@@ -2626,6 +2626,66 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
   const [fogMode, setFogMode] = useState("manual"); // "manual" | "vision"
   const [fogEnabled, setFogEnabled] = useState(true);
 
+  // ── Token conditions (independent of combat) ──
+  const [tokenConditions, setTokenConditions] = useState({}); // { tokenId: ["Blinded", ...] }
+  const DND_CONDITIONS = [
+    { name: "Blinded", color: "#888", icon: "B" },
+    { name: "Charmed", color: "#ff69b4", icon: "C" },
+    { name: "Deafened", color: "#999", icon: "D" },
+    { name: "Frightened", color: "#e8940a", icon: "F" },
+    { name: "Grappled", color: "#8b6914", icon: "G" },
+    { name: "Incapacitated", color: "#666", icon: "I" },
+    { name: "Invisible", color: "#aaccff", icon: "Iv" },
+    { name: "Paralyzed", color: "#ffcc00", icon: "P" },
+    { name: "Petrified", color: "#808080", icon: "Pe" },
+    { name: "Poisoned", color: "#4caf50", icon: "Po" },
+    { name: "Prone", color: "#8d6e63", icon: "Pr" },
+    { name: "Restrained", color: "#795548", icon: "R" },
+    { name: "Stunned", color: "#ffc107", icon: "S" },
+    { name: "Unconscious", color: "#444", icon: "U" },
+    { name: "Concentrating", color: "#7c4dff", icon: "Co" },
+    { name: "Exhaustion", color: "#ef5350", icon: "Ex" },
+    { name: "Hasted", color: "#00bcd4", icon: "H" },
+    { name: "Blessed", color: "#ffd54f", icon: "Bl" },
+    { name: "Hexed", color: "#9c27b0", icon: "Hx" },
+    { name: "Raging", color: "#d32f2f", icon: "Ra" },
+  ];
+  const addTokenCondition = (tokenId, cond) => { if (!cond) return; setTokenConditions(p => ({...p, [tokenId]: [...(p[tokenId]||[]).filter(c=>c!==cond), cond]})); };
+  const removeTokenCondition = (tokenId, cond) => { setTokenConditions(p => ({...p, [tokenId]: (p[tokenId]||[]).filter(c=>c!==cond)})); };
+
+  // ── Spell system ──
+  const [activeSpell, setActiveSpell] = useState(null); // { name, range, shape, radius, color, ... }
+  const [spellTarget, setSpellTarget] = useState(null); // { x, y } world coords for targeting
+  const [spellEffects, setSpellEffects] = useState([]); // [{ id, x, y, spell, startTime }]
+  const DND_SPELLS = [
+    { name:"Fireball", range:150, shape:"sphere", radius:20, color:"#ff6030", damage:"8d6 fire", level:3, school:"Evocation", effect:"explosion" },
+    { name:"Lightning Bolt", range:100, shape:"line", radius:5, length:100, color:"#5edfff", damage:"8d6 lightning", level:3, school:"Evocation", effect:"bolt" },
+    { name:"Healing Word", range:60, shape:"single", radius:0, color:"#5ee09a", damage:"1d4+mod", level:1, school:"Evocation", effect:"heal" },
+    { name:"Sacred Flame", range:60, shape:"single", radius:0, color:"#ffd54f", damage:"1d8 radiant", level:0, school:"Evocation", effect:"radiant" },
+    { name:"Eldritch Blast", range:120, shape:"single", radius:0, color:"#b574ff", damage:"1d10 force", level:0, school:"Evocation", effect:"bolt" },
+    { name:"Magic Missile", range:120, shape:"single", radius:0, color:"#58aaff", damage:"3x 1d4+1 force", level:1, school:"Evocation", effect:"bolt" },
+    { name:"Shield", range:0, shape:"self", radius:0, color:"#58aaff", damage:"", level:1, school:"Abjuration", effect:"shield" },
+    { name:"Thunderwave", range:0, shape:"cube", radius:15, color:"#90caf9", damage:"2d8 thunder", level:1, school:"Evocation", effect:"shockwave" },
+    { name:"Cone of Cold", range:0, shape:"cone", radius:60, color:"#b3e5fc", damage:"8d8 cold", level:5, school:"Evocation", effect:"freeze" },
+    { name:"Bless", range:30, shape:"sphere", radius:0, color:"#ffd54f", damage:"", level:1, school:"Enchantment", effect:"heal" },
+    { name:"Faerie Fire", range:60, shape:"sphere", radius:20, color:"#e040fb", damage:"", level:1, school:"Evocation", effect:"radiant" },
+    { name:"Darkness", range:60, shape:"sphere", radius:15, color:"#1a1a2e", damage:"", level:2, school:"Evocation", effect:"darkness" },
+    { name:"Guiding Bolt", range:120, shape:"single", radius:0, color:"#ffd54f", damage:"4d6 radiant", level:1, school:"Evocation", effect:"radiant" },
+    { name:"Cure Wounds", range:0, shape:"touch", radius:0, color:"#5ee09a", damage:"1d8+mod", level:1, school:"Evocation", effect:"heal" },
+    { name:"Burning Hands", range:0, shape:"cone", radius:15, color:"#ff6030", damage:"3d6 fire", level:1, school:"Evocation", effect:"explosion" },
+    { name:"Ice Storm", range:300, shape:"sphere", radius:20, color:"#b3e5fc", damage:"2d8+4d6", level:4, school:"Evocation", effect:"freeze" },
+  ];
+
+  const castSpell = (worldX, worldY) => {
+    if (!activeSpell) return;
+    const id = "spell-" + Date.now();
+    setSpellEffects(prev => [...prev, { id, x: worldX, y: worldY, spell: activeSpell, startTime: Date.now(), casterX: selectedToken?.x || worldX, casterY: selectedToken?.y || worldY }]);
+    setActiveSpell(null);
+    setSpellTarget(null);
+    // Auto-cleanup after animation
+    setTimeout(() => setSpellEffects(prev => prev.filter(e => e.id !== id)), 2500);
+  };
+
   // ── Dice roll display ──
   const [diceResult, setDiceResult] = useState(null);
 
@@ -2724,23 +2784,94 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
       }
     }
 
-    // Terrain cells (after grid, before drawings)
+    // Terrain cells (after grid, before drawings) — texture patterns
+    const drawTerrainTexture = (gx, gy, terrainType, gs) => {
+      const x = gx * gs, y = gy * gs;
+      const cx = x + gs/2, cy = y + gs/2;
+      if (terrainType === "difficult") {
+        // Cross-hatched rocks
+        ctx.strokeStyle = "rgba(180,140,40,0.35)"; ctx.lineWidth = 0.8;
+        for (let i = 0; i < gs; i += 8) { ctx.beginPath(); ctx.moveTo(x+i, y); ctx.lineTo(x, y+i); ctx.stroke(); }
+        for (let i = 0; i < gs; i += 8) { ctx.beginPath(); ctx.moveTo(x+gs-i, y+gs); ctx.lineTo(x+gs, y+gs-i); ctx.stroke(); }
+      } else if (terrainType === "water" || terrainType === "deepwater") {
+        // Wavy lines
+        const deep = terrainType === "deepwater";
+        ctx.strokeStyle = deep ? "rgba(80,140,255,0.35)" : "rgba(100,180,255,0.30)"; ctx.lineWidth = 1;
+        for (let row = 4; row < gs; row += 7) {
+          ctx.beginPath();
+          for (let col = 0; col <= gs; col += 2) { ctx.lineTo(x + col, y + row + Math.sin(col * 0.3 + row) * 2); }
+          ctx.stroke();
+        }
+      } else if (terrainType === "lava") {
+        // Bubbling circles
+        ctx.fillStyle = "rgba(255,120,30,0.3)";
+        [0.25,0.6,0.8].forEach((px,i) => { const r = 2+i; ctx.beginPath(); ctx.arc(x+gs*px, y+gs*[0.3,0.7,0.5][i], r, 0, Math.PI*2); ctx.fill(); });
+        ctx.strokeStyle = "rgba(255,60,30,0.25)"; ctx.lineWidth = 0.6;
+        ctx.beginPath(); ctx.arc(cx, cy, gs*0.3, 0, Math.PI*2); ctx.stroke();
+      } else if (terrainType === "ice") {
+        // Crystalline lines
+        ctx.strokeStyle = "rgba(200,220,240,0.30)"; ctx.lineWidth = 0.6;
+        ctx.beginPath(); ctx.moveTo(x+2, cy); ctx.lineTo(x+gs-2, cy); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx, y+3); ctx.lineTo(cx, y+gs-3); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(x+4, y+4); ctx.lineTo(x+gs-4, y+gs-4); ctx.stroke();
+      } else if (terrainType === "pit") {
+        // Dark inward spiral
+        ctx.strokeStyle = "rgba(255,255,255,0.12)"; ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        for (let a = 0; a < Math.PI*4; a += 0.2) { const r = gs*0.05 + a*gs*0.06; ctx.lineTo(cx+Math.cos(a)*r, cy+Math.sin(a)*r); }
+        ctx.stroke();
+      } else if (terrainType === "mud") {
+        // Stippled dots
+        ctx.fillStyle = "rgba(90,60,30,0.35)";
+        for (let i = 0; i < 8; i++) { const dx = (i*17+3)%gs, dy = (i*13+7)%gs; ctx.beginPath(); ctx.arc(x+dx, y+dy, 1.5, 0, Math.PI*2); ctx.fill(); }
+      } else if (terrainType === "vegetation") {
+        // Little plant strokes
+        ctx.strokeStyle = "rgba(40,160,60,0.4)"; ctx.lineWidth = 1.2;
+        [[0.2,0.3],[0.5,0.6],[0.8,0.4],[0.4,0.8]].forEach(([px,py]) => {
+          const bx = x+gs*px, by = y+gs*py;
+          ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx-3, by-5); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx+3, by-4); ctx.stroke();
+        });
+      } else if (terrainType === "rubble") {
+        // Small angular shapes
+        ctx.strokeStyle = "rgba(160,150,130,0.35)"; ctx.lineWidth = 0.7;
+        [[0.2,0.2,5],[0.6,0.3,4],[0.4,0.7,6],[0.8,0.6,3]].forEach(([px,py,s]) => {
+          ctx.beginPath(); ctx.rect(x+gs*px-s/2, y+gs*py-s/2, s, s*0.7); ctx.stroke();
+        });
+      } else if (terrainType === "magic") {
+        // Sparkle pattern
+        ctx.strokeStyle = "rgba(180,120,255,0.35)"; ctx.lineWidth = 0.8;
+        [[cx,cy,5],[x+gs*0.25,y+gs*0.3,3],[x+gs*0.75,y+gs*0.7,3]].forEach(([sx,sy,r]) => {
+          ctx.beginPath(); ctx.moveTo(sx,sy-r); ctx.lineTo(sx,sy+r); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(sx-r,sy); ctx.lineTo(sx+r,sy); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(sx-r*0.6,sy-r*0.6); ctx.lineTo(sx+r*0.6,sy+r*0.6); ctx.stroke();
+        });
+      } else if (terrainType === "fire") {
+        // Flame wisps
+        ctx.strokeStyle = "rgba(255,160,40,0.4)"; ctx.lineWidth = 1;
+        [[0.3,0.7],[0.5,0.5],[0.7,0.8]].forEach(([px,py]) => {
+          const bx = x+gs*px, by = y+gs*py;
+          ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(bx-2, by-gs*0.25, bx+1, by-gs*0.35); ctx.stroke();
+        });
+      } else if (terrainType === "darkness") {
+        // Subtle concentric rings
+        ctx.strokeStyle = "rgba(255,255,255,0.06)"; ctx.lineWidth = 0.5;
+        [0.15,0.3].forEach(r => { ctx.beginPath(); ctx.arc(cx,cy,gs*r,0,Math.PI*2); ctx.stroke(); });
+      }
+    };
+
     Object.entries(terrainCells).forEach(([key, terrainType]) => {
       if (!terrainType) return;
       const [gx, gy] = key.split(",").map(Number);
       const terrain = TERRAIN_TYPES[terrainType];
       if (!terrain) return;
 
+      // Base color fill
       ctx.fillStyle = terrain.color;
       ctx.fillRect(gx * gridSize, gy * gridSize, gridSize, gridSize);
 
-      // Terrain label
-      ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
-      ctx.font = "bold 7px Cinzel";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      const label = terrain.icon || terrain.label.substring(0, 1);
-      ctx.fillText(label, gx * gridSize + gridSize / 2, gy * gridSize + gridSize / 2);
+      // Texture pattern overlay
+      drawTerrainTexture(gx, gy, terrainType, gridSize);
     });
 
     // Drawings (finalized)
@@ -3129,19 +3260,30 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
       }
 
       // Condition indicators (small colored dots around top of token)
-      if (tokenConditions.length > 0) {
-        const condColors = { "Blinded":"#888", "Charmed":"#ff69b4", "Deafened":"#666", "Frightened":"#9b59b6", "Grappled":"#e67e22", "Incapacitated":"#95a5a6", "Invisible":"#3498db", "Paralyzed":"#f1c40f", "Petrified":"#7f8c8d", "Poisoned":"#27ae60", "Prone":"#e74c3c", "Restrained":"#d35400", "Stunned":"#f39c12", "Unconscious":"#2c3e50", "Concentrating":"#58aaff" };
-        const maxDots = Math.min(tokenConditions.length, 6);
+      const tConds = tokenConditions[t.id] || [];
+      // Also merge combat conditions if available
+      const linkedCb = combatants.find(c => c.mapTokenId === t.id);
+      const combatConds = linkedCb ? (conditions[linkedCb.id] || []) : [];
+      const allConds = [...new Set([...tConds, ...combatConds])];
+      if (allConds.length > 0) {
+        const condColorMap = {};
+        DND_CONDITIONS.forEach(dc => { condColorMap[dc.name] = dc.color; });
+        const maxDots = Math.min(allConds.length, 8);
         for (let ci = 0; ci < maxDots; ci++) {
           const angle = -Math.PI/2 + (ci / maxDots) * Math.PI * 2;
           const dotR = r + 8;
           const dx = t.x + Math.cos(angle) * dotR;
           const dy = t.y + Math.sin(angle) * dotR;
+          // Dot with shadow
+          ctx.beginPath();
+          ctx.arc(dx, dy, 3.5, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(0,0,0,0.5)";
+          ctx.fill();
           ctx.beginPath();
           ctx.arc(dx, dy, 3, 0, Math.PI * 2);
-          ctx.fillStyle = condColors[tokenConditions[ci]] || "#aaa";
+          ctx.fillStyle = condColorMap[allConds[ci]] || "#aaa";
           ctx.fill();
-          ctx.strokeStyle = "rgba(0,0,0,0.5)";
+          ctx.strokeStyle = "rgba(0,0,0,0.4)";
           ctx.lineWidth = 0.5;
           ctx.stroke();
         }
@@ -3169,6 +3311,216 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
         ctx.setLineDash([3, 3]);
         ctx.stroke();
         ctx.setLineDash([]);
+      }
+    });
+
+    // ── Spell range preview (world space) ──
+    if (activeSpell && selectedToken) {
+      const rangeInPx = (activeSpell.range / 5) * gridSize;
+      // Range circle
+      if (rangeInPx > 0) {
+        ctx.beginPath();
+        ctx.arc(selectedToken.x, selectedToken.y, rangeInPx, 0, Math.PI * 2);
+        ctx.strokeStyle = activeSpell.color + "55";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([6, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.fillStyle = activeSpell.color + "08";
+        ctx.fill();
+      }
+      // Targeting indicator at mouse position
+      if (spellTarget) {
+        const aoeRadiusPx = (activeSpell.radius / 5) * gridSize;
+        if (activeSpell.shape === "sphere" && aoeRadiusPx > 0) {
+          ctx.beginPath();
+          ctx.arc(spellTarget.x, spellTarget.y, aoeRadiusPx, 0, Math.PI * 2);
+          ctx.fillStyle = activeSpell.color + "22";
+          ctx.fill();
+          ctx.strokeStyle = activeSpell.color + "88";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        } else if (activeSpell.shape === "cone") {
+          const dx = spellTarget.x - selectedToken.x, dy = spellTarget.y - selectedToken.y;
+          const angle = Math.atan2(dy, dx);
+          const coneLenPx = (activeSpell.radius / 5) * gridSize;
+          const spread = Math.PI / 4;
+          ctx.beginPath();
+          ctx.moveTo(selectedToken.x, selectedToken.y);
+          ctx.arc(selectedToken.x, selectedToken.y, coneLenPx, angle - spread, angle + spread);
+          ctx.closePath();
+          ctx.fillStyle = activeSpell.color + "22";
+          ctx.fill();
+          ctx.strokeStyle = activeSpell.color + "66";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        } else if (activeSpell.shape === "line") {
+          const dx = spellTarget.x - selectedToken.x, dy = spellTarget.y - selectedToken.y;
+          const dist = Math.hypot(dx, dy) || 1;
+          const lineLenPx = (activeSpell.length / 5) * gridSize;
+          const nx = dx/dist, ny = dy/dist;
+          const widthPx = (activeSpell.radius / 5) * gridSize;
+          const ex = selectedToken.x + nx * lineLenPx, ey = selectedToken.y + ny * lineLenPx;
+          const px = -ny * widthPx, py = nx * widthPx;
+          ctx.beginPath();
+          ctx.moveTo(selectedToken.x + px, selectedToken.y + py);
+          ctx.lineTo(ex + px, ey + py);
+          ctx.lineTo(ex - px, ey - py);
+          ctx.lineTo(selectedToken.x - px, selectedToken.y - py);
+          ctx.closePath();
+          ctx.fillStyle = activeSpell.color + "22";
+          ctx.fill();
+          ctx.strokeStyle = activeSpell.color + "66";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        } else {
+          // Single target crosshair
+          ctx.strokeStyle = activeSpell.color + "99";
+          ctx.lineWidth = 1.5;
+          const sz = gridSize * 0.3;
+          ctx.beginPath(); ctx.moveTo(spellTarget.x - sz, spellTarget.y); ctx.lineTo(spellTarget.x + sz, spellTarget.y); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(spellTarget.x, spellTarget.y - sz); ctx.lineTo(spellTarget.x, spellTarget.y + sz); ctx.stroke();
+          ctx.beginPath(); ctx.arc(spellTarget.x, spellTarget.y, sz * 0.6, 0, Math.PI * 2); ctx.stroke();
+        }
+      }
+    }
+
+    // ── Spell cast effects (world space) ──
+    const nowSpell = Date.now();
+    spellEffects.forEach(se => {
+      const age = (nowSpell - se.startTime) / 2000; // 0 to 1 over 2s
+      if (age > 1) return;
+      const alpha = 1 - age * age; // Ease out
+      const s = se.spell;
+      const radiusPx = Math.max((s.radius / 5) * gridSize, gridSize * 0.5);
+
+      if (s.effect === "explosion") {
+        // Expanding fireball
+        const expR = radiusPx * (0.3 + age * 0.7);
+        const grad = ctx.createRadialGradient(se.x, se.y, 0, se.x, se.y, expR);
+        grad.addColorStop(0, s.color + Math.round(alpha * 200).toString(16).padStart(2,"0"));
+        grad.addColorStop(0.5, s.color + Math.round(alpha * 100).toString(16).padStart(2,"0"));
+        grad.addColorStop(1, s.color + "00");
+        ctx.beginPath(); ctx.arc(se.x, se.y, expR, 0, Math.PI * 2); ctx.fillStyle = grad; ctx.fill();
+        // Sparks
+        for (let sp = 0; sp < 12; sp++) {
+          const a = (sp / 12) * Math.PI * 2 + age * 2;
+          const sr = expR * (0.5 + Math.random() * 0.5);
+          ctx.beginPath();
+          ctx.arc(se.x + Math.cos(a) * sr, se.y + Math.sin(a) * sr, 2 * alpha, 0, Math.PI * 2);
+          ctx.fillStyle = "#ffd54f";
+          ctx.globalAlpha = alpha * 0.8;
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+      } else if (s.effect === "bolt") {
+        // Lightning/force bolt from caster to target
+        ctx.strokeStyle = s.color;
+        ctx.lineWidth = 3 * alpha;
+        ctx.globalAlpha = alpha;
+        ctx.beginPath();
+        ctx.moveTo(se.casterX, se.casterY);
+        // Jagged line
+        const dx = se.x - se.casterX, dy = se.y - se.casterY;
+        const dist = Math.hypot(dx, dy);
+        const steps = Math.max(6, Math.floor(dist / 15));
+        for (let i = 1; i <= steps; i++) {
+          const t = i / steps;
+          const jitter = (i < steps) ? (Math.random() - 0.5) * 12 : 0;
+          ctx.lineTo(se.casterX + dx * t + jitter * (-dy/dist), se.casterY + dy * t + jitter * (dx/dist));
+        }
+        ctx.stroke();
+        // Impact flash
+        ctx.beginPath();
+        ctx.arc(se.x, se.y, gridSize * 0.4 * alpha, 0, Math.PI * 2);
+        ctx.fillStyle = s.color;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      } else if (s.effect === "heal") {
+        // Rising sparkles
+        for (let sp = 0; sp < 8; sp++) {
+          const ox = (Math.random() - 0.5) * gridSize * 0.6;
+          const rise = age * gridSize * 1.2 + sp * 4;
+          ctx.beginPath();
+          ctx.arc(se.x + ox, se.y - rise, 2 * alpha, 0, Math.PI * 2);
+          ctx.fillStyle = s.color;
+          ctx.globalAlpha = alpha * 0.8;
+          ctx.fill();
+        }
+        // Gentle glow
+        ctx.beginPath();
+        ctx.arc(se.x, se.y, gridSize * 0.5 * (1 - age * 0.3), 0, Math.PI * 2);
+        ctx.fillStyle = s.color + "22";
+        ctx.globalAlpha = alpha;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      } else if (s.effect === "radiant") {
+        // Star burst rays
+        ctx.strokeStyle = s.color;
+        ctx.lineWidth = 2 * alpha;
+        ctx.globalAlpha = alpha;
+        for (let ray = 0; ray < 8; ray++) {
+          const a = (ray / 8) * Math.PI * 2 + age * 3;
+          const rl = gridSize * 0.6 * (0.5 + age * 0.5);
+          ctx.beginPath();
+          ctx.moveTo(se.x, se.y);
+          ctx.lineTo(se.x + Math.cos(a) * rl, se.y + Math.sin(a) * rl);
+          ctx.stroke();
+        }
+        ctx.beginPath();
+        ctx.arc(se.x, se.y, gridSize * 0.25, 0, Math.PI * 2);
+        ctx.fillStyle = s.color;
+        ctx.fill();
+        ctx.globalAlpha = 1;
+      } else if (s.effect === "shockwave") {
+        // Expanding ring
+        const ringR = radiusPx * age;
+        ctx.beginPath();
+        ctx.arc(se.x, se.y, ringR, 0, Math.PI * 2);
+        ctx.strokeStyle = s.color;
+        ctx.lineWidth = 4 * alpha;
+        ctx.globalAlpha = alpha;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(se.x, se.y, ringR * 0.8, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(255,255,255,0.3)";
+        ctx.lineWidth = 2 * alpha;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      } else if (s.effect === "freeze") {
+        // Ice crystals
+        ctx.strokeStyle = s.color;
+        ctx.globalAlpha = alpha;
+        for (let cr = 0; cr < 6; cr++) {
+          const a = (cr / 6) * Math.PI * 2;
+          const rl = radiusPx * 0.7 * age;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.moveTo(se.x, se.y); ctx.lineTo(se.x + Math.cos(a) * rl, se.y + Math.sin(a) * rl); ctx.stroke();
+          // Branch
+          const bx = se.x + Math.cos(a) * rl * 0.6, by = se.y + Math.sin(a) * rl * 0.6;
+          ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx + Math.cos(a+0.5)*rl*0.3, by + Math.sin(a+0.5)*rl*0.3); ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      } else if (s.effect === "shield") {
+        // Dome around caster
+        ctx.beginPath();
+        ctx.arc(se.x, se.y, gridSize * 0.6, 0, Math.PI * 2);
+        ctx.strokeStyle = s.color;
+        ctx.lineWidth = 3 * alpha;
+        ctx.globalAlpha = alpha * 0.7;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(se.x, se.y, gridSize * 0.55, -Math.PI/3, Math.PI/3);
+        ctx.strokeStyle = "rgba(255,255,255,0.5)";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      } else if (s.effect === "darkness") {
+        // Expanding dark void
+        const dR = radiusPx * (0.5 + age * 0.5);
+        ctx.beginPath(); ctx.arc(se.x, se.y, dR, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(10,5,20," + (0.7 * alpha) + ")";
+        ctx.fill();
       }
     });
 
@@ -3246,11 +3598,11 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
       ctx.textBaseline = "middle";
       ctx.fillText("Move: " + (used * 5) + "/" + (speedCells * 5) + " ft  (" + (remaining * 5) + " left)", w/2, 22);
     }
-  }, [bgColor, bgImage, showGrid, gridSize, zoom, pan, drawings, drawPoints, drawColor, drawWidth, fogCells, fogEnabled, tokens, walls, wallStart, wallPreview, selectedWallType, activeTool, rulerStart, rulerEnd, selectedTokenId, hoveredTokenId, activeCombatantId, combatLive, combatants, conditions, fogMode, movementMode, movementPath, movementOrigin, terrainCells, pings, viewRole]);
+  }, [bgColor, bgImage, showGrid, gridSize, zoom, pan, drawings, drawPoints, drawColor, drawWidth, fogCells, fogEnabled, tokens, walls, wallStart, wallPreview, selectedWallType, activeTool, rulerStart, rulerEnd, selectedTokenId, hoveredTokenId, activeCombatantId, combatLive, combatants, conditions, tokenConditions, activeSpell, spellTarget, spellEffects, fogMode, movementMode, movementPath, movementOrigin, terrainCells, pings, viewRole]);
 
-  // Animation loop for combat glow and pings
+  // Animation loop for combat glow, pings, and spell effects
   useEffect(() => {
-    if (!combatLive && pings.length === 0) return;
+    if (!combatLive && pings.length === 0 && spellEffects.length === 0) return;
     let running = true;
     const animate = () => {
       if (!running) return;
@@ -3259,7 +3611,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     };
     animate();
     return () => { running = false; cancelAnimationFrame(animRef.current); };
-  }, [combatLive, pings.length, render]);
+  }, [combatLive, pings.length, spellEffects.length, render]);
 
   useEffect(() => { if (!combatLive && pings.length === 0) render(); }, [render, combatLive, pings]);
 
@@ -3411,6 +3763,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
         setContextMenu(null);
         setWallStart(null);
         setWallPreview(null);
+        setActiveSpell(null);
+        setSpellTarget(null);
         if (movementMode && selectedToken && movementOrigin) {
           // Cancel movement — return token to origin
           setTokens(p => p.map(t => t.id === selectedTokenId ? {...t, x: movementOrigin.x, y: movementOrigin.y} : t));
@@ -3432,6 +3786,16 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     if (e.button === 2) return;
     setContextMenu(null);
     const w = getMouseWorld(e);
+
+    // Spell targeting — click to cast
+    if (activeSpell) {
+      if (activeSpell.shape === "self" || activeSpell.shape === "touch") {
+        castSpell(selectedToken?.x || w.x, selectedToken?.y || w.y);
+      } else {
+        castSpell(w.x, w.y);
+      }
+      return;
+    }
 
     // Pings work for both DM and player
     if (pingMode) {
@@ -3532,6 +3896,11 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
 
   const handleMouseMove = (e) => {
     const w = getMouseWorld(e);
+
+    // Spell targeting preview
+    if (activeSpell) {
+      setSpellTarget({ x: w.x, y: w.y });
+    }
 
     // Token hover detection
     const hitHover = [...tokens].reverse().find(t => {
@@ -3752,8 +4121,9 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
       init: Math.floor(Math.random() * 20) + 1,
       hp: t.hp || 30,
       maxHp: t.maxHp || 30,
-      ac: 12,
-      type: t.color === "#2e8b57" ? "pc" : "enemy",
+      ac: t.ac || 12,
+      type: t.tokenType === "pc" ? "pc" : (t.tokenType === "npc" ? "npc" : "enemy"),
+      color: t.color,
     })).sort((a, b) => b.init - a.init);
     setCombatants(combs);
     setTurn(0);
@@ -3980,6 +4350,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
   ];
 
   const getCursor = () => {
+    if (activeSpell) return "crosshair";
     if (pingMode) return "crosshair";
     if (movementMode) return "move";
     if (dragState?.type === "pan") return "grabbing";
@@ -4002,6 +4373,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
 
   return (
     <div style={{ display:"flex", flexDirection:"column", flex:1, minHeight:0, ...(immersive ? { position:"fixed", inset:0, zIndex:9999, background:T.bg } : {}) }}>
+      {/* Top-level hidden file inputs for reliable label association */}
+      <input type="file" ref={fileRef} id="battlemap-file-upload" style={{display:"none"}} accept="image/*" onChange={handleMapUpload} />
 
       {/* ── Immersive mode top bar ── */}
       {immersive && (
@@ -4027,7 +4400,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
             <canvas ref={canvasRef} style={{ display:"block", width:"100%", height:"100%", position:"absolute", top:0, left:0 }}
               onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}
               onMouseLeave={handleMouseUp} onWheel={handleWheel} onContextMenu={handleContextMenu} />
-            <input type="file" ref={fileRef} id="battlemap-file-upload" style={{display:"none"}} accept="image/*" onChange={handleMapUpload} />
+            {/* Map file input moved to top-level for reliable label association */}
 
             {/* Canvas edge overlays — subtle borders that integrate panels with map */}
             <div style={{ position:"absolute", top:0, left:0, bottom:0, width:2, background:"linear-gradient(180deg, var(--crimson-border) 0%, transparent 30%, transparent 70%, var(--crimson-border) 100%)", pointerEvents:"none", zIndex:5, opacity:0.5 }} />
@@ -4052,9 +4425,15 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                 PING MODE (click to ping, Esc to cancel)
               </div>
             )}
-            {movementMode && !pingMode && (
+            {movementMode && !pingMode && !activeSpell && (
               <div style={{ position:"absolute", top:14, left:80, background:"rgba(46,139,87,0.85)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"#f2e8d6", letterSpacing:"1.5px", pointerEvents:"none", zIndex:10, border:"1px solid rgba(46,139,87,0.4)", boxShadow:"0 2px 10px rgba(46,139,87,0.25)" }}>
                 MOVEMENT MODE (M to toggle, Esc to cancel)
+              </div>
+            )}
+            {activeSpell && (
+              <div style={{ position:"absolute", top:14, left:80, background:"rgba(181,116,255,0.88)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"#f2e8d6", letterSpacing:"1.5px", pointerEvents:"none", zIndex:10, border:"1px solid rgba(181,116,255,0.5)", boxShadow:"0 2px 10px rgba(181,116,255,0.3)", display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ width:7, height:7, borderRadius:"50%", background:activeSpell.color, boxShadow:"0 0 6px " + activeSpell.color }} />
+                SPELL: {activeSpell.name.toUpperCase()} — click to cast, Esc to cancel
               </div>
             )}
 
@@ -4379,10 +4758,28 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
         }}>
 
           {mode === "combat" ? (
-            <div style={{ padding:14, display:"flex", flexDirection:"column", gap:10 }}>
-              <span style={{ fontFamily:T.ui, fontSize:10, letterSpacing:"2.5px", color:T.crimson, textTransform:"uppercase", display:"block", marginBottom:10, paddingBottom:7, borderBottom:"1px solid rgba(212,67,58,0.2)", fontWeight:600 }}>
-                {combatLive ? "Initiative Order" : "Combat Setup"}
-              </span>
+            <div style={{ padding:14, display:"flex", flexDirection:"column", gap:8 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingBottom:8, borderBottom:"1px solid rgba(212,67,58,0.2)" }}>
+                <span style={{ fontFamily:T.ui, fontSize:10, letterSpacing:"2.5px", color:T.crimson, textTransform:"uppercase", fontWeight:600 }}>
+                  {combatLive ? "Round " + round : "Combat Setup"}
+                </span>
+                {combatLive && (
+                  <div style={{ display:"flex", gap:4 }}>
+                    <button onClick={prevTurn} title="Previous Turn"
+                      onMouseEnter={e => e.currentTarget.style.background="var(--bg-hover)"}
+                      onMouseLeave={e => e.currentTarget.style.background="var(--bg-input)"}
+                      style={{ padding:"4px 8px", background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:"4px", cursor:"pointer", color:T.textMuted, display:"flex", alignItems:"center" }}><ChevronUp size={10}/></button>
+                    <button onClick={nextTurn} title="Next Turn"
+                      onMouseEnter={e => e.currentTarget.style.background="rgba(212,67,58,0.15)"}
+                      onMouseLeave={e => e.currentTarget.style.background="rgba(212,67,58,0.08)"}
+                      style={{ padding:"4px 10px", background:"rgba(212,67,58,0.08)", border:"1px solid rgba(212,67,58,0.25)", borderRadius:"4px", cursor:"pointer", color:cssVar("--crimson"), fontFamily:T.ui, fontSize:8, letterSpacing:"1px", display:"flex", alignItems:"center", gap:4 }}><SkipForward size={10}/> Next</button>
+                    <button onClick={endCombat} title="End Combat"
+                      onMouseEnter={e => e.currentTarget.style.background="var(--bg-hover)"}
+                      onMouseLeave={e => e.currentTarget.style.background="var(--bg-input)"}
+                      style={{ padding:"4px 6px", background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:"4px", cursor:"pointer", color:T.textFaint, display:"flex", alignItems:"center" }}><X size={10}/></button>
+                  </div>
+                )}
+              </div>
 
               {!combatLive ? (
                 <div style={{ textAlign:"center", padding:"28px 0" }}>
@@ -4394,69 +4791,82 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                 </div>
               ) : (
                 <React.Fragment>
-                  <div style={{ display:"flex", flexDirection:"column", gap:3, maxHeight:360, overflowY:"auto" }}>
-                    {combatants.map((c, i) => (
-                      <div key={c.id}
-                        onClick={() => setSelectedTokenId(c.mapTokenId)}
-                        style={{
-                          padding: i===turn ? "10px 10px" : "8px 10px",
-                          background: i===turn ? T.crimsonSoft : "transparent",
-                          borderRadius:"4px",
-                          borderLeft: i===turn ? "4px solid " + cssVar("--crimson") : "4px solid transparent",
-                          opacity: c.hp<=0 ? 0.3 : 1, transition:"all 0.2s", cursor:"pointer",
-                          boxShadow: i===turn ? "0 2px 8px rgba(212,67,58,0.15)" : "none",
-                        }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                          <span style={{ fontSize: i===turn ? 13 : 11, fontFamily:T.body, fontWeight: i===turn ? 600 : 500, color: i===turn ? cssVar("--crimson") : T.textFaint, minWidth:20 }}>{c.init}</span>
-                          <span style={{ width:7, height:7, borderRadius:"50%", flexShrink:0, background:c.type==="pc"?"#5ee09a":cssVar("--crimson"), boxShadow: i===turn ? "0 0 4px " + (c.type==="pc"?"rgba(94,224,154,0.5)":"rgba(212,67,58,0.5)") : "none" }} />
-                          <span style={{ flex:1, fontSize: i===turn ? 13 : 12, fontFamily:T.body, fontWeight: i===turn ? 500 : 400, color:T.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.name}</span>
-                          <span style={{ fontFamily:T.ui, fontSize:7, color:T.textFaint, letterSpacing:"0.5px", background:"var(--bg-input)", padding:"1px 4px", borderRadius:"2px" }}>AC{c.ac}</span>
-                        </div>
-                        <div style={{ display:"flex", alignItems:"center", gap:3, marginTop:4, paddingLeft:26 }}>
-                          <button onClick={e=>{e.stopPropagation();adjCombatantHp(c.id,-5);}} style={{ background:"none", border:"none", cursor:"pointer", color:"#f06858", fontSize:12, padding:"1px 3px" }}>-</button>
-                          <div style={{ flex:1, height:6, background:T.bgInput, borderRadius:"3px", overflow:"hidden" }}>
-                            <div style={{ width: Math.round(c.hp/c.maxHp*100) + "%", height:"100%", background:getHpColor(c.hp, c.maxHp), transition:"width 0.2s", borderRadius:"3px" }} />
+                  <div style={{ display:"flex", flexDirection:"column", gap:2, maxHeight:420, overflowY:"auto" }}>
+                    {combatants.map((c, i) => {
+                      const isCurrent = i === turn;
+                      const isDead = c.hp <= 0;
+                      const hpPct = Math.round(c.hp / c.maxHp * 100);
+                      const conds = conditions[c.id] || [];
+                      return (
+                        <div key={c.id}
+                          onClick={() => setSelectedTokenId(c.mapTokenId)}
+                          style={{
+                            padding: isCurrent ? "10px 10px 8px" : "7px 10px",
+                            background: isCurrent ? "var(--crimson-soft)" : isDead ? "rgba(0,0,0,0.1)" : "transparent",
+                            borderRadius:"6px",
+                            borderLeft: isCurrent ? "3px solid var(--crimson)" : "3px solid transparent",
+                            opacity: isDead ? 0.35 : 1, transition:"all 0.15s", cursor:"pointer",
+                          }}>
+                          {/* Row 1: Init + Name + AC */}
+                          <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                            <span style={{ fontSize:10, fontFamily:T.ui, fontWeight:600, color: isCurrent ? cssVar("--crimson") : T.textFaint, minWidth:18, textAlign:"center" }}>{c.init}</span>
+                            <span style={{ width:6, height:6, borderRadius:"50%", flexShrink:0, background: c.type==="pc" ? "#5ee09a" : c.type==="npc" ? "#58aaff" : cssVar("--crimson") }} />
+                            <span style={{ flex:1, fontSize: isCurrent ? 12 : 11, fontFamily:T.body, fontWeight: isCurrent ? 500 : 400, color:T.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.name}</span>
+                            <span style={{ fontFamily:T.ui, fontSize:7, color:T.textFaint, letterSpacing:"0.5px", padding:"1px 4px", borderRadius:"2px", background:"var(--bg-input)" }}>AC{c.ac}</span>
                           </div>
-                          <span style={{ fontSize:9, fontFamily:T.body, minWidth:36, textAlign:"center", color: i===turn ? T.text : T.textMuted, fontWeight: i===turn ? 500 : 400 }}>{c.hp}/{c.maxHp}</span>
-                          <button onClick={e=>{e.stopPropagation();adjCombatantHp(c.id,5);}} style={{ background:"none", border:"none", cursor:"pointer", color:"#5ee09a", fontSize:12, padding:"1px 3px" }}>+</button>
-                          {c.type==="enemy" && <button onClick={e=>{e.stopPropagation();removeCombatant(c.id);}} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:"1px" }}><X size={9}/></button>}
-                        </div>
-                        {(conditions[c.id]||[]).length > 0 && (
-                          <div style={{ display:"flex", gap:3, flexWrap:"wrap", marginTop:3, paddingLeft:24 }}>
-                            {(conditions[c.id]||[]).map((cond,ci) => (
+                          {/* Row 2: HP bar with +/- */}
+                          <div style={{ display:"flex", alignItems:"center", gap:3, marginTop:3, paddingLeft:24 }}>
+                            <button onClick={e=>{e.stopPropagation();adjCombatantHp(c.id,-1);}} title="Damage 1"
+                              style={{ background:"none", border:"none", cursor:"pointer", color:"#f06858", fontSize:11, padding:"0 2px", lineHeight:1 }}>-</button>
+                            <div style={{ flex:1, height:5, background:"var(--bg-input)", borderRadius:"3px", overflow:"hidden", position:"relative" }}>
+                              <div style={{ width: hpPct + "%", height:"100%", background:getHpColor(c.hp, c.maxHp), transition:"width 0.2s", borderRadius:"3px" }} />
+                            </div>
+                            <span style={{ fontSize:8, fontFamily:T.body, minWidth:34, textAlign:"center", color: isCurrent ? T.text : T.textMuted }}>{c.hp}/{c.maxHp}</span>
+                            <button onClick={e=>{e.stopPropagation();adjCombatantHp(c.id,1);}} title="Heal 1"
+                              style={{ background:"none", border:"none", cursor:"pointer", color:"#5ee09a", fontSize:11, padding:"0 2px", lineHeight:1 }}>+</button>
+                            <button onClick={e=>{e.stopPropagation(); const v=prompt("Damage (negative) or Heal (positive):"); if(v) adjCombatantHp(c.id, parseInt(v)); }} title="Custom HP"
+                              style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, fontSize:8, padding:"0 2px", fontFamily:T.ui }}>HP</button>
+                            {c.type!=="pc" && <button onClick={e=>{e.stopPropagation();removeCombatant(c.id);}} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:"0 1px" }}><X size={8}/></button>}
+                          </div>
+                          {/* Row 3: Conditions (always visible, any combatant can add) */}
+                          <div style={{ display:"flex", gap:2, flexWrap:"wrap", marginTop:3, paddingLeft:24, alignItems:"center" }}>
+                            {conds.map((cond,ci) => (
                               <span key={ci} onClick={e=>{e.stopPropagation();removeCondition(c.id,ci);}}
-                                style={{ display:"inline-flex", alignItems:"center", gap:2, background:T.crimsonSoft, border:"1px solid " + T.crimsonBorder, padding:"1px 5px", borderRadius:"2px", fontSize:7, fontFamily:T.ui, letterSpacing:"0.5px", color:cssVar("--crimson"), cursor:"pointer", textTransform:"uppercase" }}>
-                                {cond} <X size={6}/>
+                                style={{ display:"inline-flex", alignItems:"center", gap:1, background:"var(--crimson-soft)", border:"1px solid var(--crimson-border)", padding:"1px 4px", borderRadius:"2px", fontSize:6, fontFamily:T.ui, letterSpacing:"0.3px", color:cssVar("--crimson"), cursor:"pointer", textTransform:"uppercase" }}>
+                                {cond} <X size={5}/>
                               </span>
                             ))}
+                            {c.hp > 0 && (
+                              <select onChange={e=>{e.stopPropagation();addCondition(c.id,e.target.value);e.target.value="";}} value=""
+                                onClick={e=>e.stopPropagation()}
+                                style={{ padding:"1px 2px", fontSize:7, fontFamily:T.ui, background:"transparent", border:"1px dashed var(--border-mid)", color:T.textFaint, borderRadius:"2px", cursor:"pointer", maxWidth:60 }}>
+                                <option value="">+</option>
+                                {conditionsList.map(co=><option key={co} value={co}>{co}</option>)}
+                              </select>
+                            )}
                           </div>
-                        )}
-                        {i === turn && c.hp > 0 && (
-                          <div style={{ paddingLeft:24, marginTop:3 }}>
-                            <select onChange={e=>{addCondition(c.id,e.target.value);e.target.value="";}} value=""
-                              onClick={e=>e.stopPropagation()}
-                              style={{ padding:"2px 4px", fontSize:9, fontFamily:T.ui, background:T.bgInput, border:"1px solid " + T.border, color:T.textMuted, borderRadius:"2px", cursor:"pointer" }}>
-                              <option value="">+ Condition</option>
-                              {conditionsList.map(co=><option key={co} value={co}>{co}</option>)}
-                            </select>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                        </div>
+                      );
+                    })}
                   </div>
 
-                  <div style={{ borderTop:"1px solid " + T.border, paddingTop:10, marginTop:6 }}>
-                    <span style={{ fontFamily:T.ui, fontSize:9, color:T.textFaint, letterSpacing:"1.5px", textTransform:"uppercase", display:"block", marginBottom:6, fontWeight:500 }}>Add Combatant</span>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 40px", gap:4 }}>
-                      <Input value={addName} onChange={setAddName} placeholder="Name" style={{ padding:"5px 8px", fontSize:11 }} />
-                      <Input value={addInit} onChange={setAddInit} placeholder="Init" type="number" style={{ padding:"5px 4px", fontSize:11, textAlign:"center" }} />
+                  {/* Add Combatant (collapsed by default) */}
+                  <details style={{ borderTop:"1px solid var(--border)", paddingTop:8, marginTop:4 }}>
+                    <summary style={{ fontFamily:T.ui, fontSize:8, color:T.textFaint, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", fontWeight:500, listStyle:"none", display:"flex", alignItems:"center", gap:4 }}>
+                      <Plus size={9} color={T.textFaint}/> Add Combatant
+                    </summary>
+                    <div style={{ marginTop:6 }}>
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 36px", gap:3 }}>
+                        <Input value={addName} onChange={setAddName} placeholder="Name" style={{ padding:"4px 6px", fontSize:10 }} />
+                        <Input value={addInit} onChange={setAddInit} placeholder="Init" type="number" style={{ padding:"4px 3px", fontSize:10, textAlign:"center" }} />
+                      </div>
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 28px", gap:3, marginTop:3 }}>
+                        <Input value={addHp} onChange={setAddHp} placeholder="HP" type="number" style={{ padding:"4px 6px", fontSize:10 }} />
+                        <Input value={addAc} onChange={setAddAc} placeholder="AC" type="number" style={{ padding:"4px 6px", fontSize:10 }} />
+                        <CrimsonBtn onClick={addCombatantToEncounter} secondary small style={{ padding:"4px 5px" }}><Plus size={10}/></CrimsonBtn>
+                      </div>
                     </div>
-                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 32px", gap:4, marginTop:4 }}>
-                      <Input value={addHp} onChange={setAddHp} placeholder="HP" type="number" style={{ padding:"5px 8px", fontSize:11 }} />
-                      <Input value={addAc} onChange={setAddAc} placeholder="AC" type="number" style={{ padding:"5px 8px", fontSize:11 }} />
-                      <CrimsonBtn onClick={addCombatantToEncounter} secondary small style={{ padding:"5px 6px" }}><Plus size={11}/></CrimsonBtn>
-                    </div>
-                  </div>
+                  </details>
                 </React.Fragment>
               )}
             </div>
@@ -4572,6 +4982,30 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                 <p style={{ fontSize:8, color:T.textFaint, fontStyle:"italic", marginTop:4, fontFamily:T.body }}>12 cells = 60ft. Used with Vision Fog.</p>
               </div>
 
+              {/* Conditions */}
+              <div style={{ borderTop:"1px solid " + T.border, paddingTop:10 }}>
+                <span style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:6, fontWeight:500 }}>Conditions</span>
+                <div style={{ display:"flex", gap:3, flexWrap:"wrap", marginBottom:6 }}>
+                  {(tokenConditions[selectedToken.id] || []).map(cond => {
+                    const dc = DND_CONDITIONS.find(d => d.name === cond);
+                    return (
+                      <span key={cond} onClick={() => removeTokenCondition(selectedToken.id, cond)}
+                        style={{ display:"inline-flex", alignItems:"center", gap:3, background:"rgba(0,0,0,0.15)", border:"1px solid " + (dc ? dc.color + "55" : "var(--border-mid)"), padding:"2px 6px", borderRadius:"10px", fontSize:8, fontFamily:T.ui, letterSpacing:"0.3px", color: dc ? dc.color : T.textMuted, cursor:"pointer", transition:"all 0.15s" }}>
+                        <span style={{ width:5, height:5, borderRadius:"50%", background: dc ? dc.color : "#aaa" }} />
+                        {cond} <X size={7}/>
+                      </span>
+                    );
+                  })}
+                </div>
+                <select onChange={e => { addTokenCondition(selectedToken.id, e.target.value); e.target.value = ""; }} value=""
+                  style={{ width:"100%", padding:"4px 6px", fontSize:9, fontFamily:T.ui, background:T.bgInput, border:"1px solid " + T.border, color:T.textMuted, borderRadius:"4px", cursor:"pointer" }}>
+                  <option value="">+ Add Condition</option>
+                  {DND_CONDITIONS.filter(dc => !(tokenConditions[selectedToken.id] || []).includes(dc.name)).map(dc => (
+                    <option key={dc.name} value={dc.name}>{dc.name}</option>
+                  ))}
+                </select>
+              </div>
+
               {/* Notes */}
               <div style={{ borderTop:"1px solid " + T.border, paddingTop:10 }}>
                 <span style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:6, fontWeight:500 }}>Notes</span>
@@ -4599,6 +5033,52 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                   <CrimsonBtn onClick={() => removeToken(selectedToken.id)} secondary small style={{ flex:1 }}>
                     <Trash2 size={11}/> Remove
                   </CrimsonBtn>
+                </div>
+              </div>
+
+              {/* Spells */}
+              <div style={{ borderTop:"1px solid " + T.border, paddingTop:10 }}>
+                <span style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:6, fontWeight:500 }}>Spells</span>
+                {activeSpell && (
+                  <div style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 8px", marginBottom:8, background:"rgba(181,116,255,0.1)", border:"1px solid rgba(181,116,255,0.3)", borderRadius:"6px" }}>
+                    <span style={{ width:8, height:8, borderRadius:"50%", background:activeSpell.color, boxShadow:"0 0 6px " + activeSpell.color }} />
+                    <span style={{ flex:1, fontFamily:T.ui, fontSize:9, color:"#b574ff", letterSpacing:"0.5px" }}>Targeting: {activeSpell.name}</span>
+                    <span onClick={() => { setActiveSpell(null); setSpellTarget(null); }} style={{ cursor:"pointer", color:T.textFaint, fontSize:10 }}><X size={10}/></span>
+                  </div>
+                )}
+                <div style={{ maxHeight:200, overflowY:"auto", display:"flex", flexDirection:"column", gap:2 }}>
+                  {DND_SPELLS.map(spell => {
+                    const isActive = activeSpell && activeSpell.name === spell.name;
+                    return (
+                      <div key={spell.name}
+                        onClick={() => {
+                          if (spell.shape === "self" || spell.shape === "touch") {
+                            // Self/touch spells cast immediately on selected token
+                            const tx = selectedToken.x, ty = selectedToken.y;
+                            const id = "spell-" + Date.now();
+                            setSpellEffects(prev => [...prev, { id, x: tx, y: ty, spell: spell, startTime: Date.now(), casterX: tx, casterY: ty }]);
+                            setTimeout(() => setSpellEffects(prev => prev.filter(e => e.id !== id)), 2500);
+                          } else {
+                            setActiveSpell(isActive ? null : spell);
+                            setSpellTarget(null);
+                          }
+                        }}
+                        onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background="rgba(181,116,255,0.06)"; e.currentTarget.style.borderColor="rgba(181,116,255,0.2)"; }}}
+                        onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor=T.border; }}}
+                        style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 8px", background:isActive?"rgba(181,116,255,0.12)":"transparent", border:"1px solid " + (isActive?"rgba(181,116,255,0.35)":T.border), borderRadius:"5px", cursor:"pointer", transition:"all 0.15s" }}>
+                        <span style={{ width:7, height:7, borderRadius:"50%", background:spell.color, flexShrink:0, boxShadow: isActive ? "0 0 6px " + spell.color : "none" }} />
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontFamily:T.ui, fontSize:9, color:isActive?"#b574ff":T.text, letterSpacing:"0.3px", lineHeight:"1.3" }}>{spell.name}</div>
+                          <div style={{ fontFamily:T.body, fontSize:7, color:T.textFaint, lineHeight:"1.2" }}>
+                            Lv{spell.level} {spell.school} {spell.range > 0 ? spell.range + "ft" : spell.shape === "self" ? "Self" : "Touch"} {spell.damage ? "— " + spell.damage : ""}
+                          </div>
+                        </div>
+                        <span style={{ fontFamily:T.ui, fontSize:7, color:T.textFaint, letterSpacing:"0.5px", textTransform:"uppercase", flexShrink:0 }}>
+                          {spell.shape === "self" || spell.shape === "touch" ? "Cast" : isActive ? "Aim" : "Cast"}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             </div>
