@@ -261,12 +261,12 @@ const LinkBtn = ({ children, onClick }) => (
 
 const CrimsonBtn = ({ children, onClick, secondary, small, disabled, style:sx }) => (
   <button onClick={disabled?undefined:onClick}
-    onMouseEnter={e => { if (!disabled) { e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.boxShadow=secondary?"0 2px 8px rgba(0,0,6,0.3)":"0 4px 16px rgba(212,67,58,0.35), 0 1px 3px rgba(0,0,6,0.2)"; if (secondary) { e.currentTarget.style.borderColor="rgba(212,67,58,0.3)"; e.currentTarget.style.color="var(--crimson)"; } }}}
+    onMouseEnter={e => { if (!disabled) { e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.boxShadow=secondary?"0 2px 8px rgba(0,0,6,0.3)":"0 4px 16px rgba(212,67,58,0.35), 0 1px 3px rgba(0,0,6,0.2)"; if (secondary) { e.currentTarget.style.borderColor="var(--crimson-border)"; e.currentTarget.style.color="var(--crimson)"; } }}}
     onMouseLeave={e => { if (!disabled) { e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.boxShadow=secondary?"none":"0 2px 8px rgba(212,67,58,0.2)"; if (secondary) { e.currentTarget.style.borderColor=T.border; e.currentTarget.style.color=T.textMuted; } }}}
     style={{
     padding: small ? "7px 14px" : "10px 24px",
-    border: secondary ? "1px solid rgba(255,255,255,0.08)" : "1px solid rgba(212,67,58,0.3)",
-    background: disabled ? T.bgMid : secondary ? "rgba(255,255,255,0.02)" : "linear-gradient(180deg, var(--crimson) 0%, rgba(180,52,44,1) 100%)",
+    border: secondary ? "1px solid var(--border)" : "1px solid var(--crimson-border)",
+    background: disabled ? T.bgMid : secondary ? T.bgInput : "linear-gradient(180deg, var(--crimson) 0%, var(--crimson-dim) 100%)",
     color: disabled ? T.textFaint : secondary ? T.textMuted : T.text,
     fontFamily:T.ui, fontSize: small ? "9px" : "10px", letterSpacing:"2px", textTransform:"uppercase",
     cursor: disabled ? "default" : "pointer", borderRadius:"6px", fontWeight:600, transition:"all 0.2s ease",
@@ -3818,7 +3818,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
           </div>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <span style={{ fontFamily:T.ui, fontSize:7, color:T.textFaint, letterSpacing:"1px" }}>F to exit · Tab sidebar</span>
-            <button onClick={() => setImmersive(false)} style={{ background:"none", border:"1px solid rgba(255,255,255,0.15)", borderRadius:"3px", padding:"3px 10px", cursor:"pointer", color:T.textMuted, fontFamily:T.ui, fontSize:7, letterSpacing:"1px", textTransform:"uppercase" }}>Exit Focus</button>
+            <button onClick={() => setImmersive(false)} style={{ background:"none", border:"1px solid var(--border)", borderRadius:"3px", padding:"3px 10px", cursor:"pointer", color:T.textMuted, fontFamily:T.ui, fontSize:7, letterSpacing:"1px", textTransform:"uppercase" }}>Exit Focus</button>
           </div>
         </div>
       )}
@@ -3827,8 +3827,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
 
         {/* ── LEFT: Floating Mode Strip ── */}
         <div style={{
-          width: immersive ? 52 : 58, background: immersive ? "rgba(4,4,10,0.95)" : "linear-gradient(180deg, rgba(22,18,14,1) 0%, rgba(16,13,10,1) 100%)",
-          borderRight: immersive ? "1px solid rgba(212,67,58,0.15)" : "1px solid rgba(212,67,58,0.2)",
+          width: immersive ? 52 : 58, background: immersive ? "var(--bg-nav)" : "linear-gradient(180deg, var(--bg-nav) 0%, var(--bg) 100%)",
+          borderRight: immersive ? "1px solid var(--crimson-border)" : "1px solid var(--crimson-border)",
           display:"flex", flexDirection:"column", alignItems:"center", paddingTop:10, gap:2,
           boxShadow: immersive ? "3px 0 28px rgba(0,0,6,0.7), 1px 0 0 rgba(212,67,58,0.08)" : "3px 0 16px rgba(0,0,6,0.4), 1px 0 0 rgba(212,67,58,0.08)",
           flexShrink:0, transition:"width 0.25s ease",
@@ -3877,12 +3877,12 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
               <div style={{ width:32, height:1, background:T.border, margin:"4px 0" }} />
               {Object.entries(TERRAIN_TYPES).map(([key, terrain]) => (
                 <button key={key} onClick={() => setSelectedTerrain(key)} title={terrain.label}
-                  onMouseEnter={e => { if (selectedTerrain !== key) { e.currentTarget.style.background="rgba(255,255,255,0.06)"; e.currentTarget.style.border="1px solid rgba(255,255,255,0.12)"; }}}
+                  onMouseEnter={e => { if (selectedTerrain !== key) { e.currentTarget.style.background="var(--bg-hover)"; e.currentTarget.style.border="1px solid var(--border)"; }}}
                   onMouseLeave={e => { if (selectedTerrain !== key) { e.currentTarget.style.background="transparent"; e.currentTarget.style.border="1px solid transparent"; }}}
                   style={{
                     width:42, height:42, display:"flex", alignItems:"center", justifyContent:"center",
                     background: selectedTerrain === key ? terrain.color : "transparent",
-                    border: selectedTerrain === key ? "1px solid rgba(255,255,255,0.3)" : "1px solid transparent",
+                    border: selectedTerrain === key ? "1px solid var(--border)" : "1px solid transparent",
                     borderRadius:"8px", cursor:"pointer", transition:"all 0.2s", fontSize:11, fontFamily:T.ui, color:T.text, fontWeight:600
                   }}>
                   {terrain.label.substring(0, 1)}
@@ -3913,38 +3913,43 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
           )}
 
           <button onClick={() => setShowGrid(!showGrid)} title="Toggle Grid"
-            onMouseEnter={e => { if (!showGrid) { e.currentTarget.style.background="rgba(212,67,58,0.08)"; e.currentTarget.style.border="1px solid rgba(212,67,58,0.15)"; }}}
+            onMouseEnter={e => { if (!showGrid) { e.currentTarget.style.background="var(--crimson-soft)"; e.currentTarget.style.border="1px solid var(--crimson-border)"; }}}
             onMouseLeave={e => { if (!showGrid) { e.currentTarget.style.background="transparent"; e.currentTarget.style.border="1px solid transparent"; }}}
-            style={{ width:42, height:42, display:"flex", alignItems:"center", justifyContent:"center", background:showGrid?"rgba(212,67,58,0.18)":"transparent", border:"1px solid " + (showGrid?"rgba(212,67,58,0.4)":"transparent"), borderRadius:"8px", cursor:"pointer", transition:"all 0.2s", boxShadow:showGrid?"0 0 12px rgba(212,67,58,0.25)":"none" }}>
+            style={{ width:46, height:46, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2, background:showGrid?"var(--crimson-soft)":"transparent", border:"1px solid " + (showGrid?"var(--crimson-border)":"transparent"), borderRadius:"8px", cursor:"pointer", transition:"all 0.2s", boxShadow:showGrid?"0 0 12px rgba(212,67,58,0.25)":"none" }}>
             <Layers size={15} color={showGrid ? cssVar("--crimson") : cssVar("--text-faint")} />
+            <span style={{ fontSize:6, fontFamily:T.ui, letterSpacing:"0.5px", color:showGrid?cssVar("--crimson"):T.textFaint, textTransform:"uppercase", fontWeight:500 }}>Grid</span>
           </button>
 
           <button onClick={() => setPingMode(!pingMode)} title="Ping (P)"
             onMouseEnter={e => { if (!pingMode) { e.currentTarget.style.background="rgba(88,170,255,0.08)"; e.currentTarget.style.border="1px solid rgba(88,170,255,0.15)"; }}}
             onMouseLeave={e => { if (!pingMode) { e.currentTarget.style.background="transparent"; e.currentTarget.style.border="1px solid transparent"; }}}
-            style={{ width:42, height:42, display:"flex", alignItems:"center", justifyContent:"center", background:pingMode?"rgba(88,170,255,0.18)":"transparent", border:"1px solid " + (pingMode?"rgba(88,170,255,0.4)":"transparent"), borderRadius:"8px", cursor:"pointer", transition:"all 0.2s", boxShadow:pingMode?"0 0 12px rgba(88,170,255,0.25)":"none" }}>
+            style={{ width:46, height:46, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2, background:pingMode?"rgba(88,170,255,0.18)":"transparent", border:"1px solid " + (pingMode?"rgba(88,170,255,0.4)":"transparent"), borderRadius:"8px", cursor:"pointer", transition:"all 0.2s", boxShadow:pingMode?"0 0 12px rgba(88,170,255,0.25)":"none" }}>
             <MapPin size={15} color={pingMode ? "#58aaff" : cssVar("--text-faint")} />
+            <span style={{ fontSize:6, fontFamily:T.ui, letterSpacing:"0.5px", color:pingMode?"#58aaff":T.textFaint, textTransform:"uppercase", fontWeight:500 }}>Ping</span>
           </button>
 
           <button onClick={() => setShowDicePanel(!showDicePanel)} title="Dice Roller"
-            onMouseEnter={e => { if (!showDicePanel) { e.currentTarget.style.background="rgba(212,67,58,0.08)"; e.currentTarget.style.border="1px solid rgba(212,67,58,0.15)"; }}}
+            onMouseEnter={e => { if (!showDicePanel) { e.currentTarget.style.background="var(--crimson-soft)"; e.currentTarget.style.border="1px solid var(--crimson-border)"; }}}
             onMouseLeave={e => { if (!showDicePanel) { e.currentTarget.style.background="transparent"; e.currentTarget.style.border="1px solid transparent"; }}}
-            style={{ width:42, height:42, display:"flex", alignItems:"center", justifyContent:"center", background:showDicePanel?"rgba(212,67,58,0.18)":"transparent", border:"1px solid " + (showDicePanel?"rgba(212,67,58,0.4)":"transparent"), borderRadius:"8px", cursor:"pointer", transition:"all 0.2s", boxShadow:showDicePanel?"0 0 12px rgba(212,67,58,0.25)":"none" }}>
+            style={{ width:46, height:46, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2, background:showDicePanel?"var(--crimson-soft)":"transparent", border:"1px solid " + (showDicePanel?"var(--crimson-border)":"transparent"), borderRadius:"8px", cursor:"pointer", transition:"all 0.2s", boxShadow:showDicePanel?"0 0 12px rgba(212,67,58,0.25)":"none" }}>
             <Dice6 size={15} color={showDicePanel ? cssVar("--crimson") : cssVar("--text-faint")} />
+            <span style={{ fontSize:6, fontFamily:T.ui, letterSpacing:"0.5px", color:showDicePanel?cssVar("--crimson"):T.textFaint, textTransform:"uppercase", fontWeight:500 }}>Dice</span>
           </button>
 
           <button onClick={() => { setZoom(1); setPan({x:0,y:0}); }} title="Reset View"
-            onMouseEnter={e => { e.currentTarget.style.background="rgba(255,255,255,0.04)"; e.currentTarget.style.border="1px solid rgba(255,255,255,0.08)"; }}
+            onMouseEnter={e => { e.currentTarget.style.background="var(--bg-hover)"; e.currentTarget.style.border="1px solid var(--border)"; }}
             onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.border="1px solid transparent"; }}
-            style={{ width:42, height:42, display:"flex", alignItems:"center", justifyContent:"center", background:"transparent", border:"1px solid transparent", borderRadius:"8px", cursor:"pointer", transition:"all 0.2s" }}>
+            style={{ width:46, height:46, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2, background:"transparent", border:"1px solid transparent", borderRadius:"8px", cursor:"pointer", transition:"all 0.2s" }}>
             <RefreshCw size={15} color={cssVar("--text-faint")} />
+            <span style={{ fontSize:6, fontFamily:T.ui, letterSpacing:"0.5px", color:T.textFaint, textTransform:"uppercase", fontWeight:500 }}>Reset</span>
           </button>
 
           <button onClick={() => setImmersive(!immersive)} title="Focus Mode (F)"
-            onMouseEnter={e => { if (!immersive) { e.currentTarget.style.background="rgba(212,67,58,0.08)"; e.currentTarget.style.border="1px solid rgba(212,67,58,0.15)"; }}}
+            onMouseEnter={e => { if (!immersive) { e.currentTarget.style.background="var(--crimson-soft)"; e.currentTarget.style.border="1px solid var(--crimson-border)"; }}}
             onMouseLeave={e => { if (!immersive) { e.currentTarget.style.background="transparent"; e.currentTarget.style.border="1px solid transparent"; }}}
-            style={{ width:42, height:42, display:"flex", alignItems:"center", justifyContent:"center", background:immersive?"rgba(212,67,58,0.18)":"transparent", border:"1px solid " + (immersive?"rgba(212,67,58,0.4)":"transparent"), borderRadius:"8px", cursor:"pointer", transition:"all 0.2s", marginBottom:6, boxShadow:immersive?"0 0 12px rgba(212,67,58,0.25)":"none" }}>
+            style={{ width:46, height:46, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2, background:immersive?"var(--crimson-soft)":"transparent", border:"1px solid " + (immersive?"var(--crimson-border)":"transparent"), borderRadius:"8px", cursor:"pointer", transition:"all 0.2s", marginBottom:6, boxShadow:immersive?"0 0 12px rgba(212,67,58,0.25)":"none" }}>
             <Target size={15} color={immersive ? cssVar("--crimson") : cssVar("--text-faint")} />
+            <span style={{ fontSize:6, fontFamily:T.ui, letterSpacing:"0.5px", color:immersive?cssVar("--crimson"):T.textFaint, textTransform:"uppercase", fontWeight:500 }}>Focus</span>
           </button>
         </div>
 
@@ -3957,26 +3962,38 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
               onMouseLeave={handleMouseUp} onWheel={handleWheel} onContextMenu={handleContextMenu} />
             <input type="file" ref={fileRef} style={{display:"none"}} accept="image/*" onChange={handleMapUpload} />
 
+            {/* Canvas edge overlays — subtle borders that integrate panels with map */}
+            <div style={{ position:"absolute", top:0, left:0, bottom:0, width:2, background:"linear-gradient(180deg, var(--crimson-border) 0%, transparent 30%, transparent 70%, var(--crimson-border) 100%)", pointerEvents:"none", zIndex:5, opacity:0.5 }} />
+            <div style={{ position:"absolute", top:0, right:0, bottom:0, width:2, background:"linear-gradient(180deg, var(--crimson-border) 0%, transparent 30%, transparent 70%, var(--crimson-border) 100%)", pointerEvents:"none", zIndex:5, opacity: sidebarOpen ? 0.5 : 0 }} />
+            <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:"linear-gradient(90deg, var(--crimson-border) 0%, transparent 20%, transparent 80%, var(--crimson-border) 100%)", pointerEvents:"none", zIndex:5, opacity:0.4 }} />
+            <div style={{ position:"absolute", bottom:0, left:0, right:0, height:2, background:"linear-gradient(90deg, var(--crimson-border) 0%, transparent 20%, transparent 80%, var(--crimson-border) 100%)", pointerEvents:"none", zIndex:5, opacity:0.4 }} />
+
+            {/* Corner accents — small L-shaped decorations in corners */}
+            <div style={{ position:"absolute", top:0, left:0, width:16, height:16, borderTop:"2px solid var(--crimson-border)", borderLeft:"2px solid var(--crimson-border)", pointerEvents:"none", zIndex:6, opacity:0.6 }} />
+            <div style={{ position:"absolute", top:0, right:0, width:16, height:16, borderTop:"2px solid var(--crimson-border)", borderRight:"2px solid var(--crimson-border)", pointerEvents:"none", zIndex:6, opacity:sidebarOpen?0.6:0.3 }} />
+            <div style={{ position:"absolute", bottom:0, left:0, width:16, height:16, borderBottom:"2px solid var(--crimson-border)", borderLeft:"2px solid var(--crimson-border)", pointerEvents:"none", zIndex:6, opacity:0.6 }} />
+            <div style={{ position:"absolute", bottom:0, right:0, width:16, height:16, borderBottom:"2px solid var(--crimson-border)", borderRight:"2px solid var(--crimson-border)", pointerEvents:"none", zIndex:6, opacity:sidebarOpen?0.6:0.3 }} />
+
             {/* Zoom indicator */}
-            <div style={{ position:"absolute", bottom:8, left:8, background:"rgba(0,0,0,0.6)", padding:"4px 10px", borderRadius:"3px", fontFamily:T.ui, fontSize:9, color:"rgba(255,255,255,0.7)", letterSpacing:"1px", pointerEvents:"none" }}>
+            <div style={{ position:"absolute", bottom:10, left:10, background:"rgba(0,0,0,0.55)", backdropFilter:"blur(4px)", padding:"5px 12px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"rgba(255,255,255,0.7)", letterSpacing:"1.5px", pointerEvents:"none", border:"1px solid rgba(255,255,255,0.08)", zIndex:8 }}>
               {Math.round(zoom*100)}%
             </div>
 
             {/* Mode indicators (stacked top-left) */}
             {pingMode && (
-              <div style={{ position:"absolute", top:8, left:8, background:"rgba(88,170,255,0.8)", padding:"4px 10px", borderRadius:"3px", fontFamily:T.ui, fontSize:9, color:"#f2e8d6", letterSpacing:"1px", pointerEvents:"none", zIndex:10 }}>
+              <div style={{ position:"absolute", top:10, left:10, background:"rgba(88,170,255,0.85)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"#f2e8d6", letterSpacing:"1.5px", pointerEvents:"none", zIndex:10, border:"1px solid rgba(88,170,255,0.4)", boxShadow:"0 2px 10px rgba(88,170,255,0.25)" }}>
                 PING MODE (click to ping, Esc to cancel)
               </div>
             )}
             {movementMode && !pingMode && (
-              <div style={{ position:"absolute", top:8, left:8, background:"rgba(46,139,87,0.8)", padding:"4px 10px", borderRadius:"3px", fontFamily:T.ui, fontSize:9, color:"#f2e8d6", letterSpacing:"1px", pointerEvents:"none", zIndex:10 }}>
+              <div style={{ position:"absolute", top:10, left:10, background:"rgba(46,139,87,0.85)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"#f2e8d6", letterSpacing:"1.5px", pointerEvents:"none", zIndex:10, border:"1px solid rgba(46,139,87,0.4)", boxShadow:"0 2px 10px rgba(46,139,87,0.25)" }}>
                 MOVEMENT MODE (M to toggle, Esc to cancel)
               </div>
             )}
 
             {/* Player view badge */}
             {viewRole === "player" && (
-              <div style={{ position:"absolute", top:8, right:8, background:"rgba(88,170,255,0.8)", padding:"4px 10px", borderRadius:"3px", fontFamily:T.ui, fontSize:9, color:"#f2e8d6", letterSpacing:"1px", pointerEvents:"none" }}>
+              <div style={{ position:"absolute", top:10, right:10, background:"rgba(88,170,255,0.85)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"#f2e8d6", letterSpacing:"1.5px", pointerEvents:"none", border:"1px solid rgba(88,170,255,0.4)", boxShadow:"0 2px 10px rgba(88,170,255,0.25)" }}>
                 PLAYER VIEW
               </div>
             )}
@@ -4101,7 +4118,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                     <span style={{ fontFamily:T.ui, fontSize:9, color:T.textMuted }}>{combatants[turn].hp}/{combatants[turn].maxHp}</span>
                   </div>
                 )}
-                <span style={{ fontFamily:T.ui, fontSize:8, color:T.textFaint, letterSpacing:"1px", background:"rgba(255,255,255,0.05)", padding:"2px 6px", borderRadius:"2px" }}>
+                <span style={{ fontFamily:T.ui, fontSize:8, color:T.textFaint, letterSpacing:"1px", background:"var(--bg-input)", padding:"2px 6px", borderRadius:"2px" }}>
                   {turn+1}/{combatants.filter(c=>c.hp>0).length}
                 </span>
               </div>
@@ -4135,9 +4152,9 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
         {/* ── RIGHT: Context Panel ── */}
         <div style={{
           width: sidebarOpen ? 288 : 0, minWidth: sidebarOpen ? 288 : 0,
-          background:"linear-gradient(180deg, rgba(22,18,14,1) 0%, rgba(14,11,9,1) 100%)", overflowY: sidebarOpen ? "auto" : "hidden", overflowX:"hidden",
+          background:"linear-gradient(180deg, var(--bg-nav) 0%, var(--bg) 100%)", overflowY: sidebarOpen ? "auto" : "hidden", overflowX:"hidden",
           display:"flex", flexDirection:"column",
-          borderLeft: sidebarOpen ? "1px solid rgba(212,67,58,0.18)" : "none",
+          borderLeft: sidebarOpen ? "1px solid var(--crimson-border)" : "none",
           boxShadow: sidebarOpen ? "-4px 0 20px rgba(0,0,6,0.4), -1px 0 0 rgba(212,67,58,0.06)" : "none",
           transition:"width 0.25s ease, min-width 0.25s ease, opacity 0.2s ease",
           opacity: sidebarOpen ? 1 : 0,
@@ -4175,7 +4192,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                           <span style={{ fontSize: i===turn ? 13 : 11, fontFamily:T.body, fontWeight: i===turn ? 600 : 500, color: i===turn ? cssVar("--crimson") : T.textFaint, minWidth:20 }}>{c.init}</span>
                           <span style={{ width:7, height:7, borderRadius:"50%", flexShrink:0, background:c.type==="pc"?"#5ee09a":cssVar("--crimson"), boxShadow: i===turn ? "0 0 4px " + (c.type==="pc"?"rgba(94,224,154,0.5)":"rgba(212,67,58,0.5)") : "none" }} />
                           <span style={{ flex:1, fontSize: i===turn ? 13 : 12, fontFamily:T.body, fontWeight: i===turn ? 500 : 400, color:T.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.name}</span>
-                          <span style={{ fontFamily:T.ui, fontSize:7, color:T.textFaint, letterSpacing:"0.5px", background:"rgba(255,255,255,0.05)", padding:"1px 4px", borderRadius:"2px" }}>AC{c.ac}</span>
+                          <span style={{ fontFamily:T.ui, fontSize:7, color:T.textFaint, letterSpacing:"0.5px", background:"var(--bg-input)", padding:"1px 4px", borderRadius:"2px" }}>AC{c.ac}</span>
                         </div>
                         <div style={{ display:"flex", alignItems:"center", gap:3, marginTop:4, paddingLeft:26 }}>
                           <button onClick={e=>{e.stopPropagation();adjCombatantHp(c.id,-5);}} style={{ background:"none", border:"none", cursor:"pointer", color:"#f06858", fontSize:12, padding:"1px 3px" }}>-</button>
@@ -4314,8 +4331,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                   <React.Fragment>
                     <div onClick={() => fileRef.current?.click()}
                       onMouseEnter={e => { e.currentTarget.style.background="rgba(212,67,58,0.06)"; e.currentTarget.style.borderColor="rgba(212,67,58,0.25)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background="rgba(255,255,255,0.02)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.08)"; }}
-                      style={{ width:"100%", padding:"12px 10px", background:"rgba(255,255,255,0.02)", border:"1px dashed rgba(255,255,255,0.08)", borderRadius:"6px", cursor:"pointer", fontSize:11, color:T.textMuted, textAlign:"center", transition:"all 0.2s ease" }}>
+                      onMouseLeave={e => { e.currentTarget.style.background="var(--bg-input)"; e.currentTarget.style.borderColor="var(--border)"; }}
+                      style={{ width:"100%", padding:"12px 10px", background:"var(--bg-input)", border:"1px dashed var(--border)", borderRadius:"6px", cursor:"pointer", fontSize:11, color:T.textMuted, textAlign:"center", transition:"all 0.2s ease" }}>
                       {bgImage ? "Replace Map Image" : "Upload Map Image"}
                     </div>
                   </React.Fragment>
@@ -4323,7 +4340,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                 <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginTop:8 }}>
                   {bgPresets.map(p => (
                     <button key={p.c} onClick={() => setBgColor(p.c)}
-                      onMouseEnter={e => { if (bgColor !== p.c) { e.currentTarget.style.background="rgba(255,255,255,0.04)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.12)"; }}}
+                      onMouseEnter={e => { if (bgColor !== p.c) { e.currentTarget.style.background="var(--bg-hover)"; e.currentTarget.style.borderColor="var(--border)"; }}}
                       onMouseLeave={e => { if (bgColor !== p.c) { e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor=T.border; }}}
                       style={{ padding:"5px 9px", background:bgColor===p.c?"rgba(212,67,58,0.12)":"transparent", border:"1px solid " + (bgColor===p.c?"rgba(212,67,58,0.3)":T.border), color:bgColor===p.c?cssVar("--crimson"):T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"0.5px", cursor:"pointer", borderRadius:"4px", textTransform:"uppercase", transition:"all 0.2s ease" }}>{p.l}</button>
                   ))}
@@ -4355,28 +4372,28 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                 {viewRole === "dm" && (
                   <div style={{ display:"flex", gap:4, marginTop:6 }}>
                     <button onClick={() => setFogCells({})}
-                      onMouseEnter={e => { e.currentTarget.style.background="rgba(255,255,255,0.04)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.12)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background="rgba(255,255,255,0.02)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.06)"; }}
-                      style={{ flex:1, padding:"7px 0", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", cursor:"pointer", borderRadius:"4px", textTransform:"uppercase", transition:"all 0.2s ease" }}>Reveal All</button>
+                      onMouseEnter={e => { e.currentTarget.style.background="var(--bg-hover)"; e.currentTarget.style.borderColor="var(--border)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.background="var(--bg-input)"; e.currentTarget.style.borderColor="var(--border-mid)"; }}
+                      style={{ flex:1, padding:"7px 0", background:"var(--bg-input)", border:"1px solid var(--border-mid)", color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", cursor:"pointer", borderRadius:"4px", textTransform:"uppercase", transition:"all 0.2s ease" }}>Reveal All</button>
                     <button onClick={() => { setDrawings([]); setTokens([]); setFogCells({}); setWalls([]); setTerrainCells({}); }}
                       onMouseEnter={e => { e.currentTarget.style.background="rgba(212,67,58,0.06)"; e.currentTarget.style.borderColor="rgba(212,67,58,0.2)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.background="rgba(255,255,255,0.02)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.06)"; }}
-                      style={{ flex:1, padding:"7px 0", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", cursor:"pointer", borderRadius:"4px", textTransform:"uppercase", transition:"all 0.2s ease" }}>Clear All</button>
+                      onMouseLeave={e => { e.currentTarget.style.background="var(--bg-input)"; e.currentTarget.style.borderColor="var(--border-mid)"; }}
+                      style={{ flex:1, padding:"7px 0", background:"var(--bg-input)", border:"1px solid var(--border-mid)", color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", cursor:"pointer", borderRadius:"4px", textTransform:"uppercase", transition:"all 0.2s ease" }}>Clear All</button>
                   </div>
                 )}
                 {viewRole === "dm" && walls.length > 0 && (
                   <button onClick={() => setWalls([])}
                     onMouseEnter={e => { e.currentTarget.style.background="rgba(181,116,255,0.08)"; e.currentTarget.style.borderColor="rgba(181,116,255,0.25)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.background="rgba(255,255,255,0.02)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.06)"; }}
-                    style={{ width:"100%", padding:"7px 0", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", color:"#b574ff", fontFamily:T.ui, fontSize:8, letterSpacing:"1px", cursor:"pointer", borderRadius:"4px", textTransform:"uppercase", marginTop:4, transition:"all 0.2s ease" }}>
+                    onMouseLeave={e => { e.currentTarget.style.background="var(--bg-input)"; e.currentTarget.style.borderColor="var(--border-mid)"; }}
+                    style={{ width:"100%", padding:"7px 0", background:"var(--bg-input)", border:"1px solid var(--border-mid)", color:"#b574ff", fontFamily:T.ui, fontSize:8, letterSpacing:"1px", cursor:"pointer", borderRadius:"4px", textTransform:"uppercase", marginTop:4, transition:"all 0.2s ease" }}>
                     Clear Walls ({walls.length})
                   </button>
                 )}
                 {viewRole === "dm" && Object.keys(terrainCells).length > 0 && (
                   <button onClick={() => setTerrainCells({})}
                     onMouseEnter={e => { e.currentTarget.style.background="rgba(212,67,58,0.06)"; e.currentTarget.style.borderColor="rgba(212,67,58,0.2)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.background="rgba(255,255,255,0.02)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.06)"; }}
-                    style={{ width:"100%", padding:"7px 0", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", color:cssVar("--crimson"), fontFamily:T.ui, fontSize:8, letterSpacing:"1px", cursor:"pointer", borderRadius:"4px", textTransform:"uppercase", marginTop:4, transition:"all 0.2s ease" }}>
+                    onMouseLeave={e => { e.currentTarget.style.background="var(--bg-input)"; e.currentTarget.style.borderColor="var(--border-mid)"; }}
+                    style={{ width:"100%", padding:"7px 0", background:"var(--bg-input)", border:"1px solid var(--border-mid)", color:cssVar("--crimson"), fontFamily:T.ui, fontSize:8, letterSpacing:"1px", cursor:"pointer", borderRadius:"4px", textTransform:"uppercase", marginTop:4, transition:"all 0.2s ease" }}>
                     Clear Terrain ({Object.keys(terrainCells).length})
                   </button>
                 )}
@@ -4391,8 +4408,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                     onDragStart={e => e.dataTransfer.setData("application/token", JSON.stringify({ name:p.name, color:"#2e8b57", hp:p.hp, maxHp:p.maxHp }))}
                     onClick={() => addToken(p.name, "#2e8b57", p.hp, p.maxHp)}
                     onMouseEnter={e => { e.currentTarget.style.background="rgba(46,139,87,0.08)"; e.currentTarget.style.borderColor="rgba(46,139,87,0.3)"; e.currentTarget.style.transform="translateY(-1px)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.background="rgba(255,255,255,0.02)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.06)"; e.currentTarget.style.transform="translateY(0)"; }}
-                    style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 12px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:"6px", cursor:"grab", marginBottom:4, transition:"all 0.2s ease", boxShadow:"0 1px 3px rgba(0,0,6,0.2)" }}>
+                    onMouseLeave={e => { e.currentTarget.style.background="var(--bg-input)"; e.currentTarget.style.borderColor="var(--border-mid)"; e.currentTarget.style.transform="translateY(0)"; }}
+                    style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 12px", background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:"6px", cursor:"grab", marginBottom:4, transition:"all 0.2s ease", boxShadow:"0 1px 3px rgba(0,0,6,0.2)" }}>
                     <div>
                       <div style={{ fontSize:12, color:T.text, fontWeight:500 }}>{p.name}</div>
                       <div style={{ fontSize:9, color:T.textMuted, letterSpacing:"0.5px", marginTop:2 }}>PC · {p.hp}/{p.maxHp} HP</div>
@@ -4405,8 +4422,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                 {viewRole === "dm" && (
                   <div onClick={() => { const n=prompt("Token name:"); if(n) addToken(n, cssVar("--crimson"), null, null); }}
                     onMouseEnter={e => { e.currentTarget.style.background="rgba(212,67,58,0.06)"; e.currentTarget.style.borderColor="rgba(212,67,58,0.35)"; e.currentTarget.style.transform="translateY(-1px)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.background="rgba(255,255,255,0.02)"; e.currentTarget.style.borderColor="rgba(212,67,58,0.2)"; e.currentTarget.style.transform="translateY(0)"; }}
-                    style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:6, padding:"10px 12px", background:"rgba(255,255,255,0.02)", border:"1px dashed rgba(212,67,58,0.2)", borderRadius:"6px", cursor:"pointer", marginTop:6, fontSize:10, color:T.textMuted, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", transition:"all 0.2s ease", boxShadow:"0 1px 3px rgba(0,0,6,0.15)" }}>
+                    onMouseLeave={e => { e.currentTarget.style.background="var(--bg-input)"; e.currentTarget.style.borderColor="rgba(212,67,58,0.2)"; e.currentTarget.style.transform="translateY(0)"; }}
+                    style={{ display:"flex", justifyContent:"center", alignItems:"center", gap:6, padding:"10px 12px", background:"var(--bg-input)", border:"1px dashed rgba(212,67,58,0.2)", borderRadius:"6px", cursor:"pointer", marginTop:6, fontSize:10, color:T.textMuted, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", transition:"all 0.2s ease", boxShadow:"0 1px 3px rgba(0,0,6,0.15)" }}>
                     <Plus size={11} color="rgba(212,67,58,0.6)"/> Enemy Token
                   </div>
                 )}
@@ -4417,9 +4434,9 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                 {tokens.filter(t => viewRole === "player" ? !t.hidden : true).map(t => (
                   <div key={t.id}
                     onClick={() => { setSelectedTokenId(t.id); setMode("select"); }}
-                    onMouseEnter={e => { if (t.id !== selectedTokenId) { e.currentTarget.style.background="rgba(255,255,255,0.04)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.12)"; e.currentTarget.style.transform="translateY(-1px)"; }}}
-                    onMouseLeave={e => { if (t.id !== selectedTokenId) { e.currentTarget.style.background="rgba(255,255,255,0.02)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.06)"; e.currentTarget.style.transform="translateY(0)"; }}}
-                    style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 12px", background: t.id === selectedTokenId ? "rgba(212,67,58,0.1)" : "rgba(255,255,255,0.02)", border:"1px solid " + (t.id === selectedTokenId ? "rgba(212,67,58,0.35)" : "rgba(255,255,255,0.06)"), borderRadius:"6px", marginBottom:4, fontSize:11, color:T.text, cursor:"pointer", transition:"all 0.2s ease", boxShadow: t.id === selectedTokenId ? "0 2px 8px rgba(212,67,58,0.15)" : "0 1px 3px rgba(0,0,6,0.2)" }}>
+                    onMouseEnter={e => { if (t.id !== selectedTokenId) { e.currentTarget.style.background="var(--bg-hover)"; e.currentTarget.style.borderColor="var(--border)"; e.currentTarget.style.transform="translateY(-1px)"; }}}
+                    onMouseLeave={e => { if (t.id !== selectedTokenId) { e.currentTarget.style.background="var(--bg-input)"; e.currentTarget.style.borderColor="var(--border-mid)"; e.currentTarget.style.transform="translateY(0)"; }}}
+                    style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 12px", background: t.id === selectedTokenId ? "var(--crimson-soft)" : "var(--bg-input)", border:"1px solid " + (t.id === selectedTokenId ? "var(--crimson-border)" : "var(--border-mid)"), borderRadius:"6px", marginBottom:4, fontSize:11, color:T.text, cursor:"pointer", transition:"all 0.2s ease", boxShadow: t.id === selectedTokenId ? "0 2px 8px rgba(212,67,58,0.15)" : "0 1px 3px rgba(0,0,6,0.2)" }}>
                     <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                       <span style={{ width:8, height:8, borderRadius:"50%", background:t.color, flexShrink:0 }}/>
                       <span>{t.name.length>12?t.name.substring(0,12)+"...":t.name}</span>
@@ -4445,8 +4462,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                     ) : (
                       <button onClick={() => setShowTemplateInput(true)}
                         onMouseEnter={e => { e.currentTarget.style.background="rgba(212,67,58,0.06)"; e.currentTarget.style.borderColor="rgba(212,67,58,0.25)"; }}
-                        onMouseLeave={e => { e.currentTarget.style.background="rgba(255,255,255,0.02)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.08)"; }}
-                        style={{ width:"100%", padding:"8px 0", background:"rgba(255,255,255,0.02)", border:"1px dashed rgba(255,255,255,0.08)", color:T.textMuted, fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", cursor:"pointer", borderRadius:"6px", textTransform:"uppercase", marginBottom:6, transition:"all 0.2s ease" }}>
+                        onMouseLeave={e => { e.currentTarget.style.background="var(--bg-input)"; e.currentTarget.style.borderColor="var(--border)"; }}
+                        style={{ width:"100%", padding:"8px 0", background:"var(--bg-input)", border:"1px dashed var(--border)", color:T.textMuted, fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", cursor:"pointer", borderRadius:"6px", textTransform:"uppercase", marginBottom:6, transition:"all 0.2s ease" }}>
                         + Save Current
                       </button>
                     )}
@@ -4455,9 +4472,9 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                     ) : (
                       templates.map(tpl => (
                         <div key={tpl.id}
-                          onMouseEnter={e => { e.currentTarget.style.background="rgba(255,255,255,0.04)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.12)"; e.currentTarget.style.transform="translateY(-1px)"; }}
-                          onMouseLeave={e => { e.currentTarget.style.background="rgba(255,255,255,0.02)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.06)"; e.currentTarget.style.transform="translateY(0)"; }}
-                          style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 12px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:"6px", marginBottom:4, fontSize:10, color:T.text, transition:"all 0.2s ease", boxShadow:"0 1px 3px rgba(0,0,6,0.2)" }}>
+                          onMouseEnter={e => { e.currentTarget.style.background="var(--bg-hover)"; e.currentTarget.style.borderColor="var(--border)"; e.currentTarget.style.transform="translateY(-1px)"; }}
+                          onMouseLeave={e => { e.currentTarget.style.background="var(--bg-input)"; e.currentTarget.style.borderColor="var(--border-mid)"; e.currentTarget.style.transform="translateY(0)"; }}
+                          style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 12px", background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:"6px", marginBottom:4, fontSize:10, color:T.text, transition:"all 0.2s ease", boxShadow:"0 1px 3px rgba(0,0,6,0.2)" }}>
                           <button onClick={() => loadEncounterTemplate(tpl.id)} style={{ flex:1, background:"none", border:"none", cursor:"pointer", color:T.text, textAlign:"left", fontSize:10 }}>
                             {tpl.name}
                           </button>
