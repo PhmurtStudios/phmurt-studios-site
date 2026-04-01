@@ -4445,7 +4445,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
   );
 }
 
-function PlayView({ data, setData }) {
+function PlayView({ data, setData, activeCampaignId }) {
   const [viewMode, setViewMode] = useState("battlemap");
   const isPlayer = new URLSearchParams(window.location.search).get("role") === "player";
 
@@ -14538,7 +14538,7 @@ function CampaignManager() {
           {tab==="dashboard" && <DashboardView data={data} setData={setData} onNav={setTab}/>}
           {tab==="timeline"  && <TimelineView data={data} setData={setData}/>}
           {tab==="world"     && <WorldView data={data} setData={setData}/>}
-          {tab==="play"      && <PlayView data={data} setData={setData}/>}
+          {tab==="play"      && <PlayView data={data} setData={setData} activeCampaignId={activeCampaignId}/>}
           {tab==="generator" && <FantasyMapGenerator />}
           {tab==="notes"     && <NotesView data={data} setData={setData}/>}
           {tab==="settings"  && <SettingsView data={data} setData={setData}/>}
