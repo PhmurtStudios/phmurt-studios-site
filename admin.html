@@ -1,0 +1,1889 @@
+<!DOCTYPE html>
+<html lang="en" data-nav-active="about" data-footer-copy="Roll Well. Play Weird.">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-Content-Type-Options" content="nosniff" />
+<meta name="referrer" content="strict-origin-when-cross-origin" />
+<title>Admin Dashboard – Phmurt Studios</title>
+<!-- NOTE: unsafe-eval is required by @babel/standalone to compile JSX at runtime.
+     This is acceptable for an admin-only page, but should be reviewed if Babel usage changes. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Spectral:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
+<!-- Supabase must load FIRST so phmurtSupabase is defined before anything else -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb" crossorigin="anonymous"></script>
+<script src="supabase-config.js"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="theme.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════════════════
+   ADMIN GATE  —  Self-contained two-factor access control
+   ═══════════════════════════════════════════════════════════════════
+   Stage 1 — Key image upload (shown to everyone, no prior sign-in needed)
+   Stage 2 — Admin account sign-in (shown after image passes)
+
+   FIRST-TIME SETUP:
+     EXPECTED_HASH is 'SETUP'. Upload the image → the computed hash
+     is displayed. Copy it, replace 'SETUP' below, push and redeploy.
+     After that, every visitor must upload the exact same image.
+   ═══════════════════════════════════════════════════════════════════ */
+(function () {
+
+  /* ── Config ──────────────────────────────────────────────────────── */
+  var ADMIN_EMAILS  = ['dreverad@icloud.com', 'dreverad18@gmail.com'];
+  var EXPECTED_HASH = '1100000000000000100000001001110010011100101000000000010000000110'; // ← replace with your hash after first run
+  var IMG_OK_KEY    = 'phmurt_admin_img_ok'; // sessionStorage flag
+  var ADMIN_HASH_KEY = 'phmurt_admin_key_hash'; // localStorage key for dynamic hash storage
+
+  /* ── Hide page immediately so nothing flashes ───────────────────── */
+  document.documentElement.style.visibility = 'hidden';
+
+  /* ── Helpers: cookie read/write (mirrors phmurt-auth.js) ──────── */
+  function getCookie(name) {
+    try {
+      var prefix = name + '=';
+      var parts = document.cookie.split(';');
+      for (var i = 0; i < parts.length; i++) {
+        var c = parts[i].replace(/^\s+/, '');
+        if (c.indexOf(prefix) === 0) return decodeURIComponent(c.substring(prefix.length));
+      }
+    } catch (e) {}
+    return null;
+  }
+  function setCookie(name, value, days) {
+    try {
+      var expires = '';
+      if (days) {
+        var d = new Date();
+        d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
+        expires = '; expires=' + d.toUTCString();
+      }
+      document.cookie = name + '=' + encodeURIComponent(value || '') + expires + '; path=/; SameSite=Strict';
+    } catch (e) {}
+  }
+
+  /* ── Helpers: storage ───────────────────────────────────────────── */
+  function getSession() {
+    // Try localStorage first, fall back to cookie backup
+    try {
+      var raw = localStorage.getItem('phmurt_auth_session');
+      if (raw) { var p = JSON.parse(raw); if (p && p.userId) return p; }
+    } catch (e) {}
+    try {
+      var cr = getCookie('phmurt_sess');
+      if (cr) { var cp = JSON.parse(cr); if (cp && cp.userId) { try { localStorage.setItem('phmurt_auth_session', cr); } catch(e) {} return cp; } }
+    } catch (e) {}
+    return null;
+  }
+  function getUsers() {
+    // Try localStorage first, fall back to cookie backup
+    try {
+      var raw = localStorage.getItem('phmurt_users_db');
+      if (raw) { var p = JSON.parse(raw); if (p && typeof p === 'object') return p; }
+    } catch (e) {}
+    try {
+      var cr = getCookie('phmurt_udb');
+      if (cr) { var cp = JSON.parse(cr); if (cp && typeof cp === 'object') { try { localStorage.setItem('phmurt_users_db', cr); } catch(e) {} return cp; } }
+    } catch (e) {}
+    return {};
+  }
+  function isAdminSession(s) {
+    if (!s) return false;
+    var e = (s.email || '').trim().toLowerCase();
+    return s.isAdmin === true || ADMIN_EMAILS.indexOf(e) !== -1;
+  }
+
+  /* ── Helpers: password hashing (same as phmurt-auth.js) ─────────── */
+  function hashPassword(password, email) {
+    var str = password + ':' + email.toLowerCase();
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))
+      .then(function (buf) {
+        return Array.from(new Uint8Array(buf))
+          .map(function (b) { return b.toString(16).padStart(2, '0'); })
+          .join('');
+      });
+  }
+  function setSession(user) {
+    var s = { userId: user.userId, name: user.name, email: user.email,
+              displayName: user.name,
+              isAdmin: ADMIN_EMAILS.indexOf(user.email) !== -1 };
+    var json = JSON.stringify(s);
+    try { localStorage.setItem('phmurt_auth_session', json); } catch (e) {}
+    setCookie('phmurt_sess', json, 30);  // 30-day cookie backup
+    try { window.dispatchEvent(new Event('phmurt-auth-change')); } catch(e) {}
+    return s;
+  }
+
+  /* ── Helpers: perceptual dHash ──────────────────────────────────── */
+  function computeDHash(imgEl) {
+    var W = 9, H = 8;
+    var cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    var ctx = cv.getContext('2d');
+    ctx.drawImage(imgEl, 0, 0, W, H);
+    var px = ctx.getImageData(0, 0, W, H).data;
+    var hash = '';
+    for (var r = 0; r < H; r++) {
+      for (var c = 0; c < W - 1; c++) {
+        var i1 = (r * W + c) * 4, i2 = i1 + 4;
+        var g1 = 0.299*px[i1]   + 0.587*px[i1+1] + 0.114*px[i1+2];
+        var g2 = 0.299*px[i2]   + 0.587*px[i2+1] + 0.114*px[i2+2];
+        hash += g1 > g2 ? '1' : '0';
+      }
+    }
+    return hash;
+  }
+  function hammingDist(a, b) {
+    var d = 0;
+    for (var i = 0; i < a.length; i++) { if (a[i] !== b[i]) d++; }
+    return d;
+  }
+
+  /* ── CSS shorthand ──────────────────────────────────────────────── */
+  var C = {
+    label:  'font-family:Cinzel,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#8c7d6e;display:block;margin-bottom:6px;',
+    input:  'width:100%;padding:10px 12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);color:#f5ede0;font-family:Spectral,serif;font-size:14px;border-radius:3px;box-sizing:border-box;outline:none;',
+    btn:    'width:100%;padding:12px;background:#d4433a;color:#f5f0e8;border:none;font-family:Cinzel,serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border-radius:3px;margin-top:8px;',
+    err:    'font-family:Spectral,serif;font-size:13px;color:#d4433a;background:rgba(212,67,58,0.1);border-radius:3px;padding:10px 12px;margin-bottom:14px;display:none;',
+    ok:     'font-family:Spectral,serif;font-size:13px;color:#2e8b57;',
+    field:  'margin-bottom:14px;'
+  };
+
+  /* ══════════════════════════════════════════════════════════════════
+     GATE OVERLAY — built once, stages swapped inside it
+  ══════════════════════════════════════════════════════════════════ */
+  function showGate() {
+    document.documentElement.style.visibility = 'visible';
+
+    var gate = document.createElement('div');
+    gate.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0c0a0a;display:flex;align-items:center;justify-content:center;padding:24px;font-family:Cinzel,serif;color:#f5ede0;';
+    document.body.appendChild(gate);
+
+    /* ── STAGE 1: Image upload ──────────────────────────────────────── */
+    function renderImageStage() {
+      var isSetup = EXPECTED_HASH === 'SETUP';
+      gate.innerHTML =
+        '<div style="max-width:460px;width:100%;text-align:center;">' +
+          '<div style="font-size:10px;letter-spacing:3px;color:#574843;text-transform:uppercase;margin-bottom:20px;">' +
+            (isSetup ? 'First-Time Setup' : 'Admin Access — Step 1 of 2') +
+          '</div>' +
+          '<h2 style="font-size:24px;font-weight:400;color:#d4433a;margin:0 0 10px;letter-spacing:1px;">Key Image Required</h2>' +
+          '<p style="font-family:Spectral,serif;font-size:15px;color:#8c7d6e;line-height:1.6;margin:0 0 32px;">' +
+            (isSetup ? 'No key image is set yet. Upload yours now to register it.' : 'Upload the image you were given to proceed.') +
+          '</p>' +
+
+          '<label id="ag-img-label" style="display:flex;flex-direction:column;align-items:center;gap:10px;border:1px dashed rgba(212,67,58,0.35);border-radius:6px;padding:36px 24px;cursor:pointer;transition:border-color .2s;">' +
+            '<span style="font-size:36px;">🖼</span>' +
+            '<span style="font-size:13px;color:#8c7d6e;font-family:Spectral,serif;">Click or drag image here</span>' +
+            '<input type="file" id="ag-img-input" accept="image/*" style="display:none;" />' +
+          '</label>' +
+
+          '<div id="ag-img-status" style="margin-top:18px;min-height:36px;font-family:Spectral,serif;font-size:14px;"></div>' +
+
+          (isSetup ?
+            '<div id="ag-hash-wrap" style="display:none;margin-top:16px;text-align:left;">' +
+              '<p style="font-size:12px;color:#8c7d6e;margin:0 0 8px;font-family:Spectral,serif;">Your hash — paste into <code>EXPECTED_HASH</code> and redeploy:</p>' +
+              '<code id="ag-hash-val" style="display:block;background:#111010;border:1px solid rgba(255,255,255,0.09);border-radius:4px;padding:10px;font-size:11px;word-break:break-all;color:#d4433a;cursor:pointer;" title="Click to copy"></code>' +
+              '<button id="ag-hash-continue" style="' + C.btn + 'margin-top:12px;">Continue to Sign In →</button>' +
+            '</div>'
+          : '') +
+        '</div>';
+
+      var input  = document.getElementById('ag-img-input');
+      var label  = document.getElementById('ag-img-label');
+      var status = document.getElementById('ag-img-status');
+
+      function setStatus(msg, color) {
+        status.textContent = msg;
+        status.style.color = color || '#f5ede0';
+      }
+
+      function processImage(file) {
+        if (!file || !file.type.startsWith('image/')) { setStatus('Please upload an image file.', '#d4433a'); return; }
+        setStatus('Analysing…', '#8c7d6e');
+        var reader = new FileReader();
+        reader.onload = function (ev) {
+          var img = new Image();
+          img.onload = function () {
+            var hash = computeDHash(img);
+            if (isSetup) {
+              /* Setup mode — display hash, let admin continue */
+              var wrap = document.getElementById('ag-hash-wrap');
+              var val  = document.getElementById('ag-hash-val');
+              val.textContent = hash;
+              wrap.style.display = 'block';
+              label.style.display = 'none';
+              setStatus('Hash computed. Copy it into the code, then redeploy.', '#2e8b57');
+              val.addEventListener('click', function () {
+                navigator.clipboard.writeText(hash).then(function () {
+                  val.textContent = '✓ Copied!';
+                  setTimeout(function () { val.textContent = hash; }, 2000);
+                });
+              });
+              document.getElementById('ag-hash-continue').addEventListener('click', function () {
+                sessionStorage.setItem(IMG_OK_KEY, 'true');
+                renderAuthStage();
+              });
+            } else {
+              /* Normal mode — verify hash */
+              /* Check localStorage first, then fall back to hardcoded hash */
+              var storedHash = null;
+              try { storedHash = localStorage.getItem(ADMIN_HASH_KEY); } catch (e) {}
+              var expectedForVerification = storedHash || EXPECTED_HASH;
+              var dist = hammingDist(hash, expectedForVerification);
+              if (dist <= 6) {
+                setStatus('✓ Image verified.', '#2e8b57');
+                sessionStorage.setItem(IMG_OK_KEY, 'true');
+                setTimeout(renderAuthStage, 700);
+              } else {
+                setStatus('✗ Wrong image. Try again.', '#d4433a');
+                input.value = '';
+              }
+            }
+          };
+          img.onerror = function () { setStatus('Could not read image.', '#d4433a'); };
+          img.src = ev.target.result;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      input.addEventListener('change', function () { if (input.files[0]) processImage(input.files[0]); });
+      label.addEventListener('dragover', function (e) { e.preventDefault(); label.style.borderColor = '#d4433a'; });
+      label.addEventListener('dragleave', function () { label.style.borderColor = 'rgba(212,67,58,0.35)'; });
+      label.addEventListener('drop', function (e) {
+        e.preventDefault(); label.style.borderColor = 'rgba(212,67,58,0.35)';
+        if (e.dataTransfer.files[0]) processImage(e.dataTransfer.files[0]);
+      });
+    }
+
+    /* ── STAGE 2: Sign in ────────────────────────────────────────────── */
+    function renderAuthStage() {
+      var mode = 'in'; // 'in' | 'up'
+      gate.innerHTML =
+        '<div style="max-width:400px;width:100%;">' +
+          '<div style="font-size:10px;letter-spacing:3px;color:#574843;text-transform:uppercase;margin-bottom:20px;text-align:center;">Admin Access — Step 2 of 2</div>' +
+          '<h2 style="font-size:22px;font-weight:400;color:#d4433a;margin:0 0 24px;letter-spacing:1px;text-align:center;">Sign In</h2>' +
+
+          /* Tabs */
+          '<div style="display:flex;border-bottom:1px solid rgba(255,255,255,0.09);margin-bottom:22px;">' +
+            '<button id="ag-tab-in" style="flex:1;padding:9px;background:transparent;border:none;border-bottom:2px solid #d4433a;color:#d4433a;font-family:Cinzel,serif;font-size:11px;letter-spacing:1.5px;cursor:pointer;">Sign In</button>' +
+            '<button id="ag-tab-up" style="flex:1;padding:9px;background:transparent;border:none;border-bottom:2px solid transparent;color:#8c7d6e;font-family:Cinzel,serif;font-size:11px;letter-spacing:1.5px;cursor:pointer;">Create Account</button>' +
+          '</div>' +
+
+          '<div id="ag-err" style="' + C.err + '"></div>' +
+
+          /* Sign-in panel */
+          '<div id="ag-panel-in">' +
+            '<div style="' + C.field + '"><label style="' + C.label + '">Email Address</label><input id="ag-in-email" type="email" autocomplete="email" placeholder="you@example.com" style="' + C.input + '" /></div>' +
+            '<div style="' + C.field + '"><label style="' + C.label + '">Password</label><input id="ag-in-pass" type="password" autocomplete="current-password" placeholder="••••••••" style="' + C.input + '" /></div>' +
+            '<button id="ag-in-submit" style="' + C.btn + '">Sign In</button>' +
+          '</div>' +
+
+          /* Create account panel */
+          '<div id="ag-panel-up" style="display:none;">' +
+            '<div style="' + C.field + '"><label style="' + C.label + '">Display Name</label><input id="ag-up-name" type="text" autocomplete="name" placeholder="Your adventurer name" style="' + C.input + '" /></div>' +
+            '<div style="' + C.field + '"><label style="' + C.label + '">Email Address</label><input id="ag-up-email" type="email" autocomplete="email" placeholder="you@example.com" style="' + C.input + '" /></div>' +
+            '<div style="' + C.field + '"><label style="' + C.label + '">Password</label><input id="ag-up-pass" type="password" autocomplete="new-password" placeholder="Min. 8 characters" style="' + C.input + '" /></div>' +
+            '<div style="' + C.field + '"><label style="' + C.label + '">Confirm Password</label><input id="ag-up-pass2" type="password" autocomplete="new-password" placeholder="Repeat password" style="' + C.input + '" /></div>' +
+            '<button id="ag-up-submit" style="' + C.btn + '">Create Account</button>' +
+          '</div>' +
+
+          '<p style="font-family:Spectral,serif;font-size:12px;color:#574843;text-align:center;margin-top:20px;">Only registered admin accounts can proceed.</p>' +
+        '</div>';
+
+      function showErr(msg) {
+        var el = document.getElementById('ag-err');
+        el.textContent = msg; el.style.display = msg ? 'block' : 'none';
+      }
+      function setLoading(id, on) {
+        var b = document.getElementById(id);
+        if (b) { b.disabled = on; b.style.opacity = on ? '0.6' : '1'; }
+      }
+      function grantAccess() {
+        gate.innerHTML = '<div style="text-align:center;"><div style="font-size:28px;margin-bottom:16px;">✓</div><p style="font-family:Spectral,serif;color:#2e8b57;font-size:16px;">Access granted. Welcome.</p></div>';
+        setTimeout(function () { gate.remove(); }, 900);
+      }
+      function afterSignIn(session) {
+        if (!isAdminSession(session)) {
+          showErr('This account does not have admin privileges.');
+          setLoading('ag-in-submit', false);
+          setLoading('ag-up-submit', false);
+          return;
+        }
+        grantAccess();
+      }
+
+      /* Tab switching */
+      document.getElementById('ag-tab-in').addEventListener('click', function () {
+        mode = 'in'; showErr('');
+        document.getElementById('ag-panel-in').style.display = 'block';
+        document.getElementById('ag-panel-up').style.display = 'none';
+        document.getElementById('ag-tab-in').style.cssText += 'color:#d4433a;border-bottom-color:#d4433a;';
+        document.getElementById('ag-tab-up').style.cssText += 'color:#8c7d6e;border-bottom-color:transparent;';
+        document.getElementById('ag-in-email').focus();
+      });
+      document.getElementById('ag-tab-up').addEventListener('click', function () {
+        mode = 'up'; showErr('');
+        document.getElementById('ag-panel-in').style.display = 'none';
+        document.getElementById('ag-panel-up').style.display = 'block';
+        document.getElementById('ag-tab-in').style.cssText += 'color:#8c7d6e;border-bottom-color:transparent;';
+        document.getElementById('ag-tab-up').style.cssText += 'color:#d4433a;border-bottom-color:#d4433a;';
+        document.getElementById('ag-up-name').focus();
+      });
+
+      /* Sign In */
+      function tryLocalSignIn(email, pass) {
+        var users = getUsers();
+        var user  = users[email];
+        if (!user) { showErr('No account found with that email.'); setLoading('ag-in-submit', false); return; }
+        hashPassword(pass, email).then(function (hash) {
+          if (hash !== user.passwordHash) { showErr('Incorrect password.'); setLoading('ag-in-submit', false); return; }
+          afterSignIn(setSession(user));
+        }).catch(function () { showErr('Sign in failed. Try again.'); setLoading('ag-in-submit', false); });
+      }
+
+      document.getElementById('ag-in-submit').addEventListener('click', function () {
+        showErr('');
+        var email = (document.getElementById('ag-in-email').value || '').trim().toLowerCase();
+        var pass  = document.getElementById('ag-in-pass').value;
+        if (!email) { showErr('Email is required.'); return; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showErr('Please enter a valid email address.'); return; }
+        if (!pass)  { showErr('Password is required.'); return; }
+        setLoading('ag-in-submit', true);
+
+        var sbClient = (typeof phmurtSupabase !== 'undefined') ? phmurtSupabase : null;
+        if (sbClient) {
+          /* Try Supabase auth first */
+          sbClient.auth.signInWithPassword({ email: email, password: pass })
+            .then(function (result) {
+              if (result.error) {
+                /* Supabase failed — fall back to local hash auth */
+                tryLocalSignIn(email, pass);
+                return;
+              }
+              var user = result.data && result.data.user;
+              if (!user) { showErr('Sign in failed. Try again.'); setLoading('ag-in-submit', false); return; }
+              /* Check is_admin flag in profiles, also honour ADMIN_EMAILS */
+              sbClient.from('profiles').select('is_admin').eq('id', user.id).maybeSingle()
+                .then(function (pr) {
+                  var isAdm = (pr.data && pr.data.is_admin) || (ADMIN_EMAILS.indexOf(email) !== -1);
+                  if (!isAdm) {
+                    showErr('This account does not have admin privileges.');
+                    setLoading('ag-in-submit', false);
+                    return;
+                  }
+                  /* Write a compatible session so the rest of the gate recognises it */
+                  var dispName = (user.user_metadata && user.user_metadata.name) || email.split('@')[0];
+                  setSession({ userId: user.id, name: dispName, email: email, isAdmin: true });
+                  grantAccess();
+                })
+                .catch(function () {
+                  /* Profile fetch failed — still grant if email is in ADMIN_EMAILS */
+                  if (ADMIN_EMAILS.indexOf(email) !== -1) {
+                    var dispName = email.split('@')[0];
+                    setSession({ userId: user.id, name: dispName, email: email, isAdmin: true });
+                    grantAccess();
+                  } else {
+                    showErr('Could not verify admin status. Try again.');
+                    setLoading('ag-in-submit', false);
+                  }
+                });
+            })
+            .catch(function () { showErr('Sign in failed. Try again.'); setLoading('ag-in-submit', false); });
+        } else {
+          /* No Supabase — local hash auth only */
+          tryLocalSignIn(email, pass);
+        }
+      });
+
+      /* Create Account */
+      document.getElementById('ag-up-submit').addEventListener('click', function () {
+        showErr('');
+        var name  = (document.getElementById('ag-up-name').value  || '').trim();
+        var email = (document.getElementById('ag-up-email').value || '').trim().toLowerCase();
+        var pass  = document.getElementById('ag-up-pass').value;
+        var pass2 = document.getElementById('ag-up-pass2').value;
+        if (!name)           { showErr('Display name is required.'); return; }
+        if (!email)          { showErr('Email is required.'); return; }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showErr('Please enter a valid email address.'); return; }
+        if (!pass)           { showErr('Password is required.'); return; }
+        if (pass.length < 8) { showErr('Password must be at least 8 characters.'); return; }
+        if (pass !== pass2)  { showErr('Passwords do not match.'); return; }
+        var users = getUsers();
+        if (users[email])    { showErr('An account with that email already exists.'); return; }
+        setLoading('ag-up-submit', true);
+        hashPassword(pass, email).then(function (hash) {
+          var uidBytes = new Uint8Array(8); crypto.getRandomValues(uidBytes);
+          var uid = 'user_' + Date.now().toString(36) + '_' + Array.from(uidBytes).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
+          var user = { userId: uid, name: name, email: email, passwordHash: hash, createdAt: new Date().toISOString() };
+          users[email] = user;
+          localStorage.setItem('phmurt_users_db', JSON.stringify(users));
+          afterSignIn(setSession(user));
+        }).catch(function () { showErr('Account creation failed. Try again.'); setLoading('ag-up-submit', false); });
+      });
+
+      /* Enter key */
+      gate.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter') return;
+        if (mode === 'in') document.getElementById('ag-in-submit').click();
+        else               document.getElementById('ag-up-submit').click();
+      });
+
+      setTimeout(function () { var el = document.getElementById('ag-in-email'); if (el) el.focus(); }, 80);
+    }
+
+    /* ── Decide which stage to start on ──────────────────────────────── */
+    if (sessionStorage.getItem(IMG_OK_KEY) === 'true') {
+      /* Image already verified this session — check if also signed in */
+      var s = getSession();
+      if (isAdminSession(s)) { gate.remove(); return; } /* fully authenticated (local) */
+      /* Also check for a live Supabase session */
+      var sbClient = (typeof phmurtSupabase !== 'undefined') ? phmurtSupabase : null;
+      if (sbClient) {
+        sbClient.auth.getSession().then(function (r) {
+          var sess = r.data && r.data.session;
+          if (sess && sess.user) {
+            var email = (sess.user.email || '').toLowerCase();
+            if (ADMIN_EMAILS.indexOf(email) !== -1) { gate.remove(); return; }
+            sbClient.from('profiles').select('is_admin').eq('id', sess.user.id).maybeSingle()
+              .then(function (pr) {
+                if (pr.data && pr.data.is_admin) { gate.remove(); return; }
+                renderAuthStage();
+              })
+              .catch(function () { renderAuthStage(); });
+          } else {
+            renderAuthStage();
+          }
+        }).catch(function () { renderAuthStage(); });
+      } else {
+        renderAuthStage();
+      }
+    } else {
+      renderImageStage();
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', showGate);
+
+})();
+</script>
+<style>
+/* ═══════════════════════════════
+   ADMIN DASHBOARD STYLES
+   Uses the same CSS variables as the main site
+   ═══════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0c0a0a;--bg-nav:#080607;--bg-card:#111010;--bg-hover:#1c1515;
+  --bg-mid:#181212;--text:#f5ede0;--text-dim:#c8bfb0;--text-muted:#8c7d6e;
+  --text-faint:#574843;--crimson:#d4433a;--crimson-dim:#8b2219;
+  --crimson-soft:rgba(212,67,58,0.13);--crimson-border:rgba(212,67,58,0.32);
+  --border:rgba(255,255,255,0.09);--border-mid:rgba(255,255,255,0.05);
+  --bg-input:rgba(255,255,255,0.04);--border-subtle:rgba(255,255,255,0.06);
+  --success:#2e8b57;--warning:#e8940a;--danger:#e8605a;--info:#58aaff;
+}
+html.light-mode{
+  --bg:#f0e7d4;--bg-nav:#f9f2e4;--bg-card:#e9dfc9;--bg-hover:#ddd0b8;
+  --bg-mid:#d4c8ac;--text:#140902;--text-dim:#342010;--text-muted:#6a4028;
+  --text-faint:#9a6845;--crimson:#8b1a10;--crimson-dim:#5e1009;
+  --crimson-soft:rgba(139,26,16,0.11);--crimson-border:rgba(139,26,16,0.34);
+  --border:rgba(20,9,2,0.15);--border-mid:rgba(20,9,2,0.08);
+  --bg-input:rgba(20,9,2,0.06);--border-subtle:rgba(20,9,2,0.10);
+}
+html{scroll-behavior:smooth;background:var(--bg);}
+body{background:var(--bg);color:var(--text);font-family:'Spectral',Georgia,serif;min-height:100vh;-webkit-font-smoothing:antialiased;}
+::selection{background:var(--crimson);color:#f5f0e8;}
+:focus-visible{outline:2px solid var(--crimson);outline-offset:2px;}
+
+/* Layout */
+.admin-layout{display:flex;min-height:100vh;}
+.admin-sidebar{width:260px;background:var(--bg-nav);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;transition:transform 0.3s ease;}
+.admin-main{flex:1;margin-left:260px;min-height:100vh;}
+.admin-topbar{height:56px;background:var(--bg-nav);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:90;}
+.admin-content{padding:32px;}
+
+/* Sidebar */
+.sidebar-brand{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;}
+.sidebar-brand h1{font-family:'Cinzel',serif;font-size:15px;font-weight:600;letter-spacing:1px;color:var(--crimson);}
+.sidebar-brand .brand-sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);font-family:'Cinzel',serif;}
+.sidebar-nav{flex:1;padding:16px 0;overflow-y:auto;}
+.sidebar-section{padding:0 12px;margin-bottom:8px;}
+.sidebar-section-label{font-family:'Cinzel',serif;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--text-faint);padding:8px 12px 4px;display:block;}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:4px;cursor:pointer;color:var(--text-dim);font-size:13.5px;transition:all 0.15s ease;border:1px solid transparent;}
+.sidebar-item:hover{background:var(--bg-hover);color:var(--text);}
+.sidebar-item.active{background:var(--crimson-soft);color:var(--crimson);border-color:var(--crimson-border);}
+.sidebar-item svg{width:16px;height:16px;opacity:0.7;flex-shrink:0;}
+.sidebar-item.active svg{opacity:1;}
+.sidebar-footer{padding:16px 24px;border-top:1px solid var(--border);font-size:11px;color:var(--text-faint);}
+
+/* Cards & Panels */
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+.card-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.card-header h2{font-family:'Cinzel',serif;font-size:14px;font-weight:600;letter-spacing:1px;}
+.card-body{padding:24px;}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;}
+.stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:20px 24px;}
+.stat-label{font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
+.stat-value{font-size:28px;font-weight:600;color:var(--text);}
+.stat-sub{font-size:12px;color:var(--text-muted);margin-top:4px;}
+
+/* Tables */
+.data-table{width:100%;border-collapse:collapse;font-size:13px;}
+.data-table th{font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);padding:12px 16px;text-align:left;border-bottom:1px solid var(--border);background:var(--bg-mid);}
+.data-table td{padding:12px 16px;border-bottom:1px solid var(--border-mid);color:var(--text-dim);}
+.data-table tr:hover td{background:var(--bg-hover);}
+.data-table .mono{font-family:'Courier New',monospace;font-size:11px;color:var(--text-faint);}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:2px;font-family:'Cinzel',serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;font-weight:600;}
+.badge-active{background:rgba(78,218,128,0.15);color:#2e8b57;border:1px solid rgba(78,218,128,0.3);}
+.badge-suspended{background:rgba(212,67,58,0.15);color:#e8605a;border:1px solid rgba(212,67,58,0.3);}
+.badge-pending{background:rgba(243,156,18,0.15);color:#e8940a;border:1px solid rgba(243,156,18,0.3);}
+.badge-inactive{background:rgba(140,125,110,0.15);color:var(--text-muted);border:1px solid var(--border);}
+.badge-admin{background:rgba(212,67,58,0.15);color:var(--crimson);border:1px solid var(--crimson-border);}
+.badge-info{background:rgba(52,152,219,0.15);color:#58aaff;border:1px solid rgba(52,152,219,0.3);}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border);border-radius:2px;font-family:'Cinzel',serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all 0.15s ease;background:transparent;color:var(--text-dim);}
+.btn:hover{background:var(--bg-hover);color:var(--text);}
+.btn-primary{background:var(--crimson);color:#f5f0e8;border-color:var(--crimson);}
+.btn-primary:hover{background:var(--crimson-dim);}
+.btn-danger{border-color:rgba(212,67,58,0.4);color:#e8605a;}
+.btn-danger:hover{background:rgba(212,67,58,0.1);}
+.btn-sm{padding:5px 10px;font-size:9px;}
+.btn-group{display:flex;gap:8px;}
+
+/* Forms */
+.form-group{margin-bottom:20px;}
+.form-label{display:block;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;}
+.form-input{width:100%;padding:10px 12px;background:var(--bg-input);border:1px solid var(--border);color:var(--text);font-family:'Spectral',serif;font-size:14px;border-radius:2px;transition:border-color 0.15s ease;}
+.form-input:focus{border-color:var(--crimson-border);outline:none;}
+.form-input::placeholder{color:var(--text-faint);}
+select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238c7d6e' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;}
+
+/* Tabs */
+.tab-bar{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:24px;}
+.tab-item{padding:12px 20px;font-family:'Cinzel',serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s ease;}
+.tab-item:hover{color:var(--text);}
+.tab-item.active{color:var(--crimson);border-bottom-color:var(--crimson);}
+
+/* Search */
+.search-bar{position:relative;max-width:300px;}
+.search-bar input{width:100%;padding:8px 12px 8px 36px;background:var(--bg-input);border:1px solid var(--border);color:var(--text);font-family:'Spectral',serif;font-size:13px;border-radius:2px;}
+.search-bar svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text-faint);}
+
+/* Modal */
+.modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:500;animation:fadeIn 0.15s ease;}
+.modal{background:var(--bg-card);border:1px solid var(--crimson-border);border-radius:4px;max-width:560px;width:90%;max-height:85vh;overflow-y:auto;}
+.modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.modal-header h3{font-family:'Cinzel',serif;font-size:14px;font-weight:600;letter-spacing:1px;}
+.modal-body{padding:24px;}
+.modal-footer{padding:16px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+
+/* Key display */
+.key-block{background:var(--bg);border:1px solid var(--border);border-radius:2px;padding:12px 16px;font-family:'Courier New',monospace;font-size:11px;color:var(--text-faint);word-break:break-all;line-height:1.6;max-height:120px;overflow-y:auto;}
+
+/* Permissions tree */
+.perm-group{margin-bottom:16px;}
+.perm-group-header{font-family:'Cinzel',serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);padding:8px 0;border-bottom:1px solid var(--border-mid);margin-bottom:8px;}
+.perm-item{display:flex;align-items:center;gap:10px;padding:6px 0 6px 16px;font-size:13px;color:var(--text-dim);}
+.perm-check{width:16px;height:16px;border:1px solid var(--border);border-radius:2px;background:var(--bg-input);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
+.perm-check.checked{background:var(--crimson);border-color:var(--crimson);}
+.perm-check.checked::after{content:'✓';color:#fff;font-size:10px;}
+
+/* Timeline / Audit */
+.audit-entry{display:flex;gap:16px;padding:16px 0;border-bottom:1px solid var(--border-mid);}
+.audit-time{font-family:'Courier New',monospace;font-size:11px;color:var(--text-faint);min-width:140px;flex-shrink:0;}
+.audit-action{font-size:13px;color:var(--text-dim);}
+.audit-action strong{color:var(--text);font-weight:600;}
+.audit-action .audit-detail{font-size:11px;color:var(--text-faint);margin-top:4px;}
+
+/* Rate limit display */
+.rate-bar{height:6px;background:var(--bg);border-radius:3px;overflow:hidden;margin-top:6px;}
+.rate-fill{height:100%;border-radius:3px;transition:width 0.3s ease;}
+
+/* Toggle switch */
+.toggle{width:36px;height:20px;border-radius:10px;background:var(--border);cursor:pointer;position:relative;transition:background 0.2s ease;flex-shrink:0;}
+.toggle.on{background:var(--crimson);}
+.toggle::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:var(--text);top:2px;left:2px;transition:transform 0.2s ease;}
+.toggle.on::after{transform:translateX(16px);}
+
+/* Responsive */
+.mobile-toggle{display:none;background:none;border:none;color:var(--text);cursor:pointer;padding:8px;}
+@media(max-width:900px){
+  .admin-sidebar{transform:translateX(-100%);}
+  .admin-sidebar.open{transform:translateX(0);}
+  .admin-main{margin-left:0;}
+  .mobile-toggle{display:block;}
+  .stat-grid{grid-template-columns:1fr 1fr;}
+}
+@media(max-width:600px){
+  .admin-content{padding:16px;}
+  .stat-grid{grid-template-columns:1fr;}
+  .data-table{font-size:11px;}
+  .data-table th,.data-table td{padding:8px 10px;}
+}
+
+/* Admin Dashboard Cards */
+.admin-stat-card{
+  background:var(--bg-card);
+  border:1px solid var(--border);
+  padding:20px;
+  text-align:center;
+  transition:all 0.15s ease;
+}
+.admin-stat-card:hover{
+  border-color:var(--crimson-border);
+  box-shadow:0 2px 8px rgba(212,67,58,0.1);
+}
+.admin-stat-value{
+  font-family:'Cinzel',serif;
+  font-size:32px;
+  color:var(--crimson);
+  font-weight:700;
+  margin:12px 0 4px;
+}
+.admin-stat-label{
+  font-family:'Cinzel',serif;
+  font-size:9px;
+  letter-spacing:2px;
+  text-transform:uppercase;
+  color:var(--text-muted);
+  margin-bottom:8px;
+}
+.admin-stat-sub{
+  font-size:12px;
+  color:var(--text-muted);
+  margin-top:8px;
+}
+.admin-activity-feed{
+  max-height:300px;
+  overflow-y:auto;
+  border:1px solid var(--border);
+  border-radius:4px;
+}
+.admin-activity-item{
+  padding:12px 16px;
+  border-bottom:1px solid var(--border-subtle);
+  font-size:13px;
+  color:var(--text-dim);
+  transition:background 0.15s ease;
+}
+.admin-activity-item:hover{
+  background:var(--bg-hover);
+}
+.admin-activity-time{
+  font-size:11px;
+  color:var(--text-faint);
+  margin-top:4px;
+}
+
+/* Toasts */
+.toast-container{position:fixed;bottom:24px;right:24px;z-index:600;display:flex;flex-direction:column;gap:8px;}
+.toast{padding:12px 20px;border-radius:4px;font-size:13px;color:#f5f0e8;animation:slideUp 0.2s ease;}
+.toast-success{background:#2e8b57;}
+.toast-error{background:#e8605a;}
+.toast-info{background:#58aaff;}
+@keyframes slideUp{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+/* Empty states */
+.empty-state{text-align:center;padding:48px 24px;color:var(--text-muted);}
+.empty-state svg{width:48px;height:48px;margin-bottom:16px;opacity:0.3;}
+.empty-state p{font-size:14px;margin-bottom:16px;}
+
+/* JSON viewer */
+.json-view{background:var(--bg);border:1px solid var(--border);border-radius:2px;padding:16px;font-family:'Courier New',monospace;font-size:11px;color:var(--text-faint);white-space:pre-wrap;max-height:300px;overflow-y:auto;line-height:1.6;}
+
+/* Pill filters */
+.filter-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.pill{padding:5px 14px;border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--text-muted);cursor:pointer;transition:all 0.15s;font-family:'Spectral',serif;}
+.pill:hover{border-color:var(--crimson-border);color:var(--text);}
+.pill.active{background:var(--crimson-soft);border-color:var(--crimson-border);color:var(--crimson);}
+</style>
+</head>
+<body>
+<div id="admin-root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useCallback, useRef, useMemo } = React;
+
+// ═══════════════════════════════
+// CONFIG
+// ═══════════════════════════════
+const API_BASE_URL = null; // Set to your .NET backend URL when deployed, e.g. 'https://api.phmurtstudios.com'
+
+// ═══════════════════════════════
+// MOCK DATA
+// ═══════════════════════════════
+// ── Supabase reference ──────────────────────────────────────────────
+const sb = (typeof phmurtSupabase !== 'undefined' && phmurtSupabase) ? phmurtSupabase : null;
+
+// ── Admin data-fetching hook ────────────────────────────────────────
+function useAdminQuery(fetchFn, deps = []) {
+  const [data, setData]     = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]   = useState(null);
+
+  const fetch_ = useCallback(() => {
+    if (!sb) { setLoading(false); setError('Supabase not configured.'); return; }
+    setLoading(true);
+    fetchFn(sb)
+      .then(d  => { setData(d); setError(null); })
+      .catch(e => setError(e.message || 'Load failed'))
+      .finally(() => setLoading(false));
+  }, deps);  // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => { fetch_(); }, [fetch_]);
+  return { data, loading, error, refetch: fetch_ };
+}
+
+// ── Placeholder for legacy mock references still in old pages ──────
+const MOCK_TENANTS   = [];
+const MOCK_USERS     = [];
+const MOCK_SIGNING_KEYS = [];
+const MOCK_CLIENTS   = [];
+const MOCK_ROLES     = [];
+const MOCK_PERMISSIONS = {};
+const MOCK_AUDIT_LOG = [];
+const MOCK_RATE_LIMITS = [];
+// (duplicate mock declarations removed — empty stubs above are used for legacy compat)
+
+// ═══════════════════════════════
+// ICONS (inline SVG components)
+// ═══════════════════════════════
+const Icons = {
+  Dashboard: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>,
+  Tenants: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
+  Users: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>,
+  Keys: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>,
+  Shield: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  Clients: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>,
+  Audit: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>,
+  RateLimit: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
+  Settings: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>,
+  Search: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>,
+  Plus: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  X: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+  Menu: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>,
+  Refresh: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>,
+  Eye: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>,
+  Back: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>,
+  Check: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>,
+  Moon: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
+};
+
+// ═══════════════════════════════
+// UTILITY FUNCTIONS
+// ═══════════════════════════════
+function formatDate(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+function formatDateTime(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+function timeAgo(iso) {
+  if (!iso) return 'Never';
+  const now = new Date();
+  const d = new Date(iso);
+  const diff = Math.floor((now - d) / 1000);
+  if (diff < 60) return 'Just now';
+  if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+  return Math.floor(diff / 86400) + 'd ago';
+}
+function getTenantName(id) {
+  const t = MOCK_TENANTS.find(t => t.id === id);
+  return t ? t.name : id;
+}
+
+// ═══════════════════════════════
+// TOAST SYSTEM
+// ═══════════════════════════════
+function ToastContainer({ toasts }) {
+  return (
+    <div className="toast-container">
+      {toasts.map(t => (
+        <div key={t.id} className={`toast toast-${t.type}`}>{t.message}</div>
+      ))}
+    </div>
+  );
+}
+
+// ═══════════════════════════════
+// MODAL COMPONENT
+// ═══════════════════════════════
+function Modal({ title, children, onClose, footer }) {
+  useEffect(() => {
+    const handleEsc = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', handleEsc);
+    return () => document.removeEventListener('keydown', handleEsc);
+  }, [onClose]);
+
+  return (
+    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="modal">
+        <div className="modal-header">
+          <h3>{title}</h3>
+          <button className="btn btn-sm" onClick={onClose} style={{border:'none',padding:'4px'}}><Icons.X /></button>
+        </div>
+        <div className="modal-body">{children}</div>
+        {footer && <div className="modal-footer">{footer}</div>}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════
+// DASHBOARD PAGE  (live Supabase data)
+// ═══════════════════════════════
+function DashboardPage({ onNavigate }) {
+  const { data: stats, loading, error } = useAdminQuery(async (db) => {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const [users, chars, camps, visits, recent] = await Promise.all([
+      db.from('profiles').select('id', { count: 'exact', head: true }),
+      db.from('characters').select('id', { count: 'exact', head: true }),
+      db.from('campaigns').select('id', { count: 'exact', head: true }),
+      db.from('site_visits').select('id', { count: 'exact', head: true }).gte('visited_at', today.toISOString()),
+      db.from('profiles').select('id, name, email, created_at, is_admin, is_banned').order('created_at', { ascending: false }).limit(5),
+    ]);
+    return {
+      users:   users.count  || 0,
+      chars:   chars.count  || 0,
+      camps:   camps.count  || 0,
+      visits:  visits.count || 0,
+      recent:  recent.data  || [],
+    };
+  });
+
+  if (loading) return <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)',fontFamily:'Spectral,serif'}}>Loading…</div>;
+  if (error)   return <div style={{padding:'40px',color:'var(--crimson)',fontFamily:'Spectral,serif'}}>{error}</div>;
+
+  const s = stats || { users:0, chars:0, camps:0, visits:0, recent:[] };
+
+  return (
+    <div>
+      <h1 style={{fontFamily:'Cinzel, serif',fontSize:'20px',fontWeight:600,letterSpacing:'1px',marginBottom:'24px'}}>Dashboard</h1>
+
+      <div className="stat-grid">
+        <div className="stat-card">
+          <div className="stat-label">Registered Users</div>
+          <div className="stat-value">{s.users}</div>
+          <div className="stat-sub">All-time sign-ups</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Characters</div>
+          <div className="stat-value">{s.chars}</div>
+          <div className="stat-sub">Saved character sheets</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Campaigns</div>
+          <div className="stat-value">{s.camps}</div>
+          <div className="stat-sub">Active campaigns</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Visits Today</div>
+          <div className="stat-value">{s.visits}</div>
+          <div className="stat-sub">Page loads since midnight</div>
+        </div>
+      </div>
+
+      <div className="card" style={{marginBottom:'24px'}}>
+        <div className="card-header"><h2>Newest Members</h2></div>
+        <div className="card-body" style={{padding:0}}>
+          {s.recent.length === 0 && <div className="empty-state"><p>No users yet.</p></div>}
+          {s.recent.map(u => (
+            <div key={u.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 24px',borderBottom:'1px solid var(--border-mid)'}}>
+              <div>
+                <div style={{fontSize:'13px',fontWeight:600,color:'var(--text)'}}>{u.name || u.email.split('@')[0]}</div>
+                <div style={{fontSize:'11px',color:'var(--text-muted)'}}>{u.email}</div>
+              </div>
+              <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                {u.is_admin && <span className="badge badge-admin">Admin</span>}
+                {u.is_banned && <span className="badge badge-suspended">Banned</span>}
+                <span style={{fontSize:'11px',color:'var(--text-faint)'}}>{timeAgo(u.created_at)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px'}}>
+        <div className="card">
+          <div className="card-header"><h2>Quick Links</h2></div>
+          <div className="card-body">
+            {[
+              { label: 'Manage Users',    desc: 'View, ban, or delete accounts',  page: 'users' },
+              { label: 'Characters',      desc: 'Browse all saved character sheets', page: 'characters' },
+              { label: 'Campaigns',       desc: 'Browse all saved campaigns',     page: 'campaigns' },
+              { label: 'Site Traffic',    desc: 'Page visit analytics',           page: 'traffic' },
+            ].map(link => (
+              <div key={link.page} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 0',borderBottom:'1px solid var(--border-mid)'}}>
+                <div>
+                  <div style={{fontSize:'13px',fontWeight:600}}>{link.label}</div>
+                  <div style={{fontSize:'11px',color:'var(--text-muted)'}}>{link.desc}</div>
+                </div>
+                <button className="btn btn-sm" onClick={() => onNavigate && onNavigate(link.page)}>
+                  <Icons.Eye />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-header"><h2>Platform Status</h2></div>
+          <div className="card-body">
+            {[
+              { label: 'Auth Backend',         value: sb ? 'Supabase ✓' : 'Local (not configured)', ok: !!sb },
+              { label: 'Session Persistence',  value: 'Cookie + localStorage', ok: true },
+              { label: 'Character Cloud Sync', value: 'Enabled', ok: true },
+              { label: 'Campaign Cloud Sync',  value: 'Enabled', ok: true },
+              { label: 'Page Visit Tracking',  value: 'Enabled', ok: true },
+              { label: 'Admin Gate',           value: '2-Factor (image + account)', ok: true },
+            ].map((item, i) => (
+              <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderBottom:'1px solid var(--border-mid)'}}>
+                <span style={{fontSize:'13px'}}>{item.label}</span>
+                <span style={{fontSize:'12px',color:item.ok?'#2e8b57':'#e8605a',display:'flex',alignItems:'center',gap:'4px'}}>
+                  {item.ok ? <span style={{fontSize:'10px'}}>✓</span> : <span style={{fontSize:'10px'}}>✗</span>} {item.value}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════
+// CAMPAIGNS PAGE  (live Supabase data)
+// ═══════════════════════════════
+function CampaignsPage({ addToast }) {
+  const [search, setSearch] = useState('');
+  const { data: campaigns, loading, error, refetch } = useAdminQuery(async (db) => {
+    const { data, error } = await db
+      .from('campaigns')
+      .select('id, data, owner_id, created_at, updated_at')
+      .order('updated_at', { ascending: false })
+      .limit(200);
+    if (error) throw error;
+    return data || [];
+  });
+
+  const filtered = (campaigns || []).filter(c => {
+    if (!search) return true;
+    const name = (c.data && c.data.name) || '';
+    return name.toLowerCase().includes(search.toLowerCase()) ||
+           (c.owner_id || '').toLowerCase().includes(search.toLowerCase());
+  });
+
+  async function deleteCampaign(id) {
+    if (!confirm('Delete this campaign? This cannot be undone.')) return;
+    const { error } = await sb.from('campaigns').delete().eq('id', id);
+    if (error) { addToast('Delete failed: ' + error.message, 'error'); return; }
+    addToast('Campaign deleted.', 'success');
+    refetch();
+  }
+
+  return (
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px'}}>
+        <h1 style={{fontFamily:'Cinzel, serif',fontSize:'20px',fontWeight:600,letterSpacing:'1px'}}>Campaigns</h1>
+        <button className="btn" onClick={refetch}><Icons.Refresh /> Refresh</button>
+      </div>
+
+      <div className="search-bar" style={{marginBottom:'20px',maxWidth:'360px'}}>
+        <Icons.Search />
+        <input placeholder="Search campaigns..." value={search} onChange={e => setSearch(e.target.value)} />
+      </div>
+
+      {loading && <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)',fontFamily:'Spectral,serif'}}>Loading…</div>}
+      {error   && <div style={{padding:'20px',color:'var(--crimson)',fontFamily:'Spectral,serif'}}>{error}</div>}
+
+      {!loading && !error && (
+        <div className="card">
+          <table className="data-table">
+            <thead>
+              <tr><th>Campaign Name</th><th>Owner ID</th><th>Updated</th><th>Created</th><th></th></tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 && (
+                <tr><td colSpan="5" style={{textAlign:'center',color:'var(--text-muted)',padding:'40px 16px'}}>No campaigns found.</td></tr>
+              )}
+              {filtered.map(c => {
+                const name = (c.data && c.data.name) || 'Untitled Campaign';
+                return (
+                  <tr key={c.id}>
+                    <td style={{fontWeight:600,color:'var(--text)'}}>{name}</td>
+                    <td className="mono" style={{fontSize:'11px'}}>{c.owner_id}</td>
+                    <td>{timeAgo(c.updated_at)}</td>
+                    <td>{formatDate(c.created_at)}</td>
+                    <td>
+                      <button className="btn btn-sm btn-danger" onClick={() => deleteCampaign(c.id)}>Delete</button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════
+// USERS PAGE  (live Supabase data)
+// ═══════════════════════════════
+function UsersPage({ addToast }) {
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('all');
+  const [selectedUser, setSelectedUser] = useState(null);
+
+  const { data: users, loading, error, refetch } = useAdminQuery(async (db) => {
+    const { data, error } = await db
+      .from('profiles')
+      .select('id, name, email, created_at, is_admin, is_superuser, is_banned')
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error) throw error;
+    return data || [];
+  });
+
+  const filtered = (users || []).filter(u => {
+    if (filter === 'admin'  && !u.is_admin)  return false;
+    if (filter === 'banned' && !u.is_banned) return false;
+    if (search && !(u.name  || '').toLowerCase().includes(search.toLowerCase()) &&
+                  !(u.email || '').toLowerCase().includes(search.toLowerCase())) return false;
+    return true;
+  });
+
+  async function toggleBan(user) {
+    if (user.is_superuser) { addToast('Superuser accounts cannot be modified.', 'error'); return; }
+    const next = !user.is_banned;
+    const { error } = await sb.from('profiles').update({ is_banned: next }).eq('id', user.id);
+    if (error) { addToast('Update failed: ' + error.message, 'error'); return; }
+    addToast(next ? 'User banned.' : 'User unbanned.', next ? 'error' : 'success');
+    refetch(); setSelectedUser(null);
+  }
+
+  async function toggleAdmin(user) {
+    if (user.is_superuser) { addToast('Superuser accounts cannot be modified.', 'error'); return; }
+    const next = !user.is_admin;
+    const { error } = await sb.from('profiles').update({ is_admin: next }).eq('id', user.id);
+    if (error) { addToast('Update failed: ' + error.message, 'error'); return; }
+    addToast(next ? 'Admin privileges granted.' : 'Admin privileges removed.', 'success');
+    refetch(); setSelectedUser(null);
+  }
+
+  async function deleteUser(id, user) {
+    if (user && user.is_superuser) { addToast('Superuser accounts cannot be deleted.', 'error'); return; }
+    if (!confirm('Permanently delete this user and all their data? This cannot be undone.')) return;
+    const { error } = await sb.from('profiles').delete().eq('id', id);
+    if (error) { addToast('Delete failed: ' + error.message, 'error'); return; }
+    addToast('User deleted.', 'error');
+    refetch(); setSelectedUser(null);
+  }
+
+  return (
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px'}}>
+        <h1 style={{fontFamily:'Cinzel, serif',fontSize:'20px',fontWeight:600,letterSpacing:'1px'}}>Users</h1>
+        <button className="btn" onClick={refetch}><Icons.Refresh /> Refresh</button>
+      </div>
+
+      <div style={{display:'flex',gap:'16px',alignItems:'center',marginBottom:'20px',flexWrap:'wrap'}}>
+        <div className="search-bar">
+          <Icons.Search />
+          <input placeholder="Search users..." value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <div className="filter-pills">
+          {[['all','All'],['admin','Admins'],['banned','Banned']].map(([k,l]) => (
+            <span key={k} className={`pill ${filter===k?'active':''}`} onClick={() => setFilter(k)}>{l}</span>
+          ))}
+        </div>
+      </div>
+
+      {loading && <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)',fontFamily:'Spectral,serif'}}>Loading…</div>}
+      {error   && <div style={{padding:'20px',color:'var(--crimson)',fontFamily:'Spectral,serif'}}>{error}</div>}
+
+      {!loading && !error && (
+        <div className="card">
+          <table className="data-table">
+            <thead>
+              <tr><th>Name</th><th>Email</th><th>Status</th><th>Joined</th><th></th></tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 && (
+                <tr><td colSpan="5" style={{textAlign:'center',color:'var(--text-muted)',padding:'40px 16px'}}>No users found.</td></tr>
+              )}
+              {filtered.map(u => (
+                <tr key={u.id}>
+                  <td style={{fontWeight:600,color:'var(--text)'}}>{u.name || '—'}</td>
+                  <td className="mono">{u.email}</td>
+                  <td>
+                    {u.is_superuser && <span className="badge badge-admin" style={{marginRight:'4px',background:'rgba(212,67,58,0.15)',color:'#d4433a'}}>Superuser</span>}
+                    {u.is_admin && !u.is_superuser && <span className="badge badge-admin" style={{marginRight:'4px'}}>Admin</span>}
+                    {u.is_banned ? <span className="badge badge-suspended">Banned</span>
+                                 : <span className="badge badge-active">Active</span>}
+                  </td>
+                  <td>{formatDate(u.created_at)}</td>
+                  <td>
+                    <button className="btn btn-sm" onClick={() => setSelectedUser(u)}><Icons.Eye /></button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {selectedUser && (
+        <Modal
+          title={`User: ${selectedUser.name || selectedUser.email}`}
+          onClose={() => setSelectedUser(null)}
+          footer={
+            <div className="btn-group">
+              <button className="btn btn-danger btn-sm" onClick={() => deleteUser(selectedUser.id)}>Delete</button>
+              <button className={`btn btn-sm ${selectedUser.is_banned ? 'btn-primary' : 'btn-danger'}`} onClick={() => toggleBan(selectedUser)}>
+                {selectedUser.is_banned ? 'Unban' : 'Ban'}
+              </button>
+              <button className="btn btn-sm" onClick={() => toggleAdmin(selectedUser)}>
+                {selectedUser.is_admin ? 'Remove Admin' : 'Make Admin'}
+              </button>
+            </div>
+          }
+        >
+          <div style={{fontSize:'13px',display:'grid',gap:'10px'}}>
+            <div><span style={{color:'var(--text-muted)'}}>ID: </span><span className="mono" style={{fontSize:'11px'}}>{selectedUser.id}</span></div>
+            <div><span style={{color:'var(--text-muted)'}}>Name: </span>{selectedUser.name || '—'}</div>
+            <div><span style={{color:'var(--text-muted)'}}>Email: </span>{selectedUser.email}</div>
+            <div><span style={{color:'var(--text-muted)'}}>Joined: </span>{formatDateTime(selectedUser.created_at)}</div>
+            <div><span style={{color:'var(--text-muted)'}}>Admin: </span>{selectedUser.is_admin ? '✓ Yes' : 'No'}</div>
+            <div><span style={{color:'var(--text-muted)'}}>Banned: </span>{selectedUser.is_banned ? '✓ Yes' : 'No'}</div>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════
+// CHARACTERS PAGE  (live Supabase data)
+// ═══════════════════════════════
+function CharactersPage({ addToast }) {
+  const [search, setSearch] = useState('');
+
+  const { data: characters, loading, error, refetch } = useAdminQuery(async (db) => {
+    const { data, error } = await db
+      .from('characters')
+      .select('id, owner_id, data, builder_type, created_at, updated_at')
+      .order('updated_at', { ascending: false })
+      .limit(500);
+    if (error) throw error;
+    return data || [];
+  });
+
+  const filtered = (characters || []).filter(c => {
+    if (!search) return true;
+    const d    = c.data || {};
+    const name = (d.name || '').toLowerCase();
+    const race = (d.race || '').toLowerCase();
+    const cls  = (d.class || d.class_ || '').toLowerCase();
+    const q    = search.toLowerCase();
+    return name.includes(q) || race.includes(q) || cls.includes(q) ||
+           (c.owner_id || '').toLowerCase().includes(q);
+  });
+
+  async function deleteCharacter(id) {
+    if (!confirm('Delete this character sheet? This cannot be undone.')) return;
+    const { error } = await sb.from('characters').delete().eq('id', id);
+    if (error) { addToast('Delete failed: ' + error.message, 'error'); return; }
+    addToast('Character deleted.', 'success');
+    refetch();
+  }
+
+  return (
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px'}}>
+        <h1 style={{fontFamily:'Cinzel, serif',fontSize:'20px',fontWeight:600,letterSpacing:'1px'}}>Characters</h1>
+        <button className="btn" onClick={refetch}><Icons.Refresh /> Refresh</button>
+      </div>
+
+      <div className="search-bar" style={{marginBottom:'20px',maxWidth:'360px'}}>
+        <Icons.Search />
+        <input placeholder="Search by name, race, or class…" value={search} onChange={e => setSearch(e.target.value)} />
+      </div>
+
+      {loading && <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)',fontFamily:'Spectral,serif'}}>Loading…</div>}
+      {error   && <div style={{padding:'20px',color:'var(--crimson)',fontFamily:'Spectral,serif'}}>{error}</div>}
+
+      {!loading && !error && (
+        <div className="card">
+          <table className="data-table">
+            <thead>
+              <tr><th>Character Name</th><th>Race · Class</th><th>Level</th><th>System</th><th>Updated</th><th></th></tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 && (
+                <tr><td colSpan="6" style={{textAlign:'center',color:'var(--text-muted)',padding:'40px 16px'}}>No characters found.</td></tr>
+              )}
+              {filtered.map(c => {
+                const d   = c.data || {};
+                const sub = [d.race, d.class || d.class_].filter(Boolean).join(' · ') || '—';
+                return (
+                  <tr key={c.id}>
+                    <td style={{fontWeight:600,color:'var(--text)'}}>{d.name || 'Unnamed'}</td>
+                    <td>{sub}</td>
+                    <td>{d.level || '—'}</td>
+                    <td><span className="badge badge-info">{c.builder_type || '5e'}</span></td>
+                    <td>{timeAgo(c.updated_at)}</td>
+                    <td>
+                      <button className="btn btn-sm btn-danger" onClick={() => deleteCharacter(c.id)}>Delete</button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════
+// TRAFFIC PAGE  (live site_visits data)
+// ═══════════════════════════════
+function TrafficPage() {
+  const { data: visits, loading, error, refetch } = useAdminQuery(async (db) => {
+    const { data, error } = await db
+      .from('site_visits')
+      .select('id, page, visited_at')
+      .order('visited_at', { ascending: false })
+      .limit(2000);
+    if (error) throw error;
+    return data || [];
+  });
+
+  const stats = useMemo(() => {
+    if (!visits) return { byPage: {}, byDay: {}, total: 0 };
+    const byPage = {}, byDay = {};
+    visits.forEach(v => {
+      const p = v.page || '/';
+      byPage[p] = (byPage[p] || 0) + 1;
+      const d = (v.visited_at || '').slice(0, 10);
+      if (d) byDay[d] = (byDay[d] || 0) + 1;
+    });
+    return { byPage, byDay, total: visits.length };
+  }, [visits]);
+
+  const topPages   = Object.entries(stats.byPage).sort((a,b) => b[1]-a[1]).slice(0, 20);
+  const recentDays = Object.entries(stats.byDay).sort((a,b) => b[0].localeCompare(a[0])).slice(0, 14);
+  const maxDay     = Math.max(1, ...recentDays.map(([,v]) => v));
+  const today      = new Date().toISOString().slice(0,10);
+
+  return (
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px'}}>
+        <h1 style={{fontFamily:'Cinzel, serif',fontSize:'20px',fontWeight:600,letterSpacing:'1px'}}>Site Traffic</h1>
+        <button className="btn" onClick={refetch}><Icons.Refresh /> Refresh</button>
+      </div>
+
+      {loading && <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)',fontFamily:'Spectral,serif'}}>Loading…</div>}
+      {error   && <div style={{padding:'20px',color:'var(--crimson)',fontFamily:'Spectral,serif'}}>{error}</div>}
+
+      {!loading && !error && (
+        <>
+          <div className="stat-grid" style={{marginBottom:'24px'}}>
+            <div className="stat-card">
+              <div className="stat-label">Visits Tracked</div>
+              <div className="stat-value">{stats.total}</div>
+              <div className="stat-sub">Most recent 2,000</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Unique Pages</div>
+              <div className="stat-value">{Object.keys(stats.byPage).length}</div>
+              <div className="stat-sub">Distinct URLs visited</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Today</div>
+              <div className="stat-value">{stats.byDay[today] || 0}</div>
+              <div className="stat-sub">Page loads since midnight</div>
+            </div>
+          </div>
+
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px'}}>
+            <div className="card">
+              <div className="card-header"><h2>Top Pages</h2></div>
+              <div className="card-body" style={{padding:0}}>
+                {topPages.length === 0 && <div className="empty-state"><p>No visit data yet.</p></div>}
+                {topPages.map(([page, count]) => (
+                  <div key={page} style={{display:'flex',alignItems:'center',padding:'10px 24px',borderBottom:'1px solid var(--border-mid)',gap:'12px'}}>
+                    <span className="mono" style={{fontSize:'11px',color:'var(--text)',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{page}</span>
+                    <div style={{width:'80px',height:'5px',background:'var(--bg)',borderRadius:'3px',overflow:'hidden',flexShrink:0}}>
+                      <div style={{height:'100%',width:`${Math.round(count/topPages[0][1]*100)}%`,background:'var(--crimson)',borderRadius:'3px'}} />
+                    </div>
+                    <span style={{fontSize:'12px',color:'var(--text-muted)',minWidth:'28px',textAlign:'right',flexShrink:0}}>{count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="card-header"><h2>Daily Visits — Last 14 Days</h2></div>
+              <div className="card-body" style={{padding:0}}>
+                {recentDays.length === 0 && <div className="empty-state"><p>No visit data yet.</p></div>}
+                {recentDays.map(([day, count]) => (
+                  <div key={day} style={{display:'flex',alignItems:'center',padding:'8px 24px',borderBottom:'1px solid var(--border-mid)',gap:'12px'}}>
+                    <span style={{fontSize:'12px',color:'var(--text-dim)',minWidth:'90px',flexShrink:0}}>{day}</span>
+                    <div style={{flex:1,height:'5px',background:'var(--bg)',borderRadius:'3px',overflow:'hidden'}}>
+                      <div style={{height:'100%',width:`${Math.round(count/maxDay*100)}%`,background:'var(--crimson)',borderRadius:'3px'}} />
+                    </div>
+                    <span style={{fontSize:'12px',color:'var(--text-muted)',minWidth:'28px',textAlign:'right',flexShrink:0}}>{count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// (ClientsPage removed — not applicable to Phmurt Studios game site)
+
+// (AuditLogPage and RateLimitsPage removed — replaced with Traffic page)
+
+// ═══════════════════════════════
+// SETTINGS PAGE
+// ═══════════════════════════════
+// ── Manage Admins card (used inside SettingsPage) ────────────────────────────
+function AdminKeySetupCard({ addToast }) {
+  const [storedHash, setStoredHash] = useState('');
+  const [computedHash, setComputedHash] = useState('');
+  const [keyImage, setKeyImage] = useState(null);
+  const [status, setStatus] = useState('');
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('phmurt_admin_key_hash');
+      setStoredHash(stored || 'Not configured');
+    } catch (e) {
+      setStoredHash('Error reading storage');
+    }
+  }, []);
+
+  function computeDHash(imgEl) {
+    const W = 9, H = 8;
+    const cv = document.createElement('canvas');
+    cv.width = W; cv.height = H;
+    const ctx = cv.getContext('2d');
+    ctx.drawImage(imgEl, 0, 0, W, H);
+    const px = ctx.getImageData(0, 0, W, H).data;
+    let hash = '';
+    for (let r = 0; r < H; r++) {
+      for (let c = 0; c < W - 1; c++) {
+        const i1 = (r * W + c) * 4, i2 = i1 + 4;
+        const g1 = 0.299*px[i1] + 0.587*px[i1+1] + 0.114*px[i1+2];
+        const g2 = 0.299*px[i2] + 0.587*px[i2+1] + 0.114*px[i2+2];
+        hash += g1 > g2 ? '1' : '0';
+      }
+    }
+    return hash;
+  }
+
+  function handleImageUpload(e) {
+    const file = e.target.files[0];
+    if (!file || !file.type.startsWith('image/')) {
+      setStatus('Please upload an image file.');
+      return;
+    }
+    setStatus('Analysing…');
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const hash = computeDHash(img);
+        setComputedHash(hash);
+        setKeyImage(img.src);
+        setStatus('Image analysed. Review the hash below and save if correct.');
+      };
+      img.onerror = () => setStatus('Could not read image.');
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function saveKeyHash() {
+    if (!computedHash) {
+      addToast('No hash computed. Please upload an image first.', 'error');
+      return;
+    }
+    try {
+      localStorage.setItem('phmurt_admin_key_hash', computedHash);
+      setStoredHash(computedHash);
+      setComputedHash('');
+      setKeyImage(null);
+      setStatus('');
+      addToast('Admin key hash updated successfully.', 'success');
+    } catch (e) {
+      addToast('Failed to save hash: ' + e.message, 'error');
+    }
+  }
+
+  function clearKeyHash() {
+    if (!confirm('Clear the stored key hash? Admins will need to re-enter the image after page reload.')) return;
+    try {
+      localStorage.removeItem('phmurt_admin_key_hash');
+      setStoredHash('Not configured');
+      addToast('Admin key hash cleared.', 'success');
+    } catch (e) {
+      addToast('Failed to clear hash: ' + e.message, 'error');
+    }
+  }
+
+  return (
+    <div className="card" style={{gridColumn:'1 / -1'}}>
+      <div className="card-header"><h2>Admin Key Setup</h2></div>
+      <div className="card-body">
+        <p style={{fontSize:'13px',color:'var(--text-muted)',marginBottom:'20px',lineHeight:'1.7'}}>
+          Configure the admin access key image. All admins must upload this same image to access the admin panel. Upload a new image to update the hash across all admin accounts.
+        </p>
+
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'20px',marginBottom:'24px'}}>
+          <div>
+            <div style={{fontSize:'11px',letterSpacing:'1.5px',textTransform:'uppercase',color:'var(--text-muted)',display:'block',marginBottom:'10px',fontFamily:'Cinzel,serif'}}>Current Key Hash</div>
+            <div style={{background:'var(--bg-input)',border:'1px solid var(--border)',borderRadius:'3px',padding:'12px',fontSize:'11px',fontFamily:'monospace',color:'var(--crimson)',wordBreak:'break-all',minHeight:'60px',display:'flex',alignItems:'center',justifyContent:'center',textAlign:'center'}}>
+              {storedHash === 'Not configured' ? (
+                <span style={{color:'var(--text-muted)'}}>No key configured yet</span>
+              ) : storedHash.length > 50 ? (
+                storedHash
+              ) : (
+                storedHash
+              )}
+            </div>
+          </div>
+
+          <div>
+            <div style={{fontSize:'11px',letterSpacing:'1.5px',textTransform:'uppercase',color:'var(--text-muted)',display:'block',marginBottom:'10px',fontFamily:'Cinzel,serif'}}>Upload New Key Image</div>
+            <label style={{display:'block',border:'2px dashed var(--crimson-border)',borderRadius:'3px',padding:'20px',textAlign:'center',cursor:'pointer',transition:'all 0.2s',background:'var(--bg-input)'}}>
+              <div style={{fontSize:'24px',marginBottom:'8px'}}>🖼</div>
+              <div style={{fontSize:'12px',color:'var(--text-muted)',fontFamily:'Spectral,serif'}}>Click to upload image</div>
+              <input type="file" accept="image/*" onChange={handleImageUpload} style={{display:'none'}} />
+            </label>
+          </div>
+        </div>
+
+        {status && (
+          <div style={{padding:'10px 12px',background:'rgba(212,67,58,0.1)',border:'1px solid rgba(212,67,58,0.2)',borderRadius:'3px',fontSize:'12px',color:'var(--text-muted)',marginBottom:'16px'}}>
+            {status}
+          </div>
+        )}
+
+        {computedHash && (
+          <div style={{background:'var(--bg-mid)',border:'1px solid var(--border)',borderRadius:'3px',padding:'16px',marginBottom:'16px'}}>
+            <div style={{fontSize:'11px',letterSpacing:'1.5px',textTransform:'uppercase',color:'var(--text-muted)',display:'block',marginBottom:'10px',fontFamily:'Cinzel,serif'}}>New Hash Preview</div>
+            <div style={{background:'var(--bg)',border:'1px solid var(--border)',borderRadius:'3px',padding:'12px',fontSize:'11px',fontFamily:'monospace',color:'var(--crimson)',wordBreak:'break-all',marginBottom:'12px'}}>
+              {computedHash}
+            </div>
+            {keyImage && (
+              <div style={{marginBottom:'12px'}}>
+                <img src={keyImage} alt="Key preview" style={{maxWidth:'100%',maxHeight:'200px',borderRadius:'3px',border:'1px solid var(--border)'}} />
+              </div>
+            )}
+            <div style={{display:'flex',gap:'10px'}}>
+              <button onClick={saveKeyHash}
+                style={{flex:1,padding:'10px',background:'var(--crimson)',color:'#f5f0e8',border:'none',fontFamily:'Cinzel,serif',fontSize:'11px',letterSpacing:'1.5px',textTransform:'uppercase',cursor:'pointer',borderRadius:'3px'}}>
+                Save Key Hash
+              </button>
+              <button onClick={() => { setComputedHash(''); setKeyImage(null); setStatus(''); }}
+                style={{flex:1,padding:'10px',background:'transparent',color:'var(--text-muted)',border:'1px solid var(--border)',fontFamily:'Cinzel,serif',fontSize:'11px',letterSpacing:'1.5px',textTransform:'uppercase',cursor:'pointer',borderRadius:'3px'}}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {storedHash !== 'Not configured' && !computedHash && (
+          <div style={{display:'flex',gap:'10px'}}>
+            <button onClick={clearKeyHash}
+              style={{flex:1,padding:'10px',background:'transparent',color:'var(--danger)',border:'1px solid rgba(212,67,58,0.3)',fontFamily:'Cinzel,serif',fontSize:'11px',letterSpacing:'1.5px',textTransform:'uppercase',cursor:'pointer',borderRadius:'3px'}}>
+              Clear Stored Hash
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function ManageAdminsCard({ addToast }) {
+  const [admins, setAdmins]     = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [email, setEmail]       = useState('');
+  const [working, setWorking]   = useState(false);
+
+  function fetchAdmins() {
+    if (!sb) { setLoading(false); return; }
+    setLoading(true);
+    sb.from('profiles').select('id, name, email, is_admin, is_superuser')
+      .eq('is_admin', true).order('email')
+      .then(r => { setAdmins(r.data || []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }
+  useEffect(() => { fetchAdmins(); }, []);
+
+  async function grantAdmin() {
+    if (!sb) { addToast('Supabase not configured.', 'error'); return; }
+    const addr = email.trim().toLowerCase();
+    if (!addr) { addToast('Enter an email address.', 'error'); return; }
+    setWorking(true);
+    // Look up the user in profiles by email
+    const { data: rows, error } = await sb.from('profiles').select('id, email').eq('email', addr).limit(1);
+    if (error || !rows || rows.length === 0) {
+      addToast('No account found with that email. They must sign up first.', 'error');
+      setWorking(false); return;
+    }
+    const { error: upErr } = await sb.from('profiles').update({ is_admin: true }).eq('id', rows[0].id);
+    if (upErr) { addToast('Failed to grant admin: ' + upErr.message, 'error'); }
+    else       { addToast(addr + ' is now an admin.', 'success'); setEmail(''); fetchAdmins(); }
+    setWorking(false);
+  }
+
+  async function revokeAdmin(user) {
+    if (!sb) return;
+    if (!confirm('Remove admin access from ' + user.email + '?')) return;
+    const { error } = await sb.from('profiles').update({ is_admin: false }).eq('id', user.id);
+    if (error) addToast('Failed to revoke: ' + error.message, 'error');
+    else       { addToast(user.email + ' admin access removed.', 'success'); fetchAdmins(); }
+  }
+
+  return (
+    <div className="card" style={{gridColumn:'1 / -1'}}>
+      <div className="card-header"><h2>Manage Admin Accounts</h2></div>
+      <div className="card-body">
+        {!sb ? (
+          <p style={{fontSize:'13px',color:'var(--text-muted)'}}>Supabase must be configured to manage admins here.</p>
+        ) : (
+          <>
+            {/* Grant form */}
+            <div style={{display:'flex',gap:'10px',marginBottom:'24px',alignItems:'flex-end'}}>
+              <div style={{flex:1}}>
+                <label style={{fontSize:'11px',letterSpacing:'1.5px',textTransform:'uppercase',color:'var(--text-muted)',display:'block',marginBottom:'6px',fontFamily:'Cinzel,serif'}}>Grant Admin by Email</label>
+                <input
+                  type="email" value={email} onChange={e => setEmail(e.target.value)}
+                  placeholder="user@example.com"
+                  onKeyDown={e => e.key === 'Enter' && grantAdmin()}
+                  style={{width:'100%',padding:'9px 12px',background:'var(--bg-input)',border:'1px solid var(--border)',color:'var(--text)',fontFamily:'Spectral,serif',fontSize:'13px',borderRadius:'3px',outline:'none'}}
+                />
+              </div>
+              <button onClick={grantAdmin} disabled={working || !email.trim()}
+                style={{padding:'9px 20px',background:'var(--crimson)',color:'#f5f0e8',border:'none',fontFamily:'Cinzel,serif',fontSize:'11px',letterSpacing:'1.5px',textTransform:'uppercase',cursor:'pointer',borderRadius:'3px',opacity:(working||!email.trim())?0.5:1,whiteSpace:'nowrap'}}>
+                {working ? 'Granting…' : 'Grant Admin'}
+              </button>
+            </div>
+
+            {/* Admin list */}
+            {loading ? (
+              <p style={{fontSize:'13px',color:'var(--text-muted)'}}>Loading…</p>
+            ) : admins.length === 0 ? (
+              <p style={{fontSize:'13px',color:'var(--text-muted)'}}>No admin accounts found in the database.</p>
+            ) : (
+              <div className="data-table" style={{overflowX:'auto'}}>
+                <table>
+                  <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Action</th></tr></thead>
+                  <tbody>
+                    {admins.map(u => (
+                      <tr key={u.id}>
+                        <td>{u.name || '—'}</td>
+                        <td><code style={{fontSize:'12px'}}>{u.email}</code></td>
+                        <td>
+                          {u.is_superuser
+                            ? <span style={{fontSize:'11px',padding:'3px 8px',background:'rgba(212,67,58,0.15)',color:'var(--crimson)',border:'1px solid var(--crimson-border)',borderRadius:'3px'}}>Superuser</span>
+                            : <span style={{fontSize:'11px',padding:'3px 8px',background:'rgba(52,152,219,0.1)',color:'var(--info)',border:'1px solid rgba(52,152,219,0.2)',borderRadius:'3px'}}>Admin</span>
+                          }
+                        </td>
+                        <td>
+                          {u.is_superuser
+                            ? <span style={{fontSize:'11px',color:'var(--text-faint)'}}>Protected</span>
+                            : <button onClick={() => revokeAdmin(u)}
+                                style={{padding:'5px 12px',background:'rgba(212,67,58,0.12)',color:'var(--danger)',border:'1px solid rgba(212,67,58,0.2)',fontFamily:'Cinzel,serif',fontSize:'10px',letterSpacing:'1px',cursor:'pointer',borderRadius:'3px'}}>
+                                Revoke
+                              </button>
+                          }
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function SettingsPage({ addToast }) {
+  const sbConfigured = !!sb;
+
+  return (
+    <div>
+      <h1 style={{fontFamily:'Cinzel, serif',fontSize:'20px',fontWeight:600,letterSpacing:'1px',marginBottom:'24px'}}>Settings</h1>
+
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'24px'}}>
+        <div className="card">
+          <div className="card-header"><h2>Supabase Connection</h2></div>
+          <div className="card-body">
+            <div style={{padding:'12px',background: sbConfigured ? 'rgba(78,218,128,0.08)' : 'rgba(212,67,58,0.08)',border:`1px solid ${sbConfigured?'rgba(78,218,128,0.2)':'rgba(212,67,58,0.2)'}`,borderRadius:'4px',fontSize:'13px',color:sbConfigured?'#2e8b57':'#e8605a',marginBottom:'20px'}}>
+              {sbConfigured ? '✓ Supabase is connected. Cloud auth and data sync are active.' : '✗ Supabase is not configured. Open supabase-config.js and set your URL and anon key.'}
+            </div>
+            <p style={{fontSize:'13px',color:'var(--text-muted)',lineHeight:'1.7',margin:0}}>
+              To configure Supabase, open <code style={{background:'var(--bg)',padding:'2px 6px',borderRadius:'3px',fontSize:'11px'}}>supabase-config.js</code> and set <code style={{background:'var(--bg)',padding:'2px 6px',borderRadius:'3px',fontSize:'11px'}}>SUPABASE_URL</code> and <code style={{background:'var(--bg)',padding:'2px 6px',borderRadius:'3px',fontSize:'11px'}}>SUPABASE_ANON_KEY</code> from your Supabase project dashboard under Settings → API.
+            </p>
+          </div>
+        </div>
+
+        <div className="card">
+          <div className="card-header"><h2>Admin Access</h2></div>
+          <div className="card-body">
+            <p style={{fontSize:'13px',color:'var(--text-muted)',lineHeight:'1.7',marginBottom:'16px'}}>
+              Admin access is controlled by the email list in the gate script at the top of this file and in <code style={{background:'var(--bg)',padding:'2px 6px',borderRadius:'3px',fontSize:'11px'}}>phmurt-auth.js</code>.
+            </p>
+            {[
+              { label: '2-Factor Gate', desc: 'Image hash + account sign-in required', on: true },
+              { label: 'Session Cookies', desc: 'Auth persists via 30-day cookie backup', on: true },
+              { label: 'Cloud Sync', desc: 'Characters & campaigns synced to Supabase', on: sbConfigured },
+              { label: 'Visit Tracking', desc: 'Page loads logged to site_visits table', on: sbConfigured },
+            ].map((s, i) => (
+              <div key={i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 0',borderBottom:'1px solid var(--border-mid)'}}>
+                <div>
+                  <div style={{fontSize:'13px'}}>{s.label}</div>
+                  <div style={{fontSize:'11px',color:'var(--text-muted)'}}>{s.desc}</div>
+                </div>
+                <div className={`toggle ${s.on ? 'on' : ''}`} style={{pointerEvents:'none'}} />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <ManageAdminsCard addToast={addToast} />
+
+        <AdminKeySetupCard addToast={addToast} />
+
+        <div className="card" style={{gridColumn:'1 / -1'}}>
+          <div className="card-header"><h2>Database Schema</h2></div>
+          <div className="card-body">
+            <p style={{fontSize:'13px',color:'var(--text-muted)',marginBottom:'16px',lineHeight:'1.7'}}>
+              Run the SQL below in your Supabase SQL Editor to create the required tables and Row Level Security policies. This only needs to be done once.
+            </p>
+            <div className="key-block" style={{maxHeight:'200px'}}>
+{`-- profiles: auto-created on signup
+create table if not exists public.profiles (
+  id         uuid references auth.users on delete cascade primary key,
+  name       text,
+  email      text,
+  is_admin   boolean default false,
+  is_banned  boolean default false,
+  created_at timestamptz default now()
+);
+alter table public.profiles enable row level security;
+create policy "Public read"   on public.profiles for select using (true);
+create policy "Own update"    on public.profiles for update using (auth.uid() = id);
+create policy "Admin all"     on public.profiles for all using (
+  exists (select 1 from public.profiles where id = auth.uid() and is_admin = true));
+
+-- characters
+create table if not exists public.characters (
+  id           uuid primary key default gen_random_uuid(),
+  owner_id     uuid references auth.users on delete cascade not null,
+  data         jsonb not null default '{}',
+  builder_type text  default '5e',
+  created_at   timestamptz default now(),
+  updated_at   timestamptz default now()
+);
+alter table public.characters enable row level security;
+create policy "Own access" on public.characters for all using (auth.uid() = owner_id);
+
+-- campaigns
+create table if not exists public.campaigns (
+  id         uuid primary key default gen_random_uuid(),
+  owner_id   uuid references auth.users on delete cascade not null,
+  data       jsonb not null default '{}',
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+alter table public.campaigns enable row level security;
+create policy "Own access" on public.campaigns for all using (auth.uid() = owner_id);
+
+-- site_visits
+create table if not exists public.site_visits (
+  id         bigserial primary key,
+  page       text,
+  user_id    uuid,
+  visited_at timestamptz default now()
+);
+alter table public.site_visits enable row level security;
+create policy "Anon insert" on public.site_visits for insert with check (true);
+create policy "Admin read"  on public.site_visits for select using (
+  exists (select 1 from public.profiles where id = auth.uid() and is_admin = true));
+
+-- auto-create profile on signup
+create or replace function public.handle_new_user()
+returns trigger language plpgsql security definer as $$
+begin
+  insert into public.profiles (id, name, email)
+  values (new.id, coalesce(new.raw_user_meta_data->>'name', split_part(new.email,'@',1)), new.email);
+  return new;
+end;
+$$;
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created after insert on auth.users
+  for each row execute procedure public.handle_new_user();`}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════
+// MAIN APP
+// ═══════════════════════════════
+function AdminApp() {
+  const [page, setPage] = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [toasts, setToasts] = useState([]);
+  const toastId = useRef(0);
+
+  const addToast = useCallback((message, type = 'info') => {
+    const id = ++toastId.current;
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
+  }, []);
+
+  const navItems = [
+    { section: 'Overview' },
+    { id: 'dashboard',   label: 'Dashboard',   icon: Icons.Dashboard },
+    { section: 'Content' },
+    { id: 'users',       label: 'Users',        icon: Icons.Users },
+    { id: 'characters',  label: 'Characters',   icon: Icons.Keys },
+    { id: 'campaigns',   label: 'Campaigns',    icon: Icons.Tenants },
+    { section: 'Analytics' },
+    { id: 'traffic',     label: 'Site Traffic', icon: Icons.RateLimit },
+    { section: 'System' },
+    { id: 'settings',    label: 'Settings',     icon: Icons.Settings },
+  ];
+
+  const renderPage = () => {
+    switch(page) {
+      case 'dashboard':  return <DashboardPage onNavigate={setPage} />;
+      case 'users':      return <UsersPage addToast={addToast} />;
+      case 'characters': return <CharactersPage addToast={addToast} />;
+      case 'campaigns':  return <CampaignsPage addToast={addToast} />;
+      case 'traffic':    return <TrafficPage />;
+      case 'settings':   return <SettingsPage addToast={addToast} />;
+      default:           return <DashboardPage onNavigate={setPage} />;
+    }
+  };
+
+  const toggleTheme = () => {
+    document.documentElement.classList.toggle('light-mode');
+    const isLight = document.documentElement.classList.contains('light-mode');
+    localStorage.setItem('phmurt_theme', isLight ? 'light' : 'dark');
+  };
+
+  // Apply saved theme
+  useEffect(() => {
+    const saved = localStorage.getItem('phmurt_theme');
+    if (saved === 'light') document.documentElement.classList.add('light-mode');
+  }, []);
+
+  return (
+    <div className="admin-layout">
+      {/* Sidebar */}
+      <aside className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`}>
+        <div className="sidebar-brand">
+          <div>
+            <h1>Phmurt Studios</h1>
+            <div className="brand-sub">Admin Panel</div>
+          </div>
+        </div>
+        <nav className="sidebar-nav">
+          {navItems.map((item, i) => {
+            if (item.section) {
+              return <div key={i} className="sidebar-section"><span className="sidebar-section-label">{item.section}</span></div>;
+            }
+            const Icon = item.icon;
+            return (
+              <div className="sidebar-section" key={item.id}>
+                <div
+                  className={`sidebar-item ${page === item.id ? 'active' : ''}`}
+                  onClick={() => { setPage(item.id); setSidebarOpen(false); }}
+                >
+                  <Icon />
+                  {item.label}
+                </div>
+              </div>
+            );
+          })}
+        </nav>
+        <div className="sidebar-footer">
+          <a href="index.html" style={{color:'var(--crimson)',textDecoration:'none',fontSize:'12px',fontFamily:'Cinzel, serif',letterSpacing:'1px'}}>
+            ← Back to Site
+          </a>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="admin-main">
+        <div className="admin-topbar">
+          <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
+            <button className="mobile-toggle" onClick={() => setSidebarOpen(!sidebarOpen)}>
+              <Icons.Menu />
+            </button>
+            <span style={{fontFamily:'Cinzel, serif',fontSize:'10px',letterSpacing:'2px',textTransform:'uppercase',color:'var(--text-muted)'}}>
+              {navItems.find(n => n.id === page)?.label || 'Dashboard'}
+            </span>
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:'16px'}}>
+            <button className="btn btn-sm" onClick={toggleTheme} style={{border:'1px solid var(--crimson-border)',borderRadius:'50%',width:'32px',height:'32px',padding:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
+              <Icons.Moon />
+            </button>
+            <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+              <div style={{width:'28px',height:'28px',borderRadius:'50%',background:'var(--crimson)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',fontFamily:'Cinzel',color:'#f5f0e8'}}>A</div>
+              <span style={{fontSize:'13px'}}>Aaron M.</span>
+            </div>
+          </div>
+        </div>
+        <div className="admin-content">
+          {renderPage()}
+        </div>
+      </main>
+
+      <ToastContainer toasts={toasts} />
+    </div>
+  );
+}
+
+// ═══════════════════════════════
+// MOUNT
+// ═══════════════════════════════
+const root = ReactDOM.createRoot(document.getElementById('admin-root'));
+root.render(<AdminApp />);
+</script>
+</body>
+</html>

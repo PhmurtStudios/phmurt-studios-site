@@ -1,0 +1,2078 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
+  <title>Fantasy Map Generator</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Georgia', serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 20px;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 100%;
+      margin: 0 auto;
+      background: var(--bg-card);
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+      color: var(--text);
+      font-size: 32px;
+      font-weight: normal;
+      letter-spacing: 2px;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .control-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    label {
+      font-weight: bold;
+      color: var(--text);
+    }
+
+    input[type="number"] {
+      padding: 8px 12px;
+      border: 2px solid var(--border);
+      border-radius: 4px;
+      font-family: 'Georgia', serif;
+      font-size: 14px;
+      width: 120px;
+      background: var(--bg-mid);
+      color: var(--text);
+    }
+
+    button {
+      padding: 10px 24px;
+      background: var(--crimson);
+      color: var(--bg-card);
+      border: 2px solid var(--crimson);
+      border-radius: 4px;
+      font-family: 'Georgia', serif;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      letter-spacing: 1px;
+    }
+
+    button:hover {
+      background: var(--crimson-dim);
+      border-color: var(--crimson-dim);
+      transform: translateY(-2px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .status {
+      text-align: center;
+      margin: 15px 0;
+      height: 24px;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    .canvas-container {
+      display: flex;
+      justify-content: center;
+      margin: 30px 0;
+      overflow-x: auto;
+      background: var(--bg-mid);
+      border: 3px solid var(--border);
+      border-radius: 4px;
+      padding: 20px;
+    }
+
+    canvas {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      border: 1px solid rgba(212, 67, 58, 0.36);
+      background: #d7c69e;
+    }
+
+    .info {
+      text-align: center;
+      color: var(--text-muted);
+      margin-top: 20px;
+      font-size: 12px;
+    }
+  </style>
+  <script src="theme.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Fantasy Map Generator</h1>
+
+    <div class="controls">
+      <div class="control-group">
+        <label for="seed">Seed:</label>
+        <input type="number" id="seed" value="42">
+      </div>
+      <button onclick="generate()">Generate Map</button>
+      <button id="downloadBtn" onclick="downloadMap()" disabled>Download PNG</button>
+    </div>
+
+    <div class="status" id="status"></div>
+
+    <div class="canvas-container">
+      <canvas id="map"></canvas>
+    </div>
+
+    <div class="info">
+      <p>Click "Generate Map" to create a new fantasy world. Use seeds to recreate worlds.</p>
+    </div>
+  </div>
+
+  <script>
+    // ============================================================================
+    // CONFIGURATION
+    // ============================================================================
+    const CONFIG = {
+      MAP_W: 4800,
+      MAP_H: 3200,
+      GRID_COLS: 320,
+      GRID_ROWS: 214,
+      WATER_LEVEL: 0.46,
+      MARGIN: 70,
+      INK: '#1a1005',
+      INK_RGB: [26, 16, 5],
+      PARCHMENT: [215, 198, 158],
+    };
+
+    // ============================================================================
+    // SEEDED RNG (Mulberry32)
+    // ============================================================================
+    class SeededRNG {
+      constructor(seed) {
+        this.seed = seed >>> 0;
+        this.state = this.seed;
+      }
+
+      next() {
+        this.state |= 0;
+        this.state = (this.state + 0x6d2b79f5) | 0;
+        let t = Math.imul(this.state ^ (this.state >>> 15), 1 | this.state);
+        t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+      }
+
+      nextInt(min, max) {
+        return Math.floor(this.next() * (max - min + 1)) + min;
+      }
+
+      nextFloat(min, max) {
+        return this.next() * (max - min) + min;
+      }
+
+      shuffle(arr) {
+        const result = arr.slice();
+        for (let i = result.length - 1; i > 0; i--) {
+          const j = Math.floor(this.next() * (i + 1));
+          [result[i], result[j]] = [result[j], result[i]];
+        }
+        return result;
+      }
+    }
+
+    // ============================================================================
+    // NOISE GENERATION
+    // ============================================================================
+    class NoiseGenerator {
+      constructor(seed) {
+        this.rng = new SeededRNG(seed);
+        this.permutation = Array.from({length: 256}, (_, i) => i);
+        this.permutation = this.rng.shuffle(this.permutation);
+        this.perm = [...this.permutation, ...this.permutation];
+      }
+
+      _hash2d(x, y, seed) {
+        const h = Math.sin(x * 12.9898 + y * 78.233 + seed * 43758.5453) * 43758.5453;
+        return h - Math.floor(h);
+      }
+
+      _fade(t) {
+        return t * t * t * (t * (t * 6 - 15) + 10);
+      }
+
+      _lerp(t, a, b) {
+        return a + t * (b - a);
+      }
+
+      noise2D(x, y) {
+        const xi = Math.floor(x) & 255;
+        const yi = Math.floor(y) & 255;
+        const xf = x - Math.floor(x);
+        const yf = y - Math.floor(y);
+
+        const u = this._fade(xf);
+        const v = this._fade(yf);
+
+        const n00 = this._hash2d(xi, yi, 0);
+        const n10 = this._hash2d(xi + 1, yi, 0);
+        const n01 = this._hash2d(xi, yi + 1, 0);
+        const n11 = this._hash2d(xi + 1, yi + 1, 0);
+
+        const nx0 = this._lerp(u, n00, n10);
+        const nx1 = this._lerp(u, n01, n11);
+        return this._lerp(v, nx0, nx1);
+      }
+
+      fractalNoise(x, y, octaves = 4, persistence = 0.5, lacunarity = 2.0, seed = 0) {
+        let result = 0;
+        let amplitude = 1;
+        let frequency = 1;
+        let maxValue = 0;
+
+        for (let i = 0; i < octaves; i++) {
+          result += this.noise2D(x * frequency, y * frequency + seed * i) * amplitude;
+          maxValue += amplitude;
+          amplitude *= persistence;
+          frequency *= lacunarity;
+        }
+
+        return result / maxValue;
+      }
+    }
+
+    // ============================================================================
+    // NAME GENERATOR
+    // ============================================================================
+    class NameGenerator {
+      constructor(rng) {
+        this.rng = rng;
+
+        this.onsets = ['Br', 'Cr', 'Dr', 'Fr', 'Gr', 'Pr', 'Tr', 'Str',
+                       'Sh', 'Th', 'Ch', 'Wh', 'Kn', 'Ph', 'Qu', 'Sch',
+                       'B', 'C', 'D', 'F', 'G', 'H', 'K', 'L', 'M', 'N',
+                       'P', 'R', 'S', 'T', 'V', 'W', 'Y', 'Z', ''];
+
+        this.vowels = ['a', 'e', 'i', 'o', 'u', 'ae', 'ai', 'au', 'ei', 'eu',
+                       'ia', 'ie', 'io', 'oi', 'ou', 'ue', 'ui'];
+
+        this.codas = ['n', 'd', 'r', 's', 't', 'th', 'sh', 'ch', 'ck', 'ng',
+                      'nd', 'nt', 'st', 'ld', 'rd', 'nk', 'lt', 'mp', 'rt', ''];
+
+        this.worldStarts = ['Vol', 'Dar', 'Aes', 'Kal', 'Thel', 'Mor', 'Val',
+                            'Ael', 'Cor', 'Kel', 'Syl', 'Tar', 'Vel', 'Zar'];
+
+        this.worldEnds = ['mor', 'iar', 'eth', 'orn', 'wen', 'tyr', 'dor',
+                          'ath', 'ion', 'ara', 'ish', 'ium', 'ia', 'us'];
+
+        this.settlementPrefixes = ['New', 'Old', 'Great', 'Fair', 'Stone',
+                                   'Silver', 'Golden', 'Twin', 'High', 'Low',
+                                   'North', 'South', 'East', 'West', 'Red', 'Blue'];
+
+        this.settlementSuffixes = ['ford', 'field', 'wood', 'stone', 'bridge',
+                                   'haven', 'port', 'shire', 'dale', 'town',
+                                   'hall', 'keep', 'holm', 'mere', 'side'];
+      }
+
+      _generateSyllable() {
+        const onset = this.rng.shuffle(this.onsets)[0];
+        const vowel = this.rng.shuffle(this.vowels)[0];
+        const coda = this.rng.shuffle(this.codas)[0];
+        return onset + vowel + coda;
+      }
+
+      worldName() {
+        const start = this.rng.shuffle(this.worldStarts)[0];
+        const end = this.rng.shuffle(this.worldEnds)[0];
+        return start + end;
+      }
+
+      settlementName() {
+        if (this.rng.next() < 0.4) {
+          return this.rng.shuffle(this.settlementPrefixes)[0] +
+                 this.rng.shuffle(this.settlementSuffixes)[0];
+        } else {
+          const syllables = 2 + Math.floor(this.rng.next() * 2);
+          let name = '';
+          for (let i = 0; i < syllables; i++) {
+            name += this._generateSyllable();
+          }
+          return name.charAt(0).toUpperCase() + name.slice(1);
+        }
+      }
+
+      kingdomName() {
+        return this._generateSyllable() + this._generateSyllable();
+      }
+
+      regionName() {
+        const parts = ['Mount', 'Sea', 'Wild', 'Dark', 'Silver', 'Golden',
+                       'Stone', 'Frost', 'Fire', 'Wind', 'Shadow', 'Light'];
+        const suffixes = ['peak', 'lands', 'wood', 'moor', 'vale', 'forest',
+                          'sea', 'marsh', 'waste', 'plain', 'mountains'];
+        return this.rng.shuffle(parts)[0] + this.rng.shuffle(suffixes)[0];
+      }
+    }
+
+    // ============================================================================
+    // WORLD GENERATION
+    // ============================================================================
+
+    function generateHeightmap(rng) {
+      const cols = CONFIG.GRID_COLS;
+      const rows = CONFIG.GRID_ROWS;
+      const hmap = new Float32Array(cols * rows);
+      const noise = new NoiseGenerator(rng.nextInt(0, 1000000));
+      const noise2 = new NoiseGenerator(rng.nextInt(0, 1000000));
+      const noise3 = new NoiseGenerator(rng.nextInt(0, 1000000));
+
+      // Step 1: Base continent shapes using large-scale noise
+      // The key: use LARGE features (low frequency) for continent vs ocean,
+      // then add smaller features for terrain variety
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const nx = c / cols;  // 0-1
+          const ny = r / rows;  // 0-1
+
+          // Large continent shapes (low freq)
+          const continent = noise.fractalNoise(nx * 3, ny * 3, 4, 0.55, 2.0, 0);
+          // Medium terrain features
+          const terrain = noise2.fractalNoise(nx * 6, ny * 6, 4, 0.50, 2.0, 50);
+          // Fine detail
+          const detail = noise3.fractalNoise(nx * 12, ny * 12, 3, 0.45, 2.0, 100);
+
+          // Combine: continent shape dominates, terrain adds variety, detail adds texture
+          let h = continent * 0.60 + terrain * 0.28 + detail * 0.12;
+
+          // Edge falloff — push edges toward ocean
+          const edgeX = Math.min(nx, 1 - nx) * 2;  // 0 at edges, 1 in center
+          const edgeY = Math.min(ny, 1 - ny) * 2;
+          const edgeDist = Math.min(edgeX, edgeY);
+          const edgeFalloff = Math.min(1, edgeDist * 3);  // ramp up quickly from edge
+          h *= edgeFalloff;
+
+          hmap[r * cols + c] = Math.max(0, Math.min(1, h));
+        }
+      }
+
+      // Step 2: Tectonic uplift — place 3-5 continental seed points and raise terrain near them
+      const nSeeds = 3 + Math.floor(rng.next() * 3);
+      const seeds = [];
+      for (let i = 0; i < nSeeds; i++) {
+        seeds.push({
+          r: rng.nextInt(rows * 0.15, rows * 0.85),
+          c: rng.nextInt(cols * 0.15, cols * 0.85),
+          radius: rng.nextFloat(40, 90),  // cells
+          strength: rng.nextFloat(0.15, 0.35)
+        });
+      }
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const idx = r * cols + c;
+          for (const s of seeds) {
+            const dist = Math.hypot(r - s.r, c - s.c);
+            if (dist < s.radius) {
+              const t = 1 - dist / s.radius;
+              hmap[idx] += t * t * s.strength;
+            }
+          }
+          hmap[idx] = Math.min(1, hmap[idx]);
+        }
+      }
+
+      // Step 3: Mountain ridges along intersections between seed regions
+      for (let i = 0; i < nSeeds; i++) {
+        for (let j = i + 1; j < nSeeds; j++) {
+          const s1 = seeds[i], s2 = seeds[j];
+          const midR = (s1.r + s2.r) / 2;
+          const midC = (s1.c + s2.c) / 2;
+          const dist = Math.hypot(s1.r - s2.r, s1.c - s2.c);
+          if (dist > 150) continue;  // too far apart
+          const ridgeRadius = rng.nextFloat(12, 25);
+          const ridgeStrength = rng.nextFloat(0.12, 0.25);
+          // Draw ridge along the perpendicular bisector
+          const angle = Math.atan2(s2.r - s1.r, s2.c - s1.c) + Math.PI / 2;
+          for (let t = -30; t <= 30; t++) {
+            const rr = Math.round(midR + Math.sin(angle) * t);
+            const rc = Math.round(midC + Math.cos(angle) * t);
+            if (rr < 0 || rr >= rows || rc < 0 || rc >= cols) continue;
+            for (let dr = -ridgeRadius; dr <= ridgeRadius; dr++) {
+              for (let dc = -ridgeRadius; dc <= ridgeRadius; dc++) {
+                const nr = rr + dr, nc = rc + dc;
+                if (nr < 0 || nr >= rows || nc < 0 || nc >= cols) continue;
+                const d = Math.hypot(dr, dc);
+                if (d < ridgeRadius) {
+                  const ridge_t = 1 - d / ridgeRadius;
+                  const noiseWobble = noise.fractalNoise(nc / cols * 20, nr / rows * 20, 2, 0.5, 2, 200);
+                  hmap[nr * cols + nc] = Math.min(1, hmap[nr * cols + nc] + ridge_t * ridgeStrength * (0.5 + noiseWobble));
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Step 4: Gaussian blur for smooth coastlines
+      for (let pass = 0; pass < 2; pass++) {
+        const blurMap = new Float32Array(hmap);
+        for (let r = 1; r < rows - 1; r++) {
+          for (let c = 1; c < cols - 1; c++) {
+            const idx = r * cols + c;
+            blurMap[idx] = (
+              hmap[idx] * 4 +
+              hmap[idx - 1] + hmap[idx + 1] +
+              hmap[idx - cols] + hmap[idx + cols]
+            ) / 8;
+          }
+        }
+        for (let i = 0; i < hmap.length; i++) hmap[i] = blurMap[i];
+      }
+
+      // Step 5: Adaptive water level for 35-55% land coverage
+      const sorted = Array.from(hmap).sort((a, b) => a - b);
+      const targetLand = 0.45;  // want ~45% land
+      const waterIdx = Math.floor(sorted.length * (1 - targetLand));
+      CONFIG.WATER_LEVEL = sorted[waterIdx];
+      console.log('  Water level set to', CONFIG.WATER_LEVEL.toFixed(3),
+                  'for', (targetLand * 100).toFixed(0) + '% land');
+
+      return hmap;
+    }
+
+    function generateClimate(hmap, rng) {
+      const cols = CONFIG.GRID_COLS;
+      const rows = CONFIG.GRID_ROWS;
+      const noise = new NoiseGenerator(rng.nextInt(0, 1000000));
+      const temperature = new Float32Array(cols * rows);
+      const moisture = new Float32Array(cols * rows);
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const idx = r * cols + c;
+          const h = hmap[idx];
+
+          // Temperature
+          const latGrad = 1 - (r / rows); // Colder at top
+          const elevCooling = Math.max(0, h - 0.5) * 0.8;
+          const tempNoise = noise.fractalNoise(c / cols, r / rows, 3, 0.6, 2.0, 50);
+          temperature[idx] = Math.max(0, Math.min(1, latGrad * 0.6 + tempNoise * 0.3 - elevCooling));
+
+          // Moisture
+          const moistBase = noise.fractalNoise(c / cols * 2, r / rows * 2, 3, 0.6, 2.0, 100);
+          let moist = moistBase * 0.5 + 0.25;
+
+          // Coastal boost
+          const isWater = h <= CONFIG.WATER_LEVEL;
+          if (isWater) moist = Math.max(0.8, moist);
+
+          // Elevation orographic
+          if (h > 0.6) moist = Math.min(1, moist + (h - 0.6) * 0.5);
+
+          moisture[idx] = Math.max(0, Math.min(1, moist));
+        }
+      }
+
+      return {temperature, moisture};
+    }
+
+    function computeCoastDistance(hmap) {
+      const cols = CONFIG.GRID_COLS;
+      const rows = CONFIG.GRID_ROWS;
+      const dist = new Int16Array(cols * rows);
+      const queue = [];
+
+      // Find all coastal cells
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const idx = r * cols + c;
+          const isWater = hmap[idx] <= CONFIG.WATER_LEVEL;
+          let isCoast = isWater;
+
+          for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              const nr = r + dr;
+              const nc = c + dc;
+              if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+                const nidx = nr * cols + nc;
+                const nWater = hmap[nidx] <= CONFIG.WATER_LEVEL;
+                if (isWater !== nWater) {
+                  isCoast = true;
+                }
+              }
+            }
+          }
+
+          if (isCoast) {
+            dist[idx] = 0;
+            queue.push([r, c]);
+          } else {
+            dist[idx] = 999;
+          }
+        }
+      }
+
+      // BFS
+      while (queue.length > 0) {
+        const [r, c] = queue.shift();
+        const idx = r * cols + c;
+
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            const nr = r + dr;
+            const nc = c + dc;
+            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+              const nidx = nr * cols + nc;
+              const d = dist[idx] + (Math.abs(dr) + Math.abs(dc) === 2 ? 1.4 : 1);
+              if (d < dist[nidx]) {
+                dist[nidx] = d;
+                queue.push([nr, nc]);
+              }
+            }
+          }
+        }
+      }
+
+      return dist;
+    }
+
+    function assignBiomes(hmap, temperature, moisture, coastDist) {
+      const cols = CONFIG.GRID_COLS;
+      const rows = CONFIG.GRID_ROWS;
+      const biomes = new Array(cols * rows);
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const idx = r * cols + c;
+          const h = hmap[idx];
+          const t = temperature[idx];
+          const m = moisture[idx];
+          const cd = coastDist[idx];
+
+          if (h <= CONFIG.WATER_LEVEL) {
+            biomes[idx] = 'water';
+          } else if (h > 0.80) {
+            biomes[idx] = 'snow_peak';
+          } else if (h > 0.63) {
+            biomes[idx] = 'mountain';
+          } else if (h > 0.52) {
+            biomes[idx] = 'hills';
+          } else if (t < 0.2) {
+            biomes[idx] = 'tundra';
+          } else if (m < 0.22 && t > 0.58) {
+            biomes[idx] = 'desert';
+          } else if (m > 0.62) {
+            biomes[idx] = 'dense_forest';
+          } else if (m > 0.38) {
+            biomes[idx] = 'forest';
+          } else if (m > 0.22) {
+            biomes[idx] = 'grassland';
+          } else if (cd > 8 && m > 0.15) {
+            biomes[idx] = 'forest';
+          } else if (cd > 22 && m > 0.10) {
+            biomes[idx] = 'forest';
+          } else {
+            biomes[idx] = 'plains';
+          }
+        }
+      }
+
+      return biomes;
+    }
+
+    function detectRidgelines(hmap, biomes) {
+      const cols = CONFIG.GRID_COLS;
+      const rows = CONFIG.GRID_ROWS;
+      const ridgelines = [];
+      const visited = new Set();
+
+      function traceRidge(startR, startC) {
+        const path = [];
+        const q = [[startR, startC]];
+        const local = new Set();
+        local.add(`${startR},${startC}`);
+
+        while (q.length > 0) {
+          const [r, c] = q.shift();
+          const key = `${r},${c}`;
+          if (visited.has(key)) continue;
+          visited.add(key);
+          path.push({r, c});
+
+          for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              const nr = r + dr;
+              const nc = c + dc;
+              const nkey = `${nr},${nc}`;
+              if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && !local.has(nkey)) {
+                const idx = nr * cols + nc;
+                const h = hmap[idx];
+                const bio = biomes[idx];
+                if (h > 0.52 && (bio === 'mountain' || bio === 'snow_peak' || bio === 'hills')) {
+                  local.add(nkey);
+                  q.push([nr, nc]);
+                }
+              }
+            }
+          }
+        }
+
+        return path.length > 5 ? path : null;
+      }
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const idx = r * cols + c;
+          const h = hmap[idx];
+          const bio = biomes[idx];
+          const key = `${r},${c}`;
+          if (h > 0.60 && (bio === 'mountain' || bio === 'snow_peak') && !visited.has(key)) {
+            const ridge = traceRidge(r, c);
+            if (ridge) ridgelines.push(ridge);
+          }
+        }
+      }
+
+      return ridgelines;
+    }
+
+    function placeSettlements(hmap, biomes, coastDist, rng, namer) {
+      const cols = CONFIG.GRID_COLS;
+      const rows = CONFIG.GRID_ROWS;
+      const settlements = [];
+      const occupied = new Set();
+
+      function canPlace(r, c, minDist) {
+        const idx = r * cols + c;
+        if (hmap[idx] <= CONFIG.WATER_LEVEL) return false;
+        if (biomes[idx] === 'snow_peak' || biomes[idx] === 'desert') return false;
+
+        for (const s of settlements) {
+          if (Math.hypot(s.r - r, s.c - c) < minDist) return false;
+        }
+        return true;
+      }
+
+      function scoreCell(r, c) {
+        const idx = r * cols + c;
+        const h = hmap[idx];
+        const cd = coastDist[idx];
+        const bio = biomes[idx];
+
+        let score = 0;
+        score += (0.5 - Math.abs(h - 0.5)) * 100; // Flatness
+        score += Math.min(cd / 10, 1) * 50; // Coast proximity (but not too close)
+        score -= Math.abs(cd - 5) < 2 ? 30 : 0; // Avoid immediate coast
+        return score;
+      }
+
+      const nCapitals = 3;
+      const nCities = 8;
+      const nTowns = 15;
+      const nHamlets = 20;
+      const nVillages = 40;
+
+      // Place capitals
+      let attempts = 0;
+      while (settlements.filter(s => s.type === 'capital').length < nCapitals && attempts < 500) {
+        const r = rng.nextInt(rows * 0.2, rows * 0.8);
+        const c = rng.nextInt(cols * 0.2, cols * 0.8);
+        if (canPlace(r, c, 40)) {
+          settlements.push({
+            r, c, type: 'capital', name: namer.settlementName(),
+            score: scoreCell(r, c)
+          });
+        }
+        attempts++;
+      }
+
+      // Place cities
+      attempts = 0;
+      while (settlements.filter(s => s.type === 'city').length < nCities && attempts < 1000) {
+        const r = rng.nextInt(0, rows - 1);
+        const c = rng.nextInt(0, cols - 1);
+        if (canPlace(r, c, 25)) {
+          settlements.push({
+            r, c, type: 'city', name: namer.settlementName(),
+            score: scoreCell(r, c)
+          });
+        }
+        attempts++;
+      }
+
+      // Place towns
+      attempts = 0;
+      while (settlements.filter(s => s.type === 'town').length < nTowns && attempts < 1500) {
+        const r = rng.nextInt(0, rows - 1);
+        const c = rng.nextInt(0, cols - 1);
+        if (canPlace(r, c, 18)) {
+          settlements.push({
+            r, c, type: 'town', name: namer.settlementName(),
+            score: scoreCell(r, c)
+          });
+        }
+        attempts++;
+      }
+
+      // Place hamlets
+      attempts = 0;
+      while (settlements.filter(s => s.type === 'hamlet').length < nHamlets && attempts < 2000) {
+        const r = rng.nextInt(0, rows - 1);
+        const c = rng.nextInt(0, cols - 1);
+        if (canPlace(r, c, 12)) {
+          settlements.push({
+            r, c, type: 'hamlet', name: namer.settlementName(),
+            score: scoreCell(r, c)
+          });
+        }
+        attempts++;
+      }
+
+      // Place villages
+      attempts = 0;
+      while (settlements.filter(s => s.type === 'village').length < nVillages && attempts < 2500) {
+        const r = rng.nextInt(0, rows - 1);
+        const c = rng.nextInt(0, cols - 1);
+        if (canPlace(r, c, 8)) {
+          settlements.push({
+            r, c, type: 'village', name: namer.settlementName(),
+            score: scoreCell(r, c)
+          });
+        }
+        attempts++;
+      }
+
+      return settlements;
+    }
+
+    function assignKingdoms(hmap, biomes, settlements, rng, namer) {
+      const cols = CONFIG.GRID_COLS;
+      const rows = CONFIG.GRID_ROWS;
+      const kingdomMap = new Int8Array(cols * rows).fill(-1);
+      const kingdoms = [];
+      const capitals = settlements.filter(s => s.type === 'capital');
+
+      // Assign kingdom colors
+      const colors = [
+        '#cc7744', '#4488cc', '#44cc44', '#cccc44', '#cc44cc', '#44cccc',
+        '#884444', '#448844', '#444488', '#888844', '#884488', '#448888'
+      ];
+
+      // Create kingdoms from capitals
+      for (let k = 0; k < capitals.length; k++) {
+        const cap = capitals[k];
+        kingdoms.push({
+          id: k,
+          name: namer.kingdomName(),
+          capitalR: cap.r,
+          capitalC: cap.c,
+          color: colors[k % colors.length],
+          cells: new Set()
+        });
+      }
+
+      // Voronoi flood-fill from capitals
+      const queue = [];
+      for (let k = 0; k < kingdoms.length; k++) {
+        const {capitalR, capitalC} = kingdoms[k];
+        kingdomMap[capitalR * cols + capitalC] = k;
+        queue.push([capitalR, capitalC, k]);
+        kingdoms[k].cells.add(`${capitalR},${capitalC}`);
+      }
+
+      while (queue.length > 0) {
+        const [r, c, kid] = queue.shift();
+
+        for (let dr = -1; dr <= 1; dr++) {
+          for (let dc = -1; dc <= 1; dc++) {
+            const nr = r + dr;
+            const nc = c + dc;
+            if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+              const nidx = nr * cols + nc;
+              const h = hmap[nidx];
+              if (h > CONFIG.WATER_LEVEL && kingdomMap[nidx] === -1) {
+                kingdomMap[nidx] = kid;
+                kingdoms[kid].cells.add(`${nr},${nc}`);
+                queue.push([nr, nc, kid]);
+              }
+            }
+          }
+        }
+      }
+
+      return {kingdomMap, kingdoms};
+    }
+
+    // ============================================================================
+    // DRAWING FUNCTIONS
+    // ============================================================================
+
+    function applyNoiseOffset(val, amount, seed) {
+      const noise = new NoiseGenerator(seed);
+      return val + noise.fractalNoise(val * 10, seed, 2, 0.5, 2.0, 0) * amount - amount / 2;
+    }
+
+    function drawMountainPeak(ctx, x, y, size, options = {}) {
+      const {isSolo = false, isSnow = false, hVal = 0.5, facing = 'left', seed = 0} = options;
+      const sc = size / 40;
+      const baseY = y + sc * 4;
+      const peakH = size * 3.5;
+      const halfW = size * 0.9;
+      const tipX = x + (hVal - 0.5) * 4;
+      const tipY = baseY - peakH;
+      const noise = new NoiseGenerator(seed);
+
+      ctx.save();
+
+      // Left companion (75% size)
+      if (!isSolo) {
+        const cscale = 0.75;
+        const cx = x - size * 1.2;
+        const cbaseY = y + sc * 2;
+        const cpeakH = size * 3.2 * cscale;
+        const chalfW = size * 0.8 * cscale;
+        const ctipY = cbaseY - cpeakH;
+
+        // Shadow left face
+        ctx.fillStyle = 'rgba(26, 16, 5, 0.85)';
+        ctx.beginPath();
+        ctx.moveTo(cx - chalfW, cbaseY);
+        ctx.lineTo(cx, ctipY);
+        ctx.lineTo(cx, cbaseY);
+        ctx.closePath();
+        ctx.fill();
+
+        // Right face light
+        ctx.fillStyle = 'rgba(215, 198, 158, 0.9)';
+        ctx.beginPath();
+        ctx.moveTo(cx, cbaseY);
+        ctx.lineTo(cx, ctipY);
+        ctx.lineTo(cx + chalfW, cbaseY);
+        ctx.closePath();
+        ctx.fill();
+
+        // Outline
+        ctx.strokeStyle = '#1a1005';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - chalfW, cbaseY);
+        ctx.lineTo(cx, ctipY);
+        ctx.lineTo(cx + chalfW, cbaseY);
+        ctx.closePath();
+        ctx.stroke();
+      }
+
+      // Right companion (60% size)
+      if (!isSolo) {
+        const cscale = 0.60;
+        const cx = x + size * 1.3;
+        const cbaseY = y + sc * 3;
+        const cpeakH = size * 3.3 * cscale;
+        const chalfW = size * 0.85 * cscale;
+        const ctipY = cbaseY - cpeakH;
+
+        // Shadow left
+        ctx.fillStyle = 'rgba(26, 16, 5, 0.80)';
+        ctx.beginPath();
+        ctx.moveTo(cx - chalfW, cbaseY);
+        ctx.lineTo(cx, ctipY);
+        ctx.lineTo(cx, cbaseY);
+        ctx.closePath();
+        ctx.fill();
+
+        // Right
+        ctx.fillStyle = 'rgba(215, 198, 158, 0.9)';
+        ctx.beginPath();
+        ctx.moveTo(cx, cbaseY);
+        ctx.lineTo(cx, ctipY);
+        ctx.lineTo(cx + chalfW, cbaseY);
+        ctx.closePath();
+        ctx.fill();
+
+        // Outline
+        ctx.strokeStyle = '#1a1005';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cx - chalfW, cbaseY);
+        ctx.lineTo(cx, ctipY);
+        ctx.lineTo(cx + chalfW, cbaseY);
+        ctx.closePath();
+        ctx.stroke();
+      }
+
+      // Main peak - left shadow face
+      ctx.fillStyle = 'rgba(26, 16, 5, 0.88)';
+      ctx.beginPath();
+      ctx.moveTo(x - halfW, baseY);
+      ctx.lineTo(tipX, tipY);
+      ctx.lineTo(x, baseY);
+      ctx.closePath();
+      ctx.fill();
+
+      // Contour lines in shadow
+      ctx.strokeStyle = 'rgba(26, 16, 5, 0.4)';
+      ctx.lineWidth = 1.5;
+      for (let i = 1; i <= 3; i++) {
+        const frac = i / 4;
+        const lx1 = x - halfW + (tipX - (x - halfW)) * frac;
+        const ly1 = baseY + (tipY - baseY) * frac;
+        const lx2 = x + (tipX - x) * frac * 0.6;
+        const ly2 = ly1;
+        ctx.beginPath();
+        ctx.moveTo(lx1, ly1);
+        ctx.quadraticCurveTo((lx1 + lx2) / 2, ly1 + 3, lx2, ly2);
+        ctx.stroke();
+      }
+
+      // Right sunlit face - empty/parchment
+      ctx.fillStyle = 'rgba(215, 198, 158, 0.95)';
+      ctx.beginPath();
+      ctx.moveTo(x, baseY);
+      ctx.lineTo(tipX, tipY);
+      ctx.lineTo(x + halfW, baseY);
+      ctx.closePath();
+      ctx.fill();
+
+      // Rock strata on right
+      ctx.strokeStyle = 'rgba(26, 16, 5, 0.3)';
+      ctx.lineWidth = 1;
+      for (let i = 1; i <= 2; i++) {
+        const frac = 0.3 + i * 0.25;
+        const sx1 = tipX + (x + halfW - tipX) * frac;
+        const sy1 = tipY + (baseY - tipY) * frac;
+        const sx2 = x + halfW;
+        const sy2 = baseY;
+        ctx.beginPath();
+        ctx.moveTo(sx1, sy1);
+        ctx.lineTo(sx2, sy2);
+        ctx.stroke();
+      }
+
+      // Left outline (bold shadow side)
+      ctx.strokeStyle = '#1a1005';
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      ctx.moveTo(x - halfW, baseY);
+      ctx.lineTo(tipX, tipY);
+      ctx.stroke();
+
+      // Right outline (thin)
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(tipX, tipY);
+      ctx.lineTo(x + halfW, baseY);
+      ctx.stroke();
+
+      // Ridge line (center divide)
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(x, baseY);
+      ctx.lineTo(tipX, tipY);
+      ctx.stroke();
+
+      // Base scree
+      ctx.strokeStyle = 'rgba(26, 16, 5, 0.5)';
+      ctx.lineWidth = 1.5;
+      for (let i = 0; i < 4; i++) {
+        const sx = x - halfW * 0.4 + i * halfW * 0.2;
+        ctx.beginPath();
+        ctx.moveTo(sx, baseY);
+        ctx.lineTo(sx + halfW * 0.08, baseY + 6);
+        ctx.stroke();
+      }
+
+      // Snow cap
+      if (isSnow) {
+        ctx.fillStyle = 'rgba(245, 245, 245, 0.95)';
+        ctx.beginPath();
+        const snowH = peakH * 0.25;
+        ctx.moveTo(tipX, tipY);
+        ctx.lineTo(x - halfW * 0.3, baseY - snowH);
+        ctx.lineTo(x + halfW * 0.3, baseY - snowH);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.strokeStyle = '#1a1005';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function drawCloudWisp(ctx, x, y, size, seed) {
+      const noise = new NoiseGenerator(seed);
+      const nBumps = 4 + Math.floor(noise.fractalNoise(x, y, 2, 0.5, 2.0, 0) * 4);
+
+      ctx.save();
+      ctx.strokeStyle = 'rgba(26, 16, 5, 0.5)';
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+
+      ctx.beginPath();
+      let cx = x - size / 2;
+      for (let i = 0; i < nBumps; i++) {
+        const rand = noise.fractalNoise(i * 10, seed, 2, 0.5, 2.0, 0);
+        const r = (size / nBumps) * (0.6 + rand * 0.8);
+        ctx.arc(cx + r, y, r, Math.PI, 0, false);
+        cx += r * 2 * 0.75;
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function drawPineTree(ctx, x, y, height, seed) {
+      const noise = new NoiseGenerator(seed);
+      const trunkH = Math.max(3, height * 0.15);
+      const trunkW = Math.max(1.5, height * 0.06);
+      const baseY = y;
+
+      ctx.save();
+
+      // Trunk
+      ctx.fillStyle = 'rgba(26, 16, 5, 0.82)';
+      ctx.fillRect(x - trunkW, baseY - trunkH, trunkW * 2, trunkH);
+
+      // Foliage tiers
+      const foliageBase = baseY - trunkH;
+      const foliageH = height - trunkH;
+      const nTiers = height > 25 ? 4 : 3;
+
+      ctx.fillStyle = 'rgba(26, 16, 5, 0.75)';
+      for (let t = 0; t < nTiers; t++) {
+        const tierFrac = t / nTiers;
+        const tierBottom = foliageBase - foliageH * tierFrac;
+        const tierTop = foliageBase - foliageH * (tierFrac + 1 / nTiers);
+        const halfW = (height * 0.32) * (1 - tierFrac * 0.55);
+
+        ctx.beginPath();
+        ctx.moveTo(x, tierTop);
+
+        // Right zigzag
+        const steps = 3;
+        for (let s = 1; s <= steps; s++) {
+          const sf = s / steps;
+          const jx = x + halfW * sf;
+          const jy = tierTop + (tierBottom - tierTop) * sf;
+          ctx.lineTo(jx, jy);
+          if (s < steps) {
+            const jag = tierBottom - tierTop;
+            ctx.lineTo(jx - halfW * 0.15, jy + jag * 0.12);
+          }
+        }
+
+        // Left zigzag
+        for (let s = steps; s >= 1; s--) {
+          const sf = s / steps;
+          const jx = x - halfW * sf;
+          const jy = tierTop + (tierBottom - tierTop) * sf;
+          ctx.lineTo(jx, jy);
+          if (s > 1) {
+            const jag = tierBottom - tierTop;
+            ctx.lineTo(jx + halfW * 0.15, jy + jag * 0.12);
+          }
+        }
+
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      ctx.restore();
+    }
+
+    function drawCapitalCastle(ctx, x, y, sc) {
+      ctx.save();
+
+      const baseW = 45 * sc;
+      const baseH = 35 * sc;
+
+      // Main keep
+      ctx.fillStyle = 'rgba(26, 16, 5, 0.8)';
+      ctx.fillRect(x - baseW / 2, y - baseH, baseW, baseH);
+
+      // Crenellations
+      ctx.strokeStyle = '#1a1005';
+      ctx.lineWidth = 2 * sc;
+      ctx.beginPath();
+      ctx.moveTo(x - baseW / 2, y - baseH);
+      const crens = 6;
+      for (let i = 0; i <= crens; i++) {
+        const cx = x - baseW / 2 + (i / crens) * baseW;
+        if (i % 2 === 0) {
+          ctx.lineTo(cx, y - baseH);
+          ctx.lineTo(cx, y - baseH - 8 * sc);
+        } else {
+          ctx.lineTo(cx, y - baseH - 8 * sc);
+          ctx.lineTo(cx, y - baseH);
+        }
+      }
+      ctx.stroke();
+
+      // Central spire
+      const spireH = 90 * sc;
+      ctx.fillStyle = 'rgba(26, 16, 5, 0.9)';
+      ctx.beginPath();
+      ctx.moveTo(x - 6 * sc, y - baseH);
+      ctx.lineTo(x, y - baseH - spireH);
+      ctx.lineTo(x + 6 * sc, y - baseH);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = '#1a1005';
+      ctx.lineWidth = 2.5 * sc;
+      ctx.stroke();
+
+      // Left spire
+      const leftSH = 75 * sc;
+      ctx.fillStyle = 'rgba(26, 16, 5, 0.85)';
+      ctx.beginPath();
+      ctx.moveTo(x - baseW * 0.35 - 4 * sc, y - baseH + 5 * sc);
+      ctx.lineTo(x - baseW * 0.35, y - baseH + 5 * sc - leftSH);
+      ctx.lineTo(x - baseW * 0.35 + 4 * sc, y - baseH + 5 * sc);
+      ctx.closePath();
+      ctx.fill();
+      ctx.lineWidth = 2 * sc;
+      ctx.stroke();
+
+      // Right spire
+      const rightSH = 70 * sc;
+      ctx.fillStyle = 'rgba(26, 16, 5, 0.85)';
+      ctx.beginPath();
+      ctx.moveTo(x + baseW * 0.35 - 4 * sc, y - baseH + 8 * sc);
+      ctx.lineTo(x + baseW * 0.35, y - baseH + 8 * sc - rightSH);
+      ctx.lineTo(x + baseW * 0.35 + 4 * sc, y - baseH + 8 * sc);
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+
+      // Gate arch
+      ctx.strokeStyle = '#1a1005';
+      ctx.lineWidth = 2 * sc;
+      ctx.beginPath();
+      ctx.arc(x, y - 6 * sc, 12 * sc, Math.PI, 0, true);
+      ctx.stroke();
+
+      // Finials
+      ctx.fillStyle = 'rgba(26, 16, 5, 0.9)';
+      for (const sx of [x - baseW * 0.35, x, x + baseW * 0.35]) {
+        const sh = sx === x ? spireH : (sx < x ? leftSH : rightSH);
+        const sy = sx === x ? y - baseH - spireH : y - baseH + (sx < x ? 5 : 8) * sc - sh;
+        ctx.fillRect(sx - 1.5 * sc, sy - 6 * sc, 3 * sc, 6 * sc);
+      }
+
+      ctx.restore();
+    }
+
+    function drawCity(ctx, x, y, sc) {
+      ctx.save();
+      const size = 30 * sc;
+
+      // Walls
+      ctx.strokeStyle = '#1a1005';
+      ctx.lineWidth = 2.5 * sc;
+      ctx.beginPath();
+      ctx.ellipse(x, y - size * 0.3, size * 0.6, size * 0.4, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Central dome
+      ctx.fillStyle = 'rgba(26, 16, 5, 0.75)';
+      ctx.beginPath();
+      ctx.arc(x, y - size * 0.3, size * 0.2, Math.PI, 0, true);
+      ctx.fill();
+      ctx.strokeStyle = '#1a1005';
+      ctx.lineWidth = 1.5 * sc;
+      ctx.stroke();
+
+      // Turrets
+      for (const tx of [x - size * 0.45, x + size * 0.45]) {
+        ctx.fillStyle = 'rgba(26, 16, 5, 0.7)';
+        ctx.beginPath();
+        ctx.arc(tx, y - size * 0.35, size * 0.12, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#1a1005';
+        ctx.lineWidth = 1.5 * sc;
+        ctx.stroke();
+
+        // Conical roof
+        ctx.fillStyle = 'rgba(26, 16, 5, 0.6)';
+        ctx.beginPath();
+        ctx.moveTo(tx - size * 0.12, y - size * 0.35);
+        ctx.lineTo(tx, y - size * 0.55);
+        ctx.lineTo(tx + size * 0.12, y - size * 0.35);
+        ctx.closePath();
+        ctx.fill();
+      }
+
+      // Rooftop peaks
+      ctx.strokeStyle = '#1a1005';
+      ctx.lineWidth = 1 * sc;
+      ctx.fillStyle = 'rgba(26, 16, 5, 0.5)';
+      for (let i = -1; i <= 1; i++) {
+        const px = x + i * size * 0.25;
+        ctx.beginPath();
+        ctx.moveTo(px - size * 0.12, y - size * 0.25);
+        ctx.lineTo(px, y - size * 0.45);
+        ctx.lineTo(px + size * 0.12, y - size * 0.25);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+      }
+
+      ctx.restore();
+    }
+
+    function drawTown(ctx, x, y, sc) {
+      ctx.save();
+      const size = 20 * sc;
+
+      // Church steeple
+      ctx.fillStyle = 'rgba(26, 16, 5, 0.8)';
+      ctx.beginPath();
+      ctx.moveTo(x - 3 * sc, y - size);
+      ctx.lineTo(x, y - size * 1.6);
+      ctx.lineTo(x + 3 * sc, y - size);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.strokeStyle = '#1a1005';
+      ctx.lineWidth = 1.5 * sc;
+      ctx.stroke();
+
+      // Church base
+      ctx.fillStyle = 'rgba(26, 16, 5, 0.7)';
+      ctx.fillRect(x - 5 * sc, y - size, 10 * sc, size * 0.6);
+
+      // Cross
+      ctx.strokeStyle = '#1a1005';
+      ctx.lineWidth = 1 * sc;
+      ctx.beginPath();
+      ctx.moveTo(x, y - size * 1.6 - 4 * sc);
+      ctx.lineTo(x, y - size * 1.6 + 4 * sc);
+      ctx.moveTo(x - 3 * sc, y - size * 1.6);
+      ctx.lineTo(x + 3 * sc, y - size * 1.6);
+      ctx.stroke();
+
+      // Left building
+      ctx.fillStyle = 'rgba(26, 16, 5, 0.65)';
+      ctx.fillRect(x - size * 0.5, y - size * 0.5, size * 0.35, size * 0.5);
+      ctx.beginPath();
+      ctx.moveTo(x - size * 0.5, y - size * 0.5);
+      ctx.lineTo(x - size * 0.325, y - size * 0.8);
+      ctx.lineTo(x - size * 0.15, y - size * 0.5);
+      ctx.closePath();
+      ctx.fill();
+
+      // Right building
+      ctx.fillRect(x + size * 0.15, y - size * 0.4, size * 0.35, size * 0.4);
+      ctx.beginPath();
+      ctx.moveTo(x + size * 0.15, y - size * 0.4);
+      ctx.lineTo(x + size * 0.325, y - size * 0.7);
+      ctx.lineTo(x + size * 0.5, y - size * 0.4);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function drawHamlet(ctx, x, y, sc) {
+      ctx.save();
+      const size = 15 * sc;
+
+      // Left house
+      ctx.fillStyle = 'rgba(26, 16, 5, 0.7)';
+      ctx.fillRect(x - size * 0.4, y - size * 0.5, size * 0.35, size * 0.5);
+      ctx.beginPath();
+      ctx.moveTo(x - size * 0.4, y - size * 0.5);
+      ctx.lineTo(x - size * 0.225, y - size * 0.75);
+      ctx.lineTo(x - size * 0.05, y - size * 0.5);
+      ctx.closePath();
+      ctx.fill();
+
+      // Right house
+      ctx.fillRect(x + size * 0.05, y - size * 0.4, size * 0.35, size * 0.4);
+      ctx.beginPath();
+      ctx.moveTo(x + size * 0.05, y - size * 0.4);
+      ctx.lineTo(x + size * 0.225, y - size * 0.65);
+      ctx.lineTo(x + size * 0.4, y - size * 0.4);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    function drawVillage(ctx, x, y, sc) {
+      ctx.save();
+      const size = 10 * sc;
+
+      ctx.fillStyle = 'rgba(26, 16, 5, 0.65)';
+      ctx.fillRect(x - size * 0.3, y - size * 0.4, size * 0.6, size * 0.4);
+      ctx.beginPath();
+      ctx.moveTo(x - size * 0.3, y - size * 0.4);
+      ctx.lineTo(x, y - size * 0.65);
+      ctx.lineTo(x + size * 0.3, y - size * 0.4);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    // ============================================================================
+    // RENDER FUNCTIONS
+    // ============================================================================
+
+    function renderParchment(ctx, rng) {
+      ctx.fillStyle = `rgb(${CONFIG.PARCHMENT.join(',')})`;
+      ctx.fillRect(0, 0, CONFIG.MAP_W, CONFIG.MAP_H);
+
+      // Subtle noise texture
+      const noise = new NoiseGenerator(rng.nextInt(0, 1000000));
+      const imageData = ctx.getImageData(0, 0, CONFIG.MAP_W, CONFIG.MAP_H);
+      const data = imageData.data;
+
+      for (let i = 0; i < data.length; i += 12) {
+        const nval = noise.fractalNoise(i / 1000, i / 10000, 2, 0.5, 2.0, 0);
+        const variation = (nval - 0.5) * 20;
+
+        for (let j = 0; j < 12; j += 4) {
+          data[i + j] += variation * 0.3;
+          data[i + j + 1] += variation * 0.25;
+          data[i + j + 2] += variation * 0.2;
+        }
+      }
+
+      ctx.putImageData(imageData, 0, 0);
+
+      // Vignette
+      const grad = ctx.createRadialGradient(CONFIG.MAP_W / 2, CONFIG.MAP_H / 2, 0,
+                                           CONFIG.MAP_W / 2, CONFIG.MAP_H / 2, CONFIG.MAP_W);
+      grad.addColorStop(0, 'rgba(0, 0, 0, 0)');
+      grad.addColorStop(1, 'rgba(0, 0, 0, 0.15)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, CONFIG.MAP_W, CONFIG.MAP_H);
+    }
+
+    function renderWater(ctx, hmap, rng) {
+      const cols = CONFIG.GRID_COLS;
+      const rows = CONFIG.GRID_ROWS;
+      const cellW = CONFIG.MAP_W / cols;
+      const cellH = CONFIG.MAP_H / rows;
+
+      ctx.fillStyle = 'rgba(180, 170, 140, 0.4)';
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const idx = r * cols + c;
+          if (hmap[idx] <= CONFIG.WATER_LEVEL) {
+            const x = c * cellW;
+            const y = r * cellH;
+            ctx.fillRect(x, y, cellW, cellH);
+          }
+        }
+      }
+    }
+
+    function renderCoastlines(ctx, hmap) {
+      const cols = CONFIG.GRID_COLS;
+      const rows = CONFIG.GRID_ROWS;
+      const cellW = CONFIG.MAP_W / cols;
+      const cellH = CONFIG.MAP_H / rows;
+
+      ctx.strokeStyle = '#1a1005';
+      ctx.lineWidth = 3;
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const idx = r * cols + c;
+          const isWater = hmap[idx] <= CONFIG.WATER_LEVEL;
+
+          for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              const nr = r + dr;
+              const nc = c + dc;
+              if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+                const nidx = nr * cols + nc;
+                const nWater = hmap[nidx] <= CONFIG.WATER_LEVEL;
+
+                if (isWater !== nWater) {
+                  const x1 = c * cellW;
+                  const y1 = r * cellH;
+                  const x2 = x1 + cellW;
+                  const y2 = y1 + cellH;
+
+                  if (dc === -1) {
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x1, y2);
+                    ctx.stroke();
+                  } else if (dc === 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(x2, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                  } else if (dr === -1) {
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y1);
+                    ctx.stroke();
+                  } else if (dr === 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y2);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Coastal shadow gradient
+      ctx.globalAlpha = 0.15;
+      ctx.fillStyle = '#000000';
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const idx = r * cols + c;
+          const isWater = hmap[idx] <= CONFIG.WATER_LEVEL;
+          if (!isWater) {
+            let isCoastal = false;
+            for (let dr = -2; dr <= 2; dr++) {
+              for (let dc = -2; dc <= 2; dc++) {
+                const nr = r + dr;
+                const nc = c + dc;
+                if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+                  if (hmap[nr * cols + nc] <= CONFIG.WATER_LEVEL) {
+                    isCoastal = true;
+                    break;
+                  }
+                }
+              }
+              if (isCoastal) break;
+            }
+            if (isCoastal) {
+              const x = c * CONFIG.MAP_W / cols;
+              const y = r * CONFIG.MAP_H / rows;
+              ctx.fillRect(x, y, CONFIG.MAP_W / cols, CONFIG.MAP_H / rows);
+            }
+          }
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function renderCoastalHachures(ctx, hmap, rng) {
+      const cols = CONFIG.GRID_COLS;
+      const rows = CONFIG.GRID_ROWS;
+      const cellW = CONFIG.MAP_W / cols;
+      const cellH = CONFIG.MAP_H / rows;
+
+      ctx.strokeStyle = 'rgba(26, 16, 5, 0.4)';
+      ctx.lineWidth = 1.5;
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const idx = r * cols + c;
+          if (hmap[idx] <= CONFIG.WATER_LEVEL) {
+            // Check if adjacent to land
+            let hasLandNeighbor = false;
+            for (let dr = -1; dr <= 1; dr++) {
+              for (let dc = -1; dc <= 1; dc++) {
+                const nr = r + dr;
+                const nc = c + dc;
+                if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+                  if (hmap[nr * cols + nc] > CONFIG.WATER_LEVEL) {
+                    hasLandNeighbor = true;
+                    break;
+                  }
+                }
+              }
+              if (hasLandNeighbor) break;
+            }
+
+            if (hasLandNeighbor && rng.next() < 0.25) {
+              const x = c * cellW + cellW / 2;
+              const y = r * cellH + cellH / 2;
+              const angle = rng.nextFloat(0, Math.PI * 2);
+              const len = 8 + rng.nextFloat(0, 10);
+              ctx.beginPath();
+              ctx.moveTo(x, y);
+              ctx.lineTo(x + Math.cos(angle) * len, y + Math.sin(angle) * len);
+              ctx.stroke();
+            }
+          }
+        }
+      }
+    }
+
+    function renderOceanWaves(ctx, hmap, rng) {
+      const cols = CONFIG.GRID_COLS;
+      const rows = CONFIG.GRID_ROWS;
+      const cellW = CONFIG.MAP_W / cols;
+      const cellH = CONFIG.MAP_H / rows;
+
+      ctx.strokeStyle = 'rgba(26, 16, 5, 0.3)';
+      ctx.lineWidth = 2;
+
+      for (let r = 0; r < rows; r += 5) {
+        for (let c = 0; c < cols; c += 5) {
+          const idx = r * cols + c;
+          if (hmap[idx] <= CONFIG.WATER_LEVEL) {
+            if (rng.next() < 0.5) {
+              const x = c * cellW + cellW / 2;
+              const y = r * cellH + cellH / 2;
+              const angle = rng.nextFloat(0, Math.PI * 2);
+              const radius = 10 + rng.nextFloat(0, 15);
+
+              // Wave arc
+              ctx.beginPath();
+              ctx.arc(x, y, radius, angle, angle + Math.PI * 0.7, false);
+              ctx.stroke();
+
+              // Spiral — more frequent
+              if (rng.next() < 0.45) {
+                ctx.beginPath();
+                let sx = x + Math.cos(angle) * radius;
+                let sy = y + Math.sin(angle) * radius;
+                ctx.moveTo(sx, sy);
+                for (let i = 0; i < 20; i++) {
+                  const t = i / 20;
+                  const a = angle + t * Math.PI * 1.8;
+                  const r = radius * (1 - t * 0.7);
+                  sx = x + Math.cos(a) * r;
+                  sy = y + Math.sin(a) * r;
+                  ctx.lineTo(sx, sy);
+                }
+                ctx.stroke();
+              }
+            }
+          }
+        }
+      }
+    }
+
+    function renderForests(ctx, hmap, biomes, coastDist, rng) {
+      const cols = CONFIG.GRID_COLS;
+      const rows = CONFIG.GRID_ROWS;
+      const cellW = CONFIG.MAP_W / cols;
+      const cellH = CONFIG.MAP_H / rows;
+      const trees = [];
+
+      // Forest placement — clustered groves, not uniform carpet
+      // First pass: place cluster seeds in forest biome areas
+      const clusterSeeds = [];
+      for (let r = 0; r < rows; r += 12) {
+        for (let c = 0; c < cols; c += 12) {
+          const idx = r * cols + c;
+          const bio = biomes[idx];
+          const h = hmap[idx];
+          if (h > 0.56) continue; // skip near mountains
+          if (bio === 'dense_forest' && rng.next() < 0.7) {
+            clusterSeeds.push({r, c, size: 3 + rng.nextInt(0, 4), treeH: 12 + rng.nextInt(0, 6)});
+          } else if (bio === 'forest' && rng.next() < 0.45) {
+            clusterSeeds.push({r, c, size: 2 + rng.nextInt(0, 2), treeH: 9 + rng.nextInt(0, 5)});
+          }
+        }
+      }
+
+      // Second pass: expand clusters into trees
+      for (const cluster of clusterSeeds) {
+        for (let t = 0; t < cluster.size; t++) {
+          const tx = cluster.c * cellW + rng.nextFloat(-cellW * 3, cellW * 3);
+          const ty = cluster.r * cellH + rng.nextFloat(-cellH * 3, cellH * 3);
+          const th = cluster.treeH + rng.nextFloat(-3, 3);
+          const seed = rng.nextInt(0, 1000000);
+          trees.push({x: tx, y: ty, h: th, seed, r: cluster.r + rng.next(), c: cluster.c + rng.next()});
+        }
+      }
+
+      // Scattered lone trees on grasslands
+      for (let r = 0; r < rows; r += 15) {
+        for (let c = 0; c < cols; c += 15) {
+          const idx = r * cols + c;
+          const bio = biomes[idx];
+          const h = hmap[idx];
+          if (bio === 'grassland' && h < 0.52 && rng.next() < 0.12) {
+            const tx = c * cellW + rng.nextFloat(0, cellW * 5);
+            const ty = r * cellH + rng.nextFloat(0, cellH * 5);
+            trees.push({x: tx, y: ty, h: 6 + rng.nextFloat(0, 3), seed: rng.nextInt(0, 1000000), r: r, c: c});
+          }
+        }
+      }
+
+      // Sort by Y for depth
+      trees.sort((a, b) => a.y - b.y);
+
+      for (const tree of trees) {
+        drawPineTree(ctx, tree.x, tree.y, tree.h, tree.seed);
+      }
+    }
+
+    function renderTerrainTexture(ctx, hmap, biomes, rng) {
+      const cols = CONFIG.GRID_COLS;
+      const rows = CONFIG.GRID_ROWS;
+      const cellW = CONFIG.MAP_W / cols;
+      const cellH = CONFIG.MAP_H / rows;
+
+      ctx.strokeStyle = 'rgba(26, 16, 5, 0.28)';
+      ctx.lineWidth = 1.5;
+      ctx.fillStyle = 'rgba(26, 16, 5, 0.25)';
+
+      for (let r = 0; r < rows; r += 4) {
+        for (let c = 0; c < cols; c += 4) {
+          const idx = r * cols + c;
+          const bio = biomes[idx];
+          const h = hmap[idx];
+          if (h <= CONFIG.WATER_LEVEL) continue;
+
+          // Rolling contour/hachure lines on plains and grasslands
+          if ((bio === 'plains' || bio === 'grassland' || bio === 'hills') && rng.next() > 0.4) {
+            const x = c * cellW;
+            const y = r * cellH;
+            const angle = rng.nextFloat(-0.4, 0.4);
+            const len = 25 + rng.nextFloat(0, 40);
+
+            ctx.beginPath();
+            ctx.moveTo(x, y);
+            for (let i = 0; i < 35; i++) {
+              const t = i / 35;
+              const lx = x + t * len * Math.cos(angle);
+              const ly = y + Math.sin(t * Math.PI * 2.5) * 6;
+              ctx.lineTo(lx, ly);
+            }
+            ctx.stroke();
+          }
+
+          // Grass tufts on grassland
+          if (bio === 'grassland' && rng.next() > 0.75) {
+            const x = c * cellW + rng.nextFloat(0, cellW * 2);
+            const y = r * cellH + rng.nextFloat(0, cellH * 2);
+            ctx.beginPath();
+            ctx.moveTo(x - 3, y);
+            ctx.quadraticCurveTo(x - 1, y - 8, x, y - 10);
+            ctx.moveTo(x, y);
+            ctx.quadraticCurveTo(x + 1, y - 9, x + 2, y - 11);
+            ctx.moveTo(x + 3, y);
+            ctx.quadraticCurveTo(x + 4, y - 7, x + 5, y - 9);
+            ctx.stroke();
+          }
+
+          // Small dots/stipple for desert/arid biomes
+          if ((bio === 'desert' || bio === 'savanna') && rng.next() > 0.55) {
+            const x = c * cellW + rng.nextFloat(0, cellW * 3);
+            const y = r * cellH + rng.nextFloat(0, cellH * 3);
+            ctx.beginPath();
+            ctx.arc(x, y, 1.5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+        }
+      }
+    }
+
+    function renderClouds(ctx, hmap, biomes, rng) {
+      const cols = CONFIG.GRID_COLS;
+      const rows = CONFIG.GRID_ROWS;
+      const cellW = CONFIG.MAP_W / cols;
+      const cellH = CONFIG.MAP_H / rows;
+
+      // Scatter cloud wisps across open water and near coasts
+      for (let i = 0; i < 60; i++) {
+        const r = rng.nextInt(5, rows - 5);
+        const c = rng.nextInt(5, cols - 5);
+        const idx = r * cols + c;
+        const h = hmap[idx];
+        // Clouds over water or near coastlines
+        if (h < CONFIG.WATER_LEVEL + 0.06) {
+          const x = c * cellW;
+          const y = r * cellH;
+          const cloudSize = 50 + rng.nextFloat(0, 60);
+          drawCloudWisp(ctx, x, y, cloudSize, rng.nextInt(0, 1000000));
+        }
+      }
+
+      // A few scattered clouds over land too
+      for (let i = 0; i < 12; i++) {
+        const r = rng.nextInt(10, rows - 10);
+        const c = rng.nextInt(10, cols - 10);
+        const idx = r * cols + c;
+        const h = hmap[idx];
+        const bio = biomes[idx];
+        if (h > CONFIG.WATER_LEVEL && (bio === 'plains' || bio === 'grassland') && rng.next() < 0.5) {
+          const x = c * cellW;
+          const y = r * cellH;
+          const cloudSize = 35 + rng.nextFloat(0, 40);
+          drawCloudWisp(ctx, x, y, cloudSize, rng.nextInt(0, 1000000));
+        }
+      }
+    }
+
+    function renderMountains(ctx, hmap, biomes, ridgelines, rng) {
+      const cols = CONFIG.GRID_COLS;
+      const rows = CONFIG.GRID_ROWS;
+      const cellW = CONFIG.MAP_W / cols;
+      const cellH = CONFIG.MAP_H / rows;
+      const peaks = [];
+
+      const MAX_PEAKS = 60; // hard cap — quality over quantity
+      const MIN_PEAK_DIST = 250; // generous spacing
+      const placedPositions = [];
+
+      function tooClose(px, py) {
+        for (const pos of placedPositions) {
+          if (Math.hypot(px - pos.x, py - pos.y) < MIN_PEAK_DIST) return true;
+        }
+        return false;
+      }
+
+      // Collect all candidate mountain cells, sorted by height (tallest first)
+      const candidates = [];
+      for (let r = 0; r < rows; r += 3) {
+        for (let c = 0; c < cols; c += 3) {
+          const idx = r * cols + c;
+          const h = hmap[idx];
+          const bio = biomes[idx];
+          if ((bio === 'mountain' || bio === 'snow_peak') && h > 0.55) {
+            candidates.push({r, c, h, bio});
+          }
+        }
+      }
+      candidates.sort((a, b) => b.h - a.h);
+
+      // Place the tallest peaks first, respecting spacing
+      for (const cand of candidates) {
+        if (peaks.length >= MAX_PEAKS) break;
+        const x = cand.c * cellW + cellW / 2;
+        const y = cand.r * cellH + cellH / 2;
+        if (tooClose(x, y)) continue;
+        const size = 30 + (cand.h - 0.55) * 80 + rng.nextFloat(0, 15);
+        const isSnow = cand.bio === 'snow_peak' || cand.h > 0.78;
+        peaks.push({x, y, size, isSnow, h: cand.h, r: cand.r, seed: rng.nextInt(0, 1000000), isSolo: false});
+        placedPositions.push({x, y});
+      }
+
+      // Add a few scattered isolated peaks in hills (smaller, solo)
+      for (let i = 0; i < 15; i++) {
+        if (peaks.length >= MAX_PEAKS + 15) break;
+        const r = rng.nextInt(rows * 0.1, rows * 0.9);
+        const c = rng.nextInt(cols * 0.1, cols * 0.9);
+        const idx = r * cols + c;
+        const h = hmap[idx];
+        const bio = biomes[idx];
+        if (h > 0.50 && (bio === 'mountain' || bio === 'hills' || bio === 'snow_peak')) {
+          const x = c * cellW + cellW / 2;
+          const y = r * cellH + cellH / 2;
+          if (tooClose(x, y)) continue;
+          const size = 16 + rng.nextFloat(0, 12);
+          peaks.push({x, y, size, isSnow: h > 0.75, h, r, seed: rng.nextInt(0, 1000000), isSolo: true});
+          placedPositions.push({x, y});
+        }
+      }
+
+      // Sort by Y for depth
+      peaks.sort((a, b) => a.r - b.r);
+
+      for (const peak of peaks) {
+        drawMountainPeak(ctx, peak.x, peak.y, peak.size, {
+          isSolo: peak.isSolo,
+          isSnow: peak.isSnow,
+          hVal: peak.h,
+          seed: peak.seed
+        });
+      }
+
+      // Add cloud wisps around large peaks
+      for (const peak of peaks) {
+        if (peak.size > 25 && rng.next() < 0.35 && !peak.isSolo) {
+          const cloudY = peak.y + peak.size * 0.3;
+          const cloudX = peak.x + (rng.next() - 0.5) * peak.size * 1.5;
+          drawCloudWisp(ctx, cloudX, cloudY, 30 + peak.size * 0.6, peak.seed + 100);
+        }
+      }
+    }
+
+    function renderSettlements(ctx, settlements, rng) {
+      ctx.save();
+      ctx.font = `bold 14px 'Georgia', serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = '#1a1005';
+
+      // Sort by Y
+      const sorted = settlements.slice().sort((a, b) => a.r - b.r);
+
+      for (const settlement of sorted) {
+        const x = (settlement.c / CONFIG.GRID_COLS) * CONFIG.MAP_W;
+        const y = (settlement.r / CONFIG.GRID_ROWS) * CONFIG.MAP_H;
+
+        // Draw icon — scale varies by type
+        switch (settlement.type) {
+          case 'capital':
+            drawCapitalCastle(ctx, x, y, 2.5);
+            break;
+          case 'city':
+            drawCity(ctx, x, y, 2.0);
+            break;
+          case 'town':
+            drawTown(ctx, x, y, 1.5);
+            break;
+          case 'hamlet':
+            drawHamlet(ctx, x, y, 1.2);
+            break;
+          case 'village':
+            drawVillage(ctx, x, y, 0.9);
+            break;
+        }
+
+        // Label
+        const fontSize = settlement.type === 'capital' ? 18 : settlement.type === 'city' ? 16 : 13;
+        ctx.font = `bold ${fontSize}px 'Georgia', serif`;
+        const labelY = y + 30;
+        const textW = ctx.measureText(settlement.name).width;
+        ctx.fillStyle = 'rgba(215, 198, 158, 0.85)';
+        ctx.fillRect(x - textW / 2 - 4, labelY - 2, textW + 8, fontSize + 4);
+        ctx.fillStyle = '#1a1005';
+        ctx.fillText(settlement.name, x, labelY);
+      }
+
+      ctx.restore();
+    }
+
+    function renderKingdomBorders(ctx, kingdomMap, kingdoms, hmap) {
+      const cols = CONFIG.GRID_COLS;
+      const rows = CONFIG.GRID_ROWS;
+      const cellW = CONFIG.MAP_W / cols;
+      const cellH = CONFIG.MAP_H / rows;
+
+      ctx.strokeStyle = 'rgba(26, 16, 5, 0.2)';
+      ctx.lineWidth = 1;
+      ctx.setLineDash([4, 4]);
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const idx = r * cols + c;
+          const kid = kingdomMap[idx];
+          if (kid === -1 || hmap[idx] <= CONFIG.WATER_LEVEL) continue;
+
+          for (let dr = -1; dr <= 1; dr++) {
+            for (let dc = -1; dc <= 1; dc++) {
+              const nr = r + dr;
+              const nc = c + dc;
+              if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
+                const nidx = nr * cols + nc;
+                const nkid = kingdomMap[nidx];
+                if (nkid !== kid && nkid !== -1) {
+                  const x = c * cellW;
+                  const y = r * cellH;
+                  if (dc === -1) {
+                    ctx.beginPath();
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x, y + cellH);
+                    ctx.stroke();
+                  } else if (dc === 1) {
+                    ctx.beginPath();
+                    ctx.moveTo(x + cellW, y);
+                    ctx.lineTo(x + cellW, y + cellH);
+                    ctx.stroke();
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      ctx.setLineDash([]);
+    }
+
+    function renderKingdomLabels(ctx, kingdoms, hmap) {
+      ctx.save();
+      ctx.font = `bold 28px 'Georgia', serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      for (const kingdom of kingdoms) {
+        const x = (kingdom.capitalC / CONFIG.GRID_COLS) * CONFIG.MAP_W;
+        const y = (kingdom.capitalR / CONFIG.GRID_ROWS) * CONFIG.MAP_H;
+
+        ctx.fillStyle = 'rgba(215, 198, 158, 0.85)';
+        const w = ctx.measureText(kingdom.name).width + 20;
+        ctx.fillRect(x - w / 2, y - 20, w, 40);
+
+        ctx.fillStyle = kingdom.color;
+        ctx.fillText(kingdom.name, x, y);
+      }
+
+      ctx.restore();
+    }
+
+    function renderDecorations(ctx, worldName, rng) {
+      ctx.save();
+
+      // Title banner
+      ctx.fillStyle = 'rgba(26, 16, 5, 0.8)';
+      ctx.fillRect(50, 30, CONFIG.MAP_W - 100, 80);
+
+      ctx.strokeStyle = '#1a1005';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(50, 30, CONFIG.MAP_W - 100, 80);
+
+      ctx.font = `bold 48px 'Georgia', serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = 'rgba(215, 198, 158, 0.95)';
+      ctx.fillText(worldName, CONFIG.MAP_W / 2, 70);
+
+      // Compass rose
+      const cx = CONFIG.MAP_W - 120;
+      const cy = 100;
+      ctx.strokeStyle = '#1a1005';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(cx, cy, 30, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - 25);
+      ctx.lineTo(cx + 10, cy + 8);
+      ctx.lineTo(cx, cy + 15);
+      ctx.lineTo(cx - 10, cy + 8);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(26, 16, 5, 0.5)';
+      ctx.fill();
+      ctx.stroke();
+
+      // Scale bar
+      ctx.font = `12px 'Georgia', serif`;
+      ctx.textAlign = 'left';
+      ctx.fillStyle = '#1a1005';
+      ctx.fillText('100 km', 80, CONFIG.MAP_H - 40);
+      ctx.beginPath();
+      ctx.moveTo(80, CONFIG.MAP_H - 20);
+      ctx.lineTo(80 + 50, CONFIG.MAP_H - 20);
+      ctx.stroke();
+
+      // Border ornaments
+      ctx.lineWidth = 2;
+      const corners = [
+        [40, 40], [CONFIG.MAP_W - 40, 40],
+        [40, CONFIG.MAP_H - 40], [CONFIG.MAP_W - 40, CONFIG.MAP_H - 40]
+      ];
+      for (const [cx, cy] of corners) {
+        ctx.strokeStyle = '#1a1005';
+        for (let i = 0; i < 3; i++) {
+          ctx.beginPath();
+          ctx.arc(cx, cy, 5 + i * 3, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+
+      ctx.restore();
+    }
+
+    // ============================================================================
+    // MAIN GENERATION
+    // ============================================================================
+
+    async function generate() {
+      const seedInput = document.getElementById('seed');
+      const status = document.getElementById('status');
+      const downloadBtn = document.getElementById('downloadBtn');
+
+      status.textContent = 'Generating world...';
+      downloadBtn.disabled = true;
+
+      try {
+        const seed = parseInt(seedInput.value) || 42;
+        const rng = new SeededRNG(seed);
+        const namer = new NameGenerator(rng);
+        const worldName = namer.worldName();
+
+        status.textContent = 'Building heightmap...';
+        const hmap = generateHeightmap(rng);
+
+        status.textContent = 'Computing climate...';
+        const {temperature, moisture} = generateClimate(hmap, rng);
+
+        status.textContent = 'Analyzing coastlines...';
+        const coastDist = computeCoastDistance(hmap);
+
+        status.textContent = 'Assigning biomes...';
+        const biomes = assignBiomes(hmap, temperature, moisture, coastDist);
+
+        status.textContent = 'Detecting ridgelines...';
+        const ridgelines = detectRidgelines(hmap, biomes);
+
+        status.textContent = 'Placing settlements...';
+        const settlements = placeSettlements(hmap, biomes, coastDist, rng, namer);
+
+        status.textContent = 'Creating kingdoms...';
+        const {kingdomMap, kingdoms} = assignKingdoms(hmap, biomes, settlements, rng, namer);
+
+        status.textContent = 'Rendering map...';
+        const canvas = document.getElementById('map');
+        canvas.width = CONFIG.MAP_W;
+        canvas.height = CONFIG.MAP_H;
+        const ctx = canvas.getContext('2d');
+
+        renderParchment(ctx, rng);
+        renderWater(ctx, hmap, rng);
+        renderCoastlines(ctx, hmap);
+        renderCoastalHachures(ctx, hmap, rng);
+        renderOceanWaves(ctx, hmap, rng);
+        renderForests(ctx, hmap, biomes, coastDist, rng);
+        renderTerrainTexture(ctx, hmap, biomes, rng);
+        renderMountains(ctx, hmap, biomes, ridgelines, rng);
+        renderClouds(ctx, hmap, biomes, rng);
+        renderKingdomBorders(ctx, kingdomMap, kingdoms, hmap);
+        renderSettlements(ctx, settlements, rng);
+        renderKingdomLabels(ctx, kingdoms, hmap);
+        renderDecorations(ctx, worldName, rng);
+
+        status.textContent = `World "${worldName}" generated successfully!`;
+        downloadBtn.disabled = false;
+      } catch (error) {
+        status.textContent = `Error: ${error.message}`;
+        console.error(error);
+      }
+    }
+
+    function downloadMap() {
+      const canvas = document.getElementById('map');
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL('image/png');
+      link.download = 'fantasy_map.png';
+      link.click();
+    }
+
+    // Auto-generate on load
+    window.addEventListener('load', () => {
+      setTimeout(generate, 100);
+    });
+  </script>
+</body>
+</html>

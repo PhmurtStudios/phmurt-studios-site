@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
+  <title>Legendary Soups · Phmurt Studios</title>
+  <meta name="description" content="Legendary Soups for the Soup Savant class. Recipes forged from the remains of the mightiest creatures in existence." />
+  <meta property="og:title" content="Legendary Soups · Phmurt Studios" />
+  <meta property="og:description" content="Recipes forged from the remains of the mightiest creatures in existence. A supplement for the Soup Savant class." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://phmurtstudios.com/legendary.html" />
+  <meta property="og:image" content="https://phmurtstudios.com/logo.png" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="theme.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb" crossorigin="anonymous"></script>
+  <script src="supabase-config.js"></script>
+  <script src="phmurt-auth.js"></script>
+</head>
+<body data-nav-active="Content" data-breadcrumb="Home|index.html;Grimoire|grimoire.html;Legendary Soups">
+
+  <div id="ps-site-shell"></div>
+
+  <div id="ps-page-breadcrumb"></div>
+
+  <div class="ps-page-hero">
+    <div class="ps-page-eyebrow">Soup Savant Supplement</div>
+    <div class="ps-page-title">Legendary Soups</div>
+    <div class="ps-page-subtitle">Recipes of the Mightiest Creatures in Existence</div>
+  </div>
+
+  <div class="ps-divider"><div class="ps-div-line"></div><div class="ps-div-ornament"><div class="ps-div-dot"></div><div class="ps-div-gem"></div><div class="ps-div-dot"></div></div><div class="ps-div-line r"></div></div>
+
+  <div class="fantasy-divider">◆</div>
+
+  <div class="ps-section-header">
+    <div class="ps-section-title">Introduction</div>
+  </div>
+
+  <div class="ps-content-block">
+    <p>Legendary soups represent the pinnacle of culinary achievement and magical craftsmanship. These recipes call for ingredients harvested from legendary creatures, each one a monument to power incarnate. The recipes that follow are not for the faint of heart. They demand ingredients of incredible scarcity, hours or days of careful preparation, and consequences that reshape those who consume them.</p>
+
+    <p>A legendary soup follows these fundamental rules:</p>
+    <ul>
+      <li>No thermos is needed to maintain a legendary soup's properties. Once prepared, its benefits manifest immediately and require no magical vessel.</li>
+      <li>Minimum cooking time is 8 hours. Some legendary recipes require significantly longer.</li>
+      <li>Legendary soups cannot be enhanced by Soup of the Day, Culinary Edge, or Divinely Delicious features.</li>
+      <li>Only one creature can cook a legendary soup. Multiple cooks attempting to prepare the same batch causes the recipe to spoil entirely.</li>
+      <li>The ingredient is consumed in the cooking process. It cannot be recovered, reused, or divided among multiple batches.</li>
+      <li>Harvesting an ingredient from a defeated legendary creature requires DM approval and must occur within a strict time window after the creature's death.</li>
+    </ul>
+
+    <p>These soups are works of art, power made palatable. They are the dreams of heroes and the obsessions of those who dare to aspire to immortality through broth.</p>
+  </div>
+
+  <div class="ps-divider"><div class="ps-div-line"></div><div class="ps-div-ornament"><div class="ps-div-dot"></div><div class="ps-div-gem"></div><div class="ps-div-dot"></div></div><div class="ps-div-line r"></div></div>
+
+  <div class="fantasy-divider">◆</div>
+
+  <div class="ps-section-header">
+    <div class="ps-section-title">Legendary Recipes</div>
+  </div>
+
+  <!-- 1. Tarrasque Tail Consomme -->
+  <div class="ps-legendary-card">
+    <div class="ps-legendary-name">Tarrasque Tail Consomme</div>
+    <div class="ps-legendary-subtitle">Legendary Recipe</div>
+    <div class="ps-legendary-lore">The marrow of the world-devourer, distilled to its essence. A soup that remakes the body in the image of destruction itself.</div>
+    <div class="ps-legendary-stats">
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Ingredient</div>
+        <div class="ps-legendary-stat-val">Tarrasque tail marrow</div>
+      </div>
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Cooking Time</div>
+        <div class="ps-legendary-stat-val">8 hours</div>
+      </div>
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Serves</div>
+        <div class="ps-legendary-stat-val">1 creature</div>
+      </div>
+    </div>
+    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--crimson-border);">
+      <div style="font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1px; color: var(--crimson); text-transform: uppercase; margin-bottom: 12px;">Effects</div>
+      <ul style="font-size: 14px; line-height: 1.8; color: var(--text-dim);">
+        <li>Maximum hit points increased by 50</li>
+        <li>Resistance to nonmagical bludgeoning, piercing, and slashing damage</li>
+        <li>Regenerate 10 hit points at the start of your turn</li>
+        <li>Immunity to the frightened condition</li>
+      </ul>
+      <p style="font-size: 13px; color: var(--text-muted); margin-top: 12px; font-style: italic;">These effects are permanent.</p>
+    </div>
+  </div>
+
+  <!-- 2. Beholder Eye Bisque -->
+  <div class="ps-legendary-card">
+    <div class="ps-legendary-name">Beholder Eye Bisque</div>
+    <div class="ps-legendary-subtitle">Legendary Recipe</div>
+    <div class="ps-legendary-lore">Crafted from the beholder's central eye, harvested whole before the creature's essence fades. Vision perfected to an impossible degree.</div>
+    <div class="ps-legendary-stats">
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Ingredient</div>
+        <div class="ps-legendary-stat-val">Central eye removed whole within 10 minutes of death</div>
+      </div>
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Cooking Time</div>
+        <div class="ps-legendary-stat-val">12 hours</div>
+      </div>
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Serves</div>
+        <div class="ps-legendary-stat-val">1 creature</div>
+      </div>
+    </div>
+    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--crimson-border);">
+      <div style="font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1px; color: var(--crimson); text-transform: uppercase; margin-bottom: 12px;">Effects (7 Days)</div>
+      <ul style="font-size: 14px; line-height: 1.8; color: var(--text-dim);">
+        <li>Truesight out to 120 feet</li>
+        <li>Immunity to gaze attacks</li>
+        <li>See invisible creatures and objects as if they were visible</li>
+        <li>Once per day, create a 30-foot cone of antimagic (as the antimagic field spell)</li>
+      </ul>
+      <p style="font-size: 13px; color: var(--text-muted); margin-top: 12px; font-style: italic;">Effects fade after 7 days.</p>
+    </div>
+  </div>
+
+  <!-- 3. Lich Phylactery Potage -->
+  <div class="ps-legendary-card">
+    <div class="ps-legendary-name">Lich Phylactery Potage</div>
+    <div class="ps-legendary-subtitle">Legendary Recipe</div>
+    <div class="ps-legendary-lore">The phylactery must be shattered over the broth at the moment of the lich's final death. Undeath itself becomes an ingredient, binding the drinker to eternity.</div>
+    <div class="ps-legendary-stats">
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Ingredient</div>
+        <div class="ps-legendary-stat-val">Phylactery shattered at lich's final death</div>
+      </div>
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Cooking Time</div>
+        <div class="ps-legendary-stat-val">24 hours</div>
+      </div>
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Serves</div>
+        <div class="ps-legendary-stat-val">1 creature</div>
+      </div>
+    </div>
+    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--crimson-border);">
+      <div style="font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1px; color: var(--crimson); text-transform: uppercase; margin-bottom: 12px;">Effects (Permanent)</div>
+      <ul style="font-size: 14px; line-height: 1.8; color: var(--text-dim);">
+        <li>You no longer age</li>
+        <li>Advantage on Intelligence checks and saving throws</li>
+        <li>Once per long rest, when you would be reduced to 0 hit points, you are instead reduced to 1 hit point</li>
+        <li>Proficiency (or expertise if you already have it) with Arcana, History, and Religion checks</li>
+      </ul>
+      <p style="font-size: 13px; color: var(--text-muted); margin-top: 12px; font-style: italic;">These effects are permanent.</p>
+    </div>
+  </div>
+
+  <!-- 4. Ancient Dragon Bone Broth -->
+  <div class="ps-legendary-card">
+    <div class="ps-legendary-name">Ancient Dragon Bone Broth</div>
+    <div class="ps-legendary-subtitle">Legendary Recipe</div>
+    <div class="ps-legendary-lore">The femur of an ancient wyrm, boiled under magical heat until nothing remains but essence and power. Draconic majesty made sustenance.</div>
+    <div class="ps-legendary-stats">
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Ingredient</div>
+        <div class="ps-legendary-stat-val">Femur of ancient dragon CR 20+</div>
+      </div>
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Cooking Time</div>
+        <div class="ps-legendary-stat-val">10 hours with magical heat</div>
+      </div>
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Serves</div>
+        <div class="ps-legendary-stat-val">4 creatures</div>
+      </div>
+    </div>
+    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--crimson-border);">
+      <div style="font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1px; color: var(--crimson); text-transform: uppercase; margin-bottom: 12px;">Effects (30 Days)</div>
+      <ul style="font-size: 14px; line-height: 1.8; color: var(--text-dim);">
+        <li>Immunity to the damage type of the dragon's breath weapon</li>
+        <li>Strength and Constitution each increase by 4 (maximum 24)</li>
+        <li>Advantage on Intimidation checks and saving throws against the frightened condition</li>
+        <li>Once per day, you can exhale a 30-foot cone of the dragon's breath weapon type (DC 20 saving throw, same damage as the dragon's breath)</li>
+      </ul>
+      <p style="font-size: 13px; color: var(--text-muted); margin-top: 12px; font-style: italic;">Effects fade after 30 days.</p>
+    </div>
+  </div>
+
+  <!-- 5. Elder Brain Bouillabaisse -->
+  <div class="ps-legendary-card">
+    <div class="ps-legendary-name">Elder Brain Bouillabaisse</div>
+    <div class="ps-legendary-subtitle">Legendary Recipe</div>
+    <div class="ps-legendary-lore">The elder brain must be harvested whole within thirty minutes of the hive's destruction. As you cook, the lingering psychic energy assaults your mind with visions of collective thought.</div>
+    <div class="ps-legendary-stats">
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Ingredient</div>
+        <div class="ps-legendary-stat-val">Elder brain harvested whole within 30 minutes</div>
+      </div>
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Cooking Time</div>
+        <div class="ps-legendary-stat-val">8 hours (3 DC 16 Wisdom saves per hour or take 4d6 psychic damage)</div>
+      </div>
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Serves</div>
+        <div class="ps-legendary-stat-val">6 creatures</div>
+      </div>
+    </div>
+    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--crimson-border);">
+      <div style="font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1px; color: var(--crimson); text-transform: uppercase; margin-bottom: 12px;">Effects (10 Days)</div>
+      <ul style="font-size: 14px; line-height: 1.8; color: var(--text-dim);">
+        <li>Telepathy out to 120 feet with creatures you can see</li>
+        <li>Cast detect thoughts at will (no spell slot required)</li>
+        <li>Once per day, cast dominate monster (DC 18 Intelligence saving throw to resist)</li>
+        <li>Immunity to charm and frighten effects caused by aberrations</li>
+      </ul>
+      <p style="font-size: 13px; color: var(--text-muted); margin-top: 12px; font-style: italic;">Effects fade after 10 days.</p>
+    </div>
+  </div>
+
+  <!-- 6. Kraken Ink Ramen -->
+  <div class="ps-legendary-card">
+    <div class="ps-legendary-name">Kraken Ink Ramen</div>
+    <div class="ps-legendary-subtitle">Legendary Recipe</div>
+    <div class="ps-legendary-lore">One part ink to one hundred parts seawater, simmered near the shore where the beast was slain. The depths themselves settle into every bowl.</div>
+    <div class="ps-legendary-stats">
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Ingredient</div>
+        <div class="ps-legendary-stat-val">Ink sac diluted 1:100 in seawater</div>
+      </div>
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Cooking Time</div>
+        <div class="ps-legendary-stat-val">8 hours near water</div>
+      </div>
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Serves</div>
+        <div class="ps-legendary-stat-val">4 creatures</div>
+      </div>
+    </div>
+    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--crimson-border);">
+      <div style="font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1px; color: var(--crimson); text-transform: uppercase; margin-bottom: 12px;">Effects (14 Days)</div>
+      <ul style="font-size: 14px; line-height: 1.8; color: var(--text-dim);">
+        <li>Swim speed of 60 feet and ability to breathe underwater</li>
+        <li>Immunity to lightning damage</li>
+        <li>Once per day, exhale a cloud of ink in a 20-foot radius (creatures in the area must make a DC 18 Constitution saving throw or be blinded for 1 minute)</li>
+        <li>Ability to communicate telepathically with creatures that can swim</li>
+      </ul>
+      <p style="font-size: 13px; color: var(--text-muted); margin-top: 12px; font-style: italic;">Effects fade after 14 days.</p>
+    </div>
+  </div>
+
+  <!-- 7. Tiamat's Five-Spice Hotpot -->
+  <div class="ps-legendary-card">
+    <div class="ps-legendary-name">Tiamat's Five-Spice Hotpot</div>
+    <div class="ps-legendary-subtitle">Legendary Recipe</div>
+    <div class="ps-legendary-lore">One scale harvested from each of Tiamat's five draconic heads. An recipe that has never been successfully completed. Legend says the cooking time multiplies by the cook's doubt.</div>
+    <div class="ps-legendary-stats">
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Ingredient</div>
+        <div class="ps-legendary-stat-val">One scale from each head of Tiamat</div>
+      </div>
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Cooking Time</div>
+        <div class="ps-legendary-stat-val">5 hours (1 per scale at increasing difficulty)</div>
+      </div>
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Serves</div>
+        <div class="ps-legendary-stat-val">1 creature</div>
+      </div>
+    </div>
+    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--crimson-border);">
+      <div style="font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1px; color: var(--crimson); text-transform: uppercase; margin-bottom: 12px;">Effects (Permanent)</div>
+      <ul style="font-size: 14px; line-height: 1.8; color: var(--text-dim);">
+        <li>Immunity to fire, cold, lightning, acid, and poison damage</li>
+        <li>Once per day, exhale a 30-foot cone of elemental damage (fire, cold, lightning, acid, or poison; DC 20 Dexterity saving throw, 10d8 damage)</li>
+        <li>Advantage on Charisma checks and saving throws when dealing with chromatic dragons</li>
+      </ul>
+      <p style="font-size: 13px; color: var(--text-muted); margin-top: 12px; font-style: italic;">This recipe has never been successfully completed in known history.</p>
+    </div>
+  </div>
+
+  <!-- 8. Aboleth Memory Bisque -->
+  <div class="ps-legendary-card">
+    <div class="ps-legendary-name">Aboleth Memory Bisque</div>
+    <div class="ps-legendary-subtitle">Legendary Recipe</div>
+    <div class="ps-legendary-lore">The mucus glands must be rendered immediately, before they break down. The cooking requires absolute attention. One moment of wavering focus and the entire batch curdles into uselessness.</div>
+    <div class="ps-legendary-stats">
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Ingredient</div>
+        <div class="ps-legendary-stat-val">Mucus glands rendered immediately (break down in 2 hours)</div>
+      </div>
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Cooking Time</div>
+        <div class="ps-legendary-stat-val">16 hours on low heat (DC 14 Wisdom per hour or lost in visions; burns after 20 hours)</div>
+      </div>
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Serves</div>
+        <div class="ps-legendary-stat-val">1 creature</div>
+      </div>
+    </div>
+    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--crimson-border);">
+      <div style="font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1px; color: var(--crimson); text-transform: uppercase; margin-bottom: 12px;">Effects (Permanent)</div>
+      <ul style="font-size: 14px; line-height: 1.8; color: var(--text-dim);">
+        <li>Proficiency with all skills (you gain proficiency bonus on any ability check you make)</li>
+        <li>Cast legend lore at will (no spell slot required)</li>
+        <li>Advantage on all Intelligence saving throws and Intelligence checks</li>
+        <li>Once per week, spend 1 hour in meditation to receive a vision of a past event within 10,000 years</li>
+      </ul>
+      <p style="font-size: 13px; color: var(--text-muted); margin-top: 12px; font-style: italic;">These effects are permanent.</p>
+    </div>
+  </div>
+
+  <!-- 9. Vecna's Unseen Eye Stew -->
+  <div class="ps-legendary-card">
+    <div class="ps-legendary-name">Vecna's Unseen Eye Stew</div>
+    <div class="ps-legendary-subtitle">Legendary Recipe</div>
+    <div class="ps-legendary-lore">The necrotic residue from the socket of one who once bore the Eye of Vecna. Must be prepared in total darkness. Even candlelight will spoil it, turning the broth into useless sludge.</div>
+    <div class="ps-legendary-stats">
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Ingredient</div>
+        <div class="ps-legendary-stat-val">Necrotic residue from Eye of Vecna bearer's socket</div>
+      </div>
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Cooking Time</div>
+        <div class="ps-legendary-stat-val">6 hours in total darkness (light within 30 feet curdles it)</div>
+      </div>
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Serves</div>
+        <div class="ps-legendary-stat-val">1 creature</div>
+      </div>
+    </div>
+    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--crimson-border);">
+      <div style="font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1px; color: var(--crimson); text-transform: uppercase; margin-bottom: 12px;">Effects (Permanent)</div>
+      <ul style="font-size: 14px; line-height: 1.8; color: var(--text-dim);">
+        <li>See invisible creatures and objects within 60 feet, even through magical darkness</li>
+        <li>Once per day, cast foresight on yourself (no spell slot required)</li>
+        <li>Always know if a creature within 30 feet of you is lying</li>
+      </ul>
+      <p style="font-size: 13px; color: var(--text-muted); margin-top: 12px; font-style: italic;">Drawback: You have disadvantage on saving throws against effects caused by Vecna.</p>
+    </div>
+  </div>
+
+  <!-- 10. Dracolich Marrow Glaze -->
+  <div class="ps-legendary-card">
+    <div class="ps-legendary-name">Dracolich Marrow Glaze</div>
+    <div class="ps-legendary-subtitle">Legendary Recipe</div>
+    <div class="ps-legendary-lore">Not a soup in the traditional sense. A glaze of crystallized marrow vapor, captured in a sealed vessel and applied to other soups. Death itself, rendered into enhancement.</div>
+    <div class="ps-legendary-stats">
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Ingredient</div>
+        <div class="ps-legendary-stat-val">Crystallized marrow vapor in sealed vessel</div>
+      </div>
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Cooking Time</div>
+        <div class="ps-legendary-stat-val">4 hours, applied to another non-legendary recipe</div>
+      </div>
+      <div class="ps-legendary-stat">
+        <div class="ps-legendary-stat-label">Serves</div>
+        <div class="ps-legendary-stat-val">Applied to existing soup</div>
+      </div>
+    </div>
+    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--crimson-border);">
+      <div style="font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1px; color: var(--crimson); text-transform: uppercase; margin-bottom: 12px;">Effects When Applied (7 Days)</div>
+      <ul style="font-size: 14px; line-height: 1.8; color: var(--text-dim);">
+        <li>Any healing received also grants temporary hit points equal to the amount healed (last for 24 hours)</li>
+        <li>Resistance to necrotic damage for 7 days</li>
+        <li>No need to sleep and immunity to exhaustion for 7 days</li>
+        <li>Once during those 7 days, when you would be reduced to 0 hit points, you instead drop to 1 hit point and are immune to all damage until the end of your next turn</li>
+      </ul>
+      <p style="font-size: 13px; color: var(--text-muted); margin-top: 12px; font-style: italic;">Effects fade after 7 days.</p>
+    </div>
+  </div>
+
+  <div class="ps-divider"><div class="ps-div-line"></div><div class="ps-div-ornament"><div class="ps-div-dot"></div><div class="ps-div-gem"></div><div class="ps-div-dot"></div></div><div class="ps-div-line r"></div></div>
+
+  <div id="ps-site-footer"></div>
+
+  <script src="phmurt-shell.js"></script>
+
+</body>
+</html>

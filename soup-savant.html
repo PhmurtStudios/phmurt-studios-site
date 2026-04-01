@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
+  <title>The Soup Savant · Phmurt Studios</title>
+  <meta name="description" content="The Soup Savant, a full homebrew class for D&D 5e by Phmurt Studios. A spellcaster who devoted their life to crafting the perfect soup." />
+  <meta property="og:title" content="The Soup Savant · Phmurt Studios" />
+  <meta property="og:description" content="A full homebrew class for D&D 5e. Weaponize broth, heal with bisque, and build a traveling culinary empire." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://phmurtstudios.com/soup-savant.html" />
+  <meta property="og:image" content="https://phmurtstudios.com/logo.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="theme.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb" crossorigin="anonymous"></script>
+  <script src="supabase-config.js"></script>
+  <script src="phmurt-auth.js"></script>
+
+  <style>
+    :root {
+      --soup-accent: #d4a574;
+      --soup-accent-dark: #8b6f47;
+      --soup-light: #f5ede0;
+    }
+
+    .ps-hero {
+      background: linear-gradient(135deg, rgba(20, 20, 30, 0.95) 0%, rgba(40, 25, 35, 0.95) 100%);
+      border-bottom: 2px solid var(--crimson-border);
+      padding: 3rem 2rem;
+      text-align: center;
+      margin-bottom: 3rem;
+    }
+
+    .ps-hero-eyebrow {
+      font-family: 'Cinzel', serif;
+      font-size: 0.875rem;
+      letter-spacing: 0.15em;
+      color: var(--crimson);
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+    }
+
+    .ps-hero-title {
+      font-family: 'Cinzel', serif;
+      font-size: 3rem;
+      font-weight: 700;
+      color: var(--soup-accent);
+      margin: 0.5rem 0;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .ps-hero-subtitle {
+      font-family: 'Spectral', serif;
+      font-size: 1.25rem;
+      color: var(--text-dim);
+      font-style: italic;
+      margin-top: 0.5rem;
+    }
+
+    .ps-flavor-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 2rem;
+      margin: 3rem 0;
+    }
+
+    .ps-flavor-card {
+      background: linear-gradient(135deg, rgba(50, 30, 40, 0.8), rgba(30, 30, 40, 0.9));
+      border: 1px solid var(--crimson-border);
+      border-left: 4px solid var(--soup-accent);
+      padding: 1.5rem;
+      border-radius: 4px;
+      font-family: 'Spectral', serif;
+      font-size: 0.95rem;
+      line-height: 1.6;
+      color: var(--text);
+    }
+
+    .ps-flavor-card::before {
+      content: '"';
+      font-family: 'Cinzel', serif;
+      font-size: 3rem;
+      color: var(--soup-accent);
+      opacity: 0.3;
+      display: block;
+      margin: -0.5rem 0 0 0;
+      line-height: 1;
+    }
+
+    .ps-intro-section {
+      max-width: 900px;
+      margin: 3rem auto;
+      padding: 2rem;
+      background: rgba(30, 20, 25, 0.5);
+      border-left: 4px solid var(--soup-accent);
+    }
+
+    .ps-intro-section p {
+      font-family: 'Spectral', serif;
+      font-size: 1rem;
+      line-height: 1.8;
+      color: var(--text);
+      margin: 1rem 0;
+    }
+
+    .ps-section-heading {
+      font-family: 'Cinzel', serif;
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--soup-accent);
+      margin: 2.5rem 0 1.5rem 0;
+      border-bottom: 2px solid var(--crimson-border);
+      padding-bottom: 0.75rem;
+    }
+
+    .ps-section-heading.level-2 {
+      font-size: 1.35rem;
+      color: var(--soup-accent);
+      margin: 1.75rem 0 1rem 0;
+      border-bottom: 1px solid var(--crimson-border);
+    }
+
+    .ps-stat-block {
+      background: linear-gradient(135deg, rgba(40, 30, 35, 0.9), rgba(30, 25, 30, 0.95));
+      border: 2px solid var(--crimson-border);
+      border-left: 4px solid var(--soup-accent);
+      padding: 1.5rem;
+      margin: 2rem 0;
+      border-radius: 4px;
+    }
+
+    .ps-stat-row {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 1rem;
+      margin: 0.75rem 0;
+      align-items: flex-start;
+    }
+
+    .ps-stat-label {
+      font-family: 'Cinzel', serif;
+      font-weight: 700;
+      color: var(--soup-accent);
+      text-transform: uppercase;
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+    }
+
+    .ps-stat-value {
+      font-family: 'Spectral', serif;
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    .ps-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 2rem 0;
+      background: rgba(20, 20, 30, 0.8);
+      border: 1px solid var(--crimson-border);
+    }
+
+    .ps-table thead {
+      background: linear-gradient(90deg, rgba(50, 30, 40, 0.8), rgba(30, 30, 40, 0.9));
+      border-bottom: 2px solid var(--soup-accent);
+    }
+
+    .ps-table th {
+      padding: 0.75rem;
+      text-align: left;
+      font-family: 'Cinzel', serif;
+      font-weight: 700;
+      color: var(--soup-accent);
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .ps-table td {
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--crimson-border);
+      font-family: 'Spectral', serif;
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+
+    .ps-table tbody tr:hover {
+      background: rgba(60, 40, 50, 0.6);
+    }
+
+    .ps-feature {
+      margin: 2rem 0;
+      padding: 1.5rem;
+      background: rgba(30, 20, 25, 0.5);
+      border-left: 4px solid var(--soup-accent);
+      border-radius: 2px;
+    }
+
+    .ps-feature-title {
+      font-family: 'Cinzel', serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: var(--soup-accent);
+      margin-bottom: 0.75rem;
+    }
+
+    .ps-feature-subtitle {
+      font-family: 'Cinzel', serif;
+      font-size: 0.9rem;
+      color: var(--text-dim);
+      margin-bottom: 1rem;
+      font-weight: 500;
+    }
+
+    .ps-feature p {
+      font-family: 'Spectral', serif;
+      color: var(--text);
+      font-size: 0.95rem;
+      line-height: 1.7;
+      margin: 0.75rem 0;
+    }
+
+    .ps-feature ul {
+      font-family: 'Spectral', serif;
+      color: var(--text);
+      font-size: 0.95rem;
+      line-height: 1.7;
+      margin: 0.75rem 0;
+      margin-left: 1.5rem;
+    }
+
+    .ps-feature li {
+      margin: 0.5rem 0;
+    }
+
+    .ps-soup-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      background: rgba(20, 20, 30, 0.8);
+      border: 1px solid var(--crimson-border);
+    }
+
+    .ps-soup-table thead {
+      background: linear-gradient(90deg, rgba(50, 30, 40, 0.8), rgba(30, 30, 40, 0.9));
+      border-bottom: 2px solid var(--soup-accent);
+    }
+
+    .ps-soup-table th {
+      padding: 0.75rem;
+      text-align: left;
+      font-family: 'Cinzel', serif;
+      font-weight: 700;
+      color: var(--soup-accent);
+      font-size: 0.85rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .ps-soup-table td {
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--crimson-border);
+      font-family: 'Spectral', serif;
+      color: var(--text);
+      font-size: 0.9rem;
+    }
+
+    .ps-soup-table tbody tr:hover {
+      background: rgba(60, 40, 50, 0.6);
+    }
+
+    .ps-content-wrapper {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 0 1.5rem;
+    }
+
+    .ps-columns-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      margin: 2rem 0;
+    }
+
+    @media (max-width: 768px) {
+      .ps-columns-2 {
+        grid-template-columns: 1fr;
+      }
+
+      .ps-hero-title {
+        font-size: 2rem;
+      }
+
+      .ps-stat-row {
+        grid-template-columns: 1fr;
+        gap: 0.25rem;
+      }
+
+      .ps-table, .ps-soup-table {
+        font-size: 0.8rem;
+      }
+
+      .ps-table th, .ps-table td,
+      .ps-soup-table th, .ps-soup-table td {
+        padding: 0.5rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="ps-site-shell"></div>
+  <div id="ps-page-breadcrumb"></div>
+
+  <main class="ps-content">
+    <!-- Hero Section -->
+    <div class="ps-hero">
+      <div class="ps-hero-eyebrow">D&D 5e Homebrew Class</div>
+      <h1 class="ps-hero-title">The Soup Savant</h1>
+      <p class="ps-hero-subtitle">A Life Devoted to the Perfect Bowl</p>
+    </div>
+
+    <div class="ps-content-wrapper">
+      <!-- Flavor Stories -->
+      <div class="ps-flavor-cards">
+        <div class="ps-flavor-card">
+          <p>The halfling warrior had been lost in the Thornwood for three days when she stumbled upon a figure hunched over a portable cauldron. The figure looked up, steam rising from their face, and offered her a wooden bowl filled with golden broth. By the time she finished the soup, her wounds had closed. By the time she left, she had found a new companion. The Soup Savant had found their calling.</p>
+        </div>
+        <div class="ps-flavor-card">
+          <p>The gnome alchemist was being chased through the market square by bandits when she ducked into an alley and collided with someone carrying an enormous cauldron. "Perfect timing," the stranger said, tossing a sealed thermos bottle. The thermos struck the alley's entrance and exploded with a wave of scalding liquid that sent the bandits screaming. "I was saving that one," the Soup Savant muttered, already starting on a new batch.</p>
+        </div>
+        <div class="ps-flavor-card">
+          <p>The fallen paladin had given up on redemption until she tasted the Soup Savant's creation. It carried the warmth of divine grace in a mortal bowl. "This," she said, tears running down her face, "tastes like forgiveness." The Soup Savant smiled. "Every great soup does. That's why I make them."</p>
+        </div>
+      </div>
+
+      <!-- Introduction Section -->
+      <div class="ps-intro-section">
+        <p>Every soup savant is chasing a dream. They have devoted themselves entirely to the pursuit of culinary perfection, spending countless hours testing ingredients, experimenting with techniques, and studying the complex interplay of flavors that create the ideal soup. But a Soup Savant is not merely a chef. They are an innovator, a risk taker, a culinary scientist, and above all, an artist. Their soups have supernatural properties that extend far beyond satisfying hunger. They heal the wounded, inspire the timid, and bolster the weak of spirit.</p>
+
+        <p>To reach that ideal, a Soup Savant must think of their craft not as cooking, but as casting. Each soup is a spell unto itself. They must understand the fundamental properties of their ingredients and the complex interactions that occur when they are combined. They must know when to simmer and when to boil, when to be patient and when to act with urgency. They must learn the secret recipes that generations of culinary masters have perfected and, more importantly, they must discover and develop new recipes of their own. With each new soup, they become more powerful, more capable, and closer to their ultimate goal. That goal? To create the Magnum Opus. The perfect soup.</p>
+      </div>
+
+      <!-- Interdisciplinary Training -->
+      <section>
+        <h2 class="ps-section-heading">Interdisciplinary Training</h2>
+        <p>The path to becoming a Soup Savant requires mastery across multiple domains. A Soup Savant must be an alchemist to understand the transformative properties of their ingredients. They must be an herbalist to source the rarest and most potent botanicals. They must be an artisan to create the vessels that carry their work. They must be a merchant to sustain their travels and fund their experiments. But most importantly, they must be willing to embrace the possibility that cooking might be one of the most powerful forms of magic in existence.</p>
+      </section>
+
+      <!-- The Savory Soup Solution -->
+      <section>
+        <h2 class="ps-section-heading">The Savory Soup Solution</h2>
+        <p>While other spellcasters spend years studying dusty tomes and ancient incantations, Soup Savants have discovered a more elegant truth. Magic is not bound by rigid rules and predetermined structures. It is fluid, adaptable, and intimately connected to the natural world. Every ingredient carries its own magical signature. Every combination of flavors creates new possibilities. Every perfectly timed stir of the ladle channels magical energy in ways that traditional wizards have yet to fully understand.</p>
+
+        <p>A Soup Savant's true power lies in their flexibility. They prepare their soups in advance, storing them in magical thermoses that preserve both the physical properties and the magical essence of their creation. When danger strikes, they do not need to spend precious minutes casting spells. They simply retrieve the perfect soup for the situation and deploy it with precision. This approach has proven remarkably effective in a wide variety of circumstances, from healing wounds to controlling crowds to inspiring heroic deeds.</p>
+      </section>
+
+      <!-- Creating a Soup Savant -->
+      <section>
+        <h2 class="ps-section-heading">Creating a Soup Savant</h2>
+
+        <p>When you create a Soup Savant, the most important consideration is understanding what drives their passion. What was the moment that sparked their devotion to the culinary arts? Did they grow up in a poor village where a single bowl of soup meant the difference between survival and starvation? Did they have a mentor who opened their eyes to the infinite possibilities of flavor? Did they experience a revelation where they understood that cooking was magic?</p>
+
+        <p>Consider also the current state of their journey. Are they a young apprentice just beginning to understand the basics of their craft? Are they an experienced chef who is seeking to master higher forms of culinary magic? Are they a seasoned veteran who is finally pursuing their dream of creating the perfect soup?</p>
+
+        <h3 class="ps-section-heading level-2">Quick Build</h3>
+
+        <p>You can make a Soup Savant quickly by following these suggestions. First, make Charisma your highest ability score, followed by Constitution. Second, choose the Folk Hero background. Third, select the following spells from your Soupcooking class feature: Healing Word, Magic Weapon, and Scorching Ray.</p>
+      </section>
+
+      <!-- Class Features Stat Block -->
+      <div class="ps-stat-block">
+        <h3 class="ps-section-heading level-2">Class Features</h3>
+
+        <div class="ps-stat-row">
+          <div class="ps-stat-label">Hit Dice</div>
+          <div class="ps-stat-value">1d6 per Soup Savant level</div>
+        </div>
+
+        <div class="ps-stat-row">
+          <div class="ps-stat-label">Hit Points at 1st Level</div>
+          <div class="ps-stat-value">6 + your Constitution modifier</div>
+        </div>
+
+        <div class="ps-stat-row">
+          <div class="ps-stat-label">Hit Points at Higher Levels</div>
+          <div class="ps-stat-value">1d6 (or 4) + your Constitution modifier per Soup Savant level after 1st</div>
+        </div>
+
+        <div class="ps-stat-row">
+          <div class="ps-stat-label">Armor</div>
+          <div class="ps-stat-value">Light armor</div>
+        </div>
+
+        <div class="ps-stat-row">
+          <div class="ps-stat-label">Weapons</div>
+          <div class="ps-stat-value">Simple weapons, nets</div>
+        </div>
+
+        <div class="ps-stat-row">
+          <div class="ps-stat-label">Tools</div>
+          <div class="ps-stat-value">Cook's utensils, alchemist's supplies</div>
+        </div>
+
+        <div class="ps-stat-row">
+          <div class="ps-stat-label">Saving Throws</div>
+          <div class="ps-stat-value">Charisma, Constitution</div>
+        </div>
+
+        <div class="ps-stat-row">
+          <div class="ps-stat-label">Skills</div>
+          <div class="ps-stat-value">Choose two from Animal Handling, Arcana, Deception, Medicine, Nature, Performance, or Persuasion</div>
+        </div>
+      </div>
+
+      <!-- Progression Table -->
+      <div style="overflow-x: auto;">
+        <table class="ps-table">
+          <thead>
+            <tr>
+              <th>Level</th>
+              <th>PB</th>
+              <th>Culinary Die</th>
+              <th>Features</th>
+              <th>Instant Soups</th>
+              <th>Magic Thermoses</th>
+              <th>Thermos Level</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>+2</td>
+              <td>d4</td>
+              <td>Soupcooking, Soup Cabinet</td>
+              <td>2</td>
+              <td>2</td>
+              <td>1st</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>+2</td>
+              <td>d4</td>
+              <td>Culinary Edge, Entrepreneur's Expertise</td>
+              <td>2</td>
+              <td>2</td>
+              <td>1st</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>+2</td>
+              <td>d4</td>
+              <td>Soup of the Day</td>
+              <td>3</td>
+              <td>3</td>
+              <td>2nd</td>
+            </tr>
+            <tr>
+              <td>4</td>
+              <td>+2</td>
+              <td>d4</td>
+              <td>Ability Score Improvement</td>
+              <td>3</td>
+              <td>3</td>
+              <td>2nd</td>
+            </tr>
+            <tr>
+              <td>5</td>
+              <td>+3</td>
+              <td>d6</td>
+              <td>Soup Pantry, Gritty Gut</td>
+              <td>4</td>
+              <td>4</td>
+              <td>3rd</td>
+            </tr>
+            <tr>
+              <td>6</td>
+              <td>+3</td>
+              <td>d6</td>
+              <td>Trained Tongue</td>
+              <td>4</td>
+              <td>4</td>
+              <td>3rd</td>
+            </tr>
+            <tr>
+              <td>7</td>
+              <td>+3</td>
+              <td>d6</td>
+              <td>Pop-up Stand</td>
+              <td>5</td>
+              <td>5</td>
+              <td>4th</td>
+            </tr>
+            <tr>
+              <td>8</td>
+              <td>+3</td>
+              <td>d6</td>
+              <td>Ability Score Improvement</td>
+              <td>5</td>
+              <td>5</td>
+              <td>4th</td>
+            </tr>
+            <tr>
+              <td>9</td>
+              <td>+4</td>
+              <td>d8</td>
+              <td>&mdash;</td>
+              <td>6</td>
+              <td>6</td>
+              <td>5th</td>
+            </tr>
+            <tr>
+              <td>10</td>
+              <td>+4</td>
+              <td>d8</td>
+              <td>Soup Kitchen</td>
+              <td>6</td>
+              <td>6</td>
+              <td>5th</td>
+            </tr>
+            <tr>
+              <td>11</td>
+              <td>+4</td>
+              <td>d8</td>
+              <td>&mdash;</td>
+              <td>7</td>
+              <td>7</td>
+              <td>6th</td>
+            </tr>
+            <tr>
+              <td>12</td>
+              <td>+4</td>
+              <td>d8</td>
+              <td>Ability Score Improvement</td>
+              <td>7</td>
+              <td>7</td>
+              <td>6th</td>
+            </tr>
+            <tr>
+              <td>13</td>
+              <td>+5</td>
+              <td>d10</td>
+              <td>Forager Foresight</td>
+              <td>8</td>
+              <td>8</td>
+              <td>7th</td>
+            </tr>
+            <tr>
+              <td>14</td>
+              <td>+5</td>
+              <td>d10</td>
+              <td>Divinely Delicious Soup</td>
+              <td>8</td>
+              <td>8</td>
+              <td>7th</td>
+            </tr>
+            <tr>
+              <td>15</td>
+              <td>+5</td>
+              <td>d10</td>
+              <td>Pop-up Restaurant</td>
+              <td>9</td>
+              <td>9</td>
+              <td>8th</td>
+            </tr>
+            <tr>
+              <td>16</td>
+              <td>+5</td>
+              <td>d10</td>
+              <td>Ability Score Improvement</td>
+              <td>9</td>
+              <td>9</td>
+              <td>8th</td>
+            </tr>
+            <tr>
+              <td>17</td>
+              <td>+6</td>
+              <td>d12</td>
+              <td>&mdash;</td>
+              <td>10</td>
+              <td>10</td>
+              <td>9th</td>
+            </tr>
+            <tr>
+              <td>18</td>
+              <td>+6</td>
+              <td>d12</td>
+              <td>Interdimensional Cauldron</td>
+              <td>10</td>
+              <td>10</td>
+              <td>9th</td>
+            </tr>
+            <tr>
+              <td>19</td>
+              <td>+6</td>
+              <td>d12</td>
+              <td>Ability Score Improvement</td>
+              <td>11</td>
+              <td>11</td>
+              <td>9th</td>
+            </tr>
+            <tr>
+              <td>20</td>
+              <td>+6</td>
+              <td>d12</td>
+              <td>Legendary Chef</td>
+              <td>11</td>
+              <td>11</td>
+              <td>9th</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Class Features Section -->
+      <section>
+        <h2 class="ps-section-heading">Class Features</h2>
+
+        <!-- Soupcooking -->
+        <div class="ps-feature">
+          <div class="ps-feature-title">Soupcooking</div>
+          <div class="ps-feature-subtitle">1st Level Soup Savant Feature</div>
+
+          <p>You have mastered the magical art of Soupcooking. Your soups are the vessels through which you channel magical power. You have the ability to prepare soups in advance and store them in magical thermoses. At the beginning of your adventure or the start of each long rest, you choose which soups to prepare based on your Instant Soups, Cookbook, and Thermos capacity.</p>
+
+          <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1.5rem 0 0.75rem 0;">Instant Soups</h4>
+          <p>You know a certain number of soup recipes and can prepare a number of soups equal to your Soup Savant level plus your Charisma modifier (minimum of one soup). When you prepare soups, you choose from your Cookbook. The Cookbook subsection describes how to add soups to your Cookbook.</p>
+
+          <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1.5rem 0 0.75rem 0;">Cookbook</h4>
+          <p>You start with a Cookbook containing two 1st level soups of your choice. You add one soup to your Cookbook whenever you gain a Soup Savant level.</p>
+
+          <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1.5rem 0 0.75rem 0;">Thermoses and Cooking Soups</h4>
+          <p>At 1st level, you have two magical thermoses. Each thermos can hold one soup. When you finish a long rest, you can prepare soups in your thermoses. You can prepare any soup in your Cookbook that you have the thermos level to hold.</p>
+
+          <p>When you use a soup, you expend it from the thermos. As long as you have access to basic cooking supplies and ingredients, you can spend 10 minutes preparing a new soup to fill an empty thermos during a short or long rest.</p>
+
+          <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1.5rem 0 0.75rem 0;">Soupcooking Ability</h4>
+          <p>Charisma is your Soupcooking ability for your soups. You use your Charisma modifier whenever a soup refers to your spellcasting ability. Additionally, you use your Charisma modifier when setting the saving throw DC for a soup you have prepared and when making an attack roll with one.</p>
+
+          <p><strong>Soup Save DC:</strong> 8 + your proficiency bonus + your Charisma modifier</p>
+          <p><strong>Soup Attack Modifier:</strong> your proficiency bonus + your Charisma modifier</p>
+
+          <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1.5rem 0 0.75rem 0;">Slow Cooking</h4>
+          <p>When you reach 5th level, your Instant Soups and Thermos Maximum increases. Your Instant Soups increases to 4, and you gain an additional thermos. The maximum thermos level is the thermos level shown on the Soup Savant table for your level.</p>
+        </div>
+
+        <!-- Soup Cabinet -->
+        <div class="ps-feature">
+          <div class="ps-feature-title">Soup Cabinet</div>
+          <div class="ps-feature-subtitle">1st Level Soup Savant Feature</div>
+
+          <p>You have constructed or acquired a traveling Soup Cabinet. This container is magically enhanced to preserve the properties of soups stored within it. You can store your prepared soups in the Cabinet without them spoiling for up to 7 days. The Cabinet can hold a number of thermoses equal to your Instant Soups maximum. In addition to thermoses, the Cabinet provides you with all the basic cooking supplies and tools you need to prepare soups during short and long rests. If your Cabinet is destroyed, you can create a replacement during a long rest using basic materials that cost 50 gold pieces.</p>
+        </div>
+
+        <!-- Culinary Edge -->
+        <div class="ps-feature">
+          <div class="ps-feature-title">Culinary Edge</div>
+          <div class="ps-feature-subtitle">2nd Level Soup Savant Feature</div>
+
+          <p>You have learned to enhance the potency of your soups with your personal touch. When you use a soup that requires a Constitution saving throw, you can add your Culinary Die to the save DC. In addition, when you cast a soup that deals damage, you can add your Culinary Die to the total damage rolled.</p>
+        </div>
+
+        <!-- Entrepreneur's Expertise -->
+        <div class="ps-feature">
+          <div class="ps-feature-title">Entrepreneur's Expertise</div>
+          <div class="ps-feature-subtitle">2nd Level Soup Savant Feature</div>
+
+          <p>You have experience running a business, whether formal or informal. You have proficiency in the Insight skill if you do not already have it. Additionally, when you make a Charisma (Persuasion) check to negotiate the sale of soup, to convince someone to taste your soup, or to establish a business arrangement related to your soups, you add your proficiency bonus to the check even if you are not normally proficient.</p>
+        </div>
+
+        <!-- Soup of the Day -->
+        <div class="ps-feature">
+          <div class="ps-feature-title">Soup of the Day</div>
+          <div class="ps-feature-subtitle">3rd Level Soup Savant Feature</div>
+
+          <p>You can prepare a special soup based on the date and roll on the Soup of the Day table. You can prepare one Soup of the Day, and you can use it as one of your prepared soups. When you prepare soups during a long rest, you choose which day's soup to prepare, or you can skip this feature entirely and prepare a normal soup in that slot.</p>
+
+          <table class="ps-soup-table">
+            <thead>
+              <tr>
+                <th>d6</th>
+                <th>Day</th>
+                <th>Soup</th>
+                <th>Effect</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>Monday</td>
+                <td>Motivation Minestrone</td>
+                <td>Grant inspiration to an ally</td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>Tuesday</td>
+                <td>Battle Broth</td>
+                <td>Temporary hit points</td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>Wednesday</td>
+                <td>Wisdom Walnut Bisque</td>
+                <td>Gain advantage on next Intelligence or Wisdom check</td>
+              </tr>
+              <tr>
+                <td>4</td>
+                <td>Thursday</td>
+                <td>Courage Consomme</td>
+                <td>Resistance to fear</td>
+              </tr>
+              <tr>
+                <td>5</td>
+                <td>Friday</td>
+                <td>Freedom Fricassee</td>
+                <td>Advantage on next saving throw against being restrained</td>
+              </tr>
+              <tr>
+                <td>6</td>
+                <td>Saturday</td>
+                <td>Sustenance Stew</td>
+                <td>Counts as four days of rations</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Ability Score Improvement -->
+        <div class="ps-feature">
+          <div class="ps-feature-title">Ability Score Improvement</div>
+          <div class="ps-feature-subtitle">4th, 8th, 12th, 16th, and 19th Level Feature</div>
+
+          <p>When you reach 4th level, and again at 8th, 12th, 16th, and 19th level, you can increase one ability score of your choice by 2, or you can increase two ability scores of your choice by 1. As normal, you can't increase an ability score above 20 using this feature.</p>
+        </div>
+
+        <!-- Soup Pantry -->
+        <div class="ps-feature">
+          <div class="ps-feature-title">Soup Pantry</div>
+          <div class="ps-feature-subtitle">5th Level Soup Savant Feature</div>
+
+          <p>Your soups have become more powerful and versatile. Your Instant Soups increases to 4, and you gain an additional magical thermos. You can now store soups in the thermos equal to your thermos level plus 1.</p>
+        </div>
+
+        <!-- Gritty Gut -->
+        <div class="ps-feature">
+          <div class="ps-feature-title">Gritty Gut</div>
+          <div class="ps-feature-subtitle">5th Level Soup Savant Feature</div>
+
+          <p>Your constant exposure to the powerful magical ingredients in your soups has made you resilient to their effects. You gain advantage on saving throws against poison, disease, and being poisoned. Additionally, you no longer need to eat or drink if you consume a prepared soup within the last 24 hours.</p>
+        </div>
+
+        <!-- Trained Tongue -->
+        <div class="ps-feature">
+          <div class="ps-feature-title">Trained Tongue</div>
+          <div class="ps-feature-subtitle">6th Level Soup Savant Feature</div>
+
+          <p>Your experience tasting soups has attuned you to magical flavors. You can taste the presence of magic in food and drink, and you gain advantage on checks to identify the properties of a food item or drink. You also gain advantage on saving throws against being poisoned or affected by harmful substances in food or drink.</p>
+        </div>
+
+        <!-- Pop-up Stand -->
+        <div class="ps-feature">
+          <div class="ps-feature-title">Pop-up Stand</div>
+          <div class="ps-feature-subtitle">7th Level Soup Savant Feature</div>
+
+          <p>You can establish a temporary soup stand in 1 hour and break it down in 10 minutes. While operating a pop-up stand, you can prepare soups without using your prepared soups, spending resources and time instead. Any creature that consumes a soup from your pop-up stand gains temporary hit points equal to your Culinary Die plus your Charisma modifier. You can set up your pop-up stand in a place of your choosing, and you can operate it independently of your companions.</p>
+        </div>
+
+        <!-- Soup Kitchen -->
+        <div class="ps-feature">
+          <div class="ps-feature-title">Soup Kitchen</div>
+          <div class="ps-feature-subtitle">10th Level Soup Savant Feature</div>
+
+          <p>You have established a permanent base for your soups. You can designate a location as your Soup Kitchen. This location must have adequate shelter and cooking facilities. You gain the following benefits within your Soup Kitchen:</p>
+
+          <ul>
+            <li>You can prepare twice as many soups as usual during a long rest</li>
+            <li>Your soups remain fresh for twice as long in your Soup Cabinet</li>
+            <li>You can research and develop new soups more efficiently, reducing the time to learn a new soup by half</li>
+            <li>You can craft additional magical thermoses in your Kitchen at a cost of 100 gold pieces and 1 hour of work per thermos, up to your Instant Soups maximum</li>
+          </ul>
+        </div>
+
+        <!-- Forager Foresight -->
+        <div class="ps-feature">
+          <div class="ps-feature-title">Forager Foresight</div>
+          <div class="ps-feature-subtitle">13th Level Soup Savant Feature</div>
+
+          <p>You have learned to identify the most potent ingredients in any environment. You gain advantage on Wisdom (Survival) checks to forage for food and ingredients. Additionally, when you forage for ingredients, you find twice as much as you normally would, and you can identify the magical properties of any ingredients you find automatically.</p>
+        </div>
+
+        <!-- Divinely Delicious Soup -->
+        <div class="ps-feature">
+          <div class="ps-feature-title">Divinely Delicious Soup</div>
+          <div class="ps-feature-subtitle">14th Level Soup Savant Feature</div>
+
+          <p>Your soups have achieved legendary status. You can now create soups with the following special properties:</p>
+
+          <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1rem 0 0.5rem 0;">Smell of Divine Presence</h4>
+          <p>The aroma of your soup can be detected up to 300 feet away. Creatures that smell it gain advantage on saving throws against fear and being charmed for 1 minute.</p>
+
+          <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1rem 0 0.5rem 0;">Healing Properties</h4>
+          <p>When a creature consumes your soup, they regain hit points equal to 2d6 plus your Charisma modifier. A creature can benefit from this property once per long rest.</p>
+
+          <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1rem 0 0.5rem 0;">Charming Aura</h4>
+          <p>Any creature that consumes your soup has advantage on Charisma checks for 1 hour. Additionally, while under the effect of this property, the creature is considered friendly to you and your allies for the purpose of Charisma (Persuasion) checks.</p>
+        </div>
+
+        <!-- Pop-up Restaurant -->
+        <div class="ps-feature">
+          <div class="ps-feature-title">Pop-up Restaurant</div>
+          <div class="ps-feature-subtitle">15th Level Soup Savant Feature</div>
+
+          <p>You can establish a semi-permanent restaurant in 1 week using materials costing 500 gold pieces. Your pop-up restaurant provides all the benefits of your pop-up stand, plus the following:</p>
+
+          <ul>
+            <li>You can hire staff to assist you in preparing and serving soups</li>
+            <li>Your restaurant can accommodate up to 20 customers per day</li>
+            <li>Soups prepared at your restaurant last twice as long before spoiling</li>
+            <li>You can research and develop new soups more rapidly in your restaurant</li>
+            <li>You can disassemble your restaurant in 1 day, reclaiming half the materials used to build it</li>
+          </ul>
+        </div>
+
+        <!-- Interdimensional Cauldron -->
+        <div class="ps-feature">
+          <div class="ps-feature-title">Interdimensional Cauldron</div>
+          <div class="ps-feature-subtitle">18th Level Soup Savant Feature</div>
+
+          <p>You have crafted a cauldron of immense magical power. Your Interdimensional Cauldron has infinite storage capacity for soups. You can prepare and store any number of soups within it, and they remain fresh indefinitely. Additionally, you can use the cauldron to prepare soups remotely. As an action, you can designate a thermos within 30 feet of you and use the cauldron to fill it with any soup in your Cookbook, using one of your prepared soups to do so.</p>
+        </div>
+
+        <!-- Legendary Chef -->
+        <div class="ps-feature">
+          <div class="ps-feature-title">Legendary Chef</div>
+          <div class="ps-feature-subtitle">20th Level Soup Savant Feature</div>
+
+          <p>You have reached the pinnacle of your culinary mastery. When you roll initiative and have no soups prepared, you regain all expended soups. Additionally, you can attempt to create your Magnum Opus.</p>
+
+          <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1rem 0 0.5rem 0;">Magnum Opus</h4>
+          <p>You can spend 8 hours during a long rest to create your Magnum Opus. This is the perfect soup. You create a single thermos containing the Magnum Opus, a legendary soup. This soup has the following properties:</p>
+
+          <ul>
+            <li>Any creature that consumes the Magnum Opus immediately recovers all hit points and is cured of all diseases, poisons, and curses</li>
+            <li>The consumer gains advantage on all saving throws for 24 hours</li>
+            <li>The consumer is immune to being frightened, charmed, and poisoned for 24 hours</li>
+            <li>The Magnum Opus is the most delicious thing a creature has ever tasted and permanently grants them happiness and contentment</li>
+          </ul>
+
+          <p>Once you create a Magnum Opus, you cannot create another one until you reach your next milestone of personal growth and mastery. Your DM determines what constitutes such a milestone, but it typically involves completing a major quest or reaching a significant personal goal related to your soups.</p>
+        </div>
+
+      </section>
+
+      <!-- Soup Spell System -->
+      <section>
+        <h2 class="ps-section-heading">Soup Spell System</h2>
+
+        <p>Your soups are magical in nature and can be cast in multiple ways depending on your needs and the situation. Each soup in your Cookbook has an associated delivery method that determines how you use it in combat or exploration.</p>
+
+        <h3 class="ps-section-heading level-2">Delivery Methods</h3>
+
+        <p>When you use a soup, you choose one of the following delivery methods:</p>
+
+        <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1.5rem 0 0.75rem 0;">Served</h4>
+        <p>You present the soup to a creature within 5 feet of you. The creature must be willing to consume the soup, or you must succeed on a Charisma (Persuasion) check opposed by their Wisdom (Insight) check. If the creature consumes the soup, the effects activate immediately. Serving a soup is an action.</p>
+
+        <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1.5rem 0 0.75rem 0;">Thrown</h4>
+        <p>You throw the thermos as a ranged attack with a range of 20/60 feet. The thermos breaks on impact and releases a cloud of soup. All creatures in a 10-foot-radius sphere centered on the point of impact must make a Constitution saving throw. Creatures that fail take damage equal to 3d6 plus your Charisma modifier. Creatures that succeed take half damage. Throwing a soup is an action.</p>
+
+        <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1.5rem 0 0.75rem 0;">Pressure Cooked</h4>
+        <p>You rupture a thermos to release a burst of magical pressure. All creatures within 15 feet of you (excluding yourself) must make a Constitution saving throw. Creatures that fail are knocked prone and take damage equal to 2d6 plus your Charisma modifier. Creatures that succeed take half damage and are not knocked prone. Using a Pressure Cooked soup is an action.</p>
+
+        <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1.5rem 0 0.75rem 0;">Ranged Spell Attack</h4>
+        <p>You use the soup as a ranged spell attack with a range of 30/120 feet. Make a spell attack roll. On a hit, the target takes damage equal to your Culinary Die plus your Charisma modifier, plus any additional effects of the soup. On a miss, the thermos still breaks and some soup is wasted, but the primary effect is negated.</p>
+
+        <h3 class="ps-section-heading level-2">Developing New Recipes</h3>
+
+        <p>You can add new soups to your Cookbook through study and experimentation. When you discover a new recipe or learn a new technique, you can spend time researching and developing the recipe. The process typically takes 1 hour per spell level of the soup, and you must have access to basic cooking ingredients and supplies. Your DM may require you to use specific ingredients or perform specific techniques to unlock certain recipes. Some soups may only be available through completing quests, defeating specific enemies, or discovering ancient culinary texts.</p>
+
+        <p>You gain one new soup in your Cookbook whenever you level up as a Soup Savant. You can choose any soup you have discovered during your adventures, or you can work with your DM to create a custom soup based on your character's experiences.</p>
+      </section>
+
+    </div>
+  </main>
+
+  <div id="ps-site-footer"></div>
+
+  <script src="phmurt-shell.js" data-nav-active="Content" data-breadcrumb="Home|index.html;Grimoire|grimoire.html;Soup Savant"></script>
+</body>
+
+</html>

@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
+  <title>D&amp;D 5e Character Sheet · Phmurt Studios</title>
+  <meta name="description" content="Free fillable D&D 5th Edition character sheet. Fill in your browser, print or save as PDF." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+  <link rel="manifest" href="site.webmanifest" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="theme.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb" crossorigin="anonymous"></script>
+  <script src="supabase-config.js"></script>
+  <script src="phmurt-auth.js"></script>
+  <style>
+    .cs-wrap { max-width: 960px; margin: 0 auto; padding: 32px 24px 64px; }
+    .cs-sheet { background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 32px; }
+    .cs-header { display: grid; grid-template-columns: 1fr auto; gap: 24px; margin-bottom: 32px; }
+    .cs-title-block { display: flex; flex-direction: column; gap: 12px; }
+    .cs-field-group { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+    .cs-field { display: flex; flex-direction: column; gap: 4px; }
+    .cs-field label { font-family: Cinzel, serif; font-size: 10px; letter-spacing: 0.08em; color: var(--text-dim); text-transform: uppercase; }
+    .cs-field input, .cs-field textarea, .cs-field select {
+      background: var(--bg-mid); border: 1px solid var(--border); border-radius: 4px;
+      color: var(--text); font-family: Spectral, serif; font-size: 14px;
+      padding: 7px 10px; width: 100%; box-sizing: border-box;
+    }
+    .cs-field textarea { resize: vertical; min-height: 80px; }
+    .cs-section-title { font-family: Cinzel, serif; font-size: 13px; letter-spacing: 0.1em; color: var(--crimson); text-transform: uppercase; border-bottom: 1px solid var(--border); padding-bottom: 8px; margin: 28px 0 16px; }
+    .cs-abilities { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 24px; }
+    .cs-ability { background: var(--bg-mid); border: 1px solid var(--border); border-radius: 6px; padding: 12px 8px; text-align: center; }
+    .cs-ability label { font-family: Cinzel, serif; font-size: 10px; letter-spacing: 0.06em; color: var(--text-dim); display: block; margin-bottom: 6px; }
+    .cs-ability input[type="number"] {
+      width: 100%; text-align: center; font-family: Cinzel, serif; font-size: 22px; font-weight: 700;
+      color: var(--text); background: transparent; border: none; outline: none; padding: 0;
+    }
+    .cs-ability .cs-mod { font-family: Spectral, serif; font-size: 13px; color: var(--text-dim); margin-top: 4px; min-height: 18px; }
+    .cs-saves-skills { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+    .cs-check-list { display: flex; flex-direction: column; gap: 6px; }
+    .cs-check-item { display: flex; align-items: center; gap: 8px; font-family: Spectral, serif; font-size: 14px; color: var(--text); }
+    .cs-check-item input[type="checkbox"] { accent-color: var(--crimson); width: 14px; height: 14px; flex-shrink: 0; }
+    .cs-check-item .cs-prof-val { min-width: 32px; text-align: right; font-size: 13px; color: var(--text-dim); }
+    .cs-combat { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .cs-combat-box { background: var(--bg-mid); border: 1px solid var(--border); border-radius: 6px; padding: 12px; text-align: center; }
+    .cs-combat-box label { font-family: Cinzel, serif; font-size: 9px; letter-spacing: 0.07em; color: var(--text-dim); display: block; margin-bottom: 6px; }
+    .cs-combat-box input { width: 100%; text-align: center; font-family: Cinzel, serif; font-size: 20px; font-weight: 700; color: var(--text); background: transparent; border: none; outline: none; }
+    .cs-attack-table { width: 100%; border-collapse: collapse; font-family: Spectral, serif; font-size: 14px; margin-bottom: 8px; }
+    .cs-attack-table th { font-family: Cinzel, serif; font-size: 10px; letter-spacing: 0.07em; color: var(--text-dim); text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    .cs-attack-table td { padding: 4px 4px; }
+    .cs-attack-table td input { width: 100%; background: var(--bg-mid); border: 1px solid var(--border); border-radius: 3px; color: var(--text); font-family: Spectral, serif; font-size: 13px; padding: 5px 8px; box-sizing: border-box; }
+    .cs-spell-level { margin-bottom: 16px; }
+    .cs-spell-level-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+    .cs-spell-level-header label { font-family: Cinzel, serif; font-size: 11px; letter-spacing: 0.07em; color: var(--text-dim); min-width: 60px; }
+    .cs-slot-boxes { display: flex; gap: 4px; align-items: center; }
+    .cs-slot-box { width: 18px; height: 18px; border: 1px solid var(--border); border-radius: 3px; cursor: pointer; background: transparent; transition: background .15s; }
+    .cs-slot-box.used { background: var(--crimson); }
+    .cs-spells-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 6px; }
+    .cs-spells-grid input { background: var(--bg-mid); border: 1px solid var(--border); border-radius: 3px; color: var(--text); font-family: Spectral, serif; font-size: 13px; padding: 5px 8px; width: 100%; box-sizing: border-box; cursor: pointer; }
+    .cs-spells-grid input:hover { border-color: var(--crimson); }
+    .cs-actions { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 32px; }
+    .cs-btn { padding: 10px 24px; font-family: Cinzel, serif; font-size: 13px; letter-spacing: 0.05em; border-radius: 4px; cursor: pointer; border: none; transition: background .15s, color .15s; }
+    .cs-btn-primary { background: var(--crimson); color: #fff; }
+    .cs-btn-primary:hover { background: var(--crimson-dim); }
+    .cs-btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
+    .cs-btn-secondary:hover { border-color: var(--crimson); color: var(--text); }
+
+    /* Spell Modal Styles */
+    .spell-modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7); z-index: 500; align-items: center; justify-content: center;
+    }
+    .spell-modal-overlay.active { display: flex; }
+    .spell-modal {
+      background: var(--bg-card); border: 1px solid var(--crimson);
+      max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto;
+      padding: 0; border-radius: 8px;
+    }
+    .spell-modal-header {
+      background: var(--crimson); color: #f5f0e8; padding: 16px 20px;
+      font-family: Cinzel, serif;
+    }
+    .spell-modal-name { font-size: 20px; margin-bottom: 4px; font-weight: 700; }
+    .spell-modal-level { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.8; }
+    .spell-modal-body { padding: 20px; }
+    .spell-modal-stat { margin-bottom: 12px; }
+    .spell-modal-stat-label { font-weight: bold; color: var(--crimson); font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; }
+    .spell-modal-stat-value { font-family: Spectral, serif; font-size: 14px; margin-top: 2px; }
+    .spell-modal-desc { line-height: 1.7; margin: 16px 0; font-family: Spectral, serif; font-size: 14px; color: var(--text); }
+    .spell-modal-actions { display: flex; gap: 8px; padding: 16px 20px; border-top: 1px solid var(--border); }
+    .spell-cast-btn {
+      flex: 1; padding: 10px; background: var(--crimson); border: none;
+      color: #f5f0e8; font-family: Cinzel, serif; font-size: 11px;
+      letter-spacing: 2px; text-transform: uppercase; cursor: pointer; border-radius: 4px;
+      transition: background .15s;
+    }
+    .spell-cast-btn:hover { background: var(--crimson-dim); }
+    .spell-close-btn {
+      padding: 10px 20px; background: transparent; border: 1px solid var(--border);
+      color: var(--text-dim); font-family: Cinzel, serif; font-size: 11px;
+      letter-spacing: 2px; text-transform: uppercase; cursor: pointer; border-radius: 4px;
+      transition: border-color .15s, color .15s;
+    }
+    .spell-close-btn:hover { border-color: var(--crimson); color: var(--crimson); }
+
+    /* Dice roll result display */
+    .spell-roll-result {
+      text-align: center; padding: 16px; margin-top: 12px;
+      background: var(--bg-mid); border: 1px solid var(--border); border-radius: 4px;
+    }
+    .spell-roll-total {
+      font-family: Cinzel, serif; font-size: 36px; color: var(--crimson);
+      font-weight: 700;
+    }
+    .spell-roll-breakdown {
+      font-size: 12px; color: var(--text-muted); margin-top: 4px; font-family: Spectral, serif;
+    }
+
+    @media (max-width: 640px) {
+      .cs-abilities { grid-template-columns: repeat(3, 1fr); }
+      .cs-saves-skills { grid-template-columns: 1fr; }
+      .cs-header { grid-template-columns: 1fr; }
+    }
+    @media print {
+      #ps-site-shell, #ps-page-breadcrumb, #ps-site-footer, .cs-actions, .spell-modal-overlay { display: none !important; }
+      .cs-sheet { border: none; padding: 0; }
+    }
+  </style>
+</head>
+<body data-nav-active="Players" data-footer-copy="Roll Well. Play Weird." data-breadcrumb="Home|index.html;Character Sheets|character-sheets.html;D&amp;D 5e Sheet">
+  <div id="ps-site-shell"></div>
+  <div id="ps-page-breadcrumb"></div>
+
+  <div class="ps-page-hero">
+    <div class="ps-page-eyebrow">D&amp;D 5th Edition</div>
+    <div class="ps-page-title">Character Sheet</div>
+    <div class="ps-page-subtitle">Fill in your browser · Auto-saves locally</div>
+  </div>
+
+  <div class="cs-wrap">
+    <div class="cs-sheet" id="cs-sheet">
+
+      <!-- ── CHARACTER INFO ── -->
+      <div class="cs-section-title">Character Information</div>
+      <div class="cs-field-group">
+        <div class="cs-field" style="grid-column:span 2;"><label>Character Name</label><input type="text" id="cs-name" placeholder="Thalindra Moonshadow" /></div>
+        <div class="cs-field"><label>Class &amp; Level</label><input type="text" id="cs-class" placeholder="Fighter 5" /></div>
+        <div class="cs-field"><label>Background</label><input type="text" id="cs-background" placeholder="Soldier" /></div>
+        <div class="cs-field"><label>Race</label><input type="text" id="cs-race" placeholder="Half-Elf" /></div>
+        <div class="cs-field"><label>Alignment</label><input type="text" id="cs-alignment" placeholder="Neutral Good" /></div>
+        <div class="cs-field"><label>Experience Points</label><input type="number" id="cs-xp" placeholder="6500" /></div>
+        <div class="cs-field"><label>Player Name</label><input type="text" id="cs-player" placeholder="Aaron" /></div>
+      </div>
+
+      <!-- ── ABILITY SCORES ── -->
+      <div class="cs-section-title">Ability Scores</div>
+      <div class="cs-abilities">
+        <div class="cs-ability"><label>STR</label><input type="number" id="cs-str" min="1" max="30" value="10" oninput="updateMod('str')" /><div class="cs-mod" id="cs-str-mod">+0</div></div>
+        <div class="cs-ability"><label>DEX</label><input type="number" id="cs-dex" min="1" max="30" value="10" oninput="updateMod('dex')" /><div class="cs-mod" id="cs-dex-mod">+0</div></div>
+        <div class="cs-ability"><label>CON</label><input type="number" id="cs-con" min="1" max="30" value="10" oninput="updateMod('con')" /><div class="cs-mod" id="cs-con-mod">+0</div></div>
+        <div class="cs-ability"><label>INT</label><input type="number" id="cs-int" min="1" max="30" value="10" oninput="updateMod('int')" /><div class="cs-mod" id="cs-int-mod">+0</div></div>
+        <div class="cs-ability"><label>WIS</label><input type="number" id="cs-wis" min="1" max="30" value="10" oninput="updateMod('wis')" /><div class="cs-mod" id="cs-wis-mod">+0</div></div>
+        <div class="cs-ability"><label>CHA</label><input type="number" id="cs-cha" min="1" max="30" value="10" oninput="updateMod('cha')" /><div class="cs-mod" id="cs-cha-mod">+0</div></div>
+      </div>
+
+      <!-- ── SAVING THROWS & SKILLS ── -->
+      <div class="cs-saves-skills">
+        <div>
+          <div class="cs-section-title">Saving Throws</div>
+          <div class="cs-field" style="margin-bottom:10px;"><label>Proficiency Bonus</label><input type="number" id="cs-prof" value="2" min="2" max="6" /></div>
+          <div class="cs-check-list" id="cs-saves-list"></div>
+        </div>
+        <div>
+          <div class="cs-section-title">Skills</div>
+          <div class="cs-check-list" id="cs-skills-list"></div>
+        </div>
+      </div>
+
+      <!-- ── COMBAT ── -->
+      <div class="cs-section-title">Combat</div>
+      <div class="cs-combat">
+        <div class="cs-combat-box"><label>Armor Class</label><input type="number" id="cs-ac" value="10" /></div>
+        <div class="cs-combat-box"><label>Initiative</label><input type="text" id="cs-init" value="+0" /></div>
+        <div class="cs-combat-box"><label>Speed</label><input type="text" id="cs-speed" value="30 ft" /></div>
+        <div class="cs-combat-box"><label>Max HP</label><input type="number" id="cs-hp-max" value="0" /></div>
+        <div class="cs-combat-box"><label>Current HP</label><input type="number" id="cs-hp-cur" value="0" /></div>
+        <div class="cs-combat-box"><label>Temp HP</label><input type="number" id="cs-hp-tmp" value="0" /></div>
+        <div class="cs-combat-box"><label>Hit Dice</label><input type="text" id="cs-hd" placeholder="5d10" /></div>
+        <div class="cs-combat-box"><label>Passive Perc.</label><input type="number" id="cs-passive" value="10" /></div>
+      </div>
+
+      <!-- Death saves -->
+      <div style="display:flex;gap:32px;margin-bottom:24px;flex-wrap:wrap;">
+        <div><div style="font-family:Cinzel;font-size:11px;color:var(--text-dim);margin-bottom:8px;letter-spacing:0.07em;">DEATH SAVES — SUCCESS</div><div style="display:flex;gap:8px;"><input type="checkbox" /><input type="checkbox" /><input type="checkbox" /></div></div>
+        <div><div style="font-family:Cinzel;font-size:11px;color:var(--text-dim);margin-bottom:8px;letter-spacing:0.07em;">DEATH SAVES — FAILURE</div><div style="display:flex;gap:8px;"><input type="checkbox" /><input type="checkbox" /><input type="checkbox" /></div></div>
+      </div>
+
+      <!-- ── ATTACKS ── -->
+      <div class="cs-section-title">Attacks &amp; Spellcasting</div>
+      <table class="cs-attack-table">
+        <thead><tr><th>Name</th><th>Attack Bonus</th><th>Damage / Type</th></tr></thead>
+        <tbody id="cs-attacks-body"></tbody>
+      </table>
+      <button class="cs-btn cs-btn-secondary" onclick="addAttackRow()" style="margin-top:8px;font-size:12px;padding:6px 16px;">+ Add Attack</button>
+
+      <!-- ── EQUIPMENT ── -->
+      <div class="cs-section-title">Equipment &amp; Treasure</div>
+      <div class="cs-field-group" style="grid-template-columns:repeat(5,1fr);">
+        <div class="cs-field"><label>CP</label><input type="number" id="cs-cp" value="0" /></div>
+        <div class="cs-field"><label>SP</label><input type="number" id="cs-sp" value="0" /></div>
+        <div class="cs-field"><label>EP</label><input type="number" id="cs-ep" value="0" /></div>
+        <div class="cs-field"><label>GP</label><input type="number" id="cs-gp" value="0" /></div>
+        <div class="cs-field"><label>PP</label><input type="number" id="cs-pp" value="0" /></div>
+      </div>
+      <div class="cs-field"><label>Equipment</label><textarea id="cs-equipment" rows="5" placeholder="List your items here..."></textarea></div>
+
+      <!-- ── FEATURES & TRAITS ── -->
+      <div class="cs-section-title">Features &amp; Traits</div>
+      <div class="cs-field-group">
+        <div class="cs-field" style="grid-column:span 2;"><label>Personality Traits</label><textarea id="cs-traits" rows="3"></textarea></div>
+        <div class="cs-field"><label>Ideals</label><textarea id="cs-ideals" rows="3"></textarea></div>
+        <div class="cs-field"><label>Bonds</label><textarea id="cs-bonds" rows="3"></textarea></div>
+        <div class="cs-field" style="grid-column:span 2;"><label>Flaws</label><textarea id="cs-flaws" rows="2"></textarea></div>
+        <div class="cs-field" style="grid-column:span 2;"><label>Features &amp; Class Abilities</label><textarea id="cs-features" rows="6"></textarea></div>
+        <div class="cs-field" style="grid-column:span 2;"><label>Proficiencies &amp; Languages</label><textarea id="cs-profs" rows="4"></textarea></div>
+      </div>
+
+      <!-- ── SPELLS ── -->
+      <div class="cs-section-title">Spellcasting</div>
+      <div class="cs-field-group">
+        <div class="cs-field"><label>Spellcasting Class</label><input type="text" id="cs-spell-class" /></div>
+        <div class="cs-field"><label>Spellcasting Ability</label><input type="text" id="cs-spell-ability" placeholder="INT / WIS / CHA" /></div>
+        <div class="cs-field"><label>Spell Save DC</label><input type="number" id="cs-spell-dc" /></div>
+        <div class="cs-field"><label>Spell Attack Bonus</label><input type="text" id="cs-spell-atk" /></div>
+      </div>
+      <div id="cs-spell-slots"></div>
+
+      <!-- ── BACKSTORY ── -->
+      <div class="cs-section-title">Character Background</div>
+      <div class="cs-field"><label>Backstory</label><textarea id="cs-backstory" rows="6" placeholder="Write your character's history..."></textarea></div>
+      <div class="cs-field" style="margin-top:16px;"><label>Allies &amp; Organizations</label><textarea id="cs-allies" rows="3"></textarea></div>
+      <div class="cs-field" style="margin-top:16px;"><label>Additional Notes</label><textarea id="cs-notes" rows="4"></textarea></div>
+
+      <!-- ── ACTIONS ── -->
+      <div class="cs-actions">
+        <button class="cs-btn cs-btn-primary" onclick="saveSheet()">Save Sheet</button>
+        <button class="cs-btn cs-btn-secondary" onclick="window.print()">Print / Save PDF</button>
+        <button class="cs-btn cs-btn-secondary" onclick="clearSheet()">Clear All</button>
+      </div>
+
+    </div><!-- /cs-sheet -->
+  </div><!-- /cs-wrap -->
+
+  <!-- Spell Modal Overlay -->
+  <div class="spell-modal-overlay" id="spell-modal-overlay">
+    <div class="spell-modal" id="spell-modal">
+      <div class="spell-modal-header">
+        <div class="spell-modal-name" id="spell-modal-title">Spell Name</div>
+        <div class="spell-modal-level" id="spell-modal-level">Level 0 - Evocation</div>
+      </div>
+      <div class="spell-modal-body">
+        <div class="spell-modal-stat">
+          <div class="spell-modal-stat-label">Casting Time</div>
+          <div class="spell-modal-stat-value" id="spell-modal-casting-time">1 action</div>
+        </div>
+        <div class="spell-modal-stat">
+          <div class="spell-modal-stat-label">Range</div>
+          <div class="spell-modal-stat-value" id="spell-modal-range">120 feet</div>
+        </div>
+        <div class="spell-modal-stat">
+          <div class="spell-modal-stat-label">Components</div>
+          <div class="spell-modal-stat-value" id="spell-modal-components">V, S</div>
+        </div>
+        <div class="spell-modal-stat">
+          <div class="spell-modal-stat-label">Duration</div>
+          <div class="spell-modal-stat-value" id="spell-modal-duration">Instantaneous</div>
+        </div>
+        <div class="spell-modal-desc" id="spell-modal-description">Spell description goes here.</div>
+        <div class="spell-modal-desc" id="spell-modal-higher-levels" style="display:none;border-top:1px solid var(--border);padding-top:12px;margin-top:12px;"><strong>At Higher Levels.</strong> <span id="spell-modal-higher-text"></span></div>
+        <div id="spell-roll-container"></div>
+      </div>
+      <div class="spell-modal-actions">
+        <button class="spell-cast-btn" onclick="castSpell()">Cast Spell</button>
+        <button class="spell-close-btn" onclick="closeSpellModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="ps-site-footer"></div>
+
+  <script>
+    // ── Spell Database ────────────────────────────────────────────────────
+    var SPELL_DATABASE = {
+      'Fire Bolt': {
+        level: 0, school: 'Evocation',
+        castingTime: '1 action', range: '120 feet',
+        components: 'V, S', duration: 'Instantaneous',
+        description: 'You hurl a mote of fire at a creature or object within range. Make a ranged spell attack against the target. On a hit, the target takes 1d10 fire damage.',
+        higherLevels: 'The spell\'s damage increases by 1d10 when you reach 5th level (2d10), 11th level (3d10), and 17th level (4d10).',
+        classes: ['Sorcerer', 'Wizard'], attack: true, damage: '1d10', damageType: 'fire'
+      },
+      'Acid Splash': {
+        level: 0, school: 'Conjuration',
+        castingTime: '1 action', range: '60 feet',
+        components: 'V, S', duration: 'Instantaneous',
+        description: 'You cast a bubble of acid at a creature or object you can see within range. Make a ranged spell attack against the target. On a hit, the target takes 1d6 acid damage.',
+        higherLevels: 'The spell\'s damage increases by 1d6 when you reach 5th level (2d6), 11th level (3d6), and 17th level (4d6).',
+        classes: ['Sorcerer', 'Wizard'], attack: true, damage: '1d6', damageType: 'acid'
+      },
+      'Ray of Frost': {
+        level: 0, school: 'Evocation',
+        castingTime: '1 action', range: '60 feet',
+        components: 'V, S', duration: 'Instantaneous',
+        description: 'A thin icy beam springs from your pointing finger. Make a ranged spell attack against the target. On a hit, it takes 1d8 cold damage, and its speed is reduced by 10 feet until the start of your next turn.',
+        higherLevels: 'The spell\'s damage increases by 1d8 when you reach 5th level (2d8), 11th level (3d8), and 17th level (4d8).',
+        classes: ['Sorcerer', 'Wizard'], attack: true, damage: '1d8', damageType: 'cold'
+      },
+      'Mage Hand': {
+        level: 0, school: 'Conjuration',
+        castingTime: '1 action', range: '30 feet',
+        components: 'V, S', duration: 'Concentration, up to 1 minute',
+        description: 'A spectral, floating hand appears at a point you choose within range. The hand lasts for the duration or until you dismiss it as an action. You can use your action to move the hand up to 30 feet and then cause one of the following effects at the hand\'s location.',
+        classes: ['Bard', 'Sorcerer', 'Wizard'], attack: false
+      },
+      'Prestidigitation': {
+        level: 0, school: 'Transmutation',
+        castingTime: '1 action', range: '10 feet',
+        components: 'V, S', duration: 'Up to 1 hour',
+        description: 'This spell is a minor magical trick that novice spellcasters use for practice. You create one of the following magical effects within range: you instantaneously light or snuff out a candle, torch, or small campfire.',
+        classes: ['Bard', 'Cleric', 'Sorcerer', 'Wizard'], attack: false
+      },
+      'Magic Missile': {
+        level: 1, school: 'Evocation',
+        castingTime: '1 action', range: '120 feet',
+        components: 'V, S', duration: 'Instantaneous',
+        description: 'You create three glowing darts of magical force. Each dart hits a creature of your choice that you can see within range. A dart deals 1d4 + 1 force damage to its target. The darts all strike simultaneously, and you can direct them to hit one creature or several.',
+        higherLevels: 'When you cast this spell using a slot of 2nd level or higher, the number of darts increases by one for each slot level above 1st.',
+        classes: ['Sorcerer', 'Wizard'], attack: true, damage: '1d4+1', damageType: 'force'
+      },
+      'Burning Hands': {
+        level: 1, school: 'Evocation',
+        castingTime: '1 action', range: 'Self (15-foot cone)',
+        components: 'V, S', duration: 'Instantaneous',
+        description: 'As you hold your hands with thumbs touching and fingers spread, a thin sheet of flames springs from your fingertips. Each creature in a 15-foot cone must make a Dexterity saving throw. A creature takes 3d6 fire damage on a failed save, or half as much on a successful one.',
+        higherLevels: 'When you cast this spell using a slot of 2nd level or higher, the damage increases by 1d6 for each slot level above 1st.',
+        classes: ['Sorcerer', 'Wizard'], attack: false, damage: '3d6', damageType: 'fire', saveType: 'dex', saveDC: true
+      },
+      'Mage Armor': {
+        level: 1, school: 'Abjuration',
+        castingTime: '1 action', range: 'Touch',
+        components: 'V, S, M (a piece of cured leather)', duration: '8 hours',
+        description: 'You touch a willing creature who isn\'t wearing armor, and a protective magical force surrounds it. Until the spell ends, the target\'s AC is 13 + its Dexterity modifier. The spell ends if the target dons armor or if you dismiss the spell as an action.',
+        classes: ['Sorcerer', 'Wizard'], attack: false
+      },
+      'Shield': {
+        level: 1, school: 'Abjuration',
+        castingTime: '1 reaction, which you take when you are hit by an attack or targeted by the magic missile spell',
+        range: 'Self', components: 'V, S', duration: '1 round',
+        description: 'An invisible barrier of magical force springs into existence in front of you. Until the start of your next turn, you have a +5 bonus to AC, including against the triggering attack, and you take no damage from magic missile.',
+        classes: ['Sorcerer', 'Wizard'], attack: false
+      },
+      'Sleep': {
+        level: 1, school: 'Enchantment',
+        castingTime: '1 action', range: '90 feet',
+        components: 'V, S, M (a pinch of fine sand, rose petals, or a cricket)', duration: '1 minute',
+        description: 'This spell sends creatures into a magical slumber. Roll 5d8; the total is how many hit points of creatures this spell can affect. Creatures within 20 feet of a point you choose within range are affected in ascending order of their current hit points (ignoring unconscious creatures).',
+        classes: ['Bard', 'Sorcerer', 'Wizard'], attack: false
+      },
+      'Cure Wounds': {
+        level: 1, school: 'Evocation',
+        castingTime: '1 action', range: 'Touch',
+        components: 'V, S', duration: 'Instantaneous',
+        description: 'A creature you touch regains a number of hit points equal to 1d8 + your spellcasting ability modifier. This spell has no effect on undead or constructs.',
+        higherLevels: 'When you cast this spell using a slot of 2nd level or higher, the healing increases by 1d8 for each slot level above 1st.',
+        classes: ['Bard', 'Cleric', 'Druid'], attack: false, damage: '1d8', damageType: 'healing'
+      },
+      'Detect Magic': {
+        level: 1, school: 'Divination',
+        castingTime: '1 action', range: 'Self',
+        components: 'V, S', duration: 'Concentration, up to 10 minutes',
+        description: 'For the spell\'s duration, you sense the presence of magic within 30 feet of you. If you sense magic in this way, you can use your action to see a faint aura around any visible creature or object in the area that bears magic.',
+        classes: ['Bard', 'Cleric', 'Druid', 'Paladin', 'Ranger', 'Sorcerer', 'Wizard'], attack: false
+      },
+      'Charm Person': {
+        level: 1, school: 'Enchantment',
+        castingTime: '1 action', range: '30 feet',
+        components: 'V, S', duration: '1 hour',
+        description: 'You attempt to charm a humanoid you can see within range. It must make a Wisdom saving throw, and does so with advantage if you or your companions are fighting it. If it fails the save, it is charmed by you until the spell ends or until you or your companions do anything harmful to it.',
+        classes: ['Bard', 'Sorcerer', 'Wizard'], attack: false, saveType: 'wis', saveDC: true
+      },
+      'Scorching Ray': {
+        level: 2, school: 'Evocation',
+        castingTime: '1 action', range: '120 feet',
+        components: 'V, S', duration: 'Instantaneous',
+        description: 'You hurl 3 rays of searing flame at targets you can see within range. You can hurl them at one target or several. Make a ranged spell attack for each ray. On a hit, the target takes 2d6 fire damage.',
+        higherLevels: 'When you cast this spell using a slot of 3rd level or higher, you create one additional ray for each slot level above 2nd.',
+        classes: ['Sorcerer', 'Wizard'], attack: true, damage: '2d6', damageType: 'fire'
+      },
+      'Fireball': {
+        level: 3, school: 'Evocation',
+        castingTime: '1 action', range: '150 feet',
+        components: 'V, S, M (a tiny ball of bat guano and sulfur)', duration: 'Instantaneous',
+        description: 'A bright streak flashes from your pointing finger to a point of your choice within range and then blossoms with a low roar into an explosion of flame. Each creature in a 20-foot-radius sphere centered on that point must make a Dexterity saving throw. A target takes 8d6 fire damage on a failed save, or half as much on a successful one.',
+        higherLevels: 'When you cast this spell using a slot of 4th level or higher, the damage increases by 1d6 for each slot level above 3rd.',
+        classes: ['Sorcerer', 'Wizard'], attack: false, damage: '8d6', damageType: 'fire', saveType: 'dex', saveDC: true
+      },
+      'Lightning Bolt': {
+        level: 3, school: 'Evocation',
+        castingTime: '1 action', range: 'Self (100-foot line)',
+        components: 'V, S, M (a bit of fur and a rod of amber, crystal, or glass)', duration: 'Instantaneous',
+        description: 'A stroke of lightning forming a line 100 feet long and 5 feet wide blasts out from you in a direction you choose. Each creature in the line must make a Dexterity saving throw. A creature takes 8d6 lightning damage on a failed save, or half as much on a successful one.',
+        higherLevels: 'When you cast this spell using a slot of 4th level or higher, the damage increases by 1d6 for each slot level above 3rd.',
+        classes: ['Sorcerer', 'Wizard'], attack: false, damage: '8d6', damageType: 'lightning', saveType: 'dex', saveDC: true
+      },
+      'Magic Weapon': {
+        level: 2, school: 'Transmutation',
+        castingTime: '1 bonus action', range: 'Touch',
+        components: 'V, S', duration: 'Concentration, up to 1 hour',
+        description: 'You touch a nonmagical weapon. Until the spell ends, that weapon becomes a magic weapon with a +1 bonus to attack rolls and damage rolls.',
+        higherLevels: 'When you cast this spell using a spell slot of 4th level or higher, the bonus increases to +2. When you use a 6th-level slot or higher, the bonus increases to +3.',
+        classes: ['Paladin', 'Wizard'], attack: false
+      },
+      'Invisibility': {
+        level: 2, school: 'Illusion',
+        castingTime: '1 action', range: 'Touch',
+        components: 'V, S, M (an eyelash encased in gum arabic)', duration: 'Concentration, up to 1 hour',
+        description: 'A creature you touch becomes invisible until the spell ends. Anything the target is wearing or carrying is invisible as long as it remains in the target\'s possession. The spell ends for a target that attacks or casts a spell.',
+        higherLevels: 'When you cast this spell using a spell slot of 3rd level or higher, you can target one additional creature for each slot level above 2nd.',
+        classes: ['Bard', 'Sorcerer', 'Wizard'], attack: false
+      },
+      'Blindness/Deafness': {
+        level: 2, school: 'Necromancy',
+        castingTime: '1 action', range: '30 feet',
+        components: 'V', duration: '1 minute',
+        description: 'For the spell\'s duration, a creature you can see within range is either blinded or deafened of your choice. At the end of each of the target\'s turns, it can make a Constitution saving throw. If it succeeds, the spell ends.',
+        classes: ['Bard', 'Cleric', 'Sorcerer', 'Wizard'], attack: false, saveType: 'con', saveDC: true
+      },
+      'Polymorph': {
+        level: 4, school: 'Transmutation',
+        castingTime: '1 action', range: '60 feet',
+        components: 'V, S, M (a caterpillar cocoon)', duration: 'Concentration, up to 1 hour',
+        description: 'This spell transforms a creature that you can see within range into a new form. An unwilling creature must make a Wisdom saving throw to avoid the effect. You transform the creature into a harmless animal. The transformed creature is limited in the actions it can perform by the nature of its new form.',
+        classes: ['Bard', 'Druid', 'Sorcerer', 'Wizard'], attack: false, saveType: 'wis', saveDC: true
+      },
+      'Haste': {
+        level: 3, school: 'Transmutation',
+        castingTime: '1 action', range: '30 feet',
+        components: 'V, S, M (a shaving of licorice root)', duration: 'Concentration, up to 1 minute',
+        description: 'Choose a willing creature that you can see within range. Until the spell ends, the target\'s speed is doubled, it gains a +2 bonus to AC, it has advantage on Dexterity saving throws, and it gains an additional action on each of its turns.',
+        classes: ['Sorcerer', 'Wizard'], attack: false
+      },
+      'Slow': {
+        level: 3, school: 'Transmutation',
+        castingTime: '1 action', range: '120 feet',
+        components: 'V, S, M (a drop of molasses)', duration: 'Concentration, up to 1 minute',
+        description: 'You alter time around up to six creatures of your choice in a 40-foot cube within range. Each creature must make a Wisdom saving throw. On a failed save, the spell slows a creature for the spell\'s duration.',
+        classes: ['Sorcerer', 'Wizard'], attack: false, saveType: 'wis', saveDC: true
+      },
+      'Hold Person': {
+        level: 2, school: 'Enchantment',
+        castingTime: '1 action', range: '60 feet',
+        components: 'V, S, M (a small, straight piece of iron)', duration: 'Concentration, up to 1 minute',
+        description: 'Choose a humanoid that you can see within range. The target must succeed on a Wisdom saving throw or be paralyzed for the duration. At the end of each of the target\'s turns, it can make another Wisdom saving throw.',
+        higherLevels: 'When you cast this spell using a spell slot of 3rd level or higher, you can target one additional humanoid for each slot level above 2nd.',
+        classes: ['Bard', 'Cleric', 'Druid', 'Sorcerer', 'Wizard'], attack: false, saveType: 'wis', saveDC: true
+      },
+      'Counterspell': {
+        level: 3, school: 'Abjuration',
+        castingTime: '1 reaction, which you take when you see a creature within 60 feet of you casting a spell',
+        range: '60 feet', components: 'V, S', duration: 'Instantaneous',
+        description: 'You attempt to interrupt a creature in the process of casting a spell. If the creature is casting a spell of 3rd level or lower, its spell fails and has no effect. If it is casting a spell of 4th level or higher, make an ability check using your spellcasting ability.',
+        classes: ['Sorcerer', 'Wizard'], attack: false
+      },
+      'Dispel Magic': {
+        level: 3, school: 'Abjuration',
+        castingTime: '1 action', range: '120 feet',
+        components: 'V, S', duration: 'Instantaneous',
+        description: 'Choose one creature, object, or magical effect within range. Any spell of 3rd level or lower on the target ends. For each spell of 4th level or higher on the target, make an ability check using your spellcasting ability.',
+        higherLevels: 'When you cast this spell using a spell slot of 4th level or higher, you automatically end the effects of a spell on the target if the spell\'s level is less than or equal to the level of the spell slot you used.',
+        classes: ['Bard', 'Cleric', 'Druid', 'Paladin', 'Ranger', 'Sorcerer', 'Wizard'], attack: false
+      },
+      'Cone of Cold': {
+        level: 5, school: 'Evocation',
+        castingTime: '1 action', range: 'Self (60-foot cone)',
+        components: 'V, S, M (a small crystal or glass cone)', duration: 'Instantaneous',
+        description: 'A blast of cold air springs from your hands. Each creature in a 60-foot cone centered on you must make a Constitution saving throw. A creature takes 8d8 cold damage on a failed save, or half as much on a successful one.',
+        higherLevels: 'When you cast this spell using a spell slot of 6th level or higher, the damage increases by 1d8 for each slot level above 5th.',
+        classes: ['Sorcerer', 'Wizard'], attack: false, damage: '8d8', damageType: 'cold', saveType: 'con', saveDC: true
+      },
+      'Telekinesis': {
+        level: 5, school: 'Transmutation',
+        castingTime: '1 action', range: '60 feet',
+        components: 'V, S', duration: 'Concentration, up to 10 minutes',
+        description: 'You gain the ability to move or manipulate creatures or objects by thought. When you cast the spell, and as your action each round for the duration, you can mentally select any creature or object you can see within range.',
+        classes: ['Sorcerer', 'Wizard'], attack: false
+      },
+      'Mass Heal': {
+        level: 5, school: 'Evocation',
+        castingTime: '1 action', range: '60 feet',
+        components: 'V, S', duration: 'Instantaneous',
+        description: 'A wave of healing energy washes out from a point of your choice within range. Choose up to 6 creatures in a 30-foot radius centered on that point. Each target regains hit points equal to 3d8 + your spellcasting ability modifier.',
+        classes: ['Cleric'], attack: false, damage: '3d8', damageType: 'healing'
+      },
+      'Meteor Swarm': {
+        level: 9, school: 'Evocation',
+        castingTime: '1 action', range: '1 mile',
+        components: 'V, S', duration: 'Instantaneous',
+        description: 'Blazing rain falls in a 360-foot-radius, 40-foot-high cylinder centered on a point within range. Each creature in that area must make a Dexterity saving throw. A creature takes 20d6 fire damage and 20d6 bludgeoning damage on a failed save, or half as much on a successful one.',
+        classes: ['Sorcerer', 'Wizard'], attack: false, damage: '20d6', damageType: 'fire', saveType: 'dex', saveDC: true
+      },
+      'Wish': {
+        level: 9, school: 'Conjuration',
+        castingTime: '1 action', range: 'Self',
+        components: 'V', duration: 'Instantaneous',
+        description: 'Wish is the mightiest spell a mortal creature can cast. By simply speaking aloud, you can alter the very foundations of reality in accord with your desires.',
+        classes: ['Sorcerer', 'Wizard'], attack: false
+      },
+      'Heal': {
+        level: 6, school: 'Evocation',
+        castingTime: '1 action', range: '60 feet',
+        components: 'V, S', duration: 'Instantaneous',
+        description: 'Choose a creature that you can see within range. A creature you touch regains a number of hit points equal to 70. This spell has no effect on undead or constructs.',
+        classes: ['Cleric', 'Druid'], attack: false, damage: '70', damageType: 'healing'
+      },
+      'True Polymorph': {
+        level: 9, school: 'Transmutation',
+        castingTime: '1 action', range: '30 feet',
+        components: 'V, S, M (a jade circlet worth at least 1,500 gp)', duration: 'Concentration, up to 1 hour',
+        description: 'Choose one creature or nonmagical object that you can see within range. You transform the creature into a different creature, the creature into an object, or the object into a creature. A nonmagical object can be transformed into a creature only if it has never been a creature.',
+        classes: ['Wizard'], attack: false
+      },
+      'Levitate': {
+        level: 2, school: 'Transmutation',
+        castingTime: '1 action', range: '60 feet',
+        components: 'V, S, M (a small leather loop)', duration: 'Concentration, up to 10 minutes',
+        description: 'One creature you can see within range floats upward within the space. The target can be a willing creature, or a creature that you attempt to move with the spell. The target rises until the spell ends, up to 20 feet off the ground while you concentrate on the spell.',
+        classes: ['Sorcerer', 'Wizard'], attack: false
+      },
+      'Misty Step': {
+        level: 2, school: 'Conjuration',
+        castingTime: '1 bonus action', range: 'Self',
+        components: 'V', duration: 'Instantaneous',
+        description: 'Briefly surrounded by silvery mist, you teleport up to 30 feet to an unoccupied space that you can see.',
+        classes: ['Bard', 'Sorcerer', 'Wizard'], attack: false
+      },
+      'Shatter': {
+        level: 2, school: 'Evocation',
+        castingTime: '1 action', range: '60 feet',
+        components: 'V, S, M (a chip of mica)', duration: 'Instantaneous',
+        description: 'A sudden loud ringing noise, painfully intense, springs from a point of your choice within range. Each creature in a 10-foot-radius sphere centered on that point must make a Constitution saving throw. A creature takes 3d8 thunder damage on a failed save, or half as much on a successful one.',
+        higherLevels: 'When you cast this spell using a spell slot of 3rd level or higher, the damage increases by 1d8 for each slot level above 2nd.',
+        classes: ['Bard', 'Sorcerer', 'Wizard'], attack: false, damage: '3d8', damageType: 'thunder', saveType: 'con', saveDC: true
+      },
+      'Call Lightning': {
+        level: 3, school: 'Evocation',
+        castingTime: '1 action', range: '120 feet',
+        components: 'V, S, M (a bit of copper wire)', duration: 'Concentration, up to 10 minutes',
+        description: 'A storm cloud appears in the shape of a cylinder that is 10 feet tall with a 60-foot radius, centered on a point you can see 100 feet directly above you. On each turn, you can use your action to call down lightning to strike a creature in the area. A creature can make a Dexterity saving throw, taking 3d10 lightning damage on a failed save, or half as much on a successful one.',
+        higherLevels: 'When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d10 for each slot level above 3rd.',
+        classes: ['Cleric', 'Druid', 'Sorcerer', 'Wizard'], attack: false, damage: '3d10', damageType: 'lightning', saveType: 'dex', saveDC: true
+      },
+      'Dimension Door': {
+        level: 4, school: 'Conjuration',
+        castingTime: '1 action', range: 'Self',
+        components: 'V', duration: 'Instantaneous',
+        description: 'You teleport yourself from your current location to any other spot within 500 feet that you can see. You arrive at exactly the spot desired. It can be a place you can see, one you can visualize, or one you can describe by stating distance and direction.',
+        classes: ['Bard', 'Sorcerer', 'Wizard'], attack: false
+      },
+      'Phantasmal Killer': {
+        level: 4, school: 'Illusion',
+        castingTime: '1 action', range: '120 feet',
+        components: 'V, S', duration: 'Concentration, up to 1 minute',
+        description: 'You tap into the nightmares of a creature you can see within range and create an illusory manifestation of its deepest fears. The target must make a Wisdom saving throw. On a failed save, the target takes 4d10 psychic damage.',
+        higherLevels: 'When you cast this spell using a spell slot of 5th level or higher, the damage increases by 1d10 for each slot level above 4th.',
+        classes: ['Wizard'], attack: false, damage: '4d10', damageType: 'psychic', saveType: 'wis', saveDC: true
+      },
+      'Cloudkill': {
+        level: 5, school: 'Conjuration',
+        castingTime: '1 action', range: '120 feet',
+        components: 'V, S', duration: 'Concentration, up to 10 minutes',
+        description: 'You create a 20-foot-radius sphere of yellowish, nauseating gas centered on a point you choose within range. The cloud spreads around corners. It lasts for the duration or until strong wind disperses the cloud.',
+        classes: ['Sorcerer', 'Wizard'], attack: false
+      },
+      'Circle of Death': {
+        level: 6, school: 'Necromancy',
+        castingTime: '1 action', range: '150 feet',
+        components: 'V, S, M (the powder of a crushed black pearl worth at least 500 gp)', duration: 'Instantaneous',
+        description: 'A sphere of blackish dweomer springs into existence at a point of your choice within range. Each creature in that area must make a Constitution saving throw. A target takes 8d6 necrotic damage on a failed save, or half as much on a successful one.',
+        higherLevels: 'When you cast this spell using a spell slot of 7th level or higher, the damage increases by 2d6 for each slot level above 6th.',
+        classes: ['Sorcerer', 'Wizard'], attack: false, damage: '8d6', damageType: 'necrotic', saveType: 'con', saveDC: true
+      },
+      'Teleport': {
+        level: 7, school: 'Conjuration',
+        castingTime: '1 action', range: 'Self',
+        components: 'V', duration: 'Instantaneous',
+        description: 'This spell instantly transports you and up to eight willing creatures of your choice that you can see within range, or a single object that you can see within range, to a destination you select.',
+        classes: ['Bard', 'Sorcerer', 'Wizard'], attack: false
+      },
+      'Prismatic Wall': {
+        level: 9, school: 'Abjuration',
+        castingTime: '1 action', range: '60 feet',
+        components: 'V, S', duration: 'Concentration, up to 10 minutes',
+        description: 'A shimmering, multicolored plane of light springs into existence at a point of your choice within range. The wall is opaque to nonmagical sight and extends in any direction you choose so long as it remains within the spell\'s range.',
+        classes: ['Wizard'], attack: false
+      },
+      'Feather Fall': {
+        level: 1, school: 'Transmutation',
+        castingTime: '1 reaction, which you take when you or a creature within 60 feet of you falls',
+        range: '60 feet', components: 'V, M (a small feather or piece of down)', duration: '1 minute',
+        description: 'You instruct one creature you can see within range to fall slowly. Until the spell ends, the target\'s fall is slowed so that it falls 60 feet per round instead of falling at normal speed.',
+        classes: ['Bard', 'Sorcerer', 'Wizard'], attack: false
+      },
+      'Grease': {
+        level: 1, school: 'Conjuration',
+        castingTime: '1 action', range: '60 feet',
+        components: 'V, S, M (a bit of pork rind)', duration: '1 minute',
+        description: 'Slick grease covers the ground in a 10-foot square centered on a point within range and turns it into difficult terrain for the duration. When the grease appears, each creature standing in its area must succeed on a Dexterity saving throw or fall prone.',
+        classes: ['Sorcerer', 'Wizard'], attack: false, saveType: 'dex', saveDC: true
+      },
+      'Web': {
+        level: 2, school: 'Conjuration',
+        castingTime: '1 action', range: '60 feet',
+        components: 'V, S, M (a bit of spider web)', duration: 'Concentration, up to 1 hour',
+        description: 'You create a sticky web in a 20-foot cube within range. The web fills each of its area that is not blocked by a wall. The web lasts for the duration. Any creature that starts its turn in the web or that enters the web during its turn is restrained as long as it remains in the web or until it breaks free.',
+        classes: ['Sorcerer', 'Wizard'], attack: false
+      },
+      'Enlarge/Reduce': {
+        level: 2, school: 'Transmutation',
+        castingTime: '1 action', range: '30 feet',
+        components: 'V, S, M (a pinch of powdered iron)', duration: 'Concentration, up to 1 minute',
+        description: 'You cause a creature or an object you can see within range to grow larger or smaller for the duration. Choose either a creature or an object that is neither worn nor carried. If the target is unwilling, it can make a Constitution saving throw.',
+        classes: ['Sorcerer', 'Wizard'], attack: false, saveType: 'con', saveDC: true
+      },
+      'Spiritual Weapon': {
+        level: 2, school: 'Evocation',
+        castingTime: '1 bonus action', range: '60 feet',
+        components: 'V, S', duration: 'Concentration, up to 1 minute',
+        description: 'You create a floating, spectral weapon within range that lasts for the duration or until you cast this spell again. When you cast the spell, you can make a melee spell attack against a creature within 5 feet of the weapon. On a hit, the target takes 1d8 force damage.',
+        higherLevels: 'Every four levels after 2nd, the damage of this weapon increases by one die (3rd level: 2d8, 5th level: 3d8, etc).',
+        classes: ['Cleric'], attack: true, damage: '1d8', damageType: 'force'
+      },
+      'Mirror Image': {
+        level: 2, school: 'Illusion',
+        castingTime: '1 action', range: 'Self',
+        components: 'V, S', duration: 'Concentration, up to 1 minute',
+        description: 'Three illusory copies of yourself appear in your space. Until the spell ends, the copies move with you and mimic your actions, shifting position so it\'s impossible to track which image is real. You can use your action to dismiss the illusory copies.',
+        classes: ['Sorcerer', 'Wizard'], attack: false
+      },
+      'Stoneskin': {
+        level: 4, school: 'Abjuration',
+        castingTime: '1 action', range: 'Touch',
+        components: 'V, S, M (diamond dust worth 100 gp, which the spell consumes)', duration: 'Concentration, up to 1 hour',
+        description: 'You touch a creature and grant it resistance to nonmagical bludgeoning, piercing, and slashing damage for the duration.',
+        classes: ['Druid', 'Ranger', 'Sorcerer', 'Wizard'], attack: false
+      },
+      'Ice Storm': {
+        level: 4, school: 'Evocation',
+        castingTime: '1 action', range: '300 feet',
+        components: 'V, S, M (a pinch of dust and a few drops of water)', duration: 'Instantaneous',
+        description: 'A hail of rock-hard ice pounds to the ground in a 20-foot-radius cylinder centered on a point you see within range. Each creature in that cylinder must make a Dexterity saving throw. A creature takes 2d8 bludgeoning damage and 4d8 cold damage on a failed save, or half as much on a successful one.',
+        classes: ['Sorcerer', 'Wizard'], attack: false, damage: '2d8+4d8', damageType: 'cold', saveType: 'dex', saveDC: true
+      },
+      'Greater Invisibility': {
+        level: 4, school: 'Illusion',
+        castingTime: '1 action', range: 'Touch',
+        components: 'V, S', duration: 'Concentration, up to 1 minute',
+        description: 'You or a creature you touch becomes invisible until the spell ends. Anything the target is wearing or carrying is invisible as long as it remains in the target\'s possession. Unlike invisibility, the target can attack and cast spells while invisible and remain invisible.',
+        classes: ['Bard', 'Sorcerer', 'Wizard'], attack: false
+      },
+      'Blight': {
+        level: 4, school: 'Necromancy',
+        castingTime: '1 action', range: '30 feet',
+        components: 'V, S', duration: 'Instantaneous',
+        description: 'Necromantic energy springs from your fingers toward a creature you can see within range. The target must make a Constitution saving throw. A creature takes 8d8 necrotic damage on a failed save, or half as much on a successful one. A target killed by this spell becomes a ghoul under the caster\'s control.',
+        classes: ['Druid', 'Sorcerer', 'Wizard'], attack: false, damage: '8d8', damageType: 'necrotic', saveType: 'con', saveDC: true
+      },
+      'Immolation': {
+        level: 3, school: 'Evocation',
+        castingTime: '1 action', range: '90 feet',
+        components: 'V', duration: 'Concentration, up to 1 minute',
+        description: 'Flames spring from your fingers and instantly engulf a creature you can see within range. The target must make a Dexterity saving throw. It takes 2d6 fire damage on a failed save, or half as much on a successful one. On a failed save, the target is also burning.',
+        classes: ['Sorcerer'], attack: false, damage: '2d6', damageType: 'fire', saveType: 'dex', saveDC: true
+      }
+    };
+
+    // ── Data ──────────────────────────────────────────────────────────────
+    const SAVES = [
+      { id: 'sav-str', label: 'Strength',     ability: 'str' },
+      { id: 'sav-dex', label: 'Dexterity',    ability: 'dex' },
+      { id: 'sav-con', label: 'Constitution', ability: 'con' },
+      { id: 'sav-int', label: 'Intelligence', ability: 'int' },
+      { id: 'sav-wis', label: 'Wisdom',       ability: 'wis' },
+      { id: 'sav-cha', label: 'Charisma',     ability: 'cha' }
+    ];
+
+    const SKILLS = [
+      { id: 'sk-acrobatics',     label: 'Acrobatics',      ability: 'dex' },
+      { id: 'sk-animal',         label: 'Animal Handling', ability: 'wis' },
+      { id: 'sk-arcana',         label: 'Arcana',          ability: 'int' },
+      { id: 'sk-athletics',      label: 'Athletics',       ability: 'str' },
+      { id: 'sk-deception',      label: 'Deception',       ability: 'cha' },
+      { id: 'sk-history',        label: 'History',         ability: 'int' },
+      { id: 'sk-insight',        label: 'Insight',         ability: 'wis' },
+      { id: 'sk-intimidation',   label: 'Intimidation',    ability: 'cha' },
+      { id: 'sk-investigation',  label: 'Investigation',   ability: 'int' },
+      { id: 'sk-medicine',       label: 'Medicine',        ability: 'wis' },
+      { id: 'sk-nature',         label: 'Nature',          ability: 'int' },
+      { id: 'sk-perception',     label: 'Perception',      ability: 'wis' },
+      { id: 'sk-performance',    label: 'Performance',     ability: 'cha' },
+      { id: 'sk-persuasion',     label: 'Persuasion',      ability: 'cha' },
+      { id: 'sk-religion',       label: 'Religion',        ability: 'int' },
+      { id: 'sk-sleight',        label: 'Sleight of Hand', ability: 'dex' },
+      { id: 'sk-stealth',        label: 'Stealth',         ability: 'dex' },
+      { id: 'sk-survival',       label: 'Survival',        ability: 'wis' }
+    ];
+
+    const SPELL_SLOTS = [
+      { level: 'Cantrips', slots: 0 },
+      { level: '1st',  slots: 4 },
+      { level: '2nd',  slots: 3 },
+      { level: '3rd',  slots: 3 },
+      { level: '4th',  slots: 3 },
+      { level: '5th',  slots: 2 },
+      { level: '6th',  slots: 1 },
+      { level: '7th',  slots: 1 },
+      { level: '8th',  slots: 1 },
+      { level: '9th',  slots: 1 }
+    ];
+
+    // ── Init ─────────────────────────────────────────────────────────────
+    function getMod(score) {
+      return Math.floor((parseInt(score) - 10) / 2);
+    }
+
+    function fmtMod(m) {
+      return (m >= 0 ? '+' : '') + m;
+    }
+
+    function updateMod(ability) {
+      const score = document.getElementById('cs-' + ability).value;
+      const mod = getMod(score);
+      document.getElementById('cs-' + ability + '-mod').textContent = fmtMod(mod);
+    }
+
+    function buildSaves() {
+      const container = document.getElementById('cs-saves-list');
+      container.innerHTML = SAVES.map(s => `
+        <div class="cs-check-item">
+          <input type="checkbox" id="${s.id}-prof" />
+          <span class="cs-prof-val" id="${s.id}-val">+0</span>
+          <label for="${s.id}-prof">${s.label}</label>
+        </div>
+      `).join('');
+    }
+
+    function buildSkills() {
+      const container = document.getElementById('cs-skills-list');
+      container.innerHTML = SKILLS.map(s => `
+        <div class="cs-check-item">
+          <input type="checkbox" id="${s.id}-prof" />
+          <span class="cs-prof-val" id="${s.id}-val">+0</span>
+          <label for="${s.id}-prof">${s.label} <span style="opacity:.5;font-size:12px;">(${s.ability.toUpperCase()})</span></label>
+        </div>
+      `).join('');
+    }
+
+    function buildSpellSlots() {
+      const container = document.getElementById('cs-spell-slots');
+      container.innerHTML = SPELL_SLOTS.map((row, i) => `
+        <div class="cs-spell-level">
+          <div class="cs-spell-level-header">
+            <label>${row.level}</label>
+            ${row.slots > 0 ? `<div class="cs-slot-boxes">${Array.from({length: row.slots}, (_, j) =>
+              `<div class="cs-slot-box" onclick="this.classList.toggle('used')" title="Slot ${j+1}"></div>`
+            ).join('')}</div>` : ''}
+          </div>
+          <div class="cs-spells-grid" id="spells-${i}" data-level="${i}">
+            ${Array.from({length: row.slots > 0 ? 6 : 4}, () =>
+              `<input type="text" placeholder="Spell name..." />`
+            ).join('')}
+          </div>
+        </div>
+      `).join('');
+      setTimeout(attachSpellClickHandlers, 100);
+    }
+
+    function buildAttackRows(count) {
+      const tbody = document.getElementById('cs-attacks-body');
+      tbody.innerHTML = '';
+      for (let i = 0; i < count; i++) addAttackRow();
+    }
+
+    window.addAttackRow = function() {
+      const tbody = document.getElementById('cs-attacks-body');
+      const tr = document.createElement('tr');
+      tr.innerHTML = `<td><input type="text" placeholder="Longsword" /></td><td><input type="text" placeholder="+5" style="width:70px;" /></td><td><input type="text" placeholder="1d8+3 slashing" /></td>`;
+      tbody.appendChild(tr);
+    };
+
+    // ── Save / Load ───────────────────────────────────────────────────────
+    const STORAGE_KEY = 'phmurt_sheet_dnd5e';
+
+    function collectSheetData() {
+      const fields = document.querySelectorAll('#cs-sheet input[id], #cs-sheet textarea[id], #cs-sheet select[id]');
+      const data = {};
+      fields.forEach(f => { data[f.id] = f.type === 'checkbox' ? f.checked : f.value; });
+
+      // Attacks
+      const attacks = [];
+      document.querySelectorAll('#cs-attacks-body tr').forEach(tr => {
+        const inputs = tr.querySelectorAll('input');
+        attacks.push([inputs[0].value, inputs[1].value, inputs[2].value]);
+      });
+      data._attacks = attacks;
+
+      // Spells
+      const spells = {};
+      SPELL_SLOTS.forEach((_, i) => {
+        spells[i] = Array.from(document.querySelectorAll(`#spells-${i} input`)).map(inp => inp.value);
+      });
+      data._spells = spells;
+
+      // Slot usage
+      const slots = [];
+      document.querySelectorAll('.cs-slot-box').forEach(box => slots.push(box.classList.contains('used')));
+      data._slots = slots;
+
+      // Saves/skills proficiency checkboxes
+      const profChecks = {};
+      document.querySelectorAll('.cs-check-item input[type="checkbox"]').forEach(cb => {
+        profChecks[cb.id] = cb.checked;
+      });
+      data._profChecks = profChecks;
+
+      return data;
+    }
+
+    function applySheetData(data) {
+      if (!data) return;
+      Object.keys(data).forEach(key => {
+        if (key.startsWith('_')) return;
+        const el = document.getElementById(key);
+        if (!el) return;
+        if (el.type === 'checkbox') el.checked = data[key];
+        else el.value = data[key];
+      });
+
+      // Attacks
+      const tbody = document.getElementById('cs-attacks-body');
+      tbody.innerHTML = '';
+      (data._attacks || []).forEach(atk => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td><input type="text" value="${atk[0]||''}" placeholder="Longsword" /></td><td><input type="text" value="${atk[1]||''}" placeholder="+5" style="width:70px;" /></td><td><input type="text" value="${atk[2]||''}" placeholder="1d8+3 slashing" /></td>`;
+        tbody.appendChild(tr);
+      });
+      if (!tbody.rows.length) for (let i = 0; i < 3; i++) addAttackRow();
+
+      // Spells
+      SPELL_SLOTS.forEach((_, i) => {
+        const vals = (data._spells || {})[i] || [];
+        document.querySelectorAll(`#spells-${i} input`).forEach((inp, j) => { inp.value = vals[j] || ''; });
+      });
+
+      // Slot usage
+      const slots = data._slots || [];
+      document.querySelectorAll('.cs-slot-box').forEach((box, i) => {
+        box.classList.toggle('used', !!slots[i]);
+      });
+
+      // Prof checks
+      const profChecks = data._profChecks || {};
+      Object.keys(profChecks).forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.checked = profChecks[id];
+      });
+
+      // Refresh mods
+      ['str','dex','con','int','wis','cha'].forEach(updateMod);
+    }
+
+    window.saveSheet = function() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(collectSheetData()));
+      if (window.psToast) window.psToast('Sheet saved!');
+    };
+
+    window.clearSheet = function() {
+      if (!confirm('Clear all fields? This cannot be undone.')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      location.reload();
+    };
+
+    // Auto-save every 30 seconds
+    setInterval(saveSheet, 30000);
+
+    // ── Spell Modal & Casting ────────────────────────────────────────────
+    var currentSpellName = null;
+    var currentSpellLevel = null;
+    var currentSpellIndex = null;
+
+    window.openSpellModal = function(spellName, levelIndex) {
+      const spell = SPELL_DATABASE[spellName];
+      if (!spell) return;
+
+      currentSpellName = spellName;
+      currentSpellLevel = levelIndex;
+      const levelObj = SPELL_SLOTS[levelIndex];
+      currentSpellIndex = levelIndex;
+
+      document.getElementById('spell-modal-title').textContent = spellName;
+      const levelText = spell.level === 0 ? 'Cantrip' : getMod(spell.level) + ' Level';
+      document.getElementById('spell-modal-level').textContent = levelText + ' - ' + spell.school;
+      document.getElementById('spell-modal-casting-time').textContent = spell.castingTime;
+      document.getElementById('spell-modal-range').textContent = spell.range;
+      document.getElementById('spell-modal-components').textContent = spell.components;
+      document.getElementById('spell-modal-duration').textContent = spell.duration;
+      document.getElementById('spell-modal-description').textContent = spell.description;
+
+      const higherLevelsEl = document.getElementById('spell-modal-higher-levels');
+      if (spell.higherLevels) {
+        document.getElementById('spell-modal-higher-text').textContent = spell.higherLevels;
+        higherLevelsEl.style.display = 'block';
+      } else {
+        higherLevelsEl.style.display = 'none';
+      }
+
+      document.getElementById('spell-roll-container').innerHTML = '';
+      document.getElementById('spell-modal-overlay').classList.add('active');
+    };
+
+    window.closeSpellModal = function() {
+      document.getElementById('spell-modal-overlay').classList.remove('active');
+      currentSpellName = null;
+      currentSpellLevel = null;
+    };
+
+    window.rollDice = function(diceStr) {
+      const pattern = /(\d+)d(\d+)(?:\+(\d+))?/i;
+      const match = diceStr.match(pattern);
+      if (!match) return null;
+
+      const numDice = parseInt(match[1]);
+      const diceSize = parseInt(match[2]);
+      const bonus = match[3] ? parseInt(match[3]) : 0;
+
+      let total = 0;
+      let rolls = [];
+      for (let i = 0; i < numDice; i++) {
+        const roll = Math.floor(Math.random() * diceSize) + 1;
+        rolls.push(roll);
+        total += roll;
+      }
+      total += bonus;
+
+      return { rolls, total, bonus, numDice, diceSize };
+    };
+
+    window.castSpell = function() {
+      if (!currentSpellName) return;
+      const spell = SPELL_DATABASE[currentSpellName];
+      const levelObj = SPELL_SLOTS[currentSpellIndex];
+
+      let message = '';
+
+      if (spell.level === 0) {
+        message = 'Casting cantrip: ' + currentSpellName;
+      } else {
+        const usedSlots = document.querySelectorAll('#spell-modal-overlay .cs-slot-box.used').length;
+        const availableSlots = levelObj.slots - usedSlots;
+
+        if (availableSlots <= 0) {
+          alert('No spell slots remaining for this level!');
+          return;
+        }
+
+        if (!confirm('Cast ' + currentSpellName + ' using a ' + levelObj.level + ' spell slot? (' + availableSlots + ' remaining)')) {
+          return;
+        }
+
+        message = 'Casting ' + currentSpellName + ' (Level ' + levelObj.level + ' slot)';
+
+        const slotBoxes = document.querySelectorAll(`#cs-spell-slots .cs-spell-level:nth-child(${currentSpellIndex + 1}) .cs-slot-box`);
+        for (let i = 0; i < slotBoxes.length; i++) {
+          if (!slotBoxes[i].classList.contains('used')) {
+            slotBoxes[i].classList.add('used');
+            break;
+          }
+        }
+      }
+
+      const rollContainer = document.getElementById('spell-roll-container');
+      rollContainer.innerHTML = '';
+
+      if (spell.attack) {
+        const spellAtk = document.getElementById('cs-spell-atk').value || '+0';
+        const atkMatch = spellAtk.match(/[+-]?\d+/);
+        const atkBonus = atkMatch ? parseInt(atkMatch[0]) : 0;
+
+        const d20 = Math.floor(Math.random() * 20) + 1;
+        const result = d20 + atkBonus;
+
+        const resultDiv = document.createElement('div');
+        resultDiv.className = 'spell-roll-result';
+        resultDiv.innerHTML = '<div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">SPELL ATTACK ROLL</div><div class="spell-roll-total">' + result + '</div><div class="spell-roll-breakdown">d20 (' + d20 + ') + ' + atkBonus + '</div>';
+        rollContainer.appendChild(resultDiv);
+      }
+
+      if (spell.damage) {
+        const damageRoll = rollDice(spell.damage);
+        if (damageRoll) {
+          const dmgDiv = document.createElement('div');
+          dmgDiv.className = 'spell-roll-result';
+          dmgDiv.innerHTML = '<div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">DAMAGE (' + spell.damageType.toUpperCase() + ')</div><div class="spell-roll-total">' + damageRoll.total + '</div><div class="spell-roll-breakdown">' + damageRoll.rolls.join(', ') + (damageRoll.bonus ? ' + ' + damageRoll.bonus : '') + '</div>';
+          rollContainer.appendChild(dmgDiv);
+        }
+      }
+
+      if (spell.saveDC) {
+        const dc = document.getElementById('cs-spell-dc').value || '13';
+        const saveDiv = document.createElement('div');
+        saveDiv.className = 'spell-roll-result';
+        saveDiv.innerHTML = '<div style="font-size:12px;color:var(--text-dim);margin-bottom:8px;">SPELL SAVE DC (' + (spell.saveType || 'WIS').toUpperCase() + ')</div><div class="spell-roll-total">' + dc + '</div>';
+        rollContainer.appendChild(saveDiv);
+      }
+
+      saveSheet();
+    };
+
+    window.attachSpellClickHandlers = function() {
+      document.querySelectorAll('.cs-spells-grid input').forEach((input) => {
+        input.style.cursor = 'pointer';
+        input.addEventListener('click', function(e) {
+          e.preventDefault();
+          const spellName = input.value.trim();
+          if (spellName && SPELL_DATABASE[spellName]) {
+            const levelIndex = parseInt(input.closest('.cs-spells-grid').getAttribute('data-level'));
+            openSpellModal(spellName, levelIndex);
+          }
+        });
+        input.addEventListener('input', function() {
+          const spellName = input.value.trim();
+          if (spellName && SPELL_DATABASE[spellName]) {
+            input.style.borderColor = 'var(--crimson)';
+          } else {
+            input.style.borderColor = 'var(--border)';
+          }
+        });
+      });
+    };
+
+    // ── Spell Save DC Calculation ────────────────────────────────────────
+    window.calculateSpellDC = function() {
+      const abilityStr = document.getElementById('cs-spell-ability').value.toUpperCase();
+      const abilityMap = { 'INT': 'int', 'WIS': 'wis', 'CHA': 'cha' };
+      const ability = abilityMap[abilityStr.substring(0, 3)];
+
+      if (!ability) return;
+
+      const score = document.getElementById('cs-' + ability).value;
+      const mod = getMod(score);
+      const prof = parseInt(document.getElementById('cs-prof').value) || 2;
+      const dc = 8 + mod + prof;
+
+      document.getElementById('cs-spell-dc').value = dc;
+    };
+
+    // ── Boot ─────────────────────────────────────────────────────────────
+    document.addEventListener('DOMContentLoaded', function() {
+      buildSaves();
+      buildSkills();
+      buildSpellSlots();
+      buildAttackRows(3);
+
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try { applySheetData(JSON.parse(saved)); }
+        catch(e) { console.warn('Could not load saved sheet', e); }
+      } else {
+        ['str','dex','con','int','wis','cha'].forEach(updateMod);
+      }
+
+      attachSpellClickHandlers();
+      calculateSpellDC();
+
+      document.getElementById('cs-spell-ability').addEventListener('change', calculateSpellDC);
+      document.getElementById('cs-prof').addEventListener('change', calculateSpellDC);
+      ['int', 'wis', 'cha'].forEach(ability => {
+        document.getElementById('cs-' + ability).addEventListener('change', calculateSpellDC);
+      });
+    });
+  </script>
+  <script src="phmurt-shell.js"></script>
+</body>
+</html>

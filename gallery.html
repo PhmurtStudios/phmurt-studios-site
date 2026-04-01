@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
+  <title>Character Gallery · Phmurt Studios</title>
+  <meta name="description" content="Browse premade D&D 5e characters ready to play, or explore community-created heroes for inspiration." />
+  <meta property="og:title" content="Character Gallery · Phmurt Studios" />
+  <meta property="og:description" content="Browse premade D&D 5e characters ready to play, or explore community-created heroes for inspiration." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://phmurtstudios.com/gallery.html" />
+  <meta property="og:image" content="https://phmurtstudios.com/logo.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Character Gallery · Phmurt Studios" />
+  <meta name="twitter:description" content="Browse premade D&D 5e characters ready to play, or explore community-created heroes for inspiration." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+  <link rel="manifest" href="site.webmanifest" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="theme.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb" crossorigin="anonymous"></script>
+  <script src="supabase-config.js"></script>
+  <script src="phmurt-auth.js"></script>
+  <style>
+    /* ═══════════════════════════════
+       GALLERY PAGE STYLES
+       ═══════════════════════════════ */
+
+    .gallery-hero {
+      padding: 64px 56px;
+      text-align: center;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .gallery-hero-title {
+      font-family: 'Cinzel', serif;
+      font-size: 52px;
+      font-weight: 400;
+      letter-spacing: 2px;
+      color: var(--text);
+      margin-bottom: 12px;
+    }
+
+    .gallery-hero-subtitle {
+      font-size: 18px;
+      font-style: italic;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+    }
+
+    /* ─── FILTER BAR ─── */
+    .gallery-filters {
+      padding: 32px 56px;
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-mid);
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      flex-wrap: wrap;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .filter-group {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .filter-label {
+      font-family: 'Cinzel', serif;
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .filter-input,
+    .filter-select {
+      font-family: 'Spectral', serif;
+      font-size: 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--crimson-border);
+      color: var(--text);
+      padding: 8px 12px;
+      border-radius: 2px;
+      cursor: pointer;
+    }
+
+    .filter-input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .filter-input:focus,
+    .filter-select:focus {
+      outline: none;
+      border-color: var(--crimson);
+      box-shadow: 0 0 8px rgba(192, 57, 43, 0.2);
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 200px;
+    }
+
+    /* ─── PREMADE CHARACTERS SECTION ─── */
+    .gallery-section {
+      padding: 56px;
+      border-bottom: 1px solid var(--border);
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+
+    .gallery-section-title {
+      font-family: 'Cinzel', serif;
+      font-size: 32px;
+      font-weight: 400;
+      letter-spacing: 1px;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .gallery-section-subtitle {
+      font-size: 14px;
+      font-style: italic;
+      color: var(--text-muted);
+      margin-bottom: 40px;
+    }
+
+    /* ─── CHARACTER CARD GRID ─── */
+    .character-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+    }
+
+    @media (max-width: 1200px) {
+      .character-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .character-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ─── CHARACTER CARD ─── */
+    .character-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 28px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      min-height: 400px;
+    }
+
+    .character-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, currentColor, transparent);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .character-card:hover {
+      border-color: var(--crimson);
+      box-shadow: 0 8px 24px rgba(192, 57, 43, 0.15);
+      transform: translateY(-4px);
+    }
+
+    .character-card:hover::before {
+      opacity: 0.6;
+    }
+
+    /* Class accent colors */
+    .card-barbarian { color: #d24545; }
+    .card-bard { color: #b895a8; }
+    .card-cleric { color: #f4d03f; }
+    .card-druid { color: #52b788; }
+    .card-fighter { color: #8b7355; }
+    .card-monk { color: #4a90e2; }
+    .card-paladin { color: #f0ad4e; }
+    .card-ranger { color: #66bb6a; }
+    .card-rogue { color: #5a4a7f; }
+    .card-sorcerer { color: #e8605a; }
+    .card-warlock { color: #b574ff; }
+    .card-wizard { color: #58aaff; }
+
+    /* ─── CARD HEADER (ICON + NAME) ─── */
+    .card-header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .card-class-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      border: 2px solid currentColor;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      flex-shrink: 0;
+      background: rgba(192, 57, 43, 0.08);
+    }
+
+    .card-name-section h3 {
+      font-family: 'Cinzel', serif;
+      font-size: 24px;
+      font-weight: 400;
+      letter-spacing: 1px;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+
+    .card-flavor {
+      font-size: 12px;
+      font-style: italic;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 20px;
+    }
+
+    /* ─── CARD META ─── */
+    .card-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .card-meta-tag {
+      font-family: 'Cinzel', serif;
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      background: var(--bg-mid);
+      padding: 4px 10px;
+      border-radius: 2px;
+    }
+
+    /* ─── ABILITIES ─── */
+    .card-abilities {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+
+    .ability {
+      flex: 1;
+      text-align: center;
+    }
+
+    .ability-label {
+      font-family: 'Cinzel', serif;
+      font-size: 9px;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .ability-score {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--text);
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    .ability-bar {
+      width: 100%;
+      height: 3px;
+      background: var(--bg-mid);
+      border-radius: 2px;
+      overflow: hidden;
+    }
+
+    .ability-bar-fill {
+      height: 100%;
+      background: currentColor;
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    /* ─── FEATURES ─── */
+    .card-features {
+      margin-bottom: 20px;
+    }
+
+    .card-features-title {
+      font-family: 'Cinzel', serif;
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .card-features-list {
+      list-style: none;
+      padding: 0;
+    }
+
+    .card-features-list li {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.5;
+      margin-bottom: 8px;
+      padding-left: 16px;
+      position: relative;
+    }
+
+    .card-features-list li::before {
+      content: '▪';
+      position: absolute;
+      left: 0;
+      color: currentColor;
+    }
+
+    /* ─── CARD BUTTON ─── */
+    .card-action {
+      margin-top: auto;
+      padding-top: 20px;
+    }
+
+    .card-button {
+      width: 100%;
+      font-family: 'Cinzel', serif;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #f5f0e8;
+      background: currentColor;
+      border: 1px solid currentColor;
+      padding: 10px 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border-radius: 2px;
+    }
+
+    .card-button:hover {
+      opacity: 0.85;
+      transform: translateY(-2px);
+    }
+
+    /* ─── EXPANDED DETAILS ─── */
+    .card-details {
+      max-height: 0;
+      opacity: 0;
+      overflow: hidden;
+      transition: all 0.4s ease;
+      margin-top: 20px;
+      border-top: 1px solid var(--border);
+      padding-top: 20px;
+    }
+
+    .character-card.expanded .card-details {
+      max-height: 500px;
+      opacity: 1;
+    }
+
+    .details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .detail-section h4 {
+      font-family: 'Cinzel', serif;
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+
+    .detail-section p {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+
+    .equipment-list {
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.6;
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .equipment-list li {
+      margin-bottom: 6px;
+      padding-left: 12px;
+      position: relative;
+    }
+
+    .equipment-list li::before {
+      content: '◆';
+      position: absolute;
+      left: 0;
+      color: currentColor;
+      font-size: 8px;
+    }
+
+    /* ─── COMMUNITY SECTION ─── */
+    .community-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 40px;
+    }
+
+    .community-header-text h2 {
+      font-family: 'Cinzel', serif;
+      font-size: 32px;
+      font-weight: 400;
+      letter-spacing: 1px;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .community-header-text p {
+      font-size: 14px;
+      font-style: italic;
+      color: var(--text-muted);
+    }
+
+    .community-cta-button {
+      font-family: 'Cinzel', serif;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #f5f0e8;
+      background: var(--crimson);
+      border: 1px solid var(--crimson);
+      padding: 12px 28px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      border-radius: 2px;
+    }
+
+    .community-cta-button:hover {
+      background: var(--crimson-dim);
+      box-shadow: 0 4px 12px rgba(192, 57, 43, 0.3);
+    }
+
+    /* ─── COMMUNITY PLACEHOLDER CARDS ─── */
+    .community-card {
+      background: var(--bg-card);
+      border: 1px dashed var(--crimson-border);
+      border-radius: 4px;
+      padding: 24px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 200px;
+      transition: all 0.3s ease;
+    }
+
+    .community-card:hover {
+      border-color: var(--crimson);
+      background: var(--bg-hover);
+    }
+
+    .community-placeholder-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+      opacity: 0.6;
+    }
+
+    .community-placeholder-text {
+      font-size: 14px;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    /* ─── RESPONSIVE ADJUSTMENTS ─── */
+    @media (max-width: 768px) {
+      .gallery-hero {
+        padding: 48px 24px;
+      }
+
+      .gallery-hero-title {
+        font-size: 36px;
+      }
+
+      .gallery-filters {
+        padding: 24px;
+        flex-direction: column;
+      }
+
+      .filter-group {
+        width: 100%;
+      }
+
+      .search-box {
+        width: 100%;
+      }
+
+      .gallery-section {
+        padding: 40px 24px;
+      }
+
+      .character-grid {
+        gap: 24px;
+      }
+
+      .character-card {
+        min-height: auto;
+      }
+
+      .details-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .community-header {
+        flex-direction: column;
+      }
+
+      .community-cta-button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body data-nav-active="Players" data-footer-copy="Roll Well. Play Weird.">
+  <div id="ps-site-shell"></div>
+
+  <div id="ps-page-breadcrumb"></div>
+
+  <!-- HERO -->
+  <div class="gallery-hero">
+    <h1 class="gallery-hero-title">Character Gallery</h1>
+    <p class="gallery-hero-subtitle">Premade heroes ready to play, and community creations to inspire</p>
+  </div>
+
+  <!-- FILTERS -->
+  <div class="gallery-filters">
+    <div class="filter-group">
+      <label for="filter-class" class="filter-label">Class</label>
+      <select id="filter-class" class="filter-select">
+        <option value="">All Classes</option>
+        <option value="Barbarian">Barbarian</option>
+        <option value="Bard">Bard</option>
+        <option value="Cleric">Cleric</option>
+        <option value="Druid">Druid</option>
+        <option value="Fighter">Fighter</option>
+        <option value="Monk">Monk</option>
+        <option value="Paladin">Paladin</option>
+        <option value="Ranger">Ranger</option>
+        <option value="Rogue">Rogue</option>
+        <option value="Sorcerer">Sorcerer</option>
+        <option value="Warlock">Warlock</option>
+        <option value="Wizard">Wizard</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="filter-race" class="filter-label">Race</label>
+      <select id="filter-race" class="filter-select">
+        <option value="">All Races</option>
+        <option value="Human">Human</option>
+        <option value="Elf">Elf</option>
+        <option value="Half-Elf">Half-Elf</option>
+        <option value="Half-Orc">Half-Orc</option>
+        <option value="Dwarf">Dwarf</option>
+        <option value="Halfling">Halfling</option>
+        <option value="Tiefling">Tiefling</option>
+        <option value="Dragonborn">Dragonborn</option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label for="filter-level" class="filter-label">Level</label>
+      <select id="filter-level" class="filter-select">
+        <option value="">All Levels</option>
+        <option value="1">Level 1</option>
+        <option value="3">Level 3</option>
+        <option value="5">Level 5</option>
+      </select>
+    </div>
+
+    <div class="filter-group search-box">
+      <input type="text" id="search-input" class="filter-input" placeholder="Search by name..." />
+    </div>
+
+    <div class="filter-group">
+      <label for="sort-by" class="filter-label">Sort By</label>
+      <select id="sort-by" class="filter-select">
+        <option value="name">Name</option>
+        <option value="class">Class</option>
+        <option value="level">Level</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- PREMADE CHARACTERS SECTION -->
+  <div class="gallery-section">
+    <h2 class="gallery-section-title">Ready-to-Play Heroes</h2>
+    <p class="gallery-section-subtitle">Grab one and start your adventure</p>
+
+    <div class="character-grid" id="character-grid">
+      <!-- Characters will be populated by JavaScript -->
+    </div>
+  </div>
+
+  <!-- COMMUNITY SECTION -->
+  <div class="gallery-section">
+    <div class="community-header">
+      <div class="community-header-text">
+        <h2>Community Creations</h2>
+        <p>Characters shared by fellow adventurers</p>
+      </div>
+      <a href="character-builder.html" class="community-cta-button">Share Your Character →</a>
+    </div>
+
+    <div class="character-grid">
+      <div class="community-card">
+        <div class="community-placeholder-icon">✨</div>
+        <div class="community-placeholder-text">Community content coming soon</div>
+      </div>
+      <div class="community-card">
+        <div class="community-placeholder-icon">🎭</div>
+        <div class="community-placeholder-text">Be the first to share your hero</div>
+      </div>
+      <div class="community-card">
+        <div class="community-placeholder-icon">⚔️</div>
+        <div class="community-placeholder-text">Inspire other adventurers</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="ps-site-footer"></div>
+
+  <script src="phmurt-shell.js"></script>
+
+  <script>
+    const CHARACTERS = [
+      {
+        name: 'Krag Thunderfist',
+        class: 'Barbarian',
+        race: 'Half-Orc',
+        level: 3,
+        subclass: 'Path of the Berserker',
+        flavor: 'Born in the Frostfell wastes, Krag channels primal fury.',
+        icon: '⚡',
+        abilities: { STR: 17, DEX: 13, CON: 16, INT: 8, WIS: 12, CHA: 10 },
+        features: [
+          'Reckless Attack — Attack with advantage, accept disadvantage on attacks against you',
+          'Mindless Rage — Cannot be charmed or frightened during rage',
+          'Primal Knowledge — Advantage on Strength and Constitution checks'
+        ],
+        equipment: ['Greataxe', 'Animal hide armor', 'Dungeoneer\'s pack'],
+        traits: 'Fierce and untamed, Krag respects strength above all. He speaks in short, direct sentences and laughs at his own pain.',
+        backstory: 'Exiled from his tribe for showing mercy to a human, Krag seeks to prove his worth as a warrior and prove that honor exists beyond pure brutality.'
+      },
+      {
+        name: 'Lyria Songweaver',
+        class: 'Bard',
+        race: 'Half-Elf',
+        level: 3,
+        subclass: 'College of Lore',
+        flavor: 'Her melodies can charm a dragon or shatter stone.',
+        icon: '🎵',
+        abilities: { STR: 8, DEX: 14, CON: 12, INT: 13, WIS: 10, CHA: 17 },
+        features: [
+          'Bardic Inspiration — Grant allies a d6 to add to ability checks, attack rolls, or saving throws',
+          'Jack of All Trades — Add half proficiency to ability checks she\'s not proficient in',
+          'Lore Master — Gain additional magical secrets from any class'
+        ],
+        equipment: ['Lute', 'Leather armor', 'Entertainer\'s pack'],
+        traits: 'Charismatic and witty, Lyria speaks with poetic flair. She sees music in everything and is rarely without her lute.',
+        backstory: 'A traveling musician who discovered her magical abilities by accident, Lyria now uses her gift to bring hope and healing to those she meets.'
+      },
+      {
+        name: 'Brother Aldric',
+        class: 'Cleric',
+        race: 'Human',
+        level: 3,
+        subclass: 'Life Domain',
+        flavor: 'The light of Pelor burns in his unwavering faith.',
+        icon: '✨',
+        abilities: { STR: 14, DEX: 10, CON: 13, INT: 12, WIS: 17, CHA: 8 },
+        features: [
+          'Channel Divinity — Turn undead or heal creatures',
+          'Bonus Healing — Whenever you cast a healing spell, add extra hit points equal to 2 + spell level',
+          'Divine Strike — Add 1d8 radiant damage to weapon attacks'
+        ],
+        equipment: ['Mace', 'Heavy armor', 'Holy symbol', 'Priest\'s pack'],
+        traits: 'Solemn and serious, Aldric speaks with conviction about divine purpose. He is patient but unyielding in his faith.',
+        backstory: 'A former soldier who found salvation through faith, Aldric now fights evil with the same discipline he once used as a warrior.'
+      },
+      {
+        name: 'Thistle Mossfoot',
+        class: 'Druid',
+        race: 'Wood Elf',
+        level: 3,
+        subclass: 'Circle of the Moon',
+        flavor: 'She speaks the old tongue of root and rain.',
+        icon: '🌿',
+        abilities: { STR: 10, DEX: 14, CON: 13, INT: 12, WIS: 17, CHA: 8 },
+        features: [
+          'Wild Shape — Transform into a beast with challenge rating up to 1 (wolf, bear)',
+          'Combat Wild Shape — Attack with your beast form',
+          'Moon Spells — Can cast spells while in wild shape form'
+        ],
+        equipment: ['Quarterstaff', 'Leather armor', 'Druidic focus', 'Explorer\'s pack'],
+        traits: 'Connected to nature, Thistle speaks rarely but with great wisdom. She smells of earth and rain.',
+        backstory: 'Raised by woodland creatures after her family perished, Thistle has dedicated her life to protecting the balance of nature and the forest.'
+      },
+      {
+        name: 'Ser Gareth Ironwall',
+        class: 'Fighter',
+        race: 'Human',
+        level: 3,
+        subclass: 'Champion',
+        flavor: 'A knight whose shield has turned a thousand blades.',
+        icon: '🛡️',
+        abilities: { STR: 17, DEX: 12, CON: 16, INT: 10, WIS: 13, CHA: 8 },
+        features: [
+          'Fighting Style — Defense: +1 to AC while wearing armor',
+          'Second Wind — Regain hit points on your turn',
+          'Action Surge — Take an additional action once per short rest'
+        ],
+        equipment: ['Longsword', 'Shield', 'Plate armor'],
+        traits: 'Disciplined and stoic, Gareth carries himself with noble bearing. He values honor and loyalty above all.',
+        backstory: 'A squire who rose through the ranks by sheer determination and skill, Gareth seeks to protect the innocent and uphold the ideals of chivalry.'
+      },
+      {
+        name: 'Zen Whisperwind',
+        class: 'Monk',
+        race: 'Wood Elf',
+        level: 3,
+        subclass: 'Way of the Open Hand',
+        flavor: 'Silence is his weapon; speed, his armor.',
+        icon: '✊',
+        abilities: { STR: 10, DEX: 17, CON: 13, INT: 12, WIS: 16, CHA: 8 },
+        features: [
+          'Martial Arts — Unarmed strikes and monk weapons deal increased damage',
+          'Ki Points — Spend ki to make bonus unarmed strikes or dodge attacks',
+          'Unarmored Defense — AC equals 10 + Dexterity + Wisdom'
+        ],
+        equipment: ['Martial arts focus', 'Dungeoneer\'s pack'],
+        traits: 'Peaceful yet deadly, Zen speaks in few words. He has achieved inner balance through discipline.',
+        backstory: 'A monastery-trained warrior seeking to understand the balance between peace and conflict, Zen uses his abilities to protect others without taking life when possible.'
+      },
+      {
+        name: 'Dame Elara Brightblade',
+        class: 'Paladin',
+        race: 'Human',
+        level: 3,
+        subclass: 'Oath of Devotion',
+        flavor: 'Her oath binds her to justice above all.',
+        icon: '⚔️',
+        abilities: { STR: 16, DEX: 10, CON: 14, INT: 8, WIS: 12, CHA: 17 },
+        features: [
+          'Divine Smite — Channel divine magic into weapon strikes for extra radiant damage',
+          'Oath Spells — Access to devotion-themed spells at no spell slot cost',
+          'Channel Divinity — Turn undead or radiate protective aura'
+        ],
+        equipment: ['Longsword', 'Shield', 'Plate armor', 'Holy symbol'],
+        traits: 'Righteous and commanding, Elara speaks with absolute conviction. She is a born leader of unwavering principle.',
+        backstory: 'Sworn to a sacred oath to protect the defenseless, Elara wields her blade as an instrument of divine justice against tyranny and evil.'
+      },
+      {
+        name: 'Fenris Darktrail',
+        class: 'Ranger',
+        race: 'Human',
+        level: 3,
+        subclass: 'Hunter',
+        flavor: 'No quarry escapes his eye; no forest denies him passage.',
+        icon: '🏹',
+        abilities: { STR: 12, DEX: 17, CON: 14, INT: 10, WIS: 16, CHA: 8 },
+        features: [
+          'Favored Enemy — Gain advantage against specific creature types',
+          'Natural Explorer — Advantage on tracking and survival in chosen terrain',
+          'Hunter\'s Mark — Deal extra damage to a target you mark with bonus action'
+        ],
+        equipment: ['Longbow', 'Shortsword', 'Leather armor', 'Explorer\'s pack'],
+        traits: 'Withdrawn and observant, Fenris is most comfortable in the wild. He is taciturn but reliable.',
+        backstory: 'Raised on the edges of civilization, Fenris became a ranger to protect travelers from the dangers lurking in wild places.'
+      },
+      {
+        name: 'Nyx Shadowmere',
+        class: 'Rogue',
+        race: 'Lightfoot Halfling',
+        level: 3,
+        subclass: 'Thief',
+        flavor: 'If you can see her, it\'s already too late.',
+        icon: '🗡️',
+        abilities: { STR: 8, DEX: 17, CON: 12, INT: 14, WIS: 13, CHA: 10 },
+        features: [
+          'Sneak Attack — Deal extra damage when attacking with advantage or ally nearby',
+          'Cunning Action — Use bonus action to Dash, Disengage, or Hide',
+          'Fast Hands — Use cunning action to activate magic items or use thieves\' tools'
+        ],
+        equipment: ['Shortsword', 'Shortbow', 'Leather armor', 'Thieves\' tools'],
+        traits: 'Quick-witted and curious, Nyx moves silently through the world. She questions authority and trusts few.',
+        backstory: 'Orphaned and surviving on the streets, Nyx honed her skills as a thief but now seeks redemption by using her abilities to fight injustice.'
+      },
+      {
+        name: 'Ember Ashborne',
+        class: 'Sorcerer',
+        race: 'Tiefling',
+        level: 3,
+        subclass: 'Draconic Bloodline',
+        flavor: 'Wild magic courses through her infernal blood.',
+        icon: '🔥',
+        abilities: { STR: 8, DEX: 13, CON: 14, INT: 10, WIS: 12, CHA: 17 },
+        features: [
+          'Draconic Resilience — Gain AC bonus and extra hit points based on sorcerer level',
+          'Sorcerous Power — Spend sorcery points to cast spells or enhance spell effects',
+          'Dragon Ancestor — Gain resistance to dragon ancestry damage type'
+        ],
+        equipment: ['Dagger', 'Light crossbow', 'Dungeoneer\'s pack'],
+        traits: 'Passionate and volatile, Ember is ruled by emotion and instinct. She is dramatic and speaks in fire-tinged metaphors.',
+        backstory: 'Descended from dragon blood, Ember struggled to control her magical powers until she learned to harness them as a weapon against those who would exploit her kind.'
+      },
+      {
+        name: 'Mordecai Vex',
+        class: 'Warlock',
+        race: 'Human',
+        level: 3,
+        subclass: 'The Great Old One',
+        flavor: 'The pact was sealed in starlight and whispers.',
+        icon: '👁️',
+        abilities: { STR: 10, DEX: 14, CON: 13, INT: 12, WIS: 8, CHA: 17 },
+        features: [
+          'Eldritch Invocations — Unlock magical abilities that don\'t consume spell slots',
+          'Pact Magic — Cast spells using spell slots that refresh on short rest',
+          'Eldritch Blast — Cast a powerful cantrip as your main attack'
+        ],
+        equipment: ['Quarterstaff', 'Light crossbow', 'Scholar\'s pack'],
+        traits: 'Mysterious and cryptic, Mordecai hints at knowledge beyond mortal understanding. He speaks in riddles and half-truths.',
+        backstory: 'A scholar who peered too deeply into forbidden knowledge, Mordecai made a pact with an otherworldly entity for power, but at what cost?'
+      },
+      {
+        name: 'Alaric Quillborne',
+        class: 'Wizard',
+        race: 'High Elf',
+        level: 3,
+        subclass: 'School of Evocation',
+        flavor: 'Knowledge is the only true power.',
+        icon: '📚',
+        abilities: { STR: 8, DEX: 13, CON: 12, INT: 17, WIS: 14, CHA: 10 },
+        features: [
+          'Arcane Recovery — Recover spell slots equal to half your wizard level',
+          'Evocation Savant — Spells cost less time and materials to copy and learn',
+          'Sculpt Spells — When you cast damaging spells, allies in area take no damage'
+        ],
+        equipment: ['Dagger', 'Light crossbow', 'Scholar\'s pack', 'Spellbook'],
+        traits: 'Intellectual and measured, Alaric approaches problems through logic and study. He is patient but easily frustrated by superstition.',
+        backstory: 'A dedicated scholar of the arcane, Alaric left his tower to see the world and test his understanding of magic in real situations beyond academic theory.'
+      }
+    ];
+
+    let filteredCharacters = [...CHARACTERS];
+
+    function calculateAbilityBar(score) {
+      // Scale 8-18 to 0-100%
+      return Math.max(0, Math.min(100, ((score - 8) / 10) * 100));
+    }
+
+    function renderCharacters() {
+      const grid = document.getElementById('character-grid');
+      grid.innerHTML = '';
+
+      filteredCharacters.forEach((char) => {
+        const classKey = char.class.toLowerCase();
+        const cardClass = `card-${classKey}`;
+
+        const abilityScores = Object.entries(char.abilities).map(([key, value]) => {
+          const barFill = calculateAbilityBar(value);
+          return `
+            <div class="ability">
+              <div class="ability-label">${key}</div>
+              <span class="ability-score">${value}</span>
+              <div class="ability-bar">
+                <div class="ability-bar-fill" style="width: ${barFill}%"></div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        const featuresList = char.features
+          .map(f => `<li>${f}</li>`)
+          .join('');
+
+        const equipmentList = char.equipment
+          .map(e => `<li>${e}</li>`)
+          .join('');
+
+        const card = document.createElement('div');
+        card.className = `character-card ${cardClass}`;
+        card.innerHTML = `
+          <div class="card-header">
+            <div class="card-class-icon">${char.icon}</div>
+            <div class="card-name-section">
+              <h3>${char.name}</h3>
+            </div>
+          </div>
+
+          <p class="card-flavor">"${char.flavor}"</p>
+
+          <div class="card-meta">
+            <span class="card-meta-tag">${char.class}</span>
+            <span class="card-meta-tag">${char.race}</span>
+            <span class="card-meta-tag">Level ${char.level}</span>
+            <span class="card-meta-tag">${char.subclass}</span>
+          </div>
+
+          <div class="card-abilities">
+            ${abilityScores}
+          </div>
+
+          <div class="card-features">
+            <div class="card-features-title">Key Features</div>
+            <ul class="card-features-list">
+              ${featuresList}
+            </ul>
+          </div>
+
+          <div class="card-details">
+            <div class="details-grid">
+              <div class="detail-section">
+                <h4>Equipment</h4>
+                <ul class="equipment-list">
+                  ${equipmentList}
+                </ul>
+              </div>
+              <div class="detail-section">
+                <h4>Personality Traits</h4>
+                <p>${char.traits}</p>
+              </div>
+              <div class="detail-section" style="grid-column: 1 / -1;">
+                <h4>Backstory</h4>
+                <p>${char.backstory}</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-action">
+            <a href="character-builder.html" class="card-button">Use This Character →</a>
+          </div>
+        `;
+
+        card.addEventListener('click', function () {
+          this.classList.toggle('expanded');
+        });
+
+        grid.appendChild(card);
+      });
+    }
+
+    function filterCharacters() {
+      const classFilter = document.getElementById('filter-class').value;
+      const raceFilter = document.getElementById('filter-race').value;
+      const levelFilter = document.getElementById('filter-level').value;
+      const searchTerm = document.getElementById('search-input').value.toLowerCase();
+      const sortBy = document.getElementById('sort-by').value;
+
+      filteredCharacters = CHARACTERS.filter(char => {
+        if (classFilter && char.class !== classFilter) return false;
+        if (raceFilter && char.race !== raceFilter) return false;
+        if (levelFilter && char.level !== parseInt(levelFilter)) return false;
+        if (searchTerm && !char.name.toLowerCase().includes(searchTerm)) return false;
+        return true;
+      });
+
+      // Sort
+      if (sortBy === 'name') {
+        filteredCharacters.sort((a, b) => a.name.localeCompare(b.name));
+      } else if (sortBy === 'class') {
+        filteredCharacters.sort((a, b) => a.class.localeCompare(b.class));
+      } else if (sortBy === 'level') {
+        filteredCharacters.sort((a, b) => a.level - b.level);
+      }
+
+      renderCharacters();
+    }
+
+    // Event listeners
+    document.getElementById('filter-class').addEventListener('change', filterCharacters);
+    document.getElementById('filter-race').addEventListener('change', filterCharacters);
+    document.getElementById('filter-level').addEventListener('change', filterCharacters);
+    document.getElementById('search-input').addEventListener('input', filterCharacters);
+    document.getElementById('sort-by').addEventListener('change', filterCharacters);
+
+    // Initial render
+    document.addEventListener('DOMContentLoaded', function () {
+      renderCharacters();
+    });
+  </script>
+</body>
+</html>

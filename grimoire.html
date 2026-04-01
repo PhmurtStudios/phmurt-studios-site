@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
+  <title>Grimoire · Phmurt Studios</title>
+  <meta name="description" content="The Phmurt Studios Grimoire featuring all published D&D classes, supplements, and original RPG systems." />
+  <meta property="og:title" content="Grimoire · Phmurt Studios" />
+  <meta property="og:description" content="Browse all published D&D classes, supplements, and original RPG systems from Phmurt Studios." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://phmurtstudios.com/grimoire.html" />
+  <meta property="og:image" content="https://phmurtstudios.com/logo.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Grimoire · Phmurt Studios" />
+  <meta name="twitter:description" content="Browse all published D&D classes, supplements, and original RPG systems from Phmurt Studios." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+  <link rel="manifest" href="site.webmanifest" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="theme.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb" crossorigin="anonymous"></script>
+  <script src="supabase-config.js"></script>
+  <script src="phmurt-auth.js"></script>
+</head>
+<body data-nav-active="Content" data-footer-copy="Roll Well. Play Weird." data-breadcrumb="Home|index.html;Grimoire">
+
+  <div id="ps-site-shell"></div>
+
+  <div id="ps-page-breadcrumb"></div>
+
+  <div class="ps-page-hero">
+    <div class="ps-page-eyebrow">The Archive</div>
+    <div class="ps-page-title">Grimoire</div>
+    <div class="ps-page-subtitle">All Published Work</div>
+    <p class="ps-page-intro">Every class, supplement, and system published by Phmurt Studios. Playtested, refined, and built for storytellers who demand more from their table.</p>
+  </div>
+
+  <div class="ps-divider"><div class="ps-div-line"></div><div class="ps-div-ornament"><div class="ps-div-dot"></div><div class="ps-div-gem"></div><div class="ps-div-dot"></div></div><div class="ps-div-line r"></div></div>
+
+  <div class="fantasy-divider">◆</div>
+
+  <div class="ps-section-header">
+    <div class="ps-section-title">All Content</div>
+  </div>
+
+  <div class="ps-grimoire-search">
+    <input type="text" id="grimoire-main-search" placeholder="Search all content&#8230;" oninput="filterGrimoireMain()" aria-label="Search all content" />
+  </div>
+
+  <div class="ps-grimoire-filters" id="filters">
+    <button class="ps-filter-btn active" data-filter="all">All</button>
+    <button class="ps-filter-btn" data-filter="class">Classes</button>
+    <button class="ps-filter-btn" data-filter="supplement">Supplements</button>
+    <button class="ps-filter-btn" data-filter="system">Systems</button>
+  </div>
+
+  <div class="ps-grimoire-grid reveal" id="grimoire">
+
+    <a href="soup-savant.html" class="ps-grimoire-card" data-type="class">
+      <div class="ps-card-type">Full Class</div>
+      <div class="ps-card-title">The Soup Savant</div>
+      <div class="ps-card-excerpt">A spellcaster devoted to crafting the perfect soup. Weaponizing broth, healing with bisque, building a traveling culinary empire across the realms. 20 levels, full progression.</div>
+      <div class="ps-card-footer">
+        <span class="ps-card-tag">D&amp;D 5e</span>
+        <span class="ps-card-arrow">↗</span>
+      </div>
+      <span class="ps-grimoire-status">Available</span>
+    </a>
+
+    <a href="legendary.html" class="ps-grimoire-card" data-type="supplement">
+      <div class="ps-card-type">Supplement</div>
+      <div class="ps-card-title">Legendary Soups</div>
+      <div class="ps-card-excerpt">Recipes forged from the remains of the mightiest creatures in existence. Requires harvesting an ingredient from a defeated legendary monster. Not for the faint of heart.</div>
+      <div class="ps-card-footer">
+        <span class="ps-card-tag">Soup Savant</span>
+        <span class="ps-card-arrow">↗</span>
+      </div>
+      <span class="ps-grimoire-status">Available</span>
+    </a>
+
+    <div class="ps-grimoire-card" data-type="class" style="cursor:default;">
+      <div class="ps-card-type">Full Class</div>
+      <div class="ps-card-title">The Runewright</div>
+      <div class="ps-card-excerpt">An artificer variant who carves living magic into stone, metal, and bone. Magic that endures long after the caster is gone.</div>
+      <div class="ps-card-footer">
+        <span class="ps-card-tag">D&amp;D 5e</span>
+      </div>
+      <span class="ps-grimoire-status coming">In Development</span>
+    </div>
+
+    <div class="ps-grimoire-card" data-type="system" style="cursor:default;">
+      <div class="ps-card-type">Original RPG</div>
+      <div class="ps-card-title">Ashen Crown</div>
+      <div class="ps-card-excerpt">A standalone tabletop RPG set in the dying age of a fallen empire. Grim, political, mortal. A complete system built from the ground up.</div>
+      <div class="ps-card-footer">
+        <span class="ps-card-tag">Original System</span>
+      </div>
+      <span class="ps-grimoire-status coming">In Development</span>
+    </div>
+
+    <div class="ps-grimoire-card" data-type="supplement" style="cursor:default;">
+      <div class="ps-card-type">Supplement</div>
+      <div class="ps-card-title">More Coming Soon</div>
+      <div class="ps-card-excerpt">New content is always in development. Follow us on Instagram or subscribe to be notified when new releases drop.</div>
+      <div class="ps-card-footer">
+        <span class="ps-card-tag">Phmurt Studios</span>
+      </div>
+      <span class="ps-grimoire-status coming">Coming Soon</span>
+    </div>
+
+  </div>
+
+  <!-- COMMUNITY HOMEBREW COMPENDIUM -->
+  <!-- TODO: Extract inline styles from filter buttons, search input, sort dropdown, and results container into dedicated CSS classes. High-volume inline styles make maintenance difficult. -->
+  <div id="community-hb-section">
+  <div class="ps-divider"><div class="ps-div-line"></div><div class="ps-div-ornament"><div class="ps-div-dot"></div><div class="ps-div-gem"></div><div class="ps-div-dot"></div></div><div class="ps-div-line r"></div></div>
+
+  <div class="fantasy-divider">◆</div>
+
+  <div class="ps-section-header">
+    <div class="ps-section-title">Community Homebrew</div>
+  </div>
+  <p style="text-align:center;max-width:600px;margin:0 auto 32px;font-family:'Spectral',serif;font-size:16px;color:var(--text-dim);font-style:italic;line-height:1.7;">
+    Player-created races, classes, backgrounds, subclasses, and items. Browse or share your own from the <a href="compendium.html" style="color:var(--crimson);">Compendium</a>.
+  </p>
+
+  <div style="max-width:800px;margin:0 auto 24px;">
+    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;">
+      <input id="hbc-grimoire-search" type="text" placeholder="Search name, type, author, tags&#8230;"
+        oninput="grimHbRender()"
+        style="flex:1;min-width:200px;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-family:'Spectral',serif;font-size:15px;padding:10px 14px;" />
+      <select id="hbc-grimoire-sort" onchange="grimHbRender()"
+        style="background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;padding:10px 14px;cursor:pointer;">
+        <option value="popular">Most Liked</option>
+        <option value="newest">Newest</option>
+        <option value="name">A to Z</option>
+      </select>
+    </div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button class="hbc-gr-filter active" data-gf="all" style="font-family:'Cinzel',serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;background:var(--crimson);border:1px solid var(--crimson);color:#f5f0e8;cursor:pointer;">All</button>
+      <button class="hbc-gr-filter" data-gf="race" style="font-family:'Cinzel',serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;background:transparent;border:1px solid var(--border);color:var(--text-muted);cursor:pointer;">Races</button>
+      <button class="hbc-gr-filter" data-gf="class" style="font-family:'Cinzel',serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;background:transparent;border:1px solid var(--border);color:var(--text-muted);cursor:pointer;">Classes</button>
+      <button class="hbc-gr-filter" data-gf="background" style="font-family:'Cinzel',serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;background:transparent;border:1px solid var(--border);color:var(--text-muted);cursor:pointer;">Backgrounds</button>
+      <button class="hbc-gr-filter" data-gf="subclass" style="font-family:'Cinzel',serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;background:transparent;border:1px solid var(--border);color:var(--text-muted);cursor:pointer;">Subclasses</button>
+      <button class="hbc-gr-filter" data-gf="item" style="font-family:'Cinzel',serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;background:transparent;border:1px solid var(--border);color:var(--text-muted);cursor:pointer;">Items</button>
+    </div>
+  </div>
+
+  <div id="hbc-grimoire-results" class="ps-grimoire-grid reveal" style="max-width:900px;margin:0 auto;">
+    <div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-faint);font-family:'Spectral',serif;font-size:15px;font-style:italic;">
+      Loading community homebrew&#8230;
+    </div>
+  </div>
+  </div>
+
+  <div class="ps-divider"><div class="ps-div-line"></div><div class="ps-div-ornament"><div class="ps-div-dot"></div><div class="ps-div-gem"></div><div class="ps-div-dot"></div></div><div class="ps-div-line r"></div></div>
+
+  <div class="fantasy-section-end">◆   ◆   ◆</div>
+
+  <section class="ps-connect reveal">
+    <div class="ps-section-header"><div class="ps-section-title">Find Us</div></div>
+    <div class="ps-connect-grid">
+      <a href="https://startplaying.games/gm/phmurt-studios" target="_blank" rel="noopener" class="ps-connect-card"><div class="ps-connect-icon"><svg viewBox="0 0 24 24"><polygon points="5,3 22,12 5,21" fill="currentColor"/></svg></div><div class="ps-connect-label">Start Playing</div><div class="ps-connect-sub">Book a session</div><div class="ps-connect-url">startplaying.games/gm/phmurt-studios</div></a>
+      <a href="https://www.youtube.com/@PhmurtStudios" target="_blank" rel="noopener" class="ps-connect-card"><div class="ps-connect-icon"><svg viewBox="0 0 24 24"><path d="M23 7s-.3-2-1.2-2.8c-1.1-1.2-2.4-1.2-3-1.3C16.2 2.8 12 2.8 12 2.8s-4.2 0-6.8.2c-.6.1-1.9.1-3 1.3C1.3 5 1 7 1 7S.7 9.1.7 11.3v2c0 2.1.3 4.2.3 4.2s.3 2 1.2 2.8c1.1 1.2 2.6 1.1 3.3 1.2C7.5 21.6 12 21.6 12 21.6s4.2 0 6.8-.3c.6-.1 1.9-.1 3-1.3.9-.8 1.2-2.8 1.2-2.8s.3-2.1.3-4.2v-2C23.3 9.1 23 7 23 7zm-13.5 8.5V8.5l8 3.5-8 3.5z" fill="currentColor"/></svg></div><div class="ps-connect-label">YouTube</div><div class="ps-connect-sub">Videos &amp; updates</div><div class="ps-connect-url">@PhmurtStudios</div></a>
+      <a href="https://discord.gg/GSvCXfehmK" target="_blank" rel="noopener" class="ps-connect-card"><div class="ps-connect-icon"><svg viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.03.054a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.04.001-.088-.041-.104a13.201 13.201 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" fill="currentColor"/></svg></div><div class="ps-connect-label">Discord</div><div class="ps-connect-sub">Join the community</div><div class="ps-connect-url">discord.gg/GSvCXfehmK</div></a>
+      <a href="https://www.instagram.com/phmurt_studios/" target="_blank" rel="noopener" class="ps-connect-card"><div class="ps-connect-icon"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.2" fill="currentColor"/></svg></div><div class="ps-connect-label">Instagram</div><div class="ps-connect-sub">Behind the scenes</div><div class="ps-connect-url">@phmurt_studios</div></a>
+      <a href="mailto:contact@phmurtstudios.com" class="ps-connect-card"><div class="ps-connect-icon"><svg viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><polyline points="2,4 12,13 22,4" fill="none" stroke="currentColor" stroke-width="2"/></svg></div><div class="ps-connect-label">Email</div><div class="ps-connect-sub">Get in touch</div><div class="ps-connect-url">contact@phmurtstudios.com</div></a>
+    </div>
+  </section>
+
+  <div id="ps-site-footer"></div>
+
+  <script>
+    var _grimHbData = null;
+    var _grimHbFilter = 'all';
+
+    function _grimSb() {
+      if (typeof PHMURT_CONFIG === 'undefined' || !PHMURT_CONFIG.cloudEnabled) return null;
+      if (typeof window.supabase === 'undefined') return null;
+      try { return window.supabase.createClient(PHMURT_CONFIG.supabaseUrl, PHMURT_CONFIG.supabaseAnonKey); } catch(e) { return null; }
+    }
+
+    async function grimHbLoad() {
+      var el = document.getElementById('hbc-grimoire-results');
+      var sb = _grimSb();
+      if (!sb) {
+        if (el) el.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-faint);font-family:Spectral,Georgia,serif;font-size:15px;font-style:italic;">Share homebrew from the <a href="compendium.html" style="color:var(--crimson);">Compendium</a> to see it here.</div>';
+        return;
+      }
+      try {
+        var res = await sb.from('homebrew_compendium').select('*').order('likes',{ascending:false}).order('created_at',{ascending:false}).limit(200);
+        _grimHbData = res.data || [];
+        grimHbRender();
+      } catch(e) {
+        if (el) el.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-faint);">Unable to load community content.</div>';
+      }
+    }
+
+    function grimHbFilter(btn, filter) {
+      _grimHbFilter = filter;
+      document.querySelectorAll('.hbc-gr-filter').forEach(function(b) {
+        var isActive = b.getAttribute('data-gf') === filter;
+        b.style.background   = isActive ? 'var(--crimson)' : 'transparent';
+        b.style.borderColor  = isActive ? 'var(--crimson)' : 'var(--border)';
+        b.style.color        = isActive ? '#f5f0e8' : 'var(--text-muted)';
+      });
+      grimHbRender();
+    }
+
+    function grimHbRender() {
+      var el = document.getElementById('hbc-grimoire-results');
+      if (!el || !_grimHbData) return;
+      var q      = (document.getElementById('hbc-grimoire-search').value || '').toLowerCase();
+      var sortBy = document.getElementById('hbc-grimoire-sort').value;
+
+      var filtered = _grimHbData.filter(function(row) {
+        if (_grimHbFilter !== 'all' && row.type !== _grimHbFilter) return false;
+        if (q) {
+          var t = (row.name + ' ' + row.type + ' ' + (row.author_name||'') + ' ' + (row.tags||[]).join(' ')).toLowerCase();
+          if (t.indexOf(q) === -1) return false;
+        }
+        return true;
+      }).slice().sort(function(a, b) {
+        if (sortBy === 'popular') return (b.likes||0) - (a.likes||0);
+        if (sortBy === 'name')    return a.name.localeCompare(b.name);
+        return new Date(b.created_at||0) - new Date(a.created_at||0);
+      });
+
+      if (!filtered.length) {
+        el.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-faint);font-family:Spectral,Georgia,serif;font-size:15px;font-style:italic;">'
+          + (_grimHbFilter !== 'all' || q ? 'No results found.' : 'No community homebrew yet. Share from the Compendium!')
+          + '</div>';
+        return;
+      }
+
+      var liked = [];
+      try { liked = JSON.parse(localStorage.getItem('phmurt_liked_hb') || '[]'); } catch(e) {}
+      var likedSet = new Set(liked);
+      var typeColors = { race:'#4169e1', class:'#8b1a10', background:'#2e8b57', subclass:'#8b6914', item:'#6b4ea8' };
+      var typeLabels = { race:'Race', class:'Class', background:'Background', subclass:'Subclass', item:'Item' };
+
+      el.innerHTML = filtered.map(function(row) {
+        var col  = typeColors[row.type] || '#888';
+        var lbl  = typeLabels[row.type] || row.type;
+        var isLiked = likedSet.has(row.id);
+        var likes = row.likes || 0;
+        var desc = '';
+        if (row.data) {
+          desc = row.data.desc
+            || (row.data.traits   && row.data.traits[0]   && row.data.traits[0].desc)
+            || (row.data.features && row.data.features[0] && row.data.features[0].desc)
+            || row.data.featureDesc || '';
+        }
+        if (desc.length > 160) desc = desc.slice(0, 157) + '...';
+        var tags = (row.tags || []).slice(0, 4).map(function(t) {
+          return '<span class="ps-card-tag">' + gEsc(t) + '</span>';
+        }).join('');
+
+        return '<div class="ps-grimoire-card" style="cursor:default;border-left:3px solid ' + col + ';">'
+          + '<div class="ps-card-type" style="color:' + col + ';">' + lbl + '</div>'
+          + '<div class="ps-card-title" style="font-size:16px;">' + gEsc(row.name) + '</div>'
+          + '<div class="ps-card-excerpt">' + gEsc(desc) + '</div>'
+          + '<div style="margin-top:6px;display:flex;flex-wrap:wrap;gap:4px;">' + tags + '</div>'
+          + '<div class="ps-card-footer" style="margin-top:12px;">'
+          + '<span style="font-size:11px;color:var(--text-faint);">by ' + gEsc(row.author_name || 'Unknown') + '</span>'
+          + '<button data-glike-id="' + row.id + '" class="glike-btn" style="font-family:Cinzel,serif;font-size:8px;letter-spacing:1px;padding:3px 9px;'
+          + 'background:' + (isLiked ? 'rgba(139,26,16,0.12)' : 'transparent') + ';'
+          + 'border:1px solid ' + (isLiked ? 'var(--crimson)' : 'var(--border)') + ';'
+          + 'color:' + (isLiked ? 'var(--crimson)' : 'var(--text-muted)') + ';'
+          + 'cursor:' + (isLiked ? 'default' : 'pointer') + ';display:inline-flex;align-items:center;gap:4px;">'
+          + '&#9829; <span id="glc-' + row.id + '">' + likes + '</span></button>'
+          + '</div></div>';
+      }).join('');
+
+      el.querySelectorAll('.glike-btn:not([style*="default"])').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+          grimLike(this, this.getAttribute('data-glike-id'));
+        });
+      });
+    }
+
+    async function grimLike(btn, id) {
+      var liked = [];
+      try { liked = JSON.parse(localStorage.getItem('phmurt_liked_hb') || '[]'); } catch(e) {}
+      if (liked.indexOf(id) !== -1) return;
+      var sb = _grimSb();
+      if (!sb) return;
+      var row = _grimHbData && _grimHbData.find(function(r) { return r.id === id; });
+      var cur = row ? (row.likes || 0) : 0;
+      try {
+        await sb.from('homebrew_compendium').update({ likes: cur + 1 }).eq('id', id);
+        liked.push(id);
+        localStorage.setItem('phmurt_liked_hb', JSON.stringify(liked));
+        var c = document.getElementById('glc-' + id);
+        if (c) c.textContent = cur + 1;
+        if (row) row.likes = cur + 1;
+        btn.style.color = 'var(--crimson)';
+        btn.style.borderColor = 'var(--crimson)';
+        btn.style.background = 'rgba(139,26,16,0.12)';
+        btn.style.cursor = 'default';
+      } catch(e) {}
+    }
+
+    function gEsc(str) {
+      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    document.addEventListener('DOMContentLoaded', function() { grimHbLoad(); });
+
+    document.querySelectorAll('.hbc-gr-filter').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        grimHbFilter(this, this.getAttribute('data-gf'));
+      });
+    });
+
+    // Main grimoire filter + search
+    var _activeFilter = 'all';
+
+    function filterGrimoireMain() {
+      var q = (document.getElementById('grimoire-main-search').value || '').toLowerCase();
+      var cards = document.querySelectorAll('#grimoire .ps-grimoire-card');
+      cards.forEach(function(card) {
+        var matchType = (_activeFilter === 'all' || card.getAttribute('data-type') === _activeFilter);
+        var matchSearch = !q || (card.textContent || '').toLowerCase().indexOf(q) !== -1;
+        if (matchType && matchSearch) { card.classList.remove('hidden'); }
+        else { card.classList.add('hidden'); }
+      });
+    }
+
+    document.querySelectorAll('.ps-filter-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        _activeFilter = this.getAttribute('data-filter');
+        document.querySelectorAll('.ps-filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        this.classList.add('active');
+        filterGrimoireMain();
+      });
+    });
+
+    // ── Favorites system ──
+    function getFavorites() {
+      try { return JSON.parse(localStorage.getItem('phmurt_favorites') || '[]'); } catch(e) { return []; }
+    }
+    function saveFavorites(arr) {
+      try { localStorage.setItem('phmurt_favorites', JSON.stringify(arr)); } catch(e) {}
+    }
+    function toggleFavorite(id) {
+      var favs = getFavorites();
+      var idx = favs.indexOf(id);
+      if (idx === -1) { favs.push(id); } else { favs.splice(idx, 1); }
+      saveFavorites(favs);
+      renderFavButtons();
+    }
+    function renderFavButtons() {
+      var favs = getFavorites();
+      document.querySelectorAll('.ps-fav-btn').forEach(function(btn) {
+        var id = btn.getAttribute('data-fav-id');
+        var isFav = favs.indexOf(id) !== -1;
+        btn.classList.toggle('favorited', isFav);
+        btn.innerHTML = isFav ? '&#9733; Saved' : '&#9734; Save';
+        btn.setAttribute('aria-label', isFav ? 'Remove from favorites' : 'Add to favorites');
+      });
+    }
+
+    // Add fav buttons to grimoire cards
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('#grimoire .ps-grimoire-card').forEach(function(card) {
+        var title = card.querySelector('.ps-card-title');
+        if (!title) return;
+        var id = 'grim-' + (title.textContent || '').trim().toLowerCase().replace(/\s+/g, '-');
+        var btn = document.createElement('button');
+        btn.className = 'ps-fav-btn';
+        btn.setAttribute('data-fav-id', id);
+        btn.onclick = function(e) { e.preventDefault(); e.stopPropagation(); toggleFavorite(id); };
+        var footer = card.querySelector('.ps-card-footer');
+        if (footer) footer.appendChild(btn);
+        else card.appendChild(btn);
+      });
+      renderFavButtons();
+    });
+  </script>
+
+  <script src="phmurt-shell.js"></script>
+</body>
+</html>

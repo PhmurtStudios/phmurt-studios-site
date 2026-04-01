@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
+  <title>My Characters · Phmurt Studios</title>
+  <meta name="description" content="View and manage your saved characters on Phmurt Studios." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+  <link rel="manifest" href="site.webmanifest" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="theme.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb" crossorigin="anonymous"></script>
+  <script src="supabase-config.js"></script>
+  <script src="phmurt-auth.js"></script>
+</head>
+<body data-nav-active="My Characters" data-footer-copy="Roll Well. Play Weird." data-breadcrumb="Home|index.html;My Characters">
+  <div id="ps-site-shell"></div>
+  <div id="ps-page-breadcrumb"></div>
+
+  <div class="ps-page-hero">
+    <div class="ps-page-eyebrow">Your Roster</div>
+    <div class="ps-page-title">My Characters</div>
+    <div class="ps-page-subtitle">All your saved adventurers in one place</div>
+  </div>
+
+  <div class="ps-divider"><div class="ps-div-line"></div><div class="ps-div-ornament"><div class="ps-div-dot"></div><div class="ps-div-gem"></div><div class="ps-div-dot"></div></div><div class="ps-div-line r"></div></div>
+
+  <div class="ps-content reveal" id="my-characters-content" style="max-width:800px;margin:40px auto;padding:0 24px;">
+
+    <!-- Signed-out state -->
+    <div id="mc-signed-out" style="text-align:center;padding:60px 0;">
+      <p style="font-family:Spectral;font-size:18px;color:var(--text-dim);margin-bottom:32px;">Sign in to view and manage your saved characters.</p>
+      <button class="ps-btn ps-btn-primary" onclick="window.PhmurtDB && window.PhmurtDB.openAuth()">Sign In</button>
+    </div>
+
+    <!-- Signed-in state -->
+    <div id="mc-signed-in" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;flex-wrap:wrap;gap:12px;">
+        <h2 style="font-family:Cinzel;color:var(--text);font-size:20px;margin:0;">Your Characters</h2>
+        <a href="character-builder.html" class="ps-btn ps-btn-primary" style="font-size:14px;">+ New Character</a>
+      </div>
+      <div id="mc-character-list"></div>
+    </div>
+
+  </div>
+
+  <div class="ps-divider"><div class="ps-div-line"></div><div class="ps-div-ornament"><div class="ps-div-dot"></div><div class="ps-div-gem"></div><div class="ps-div-dot"></div></div><div class="ps-div-line r"></div></div>
+
+  <div class="fantasy-section-end">◆   ◆   ◆</div>
+
+  <div id="ps-site-footer"></div>
+
+  <script>
+    /* ── Character list with cloud sync ─────────────────────────────── */
+    var _mcChars = [];  // in-memory character list
+
+    function renderCharacterList() {
+      var session   = window.PhmurtDB ? window.PhmurtDB.getSession() : null;
+      var signedOut = document.getElementById('mc-signed-out');
+      var signedIn  = document.getElementById('mc-signed-in');
+      var list      = document.getElementById('mc-character-list');
+
+      if (!session) {
+        signedOut.style.display = 'block';
+        signedIn.style.display  = 'none';
+        return;
+      }
+
+      signedOut.style.display = 'none';
+      signedIn.style.display  = 'block';
+
+      if (!_mcChars.length) {
+        list.innerHTML = '<div style="text-align:center;padding:48px 0;font-family:Spectral;font-style:italic;color:var(--text-dim);">No characters yet. <a href="character-builder.html" style="color:var(--crimson);">Create your first one →</a></div>';
+        return;
+      }
+
+      list.innerHTML = _mcChars.map(function (c) {
+        var id      = encodeURIComponent(c.id !== undefined ? c.id : '');
+        var name    = c.name  || 'Unnamed Character';
+        var race    = c.race  || '';
+        var cls     = c.class || c.class_ || '';
+        var level   = c.level ? '· Level ' + c.level : '';
+        var builder = c.builder_type || '5e';
+        var editHref = (builder === '35e' ? 'character-builder-35.html' : 'character-builder.html') + '?load=' + id;
+        return '<div class="ps-sheet-card" style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">' +
+          '<div>' +
+            '<div class="ps-sheet-title" style="margin-bottom:4px;">' + name + '</div>' +
+            '<div class="ps-sheet-system">' + race + (race && cls ? ' ' : '') + cls + ' ' + level + '</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:8px;">' +
+            '<a href="' + editHref + '" class="ps-btn ps-btn-primary" style="font-size:13px;">Edit</a>' +
+            '<button onclick="deleteCharacter(\'' + id + '\')" style="font-size:13px;padding:6px 14px;border:1px solid var(--border);background:transparent;color:var(--text-dim);border-radius:4px;cursor:pointer;">Delete</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function loadAndRender() {
+      var session = window.PhmurtDB ? window.PhmurtDB.getSession() : null;
+      if (!session) { renderCharacterList(); return; }
+
+      // Show loading state
+      var list = document.getElementById('mc-character-list');
+      if (list) list.innerHTML = '<div style="text-align:center;padding:32px 0;font-family:Spectral;color:var(--text-muted);">Loading…</div>';
+      document.getElementById('mc-signed-out').style.display = 'none';
+      document.getElementById('mc-signed-in').style.display  = 'block';
+
+      PhmurtDB.getCharacters().then(function (chars) {
+        _mcChars = chars || [];
+        renderCharacterList();
+      }).catch(function () {
+        _mcChars = [];
+        renderCharacterList();
+      });
+    }
+
+    window.deleteCharacter = function (id) {
+      if (!window.PhmurtDB || !PhmurtDB.getSession()) return;
+      if (!confirm('Delete this character? This cannot be undone.')) return;
+
+      PhmurtDB.deleteCharacter(decodeURIComponent(id)).then(function (ok) {
+        if (ok) {
+          _mcChars = _mcChars.filter(function (c) { return String(c.id) !== decodeURIComponent(id); });
+          renderCharacterList();
+          if (window.psToast) window.psToast('Character deleted.');
+        } else {
+          if (window.psToast) window.psToast('Delete failed – please try again.');
+        }
+      });
+    };
+
+    document.addEventListener('DOMContentLoaded', function () {
+      loadAndRender();
+      window.addEventListener('phmurt-auth-change', loadAndRender);
+    });
+  </script>
+  <script src="phmurt-shell.js"></script>
+</body>
+</html>

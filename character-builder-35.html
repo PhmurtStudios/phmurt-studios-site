@@ -1,0 +1,2266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
+  <title>D&D 3.5e Character Builder · Phmurt Studios</title>
+  <meta name="description" content="Build a D&D 3.5 Edition character step by step. Choose race, class, abilities, skills, feats, and equipment." />
+  <meta property="og:title" content="D&D 3.5e Character Builder · Phmurt Studios" />
+  <meta property="og:description" content="Build a D&D 3.5 Edition character step by step with the Phmurt Studios builder." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://phmurtstudios.com/character-builder-35.html" />
+  <meta property="og:image" content="https://phmurtstudios.com/logo.png" />
+  <meta name="twitter:card" content="summary" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="theme.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb" crossorigin="anonymous"></script>
+  <script src="supabase-config.js"></script>
+  <script src="phmurt-auth.js"></script>
+  <script src="builder-data-35.js"></script>
+  <style>
+    .cb-wrap { display:grid; grid-template-columns:280px 1fr; min-height:calc(100vh - 60px); max-width:1200px; margin:0 auto; }
+    .cb-sidebar { background:var(--bg); border-right:1px solid var(--border); padding:24px 0; position:sticky; top:60px; height:calc(100vh - 60px); overflow-y:auto; }
+    .cb-main { padding:48px 56px; }
+    .cb-step-item { display:flex; align-items:center; gap:14px; padding:14px 24px; cursor:pointer; transition:all 0.25s; position:relative; }
+    .cb-step-item::after { content:''; position:absolute; left:37px; top:100%; width:1px; height:0; background:var(--border-mid); z-index:1; }
+    .cb-step-item:not(:last-of-type)::after { height:100%; }
+    .cb-step-item:hover { background:var(--crimson-soft); }
+    .cb-step-item.active { background:var(--crimson-soft); }
+    .cb-step-item.active::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--crimson); border-radius:0 2px 2px 0; }
+    .cb-step-item.done .cb-step-num { background:var(--crimson); border-color:var(--crimson); color:#fff; font-size:0; }
+    .cb-step-item.done .cb-step-num::after { content:'✓'; font-size:12px; }
+    .cb-step-num { width:30px; height:30px; border:2px solid var(--border); border-radius:50%; display:flex; align-items:center; justify-content:center; font-family:'Cinzel',serif; font-size:11px; color:var(--text-muted); flex-shrink:0; transition:all 0.25s; position:relative; z-index:2; background:var(--bg); }
+    .cb-step-item.active .cb-step-num { border-color:var(--crimson); color:var(--crimson); background:var(--crimson-soft); box-shadow:0 0 12px rgba(212,67,58,0.2); }
+    .cb-step-item.done .cb-step-num { border-radius:50%; }
+    .cb-step-label { font-family:'Cinzel',serif; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--text-muted); transition:color 0.2s; }
+    .cb-step-item.active .cb-step-label { color:var(--text); font-weight:500; }
+    .cb-step-item.done .cb-step-label { color:var(--text-dim); }
+    .cb-step-sublabel { font-size:11px; font-style:italic; color:var(--text-faint); margin-top:2px; font-family:'Spectral',serif; transition:color 0.2s; }
+    .cb-step-item.active .cb-step-sublabel { color:var(--crimson); }
+    .cb-summary-mini { padding:20px 24px; border-top:1px solid var(--border); margin-top:12px; background:var(--crimson-soft); }
+    .cb-summary-mini-title { font-family:'Cinzel',serif; font-size:9px; letter-spacing:3px; color:var(--crimson); text-transform:uppercase; margin-bottom:14px; display:flex; align-items:center; gap:6px; }
+    .cb-summary-mini-title::before { content:'◆'; font-size:6px; }
+    .cb-mini-stat { display:flex; justify-content:space-between; margin-bottom:8px; padding-bottom:8px; border-bottom:1px solid var(--border-mid); }
+    .cb-mini-stat:last-child { border-bottom:none; margin-bottom:0; padding-bottom:0; }
+    .cb-mini-stat-label { font-size:11px; color:var(--text-muted); font-style:italic; }
+    .cb-mini-stat-val { font-family:'Cinzel',serif; font-size:11px; color:var(--text); letter-spacing:1px; }
+    .cb-panel { display:none; animation:fadeUp 0.3s ease both; }
+    .cb-panel.active { display:block; }
+    .cb-step-context { font-family:'Cinzel',serif; font-size:9px; letter-spacing:4px; text-transform:uppercase; color:var(--crimson); margin-bottom:8px; }
+    .cb-panel-title { font-size:36px; font-weight:300; color:var(--text); margin-bottom:8px; line-height:1.2; }
+    .cb-panel-sub { font-size:18px; font-style:italic; color:var(--text-muted); margin-bottom:28px; line-height:1.5; }
+    .cb-panel-hint { background:var(--bg-card); border-left:3px solid var(--crimson); padding:14px 18px; margin-bottom:28px; font-size:14px; color:var(--text-dim); line-height:1.6; font-style:italic; }
+    .cb-cards { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:2px; background:var(--border-mid); border:1px solid var(--border); margin-bottom:32px; border-radius:2px; }
+    .cb-card { background:var(--bg-card); padding:22px 18px; cursor:pointer; transition:all 0.25s; border:2px solid transparent; position:relative; }
+    .cb-card:hover { background:var(--bg-hover); border-color:var(--crimson-border); }
+    .cb-card.selected { background:var(--crimson-soft); border-color:var(--crimson); }
+    .cb-card.selected::after { content:'✓'; position:absolute; top:10px; right:12px; width:20px; height:20px; background:var(--crimson); color:#fff; font-size:11px; display:flex; align-items:center; justify-content:center; border-radius:50%; }
+    .cb-card-name { font-family:'Cinzel',serif; font-size:11px; letter-spacing:2px; color:var(--text); text-transform:uppercase; margin-bottom:6px; }
+    .cb-card.selected .cb-card-name { color:var(--crimson); }
+    .cb-card-detail { font-size:13px; color:var(--text-muted); font-style:italic; line-height:1.5; }
+    .cb-card-badge { position:absolute; top:12px; right:12px; font-family:'Cinzel',serif; font-size:8px; letter-spacing:1px; color:var(--crimson); text-transform:uppercase; }
+    .cb-card.selected .cb-card-badge { display:none; }
+    .cb-detail { background:var(--bg-card); border:1px solid var(--crimson-border); padding:28px; margin-bottom:28px; position:relative; border-radius:2px; }
+    .cb-detail::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,transparent,var(--crimson),transparent); border-radius:2px 2px 0 0; }
+    .cb-detail-title { font-family:'Cinzel',serif; font-size:13px; letter-spacing:3px; text-transform:uppercase; color:var(--white); margin-bottom:4px; }
+    .cb-detail-sub { font-size:15px; font-style:italic; color:var(--crimson); margin-bottom:16px; }
+    .cb-detail-body { font-size:15px; color:var(--text-dim); line-height:1.8; }
+    .cb-trait { padding:10px 0; border-bottom:1px solid var(--border-mid); }
+    .cb-trait:last-child { border-bottom:none; }
+    .cb-trait-name { font-family:'Cinzel',serif; font-size:9px; letter-spacing:2px; color:var(--crimson); text-transform:uppercase; margin-bottom:4px; }
+    .cb-trait-desc { font-size:13px; color:var(--text-muted); line-height:1.6; font-style:italic; }
+    .cb-asi-badges { display:flex; gap:8px; flex-wrap:wrap; margin:12px 0; }
+    .cb-asi-badge { font-family:'Cinzel',serif; font-size:9px; letter-spacing:1px; padding:4px 10px; background:rgba(212,67,58,0.15); border:1px solid rgba(212,67,58,0.3); color:var(--crimson); text-transform:uppercase; }
+    .cb-ability-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:24px; }
+    .cb-ability-box { background:var(--bg-card); border:1px solid var(--border); padding:18px 10px; text-align:center; position:relative; cursor:pointer; border-radius:2px; transition:all 0.2s; }
+    .cb-ability-box:hover { border-color:var(--crimson-border); }
+    .cb-ability-box::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--crimson); border-radius:2px 2px 0 0; }
+    .cb-ability-name { font-family:'Cinzel',serif; font-size:8px; letter-spacing:2px; color:var(--text-muted); text-transform:uppercase; margin-bottom:8px; }
+    .cb-ability-score { font-size:32px; font-weight:300; color:var(--white); line-height:1; margin-bottom:4px; }
+    .cb-ability-mod { font-size:13px; color:var(--crimson); font-family:'Cinzel',serif; }
+    .cb-ability-asi { font-size:11px; color:rgba(212,67,58,0.6); margin-top:2px; }
+    .cb-ability-input { width:100%; background:transparent; border:none; border-bottom:1px solid rgba(212,67,58,0.3); color:var(--white); font-size:24px; text-align:center; padding:4px 0; }
+    .cb-ability-input:focus { outline:none; border-color:var(--crimson); }
+    .cb-array-pool { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:20px; }
+    .cb-array-val { font-family:'Cinzel',serif; font-size:14px; padding:8px 14px; border:1px solid rgba(212,67,58,0.3); color:var(--text-dim); cursor:pointer; transition:all 0.2s; user-select:none; }
+    .cb-array-val:hover { border-color:var(--crimson); color:var(--white); }
+    .cb-array-val.used { opacity:0.25; cursor:not-allowed; text-decoration:line-through; }
+    .cb-array-val.selected { background:var(--crimson); border-color:var(--crimson); color:white; }
+    .cb-ability-box.selecting { border-color:rgba(255,200,50,0.5); }
+    .cb-ability-box.selecting::before { background:rgba(255,200,50,0.5); }
+    .cb-pb-display { font-family:'Cinzel',serif; font-size:11px; letter-spacing:2px; color:var(--text-muted); margin-bottom:16px; }
+    .cb-pb-display span { color:var(--crimson); font-size:14px; }
+    .cb-score-btns { display:flex; align-items:center; gap:8px; justify-content:center; margin-top:6px; }
+    .cb-score-btn { width:22px; height:22px; background:rgba(212,67,58,0.2); border:1px solid rgba(212,67,58,0.3); color:var(--white); font-size:14px; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background 0.2s; }
+    .cb-score-btn:hover { background:var(--crimson); }
+    .cb-equip-choice { background:var(--bg-card); border:1px solid var(--border); padding:22px; margin-bottom:16px; border-radius:2px; }
+    .cb-equip-label { font-family:'Cinzel',serif; font-size:9px; letter-spacing:3px; color:var(--text-muted); text-transform:uppercase; margin-bottom:14px; display:flex; align-items:center; gap:6px; }
+    .cb-equip-label::before { content:'◇'; font-size:8px; color:var(--crimson); }
+    .cb-equip-options { display:flex; gap:8px; flex-wrap:wrap; }
+    .cb-equip-option { padding:10px 18px; border:1px solid var(--border); font-size:13px; color:var(--text-muted); cursor:pointer; transition:all 0.25s; border-radius:2px; }
+    .cb-equip-option:hover { border-color:var(--crimson); color:var(--text); background:var(--bg-hover); }
+    .cb-equip-option.selected { background:var(--crimson-soft); border-color:var(--crimson); color:var(--text); }
+    .cb-spell-section { margin-bottom:28px; }
+    .cb-spell-header { font-family:'Cinzel',serif; font-size:9px; letter-spacing:4px; color:var(--crimson); text-transform:uppercase; margin-bottom:14px; padding-bottom:8px; border-bottom:1px solid var(--crimson-border); display:flex; align-items:center; gap:8px; }
+    .cb-spell-header::before { content:'✦'; font-size:8px; }
+    .cb-spell-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(170px,1fr)); gap:8px; }
+    .cb-spell-item { background:var(--bg-card); border:1px solid var(--border); padding:10px 14px; cursor:pointer; font-size:13px; color:var(--text-muted); transition:all 0.25s; display:flex; align-items:center; gap:8px; border-radius:2px; }
+    .cb-spell-item:hover { border-color:var(--crimson-border); color:var(--text); background:var(--bg-hover); }
+    .cb-spell-item.selected { background:var(--crimson-soft); border-color:var(--crimson); color:var(--text); }
+    .cb-spell-dot { width:8px; height:8px; border:2px solid var(--border); border-radius:50%; flex-shrink:0; transition:all 0.2s; }
+    .cb-spell-item:hover .cb-spell-dot { border-color:var(--crimson-border); }
+    .cb-spell-item.selected .cb-spell-dot { background:var(--crimson); border-color:var(--crimson); }
+    .cb-spell-count { font-family:'Cinzel',serif; font-size:10px; color:var(--text-muted); margin-bottom:8px; }
+    .cb-spell-count span { color:var(--crimson); }
+    .cb-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-bottom:28px; }
+    .cb-form-field { display:flex; flex-direction:column; gap:6px; }
+    .cb-form-label { font-family:'Cinzel',serif; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text-muted); }
+    .cb-form-input { background:var(--bg-input); border:1px solid var(--border); color:var(--text); font-family:'Spectral',serif; font-size:15px; padding:10px 14px; transition:all 0.2s; border-radius:2px; }
+    .cb-form-input:focus { outline:none; border-color:var(--crimson); background:var(--crimson-soft); box-shadow:0 0 0 3px rgba(212,67,58,0.1); }
+    .cb-form-input::placeholder { color:var(--text-faint); }
+    select.cb-form-input option { background:var(--bg-card); color:var(--text); }
+    .cb-form-textarea { resize:vertical; min-height:100px; }
+    .cb-nav-btns { display:flex; gap:12px; margin-top:40px; padding-top:28px; border-top:1px solid var(--border); }
+    .cb-btn { font-family:'Cinzel',serif; font-size:10px; letter-spacing:3px; text-transform:uppercase; padding:14px 32px; cursor:pointer; border:none; transition:all 0.25s; border-radius:2px; }
+    .cb-btn-primary { background:var(--crimson); color:#fff; box-shadow:0 2px 8px rgba(212,67,58,0.25); }
+    .cb-btn-primary:hover { background:var(--crimson-dim); box-shadow:0 4px 16px rgba(212,67,58,0.35); transform:translateY(-1px); }
+    .cb-btn-secondary { background:transparent; color:var(--text-muted); border:1px solid var(--border); }
+    .cb-btn-secondary:hover { border-color:var(--crimson-border); color:var(--text); }
+    .cb-alert { background:var(--crimson-soft); border:1px solid var(--crimson-border); border-left:3px solid var(--crimson); padding:14px 18px; margin-bottom:24px; font-size:14px; color:var(--text-dim); font-style:italic; line-height:1.6; border-radius:0 2px 2px 0; }
+    .cb-alert strong { color:var(--crimson); font-style:normal; font-family:'Cinzel',serif; font-size:10px; letter-spacing:1px; }
+    .cb-method-tabs { display:flex; gap:0; margin-bottom:28px; border:1px solid var(--border); border-radius:2px; overflow:hidden; }
+    .cb-method-tab { flex:1; font-family:'Cinzel',serif; font-size:9px; letter-spacing:2px; text-transform:uppercase; padding:12px 8px; cursor:pointer; background:transparent; border:none; border-right:1px solid var(--border-mid); color:var(--text-muted); transition:all 0.25s; text-align:center; }
+    .cb-method-tab:last-child { border-right:none; }
+    .cb-method-tab:hover:not(.active) { background:var(--bg-hover); color:var(--text-dim); }
+    .cb-method-tab.active { background:var(--crimson-soft); color:var(--text); border-bottom:3px solid var(--crimson); }
+    .cb-progress { height:4px; background:var(--border-subtle); position:relative; }
+    .cb-progress-fill { height:100%; background:linear-gradient(90deg,var(--crimson-dim),var(--crimson)); transition:width 0.5s cubic-bezier(0.4,0,0.2,1); box-shadow:0 0 8px rgba(212,67,58,0.3); }
+    .cb-roll-all-btn { font-family:'Cinzel',serif; font-size:10px; letter-spacing:3px; text-transform:uppercase; padding:12px 28px; background:var(--crimson); border:none; color:#fff; cursor:pointer; margin-bottom:14px; border-radius:2px; box-shadow:0 2px 8px rgba(212,67,58,0.25); transition:all 0.2s; }
+    .cb-roll-all-btn:hover { background:var(--crimson-dim); box-shadow:0 4px 16px rgba(212,67,58,0.35); }
+    /* 3.5e skill table */
+    .t35-skills { width:100%; border-collapse:collapse; margin-bottom:28px; }
+    .t35-skills th { font-family:'Cinzel',serif; font-size:8px; letter-spacing:2px; text-transform:uppercase; color:var(--crimson); padding:10px 10px; border-bottom:2px solid var(--crimson-border); text-align:left; }
+    .t35-skills td { padding:7px 10px; border-bottom:1px solid var(--border-mid); font-size:13px; color:var(--text-dim); vertical-align:middle; transition:background 0.15s; }
+    .t35-skills tr:hover td { background:var(--bg-hover); }
+    .t35-skills tr.cross-class td { opacity:0.5; }
+    .t35-rank-input { width:50px; text-align:center; background:var(--bg-input); border:1px solid var(--border); color:var(--text); font-size:13px; padding:5px 4px; border-radius:2px; transition:all 0.2s; }
+    .t35-rank-input:focus { outline:none; border-color:var(--crimson); box-shadow:0 0 0 3px rgba(212,67,58,0.1); }
+    .t35-sp-bar { display:flex; justify-content:space-between; align-items:center; background:var(--crimson-soft); border:1px solid var(--crimson-border); border-left:3px solid var(--crimson); padding:12px 18px; margin-bottom:20px; border-radius:0 2px 2px 0; }
+    .t35-sp-label { font-family:'Cinzel',serif; font-size:9px; letter-spacing:2px; text-transform:uppercase; color:var(--text-muted); }
+    .t35-sp-val { font-family:'Cinzel',serif; font-size:22px; color:var(--crimson); }
+    /* 3.5e feat list */
+    .t35-feats { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:28px; }
+    .t35-feat { background:var(--bg-card); border:1px solid var(--border); padding:16px; cursor:pointer; transition:all 0.25s; border-radius:2px; }
+    .t35-feat:hover { background:var(--bg-hover); border-color:var(--crimson-border); }
+    .t35-feat.selected { background:var(--crimson-soft); border-color:var(--crimson); }
+    .t35-feat.selected::before { content:'✓ '; color:var(--crimson); }
+    .t35-feat-name { font-family:'Cinzel',serif; font-size:10px; letter-spacing:2px; text-transform:uppercase; color:var(--text); margin-bottom:4px; display:inline; }
+    .t35-feat.selected .t35-feat-name { color:var(--crimson); }
+    .t35-feat-prereq { font-size:10px; color:var(--text-faint); margin-bottom:6px; }
+    .t35-feat-desc { font-size:12px; color:var(--text-muted); line-height:1.6; font-style:italic; }
+    /* Dice popup */
+    #dice-popup35 { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0.6); background:var(--bg-card); border:1px solid var(--crimson-border); padding:36px 44px; z-index:9999; text-align:center; min-width:260px; pointer-events:none; opacity:0; transition:opacity 0.15s,transform 0.15s; box-shadow:0 0 60px rgba(0,0,0,0.6); }
+    #dice-popup35::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--crimson),transparent); }
+    #dice-popup35.show { opacity:1; transform:translate(-50%,-50%) scale(1); }
+    #dice-popup35.exit { opacity:0; transform:translate(-50%,-50%) scale(0.85); transition:opacity 0.35s,transform 0.35s; }
+    .dp-overlay { position:fixed; inset:0; z-index:9998; background:rgba(0,0,0,0.45); opacity:0; transition:opacity 0.15s; pointer-events:none; }
+    .dp-overlay.show { opacity:1; pointer-events:all; }
+    #dice-popup35 .dp-close { position:absolute; top:10px; right:14px; font-size:16px; color:var(--text-faint); cursor:pointer; background:none; border:none; pointer-events:all; }
+    .spell-info-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:8000; display:flex; align-items:center; justify-content:center; }
+    .spell-info-box { background:var(--bg-card); border:1px solid var(--crimson-border); padding:32px; max-width:420px; width:90%; position:relative; }
+    .spell-info-box::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--crimson),transparent); }
+    .spell-info-close { position:absolute; top:10px; right:14px; background:none; border:none; color:var(--text-faint); font-size:18px; cursor:pointer; }
+    .cb-weapon-card { background:var(--bg-card); border:1px solid var(--crimson-border); padding:12px 14px; cursor:pointer; transition:all 0.2s; min-width:150px; position:relative; flex-shrink:0; }
+    .cb-weapon-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--crimson); }
+    .cb-weapon-card:hover { background:var(--bg-hover); border-color:var(--crimson); transform:translateY(-2px); }
+    .cb-weapon-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; }
+    .cb-weapon-name { font-family:'Cinzel',serif; font-size:9px; letter-spacing:2px; color:var(--text); text-transform:uppercase; }
+    .cb-weapon-hint { font-size:10px; color:var(--crimson); opacity:0.6; }
+    .cb-weapon-card:hover .cb-weapon-hint { opacity:1; }
+    .cb-weapon-atk { font-family:'Cinzel',serif; font-size:11px; color:var(--crimson); }
+    .cb-weapon-dmg { font-size:12px; color:var(--text-dim); font-style:italic; }
+    .cb-roll-btn { font-family:'Cinzel',serif; font-size:9px; letter-spacing:1.5px; text-transform:uppercase; padding:7px 12px; background:var(--crimson-soft); border:1px solid var(--crimson-border); color:var(--text-dim); cursor:pointer; transition:all 0.15s; text-align:left; display:flex; justify-content:space-between; align-items:center; }
+    .cb-roll-btn:hover { background:var(--crimson); color:#f5f0e8; }
+    /* Dice animation shake */
+    @keyframes diceShake {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-3px) rotate(-2deg); }
+      50% { transform: translateX(3px) rotate(2deg); }
+      75% { transform: translateX(-2px) rotate(-1deg); }
+      100% { transform: translateX(0); }
+    }
+    @keyframes dicePulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .dp-die.animate { animation: diceShake 0.5s ease-in-out; }
+    .dp-die.crit { animation: dicePulse 0.3s ease-in-out; }
+    .dp-die.fail { animation: dicePulse 0.3s ease-in-out; }
+    /* Helpful prompt */
+    .cb-detail-prompt { font-size:14px; color:var(--text-muted); font-style:italic; text-align:center; padding:40px 20px; background:var(--crimson-soft); border:1px dashed var(--crimson-border); border-radius:2px; }
+    /* Death saves tracker */
+    .cs-death-saves { margin-top:20px; padding:16px; background:var(--crimson-soft); border:1px solid var(--crimson-border); border-radius:2px; }
+    .cs-death-saves-title { font-family:'Cinzel',serif; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--crimson); margin-bottom:12px; }
+    .cs-death-saves-row { display:flex; gap:24px; }
+    .cs-death-saves-col { flex:1; }
+    .cs-death-saves-label { font-size:11px; color:var(--text-faint); margin-bottom:8px; font-style:italic; }
+    .cs-death-pips { display:flex; gap:8px; }
+    .cs-death-pip { width:24px; height:24px; border:2px solid var(--border); border-radius:50%; background:transparent; cursor:pointer; transition:all 0.2s; display:flex; align-items:center; justify-content:center; }
+    .cs-death-pip:hover { border-color:var(--crimson); }
+    .cs-death-pip.success { background:#4eda80; border-color:#4eda80; }
+    .cs-death-pip.failure { background:var(--crimson); border-color:var(--crimson); }
+    .cs-death-save-btn { font-family:'Cinzel',serif; font-size:10px; letter-spacing:2px; text-transform:uppercase; padding:8px 16px; background:var(--crimson); border:none; color:white; cursor:pointer; margin-top:8px; }
+    .cs-death-save-btn:hover { background:var(--crimson-dim); }
+    /* Conditions tracker */
+    .cs-conditions { margin-top:20px; padding:16px; background:var(--crimson-soft); border:1px solid var(--crimson-border); border-radius:2px; }
+    .cs-conditions-title { font-family:'Cinzel',serif; font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--crimson); margin-bottom:12px; }
+    .cs-conditions-tags { display:flex; gap:6px; flex-wrap:wrap; }
+    .cs-condition-tag { padding:6px 12px; background:transparent; border:1px solid rgba(212,67,58,0.3); color:var(--text-muted); font-size:11px; cursor:pointer; transition:all 0.2s; font-family:'Cinzel',serif; letter-spacing:1px; text-transform:uppercase; }
+    .cs-condition-tag:hover { border-color:var(--crimson); color:var(--crimson); }
+    .cs-condition-tag.active { background:var(--crimson); border-color:var(--crimson); color:white; }
+    /* Roll Initiative button */
+    .cs-init-btn { font-family:'Cinzel',serif; font-size:11px; letter-spacing:2px; text-transform:uppercase; padding:12px 24px; background:var(--crimson); border:none; color:white; cursor:pointer; margin-bottom:16px; width:100%; }
+    .cs-init-btn:hover { background:var(--crimson-dim); }
+    /* Level-Up Modal */
+    .lu-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9997; opacity:0; pointer-events:none; transition:opacity 0.2s; }
+    .lu-overlay.show { opacity:1; pointer-events:all; }
+    .lu-modal { position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0.9); background:var(--bg-card); border:1px solid var(--crimson-border); z-index:9998; max-height:85vh; overflow-y:auto; max-width:560px; width:90%; pointer-events:none; opacity:0; transition:all 0.3s ease; }
+    .lu-modal::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,transparent,var(--crimson),transparent); }
+    .lu-modal.show { opacity:1; pointer-events:all; transform:translate(-50%,-50%) scale(1); }
+    .lu-close { position:absolute; top:12px; right:16px; background:none; border:none; color:var(--text-faint); font-size:18px; cursor:pointer; padding:4px; }
+    .lu-header { padding:28px 32px 20px; border-bottom:1px solid var(--crimson-border); }
+    .lu-title { font-family:'Cinzel',serif; font-size:28px; color:var(--white); margin-bottom:4px; }
+    .lu-subtitle { font-family:'Cinzel',serif; font-size:14px; color:var(--crimson); letter-spacing:1px; }
+    .lu-content { padding:24px 32px; }
+    .lu-section { margin-bottom:28px; }
+    .lu-section-title { font-family:'Cinzel',serif; font-size:11px; letter-spacing:3px; color:var(--crimson); text-transform:uppercase; margin-bottom:12px; padding-bottom:8px; border-bottom:1px solid var(--crimson-border); }
+    .lu-section-body { font-size:13px; color:var(--text-dim); line-height:1.6; }
+    .lu-feature-list { list-style:none; padding:0; margin:0; }
+    .lu-feature-item { padding:8px 0; border-bottom:1px solid var(--border-mid); }
+    .lu-feature-item:last-child { border-bottom:none; }
+    .lu-feature-name { font-family:'Cinzel',serif; font-size:9px; letter-spacing:1px; color:var(--crimson); text-transform:uppercase; }
+    .lu-feature-desc { font-size:12px; color:var(--text-muted); margin-top:2px; font-style:italic; }
+    .lu-stat-row { display:flex; gap:16px; margin-bottom:16px; }
+    .lu-stat { flex:1; background:var(--crimson-soft); border:1px solid var(--crimson-border); padding:12px; border-radius:2px; }
+    .lu-stat-label { font-family:'Cinzel',serif; font-size:9px; letter-spacing:2px; color:var(--text-faint); text-transform:uppercase; margin-bottom:4px; }
+    .lu-stat-val { font-family:'Cinzel',serif; font-size:18px; color:var(--crimson); }
+    .lu-skill-list { margin-top:12px; }
+    .lu-skill-item { display:flex; gap:12px; margin-bottom:10px; align-items:center; }
+    .lu-skill-input { width:50px; background:var(--bg-input); border:1px solid var(--border); color:var(--text); font-size:13px; padding:4px 8px; text-align:center; border-radius:2px; }
+    .lu-skill-input:focus { outline:none; border-color:var(--crimson); box-shadow:0 0 0 3px rgba(212,67,58,0.1); }
+    .lu-skill-label { font-size:12px; color:var(--text-dim); flex:1; }
+    .lu-ability-select { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px; }
+    .lu-ability-btn { padding:8px; background:transparent; border:1px solid var(--border); color:var(--text-muted); font-family:'Cinzel',serif; font-size:11px; cursor:pointer; transition:all 0.25s; text-transform:uppercase; border-radius:2px; }
+    .lu-ability-btn:hover { border-color:var(--crimson); color:var(--crimson); background:var(--crimson-soft); }
+    .lu-ability-btn.selected { background:var(--crimson); border-color:var(--crimson); color:#fff; }
+    .lu-feat-list { display:grid; grid-template-columns:1fr; gap:8px; margin-top:10px; max-height:300px; overflow-y:auto; }
+    .lu-feat-item { padding:10px; background:var(--bg-card); border:1px solid var(--border); cursor:pointer; transition:all 0.25s; border-radius:2px; }
+    .lu-feat-item:hover { border-color:var(--crimson-border); background:var(--bg-hover); }
+    .lu-feat-item.selected { background:var(--crimson-soft); border-color:var(--crimson); }
+    .lu-feat-item-name { font-family:'Cinzel',serif; font-size:9px; color:var(--crimson); text-transform:uppercase; margin-bottom:2px; }
+    .lu-feat-item-desc { font-size:11px; color:var(--text-muted); }
+    .lu-hp-input { width:60px; background:var(--bg-input); border:1px solid var(--border); color:var(--text); font-size:14px; padding:6px 8px; text-align:center; margin:0 8px; border-radius:2px; }
+    .lu-hp-input:focus { outline:none; border-color:var(--crimson); box-shadow:0 0 0 3px rgba(212,67,58,0.1); }
+    .lu-footer { padding:20px 32px; border-top:1px solid var(--border); display:flex; gap:12px; justify-content:flex-end; }
+    .lu-cancel-btn { font-family:'Cinzel',serif; font-size:9px; letter-spacing:2px; text-transform:uppercase; padding:10px 24px; background:transparent; border:1px solid var(--border); color:var(--text-muted); cursor:pointer; transition:all 0.2s; }
+    .lu-cancel-btn:hover { border-color:var(--text-muted); color:var(--white); }
+    .lu-confirm-btn { font-family:'Cinzel',serif; font-size:9px; letter-spacing:2px; text-transform:uppercase; padding:10px 24px; background:var(--crimson); border:none; color:white; cursor:pointer; transition:all 0.2s; }
+    .lu-confirm-btn:hover { background:var(--crimson-dim); }
+
+    @media (max-width:860px) {
+      .cb-wrap { grid-template-columns:1fr; }
+      .cb-sidebar { position:static; height:auto; display:flex; overflow-x:auto; padding:12px 0; border-right:none; border-bottom:1px solid var(--border); gap:0; }
+      .cb-step-item { min-width:80px; flex-direction:column; gap:4px; padding:10px 14px; }
+      .cb-step-item::after { display:none; }
+      .cb-step-sublabel { display:none; }
+      .cb-step-label { font-size:7px; text-align:center; }
+      .cb-summary-mini { display:none; }
+      .cb-main { padding:24px; }
+      .cb-panel-title { font-size:28px; }
+      .cb-panel-sub { font-size:16px; margin-bottom:20px; }
+      .cb-panel-hint { font-size:13px; padding:12px 14px; }
+      .cb-step-context { font-size:8px; }
+      .cb-ability-grid { grid-template-columns:repeat(3,1fr); }
+      .t35-feats { grid-template-columns:1fr; }
+      .cb-form-grid { grid-template-columns:1fr; }
+      .cb-nav-btns button { min-height:44px; }
+    }
+    @media (max-width:480px) {
+      .cb-main { padding:16px; }
+      .cb-panel-title { font-size:22px; }
+      .cb-panel-hint { display:none; }
+      .cb-ability-grid { grid-template-columns:repeat(2,1fr); }
+    }
+  </style>
+</head>
+<body data-nav-active="Players" data-footer-copy="Roll Well. Play Weird.">
+
+  <div id="ps-site-shell"></div>
+  <div id="ps-page-breadcrumb"></div>
+
+  <div class="cb-progress"><div class="cb-progress-fill" id="progressBar" style="width:11%"></div></div>
+  <div class="cb-wrap">
+    <aside class="cb-sidebar" id="sidebar">
+      <div class="cb-step-item active" data-step="1" onclick="goToStep35(1)"><div class="cb-step-num">1</div><div><div class="cb-step-label">Race</div><div class="cb-step-sublabel" id="sl35-race">Choose your race</div></div></div>
+      <div class="cb-step-item" data-step="2" onclick="goToStep35(2)"><div class="cb-step-num">2</div><div><div class="cb-step-label">Class</div><div class="cb-step-sublabel" id="sl35-class">Choose your class</div></div></div>
+      <div class="cb-step-item" data-step="3" onclick="goToStep35(3)"><div class="cb-step-num">3</div><div><div class="cb-step-label">Alignment</div><div class="cb-step-sublabel" id="sl35-align">Choose alignment</div></div></div>
+      <div class="cb-step-item" data-step="4" onclick="goToStep35(4)"><div class="cb-step-num">4</div><div><div class="cb-step-label">Ability Scores</div><div class="cb-step-sublabel" id="sl35-ability">Assign your scores</div></div></div>
+      <div class="cb-step-item" data-step="5" onclick="goToStep35(5)"><div class="cb-step-num">5</div><div><div class="cb-step-label">Skills</div><div class="cb-step-sublabel" id="sl35-skills">Assign skill ranks</div></div></div>
+      <div class="cb-step-item" data-step="6" onclick="goToStep35(6)"><div class="cb-step-num">6</div><div><div class="cb-step-label">Feats</div><div class="cb-step-sublabel" id="sl35-feats">Choose feats</div></div></div>
+      <div class="cb-step-item" data-step="7" onclick="goToStep35(7)"><div class="cb-step-num">7</div><div><div class="cb-step-label">Equipment</div><div class="cb-step-sublabel" id="sl35-equip">Starting gear</div></div></div>
+      <div class="cb-step-item" data-step="8" onclick="goToStep35(8)" id="step35-8"><div class="cb-step-num">8</div><div><div class="cb-step-label">Spells</div><div class="cb-step-sublabel" id="sl35-spells">Known spells</div></div></div>
+      <div class="cb-step-item" data-step="9" onclick="goToStep35(9)"><div class="cb-step-num">9</div><div><div class="cb-step-label">Details &amp; Sheet</div><div class="cb-step-sublabel">Ready to play</div></div></div>
+      <div class="cb-summary-mini"><div class="cb-summary-mini-title">Character (3.5e)</div><div id="miniSummary35"></div></div>
+    </aside>
+    <main class="cb-main" id="main-content">
+
+      <!-- STEP 1: RACE -->
+      <div class="cb-panel active" id="panel35-1">
+        <div class="cb-step-context">Step 1 of 9</div>
+        <div class="cb-panel-title">Choose Your Race</div>
+        <div class="cb-panel-sub">Your race shapes your abilities, traits, and heritage.</div>
+        <div class="cb-panel-hint">Select a race to see its ability score adjustments, racial traits, and special abilities. In 3.5e, race significantly impacts your character build.</div>
+        <div class="cb-cards" id="raceCards35"></div>
+        <div id="raceDetail35"></div>
+        <div class="cb-nav-btns"><button class="cb-btn cb-btn-primary" onclick="nextStep35(1)">Continue to Class →</button></div>
+      </div>
+
+      <!-- STEP 2: CLASS -->
+      <div class="cb-panel" id="panel35-2">
+        <div class="cb-step-context">Step 2 of 9</div>
+        <div class="cb-panel-title">Choose Your Class</div>
+        <div class="cb-panel-sub">Your class defines your combat style, skills, and abilities.</div>
+        <div class="cb-panel-hint">Each class determines your hit die, base attack bonus, saving throws, and skill points per level. Your class choice shapes everything that follows.</div>
+        <div class="cb-cards" id="classCards35"></div>
+        <div id="classDetail35"></div>
+        <div class="cb-nav-btns">
+          <button class="cb-btn cb-btn-secondary" onclick="prevStep35(2)">← Back</button>
+          <button class="cb-btn cb-btn-primary" onclick="nextStep35(2)">Continue to Alignment →</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: ALIGNMENT -->
+      <div class="cb-panel" id="panel35-3">
+        <div class="cb-step-context">Step 3 of 9</div>
+        <div class="cb-panel-title">Choose Your Alignment</div>
+        <div class="cb-panel-sub">Your moral and ethical compass. Some classes restrict your options.</div>
+        <div id="alignRestriction35" class="cb-alert" style="display:none;"></div>
+        <div class="cb-cards" id="alignCards35"></div>
+        <div class="cb-nav-btns">
+          <button class="cb-btn cb-btn-secondary" onclick="prevStep35(3)">← Back</button>
+          <button class="cb-btn cb-btn-primary" onclick="nextStep35(3)">Continue to Ability Scores →</button>
+        </div>
+      </div>
+
+      <!-- STEP 4: ABILITY SCORES -->
+      <div class="cb-panel" id="panel35-4">
+        <div class="cb-step-context">Step 4 of 9</div>
+        <div class="cb-panel-title">Ability Scores</div>
+        <div class="cb-panel-sub">The six pillars of your character's capabilities</div>
+        <div class="cb-method-tabs">
+          <button class="cb-method-tab active" onclick="setMethod35('standard')">Standard Array</button>
+          <button class="cb-method-tab" onclick="setMethod35('pointbuy')">Point Buy (28 pts)</button>
+          <button class="cb-method-tab" onclick="setMethod35('roll')">Roll 4d6</button>
+          <button class="cb-method-tab" onclick="setMethod35('manual')">Manual Entry</button>
+        </div>
+        <div id="methodInfo35" class="cb-alert"></div>
+        <div id="arrayPool35" class="cb-array-pool" style="display:flex;"></div>
+        <div id="rollPanel35" style="display:none;">
+          <button class="cb-roll-all-btn" onclick="rollAllStats35()">Roll All Stats (4d6 drop lowest)</button>
+          <div style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:3px;color:var(--text-faint);text-transform:uppercase;margin-bottom:8px;">Click a result, then click an ability box to assign it</div>
+          <div id="rolledScores35" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;"></div>
+        </div>
+        <div class="cb-ability-grid" id="abilityGrid35"></div>
+        <div id="asiNote35" class="cb-alert" style="display:none;"></div>
+        <div class="cb-nav-btns">
+          <button class="cb-btn cb-btn-secondary" onclick="prevStep35(4)">← Back</button>
+          <button class="cb-btn cb-btn-primary" onclick="nextStep35(4)">Continue to Skills →</button>
+        </div>
+      </div>
+
+      <!-- STEP 5: SKILLS -->
+      <div class="cb-panel" id="panel35-5">
+        <div class="cb-step-context">Step 5 of 9</div>
+        <div class="cb-panel-title">Skill Ranks</div>
+        <div class="cb-panel-sub">3.5e uses a rank system. Class skills cost 1 point, cross-class cost 2 points per rank.</div>
+        <div class="t35-sp-bar">
+          <span class="t35-sp-label">Points Remaining</span>
+          <span class="t35-sp-val" id="sp35Remaining">0</span>
+          <span class="t35-sp-label">of <span id="sp35Total">0</span></span>
+        </div>
+        <div id="skillAlert35" class="cb-alert"></div>
+        <table class="t35-skills">
+          <thead><tr><th>Skill</th><th>Type</th><th>Ability</th><th>Ranks</th><th>Mod</th><th>Total</th></tr></thead>
+          <tbody id="skillRows35"></tbody>
+        </table>
+        <div class="cb-nav-btns">
+          <button class="cb-btn cb-btn-secondary" onclick="prevStep35(5)">← Back</button>
+          <button class="cb-btn cb-btn-primary" onclick="nextStep35(5)">Continue to Feats →</button>
+        </div>
+      </div>
+
+      <!-- STEP 6: FEATS -->
+      <div class="cb-panel" id="panel35-6">
+        <div class="cb-step-context">Step 6 of 9</div>
+        <div class="cb-panel-title">Choose Feats</div>
+        <div class="cb-panel-sub">1st-level feats. Humans and Fighters get bonus feats.</div>
+        <div id="featInfo35" class="cb-alert"></div>
+        <div class="t35-feats" id="featList35"></div>
+        <div class="cb-nav-btns">
+          <button class="cb-btn cb-btn-secondary" onclick="prevStep35(6)">← Back</button>
+          <button class="cb-btn cb-btn-primary" onclick="nextStep35(6)">Continue to Equipment →</button>
+        </div>
+      </div>
+
+      <!-- STEP 7: EQUIPMENT -->
+      <div class="cb-panel" id="panel35-7">
+        <div class="cb-step-context">Step 7 of 9</div>
+        <div class="cb-panel-title">Starting Equipment</div>
+        <div class="cb-panel-sub">Choose your starting gear based on your class.</div>
+        <div id="equipChoices35"></div>
+        <div id="fixedEquip35"></div>
+        <div class="cb-nav-btns">
+          <button class="cb-btn cb-btn-secondary" onclick="prevStep35(7)">← Back</button>
+          <button class="cb-btn cb-btn-primary" onclick="nextStep35(7)">Continue to Spells →</button>
+        </div>
+      </div>
+
+      <!-- STEP 8: SPELLS -->
+      <div class="cb-panel" id="panel35-8">
+        <div class="cb-step-context">Step 8 of 9</div>
+        <div class="cb-panel-title" id="spellTitle35">Spells</div>
+        <div class="cb-panel-sub" id="spellSub35">Choose your starting spells</div>
+        <div id="spellsContent35"></div>
+        <div class="cb-nav-btns">
+          <button class="cb-btn cb-btn-secondary" onclick="prevStep35(8)">← Back</button>
+          <button class="cb-btn cb-btn-primary" id="spellNextBtn35" onclick="nextStep35(8)">Continue to Details →</button>
+        </div>
+      </div>
+
+      <!-- STEP 9: DETAILS + FINAL SHEET -->
+      <div class="cb-panel" id="panel35-9" style="padding:0;">
+        <div id="detailsForm35" style="padding:48px 56px;">
+          <div class="cb-step-context">Step 9 of 9</div>
+          <div class="cb-panel-title">Character Details</div>
+          <div class="cb-panel-sub">The story behind your adventurer</div>
+          <div class="cb-form-grid">
+            <div class="cb-form-field"><label class="cb-form-label">Character Name</label><input class="cb-form-input" type="text" id="charName35" placeholder="Enter name..." oninput="updateDetails35()"></div>
+            <div class="cb-form-field"><label class="cb-form-label">Alignment</label><input class="cb-form-input" type="text" id="charAlignment35" readonly style="opacity:0.6;"></div>
+            <div class="cb-form-field"><label class="cb-form-label">Age</label><input class="cb-form-input" type="text" id="charAge35" placeholder="e.g. 28 years" oninput="updateDetails35()"></div>
+            <div class="cb-form-field"><label class="cb-form-label">Gender / Pronouns</label><input class="cb-form-input" type="text" id="charGender35" placeholder="e.g. He/Him" oninput="updateDetails35()"></div>
+            <div class="cb-form-field"><label class="cb-form-label">Height</label><input class="cb-form-input" type="text" id="charHeight35" placeholder="e.g. 5'10&quot;" oninput="updateDetails35()"></div>
+            <div class="cb-form-field"><label class="cb-form-label">Weight</label><input class="cb-form-input" type="text" id="charWeight35" placeholder="e.g. 170 lbs" oninput="updateDetails35()"></div>
+            <div class="cb-form-field"><label class="cb-form-label">Eye Color</label><input class="cb-form-input" type="text" id="charEyes35" oninput="updateDetails35()"></div>
+            <div class="cb-form-field"><label class="cb-form-label">Hair Color</label><input class="cb-form-input" type="text" id="charHair35" oninput="updateDetails35()"></div>
+          </div>
+          <div class="cb-form-field" style="margin-bottom:16px;"><label class="cb-form-label">Personality Traits</label><textarea class="cb-form-input cb-form-textarea" id="charPersonality35" placeholder="Describe your character's personality..." oninput="updateDetails35()"></textarea></div>
+          <div class="cb-form-grid">
+            <div class="cb-form-field"><label class="cb-form-label">Ideals</label><textarea class="cb-form-input cb-form-textarea" id="charIdeals35" placeholder="What does your character believe in?" oninput="updateDetails35()"></textarea></div>
+            <div class="cb-form-field"><label class="cb-form-label">Bonds</label><textarea class="cb-form-input cb-form-textarea" id="charBonds35" placeholder="What connects your character to the world?" oninput="updateDetails35()"></textarea></div>
+            <div class="cb-form-field"><label class="cb-form-label">Flaws</label><textarea class="cb-form-input cb-form-textarea" id="charFlaws35" placeholder="What weaknesses does your character have?" oninput="updateDetails35()"></textarea></div>
+            <div class="cb-form-field"><label class="cb-form-label">Backstory</label><textarea class="cb-form-input cb-form-textarea" id="charBackstory35" placeholder="A brief history of your character..." oninput="updateDetails35()"></textarea></div>
+          </div>
+          <div class="cb-nav-btns">
+            <button class="cb-btn cb-btn-secondary" onclick="prevStep35(9)">← Back</button>
+            <button class="cb-btn cb-btn-primary" onclick="showFinalSheet35()">Generate Character Sheet →</button>
+          </div>
+        </div>
+
+        <!-- FINAL SHEET (hidden until details submitted) -->
+        <div id="finalSheet35" style="display:none;">
+          <div class="cs-header">
+            <div>
+              <div class="cs-char-name" id="cs35-name">—</div>
+              <div class="cs-char-class" id="cs35-class">—</div>
+              <div class="cs-tags" id="cs35-tags"></div>
+            </div>
+            <div class="cs-header-actions">
+              <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+                <button class="cs-save-btn" id="cs35-save-btn" onclick="saveChar35()">Save Character ↑</button>
+                <button class="cs-save-btn" style="background:transparent;color:var(--crimson);border:1px solid var(--crimson-border);" onclick="window.print()">Print / PDF</button>
+                <button class="cs-save-btn" style="background:transparent;color:var(--text-muted);border:1px solid var(--border);" onclick="backToDetails35()">← Edit Details</button>
+                <button class="cs-save-btn" style="background:transparent;color:var(--text-muted);border:1px solid var(--border);" onclick="location.reload()">New Character</button>
+                <button class="cs-save-btn" id="levelUpBtn35" style="background:linear-gradient(135deg,rgba(212,67,58,0.3),rgba(212,67,58,0.1));color:var(--crimson);border:1px solid var(--crimson);" onclick="openLevelUpModal35()">Level Up ▲</button>
+              </div>
+              <div id="cs35-save-status" class="cs-save-status"></div>
+              <div class="cs-rest-btns">
+                <button class="cs-rest-btn" onclick="shortRest35()">Short Rest</button>
+                <button class="cs-rest-btn" onclick="longRest35()">Long Rest</button>
+              </div>
+            </div>
+          </div>
+          <div class="cs-tabs">
+            <button class="cs-tab active" onclick="switchTab35('main')">Main</button>
+            <button class="cs-tab" onclick="switchTab35('combat')">Combat</button>
+            <button class="cs-tab" onclick="switchTab35('skills')">Skills</button>
+            <button class="cs-tab" id="cs35-spell-tab" onclick="switchTab35('spells')">Spells</button>
+            <button class="cs-tab" onclick="switchTab35('inventory')">Inventory</button>
+            <button class="cs-tab" onclick="switchTab35('features')">Features &amp; Traits</button>
+            <button class="cs-tab" onclick="switchTab35('notes')">Notes</button>
+          </div>
+          <div class="cs-panel active" id="tab35-main"></div>
+          <div class="cs-panel" id="tab35-combat"></div>
+          <div class="cs-panel" id="tab35-skills"></div>
+          <div class="cs-panel" id="tab35-spells"></div>
+          <div class="cs-panel" id="tab35-inventory"></div>
+          <div class="cs-panel" id="tab35-features"></div>
+          <div class="cs-panel" id="tab35-notes"></div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Level-Up Modal -->
+  <div class="lu-overlay" id="levelUpOverlay35" onclick="closeLevelUpModal35()"></div>
+  <div class="lu-modal" id="levelUpModal35">
+    <button class="lu-close" onclick="closeLevelUpModal35()">✕</button>
+    <div class="lu-header">
+      <div class="lu-title">Level Up</div>
+      <div class="lu-subtitle"><span id="lu35-from">1</span> → <span id="lu35-to">2</span></div>
+    </div>
+    <div class="lu-content" id="lu35-content">
+      <!-- Dynamically populated -->
+    </div>
+    <div class="lu-footer">
+      <button class="lu-cancel-btn" onclick="closeLevelUpModal35()">Cancel</button>
+      <button class="lu-confirm-btn" onclick="confirmLevelUp35()">Confirm Level Up</button>
+    </div>
+  </div>
+
+  <!-- Dice popup -->
+  <div class="dp-overlay" id="diceOverlay35" onclick="closeDice35()"></div>
+  <div id="dice-popup35">
+    <button class="dp-close" onclick="closeDice35()">✕</button>
+    <div class="dp-type" id="dp35-type"></div>
+    <div class="dp-label" id="dp35-label"></div>
+    <div class="dp-dice-row" id="dp35-row"></div>
+    <div class="dp-total" id="dp35-total"></div>
+    <div class="dp-breakdown" id="dp35-break"></div>
+    <div class="dp-crit-label" id="dp35-crit"></div>
+  </div>
+
+  <script>
+// ═══════════════════════════════════════
+// D&D 3.5e BUILDER — STATE
+// ═══════════════════════════════════════
+var C35 = {
+  step: 1,
+  race: null, cls: null, alignment: null,
+  abilities: {str:10,dex:10,con:10,int:10,wis:10,cha:10},
+  scoreMethod: 'standard',
+  arrayAssigned: {}, selectedArrayVal: null,
+  rolledScores: [], rolledAssigned: {}, selectedRolled: null,
+  skillRanks: {},
+  selectedFeats: [],
+  equipChoices: {}, weaponChoices: {},
+  selectedCantrips: [], selectedSpells: [],
+  details: {},
+  level: 1, rollLog: [],
+  hpRolls: [12], levelUpSkills: {}, levelUpFeats: [], levelUpAbilityBoosts: []
+};
+
+var STANDARD_ARRAY35 = [15,14,13,12,10,8];
+var PB_COST35 = {8:0,9:1,10:2,11:3,12:4,13:5,14:6,15:8};
+var sheet35State = {};
+var abilUsed35 = {};
+var inv35Items = [];
+var slots35Used = {};
+
+// ── UTILS ──
+function mod35(s) { return Math.floor(((parseInt(s)||8)-10)/2); }
+function ms35(s) { var m = mod35(s); return (m>=0?'+':'')+m; }
+function ts35(a) {
+  var base = C35.abilities[a]||8;
+  if (!C35.race) return base;
+  return base + (DND35_DATA.races[C35.race].asi[a]||0);
+}
+function bab35() {
+  if (!C35.cls) return 0;
+  var cls = DND35_DATA.classes[C35.cls];
+  var babData = DND35_DATA.babProgression[C35.level];
+  if (!babData) return 0;
+  var progType = cls.babProg;
+  return babData[progType] ? babData[progType][0] : 0;
+}
+function save35(type) {
+  if (!C35.cls) return 0;
+  var cls = DND35_DATA.classes[C35.cls];
+  var isGood = cls.goodSaves.includes(type);
+  var abilMap = {fort:'con',ref:'dex',will:'wis'};
+  var baseSave = isGood ? DND35_DATA.saveProgression.good[C35.level-1] : DND35_DATA.saveProgression.poor[C35.level-1];
+  return baseSave + mod35(ts35(abilMap[type]));
+}
+function spTotal35() {
+  if (!C35.cls) return 0;
+  var cls = DND35_DATA.classes[C35.cls];
+  var pts = Math.max(1, cls.skillPoints + mod35(ts35('int')));
+  pts *= 4;
+  if (C35.race === 'human') pts += 4;
+  for (var i = 2; i <= C35.level; i++) {
+    var perLevel = Math.max(1, cls.skillPoints + mod35(ts35('int')));
+    if (C35.race === 'human') perLevel += 1;
+    pts += perLevel;
+  }
+  return Math.max(pts, 4);
+}
+function spSpent35() {
+  var spent = 0;
+  var cls = C35.cls ? DND35_DATA.classes[C35.cls] : null;
+  Object.entries(C35.skillRanks).forEach(function(kv) {
+    var id = kv[0]; var ranks = parseInt(kv[1])||0;
+    if (ranks <= 0) return;
+    var isClass = cls && cls.classSkills.includes(DND35_DATA.skills[id].name);
+    spent += isClass ? ranks : ranks * 2;
+  });
+  return spent;
+}
+function maxRank35(isClass) {
+  var max = C35.level + 3;
+  return isClass ? max : Math.floor(max / 2);
+}
+function featCount35() {
+  var n = 0;
+  DND35_DATA.featLevels.forEach(function(lvl) {
+    if (lvl <= C35.level) n++;
+  });
+  if (C35.race === 'human') n++;
+  DND35_DATA.fighterBonusFeatLevels.forEach(function(lvl) {
+    if (lvl <= C35.level && C35.cls === 'fighter') n++;
+  });
+  return n;
+}
+
+// ── VALIDATION ──
+function validate35(step) {
+  if (step===1 && !C35.race) return 'Please select a race.';
+  if (step===2 && !C35.cls) return 'Please select a class.';
+  if (step===3 && !C35.alignment) return 'Please choose an alignment.';
+  if (step===4 && C35.scoreMethod==='standard') {
+    var n = Object.keys(C35.arrayAssigned).length;
+    if (n < 6) return 'Assign all 6 ability scores. '+(6-n)+' remaining.';
+  }
+  if (step===4 && C35.scoreMethod==='roll') {
+    var n2 = Object.keys(C35.rolledAssigned||{}).length;
+    if (n2 < 6) return 'Assign all 6 rolled scores. '+(6-n2)+' remaining.';
+  }
+  if (step===5 && spSpent35() > spTotal35()) return 'You have spent too many skill points.';
+  if (step===6 && C35.selectedFeats.length < featCount35()) return 'Choose '+(featCount35()-C35.selectedFeats.length)+' more feat(s).';
+  return null;
+}
+function showError35(msg) {
+  var el = document.getElementById('cb35-err');
+  if (!el) {
+    el = document.createElement('div'); el.id = 'cb35-err';
+    el.style.cssText = 'background:rgba(212,67,58,.15);border:1px solid var(--crimson);padding:11px 16px;margin-top:14px;font-size:13px;color:var(--text);';
+    var nb = document.querySelector('.cb-panel.active .cb-nav-btns');
+    if (nb) nb.before(el);
+  }
+  el.textContent = '⚠ '+msg;
+  setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 4000);
+}
+
+// ── NAVIGATION ──
+function goToStep35(n, skipVal) {
+  if (!skipVal && n > C35.step) {
+    var err = validate35(C35.step);
+    if (err) { showError35(err); return; }
+  }
+  var old = document.getElementById('cb35-err'); if (old) old.remove();
+  C35.step = n;
+  document.querySelectorAll('.cb-panel').forEach(function(p) { p.classList.remove('active'); });
+  document.getElementById('panel35-'+n).classList.add('active');
+  document.querySelectorAll('.cb-step-item').forEach(function(s) {
+    var sn = parseInt(s.dataset.step);
+    s.classList.toggle('active', sn===n);
+    s.classList.toggle('done', sn<n);
+  });
+  document.getElementById('progressBar').style.width = Math.round(n/9*100)+'%';
+  var sidebar = document.getElementById('sidebar');
+  var cbWrap = document.querySelector('.cb-wrap');
+  if (n === 9) {
+    if (sidebar) sidebar.style.display = 'none';
+    if (cbWrap) cbWrap.style.gridTemplateColumns = '1fr';
+  } else {
+    if (sidebar) sidebar.style.display = '';
+    if (cbWrap) cbWrap.style.gridTemplateColumns = '';
+  }
+  if (n===3) renderAlignments35();
+  if (n===5) renderSkills35();
+  if (n===6) renderFeats35();
+  if (n===7) renderEquipment35();
+  if (n===8) renderSpells35();
+  if (n===9) {
+    var alField = document.getElementById('charAlignment35');
+    if (alField) alField.value = C35.alignment||'';
+  }
+  updateMini35();
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+function nextStep35(n) { goToStep35(n+1); }
+function prevStep35(n) { goToStep35(n-1, true); }
+
+// ── STEP 1: RACE ──
+var raceFlavorTexts35 = {
+  human: "Versatile and ambitious",
+  dwarf: "Steadfast and honorable",
+  elf: "Graceful and perceptive",
+  gnome: "Clever and energetic",
+  "half-elf": "Adaptable and charismatic",
+  "half-orc": "Strong and determined",
+  halfling: "Lucky and resourceful"
+};
+var classFlavorTexts35 = {
+  barbarian: "Rage incarnate, unstoppable force",
+  bard: "Charming performer and jack-of-all-trades",
+  cleric: "Divine conduit and healer",
+  druid: "Nature's guardian and shapeshifter",
+  fighter: "Master of arms and tactics",
+  monk: "Disciplined warrior and ascetic",
+  paladin: "Holy warrior bound by oath",
+  ranger: "Tracker and nature's sentinel",
+  rogue: "Swift and cunning shadow",
+  sorcerer: "Wild magic unleashed within",
+  wizard: "Master of arcane knowledge"
+};
+
+function renderRaces35() {
+  var c = document.getElementById('raceCards35'); c.innerHTML = '';
+  Object.entries(DND35_DATA.races).forEach(function(kv) {
+    var id = kv[0]; var race = kv[1];
+    var d = document.createElement('div');
+    d.className = 'cb-card'+(C35.race===id?' selected':'');
+    d.onclick = function() { selectRace35(id); };
+    var asi = Object.entries(race.asi).map(function(e) { return DND35_DATA.abilityShort[e[0]]+(e[1]>0?'+':'')+e[1]; }).join(', ')||'No ASI';
+    var flavor = raceFlavorTexts35[id] || '';
+    d.innerHTML = '<div class="cb-card-name">'+race.name+'</div><div class="cb-card-detail">'+(flavor?'<div style="font-size:12px;margin-bottom:6px;color:var(--crimson);">'+flavor+'</div>':'')+asi+' · '+race.size+' · '+race.speed+' ft</div>';
+    c.appendChild(d);
+  });
+}
+function selectRace35(id) {
+  C35.race = id;
+  document.querySelectorAll('#raceCards35 .cb-card').forEach(function(c,i) {
+    c.classList.toggle('selected', Object.keys(DND35_DATA.races)[i]===id);
+  });
+  document.getElementById('sl35-race').textContent = DND35_DATA.races[id].name;
+  renderRaceDetail35(id); updateMini35(); updateAsiNote35();
+}
+function renderRaceDetail35(id) {
+  if (!id) {
+    document.getElementById('raceDetail35').innerHTML = '<div class="cb-detail-prompt">Select a race above to see its traits and abilities.</div>';
+    return;
+  }
+  var race = DND35_DATA.races[id];
+  var badges = Object.entries(race.asi).map(function(e) {
+    return '<span class="cb-asi-badge">'+DND35_DATA.abilityShort[e[0]]+(e[1]>0?'+':'')+e[1]+'</span>';
+  }).join('');
+  var html = '<div class="cb-detail"><div class="cb-detail-title">'+race.name+'</div>';
+  html += '<div class="cb-detail-sub">'+race.size+' · '+race.speed+' ft · '+race.languages.join(', ')+'</div>';
+  html += '<div class="cb-asi-badges">'+badges+'</div><div class="cb-detail-body">';
+  race.traits.forEach(function(t) {
+    html += '<div class="cb-trait"><div class="cb-trait-name">'+t.name+'</div><div class="cb-trait-desc">'+t.desc+'</div></div>';
+  });
+  html += '</div></div>';
+  document.getElementById('raceDetail35').innerHTML = html;
+}
+
+// ── STEP 2: CLASS ──
+function renderClasses35() {
+  var c = document.getElementById('classCards35'); c.innerHTML = '';
+  Object.entries(DND35_DATA.classes).forEach(function(kv) {
+    var id = kv[0]; var cls = kv[1];
+    var d = document.createElement('div');
+    d.className = 'cb-card'+(C35.cls===id?' selected':'');
+    d.onclick = function() { selectClass35(id); };
+    var bab = cls.babProg==='good'?'Good BAB':cls.babProg==='medium'?'Med BAB':'Poor BAB';
+    var flavor = classFlavorTexts35[id] || '';
+    d.innerHTML = '<div class="cb-card-name">'+cls.name+'</div><div class="cb-card-detail">'+(flavor?'<div style="font-size:12px;margin-bottom:6px;color:var(--crimson);">'+flavor+'</div>':'')+' d'+cls.hitDie+' HD · '+bab+' · '+cls.skillPoints+'+INT skills</div><div class="cb-card-badge">'+cls.primaryAbility.toUpperCase()+'</div>';
+    c.appendChild(d);
+  });
+}
+function selectClass35(id) {
+  C35.cls = id; C35.skillRanks = {}; C35.equipChoices = {}; C35.weaponChoices = {};
+  document.querySelectorAll('#classCards35 .cb-card').forEach(function(c,i) {
+    c.classList.toggle('selected', Object.keys(DND35_DATA.classes)[i]===id);
+  });
+  document.getElementById('sl35-class').textContent = DND35_DATA.classes[id].name;
+  var step8 = document.getElementById('step35-8');
+  if (step8) step8.style.opacity = DND35_DATA.classes[id].spellcastingAbility ? '1' : '0.4';
+  renderClassDetail35(id); updateMini35();
+}
+function renderClassDetail35(id) {
+  if (!id) {
+    document.getElementById('classDetail35').innerHTML = '<div class="cb-detail-prompt">Select a class above to see its features and proficiencies.</div>';
+    return;
+  }
+  var cls = DND35_DATA.classes[id];
+  var bab = cls.babProg==='good'?'+1':'+0';
+  var fort = cls.goodSaves.includes('fort')?'Good':'Poor';
+  var ref = cls.goodSaves.includes('ref')?'Good':'Poor';
+  var will = cls.goodSaves.includes('will')?'Good':'Poor';
+  var html = '<div class="cb-detail"><div class="cb-detail-title">'+cls.name+'</div>';
+  html += '<div class="cb-detail-sub">d'+cls.hitDie+' HD · BAB '+bab+' · Fort '+fort+' · Ref '+ref+' · Will '+will+'</div>';
+  html += '<div class="cb-detail-body">';
+  html += '<div class="cb-trait"><div class="cb-trait-name">Class Skills ('+cls.skillPoints+'+INT per level)</div><div class="cb-trait-desc">'+cls.classSkills.join(', ')+'</div></div>';
+  html += '<div class="cb-trait"><div class="cb-trait-name">Armor Proficiencies</div><div class="cb-trait-desc">'+(cls.armorProf.join(', ')||'None')+'</div></div>';
+  cls.features.forEach(function(f) {
+    html += '<div class="cb-trait"><div class="cb-trait-name">Level '+f.level+': '+f.name+'</div><div class="cb-trait-desc">'+f.desc+'</div></div>';
+  });
+  html += '</div></div>';
+  document.getElementById('classDetail35').innerHTML = html;
+}
+
+// ── STEP 3: ALIGNMENT ──
+function renderAlignments35() {
+  var c = document.getElementById('alignCards35'); c.innerHTML = '';
+  DND35_DATA.alignments.forEach(function(a) {
+    var d = document.createElement('div');
+    d.className = 'cb-card'+(C35.alignment===a?' selected':'');
+    d.onclick = function() { selectAlign35(a); };
+    d.innerHTML = '<div class="cb-card-name">'+a+'</div>';
+    c.appendChild(d);
+  });
+  var restrictions = {paladin:'Must be Lawful Good.',monk:'Must be Lawful.',barbarian:'Cannot be Lawful.',druid:'Must be Neutral on at least one axis.'};
+  var el = document.getElementById('alignRestriction35');
+  if (C35.cls && restrictions[C35.cls]) {
+    el.innerHTML = '<strong>'+DND35_DATA.classes[C35.cls].name+' Restriction:</strong> '+restrictions[C35.cls];
+    el.style.display = '';
+  } else {
+    el.style.display = 'none';
+  }
+}
+function selectAlign35(a) {
+  C35.alignment = a;
+  document.querySelectorAll('#alignCards35 .cb-card').forEach(function(c) {
+    c.classList.toggle('selected', c.querySelector('.cb-card-name').textContent===a);
+  });
+  document.getElementById('sl35-align').textContent = a;
+  updateMini35();
+}
+
+// ── STEP 4: ABILITY SCORES ──
+function setMethod35(m) {
+  C35.scoreMethod = m;
+  document.querySelectorAll('.cb-method-tab').forEach(function(t,i) {
+    t.classList.toggle('active', ['standard','pointbuy','roll','manual'][i]===m);
+  });
+  var info = document.getElementById('methodInfo35');
+  if (m==='standard') info.innerHTML = '<strong>Standard Array</strong>. Assign 15,14,13,12,10,8 to your six abilities.';
+  else if (m==='pointbuy') info.innerHTML = '<strong>Point Buy</strong>. 28 points (3.5e standard). Scores start at 8.';
+  else if (m==='roll') info.innerHTML = '<strong>Roll 4d6 Drop Lowest</strong>. Roll, then assign each result.';
+  else info.innerHTML = '<strong>Manual Entry</strong>. Type scores directly.';
+  C35.arrayAssigned = {}; C35.selectedArrayVal = null;
+  C35.rolledScores = []; C35.rolledAssigned = {}; C35.selectedRolled = null;
+  Object.keys(C35.abilities).forEach(function(a) { C35.abilities[a] = 8; });
+  document.getElementById('arrayPool35').style.display = m==='standard'?'flex':'none';
+  document.getElementById('rollPanel35').style.display = m==='roll'?'block':'none';
+  renderPool35(); renderAbilGrid35(); updateAsiNote35();
+}
+function renderPool35() {
+  var pool = document.getElementById('arrayPool35');
+  var used = Object.values(C35.arrayAssigned);
+  pool.innerHTML = STANDARD_ARRAY35.map(function(v) {
+    var uc = used.filter(function(u){return u===v;}).length;
+    var isUsed = uc >= STANDARD_ARRAY35.filter(function(u){return u===v;}).length;
+    var isSel = C35.selectedArrayVal===v;
+    return '<div class="cb-array-val'+(isUsed?' used':'')+(isSel?' selected':'')+'" onclick="pickArray35('+v+')">'+v+'</div>';
+  }).join('');
+}
+function pickArray35(v) {
+  var used = Object.values(C35.arrayAssigned);
+  var uc = used.filter(function(u){return u===v;}).length;
+  if (uc >= STANDARD_ARRAY35.filter(function(u){return u===v;}).length) return;
+  C35.selectedArrayVal = v; renderPool35(); renderAbilGrid35();
+}
+function rollAllStats35() {
+  C35.rolledScores = []; C35.rolledAssigned = {}; C35.selectedRolled = null;
+  for (var i=0;i<6;i++) {
+    var r = [1,2,3,4].map(function(){return Math.ceil(Math.random()*6);}).sort(function(a,b){return a-b;});
+    C35.rolledScores.push(r[1]+r[2]+r[3]);
+  }
+  Object.keys(C35.abilities).forEach(function(a){C35.abilities[a]=8;});
+  renderRolled35(); renderAbilGrid35();
+}
+function renderRolled35() {
+  var el = document.getElementById('rolledScores35'); if (!el) return;
+  var used = Object.values(C35.rolledAssigned||{});
+  el.innerHTML = C35.rolledScores.map(function(v,i) {
+    var isUsed = used.includes(i);
+    var isSel = C35.selectedRolled===i;
+    return '<div class="cb-array-val'+(isUsed?' used':'')+(isSel?' selected':'')+'" onclick="pickRolled35('+i+')">'+v+'</div>';
+  }).join('');
+}
+function pickRolled35(i) {
+  if (Object.values(C35.rolledAssigned||{}).includes(i)) return;
+  C35.selectedRolled = i; renderRolled35(); renderAbilGrid35();
+}
+function assignAbil35(a) {
+  if (C35.scoreMethod==='standard') {
+    if (C35.selectedArrayVal===null) return;
+    C35.abilities[a] = C35.selectedArrayVal;
+    C35.arrayAssigned[a] = C35.selectedArrayVal;
+    C35.selectedArrayVal = null;
+    renderPool35();
+  } else if (C35.scoreMethod==='roll') {
+    if (C35.selectedRolled===null) return;
+    C35.abilities[a] = C35.rolledScores[C35.selectedRolled];
+    C35.rolledAssigned[a] = C35.selectedRolled;
+    C35.selectedRolled = null;
+    renderRolled35();
+  }
+  renderAbilGrid35(); updateAsiNote35();
+}
+function pbAdj35(a, d) {
+  var cur = C35.abilities[a]; var nxt = cur+d;
+  if (nxt<8||nxt>15) return;
+  var spent = Object.values(C35.abilities).reduce(function(s,v){return s+(PB_COST35[v]||0);},0);
+  if ((PB_COST35[nxt]||0)-(PB_COST35[cur]||0) > 28-spent) return;
+  C35.abilities[a] = nxt; renderAbilGrid35(); updateAsiNote35();
+}
+function renderAbilGrid35() {
+  var grid = document.getElementById('abilityGrid35');
+  var isSel = (C35.scoreMethod==='standard'&&C35.selectedArrayVal!==null)||(C35.scoreMethod==='roll'&&C35.selectedRolled!==null);
+  var spent = Object.values(C35.abilities).reduce(function(s,v){return s+(PB_COST35[v]||0);},0);
+  if (C35.scoreMethod==='pointbuy') {
+    var pbEl = document.getElementById('pb35Display');
+    if (!pbEl) {
+      pbEl = document.createElement('div'); pbEl.id='pb35Display'; pbEl.className='cb-pb-display';
+      grid.before(pbEl);
+    }
+    pbEl.innerHTML = 'Points remaining: <span>'+(28-spent)+'</span>/28';
+  } else {
+    var old = document.getElementById('pb35Display'); if (old) old.remove();
+  }
+  grid.innerHTML = Object.keys(C35.abilities).map(function(a) {
+    var base = C35.abilities[a];
+    var rasi = C35.race ? (DND35_DATA.races[C35.race].asi[a]||0) : 0;
+    var total = base+rasi;
+    var inner = '';
+    if (C35.scoreMethod==='standard'||C35.scoreMethod==='roll') {
+      var isSet = C35.scoreMethod==='standard'?(C35.arrayAssigned[a]!==undefined):(C35.rolledAssigned&&C35.rolledAssigned[a]!==undefined);
+      inner = '<div class="cb-ability-score" style="'+(isSet?'':'color:var(--text-faint)')+'">'+(isSet?base:'—')+'</div>';
+    } else if (C35.scoreMethod==='pointbuy') {
+      inner = '<div class="cb-score-btns"><button class="cb-score-btn" onclick="event.stopPropagation();pbAdj35(\''+a+'\',-1)">−</button><span style="font-size:26px;font-weight:300;color:var(--text);min-width:38px;text-align:center;">'+base+'</span><button class="cb-score-btn" onclick="event.stopPropagation();pbAdj35(\''+a+'\',1)">+</button></div>';
+    } else {
+      inner = '<input class="cb-ability-input" type="number" min="3" max="18" value="'+base+'" onclick="event.stopPropagation()" oninput="C35.abilities[\''+a+'\']=Math.max(3,Math.min(18,parseInt(this.value)||3));renderAbilGrid35();updateAsiNote35();">';
+    }
+    return '<div class="cb-ability-box'+(isSel?' selecting':'')+'" onclick="assignAbil35(\''+a+'\')">'+
+      '<div class="cb-ability-name">'+DND35_DATA.abilityShort[a]+'</div>'+inner+
+      '<div class="cb-ability-mod">'+ms35(total)+'</div>'+
+      (rasi!==0?'<div class="cb-ability-asi">'+(rasi>0?'+':'')+rasi+' racial</div>':'')+
+      '<div style="font-size:10px;color:var(--text-faint);margin-top:3px;font-style:italic;">'+DND35_DATA.abilityNames[a]+'</div>'+
+    '</div>';
+  }).join('');
+}
+function updateAsiNote35() {
+  var note = document.getElementById('asiNote35');
+  if (!C35.race) { note.style.display='none'; return; }
+  var race = DND35_DATA.races[C35.race];
+  var bonuses = Object.entries(race.asi).map(function(e){ return DND35_DATA.abilityNames[e[0]]+(e[1]>0?' +':' ')+e[1]; });
+  if (bonuses.length) { note.style.display=''; note.innerHTML='<strong>Racial Modifiers Applied:</strong> '+bonuses.join(', ')+'.'; }
+  else note.style.display = 'none';
+}
+
+// ── STEP 5: SKILLS ──
+function renderSkills35() {
+  var cls = C35.cls ? DND35_DATA.classes[C35.cls] : null;
+  var total = spTotal35(); var spent = spSpent35(); var rem = total-spent;
+  document.getElementById('sp35Total').textContent = total;
+  document.getElementById('sp35Remaining').textContent = rem;
+  document.getElementById('sp35Remaining').style.color = rem<0?'var(--crimson)':rem===0?'#4eda80':'';
+  var alert35 = document.getElementById('skillAlert35');
+  if (cls) alert35.innerHTML = '<strong>'+cls.name+'</strong> gets <strong>'+(cls.skillPoints)+'+INT modifier</strong> skill points per level (×4 at 1st level). Class skills cost 1 pt/rank (max 4). Cross-class cost 2 pts/rank (max 2). <em>Trained-only skills (†) require at least 1 rank.</em>';
+  var tbody = document.getElementById('skillRows35'); tbody.innerHTML = '';
+  Object.entries(DND35_DATA.skills).forEach(function(kv) {
+    var id = kv[0]; var skill = kv[1];
+    var isClass = cls && cls.classSkills.includes(skill.name);
+    var ranks = parseInt(C35.skillRanks[id])||0;
+    var max = maxRank35(isClass);
+    var abilMod = mod35(ts35(skill.ability));
+    var rowTotal = ranks+abilMod;
+    var tr = document.createElement('tr');
+    if (!isClass) tr.className = 'cross-class';
+    tr.innerHTML =
+      '<td>'+skill.name+(skill.trained?'<span style="color:var(--crimson);font-size:10px;margin-left:3px;">†</span>':'')+'</td>'+
+      '<td style="font-family:\'Cinzel\',serif;font-size:8px;letter-spacing:1px;text-transform:uppercase;color:'+(isClass?'#4eda80':'var(--text-faint)')+'">'+
+        (isClass?'Class':'Cross')+'<br><span style="font-size:9px;opacity:0.6;">'+(isClass?'1pt':'2pts')+'/rank · max '+max+'</span>'+
+      '</td>'+
+      '<td style="font-family:\'Cinzel\',serif;font-size:9px;color:var(--text-muted);">'+DND35_DATA.abilityShort[skill.ability]+'</td>'+
+      '<td><input class="t35-rank-input" type="number" min="0" max="'+max+'" value="'+ranks+'" id="rank35_'+id+'" onchange="setRank35(\''+id+'\',this.value)"></td>'+
+      '<td style="font-family:\'Cinzel\',serif;font-size:11px;color:var(--text-muted);text-align:center;">'+abilMod+'</td>'+
+      '<td style="font-family:\'Cinzel\',serif;font-size:13px;color:var(--crimson);text-align:center;">'+(rowTotal>=0?'+':'')+rowTotal+'</td>';
+    tbody.appendChild(tr);
+  });
+}
+function setRank35(id, val) {
+  var cls = C35.cls ? DND35_DATA.classes[C35.cls] : null;
+  var isClass = cls && cls.classSkills.includes(DND35_DATA.skills[id].name);
+  var max = maxRank35(isClass);
+  var ranks = Math.max(0, Math.min(max, parseInt(val)||0));
+  C35.skillRanks[id] = ranks;
+  var inp = document.getElementById('rank35_'+id); if (inp) inp.value = ranks;
+  var spent = spSpent35(); var rem = spTotal35()-spent;
+  document.getElementById('sp35Remaining').textContent = rem;
+  document.getElementById('sp35Remaining').style.color = rem<0?'var(--crimson)':rem===0?'#4eda80':'';
+}
+
+// ── STEP 6: FEATS ──
+function renderFeats35() {
+  var count = featCount35();
+  document.getElementById('featInfo35').innerHTML =
+    '<strong>Choose '+count+' feat'+(count>1?'s':'')+'</strong>. '+C35.selectedFeats.length+'/'+count+' selected.'+
+    (C35.race==='human'?' Includes Human bonus feat.':'')+
+    (C35.cls==='fighter'?' Includes Fighter bonus combat feat.':'');
+  var list = document.getElementById('featList35'); list.innerHTML = '';
+  DND35_DATA.feats.forEach(function(feat) {
+    var isSel = C35.selectedFeats.includes(feat.name);
+    var d = document.createElement('div');
+    d.className = 't35-feat'+(isSel?' selected':'');
+    d.onclick = function() { toggleFeat35(feat.name, count); };
+    d.innerHTML = '<div class="t35-feat-name">'+feat.name+'</div><div class="t35-feat-prereq">Prereq: '+feat.prereq+'</div><div class="t35-feat-desc">'+feat.desc+'</div>';
+    list.appendChild(d);
+  });
+}
+function toggleFeat35(name, max) {
+  var idx = C35.selectedFeats.indexOf(name);
+  if (idx>=0) C35.selectedFeats.splice(idx,1);
+  else if (C35.selectedFeats.length<max) C35.selectedFeats.push(name);
+  renderFeats35();
+}
+
+// ── STEP 7: EQUIPMENT ──
+function renderEquipment35() {
+  var cls = C35.cls ? DND35_DATA.classes[C35.cls] : null;
+  var cont = document.getElementById('equipChoices35');
+  var fixed = document.getElementById('fixedEquip35');
+  cont.innerHTML = ''; fixed.innerHTML = '';
+  if (!cls) return;
+  var equip = cls.equipment||[]; var ci = 0;
+  equip.forEach(function(choice) {
+    if (!Array.isArray(choice)||choice.length===0) return;
+    if (choice.length===1) {
+      var d = document.createElement('div'); d.className = 'cb-equip-choice';
+      d.innerHTML = '<div class="cb-equip-label">Always Included</div><div style="font-size:15px;color:var(--text-muted);font-style:italic;padding:4px 0;">✓ '+choice[0]+'</div>';
+      fixed.appendChild(d);
+    } else {
+      var idx = ci;
+      var d2 = document.createElement('div'); d2.className = 'cb-equip-choice';
+      var req = C35.equipChoices[idx]===undefined;
+      var allW = [].concat(DND35_DATA.weapons.simple_melee||[],DND35_DATA.weapons.simple_ranged||[],DND35_DATA.weapons.martial_melee||[],DND35_DATA.weapons.martial_ranged||[]);
+      var weapDrop = '';
+      if (C35.equipChoices[idx]!==undefined) {
+        var selOpt = choice[C35.equipChoices[idx]];
+        var isCat = DND35_DATA.weaponCategories && DND35_DATA.weaponCategories[selOpt];
+        if (isCat) {
+          var wKey = idx+'_'+C35.equipChoices[idx];
+          var curW = (C35.weaponChoices&&C35.weaponChoices[wKey])||'';
+          weapDrop = '<div style="margin-top:12px;"><div style="font-family:\'Cinzel\',serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);margin-bottom:8px;">Choose Specific Weapon</div>'+
+            '<select style="background:var(--bg-input);border:1px solid rgba(212,67,58,0.3);color:var(--white);font-family:\'Spectral\',serif;font-size:14px;padding:7px 10px;width:100%;" onchange="if(!C35.weaponChoices)C35.weaponChoices={};C35.weaponChoices[\''+wKey+'\']=this.value;renderEquipment35();">'+
+            '<option value="">Select a weapon...</option>'+
+            allW.map(function(w){return '<option value="'+w.name+'" '+(curW===w.name?'selected':'')+'>'+w.name+' — '+w.damage+' '+w.type+'</option>';}).join('')+
+            '</select>'+(curW?'<div style="font-size:12px;color:var(--text-muted);margin-top:5px;">✓ '+curW+'</div>':'')+
+            '</div>';
+        }
+      }
+      d2.innerHTML = '<div class="cb-equip-label" style="'+(req?'color:var(--crimson);':'')+'">'+
+        (req?'⚠ ':'')+'Choice '+(idx+1)+'. Pick One'+(req?' (Required)':'')+'</div>'+
+        '<div class="cb-equip-options">'+choice.map(function(opt,j){
+          return '<div class="cb-equip-option'+(C35.equipChoices[idx]===j?' selected':'')+'" onclick="C35.equipChoices['+idx+']='+j+';C35.weaponChoices={};renderEquipment35();">'+(C35.equipChoices[idx]===j?'✓ ':'')+opt+'</div>';
+        }).join('')+'</div>'+weapDrop;
+      cont.appendChild(d2);
+      ci++;
+    }
+  });
+}
+
+// ── STEP 8: SPELLS ──
+function renderSpells35() {
+  var cls = C35.cls ? DND35_DATA.classes[C35.cls] : null;
+  var title = document.getElementById('spellTitle35');
+  var sub = document.getElementById('spellSub35');
+  var nextBtn = document.getElementById('spellNextBtn35');
+  var cont = document.getElementById('spellsContent35');
+  var lvl = C35.level || 1;
+  var isPreparedCaster = (C35.cls==='cleric'||C35.cls==='druid');
+  var isHalfCaster = (C35.cls==='paladin'||C35.cls==='ranger');
+
+  // Check if class has spells at current level
+  var hasSpellsAtLevel = cls && cls.spellcastingAbility;
+  if (isHalfCaster && lvl < 4) hasSpellsAtLevel = false;
+
+  if (!hasSpellsAtLevel) {
+    if (title) title.textContent = 'No Spellcasting';
+    if (sub) sub.textContent = isHalfCaster ? 'This class gains spells at level 4' : 'This class does not use spells';
+    if (nextBtn) nextBtn.textContent = 'Skip → Continue to Details';
+    cont.innerHTML = '<div class="cb-detail" style="text-align:center;padding:56px 32px;"><div style="font-size:56px;margin-bottom:20px;opacity:.2;">⚔</div><div class="cb-detail-title">'+(cls?cls.name:'This class')+'. No Spellcasting'+(isHalfCaster?' Yet':'')+'</div><div class="cb-detail-sub" style="margin-top:10px;">Click continue to move on.</div></div>';
+    return;
+  }
+  if (title) title.textContent = 'Spells';
+  if (sub) sub.textContent = lvl > 1 ? 'Spells available at level '+lvl : 'Choose your starting spells';
+  if (nextBtn) nextBtn.textContent = 'Continue to Details →';
+  var spList = DND35_DATA.spells[C35.cls];
+  if (!spList) { cont.innerHTML = '<div class="cb-alert">Spell list unavailable.</div>'; return; }
+  var sm = mod35(ts35(cls.spellcastingAbility));
+  var dc = 10+sm;
+
+  // Get spells per day table for this class
+  var spdTable = DND35_DATA.spellsPerDay[C35.cls];
+
+  // Determine max spell level available
+  var maxSpellLevel = 0;
+  if (spdTable) {
+    for (var sl = 9; sl >= 0; sl--) {
+      if (spdTable[sl] && spdTable[sl][lvl-1] !== null && spdTable[sl][lvl-1] !== undefined) {
+        maxSpellLevel = sl; break;
+      }
+    }
+  }
+
+  var html = '<div class="cb-detail" style="margin-bottom:24px;"><div class="cb-detail-title">'+cls.name+' Spellcasting (3.5e)</div><div class="cb-detail-sub">'+DND35_DATA.abilityShort[cls.spellcastingAbility]+'-based · Save DC '+dc+'+ · Caster Level '+lvl+'</div>';
+
+  // Show spells per day summary
+  if (spdTable) {
+    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;">';
+    for (var sLvl = 0; sLvl <= maxSpellLevel; sLvl++) {
+      var perDay = spdTable[sLvl] ? spdTable[sLvl][lvl-1] : null;
+      if (perDay === null || perDay === undefined) continue;
+      var bonusSlots = (sLvl > 0 && sm >= sLvl) ? Math.floor((sm - sLvl) / 4) + 1 : 0;
+      html += '<div style="text-align:center;background:var(--bg);padding:6px 10px;min-width:50px;"><div style="font-family:\'Cinzel\',serif;font-size:8px;letter-spacing:1px;color:var(--text-faint);text-transform:uppercase;">'+(sLvl===0?'0th':sLvl+(['st','nd','rd'][sLvl-1]||'th'))+'</div><div style="font-size:16px;color:var(--crimson);font-weight:600;">'+perDay+(bonusSlots>0?'+'+bonusSlots:'')+'</div><div style="font-size:9px;color:var(--text-faint);">/day</div></div>';
+    }
+    html += '</div>';
+  }
+  html += '</div>';
+
+  // Initialize spell storage per level if not exists
+  if (!C35.spellsByLevel) C35.spellsByLevel = {};
+
+  // Cantrips (0-level)
+  var cantripCount = isPreparedCaster ? 0 : ({'int':4,'cha':4,'wis':3}[cls.spellcastingAbility]||3);
+  if (isHalfCaster) cantripCount = 0;
+  if (spList.cantrips && spList.cantrips.length && cantripCount > 0) {
+    var ch = C35.selectedCantrips.length;
+    html += '<div class="cb-spell-section"><div class="cb-spell-header">Cantrips / Orisons — Choose '+cantripCount+'</div><div class="cb-spell-count"><span style="color:'+(ch>=cantripCount?'#5a9a5a':'var(--crimson)')+'">'+ch+'/'+cantripCount+'</span> selected</div><div class="cb-spell-grid">'+
+      spList.cantrips.map(function(sp) {
+        return '<div class="cb-spell-item'+(C35.selectedCantrips.includes(sp)?' selected':'')+'">'+
+          '<div class="cb-spell-dot" onclick="toggleSpell35(\''+sp.replace(/'/g,"\\'")+'\',\'c\','+cantripCount+')" style="cursor:pointer;"></div>'+
+          '<span style="flex:1;cursor:pointer;" onclick="toggleSpell35(\''+sp.replace(/'/g,"\\'")+'\',\'c\','+cantripCount+')">'+sp+'</span>'+
+          '<span onclick="event.stopPropagation();showSpellInfo35(\''+sp.replace(/'/g,"\\'")+'\');" style="font-family:\'Cinzel\',serif;font-size:10px;color:var(--text-faint);cursor:pointer;padding:0 6px;">ℹ</span>'+
+        '</div>';
+      }).join('')+'</div></div>';
+  }
+
+  // Level 1+ spells
+  var levelNames = ['','1st','2nd','3rd','4th','5th','6th','7th','8th','9th'];
+  for (var spLvl = 1; spLvl <= maxSpellLevel; spLvl++) {
+    var key = 'level'+spLvl;
+    if (!spList[key] || !spList[key].length) continue;
+    var perDay2 = spdTable[spLvl] ? spdTable[spLvl][lvl-1] : null;
+    if (perDay2 === null || perDay2 === undefined || perDay2 <= 0) continue;
+
+    // For known casters (wizard, sorc, bard), allow selection
+    // For prepared casters (cleric, druid), show the list but note they prepare from full list
+    if (!C35.spellsByLevel[spLvl]) C35.spellsByLevel[spLvl] = [];
+
+    if (isPreparedCaster) {
+      var bonusPrep = (sm >= spLvl) ? Math.floor((sm - spLvl)/4)+1 : 0;
+      html += '<div class="cb-spell-section"><div class="cb-spell-header">'+levelNames[spLvl]+'-Level Spells — '+perDay2+(bonusPrep>0?'+'+bonusPrep:'')+' per day (prepare from full list)</div>';
+      html += '<div style="font-size:12px;color:var(--text-muted);font-style:italic;margin-bottom:8px;">As a prepared caster, you choose from the full spell list each day.</div>';
+      html += '<div class="cb-spell-grid" style="max-height:200px;overflow-y:auto;">';
+      spList[key].forEach(function(sp) {
+        html += '<div class="cb-spell-item" style="opacity:0.7;cursor:default;">'+
+          '<span style="flex:1;">'+sp+'</span>'+
+          '<span onclick="event.stopPropagation();showSpellInfo35(\''+sp.replace(/'/g,"\\'")+'\');" style="font-family:\'Cinzel\',serif;font-size:10px;color:var(--text-faint);cursor:pointer;padding:0 6px;">ℹ</span>'+
+        '</div>';
+      });
+      html += '</div></div>';
+    } else {
+      // Known caster - allow selection
+      var knownCount = spLvl === 1 ? (cls.spellcastingAbility==='int' ? 3+Math.max(0,sm) : 4) : 2;
+      knownCount = Math.max(1, knownCount);
+      var selected = C35.spellsByLevel[spLvl] || [];
+      // Also include level1 selectedSpells for backwards compat
+      if (spLvl === 1) selected = C35.selectedSpells;
+      var selCount = selected.length;
+
+      html += '<div class="cb-spell-section"><div class="cb-spell-header">'+levelNames[spLvl]+'-Level Spells — Choose '+knownCount+' known</div><div class="cb-spell-count"><span style="color:'+(selCount>=knownCount?'#5a9a5a':'var(--crimson)')+'">'+selCount+'/'+knownCount+'</span> selected</div><div class="cb-spell-grid">';
+      spList[key].forEach(function(sp) {
+        var isSel = selected.includes(sp);
+        html += '<div class="cb-spell-item'+(isSel?' selected':'')+'">'+
+          '<div class="cb-spell-dot" onclick="toggleSpellLevel35(\''+sp.replace(/'/g,"\\'")+'\','+spLvl+','+knownCount+')" style="cursor:pointer;"></div>'+
+          '<span style="flex:1;cursor:pointer;" onclick="toggleSpellLevel35(\''+sp.replace(/'/g,"\\'")+'\','+spLvl+','+knownCount+')">'+sp+'</span>'+
+          '<span onclick="event.stopPropagation();showSpellInfo35(\''+sp.replace(/'/g,"\\'")+'\');" style="font-family:\'Cinzel\',serif;font-size:10px;color:var(--text-faint);cursor:pointer;padding:0 6px;">ℹ</span>'+
+        '</div>';
+      });
+      html += '</div></div>';
+    }
+  }
+
+  if (isPreparedCaster && maxSpellLevel >= 1) {
+    html += '<div class="cb-alert"><strong>Prepared Caster</strong>. Each day you prepare spells from the full '+cls.name+' list. Bonus spells from high '+DND35_DATA.abilityShort[cls.spellcastingAbility]+' are included above.</div>';
+  }
+  cont.innerHTML = html;
+}
+function toggleSpellLevel35(name, level, max) {
+  if (!C35.spellsByLevel) C35.spellsByLevel = {};
+  if (!C35.spellsByLevel[level]) C35.spellsByLevel[level] = [];
+  // Backwards compat: level 1 uses selectedSpells
+  var arr = (level === 1) ? C35.selectedSpells : C35.spellsByLevel[level];
+  var j = arr.indexOf(name);
+  if (j >= 0) arr.splice(j, 1);
+  else if (arr.length < max) arr.push(name);
+  if (level === 1) C35.selectedSpells = arr;
+  else C35.spellsByLevel[level] = arr;
+  renderSpells35();
+}
+function toggleSpell35(name, type, max) {
+  if (type==='c') {
+    var i = C35.selectedCantrips.indexOf(name);
+    if (i>=0) C35.selectedCantrips.splice(i,1);
+    else if (C35.selectedCantrips.length<max) C35.selectedCantrips.push(name);
+  } else {
+    var j = C35.selectedSpells.indexOf(name);
+    if (j>=0) C35.selectedSpells.splice(j,1);
+    else if (C35.selectedSpells.length<max) C35.selectedSpells.push(name);
+  }
+  renderSpells35();
+}
+function showSpellInfo35(spName) {
+  var old = document.getElementById('si35-popup'); if (old) old.remove();
+  var data = DND35_DATA.spellDescriptions && DND35_DATA.spellDescriptions[spName];
+  var overlay = document.createElement('div');
+  overlay.className = 'spell-info-overlay'; overlay.id = 'si35-popup';
+  overlay.onclick = function(e) { if (e.target===overlay) overlay.remove(); };
+  if (data) {
+    overlay.innerHTML = '<div class="spell-info-box"><button class="spell-info-close" onclick="document.getElementById(\'si35-popup\').remove()">✕</button>'+
+      '<div style="font-family:\'Cinzel\',serif;font-size:14px;letter-spacing:2px;text-transform:uppercase;color:var(--text);margin-bottom:4px;">'+spName+'</div>'+
+      '<div style="font-family:\'Cinzel\',serif;font-size:9px;letter-spacing:3px;color:var(--crimson);text-transform:uppercase;margin-bottom:16px;">'+data.school+'</div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">'+
+        '<div style="background:var(--bg);padding:8px 10px;"><div style="font-family:\'Cinzel\',serif;font-size:7px;letter-spacing:2px;color:var(--text-faint);text-transform:uppercase;margin-bottom:3px;">Casting Time</div><div style="font-size:13px;color:var(--text-dim);">'+data.castTime+'</div></div>'+
+        '<div style="background:var(--bg);padding:8px 10px;"><div style="font-family:\'Cinzel\',serif;font-size:7px;letter-spacing:2px;color:var(--text-faint);text-transform:uppercase;margin-bottom:3px;">Range</div><div style="font-size:13px;color:var(--text-dim);">'+data.range+'</div></div>'+
+        '<div style="background:var(--bg);padding:8px 10px;grid-column:1/-1;"><div style="font-family:\'Cinzel\',serif;font-size:7px;letter-spacing:2px;color:var(--text-faint);text-transform:uppercase;margin-bottom:3px;">Duration</div><div style="font-size:13px;color:var(--text-dim);">'+data.duration+'</div></div>'+
+      '</div><div style="font-size:14px;color:var(--text-dim);line-height:1.75;font-style:italic;">'+data.desc+'</div></div>';
+  } else {
+    overlay.innerHTML = '<div class="spell-info-box"><button class="spell-info-close" onclick="document.getElementById(\'si35-popup\').remove()">✕</button>'+
+      '<div style="font-family:\'Cinzel\',serif;font-size:14px;letter-spacing:2px;color:var(--text);margin-bottom:12px;">'+spName+'</div>'+
+      '<div style="font-size:13px;color:var(--text-dim);font-style:italic;">No description available.</div></div>';
+  }
+  document.body.appendChild(overlay);
+  document.addEventListener('keydown', function esc(e){ if(e.key==='Escape'){overlay.remove();document.removeEventListener('keydown',esc);}});
+}
+
+// ── STEP 9: DETAILS ──
+function updateDetails35() {
+  C35.details = {
+    name: document.getElementById('charName35').value,
+    alignment: C35.alignment||'',
+    age: document.getElementById('charAge35').value,
+    gender: document.getElementById('charGender35').value,
+    height: document.getElementById('charHeight35').value,
+    weight: document.getElementById('charWeight35').value,
+    eyes: document.getElementById('charEyes35').value,
+    hair: document.getElementById('charHair35').value,
+    personality: document.getElementById('charPersonality35').value,
+    ideals: document.getElementById('charIdeals35').value,
+    bonds: document.getElementById('charBonds35').value,
+    flaws: document.getElementById('charFlaws35').value,
+    backstory: document.getElementById('charBackstory35').value
+  };
+  updateMini35();
+}
+function showFinalSheet35() {
+  updateDetails35();
+  if (!C35.details.name || !C35.details.name.trim()) {
+    alert('Please enter a character name.'); return;
+  }
+  document.getElementById('detailsForm35').style.display = 'none';
+  document.getElementById('finalSheet35').style.display = 'block';
+  buildFinalSheet35();
+}
+function backToDetails35() {
+  document.getElementById('finalSheet35').style.display = 'none';
+  document.getElementById('detailsForm35').style.display = 'block';
+}
+
+// ── DICE ──
+var _diceTimer35 = null;
+function showDice35(opts) {
+  var popup = document.getElementById('dice-popup35');
+  var overlay = document.getElementById('diceOverlay35');
+  if (!popup) return;
+  if (_diceTimer35) clearTimeout(_diceTimer35);
+  popup.classList.remove('exit','show'); overlay.classList.remove('show');
+  document.getElementById('dp35-type').textContent = opts.type;
+  document.getElementById('dp35-label').textContent = opts.label;
+  var row = document.getElementById('dp35-row'); row.innerHTML = '';
+  opts.dice.forEach(function(d,i) {
+    var el = document.createElement('div');
+    el.className = 'dp-die animate'+(d.sides===20?' d20':'')+(d.isCrit?' crit':d.isFail?' fail':'');
+    el.style.animationDelay = (i*0.07)+'s';
+    el.innerHTML = d.val+'<span class="dp-die-label">d'+d.sides+'</span>';
+    row.appendChild(el);
+  });
+  var tot = document.getElementById('dp35-total');
+  tot.textContent = opts.total;
+  tot.style.color = opts.isCrit?'#4eda80':opts.isFail?'var(--crimson)':'var(--text)';
+  document.getElementById('dp35-break').textContent = opts.dice.length===1&&opts.dice[0].sides===20?
+    ('d20: '+opts.dice[0].val+(opts.bonus!==0?(opts.bonus>0?' + '+opts.bonus:' '+opts.bonus):'')+(opts.bonus!==0?' = '+opts.total:'')) :
+    (opts.dice.map(function(d){return d.val;}).join(' + ')+(opts.bonus!==0?(opts.bonus>0?' + '+opts.bonus:' '+opts.bonus):'')+(opts.bonus!==0?' = '+opts.total:''));
+  var critEl = document.getElementById('dp35-crit');
+  critEl.textContent = opts.isCrit?'Critical Hit!':opts.isFail?'Critical Fail':'';
+  critEl.className = 'dp-crit-label'+(opts.isCrit?' hit':opts.isFail?' fail':'');
+  critEl.style.opacity = (opts.isCrit||opts.isFail)?'':'0';
+  requestAnimationFrame(function() { popup.classList.add('show'); overlay.classList.add('show'); });
+  _diceTimer35 = setTimeout(closeDice35, 3500);
+}
+function closeDice35() {
+  var popup = document.getElementById('dice-popup35');
+  var overlay = document.getElementById('diceOverlay35');
+  if (!popup) return;
+  if (_diceTimer35) { clearTimeout(_diceTimer35); _diceTimer35=null; }
+  popup.classList.remove('show'); popup.classList.add('exit'); overlay.classList.remove('show');
+  setTimeout(function(){popup.classList.remove('exit');},350);
+}
+// Escape key to close dice popup
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeDice35();
+});
+function rollCheck35(type, label, bonus) {
+  var roll = Math.ceil(Math.random()*20);
+  var total = roll+bonus;
+  var isCrit = roll===20; var isFail = roll===1;
+  C35.rollLog.unshift({ts:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),type:type,label:label,roll:roll,bonus:bonus,total:total,crit:isCrit,fail:isFail});
+  showDice35({type:type,label:label,dice:[{val:roll,sides:20,isCrit:isCrit,isFail:isFail}],bonus:bonus,total:total,isCrit:isCrit,isFail:isFail});
+  renderRollLog35();
+}
+function rollDmg35(label, diceStr, dmgBonus) {
+  var m = diceStr.match(/(\d+)d(\d+)/); if (!m) return;
+  var num=parseInt(m[1]),sides=parseInt(m[2]);
+  var rolls=[]; for(var i=0;i<num;i++) rolls.push(Math.ceil(Math.random()*sides));
+  var total = rolls.reduce(function(s,v){return s+v;},0)+dmgBonus;
+  showDice35({type:'Damage',label:label,dice:rolls.map(function(v){return{val:v,sides:sides};}),bonus:dmgBonus,total:total,isCrit:false,isFail:false});
+  C35.rollLog.unshift({ts:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),type:'Damage',label:label,roll:rolls.join('+'),bonus:dmgBonus,total:total});
+  renderRollLog35();
+}
+function rollWeapon35(name, atkBonus, dmgBonus, damageDice) {
+  var atkRoll = Math.ceil(Math.random()*20);
+  var atkTotal = atkRoll+atkBonus;
+  var isCrit=atkRoll===20; var isFail=atkRoll===1;
+  C35.rollLog.unshift({ts:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),type:'Attack',label:name,roll:atkRoll,bonus:atkBonus,total:atkTotal,crit:isCrit,fail:isFail});
+  var dm=damageDice.match(/(\d+)d(\d+)/);
+  var dmgDice=[]; var dmgTotal=dmgBonus;
+  if (dm) {
+    var dnum=parseInt(dm[1]),dsides=parseInt(dm[2]);
+    for(var i=0;i<dnum;i++){var r=Math.ceil(Math.random()*dsides);dmgDice.push({val:r,sides:dsides});dmgTotal+=r;}
+  }
+  renderRollLog35();
+  showDice35({type:'Attack',label:name,dice:[{val:atkRoll,sides:20,isCrit:isCrit,isFail:isFail}],bonus:atkBonus,total:atkTotal,isCrit:isCrit,isFail:isFail});
+  if (dmgDice.length) {
+    C35.rollLog.unshift({ts:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),type:'Damage',label:name+' Dmg',roll:dmgDice.map(function(d){return d.val;}).join('+'),bonus:dmgBonus,total:dmgTotal});
+  }
+}
+function renderRollLog35() {
+  var el = document.getElementById('rollLog35'); if (!el) return;
+  if (!C35.rollLog.length) { el.innerHTML='<div style="font-size:13px;color:var(--text-faint);font-style:italic;padding:8px 0;">No rolls yet.</div>'; return; }
+  el.innerHTML = C35.rollLog.slice(0,20).map(function(e) {
+    return '<div style="padding:7px 0;border-bottom:1px solid var(--border-mid);display:flex;justify-content:space-between;align-items:center;">'+
+      '<div><span style="font-family:\'Cinzel\',serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);">'+e.type+'</span>'+
+      '<span style="font-size:13px;color:var(--text-dim);margin-left:8px;">'+e.label+'</span>'+
+      (e.crit?'<span style="font-size:9px;color:#4eda80;margin-left:5px;font-family:Cinzel,serif;">CRIT</span>':'')+
+      (e.fail?'<span style="font-size:9px;color:var(--crimson);margin-left:5px;font-family:Cinzel,serif;">FAIL</span>':'')+
+      '</div><span style="font-family:\'Cinzel\',serif;font-size:17px;color:'+(e.crit?'#4eda80':e.fail?'var(--crimson)':'var(--text)')+';">'+e.total+'</span></div>';
+  }).join('');
+}
+
+// ── FINAL SHEET ──
+function switchTab35(name) {
+  document.querySelectorAll('#finalSheet35 .cs-panel').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('#finalSheet35 .cs-tab').forEach(function(t,i){
+    t.classList.toggle('active',['main','combat','skills','spells','inventory','features','notes'][i]===name);
+  });
+  var panel = document.getElementById('tab35-'+name);
+  if (panel) panel.classList.add('active');
+}
+function buildFinalSheet35() {
+  if (!C35.race||!C35.cls) return;
+  var race = DND35_DATA.races[C35.race];
+  var cls = DND35_DATA.classes[C35.cls];
+  var conMod = mod35(ts35('con')); var dexMod = mod35(ts35('dex'));
+  var strMod = mod35(ts35('str'));
+  var maxHP = cls.hitDie+conMod; if (maxHP<1) maxHP=1;
+  var babVal = bab35();
+  // Compute AC from equipment
+  var armorBonus=0; var shieldBonus=0;
+  var equip=cls.equipment||[]; var ci=0;
+  equip.forEach(function(ch) {
+    if (!Array.isArray(ch)||ch.length===0) return;
+    if (ch.length>1) {
+      var sel=C35.equipChoices[ci];
+      if (sel!==undefined) {
+        var opt=ch[sel]; var ar=DND35_DATA.armor&&DND35_DATA.armor[opt];
+        if (ar) { if(ar.isShield) shieldBonus=ar.bonus; else armorBonus=ar.bonus; }
+      }
+      ci++;
+    } else {
+      var ar2=DND35_DATA.armor&&DND35_DATA.armor[ch[0]];
+      if(ar2){if(ar2.isShield)shieldBonus=ar2.bonus;else armorBonus=ar2.bonus;}
+    }
+  });
+  var effectiveDex = armorBonus===0?dexMod:Math.min(dexMod, (function(){
+    var armorKey=Object.keys(DND35_DATA.armor||{}).find(function(k){return !DND35_DATA.armor[k].isShield&&DND35_DATA.armor[k].bonus===armorBonus;});
+    return armorKey?DND35_DATA.armor[armorKey].maxDex:dexMod;
+  })());
+  var ac = 10+effectiveDex+armorBonus+shieldBonus;
+  sheet35State = {race:race,cls:cls,maxHP:maxHP,ac:ac,babVal:babVal,dexMod:dexMod,strMod:strMod,conMod:conMod,armorBonus:armorBonus,shieldBonus:shieldBonus};
+
+  // Header
+  var name = (C35.details&&C35.details.name)||'Unnamed Adventurer';
+  document.getElementById('cs35-name').textContent = name;
+  document.getElementById('cs35-class').textContent = race.name+' '+cls.name+' · Level '+C35.level+' · '+(C35.alignment||'');
+  document.getElementById('cs35-tags').innerHTML = [
+    '<span class="cs-tag">'+race.size+'</span>',
+    '<span class="cs-tag">'+race.speed+' ft</span>',
+    '<span class="cs-tag">BAB '+(babVal>=0?'+':'')+babVal+'</span>',
+    '<span class="cs-tag">Fort '+(save35('fort')>=0?'+':'')+save35('fort')+'</span>',
+    '<span class="cs-tag">Ref '+(save35('ref')>=0?'+':'')+save35('ref')+'</span>',
+    '<span class="cs-tag">Will '+(save35('will')>=0?'+':'')+save35('will')+'</span>'
+  ].join('');
+
+  // Spell tab visibility
+  var spellTabEl = document.getElementById('cs35-spell-tab');
+  if (spellTabEl) spellTabEl.style.display = cls.spellcastingAbility ? '' : 'none';
+
+  buildMainTab35(maxHP,ac,babVal,dexMod,strMod);
+  buildCombatTab35();
+  buildSkillsTab35();
+  buildSpellsTab35();
+  buildInventoryTab35();
+  buildFeaturesTab35();
+  buildNotesTab35();
+}
+
+function buildMainTab35(maxHP,ac,babVal,dexMod,strMod) {
+  var abilHTML = Object.keys(C35.abilities).map(function(a) {
+    return '<div class="cs-ability" onclick="rollCheck35(\'Ability\',\''+DND35_DATA.abilityNames[a]+'\','+mod35(ts35(a))+')" title="Click to roll">'+
+      '<div class="cs-ability-label">'+DND35_DATA.abilityShort[a]+'</div>'+
+      '<div class="cs-ability-score">'+ts35(a)+'</div>'+
+      '<div class="cs-ability-mod">'+ms35(ts35(a))+'</div>'+
+    '</div>';
+  }).join('');
+  var savesHTML = ['fort','ref','will'].map(function(s){
+    var name35 = {fort:'Fortitude',ref:'Reflex',will:'Will'}[s];
+    var tot = save35(s);
+    return '<div class="cs-skill-row" onclick="rollCheck35(\'Save\',\''+name35+'\','+tot+')" title="Click to roll" style="cursor:pointer;">'+
+      '<div class="cs-skill-prof full" style="background:'+(sheet35State.cls.goodSaves.includes(s)?'var(--crimson)':'transparent')+';border-color:var(--crimson-border);"></div>'+
+      '<span class="cs-skill-ability">'+(s==='fort'?'CON':s==='ref'?'DEX':'WIS')+'</span>'+
+      '<span class="cs-skill-name">'+name35+'</span>'+
+      '<span class="cs-skill-bonus">'+(tot>=0?'+':'')+tot+'</span>'+
+    '</div>';
+  }).join('');
+
+  var cls = sheet35State.cls;
+  var uses = DND35_DATA.abilityUses&&DND35_DATA.abilityUses[C35.cls]||[];
+  var trackersHTML = '';
+  if (uses.length) {
+    trackersHTML = '<div class="cs-box" style="padding:14px;margin-top:12px;"><div class="cs-box-title">Limited Use Abilities</div>'+
+      uses.map(function(u) {
+        var cha=mod35(ts35('cha'));
+        var max = u.uses==='cha_mod_min1'?Math.max(1,cha):u.uses==='3_plus_cha'?Math.max(1,3+cha):u.uses==='level'?1:parseInt(u.uses)||1;
+        var used = abilUsed35[u.name]||0;
+        var pips = Array.from({length:Math.max(1,max)},function(_,i){
+          return '<div class="cs-use-pip '+(i<used?'used':'available')+'" onclick="abilUsed35[\''+u.name+'\']='+(i<used?i:'Math.min('+(i+1)+','+max+')')+';buildMainTab35('+maxHP+','+ac+','+babVal+','+dexMod+','+strMod+');" title="'+(i<used?'Restore':'Use')+'"></div>';
+        }).join('');
+        return '<div class="cs-feature-card" style="margin-bottom:8px;">'+
+          '<div class="cs-feature-card-top">'+
+            '<span class="cs-feature-card-name">'+u.name+'</span>'+
+            '<div class="cs-use-tracker">'+pips+'<span class="cs-use-recharge">Per Day</span></div>'+
+          '</div>'+
+          '<div class="cs-feature-card-desc">'+u.desc+'</div>'+
+        '</div>';
+      }).join('')+'</div>';
+  }
+
+  // Death saves state
+  var curHP = parseInt(document.getElementById('hp35cur')?.value || maxHP);
+  var showDeathSaves = curHP <= 0;
+  
+  // Conditions state
+  var activeConditions = window.activeConditions35 || {};
+  
+  var html = '<div class="cs-main-grid">'+
+    '<div>'+
+      '<div class="cs-box" style="padding:14px;"><div class="cs-box-title">Ability Scores</div><div class="cs-ability-grid">'+abilHTML+'</div></div>'+
+      '<div class="cs-box" style="padding:14px;"><div class="cs-box-title">Saving Throws. Click to Roll</div>'+savesHTML+'</div>'+
+      trackersHTML+
+    '</div>'+
+    '<div>'+
+      '<div class="cs-hp-block">'+
+        '<div class="cs-hp-label">Hit Points</div>'+
+        '<div class="cs-hp-controls">'+
+          '<button class="cs-hp-btn" onclick="adjHP35(-1)">−</button>'+
+          '<input class="cs-hp-input" type="number" id="hp35cur" value="'+maxHP+'" min="0" onchange="clampHP35()">'+
+          '<button class="cs-hp-btn" onclick="adjHP35(1)">+</button>'+
+        '</div>'+
+        '<div class="cs-hp-max">/ <span id="hp35max">'+maxHP+'</span> Max &nbsp;|&nbsp; Temp: <input type="number" id="hp35temp" value="0" min="0" style="width:40px;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text);text-align:center;font-size:13px;"></div>'+
+        '<div class="cs-hp-adjust">'+
+          '<input class="cs-hp-adj-input" type="number" id="hp35adj" placeholder="Amt" min="1">'+
+          '<button class="cs-hp-adj-btn" onclick="applyHP35(\'dmg\')">Damage</button>'+
+          '<button class="cs-hp-adj-btn" onclick="applyHP35(\'heal\')">Heal</button>'+
+        '</div>'+
+      '</div>'+
+      '<div class="cs-stat-row">'+
+        '<div class="cs-stat"><div class="cs-stat-val">'+ac+'</div><div class="cs-stat-label">AC</div></div>'+
+        '<div class="cs-stat"><div class="cs-stat-val">'+(10+mod35(ts35('dex')))+'</div><div class="cs-stat-label">Touch AC</div></div>'+
+        '<div class="cs-stat" style="cursor:pointer;" onclick="rollCheck35(\'Initiative\',\'Initiative\','+mod35(ts35('dex'))+')" title="Click to roll"><div class="cs-stat-val">'+(mod35(ts35('dex'))>=0?'+':'')+mod35(ts35('dex'))+'</div><div class="cs-stat-label" style="color:var(--crimson);">Initiative ▸</div></div>'+
+      '</div>'+
+      '<div class="cs-stat-row">'+
+        '<div class="cs-stat"><div class="cs-stat-val">'+(babVal>=0?'+':'')+babVal+'</div><div class="cs-stat-label">Base Attack</div></div>'+
+        '<div class="cs-stat" style="cursor:pointer;" onclick="rollCheck35(\'Grapple\',\'Grapple Check\','+(babVal+strMod)+')" title="Click to roll"><div class="cs-stat-val">'+(babVal+strMod>=0?'+':'')+(babVal+strMod)+'</div><div class="cs-stat-label" style="color:var(--crimson);">Grapple ▸</div></div>'+
+        '<div class="cs-stat"><div class="cs-stat-val">'+sheet35State.race.speed+' ft</div><div class="cs-stat-label">Speed</div></div>'+
+        '<div class="cs-stat"><div class="cs-stat-val">d'+sheet35State.cls.hitDie+'</div><div class="cs-stat-label">Hit Die</div></div>'+
+      '</div>'+
+      '<div style="margin-top:16px;"><div class="cs-box-title" style="margin-bottom:10px;">Quick Roll</div>'+
+        '<div style="display:flex;gap:8px;flex-wrap:wrap;">'+
+          Object.keys(C35.abilities).map(function(a){
+            return '<button class="cb-roll-btn" onclick="rollCheck35(\'Ability\',\''+DND35_DATA.abilityNames[a]+'\','+mod35(ts35(a))+')" style="padding:5px 10px;">'+
+              DND35_DATA.abilityShort[a]+' <span>'+ms35(ts35(a))+'</span></button>';
+          }).join('')+
+          '<button class="cb-roll-btn" onclick="rollCheck35(\'Attack\',\'Melee Attack\','+(babVal+mod35(ts35('str')))+')">Melee <span>'+(babVal+mod35(ts35('str'))>=0?'+':''+(babVal+mod35(ts35('str'))))+'</span></button>'+
+          '<button class="cb-roll-btn" onclick="rollCheck35(\'Attack\',\'Ranged Attack\','+(babVal+mod35(ts35('dex')))+')">Ranged <span>'+(babVal+mod35(ts35('dex'))>=0?'+':''+(babVal+mod35(ts35('dex'))))+'</span></button>'+
+        '</div>'+
+      '</div>'+
+      '<div style="margin-top:16px;"><div class="cs-box-title" style="margin-bottom:8px;">Roll Transcript</div>'+
+        '<div id="rollLog35" style="background:var(--bg-card);border:1px solid var(--border-mid);padding:10px;max-height:180px;overflow-y:auto;"></div>'+
+        '<div style="text-align:right;margin-top:4px;"><button onclick="C35.rollLog=[];renderRollLog35();" style="font-family:\'Cinzel\',serif;font-size:8px;letter-spacing:2px;padding:3px 8px;background:transparent;border:1px solid var(--border);color:var(--text-faint);cursor:pointer;">Clear</button></div>'+
+      '</div>'+
+    '</div>'+
+    '<div>'+
+      '<div class="cs-box" style="padding:14px;"><div class="cs-box-title">Key Skills. Click to Roll</div>'+buildKeySkills35()+'</div>'+
+    '</div>'+
+  '</div>';
+  // Add death saves section if HP = 0
+  if (showDeathSaves) {
+    var successPips = Array.from({length:3}, function(_,i) {
+      return '<div class="cs-death-pip '+(C35.deathSaveSuccesses && C35.deathSaveSuccesses > i ? 'success' : '')+'" onclick="C35.deathSaveSuccesses=C35.deathSaveSuccesses||0;C35.deathSaveSuccesses='+(C35.deathSaveSuccesses && C35.deathSaveSuccesses > i ? i : i+1)+';buildMainTab35('+maxHP+','+sheet35State.ac+','+sheet35State.babVal+','+sheet35State.dexMod+','+sheet35State.strMod+');" title="Click to toggle"></div>';
+    }).join('');
+    var failurePips = Array.from({length:3}, function(_,i) {
+      return '<div class="cs-death-pip '+(C35.deathSaveFailures && C35.deathSaveFailures > i ? 'failure' : '')+'" onclick="C35.deathSaveFailures=C35.deathSaveFailures||0;C35.deathSaveFailures='+(C35.deathSaveFailures && C35.deathSaveFailures > i ? i : i+1)+';buildMainTab35('+maxHP+','+sheet35State.ac+','+sheet35State.babVal+','+sheet35State.dexMod+','+sheet35State.strMod+');" title="Click to toggle"></div>';
+    }).join('');
+    html += '<div class="cs-death-saves"><div class="cs-death-saves-title">Death Saves (Unconscious)</div><div class="cs-death-saves-row"><div class="cs-death-saves-col"><div class="cs-death-saves-label">Successes</div><div class="cs-death-pips">'+successPips+'</div></div><div class="cs-death-saves-col"><div class="cs-death-saves-label">Failures</div><div class="cs-death-pips">'+failurePips+'</div></div></div><button class="cs-death-save-btn" onclick="rollDeathSave35('+maxHP+','+sheet35State.ac+','+sheet35State.babVal+','+sheet35State.dexMod+','+sheet35State.strMod+')">Roll Death Save (d20)</button></div>';
+  }
+  
+  // Add conditions tracker
+  var allConditions = ['Blinded','Confused','Dazed','Deafened','Exhausted','Fatigued','Frightened','Grappled','Nauseated','Paralyzed','Prone','Shaken','Sickened','Stunned'];
+  var conditionsTags = allConditions.map(function(cond) {
+    var isActive = activeConditions[cond];
+    return '<div class="cs-condition-tag '+(isActive?'active':'')+'" onclick="toggleCondition35(\''+cond+'\','+maxHP+','+sheet35State.ac+','+sheet35State.babVal+','+sheet35State.dexMod+','+sheet35State.strMod+')">'+cond+'</div>';
+  }).join('');
+  html += '<div class="cs-conditions"><div class="cs-conditions-title">Conditions</div><div class="cs-conditions-tags">'+conditionsTags+'</div></div>';
+  
+  document.getElementById('tab35-main').innerHTML = html;
+  renderRollLog35();
+}
+
+function buildKeySkills35() {
+  var cls = C35.cls?DND35_DATA.classes[C35.cls]:null;
+  var allSk = Object.entries(DND35_DATA.skills).sort(function(a,b){
+    var rA=parseInt(C35.skillRanks[a[0]])||0; var rB=parseInt(C35.skillRanks[b[0]])||0;
+    var cA=cls&&cls.classSkills.includes(a[1].name)?1:0;
+    var cB=cls&&cls.classSkills.includes(b[1].name)?1:0;
+    return rA!==rB?rB-rA:cB-cA;
+  }).slice(0,12);
+  return allSk.map(function(kv){
+    var id=kv[0]; var skill=kv[1];
+    var ranks=parseInt(C35.skillRanks[id])||0;
+    var abilMod=mod35(ts35(skill.ability));
+    var total=ranks+abilMod;
+    return '<div class="cs-skill-row" onclick="rollCheck35(\'Skill\',\''+skill.name+'\','+total+')" title="Click to roll" style="cursor:pointer;">'+
+      '<div class="cs-skill-prof '+(ranks>0?'full':'')+'" style="'+(ranks>0?'background:var(--crimson);':'')+'border-color:var(--crimson-border);"></div>'+
+      '<span class="cs-skill-ability">'+DND35_DATA.abilityShort[skill.ability]+'</span>'+
+      '<span class="cs-skill-name">'+skill.name+'</span>'+
+      '<span class="cs-skill-bonus">'+(total>=0?'+':'')+total+'</span>'+
+    '</div>';
+  }).join('');
+}
+
+function buildCombatTab35() {
+  var cls = sheet35State.cls; if (!cls) return;
+  var babVal = sheet35State.babVal;
+  var strMod = sheet35State.strMod; var dexMod = sheet35State.dexMod;
+  var initMod = dexMod;
+  var allW = [].concat(DND35_DATA.weapons.simple_melee,DND35_DATA.weapons.simple_ranged,DND35_DATA.weapons.martial_melee,DND35_DATA.weapons.martial_ranged);
+  var weapons = [];
+  var equip=cls.equipment||[]; var ci=0;
+  equip.forEach(function(ch){
+    if(!Array.isArray(ch)||ch.length<=1){ci++;return;}
+    var sel=C35.equipChoices[ci]; if(sel===undefined){ci++;return;}
+    var opt=ch[sel]; var wKey=ci+'_'+sel;
+    var chosen=C35.weaponChoices&&C35.weaponChoices[wKey];
+    if(chosen){var w=allW.find(function(x){return x.name===chosen;});if(w)weapons.push(w);}
+    else if(!DND35_DATA.weaponCategories||!DND35_DATA.weaponCategories[opt]){var w2=allW.find(function(x){return x.name===opt;});if(w2)weapons.push(w2);}
+    ci++;
+  });
+  var defaults={fighter:[{name:'Longsword',damage:'1d8',type:'S',crit:'19-20/×2',range:'—'}],barbarian:[{name:'Greataxe',damage:'1d12',type:'S',crit:'×3',range:'—'}],monk:[{name:'Unarmed Strike',damage:'1d6',type:'B',crit:'×2',range:'—'}],rogue:[{name:'Short Sword',damage:'1d6',type:'P',crit:'19-20/×2',range:'—'}]};
+  if(defaults[C35.cls])defaults[C35.cls].forEach(function(w){if(!weapons.find(function(x){return x.name===w.name;}))weapons.push(w);});
+
+  var html = '<button class="cs-init-btn" onclick="rollCheck35(\'Initiative\',\'Combat Initiative\','+initMod+')">⚔ Roll Initiative ('+(initMod>=0?'+':'')+initMod+')</button>'+
+    '<div class="cs-action-section"><div class="cs-action-title">Weapon Attacks. Click to Roll</div>';
+  if (weapons.length) {
+    html += weapons.map(function(w){
+      var isRanged=w.range&&w.range!=='—'&&parseInt(w.range)>5;
+      var atkMod=(isRanged?dexMod:strMod)+babVal;
+      var dmgMod=isRanged?dexMod:strMod;
+      var crit=w.crit||'×2';
+      return '<div class="cs-attack-card" onclick="rollWeapon35(\''+w.name.replace(/'/g,"\\'")+'\','+atkMod+','+dmgMod+',\''+w.damage+'\')">'+
+        '<div><div class="cs-attack-name">'+w.name+'</div><div style="font-size:11px;color:var(--text-faint);font-style:italic;">Crit '+crit+' · '+w.type+'</div></div>'+
+        '<div class="cs-attack-stats"><span class="cs-attack-atk">ATK '+(atkMod>=0?'+':'')+atkMod+'</span><span class="cs-attack-dmg">'+w.damage+(dmgMod>=0?'+':'')+dmgMod+' '+w.type+'</span></div>'+
+        '<span class="cs-attack-hint">▸ Roll</span></div>';
+    }).join('');
+  } else {
+    html += '<div style="font-size:13px;color:var(--text-faint);font-style:italic;padding:8px 0;">No weapons equipped.</div>';
+  }
+  html += '</div>';
+
+  // Feats
+  html += '<div class="cs-action-section"><div class="cs-action-title">Feats</div>';
+  if (C35.selectedFeats.length) {
+    html += C35.selectedFeats.map(function(name){
+      var f=DND35_DATA.feats.find(function(x){return x.name===name;});
+      return f?'<div class="cs-feature-card" style="margin-bottom:8px;"><div class="cs-feature-card-top"><span class="cs-feature-card-name">'+f.name+'</span></div><div class="cs-feature-card-desc">'+f.desc+'</div></div>':'';
+    }).join('');
+  } else {
+    html += '<div style="font-size:13px;color:var(--text-faint);font-style:italic;">No feats selected.</div>';
+  }
+  html += '</div>';
+
+  // Standard 3.5e actions
+  html += '<div class="cs-action-section"><div class="cs-action-title">Standard Actions (3.5e)</div>';
+  [['Attack','Standard','Make one melee or ranged weapon attack.'],
+   ['Full Attack','Full-Round','Make all iterative attacks granted by your BAB.'],
+   ['Charge','Full-Round','Move 2× speed and attack at +2 to hit, -2 AC.'],
+   ['Cast a Spell','Standard / Full','Cast a spell. Full-round for casting time of 1 full-round action.'],
+   ['Move','Move','Move up to your speed.'],
+   ['5-Foot Step','Free','Move 5 ft. without provoking attacks of opportunity.'],
+   ['Total Defense','Standard','+4 dodge bonus to AC. You cannot attack.'],
+   ['Withdraw','Full-Round','Move 2× speed; first square does not provoke an AoO.'],
+   ['Aid Another','Standard','Make attack roll vs. AC 10; success gives ally +2 to attack or AC.']
+  ].forEach(function(a){
+    html += '<div class="cs-std-action"><span class="cs-std-action-name">'+a[0]+'</span><span style="font-family:\'Cinzel\',serif;font-size:8px;letter-spacing:2px;color:var(--crimson);text-transform:uppercase;flex-shrink:0;">'+a[1]+'</span><span class="cs-std-action-desc">'+a[2]+'</span></div>';
+  });
+  html += '</div>';
+  document.getElementById('tab35-combat').innerHTML = html;
+}
+
+function buildSkillsTab35() {
+  var cls = C35.cls?DND35_DATA.classes[C35.cls]:null;
+  var html = '<div class="cs-action-title" style="margin-bottom:12px;">All Skills. Click to Roll</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">';
+  Object.entries(DND35_DATA.skills).forEach(function(kv){
+    var id=kv[0]; var skill=kv[1];
+    var isClass=cls&&cls.classSkills.includes(skill.name);
+    var ranks=parseInt(C35.skillRanks[id])||0;
+    var abilMod=mod35(ts35(skill.ability));
+    var total=ranks+abilMod;
+    html += '<div class="cs-skill-row" onclick="rollCheck35(\'Skill\',\''+skill.name+'\','+total+')" title="Click to roll" style="cursor:pointer;padding:5px 8px;">'+
+      '<div class="cs-skill-prof" style="background:'+(ranks>0?'var(--crimson)':'transparent')+';border-color:var(--crimson-border);width:7px;height:7px;"></div>'+
+      '<span style="width:8px;height:8px;background:'+(isClass?'rgba(78,218,128,0.5)':'transparent')+';border:1px solid '+(isClass?'#4eda80':'var(--border)')+';flex-shrink:0;" title="'+(isClass?'Class skill':'Cross-class')+'"></span>'+
+      '<span class="cs-skill-ability">'+DND35_DATA.abilityShort[skill.ability]+'</span>'+
+      '<span class="cs-skill-name" style="font-size:12px;">'+skill.name+(skill.trained?'<span style="color:var(--crimson);font-size:9px;margin-left:2px;">†</span>':'')+'</span>'+
+      '<span class="cs-skill-bonus">'+(total>=0?'+':'')+total+'</span>'+
+    '</div>';
+  });
+  html += '</div><div style="margin-top:12px;font-size:11px;color:var(--text-faint);font-style:italic;">■ Green = class skill · ■ Crimson = ranks assigned · † = trained only</div>';
+  document.getElementById('tab35-skills').innerHTML = html;
+}
+
+function buildSpellsTab35() {
+  var cls = sheet35State.cls;
+  var el = document.getElementById('tab35-spells');
+  if (!cls.spellcastingAbility) {
+    el.innerHTML = '<div class="cs-no-spell"><div style="font-size:48px;opacity:.15;margin-bottom:16px;">⚔</div><div style="font-family:\'Cinzel\',serif;font-size:10px;letter-spacing:4px;color:var(--text-muted);text-transform:uppercase;">'+cls.name+'. No Spellcasting</div></div>';
+    return;
+  }
+  var sm = mod35(ts35(cls.spellcastingAbility));
+  var slotTable = {cleric:[3,1],druid:[3,1],wizard:[3,1],sorcerer:[5,3],bard:[2,0],paladin:[0,0],ranger:[0,0]};
+  var slots = slotTable[C35.cls]||[2,0];
+  var html = '<div class="cs-spell-stats">'+
+    '<div class="cs-spell-stat"><div class="cs-spell-stat-val">'+DND35_DATA.abilityShort[cls.spellcastingAbility]+'</div><div class="cs-spell-stat-label">Ability</div></div>'+
+    '<div class="cs-spell-stat"><div class="cs-spell-stat-val">'+(10+sm)+'</div><div class="cs-spell-stat-label">Save DC</div></div>'+
+    '<div class="cs-spell-stat"><div class="cs-spell-stat-val">Lv 1</div><div class="cs-spell-stat-label">Caster Level</div></div>'+
+  '</div>';
+  if (slots[0]>0) {
+    html += '<div class="cs-action-title" style="margin-bottom:10px;">Cantrips / Orisons (At Will)</div>';
+    html += C35.selectedCantrips.map(function(sp){
+      return '<div class="cs-spell-item cs-spell-prepared">'+
+        '<div class="cs-spell-item-dot" onclick="rollCheck35(\'Spell\',\''+sp+'\','+(bab35()+sm)+')" style="cursor:pointer;"></div>'+
+        '<span class="cs-spell-name" onclick="showSpellInfo35(\''+sp.replace(/'/g,"\\'")+'\');" style="cursor:pointer;">'+sp+'</span>'+
+        '<span class="cs-spell-atk" onclick="rollCheck35(\'Spell\',\''+sp+'\','+(bab35()+sm)+')" style="cursor:pointer;">▸ Roll</span>'+
+      '</div>';
+    }).join('')||'<div style="font-size:13px;color:var(--text-faint);font-style:italic;">No cantrips selected.</div>';
+  }
+  if (slots[1]>0) {
+    var used1 = slots35Used[1]||0;
+    var pips = Array.from({length:slots[1]},function(_,j){
+      return '<div class="cs-slot-pip '+(j<used1?'used':'available')+'" onclick="slots35Used[1]='+(j<used1?j:'Math.min('+(j+1)+','+slots[1]+')')+';buildSpellsTab35();" title="'+(j<used1?'Restore':'Expend')+'"></div>';
+    }).join('');
+    html += '<div class="cs-slot-section" style="margin-top:20px;"><div class="cs-slot-header"><span>1st-Level Spells ('+slots[1]+'/day)</span><div class="cs-slot-pips">'+pips+'</div></div></div>';
+    html += C35.selectedSpells.map(function(sp){
+      return '<div class="cs-spell-item cs-spell-prepared">'+
+        '<div class="cs-spell-item-dot" onclick="rollCheck35(\'Spell\',\''+sp+'\','+(bab35()+sm)+')" style="cursor:pointer;"></div>'+
+        '<span class="cs-spell-name" onclick="showSpellInfo35(\''+sp.replace(/'/g,"\\'")+'\');" style="cursor:pointer;">'+sp+'</span>'+
+        '<span class="cs-spell-atk" onclick="rollCheck35(\'Spell\',\''+sp+'\','+(bab35()+sm)+')" style="cursor:pointer;">▸ Roll</span>'+
+      '</div>';
+    }).join('')||'<div style="font-size:13px;color:var(--text-faint);font-style:italic;">No spells selected.</div>';
+  }
+  if (C35.cls==='cleric'||C35.cls==='druid') {
+    html += '<div class="cb-alert" style="margin-top:16px;"><strong>Prepared Caster</strong>. '+cls.name+'s prepare '+(Math.max(1,sm+1))+' 1st-level spells per day from the full class list.</div>';
+  }
+  el.innerHTML = html;
+}
+
+function buildInventoryTab35() {
+  var cls = sheet35State.cls;
+  if (!inv35Items.length) {
+    var equip=cls.equipment||[]; var ci=0;
+    equip.forEach(function(ch){
+      if(!Array.isArray(ch)||ch.length===0)return;
+      if(ch.length===1){inv35Items.push({name:ch[0],qty:1});}
+      else{
+        var sel=C35.equipChoices[ci]; if(sel===undefined){ci++;return;}
+        var opt=ch[sel]; var wKey=ci+'_'+sel;
+        inv35Items.push({name:(C35.weaponChoices&&C35.weaponChoices[wKey])||opt,qty:1});
+        ci++;
+      }
+    });
+  }
+  var startGP = {barbarian:'2d4×10',bard:'2d4×10',cleric:'3d4×10',druid:'2d4×10',fighter:'5d4×10',monk:'5d4',paladin:'5d4×10',ranger:'5d4×10',rogue:'4d4×10',sorcerer:'3d4×10',wizard:'3d4×10'}[C35.cls]||'3d4×10';
+  var html = '<div class="cs-action-title">Currency</div>'+
+    '<div class="cs-currency-grid">'+
+    ['CP','SP','GP','PP'].map(function(c){return '<div class="cs-coin"><div class="cs-coin-label">'+c+'</div><input class="cs-coin-input" type="number" value="0"></div>';}).join('')+
+    '<div class="cs-coin"><div class="cs-coin-label">Starting GP</div><div style="font-size:14px;color:var(--crimson);margin-top:4px;">'+startGP+'</div></div>'+
+    '</div>'+
+    '<div id="inv35List"></div>'+
+    '<div style="margin-top:16px;"><div class="cs-action-title">Add Item</div>'+
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">'+
+        '<input id="inv35Name" placeholder="Item name" style="background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-family:\'Spectral\',serif;font-size:14px;padding:7px 10px;flex:1;">'+
+        '<button onclick="addInv35()" style="font-family:\'Cinzel\',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:7px 14px;background:var(--crimson);border:none;color:#f5f0e8;cursor:pointer;">Add</button>'+
+      '</div>'+
+    '</div>';
+  document.getElementById('tab35-inventory').innerHTML = html;
+  renderInv35();
+}
+function renderInv35() {
+  var el = document.getElementById('inv35List'); if (!el) return;
+  if (!inv35Items.length) { el.innerHTML='<div style="font-size:13px;color:var(--text-faint);font-style:italic;padding:8px 0;">No items.</div>'; return; }
+  el.innerHTML = '<div class="cs-action-title">Equipment</div>'+
+    inv35Items.map(function(item,i){
+      return '<div class="cs-item-row"><span class="cs-item-name">'+item.name+'</span>'+
+        '<input class="cs-item-qty" type="number" value="'+item.qty+'" min="0" onchange="inv35Items['+i+'].qty=parseInt(this.value)||0;">'+
+        '<button onclick="inv35Items.splice('+i+',1);renderInv35();" style="background:none;border:none;color:var(--text-faint);cursor:pointer;font-size:16px;">×</button></div>';
+    }).join('');
+}
+function addInv35() {
+  var n=document.getElementById('inv35Name');
+  if (!n||!n.value.trim()) return;
+  inv35Items.push({name:n.value.trim(),qty:1}); n.value=''; renderInv35();
+}
+
+function buildFeaturesTab35() {
+  var race = sheet35State.race; var cls = sheet35State.cls;
+  var html = '<div class="cs-action-title">Class Features</div>'+
+    cls.features.map(function(f){return '<div class="cs-feature-card" style="margin-bottom:8px;"><div class="cs-feature-card-top"><span class="cs-feature-card-name">Level '+f.level+': '+f.name+'</span></div><div class="cs-feature-card-desc">'+f.desc+'</div></div>';}).join('')+
+    '<div class="cs-action-title" style="margin-top:24px;">Racial Traits</div>'+
+    race.traits.map(function(t){return '<div class="cs-feature-card" style="margin-bottom:8px;"><div class="cs-feature-card-top"><span class="cs-feature-card-name">'+t.name+'</span></div><div class="cs-feature-card-desc">'+t.desc+'</div></div>';}).join('');
+  var profHTML = '<div class="cs-action-title" style="margin-top:24px;">Proficiencies</div><div class="cs-prof-list">'+
+    '<span class="cs-prof-category">Armor</span>'+(cls.armorProf.join(', ')||'None')+
+    '<span class="cs-prof-category">Weapons</span>'+cls.weaponProf.join(', ')+
+    '<span class="cs-prof-category">Languages</span>'+race.languages.join(', ')+
+  '</div>';
+  document.getElementById('tab35-features').innerHTML = html+profHTML;
+}
+
+function buildNotesTab35() {
+  var d = C35.details||{};
+  var makeBlock = function(label,val){return val?'<div class="cs-trait-row"><div class="cs-trait-label">'+label+'</div><div class="cs-trait-text">'+val+'</div></div>':'';};
+  var html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">'+
+    '<div>'+makeBlock('Personality Traits',d.personality)+makeBlock('Ideals',d.ideals)+'</div>'+
+    '<div>'+makeBlock('Bonds',d.bonds)+makeBlock('Flaws',d.flaws)+'</div>'+
+  '</div>'+
+  (d.backstory?'<div class="cs-action-title">Backstory</div><div style="font-size:14px;color:var(--text-dim);line-height:1.8;font-style:italic;margin-bottom:24px;">'+d.backstory+'</div>':'')+
+  '<div class="cs-action-title" style="margin-bottom:12px;">Notes &amp; Journal</div>'+
+  '<textarea class="cs-notes-field" id="notes35Field" placeholder="Session notes, reminders, character development..."></textarea>'+
+  '<div style="margin-top:8px;text-align:right;"><button onclick="localStorage.setItem(\'phmurt_notes35_\'+(C35.cls||\'\'),document.getElementById(\'notes35Field\').value);this.textContent=\'Saved ✓\';setTimeout(()=>this.textContent=\'Save Notes\',1500);" style="font-family:\'Cinzel\',serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;padding:6px 14px;background:transparent;border:1px solid var(--border);color:var(--text-muted);cursor:pointer;">Save Notes</button></div>';
+  document.getElementById('tab35-notes').innerHTML = html;
+  var saved = localStorage.getItem('phmurt_notes35_'+(C35.cls||''));
+  if (saved) { var f=document.getElementById('notes35Field'); if(f) f.value=saved; }
+}
+
+
+// ── DEATH SAVES ──
+function rollDeathSave35(maxHP, ac, babVal, dexMod, strMod) {
+  var roll = Math.ceil(Math.random()*20);
+  var isCrit = roll === 20;
+  var isFail = roll === 1;
+  
+  // 20 regains 1 HP, 1 counts as 2 failures, 10+ is success
+  if (isCrit) {
+    // Regain 1 HP
+    var curInput = document.getElementById('hp35cur');
+    if (curInput) curInput.value = '1';
+    clampHP35();
+    C35.deathSaveSuccesses = 0;
+    C35.deathSaveFailures = 0;
+    showToast35('Critical Success','You regain 1 hit point!');
+  } else if (isFail) {
+    // Count as 2 failures
+    C35.deathSaveFailures = (C35.deathSaveFailures || 0) + 2;
+    if (C35.deathSaveFailures >= 3) {
+      showToast35('Character Dead','Three failed death saves. Your character has died.');
+    }
+  } else if (roll >= 10) {
+    // Success
+    C35.deathSaveSuccesses = (C35.deathSaveSuccesses || 0) + 1;
+    if (C35.deathSaveSuccesses >= 3) {
+      showToast35('Stabilized','Three successful death saves. You are stabilized.');
+    }
+  } else {
+    // Failure
+    C35.deathSaveFailures = (C35.deathSaveFailures || 0) + 1;
+    if (C35.deathSaveFailures >= 3) {
+      showToast35('Character Dead','Three failed death saves. Your character has died.');
+    }
+  }
+  
+  C35.rollLog.unshift({ts:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),type:'Death Save',label:'Death Save',roll:roll,bonus:0,total:roll,crit:isCrit,fail:isFail});
+  showDice35({type:'Death Save',label:'Death Save',dice:[{val:roll,sides:20,isCrit:isCrit,isFail:isFail}],bonus:0,total:roll,isCrit:isCrit,isFail:isFail});
+  renderRollLog35();
+  buildMainTab35(maxHP,ac,babVal,dexMod,strMod);
+}
+
+// ── CONDITIONS ──
+function toggleCondition35(condition, maxHP, ac, babVal, dexMod, strMod) {
+  window.activeConditions35 = window.activeConditions35 || {};
+  window.activeConditions35[condition] = !window.activeConditions35[condition];
+  buildMainTab35(maxHP, ac, babVal, dexMod, strMod);
+}
+
+// ── HP ──
+function adjHP35(d) {
+  var inp = document.getElementById('hp35cur'); if (!inp) return;
+  var max = parseInt(document.getElementById('hp35max').textContent)||0;
+  var cur = parseInt(inp.value)||0;
+  var nv = Math.max(0,Math.min(max,cur+d));
+  inp.value=nv; inp.style.color=nv===0?'var(--crimson)':nv<=Math.floor(max/2)?'#e8a020':'var(--text)';
+}
+function applyHP35(mode) {
+  var amt = parseInt(document.getElementById('hp35adj').value)||0; if (amt<=0) return;
+  adjHP35(mode==='heal'?amt:-amt);
+  document.getElementById('hp35adj').value='';
+}
+function clampHP35() {
+  var inp = document.getElementById('hp35cur'); if (!inp) return;
+  var max = parseInt(document.getElementById('hp35max').textContent)||0;
+  var val = Math.max(0,Math.min(max,parseInt(inp.value)||0));
+  inp.value=val; inp.style.color=val===0?'var(--crimson)':val<=Math.floor(max/2)?'#e8a020':'var(--text)';
+}
+
+// ── REST ──
+function shortRest35() { showToast35('Short Rest','Rest briefly. Daily abilities are not restored in 3.5e on a short rest.'); }
+function longRest35() {
+  var max = parseInt(document.getElementById('hp35max')?.textContent)||0;
+  var inp = document.getElementById('hp35cur');
+  if (inp) { inp.value=max; inp.style.color='var(--text)'; }
+  abilUsed35 = {};
+  Object.keys(slots35Used).forEach(function(k){delete slots35Used[k];});
+  buildSpellsTab35();
+  buildMainTab35(max,sheet35State.ac,sheet35State.babVal,sheet35State.dexMod,sheet35State.strMod);
+  showToast35('8 Hours Rest','HP fully restored. Spell slots and daily abilities recharged.');
+}
+function showToast35(title,msg) {
+  var t = document.createElement('div');
+  t.style.cssText='position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--bg-card);border:1px solid var(--crimson-border);padding:14px 24px;font-family:\'Cinzel\',serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:var(--text-dim);z-index:9000;text-align:center;';
+  t.innerHTML='<div style="color:var(--crimson);margin-bottom:4px;">'+title+'</div><div style="font-family:\'Spectral\',serif;font-size:14px;font-style:italic;letter-spacing:1px;text-transform:none;">'+msg+'</div>';
+  document.body.appendChild(t);
+  setTimeout(function(){t.style.opacity='0';t.style.transition='opacity .4s';setTimeout(function(){t.remove();},400);},2500);
+}
+
+// ── SAVE ──
+async function saveChar35() {
+  var btn = document.getElementById('cs35-save-btn');
+  var status = document.getElementById('cs35-save-status');
+  if (typeof PhmurtDB==='undefined') { if(status) status.textContent='Auth not loaded.'; return; }
+  var session = PhmurtDB.getSession();
+  if (!session) { PhmurtDB.openAuth(); if(status) status.textContent='Sign in to save.'; return; }
+  if (btn) { btn.textContent='Saving...'; btn.disabled=true; }
+  var snapshot = {
+    edition:'3.5', race:C35.race, cls:C35.cls, alignment:C35.alignment,
+    abilities:{...C35.abilities}, scoreMethod:C35.scoreMethod, arrayAssigned:{...C35.arrayAssigned},
+    skillRanks:{...C35.skillRanks}, selectedFeats:[...C35.selectedFeats],
+    equipChoices:{...C35.equipChoices}, weaponChoices:{...(C35.weaponChoices||{})},
+    selectedCantrips:[...C35.selectedCantrips], selectedSpells:[...C35.selectedSpells],
+    spellsByLevel: C35.spellsByLevel ? JSON.parse(JSON.stringify(C35.spellsByLevel)) : {},
+    details:{...C35.details}, level:C35.level, hpRolls:[...(C35.hpRolls||[])],
+    levelUpSkills: C35.levelUpSkills ? JSON.parse(JSON.stringify(C35.levelUpSkills)) : {},
+    levelUpFeats:[...(C35.levelUpFeats||[])],
+    levelUpAbilityBoosts: C35.levelUpAbilityBoosts ? JSON.parse(JSON.stringify(C35.levelUpAbilityBoosts)) : {},
+    savedAt:Date.now()
+  };
+  var existingId = localStorage.getItem('phmurt_current_char35_id')||undefined;
+  var r = await PhmurtDB.saveCharacter(snapshot, existingId);
+  if (r&&r.success) {
+    localStorage.setItem('phmurt_current_char35_id',r.id);
+    if (btn) { btn.textContent='Saved ✓'; btn.disabled=false; }
+    if (status) status.textContent='Saved '+(new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));
+    setTimeout(function(){if(btn)btn.textContent='Save Character ↑';},2000);
+  } else {
+    if (btn) { btn.textContent='Save Character ↑'; btn.disabled=false; }
+    if (status) status.textContent=(r&&r.error)||'Save failed.';
+  }
+}
+
+// ── MINI SUMMARY ──
+function updateMini35() {
+  var el = document.getElementById('miniSummary35'); if (!el) return;
+  var lines = [];
+  if (C35.details&&C35.details.name) lines.push({l:'Name',v:C35.details.name});
+  if (C35.race) lines.push({l:'Race',v:DND35_DATA.races[C35.race].name});
+  if (C35.cls) lines.push({l:'Class',v:DND35_DATA.classes[C35.cls].name+' (3.5e)'});
+  if (C35.level) lines.push({l:'Level',v:C35.level});
+  if (C35.alignment) lines.push({l:'Alignment',v:C35.alignment});
+  el.innerHTML = lines.map(function(l){
+    return '<div class="cb-mini-stat"><span class="cb-mini-stat-label">'+l.l+'</span><span class="cb-mini-stat-val">'+l.v+'</span></div>';
+  }).join('');
+}
+
+// ── LEVEL UP SYSTEM ──
+function openLevelUpModal35() {
+  if (C35.level >= 20) {
+    alert('Character is already at maximum level (20).');
+    return;
+  }
+  var newLevel = C35.level + 1;
+  document.getElementById('lu35-from').textContent = C35.level;
+  document.getElementById('lu35-to').textContent = newLevel;
+
+  C35.levelUpState = {
+    newLevel: newLevel,
+    selectedSkills: {},
+    selectedFeats: [],
+    selectedAbilityBoosts: [],
+    hpRoll: null
+  };
+
+  renderLevelUpModal35();
+  var modal = document.getElementById('levelUpModal35');
+  var overlay = document.getElementById('levelUpOverlay35');
+  if (modal && overlay) {
+    overlay.classList.add('show');
+    modal.classList.add('show');
+  }
+}
+
+function closeLevelUpModal35() {
+  var modal = document.getElementById('levelUpModal35');
+  var overlay = document.getElementById('levelUpOverlay35');
+  if (modal && overlay) {
+    modal.classList.remove('show');
+    overlay.classList.remove('show');
+  }
+  C35.levelUpState = null;
+  setTimeout(function() { modal.innerHTML = ''; }, 300);
+}
+
+function renderLevelUpModal35() {
+  if (!C35.levelUpState) return;
+  var cls = DND35_DATA.classes[C35.cls];
+  var newLvl = C35.levelUpState.newLevel;
+  var hitDie = cls.hitDie;
+  var conMod = mod35(ts35('con'));
+  var content = '';
+
+  content += '<div class="lu-section">';
+  content += '<div class="lu-section-title">Class Features</div>';
+  var features = DND35_DATA.classFeaturesByLevel[C35.cls] && DND35_DATA.classFeaturesByLevel[C35.cls][newLvl] || [];
+  if (features.length > 0) {
+    content += '<ul class="lu-feature-list">';
+    features.forEach(function(feat) {
+      content += '<li class="lu-feature-item"><div class="lu-feature-name">'+feat+'</div></li>';
+    });
+    content += '</ul>';
+  } else {
+    content += '<div class="lu-section-body">No new features at this level.</div>';
+  }
+  content += '</div>';
+
+  content += '<div class="lu-section">';
+  content += '<div class="lu-section-title">Stats</div>';
+  var newBAB = DND35_DATA.babProgression[newLvl] ? DND35_DATA.babProgression[newLvl][cls.babProg][0] : 0;
+  var oldBAB = DND35_DATA.babProgression[C35.level] ? DND35_DATA.babProgression[C35.level][cls.babProg][0] : 0;
+  var fortGood = cls.goodSaves.includes('fort');
+  var refGood = cls.goodSaves.includes('ref');
+  var willGood = cls.goodSaves.includes('will');
+  var newFortBase = fortGood ? DND35_DATA.saveProgression.good[newLvl-1] : DND35_DATA.saveProgression.poor[newLvl-1];
+  var newRefBase = refGood ? DND35_DATA.saveProgression.good[newLvl-1] : DND35_DATA.saveProgression.poor[newLvl-1];
+  var newWillBase = willGood ? DND35_DATA.saveProgression.good[newLvl-1] : DND35_DATA.saveProgression.poor[newLvl-1];
+  content += '<div class="lu-stat-row">';
+  content += '<div class="lu-stat"><div class="lu-stat-label">BAB</div><div class="lu-stat-val">'+(newBAB>=0?'+':'')+newBAB+'</div></div>';
+  content += '<div class="lu-stat"><div class="lu-stat-label">Fort Save</div><div class="lu-stat-val">'+(newFortBase+mod35(ts35('con'))>=0?'+':'')+newFortBase+mod35(ts35('con'))+'</div></div>';
+  content += '<div class="lu-stat"><div class="lu-stat-label">Ref Save</div><div class="lu-stat-val">'+(newRefBase+mod35(ts35('dex'))>=0?'+':'')+newRefBase+mod35(ts35('dex'))+'</div></div>';
+  content += '<div class="lu-stat"><div class="lu-stat-label">Will Save</div><div class="lu-stat-val">'+(newWillBase+mod35(ts35('wis'))>=0?'+':'')+newWillBase+mod35(ts35('wis'))+'</div></div>';
+  content += '</div>';
+  content += '</div>';
+
+  content += '<div class="lu-section">';
+  content += '<div class="lu-section-title">Hit Points</div>';
+  var hpAvg = Math.floor(hitDie / 2) + 1 + conMod;
+  if (hpAvg < 1) hpAvg = 1;
+  content += '<div class="lu-section-body">Roll d'+hitDie+' (or take '+hpAvg+')</div>';
+  content += '<div style="margin-top:10px;">';
+  content += '<input type="number" id="luHPRoll35" min="1" max="'+hitDie+'" placeholder="Roll or avg" class="lu-hp-input">';
+  content += ' <button onclick="luRollHP35()" class="cb-roll-btn" style="padding:4px 8px;font-size:10px;">Roll</button>';
+  content += ' <button onclick="luSetHPAvg35('+hpAvg+')" class="cb-roll-btn" style="padding:4px 8px;font-size:10px;">Avg</button>';
+  content += '</div>';
+  content += '</div>';
+
+  var skillPointsPerLevel = Math.max(1, cls.skillPoints + mod35(ts35('int')));
+  if (C35.race === 'human') skillPointsPerLevel += 1;
+  content += '<div class="lu-section">';
+  content += '<div class="lu-section-title">Skill Points ('+skillPointsPerLevel+')</div>';
+  content += '<div class="lu-skill-list" id="luSkillList35"></div>';
+  content += '</div>';
+
+  var isFeatLevel = DND35_DATA.featLevels.includes(newLvl);
+  var isFighterBonusFeat = C35.cls === 'fighter' && DND35_DATA.fighterBonusFeatLevels.includes(newLvl);
+  var featCount = (isFeatLevel ? 1 : 0) + (isFighterBonusFeat ? 1 : 0);
+  if (featCount > 0) {
+    content += '<div class="lu-section">';
+    if (isFeatLevel && isFighterBonusFeat) content += '<div class="lu-section-title">Feats (1 Feat, 1 Combat Feat)</div>';
+    else if (isFeatLevel) content += '<div class="lu-section-title">Feats (1 Feat)</div>';
+    else content += '<div class="lu-section-title">Feats (1 Combat Feat)</div>';
+    content += '<div class="lu-feat-list" id="luFeatList35"></div>';
+    content += '</div>';
+  }
+
+  if ([4, 8, 12, 16, 20].includes(newLvl)) {
+    content += '<div class="lu-section">';
+    content += '<div class="lu-section-title">Ability Score Increase</div>';
+    content += '<div class="lu-section-body">Choose one ability to increase by 1:</div>';
+    content += '<div class="lu-ability-select">';
+    ['str','dex','con','int','wis','cha'].forEach(function(a) {
+      content += '<button class="lu-ability-btn" onclick="luSelectAbility35(\''+a+'\')">'+DND35_DATA.abilityShort[a]+'</button>';
+    });
+    content += '</div>';
+    content += '</div>';
+  }
+
+  var spellcaster = cls.spellcastingAbility;
+  if (spellcaster) {
+    var spellsTable = DND35_DATA.spellsPerDay[C35.cls];
+    if (spellsTable) {
+      content += '<div class="lu-section">';
+      content += '<div class="lu-section-title">Spells Per Day</div>';
+      content += '<div class="lu-section-body">';
+      for (var lvl = 0; lvl <= 9; lvl++) {
+        if (spellsTable[lvl]) {
+          var slots = spellsTable[lvl][newLvl-1];
+          if (slots !== null) {
+            content += '<div>Level '+lvl+': '+slots+' spells</div>';
+          }
+        }
+      }
+      content += '</div>';
+      content += '</div>';
+    }
+  }
+
+  document.getElementById('lu35-content').innerHTML = content;
+  renderLevelUpSkills35();
+  renderLevelUpFeats35();
+}
+
+function renderLevelUpSkills35() {
+  var cls = DND35_DATA.classes[C35.cls];
+  var skillPointsPerLevel = Math.max(1, cls.skillPoints + mod35(ts35('int')));
+  if (C35.race === 'human') skillPointsPerLevel += 1;
+
+  var html = '';
+  Object.entries(DND35_DATA.skills).forEach(function(kv) {
+    var id = kv[0];
+    var skill = kv[1];
+    var isClass = cls.classSkills.includes(skill.name);
+    var currentRanks = parseInt(C35.skillRanks[id]) || 0;
+    var addedRanks = parseInt(C35.levelUpState.selectedSkills[id]) || 0;
+    var newRanks = currentRanks + addedRanks;
+    var maxRank = C35.levelUpState.newLevel + 3;
+    var maxForSkill = isClass ? maxRank : Math.floor(maxRank / 2);
+
+    html += '<div class="lu-skill-item">';
+    html += '<input type="number" class="lu-skill-input" id="luSkill_'+id+'" min="0" max="'+(maxForSkill-currentRanks)+'" value="'+addedRanks+'" onchange="luUpdateSkill35(\''+id+'\')">';
+    html += '<span class="lu-skill-label">'+skill.name+' ('+DND35_DATA.abilityShort[skill.ability]+')'+(!isClass?' [cross-class]':'')+' - '+newRanks+'/'+maxForSkill+'</span>';
+    html += '</div>';
+  });
+
+  document.getElementById('luSkillList35').innerHTML = html;
+}
+
+function luUpdateSkill35(skillId) {
+  var input = document.getElementById('luSkill_'+skillId);
+  if (input) {
+    var val = parseInt(input.value) || 0;
+    C35.levelUpState.selectedSkills[skillId] = val;
+    renderLevelUpSkills35();
+  }
+}
+
+function renderLevelUpFeats35() {
+  var list = document.getElementById('luFeatList35');
+  if (!list) return;
+
+  var cls = DND35_DATA.classes[C35.cls];
+  var newLvl = C35.levelUpState.newLevel;
+  var isFeatLevel = DND35_DATA.featLevels.includes(newLvl);
+  var isFighterBonusFeat = C35.cls === 'fighter' && DND35_DATA.fighterBonusFeatLevels.includes(newLvl);
+
+  var html = '';
+  var feats = DND35_DATA.feats || [];
+  feats.forEach(function(feat, idx) {
+    var isSelected = C35.levelUpState.selectedFeats.includes(idx);
+    html += '<div class="lu-feat-item '+(isSelected?'selected':'')+'" onclick="luToggleFeat35('+idx+')">';
+    html += '<div class="lu-feat-item-name">'+feat.name+'</div>';
+    html += '<div class="lu-feat-item-desc">'+feat.desc+'</div>';
+    html += '</div>';
+  });
+
+  list.innerHTML = html;
+}
+
+function luToggleFeat35(featIdx) {
+  var idx = C35.levelUpState.selectedFeats.indexOf(featIdx);
+  if (idx >= 0) {
+    C35.levelUpState.selectedFeats.splice(idx, 1);
+  } else {
+    C35.levelUpState.selectedFeats.push(featIdx);
+  }
+  renderLevelUpFeats35();
+}
+
+function luRollHP35() {
+  var hitDie = DND35_DATA.classes[C35.cls].hitDie;
+  var roll = Math.floor(Math.random() * hitDie) + 1;
+  document.getElementById('luHPRoll35').value = roll;
+  C35.levelUpState.hpRoll = roll;
+}
+
+function luSetHPAvg35(avg) {
+  document.getElementById('luHPRoll35').value = avg;
+  C35.levelUpState.hpRoll = avg;
+}
+
+function luSelectAbility35(abil) {
+  document.querySelectorAll('.lu-ability-btn').forEach(function(btn) {
+    btn.classList.remove('selected');
+  });
+  C35.levelUpState.selectedAbilityBoosts = [abil];
+  event.target.classList.add('selected');
+}
+
+function confirmLevelUp35() {
+  if (!C35.levelUpState) return;
+
+  var newLvl = C35.levelUpState.newLevel;
+  var hitDie = DND35_DATA.classes[C35.cls].hitDie;
+  var conMod = mod35(ts35('con'));
+  var hpGain = (C35.levelUpState.hpRoll || Math.floor(hitDie/2)+1) + conMod;
+  if (hpGain < 1) hpGain = 1;
+
+  C35.level = newLvl;
+  C35.hpRolls = C35.hpRolls || [];
+  C35.hpRolls.push(hpGain);
+
+  var currentHP = parseInt(document.getElementById('hp35cur').value) || 0;
+  var newHP = currentHP + hpGain;
+  document.getElementById('hp35cur').value = newHP;
+
+  var maxHP = C35.hpRolls.reduce(function(a,b){return a+b},0);
+  document.getElementById('hp35max').textContent = maxHP;
+
+  Object.entries(C35.levelUpState.selectedSkills).forEach(function(kv) {
+    var id = kv[0];
+    var ranks = parseInt(kv[1]) || 0;
+    if (ranks > 0) {
+      C35.skillRanks[id] = (parseInt(C35.skillRanks[id]) || 0) + ranks;
+    }
+  });
+
+  C35.levelUpState.selectedFeats.forEach(function(featIdx) {
+    if (!C35.selectedFeats.includes(featIdx)) {
+      C35.selectedFeats.push(featIdx);
+    }
+  });
+
+  if (C35.levelUpState.selectedAbilityBoosts.length > 0) {
+    var ability = C35.levelUpState.selectedAbilityBoosts[0];
+    C35.abilities[ability] = (C35.abilities[ability] || 10) + 1;
+  }
+
+  closeLevelUpModal35();
+  buildFinalSheet35();
+  updateMini35();
+}
+
+// ── INIT ──
+document.addEventListener('DOMContentLoaded', function() {
+  // Method info default
+  document.getElementById('methodInfo35').innerHTML = '<strong>Standard Array</strong>. Assign 15,14,13,12,10,8 to your six ability scores.';
+  renderRaces35(); renderClasses35(); renderAbilGrid35(); renderPool35(); updateMini35();
+  // Mobile nav
+  var ham=document.getElementById('hamburger'),menu=document.getElementById('mobileMenu'),close=document.getElementById('mobileClose');
+  if (ham) ham.addEventListener('click',function(){ham.classList.toggle('open');menu.classList.toggle('open');});
+  if (close) close.addEventListener('click',function(){ham.classList.remove('open');menu.classList.remove('open');});
+  document.addEventListener('click',function(e){if(!e.target.closest('.nav-auth-wrap')){var dd=document.getElementById('nav-user-dropdown');if(dd)dd.classList.remove('open');}});
+  document.querySelectorAll('a[href]').forEach(function(a){
+    var href=a.getAttribute('href');
+    if(href&&href.endsWith('.html')&&!href.startsWith('http')&&!href.startsWith('mailto')){
+      a.addEventListener('click',function(e){e.preventDefault();document.body.classList.add('page-out');setTimeout(function(){window.location.href=href;},200);});
+    }
+  });
+  (function(){  })();
+  // Load saved char
+  var loadId = localStorage.getItem('cb35_load_char_id');
+  if (loadId && typeof PhmurtDB!=='undefined') {
+    localStorage.removeItem('cb35_load_char_id');
+    PhmurtDB.loadCharacter(loadId).then(function(data) {
+      if (!data||data.edition!=='3.5') return;
+      ['race','cls','alignment','abilities','scoreMethod','arrayAssigned','skillRanks','selectedFeats',
+       'equipChoices','weaponChoices','selectedCantrips','selectedSpells','spellsByLevel','details','level','hpRolls',
+       'levelUpSkills','levelUpFeats','levelUpAbilityBoosts'].forEach(function(k){
+        if (data[k]!==undefined) C35[k]=data[k];
+      });
+      C35.weaponChoices = C35.weaponChoices||{};
+      localStorage.setItem('phmurt_current_char35_id',loadId);
+      renderAbilGrid35(); renderPool35();
+      if (C35.details&&C35.details.name) {
+        var nf=document.getElementById('charName35'); if(nf) nf.value=C35.details.name||'';
+        var af=document.getElementById('charAlignment35'); if(af) af.value=C35.alignment||'';
+      }
+      goToStep35(9,true);
+      setTimeout(function(){
+        document.getElementById('detailsForm35').style.display='none';
+        document.getElementById('finalSheet35').style.display='block';
+        buildFinalSheet35();
+      },100);
+    });
+  }
+});
+  </script>
+  <div id="ps-site-footer"></div>
+
+  <script src="phmurt-shell.js"></script>
+</body>
+</html>
