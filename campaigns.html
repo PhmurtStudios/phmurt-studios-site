@@ -229,8 +229,8 @@ const Tag = ({ children, variant = "default" }) => {
 };
 
 const HpBar = ({ val, max, color }) => (
-  <div style={{ width:"100%", height:6, background:T.bgInput, border:`1px solid ${T.border}`, borderRadius:"2px", overflow:"hidden" }}>
-    <div style={{ width:`${Math.round(val/max*100)}%`, height:"100%", background:color||T.crimson, transition:"width 0.3s ease" }} />
+  <div style={{ width:"100%", height:8, background:T.bgInput, border:`1px solid ${T.border}`, borderRadius:"3px", overflow:"hidden" }}>
+    <div style={{ width:`${Math.round(val/max*100)}%`, height:"100%", background:`linear-gradient(90deg, ${color||T.crimson} 0%, ${color||T.crimson}cc 100%)`, transition:"width 0.3s ease" }} />
   </div>
 );
 
@@ -2569,6 +2569,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
   const fileRef = useRef(null);
   const tokenImgRef = useRef(null);
   const tokenImagesCache = useRef({});
+  const wheelHandlerRef = useRef(null);
 
   // ── Core map state ──
   const [gridSize, setGridSize] = useState(40);
@@ -2661,6 +2662,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
   const [spellDC, setSpellDC] = useState(15);
   const [spellLevelFilter, setSpellLevelFilter] = useState(-1); // -1 for all
   const [spellSearchFilter, setSpellSearchFilter] = useState("");
+  const [selectedSpellInfo, setSelectedSpellInfo] = useState(null); // spell object for info panel
   const DND_SPELLS = [
     // CANTRIPS (Level 0)
     { name:"Acid Splash", level:0, school:"Evocation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"1d6 acid", damageType:"acid", save:"", effect:"acid", color:"#76ff03", healing:"", concentration:false, ritual:false, conditions:[], description:"A flick of acid at target creature", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
@@ -2668,7 +2670,6 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     { name:"Chill Touch", level:0, school:"Necromancy", castTime:"1 action", range:120, shape:"single", radius:0, damage:"1d8 necrotic", damageType:"necrotic", save:"", effect:"necrotic", color:"#7c3aed", healing:"", concentration:false, ritual:false, conditions:["Disadvantage"], description:"A ghostly hand chills the target", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Dancing Lights", level:0, school:"Evocation", castTime:"1 action", range:120, shape:"sphere", radius:10, damage:"", damageType:"", save:"", effect:"radiant", color:"#ffd54f", healing:"", concentration:true, ritual:false, conditions:[], description:"You create up to 4 torch-sized lights", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
     { name:"Fire Bolt", level:0, school:"Evocation", castTime:"1 action", range:120, shape:"single", radius:0, damage:"1d10 fire", damageType:"fire", save:"", effect:"explosion", color:"#ff6030", healing:"", concentration:false, ritual:false, conditions:[], description:"You hurl a mote of fire at a target", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
-    { name:"Frost Bolt", level:0, school:"Evocation", castTime:"1 action", range:120, shape:"single", radius:0, damage:"1d8 cold", damageType:"cold", save:"DEX", effect:"freeze", color:"#b3e5fc", healing:"", concentration:false, ritual:false, conditions:[], description:"A bolt of cold magic targets a creature", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Light", level:0, school:"Evocation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"radiant", color:"#ffd54f", healing:"", concentration:false, ritual:false, conditions:[], description:"An object sheds bright light in 20ft radius", classes:["Bard","Cleric","Sorcerer","Wizard"], applyEffect:"utility" },
     { name:"Mage Hand", level:0, school:"Transmutation", castTime:"1 action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:false, ritual:true, conditions:[], description:"You create a spectral hand to move objects", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
     { name:"Mending", level:0, school:"Transmutation", castTime:"1 minute", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:false, ritual:true, conditions:[], description:"You mend a single break in nonmagical object", classes:["Bard","Cleric","Druid","Sorcerer","Wizard"], applyEffect:"utility" },
@@ -2696,7 +2697,6 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     { name:"Feather Fall", level:1, school:"Transmutation", castTime:"1 reaction", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:false, ritual:false, conditions:[], description:"Up to 5 willing creatures fall slowly", classes:["Artificer","Bard","Sorcerer","Wizard"], applyEffect:"utility" },
     { name:"Grease", level:1, school:"Conjuration", castTime:"1 action", range:60, shape:"cube", radius:10, damage:"", damageType:"", save:"STR", effect:"conjuration", color:"#a4e89c", healing:"", concentration:false, ritual:false, conditions:["Prone"], description:"Slick grease makes an area difficult terrain", classes:["Artificer","Bard","Sorcerer","Wizard"], applyEffect:"control" },
     { name:"Healing Word", level:1, school:"Evocation", castTime:"1 bonus action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"heal", color:"#5ee09a", healing:"1d4+mod", concentration:false, ritual:false, conditions:[], description:"A bonus action heal from range", classes:["Bard","Cleric","Druid"], applyEffect:"heal" },
-    { name:"Help", level:1, school:"Enchantment", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:"#e040fb", healing:"", concentration:false, ritual:false, conditions:["Blessed"], description:"An ally gains advantage on next ability check", classes:[], applyEffect:"buff" },
     { name:"Identify", level:1, school:"Divination", castTime:"1 minute", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"radiant", color:"#ffd54f", healing:"", concentration:false, ritual:true, conditions:[], description:"Learn magical properties of an object", classes:["Artificer","Bard","Cleric","Wizard"], applyEffect:"utility" },
     { name:"Illusory Script", level:1, school:"Illusion", castTime:"1 minute", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:"#e040fb", healing:"", concentration:false, ritual:true, conditions:[], description:"Write magical script only you can read", classes:["Bard","Wizard"], applyEffect:"utility" },
     { name:"Mage Armor", level:1, school:"Abjuration", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Touch gains AC 13 + DEX", classes:["Sorcerer","Wizard"], applyEffect:"buff" },
@@ -2714,13 +2714,12 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     { name:"Aganazzar's Scorcher", level:2, school:"Evocation", castTime:"1 action", range:30, shape:"line", radius:0, length:30, damage:"3d8 fire", damageType:"fire", save:"DEX", effect:"explosion", color:"#ff6030", healing:"", concentration:false, ritual:false, conditions:[], description:"30-ft line of flame", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Blindness/Deafness", level:2, school:"Necromancy", castTime:"1 action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"CON", effect:"necrotic", color:"#7c3aed", healing:"", concentration:true, ritual:false, conditions:["Blinded","Deafened"], description:"Target goes blind or deaf", classes:["Cleric","Sorcerer","Wizard"], applyEffect:"debuff" },
     { name:"Cloud of Daggers", level:2, school:"Conjuration", castTime:"1 action", range:60, shape:"cube", radius:5, damage:"4d4 slashing", damageType:"slashing", save:"", effect:"conjuration", color:"#a4e89c", healing:"", concentration:true, ritual:false, conditions:[], description:"Daggers fill cube, deal damage", classes:["Bard","Sorcerer","Wizard"], applyEffect:"damage" },
-    { name:"Darkness", level:2, school:"Evocation", castTime:"1 action", range:60, shape:"sphere", radius:15, damage:"", damageType:"", save:"", effect:"darkness", color:"#1a1a2e", healing:"", concentration:true, ritual:false, conditions:[], description:"Magical darkness fills 30-ft sphere", classes:["Sorcerer","Warlock","Wizard"], applyEffect:"control" },
+    { name:"Darkness", level:2, school:"Evocation", castTime:"1 action", range:60, shape:"sphere", radius:15, damage:"", damageType:"", save:"", effect:"darkness", color:"#1a1a2e", healing:"", concentration:true, ritual:false, conditions:["Blinded"], description:"Magical darkness fills 30-ft sphere", classes:["Sorcerer","Warlock","Wizard"], applyEffect:"control" },
     { name:"Detect Thoughts", level:2, school:"Divination", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"WIS", effect:"radiant", color:"#ffd54f", healing:"", concentration:true, ritual:false, conditions:[], description:"Read surface thoughts of one creature", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
     { name:"Enhance Ability", level:2, school:"Transmutation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:["Blessed"], description:"Grant advantage on ability checks with one ability", classes:["Artificer","Bard","Cleric","Druid","Sorcerer","Wizard"], applyEffect:"buff" },
     { name:"Flaming Sphere", level:2, school:"Conjuration", castTime:"1 action", range:60, shape:"sphere", radius:5, damage:"2d6 fire", damageType:"fire", save:"DEX", effect:"explosion", color:"#ff6030", healing:"", concentration:true, ritual:false, conditions:[], description:"Rolling sphere deals fire damage", classes:["Druid","Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Gust of Wind", level:2, school:"Evocation", castTime:"1 action", range:0, shape:"line", radius:0, length:60, damage:"", damageType:"", save:"STR", effect:"shockwave", color:"#90caf9", healing:"", concentration:true, ritual:false, conditions:["Prone"], description:"60-ft line of wind pushes creatures and objects", classes:["Druid","Sorcerer","Wizard"], applyEffect:"control" },
     { name:"Heat Metal", level:2, school:"Transmutation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"2d8 fire", damageType:"fire", save:"", effect:"explosion", color:"#ff6030", healing:"", concentration:true, ritual:false, conditions:[], description:"Metal worn/carried burns target", classes:["Artificer","Bard","Cleric","Druid"], applyEffect:"damage" },
-    { name:"Hideous Laughter", level:2, school:"Enchantment", castTime:"1 action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Incapacitated"], description:"Target incapacitated by laughter", classes:["Bard","Wizard"], applyEffect:"control" },
     { name:"Hold Person", level:2, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Paralyzed"], description:"Humanoid is paralyzed if it fails save", classes:["Bard","Cleric","Druid","Sorcerer","Wizard"], applyEffect:"control" },
     { name:"Invisibility", level:2, school:"Illusion", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Invisible"], description:"Target becomes invisible", classes:["Artificer","Bard","Sorcerer","Wizard"], applyEffect:"utility" },
     { name:"Knock", level:2, school:"Transmutation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:false, ritual:false, conditions:[], description:"Open one lock/door within range", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
@@ -2730,9 +2729,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     { name:"Misty Step", level:2, school:"Conjuration", castTime:"1 bonus action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"conjuration", color:"#a4e89c", healing:"", concentration:false, ritual:false, conditions:[], description:"Teleport up to 30 feet to unoccupied space", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
     { name:"Pass Without Trace", level:2, school:"Abjuration", castTime:"1 minute", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:true, ritual:false, conditions:[], description:"10 creatures can't be tracked", classes:["Artificer","Bard","Druid","Ranger"], applyEffect:"utility" },
     { name:"Phantasmal Force", level:2, school:"Illusion", castTime:"1 action", range:60, shape:"single", radius:0, damage:"1d6 psychic", damageType:"psychic", save:"INT", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:[], description:"Creature sees illusion, takes psychic damage", classes:["Wizard"], applyEffect:"damage" },
-    { name:"Python's Mark", level:2, school:"Transmutation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"3d6 poison", damageType:"poison", save:"", effect:"poison", color:"#4caf50", healing:"", concentration:false, ritual:false, conditions:["Poisoned"], description:"Poison seeps from target", classes:["Druid","Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Rope Trick", level:2, school:"Transmutation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:false, ritual:false, conditions:[], description:"Rope becomes extra-dimensional shelter", classes:["Wizard"], applyEffect:"utility" },
-    { name:"Scorching Ray", level:2, school:"Evocation", castTime:"1 action", range:120, shape:"single", radius:0, damage:"2d6 fire", damageType:"fire", save:"", effect:"explosion", color:"#ff6030", healing:"", concentration:false, ritual:false, conditions:[], description:"4 rays of fire, each deals 2d6", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
+    { name:"Scorching Ray", level:2, school:"Evocation", castTime:"1 action", range:120, shape:"single", radius:0, damage:"2d6 fire", damageType:"fire", save:"", effect:"explosion", color:"#ff6030", healing:"", concentration:false, ritual:false, conditions:[], description:"3 rays of fire, each deals 2d6", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"See Invisibility", level:2, school:"Divination", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"radiant", color:"#ffd54f", healing:"", concentration:true, ritual:false, conditions:[], description:"See invisible creatures and objects", classes:["Artificer","Bard","Sorcerer","Wizard"], applyEffect:"utility" },
     { name:"Shatter", level:2, school:"Evocation", castTime:"1 action", range:60, shape:"sphere", radius:10, damage:"3d8 thunder", damageType:"thunder", save:"CON", effect:"shockwave", color:"#90caf9", healing:"", concentration:false, ritual:false, conditions:[], description:"Thunder shatters nonmagical objects in sphere", classes:["Bard","Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Spider Climb", level:2, school:"Transmutation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Target can walk on any surface", classes:["Artificer","Sorcerer","Wizard"], applyEffect:"buff" },
@@ -2748,12 +2746,11 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     { name:"Fireball", level:3, school:"Evocation", castTime:"1 action", range:150, shape:"sphere", radius:20, damage:"8d6 fire", damageType:"fire", save:"DEX", effect:"explosion", color:"#ff6030", healing:"", concentration:false, ritual:false, conditions:[], description:"Ball of fire fills 20-ft sphere", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Fly", level:3, school:"Transmutation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Grant flight speed to creature", classes:["Artificer","Sorcerer","Wizard"], applyEffect:"buff" },
     { name:"Gaseous Form", level:3, school:"Transmutation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Target becomes cloud of gas", classes:["Sorcerer","Wizard"], applyEffect:"utility" },
-    { name:"Glyph of Warding", level:3, school:"Abjuration", castTime:"1 hour", range:0, shape:"touch", radius:0, damage:"5d8", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Inscribe protective glyph", classes:["Artificer","Bard","Cleric","Wizard"], applyEffect:"utility" },
-    { name:"Haste", level:3, school:"Transmutation", castTime:"1 action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:["Hasted"], description:"Target gains extra action, speed, AC", classes:["Sorcerer","Wizard"], applyEffect:"buff" },
+    { name:"Glyph of Warding", level:3, school:"Abjuration", castTime:"1 hour", range:0, shape:"touch", radius:0, damage:"5d8", damageType:"fire", save:"DEX", effect:"shield", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Inscribe protective glyph", classes:["Artificer","Bard","Cleric","Wizard"], applyEffect:"damage" },
+    { name:"Haste", level:3, school:"Transmutation", castTime:"1 action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:["Hasted"], description:"Target gains extra action, speed, AC", classes:["Sorcerer","Wizard"], applyEffect:"buff" },
     { name:"Hypnotic Pattern", level:3, school:"Illusion", castTime:"1 action", range:120, shape:"cube", radius:30, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Incapacitated"], description:"Creatures see hypnotic pattern, become incapacitated", classes:["Bard","Sorcerer","Warlock","Wizard"], applyEffect:"control" },
     { name:"Intellect Fortress", level:3, school:"Abjuration", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:true, ritual:false, conditions:[], description:"Protect against psychic damage and charm", classes:["Artificer","Bard","Sorcerer","Wizard"], applyEffect:"buff" },
     { name:"Invisibility (Greater)", level:4, school:"Illusion", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Invisible"], description:"Target stays invisible while attacking", classes:["Bard","Sorcerer","Wizard"], applyEffect:"buff" },
-    { name:"Keen Mind", level:3, school:"Divination", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"radiant", color:"#ffd54f", healing:"", concentration:false, ritual:false, conditions:[], description:"Perfect memory and sense of direction", classes:["Wizard"], applyEffect:"buff" },
     { name:"Leomund's Tiny Hut", level:3, school:"Evocation", castTime:"1 minute", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:false, ritual:true, conditions:[], description:"Create a magical shelter for 9 creatures", classes:["Bard","Wizard"], applyEffect:"utility" },
     { name:"Lightning Bolt", level:3, school:"Evocation", castTime:"1 action", range:100, shape:"line", radius:5, length:100, damage:"8d6 lightning", damageType:"lightning", save:"DEX", effect:"bolt", color:"#5edfff", healing:"", concentration:false, ritual:false, conditions:[], description:"100-ft line of lightning", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Major Image", level:3, school:"Illusion", castTime:"1 action", range:120, shape:"cube", radius:20, damage:"", damageType:"", save:"INT", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:[], description:"Create an illusion that moves and acts", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
@@ -2764,11 +2761,10 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     { name:"Summon Lesser Demons", level:3, school:"Conjuration", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"conjuration", color:"#a4e89c", healing:"", concentration:true, ritual:false, conditions:[], description:"Summon demons to fight for you", classes:["Warlock","Wizard"], applyEffect:"summon" },
     { name:"Tidal Wave", level:3, school:"Evocation", castTime:"1 action", range:120, shape:"cube", radius:30, damage:"4d8 bludgeoning", damageType:"bludgeoning", save:"STR", effect:"shockwave", color:"#90caf9", healing:"", concentration:false, ritual:false, conditions:["Prone"], description:"Wave of water knocks creatures around", classes:["Druid","Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Vampiric Touch", level:3, school:"Necromancy", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"3d6 necrotic", damageType:"necrotic", save:"", effect:"necrotic", color:"#7c3aed", healing:"3d6", concentration:true, ritual:false, conditions:[], description:"Drain life from target, heal yourself", classes:["Wizard"], applyEffect:"damage" },
-    { name:"Warden Sign", level:3, school:"Abjuration", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Make a protective warding sign", classes:["Artificer","Cleric","Wizard"], applyEffect:"buff" },
     // LEVEL 4
     { name:"Blight", level:4, school:"Necromancy", castTime:"1 action", range:30, shape:"single", radius:0, damage:"8d8 necrotic", damageType:"necrotic", save:"CON", effect:"necrotic", color:"#7c3aed", healing:"", concentration:false, ritual:false, conditions:[], description:"Wither a creature or plant", classes:["Druid","Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Charm Monster", level:4, school:"Enchantment", castTime:"1 action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Charmed"], description:"Charm a creature", classes:["Bard","Sorcerer","Warlock","Wizard"], applyEffect:"control" },
-    { name:"Confusion", level:4, school:"Enchantment", castTime:"1 action", range:90, shape:"sphere", radius:10, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:[], description:"Creatures in area become confused", classes:["Bard","Druid","Sorcerer","Wizard"], applyEffect:"control" },
+    { name:"Confusion", level:4, school:"Enchantment", castTime:"1 action", range:90, shape:"sphere", radius:10, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Incapacitated"], description:"Creatures in area become confused", classes:["Bard","Druid","Sorcerer","Wizard"], applyEffect:"control" },
     { name:"Dimension Door", level:4, school:"Conjuration", castTime:"1 action", range:500, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"conjuration", color:"#a4e89c", healing:"", concentration:false, ritual:false, conditions:[], description:"Teleport yourself and ally up to 500 ft", classes:["Artificer","Bard","Sorcerer","Warlock","Wizard"], applyEffect:"utility" },
     { name:"Fire Shield", level:4, school:"Evocation", castTime:"1 action", range:0, shape:"self", radius:0, damage:"2d8 fire", damageType:"fire", save:"", effect:"explosion", color:"#ff6030", healing:"", concentration:true, ritual:false, conditions:[], description:"Flaming aura harms those who strike you", classes:["Sorcerer","Wizard"], applyEffect:"buff" },
     { name:"Hallucinatory Terrain", level:4, school:"Illusion", castTime:"10 minutes", range:300, shape:"cube", radius:150, damage:"", damageType:"", save:"INT", effect:"enchantment", color:"#e040fb", healing:"", concentration:false, ritual:true, conditions:[], description:"Hide terrain with illusion", classes:["Bard","Druid","Wizard"], applyEffect:"utility" },
@@ -2787,8 +2783,38 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     { name:"Circle of Death", level:6, school:"Necromancy", castTime:"1 action", range:150, shape:"sphere", radius:60, damage:"8d6 necrotic", damageType:"necrotic", save:"CON", effect:"necrotic", color:"#7c3aed", healing:"", concentration:false, ritual:false, conditions:[], description:"Death energy fills sphere", classes:["Sorcerer","Warlock","Wizard"], applyEffect:"damage" },
     { name:"Disintegrate", level:6, school:"Evocation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"10d6+40 force", damageType:"force", save:"DEX", effect:"bolt", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Utterly destroy target", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Tenser's Transformation", level:6, school:"Transmutation", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:["Hasted"], description:"Transform yourself into warrior", classes:["Wizard"], applyEffect:"buff" },
+    // LEVEL 7
+    { name:"Delayed Blast Fireball", level:7, school:"Evocation", castTime:"1 action", range:150, shape:"sphere", radius:20, damage:"12d6", damageType:"fire", save:"DEX", effect:"explosion", color:"#ff6030", healing:"", concentration:true, ritual:false, conditions:[], description:"Fireball you can delay up to 1 minute, growing stronger", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
+    { name:"Etherealness", level:7, school:"Transmutation", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"conjuration", color:"#a4e89c", healing:"", concentration:false, ritual:false, conditions:["Invisible"], description:"Step into the Ethereal Plane", classes:["Bard","Cleric","Sorcerer","Wizard"], applyEffect:"utility" },
+    { name:"Finger of Death", level:7, school:"Necromancy", castTime:"1 action", range:60, shape:"single", radius:0, damage:"7d8+30", damageType:"necrotic", save:"CON", effect:"necrotic", color:"#7c3aed", healing:"", concentration:false, ritual:false, conditions:[], description:"Slay with a word; corpse rises as zombie", classes:["Sorcerer","Warlock","Wizard"], applyEffect:"damage" },
+    { name:"Fire Storm", level:7, school:"Evocation", castTime:"1 action", range:150, shape:"sphere", radius:20, damage:"7d10", damageType:"fire", save:"DEX", effect:"explosion", color:"#ff6030", healing:"", concentration:false, ritual:false, conditions:[], description:"Fire rains down in multiple areas", classes:["Cleric","Druid","Sorcerer"], applyEffect:"damage" },
+    { name:"Forcecage", level:7, school:"Evocation", castTime:"1 action", range:100, shape:"cube", radius:10, damage:"", damageType:"", save:"CHA", effect:"force", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:["Restrained"], description:"Immobile invisible cage traps creatures", classes:["Bard","Warlock","Wizard"], applyEffect:"control" },
+    { name:"Mordenkainen's Sword", level:7, school:"Evocation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"3d10", damageType:"force", save:"", effect:"force", color:"#58aaff", healing:"", concentration:true, ritual:false, conditions:[], description:"Floating sword attacks each turn", classes:["Bard","Wizard"], applyEffect:"damage" },
+    { name:"Plane Shift", level:7, school:"Conjuration", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"CHA", effect:"conjuration", color:"#a4e89c", healing:"", concentration:false, ritual:false, conditions:[], description:"Transport willing creatures to another plane", classes:["Cleric","Druid","Sorcerer","Wizard"], applyEffect:"utility" },
+    { name:"Prismatic Spray", level:7, school:"Evocation", castTime:"1 action", range:0, shape:"cone", radius:60, damage:"10d6", damageType:"radiant", save:"DEX", effect:"radiant", color:"#e040fb", healing:"", concentration:false, ritual:false, conditions:["Blinded"], description:"Seven multicolored rays with random effects", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
+    { name:"Regenerate", level:7, school:"Transmutation", castTime:"1 minute", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"heal", color:"#5ee09a", healing:"4d8+15", concentration:false, ritual:false, conditions:[], description:"Target regains 4d8+15 HP and regenerates limbs", classes:["Bard","Cleric","Druid"], applyEffect:"heal" },
+    { name:"Resurrection", level:7, school:"Necromancy", castTime:"1 hour", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"heal", color:"#5ee09a", healing:"", concentration:false, ritual:false, conditions:[], description:"Bring a creature dead up to 100 years back to life", classes:["Bard","Cleric"], applyEffect:"utility" },
+    { name:"Reverse Gravity", level:7, school:"Transmutation", castTime:"1 action", range:100, shape:"cylinder", radius:50, damage:"", damageType:"", save:"DEX", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:["Prone"], description:"Gravity reverses in a cylinder, creatures fall upward", classes:["Druid","Sorcerer","Wizard"], applyEffect:"control" },
+    { name:"Symbol", level:7, school:"Abjuration", castTime:"1 minute", range:0, shape:"touch", radius:0, damage:"10d10", damageType:"necrotic", save:"CON", effect:"necrotic", color:"#7c3aed", healing:"", concentration:false, ritual:false, conditions:[], description:"Inscribe a glyph that triggers various effects", classes:["Bard","Cleric","Wizard"], applyEffect:"damage" },
+    { name:"Teleport", level:7, school:"Conjuration", castTime:"1 action", range:10, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"conjuration", color:"#a4e89c", healing:"", concentration:false, ritual:false, conditions:[], description:"Teleport up to 8 willing creatures anywhere on same plane", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
+    // LEVEL 8
+    { name:"Abi-Dalzim's Horrid Wilting", level:8, school:"Necromancy", castTime:"1 action", range:150, shape:"sphere", radius:30, damage:"12d8", damageType:"necrotic", save:"CON", effect:"necrotic", color:"#7c3aed", healing:"", concentration:false, ritual:false, conditions:[], description:"Drain moisture from creatures in 30-ft sphere", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
+    { name:"Antimagic Field", level:8, school:"Abjuration", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:true, ritual:false, conditions:[], description:"10-ft sphere suppresses all magic", classes:["Cleric","Wizard"], applyEffect:"utility" },
+    { name:"Clone", level:8, school:"Necromancy", castTime:"1 hour", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"necrotic", color:"#7c3aed", healing:"", concentration:false, ritual:false, conditions:[], description:"Create a duplicate body to revive into", classes:["Wizard"], applyEffect:"utility" },
+    { name:"Control Weather", level:8, school:"Transmutation", castTime:"10 minutes", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"shockwave", color:"#90caf9", healing:"", concentration:true, ritual:false, conditions:[], description:"Control weather in a 5-mile radius", classes:["Cleric","Druid","Wizard"], applyEffect:"utility" },
+    { name:"Dominate Monster", level:8, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Charmed"], description:"Take total control of any creature", classes:["Bard","Sorcerer","Warlock","Wizard"], applyEffect:"control" },
+    { name:"Earthquake", level:8, school:"Evocation", castTime:"1 action", range:500, shape:"sphere", radius:100, damage:"", damageType:"bludgeoning", save:"DEX", effect:"shockwave", color:"#90caf9", healing:"", concentration:true, ritual:false, conditions:["Prone"], description:"Earth shakes violently in a 100-ft radius", classes:["Cleric","Druid","Sorcerer"], applyEffect:"control" },
+    { name:"Feeblemind", level:8, school:"Enchantment", castTime:"1 action", range:150, shape:"single", radius:0, damage:"4d6", damageType:"psychic", save:"INT", effect:"psychic", color:"#c77dff", healing:"", concentration:false, ritual:false, conditions:["Stunned"], description:"Shatter a creature's intellect and personality", classes:["Bard","Druid","Warlock","Wizard"], applyEffect:"damage" },
+    { name:"Holy Aura", level:8, school:"Abjuration", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"radiant", color:"#ffd54f", healing:"", concentration:true, ritual:false, conditions:["Blessed"], description:"Divine light protects allies within 30 ft", classes:["Cleric"], applyEffect:"buff" },
+    { name:"Incendiary Cloud", level:8, school:"Conjuration", castTime:"1 action", range:150, shape:"sphere", radius:20, damage:"10d8", damageType:"fire", save:"DEX", effect:"explosion", color:"#ff6030", healing:"", concentration:true, ritual:false, conditions:[], description:"Cloud of fire damages creatures each turn", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
+    { name:"Maze", level:8, school:"Conjuration", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"INT", effect:"conjuration", color:"#a4e89c", healing:"", concentration:true, ritual:false, conditions:["Incapacitated"], description:"Banish creature into extradimensional maze", classes:["Wizard"], applyEffect:"control" },
+    { name:"Mind Blank", level:8, school:"Abjuration", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Target is immune to psychic damage and divination", classes:["Bard","Wizard"], applyEffect:"buff" },
+    { name:"Power Word Stun", level:8, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:"#e040fb", healing:"", concentration:false, ritual:false, conditions:["Stunned"], description:"Stun a creature with 150 HP or fewer", classes:["Bard","Sorcerer","Warlock","Wizard"], applyEffect:"control" },
+    { name:"Sunburst", level:8, school:"Evocation", castTime:"1 action", range:150, shape:"sphere", radius:60, damage:"12d6", damageType:"radiant", save:"CON", effect:"radiant", color:"#ffd54f", healing:"", concentration:false, ritual:false, conditions:["Blinded"], description:"Brilliant sunlight deals radiant damage and blinds", classes:["Cleric","Druid","Sorcerer","Wizard"], applyEffect:"damage" },
+    { name:"Telepathy", level:8, school:"Evocation", castTime:"1 action", range:0, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"psychic", color:"#c77dff", healing:"", concentration:false, ritual:false, conditions:[], description:"Create telepathic link with a creature", classes:["Wizard"], applyEffect:"utility" },
+    { name:"Tsunami", level:8, school:"Conjuration", castTime:"1 minute", range:1, shape:"line", radius:0, damage:"6d10", damageType:"bludgeoning", save:"STR", effect:"shockwave", color:"#90caf9", healing:"", concentration:true, ritual:false, conditions:["Prone"], description:"300-ft wall of water crashes forward", classes:["Druid"], applyEffect:"damage" },
     { name:"Meteor Swarm", level:9, school:"Evocation", castTime:"1 action", range:1000, shape:"sphere", radius:40, damage:"40d6 fire", damageType:"fire", save:"DEX", effect:"explosion", color:"#ff6030", healing:"", concentration:false, ritual:false, conditions:[], description:"Meteors rain from sky", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
-    { name:"Power Word Kill", level:9, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:"#e040fb", healing:"", concentration:false, ritual:false, conditions:[], description:"Instantly slay target with 100 or fewer HP", classes:["Sorcerer","Wizard"], applyEffect:"control" },
+    { name:"Power Word Kill", level:9, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:"#e040fb", healing:"", concentration:false, ritual:false, conditions:["Unconscious"], description:"Instantly slay target with 100 or fewer HP", classes:["Sorcerer","Wizard"], applyEffect:"control" },
     { name:"Time Stop", level:9, school:"Transmutation", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:false, ritual:false, conditions:[], description:"Stop time for up to 3 rounds", classes:["Wizard"], applyEffect:"utility" },
     { name:"Wish", level:9, school:"Conjuration", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"conjuration", color:"#a4e89c", healing:"", concentration:false, ritual:false, conditions:[], description:"Alter reality at DM's discretion", classes:["Sorcerer","Wizard"], applyEffect:"utility" },
   ];
@@ -2842,14 +2868,14 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     return roll >= (dc - 10);
   };
 
-  const castSpell = (worldX, worldY) => {
-    if (!activeSpell) return;
-    const spell = activeSpell;
+  const castSpell = (worldX, worldY, overrideSpell) => {
+    const spell = overrideSpell || activeSpell;
+    if (!spell) return;
     const caster = selectedToken;
     const id = "spell-" + Date.now();
 
     let hitTokens = [];
-    let msg = spell.name + " cast";
+    let msgs = [];
 
     if (spell.shape === "self" || spell.shape === "touch") {
       hitTokens = caster ? [caster] : [];
@@ -2857,58 +2883,131 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
       hitTokens = findTokensInArea(worldX, worldY, spell);
     }
 
-    if (hitTokens.length > 0 && spell.applyEffect !== "utility" && spell.applyEffect !== "summon") {
-      const damageRoll = spell.damage ? parseDiceExpression(spell.damage.split(" ")[0]) : { total: 0 };
-      const healRoll = spell.healing ? parseDiceExpression(spell.healing.split(" ")[0]) : { total: 0 };
+    // Special: Power Word Kill — instant kill if HP <= 100
+    if (spell.name === "Power Word Kill" && hitTokens.length > 0) {
+      hitTokens.forEach(t => {
+        const hp = t.hp || 0;
+        if (hp <= 100 && hp > 0) {
+          updateToken(t.id, { hp: 0 });
+          const ci = combatants.findIndex(c => c.mapTokenId === t.id);
+          if (ci >= 0) setCombatants(prev => { const n = [...prev]; n[ci] = {...n[ci], hp: 0}; return n; });
+          msgs.push(t.name + " slain by Power Word Kill!");
+        } else {
+          msgs.push(t.name + " resists (HP > 100)");
+        }
+      });
+    }
+    // Special: Power Word Stun — stun if HP <= 150
+    else if (spell.name === "Power Word Stun" && hitTokens.length > 0) {
+      hitTokens.forEach(t => {
+        if ((t.hp || 0) <= 150) {
+          addTokenCondition(t.id, "Stunned");
+          msgs.push(t.name + " stunned!");
+        } else {
+          msgs.push(t.name + " resists (HP > 150)");
+        }
+      });
+    }
+    // Normal spell processing
+    else if (hitTokens.length > 0 && spell.applyEffect !== "utility" && spell.applyEffect !== "summon") {
+      let totalDamageDealt = 0;
+      let totalHealing = 0;
 
       hitTokens.forEach(t => {
-        if (spell.applyEffect === "damage" && spell.damage) {
+        // Roll damage PER TARGET (fresh roll each time)
+        if ((spell.applyEffect === "damage" || spell.damage) && spell.damage) {
+          const damageRoll = parseDiceExpression(spell.damage.split(" ")[0]);
           let dmg = damageRoll.total;
-          if (spell.save && spell.save !== "attack") {
+          let saved = false;
+
+          if (spell.save && spell.save !== "attack" && spell.save !== "") {
             if (rollSave(spellDC, spell.save)) {
               dmg = Math.floor(dmg / 2);
+              saved = true;
             }
           }
-          const newHp = Math.max(0, (t.hp || t.maxHp) - dmg);
+
+          const oldHp = t.hp != null ? t.hp : (t.maxHp || 30);
+          const newHp = Math.max(0, oldHp - dmg);
           updateToken(t.id, { hp: newHp });
-          const combatIdx = combatants.findIndex(c => c.mapTokenId === t.id);
-          if (combatIdx >= 0) {
-            setCombatants(prev => {
-              const next = [...prev];
-              next[combatIdx].hp = newHp;
-              return next;
-            });
-          }
-        } else if (spell.applyEffect === "heal" && spell.healing) {
-          const newHp = Math.min(t.maxHp, (t.hp || 0) + healRoll.total);
-          updateToken(t.id, { hp: newHp });
-          const combatIdx = combatants.findIndex(c => c.mapTokenId === t.id);
-          if (combatIdx >= 0) {
-            setCombatants(prev => {
-              const next = [...prev];
-              next[combatIdx].hp = newHp;
-              return next;
-            });
+          const ci = combatants.findIndex(c => c.mapTokenId === t.id);
+          if (ci >= 0) setCombatants(prev => { const n = [...prev]; n[ci] = {...n[ci], hp: newHp}; return n; });
+          totalDamageDealt += dmg;
+
+          // Vampiric Touch: heal caster for damage dealt
+          if (spell.name === "Vampiric Touch" && caster && caster.id !== t.id) {
+            const healAmt = Math.floor(dmg / 2);
+            const casterNewHp = Math.min(caster.maxHp, (caster.hp || 0) + healAmt);
+            updateToken(caster.id, { hp: casterNewHp });
+            const cci = combatants.findIndex(c => c.mapTokenId === caster.id);
+            if (cci >= 0) setCombatants(prev => { const n = [...prev]; n[cci] = {...n[cci], hp: casterNewHp}; return n; });
           }
         }
+
+        // Healing
+        if (spell.applyEffect === "heal" && spell.healing) {
+          const healRoll = parseDiceExpression(spell.healing.split("+")[0]);
+          // Add modifier (+mod = +3 by default)
+          const modBonus = spell.healing.includes("mod") ? 3 : 0;
+          const healTotal = healRoll.total + modBonus;
+          const oldHp = t.hp != null ? t.hp : 0;
+          const newHp = Math.min(t.maxHp || 30, oldHp + healTotal);
+          updateToken(t.id, { hp: newHp });
+          const ci = combatants.findIndex(c => c.mapTokenId === t.id);
+          if (ci >= 0) setCombatants(prev => { const n = [...prev]; n[ci] = {...n[ci], hp: newHp}; return n; });
+          totalHealing += healTotal;
+        }
+
+        // Apply conditions
         if (spell.conditions && spell.conditions.length > 0) {
-          spell.conditions.forEach(cond => addTokenCondition(t.id, cond));
+          let applyConditions = true;
+          // If spell has a save and it's a debuff/control, only apply on failed save
+          if (spell.save && spell.save !== "" && (spell.applyEffect === "control" || spell.applyEffect === "debuff")) {
+            if (rollSave(spellDC, spell.save)) {
+              applyConditions = false;
+            }
+          }
+          if (applyConditions) {
+            spell.conditions.forEach(cond => addTokenCondition(t.id, cond));
+          }
         }
       });
 
-      msg = spell.name + " hit " + hitTokens.length + " target" + (hitTokens.length !== 1 ? "s" : "");
-      if (spell.damage) msg += " for " + damageRoll.total + " " + (spell.damageType || "damage");
-      if (spell.healing) msg += " healing " + healRoll.total;
+      // Build log message
+      if (spell.damage && totalDamageDealt > 0) {
+        msgs.push(spell.name + " dealt " + totalDamageDealt + " " + (spell.damageType || "") + " to " + hitTokens.length + " target" + (hitTokens.length !== 1 ? "s" : ""));
+      }
+      if (spell.healing && totalHealing > 0) {
+        msgs.push(spell.name + " healed " + totalHealing + " HP");
+      }
+      if (!spell.damage && !spell.healing && spell.conditions && spell.conditions.length > 0) {
+        msgs.push(spell.name + " applied " + spell.conditions.join(", ") + " to " + hitTokens.length + " target" + (hitTokens.length !== 1 ? "s" : ""));
+      }
+      if (msgs.length === 0 && hitTokens.length > 0) {
+        msgs.push(spell.name + " cast on " + hitTokens.length + " target" + (hitTokens.length !== 1 ? "s" : ""));
+      }
     }
 
+    if (msgs.length === 0) {
+      msgs.push(spell.name + " cast" + (hitTokens.length === 0 && spell.shape !== "self" ? " (no targets hit)" : ""));
+    }
+
+    // Create visual effect
     setSpellEffects(prev => [...prev, { id, x: worldX, y: worldY, spell, startTime: Date.now(), casterX: caster?.x || worldX, casterY: caster?.y || worldY }]);
 
-    const logId = "log-" + Date.now();
-    setSpellLog(prev => [...prev, { id: logId, msg, time: Date.now() }]);
-    setTimeout(() => setSpellLog(prev => prev.filter(l => l.id !== logId)), 4000);
+    // Log all messages
+    msgs.forEach((msg, i) => {
+      const logId = "log-" + Date.now() + "-" + i;
+      setTimeout(() => {
+        setSpellLog(prev => [...prev, { id: logId, msg, time: Date.now() }]);
+        setTimeout(() => setSpellLog(prev => prev.filter(l => l.id !== logId)), 5000);
+      }, i * 200);
+    });
 
-    setActiveSpell(null);
-    setSpellTarget(null);
+    if (!overrideSpell) {
+      setActiveSpell(null);
+      setSpellTarget(null);
+    }
     setTimeout(() => setSpellEffects(prev => prev.filter(e => e.id !== id)), 4000);
   };
 
@@ -3010,79 +3109,198 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
       }
     }
 
-    // Terrain cells (after grid, before drawings) — texture patterns
+    // Terrain cells (after grid, before drawings) — enhanced texture with variability
     const drawTerrainTexture = (gx, gy, terrainType, gs) => {
       const x = gx * gs, y = gy * gs;
       const cx = x + gs/2, cy = y + gs/2;
+      // Deterministic seed per cell for variability
+      const seed = (gx * 7919 + gy * 104729) % 65536;
+      const srand = (n) => ((seed * 9301 + n * 49297 + 233280) % 233280) / 233280;
+
       if (terrainType === "difficult") {
-        // Cross-hatched rocks
-        ctx.strokeStyle = "rgba(180,140,40,0.35)"; ctx.lineWidth = 0.8;
-        for (let i = 0; i < gs; i += 8) { ctx.beginPath(); ctx.moveTo(x+i, y); ctx.lineTo(x, y+i); ctx.stroke(); }
-        for (let i = 0; i < gs; i += 8) { ctx.beginPath(); ctx.moveTo(x+gs-i, y+gs); ctx.lineTo(x+gs, y+gs-i); ctx.stroke(); }
-      } else if (terrainType === "water" || terrainType === "deepwater") {
-        // Wavy lines
-        const deep = terrainType === "deepwater";
-        ctx.strokeStyle = deep ? "rgba(80,140,255,0.35)" : "rgba(100,180,255,0.30)"; ctx.lineWidth = 1;
-        for (let row = 4; row < gs; row += 7) {
+        ctx.strokeStyle = "rgba(180,140,40,0.3)"; ctx.lineWidth = 0.7;
+        for (let i = 0; i < 6; i++) {
+          const rx = x + srand(i*3) * gs, ry = y + srand(i*3+1) * gs;
+          const sz = 2 + srand(i*3+2) * 4;
           ctx.beginPath();
-          for (let col = 0; col <= gs; col += 2) { ctx.lineTo(x + col, y + row + Math.sin(col * 0.3 + row) * 2); }
+          ctx.moveTo(rx - sz, ry + sz*0.3);
+          ctx.lineTo(rx - sz*0.3, ry - sz*0.6);
+          ctx.lineTo(rx + sz*0.4, ry - sz*0.5);
+          ctx.lineTo(rx + sz, ry + sz*0.2);
+          ctx.closePath(); ctx.stroke();
+        }
+        ctx.fillStyle = "rgba(160,120,30,0.12)";
+        for (let i = 0; i < 10; i++) {
+          ctx.beginPath(); ctx.arc(x + srand(i*2+20) * gs, y + srand(i*2+21) * gs, 0.5 + srand(i+30), 0, Math.PI*2); ctx.fill();
+        }
+      } else if (terrainType === "water" || terrainType === "deepwater") {
+        const deep = terrainType === "deepwater";
+        const baseAlpha = deep ? 0.35 : 0.25;
+        ctx.strokeStyle = deep ? "rgba(60,120,220," + baseAlpha + ")" : "rgba(80,170,255," + baseAlpha + ")";
+        ctx.lineWidth = deep ? 1.2 : 0.9;
+        const phase = srand(0) * Math.PI * 2;
+        for (let row = 3; row < gs; row += (deep ? 5 : 6)) {
+          ctx.beginPath();
+          const amp = 1.5 + srand(row) * 1.5;
+          const freq = 0.2 + srand(row + 1) * 0.15;
+          for (let col = 0; col <= gs; col += 1.5) {
+            ctx.lineTo(x + col, y + row + Math.sin(col * freq + phase + row * 0.4) * amp);
+          }
           ctx.stroke();
         }
+        if (deep) {
+          ctx.fillStyle = "rgba(20,60,160,0.12)";
+          for (let i = 0; i < 4; i++) {
+            ctx.beginPath(); ctx.arc(x + srand(i*2+40) * gs, y + srand(i*2+41) * gs, 1 + srand(i+50) * 2, 0, Math.PI*2); ctx.fill();
+          }
+        }
       } else if (terrainType === "lava") {
-        // Bubbling circles
-        ctx.fillStyle = "rgba(255,120,30,0.3)";
-        [0.25,0.6,0.8].forEach((px,i) => { const r = 2+i; ctx.beginPath(); ctx.arc(x+gs*px, y+gs*[0.3,0.7,0.5][i], r, 0, Math.PI*2); ctx.fill(); });
-        ctx.strokeStyle = "rgba(255,60,30,0.25)"; ctx.lineWidth = 0.6;
-        ctx.beginPath(); ctx.arc(cx, cy, gs*0.3, 0, Math.PI*2); ctx.stroke();
+        for (let i = 0; i < 5; i++) {
+          const bx = x + srand(i*3) * gs, by = y + srand(i*3+1) * gs;
+          const r = 2 + srand(i*3+2) * 3;
+          const grad = ctx.createRadialGradient(bx, by, 0, bx, by, r);
+          grad.addColorStop(0, "rgba(255,200,60,0.35)");
+          grad.addColorStop(0.5, "rgba(255,100,20,0.25)");
+          grad.addColorStop(1, "rgba(180,30,10,0.1)");
+          ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(bx, by, r, 0, Math.PI*2); ctx.fill();
+        }
+        ctx.strokeStyle = "rgba(255,80,20,0.2)"; ctx.lineWidth = 0.6;
+        for (let i = 0; i < 3; i++) {
+          const sx = x + srand(i+60) * gs, sy = y + srand(i+61) * gs;
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.quadraticCurveTo(sx + srand(i+62) * 8 - 4, sy - 4 - srand(i+63) * 4, sx + srand(i+64) * 6 - 3, sy - 8 - srand(i+65) * 4);
+          ctx.stroke();
+        }
       } else if (terrainType === "ice") {
-        // Crystalline lines
-        ctx.strokeStyle = "rgba(200,220,240,0.30)"; ctx.lineWidth = 0.6;
-        ctx.beginPath(); ctx.moveTo(x+2, cy); ctx.lineTo(x+gs-2, cy); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(cx, y+3); ctx.lineTo(cx, y+gs-3); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(x+4, y+4); ctx.lineTo(x+gs-4, y+gs-4); ctx.stroke();
+        ctx.strokeStyle = "rgba(200,225,250,0.25)"; ctx.lineWidth = 0.5;
+        const numCracks = 3 + Math.floor(srand(0) * 3);
+        for (let i = 0; i < numCracks; i++) {
+          const sx = x + srand(i*4) * gs, sy = y + srand(i*4+1) * gs;
+          ctx.beginPath(); ctx.moveTo(sx, sy);
+          let px = sx, py = sy;
+          for (let j = 0; j < 3; j++) {
+            px += (srand(i*4+j+10) - 0.5) * gs * 0.4;
+            py += (srand(i*4+j+20) - 0.5) * gs * 0.4;
+            ctx.lineTo(px, py);
+          }
+          ctx.stroke();
+        }
+        ctx.fillStyle = "rgba(220,240,255,0.08)";
+        ctx.fillRect(x, y, gs, gs);
+        ctx.fillStyle = "rgba(255,255,255,0.15)";
+        ctx.beginPath(); ctx.arc(cx + srand(70) * gs * 0.3, cy + srand(71) * gs * 0.3, gs * 0.1, 0, Math.PI*2); ctx.fill();
       } else if (terrainType === "pit") {
-        // Dark inward spiral
-        ctx.strokeStyle = "rgba(255,255,255,0.12)"; ctx.lineWidth = 0.8;
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, gs * 0.45);
+        grad.addColorStop(0, "rgba(0,0,0,0.3)");
+        grad.addColorStop(0.7, "rgba(0,0,0,0.1)");
+        grad.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.fillStyle = grad; ctx.fillRect(x, y, gs, gs);
+        ctx.strokeStyle = "rgba(255,255,255,0.08)"; ctx.lineWidth = 0.6;
         ctx.beginPath();
-        for (let a = 0; a < Math.PI*4; a += 0.2) { const r = gs*0.05 + a*gs*0.06; ctx.lineTo(cx+Math.cos(a)*r, cy+Math.sin(a)*r); }
+        for (let a = 0; a < Math.PI * 3; a += 0.15) {
+          const r = gs * 0.05 + a * gs * 0.045;
+          ctx.lineTo(cx + Math.cos(a + srand(0)) * r, cy + Math.sin(a + srand(0)) * r);
+        }
         ctx.stroke();
       } else if (terrainType === "mud") {
-        // Stippled dots
-        ctx.fillStyle = "rgba(90,60,30,0.35)";
-        for (let i = 0; i < 8; i++) { const dx = (i*17+3)%gs, dy = (i*13+7)%gs; ctx.beginPath(); ctx.arc(x+dx, y+dy, 1.5, 0, Math.PI*2); ctx.fill(); }
+        ctx.fillStyle = "rgba(80,55,25,0.2)";
+        for (let i = 0; i < 12; i++) {
+          const bx = x + srand(i*2) * gs, by = y + srand(i*2+1) * gs;
+          const r = 1 + srand(i+30) * 2.5;
+          ctx.beginPath(); ctx.arc(bx, by, r, 0, Math.PI*2); ctx.fill();
+        }
+        ctx.strokeStyle = "rgba(100,70,30,0.15)"; ctx.lineWidth = 0.5;
+        for (let i = 0; i < 3; i++) {
+          const sx = x + srand(i+40) * gs * 0.8 + gs * 0.1;
+          ctx.beginPath();
+          ctx.moveTo(sx, y + gs * 0.2 + srand(i+50) * gs * 0.6);
+          ctx.quadraticCurveTo(sx + srand(i+51) * 10, y + gs * 0.5, sx + srand(i+52) * 8, y + gs * 0.7 + srand(i+53) * gs * 0.2);
+          ctx.stroke();
+        }
       } else if (terrainType === "vegetation") {
-        // Little plant strokes
-        ctx.strokeStyle = "rgba(40,160,60,0.4)"; ctx.lineWidth = 1.2;
-        [[0.2,0.3],[0.5,0.6],[0.8,0.4],[0.4,0.8]].forEach(([px,py]) => {
-          const bx = x+gs*px, by = y+gs*py;
-          ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx-3, by-5); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx+3, by-4); ctx.stroke();
-        });
+        const numPlants = 4 + Math.floor(srand(0) * 4);
+        for (let i = 0; i < numPlants; i++) {
+          const bx = x + srand(i*5) * gs * 0.8 + gs * 0.1;
+          const by = y + srand(i*5+1) * gs * 0.8 + gs * 0.1;
+          const height = 4 + srand(i*5+2) * 6;
+          ctx.strokeStyle = "rgba(30,100,40,0.4)"; ctx.lineWidth = 1 + srand(i*5+4) * 0.5;
+          ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx, by - height); ctx.stroke();
+          const leaves = 2 + Math.floor(srand(i*5+3) * 3);
+          for (let l = 0; l < leaves; l++) {
+            const ly = by - height * (0.3 + l * 0.25);
+            const dir = (l % 2 === 0) ? 1 : -1;
+            const lLen = 2 + srand(i*5+l+10) * 3;
+            ctx.strokeStyle = "rgba(40,140,50,0.35)"; ctx.lineWidth = 0.8;
+            ctx.beginPath(); ctx.moveTo(bx, ly);
+            ctx.quadraticCurveTo(bx + dir * lLen, ly - 1, bx + dir * lLen * 1.2, ly + 1);
+            ctx.stroke();
+          }
+        }
       } else if (terrainType === "rubble") {
-        // Small angular shapes
-        ctx.strokeStyle = "rgba(160,150,130,0.35)"; ctx.lineWidth = 0.7;
-        [[0.2,0.2,5],[0.6,0.3,4],[0.4,0.7,6],[0.8,0.6,3]].forEach(([px,py,s]) => {
-          ctx.beginPath(); ctx.rect(x+gs*px-s/2, y+gs*py-s/2, s, s*0.7); ctx.stroke();
-        });
+        for (let i = 0; i < 7; i++) {
+          const rx = x + srand(i*4) * gs * 0.85 + gs * 0.075;
+          const ry = y + srand(i*4+1) * gs * 0.85 + gs * 0.075;
+          const sz = 2 + srand(i*4+2) * 4;
+          const angle = srand(i*4+3) * Math.PI;
+          ctx.save(); ctx.translate(rx, ry); ctx.rotate(angle);
+          ctx.fillStyle = "rgba(130,120,105,0.2)";
+          ctx.strokeStyle = "rgba(160,150,130,0.25)"; ctx.lineWidth = 0.6;
+          ctx.beginPath();
+          ctx.moveTo(-sz*0.5, sz*0.3);
+          ctx.lineTo(-sz*0.3, -sz*0.4);
+          ctx.lineTo(sz*0.4, -sz*0.3);
+          ctx.lineTo(sz*0.5, sz*0.2);
+          ctx.closePath();
+          ctx.fill(); ctx.stroke();
+          ctx.restore();
+        }
       } else if (terrainType === "magic") {
-        // Sparkle pattern
-        ctx.strokeStyle = "rgba(180,120,255,0.35)"; ctx.lineWidth = 0.8;
-        [[cx,cy,5],[x+gs*0.25,y+gs*0.3,3],[x+gs*0.75,y+gs*0.7,3]].forEach(([sx,sy,r]) => {
-          ctx.beginPath(); ctx.moveTo(sx,sy-r); ctx.lineTo(sx,sy+r); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(sx-r,sy); ctx.lineTo(sx+r,sy); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(sx-r*0.6,sy-r*0.6); ctx.lineTo(sx+r*0.6,sy+r*0.6); ctx.stroke();
-        });
+        const numStars = 3 + Math.floor(srand(0) * 3);
+        for (let i = 0; i < numStars; i++) {
+          const sx = x + srand(i*3) * gs * 0.8 + gs * 0.1;
+          const sy = y + srand(i*3+1) * gs * 0.8 + gs * 0.1;
+          const r = 2 + srand(i*3+2) * 3;
+          ctx.strokeStyle = "rgba(180,120,255,0.35)"; ctx.lineWidth = 0.7;
+          for (let ray = 0; ray < 4; ray++) {
+            const a = ray * Math.PI / 4 + srand(i+30) * 0.5;
+            ctx.beginPath(); ctx.moveTo(sx + Math.cos(a) * r * 0.3, sy + Math.sin(a) * r * 0.3);
+            ctx.lineTo(sx + Math.cos(a) * r, sy + Math.sin(a) * r); ctx.stroke();
+          }
+        }
+        ctx.fillStyle = "rgba(160,80,240,0.06)"; ctx.fillRect(x, y, gs, gs);
+        const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, gs * 0.4);
+        grad.addColorStop(0, "rgba(180,120,255,0.1)"); grad.addColorStop(1, "rgba(180,120,255,0)");
+        ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(cx, cy, gs * 0.4, 0, Math.PI*2); ctx.fill();
       } else if (terrainType === "fire") {
-        // Flame wisps
-        ctx.strokeStyle = "rgba(255,160,40,0.4)"; ctx.lineWidth = 1;
-        [[0.3,0.7],[0.5,0.5],[0.7,0.8]].forEach(([px,py]) => {
-          const bx = x+gs*px, by = y+gs*py;
-          ctx.beginPath(); ctx.moveTo(bx, by); ctx.quadraticCurveTo(bx-2, by-gs*0.25, bx+1, by-gs*0.35); ctx.stroke();
-        });
+        const numFlames = 3 + Math.floor(srand(0) * 3);
+        for (let i = 0; i < numFlames; i++) {
+          const fx = x + srand(i*4) * gs * 0.7 + gs * 0.15;
+          const fy = y + gs * (0.5 + srand(i*4+1) * 0.4);
+          const h = 5 + srand(i*4+2) * 8;
+          const w = 2 + srand(i*4+3) * 2;
+          ctx.fillStyle = "rgba(255,140,30,0.25)";
+          ctx.beginPath();
+          ctx.moveTo(fx - w, fy);
+          ctx.quadraticCurveTo(fx - w * 0.5, fy - h * 0.6, fx, fy - h);
+          ctx.quadraticCurveTo(fx + w * 0.5, fy - h * 0.6, fx + w, fy);
+          ctx.closePath(); ctx.fill();
+          ctx.fillStyle = "rgba(255,220,60,0.15)";
+          ctx.beginPath();
+          ctx.moveTo(fx - w * 0.5, fy);
+          ctx.quadraticCurveTo(fx, fy - h * 0.5, fx + w * 0.5, fy);
+          ctx.closePath(); ctx.fill();
+        }
       } else if (terrainType === "darkness") {
-        // Subtle concentric rings
-        ctx.strokeStyle = "rgba(255,255,255,0.06)"; ctx.lineWidth = 0.5;
-        [0.15,0.3].forEach(r => { ctx.beginPath(); ctx.arc(cx,cy,gs*r,0,Math.PI*2); ctx.stroke(); });
+        const grad = ctx.createRadialGradient(cx + srand(0) * 4 - 2, cy + srand(1) * 4 - 2, gs * 0.05, cx, cy, gs * 0.5);
+        grad.addColorStop(0, "rgba(0,0,0,0.2)");
+        grad.addColorStop(0.5, "rgba(5,0,15,0.1)");
+        grad.addColorStop(1, "rgba(10,5,20,0)");
+        ctx.fillStyle = grad; ctx.fillRect(x, y, gs, gs);
+        ctx.fillStyle = "rgba(60,20,80,0.08)";
+        for (let i = 0; i < 5; i++) {
+          ctx.beginPath(); ctx.arc(x + srand(i+10) * gs, y + srand(i+11) * gs, 1 + srand(i+12), 0, Math.PI*2); ctx.fill();
+        }
       }
     };
 
@@ -3100,7 +3318,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
       drawTerrainTexture(gx, gy, terrainType, gridSize);
     });
 
-    // Drawings (finalized)
+    // Drawings (finalized) — smooth quadratic curves
     drawings.forEach(d => {
       if (d.points.length < 2) return;
       ctx.strokeStyle = d.color;
@@ -3109,11 +3327,21 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
       ctx.lineJoin = "round";
       ctx.beginPath();
       ctx.moveTo(d.points[0].x, d.points[0].y);
-      d.points.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+      if (d.points.length === 2) {
+        ctx.lineTo(d.points[1].x, d.points[1].y);
+      } else {
+        for (let i = 1; i < d.points.length - 1; i++) {
+          const mx = (d.points[i].x + d.points[i+1].x) / 2;
+          const my = (d.points[i].y + d.points[i+1].y) / 2;
+          ctx.quadraticCurveTo(d.points[i].x, d.points[i].y, mx, my);
+        }
+        const last = d.points[d.points.length - 1];
+        ctx.lineTo(last.x, last.y);
+      }
       ctx.stroke();
     });
 
-    // In-progress drawing preview (real-time)
+    // In-progress drawing preview (real-time) — smooth quadratic curves
     if (drawPoints.length > 1) {
       ctx.strokeStyle = drawColor;
       ctx.lineWidth = drawWidth;
@@ -3122,7 +3350,17 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
       ctx.globalAlpha = 0.7;
       ctx.beginPath();
       ctx.moveTo(drawPoints[0].x, drawPoints[0].y);
-      drawPoints.slice(1).forEach(p => ctx.lineTo(p.x, p.y));
+      if (drawPoints.length === 2) {
+        ctx.lineTo(drawPoints[1].x, drawPoints[1].y);
+      } else {
+        for (let i = 1; i < drawPoints.length - 1; i++) {
+          const mx = (drawPoints[i].x + drawPoints[i+1].x) / 2;
+          const my = (drawPoints[i].y + drawPoints[i+1].y) / 2;
+          ctx.quadraticCurveTo(drawPoints[i].x, drawPoints[i].y, mx, my);
+        }
+        const last = drawPoints[drawPoints.length - 1];
+        ctx.lineTo(last.x, last.y);
+      }
       ctx.stroke();
       ctx.globalAlpha = 1.0;
     }
@@ -3611,472 +3849,768 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
       }
     }
 
-    // ── Spell cast effects (world space) ──
+    // ── Spell cast effects (world space) — ENHANCED ──
     const nowSpell = Date.now();
+    const easeOut = t => 1 - Math.pow(1 - t, 3);
+    const easeIn = t => t * t;
+    const easeInOut = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+
     spellEffects.forEach(se => {
-      const age = (nowSpell - se.startTime) / 4000; // 0 to 1 over 4s
+      const age = Math.min(1, (nowSpell - se.startTime) / 3500);
       if (age > 1) return;
-      const alpha = Math.max(0, 1 - age * age); // Ease out
+      const alpha = 1 - easeIn(age);
       const s = se.spell;
-      const radiusPx = Math.max((s.radius / 5) * gridSize, gridSize * 0.5);
+      const radiusPx = Math.max((s.radius / 5) * gridSize, gridSize * 0.6);
+
+      ctx.save();
 
       if (s.effect === "explosion") {
-        // Multiple expanding rings, particles, ground scorch
-        for (let ring = 0; ring < 3; ring++) {
-          const delay = ring * 0.15;
-          const ringAge = Math.max(0, age - delay);
-          if (ringAge <= 0) continue;
-          const ringAlpha = Math.max(0, 1 - ringAge);
-          const ringR = radiusPx * ringAge * 1.2;
-          ctx.beginPath();
-          ctx.arc(se.x, se.y, ringR, 0, Math.PI * 2);
-          ctx.strokeStyle = s.color + Math.round(ringAlpha * 120).toString(16).padStart(2,"0");
-          ctx.lineWidth = 3;
-          ctx.stroke();
-        }
-        // Main glow
-        const expR = radiusPx * (0.3 + age * 0.9);
-        const grad = ctx.createRadialGradient(se.x, se.y, 0, se.x, se.y, expR);
-        grad.addColorStop(0, s.color + Math.round(alpha * 180).toString(16).padStart(2,"0"));
-        grad.addColorStop(0.5, s.color + Math.round(alpha * 80).toString(16).padStart(2,"0"));
-        grad.addColorStop(1, s.color + "00");
-        ctx.beginPath();
-        ctx.arc(se.x, se.y, expR, 0, Math.PI * 2);
-        ctx.fillStyle = grad;
+        // FIREBALL / BURNING HANDS — massive multi-layered explosion
+        const phase1 = Math.min(1, age * 3); // fast expand 0-0.33
+        const phase2 = Math.min(1, Math.max(0, (age - 0.1) * 2)); // glow 0.1-0.6
+        const phase3 = Math.min(1, Math.max(0, (age - 0.3) * 1.5)); // fade 0.3-1.0
+        const expR = radiusPx * easeOut(phase1);
+
+        // Ground scorch (stays longest)
+        ctx.beginPath(); ctx.arc(se.x, se.y, expR * 0.9, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(40,10,0," + (0.3 * (1 - age)) + ")";
         ctx.fill();
-        // Particles radiating outward
-        for (let sp = 0; sp < 30; sp++) {
-          const a = (sp / 30) * Math.PI * 2 + age * Math.PI;
-          const dist = age * radiusPx * 1.5;
-          const px = se.x + Math.cos(a) * dist;
-          const py = se.y + Math.sin(a) * dist;
-          const particleAlpha = Math.max(0, 1 - age);
-          ctx.beginPath();
-          ctx.arc(px, py, 2 + age * 2, 0, Math.PI * 2);
-          ctx.fillStyle = s.color + Math.round(particleAlpha * 200).toString(16).padStart(2,"0");
+
+        // Core flash (brief white)
+        if (age < 0.15) {
+          const flashAlpha = (1 - age / 0.15) * 0.6;
+          ctx.beginPath(); ctx.arc(se.x, se.y, expR * 0.4, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255,255,240," + flashAlpha + ")";
           ctx.fill();
         }
-        // Ground scorch mark
-        if (age > 0.3) {
-          const scorchAlpha = Math.max(0, (age - 0.3) * 0.8);
-          ctx.beginPath();
-          ctx.arc(se.x, se.y, radiusPx * 0.9, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(40,20,0," + (scorchAlpha * 0.4) + ")";
+
+        // Main fireball gradient
+        const grad = ctx.createRadialGradient(se.x, se.y, 0, se.x, se.y, expR);
+        grad.addColorStop(0, "rgba(255,240,180," + (alpha * 0.7 * (1 - phase3 * 0.5)) + ")");
+        grad.addColorStop(0.25, "rgba(255,140,40," + (alpha * 0.6) + ")");
+        grad.addColorStop(0.5, "rgba(255,60,20," + (alpha * 0.5) + ")");
+        grad.addColorStop(0.8, "rgba(180,20,0," + (alpha * 0.3) + ")");
+        grad.addColorStop(1, "rgba(60,0,0,0)");
+        ctx.beginPath(); ctx.arc(se.x, se.y, expR, 0, Math.PI * 2);
+        ctx.fillStyle = grad; ctx.fill();
+
+        // Expanding rings
+        for (let ring = 0; ring < 3; ring++) {
+          const ringAge = Math.max(0, age - ring * 0.08);
+          const ringR = expR * (0.6 + ring * 0.2) * easeOut(Math.min(1, ringAge * 2.5));
+          const ringAlpha = alpha * (0.4 - ring * 0.1);
+          if (ringAlpha > 0) {
+            ctx.beginPath(); ctx.arc(se.x, se.y, ringR, 0, Math.PI * 2);
+            ctx.strokeStyle = "rgba(255," + (180 - ring * 40) + ",30," + ringAlpha + ")";
+            ctx.lineWidth = 2 - ring * 0.5; ctx.stroke();
+          }
+        }
+
+        // Spark particles flying outward
+        for (let sp = 0; sp < 35; sp++) {
+          const spAngle = (sp / 35) * Math.PI * 2 + sp * 0.7;
+          const spSpeed = 0.4 + (sp % 7) * 0.12;
+          const spDist = expR * spSpeed * easeOut(Math.min(1, age * 2));
+          const spLife = 1 - Math.min(1, age * (1.5 + (sp % 3) * 0.3));
+          if (spLife <= 0) continue;
+          const sx = se.x + Math.cos(spAngle) * spDist + Math.sin(sp * 3.7) * 3;
+          const sy = se.y + Math.sin(spAngle) * spDist + Math.cos(sp * 2.3) * 3;
+          const spR = (1.5 + (sp % 4) * 0.5) * spLife;
+          ctx.beginPath(); ctx.arc(sx, sy, spR, 0, Math.PI * 2);
+          ctx.fillStyle = sp % 3 === 0 ? "rgba(255,220,100," + (spLife * 0.8) + ")" : "rgba(255,120,30," + (spLife * 0.7) + ")";
           ctx.fill();
         }
+
+        // Rising embers (after main blast)
+        if (age > 0.2) {
+          const emberAge = (age - 0.2) / 0.8;
+          for (let e = 0; e < 15; e++) {
+            const ex = se.x + (((e * 17 + 3) % 40) - 20) * (expR / 40);
+            const ey = se.y - emberAge * radiusPx * (0.5 + (e % 5) * 0.2) + Math.sin(e * 2.1 + age * 8) * 3;
+            const eAlpha = Math.max(0, 1 - emberAge * 1.3) * 0.7;
+            ctx.beginPath(); ctx.arc(ex, ey, 1 + (e % 3) * 0.4, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(255," + (180 + (e % 4) * 20) + ",60," + eAlpha + ")";
+            ctx.fill();
+          }
+        }
+
       } else if (s.effect === "bolt") {
-        // Forked lightning, bright white core, afterimage
+        // LIGHTNING BOLT / ELDRITCH BLAST — forked lightning with bright core
+        const boltAlpha = alpha;
         const dx = se.x - se.casterX, dy = se.y - se.casterY;
-        const dist = Math.hypot(dx, dy);
-        const steps = Math.max(8, Math.floor(dist / 12));
-        // Multiple branches
-        for (let branch = 0; branch < 3; branch++) {
-          ctx.strokeStyle = s.color;
-          ctx.lineWidth = (3 - branch) * alpha;
-          ctx.globalAlpha = alpha * (0.8 - branch * 0.2);
+        const dist = Math.hypot(dx, dy) || 1;
+        const nx = dx / dist, ny = dy / dist;
+        const progress = easeOut(Math.min(1, age * 4));
+        const actualDist = dist * progress;
+
+        // Glow behind bolt
+        ctx.shadowColor = s.color; ctx.shadowBlur = 15 * boltAlpha;
+
+        // Main bolt (white core)
+        const drawBranch = (startX, startY, endX, endY, width, jitter, branchAlpha) => {
+          const bdx = endX - startX, bdy = endY - startY;
+          const bDist = Math.hypot(bdx, bdy);
+          const steps = Math.max(8, Math.floor(bDist / 10));
           ctx.beginPath();
-          ctx.moveTo(se.casterX, se.casterY);
+          ctx.moveTo(startX, startY);
           for (let i = 1; i <= steps; i++) {
             const t = i / steps;
-            const jitter = (i < steps && branch > 0) ? (Math.random() - 0.5) * (10 + branch * 4) : 0;
-            ctx.lineTo(se.casterX + dx * t + jitter * (-dy/dist), se.casterY + dy * t + jitter * (dx/dist));
+            const j = (i < steps) ? ((((i * 7919 + Math.floor(se.startTime)) % 100) / 100) - 0.5) * jitter : 0;
+            ctx.lineTo(startX + bdx * t + j * (-bdy/bDist), startY + bdy * t + j * (bdx/bDist));
           }
-          ctx.stroke();
+          // White core
+          ctx.strokeStyle = "rgba(255,255,255," + (branchAlpha * 0.9) + ")";
+          ctx.lineWidth = width; ctx.stroke();
+          // Colored glow
+          ctx.strokeStyle = s.color + Math.round(branchAlpha * 180).toString(16).padStart(2, "0");
+          ctx.lineWidth = width * 3; ctx.stroke();
+        };
+
+        const endX = se.casterX + dx * progress;
+        const endY = se.casterY + dy * progress;
+
+        // Main bolt
+        drawBranch(se.casterX, se.casterY, endX, endY, 2 * boltAlpha, 16, boltAlpha);
+
+        // Side branches
+        for (let b = 0; b < 5; b++) {
+          const branchT = 0.2 + (b * 0.15);
+          if (branchT > progress) continue;
+          const bx = se.casterX + dx * branchT;
+          const by = se.casterY + dy * branchT;
+          const bAngle = ((b % 2 === 0 ? 1 : -1) * (0.3 + (((b * 3571) % 100) / 100) * 0.5));
+          const bLen = 15 + (b % 3) * 10;
+          const bEndX = bx + Math.cos(Math.atan2(dy, dx) + bAngle) * bLen;
+          const bEndY = by + Math.sin(Math.atan2(dy, dx) + bAngle) * bLen;
+          drawBranch(bx, by, bEndX, bEndY, 1 * boltAlpha, 8, boltAlpha * 0.5);
         }
-        // Bright white core
-        ctx.strokeStyle = "rgba(255,255,255," + (alpha * 0.9) + ")";
-        ctx.lineWidth = 1.5;
-        ctx.globalAlpha = 1;
-        ctx.beginPath();
-        ctx.moveTo(se.casterX, se.casterY);
-        for (let i = 1; i <= steps; i++) {
-          const t = i / steps;
-          ctx.lineTo(se.casterX + dx * t, se.casterY + dy * t);
+
+        // Impact flash at target
+        if (progress >= 0.95) {
+          const impactAlpha = (1 - (age - 0.25) * 2) * 0.8;
+          if (impactAlpha > 0) {
+            const impGrad = ctx.createRadialGradient(se.x, se.y, 0, se.x, se.y, gridSize * 0.6);
+            impGrad.addColorStop(0, "rgba(255,255,255," + impactAlpha * 0.6 + ")");
+            impGrad.addColorStop(0.3, s.color + Math.round(impactAlpha * 120).toString(16).padStart(2, "0"));
+            impGrad.addColorStop(1, s.color + "00");
+            ctx.beginPath(); ctx.arc(se.x, se.y, gridSize * 0.6, 0, Math.PI * 2);
+            ctx.fillStyle = impGrad; ctx.fill();
+
+            // Impact sparks
+            for (let sp = 0; sp < 12; sp++) {
+              const sa = (sp / 12) * Math.PI * 2;
+              const sd = gridSize * 0.3 * (age - 0.2) * 3;
+              ctx.beginPath(); ctx.arc(se.x + Math.cos(sa) * sd, se.y + Math.sin(sa) * sd, 1.5 * impactAlpha, 0, Math.PI * 2);
+              ctx.fillStyle = "rgba(255,255,255," + impactAlpha * 0.7 + ")";
+              ctx.fill();
+            }
+          }
         }
-        ctx.stroke();
-        // Impact spark ring
-        for (let spark = 0; spark < 20; spark++) {
-          const a = (spark / 20) * Math.PI * 2;
-          const sr = gridSize * 0.3 * alpha;
-          ctx.beginPath();
-          ctx.arc(se.x + Math.cos(a) * sr, se.y + Math.sin(a) * sr, 1.5 * alpha, 0, Math.PI * 2);
-          ctx.fillStyle = s.color + Math.round(alpha * 150).toString(16).padStart(2,"0");
-          ctx.fill();
-        }
+
+        ctx.shadowBlur = 0;
+
       } else if (s.effect === "heal") {
-        // Spiraling golden particles, pulsing glow, plus signs
-        for (let sp = 0; sp < 20; sp++) {
-          const angle = (sp / 20) * Math.PI * 2 + age * 8;
-          const radius = gridSize * (0.3 + age * 0.5);
-          const px = se.x + Math.cos(angle) * radius;
-          const py = se.y + Math.sin(angle) * radius - age * gridSize * 1.5;
-          ctx.beginPath();
-          ctx.arc(px, py, 2.5 * alpha, 0, Math.PI * 2);
-          ctx.fillStyle = s.color + Math.round(alpha * 200).toString(16).padStart(2,"0");
+        // HEALING WORD / CURE WOUNDS — golden/green spiraling particles with plus signs
+        const healGlow = easeOut(Math.min(1, age * 2)) * (1 - easeIn(Math.max(0, age - 0.5) * 2));
+
+        // Soft base glow
+        const glowR = gridSize * 0.7 * (0.8 + Math.sin(age * 12) * 0.1);
+        const glowGrad = ctx.createRadialGradient(se.x, se.y, 0, se.x, se.y, glowR);
+        glowGrad.addColorStop(0, s.color + Math.round(healGlow * 60).toString(16).padStart(2, "0"));
+        glowGrad.addColorStop(0.5, s.color + Math.round(healGlow * 25).toString(16).padStart(2, "0"));
+        glowGrad.addColorStop(1, s.color + "00");
+        ctx.beginPath(); ctx.arc(se.x, se.y, glowR, 0, Math.PI * 2);
+        ctx.fillStyle = glowGrad; ctx.fill();
+
+        // Spiraling particles
+        for (let p = 0; p < 25; p++) {
+          const pAge = (age + p * 0.04) % 1;
+          const pAngle = p * 0.8 + pAge * Math.PI * 3;
+          const pDist = gridSize * 0.15 + gridSize * 0.4 * (1 - pAge);
+          const pRise = pAge * gridSize * 1.5;
+          const pAlpha = Math.sin(pAge * Math.PI) * alpha * 0.8;
+          if (pAlpha <= 0) continue;
+          const px = se.x + Math.cos(pAngle) * pDist;
+          const py = se.y - pRise + Math.sin(pAngle * 2) * 3;
+          const pSize = (1.5 + (p % 3)) * (1 - pAge * 0.5);
+          ctx.beginPath(); ctx.arc(px, py, pSize, 0, Math.PI * 2);
+          ctx.fillStyle = p % 4 === 0 ? "rgba(255,255,220," + pAlpha + ")" : s.color + Math.round(pAlpha * 200).toString(16).padStart(2, "0");
           ctx.fill();
         }
-        // Pulsing glow
-        const glow = gridSize * (0.4 + Math.sin(age * 12) * 0.2);
-        const grad = ctx.createRadialGradient(se.x, se.y, 0, se.x, se.y, glow);
-        grad.addColorStop(0, s.color + Math.round(alpha * 100).toString(16).padStart(2,"0"));
-        grad.addColorStop(1, s.color + "00");
-        ctx.beginPath();
-        ctx.arc(se.x, se.y, glow, 0, Math.PI * 2);
-        ctx.fillStyle = grad;
-        ctx.fill();
-        // Plus signs
-        ctx.strokeStyle = s.color + Math.round(alpha * 150).toString(16).padStart(2,"0");
-        ctx.lineWidth = 2;
-        for (let ps = 0; ps < 5; ps++) {
-          const ox = (Math.random() - 0.5) * gridSize;
-          const oy = (Math.random() - 0.5) * gridSize - age * gridSize * 0.5;
-          const sz = 4;
-          ctx.beginPath();
-          ctx.moveTo(se.x + ox - sz, se.y + oy);
-          ctx.lineTo(se.x + ox + sz, se.y + oy);
-          ctx.moveTo(se.x + ox, se.y + oy - sz);
-          ctx.lineTo(se.x + ox, se.y + oy + sz);
-          ctx.stroke();
+
+        // Rising plus signs
+        for (let i = 0; i < 5; i++) {
+          const plusAge = (age + i * 0.15) % 1;
+          const plusAlpha = Math.sin(plusAge * Math.PI) * alpha * 0.5;
+          if (plusAlpha <= 0) continue;
+          const px = se.x + ((i * 13 - 26) % 30);
+          const py = se.y - plusAge * gridSize * 1.2;
+          const sz = 3 + i;
+          ctx.strokeStyle = s.color + Math.round(plusAlpha * 200).toString(16).padStart(2, "0");
+          ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.moveTo(px - sz, py); ctx.lineTo(px + sz, py); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(px, py - sz); ctx.lineTo(px, py + sz); ctx.stroke();
         }
+
       } else if (s.effect === "radiant") {
-        // Beam from above, star-burst rays, golden motes
-        // Descending beam
-        const beamWidth = gridSize * 0.4;
-        const grad = ctx.createLinearGradient(se.x - beamWidth, se.y - radiusPx, se.x + beamWidth, se.y);
-        grad.addColorStop(0, s.color + "00");
-        grad.addColorStop(0.5, s.color + Math.round(alpha * 180).toString(16).padStart(2,"0"));
-        grad.addColorStop(1, s.color + "00");
-        ctx.fillStyle = grad;
-        ctx.fillRect(se.x - beamWidth, se.y - radiusPx * 0.5, beamWidth * 2, radiusPx * 0.5);
-        // Star-burst rays
-        for (let ray = 0; ray < 16; ray++) {
-          const a = (ray / 16) * Math.PI * 2 + age * 2;
-          const rl = gridSize * (0.4 + age * 0.8);
-          ctx.strokeStyle = s.color + Math.round(alpha * 160).toString(16).padStart(2,"0");
-          ctx.lineWidth = 2;
+        // SACRED FLAME / GUIDING BOLT — beam from above + starburst
+        const beamAlpha = alpha * (age < 0.2 ? age / 0.2 : 1);
+
+        // Beam of light from above
+        if (age < 0.6) {
+          const beamW = gridSize * 0.3;
+          const beamFade = age < 0.1 ? age / 0.1 : (1 - (age - 0.1) / 0.5);
+          ctx.fillStyle = "rgba(255,240,180," + (beamFade * 0.3) + ")";
           ctx.beginPath();
-          ctx.moveTo(se.x, se.y);
-          ctx.lineTo(se.x + Math.cos(a) * rl, se.y + Math.sin(a) * rl);
-          ctx.stroke();
+          ctx.moveTo(se.x - beamW * 2, se.y - gridSize * 6);
+          ctx.lineTo(se.x + beamW * 2, se.y - gridSize * 6);
+          ctx.lineTo(se.x + beamW * 0.5, se.y);
+          ctx.lineTo(se.x - beamW * 0.5, se.y);
+          ctx.closePath(); ctx.fill();
         }
-        // Golden motes orbiting
-        for (let mote = 0; mote < 12; mote++) {
-          const a = (mote / 12) * Math.PI * 2 + age * 6;
-          const mr = gridSize * 0.5;
-          ctx.beginPath();
-          ctx.arc(se.x + Math.cos(a) * mr, se.y + Math.sin(a) * mr, 1.5, 0, Math.PI * 2);
-          ctx.fillStyle = s.color + Math.round(alpha * 180).toString(16).padStart(2,"0");
-          ctx.fill();
+
+        // Central starburst
+        const burstR = gridSize * 0.5 * easeOut(Math.min(1, age * 3));
+        ctx.shadowColor = s.color; ctx.shadowBlur = 10 * beamAlpha;
+        for (let ray = 0; ray < 12; ray++) {
+          const rayAngle = (ray / 12) * Math.PI * 2 + age * 2;
+          const rayLen = burstR * (0.6 + ((ray * 17) % 10) / 10 * 0.4);
+          const rayW = ray % 2 === 0 ? 1.5 : 0.8;
+          ctx.beginPath(); ctx.moveTo(se.x, se.y);
+          ctx.lineTo(se.x + Math.cos(rayAngle) * rayLen, se.y + Math.sin(rayAngle) * rayLen);
+          ctx.strokeStyle = ray % 3 === 0 ? "rgba(255,255,255," + beamAlpha * 0.8 + ")" : s.color + Math.round(beamAlpha * 180).toString(16).padStart(2, "0");
+          ctx.lineWidth = rayW * beamAlpha; ctx.stroke();
         }
-        // Center bright flash
-        ctx.beginPath();
-        ctx.arc(se.x, se.y, gridSize * 0.3 * Math.max(0, 1 - age), 0, Math.PI * 2);
-        ctx.fillStyle = s.color + Math.round(alpha * 200).toString(16).padStart(2,"0");
-        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // Central glow
+        const cGrad = ctx.createRadialGradient(se.x, se.y, 0, se.x, se.y, burstR * 0.5);
+        cGrad.addColorStop(0, "rgba(255,255,240," + beamAlpha * 0.7 + ")");
+        cGrad.addColorStop(1, s.color + "00");
+        ctx.beginPath(); ctx.arc(se.x, se.y, burstR * 0.5, 0, Math.PI * 2);
+        ctx.fillStyle = cGrad; ctx.fill();
+
+        // Floating golden motes
+        for (let m = 0; m < 15; m++) {
+          const mAngle = m * 0.9 + age * 4;
+          const mDist = gridSize * (0.2 + 0.4 * ((age + m * 0.07) % 1));
+          const mAlpha = alpha * 0.5 * Math.sin(((age + m * 0.1) % 1) * Math.PI);
+          ctx.beginPath(); ctx.arc(se.x + Math.cos(mAngle) * mDist, se.y + Math.sin(mAngle) * mDist - age * 10, 1.5, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255,215,80," + mAlpha + ")"; ctx.fill();
+        }
+
       } else if (s.effect === "shockwave") {
-        // Multiple expanding rings with decreasing opacity
-        for (let ring = 0; ring < 5; ring++) {
-          const delay = ring * 0.1;
-          const ringAge = Math.max(0, age - delay);
-          if (ringAge <= 0) continue;
-          const ringAlpha = Math.max(0, 1 - ringAge);
-          const ringR = radiusPx * ringAge;
-          ctx.beginPath();
-          ctx.arc(se.x, se.y, ringR, 0, Math.PI * 2);
-          ctx.strokeStyle = s.color + Math.round(ringAlpha * 180).toString(16).padStart(2,"0");
-          ctx.lineWidth = 3;
-          ctx.stroke();
-          // Inner ring
-          ctx.beginPath();
-          ctx.arc(se.x, se.y, ringR * 0.7, 0, Math.PI * 2);
-          ctx.strokeStyle = "rgba(255,255,255," + (ringAlpha * 0.4) + ")";
-          ctx.lineWidth = 2;
-          ctx.stroke();
+        // THUNDERWAVE — multiple expanding rings + debris
+        for (let ring = 0; ring < 4; ring++) {
+          const ringDelay = ring * 0.06;
+          const ringAge = Math.max(0, age - ringDelay);
+          const ringR = radiusPx * easeOut(Math.min(1, ringAge * 2.5));
+          const ringAlpha = alpha * Math.max(0, 1 - ringAge * 1.8) * (1 - ring * 0.2);
+          if (ringAlpha <= 0) continue;
+          ctx.beginPath(); ctx.arc(se.x, se.y, ringR, 0, Math.PI * 2);
+          ctx.strokeStyle = ring === 0 ? "rgba(255,255,255," + ringAlpha * 0.6 + ")" : s.color + Math.round(ringAlpha * 150).toString(16).padStart(2, "0");
+          ctx.lineWidth = (4 - ring) * ringAlpha; ctx.stroke();
         }
+
+        // Air distortion fill
+        const distR = radiusPx * easeOut(Math.min(1, age * 2));
+        ctx.beginPath(); ctx.arc(se.x, se.y, distR, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(200,220,255," + (alpha * 0.08) + ")"; ctx.fill();
+
+        // Debris flying outward
+        for (let d = 0; d < 20; d++) {
+          const dAngle = (d / 20) * Math.PI * 2 + d * 0.3;
+          const dDist = radiusPx * 0.3 * easeOut(Math.min(1, age * 2)) + d * 2;
+          const dAlpha = alpha * 0.6 * (1 - (d % 5) * 0.1);
+          ctx.beginPath();
+          ctx.arc(se.x + Math.cos(dAngle) * dDist, se.y + Math.sin(dAngle) * dDist, 1 + (d % 3), 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(180,190,210," + dAlpha + ")"; ctx.fill();
+        }
+
       } else if (s.effect === "freeze") {
-        // Crystalline fractals, frost particles, ice shards
-        for (let layer = 0; layer < 4; layer++) {
-          const layerAge = age - layer * 0.1;
-          if (layerAge < 0) continue;
-          const layerAlpha = Math.max(0, 1 - layerAge);
-          ctx.strokeStyle = s.color + Math.round(layerAlpha * 140).toString(16).padStart(2,"0");
-          ctx.lineWidth = 1.5 + layer * 0.5;
-          for (let cr = 0; cr < 8; cr++) {
-            const a = (cr / 8) * Math.PI * 2;
-            const rl = radiusPx * (0.3 + layerAge * 0.7);
-            ctx.beginPath();
-            ctx.moveTo(se.x, se.y);
-            ctx.lineTo(se.x + Math.cos(a) * rl, se.y + Math.sin(a) * rl);
-            ctx.stroke();
-            // Branching
-            const bx = se.x + Math.cos(a) * rl * 0.5, by = se.y + Math.sin(a) * rl * 0.5;
-            ctx.beginPath();
-            ctx.moveTo(bx, by);
-            ctx.lineTo(bx + Math.cos(a + 0.6) * rl * 0.3, by + Math.sin(a + 0.6) * rl * 0.3);
+        // CONE OF COLD / ICE STORM — crystalline fractals + frost + ice shards
+        const freezeR = radiusPx * easeOut(Math.min(1, age * 2));
+
+        // Frost base
+        const fGrad = ctx.createRadialGradient(se.x, se.y, 0, se.x, se.y, freezeR);
+        fGrad.addColorStop(0, "rgba(200,230,255," + alpha * 0.25 + ")");
+        fGrad.addColorStop(0.5, "rgba(150,200,240," + alpha * 0.15 + ")");
+        fGrad.addColorStop(1, "rgba(100,170,220,0)");
+        ctx.beginPath(); ctx.arc(se.x, se.y, freezeR, 0, Math.PI * 2);
+        ctx.fillStyle = fGrad; ctx.fill();
+
+        // Crystal fractal arms
+        ctx.shadowColor = "#b3e5fc"; ctx.shadowBlur = 5 * alpha;
+        for (let arm = 0; arm < 8; arm++) {
+          const armAngle = (arm / 8) * Math.PI * 2 + ((se.startTime % 1000) / 1000) * 0.5;
+          const armLen = freezeR * 0.8 * easeOut(Math.min(1, age * 2.5));
+          ctx.strokeStyle = "rgba(200,230,255," + alpha * 0.6 + ")"; ctx.lineWidth = 1.5 * alpha;
+          ctx.beginPath(); ctx.moveTo(se.x, se.y);
+          ctx.lineTo(se.x + Math.cos(armAngle) * armLen, se.y + Math.sin(armAngle) * armLen);
+          ctx.stroke();
+
+          // Branches
+          for (let b = 0; b < 3; b++) {
+            const bt = 0.3 + b * 0.25;
+            const bx = se.x + Math.cos(armAngle) * armLen * bt;
+            const by = se.y + Math.sin(armAngle) * armLen * bt;
+            const bLen = armLen * 0.25;
+            const bDir = (b % 2 === 0 ? 1 : -1) * 0.5;
+            ctx.beginPath(); ctx.moveTo(bx, by);
+            ctx.lineTo(bx + Math.cos(armAngle + bDir) * bLen, by + Math.sin(armAngle + bDir) * bLen);
+            ctx.strokeStyle = "rgba(200,230,255," + alpha * 0.35 + ")"; ctx.lineWidth = 0.8 * alpha;
             ctx.stroke();
           }
         }
-        // Frost particles
-        for (let fp = 0; fp < 25; fp++) {
-          const a = (fp / 25) * Math.PI * 2 + age * 3;
-          const dist = age * radiusPx;
-          const px = se.x + Math.cos(a) * dist;
-          const py = se.y + Math.sin(a) * dist;
-          ctx.beginPath();
-          ctx.arc(px, py, 1.5 * alpha, 0, Math.PI * 2);
-          ctx.fillStyle = s.color + Math.round(alpha * 150).toString(16).padStart(2,"0");
-          ctx.fill();
-        }
-      } else if (s.effect === "shield") {
-        // Hexagonal force field, rippling dome, runic symbols
-        ctx.globalAlpha = alpha * 0.8;
-        // Main hexagon
-        ctx.strokeStyle = s.color;
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        for (let i = 0; i < 6; i++) {
-          const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
-          const x = se.x + Math.cos(a) * gridSize * 0.7;
-          const y = se.y + Math.sin(a) * gridSize * 0.7 + Math.sin(age * 6) * 2;
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.closePath();
-        ctx.stroke();
-        // Rippling inner hexagon
-        ctx.strokeStyle = "rgba(255,255,255," + (alpha * 0.5) + ")";
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        for (let i = 0; i < 6; i++) {
-          const a = (i / 6) * Math.PI * 2 - Math.PI / 2;
-          const x = se.x + Math.cos(a) * gridSize * 0.5 + Math.sin(age * 8) * 1.5;
-          const y = se.y + Math.sin(a) * gridSize * 0.5;
-          if (i === 0) ctx.moveTo(x, y);
-          else ctx.lineTo(x, y);
-        }
-        ctx.closePath();
-        ctx.stroke();
-        ctx.globalAlpha = 1;
-      } else if (s.effect === "necrotic") {
-        // Sickly green-purple energy, skull shapes, life drain particles
-        const energyR = radiusPx * (0.4 + age * 0.6);
-        const grad = ctx.createRadialGradient(se.x, se.y, 0, se.x, se.y, energyR);
-        grad.addColorStop(0, "#7c3aed" + Math.round(alpha * 150).toString(16).padStart(2,"0"));
-        grad.addColorStop(0.6, "#4caf50" + Math.round(alpha * 80).toString(16).padStart(2,"0"));
-        grad.addColorStop(1, "#000000" + "00");
-        ctx.beginPath();
-        ctx.arc(se.x, se.y, energyR, 0, Math.PI * 2);
-        ctx.fillStyle = grad;
-        ctx.fill();
-        // Draining particles
-        for (let dp = 0; dp < 20; dp++) {
-          const a = (dp / 20) * Math.PI * 2 - age * Math.PI;
-          const dist = age * radiusPx;
-          ctx.beginPath();
-          ctx.arc(se.x + Math.cos(a) * dist, se.y + Math.sin(a) * dist, 2 * alpha, 0, Math.PI * 2);
-          ctx.fillStyle = "#7c3aed" + Math.round(alpha * 180).toString(16).padStart(2,"0");
-          ctx.fill();
-        }
-      } else if (s.effect === "poison") {
-        // Green bubbling cloud, skull flicker, toxic drips
-        const cloudR = radiusPx * (0.5 + age * 0.5);
-        ctx.globalAlpha = alpha * 0.6;
-        for (let b = 0; b < 8; b++) {
-          const a = (b / 8) * Math.PI * 2 + age * 3;
-          const bx = se.x + Math.cos(a) * cloudR * 0.7;
-          const by = se.y + Math.sin(a) * cloudR * 0.7;
-          ctx.beginPath();
-          ctx.arc(bx, by, gridSize * 0.2 + Math.sin(age * 8 + b) * 2, 0, Math.PI * 2);
-          ctx.fillStyle = "#4caf50";
-          ctx.fill();
-        }
-        ctx.globalAlpha = 1;
-        // Toxic drips
-        for (let drip = 0; drip < 15; drip++) {
-          const a = (drip / 15) * Math.PI * 2;
-          const dy = age * gridSize * 0.8;
-          ctx.beginPath();
-          ctx.arc(se.x + Math.cos(a) * cloudR * 0.6, se.y + Math.sin(a) * cloudR * 0.6 + dy, 1.5 * alpha, 0, Math.PI * 2);
-          ctx.fillStyle = "#4caf50" + Math.round(alpha * 200).toString(16).padStart(2,"0");
-          ctx.fill();
-        }
-      } else if (s.effect === "acid") {
-        // Green bubbling drops, sizzling particles
-        const acidR = radiusPx * (0.4 + age * 0.6);
-        for (let drop = 0; drop < 25; drop++) {
-          const a = (drop / 25) * Math.PI * 2 + age * 4;
-          const dist = age * acidR;
-          const dx = se.x + Math.cos(a) * dist;
-          const dy = se.y + Math.sin(a) * dist;
-          ctx.beginPath();
-          ctx.arc(dx, dy, 2 + Math.sin(age * 10 + drop) * 1, 0, Math.PI * 2);
-          ctx.fillStyle = "#76ff03" + Math.round(alpha * 200).toString(16).padStart(2,"0");
-          ctx.fill();
-        }
-        // Sizzle effect
-        ctx.strokeStyle = "#76ff03" + Math.round(alpha * 120).toString(16).padStart(2,"0");
-        ctx.lineWidth = 1;
-        for (let sz = 0; sz < 10; sz++) {
-          const sx = se.x + (Math.random() - 0.5) * acidR;
-          const sy = se.y + (Math.random() - 0.5) * acidR;
-          ctx.beginPath();
-          ctx.arc(sx, sy, 2, 0, Math.PI * 2);
-          ctx.stroke();
-        }
-      } else if (s.effect === "darkness") {
-        // Expanding dark void, consuming light
-        const dR = radiusPx * (0.5 + age * 0.5);
-        ctx.beginPath();
-        ctx.arc(se.x, se.y, dR, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(10,5,20," + (0.8 * alpha) + ")";
-        ctx.fill();
-        // Flickering shadow edges
-        ctx.strokeStyle = "rgba(40,20,60," + (alpha * 0.5) + ")";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(se.x, se.y, dR, 0, Math.PI * 2);
-        ctx.stroke();
-      } else if (s.effect === "conjuration") {
-        // Swirling portal, geometric shapes
-        const portalR = radiusPx * (0.4 + age * 0.4);
-        // Swirling rings
-        for (let ring = 0; ring < 4; ring++) {
-          const a = age * Math.PI * (4 - ring) + ring * Math.PI / 2;
-          ctx.strokeStyle = s.color + Math.round(alpha * (200 - ring * 30)).toString(16).padStart(2,"0");
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.arc(se.x, se.y, portalR * (0.4 + ring * 0.15), 0, Math.PI * 2);
-          ctx.stroke();
-        }
-        // Geometric shapes materializing
-        for (let geo = 0; geo < 6; geo++) {
-          const a = (geo / 6) * Math.PI * 2 + age * 3;
-          const gx = se.x + Math.cos(a) * portalR * 0.6;
-          const gy = se.y + Math.sin(a) * portalR * 0.6;
-          ctx.fillStyle = s.color + Math.round(alpha * 150).toString(16).padStart(2,"0");
-          ctx.fillRect(gx - 3, gy - 3, 6, 6);
-        }
-      } else if (s.effect === "transmutation") {
-        // Golden swirling energy, morphing shimmer
-        const txR = radiusPx * (0.5 + age * 0.5);
-        // Spiral trails
-        for (let spiral = 0; spiral < 12; spiral++) {
-          const a = (spiral / 12) * Math.PI * 2 + age * Math.PI * 3;
-          const sx = se.x + Math.cos(a) * txR * (0.3 + age * 0.7);
-          const sy = se.y + Math.sin(a) * txR * (0.3 + age * 0.7);
-          ctx.beginPath();
-          ctx.arc(sx, sy, 2 * alpha, 0, Math.PI * 2);
-          ctx.fillStyle = s.color + Math.round(alpha * 200).toString(16).padStart(2,"0");
-          ctx.fill();
-        }
-        // Shimmer glow
-        const shimmer = gridSize * (0.4 + Math.sin(age * 8) * 0.15);
-        ctx.globalAlpha = alpha * 0.5;
-        ctx.beginPath();
-        ctx.arc(se.x, se.y, shimmer, 0, Math.PI * 2);
-        ctx.fillStyle = s.color;
-        ctx.fill();
-        ctx.globalAlpha = 1;
-      } else if (s.effect === "enchantment") {
-        // Pink/purple charm sparkles, heart pulses
-        const heartR = gridSize * (0.3 + Math.sin(age * 8) * 0.1);
-        // Hearts orbiting
-        for (let h = 0; h < 8; h++) {
-          const a = (h / 8) * Math.PI * 2 + age * 4;
-          const hx = se.x + Math.cos(a) * heartR;
-          const hy = se.y + Math.sin(a) * heartR;
-          ctx.fillStyle = s.color + Math.round(alpha * 200).toString(16).padStart(2,"0");
-          ctx.beginPath();
-          ctx.arc(hx - 2, hy - 1, 2, 0, Math.PI * 2);
-          ctx.arc(hx + 2, hy - 1, 2, 0, Math.PI * 2);
-          ctx.lineTo(hx, hy + 2);
-          ctx.closePath();
-          ctx.fill();
-        }
-        // Sparkle motes
-        for (let sp = 0; sp < 15; sp++) {
-          const a = (sp / 15) * Math.PI * 2 + age * 6;
-          const sr = gridSize * 0.5;
-          ctx.beginPath();
-          ctx.arc(se.x + Math.cos(a) * sr, se.y + Math.sin(a) * sr, 1.5, 0, Math.PI * 2);
-          ctx.fillStyle = s.color + Math.round(alpha * 180).toString(16).padStart(2,"0");
-          ctx.fill();
-        }
-      } else if (s.effect === "thunder") {
-        // Visible sound waves, cracking effect
-        for (let wave = 0; wave < 4; wave++) {
-          const waveAge = age - wave * 0.15;
-          if (waveAge < 0) continue;
-          const waveAlpha = Math.max(0, 1 - waveAge);
-          const waveR = waveAge * radiusPx * 1.5;
-          ctx.beginPath();
-          ctx.arc(se.x, se.y, waveR, 0, Math.PI * 2);
-          ctx.strokeStyle = s.color + Math.round(waveAlpha * 150).toString(16).padStart(2,"0");
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        }
-        // Crack lines radiating
-        for (let crack = 0; crack < 8; crack++) {
-          const a = (crack / 8) * Math.PI * 2;
-          const rl = age * radiusPx;
-          ctx.strokeStyle = s.color + Math.round(alpha * 200).toString(16).padStart(2,"0");
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.moveTo(se.x, se.y);
-          ctx.lineTo(se.x + Math.cos(a) * rl, se.y + Math.sin(a) * rl);
-          ctx.stroke();
-        }
-      } else if (s.effect === "force") {
-        // Transparent geometric shapes, crystalline impact
-        ctx.globalAlpha = alpha * 0.7;
-        for (let shape = 0; shape < 6; shape++) {
-          const a = (shape / 6) * Math.PI * 2;
-          const sr = radiusPx * (0.3 + age * 0.7);
-          const sx = se.x + Math.cos(a) * sr;
-          const sy = se.y + Math.sin(a) * sr;
-          ctx.strokeStyle = s.color;
-          ctx.lineWidth = 2;
-          // Rotating square
-          ctx.save();
-          ctx.translate(sx, sy);
-          ctx.rotate(age * Math.PI);
-          ctx.strokeRect(-5, -5, 10, 10);
+        ctx.shadowBlur = 0;
+
+        // Ice shard particles
+        for (let sh = 0; sh < 20; sh++) {
+          const shAngle = (sh / 20) * Math.PI * 2 + sh * 1.3;
+          const shDist = freezeR * 0.5 * age + sh * 1.5;
+          const shAlpha = alpha * 0.5 * (1 - age * 0.7);
+          const sx = se.x + Math.cos(shAngle) * shDist;
+          const sy = se.y + Math.sin(shAngle) * shDist - age * 5;
+          ctx.save(); ctx.translate(sx, sy); ctx.rotate(shAngle);
+          ctx.fillStyle = "rgba(220,240,255," + shAlpha + ")";
+          ctx.fillRect(-1, -3, 2, 6);
           ctx.restore();
         }
-        ctx.globalAlpha = 1;
-        // Center crystal burst
-        for (let ray = 0; ray < 12; ray++) {
-          const a = (ray / 12) * Math.PI * 2;
-          ctx.strokeStyle = s.color + Math.round(alpha * 180).toString(16).padStart(2,"0");
-          ctx.lineWidth = 1.5;
-          ctx.beginPath();
-          ctx.moveTo(se.x, se.y);
-          ctx.lineTo(se.x + Math.cos(a) * gridSize * 0.4, se.y + Math.sin(a) * gridSize * 0.4);
-          ctx.stroke();
-        }
-      } else if (s.effect === "psychic") {
-        // Purple mind-wave ripples, target shaking
-        for (let wave = 0; wave < 4; wave++) {
-          const waveAge = age - wave * 0.12;
-          if (waveAge < 0) continue;
-          const waveAlpha = Math.max(0, 1 - waveAge);
-          const waveR = waveAge * radiusPx;
-          ctx.beginPath();
-          ctx.arc(se.x + Math.sin(age * 12) * 3, se.y, waveR, 0, Math.PI * 2);
-          ctx.strokeStyle = s.color + Math.round(waveAlpha * 140).toString(16).padStart(2,"0");
-          ctx.lineWidth = 2;
-          ctx.stroke();
-        }
-        // Vibrating pulse
-        const pulse = gridSize * (0.3 + Math.sin(age * 15) * 0.1);
-        ctx.beginPath();
-        ctx.arc(se.x, se.y, pulse, 0, Math.PI * 2);
-        ctx.fillStyle = s.color + Math.round(alpha * 100).toString(16).padStart(2,"0");
-        ctx.fill();
-      }
-    });
 
-    ctx.restore();
+      } else if (s.effect === "shield") {
+        // SHIELD / MAGE ARMOR — hexagonal force field dome
+        const shieldR = gridSize * 0.65;
+        const pulseR = shieldR * (0.95 + Math.sin(age * 15) * 0.05);
+
+        // Base dome
+        ctx.beginPath(); ctx.arc(se.x, se.y, pulseR, 0, Math.PI * 2);
+        ctx.strokeStyle = s.color + Math.round(alpha * 200).toString(16).padStart(2, "0");
+        ctx.lineWidth = 2.5 * alpha; ctx.stroke();
+        ctx.fillStyle = s.color + Math.round(alpha * 20).toString(16).padStart(2, "0");
+        ctx.fill();
+
+        // Hexagonal grid pattern
+        const hexSize = gridSize * 0.12;
+        for (let hx = -3; hx <= 3; hx++) {
+          for (let hy = -3; hy <= 3; hy++) {
+            const px = se.x + hx * hexSize * 1.5;
+            const py = se.y + hy * hexSize * 1.73 + (hx % 2) * hexSize * 0.866;
+            if (Math.hypot(px - se.x, py - se.y) > pulseR * 0.85) continue;
+            ctx.beginPath();
+            for (let v = 0; v < 6; v++) {
+              const va = (v / 6) * Math.PI * 2;
+              const vx = px + Math.cos(va) * hexSize * 0.45;
+              const vy = py + Math.sin(va) * hexSize * 0.45;
+              v === 0 ? ctx.moveTo(vx, vy) : ctx.lineTo(vx, vy);
+            }
+            ctx.closePath();
+            ctx.strokeStyle = s.color + Math.round(alpha * 50).toString(16).padStart(2, "0");
+            ctx.lineWidth = 0.5; ctx.stroke();
+          }
+        }
+
+        // Orbiting runes
+        for (let r = 0; r < 4; r++) {
+          const rAngle = (r / 4) * Math.PI * 2 + age * 6;
+          const rx = se.x + Math.cos(rAngle) * pulseR * 0.75;
+          const ry = se.y + Math.sin(rAngle) * pulseR * 0.75;
+          ctx.beginPath(); ctx.arc(rx, ry, 2, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255,255,255," + alpha * 0.6 + ")"; ctx.fill();
+        }
+
+      } else if (s.effect === "necrotic") {
+        // NECROTIC — sickly green-purple drain
+        const necR = gridSize * 0.7;
+        const dGrad = ctx.createRadialGradient(se.x, se.y, 0, se.x, se.y, necR);
+        dGrad.addColorStop(0, "rgba(100,0,180," + alpha * 0.3 + ")");
+        dGrad.addColorStop(0.5, "rgba(60,180,60," + alpha * 0.15 + ")");
+        dGrad.addColorStop(1, "rgba(0,0,0,0)");
+        ctx.beginPath(); ctx.arc(se.x, se.y, necR, 0, Math.PI * 2); ctx.fillStyle = dGrad; ctx.fill();
+
+        // Skull shape suggestion
+        if (age < 0.5) {
+          const skAlpha = alpha * 0.4 * (1 - age * 2);
+          ctx.strokeStyle = "rgba(120,255,120," + skAlpha + ")"; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.arc(se.x, se.y - 3, gridSize * 0.15, 0, Math.PI * 2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(se.x - 3, se.y - 5, 2, 0, Math.PI * 2); ctx.fillStyle = "rgba(0,0,0," + skAlpha + ")"; ctx.fill();
+          ctx.beginPath(); ctx.arc(se.x + 3, se.y - 5, 2, 0, Math.PI * 2); ctx.fill();
+        }
+
+        // Life drain particles (target to caster)
+        if (se.casterX !== se.x || se.casterY !== se.y) {
+          for (let p = 0; p < 15; p++) {
+            const pt = ((age * 2 + p * 0.07) % 1);
+            const px = se.x + (se.casterX - se.x) * pt;
+            const py = se.y + (se.casterY - se.y) * pt + Math.sin(pt * 10 + p) * 5;
+            const pAlpha = Math.sin(pt * Math.PI) * alpha * 0.6;
+            ctx.beginPath(); ctx.arc(px, py, 1.5, 0, Math.PI * 2);
+            ctx.fillStyle = p % 2 === 0 ? "rgba(120,255,120," + pAlpha + ")" : "rgba(160,80,240," + pAlpha + ")"; ctx.fill();
+          }
+        }
+
+      } else if (s.effect === "poison") {
+        // POISON — expanding toxic cloud + skull + dripping particles
+        const cloudR = gridSize * 0.7 * easeOut(Math.min(1, age * 1.8));
+
+        // Multiple cloud puffs with movement
+        for (let c = 0; c < 8; c++) {
+          const cAngle = (c / 8) * Math.PI * 2 + Math.sin(age * 2 + c) * 0.5;
+          const cDist = cloudR * 0.25 * (1 + Math.sin(age * 3 + c * 2) * 0.3);
+          const cx2 = se.x + Math.cos(cAngle) * cDist;
+          const cy2 = se.y + Math.sin(cAngle) * cDist;
+          const puffR = cloudR * (0.35 + (c % 3) * 0.08);
+          const cGrad = ctx.createRadialGradient(cx2, cy2, 0, cx2, cy2, puffR);
+          cGrad.addColorStop(0, "rgba(60,180,60," + alpha * 0.22 + ")");
+          cGrad.addColorStop(0.6, "rgba(40,140,40," + alpha * 0.12 + ")");
+          cGrad.addColorStop(1, "rgba(30,100,30,0)");
+          ctx.beginPath(); ctx.arc(cx2, cy2, puffR, 0, Math.PI * 2); ctx.fillStyle = cGrad; ctx.fill();
+        }
+
+        // Skull and crossbones flicker
+        if (age > 0.1 && age < 0.6) {
+          const skAlpha = alpha * 0.3 * Math.sin((age - 0.1) / 0.5 * Math.PI);
+          ctx.strokeStyle = "rgba(200,255,200," + skAlpha + ")"; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.arc(se.x, se.y - 4, gridSize * 0.12, 0, Math.PI * 2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(se.x - 3, se.y - 6, 1.5, 0, Math.PI * 2); ctx.fillStyle = "rgba(0,50,0," + skAlpha + ")"; ctx.fill();
+          ctx.beginPath(); ctx.arc(se.x + 3, se.y - 6, 1.5, 0, Math.PI * 2); ctx.fill();
+          // Crossbones
+          ctx.beginPath(); ctx.moveTo(se.x - 6, se.y + 2); ctx.lineTo(se.x + 6, se.y + 8); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(se.x + 6, se.y + 2); ctx.lineTo(se.x - 6, se.y + 8); ctx.stroke();
+        }
+
+        // Dripping toxic particles
+        for (let d = 0; d < 15; d++) {
+          const dAge = (age * 1.5 + d * 0.07) % 1;
+          const dx = se.x + ((d * 13 - 40) % 50) * 0.7;
+          const dy = se.y + dAge * gridSize * 0.6 - gridSize * 0.1;
+          const dAlpha = Math.sin(dAge * Math.PI) * alpha * 0.5;
+          const dR = 1 + (d % 3);
+          ctx.beginPath(); ctx.arc(dx, dy, dR, 0, Math.PI * 2);
+          ctx.fillStyle = d % 3 === 0 ? "rgba(100,255,100," + dAlpha + ")" : "rgba(60,200,60," + dAlpha + ")";
+          ctx.fill();
+        }
+
+      } else if (s.effect === "acid") {
+        // ACID — bubbling corrosive drops + sizzling ground + vapor
+        // Ground sizzle pool
+        const poolR = gridSize * 0.45 * easeOut(Math.min(1, age * 2));
+        const poolGrad = ctx.createRadialGradient(se.x, se.y + gridSize * 0.1, 0, se.x, se.y + gridSize * 0.1, poolR);
+        poolGrad.addColorStop(0, "rgba(100,220,0," + alpha * 0.25 + ")");
+        poolGrad.addColorStop(0.7, "rgba(70,180,0," + alpha * 0.12 + ")");
+        poolGrad.addColorStop(1, "rgba(50,130,0,0)");
+        ctx.beginPath(); ctx.ellipse(se.x, se.y + gridSize * 0.15, poolR, poolR * 0.4, 0, 0, Math.PI * 2);
+        ctx.fillStyle = poolGrad; ctx.fill();
+
+        // Bubbling drops
+        for (let d = 0; d < 30; d++) {
+          const dAge = (age * 2 + d * 0.033) % 1;
+          const dAngle = d * 0.9 + Math.sin(d * 2.3) * 2;
+          const dDist = gridSize * 0.1 + dAge * gridSize * 0.2;
+          const dx = se.x + Math.cos(dAngle) * dDist + ((d * 19 - 50) % 30) * 0.5;
+          const dy = se.y + Math.sin(dAge * Math.PI * 2) * 3 + dAge * gridSize * 0.4 - gridSize * 0.2;
+          const dAlpha = Math.sin(dAge * Math.PI) * alpha * 0.7;
+          const dR = 1 + (d % 5) * 0.8;
+
+          // Droplet
+          ctx.beginPath(); ctx.arc(dx, dy, dR, 0, Math.PI * 2);
+          ctx.fillStyle = d % 4 === 0 ? "rgba(180,255,0," + dAlpha + ")" : "rgba(100,230,0," + dAlpha + ")";
+          ctx.fill();
+
+          // Highlight
+          ctx.beginPath(); ctx.arc(dx - dR * 0.3, dy - dR * 0.3, dR * 0.3, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(220,255,180," + dAlpha * 0.5 + ")"; ctx.fill();
+        }
+
+        // Rising vapor wisps
+        for (let v = 0; v < 8; v++) {
+          const vAge = (age + v * 0.12) % 1;
+          const vAlpha = Math.sin(vAge * Math.PI) * alpha * 0.2;
+          const vx = se.x + ((v * 9 - 30) % 25);
+          const vy = se.y - vAge * gridSize * 0.6;
+          ctx.beginPath();
+          ctx.moveTo(vx, vy + 5);
+          ctx.quadraticCurveTo(vx + Math.sin(vAge * 8) * 4, vy, vx + Math.sin(vAge * 12) * 3, vy - 5);
+          ctx.strokeStyle = "rgba(150,255,100," + vAlpha + ")";
+          ctx.lineWidth = 1; ctx.stroke();
+        }
+
+      } else if (s.effect === "darkness") {
+        // DARKNESS — consuming void with tendrils
+        const darkR = radiusPx * easeOut(Math.min(1, age * 2));
+
+        // Dark void
+        const dGrad = ctx.createRadialGradient(se.x, se.y, 0, se.x, se.y, darkR);
+        dGrad.addColorStop(0, "rgba(0,0,0," + alpha * 0.85 + ")");
+        dGrad.addColorStop(0.6, "rgba(5,0,15," + alpha * 0.5 + ")");
+        dGrad.addColorStop(1, "rgba(10,5,20,0)");
+        ctx.beginPath(); ctx.arc(se.x, se.y, darkR, 0, Math.PI * 2);
+        ctx.fillStyle = dGrad; ctx.fill();
+
+        // Tendrils
+        for (let t = 0; t < 8; t++) {
+          const tAngle = (t / 8) * Math.PI * 2 + age * 1.5;
+          const tLen = darkR * (0.8 + Math.sin(age * 4 + t * 2) * 0.3);
+          ctx.beginPath(); ctx.moveTo(se.x, se.y);
+          const cp1x = se.x + Math.cos(tAngle + 0.3) * tLen * 0.5;
+          const cp1y = se.y + Math.sin(tAngle + 0.3) * tLen * 0.5;
+          const endx = se.x + Math.cos(tAngle) * tLen;
+          const endy = se.y + Math.sin(tAngle) * tLen;
+          ctx.quadraticCurveTo(cp1x, cp1y, endx, endy);
+          ctx.strokeStyle = "rgba(20,0,40," + alpha * 0.4 + ")";
+          ctx.lineWidth = 3 * alpha; ctx.stroke();
+        }
+
+        // Swallowed light particles moving inward
+        for (let p = 0; p < 12; p++) {
+          const pAngle = (p / 12) * Math.PI * 2;
+          const pDist = darkR * (1.2 - age * 0.8 + Math.sin(p * 2 + age * 5) * 0.1);
+          ctx.beginPath(); ctx.arc(se.x + Math.cos(pAngle) * pDist, se.y + Math.sin(pAngle) * pDist, 1, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(200,200,255," + alpha * 0.3 + ")"; ctx.fill();
+        }
+
+      } else if (s.effect === "conjuration") {
+        // CONJURATION — swirling portal with inner vortex
+        const portalR = gridSize * 0.55 * easeOut(Math.min(1, age * 2.5));
+
+        // Outer glow
+        const pGrad = ctx.createRadialGradient(se.x, se.y, portalR * 0.5, se.x, se.y, portalR * 1.2);
+        pGrad.addColorStop(0, "rgba(100,220,120," + alpha * 0.15 + ")");
+        pGrad.addColorStop(1, "rgba(60,180,80,0)");
+        ctx.beginPath(); ctx.arc(se.x, se.y, portalR * 1.2, 0, Math.PI * 2);
+        ctx.fillStyle = pGrad; ctx.fill();
+
+        // Rotating rings with dashes
+        for (let ring = 0; ring < 4; ring++) {
+          const rR = portalR * (0.35 + ring * 0.18);
+          const rotSpeed = (ring % 2 === 0 ? 1 : -1) * (4 + ring);
+          ctx.save();
+          ctx.translate(se.x, se.y);
+          ctx.rotate(age * rotSpeed);
+          ctx.beginPath(); ctx.arc(0, 0, rR, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(100,220,120," + alpha * (0.5 - ring * 0.1) + ")";
+          ctx.lineWidth = 1.5 - ring * 0.2;
+          ctx.setLineDash([4 + ring * 2, 3 + ring]); ctx.stroke(); ctx.setLineDash([]);
+          ctx.restore();
+        }
+
+        // Inner vortex particles
+        for (let p = 0; p < 30; p++) {
+          const pAge = (age * 3 + p * 0.033) % 1;
+          const pa = pAge * Math.PI * 4 + p * 0.5;
+          const pd = portalR * (1 - pAge) * 0.8;
+          const pAlpha = Math.sin(pAge * Math.PI) * alpha * 0.6;
+          if (pAlpha <= 0) continue;
+          ctx.beginPath(); ctx.arc(
+            se.x + Math.cos(pa) * pd,
+            se.y + Math.sin(pa) * pd,
+            1 + (1 - pAge) * 2, 0, Math.PI * 2
+          );
+          ctx.fillStyle = p % 4 === 0 ? "rgba(200,255,200," + pAlpha + ")" : "rgba(100,230,130," + pAlpha + ")";
+          ctx.fill();
+        }
+
+        // Center bright point
+        const cAlpha = alpha * (0.5 + Math.sin(age * 10) * 0.3);
+        ctx.beginPath(); ctx.arc(se.x, se.y, 3 * alpha, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255,255,255," + cAlpha + ")"; ctx.fill();
+
+      } else if (s.effect === "transmutation") {
+        // TRANSMUTATION — golden metamorphosis swirl + morphing shimmer
+        // Golden base glow
+        const tmGrad = ctx.createRadialGradient(se.x, se.y, 0, se.x, se.y, gridSize * 0.5);
+        tmGrad.addColorStop(0, "rgba(255,215,60," + alpha * 0.25 + ")");
+        tmGrad.addColorStop(0.5, "rgba(220,180,40," + alpha * 0.1 + ")");
+        tmGrad.addColorStop(1, "rgba(180,140,20,0)");
+        ctx.beginPath(); ctx.arc(se.x, se.y, gridSize * 0.5, 0, Math.PI * 2);
+        ctx.fillStyle = tmGrad; ctx.fill();
+
+        // Double helix spiral
+        for (let strand = 0; strand < 2; strand++) {
+          ctx.beginPath();
+          const offset = strand * Math.PI;
+          for (let t = 0; t < 30; t++) {
+            const tt = t / 30;
+            const angle = tt * Math.PI * 4 + age * 8 + offset;
+            const radius = gridSize * 0.15 + gridSize * 0.3 * tt;
+            const px = se.x + Math.cos(angle) * radius;
+            const py = se.y - tt * gridSize * 1.2 + gridSize * 0.3;
+            t === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+          }
+          ctx.strokeStyle = strand === 0 ? "rgba(255,220,80," + alpha * 0.6 + ")" : "rgba(255,180,40," + alpha * 0.4 + ")";
+          ctx.lineWidth = 1.5 * alpha; ctx.stroke();
+        }
+
+        // Particle dust along helix
+        for (let p = 0; p < 20; p++) {
+          const pAge = (age + p * 0.05) % 1;
+          const pa = pAge * Math.PI * 4 + p * 1.2 + age * 6;
+          const pd = gridSize * 0.1 + gridSize * 0.25 * pAge;
+          const pAlpha = Math.sin(pAge * Math.PI) * alpha * 0.6;
+          ctx.beginPath(); ctx.arc(
+            se.x + Math.cos(pa) * pd,
+            se.y - pAge * gridSize * 0.8 + gridSize * 0.2 + Math.sin(pa) * pd * 0.3,
+            1 + (p % 3) * 0.5, 0, Math.PI * 2
+          );
+          ctx.fillStyle = p % 3 === 0 ? "rgba(255,255,200," + pAlpha + ")" : "rgba(255,200,60," + pAlpha + ")";
+          ctx.fill();
+        }
+
+      } else if (s.effect === "enchantment") {
+        // ENCHANTMENT — charm sparkles + spiraling hearts + swirl eyes
+        // Pink/purple glow base
+        const eGrad = ctx.createRadialGradient(se.x, se.y, 0, se.x, se.y, gridSize * 0.6);
+        eGrad.addColorStop(0, "rgba(255,105,180," + alpha * 0.15 + ")");
+        eGrad.addColorStop(0.5, "rgba(180,80,200," + alpha * 0.08 + ")");
+        eGrad.addColorStop(1, "rgba(140,50,160,0)");
+        ctx.beginPath(); ctx.arc(se.x, se.y, gridSize * 0.6, 0, Math.PI * 2);
+        ctx.fillStyle = eGrad; ctx.fill();
+
+        // Spiraling star sparkles
+        for (let sp = 0; sp < 25; sp++) {
+          const spAge = (age + sp * 0.04) % 1;
+          const sa = sp * 0.7 + spAge * Math.PI * 3;
+          const sd = gridSize * (0.1 + 0.5 * spAge);
+          const sAlpha = Math.sin(spAge * Math.PI) * alpha * 0.7;
+          if (sAlpha <= 0) continue;
+          const sx = se.x + Math.cos(sa) * sd;
+          const sy = se.y + Math.sin(sa) * sd - spAge * gridSize * 0.4;
+
+          // Draw 4-pointed star
+          const starR = 1.5 + (sp % 3);
+          ctx.fillStyle = sp % 4 === 0 ? "rgba(255,220,240," + sAlpha + ")" : "rgba(255,105,180," + sAlpha + ")";
+          ctx.beginPath();
+          for (let v = 0; v < 8; v++) {
+            const va = (v / 8) * Math.PI * 2 + age * 3;
+            const vr = v % 2 === 0 ? starR : starR * 0.35;
+            v === 0 ? ctx.moveTo(sx + Math.cos(va) * vr, sy + Math.sin(va) * vr) : ctx.lineTo(sx + Math.cos(va) * vr, sy + Math.sin(va) * vr);
+          }
+          ctx.closePath(); ctx.fill();
+        }
+
+        // Rising hearts (small)
+        for (let h = 0; h < 6; h++) {
+          const hAge = (age + h * 0.15) % 1;
+          const hAlpha = Math.sin(hAge * Math.PI) * alpha * 0.5;
+          if (hAlpha <= 0) continue;
+          const hx = se.x + ((h * 11 - 30) % 25);
+          const hy = se.y - hAge * gridSize;
+          const hs = 2 + h % 2;
+          // Simple heart shape
+          ctx.fillStyle = "rgba(255,80,150," + hAlpha + ")";
+          ctx.beginPath();
+          ctx.moveTo(hx, hy + hs * 0.3);
+          ctx.bezierCurveTo(hx - hs, hy - hs * 0.5, hx - hs * 0.5, hy - hs, hx, hy - hs * 0.4);
+          ctx.bezierCurveTo(hx + hs * 0.5, hy - hs, hx + hs, hy - hs * 0.5, hx, hy + hs * 0.3);
+          ctx.fill();
+        }
+
+      } else if (s.effect === "psychic") {
+        // PSYCHIC — mind ripples + purple brain pulse + target vibration
+        const pulsePhase = Math.sin(age * 20) * 0.5 + 0.5;
+
+        // Expanding mind ripples
+        for (let ring = 0; ring < 6; ring++) {
+          const rAge = Math.max(0, age - ring * 0.06);
+          const rR = gridSize * 0.6 * easeOut(Math.min(1, rAge * 2.5));
+          const rAlpha = alpha * Math.max(0, 1 - rAge * 1.8) * 0.5;
+          if (rAlpha <= 0) continue;
+          ctx.beginPath(); ctx.arc(se.x, se.y, rR, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(180,100,255," + rAlpha + ")";
+          ctx.lineWidth = (3 - ring * 0.4) * alpha; ctx.stroke();
+        }
+
+        // Central brain pulse glow
+        const brainR = gridSize * 0.3 * (0.8 + pulsePhase * 0.4);
+        const brainGrad = ctx.createRadialGradient(se.x, se.y, 0, se.x, se.y, brainR);
+        brainGrad.addColorStop(0, "rgba(200,130,255," + alpha * 0.5 + ")");
+        brainGrad.addColorStop(0.6, "rgba(150,60,220," + alpha * 0.2 + ")");
+        brainGrad.addColorStop(1, "rgba(100,30,180,0)");
+        ctx.beginPath(); ctx.arc(se.x, se.y, brainR, 0, Math.PI * 2);
+        ctx.fillStyle = brainGrad; ctx.fill();
+
+        // Psychic energy tendrils
+        ctx.shadowColor = "#c77dff"; ctx.shadowBlur = 8 * alpha;
+        for (let l = 0; l < 10; l++) {
+          const la = (l / 10) * Math.PI * 2 + age * 4;
+          const lLen = gridSize * 0.4 * easeOut(Math.min(1, age * 2));
+          const wobble = Math.sin(age * 12 + l * 3) * 5;
+          ctx.beginPath(); ctx.moveTo(se.x, se.y);
+          ctx.quadraticCurveTo(
+            se.x + Math.cos(la + 0.3) * lLen * 0.6 + wobble,
+            se.y + Math.sin(la + 0.3) * lLen * 0.6 + wobble,
+            se.x + Math.cos(la) * lLen,
+            se.y + Math.sin(la) * lLen
+          );
+          ctx.strokeStyle = "rgba(200,150,255," + alpha * 0.4 + ")";
+          ctx.lineWidth = 1.5 * alpha; ctx.stroke();
+        }
+        ctx.shadowBlur = 0;
+
+        // Floating psychic motes
+        for (let m = 0; m < 15; m++) {
+          const mAge = (age + m * 0.07) % 1;
+          const mAngle = m * 1.2 + age * 6;
+          const mDist = gridSize * 0.15 + gridSize * 0.35 * mAge;
+          const mAlpha = Math.sin(mAge * Math.PI) * alpha * 0.6;
+          ctx.beginPath(); ctx.arc(
+            se.x + Math.cos(mAngle) * mDist + Math.sin(mAngle * 3) * 3,
+            se.y + Math.sin(mAngle) * mDist - mAge * 15,
+            1.5 + Math.sin(mAge * Math.PI) * 1, 0, Math.PI * 2
+          );
+          ctx.fillStyle = m % 3 === 0 ? "rgba(255,200,255," + mAlpha + ")" : "rgba(180,120,255," + mAlpha + ")";
+          ctx.fill();
+        }
+
+      } else if (s.effect === "thunder") {
+        // THUNDER — visible sound waves
+        for (let w = 0; w < 6; w++) {
+          const wAge = Math.max(0, age - w * 0.04);
+          const wR = radiusPx * easeOut(Math.min(1, wAge * 3));
+          const wAlpha = alpha * Math.max(0, 1 - wAge * 2) * 0.4;
+          ctx.beginPath(); ctx.arc(se.x, se.y, wR, 0, Math.PI * 2);
+          ctx.strokeStyle = "rgba(200,210,230," + wAlpha + ")"; ctx.lineWidth = 3 - w * 0.4; ctx.stroke();
+        }
+        // Crack effect
+        ctx.strokeStyle = "rgba(255,255,255," + alpha * 0.3 + ")"; ctx.lineWidth = 0.8;
+        for (let c = 0; c < 4; c++) {
+          ctx.beginPath(); ctx.moveTo(se.x, se.y);
+          let px = se.x, py = se.y;
+          for (let s2 = 0; s2 < 5; s2++) {
+            px += ((((c * 31 + s2 * 17) % 20) - 10)); py += ((((c * 23 + s2 * 13) % 20) - 10));
+            ctx.lineTo(px, py);
+          }
+          ctx.stroke();
+        }
+
+      } else if (s.effect === "force") {
+        // FORCE — geometric impact + reality cracks
+        const forceR = gridSize * 0.5 * easeOut(Math.min(1, age * 3));
+
+        // Geometric shapes
+        for (let g = 0; g < 3; g++) {
+          const sides = 3 + g;
+          const gR = forceR * (0.5 + g * 0.2);
+          const gAngle = age * (3 + g) + g;
+          ctx.beginPath();
+          for (let v = 0; v <= sides; v++) {
+            const va = (v / sides) * Math.PI * 2 + gAngle;
+            const vx = se.x + Math.cos(va) * gR;
+            const vy = se.y + Math.sin(va) * gR;
+            v === 0 ? ctx.moveTo(vx, vy) : ctx.lineTo(vx, vy);
+          }
+          ctx.strokeStyle = "rgba(100,170,255," + alpha * (0.5 - g * 0.1) + ")";
+          ctx.lineWidth = 1.5 * alpha; ctx.stroke();
+        }
+
+        // Impact flash
+        if (age < 0.2) {
+          ctx.beginPath(); ctx.arc(se.x, se.y, forceR * 0.3, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(255,255,255," + (1 - age / 0.2) * 0.5 + ")"; ctx.fill();
+        }
+      }
+
+      ctx.restore();
+    });
 
     // Pings (screen space)
     const nowPing = Date.now();
@@ -4304,6 +4838,15 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     };
   }, [viewRole, activeCampaignId]);
 
+  // ── Native wheel listener with passive: false ──
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const onWheel = (e) => { e.preventDefault(); if (wheelHandlerRef.current) wheelHandlerRef.current(e); };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
+
   // ── Keyboard handler ──
   useEffect(() => {
     const handleKey = (e) => {
@@ -4315,7 +4858,6 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
       if (e.key === "1") { setMode("select"); }
       if (e.key === "2" && viewRole === "dm") { setMode("draw"); }
       if (e.key === "3") { setMode("combat"); }
-      if (e.key === "f" || e.key === "F") { setImmersive(prev => !prev); }
       if (e.key === "Tab") { e.preventDefault(); setSidebarOpen(prev => !prev); }
 
       if (e.key === "p" || e.key === "P") {
@@ -4559,7 +5101,6 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
   };
 
   const handleWheel = (e) => {
-    e.preventDefault();
     if (selectedToken && selectedToken.hp != null && (mode === "select" || mode === "combat")) {
       const w = getMouseWorld(e);
       const isOverToken = Math.hypot(selectedToken.x - w.x, selectedToken.y - w.y) < gridSize * 0.4;
@@ -4572,6 +5113,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     const delta = e.deltaY > 0 ? -0.1 : 0.1;
     setZoom(z => Math.max(0.25, Math.min(4, z + delta)));
   };
+  wheelHandlerRef.current = handleWheel;
 
   const handleMapUpload = (e) => {
     const file = e.target.files?.[0];
@@ -4946,39 +5488,24 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
   // ── Context menu condition submenu state ──
   const [showConditionMenu, setShowConditionMenu] = useState(false);
 
-  // ── Immersive focus mode ──
-  const [immersive, setImmersive] = useState(false);
+  // ── Sidebar state ──
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", flex:1, minHeight:0, ...(immersive ? { position:"fixed", inset:0, zIndex:9999, background:T.bg } : {}) }}>
+    <div style={{ display:"flex", flexDirection:"column", flex:1, minHeight:0 }}>
       {/* Top-level hidden file inputs for reliable label association */}
       <input type="file" ref={fileRef} id="battlemap-file-upload" style={{display:"none"}} accept="image/*" onChange={handleMapUpload} />
 
-      {/* ── Immersive mode top bar ── */}
-      {immersive && (
-        <div style={{ height:32, background:"rgba(4,4,10,0.92)", display:"flex", alignItems:"center", justifyContent:"space-between", padding:"0 16px", flexShrink:0, borderBottom:"1px solid rgba(212,67,58,0.15)", backdropFilter:"blur(12px)", boxShadow:"0 2px 12px rgba(0,0,6,0.4)" }}>
-          <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-            <Swords size={12} color={cssVar("--crimson")} />
-            <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"2px", color:T.textMuted, textTransform:"uppercase" }}>Play Mode</span>
-            {combatLive && <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:cssVar("--crimson"), background:"rgba(212,67,58,0.15)", padding:"2px 8px", borderRadius:"2px" }}>Combat R{round}</span>}
-          </div>
-          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-            <span style={{ fontFamily:T.ui, fontSize:7, color:T.textFaint, letterSpacing:"1px" }}>F to exit · Tab sidebar</span>
-            <button onClick={() => setImmersive(false)} style={{ background:"none", border:"1px solid var(--border)", borderRadius:"3px", padding:"3px 10px", cursor:"pointer", color:T.textMuted, fontFamily:T.ui, fontSize:7, letterSpacing:"1px", textTransform:"uppercase" }}>Exit Focus</button>
-          </div>
-        </div>
-      )}
 
       <div style={{ display:"flex", flex:1, minHeight:0, position:"relative" }}>
 
         {/* ── CENTER: Canvas ── */}
         <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0 }}>
-          <div ref={wrapRef} style={{ flex:1, position:"relative", overflow:"hidden", background:bgColor, boxShadow: immersive ? "inset 0 0 60px rgba(0,0,6,0.9), inset 0 0 160px rgba(0,0,6,0.5), inset 0 0 300px rgba(0,0,6,0.2)" : "inset 0 0 40px rgba(0,0,6,0.7), inset 0 3px 20px rgba(0,0,6,0.5), inset 0 0 6px rgba(0,0,6,0.4)", cursor:getCursor(), transition:"box-shadow 0.3s ease" }}
+          <div ref={wrapRef} style={{ flex:1, position:"relative", overflow:"hidden", background:bgColor, boxShadow: "inset 0 0 40px rgba(0,0,6,0.7), inset 0 3px 20px rgba(0,0,6,0.5), inset 0 0 6px rgba(0,0,6,0.4)", cursor:getCursor(), transition:"box-shadow 0.3s ease" }}
             onDragOver={handleDragOver} onDrop={handleDrop}>
             <canvas ref={canvasRef} style={{ display:"block", width:"100%", height:"100%", position:"absolute", top:0, left:0 }}
               onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp} onWheel={handleWheel} onContextMenu={handleContextMenu} />
+              onMouseLeave={handleMouseUp} onContextMenu={handleContextMenu} />
             {/* Map file input moved to top-level for reliable label association */}
 
             {/* Canvas edge overlays — subtle borders that integrate panels with map */}
@@ -5263,14 +5790,6 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
             <RefreshCw size={15} color={cssVar("--text-faint")} />
             <span style={{ fontSize:6, fontFamily:T.ui, letterSpacing:"0.5px", color:T.textFaint, textTransform:"uppercase", fontWeight:500 }}>Reset</span>
           </button>
-
-          <button onClick={() => setImmersive(!immersive)} title="Focus Mode (F)"
-            onMouseEnter={e => { if (!immersive) { e.currentTarget.style.background="var(--crimson-soft)"; e.currentTarget.style.border="1px solid var(--crimson-border)"; }}}
-            onMouseLeave={e => { if (!immersive) { e.currentTarget.style.background="transparent"; e.currentTarget.style.border="1px solid transparent"; }}}
-            style={{ width:46, height:46, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2, background:immersive?"var(--crimson-soft)":"transparent", border:"1px solid " + (immersive?"var(--crimson-border)":"transparent"), borderRadius:"8px", cursor:"pointer", transition:"all 0.2s", marginBottom:6, boxShadow:immersive?"0 0 12px rgba(212,67,58,0.25)":"none" }}>
-            <Target size={15} color={immersive ? cssVar("--crimson") : cssVar("--text-faint")} />
-            <span style={{ fontSize:6, fontFamily:T.ui, letterSpacing:"0.5px", color:immersive?cssVar("--crimson"):T.textFaint, textTransform:"uppercase", fontWeight:500 }}>Focus</span>
-          </button>
             </div>
           </div>
 
@@ -5457,17 +5976,17 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                 <button onClick={() => setSelectedTokenId(null)} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:2 }}><X size={12}/></button>
               </div>
 
-              <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                 {selectedToken.imageSrc ? (
-                  <div style={{ position:"relative", width:36, height:36, borderRadius:"50%", overflow:"hidden", border:"2px solid rgba(255,220,30,0.6)", flexShrink:0, cursor:"pointer" }}
+                  <div style={{ position:"relative", width:48, height:48, borderRadius:"50%", overflow:"hidden", border:"2px solid rgba(255,220,30,0.6)", flexShrink:0, cursor:"pointer" }}
                     onClick={() => tokenImgRef.current?.click()}>
                     <img src={selectedToken.imageSrc} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                   </div>
                 ) : (
                   <input type="color" value={selectedToken.color} onChange={e => updateToken(selectedToken.id, { color: e.target.value })}
-                    style={{ width:28, height:28, borderRadius:"50%", border:"2px solid rgba(255,220,30,0.6)", padding:0, cursor:"pointer", background:"none", flexShrink:0 }} />
+                    style={{ width:38, height:38, borderRadius:"50%", border:"2px solid rgba(255,220,30,0.6)", padding:0, cursor:"pointer", background:"none", flexShrink:0 }} />
                 )}
-                <span style={{ fontSize:16, fontFamily:T.body, color:T.text, fontWeight:400 }}>{selectedToken.name}</span>
+                <span style={{ fontSize:20, fontFamily:T.body, color:T.text, fontWeight:500 }}>{selectedToken.name}</span>
               </div>
               <div style={{ display:"flex", gap:4 }}>
                 <label style={{ flex:1, padding:"6px 0", background:"var(--bg-input)", border:"1px dashed var(--border)", borderRadius:"4px", cursor:"pointer", fontSize:8, color:T.textMuted, textAlign:"center", fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase", transition:"all 0.2s ease" }}
@@ -5522,12 +6041,14 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                 <div>
                   <span style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:6, fontWeight:500 }}>Hit Points</span>
                   <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
-                    <span style={{ fontSize:28, fontFamily:T.body, fontWeight:300, color: getHpColor(selectedToken.hp, selectedToken.maxHp) }}>
+                    <span style={{ fontSize:32, fontFamily:T.body, fontWeight:300, color: getHpColor(selectedToken.hp, selectedToken.maxHp) }}>
                       {selectedToken.hp}
                     </span>
                     <span style={{ fontSize:14, color:T.textFaint, fontFamily:T.body }}>/ {selectedToken.maxHp}</span>
                   </div>
-                  <HpBar val={selectedToken.hp} max={selectedToken.maxHp} color={getHpColor(selectedToken.hp, selectedToken.maxHp)} />
+                  <div style={{ flex:1, height:8, background:"var(--bg-input)", borderRadius:"3px", overflow:"hidden", position:"relative" }}>
+                    <div style={{ width:`${Math.round(selectedToken.hp/selectedToken.maxHp*100)}%`, height:"100%", background:`linear-gradient(90deg, ${getHpColor(selectedToken.hp, selectedToken.maxHp)} 0%, ${getHpColor(selectedToken.hp, selectedToken.maxHp)}cc 100%)`, transition:"width 0.3s ease" }} />
+                  </div>
 
                   <div style={{ display:"flex", gap:6, marginTop:10 }}>
                     {[{d:-10,c:"rgba(212,67,58,0.15)",bc:"rgba(212,67,58,0.3)",tc:"#f06858"},{d:-5,c:"rgba(212,67,58,0.10)",bc:"rgba(212,67,58,0.2)",tc:"#f06858"},{d:-1,c:"rgba(212,67,58,0.06)",bc:"rgba(212,67,58,0.15)",tc:"#f06858"},{d:1,c:"rgba(46,139,87,0.06)",bc:"rgba(46,139,87,0.15)",tc:"#5ee09a"},{d:5,c:"rgba(46,139,87,0.10)",bc:"rgba(46,139,87,0.2)",tc:"#5ee09a"},{d:10,c:"rgba(46,139,87,0.15)",bc:"rgba(46,139,87,0.3)",tc:"#5ee09a"}].map(btn => (
@@ -5647,37 +6168,90 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                   onChange={e => setSpellSearchFilter(e.target.value.toLowerCase())}
                   style={{ width:"100%", padding:"6px 8px", fontSize:9, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"4px", marginBottom:6, outline:"none", boxSizing:"border-box" }} />
 
-                <div style={{ maxHeight:240, overflowY:"auto", display:"flex", flexDirection:"column", gap:1 }}>
-                  {DND_SPELLS.filter(spell =>
-                    (spellLevelFilter === -1 || spell.level === spellLevelFilter) &&
-                    (spell.name.toLowerCase().includes(spellSearchFilter) || spell.description.toLowerCase().includes(spellSearchFilter))
-                  ).map(spell => {
-                    const isActive = activeSpell && activeSpell.name === spell.name;
-                    return (
-                      <div key={spell.name}
-                        onClick={() => {
-                          if (spell.shape === "self" || spell.shape === "touch") {
-                            castSpell(selectedToken.x, selectedToken.y);
-                          } else {
-                            setActiveSpell(isActive ? null : spell);
-                            setSpellTarget(null);
-                          }
-                        }}
-                        onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background="rgba(181,116,255,0.06)"; e.currentTarget.style.borderColor="rgba(181,116,255,0.2)"; }}}
-                        onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor=T.border; }}}
-                        title={spell.description}
-                        style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 8px", background:isActive?"rgba(181,116,255,0.12)":"transparent", border:"1px solid " + (isActive?"rgba(181,116,255,0.35)":T.border), borderRadius:"4px", cursor:"pointer", transition:"all 0.15s" }}>
-                        <span style={{ width:6, height:6, borderRadius:"50%", background:spell.color, flexShrink:0, boxShadow: isActive ? "0 0 6px " + spell.color : "none" }} />
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontFamily:T.ui, fontSize:8, color:isActive?"#b574ff":T.text, letterSpacing:"0.3px", lineHeight:"1.2" }}>{spell.name}</div>
-                          <div style={{ fontFamily:T.body, fontSize:6, color:T.textFaint, lineHeight:"1" }}>
-                            L{spell.level} {spell.castTime === "1 action" ? "" : spell.castTime + " · "}{spell.range > 0 ? spell.range + "ft" : spell.shape === "self" ? "Self" : "Touch"}
-                          </div>
+                {selectedSpellInfo ? (
+                  <div style={{ background:T.bgCard, border:"1px solid " + T.border, borderRadius:"6px", padding:12, marginBottom:12 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"start", marginBottom:10 }}>
+                      <div>
+                        <div style={{ fontSize:14, fontFamily:T.ui, fontWeight:600, color:selectedSpellInfo.color, marginBottom:4 }}>{selectedSpellInfo.name}</div>
+                        <div style={{ fontSize:7, fontFamily:T.ui, color:T.textMuted, letterSpacing:"0.5px", display:"flex", gap:6, marginBottom:8 }}>
+                          <span style={{ background:"rgba(181,116,255,0.15)", padding:"1px 4px", borderRadius:"2px" }}>L{selectedSpellInfo.level}</span>
+                          <span>{selectedSpellInfo.school}</span>
+                          <span>{selectedSpellInfo.castTime}</span>
                         </div>
                       </div>
-                    );
-                  })}
-                </div>
+                      <button onClick={() => setSelectedSpellInfo(null)} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:0 }}><X size={12}/></button>
+                    </div>
+
+                    <div style={{ fontSize:8, fontFamily:T.body, color:T.textMuted, marginBottom:8, paddingBottom:8, borderBottom:"1px solid " + T.border }}>
+                      {selectedSpellInfo.range > 0 ? selectedSpellInfo.range + "ft" : selectedSpellInfo.shape === "self" ? "Self" : "Touch"}
+                      {selectedSpellInfo.shape === "sphere" && (" (radius " + selectedSpellInfo.radius + "ft)")}
+                      {selectedSpellInfo.shape === "cone" && (" (cone " + selectedSpellInfo.radius + "ft)")}
+                      {selectedSpellInfo.shape === "line" && (" (line " + selectedSpellInfo.radius + "ft)")}
+                    </div>
+
+                    <div style={{ fontSize:9, fontFamily:T.body, color:T.text, marginBottom:8, lineHeight:"1.4" }}>{selectedSpellInfo.description}</div>
+
+                    {selectedSpellInfo.damage && (
+                      <div style={{ fontSize:8, fontFamily:T.ui, color:T.textMuted, marginBottom:6, padding:"6px 0", borderTop:"1px solid " + T.border, borderBottom:"1px solid " + T.border }}>
+                        <span style={{ color:T.text, fontWeight:500 }}>Damage:</span> {selectedSpellInfo.damage} {selectedSpellInfo.damageType}
+                      </div>
+                    )}
+
+                    {selectedSpellInfo.save && (
+                      <div style={{ fontSize:8, fontFamily:T.ui, color:T.textMuted, marginBottom:6 }}>
+                        <span style={{ color:T.text, fontWeight:500 }}>Save:</span> {selectedSpellInfo.save} DC {spellDC}
+                      </div>
+                    )}
+
+                    {selectedSpellInfo.concentration && (
+                      <div style={{ fontSize:8, fontFamily:T.ui, color:"#b574ff", marginBottom:6, display:"inline-block", background:"rgba(181,116,255,0.1)", padding:"2px 6px", borderRadius:"3px", marginRight:6 }}>
+                        Concentration
+                      </div>
+                    )}
+                    {selectedSpellInfo.ritual && (
+                      <div style={{ fontSize:8, fontFamily:T.ui, color:"#7c3aed", display:"inline-block", background:"rgba(124,58,237,0.1)", padding:"2px 6px", borderRadius:"3px" }}>
+                        Ritual
+                      </div>
+                    )}
+
+                    <button onClick={() => {
+                      if (selectedSpellInfo.shape === "self" || selectedSpellInfo.shape === "touch") {
+                        castSpell(selectedToken.x, selectedToken.y, selectedSpellInfo);
+                        setSelectedSpellInfo(null);
+                      } else {
+                        setActiveSpell(selectedSpellInfo);
+                        setSelectedSpellInfo(null);
+                      }
+                    }}
+                      style={{ width:"100%", marginTop:12, padding:"8px", background:selectedSpellInfo.color, border:"none", borderRadius:"4px", color:"white", fontFamily:T.ui, fontSize:10, fontWeight:600, cursor:"pointer", transition:"all 0.2s" }}>
+                      {selectedSpellInfo.shape === "self" ? "Cast on Self" : selectedSpellInfo.shape === "touch" ? "Cast on Touch" : "Begin Targeting"}
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ maxHeight:240, overflowY:"auto", display:"flex", flexDirection:"column", gap:1 }}>
+                    {DND_SPELLS.filter(spell =>
+                      (spellLevelFilter === -1 || spell.level === spellLevelFilter) &&
+                      (spell.name.toLowerCase().includes(spellSearchFilter) || spell.description.toLowerCase().includes(spellSearchFilter))
+                    ).map(spell => {
+                      return (
+                        <div key={spell.name}
+                          onClick={() => setSelectedSpellInfo(spell)}
+                          onMouseEnter={e => { e.currentTarget.style.background="rgba(181,116,255,0.06)"; e.currentTarget.style.borderColor="rgba(181,116,255,0.2)"; }}
+                          onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor=T.border; }}
+                          title={spell.description}
+                          style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 8px", background:"transparent", border:"1px solid " + T.border, borderRadius:"4px", cursor:"pointer", transition:"all 0.15s" }}>
+                          <span style={{ width:6, height:6, borderRadius:"50%", background:spell.color, flexShrink:0 }} />
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ fontFamily:T.ui, fontSize:8, color:T.text, letterSpacing:"0.3px", lineHeight:"1.2" }}>{spell.name}</div>
+                            <div style={{ fontFamily:T.body, fontSize:6, color:T.textFaint, lineHeight:"1" }}>
+                              L{spell.level} {spell.castTime === "1 action" ? "" : spell.castTime + " · "}{spell.range > 0 ? spell.range + "ft" : spell.shape === "self" ? "Self" : "Touch"}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
 
