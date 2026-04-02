@@ -5022,42 +5022,6 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
       ctx.restore();
     });
 
-    // Pings (screen space)
-    const nowPing = Date.now();
-    const activePings = pings.filter(p => nowPing - p.time < 3000);
-    if (activePings.length !== pings.length) {
-      // Clean up expired pings on next frame
-      setTimeout(() => setPings(prev => prev.filter(p => Date.now() - p.time < 3000)), 0);
-    }
-    activePings.forEach(p => {
-      const sp = worldToCanvas(p.x, p.y);
-      const age = (nowPing - p.time) / 3000;
-      const alpha = 1 - age;
-      for (let ring = 0; ring < 3; ring++) {
-        const r = 8 + ring * 12 + age * 20;
-        const ringAlpha = alpha * (1 - ring * 0.3);
-        if (ringAlpha <= 0) continue;
-        ctx.beginPath();
-        ctx.arc(sp.x, sp.y, r, 0, Math.PI * 2);
-        ctx.strokeStyle = p.color.replace(")", "," + ringAlpha + ")").replace("rgb(", "rgba(");
-        // Handle hex colors
-        if (p.color.startsWith("#")) {
-          const hex = p.color;
-          const r2 = parseInt(hex.slice(1,3), 16), g = parseInt(hex.slice(3,5), 16), b = parseInt(hex.slice(5,7), 16);
-          ctx.strokeStyle = "rgba(" + r2 + "," + g + "," + b + "," + ringAlpha + ")";
-        }
-        ctx.lineWidth = 2;
-        ctx.stroke();
-      }
-      // Center dot
-      ctx.beginPath();
-      ctx.arc(sp.x, sp.y, 4, 0, Math.PI * 2);
-      ctx.fillStyle = p.color;
-      ctx.globalAlpha = alpha;
-      ctx.fill();
-      ctx.globalAlpha = 1;
-    });
-
     // Props (above tokens layer)
     props.filter(p => p.layer === "above").forEach(p => {
       let pImg = propImagesCache.current[p.id];
@@ -5126,6 +5090,45 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
       }
       ctx.restore();
     }
+
+    // ══ END WORLD SPACE — restore the pan/zoom transform ══
+    ctx.restore();
+
+    // ══ SCREEN SPACE overlays below — no pan/zoom applied ══
+
+    // Pings (screen space)
+    const nowPing = Date.now();
+    const activePings = pings.filter(p => nowPing - p.time < 3000);
+    if (activePings.length !== pings.length) {
+      setTimeout(() => setPings(prev => prev.filter(p => Date.now() - p.time < 3000)), 0);
+    }
+    activePings.forEach(p => {
+      const sp = worldToCanvas(p.x, p.y);
+      const pingAge = (nowPing - p.time) / 3000;
+      const pingAlpha = 1 - pingAge;
+      for (let ring = 0; ring < 3; ring++) {
+        const r = 8 + ring * 12 + pingAge * 20;
+        const ringAlpha = pingAlpha * (1 - ring * 0.3);
+        if (ringAlpha <= 0) continue;
+        ctx.beginPath();
+        ctx.arc(sp.x, sp.y, r, 0, Math.PI * 2);
+        if (p.color.startsWith("#")) {
+          const hex = p.color;
+          const r2 = parseInt(hex.slice(1,3), 16), g = parseInt(hex.slice(3,5), 16), b = parseInt(hex.slice(5,7), 16);
+          ctx.strokeStyle = "rgba(" + r2 + "," + g + "," + b + "," + ringAlpha + ")";
+        } else {
+          ctx.strokeStyle = p.color.replace(")", "," + ringAlpha + ")").replace("rgb(", "rgba(");
+        }
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+      ctx.beginPath();
+      ctx.arc(sp.x, sp.y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = pingAlpha;
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    });
 
     // Ruler overlay (screen space)
     if (activeTool === "ruler" && rulerStart && rulerEnd) {
