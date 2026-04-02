@@ -25,9 +25,9 @@
   <script src="phmurt-auth.js"></script>
   <script src="phmurt-realtime.js"></script>
   <script src="phmurt-shell.js"></script>
-  <script src="monster-data.js"></script>
-  <script src="combat-engine.js"></script>
-  <script src="visual-effects.js"></script>
+  <script src="combat-engine.js" defer></script>
+  <script src="visual-effects.js" defer></script>
+  <script src="monster-data.js" defer></script>
   <style>
     #campaign-root {
       width: 100%;
@@ -39,7 +39,7 @@
 </head>
 <body>
   <div id="ps-site-shell"></div>
-  <div id="campaign-root"></div>
+  <div id="campaign-root"><div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#10101e;color:#888;font-family:Georgia,serif;font-size:18px;letter-spacing:2px">Loading Campaign Manager...</div></div>
 
   <!-- React 18 via CDN -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -2647,7 +2647,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
   const [combatLog, setCombatLog] = useState([]);
   const [showCombatLog, setShowCombatLog] = useState(false);
   const [showDiceOverlay, setShowDiceOverlay] = useState(null);
-  const [sidePanelTab, setSidePanelTab] = useState("monsters");
+  const [combatTab, setCombatTab] = useState("monsters");
 
   const addCombatLogEntry = (entry) => {
     setCombatLog(prev => [{...entry, id: Date.now(), time: new Date().toLocaleTimeString()}, ...prev].slice(0, 100));
@@ -2694,9 +2694,13 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
       maxHp: monster.hp,
       ac: monster.ac,
       speed: parseInt(monster.speed) || 30,
-      type: "enemy",
+      tokenType: "enemy",
       vision: 0,
       hidden: false,
+      darkvision: 0,
+      label: "",
+      notes: `${monster.size} ${monster.type} · CR ${monster.cr}`,
+      imageSrc: null,
       monsterData: monster,
     };
     setTokens(prev => [...prev, newToken]);
@@ -2830,7 +2834,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
     if (typeof window.CombatEngine === 'undefined') return null;
     const monsterTokens = tokens.filter(t => t.monsterData);
     if (monsterTokens.length === 0) return null;
-    const pcTokens = tokens.filter(t => t.type === "pc");
+    const pcTokens = tokens.filter(t => t.tokenType === "pc");
     const partyLevels = pcTokens.length > 0 ? pcTokens.map(t => t.level || 5) : [5, 5, 5, 5]; // Default level 5 party of 4
     const monsterXPs = monsterTokens.map(t => t.monsterData.xp || 0);
     return window.CombatEngine.calculateEncounterDifficulty(partyLevels, monsterXPs);
@@ -5606,7 +5610,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
     }
 
     // ── VFX rendering ──
-    if (typeof window.VFX !== 'undefined') {
+    if (typeof window.VFX !== 'undefined' && window.VFX.getActiveEffectCount() > 0) {
       window.VFX.updateAndDrawEffects(ctx);
     }
   }, [bgColor, bgImage, showGrid, gridSize, zoom, pan, drawings, drawPoints, drawColor, drawWidth, fogCells, fogEnabled, tokens, walls, wallStart, wallPreview, selectedWallType, activeTool, rulerStart, rulerEnd, selectedTokenId, hoveredTokenId, activeCombatantId, combatLive, combatants, conditions, tokenConditions, activeSpell, spellEffects, spellLog, spellDC, fogMode, movementMode, movementPath, movementOrigin, terrainCells, pings, viewRole, props, selectedPropId, battleMaps, activeMapId, activeSceneId, multiTargetSelections, castLevel]);
@@ -7440,8 +7444,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
     {/* Tab bar: Monsters | Tracker | Log */}
     <div style={{ display:"flex", borderBottom:"1px solid " + T.border }}>
       {[{id:"monsters",label:"Monsters"},{id:"tracker",label:"Tracker"},{id:"log",label:"Log"}].map(tab => (
-        <button key={tab.id} onClick={() => setSidePanelTab(tab.id)}
-          style={{ flex:1, padding:"8px 4px", background: sidePanelTab === tab.id ? "rgba(212,67,58,0.08)" : "transparent", border:"none", borderBottom: sidePanelTab === tab.id ? "2px solid var(--crimson)" : "2px solid transparent", cursor:"pointer", fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", color: sidePanelTab === tab.id ? "var(--crimson)" : T.textFaint, transition:"all 0.15s" }}>{tab.label}
+        <button key={tab.id} onClick={() => setCombatTab(tab.id)}
+          style={{ flex:1, padding:"8px 4px", background: combatTab === tab.id ? "rgba(212,67,58,0.08)" : "transparent", border:"none", borderBottom: combatTab === tab.id ? "2px solid var(--crimson)" : "2px solid transparent", cursor:"pointer", fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", color: combatTab === tab.id ? "var(--crimson)" : T.textFaint, transition:"all 0.15s" }}>{tab.label}
           {tab.id === "log" && combatLog.length > 0 && <span style={{ marginLeft:4, padding:"1px 4px", borderRadius:"8px", background:"rgba(212,67,58,0.15)", fontSize:7, color:"var(--crimson)" }}>{combatLog.length}</span>}
         </button>
       ))}
@@ -7449,7 +7453,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
 
     <div style={{ flex:1, overflowY:"auto", padding:"10px 14px" }}>
       {/* MONSTERS TAB */}
-      {sidePanelTab === "monsters" && (
+      {combatTab === "monsters" && (
         <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
           <input value={monsterSearch} onChange={e => setMonsterSearch(e.target.value)} placeholder="Search monsters..."
             style={{ padding:"7px 10px", background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:"4px", color:T.text, fontFamily:T.body, fontSize:11, outline:"none" }} />
@@ -7467,7 +7471,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
           </div>
           <div style={{ fontSize:8, fontFamily:T.ui, color:T.textFaint, letterSpacing:"0.5px" }}>{filteredMonsters.length} monsters found</div>
           <div style={{ display:"flex", flexDirection:"column", gap:2, maxHeight:500, overflowY:"auto" }}>
-            {filteredMonsters.slice(0, 50).map(m => (
+            {filteredMonsters.slice(0, 30).map(m => (
               <div key={m.name} onClick={() => setSelectedMonster(selectedMonster?.name === m.name ? null : m)}
                 style={{ padding:"8px 10px", background: selectedMonster?.name === m.name ? "rgba(212,67,58,0.08)" : "transparent", border: "1px solid " + (selectedMonster?.name === m.name ? "rgba(212,67,58,0.25)" : "transparent"), borderRadius:"5px", cursor:"pointer", transition:"all 0.12s" }}
                 onMouseEnter={e => { if (selectedMonster?.name !== m.name) e.currentTarget.style.background="rgba(255,255,255,0.03)"; }}
@@ -7531,7 +7535,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
       )}
 
       {/* TRACKER TAB */}
-      {sidePanelTab === "tracker" && (
+      {combatTab === "tracker" && (
         <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
           {!combatLive ? (
             <div style={{ textAlign:"center", padding:"28px 0" }}>
@@ -7605,7 +7609,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
                                 onClick={e => {
                                   e.stopPropagation();
                                   // Find nearest enemy target
-                                  const targetToken = tokens.find(t => t.id !== c.mapTokenId && t.hp > 0 && t.type !== c.type);
+                                  const targetToken = tokens.find(t => t.id !== c.mapTokenId && t.hp > 0 && t.tokenType !== c.type);
                                   if (targetToken) {
                                     executeCombatAction(c.mapTokenId, targetToken.id, ai);
                                   } else {
@@ -7627,7 +7631,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
                                   <button key={ai}
                                     onClick={e => {
                                       e.stopPropagation();
-                                      const targetToken = tokens.find(t => t.id !== c.mapTokenId && t.hp > 0 && t.type !== c.type);
+                                      const targetToken = tokens.find(t => t.id !== c.mapTokenId && t.hp > 0 && t.tokenType !== c.type);
                                       if (targetToken) executeCombatAction(c.mapTokenId, targetToken.id, { ...action, _isLegendary: true });
                                     }}
                                     onMouseEnter={e => e.currentTarget.style.background="rgba(255,213,79,0.12)"}
@@ -7668,7 +7672,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
       )}
 
       {/* LOG TAB */}
-      {sidePanelTab === "log" && (
+      {combatTab === "log" && (
         <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
           {combatLog.length === 0 ? (
             <div style={{ textAlign:"center", padding:"28px 0", color:T.textFaint, fontFamily:T.body, fontStyle:"italic", fontSize:11 }}>No combat actions yet</div>
@@ -7699,8 +7703,6 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
       )}
     </div>
   </div>
-)
-
           ) : selectedToken ? (
             <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
               {/* Token Header — always visible */}
