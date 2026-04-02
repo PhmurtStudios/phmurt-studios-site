@@ -2581,7 +2581,7 @@ function computeVisibleCells(tokens, walls, gridSize, mapW, mapH) {
   return visible;
 }
 
-function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
+function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPartyUpdate = null }) {
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
   const fileRef = useRef(null);
@@ -2683,6 +2683,173 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
   const [selectedSpellInfo, setSelectedSpellInfo] = useState(null); // spell object for info panel
   const [tokenPanelTab, setTokenPanelTab] = useState("stats"); // "stats" | "spells" | "config"
   const [sidePanelTab, setSidePanelTab] = useState("scenes"); // "scenes" | "tokens" | "settings"
+
+  // ── Multi-target spell system ──
+  const [multiTargetSelections, setMultiTargetSelections] = useState([]); // [{tokenId, x, y}, ...]
+  const [castLevel, setCastLevel] = useState(null); // Chosen spell slot level for upcasting (null = base level)
+
+  // ── D&D 5e Spell Slot Tables ──
+  // Full casters: Wizard, Sorcerer, Bard, Cleric, Druid
+  const FULL_CASTER_SLOTS = {
+    1:{1:2},2:{1:3},3:{1:4,2:2},4:{1:4,2:3},5:{1:4,2:3,3:2},6:{1:4,2:3,3:3},7:{1:4,2:3,3:3,4:1},8:{1:4,2:3,3:3,4:2},
+    9:{1:4,2:3,3:3,4:3,5:1},10:{1:4,2:3,3:3,4:3,5:2},11:{1:4,2:3,3:3,4:3,5:2,6:1},12:{1:4,2:3,3:3,4:3,5:2,6:1},
+    13:{1:4,2:3,3:3,4:3,5:2,6:1,7:1},14:{1:4,2:3,3:3,4:3,5:2,6:1,7:1},15:{1:4,2:3,3:3,4:3,5:2,6:1,7:1,8:1},
+    16:{1:4,2:3,3:3,4:3,5:2,6:1,7:1,8:1},17:{1:4,2:3,3:3,4:3,5:2,6:1,7:1,8:1,9:1},18:{1:4,2:3,3:3,4:3,5:3,6:1,7:1,8:1,9:1},
+    19:{1:4,2:3,3:3,4:3,5:3,6:2,7:1,8:1,9:1},20:{1:4,2:3,3:3,4:3,5:3,6:2,7:2,8:1,9:1}
+  };
+  // Half casters: Paladin, Ranger (start at level 2)
+  const HALF_CASTER_SLOTS = {
+    1:{},2:{1:2},3:{1:3},4:{1:3},5:{1:4,2:2},6:{1:4,2:2},7:{1:4,2:3},8:{1:4,2:3},9:{1:4,2:3,3:2},10:{1:4,2:3,3:2},
+    11:{1:4,2:3,3:3},12:{1:4,2:3,3:3},13:{1:4,2:3,3:3,4:1},14:{1:4,2:3,3:3,4:1},15:{1:4,2:3,3:3,4:2},16:{1:4,2:3,3:3,4:2},
+    17:{1:4,2:3,3:3,4:3,5:1},18:{1:4,2:3,3:3,4:3,5:1},19:{1:4,2:3,3:3,4:3,5:2},20:{1:4,2:3,3:3,4:3,5:2}
+  };
+  // Warlock: Pact Magic (all slots same level, fewer slots)
+  const WARLOCK_SLOTS = {
+    1:{slots:1,level:1},2:{slots:2,level:1},3:{slots:2,level:2},4:{slots:2,level:2},5:{slots:2,level:3},6:{slots:2,level:3},
+    7:{slots:2,level:4},8:{slots:2,level:4},9:{slots:2,level:5},10:{slots:2,level:5},11:{slots:3,level:5},12:{slots:3,level:5},
+    13:{slots:3,level:5},14:{slots:3,level:5},15:{slots:3,level:5},16:{slots:3,level:5},17:{slots:4,level:5},18:{slots:4,level:5},
+    19:{slots:4,level:5},20:{slots:4,level:5}
+  };
+  // Cantrips known by class and level
+  const CANTRIPS_KNOWN = {
+    Wizard:{1:3,4:4,10:5},Sorcerer:{1:4,4:5,10:6},Bard:{1:2,4:3,10:4},Cleric:{1:3,4:4,10:5},Druid:{1:2,4:3,10:4},
+    Warlock:{1:2,4:3,10:4},Artificer:{1:2,10:3,14:4}
+  };
+  // Spells known (for known-caster classes) by level
+  const SPELLS_KNOWN = {
+    Bard:{1:4,2:5,3:6,4:7,5:8,6:9,7:10,8:11,9:12,10:14,11:15,13:16,14:18,15:19,17:20,18:22},
+    Sorcerer:{1:2,2:3,3:4,4:5,5:6,6:7,7:8,8:9,9:10,10:11,11:12,13:13,15:14,17:15},
+    Ranger:{2:2,3:3,5:4,7:5,9:6,11:7,13:8,15:9,17:10,19:11},
+    Warlock:{1:2,2:3,3:4,4:5,5:6,6:7,7:8,8:9,9:10,11:11,13:12,15:13,17:14,19:15}
+  };
+  // Spellcasting ability by class
+  const SPELLCASTING_ABILITY = {
+    Wizard:"INT",Sorcerer:"CHA",Bard:"CHA",Cleric:"WIS",Druid:"WIS",Paladin:"CHA",Ranger:"WIS",Warlock:"CHA",Artificer:"INT"
+  };
+  // Prepared-caster classes (prepare from full class list each day)
+  const PREPARED_CASTERS = ["Cleric","Druid","Paladin","Wizard"];
+  // Known-caster classes (fixed list of spells known)
+  const KNOWN_CASTERS = ["Bard","Sorcerer","Ranger","Warlock"];
+
+  // Multi-target spell config: spells that target multiple individual creatures
+  const MULTI_TARGET_SPELLS = {
+    "Magic Missile": { targets: 3, perUpcast: 1 }, // 3 darts + 1 per level above 1
+    "Scorching Ray": { targets: 3, perUpcast: 1 }, // 3 rays + 1 per level above 2
+    "Eldritch Blast": { targets: 1, perCharLevel: {1:1, 5:2, 11:3, 17:4} }, // beams by character level
+  };
+
+  // Upcast damage scaling rules per spell (additional dice per level above base)
+  const UPCAST_RULES = {
+    "Burning Hands": { bonusDice:"1d6",perLevel:true },
+    "Cure Wounds": { bonusHeal:"1d8",perLevel:true },
+    "Healing Word": { bonusHeal:"1d4",perLevel:true },
+    "Thunderwave": { bonusDice:"1d8",perLevel:true },
+    "Shatter": { bonusDice:"1d8",perLevel:true },
+    "Fireball": { bonusDice:"1d6",perLevel:true },
+    "Lightning Bolt": { bonusDice:"1d6",perLevel:true },
+    "Cone of Cold": { bonusDice:"1d8",perLevel:true },
+    "Ice Storm": { bonusDice:"1d8",perLevel:true },
+    "Blight": { bonusDice:"1d8",perLevel:true },
+    "Chain Lightning": { bonusDice:"1d8",perLevel:true },
+    "Disintegrate": { bonusDice:"3d6",perLevel:true },
+    "Finger of Death": { bonusDice:"2d8+10",perLevel:true },
+    "Inflict Wounds": { bonusDice:"1d10",perLevel:true },
+    "Guiding Bolt": { bonusDice:"1d6",perLevel:true },
+    "Chromatic Orb": { bonusDice:"1d8",perLevel:true },
+    "Witch Bolt": { bonusDice:"1d12",perLevel:true },
+    "Ray of Sickness": { bonusDice:"1d8",perLevel:true },  // per 2 levels but simplified
+    "Acid Arrow": { bonusDice:"1d4",perLevel:true },
+    "Spiritual Weapon": { bonusDice:"1d8",per2Levels:true },
+    "Spirit Guardians": { bonusDice:"1d8",perLevel:true },
+    "Vampiric Touch": { bonusDice:"1d6",perLevel:true },
+    "Bane": { bonusTargets:1, perLevel:true },
+    "Bless": { bonusTargets:1, perLevel:true },
+    "Hold Person": { bonusTargets:1, perLevel:true },
+    "Magic Missile": { bonusDarts:1, perLevel:true },
+    "Scorching Ray": { bonusRays:1, perLevel:true },
+  };
+
+  // Get spell slots for a token based on class and level
+  const getMaxSpellSlots = (cls, level) => {
+    if (!cls || !level || level < 1) return {};
+    const lv = Math.min(20, Math.max(1, level));
+    if (cls === "Warlock") {
+      const w = WARLOCK_SLOTS[lv];
+      if (!w) return {};
+      const slots = {};
+      slots[w.level] = w.slots;
+      return slots;
+    }
+    if (PREPARED_CASTERS.includes(cls) || ["Wizard","Sorcerer","Bard","Cleric","Druid"].includes(cls)) {
+      return FULL_CASTER_SLOTS[lv] || {};
+    }
+    if (cls === "Paladin" || cls === "Ranger") {
+      return HALF_CASTER_SLOTS[lv] || {};
+    }
+    if (cls === "Artificer") {
+      return HALF_CASTER_SLOTS[lv] || {};
+    }
+    return {}; // Non-casters (Fighter, Rogue, etc.) — no slots
+  };
+
+  // Get max spell level a class/level can cast
+  const getMaxSpellLevel = (cls, level) => {
+    const slots = getMaxSpellSlots(cls, level);
+    return Math.max(0, ...Object.keys(slots).map(Number));
+  };
+
+  // Get number of multi-targets for a spell (including upcast bonus)
+  const getMultiTargetCount = (spell, castLv, charLevel) => {
+    const mt = MULTI_TARGET_SPELLS[spell.name];
+    if (!mt) return 1;
+    if (mt.perCharLevel) {
+      // Eldritch Blast — based on character level
+      const thresholds = Object.keys(mt.perCharLevel).map(Number).sort((a,b) => b-a);
+      for (const th of thresholds) { if ((charLevel || 1) >= th) return mt.perCharLevel[th]; }
+      return 1;
+    }
+    const base = mt.targets || 1;
+    const upcastLevels = (castLv || spell.level) - spell.level;
+    return base + (mt.perUpcast || 0) * upcastLevels;
+  };
+
+  // Calculate upcast damage expression
+  const getUpcastDamage = (spell, castLv) => {
+    const rules = UPCAST_RULES[spell.name];
+    if (!rules || !castLv || castLv <= spell.level) return spell.damage;
+    const levelsAbove = castLv - spell.level;
+    if (rules.bonusDice) {
+      // Parse original damage and add bonus dice
+      const base = spell.damage;
+      const diceMatch = rules.bonusDice.match(/(\d+)d(\d+)/);
+      if (diceMatch) {
+        const bonusCount = parseInt(diceMatch[1]) * (rules.per2Levels ? Math.floor(levelsAbove / 2) : levelsAbove);
+        if (bonusCount > 0) {
+          const baseDice = base.match(/(\d+)d(\d+)/);
+          if (baseDice) {
+            const newCount = parseInt(baseDice[1]) + bonusCount;
+            return base.replace(/\d+d\d+/, newCount + "d" + baseDice[2]);
+          }
+        }
+      }
+    }
+    return spell.damage;
+  };
+  const getUpcastHealing = (spell, castLv) => {
+    const rules = UPCAST_RULES[spell.name];
+    if (!rules || !castLv || castLv <= spell.level || !rules.bonusHeal) return spell.healing;
+    const levelsAbove = castLv - spell.level;
+    const base = spell.healing;
+    const diceMatch = rules.bonusHeal.match(/(\d+)d(\d+)/);
+    if (diceMatch) {
+      const baseDice = base.match(/(\d+)d(\d+)/);
+      if (baseDice) {
+        const newCount = parseInt(baseDice[1]) + parseInt(diceMatch[1]) * levelsAbove;
+        return base.replace(/\d+d\d+/, newCount + "d" + baseDice[2]);
+      }
+    }
+    return spell.healing;
+  };
 
   // ── Maps & Scenes system ──
   // A "map" is a top-level world (e.g., Swordcoast) with a bg image. Each map has "scenes" — sub-areas.
@@ -3114,11 +3281,35 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     return (roll + mod) >= dc;
   };
 
-  const castSpell = (worldX, worldY, overrideSpell) => {
+  // Cast a spell at world coordinates. Now supports upcasting via castLevel state.
+  // For multi-target spells, worldX/worldY is the final target; multiTargetSelections has all previous targets.
+  const castSpell = (worldX, worldY, overrideSpell, multiTargets) => {
     const spell = overrideSpell || activeSpell;
     if (!spell) return;
     const caster = selectedToken;
     const id = "spell-" + Date.now();
+    const effectiveCastLevel = castLevel || spell.level;
+    const upcastDamage = getUpcastDamage(spell, effectiveCastLevel);
+    const upcastHealing = getUpcastHealing(spell, effectiveCastLevel);
+
+    // ── Consume spell slot (if not cantrip) ──
+    if (spell.level > 0 && caster && caster.spellSlots) {
+      const slotLevel = effectiveCastLevel;
+      const maxSlot = caster.spellSlots[slotLevel] || 0;
+      const usedSlot = (caster.usedSlots || {})[slotLevel] || 0;
+      if (usedSlot >= maxSlot) {
+        setSpellLog(prev => [...prev, { id:"log-"+Date.now(), msg:"No " + (slotLevel===1?"1st":slotLevel===2?"2nd":slotLevel===3?"3rd":slotLevel+"th") + " level spell slots remaining!", time:Date.now() }]);
+        setTimeout(() => setSpellLog(prev => prev.slice(1)), 3000);
+        return;
+      }
+      // Consume the slot
+      const newUsed = { ...(caster.usedSlots || {}), [slotLevel]: usedSlot + 1 };
+      updateToken(caster.id, { usedSlots: newUsed });
+      // Sync to party if linked
+      if (caster.partyId) {
+        syncTokenToParty(caster.id, { usedSlots: newUsed });
+      }
+    }
 
     let hitTokens = [];
     let msgs = [];
@@ -3167,9 +3358,9 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
       let totalHealing = 0;
 
       hitTokens.forEach(t => {
-        // Roll damage PER TARGET (fresh roll each time)
-        if ((spell.applyEffect === "damage" || spell.damage) && spell.damage) {
-          const damageRoll = parseDiceExpression(spell.damage.split(" ")[0]);
+        // Roll damage PER TARGET (fresh roll each time) — uses upcast damage
+        if ((spell.applyEffect === "damage" || spell.damage) && (upcastDamage || spell.damage)) {
+          const damageRoll = parseDiceExpression((upcastDamage || spell.damage).split(" ")[0]);
           let dmg = damageRoll.total;
           let saved = false;
 
@@ -3197,11 +3388,12 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
           }
         }
 
-        // Healing
-        if (spell.applyEffect === "heal" && spell.healing) {
-          const healRoll = parseDiceExpression(spell.healing.split("+")[0]);
-          // Add modifier (+mod = +3 by default)
-          const modBonus = spell.healing.includes("mod") ? 3 : 0;
+        // Healing — uses upcast healing
+        if (spell.applyEffect === "heal" && (upcastHealing || spell.healing)) {
+          const healExpr = upcastHealing || spell.healing;
+          const healRoll = parseDiceExpression(healExpr.split("+")[0]);
+          // Add modifier (+mod = spellcasting mod or default 3)
+          const modBonus = healExpr.includes("mod") ? (caster?.spellcastingMod || 3) : 0;
           const healTotal = healRoll.total + modBonus;
           const oldHp = t.hp != null ? t.hp : 0;
           const newHp = Math.min(t.maxHp || 30, oldHp + healTotal);
@@ -3260,6 +3452,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     if (!overrideSpell) {
       setActiveSpell(null);
       spellTargetRef.current = null;
+      setMultiTargetSelections([]);
+      setCastLevel(null);
     }
     setTimeout(() => setSpellEffects(prev => prev.filter(e => e.id !== id)), 4000);
   };
@@ -4123,6 +4317,23 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
         ctx.textAlign = "center";
         ctx.textBaseline = "bottom";
         ctx.fillText(activeSpell.range + " ft", selectedToken.x, selectedToken.y - rangeInPx - 4);
+      }
+      // Multi-target selection markers (show already-selected targets)
+      if (multiTargetSelections.length > 0) {
+        multiTargetSelections.forEach((sel, idx) => {
+          // Glowing ring around selected target
+          ctx.beginPath();
+          ctx.arc(sel.x, sel.y, gridSize * 0.6, 0, Math.PI * 2);
+          ctx.strokeStyle = activeSpell.color + "cc";
+          ctx.lineWidth = 3;
+          ctx.stroke();
+          // Number label
+          ctx.fillStyle = activeSpell.color;
+          ctx.font = "bold " + Math.round(gridSize * 0.35) + "px Cinzel";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText((idx + 1).toString(), sel.x, sel.y - gridSize * 0.6 - 8);
+        });
       }
       // Targeting indicator at mouse position
       const curTarget = spellTargetRef.current;
@@ -5193,7 +5404,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
         yOffset += 28;
       });
     }
-  }, [bgColor, bgImage, showGrid, gridSize, zoom, pan, drawings, drawPoints, drawColor, drawWidth, fogCells, fogEnabled, tokens, walls, wallStart, wallPreview, selectedWallType, activeTool, rulerStart, rulerEnd, selectedTokenId, hoveredTokenId, activeCombatantId, combatLive, combatants, conditions, tokenConditions, activeSpell, spellEffects, spellLog, spellDC, fogMode, movementMode, movementPath, movementOrigin, terrainCells, pings, viewRole, props, selectedPropId, battleMaps, activeMapId, activeSceneId]);
+  }, [bgColor, bgImage, showGrid, gridSize, zoom, pan, drawings, drawPoints, drawColor, drawWidth, fogCells, fogEnabled, tokens, walls, wallStart, wallPreview, selectedWallType, activeTool, rulerStart, rulerEnd, selectedTokenId, hoveredTokenId, activeCombatantId, combatLive, combatants, conditions, tokenConditions, activeSpell, spellEffects, spellLog, spellDC, fogMode, movementMode, movementPath, movementOrigin, terrainCells, pings, viewRole, props, selectedPropId, battleMaps, activeMapId, activeSceneId, multiTargetSelections, castLevel]);
 
   // Keep a ref to the latest render function so the animation loop doesn't restart on every dep change
   const renderRef = useRef(render);
@@ -5390,6 +5601,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
         setWallPreview(null);
         setActiveSpell(null);
         spellTargetRef.current = null;
+        setMultiTargetSelections([]);
+        setCastLevel(null);
         if (movementMode && selectedToken && movementOrigin) {
           // Cancel movement — return token to origin
           setTokens(p => p.map(t => t.id === selectedTokenId ? {...t, x: movementOrigin.x, y: movementOrigin.y} : t));
@@ -5425,6 +5638,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
       if (activeSpell) {
         setActiveSpell(null);
         spellTargetRef.current = null;
+        setMultiTargetSelections([]);
+        setCastLevel(null);
       }
       return;
     }
@@ -5444,7 +5659,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
       return;
     }
 
-    // Spell targeting — LEFT CLICK to cast
+    // Spell targeting — LEFT CLICK to cast (or add multi-target)
     if (activeSpell) {
       if (activeSpell.shape === "self") {
         if (selectedToken) {
@@ -5459,10 +5674,69 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
           return;
         }
         castSpell(w.x, w.y);
-      } else if (activeSpell.shape === "touch") {
-        castSpell(w.x, w.y);
       } else {
-        castSpell(w.x, w.y);
+        // Check if this is a multi-target spell
+        const mtCount = getMultiTargetCount(activeSpell, castLevel, selectedToken?.level || 1);
+        if (mtCount > 1 && activeSpell.shape === "single") {
+          // Multi-target mode: click to add targets one by one
+          const clickedToken = tokens.reduce((c, t) => {
+            const d = Math.hypot(t.x - w.x, t.y - w.y);
+            return (!c || d < c.dist) && d < gridSize * 3 ? { token: t, dist: d } : c;
+          }, null);
+          if (clickedToken) {
+            const newSelections = [...multiTargetSelections, { tokenId: clickedToken.token.id, x: clickedToken.token.x, y: clickedToken.token.y }];
+            setMultiTargetSelections(newSelections);
+            if (newSelections.length >= mtCount) {
+              // All targets selected — cast on each
+              newSelections.forEach((sel, idx) => {
+                setTimeout(() => {
+                  // Cast individual hits as separate effects
+                  const id2 = "spell-" + Date.now() + "-" + idx;
+                  const upcastDmg = getUpcastDamage(activeSpell, castLevel);
+                  // For multi-target, each hit gets its own damage roll
+                  const singleHitSpell = { ...activeSpell, damage: activeSpell.name === "Magic Missile" ? "1d4+1 force" : upcastDmg };
+                  const target = tokens.find(t => t.id === sel.tokenId);
+                  if (target) {
+                    // Roll damage for this single hit
+                    const damageRoll = parseDiceExpression(singleHitSpell.damage.split(" ")[0]);
+                    let dmg = damageRoll.total;
+                    if (singleHitSpell.save && singleHitSpell.save !== "" && singleHitSpell.save !== "attack") {
+                      if (rollSave(spellDC, singleHitSpell.save)) dmg = Math.floor(dmg / 2);
+                    }
+                    const oldHp = target.hp != null ? target.hp : (target.maxHp || 30);
+                    const newHp = Math.max(0, oldHp - dmg);
+                    updateToken(target.id, { hp: newHp });
+                    const ci = combatants.findIndex(c => c.mapTokenId === target.id);
+                    if (ci >= 0) setCombatants(prev => { const n = [...prev]; n[ci] = {...n[ci], hp: newHp}; return n; });
+                    const logId = "log-" + Date.now() + "-mt-" + idx;
+                    setSpellLog(prev => [...prev, { id: logId, msg: activeSpell.name + " hit " + target.name + " for " + dmg + " " + (activeSpell.damageType || ""), time: Date.now() }]);
+                    setTimeout(() => setSpellLog(prev => prev.filter(l => l.id !== logId)), 5000);
+                  }
+                  // Visual effect per hit
+                  setSpellEffects(prev => [...prev, { id: id2, x: sel.x, y: sel.y, spell: activeSpell, startTime: Date.now() + idx * 150, casterX: selectedToken?.x || sel.x, casterY: selectedToken?.y || sel.y }]);
+                  setTimeout(() => setSpellEffects(prev => prev.filter(e => e.id !== id2)), 4000);
+                }, idx * 150);
+              });
+              // Consume spell slot
+              if (activeSpell.level > 0 && selectedToken && selectedToken.spellSlots) {
+                const slotLv = castLevel || activeSpell.level;
+                const usedSlot = (selectedToken.usedSlots || {})[slotLv] || 0;
+                const newUsed = { ...(selectedToken.usedSlots || {}), [slotLv]: usedSlot + 1 };
+                updateToken(selectedToken.id, { usedSlots: newUsed });
+              }
+              setActiveSpell(null);
+              spellTargetRef.current = null;
+              setMultiTargetSelections([]);
+              setCastLevel(null);
+            }
+          } else {
+            setSpellLog(prev => [...prev, { id:"log-"+Date.now(), msg:"Click on a target token (" + (multiTargetSelections.length + 1) + "/" + mtCount + ")", time:Date.now() }]);
+            setTimeout(() => setSpellLog(prev => prev.slice(1)), 2000);
+          }
+        } else {
+          // Standard single-target or AoE cast
+          castSpell(w.x, w.y);
+        }
       }
       return;
     }
@@ -5870,7 +6144,13 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     const w = canvasToWorld(cx, cy);
     const snap = snapToGridCenter(w.x, w.y);
     const id = "tk-" + Date.now() + "-" + Math.random();
-    setTokens(p => [...p, { id, name:parsed.name, color:parsed.color, hp:parsed.hp, maxHp:parsed.maxHp, x:snap.x, y:snap.y, vision:0, darkvision:0, speed:30, hidden:false }]);
+    const dropExtra = {};
+    if (parsed.cls) { dropExtra.cls = parsed.cls; dropExtra.level = parsed.level || 1; dropExtra.spellSlots = getMaxSpellSlots(parsed.cls, parsed.level || 1); dropExtra.usedSlots = {}; dropExtra.spellcastingMod = parsed.spellcastingMod || 3; }
+    if (parsed.partyId) dropExtra.partyId = parsed.partyId;
+    if (parsed.ac) dropExtra.ac = parsed.ac;
+    if (parsed.tokenType) dropExtra.tokenType = parsed.tokenType;
+    if (parsed.notes) dropExtra.notes = parsed.notes;
+    setTokens(p => [...p, { id, name:parsed.name, color:parsed.color, hp:parsed.hp, maxHp:parsed.maxHp, x:snap.x, y:snap.y, vision:0, darkvision:0, speed:30, hidden:false, size:"medium", label:"", notes:"", imageSrc:null, tokenType:"enemy", ...dropExtra }]);
     setSelectedTokenId(id);
   };
 
@@ -5885,6 +6165,45 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
   const updateToken = (id, updates) => {
     setTokens(p => p.map(t => t.id === id ? {...t, ...updates} : t));
   };
+
+  // ── Bidirectional sync: token <-> party member ──
+  // When token changes, sync relevant fields back to party data
+  const syncTokenToParty = (tokenId, updates) => {
+    if (!onPartyUpdate) return;
+    const token = tokens.find(t => t.id === tokenId);
+    if (!token || !token.partyId) return;
+    // Map token fields back to party member fields
+    const partyUpdates = {};
+    if (updates.hp !== undefined) partyUpdates.hp = updates.hp;
+    if (updates.usedSlots !== undefined) partyUpdates.usedSlots = updates.usedSlots;
+    if (updates.knownSpells !== undefined) partyUpdates.knownSpells = updates.knownSpells;
+    if (updates.preparedSpells !== undefined) partyUpdates.preparedSpells = updates.preparedSpells;
+    if (updates.spellcastingMod !== undefined) partyUpdates.spellcastingMod = updates.spellcastingMod;
+    if (Object.keys(partyUpdates).length > 0) {
+      onPartyUpdate(token.partyId, partyUpdates);
+    }
+  };
+
+  // Sync party -> tokens: when party data changes externally, update linked tokens
+  useEffect(() => {
+    if (!party || party.length === 0) return;
+    setTokens(prev => prev.map(t => {
+      if (!t.partyId) return t;
+      const member = party.find(p => p.id === t.partyId);
+      if (!member) return t;
+      // Sync HP and other fields from party -> token (party is source of truth for character data)
+      const updates = {};
+      if (member.hp !== undefined && member.hp !== t.hp) updates.hp = member.hp;
+      if (member.maxHp !== undefined && member.maxHp !== t.maxHp) updates.maxHp = member.maxHp;
+      if (member.ac !== undefined && member.ac !== t.ac) updates.ac = member.ac;
+      if (member.lv !== undefined && member.lv !== t.level) {
+        updates.level = member.lv;
+        updates.spellSlots = getMaxSpellSlots(t.cls, member.lv);
+      }
+      if (Object.keys(updates).length > 0) return { ...t, ...updates };
+      return t;
+    }));
+  }, [party]);
 
   // ── Dice rolling ──
   const rollD20 = () => {
@@ -6105,9 +6424,31 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
   };
 
   const macroShortRest = () => {
-    setTokens(prev => prev.map(t => t.maxHp ? {...t, hp: Math.min(t.maxHp, t.hp + Math.floor(t.maxHp / 2))} : t));
+    setTokens(prev => prev.map(t => {
+      if (!t.maxHp) return t;
+      const updated = { ...t, hp: Math.min(t.maxHp, t.hp + Math.floor(t.maxHp / 2)) };
+      // Warlocks recover Pact Magic slots on short rest
+      if (t.cls === "Warlock" && t.spellSlots) {
+        updated.usedSlots = {};
+      }
+      return updated;
+    }));
     setCombatants(prev => prev.map(c => ({...c, hp: Math.min(c.maxHp, c.hp + Math.floor(c.maxHp / 2))})));
-    setRollHistory(prev => [{ expr: "Short Rest", rolls: [], mod: 0, total: 0, who: "Party healed", time: Date.now() }, ...prev].slice(0, 20));
+    setRollHistory(prev => [{ expr: "Short Rest", rolls: [], mod: 0, total: 0, who: "Party healed (Warlock slots restored)", time: Date.now() }, ...prev].slice(0, 20));
+  };
+
+  const macroLongRest = () => {
+    setTokens(prev => prev.map(t => {
+      if (!t.maxHp) return t;
+      const updated = { ...t, hp: t.maxHp }; // Full HP restore
+      // All casters recover all spell slots on long rest
+      if (t.spellSlots) {
+        updated.usedSlots = {};
+      }
+      return updated;
+    }));
+    setCombatants(prev => prev.map(c => ({...c, hp: c.maxHp})));
+    setRollHistory(prev => [{ expr: "Long Rest", rolls: [], mod: 0, total: 0, who: "Party fully restored (all slots recovered)", time: Date.now() }, ...prev].slice(0, 20));
   };
 
   const macroPerception = () => {
@@ -6222,7 +6563,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
             {activeSpell && (
               <div style={{ position:"absolute", top:14, left:80, background:"rgba(181,116,255,0.88)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"#f2e8d6", letterSpacing:"1.5px", pointerEvents:"none", zIndex:10, border:"1px solid rgba(181,116,255,0.5)", boxShadow:"0 2px 10px rgba(181,116,255,0.3)", display:"flex", alignItems:"center", gap:8 }}>
                 <span style={{ width:7, height:7, borderRadius:"50%", background:activeSpell.color, boxShadow:"0 0 6px " + activeSpell.color }} />
-                SPELL: {activeSpell.name.toUpperCase()} — click to cast · right-click/Esc to cancel · Space+drag or scroll to pan/zoom
+                SPELL: {activeSpell.name.toUpperCase()}{castLevel && castLevel > activeSpell.level ? " (LV" + castLevel + ")" : ""}{MULTI_TARGET_SPELLS[activeSpell.name] ? " — " + multiTargetSelections.length + "/" + getMultiTargetCount(activeSpell, castLevel, selectedToken?.level||1) + " targets" : ""} — click to {MULTI_TARGET_SPELLS[activeSpell.name] ? "select targets" : "cast"} · right-click/Esc to cancel · Space+drag or scroll to pan/zoom
               </div>
             )}
 
@@ -7151,33 +7492,90 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                 )}
 
                 {/* SPELLS TAB */}
-                {tokenPanelTab === "spells" && (
+                {tokenPanelTab === "spells" && (() => {
+                  const tk = selectedToken;
+                  const tkClass = tk?.cls || "";
+                  const tkLevel = tk?.level || 1;
+                  const isCaster = !!SPELLCASTING_ABILITY[tkClass];
+                  const maxSlots = tk?.spellSlots || getMaxSpellSlots(tkClass, tkLevel);
+                  const usedSlots = tk?.usedSlots || {};
+                  const maxSpellLv = getMaxSpellLevel(tkClass, tkLevel);
+                  // Filter spells by class
+                  const classSpells = DND_SPELLS.filter(s => {
+                    if (!tkClass) return true; // No class = show all (DM mode)
+                    if (!s.classes.includes(tkClass)) return false;
+                    if (s.level > 0 && s.level > maxSpellLv) return false;
+                    return true;
+                  });
+                  return (
                   <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                    {/* Spell DC Control */}
+                    {/* Spell DC + Spellcasting Mod */}
                     <div style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", background:"var(--bg-input)", borderRadius:"6px", border:"1px solid " + T.border }}>
-                      <span style={{ fontFamily:T.ui, fontSize:11, color:T.textMuted, letterSpacing:"0.5px", textTransform:"uppercase", fontWeight:500 }}>Spell Save DC</span>
+                      <span style={{ fontFamily:T.ui, fontSize:11, color:T.textMuted, letterSpacing:"0.5px", textTransform:"uppercase", fontWeight:500 }}>Save DC</span>
                       <input type="number" min="8" max="30" value={spellDC} onChange={e => setSpellDC(parseInt(e.target.value) || 15)}
-                        style={{ width:48, padding:"4px 6px", fontFamily:T.ui, fontSize:14, background:T.bgCard, border:"1px solid " + T.border, color:T.text, borderRadius:"4px", textAlign:"center", fontWeight:600 }} />
+                        style={{ width:44, padding:"4px 6px", fontFamily:T.ui, fontSize:13, background:T.bgCard, border:"1px solid " + T.border, color:T.text, borderRadius:"4px", textAlign:"center", fontWeight:600 }} />
+                      {isCaster && <span style={{ fontFamily:T.ui, fontSize:10, color:T.textFaint }}>({SPELLCASTING_ABILITY[tkClass]})</span>}
+                      <span style={{ fontFamily:T.ui, fontSize:11, color:T.textMuted, letterSpacing:"0.5px", textTransform:"uppercase", fontWeight:500, marginLeft:"auto" }}>Mod</span>
+                      <input type="number" min="-5" max="10" value={tk?.spellcastingMod || 3} onChange={e => updateToken(tk.id, { spellcastingMod: parseInt(e.target.value) || 0 })}
+                        style={{ width:40, padding:"4px 6px", fontFamily:T.ui, fontSize:13, background:T.bgCard, border:"1px solid " + T.border, color:T.text, borderRadius:"4px", textAlign:"center", fontWeight:600 }} />
                     </div>
 
-                    {activeSpell && (
+                    {/* Spell Slots Display with +/- buttons */}
+                    {isCaster && Object.keys(maxSlots).length > 0 && (
+                      <div style={{ padding:"8px 10px", background:"var(--bg-input)", borderRadius:"6px", border:"1px solid " + T.border }}>
+                        <div style={{ fontFamily:T.ui, fontSize:10, letterSpacing:"1.2px", color:T.textFaint, textTransform:"uppercase", marginBottom:6, fontWeight:500 }}>Spell Slots</div>
+                        <div style={{ display:"flex", flexWrap:"wrap", gap:4 }}>
+                          {Object.keys(maxSlots).sort((a,b) => a-b).map(lv => {
+                            const max = maxSlots[lv];
+                            const used = usedSlots[lv] || 0;
+                            const remaining = max - used;
+                            return (
+                              <div key={"slot-"+lv} style={{ display:"flex", alignItems:"center", gap:3, padding:"3px 6px", background:"rgba(0,0,0,0.1)", borderRadius:"4px", border:"1px solid " + T.border }}>
+                                <span style={{ fontFamily:T.ui, fontSize:10, color:T.textMuted, fontWeight:600, minWidth:14 }}>{lv===1?"1st":lv===2?"2nd":lv===3?"3rd":lv+"th"}</span>
+                                <span onClick={() => { if (tk) { const newUsed = {...usedSlots, [lv]: Math.min(max, used+1)}; updateToken(tk.id, {usedSlots:newUsed}); } }}
+                                  style={{ cursor:"pointer", width:16, height:16, display:"flex", alignItems:"center", justifyContent:"center", borderRadius:"3px", background:"rgba(212,67,58,0.15)", color:"#f06858", fontSize:11, fontWeight:700, fontFamily:T.ui }}>-</span>
+                                <span style={{ fontFamily:T.ui, fontSize:12, fontWeight:600, color:remaining > 0 ? "#5ee09a" : "#f06858", minWidth:16, textAlign:"center" }}>{remaining}</span>
+                                <span style={{ fontFamily:T.ui, fontSize:10, color:T.textFaint }}>/{max}</span>
+                                <span onClick={() => { if (tk) { const newUsed = {...usedSlots, [lv]: Math.max(0, used-1)}; updateToken(tk.id, {usedSlots:newUsed}); } }}
+                                  style={{ cursor:"pointer", width:16, height:16, display:"flex", alignItems:"center", justifyContent:"center", borderRadius:"3px", background:"rgba(46,139,87,0.15)", color:"#5ee09a", fontSize:11, fontWeight:700, fontFamily:T.ui }}>+</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Multi-target status */}
+                    {activeSpell && multiTargetSelections.length > 0 && (
+                      <div style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", background:"rgba(88,170,255,0.1)", border:"1px solid rgba(88,170,255,0.3)", borderRadius:"8px" }}>
+                        <Target size={14} color="#58aaff" />
+                        <span style={{ flex:1, fontFamily:T.ui, fontSize:12, color:"#58aaff", fontWeight:500 }}>
+                          Targets: {multiTargetSelections.length}/{getMultiTargetCount(activeSpell, castLevel, tk?.level || 1)} selected
+                        </span>
+                        <span onClick={() => setMultiTargetSelections(prev => prev.slice(0, -1))} style={{ cursor:"pointer", fontSize:10, color:T.textFaint, fontFamily:T.ui }}>Undo</span>
+                      </div>
+                    )}
+
+                    {activeSpell && !multiTargetSelections.length && (
                       <div style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", background:"rgba(181,116,255,0.1)", border:"1px solid rgba(181,116,255,0.3)", borderRadius:"8px" }}>
                         <span style={{ width:10, height:10, borderRadius:"50%", background:activeSpell.color, boxShadow:"0 0 8px " + activeSpell.color }} />
-                        <span style={{ flex:1, fontFamily:T.ui, fontSize:12, color:"#b574ff", letterSpacing:"0.5px", fontWeight:500 }}>Targeting: {activeSpell.name}</span>
-                        <span onClick={() => { setActiveSpell(null); spellTargetRef.current = null; }} style={{ cursor:"pointer", color:T.textFaint, padding:4, display:"flex" }}><X size={14}/></span>
+                        <span style={{ flex:1, fontFamily:T.ui, fontSize:12, color:"#b574ff", letterSpacing:"0.5px", fontWeight:500 }}>Targeting: {activeSpell.name}{castLevel && castLevel > activeSpell.level ? " (Lv"+castLevel+")" : ""}</span>
+                        <span onClick={() => { setActiveSpell(null); spellTargetRef.current = null; setMultiTargetSelections([]); setCastLevel(null); }} style={{ cursor:"pointer", color:T.textFaint, padding:4, display:"flex" }}><X size={14}/></span>
                       </div>
                     )}
 
                     <div style={{ display:"flex", gap:3, flexWrap:"wrap" }}>
-                      {[0,1,2,3,4,5,6,7,8,9].map(lvl => (
+                      {[0,1,2,3,4,5,6,7,8,9].filter(lvl => lvl === 0 || lvl <= Math.max(9, maxSpellLv)).map(lvl => {
+                        const hasSlots = lvl === 0 || (maxSlots[lvl] && (maxSlots[lvl] - (usedSlots[lvl]||0)) > 0);
+                        return (
                         <button key={"lvl-" + lvl} onClick={() => setSpellLevelFilter(spellLevelFilter === lvl ? -1 : lvl)}
-                          style={{ padding:"5px 10px", fontSize:11, fontFamily:T.ui, letterSpacing:"0.5px", textTransform:"uppercase", background:spellLevelFilter === lvl ? "rgba(181,116,255,0.2)" : "transparent", border:"1px solid " + (spellLevelFilter === lvl ? "rgba(181,116,255,0.5)" : T.border), color:spellLevelFilter === lvl ? "#b574ff" : T.textMuted, borderRadius:"4px", cursor:"pointer", transition:"all 0.15s", fontWeight:spellLevelFilter === lvl ? 600 : 400 }}>
+                          style={{ padding:"5px 10px", fontSize:11, fontFamily:T.ui, letterSpacing:"0.5px", textTransform:"uppercase", background:spellLevelFilter === lvl ? "rgba(181,116,255,0.2)" : "transparent", border:"1px solid " + (spellLevelFilter === lvl ? "rgba(181,116,255,0.5)" : T.border), color:spellLevelFilter === lvl ? "#b574ff" : hasSlots ? T.textMuted : "rgba(255,80,80,0.5)", borderRadius:"4px", cursor:"pointer", transition:"all 0.15s", fontWeight:spellLevelFilter === lvl ? 600 : 400, opacity: !hasSlots && lvl > 0 ? 0.5 : 1 }}>
                           {lvl === 0 ? "C" : lvl}
                         </button>
-                      ))}
+                      );})}
                     </div>
 
-                    <input type="text" placeholder="Search spells..."
+                    <input type="text" placeholder={"Search " + (tkClass ? tkClass + " spells..." : "spells...")}
                       onChange={e => setSpellSearchFilter(e.target.value.toLowerCase())}
                       style={{ width:"100%", padding:"8px 10px", fontSize:13, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"6px", outline:"none", boxSizing:"border-box" }} />
 
@@ -7208,12 +7606,13 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
 
                         {selectedSpellInfo.damage && (
                           <div style={{ fontSize:12, fontFamily:T.ui, color:T.textMuted, marginBottom:8, padding:"8px 10px", borderRadius:"6px", background:"rgba(212,67,58,0.06)", border:"1px solid rgba(212,67,58,0.15)" }}>
-                            <span style={{ color:"#f06858", fontWeight:600 }}>Damage:</span> {selectedSpellInfo.damage} <span style={{ color:T.textFaint }}>({selectedSpellInfo.damageType})</span>
+                            <span style={{ color:"#f06858", fontWeight:600 }}>Damage:</span> {castLevel && castLevel > selectedSpellInfo.level ? getUpcastDamage(selectedSpellInfo, castLevel) : selectedSpellInfo.damage} <span style={{ color:T.textFaint }}>({selectedSpellInfo.damageType})</span>
+                            {MULTI_TARGET_SPELLS[selectedSpellInfo.name] && <span style={{ color:"#58aaff", fontSize:10, marginLeft:8 }}>({getMultiTargetCount(selectedSpellInfo, castLevel, tkLevel)} targets)</span>}
                           </div>
                         )}
                         {selectedSpellInfo.healing && (
                           <div style={{ fontSize:12, fontFamily:T.ui, color:T.textMuted, marginBottom:8, padding:"8px 10px", borderRadius:"6px", background:"rgba(46,139,87,0.06)", border:"1px solid rgba(46,139,87,0.15)" }}>
-                            <span style={{ color:"#5ee09a", fontWeight:600 }}>Healing:</span> {selectedSpellInfo.healing}
+                            <span style={{ color:"#5ee09a", fontWeight:600 }}>Healing:</span> {castLevel && castLevel > selectedSpellInfo.level ? getUpcastHealing(selectedSpellInfo, castLevel) : selectedSpellInfo.healing}
                           </div>
                         )}
                         {selectedSpellInfo.save && (
@@ -7238,13 +7637,49 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                               <AlertTriangle size={11} color="#e8940a" /> {selectedSpellInfo.conditions.join(", ")}
                             </div>
                           )}
+                          {selectedSpellInfo.classes && (
+                            <div style={{ fontSize:10, fontFamily:T.ui, color:T.textFaint, padding:"4px 10px", borderRadius:"4px", background:"rgba(255,255,255,0.03)" }}>
+                              {selectedSpellInfo.classes.join(", ")}
+                            </div>
+                          )}
                         </div>
+
+                        {/* Upcast Level Selector */}
+                        {selectedSpellInfo.level > 0 && selectedSpellInfo.level < 9 && UPCAST_RULES[selectedSpellInfo.name] && (
+                          <div style={{ marginTop:8, marginBottom:4, padding:"6px 8px", background:"rgba(181,116,255,0.05)", border:"1px solid rgba(181,116,255,0.15)", borderRadius:"6px" }}>
+                            <div style={{ fontFamily:T.ui, fontSize:10, color:T.textMuted, letterSpacing:"0.5px", textTransform:"uppercase", marginBottom:4 }}>Cast at Level</div>
+                            <div style={{ display:"flex", gap:3 }}>
+                              {Array.from({length: Math.min(9, maxSpellLv) - selectedSpellInfo.level + 1}, (_, i) => selectedSpellInfo.level + i).map(lv => {
+                                const slotsAvail = (maxSlots[lv] || 0) - (usedSlots[lv] || 0);
+                                const isSelected = (castLevel || selectedSpellInfo.level) === lv;
+                                return (
+                                  <button key={"up-"+lv} onClick={() => setCastLevel(lv)}
+                                    disabled={slotsAvail <= 0}
+                                    style={{ padding:"4px 10px", fontSize:11, fontFamily:T.ui, fontWeight:isSelected ? 700 : 400, background:isSelected ? "rgba(181,116,255,0.25)" : "transparent", border:"1px solid " + (isSelected ? "rgba(181,116,255,0.5)" : T.border), color:slotsAvail > 0 ? (isSelected ? "#b574ff" : T.text) : T.textFaint, borderRadius:"4px", cursor:slotsAvail > 0 ? "pointer" : "not-allowed", opacity:slotsAvail > 0 ? 1 : 0.4 }}>
+                                    {lv}{lv > selectedSpellInfo.level ? "+" : ""}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
 
                         <button onClick={() => {
                           if (!selectedToken) {
                             setSpellLog(prev => [...prev, { id: "log-" + Date.now(), msg: "Select a token first to cast " + selectedSpellInfo.name, time: Date.now() }]);
                             setTimeout(() => setSpellLog(prev => prev.slice(1)), 3000);
                             return;
+                          }
+                          // Check spell slot availability for non-cantrips
+                          if (selectedSpellInfo.level > 0 && selectedToken.spellSlots) {
+                            const slotLv = castLevel || selectedSpellInfo.level;
+                            const max = (selectedToken.spellSlots[slotLv] || 0);
+                            const used = (selectedToken.usedSlots || {})[slotLv] || 0;
+                            if (used >= max) {
+                              setSpellLog(prev => [...prev, { id: "log-" + Date.now(), msg: "No level " + slotLv + " spell slots remaining!", time: Date.now() }]);
+                              setTimeout(() => setSpellLog(prev => prev.slice(1)), 3000);
+                              return;
+                            }
                           }
                           if (selectedSpellInfo.shape === "self") {
                             castSpell(selectedToken.x, selectedToken.y, selectedSpellInfo);
@@ -7257,21 +7692,25 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                           onMouseEnter={e => { e.currentTarget.style.filter="brightness(1.15)"; e.currentTarget.style.transform="translateY(-1px)"; }}
                           onMouseLeave={e => { e.currentTarget.style.filter="none"; e.currentTarget.style.transform="none"; }}
                           style={{ width:"100%", marginTop:12, padding:"10px", background:selectedSpellInfo.color, border:"none", borderRadius:"6px", color:"white", fontFamily:T.ui, fontSize:12, fontWeight:600, cursor:"pointer", transition:"all 0.2s", boxShadow:"0 2px 8px " + selectedSpellInfo.color + "55", letterSpacing:"0.5px" }}>
-                          {selectedSpellInfo.shape === "self" ? "Cast on Self" : selectedSpellInfo.shape === "touch" ? "Begin Targeting (Touch)" : "Begin Targeting"}
+                          {selectedSpellInfo.shape === "self" ? "Cast on Self" : selectedSpellInfo.shape === "touch" ? "Begin Targeting (Touch)" : MULTI_TARGET_SPELLS[selectedSpellInfo.name] ? "Begin Multi-Targeting" : "Begin Targeting"}
+                          {castLevel && castLevel > selectedSpellInfo.level ? " (Lv" + castLevel + ")" : ""}
                         </button>
                       </div>
                     ) : (
-                      <div style={{ maxHeight: "calc(100vh - 420px)", overflowY:"auto", display:"flex", flexDirection:"column", gap:2 }}>
-                        {DND_SPELLS.filter(spell =>
+                      <div style={{ maxHeight: "calc(100vh - 480px)", overflowY:"auto", display:"flex", flexDirection:"column", gap:2 }}>
+                        {classSpells.filter(spell =>
                           (spellLevelFilter === -1 || spell.level === spellLevelFilter) &&
                           (spell.name.toLowerCase().includes(spellSearchFilter) || spell.description.toLowerCase().includes(spellSearchFilter))
-                        ).map(spell => (
+                        ).map(spell => {
+                          const slotLv = spell.level;
+                          const hasSlot = slotLv === 0 || !tk?.spellSlots || ((maxSlots[slotLv] || 0) - (usedSlots[slotLv] || 0)) > 0;
+                          return (
                           <div key={spell.name}
-                            onClick={() => setSelectedSpellInfo(spell)}
+                            onClick={() => { setSelectedSpellInfo(spell); setCastLevel(spell.level > 0 ? spell.level : null); }}
                             onMouseEnter={e => { e.currentTarget.style.background="rgba(181,116,255,0.08)"; e.currentTarget.style.borderColor="rgba(181,116,255,0.25)"; e.currentTarget.style.transform="translateX(-2px)"; }}
                             onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor=T.border; e.currentTarget.style.transform="none"; }}
                             title={spell.description}
-                            style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", background:"transparent", border:"1px solid " + T.border, borderRadius:"6px", cursor:"pointer", transition:"all 0.15s" }}>
+                            style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", background:"transparent", border:"1px solid " + T.border, borderRadius:"6px", cursor:"pointer", transition:"all 0.15s", opacity: hasSlot ? 1 : 0.45 }}>
                             <span style={{ width:8, height:8, borderRadius:"50%", background:spell.color, flexShrink:0, boxShadow:"0 0 6px " + spell.color + "44" }} />
                             <div style={{ flex:1, minWidth:0 }}>
                               <div style={{ fontFamily:T.ui, fontSize:12, color:T.text, letterSpacing:"0.3px", lineHeight:"1.3", fontWeight:500 }}>{spell.name}</div>
@@ -7279,14 +7718,17 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                                 {spell.level === 0 ? "Cantrip" : "Lvl " + spell.level} · {spell.school} · {spell.range > 0 ? spell.range + "ft" : spell.shape === "self" ? "Self" : "Touch"}
                                 {spell.damage ? " · " + spell.damage.split(" ")[0] + " " + (spell.damageType || "") : ""}
                                 {spell.healing ? " · Heals " + spell.healing.split("+")[0] : ""}
+                                {MULTI_TARGET_SPELLS[spell.name] ? " · Multi" : ""}
+                                {!hasSlot && spell.level > 0 ? " · NO SLOTS" : ""}
                               </div>
                             </div>
                           </div>
-                        ))}
+                        );})}
                       </div>
                     )}
                   </div>
-                )}
+                  );
+                })()}
 
                 {/* CONFIG TAB */}
                 {tokenPanelTab === "config" && (
@@ -7593,8 +8035,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                       <span style={secHead("Party")}>Party</span>
                       {party.map(p => (
                         <div key={p.id}
-                          draggable onDragStart={e => e.dataTransfer.setData("application/token", JSON.stringify({ name:p.name, color:"#2e8b57", hp:p.hp, maxHp:p.maxHp }))}
-                          onClick={() => addToken(p.name, "#2e8b57", p.hp, p.maxHp, { ac:p.ac, tokenType:"pc", notes:p.cls + " Lv" + p.lv + (p.race ? " · " + p.race : "") })}
+                          draggable onDragStart={e => e.dataTransfer.setData("application/token", JSON.stringify({ name:p.name, color:"#2e8b57", hp:p.hp, maxHp:p.maxHp, ac:p.ac, tokenType:"pc", partyId:p.id, cls:p.cls, level:p.lv, notes:(p.cls||"") + " Lv" + (p.lv||1) + (p.race ? " · " + p.race : ""), spellcastingMod:p.spellcastingMod||3 }))}
+                          onClick={() => addToken(p.name, "#2e8b57", p.hp, p.maxHp, { ac:p.ac, tokenType:"pc", notes:p.cls + " Lv" + p.lv + (p.race ? " · " + p.race : ""), partyId:p.id, cls:p.cls, level:p.lv, spellSlots:getMaxSpellSlots(p.cls, p.lv), usedSlots:{}, knownSpells:p.knownSpells||[], preparedSpells:p.preparedSpells||[], spellcastingMod:p.spellcastingMod||3 })}
                           onMouseEnter={e => e.currentTarget.style.background="rgba(46,139,87,0.08)"} onMouseLeave={e => e.currentTarget.style.background="rgba(0,0,0,0.06)"}
                           style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", background:"rgba(0,0,0,0.06)", border:"1px solid " + T.border, borderRadius:"6px", cursor:"grab", marginBottom:3, transition:"all 0.12s" }}>
                           <div style={{ width:26, height:26, borderRadius:"50%", background:"rgba(46,139,87,0.2)", display:"flex", alignItems:"center", justifyContent:"center", border:"1px solid rgba(46,139,87,0.3)" }}>
@@ -7754,6 +8196,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                           <CrimsonBtn onClick={macroRollInitiative} secondary small style={{ fontSize:10 }}>Initiative</CrimsonBtn>
                           <CrimsonBtn onClick={macroSavingThrow} secondary small style={{ fontSize:10 }}>Save Throw</CrimsonBtn>
                           <CrimsonBtn onClick={macroShortRest} secondary small style={{ fontSize:10 }}>Short Rest</CrimsonBtn>
+                          <CrimsonBtn onClick={macroLongRest} secondary small style={{ fontSize:10 }}>Long Rest</CrimsonBtn>
                           <CrimsonBtn onClick={macroPerception} secondary small style={{ fontSize:10 }}>Perception</CrimsonBtn>
                         </div>
                       </div>
@@ -7826,7 +8269,8 @@ function PlayView({ data, setData, activeCampaignId }) {
       </div>
 
       {viewMode==="battlemap" ? (
-        <Battlemap party={data.party} npcs={data.npcs} viewRole={isPlayer ? "player" : "dm"} activeCampaignId={activeCampaignId} />
+        <Battlemap party={data.party} npcs={data.npcs} viewRole={isPlayer ? "player" : "dm"} activeCampaignId={activeCampaignId}
+          onPartyUpdate={(partyId, updates) => setData(d => ({...d, party: d.party.map(p => p.id === partyId ? {...p, ...updates} : p)}))} />
       ) : (
         <div style={{ padding:24, overflowY:"auto", flex:1 }}>
           <SectionTitle icon={Users} count={data.npcs.filter(n=>n.alive).length}>NPC Reference</SectionTitle>
