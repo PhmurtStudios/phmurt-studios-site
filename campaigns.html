@@ -25,6 +25,9 @@
   <script src="phmurt-auth.js"></script>
   <script src="phmurt-realtime.js"></script>
   <script src="phmurt-shell.js"></script>
+  <script src="monster-data.js"></script>
+  <script src="combat-engine.js"></script>
+  <script src="visual-effects.js"></script>
   <style>
     #campaign-root {
       width: 100%;
@@ -2635,6 +2638,203 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
   const [addInit, setAddInit] = useState("");
   const [addHp, setAddHp] = useState("");
   const [addAc, setAddAc] = useState("");
+
+  // ── Monster encounter builder ──
+  const [monsterSearch, setMonsterSearch] = useState("");
+  const [monsterCRFilter, setMonsterCRFilter] = useState("all");
+  const [monsterTypeFilter, setMonsterTypeFilter] = useState("all");
+  const [selectedMonster, setSelectedMonster] = useState(null);
+  const [combatLog, setCombatLog] = useState([]);
+  const [showCombatLog, setShowCombatLog] = useState(false);
+  const [showDiceOverlay, setShowDiceOverlay] = useState(null);
+  const [sidePanelTab, setSidePanelTab] = useState("monsters");
+
+  const addCombatLogEntry = (entry) => {
+    setCombatLog(prev => [{...entry, id: Date.now(), time: new Date().toLocaleTimeString()}, ...prev].slice(0, 100));
+  };
+
+  const filteredMonsters = React.useMemo(() => {
+    if (typeof window.SRD_MONSTERS === 'undefined') return [];
+    return window.SRD_MONSTERS.filter(m => {
+      if (monsterSearch && !m.name.toLowerCase().includes(monsterSearch.toLowerCase())) return false;
+      if (monsterCRFilter !== "all" && String(m.cr) !== monsterCRFilter) return false;
+      if (monsterTypeFilter !== "all" && m.type !== monsterTypeFilter) return false;
+      return true;
+    });
+  }, [monsterSearch, monsterCRFilter, monsterTypeFilter]);
+
+  const monsterTypes = React.useMemo(() => {
+    if (typeof window.SRD_MONSTERS === 'undefined') return [];
+    return [...new Set(window.SRD_MONSTERS.map(m => m.type))].sort();
+  }, []);
+
+  const monsterCRs = React.useMemo(() => {
+    if (typeof window.SRD_MONSTERS === 'undefined') return [];
+    return [...new Set(window.SRD_MONSTERS.map(m => String(m.cr)))].sort((a,b) => {
+      const na = a.includes("/") ? eval(a) : parseFloat(a);
+      const nb = b.includes("/") ? eval(b) : parseFloat(b);
+      return na - nb;
+    });
+  }, []);
+
+  const addMonsterToMap = (monster) => {
+    const cx = (-pan.x + (canvasRef.current?.width || 800) / 2 / zoom);
+    const cy = (-pan.y + (canvasRef.current?.height || 600) / 2 / zoom);
+    const sizeMap = { Tiny: 0.5, Small: 1, Medium: 1, Large: 2, Huge: 3, Gargantuan: 4 };
+    const sizeMult = sizeMap[monster.size] || 1;
+    const newToken = {
+      id: Date.now() + Math.random(),
+      name: monster.name,
+      x: Math.round(cx / gridSize) * gridSize,
+      y: Math.round(cy / gridSize) * gridSize,
+      color: "#dc143c",
+      size: (monster.size || "medium").toLowerCase(),
+      tokenSize: sizeMult,
+      hp: monster.hp,
+      maxHp: monster.hp,
+      ac: monster.ac,
+      speed: parseInt(monster.speed) || 30,
+      type: "enemy",
+      vision: 0,
+      hidden: false,
+      monsterData: monster,
+    };
+    setTokens(prev => [...prev, newToken]);
+    addCombatLogEntry({ type: "system", text: `${monster.name} (CR ${monster.cr}) added to the battlefield` });
+  };
+
+  // ── Combat attack execution using CombatEngine ──
+  const executeCombatAction = (attackerId, targetId, actionOrIndex) => {
+    if (typeof window.CombatEngine === 'undefined') return;
+    const CE = window.CombatEngine;
+    const attacker = tokens.find(t => t.id === attackerId);
+    const target = tokens.find(t => t.id === targetId);
+    if (!attacker || !target) return;
+
+    const monster = attacker.monsterData;
+    if (!monster) return;
+
+    const action = typeof actionOrIndex === 'number' ? monster.actions[actionOrIndex] : actionOrIndex;
+    if (!action) return;
+
+    // Check if it's multiattack
+    if (action.name.toLowerCase() === "multiattack") {
+      const result = CE.executeMultiattack(
+        { ...monster, conditions: (tokenConditions[attackerId] || []).map(c => c.toLowerCase()) },
+        { name: target.name, ac: target.ac || 10, hp: target.hp || 0, maxHp: target.maxHp || 0, conditions: (tokenConditions[targetId] || []).map(c => c.toLowerCase()), ...target.monsterData },
+        monster
+      );
+
+      let totalDmg = 0;
+      result.attackSequence.forEach(seq => {
+        if (seq.type === "attack" && seq.result) {
+          if (seq.result.hit) {
+            totalDmg += seq.result.totalDamage || 0;
+            addCombatLogEntry({ type: "attack", attacker: attacker.name, target: target.name, action: seq.action.name, hit: true, damage: seq.result.totalDamage, isCrit: seq.result.isCrit, roll: seq.result.attackRoll });
+            // Trigger VFX
+            if (typeof window.VFX !== 'undefined') {
+              const dtype = seq.result.damage?.[0]?.type || "slashing";
+              window.VFX.addEffect(window.VFX.createAttackEffect(attacker.x + gridSize/2, attacker.y + gridSize/2, target.x + gridSize/2, target.y + gridSize/2, seq.action.name, dtype));
+              window.VFX.addEffect(window.VFX.createDamageNumber(target.x + gridSize/2, target.y + gridSize/2 - 10, seq.result.totalDamage, dtype, seq.result.isCrit));
+              window.VFX.addEffect(window.VFX.createDiceAnimation(attacker.x + gridSize/2, attacker.y + gridSize/2, 20, seq.result.attackRoll?.chosen || 0));
+            }
+          } else {
+            addCombatLogEntry({ type: "miss", attacker: attacker.name, target: target.name, action: seq.action.name, roll: seq.result.attackRoll });
+            if (typeof window.VFX !== 'undefined') {
+              window.VFX.addEffect(window.VFX.createMissEffect(target.x + gridSize/2, target.y + gridSize/2));
+            }
+          }
+        } else if (seq.type === "save" && seq.result) {
+          addCombatLogEntry({ type: "save", attacker: attacker.name, target: target.name, action: seq.action.name, success: seq.result.save?.success, damage: seq.result.damage, conditions: seq.result.conditions });
+          if (seq.result.damage) totalDmg += seq.result.damage;
+          if (typeof window.VFX !== 'undefined' && seq.parsed) {
+            window.VFX.addEffect(window.VFX.createSaveEffect(attacker.x + gridSize/2, attacker.y + gridSize/2, target.x + gridSize/2, target.y + gridSize/2, seq.action.name, seq.parsed));
+          }
+          if (seq.result.conditions?.length) {
+            seq.result.conditions.forEach(c => addTokenCondition(targetId, c.charAt(0).toUpperCase() + c.slice(1)));
+          }
+        }
+      });
+
+      if (totalDmg > 0) {
+        setTokens(prev => prev.map(t => t.id === targetId ? { ...t, hp: Math.max(0, (t.hp || 0) - totalDmg) } : t));
+        const ci = combatants.findIndex(c => c.mapTokenId === targetId);
+        if (ci >= 0) setCombatants(prev => { const n = [...prev]; n[ci] = {...n[ci], hp: Math.max(0, n[ci].hp - totalDmg)}; return n; });
+      }
+      return;
+    }
+
+    // Single attack or save action
+    const parsed = CE.parseAttackAction(action);
+    if (parsed) {
+      const result = CE.executeAttack(
+        { ...monster, conditions: (tokenConditions[attackerId] || []).map(c => c.toLowerCase()) },
+        { name: target.name, ac: target.ac || 10, hp: target.hp, maxHp: target.maxHp, conditions: (tokenConditions[targetId] || []).map(c => c.toLowerCase()), ...target.monsterData },
+        action
+      );
+      if (result.results[0]?.hit) {
+        addCombatLogEntry({ type: "attack", attacker: attacker.name, target: target.name, action: action.name, hit: true, damage: result.totalDamage, isCrit: result.results[0].isCrit, roll: result.results[0].attackRoll });
+        setTokens(prev => prev.map(t => t.id === targetId ? { ...t, hp: Math.max(0, (t.hp || 0) - result.totalDamage) } : t));
+        const ci = combatants.findIndex(c => c.mapTokenId === targetId);
+        if (ci >= 0) setCombatants(prev => { const n = [...prev]; n[ci] = {...n[ci], hp: Math.max(0, n[ci].hp - result.totalDamage)}; return n; });
+        if (typeof window.VFX !== 'undefined') {
+          const dtype = result.results[0].damage?.[0]?.type || "slashing";
+          window.VFX.addEffect(window.VFX.createAttackEffect(attacker.x + gridSize/2, attacker.y + gridSize/2, target.x + gridSize/2, target.y + gridSize/2, action.name, dtype));
+          window.VFX.addEffect(window.VFX.createDamageNumber(target.x + gridSize/2, target.y + gridSize/2 - 10, result.totalDamage, dtype, result.results[0].isCrit));
+          window.VFX.addEffect(window.VFX.createDiceAnimation(attacker.x + gridSize/2, attacker.y + gridSize/2, 20, result.results[0].attackRoll?.chosen || 0));
+        }
+      } else {
+        addCombatLogEntry({ type: "miss", attacker: attacker.name, target: target.name, action: action.name, roll: result.results[0]?.attackRoll });
+        if (typeof window.VFX !== 'undefined') window.VFX.addEffect(window.VFX.createMissEffect(target.x + gridSize/2, target.y + gridSize/2));
+      }
+      // On-hit save effects
+      if (result.results[1]?.type === "onHitSave" && !result.results[1].save?.success && result.results[1].condition) {
+        addTokenCondition(targetId, result.results[1].condition.charAt(0).toUpperCase() + result.results[1].condition.slice(1));
+      }
+    } else {
+      // Try as save action
+      const saveResult = CE.executeSaveAction(
+        { ...monster, conditions: (tokenConditions[attackerId] || []).map(c => c.toLowerCase()) },
+        [{ name: target.name, ac: target.ac, id: targetId, conditions: (tokenConditions[targetId] || []).map(c => c.toLowerCase()), ...target.monsterData }],
+        action
+      );
+      if (saveResult.results[0]) {
+        const r = saveResult.results[0];
+        addCombatLogEntry({ type: "save", attacker: attacker.name, target: target.name, action: action.name, success: r.save?.success, damage: r.damage, conditions: r.conditions, dc: saveResult.parsed?.dc, ability: saveResult.parsed?.ability });
+        if (r.damage > 0) {
+          setTokens(prev => prev.map(t => t.id === targetId ? { ...t, hp: Math.max(0, (t.hp || 0) - r.damage) } : t));
+          const ci = combatants.findIndex(c => c.mapTokenId === targetId);
+          if (ci >= 0) setCombatants(prev => { const n = [...prev]; n[ci] = {...n[ci], hp: Math.max(0, n[ci].hp - r.damage)}; return n; });
+        }
+        if (r.conditions?.length) {
+          r.conditions.forEach(c => addTokenCondition(targetId, c.charAt(0).toUpperCase() + c.slice(1)));
+        }
+        if (typeof window.VFX !== 'undefined' && saveResult.parsed) {
+          window.VFX.addEffect(window.VFX.createSaveEffect(attacker.x + gridSize/2, attacker.y + gridSize/2, target.x + gridSize/2, target.y + gridSize/2, action.name, saveResult.parsed));
+          if (r.damage > 0) window.VFX.addEffect(window.VFX.createDamageNumber(target.x + gridSize/2, target.y + gridSize/2, r.damage, saveResult.parsed.failDamage?.type || "force"));
+        }
+      }
+    }
+  };
+
+  // ── Roll initiative using CombatEngine ──
+  const rollMonsterInitiative = (monster) => {
+    if (typeof window.CombatEngine === 'undefined') return Math.floor(Math.random() * 20) + 1;
+    const dexMod = Math.floor(((monster.dex || 10) - 10) / 2);
+    const result = window.CombatEngine.rollInitiative(dexMod);
+    return result.total;
+  };
+
+  // ── Encounter difficulty ──
+  const encounterDifficulty = React.useMemo(() => {
+    if (typeof window.CombatEngine === 'undefined') return null;
+    const monsterTokens = tokens.filter(t => t.monsterData);
+    if (monsterTokens.length === 0) return null;
+    const pcTokens = tokens.filter(t => t.type === "pc");
+    const partyLevels = pcTokens.length > 0 ? pcTokens.map(t => t.level || 5) : [5, 5, 5, 5]; // Default level 5 party of 4
+    const monsterXPs = monsterTokens.map(t => t.monsterData.xp || 0);
+    return window.CombatEngine.calculateEncounterDifficulty(partyLevels, monsterXPs);
+  }, [tokens]);
 
   // ── Movement system ──
   const [movementMode, setMovementMode] = useState(false);
@@ -5404,6 +5604,11 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
         yOffset += 28;
       });
     }
+
+    // ── VFX rendering ──
+    if (typeof window.VFX !== 'undefined') {
+      window.VFX.updateAndDrawEffects(ctx);
+    }
   }, [bgColor, bgImage, showGrid, gridSize, zoom, pan, drawings, drawPoints, drawColor, drawWidth, fogCells, fogEnabled, tokens, walls, wallStart, wallPreview, selectedWallType, activeTool, rulerStart, rulerEnd, selectedTokenId, hoveredTokenId, activeCombatantId, combatLive, combatants, conditions, tokenConditions, activeSpell, spellEffects, spellLog, spellDC, fogMode, movementMode, movementPath, movementOrigin, terrainCells, pings, viewRole, props, selectedPropId, battleMaps, activeMapId, activeSceneId, multiTargetSelections, castLevel]);
 
   // Keep a ref to the latest render function so the animation loop doesn't restart on every dep change
@@ -6235,17 +6440,30 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
 
   const startCombat = () => {
     setMode("combat");
-    const combs = tokens.map(t => ({
-      id: "cb-" + t.id,
-      mapTokenId: t.id,
-      name: t.name,
-      init: Math.floor(Math.random() * 20) + 1,
-      hp: t.hp || 30,
-      maxHp: t.maxHp || 30,
-      ac: t.ac || 12,
-      type: t.tokenType === "pc" ? "pc" : (t.tokenType === "npc" ? "npc" : "enemy"),
-      color: t.color,
-    })).sort((a, b) => b.init - a.init);
+    const combs = tokens.map(t => {
+      let init;
+      if (t.monsterData && typeof window.CombatEngine !== 'undefined') {
+        // Use CombatEngine for monsters
+        const dexMod = Math.floor(((t.monsterData.dex || 10) - 10) / 2);
+        const result = window.CombatEngine.rollInitiative(dexMod);
+        init = result.total;
+      } else {
+        // Standard d20 + dex mod for PCs/NPCs
+        const dexMod = t.monsterData ? Math.floor(((t.monsterData.dex || 10) - 10) / 2) : 0;
+        init = Math.floor(Math.random() * 20) + 1 + dexMod;
+      }
+      return {
+        id: "cb-" + t.id,
+        mapTokenId: t.id,
+        name: t.name,
+        init: init,
+        hp: t.hp || 30,
+        maxHp: t.maxHp || 30,
+        ac: t.ac || 12,
+        type: t.tokenType === "pc" ? "pc" : (t.tokenType === "npc" ? "npc" : "enemy"),
+        color: t.color,
+      };
+    }).sort((a, b) => b.init - a.init);
     setCombatants(combs);
     setTurn(0);
     setRound(1);
@@ -7186,118 +7404,302 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
         }}>
 
           {mode === "combat" ? (
-            <div style={{ padding:18, display:"flex", flexDirection:"column", gap:10 }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingBottom:10, borderBottom:"1px solid rgba(212,67,58,0.2)" }}>
-                <span style={{ fontFamily:T.ui, fontSize:13, letterSpacing:"2.5px", color:T.crimson, textTransform:"uppercase", fontWeight:600 }}>
-                  {combatLive ? "Round " + round : "Combat Setup"}
-                </span>
-                {combatLive && (
-                  <div style={{ display:"flex", gap:4 }}>
-                    <button onClick={prevTurn} title="Previous Turn"
-                      onMouseEnter={e => e.currentTarget.style.background="var(--bg-hover)"}
-                      onMouseLeave={e => e.currentTarget.style.background="var(--bg-input)"}
-                      style={{ padding:"4px 8px", background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:"4px", cursor:"pointer", color:T.textMuted, display:"flex", alignItems:"center" }}><ChevronUp size={10}/></button>
-                    <button onClick={nextTurn} title="Next Turn"
-                      onMouseEnter={e => e.currentTarget.style.background="rgba(212,67,58,0.15)"}
+  <div style={{ padding:0, display:"flex", flexDirection:"column", height:"100%" }}>
+    {/* Combat Header */}
+    <div style={{ padding:"14px 18px", borderBottom:"1px solid rgba(212,67,58,0.2)", background:"linear-gradient(180deg, rgba(212,67,58,0.04) 0%, transparent 100%)" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+        <span style={{ fontFamily:T.ui, fontSize:13, letterSpacing:"2.5px", color:T.crimson, textTransform:"uppercase", fontWeight:600 }}>
+          {combatLive ? "Round " + round : "Encounter Builder"}
+        </span>
+        {combatLive && (
+          <div style={{ display:"flex", gap:4 }}>
+            <button onClick={prevTurn} title="Previous Turn"
+              onMouseEnter={e => e.currentTarget.style.background="var(--bg-hover)"}
+              onMouseLeave={e => e.currentTarget.style.background="var(--bg-input)"}
+              style={{ padding:"4px 8px", background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:"4px", cursor:"pointer", color:T.textMuted, display:"flex", alignItems:"center" }}><ChevronUp size={10}/></button>
+            <button onClick={nextTurn} title="Next Turn"
+              onMouseEnter={e => e.currentTarget.style.background="rgba(212,67,58,0.15)"}
+              onMouseLeave={e => e.currentTarget.style.background="rgba(212,67,58,0.08)"}
+              style={{ padding:"4px 10px", background:"rgba(212,67,58,0.08)", border:"1px solid rgba(212,67,58,0.25)", borderRadius:"4px", cursor:"pointer", color:cssVar("--crimson"), fontFamily:T.ui, fontSize:8, letterSpacing:"1px", display:"flex", alignItems:"center", gap:4 }}><SkipForward size={10}/> Next</button>
+            <button onClick={endCombat} title="End Combat"
+              onMouseEnter={e => e.currentTarget.style.background="var(--bg-hover)"}
+              onMouseLeave={e => e.currentTarget.style.background="var(--bg-input)"}
+              style={{ padding:"4px 6px", background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:"4px", cursor:"pointer", color:T.textFaint, display:"flex", alignItems:"center" }}><X size={10}/></button>
+          </div>
+        )}
+      </div>
+      {/* Encounter difficulty badge */}
+      {encounterDifficulty && (
+        <div style={{ marginTop:8, padding:"6px 10px", borderRadius:"4px", background: encounterDifficulty.difficulty === "deadly" ? "rgba(212,67,58,0.12)" : encounterDifficulty.difficulty === "hard" ? "rgba(232,148,10,0.12)" : encounterDifficulty.difficulty === "medium" ? "rgba(88,170,255,0.12)" : "rgba(94,224,154,0.12)", border: "1px solid " + (encounterDifficulty.difficulty === "deadly" ? "rgba(212,67,58,0.3)" : encounterDifficulty.difficulty === "hard" ? "rgba(232,148,10,0.3)" : encounterDifficulty.difficulty === "medium" ? "rgba(88,170,255,0.3)" : "rgba(94,224,154,0.3)"), display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <span style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1px", textTransform:"uppercase", fontWeight:600, color: encounterDifficulty.difficulty === "deadly" ? "#dc143c" : encounterDifficulty.difficulty === "hard" ? "#e8940a" : encounterDifficulty.difficulty === "medium" ? "#58aaff" : "#5ee09a" }}>{encounterDifficulty.difficulty}</span>
+          <span style={{ fontFamily:T.ui, fontSize:8, color:T.textFaint }}>{encounterDifficulty.adjustedXP} XP (adj)</span>
+        </div>
+      )}
+    </div>
+
+    {/* Tab bar: Monsters | Tracker | Log */}
+    <div style={{ display:"flex", borderBottom:"1px solid " + T.border }}>
+      {[{id:"monsters",label:"Monsters"},{id:"tracker",label:"Tracker"},{id:"log",label:"Log"}].map(tab => (
+        <button key={tab.id} onClick={() => setSidePanelTab(tab.id)}
+          style={{ flex:1, padding:"8px 4px", background: sidePanelTab === tab.id ? "rgba(212,67,58,0.08)" : "transparent", border:"none", borderBottom: sidePanelTab === tab.id ? "2px solid var(--crimson)" : "2px solid transparent", cursor:"pointer", fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", color: sidePanelTab === tab.id ? "var(--crimson)" : T.textFaint, transition:"all 0.15s" }}>{tab.label}
+          {tab.id === "log" && combatLog.length > 0 && <span style={{ marginLeft:4, padding:"1px 4px", borderRadius:"8px", background:"rgba(212,67,58,0.15)", fontSize:7, color:"var(--crimson)" }}>{combatLog.length}</span>}
+        </button>
+      ))}
+    </div>
+
+    <div style={{ flex:1, overflowY:"auto", padding:"10px 14px" }}>
+      {/* MONSTERS TAB */}
+      {sidePanelTab === "monsters" && (
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          <input value={monsterSearch} onChange={e => setMonsterSearch(e.target.value)} placeholder="Search monsters..."
+            style={{ padding:"7px 10px", background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:"4px", color:T.text, fontFamily:T.body, fontSize:11, outline:"none" }} />
+          <div style={{ display:"flex", gap:4 }}>
+            <select value={monsterCRFilter} onChange={e => setMonsterCRFilter(e.target.value)}
+              style={{ flex:1, padding:"4px 6px", background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:"3px", color:T.text, fontFamily:T.ui, fontSize:9 }}>
+              <option value="all">All CRs</option>
+              {monsterCRs.map(cr => <option key={cr} value={cr}>CR {cr}</option>)}
+            </select>
+            <select value={monsterTypeFilter} onChange={e => setMonsterTypeFilter(e.target.value)}
+              style={{ flex:1, padding:"4px 6px", background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:"3px", color:T.text, fontFamily:T.ui, fontSize:9 }}>
+              <option value="all">All Types</option>
+              {monsterTypes.map(t => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          <div style={{ fontSize:8, fontFamily:T.ui, color:T.textFaint, letterSpacing:"0.5px" }}>{filteredMonsters.length} monsters found</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:2, maxHeight:500, overflowY:"auto" }}>
+            {filteredMonsters.slice(0, 50).map(m => (
+              <div key={m.name} onClick={() => setSelectedMonster(selectedMonster?.name === m.name ? null : m)}
+                style={{ padding:"8px 10px", background: selectedMonster?.name === m.name ? "rgba(212,67,58,0.08)" : "transparent", border: "1px solid " + (selectedMonster?.name === m.name ? "rgba(212,67,58,0.25)" : "transparent"), borderRadius:"5px", cursor:"pointer", transition:"all 0.12s" }}
+                onMouseEnter={e => { if (selectedMonster?.name !== m.name) e.currentTarget.style.background="rgba(255,255,255,0.03)"; }}
+                onMouseLeave={e => { if (selectedMonster?.name !== m.name) e.currentTarget.style.background="transparent"; }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <span style={{ fontFamily:T.body, fontSize:11, color:T.text, fontWeight:400 }}>{m.name}</span>
+                  <div style={{ display:"flex", gap:4, alignItems:"center" }}>
+                    <span style={{ fontFamily:T.ui, fontSize:7, padding:"1px 5px", borderRadius:"2px", background:"var(--bg-input)", color:T.textFaint, letterSpacing:"0.3px" }}>CR {m.cr}</span>
+                    <button onClick={e => { e.stopPropagation(); addMonsterToMap(m); }}
+                      onMouseEnter={e => e.currentTarget.style.background="rgba(212,67,58,0.2)"}
                       onMouseLeave={e => e.currentTarget.style.background="rgba(212,67,58,0.08)"}
-                      style={{ padding:"4px 10px", background:"rgba(212,67,58,0.08)", border:"1px solid rgba(212,67,58,0.25)", borderRadius:"4px", cursor:"pointer", color:cssVar("--crimson"), fontFamily:T.ui, fontSize:8, letterSpacing:"1px", display:"flex", alignItems:"center", gap:4 }}><SkipForward size={10}/> Next</button>
-                    <button onClick={endCombat} title="End Combat"
-                      onMouseEnter={e => e.currentTarget.style.background="var(--bg-hover)"}
-                      onMouseLeave={e => e.currentTarget.style.background="var(--bg-input)"}
-                      style={{ padding:"4px 6px", background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:"4px", cursor:"pointer", color:T.textFaint, display:"flex", alignItems:"center" }}><X size={10}/></button>
+                      style={{ padding:"3px 7px", background:"rgba(212,67,58,0.08)", border:"1px solid rgba(212,67,58,0.25)", borderRadius:"3px", cursor:"pointer", color:"var(--crimson)", fontFamily:T.ui, fontSize:7, letterSpacing:"0.5px" }}>+ Add</button>
+                  </div>
+                </div>
+                <div style={{ fontSize:9, fontFamily:T.ui, color:T.textFaint, marginTop:2, display:"flex", gap:6 }}>
+                  <span style={{ textTransform:"capitalize" }}>{m.size} {m.type}</span>
+                  <span>AC {m.ac}</span>
+                  <span>HP {m.hp}</span>
+                </div>
+                {/* Expanded monster details */}
+                {selectedMonster?.name === m.name && (
+                  <div style={{ marginTop:8, padding:"8px", background:"rgba(0,0,0,0.15)", borderRadius:"4px", fontSize:9, fontFamily:T.body, color:T.textMuted }}>
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(6,1fr)", gap:2, marginBottom:6, textAlign:"center" }}>
+                      {["STR","DEX","CON","INT","WIS","CHA"].map(ab => (
+                        <div key={ab}>
+                          <div style={{ fontFamily:T.ui, fontSize:6, color:T.textFaint, letterSpacing:"0.5px" }}>{ab}</div>
+                          <div style={{ fontSize:11, fontWeight:600, color:T.text }}>{m[ab.toLowerCase()]}</div>
+                          <div style={{ fontSize:7, color:T.textFaint }}>({Math.floor((m[ab.toLowerCase()]-10)/2) >= 0 ? "+" : ""}{Math.floor((m[ab.toLowerCase()]-10)/2)})</div>
+                        </div>
+                      ))}
+                    </div>
+                    {m.speed && <div style={{ marginBottom:3 }}><strong>Speed:</strong> {m.speed}</div>}
+                    {m.senses && <div style={{ marginBottom:3 }}><strong>Senses:</strong> {m.senses}</div>}
+                    {m.damageResistances && <div style={{ marginBottom:3 }}><strong>Resistances:</strong> {m.damageResistances}</div>}
+                    {m.damageImmunities && <div style={{ marginBottom:3 }}><strong>Immunities:</strong> {m.damageImmunities}</div>}
+                    {m.conditionImmunities && <div style={{ marginBottom:3 }}><strong>Cond. Immun.:</strong> {m.conditionImmunities}</div>}
+                    {m.traits && m.traits.length > 0 && (
+                      <div style={{ marginTop:4, borderTop:"1px solid rgba(255,255,255,0.06)", paddingTop:4 }}>
+                        <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"1px", color:T.textFaint, textTransform:"uppercase", marginBottom:3 }}>Traits</div>
+                        {m.traits.map((tr,i) => <div key={i} style={{ marginBottom:2 }}><strong>{tr.name}:</strong> {tr.desc.slice(0, 120)}{tr.desc.length > 120 ? "..." : ""}</div>)}
+                      </div>
+                    )}
+                    {m.actions && m.actions.length > 0 && (
+                      <div style={{ marginTop:4, borderTop:"1px solid rgba(255,255,255,0.06)", paddingTop:4 }}>
+                        <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"1px", color:T.textFaint, textTransform:"uppercase", marginBottom:3 }}>Actions</div>
+                        {m.actions.map((a,i) => <div key={i} style={{ marginBottom:2 }}><strong>{a.name}:</strong> {a.desc.slice(0, 100)}{a.desc.length > 100 ? "..." : ""}</div>)}
+                      </div>
+                    )}
+                    {m.legendaryActions && m.legendaryActions.length > 0 && (
+                      <div style={{ marginTop:4, borderTop:"1px solid rgba(255,255,255,0.06)", paddingTop:4 }}>
+                        <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"1px", color:"#ffd54f", textTransform:"uppercase", marginBottom:3 }}>Legendary Actions</div>
+                        {m.legendaryActions.map((a,i) => <div key={i} style={{ marginBottom:2 }}><strong>{a.name}:</strong> {a.desc.slice(0, 100)}{a.desc.length > 100 ? "..." : ""}</div>)}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-              {!combatLive ? (
-                <div style={{ textAlign:"center", padding:"28px 0" }}>
-                  <Swords size={28} color={cssVar("--text-faint")} style={{ marginBottom:10 }} />
-                  <p style={{ fontFamily:T.body, fontSize:13, color:T.textMuted, fontStyle:"italic", fontWeight:300, marginBottom:12 }}>
-                    {tokens.length === 0 ? "Place tokens on the map first" : tokens.length + " token" + (tokens.length!==1?"s":"") + " ready"}
-                  </p>
-                  <CrimsonBtn onClick={startCombat} disabled={tokens.length === 0}><Swords size={13}/> Start Encounter</CrimsonBtn>
-                </div>
-              ) : (
-                <React.Fragment>
-                  <div style={{ display:"flex", flexDirection:"column", gap:2, maxHeight:420, overflowY:"auto" }}>
-                    {combatants.map((c, i) => {
-                      const isCurrent = i === turn;
-                      const isDead = c.hp <= 0;
-                      const hpPct = Math.round(c.hp / c.maxHp * 100);
-                      const conds = conditions[c.id] || [];
-                      return (
-                        <div key={c.id}
-                          onClick={() => setSelectedTokenId(c.mapTokenId)}
-                          style={{
-                            padding: isCurrent ? "10px 10px 8px" : "7px 10px",
-                            background: isCurrent ? "var(--crimson-soft)" : isDead ? "rgba(0,0,0,0.1)" : "transparent",
-                            borderRadius:"6px",
-                            borderLeft: isCurrent ? "3px solid var(--crimson)" : "3px solid transparent",
-                            opacity: isDead ? 0.35 : 1, transition:"all 0.15s", cursor:"pointer",
-                          }}>
-                          {/* Row 1: Init + Name + AC */}
-                          <div style={{ display:"flex", alignItems:"center", gap:5 }}>
-                            <span style={{ fontSize:10, fontFamily:T.ui, fontWeight:600, color: isCurrent ? cssVar("--crimson") : T.textFaint, minWidth:18, textAlign:"center" }}>{c.init}</span>
-                            <span style={{ width:6, height:6, borderRadius:"50%", flexShrink:0, background: c.type==="pc" ? "#5ee09a" : c.type==="npc" ? "#58aaff" : cssVar("--crimson") }} />
-                            <span style={{ flex:1, fontSize: isCurrent ? 12 : 11, fontFamily:T.body, fontWeight: isCurrent ? 500 : 400, color:T.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.name}</span>
-                            <span style={{ fontFamily:T.ui, fontSize:7, color:T.textFaint, letterSpacing:"0.5px", padding:"1px 4px", borderRadius:"2px", background:"var(--bg-input)" }}>AC{c.ac}</span>
-                          </div>
-                          {/* Row 2: HP bar with +/- */}
-                          <div style={{ display:"flex", alignItems:"center", gap:3, marginTop:3, paddingLeft:24 }}>
-                            <button onClick={e=>{e.stopPropagation();adjCombatantHp(c.id,-1);}} title="Damage 1"
-                              style={{ background:"none", border:"none", cursor:"pointer", color:"#f06858", fontSize:11, padding:"0 2px", lineHeight:1 }}>-</button>
-                            <div style={{ flex:1, height:5, background:"var(--bg-input)", borderRadius:"3px", overflow:"hidden", position:"relative" }}>
-                              <div style={{ width: hpPct + "%", height:"100%", background:getHpColor(c.hp, c.maxHp), transition:"width 0.2s", borderRadius:"3px" }} />
-                            </div>
-                            <span style={{ fontSize:8, fontFamily:T.body, minWidth:34, textAlign:"center", color: isCurrent ? T.text : T.textMuted }}>{c.hp}/{c.maxHp}</span>
-                            <button onClick={e=>{e.stopPropagation();adjCombatantHp(c.id,1);}} title="Heal 1"
-                              style={{ background:"none", border:"none", cursor:"pointer", color:"#5ee09a", fontSize:11, padding:"0 2px", lineHeight:1 }}>+</button>
-                            <button onClick={e=>{e.stopPropagation(); const v=prompt("Damage (negative) or Heal (positive):"); if(v) adjCombatantHp(c.id, parseInt(v)); }} title="Custom HP"
-                              style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, fontSize:8, padding:"0 2px", fontFamily:T.ui }}>HP</button>
-                            {c.type!=="pc" && <button onClick={e=>{e.stopPropagation();removeCombatant(c.id);}} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:"0 1px" }}><X size={8}/></button>}
-                          </div>
-                          {/* Row 3: Conditions (always visible, any combatant can add) */}
-                          <div style={{ display:"flex", gap:2, flexWrap:"wrap", marginTop:3, paddingLeft:24, alignItems:"center" }}>
-                            {conds.map((cond,ci) => (
-                              <span key={ci} onClick={e=>{e.stopPropagation();removeCondition(c.id,ci);}}
-                                style={{ display:"inline-flex", alignItems:"center", gap:1, background:"var(--crimson-soft)", border:"1px solid var(--crimson-border)", padding:"1px 4px", borderRadius:"2px", fontSize:6, fontFamily:T.ui, letterSpacing:"0.3px", color:cssVar("--crimson"), cursor:"pointer", textTransform:"uppercase" }}>
-                                {cond} <X size={5}/>
-                              </span>
-                            ))}
-                            {c.hp > 0 && (
-                              <select onChange={e=>{e.stopPropagation();addCondition(c.id,e.target.value);e.target.value="";}} value=""
-                                onClick={e=>e.stopPropagation()}
-                                style={{ padding:"1px 2px", fontSize:7, fontFamily:T.ui, background:"transparent", border:"1px dashed var(--border-mid)", color:T.textFaint, borderRadius:"2px", cursor:"pointer", maxWidth:60 }}>
-                                <option value="">+</option>
-                                {conditionsList.map(co=><option key={co} value={co}>{co}</option>)}
-                              </select>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* Add Combatant (collapsed by default) */}
-                  <details style={{ borderTop:"1px solid var(--border)", paddingTop:8, marginTop:4 }}>
-                    <summary style={{ fontFamily:T.ui, fontSize:8, color:T.textFaint, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", fontWeight:500, listStyle:"none", display:"flex", alignItems:"center", gap:4 }}>
-                      <Plus size={9} color={T.textFaint}/> Add Combatant
-                    </summary>
-                    <div style={{ marginTop:6 }}>
-                      <div style={{ display:"grid", gridTemplateColumns:"1fr 36px", gap:3 }}>
-                        <Input value={addName} onChange={setAddName} placeholder="Name" style={{ padding:"4px 6px", fontSize:10 }} />
-                        <Input value={addInit} onChange={setAddInit} placeholder="Init" type="number" style={{ padding:"4px 3px", fontSize:10, textAlign:"center" }} />
-                      </div>
-                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 28px", gap:3, marginTop:3 }}>
-                        <Input value={addHp} onChange={setAddHp} placeholder="HP" type="number" style={{ padding:"4px 6px", fontSize:10 }} />
-                        <Input value={addAc} onChange={setAddAc} placeholder="AC" type="number" style={{ padding:"4px 6px", fontSize:10 }} />
-                        <CrimsonBtn onClick={addCombatantToEncounter} secondary small style={{ padding:"4px 5px" }}><Plus size={10}/></CrimsonBtn>
-                      </div>
-                    </div>
-                  </details>
-                </React.Fragment>
-              )}
+      {/* TRACKER TAB */}
+      {sidePanelTab === "tracker" && (
+        <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+          {!combatLive ? (
+            <div style={{ textAlign:"center", padding:"28px 0" }}>
+              <Swords size={28} color={cssVar("--text-faint")} style={{ marginBottom:10 }} />
+              <p style={{ fontFamily:T.body, fontSize:13, color:T.textMuted, fontStyle:"italic", fontWeight:300, marginBottom:12 }}>
+                {tokens.length === 0 ? "Place tokens on the map first" : tokens.length + " token" + (tokens.length!==1?"s":"") + " ready"}
+              </p>
+              <CrimsonBtn onClick={startCombat} disabled={tokens.length === 0}><Swords size={13}/> Start Encounter</CrimsonBtn>
             </div>
+          ) : (
+            <React.Fragment>
+              <div style={{ display:"flex", flexDirection:"column", gap:2, maxHeight:320, overflowY:"auto" }}>
+                {combatants.map((c, i) => {
+                  const isCurrent = i === turn;
+                  const isDead = c.hp <= 0;
+                  const hpPct = Math.round(c.hp / c.maxHp * 100);
+                  const conds = conditions[c.id] || [];
+                  const linkedToken = tokens.find(t => t.id === c.mapTokenId);
+                  const monsterData = linkedToken?.monsterData;
+                  return (
+                    <div key={c.id}
+                      onClick={() => setSelectedTokenId(c.mapTokenId)}
+                      style={{
+                        padding: isCurrent ? "10px 10px 8px" : "7px 10px",
+                        background: isCurrent ? "var(--crimson-soft)" : isDead ? "rgba(0,0,0,0.1)" : "transparent",
+                        borderRadius:"6px",
+                        borderLeft: isCurrent ? "3px solid var(--crimson)" : "3px solid transparent",
+                        opacity: isDead ? 0.35 : 1, transition:"all 0.15s", cursor:"pointer",
+                      }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:5 }}>
+                        <span style={{ fontSize:10, fontFamily:T.ui, fontWeight:600, color: isCurrent ? cssVar("--crimson") : T.textFaint, minWidth:18, textAlign:"center" }}>{c.init}</span>
+                        <span style={{ width:6, height:6, borderRadius:"50%", flexShrink:0, background: c.type==="pc" ? "#5ee09a" : c.type==="npc" ? "#58aaff" : cssVar("--crimson") }} />
+                        <span style={{ flex:1, fontSize: isCurrent ? 12 : 11, fontFamily:T.body, fontWeight: isCurrent ? 500 : 400, color:T.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.name}</span>
+                        <span style={{ fontFamily:T.ui, fontSize:7, color:T.textFaint, letterSpacing:"0.5px", padding:"1px 4px", borderRadius:"2px", background:"var(--bg-input)" }}>AC{c.ac}</span>
+                      </div>
+                      <div style={{ display:"flex", alignItems:"center", gap:3, marginTop:3, paddingLeft:24 }}>
+                        <button onClick={e=>{e.stopPropagation();adjCombatantHp(c.id,-1);}} style={{ background:"none", border:"none", cursor:"pointer", color:"#f06858", fontSize:11, padding:"0 2px", lineHeight:1 }}>-</button>
+                        <div style={{ flex:1, height:5, background:"var(--bg-input)", borderRadius:"3px", overflow:"hidden" }}>
+                          <div style={{ width: hpPct + "%", height:"100%", background:getHpColor(c.hp, c.maxHp), transition:"width 0.2s", borderRadius:"3px" }} />
+                        </div>
+                        <span style={{ fontSize:8, fontFamily:T.body, minWidth:34, textAlign:"center", color: isCurrent ? T.text : T.textMuted }}>{c.hp}/{c.maxHp}</span>
+                        <button onClick={e=>{e.stopPropagation();adjCombatantHp(c.id,1);}} style={{ background:"none", border:"none", cursor:"pointer", color:"#5ee09a", fontSize:11, padding:"0 2px", lineHeight:1 }}>+</button>
+                        <button onClick={e=>{e.stopPropagation(); const v=prompt("Damage (negative) or Heal (positive):"); if(v) adjCombatantHp(c.id, parseInt(v)); }}
+                          style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, fontSize:8, padding:"0 2px", fontFamily:T.ui }}>HP</button>
+                        {c.type!=="pc" && <button onClick={e=>{e.stopPropagation();removeCombatant(c.id);}} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:"0 1px" }}><X size={8}/></button>}
+                      </div>
+                      {/* Conditions row */}
+                      <div style={{ display:"flex", gap:2, flexWrap:"wrap", marginTop:3, paddingLeft:24, alignItems:"center" }}>
+                        {conds.map((cond,ci) => (
+                          <span key={ci} onClick={e=>{e.stopPropagation();removeCondition(c.id,ci);}}
+                            style={{ display:"inline-flex", alignItems:"center", gap:1, background:"var(--crimson-soft)", border:"1px solid var(--crimson-border)", padding:"1px 4px", borderRadius:"2px", fontSize:6, fontFamily:T.ui, letterSpacing:"0.3px", color:cssVar("--crimson"), cursor:"pointer", textTransform:"uppercase" }}>
+                            {cond} <X size={5}/>
+                          </span>
+                        ))}
+                        {c.hp > 0 && (
+                          <select onChange={e=>{e.stopPropagation();addCondition(c.id,e.target.value);e.target.value="";}} value=""
+                            onClick={e=>e.stopPropagation()}
+                            style={{ padding:"1px 2px", fontSize:7, fontFamily:T.ui, background:"transparent", border:"1px dashed var(--border-mid)", color:T.textFaint, borderRadius:"2px", cursor:"pointer", maxWidth:60 }}>
+                            <option value="">+</option>
+                            {conditionsList.map(co=><option key={co} value={co}>{co}</option>)}
+                          </select>
+                        )}
+                      </div>
+                      {/* Monster Actions — show for current combatant with monsterData */}
+                      {isCurrent && monsterData && monsterData.actions && (
+                        <div style={{ marginTop:6, paddingLeft:24 }}>
+                          <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"1px", color:T.textFaint, textTransform:"uppercase", marginBottom:3 }}>Actions</div>
+                          <div style={{ display:"flex", flexWrap:"wrap", gap:3 }}>
+                            {monsterData.actions.map((action, ai) => (
+                              <button key={ai}
+                                onClick={e => {
+                                  e.stopPropagation();
+                                  // Find nearest enemy target
+                                  const targetToken = tokens.find(t => t.id !== c.mapTokenId && t.hp > 0 && t.type !== c.type);
+                                  if (targetToken) {
+                                    executeCombatAction(c.mapTokenId, targetToken.id, ai);
+                                  } else {
+                                    addCombatLogEntry({ type: "system", text: "No valid target found for " + action.name });
+                                  }
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.background="rgba(212,67,58,0.15)"}
+                                onMouseLeave={e => e.currentTarget.style.background="rgba(212,67,58,0.06)"}
+                                style={{ padding:"3px 8px", background:"rgba(212,67,58,0.06)", border:"1px solid rgba(212,67,58,0.2)", borderRadius:"3px", cursor:"pointer", color:T.text, fontFamily:T.ui, fontSize:8, letterSpacing:"0.3px", transition:"all 0.12s" }}>
+                                {action.name}
+                              </button>
+                            ))}
+                          </div>
+                          {monsterData.legendaryActions && monsterData.legendaryActions.length > 0 && (
+                            <React.Fragment>
+                              <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"1px", color:"#ffd54f", textTransform:"uppercase", marginBottom:3, marginTop:5 }}>Legendary</div>
+                              <div style={{ display:"flex", flexWrap:"wrap", gap:3 }}>
+                                {monsterData.legendaryActions.map((action, ai) => (
+                                  <button key={ai}
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      const targetToken = tokens.find(t => t.id !== c.mapTokenId && t.hp > 0 && t.type !== c.type);
+                                      if (targetToken) executeCombatAction(c.mapTokenId, targetToken.id, { ...action, _isLegendary: true });
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.background="rgba(255,213,79,0.12)"}
+                                    onMouseLeave={e => e.currentTarget.style.background="rgba(255,213,79,0.04)"}
+                                    style={{ padding:"3px 8px", background:"rgba(255,213,79,0.04)", border:"1px solid rgba(255,213,79,0.2)", borderRadius:"3px", cursor:"pointer", color:"#ffd54f", fontFamily:T.ui, fontSize:8, letterSpacing:"0.3px", transition:"all 0.12s" }}>
+                                    {action.name}
+                                  </button>
+                                ))}
+                              </div>
+                            </React.Fragment>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Add Combatant */}
+              <details style={{ borderTop:"1px solid var(--border)", paddingTop:8, marginTop:4 }}>
+                <summary style={{ fontFamily:T.ui, fontSize:8, color:T.textFaint, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", fontWeight:500, listStyle:"none", display:"flex", alignItems:"center", gap:4 }}>
+                  <Plus size={9} color={T.textFaint}/> Add Combatant
+                </summary>
+                <div style={{ marginTop:6 }}>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 36px", gap:3 }}>
+                    <Input value={addName} onChange={setAddName} placeholder="Name" style={{ padding:"4px 6px", fontSize:10 }} />
+                    <Input value={addInit} onChange={setAddInit} placeholder="Init" type="number" style={{ padding:"4px 3px", fontSize:10, textAlign:"center" }} />
+                  </div>
+                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 28px", gap:3, marginTop:3 }}>
+                    <Input value={addHp} onChange={setAddHp} placeholder="HP" type="number" style={{ padding:"4px 6px", fontSize:10 }} />
+                    <Input value={addAc} onChange={setAddAc} placeholder="AC" type="number" style={{ padding:"4px 6px", fontSize:10 }} />
+                    <CrimsonBtn onClick={addCombatantToEncounter} secondary small style={{ padding:"4px 5px" }}><Plus size={10}/></CrimsonBtn>
+                  </div>
+                </div>
+              </details>
+            </React.Fragment>
+          )}
+        </div>
+      )}
+
+      {/* LOG TAB */}
+      {sidePanelTab === "log" && (
+        <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
+          {combatLog.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"28px 0", color:T.textFaint, fontFamily:T.body, fontStyle:"italic", fontSize:11 }}>No combat actions yet</div>
+          ) : (
+            <React.Fragment>
+              <button onClick={() => setCombatLog([])}
+                style={{ alignSelf:"flex-end", padding:"3px 8px", background:"rgba(212,67,58,0.06)", border:"1px solid rgba(212,67,58,0.15)", borderRadius:"3px", cursor:"pointer", color:T.textFaint, fontFamily:T.ui, fontSize:7, letterSpacing:"0.5px", marginBottom:4 }}>Clear Log</button>
+              {combatLog.map(entry => (
+                <div key={entry.id} style={{ padding:"6px 8px", borderRadius:"4px", background: entry.type === "attack" ? "rgba(212,67,58,0.04)" : entry.type === "miss" ? "rgba(136,136,136,0.04)" : entry.type === "save" ? "rgba(88,170,255,0.04)" : "rgba(255,255,255,0.02)", borderLeft: "2px solid " + (entry.type === "attack" ? (entry.isCrit ? "#ffd700" : "var(--crimson)") : entry.type === "miss" ? "#666" : entry.type === "save" ? (entry.success ? "#5ee09a" : "#58aaff") : T.textFaint), fontSize:9, fontFamily:T.body, color:T.textMuted }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <span style={{ fontWeight:500, color:T.text }}>
+                      {entry.type === "attack" && (entry.isCrit ? "💥 CRITICAL! " : "⚔️ ")}
+                      {entry.type === "miss" && "💨 "}
+                      {entry.type === "save" && "🛡️ "}
+                      {entry.type === "system" && "📋 "}
+                      {entry.text || (entry.type === "attack" ? `${entry.attacker} → ${entry.target}` : entry.type === "miss" ? `${entry.attacker} misses ${entry.target}` : entry.type === "save" ? `${entry.target} ${entry.success ? "saves" : "fails"} vs ${entry.action}` : "")}
+                    </span>
+                    <span style={{ fontSize:7, color:T.textFaint }}>{entry.time}</span>
+                  </div>
+                  {entry.action && <div style={{ fontSize:8, color:T.textFaint, marginTop:1 }}>{entry.action}{entry.damage ? ` — ${entry.damage} dmg` : ""}{entry.roll ? ` (${entry.roll.chosen}+${entry.roll.modifier}=${entry.roll.total} vs AC)` : ""}</div>}
+                  {entry.dc && <div style={{ fontSize:8, color:T.textFaint, marginTop:1 }}>DC {entry.dc} {entry.ability} save{entry.damage ? ` — ${entry.damage} dmg` : ""}</div>}
+                  {entry.conditions && entry.conditions.length > 0 && <div style={{ fontSize:8, color:"#e040fb", marginTop:1 }}>Conditions: {entry.conditions.join(", ")}</div>}
+                </div>
+              ))}
+            </React.Fragment>
+          )}
+        </div>
+      )}
+    </div>
+  </div>
+)
 
           ) : selectedToken ? (
             <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
