@@ -2891,6 +2891,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
   const [laserMode, setLaserMode] = useState(false);
   const laserPointsRef = useRef([]); // [{ x, y, time }] — use ref to avoid render storms
   const laserActive = useRef(false);
+  const spaceHeldRef = useRef(false); // Track spacebar for pan-during-spell-targeting
 
   // ── Enhanced token context menu (popup style like Owlbear Rodeo) ──
   const [tokenPopup, setTokenPopup] = useState(null); // { tokenId, screenX, screenY }
@@ -5191,18 +5192,31 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     }
   }, [bgColor, bgImage, showGrid, gridSize, zoom, pan, drawings, drawPoints, drawColor, drawWidth, fogCells, fogEnabled, tokens, walls, wallStart, wallPreview, selectedWallType, activeTool, rulerStart, rulerEnd, selectedTokenId, hoveredTokenId, activeCombatantId, combatLive, combatants, conditions, tokenConditions, activeSpell, spellEffects, spellLog, spellDC, fogMode, movementMode, movementPath, movementOrigin, terrainCells, pings, viewRole, props, selectedPropId, battleMaps, activeMapId, activeSceneId]);
 
+  // Keep a ref to the latest render function so the animation loop doesn't restart on every dep change
+  const renderRef = useRef(render);
+  useEffect(() => { renderRef.current = render; }, [render]);
+
   // Animation loop for combat glow, pings, spell effects, spell log, and spell targeting
+  // Uses renderRef so the loop itself doesn't restart when render deps change (avoids jitter during zoom/pan)
+  const animActiveRef = useRef(false);
   useEffect(() => {
-    if (!combatLive && pings.length === 0 && spellEffects.length === 0 && spellLog.length === 0 && !activeSpell && !laserMode && !(activeMapId && !activeSceneId)) return;
+    const needsAnim = combatLive || pings.length > 0 || spellEffects.length > 0 || spellLog.length > 0 || !!activeSpell || laserMode || (activeMapId && !activeSceneId);
+    if (!needsAnim) {
+      animActiveRef.current = false;
+      return;
+    }
+    // If animation is already running, don't restart — renderRef updates automatically
+    if (animActiveRef.current) return;
+    animActiveRef.current = true;
     let running = true;
     const animate = () => {
-      if (!running) return;
-      render();
+      if (!running || !animActiveRef.current) return;
+      renderRef.current();
       animRef.current = requestAnimationFrame(animate);
     };
     animate();
-    return () => { running = false; cancelAnimationFrame(animRef.current); };
-  }, [combatLive, pings.length, spellEffects.length, spellLog.length, activeSpell, render, laserMode, activeMapId, activeSceneId]);
+    return () => { running = false; animActiveRef.current = false; cancelAnimationFrame(animRef.current); };
+  }, [combatLive, pings.length, spellEffects.length, spellLog.length, activeSpell, laserMode, activeMapId, activeSceneId]);
 
   useEffect(() => { if (!combatLive && pings.length === 0 && spellLog.length === 0) render(); }, [render, combatLive, pings, spellLog]);
 
@@ -5378,9 +5392,20 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
           setTokens(p => p.map(t => t.id === selectedTokenId ? {...t, x: movementOrigin.x, y: movementOrigin.y} : t));
         }
       }
+      // Spacebar hold for panning during spell targeting
+      if (e.key === " " || e.code === "Space") {
+        e.preventDefault();
+        spaceHeldRef.current = true;
+      }
+    };
+    const handleKeyUp = (e) => {
+      if (e.key === " " || e.code === "Space") {
+        spaceHeldRef.current = false;
+      }
     };
     window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => { window.removeEventListener("keydown", handleKey); window.removeEventListener("keyup", handleKeyUp); };
   }, [selectedToken, movementMode, movementOrigin, selectedTokenId]);
 
   const getMouseWorld = (e) => {
@@ -5391,23 +5416,40 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
 
   // ── Mouse handlers ──
   const handleMouseDown = (e) => {
-    if (e.button === 2) return;
+    // Right-click handled by contextMenu handler, not here
+    if (e.button === 2) {
+      // If spell targeting is active, right-click cancels it
+      if (activeSpell) {
+        setActiveSpell(null);
+        spellTargetRef.current = null;
+      }
+      return;
+    }
+    // Middle mouse button always initiates pan (even during spell targeting)
+    if (e.button === 1) {
+      setDragState({ type: "pan", startX: e.clientX, startY: e.clientY, panX: pan.x, panY: pan.y });
+      return;
+    }
     setContextMenu(null);
     setTokenPopup(null);
     setShowConditionMenu(false);
     const w = getMouseWorld(e);
 
-    // Spell targeting — click to cast
+    // Space+click during spell targeting = pan (don't cast, don't deselect)
+    if (activeSpell && spaceHeldRef.current) {
+      setDragState({ type: "pan", startX: e.clientX, startY: e.clientY, panX: pan.x, panY: pan.y });
+      return;
+    }
+
+    // Spell targeting — LEFT CLICK to cast
     if (activeSpell) {
       if (activeSpell.shape === "self") {
-        // Self spells always target the caster's position
         if (selectedToken) {
           castSpell(selectedToken.x, selectedToken.y);
         } else {
           castSpell(w.x, w.y);
         }
       } else if (activeSpell.shape === "cone" || activeSpell.shape === "line") {
-        // Cone/Line spells need an origin token to determine direction
         if (!selectedToken) {
           setSpellLog(prev => [...prev, { id: "log-" + Date.now(), msg: "Select a token first to aim " + activeSpell.name, time: Date.now() }]);
           setTimeout(() => setSpellLog(prev => prev.slice(1)), 3000);
@@ -5608,16 +5650,25 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     }
 
     // Spell targeting preview — use ref to avoid re-creating render callback
-    if (activeSpell) {
+    // Don't return early if we're panning (space+drag or middle-click+drag)
+    if (activeSpell && !dragState) {
       spellTargetRef.current = { x: w.x, y: w.y };
+      // Skip hover detection during spell targeting to reduce re-renders
+      return;
     }
-
-    // Token hover detection
-    const hitHover = [...tokens].reverse().find(t => {
-      if (t.hidden && viewRole === "player") return false;
-      return Math.hypot(t.x - w.x, t.y - w.y) < gridSize * 0.45;
-    });
-    setHoveredTokenId(hitHover ? hitHover.id : null);
+    if (activeSpell && dragState?.type === "pan") {
+      // Update spell target AND continue to pan handler below (skip hover detection)
+      spellTargetRef.current = { x: w.x, y: w.y };
+    } else if (!activeSpell) {
+      // Token hover detection (only when NOT spell targeting to avoid re-render storms)
+      const hitHover = [...tokens].reverse().find(t => {
+        if (t.hidden && viewRole === "player") return false;
+        return Math.hypot(t.x - w.x, t.y - w.y) < gridSize * 0.45;
+      });
+      if ((hitHover ? hitHover.id : null) !== hoveredTokenId) {
+        setHoveredTokenId(hitHover ? hitHover.id : null);
+      }
+    }
 
     // Wall preview
     if (activeTool === "wall" && wallStart) {
@@ -5690,6 +5741,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
 
   const handleContextMenu = (e) => {
     e.preventDefault();
+    // During spell targeting, right-click cancels (handled in mouseDown), don't show context menu
+    if (activeSpell) return;
     const w = getMouseWorld(e);
     // Check props first
     if (viewRole === "dm") {
@@ -5710,7 +5763,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
   };
 
   const handleWheel = (e) => {
-    if (selectedToken && selectedToken.hp != null && (mode === "select" || mode === "combat")) {
+    // HP scroll: only when NOT in spell targeting mode
+    if (!activeSpell && selectedToken && selectedToken.hp != null && (mode === "select" || mode === "combat")) {
       const w = getMouseWorld(e);
       const isOverToken = Math.hypot(selectedToken.x - w.x, selectedToken.y - w.y) < gridSize * 0.4;
       if (isOverToken) {
@@ -5719,8 +5773,23 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
         return;
       }
     }
-    const delta = e.deltaY > 0 ? -0.1 : 0.1;
-    setZoom(z => Math.max(0.25, Math.min(4, z + delta)));
+    // Zoom toward mouse position for better UX
+    const rect = canvasRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const zoomDelta = e.deltaY > 0 ? -0.1 : 0.1;
+    setZoom(z => {
+      const oldZoom = z;
+      const newZoom = Math.max(0.25, Math.min(4, z + zoomDelta));
+      // Adjust pan so the point under the mouse stays fixed
+      const scale = newZoom / oldZoom;
+      setPan(p => ({
+        x: mx - scale * (mx - p.x),
+        y: my - scale * (my - p.y)
+      }));
+      return newZoom;
+    });
   };
   wheelHandlerRef.current = handleWheel;
 
@@ -6150,7 +6219,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
             {activeSpell && (
               <div style={{ position:"absolute", top:14, left:80, background:"rgba(181,116,255,0.88)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"#f2e8d6", letterSpacing:"1.5px", pointerEvents:"none", zIndex:10, border:"1px solid rgba(181,116,255,0.5)", boxShadow:"0 2px 10px rgba(181,116,255,0.3)", display:"flex", alignItems:"center", gap:8 }}>
                 <span style={{ width:7, height:7, borderRadius:"50%", background:activeSpell.color, boxShadow:"0 0 6px " + activeSpell.color }} />
-                SPELL: {activeSpell.name.toUpperCase()} — click to cast, Esc to cancel
+                SPELL: {activeSpell.name.toUpperCase()} — click to cast · right-click/Esc to cancel · Space+drag or scroll to pan/zoom
               </div>
             )}
 
