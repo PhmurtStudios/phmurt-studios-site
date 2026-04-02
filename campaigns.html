@@ -2657,18 +2657,232 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
   // ── Spell system ──
   const [activeSpell, setActiveSpell] = useState(null); // { name, range, shape, radius, color, ... }
   const [spellTarget, setSpellTarget] = useState(null); // { x, y } world coords for targeting
+  const spellTargetRef = useRef(null);
   const [spellEffects, setSpellEffects] = useState([]); // [{ id, x, y, spell, startTime }]
   const [spellLog, setSpellLog] = useState([]); // [{ id, msg, time }]
   const [spellDC, setSpellDC] = useState(15);
   const [spellLevelFilter, setSpellLevelFilter] = useState(-1); // -1 for all
   const [spellSearchFilter, setSpellSearchFilter] = useState("");
   const [selectedSpellInfo, setSelectedSpellInfo] = useState(null); // spell object for info panel
+  const [tokenPanelTab, setTokenPanelTab] = useState("stats"); // "stats" | "spells" | "config"
+
+  // ── Maps & Scenes system ──
+  // A "map" is a top-level world (e.g., Swordcoast) with a bg image. Each map has "scenes" — sub-areas.
+  // Each scene stores its own tokens, fog, drawings, walls, terrain, props, bgImage, camera position.
+  const [battleMaps, setBattleMaps] = useState([]);   // [{ id, name, bgSrc, scenes:[], regionMarkers:[] }]
+  const [activeMapId, setActiveMapId] = useState(null);
+  const [activeSceneId, setActiveSceneId] = useState(null);
+  const [showScenePanel, setShowScenePanel] = useState(false); // toggle scenes list in sidebar
+  const [editingRegionMarker, setEditingRegionMarker] = useState(null); // for placing scene hotspots on the map
+  const sceneImgInputRef = useRef(null);
+  const mapImgInputRef = useRef(null);
+
+  const getActiveMap = () => battleMaps.find(m => m.id === activeMapId) || null;
+  const getActiveScene = () => {
+    const map = getActiveMap();
+    return map ? (map.scenes || []).find(s => s.id === activeSceneId) : null;
+  };
+
+  // Save current canvas state into a scene snapshot
+  const captureSceneState = () => ({
+    tokens: JSON.parse(JSON.stringify(tokens)),
+    drawings: JSON.parse(JSON.stringify(drawings)),
+    fogCells: JSON.parse(JSON.stringify(fogCells)),
+    walls: JSON.parse(JSON.stringify(walls)),
+    terrainCells: JSON.parse(JSON.stringify(terrainCells)),
+    props: JSON.parse(JSON.stringify(props)),
+    bgColor, gridSize, showGrid, zoom, pan: {...pan},
+    tokenConditions: JSON.parse(JSON.stringify(tokenConditions)),
+    combatants: JSON.parse(JSON.stringify(combatants)),
+    combatLive, turn, round,
+  });
+
+  // Load a scene snapshot onto the canvas
+  const loadSceneState = (state) => {
+    if (!state) return;
+    setTokens(state.tokens || []);
+    setDrawings(state.drawings || []);
+    setFogCells(state.fogCells || {});
+    setWalls(state.walls || []);
+    setTerrainCells(state.terrainCells || {});
+    setProps(state.props || []);
+    setBgColor(state.bgColor || cssVar("--bg") || "#10101e");
+    if (state.gridSize) setGridSize(state.gridSize);
+    if (state.showGrid !== undefined) setShowGrid(state.showGrid);
+    if (state.zoom) setZoom(state.zoom);
+    if (state.pan) setPan(state.pan);
+    if (state.tokenConditions) setTokenConditions(state.tokenConditions);
+    if (state.combatants) setCombatants(state.combatants);
+    if (state.combatLive !== undefined) setCombatLive(state.combatLive);
+    if (state.turn !== undefined) setTurn(state.turn);
+    if (state.round !== undefined) setRound(state.round);
+  };
+
+  // Save current state into the active scene, then switch to a new scene
+  const saveAndSwitchScene = (mapId, sceneId) => {
+    // Save current scene state
+    if (activeMapId && activeSceneId) {
+      setBattleMaps(prev => prev.map(m => {
+        if (m.id !== activeMapId) return m;
+        return {...m, scenes: (m.scenes || []).map(s => {
+          if (s.id !== activeSceneId) return s;
+          return {...s, state: captureSceneState()};
+        })};
+      }));
+    }
+    // Load new scene
+    const map = battleMaps.find(m => m.id === mapId);
+    if (map) {
+      const scene = (map.scenes || []).find(s => s.id === sceneId);
+      if (scene) {
+        // Load scene bg image
+        if (scene.bgSrc) {
+          const img = new Image();
+          img.onload = () => setBgImage(img);
+          img.src = scene.bgSrc;
+        } else {
+          setBgImage(null);
+        }
+        if (scene.state) loadSceneState(scene.state);
+        else {
+          // Fresh scene — clear everything
+          setTokens([]); setDrawings([]); setFogCells({}); setWalls([]); setTerrainCells({}); setProps([]);
+          setZoom(1); setPan({x:0,y:0});
+        }
+      }
+    }
+    setActiveMapId(mapId);
+    setActiveSceneId(sceneId);
+  };
+
+  // Switch to map overview (region marker view)
+  const switchToMapOverview = (mapId) => {
+    // Save current scene first
+    if (activeMapId && activeSceneId) {
+      setBattleMaps(prev => prev.map(m => {
+        if (m.id !== activeMapId) return m;
+        return {...m, scenes: (m.scenes || []).map(s => {
+          if (s.id !== activeSceneId) return s;
+          return {...s, state: captureSceneState()};
+        })};
+      }));
+    }
+    const map = battleMaps.find(m => m.id === mapId);
+    if (map && map.bgSrc) {
+      const img = new Image();
+      img.onload = () => setBgImage(img);
+      img.src = map.bgSrc;
+    } else {
+      setBgImage(null);
+    }
+    setTokens([]); setDrawings([]); setFogCells({}); setWalls([]); setTerrainCells({}); setProps([]);
+    setZoom(1); setPan({x:0,y:0});
+    setActiveMapId(mapId);
+    setActiveSceneId(null);
+  };
+
+  const createMap = (name) => {
+    const id = "map-" + Date.now();
+    setBattleMaps(prev => [...prev, { id, name, bgSrc: null, scenes: [], regionMarkers: [] }]);
+    return id;
+  };
+
+  const createScene = (mapId, name) => {
+    const id = "scene-" + Date.now();
+    setBattleMaps(prev => prev.map(m => {
+      if (m.id !== mapId) return m;
+      return {...m, scenes: [...(m.scenes || []), { id, name, bgSrc: null, state: null }]};
+    }));
+    return id;
+  };
+
+  const deleteScene = (mapId, sceneId) => {
+    setBattleMaps(prev => prev.map(m => {
+      if (m.id !== mapId) return m;
+      return {
+        ...m,
+        scenes: (m.scenes || []).filter(s => s.id !== sceneId),
+        regionMarkers: (m.regionMarkers || []).filter(r => r.sceneId !== sceneId),
+      };
+    }));
+    if (activeSceneId === sceneId) { setActiveSceneId(null); }
+  };
+
+  const deleteMap = (mapId) => {
+    setBattleMaps(prev => prev.filter(m => m.id !== mapId));
+    if (activeMapId === mapId) { setActiveMapId(null); setActiveSceneId(null); }
+  };
+
+  // Add a region marker (clickable hotspot on the map overview that links to a scene)
+  const addRegionMarker = (mapId, sceneId, x, y, label) => {
+    setBattleMaps(prev => prev.map(m => {
+      if (m.id !== mapId) return m;
+      return {...m, regionMarkers: [...(m.regionMarkers || []), { sceneId, x, y, label: label || "Scene" }]};
+    }));
+  };
+
+  const removeRegionMarker = (mapId, sceneId) => {
+    setBattleMaps(prev => prev.map(m => {
+      if (m.id !== mapId) return m;
+      return {...m, regionMarkers: (m.regionMarkers || []).filter(r => r.sceneId !== sceneId)};
+    }));
+  };
+
+  // ── Props system (placeable images on the map) ──
+  const [props, setProps] = useState([]); // [{ id, src, x, y, width, height, rotation, layer, name, locked }]
+  const [selectedPropId, setSelectedPropId] = useState(null);
+  const [propDrag, setPropDrag] = useState(null); // { propId, startX, startY, propStartX, propStartY }
+  const [propResize, setPropResize] = useState(null); // { propId, corner, startX, startY }
+  const propImgInputRef = useRef(null);
+  const propImagesCache = useRef({});
+
+  const addProp = (src, name) => {
+    const img = new Image();
+    img.onload = () => {
+      const id = "prop-" + Date.now();
+      const cx = (canvasRef.current?.width / 2 - pan.x) / zoom;
+      const cy = (canvasRef.current?.height / 2 - pan.y) / zoom;
+      const scale = Math.min(gridSize * 4 / img.width, gridSize * 4 / img.height, 1);
+      propImagesCache.current[id] = img;
+      setProps(prev => [...prev, { id, src, x: cx - (img.width * scale) / 2, y: cy - (img.height * scale) / 2, width: img.width * scale, height: img.height * scale, rotation: 0, layer: "above", name: name || "Prop", locked: false }]);
+      setSelectedPropId(id);
+    };
+    img.src = src;
+  };
+
+  const updateProp = (id, updates) => {
+    setProps(prev => prev.map(p => p.id === id ? {...p, ...updates} : p));
+  };
+
+  const removeProp = (id) => {
+    setProps(prev => prev.filter(p => p.id !== id));
+    delete propImagesCache.current[id];
+    if (selectedPropId === id) setSelectedPropId(null);
+  };
+
+  const handlePropUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith("image/")) return;
+    const reader = new FileReader();
+    reader.onload = () => addProp(reader.result, file.name.replace(/\.[^.]+$/, ""));
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  // ── Laser pointer system (DM only — persistent trail that fades) ──
+  const [laserMode, setLaserMode] = useState(false);
+  const [laserPoints, setLaserPoints] = useState([]); // [{ x, y, time }]
+  const laserActive = useRef(false);
+
+  // ── Enhanced token context menu (popup style like Owlbear Rodeo) ──
+  const [tokenPopup, setTokenPopup] = useState(null); // { tokenId, screenX, screenY }
+
   const DND_SPELLS = [
     // CANTRIPS (Level 0)
     { name:"Acid Splash", level:0, school:"Evocation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"1d6 acid", damageType:"acid", save:"", effect:"acid", color:"#76ff03", healing:"", concentration:false, ritual:false, conditions:[], description:"A flick of acid at target creature", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Blade Ward", level:0, school:"Abjuration", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"You have resistance to bludgeoning, piercing, slashing", classes:["Bard","Sorcerer","Warlock","Wizard"], applyEffect:"buff" },
     { name:"Chill Touch", level:0, school:"Necromancy", castTime:"1 action", range:120, shape:"single", radius:0, damage:"1d8 necrotic", damageType:"necrotic", save:"", effect:"necrotic", color:"#7c3aed", healing:"", concentration:false, ritual:false, conditions:["Disadvantage"], description:"A ghostly hand chills the target", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
-    { name:"Dancing Lights", level:0, school:"Evocation", castTime:"1 action", range:120, shape:"sphere", radius:10, damage:"", damageType:"", save:"", effect:"radiant", color:"#ffd54f", healing:"", concentration:true, ritual:false, conditions:[], description:"You create up to 4 torch-sized lights", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
+    { name:"Dancing Lights", level:0, school:"Evocation", castTime:"1 action", range:120, shape:"sphere", radius:10, damage:"", damageType:"", save:"", effect:"conjuration", color:"#ffd54f", healing:"", concentration:true, ritual:false, conditions:[], description:"You create up to 4 torch-sized lights", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
     { name:"Fire Bolt", level:0, school:"Evocation", castTime:"1 action", range:120, shape:"single", radius:0, damage:"1d10 fire", damageType:"fire", save:"", effect:"explosion", color:"#ff6030", healing:"", concentration:false, ritual:false, conditions:[], description:"You hurl a mote of fire at a target", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Light", level:0, school:"Evocation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"radiant", color:"#ffd54f", healing:"", concentration:false, ritual:false, conditions:[], description:"An object sheds bright light in 20ft radius", classes:["Bard","Cleric","Sorcerer","Wizard"], applyEffect:"utility" },
     { name:"Mage Hand", level:0, school:"Transmutation", castTime:"1 action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:false, ritual:true, conditions:[], description:"You create a spectral hand to move objects", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
@@ -2712,14 +2926,14 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     // LEVEL 2
     { name:"Acid Arrow", level:2, school:"Evocation", castTime:"1 action", range:90, shape:"single", radius:0, damage:"4d4 acid", damageType:"acid", save:"", effect:"acid", color:"#76ff03", healing:"", concentration:false, ritual:false, conditions:[], description:"Arrow deals acid damage on hit and next turn", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Aganazzar's Scorcher", level:2, school:"Evocation", castTime:"1 action", range:30, shape:"line", radius:0, length:30, damage:"3d8 fire", damageType:"fire", save:"DEX", effect:"explosion", color:"#ff6030", healing:"", concentration:false, ritual:false, conditions:[], description:"30-ft line of flame", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
-    { name:"Blindness/Deafness", level:2, school:"Necromancy", castTime:"1 action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"CON", effect:"necrotic", color:"#7c3aed", healing:"", concentration:true, ritual:false, conditions:["Blinded","Deafened"], description:"Target goes blind or deaf", classes:["Cleric","Sorcerer","Wizard"], applyEffect:"debuff" },
-    { name:"Cloud of Daggers", level:2, school:"Conjuration", castTime:"1 action", range:60, shape:"cube", radius:5, damage:"4d4 slashing", damageType:"slashing", save:"", effect:"conjuration", color:"#a4e89c", healing:"", concentration:true, ritual:false, conditions:[], description:"Daggers fill cube, deal damage", classes:["Bard","Sorcerer","Wizard"], applyEffect:"damage" },
+    { name:"Blindness/Deafness", level:2, school:"Necromancy", castTime:"1 action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"CON", effect:"darkness", color:"#7c3aed", healing:"", concentration:true, ritual:false, conditions:["Blinded","Deafened"], description:"Target goes blind or deaf", classes:["Cleric","Sorcerer","Wizard"], applyEffect:"debuff" },
+    { name:"Cloud of Daggers", level:2, school:"Conjuration", castTime:"1 action", range:60, shape:"cube", radius:5, damage:"4d4 slashing", damageType:"slashing", save:"", effect:"force", color:"#a4e89c", healing:"", concentration:true, ritual:false, conditions:[], description:"Daggers fill cube, deal damage", classes:["Bard","Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Darkness", level:2, school:"Evocation", castTime:"1 action", range:60, shape:"sphere", radius:15, damage:"", damageType:"", save:"", effect:"darkness", color:"#1a1a2e", healing:"", concentration:true, ritual:false, conditions:["Blinded"], description:"Magical darkness fills 30-ft sphere", classes:["Sorcerer","Warlock","Wizard"], applyEffect:"control" },
-    { name:"Detect Thoughts", level:2, school:"Divination", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"WIS", effect:"radiant", color:"#ffd54f", healing:"", concentration:true, ritual:false, conditions:[], description:"Read surface thoughts of one creature", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
+    { name:"Detect Thoughts", level:2, school:"Divination", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"WIS", effect:"psychic", color:"#ffd54f", healing:"", concentration:true, ritual:false, conditions:[], description:"Read surface thoughts of one creature", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
     { name:"Enhance Ability", level:2, school:"Transmutation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:["Blessed"], description:"Grant advantage on ability checks with one ability", classes:["Artificer","Bard","Cleric","Druid","Sorcerer","Wizard"], applyEffect:"buff" },
     { name:"Flaming Sphere", level:2, school:"Conjuration", castTime:"1 action", range:60, shape:"sphere", radius:5, damage:"2d6 fire", damageType:"fire", save:"DEX", effect:"explosion", color:"#ff6030", healing:"", concentration:true, ritual:false, conditions:[], description:"Rolling sphere deals fire damage", classes:["Druid","Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Gust of Wind", level:2, school:"Evocation", castTime:"1 action", range:0, shape:"line", radius:0, length:60, damage:"", damageType:"", save:"STR", effect:"shockwave", color:"#90caf9", healing:"", concentration:true, ritual:false, conditions:["Prone"], description:"60-ft line of wind pushes creatures and objects", classes:["Druid","Sorcerer","Wizard"], applyEffect:"control" },
-    { name:"Heat Metal", level:2, school:"Transmutation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"2d8 fire", damageType:"fire", save:"", effect:"explosion", color:"#ff6030", healing:"", concentration:true, ritual:false, conditions:[], description:"Metal worn/carried burns target", classes:["Artificer","Bard","Cleric","Druid"], applyEffect:"damage" },
+    { name:"Heat Metal", level:2, school:"Transmutation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"2d8 fire", damageType:"fire", save:"", effect:"bolt", color:"#ff6030", healing:"", concentration:true, ritual:false, conditions:[], description:"Metal worn/carried burns target", classes:["Artificer","Bard","Cleric","Druid"], applyEffect:"damage" },
     { name:"Hold Person", level:2, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Paralyzed"], description:"Humanoid is paralyzed if it fails save", classes:["Bard","Cleric","Druid","Sorcerer","Wizard"], applyEffect:"control" },
     { name:"Invisibility", level:2, school:"Illusion", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Invisible"], description:"Target becomes invisible", classes:["Artificer","Bard","Sorcerer","Wizard"], applyEffect:"utility" },
     { name:"Knock", level:2, school:"Transmutation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:false, ritual:false, conditions:[], description:"Open one lock/door within range", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
@@ -2727,7 +2941,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     { name:"Magic Mouth", level:2, school:"Illusion", castTime:"1 minute", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:"#e040fb", healing:"", concentration:false, ritual:true, conditions:[], description:"Magical mouth delivers a message", classes:["Bard","Wizard"], applyEffect:"utility" },
     { name:"Mirror Image", level:2, school:"Illusion", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:[], description:"3 illusory duplicates distract attackers", classes:["Sorcerer","Wizard"], applyEffect:"buff" },
     { name:"Misty Step", level:2, school:"Conjuration", castTime:"1 bonus action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"conjuration", color:"#a4e89c", healing:"", concentration:false, ritual:false, conditions:[], description:"Teleport up to 30 feet to unoccupied space", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
-    { name:"Pass Without Trace", level:2, school:"Abjuration", castTime:"1 minute", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:true, ritual:false, conditions:[], description:"10 creatures can't be tracked", classes:["Artificer","Bard","Druid","Ranger"], applyEffect:"utility" },
+    { name:"Pass Without Trace", level:2, school:"Abjuration", castTime:"1 minute", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"darkness", color:"#58aaff", healing:"", concentration:true, ritual:false, conditions:[], description:"10 creatures can't be tracked", classes:["Artificer","Bard","Druid","Ranger"], applyEffect:"utility" },
     { name:"Phantasmal Force", level:2, school:"Illusion", castTime:"1 action", range:60, shape:"single", radius:0, damage:"1d6 psychic", damageType:"psychic", save:"INT", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:[], description:"Creature sees illusion, takes psychic damage", classes:["Wizard"], applyEffect:"damage" },
     { name:"Rope Trick", level:2, school:"Transmutation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:false, ritual:false, conditions:[], description:"Rope becomes extra-dimensional shelter", classes:["Wizard"], applyEffect:"utility" },
     { name:"Scorching Ray", level:2, school:"Evocation", castTime:"1 action", range:120, shape:"single", radius:0, damage:"2d6 fire", damageType:"fire", save:"", effect:"explosion", color:"#ff6030", healing:"", concentration:false, ritual:false, conditions:[], description:"3 rays of fire, each deals 2d6", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
@@ -2740,13 +2954,13 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     { name:"Animate Dead", level:3, school:"Necromancy", castTime:"1 minute", range:10, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"necrotic", color:"#7c3aed", healing:"", concentration:false, ritual:false, conditions:[], description:"Animate a corpse as undead servant", classes:["Cleric","Wizard"], applyEffect:"summon" },
     { name:"Bestow Curse", level:3, school:"Necromancy", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"WIS", effect:"necrotic", color:"#7c3aed", healing:"", concentration:true, ritual:false, conditions:["Cursed"], description:"Curse a creature with various effects", classes:["Bard","Cleric","Wizard"], applyEffect:"debuff" },
     { name:"Blink", level:3, school:"Transmutation", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:false, ritual:false, conditions:["Invisible"], description:"You vanish and reappear randomly", classes:["Sorcerer","Wizard"], applyEffect:"utility" },
-    { name:"Clairvoyance", level:3, school:"Divination", castTime:"10 minutes", range:1, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"radiant", color:"#ffd54f", healing:"", concentration:true, ritual:false, conditions:[], description:"See through one object you know", classes:["Bard","Cleric","Sorcerer","Wizard"], applyEffect:"utility" },
+    { name:"Clairvoyance", level:3, school:"Divination", castTime:"10 minutes", range:1, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"psychic", color:"#ffd54f", healing:"", concentration:true, ritual:false, conditions:[], description:"See through one object you know", classes:["Bard","Cleric","Sorcerer","Wizard"], applyEffect:"utility" },
     { name:"Counterspell", level:3, school:"Abjuration", castTime:"1 reaction", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Interrupt a spell being cast", classes:["Sorcerer","Wizard"], applyEffect:"utility" },
     { name:"Dispel Magic", level:3, school:"Abjuration", castTime:"1 action", range:120, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"End one spell on target", classes:["Artificer","Bard","Cleric","Druid","Paladin","Sorcerer","Wizard"], applyEffect:"utility" },
     { name:"Fireball", level:3, school:"Evocation", castTime:"1 action", range:150, shape:"sphere", radius:20, damage:"8d6 fire", damageType:"fire", save:"DEX", effect:"explosion", color:"#ff6030", healing:"", concentration:false, ritual:false, conditions:[], description:"Ball of fire fills 20-ft sphere", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Fly", level:3, school:"Transmutation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Grant flight speed to creature", classes:["Artificer","Sorcerer","Wizard"], applyEffect:"buff" },
     { name:"Gaseous Form", level:3, school:"Transmutation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Target becomes cloud of gas", classes:["Sorcerer","Wizard"], applyEffect:"utility" },
-    { name:"Glyph of Warding", level:3, school:"Abjuration", castTime:"1 hour", range:0, shape:"touch", radius:0, damage:"5d8", damageType:"fire", save:"DEX", effect:"shield", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Inscribe protective glyph", classes:["Artificer","Bard","Cleric","Wizard"], applyEffect:"damage" },
+    { name:"Glyph of Warding", level:3, school:"Abjuration", castTime:"1 hour", range:0, shape:"touch", radius:0, damage:"5d8", damageType:"fire", save:"DEX", effect:"explosion", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Inscribe protective glyph", classes:["Artificer","Bard","Cleric","Wizard"], applyEffect:"damage" },
     { name:"Haste", level:3, school:"Transmutation", castTime:"1 action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:["Hasted"], description:"Target gains extra action, speed, AC", classes:["Sorcerer","Wizard"], applyEffect:"buff" },
     { name:"Hypnotic Pattern", level:3, school:"Illusion", castTime:"1 action", range:120, shape:"cube", radius:30, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Incapacitated"], description:"Creatures see hypnotic pattern, become incapacitated", classes:["Bard","Sorcerer","Warlock","Wizard"], applyEffect:"control" },
     { name:"Intellect Fortress", level:3, school:"Abjuration", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:true, ritual:false, conditions:[], description:"Protect against psychic damage and charm", classes:["Artificer","Bard","Sorcerer","Wizard"], applyEffect:"buff" },
@@ -2754,7 +2968,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     { name:"Leomund's Tiny Hut", level:3, school:"Evocation", castTime:"1 minute", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:false, ritual:true, conditions:[], description:"Create a magical shelter for 9 creatures", classes:["Bard","Wizard"], applyEffect:"utility" },
     { name:"Lightning Bolt", level:3, school:"Evocation", castTime:"1 action", range:100, shape:"line", radius:5, length:100, damage:"8d6 lightning", damageType:"lightning", save:"DEX", effect:"bolt", color:"#5edfff", healing:"", concentration:false, ritual:false, conditions:[], description:"100-ft line of lightning", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Major Image", level:3, school:"Illusion", castTime:"1 action", range:120, shape:"cube", radius:20, damage:"", damageType:"", save:"INT", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:[], description:"Create an illusion that moves and acts", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
-    { name:"Phantom Steed", level:3, school:"Illusion", castTime:"1 minute", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:"#e040fb", healing:"", concentration:false, ritual:true, conditions:[], description:"Create a spectral mount", classes:["Wizard"], applyEffect:"utility" },
+    { name:"Phantom Steed", level:3, school:"Illusion", castTime:"1 minute", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"conjuration", color:"#e040fb", healing:"", concentration:false, ritual:true, conditions:[], description:"Create a spectral mount", classes:["Wizard"], applyEffect:"utility" },
     { name:"Sleet Storm", level:3, school:"Evocation", castTime:"1 action", range:150, shape:"sphere", radius:20, damage:"3d8 cold", damageType:"cold", save:"DEX", effect:"freeze", color:"#b3e5fc", healing:"", concentration:true, ritual:false, conditions:["Prone"], description:"Sleet fills sphere, difficult terrain", classes:["Druid","Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Slow", level:3, school:"Transmutation", castTime:"1 action", range:120, shape:"sphere", radius:20, damage:"", damageType:"", save:"WIS", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Creatures move slower, have disadvantage", classes:["Sorcerer","Wizard"], applyEffect:"debuff" },
     { name:"Stinking Cloud", level:3, school:"Conjuration", castTime:"1 action", range:90, shape:"sphere", radius:20, damage:"", damageType:"", save:"CON", effect:"poison", color:"#4caf50", healing:"", concentration:true, ritual:false, conditions:["Poisoned"], description:"Noxious cloud nauseates creatures", classes:["Bard","Sorcerer","Wizard"], applyEffect:"control" },
@@ -2766,11 +2980,11 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     { name:"Charm Monster", level:4, school:"Enchantment", castTime:"1 action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Charmed"], description:"Charm a creature", classes:["Bard","Sorcerer","Warlock","Wizard"], applyEffect:"control" },
     { name:"Confusion", level:4, school:"Enchantment", castTime:"1 action", range:90, shape:"sphere", radius:10, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Incapacitated"], description:"Creatures in area become confused", classes:["Bard","Druid","Sorcerer","Wizard"], applyEffect:"control" },
     { name:"Dimension Door", level:4, school:"Conjuration", castTime:"1 action", range:500, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"conjuration", color:"#a4e89c", healing:"", concentration:false, ritual:false, conditions:[], description:"Teleport yourself and ally up to 500 ft", classes:["Artificer","Bard","Sorcerer","Warlock","Wizard"], applyEffect:"utility" },
-    { name:"Fire Shield", level:4, school:"Evocation", castTime:"1 action", range:0, shape:"self", radius:0, damage:"2d8 fire", damageType:"fire", save:"", effect:"explosion", color:"#ff6030", healing:"", concentration:true, ritual:false, conditions:[], description:"Flaming aura harms those who strike you", classes:["Sorcerer","Wizard"], applyEffect:"buff" },
+    { name:"Fire Shield", level:4, school:"Evocation", castTime:"1 action", range:0, shape:"self", radius:0, damage:"2d8 fire", damageType:"fire", save:"", effect:"shield", color:"#ff6030", healing:"", concentration:true, ritual:false, conditions:[], description:"Flaming aura harms those who strike you", classes:["Sorcerer","Wizard"], applyEffect:"buff" },
     { name:"Hallucinatory Terrain", level:4, school:"Illusion", castTime:"10 minutes", range:300, shape:"cube", radius:150, damage:"", damageType:"", save:"INT", effect:"enchantment", color:"#e040fb", healing:"", concentration:false, ritual:true, conditions:[], description:"Hide terrain with illusion", classes:["Bard","Druid","Wizard"], applyEffect:"utility" },
     { name:"Ice Storm", level:4, school:"Evocation", castTime:"1 action", range:300, shape:"sphere", radius:20, damage:"2d8+4d6 cold", damageType:"cold", save:"DEX", effect:"freeze", color:"#b3e5fc", healing:"", concentration:false, ritual:false, conditions:["Prone"], description:"Hail and sleet fills 20-ft sphere", classes:["Druid","Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Polymorph", level:4, school:"Transmutation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Transform creature into beast", classes:["Bard","Druid","Sorcerer","Wizard"], applyEffect:"utility" },
-    { name:"Sickening Radiance", level:4, school:"Evocation", castTime:"1 action", range:120, shape:"sphere", radius:30, damage:"2d8 radiant", damageType:"radiant", save:"CON", effect:"radiant", color:"#ffd54f", healing:"", concentration:true, ritual:false, conditions:["Poisoned"], description:"Radiation sickens creatures in sphere", classes:["Wizard"], applyEffect:"damage" },
+    { name:"Sickening Radiance", level:4, school:"Evocation", castTime:"1 action", range:120, shape:"sphere", radius:30, damage:"2d8 radiant", damageType:"radiant", save:"CON", effect:"poison", color:"#ffd54f", healing:"", concentration:true, ritual:false, conditions:["Poisoned"], description:"Radiation sickens creatures in sphere", classes:["Wizard"], applyEffect:"damage" },
     { name:"Stoneskin", level:4, school:"Abjuration", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:true, ritual:false, conditions:[], description:"Target gains resistance to physical damage", classes:["Artificer","Druid","Sorcerer","Wizard"], applyEffect:"buff" },
     // LEVEL 5+
     { name:"Animate Objects", level:5, school:"Transmutation", castTime:"1 action", range:120, shape:"sphere", radius:60, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Objects within range spring to life at your command, attacking your enemies with slam attacks", classes:["Bard","Sorcerer","Wizard"], applyEffect:"summon" },
@@ -2781,7 +2995,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     { name:"Wall of Force", level:5, school:"Evocation", castTime:"1 action", range:120, shape:"cube", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:true, ritual:false, conditions:[], description:"Create invisible protective wall", classes:["Wizard"], applyEffect:"buff" },
     { name:"Chain Lightning", level:6, school:"Evocation", castTime:"1 action", range:150, shape:"single", radius:0, damage:"10d6 lightning", damageType:"lightning", save:"DEX", effect:"bolt", color:"#5edfff", healing:"", concentration:false, ritual:false, conditions:[], description:"Lightning arcs to multiple targets", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Circle of Death", level:6, school:"Necromancy", castTime:"1 action", range:150, shape:"sphere", radius:60, damage:"8d6 necrotic", damageType:"necrotic", save:"CON", effect:"necrotic", color:"#7c3aed", healing:"", concentration:false, ritual:false, conditions:[], description:"Death energy fills sphere", classes:["Sorcerer","Warlock","Wizard"], applyEffect:"damage" },
-    { name:"Disintegrate", level:6, school:"Evocation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"10d6+40 force", damageType:"force", save:"DEX", effect:"bolt", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Utterly destroy target", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
+    { name:"Disintegrate", level:6, school:"Evocation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"10d6+40 force", damageType:"force", save:"DEX", effect:"force", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Utterly destroy target", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Tenser's Transformation", level:6, school:"Transmutation", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:["Hasted"], description:"Transform yourself into warrior", classes:["Wizard"], applyEffect:"buff" },
     // LEVEL 7
     { name:"Delayed Blast Fireball", level:7, school:"Evocation", castTime:"1 action", range:150, shape:"sphere", radius:20, damage:"12d6", damageType:"fire", save:"DEX", effect:"explosion", color:"#ff6030", healing:"", concentration:true, ritual:false, conditions:[], description:"Fireball you can delay up to 1 minute, growing stronger", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
@@ -2809,12 +3023,12 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     { name:"Incendiary Cloud", level:8, school:"Conjuration", castTime:"1 action", range:150, shape:"sphere", radius:20, damage:"10d8", damageType:"fire", save:"DEX", effect:"explosion", color:"#ff6030", healing:"", concentration:true, ritual:false, conditions:[], description:"Cloud of fire damages creatures each turn", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Maze", level:8, school:"Conjuration", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"INT", effect:"conjuration", color:"#a4e89c", healing:"", concentration:true, ritual:false, conditions:["Incapacitated"], description:"Banish creature into extradimensional maze", classes:["Wizard"], applyEffect:"control" },
     { name:"Mind Blank", level:8, school:"Abjuration", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Target is immune to psychic damage and divination", classes:["Bard","Wizard"], applyEffect:"buff" },
-    { name:"Power Word Stun", level:8, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:"#e040fb", healing:"", concentration:false, ritual:false, conditions:["Stunned"], description:"Stun a creature with 150 HP or fewer", classes:["Bard","Sorcerer","Warlock","Wizard"], applyEffect:"control" },
+    { name:"Power Word Stun", level:8, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"psychic", color:"#e040fb", healing:"", concentration:false, ritual:false, conditions:["Stunned"], description:"Stun a creature with 150 HP or fewer", classes:["Bard","Sorcerer","Warlock","Wizard"], applyEffect:"control" },
     { name:"Sunburst", level:8, school:"Evocation", castTime:"1 action", range:150, shape:"sphere", radius:60, damage:"12d6", damageType:"radiant", save:"CON", effect:"radiant", color:"#ffd54f", healing:"", concentration:false, ritual:false, conditions:["Blinded"], description:"Brilliant sunlight deals radiant damage and blinds", classes:["Cleric","Druid","Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Telepathy", level:8, school:"Evocation", castTime:"1 action", range:0, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"psychic", color:"#c77dff", healing:"", concentration:false, ritual:false, conditions:[], description:"Create telepathic link with a creature", classes:["Wizard"], applyEffect:"utility" },
     { name:"Tsunami", level:8, school:"Conjuration", castTime:"1 minute", range:1, shape:"line", radius:10, length:300, damage:"6d10", damageType:"bludgeoning", save:"STR", effect:"shockwave", color:"#90caf9", healing:"", concentration:true, ritual:false, conditions:["Prone"], description:"A massive wall of water 300 ft long crashes forward, dealing bludgeoning damage and knocking creatures prone", classes:["Druid"], applyEffect:"damage" },
     { name:"Meteor Swarm", level:9, school:"Evocation", castTime:"1 action", range:1000, shape:"sphere", radius:40, damage:"40d6 fire", damageType:"fire", save:"DEX", effect:"explosion", color:"#ff6030", healing:"", concentration:false, ritual:false, conditions:[], description:"Meteors rain from sky", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
-    { name:"Power Word Kill", level:9, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:"#e040fb", healing:"", concentration:false, ritual:false, conditions:["Unconscious"], description:"Instantly slay target with 100 or fewer HP", classes:["Sorcerer","Wizard"], applyEffect:"control" },
+    { name:"Power Word Kill", level:9, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"necrotic", color:"#e040fb", healing:"", concentration:false, ritual:false, conditions:["Unconscious"], description:"Instantly slay target with 100 or fewer HP", classes:["Sorcerer","Wizard"], applyEffect:"control" },
     { name:"Time Stop", level:9, school:"Transmutation", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:false, ritual:false, conditions:[], description:"Stop time for up to 3 rounds", classes:["Wizard"], applyEffect:"utility" },
     { name:"Wish", level:9, school:"Conjuration", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"conjuration", color:"#a4e89c", healing:"", concentration:false, ritual:false, conditions:[], description:"Alter reality at DM's discretion", classes:["Sorcerer","Wizard"], applyEffect:"utility" },
   ];
@@ -3024,7 +3238,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
 
     if (!overrideSpell) {
       setActiveSpell(null);
-      setSpellTarget(null);
+      spellTargetRef.current = null; setSpellTarget(null);
     }
     setTimeout(() => setSpellEffects(prev => prev.filter(e => e.id !== id)), 4000);
   };
@@ -3529,6 +3743,75 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
       }
     }
 
+    // Props (below tokens layer)
+    props.filter(p => p.layer === "below").forEach(p => {
+      let pImg = propImagesCache.current[p.id];
+      if (!pImg && p.src) {
+        pImg = new Image();
+        pImg.onload = () => { propImagesCache.current[p.id] = pImg; render(); };
+        pImg.src = p.src;
+        return;
+      }
+      if (!pImg) return;
+      ctx.save();
+      ctx.translate(p.x + p.width / 2, p.y + p.height / 2);
+      ctx.rotate((p.rotation || 0) * Math.PI / 180);
+      ctx.globalAlpha = p.locked ? 0.85 : 1;
+      ctx.drawImage(pImg, -p.width / 2, -p.height / 2, p.width, p.height);
+      // Selection outline
+      if (p.id === selectedPropId) {
+        ctx.strokeStyle = "#58aaff";
+        ctx.lineWidth = 2 / zoom;
+        ctx.setLineDash([6 / zoom, 4 / zoom]);
+        ctx.strokeRect(-p.width / 2, -p.height / 2, p.width, p.height);
+        ctx.setLineDash([]);
+        // Resize handles
+        const hs = 8 / zoom;
+        [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([dx,dy]) => {
+          ctx.fillStyle = "#58aaff";
+          ctx.fillRect(dx * p.width / 2 - hs / 2, dy * p.height / 2 - hs / 2, hs, hs);
+        });
+      }
+      ctx.restore();
+    });
+
+    // Region markers on map overview (when no scene is active)
+    if (activeMapId && !activeSceneId) {
+      const map = battleMaps.find(m => m.id === activeMapId);
+      if (map && map.regionMarkers) {
+        map.regionMarkers.forEach(marker => {
+          const scene = (map.scenes || []).find(s => s.id === marker.sceneId);
+          if (!scene) return;
+          ctx.save();
+          // Pulsing glow
+          const pulse = 0.6 + 0.4 * Math.sin(Date.now() / 600);
+          ctx.shadowColor = "rgba(212,67,58,0.7)";
+          ctx.shadowBlur = 12 * pulse;
+          // Pin circle
+          ctx.beginPath();
+          ctx.arc(marker.x, marker.y, gridSize * 0.8, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(212,67,58,0.25)";
+          ctx.fill();
+          ctx.strokeStyle = "rgba(212,67,58,0.8)";
+          ctx.lineWidth = 2 / zoom;
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+          // Icon dot
+          ctx.beginPath();
+          ctx.arc(marker.x, marker.y, gridSize * 0.25, 0, Math.PI * 2);
+          ctx.fillStyle = "rgba(212,67,58,0.9)";
+          ctx.fill();
+          // Label
+          ctx.font = (12 / zoom) + "px " + "'Cinzel', serif";
+          ctx.fillStyle = "#f2e8d6";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          ctx.fillText(marker.label || scene.name, marker.x, marker.y + gridSize * 1);
+          ctx.restore();
+        });
+      }
+    }
+
     // Tokens
     const now = Date.now();
     tokens.forEach(t => {
@@ -3821,7 +4104,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
         ctx.fillText(activeSpell.range + " ft", selectedToken.x, selectedToken.y - rangeInPx - 4);
       }
       // Targeting indicator at mouse position
-      if (spellTarget) {
+      const curTarget = spellTargetRef.current;
+      if (curTarget) {
         const aoeRadiusPx = (activeSpell.radius / 5) * gridSize;
         const pulseT = (Date.now() % 1500) / 1500;
         const pulseAlpha = 0.15 + Math.sin(pulseT * Math.PI * 2) * 0.1;
@@ -3829,8 +4113,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
         if (activeSpell.shape === "sphere" && aoeRadiusPx > 0) {
           // Filled area with pulsing
           ctx.beginPath();
-          ctx.arc(spellTarget.x, spellTarget.y, aoeRadiusPx, 0, Math.PI * 2);
-          const grad = ctx.createRadialGradient(spellTarget.x, spellTarget.y, 0, spellTarget.x, spellTarget.y, aoeRadiusPx);
+          ctx.arc(curTarget.x, curTarget.y, aoeRadiusPx, 0, Math.PI * 2);
+          const grad = ctx.createRadialGradient(curTarget.x, curTarget.y, 0, curTarget.x, curTarget.y, aoeRadiusPx);
           grad.addColorStop(0, activeSpell.color + "33");
           grad.addColorStop(0.7, activeSpell.color + "18");
           grad.addColorStop(1, activeSpell.color + "08");
@@ -3841,18 +4125,18 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
           ctx.stroke();
           // Inner ring pulse
           ctx.beginPath();
-          ctx.arc(spellTarget.x, spellTarget.y, aoeRadiusPx * (0.3 + pulseT * 0.7), 0, Math.PI * 2);
+          ctx.arc(curTarget.x, curTarget.y, aoeRadiusPx * (0.3 + pulseT * 0.7), 0, Math.PI * 2);
           ctx.strokeStyle = activeSpell.color + Math.round(pulseAlpha * 255).toString(16).padStart(2, "0");
           ctx.lineWidth = 1;
           ctx.stroke();
           // Center dot
           ctx.beginPath();
-          ctx.arc(spellTarget.x, spellTarget.y, 4, 0, Math.PI * 2);
+          ctx.arc(curTarget.x, curTarget.y, 4, 0, Math.PI * 2);
           ctx.fillStyle = activeSpell.color;
           ctx.fill();
         } else if (activeSpell.shape === "cone") {
-          const origin = selectedToken || { x: spellTarget.x, y: spellTarget.y };
-          const dx = spellTarget.x - origin.x, dy = spellTarget.y - origin.y;
+          const origin = selectedToken || { x: curTarget.x, y: curTarget.y };
+          const dx = curTarget.x - origin.x, dy = curTarget.y - origin.y;
           const angle = Math.atan2(dy, dx);
           const coneLenPx = (activeSpell.radius / 5) * gridSize;
           const spread = Math.PI / 4;
@@ -3869,8 +4153,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
           ctx.lineWidth = 2;
           ctx.stroke();
         } else if (activeSpell.shape === "line") {
-          const origin = selectedToken || { x: spellTarget.x - gridSize, y: spellTarget.y };
-          const dx = spellTarget.x - origin.x, dy = spellTarget.y - origin.y;
+          const origin = selectedToken || { x: curTarget.x - gridSize, y: curTarget.y };
+          const dx = curTarget.x - origin.x, dy = curTarget.y - origin.y;
           const dist = Math.hypot(dx, dy) || 1;
           const lineLenPx = (activeSpell.length / 5) * gridSize;
           const nx = dx/dist, ny = dy/dist;
@@ -3899,13 +4183,13 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
         } else if (activeSpell.shape === "cube") {
           const half = aoeRadiusPx;
           ctx.fillStyle = activeSpell.color + "22";
-          ctx.fillRect(spellTarget.x - half, spellTarget.y - half, half * 2, half * 2);
+          ctx.fillRect(curTarget.x - half, curTarget.y - half, half * 2, half * 2);
           ctx.strokeStyle = activeSpell.color + "88";
           ctx.lineWidth = 2;
-          ctx.strokeRect(spellTarget.x - half, spellTarget.y - half, half * 2, half * 2);
+          ctx.strokeRect(curTarget.x - half, curTarget.y - half, half * 2, half * 2);
           // Center dot
           ctx.beginPath();
-          ctx.arc(spellTarget.x, spellTarget.y, 4, 0, Math.PI * 2);
+          ctx.arc(curTarget.x, curTarget.y, 4, 0, Math.PI * 2);
           ctx.fillStyle = activeSpell.color;
           ctx.fill();
         } else {
@@ -3917,18 +4201,18 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
           ctx.strokeStyle = activeSpell.color + "cc";
           ctx.lineWidth = 2.5;
           // Crosshair lines
-          ctx.beginPath(); ctx.moveTo(spellTarget.x - sz, spellTarget.y); ctx.lineTo(spellTarget.x - sz * 0.3, spellTarget.y); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(spellTarget.x + sz * 0.3, spellTarget.y); ctx.lineTo(spellTarget.x + sz, spellTarget.y); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(spellTarget.x, spellTarget.y - sz); ctx.lineTo(spellTarget.x, spellTarget.y - sz * 0.3); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(spellTarget.x, spellTarget.y + sz * 0.3); ctx.lineTo(spellTarget.x, spellTarget.y + sz); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(curTarget.x - sz, curTarget.y); ctx.lineTo(curTarget.x - sz * 0.3, curTarget.y); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(curTarget.x + sz * 0.3, curTarget.y); ctx.lineTo(curTarget.x + sz, curTarget.y); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(curTarget.x, curTarget.y - sz); ctx.lineTo(curTarget.x, curTarget.y - sz * 0.3); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(curTarget.x, curTarget.y + sz * 0.3); ctx.lineTo(curTarget.x, curTarget.y + sz); ctx.stroke();
           // Center circle with pulse
-          ctx.beginPath(); ctx.arc(spellTarget.x, spellTarget.y, sz * 0.25, 0, Math.PI * 2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(curTarget.x, curTarget.y, sz * 0.25, 0, Math.PI * 2); ctx.stroke();
           // Outer rotating ring
           const rotAngle = (Date.now() % 3000) / 3000 * Math.PI * 2;
-          ctx.beginPath(); ctx.arc(spellTarget.x, spellTarget.y, sz * 0.7, rotAngle, rotAngle + Math.PI * 1.5); ctx.stroke();
+          ctx.beginPath(); ctx.arc(curTarget.x, curTarget.y, sz * 0.7, rotAngle, rotAngle + Math.PI * 1.5); ctx.stroke();
           ctx.shadowBlur = 0;
           // Snap-to-token highlight: if near a token, show highlight
-          const nearToken = tokens.find(t => Math.hypot(t.x - spellTarget.x, t.y - spellTarget.y) < gridSize * 1.2);
+          const nearToken = tokens.find(t => Math.hypot(t.x - curTarget.x, t.y - curTarget.y) < gridSize * 1.2);
           if (nearToken) {
             ctx.beginPath();
             ctx.arc(nearToken.x, nearToken.y, gridSize * 0.55, 0, Math.PI * 2);
@@ -3947,15 +4231,23 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     const easeOut = t => 1 - Math.pow(1 - t, 3);
     const easeIn = t => t * t;
     const easeInOut = t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+    // Extract RGB from hex for dynamic coloring per-spell
+    const hexRgb = (hex) => {
+      const h = (hex || "#ffffff").replace("#", "");
+      return [parseInt(h.substring(0,2),16)||200, parseInt(h.substring(2,4),16)||200, parseInt(h.substring(4,6),16)||200];
+    };
 
     spellEffects.forEach(se => {
       const age = Math.min(1, (nowSpell - se.startTime) / 3500);
-      if (age > 1) return;
+      if (age >= 1) return;
       const alpha = 1 - easeIn(age);
       const s = se.spell;
       const radiusPx = Math.max((s.radius / 5) * gridSize, gridSize * 0.6);
+      const [cr, cg, cb] = hexRgb(s.color); // spell's unique color as RGB
 
       ctx.save();
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
 
       if (s.effect === "explosion") {
         // FIREBALL / BURNING HANDS — massive multi-layered explosion
@@ -3964,9 +4256,9 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
         const phase3 = Math.min(1, Math.max(0, (age - 0.3) * 1.5)); // fade 0.3-1.0
         const expR = radiusPx * easeOut(phase1);
 
-        // Ground scorch (stays longest)
+        // Ground scorch (stays longest) — uses spell color
         ctx.beginPath(); ctx.arc(se.x, se.y, expR * 0.9, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(40,10,0," + (0.3 * (1 - age)) + ")";
+        ctx.fillStyle = "rgba(" + Math.floor(cr*0.15) + "," + Math.floor(cg*0.04) + ",0," + (0.3 * (1 - age)) + ")";
         ctx.fill();
 
         // Core flash (brief white)
@@ -3977,13 +4269,13 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
           ctx.fill();
         }
 
-        // Main fireball gradient
+        // Main explosion gradient — tinted with spell color
         const grad = ctx.createRadialGradient(se.x, se.y, 0, se.x, se.y, expR);
-        grad.addColorStop(0, "rgba(255,240,180," + (alpha * 0.7 * (1 - phase3 * 0.5)) + ")");
-        grad.addColorStop(0.25, "rgba(255,140,40," + (alpha * 0.6) + ")");
-        grad.addColorStop(0.5, "rgba(255,60,20," + (alpha * 0.5) + ")");
-        grad.addColorStop(0.8, "rgba(180,20,0," + (alpha * 0.3) + ")");
-        grad.addColorStop(1, "rgba(60,0,0,0)");
+        grad.addColorStop(0, "rgba(" + Math.min(255,cr+60) + "," + Math.min(255,cg+60) + "," + Math.min(255,cb+60) + "," + (alpha * 0.7 * (1 - phase3 * 0.5)) + ")");
+        grad.addColorStop(0.25, "rgba(" + cr + "," + Math.floor(cg*0.7) + "," + Math.floor(cb*0.3) + "," + (alpha * 0.6) + ")");
+        grad.addColorStop(0.5, "rgba(" + Math.floor(cr*0.8) + "," + Math.floor(cg*0.3) + "," + Math.floor(cb*0.15) + "," + (alpha * 0.5) + ")");
+        grad.addColorStop(0.8, "rgba(" + Math.floor(cr*0.5) + "," + Math.floor(cg*0.1) + ",0," + (alpha * 0.3) + ")");
+        grad.addColorStop(1, "rgba(" + Math.floor(cr*0.2) + ",0,0,0)");
         ctx.beginPath(); ctx.arc(se.x, se.y, expR, 0, Math.PI * 2);
         ctx.fillStyle = grad; ctx.fill();
 
@@ -3994,7 +4286,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
           const ringAlpha = alpha * (0.4 - ring * 0.1);
           if (ringAlpha > 0) {
             ctx.beginPath(); ctx.arc(se.x, se.y, ringR, 0, Math.PI * 2);
-            ctx.strokeStyle = "rgba(255," + (180 - ring * 40) + ",30," + ringAlpha + ")";
+            ctx.strokeStyle = "rgba(" + cr + "," + Math.max(0, cg - ring * 40) + "," + Math.floor(cb*0.2) + "," + ringAlpha + ")";
             ctx.lineWidth = 2 - ring * 0.5; ctx.stroke();
           }
         }
@@ -4010,7 +4302,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
           const sy = se.y + Math.sin(spAngle) * spDist + Math.cos(sp * 2.3) * 3;
           const spR = (1.5 + (sp % 4) * 0.5) * spLife;
           ctx.beginPath(); ctx.arc(sx, sy, spR, 0, Math.PI * 2);
-          ctx.fillStyle = sp % 3 === 0 ? "rgba(255,220,100," + (spLife * 0.8) + ")" : "rgba(255,120,30," + (spLife * 0.7) + ")";
+          ctx.fillStyle = sp % 3 === 0 ? "rgba(" + Math.min(255,cr+40) + "," + Math.min(255,cg+40) + "," + Math.min(255,cb+40) + "," + (spLife * 0.8) + ")" : "rgba(" + cr + "," + Math.floor(cg*0.6) + "," + Math.floor(cb*0.3) + "," + (spLife * 0.7) + ")";
           ctx.fill();
         }
 
@@ -4022,7 +4314,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
             const ey = se.y - emberAge * radiusPx * (0.5 + (e % 5) * 0.2) + Math.sin(e * 2.1 + age * 8) * 3;
             const eAlpha = Math.max(0, 1 - emberAge * 1.3) * 0.7;
             ctx.beginPath(); ctx.arc(ex, ey, 1 + (e % 3) * 0.4, 0, Math.PI * 2);
-            ctx.fillStyle = "rgba(255," + (180 + (e % 4) * 20) + ",60," + eAlpha + ")";
+            ctx.fillStyle = "rgba(" + cr + "," + Math.min(255, cg + (e % 4) * 20) + "," + Math.floor(cb*0.3) + "," + eAlpha + ")";
             ctx.fill();
           }
         }
@@ -4205,10 +4497,10 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
           ctx.lineWidth = (4 - ring) * ringAlpha; ctx.stroke();
         }
 
-        // Air distortion fill
+        // Air distortion fill — spell-colored
         const distR = radiusPx * easeOut(Math.min(1, age * 2));
         ctx.beginPath(); ctx.arc(se.x, se.y, distR, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(200,220,255," + (alpha * 0.08) + ")"; ctx.fill();
+        ctx.fillStyle = "rgba(" + cr + "," + cg + "," + cb + "," + (alpha * 0.08) + ")"; ctx.fill();
 
         // Debris flying outward
         for (let d = 0; d < 20; d++) {
@@ -4217,27 +4509,27 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
           const dAlpha = alpha * 0.6 * (1 - (d % 5) * 0.1);
           ctx.beginPath();
           ctx.arc(se.x + Math.cos(dAngle) * dDist, se.y + Math.sin(dAngle) * dDist, 1 + (d % 3), 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(180,190,210," + dAlpha + ")"; ctx.fill();
+          ctx.fillStyle = "rgba(" + Math.floor(cr*0.8) + "," + Math.floor(cg*0.85) + "," + Math.floor(cb*0.9) + "," + dAlpha + ")"; ctx.fill();
         }
 
       } else if (s.effect === "freeze") {
         // CONE OF COLD / ICE STORM — crystalline fractals + frost + ice shards
         const freezeR = radiusPx * easeOut(Math.min(1, age * 2));
 
-        // Frost base
+        // Frost base — uses spell color
         const fGrad = ctx.createRadialGradient(se.x, se.y, 0, se.x, se.y, freezeR);
-        fGrad.addColorStop(0, "rgba(200,230,255," + alpha * 0.25 + ")");
-        fGrad.addColorStop(0.5, "rgba(150,200,240," + alpha * 0.15 + ")");
-        fGrad.addColorStop(1, "rgba(100,170,220,0)");
+        fGrad.addColorStop(0, "rgba(" + Math.min(255,cr+50) + "," + Math.min(255,cg+30) + "," + Math.min(255,cb+20) + "," + alpha * 0.25 + ")");
+        fGrad.addColorStop(0.5, "rgba(" + cr + "," + cg + "," + cb + "," + alpha * 0.15 + ")");
+        fGrad.addColorStop(1, "rgba(" + Math.floor(cr*0.6) + "," + Math.floor(cg*0.8) + "," + cb + ",0)");
         ctx.beginPath(); ctx.arc(se.x, se.y, freezeR, 0, Math.PI * 2);
         ctx.fillStyle = fGrad; ctx.fill();
 
         // Crystal fractal arms
-        ctx.shadowColor = "#b3e5fc"; ctx.shadowBlur = 5 * alpha;
+        ctx.shadowColor = s.color; ctx.shadowBlur = 5 * alpha;
         for (let arm = 0; arm < 8; arm++) {
           const armAngle = (arm / 8) * Math.PI * 2 + ((se.startTime % 1000) / 1000) * 0.5;
           const armLen = freezeR * 0.8 * easeOut(Math.min(1, age * 2.5));
-          ctx.strokeStyle = "rgba(200,230,255," + alpha * 0.6 + ")"; ctx.lineWidth = 1.5 * alpha;
+          ctx.strokeStyle = "rgba(" + Math.min(255,cr+50) + "," + Math.min(255,cg+30) + "," + Math.min(255,cb+20) + "," + alpha * 0.6 + ")"; ctx.lineWidth = 1.5 * alpha;
           ctx.beginPath(); ctx.moveTo(se.x, se.y);
           ctx.lineTo(se.x + Math.cos(armAngle) * armLen, se.y + Math.sin(armAngle) * armLen);
           ctx.stroke();
@@ -4251,7 +4543,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
             const bDir = (b % 2 === 0 ? 1 : -1) * 0.5;
             ctx.beginPath(); ctx.moveTo(bx, by);
             ctx.lineTo(bx + Math.cos(armAngle + bDir) * bLen, by + Math.sin(armAngle + bDir) * bLen);
-            ctx.strokeStyle = "rgba(200,230,255," + alpha * 0.35 + ")"; ctx.lineWidth = 0.8 * alpha;
+            ctx.strokeStyle = "rgba(" + Math.min(255,cr+50) + "," + Math.min(255,cg+30) + "," + Math.min(255,cb+20) + "," + alpha * 0.35 + ")"; ctx.lineWidth = 0.8 * alpha;
             ctx.stroke();
           }
         }
@@ -4265,7 +4557,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
           const sx = se.x + Math.cos(shAngle) * shDist;
           const sy = se.y + Math.sin(shAngle) * shDist - age * 5;
           ctx.save(); ctx.translate(sx, sy); ctx.rotate(shAngle);
-          ctx.fillStyle = "rgba(220,240,255," + shAlpha + ")";
+          ctx.fillStyle = "rgba(" + Math.min(255,cr+30) + "," + Math.min(255,cg+20) + "," + Math.min(255,cb+10) + "," + shAlpha + ")";
           ctx.fillRect(-1, -3, 2, 6);
           ctx.restore();
         }
@@ -4312,18 +4604,18 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
         }
 
       } else if (s.effect === "necrotic") {
-        // NECROTIC — sickly green-purple drain
+        // NECROTIC — dark drain using spell color
         const necR = gridSize * 0.7;
         const dGrad = ctx.createRadialGradient(se.x, se.y, 0, se.x, se.y, necR);
-        dGrad.addColorStop(0, "rgba(100,0,180," + alpha * 0.3 + ")");
-        dGrad.addColorStop(0.5, "rgba(60,180,60," + alpha * 0.15 + ")");
+        dGrad.addColorStop(0, "rgba(" + cr + "," + cg + "," + cb + "," + alpha * 0.35 + ")");
+        dGrad.addColorStop(0.5, "rgba(" + Math.floor(cr*0.4) + "," + Math.floor(cg*0.6) + "," + Math.floor(cb*0.4) + "," + alpha * 0.15 + ")");
         dGrad.addColorStop(1, "rgba(0,0,0,0)");
         ctx.beginPath(); ctx.arc(se.x, se.y, necR, 0, Math.PI * 2); ctx.fillStyle = dGrad; ctx.fill();
 
         // Skull shape suggestion
         if (age < 0.5) {
           const skAlpha = alpha * 0.4 * (1 - age * 2);
-          ctx.strokeStyle = "rgba(120,255,120," + skAlpha + ")"; ctx.lineWidth = 1;
+          ctx.strokeStyle = "rgba(" + Math.min(255,cr+60) + "," + Math.min(255,cg+80) + "," + Math.min(255,cb+60) + "," + skAlpha + ")"; ctx.lineWidth = 1;
           ctx.beginPath(); ctx.arc(se.x, se.y - 3, gridSize * 0.15, 0, Math.PI * 2); ctx.stroke();
           ctx.beginPath(); ctx.arc(se.x - 3, se.y - 5, 2, 0, Math.PI * 2); ctx.fillStyle = "rgba(0,0,0," + skAlpha + ")"; ctx.fill();
           ctx.beginPath(); ctx.arc(se.x + 3, se.y - 5, 2, 0, Math.PI * 2); ctx.fill();
@@ -4337,7 +4629,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
             const py = se.y + (se.casterY - se.y) * pt + Math.sin(pt * 10 + p) * 5;
             const pAlpha = Math.sin(pt * Math.PI) * alpha * 0.6;
             ctx.beginPath(); ctx.arc(px, py, 1.5, 0, Math.PI * 2);
-            ctx.fillStyle = p % 2 === 0 ? "rgba(120,255,120," + pAlpha + ")" : "rgba(160,80,240," + pAlpha + ")"; ctx.fill();
+            ctx.fillStyle = p % 2 === 0 ? "rgba(" + Math.min(255,cr+40) + "," + Math.min(255,cg+60) + "," + Math.min(255,cb+40) + "," + pAlpha + ")" : "rgba(" + cr + "," + cg + "," + cb + "," + pAlpha + ")"; ctx.fill();
           }
         }
 
@@ -4353,9 +4645,9 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
           const cy2 = se.y + Math.sin(cAngle) * cDist;
           const puffR = cloudR * (0.35 + (c % 3) * 0.08);
           const cGrad = ctx.createRadialGradient(cx2, cy2, 0, cx2, cy2, puffR);
-          cGrad.addColorStop(0, "rgba(60,180,60," + alpha * 0.22 + ")");
-          cGrad.addColorStop(0.6, "rgba(40,140,40," + alpha * 0.12 + ")");
-          cGrad.addColorStop(1, "rgba(30,100,30,0)");
+          cGrad.addColorStop(0, "rgba(" + cr + "," + cg + "," + cb + "," + alpha * 0.22 + ")");
+          cGrad.addColorStop(0.6, "rgba(" + Math.floor(cr*0.7) + "," + Math.floor(cg*0.8) + "," + Math.floor(cb*0.7) + "," + alpha * 0.12 + ")");
+          cGrad.addColorStop(1, "rgba(" + Math.floor(cr*0.5) + "," + Math.floor(cg*0.6) + "," + Math.floor(cb*0.5) + ",0)");
           ctx.beginPath(); ctx.arc(cx2, cy2, puffR, 0, Math.PI * 2); ctx.fillStyle = cGrad; ctx.fill();
         }
 
@@ -4379,7 +4671,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
           const dAlpha = Math.sin(dAge * Math.PI) * alpha * 0.5;
           const dR = 1 + (d % 3);
           ctx.beginPath(); ctx.arc(dx, dy, dR, 0, Math.PI * 2);
-          ctx.fillStyle = d % 3 === 0 ? "rgba(100,255,100," + dAlpha + ")" : "rgba(60,200,60," + dAlpha + ")";
+          ctx.fillStyle = d % 3 === 0 ? "rgba(" + Math.min(255,cr+60) + "," + Math.min(255,cg+60) + "," + Math.min(255,cb+60) + "," + dAlpha + ")" : "rgba(" + cr + "," + cg + "," + cb + "," + dAlpha + ")";
           ctx.fill();
         }
 
@@ -4388,9 +4680,9 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
         // Ground sizzle pool
         const poolR = gridSize * 0.45 * easeOut(Math.min(1, age * 2));
         const poolGrad = ctx.createRadialGradient(se.x, se.y + gridSize * 0.1, 0, se.x, se.y + gridSize * 0.1, poolR);
-        poolGrad.addColorStop(0, "rgba(100,220,0," + alpha * 0.25 + ")");
-        poolGrad.addColorStop(0.7, "rgba(70,180,0," + alpha * 0.12 + ")");
-        poolGrad.addColorStop(1, "rgba(50,130,0,0)");
+        poolGrad.addColorStop(0, "rgba(" + cr + "," + cg + "," + cb + "," + alpha * 0.25 + ")");
+        poolGrad.addColorStop(0.7, "rgba(" + Math.floor(cr*0.7) + "," + Math.floor(cg*0.8) + "," + Math.floor(cb*0.3) + "," + alpha * 0.12 + ")");
+        poolGrad.addColorStop(1, "rgba(" + Math.floor(cr*0.5) + "," + Math.floor(cg*0.6) + ",0,0)");
         ctx.beginPath(); ctx.ellipse(se.x, se.y + gridSize * 0.15, poolR, poolR * 0.4, 0, 0, Math.PI * 2);
         ctx.fillStyle = poolGrad; ctx.fill();
 
@@ -4406,7 +4698,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
 
           // Droplet
           ctx.beginPath(); ctx.arc(dx, dy, dR, 0, Math.PI * 2);
-          ctx.fillStyle = d % 4 === 0 ? "rgba(180,255,0," + dAlpha + ")" : "rgba(100,230,0," + dAlpha + ")";
+          ctx.fillStyle = d % 4 === 0 ? "rgba(" + Math.min(255,cr+80) + "," + Math.min(255,cg+40) + "," + cb + "," + dAlpha + ")" : "rgba(" + cr + "," + cg + "," + cb + "," + dAlpha + ")";
           ctx.fill();
 
           // Highlight
@@ -4428,18 +4720,18 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
         }
 
       } else if (s.effect === "darkness") {
-        // DARKNESS — consuming void with tendrils
+        // DARKNESS — consuming void with tendrils, tinted by spell color
         const darkR = radiusPx * easeOut(Math.min(1, age * 2));
 
-        // Dark void
+        // Dark void with spell color tint
         const dGrad = ctx.createRadialGradient(se.x, se.y, 0, se.x, se.y, darkR);
-        dGrad.addColorStop(0, "rgba(0,0,0," + alpha * 0.85 + ")");
-        dGrad.addColorStop(0.6, "rgba(5,0,15," + alpha * 0.5 + ")");
-        dGrad.addColorStop(1, "rgba(10,5,20,0)");
+        dGrad.addColorStop(0, "rgba(" + Math.floor(cr*0.05) + "," + Math.floor(cg*0.05) + "," + Math.floor(cb*0.05) + "," + alpha * 0.85 + ")");
+        dGrad.addColorStop(0.6, "rgba(" + Math.floor(cr*0.1) + "," + Math.floor(cg*0.05) + "," + Math.floor(cb*0.15) + "," + alpha * 0.5 + ")");
+        dGrad.addColorStop(1, "rgba(" + Math.floor(cr*0.08) + "," + Math.floor(cg*0.04) + "," + Math.floor(cb*0.1) + ",0)");
         ctx.beginPath(); ctx.arc(se.x, se.y, darkR, 0, Math.PI * 2);
         ctx.fillStyle = dGrad; ctx.fill();
 
-        // Tendrils
+        // Tendrils tinted with spell color
         for (let t = 0; t < 8; t++) {
           const tAngle = (t / 8) * Math.PI * 2 + age * 1.5;
           const tLen = darkR * (0.8 + Math.sin(age * 4 + t * 2) * 0.3);
@@ -4449,16 +4741,16 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
           const endx = se.x + Math.cos(tAngle) * tLen;
           const endy = se.y + Math.sin(tAngle) * tLen;
           ctx.quadraticCurveTo(cp1x, cp1y, endx, endy);
-          ctx.strokeStyle = "rgba(20,0,40," + alpha * 0.4 + ")";
+          ctx.strokeStyle = "rgba(" + Math.floor(cr*0.15) + "," + Math.floor(cg*0.05) + "," + Math.floor(cb*0.2) + "," + alpha * 0.4 + ")";
           ctx.lineWidth = 3 * alpha; ctx.stroke();
         }
 
-        // Swallowed light particles moving inward
+        // Swallowed light particles moving inward, tinted
         for (let p = 0; p < 12; p++) {
           const pAngle = (p / 12) * Math.PI * 2;
           const pDist = darkR * (1.2 - age * 0.8 + Math.sin(p * 2 + age * 5) * 0.1);
           ctx.beginPath(); ctx.arc(se.x + Math.cos(pAngle) * pDist, se.y + Math.sin(pAngle) * pDist, 1, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(200,200,255," + alpha * 0.3 + ")"; ctx.fill();
+          ctx.fillStyle = "rgba(" + Math.min(255,cr+100) + "," + Math.min(255,cg+100) + "," + Math.min(255,cb+100) + "," + alpha * 0.3 + ")"; ctx.fill();
         }
 
       } else if (s.effect === "conjuration") {
@@ -4498,7 +4790,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
             se.y + Math.sin(pa) * pd,
             1 + (1 - pAge) * 2, 0, Math.PI * 2
           );
-          ctx.fillStyle = p % 4 === 0 ? "rgba(200,255,200," + pAlpha + ")" : "rgba(100,230,130," + pAlpha + ")";
+          ctx.fillStyle = p % 4 === 0 ? "rgba(" + Math.min(255,cr+80) + "," + Math.min(255,cg+40) + "," + Math.min(255,cb+80) + "," + pAlpha + ")" : "rgba(" + cr + "," + cg + "," + cb + "," + pAlpha + ")";
           ctx.fill();
         }
 
@@ -4529,7 +4821,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
             const py = se.y - tt * gridSize * 1.2 + gridSize * 0.3;
             t === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
           }
-          ctx.strokeStyle = strand === 0 ? "rgba(255,220,80," + alpha * 0.6 + ")" : "rgba(255,180,40," + alpha * 0.4 + ")";
+          ctx.strokeStyle = strand === 0 ? "rgba(" + cr + "," + cg + "," + Math.floor(cb*0.5) + "," + alpha * 0.6 + ")" : "rgba(" + Math.floor(cr*0.8) + "," + Math.floor(cg*0.7) + "," + Math.floor(cb*0.3) + "," + alpha * 0.4 + ")";
           ctx.lineWidth = 1.5 * alpha; ctx.stroke();
         }
 
@@ -4544,7 +4836,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
             se.y - pAge * gridSize * 0.8 + gridSize * 0.2 + Math.sin(pa) * pd * 0.3,
             1 + (p % 3) * 0.5, 0, Math.PI * 2
           );
-          ctx.fillStyle = p % 3 === 0 ? "rgba(255,255,200," + pAlpha + ")" : "rgba(255,200,60," + pAlpha + ")";
+          ctx.fillStyle = p % 3 === 0 ? "rgba(" + Math.min(255,cr+40) + "," + Math.min(255,cg+40) + "," + Math.min(255,cb+40) + "," + pAlpha + ")" : "rgba(" + cr + "," + cg + "," + cb + "," + pAlpha + ")";
           ctx.fill();
         }
 
@@ -4570,7 +4862,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
 
           // Draw 4-pointed star
           const starR = 1.5 + (sp % 3);
-          ctx.fillStyle = sp % 4 === 0 ? "rgba(255,220,240," + sAlpha + ")" : "rgba(255,105,180," + sAlpha + ")";
+          ctx.fillStyle = sp % 4 === 0 ? "rgba(" + Math.min(255,cr+40) + "," + Math.min(255,cg+40) + "," + Math.min(255,cb+40) + "," + sAlpha + ")" : "rgba(" + cr + "," + cg + "," + cb + "," + sAlpha + ")";
           ctx.beginPath();
           for (let v = 0; v < 8; v++) {
             const va = (v / 8) * Math.PI * 2 + age * 3;
@@ -4589,7 +4881,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
           const hy = se.y - hAge * gridSize;
           const hs = 2 + h % 2;
           // Simple heart shape
-          ctx.fillStyle = "rgba(255,80,150," + hAlpha + ")";
+          ctx.fillStyle = "rgba(" + cr + "," + Math.floor(cg*0.5) + "," + Math.floor(cb*0.8) + "," + hAlpha + ")";
           ctx.beginPath();
           ctx.moveTo(hx, hy + hs * 0.3);
           ctx.bezierCurveTo(hx - hs, hy - hs * 0.5, hx - hs * 0.5, hy - hs, hx, hy - hs * 0.4);
@@ -4650,7 +4942,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
             se.y + Math.sin(mAngle) * mDist - mAge * 15,
             1.5 + Math.sin(mAge * Math.PI) * 1, 0, Math.PI * 2
           );
-          ctx.fillStyle = m % 3 === 0 ? "rgba(255,200,255," + mAlpha + ")" : "rgba(180,120,255," + mAlpha + ")";
+          ctx.fillStyle = m % 3 === 0 ? "rgba(" + Math.min(255,cr+60) + "," + Math.min(255,cg+50) + "," + Math.min(255,cb+60) + "," + mAlpha + ")" : "rgba(" + cr + "," + cg + "," + cb + "," + mAlpha + ")";
           ctx.fill();
         }
 
@@ -4741,6 +5033,70 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
       ctx.globalAlpha = 1;
     });
 
+    // Props (above tokens layer)
+    props.filter(p => p.layer === "above").forEach(p => {
+      let pImg = propImagesCache.current[p.id];
+      if (!pImg && p.src) {
+        pImg = new Image();
+        pImg.onload = () => { propImagesCache.current[p.id] = pImg; render(); };
+        pImg.src = p.src;
+        return;
+      }
+      if (!pImg) return;
+      ctx.save();
+      ctx.translate(p.x + p.width / 2, p.y + p.height / 2);
+      ctx.rotate((p.rotation || 0) * Math.PI / 180);
+      ctx.globalAlpha = p.locked ? 0.85 : 1;
+      ctx.drawImage(pImg, -p.width / 2, -p.height / 2, p.width, p.height);
+      if (p.id === selectedPropId) {
+        ctx.strokeStyle = "#58aaff";
+        ctx.lineWidth = 2 / zoom;
+        ctx.setLineDash([6 / zoom, 4 / zoom]);
+        ctx.strokeRect(-p.width / 2, -p.height / 2, p.width, p.height);
+        ctx.setLineDash([]);
+        const hs = 8 / zoom;
+        [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([dx,dy]) => {
+          ctx.fillStyle = "#58aaff";
+          ctx.fillRect(dx * p.width / 2 - hs / 2, dy * p.height / 2 - hs / 2, hs, hs);
+        });
+      }
+      ctx.restore();
+    });
+
+    // Laser pointer trail (DM tool)
+    if (laserPoints.length > 1) {
+      ctx.save();
+      const lnow = Date.now();
+      for (let i = 1; i < laserPoints.length; i++) {
+        const age = lnow - laserPoints[i].time;
+        const alpha = Math.max(0, 1 - age / 2000);
+        if (alpha <= 0) continue;
+        ctx.beginPath();
+        ctx.moveTo(laserPoints[i-1].x, laserPoints[i-1].y);
+        ctx.lineTo(laserPoints[i].x, laserPoints[i].y);
+        ctx.strokeStyle = "rgba(255,40,40," + alpha + ")";
+        ctx.lineWidth = 3 / zoom;
+        ctx.shadowColor = "rgba(255,40,40," + (alpha * 0.8) + ")";
+        ctx.shadowBlur = 8;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+      // Laser dot at last point
+      const last = laserPoints[laserPoints.length - 1];
+      const dotAge = lnow - last.time;
+      if (dotAge < 2000) {
+        const dotAlpha = Math.max(0, 1 - dotAge / 2000);
+        ctx.beginPath();
+        ctx.arc(last.x, last.y, 5 / zoom, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(255,60,60," + dotAlpha + ")";
+        ctx.shadowColor = "rgba(255,40,40," + (dotAlpha * 0.9) + ")";
+        ctx.shadowBlur = 15;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+      ctx.restore();
+    }
+
     // Ruler overlay (screen space)
     if (activeTool === "ruler" && rulerStart && rulerEnd) {
       const rulerColor = cssVar("--crimson");
@@ -4804,11 +5160,11 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
         yOffset += 28;
       });
     }
-  }, [bgColor, bgImage, showGrid, gridSize, zoom, pan, drawings, drawPoints, drawColor, drawWidth, fogCells, fogEnabled, tokens, walls, wallStart, wallPreview, selectedWallType, activeTool, rulerStart, rulerEnd, selectedTokenId, hoveredTokenId, activeCombatantId, combatLive, combatants, conditions, tokenConditions, activeSpell, spellTarget, spellEffects, spellLog, spellDC, fogMode, movementMode, movementPath, movementOrigin, terrainCells, pings, viewRole]);
+  }, [bgColor, bgImage, showGrid, gridSize, zoom, pan, drawings, drawPoints, drawColor, drawWidth, fogCells, fogEnabled, tokens, walls, wallStart, wallPreview, selectedWallType, activeTool, rulerStart, rulerEnd, selectedTokenId, hoveredTokenId, activeCombatantId, combatLive, combatants, conditions, tokenConditions, activeSpell, spellEffects, spellLog, spellDC, fogMode, movementMode, movementPath, movementOrigin, terrainCells, pings, viewRole, props, selectedPropId, laserPoints, battleMaps, activeMapId, activeSceneId]);
 
-  // Animation loop for combat glow, pings, spell effects, and spell log
+  // Animation loop for combat glow, pings, spell effects, spell log, and spell targeting
   useEffect(() => {
-    if (!combatLive && pings.length === 0 && spellEffects.length === 0 && spellLog.length === 0) return;
+    if (!combatLive && pings.length === 0 && spellEffects.length === 0 && spellLog.length === 0 && !activeSpell && laserPoints.length === 0 && !(activeMapId && !activeSceneId)) return;
     let running = true;
     const animate = () => {
       if (!running) return;
@@ -4817,7 +5173,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     };
     animate();
     return () => { running = false; cancelAnimationFrame(animRef.current); };
-  }, [combatLive, pings.length, spellEffects.length, spellLog.length, render]);
+  }, [combatLive, pings.length, spellEffects.length, spellLog.length, activeSpell, render, laserPoints.length, activeMapId, activeSceneId]);
 
   useEffect(() => { if (!combatLive && pings.length === 0 && spellLog.length === 0) render(); }, [render, combatLive, pings, spellLog]);
 
@@ -4870,7 +5226,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     syncTimerRef.current = setTimeout(() => {
       const state = {
         tokens, drawings, fogCells, walls, terrainCells, bgColor, gridSize, showGrid,
-        combatLive, combatants, turn, round, conditions, fogMode, pings,
+        combatLive, combatants, turn, round, conditions, fogMode, pings, props, laserPoints,
       };
       // Broadcast via PhmurtRealtime (Supabase channel or localStorage fallback)
       if (typeof PhmurtRealtime !== 'undefined' && activeCampaignId && activeCampaignId !== 'example') {
@@ -4881,7 +5237,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
       }
     }, 150);
     return () => clearTimeout(syncTimerRef.current);
-  }, [tokens, drawings, fogCells, walls, terrainCells, bgColor, gridSize, showGrid, combatLive, combatants, turn, round, conditions, fogMode, pings, viewRole, activeCampaignId]);
+  }, [tokens, drawings, fogCells, walls, terrainCells, bgColor, gridSize, showGrid, combatLive, combatants, turn, round, conditions, fogMode, pings, props, laserPoints, viewRole, activeCampaignId]);
 
   // ── Player: Subscribe to DM state via PhmurtRealtime ──
   const realtimeHandleRef = useRef(null);
@@ -4905,6 +5261,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
       if (state.conditions) setConditions(state.conditions);
       if (state.fogMode)   setFogMode(state.fogMode);
       if (state.pings)     setPings(state.pings.filter(p => Date.now() - p.time < 3000));
+      if (state.props)     setProps(state.props);
+      if (state.laserPoints) setLaserPoints(state.laserPoints.filter(p => Date.now() - p.time < 2000));
     };
 
     if (typeof PhmurtRealtime !== 'undefined' && activeCampaignId && activeCampaignId !== 'example') {
@@ -4956,6 +5314,9 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
       if (e.key === "p" || e.key === "P") {
         setPingMode(prev => !prev);
       }
+      if ((e.key === "l" || e.key === "L") && viewRole === "dm") {
+        setLaserMode(prev => !prev);
+      }
       if (e.key === "m" || e.key === "M") {
         if (selectedToken) {
           if (!movementMode) {
@@ -4971,14 +5332,19 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
       }
       if (e.key === "Escape") {
         setPingMode(false);
+        setLaserMode(false);
+        setLaserPoints([]);
         setMovementMode(false);
         setMovementPath([]);
         setMovementOrigin(null);
         setContextMenu(null);
+        setTokenPopup(null);
+        setSelectedPropId(null);
+        setEditingRegionMarker(null);
         setWallStart(null);
         setWallPreview(null);
         setActiveSpell(null);
-        setSpellTarget(null);
+        spellTargetRef.current = null; setSpellTarget(null);
         if (movementMode && selectedToken && movementOrigin) {
           // Cancel movement — return token to origin
           setTokens(p => p.map(t => t.id === selectedTokenId ? {...t, x: movementOrigin.x, y: movementOrigin.y} : t));
@@ -4999,6 +5365,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
   const handleMouseDown = (e) => {
     if (e.button === 2) return;
     setContextMenu(null);
+    setTokenPopup(null);
+    setShowConditionMenu(false);
     const w = getMouseWorld(e);
 
     // Spell targeting — click to cast
@@ -5026,6 +5394,63 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
       setPings(prev => [...prev, newPing]);
       setPingMode(false);
       return;
+    }
+
+    // Laser pointer mode (DM only)
+    if (laserMode && viewRole === "dm") {
+      laserActive.current = true;
+      setLaserPoints([{ x: w.x, y: w.y, time: Date.now() }]);
+      return;
+    }
+
+    // Region marker placement mode
+    if (editingRegionMarker && activeMapId && !activeSceneId) {
+      addRegionMarker(activeMapId, editingRegionMarker.sceneId, w.x, w.y, editingRegionMarker.label);
+      setEditingRegionMarker(null);
+      return;
+    }
+
+    // Click on region markers (map overview — navigate to scene)
+    if (activeMapId && !activeSceneId) {
+      const map = battleMaps.find(m => m.id === activeMapId);
+      if (map && map.regionMarkers) {
+        const hitMarker = map.regionMarkers.find(r => Math.hypot(r.x - w.x, r.y - w.y) < gridSize * 1.2);
+        if (hitMarker) {
+          saveAndSwitchScene(activeMapId, hitMarker.sceneId);
+          return;
+        }
+      }
+    }
+
+    // Props interaction (select mode only)
+    if (activeTool === "select" && viewRole === "dm") {
+      // Check props hit (reverse order = top first)
+      const hitProp = [...props].reverse().find(p => {
+        if (p.locked) return false;
+        // Simple AABB check (ignore rotation for click detection)
+        return w.x >= p.x && w.x <= p.x + p.width && w.y >= p.y && w.y <= p.y + p.height;
+      });
+      if (hitProp) {
+        setSelectedPropId(hitProp.id);
+        setSelectedTokenId(null);
+        // Check if clicking on a resize handle
+        const hs = 10 / zoom;
+        const corners = [
+          { dx: 0, dy: 0, corner: "tl" }, { dx: hitProp.width, dy: 0, corner: "tr" },
+          { dx: hitProp.width, dy: hitProp.height, corner: "br" }, { dx: 0, dy: hitProp.height, corner: "bl" },
+        ];
+        const hitCorner = corners.find(c => Math.hypot((hitProp.x + c.dx) - w.x, (hitProp.y + c.dy) - w.y) < hs);
+        if (hitCorner) {
+          setPropResize({ propId: hitProp.id, corner: hitCorner.corner, startX: w.x, startY: w.y, origX: hitProp.x, origY: hitProp.y, origW: hitProp.width, origH: hitProp.height });
+        } else {
+          setPropDrag({ propId: hitProp.id, startX: w.x, startY: w.y, propStartX: hitProp.x, propStartY: hitProp.y });
+        }
+        return;
+      }
+      // Clicking on empty space deselects prop
+      if (selectedPropId) {
+        setSelectedPropId(null);
+      }
     }
 
     if (activeTool === "wall") {
@@ -5119,8 +5544,37 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
   const handleMouseMove = (e) => {
     const w = getMouseWorld(e);
 
-    // Spell targeting preview
+    // Laser pointer drag
+    if (laserActive.current && laserMode) {
+      setLaserPoints(prev => [...prev, { x: w.x, y: w.y, time: Date.now() }]);
+      return;
+    }
+
+    // Prop drag
+    if (propDrag) {
+      const dx = w.x - propDrag.startX;
+      const dy = w.y - propDrag.startY;
+      updateProp(propDrag.propId, { x: propDrag.propStartX + dx, y: propDrag.propStartY + dy });
+      return;
+    }
+
+    // Prop resize
+    if (propResize) {
+      const dx = w.x - propResize.startX;
+      const dy = w.y - propResize.startY;
+      const aspect = propResize.origW / propResize.origH;
+      let newW = propResize.origW, newH = propResize.origH, newX = propResize.origX, newY = propResize.origY;
+      if (propResize.corner === "br") { newW = Math.max(20, propResize.origW + dx); newH = newW / aspect; }
+      else if (propResize.corner === "bl") { newW = Math.max(20, propResize.origW - dx); newH = newW / aspect; newX = propResize.origX + propResize.origW - newW; }
+      else if (propResize.corner === "tr") { newW = Math.max(20, propResize.origW + dx); newH = newW / aspect; newY = propResize.origY + propResize.origH - newH; }
+      else if (propResize.corner === "tl") { newW = Math.max(20, propResize.origW - dx); newH = newW / aspect; newX = propResize.origX + propResize.origW - newW; newY = propResize.origY + propResize.origH - newH; }
+      updateProp(propResize.propId, { x: newX, y: newY, width: newW, height: newH });
+      return;
+    }
+
+    // Spell targeting preview — use ref to avoid re-creating render callback
     if (activeSpell) {
+      spellTargetRef.current = { x: w.x, y: w.y };
       setSpellTarget({ x: w.x, y: w.y });
     }
 
@@ -5176,6 +5630,16 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
   };
 
   const handleMouseUp = () => {
+    // Laser pointer release
+    if (laserActive.current) {
+      laserActive.current = false;
+      // Clean up old points after 2s
+      setTimeout(() => setLaserPoints([]), 2000);
+    }
+    // Prop drag/resize release
+    if (propDrag) setPropDrag(null);
+    if (propResize) setPropResize(null);
+
     if (activeTool === "draw" && drawPoints.length > 1) {
       setDrawings(p => [...p, { points:drawPoints, color:drawColor, width:drawWidth }]);
     }
@@ -5193,10 +5657,20 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
   const handleContextMenu = (e) => {
     e.preventDefault();
     const w = getMouseWorld(e);
+    // Check props first
+    if (viewRole === "dm") {
+      const hitProp = [...props].reverse().find(p => w.x >= p.x && w.x <= p.x + p.width && w.y >= p.y && w.y <= p.y + p.height);
+      if (hitProp) {
+        const rect = canvasRef.current.getBoundingClientRect();
+        setContextMenu({ x: e.clientX - rect.left, y: e.clientY - rect.top, propId: hitProp.id });
+        setSelectedPropId(hitProp.id);
+        return;
+      }
+    }
     const hit = [...tokens].reverse().find(t => Math.hypot(t.x - w.x, t.y - w.y) < gridSize * 0.44 * (({tiny:0.5,small:1,medium:1,large:2,huge:3,gargantuan:4})[t.size||"medium"]||1));
     if (hit) {
       const rect = canvasRef.current.getBoundingClientRect();
-      setContextMenu({ x: e.clientX - rect.left, y: e.clientY - rect.top, tokenId: hit.id });
+      setTokenPopup({ tokenId: hit.id, screenX: e.clientX - rect.left, screenY: e.clientY - rect.top });
       setSelectedTokenId(hit.id);
     }
   };
@@ -5574,6 +6048,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
   const getCursor = () => {
     if (activeSpell) return "crosshair";
     if (pingMode) return "crosshair";
+    if (laserMode) return "none";
+    if (editingRegionMarker) return "crosshair";
     if (movementMode) return "move";
     if (dragState?.type === "pan") return "grabbing";
     if (dragState?.type === "token" || dragState?.type === "token-move") return "grabbing";
@@ -5685,70 +6161,356 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
               </div>
             )}
 
-            {/* Right-click context menu (expanded) */}
-            {contextMenu && (() => {
-              const tk = tokens.find(t => t.id === contextMenu.tokenId);
-              if (!tk) return null;
+            {/* Prop context menu */}
+            {contextMenu && contextMenu.propId && (() => {
+              const pk = props.find(p => p.id === contextMenu.propId);
+              if (!pk) return null;
+              const menuBtnStyle = { display:"block", width:"100%", padding:"8px 14px", background:"none", border:"none", textAlign:"left", cursor:"pointer", fontSize:12, fontFamily:T.ui, letterSpacing:"0.3px", transition:"background 0.1s" };
               return (
-                <div style={{ position:"absolute", left:contextMenu.x, top:contextMenu.y, background:T.bgCard, border:"1px solid " + T.crimsonBorder, borderRadius:"4px", boxShadow:"0 4px 16px rgba(0,0,6,0.45)", zIndex:100, minWidth:160, padding:"4px 0" }}
-                  onMouseLeave={() => { setContextMenu(null); setShowConditionMenu(false); }}>
-                  <div style={{ padding:"6px 12px", fontSize:11, color:T.text, fontWeight:500, borderBottom:"1px solid " + T.border, fontFamily:T.body }}>{tk.name}</div>
-                  {tk.hp != null && (
-                    <React.Fragment>
-                      <button onClick={() => { adjustTokenHp(tk.id, -5); setContextMenu(null); }}
-                        style={{ display:"block", width:"100%", padding:"7px 12px", background:"none", border:"none", textAlign:"left", cursor:"pointer", fontSize:11, color:"#f06858", fontFamily:T.body }}>
-                        Damage (-5 HP)
-                      </button>
-                      <button onClick={() => { adjustTokenHp(tk.id, 5); setContextMenu(null); }}
-                        style={{ display:"block", width:"100%", padding:"7px 12px", background:"none", border:"none", textAlign:"left", cursor:"pointer", fontSize:11, color:"#5ee09a", fontFamily:T.body }}>
-                        Heal (+5 HP)
-                      </button>
-                      <button onClick={() => { const v = prompt("Adjust HP by (negative to damage):"); if (v) adjustTokenHp(tk.id, parseInt(v)); setContextMenu(null); }}
-                        style={{ display:"block", width:"100%", padding:"7px 12px", background:"none", border:"none", textAlign:"left", cursor:"pointer", fontSize:11, color:T.textDim, fontFamily:T.body }}>
-                        Custom HP...
-                      </button>
-                    </React.Fragment>
-                  )}
-                  <div style={{ height:1, background:T.border, margin:"2px 0" }} />
-                  <button onClick={() => { rollAttack(tk.id); setContextMenu(null); }}
-                    style={{ display:"block", width:"100%", padding:"7px 12px", background:"none", border:"none", textAlign:"left", cursor:"pointer", fontSize:11, color:"#b99aff", fontFamily:T.body }}>
-                    Roll Attack (d20)
+                <div style={{ position:"absolute", left:contextMenu.x, top:contextMenu.y, background:"rgba(12,12,18,0.95)", backdropFilter:"blur(12px)", border:"1px solid " + T.crimsonBorder, borderRadius:"8px", boxShadow:"0 8px 32px rgba(0,0,6,0.6)", zIndex:100, minWidth:180, padding:"6px 0", overflow:"hidden" }}
+                  onMouseLeave={() => setContextMenu(null)}>
+                  <div style={{ padding:"8px 14px", fontSize:12, color:T.text, fontWeight:600, borderBottom:"1px solid " + T.border, fontFamily:T.ui, letterSpacing:"0.3px" }}>{pk.name}</div>
+                  <button onClick={() => { updateProp(pk.id, { layer: pk.layer === "above" ? "below" : "above" }); setContextMenu(null); }}
+                    onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.04)"} onMouseLeave={e => e.currentTarget.style.background="none"}
+                    style={{...menuBtnStyle, color:T.textMuted}}>
+                    {pk.layer === "above" ? "Move Below Tokens" : "Move Above Tokens"}
                   </button>
-                  <div style={{ position:"relative" }}>
-                    <button onClick={() => setShowConditionMenu(!showConditionMenu)}
-                      style={{ display:"flex", width:"100%", padding:"7px 12px", background:"none", border:"none", textAlign:"left", cursor:"pointer", fontSize:11, color:T.textDim, fontFamily:T.body, alignItems:"center", justifyContent:"space-between" }}>
-                      <span>Add Condition</span> <ChevronRight size={10}/>
-                    </button>
-                    {showConditionMenu && (
-                      <div style={{ position:"absolute", left:"100%", top:0, background:T.bgCard, border:"1px solid " + T.crimsonBorder, borderRadius:"4px", boxShadow:"0 4px 12px rgba(0,0,6,0.35)", minWidth:130, padding:"4px 0", maxHeight:220, overflowY:"auto" }}>
-                        {conditionsList.map(cond => (
-                          <button key={cond} onClick={() => {
-                            // Find combatant for this token
-                            const cb = combatants.find(c => c.mapTokenId === tk.id);
-                            if (cb) addCondition(cb.id, cond);
-                            setContextMenu(null); setShowConditionMenu(false);
-                          }}
-                            style={{ display:"block", width:"100%", padding:"5px 10px", background:"none", border:"none", textAlign:"left", cursor:"pointer", fontSize:10, color:T.textDim, fontFamily:T.body }}>
-                            {cond}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <button onClick={() => { updateProp(pk.id, { locked: !pk.locked }); setContextMenu(null); }}
+                    onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.04)"} onMouseLeave={e => e.currentTarget.style.background="none"}
+                    style={{...menuBtnStyle, color:T.textMuted}}>
+                    {pk.locked ? "Unlock" : "Lock Position"}
+                  </button>
+                  <button onClick={() => { updateProp(pk.id, { rotation: (pk.rotation || 0) + 45 }); setContextMenu(null); }}
+                    onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.04)"} onMouseLeave={e => e.currentTarget.style.background="none"}
+                    style={{...menuBtnStyle, color:T.textMuted}}>
+                    Rotate 45°
+                  </button>
                   <div style={{ height:1, background:T.border, margin:"2px 0" }} />
-                  {viewRole === "dm" && (
-                    <button onClick={() => { updateToken(tk.id, { hidden: !tk.hidden }); setContextMenu(null); }}
-                      style={{ display:"block", width:"100%", padding:"7px 12px", background:"none", border:"none", textAlign:"left", cursor:"pointer", fontSize:11, color:T.textMuted, fontFamily:T.body }}>
-                      {tk.hidden ? "Show Token" : "Hide Token"}
-                    </button>
-                  )}
-                  <button onClick={() => { removeToken(tk.id); setContextMenu(null); }}
-                    style={{ display:"block", width:"100%", padding:"7px 12px", background:"none", border:"none", textAlign:"left", cursor:"pointer", fontSize:11, color:T.textMuted, fontFamily:T.body }}>
-                    Remove Token
+                  <button onClick={() => { removeProp(pk.id); setContextMenu(null); }}
+                    onMouseEnter={e => e.currentTarget.style.background="rgba(212,67,58,0.08)"} onMouseLeave={e => e.currentTarget.style.background="none"}
+                    style={{...menuBtnStyle, color:"#f06858"}}>
+                    Remove Prop
                   </button>
                 </div>
               );
             })()}
+
+            {/* Enhanced Token Popup (Owlbear Rodeo style) */}
+            {tokenPopup && (() => {
+              const tk = tokens.find(t => t.id === tokenPopup.tokenId);
+              if (!tk) return null;
+              const hpPct = tk.maxHp ? Math.round(tk.hp / tk.maxHp * 100) : 0;
+              const hpCol = tk.maxHp ? getHpColor(tk.hp, tk.maxHp) : "#888";
+              const popupBtnStyle = { display:"flex", alignItems:"center", gap:6, width:"100%", padding:"8px 12px", background:"none", border:"none", textAlign:"left", cursor:"pointer", fontSize:12, fontFamily:T.ui, letterSpacing:"0.3px", transition:"background 0.12s", borderRadius:"4px" };
+              return (
+                <div style={{ position:"absolute", left: Math.min(tokenPopup.screenX, (canvasRef.current?.width || 600) - 260), top: Math.min(tokenPopup.screenY, (canvasRef.current?.height || 400) - 380), background:"rgba(12,12,18,0.95)", backdropFilter:"blur(16px)", border:"1px solid " + T.crimsonBorder, borderRadius:"12px", boxShadow:"0 12px 48px rgba(0,0,6,0.7), 0 0 0 1px rgba(255,255,255,0.03) inset", zIndex:100, width:240, overflow:"hidden" }}
+                  onClick={e => e.stopPropagation()}>
+
+                  {/* Header */}
+                  <div style={{ padding:"12px 14px 10px", borderBottom:"1px solid " + T.border, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                      <div style={{ width:32, height:32, borderRadius:"50%", background:tk.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontFamily:T.ui, color:"#fff", fontWeight:700, border:"2px solid rgba(255,220,30,0.4)" }}>
+                        {(tk.label || tk.name.substring(0,2)).toUpperCase()}
+                      </div>
+                      <div>
+                        <div style={{ fontSize:14, fontFamily:T.ui, fontWeight:600, color:T.text, lineHeight:1.2 }}>{tk.name}</div>
+                        <div style={{ fontSize:10, fontFamily:T.ui, color:T.textFaint, display:"flex", gap:4 }}>
+                          <span style={{ textTransform:"capitalize" }}>{tk.size || "medium"}</span>
+                          {tk.ac && <span>· AC {tk.ac}</span>}
+                        </div>
+                      </div>
+                    </div>
+                    <button onClick={() => setTokenPopup(null)} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:4 }}><X size={14}/></button>
+                  </div>
+
+                  {/* HP Bar */}
+                  {tk.hp != null && tk.maxHp && (
+                    <div style={{ padding:"8px 14px", borderBottom:"1px solid " + T.border }}>
+                      <div style={{ display:"flex", alignItems:"baseline", gap:4, marginBottom:4 }}>
+                        <span style={{ fontSize:20, fontFamily:T.body, fontWeight:400, color:hpCol, lineHeight:1 }}>{tk.hp}</span>
+                        <span style={{ fontSize:12, color:T.textFaint }}>/ {tk.maxHp} HP</span>
+                      </div>
+                      <div style={{ height:4, background:"rgba(255,255,255,0.04)", borderRadius:"2px", overflow:"hidden", marginBottom:8 }}>
+                        <div style={{ width:hpPct+"%", height:"100%", background:hpCol, borderRadius:"2px", transition:"width 0.2s" }} />
+                      </div>
+                      <div style={{ display:"flex", gap:3 }}>
+                        {[-10,-5,-1,1,5,10].map(d => (
+                          <button key={d} onClick={() => adjustTokenHp(tk.id, d)}
+                            onMouseEnter={e => e.currentTarget.style.filter="brightness(1.3)"} onMouseLeave={e => e.currentTarget.style.filter="none"}
+                            style={{ flex:1, padding:"4px 0", background:d<0?"rgba(212,67,58,0.08)":"rgba(46,139,87,0.08)", border:"1px solid "+(d<0?"rgba(212,67,58,0.2)":"rgba(46,139,87,0.2)"), borderRadius:"4px", color:d<0?"#f06858":"#5ee09a", fontFamily:T.ui, fontSize:10, fontWeight:600, cursor:"pointer", transition:"all 0.12s" }}>
+                            {d>0?"+":""}{d}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Actions */}
+                  <div style={{ padding:"4px 6px" }}>
+                    <button onClick={() => { setSelectedTokenId(tk.id); setMovementMode(true); setMovementPath([]); setMovementOrigin({x:tk.x,y:tk.y}); setTokenPopup(null); }}
+                      onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.04)"} onMouseLeave={e => e.currentTarget.style.background="none"}
+                      style={{...popupBtnStyle, color:"#58aaff"}}>
+                      <Compass size={13}/> Move Token
+                    </button>
+                    <button onClick={() => { rollAttack(tk.id); setTokenPopup(null); }}
+                      onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.04)"} onMouseLeave={e => e.currentTarget.style.background="none"}
+                      style={{...popupBtnStyle, color:"#b574ff"}}>
+                      <Dice6 size={13}/> Roll d20
+                    </button>
+
+                    {/* Conditions sub-section */}
+                    <div style={{ position:"relative" }}>
+                      <button onClick={() => setShowConditionMenu(!showConditionMenu)}
+                        onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.04)"} onMouseLeave={e => e.currentTarget.style.background="none"}
+                        style={{...popupBtnStyle, color:"#e8940a", justifyContent:"space-between"}}>
+                        <span style={{ display:"flex", alignItems:"center", gap:6 }}><AlertTriangle size={13}/> Conditions</span>
+                        <ChevronRight size={11}/>
+                      </button>
+                      {showConditionMenu && (
+                        <div style={{ position:"absolute", left:"100%", top:0, background:"rgba(12,12,18,0.95)", backdropFilter:"blur(12px)", border:"1px solid " + T.crimsonBorder, borderRadius:"8px", boxShadow:"0 8px 24px rgba(0,0,6,0.5)", minWidth:150, padding:"4px 0", maxHeight:260, overflowY:"auto", zIndex:110 }}>
+                          {DND_CONDITIONS.map(dc => {
+                            const hasCond = (tokenConditions[tk.id] || []).includes(dc.name);
+                            return (
+                              <button key={dc.name} onClick={() => {
+                                if (hasCond) removeTokenCondition(tk.id, dc.name);
+                                else addTokenCondition(tk.id, dc.name);
+                              }}
+                                onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.04)"} onMouseLeave={e => e.currentTarget.style.background="none"}
+                                style={{ display:"flex", alignItems:"center", gap:6, width:"100%", padding:"6px 10px", background:"none", border:"none", textAlign:"left", cursor:"pointer", fontSize:11, color: hasCond ? dc.color : T.textMuted, fontFamily:T.ui }}>
+                                <span style={{ width:7, height:7, borderRadius:"50%", background:dc.color, opacity: hasCond ? 1 : 0.4 }} />
+                                {dc.name} {hasCond && <Check size={10} style={{ marginLeft:"auto" }}/>}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    {combatLive && (
+                      <button onClick={() => {
+                        const result = parseDiceExpression("1d20");
+                        setDiceResult({ value: result.total, type: "initiative", name: tk.name, time: Date.now() });
+                        setTimeout(() => setDiceResult(null), 3000);
+                        setTokenPopup(null);
+                      }}
+                        onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.04)"} onMouseLeave={e => e.currentTarget.style.background="none"}
+                        style={{...popupBtnStyle, color:"#ffd54f"}}>
+                        <Star size={13}/> Roll Initiative
+                      </button>
+                    )}
+
+                    {viewRole === "dm" && (
+                      <React.Fragment>
+                        <div style={{ height:1, background:T.border, margin:"2px 6px" }} />
+                        <button onClick={() => { updateToken(tk.id, { hidden: !tk.hidden }); setTokenPopup(null); }}
+                          onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.04)"} onMouseLeave={e => e.currentTarget.style.background="none"}
+                          style={{...popupBtnStyle, color:T.textMuted}}>
+                          {tk.hidden ? <React.Fragment><Eye size={13}/> Show Token</React.Fragment> : <React.Fragment><EyeOff size={13}/> Hide Token</React.Fragment>}
+                        </button>
+                        <button onClick={() => { const n = prompt("Rename token:", tk.name); if (n) updateToken(tk.id, { name: n }); setTokenPopup(null); }}
+                          onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.04)"} onMouseLeave={e => e.currentTarget.style.background="none"}
+                          style={{...popupBtnStyle, color:T.textMuted}}>
+                          <Edit3 size={13}/> Rename
+                        </button>
+                        <div style={{ height:1, background:T.border, margin:"2px 6px" }} />
+                        <button onClick={() => { removeToken(tk.id); setTokenPopup(null); }}
+                          onMouseEnter={e => e.currentTarget.style.background="rgba(212,67,58,0.06)"} onMouseLeave={e => e.currentTarget.style.background="none"}
+                          style={{...popupBtnStyle, color:"#f06858"}}>
+                          <Trash2 size={13}/> Remove
+                        </button>
+                      </React.Fragment>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* Laser pointer dot (follows cursor when active) */}
+            {laserMode && (
+              <div style={{ position:"absolute", left:0, top:0, width:"100%", height:"100%", pointerEvents:"none", zIndex:90 }}>
+                <div style={{ position:"fixed", left:"50%", top:"50%", width:12, height:12, borderRadius:"50%", background:"#ff2020", boxShadow:"0 0 15px #ff2020, 0 0 30px rgba(255,32,32,0.4)", transform:"translate(-50%,-50%)", pointerEvents:"none", mixBlendMode:"screen" }} />
+              </div>
+            )}
+
+            {/* Scene Panel floating overlay */}
+            {showScenePanel && viewRole === "dm" && (
+              <div style={{ position:"absolute", left:70, top:12, zIndex:25, width:280, maxHeight:"calc(100% - 24px)", background:"rgba(8,8,12,0.92)", backdropFilter:"blur(16px)", border:"1px solid var(--crimson-border)", borderRadius:"12px", boxShadow:"0 8px 32px rgba(0,0,6,0.6)", display:"flex", flexDirection:"column", overflow:"hidden" }}>
+                <div style={{ padding:"12px 14px", borderBottom:"1px solid " + T.border, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <span style={{ fontFamily:T.ui, fontSize:11, letterSpacing:"2px", color:"#5ee09a", textTransform:"uppercase", fontWeight:600 }}>Maps & Scenes</span>
+                  <button onClick={() => setShowScenePanel(false)} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:2 }}><X size={14}/></button>
+                </div>
+
+                <div style={{ flex:1, overflowY:"auto", padding:"8px 10px" }}>
+                  {/* Create new map button */}
+                  <button onClick={() => {
+                    const name = prompt("Map name (e.g., Sword Coast, Dungeon Level 1):");
+                    if (name) createMap(name);
+                  }}
+                    onMouseEnter={e => e.currentTarget.style.background="rgba(46,139,87,0.1)"} onMouseLeave={e => e.currentTarget.style.background="rgba(0,0,0,0.1)"}
+                    style={{ width:"100%", padding:"10px 12px", background:"rgba(0,0,0,0.1)", border:"1px dashed rgba(46,139,87,0.3)", borderRadius:"8px", color:"#5ee09a", fontFamily:T.ui, fontSize:11, letterSpacing:"0.5px", cursor:"pointer", marginBottom:8, transition:"all 0.15s", display:"flex", alignItems:"center", gap:6, justifyContent:"center" }}>
+                    <Plus size={12}/> New Map
+                  </button>
+
+                  {/* Map list */}
+                  {battleMaps.map(map => (
+                    <div key={map.id} style={{ marginBottom:8, background: activeMapId === map.id ? "rgba(46,139,87,0.06)" : "rgba(0,0,0,0.06)", border:"1px solid " + (activeMapId === map.id ? "rgba(46,139,87,0.25)" : T.border), borderRadius:"8px", overflow:"hidden" }}>
+                      <div style={{ padding:"10px 12px", display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer" }}
+                        onClick={() => switchToMapOverview(map.id)}>
+                        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                          <Globe size={14} color={activeMapId === map.id ? "#5ee09a" : T.textMuted} />
+                          <span style={{ fontFamily:T.ui, fontSize:12, color: activeMapId === map.id ? "#5ee09a" : T.text, fontWeight:500, letterSpacing:"0.3px" }}>{map.name}</span>
+                        </div>
+                        <div style={{ display:"flex", gap:4 }}>
+                          <button onClick={e => { e.stopPropagation(); mapImgInputRef.current?.click(); mapImgInputRef.current.dataset.mapId = map.id; }}
+                            style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:2 }} title="Upload map image"><Image size={12}/></button>
+                          <button onClick={e => { e.stopPropagation(); if (confirm("Delete map '" + map.name + "'?")) deleteMap(map.id); }}
+                            style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:2 }} title="Delete map"><Trash2 size={12}/></button>
+                        </div>
+                      </div>
+                      {map.bgSrc && <div style={{ height:2, background:"linear-gradient(90deg, rgba(46,139,87,0.3), transparent)" }} />}
+
+                      {/* Scenes within this map */}
+                      <div style={{ padding:"4px 8px 8px" }}>
+                        {(map.scenes || []).map(scene => (
+                          <div key={scene.id}
+                            onClick={() => saveAndSwitchScene(map.id, scene.id)}
+                            onMouseEnter={e => e.currentTarget.style.background="rgba(46,139,87,0.08)"} onMouseLeave={e => e.currentTarget.style.background= activeSceneId === scene.id ? "rgba(46,139,87,0.12)" : "transparent"}
+                            style={{ padding:"7px 10px", display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer", borderRadius:"6px", background: activeSceneId === scene.id ? "rgba(46,139,87,0.12)" : "transparent", transition:"all 0.12s", marginBottom:2 }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                              <MapPin size={11} color={activeSceneId === scene.id ? "#5ee09a" : T.textFaint} />
+                              <span style={{ fontFamily:T.body, fontSize:12, color: activeSceneId === scene.id ? "#5ee09a" : T.textDim }}>{scene.name}</span>
+                            </div>
+                            <div style={{ display:"flex", gap:3 }}>
+                              <button onClick={e => { e.stopPropagation(); sceneImgInputRef.current?.click(); sceneImgInputRef.current.dataset.mapId = map.id; sceneImgInputRef.current.dataset.sceneId = scene.id; }}
+                                style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:2 }} title="Upload scene bg"><Image size={10}/></button>
+                              {activeMapId === map.id && !activeSceneId && (
+                                <button onClick={e => { e.stopPropagation(); setEditingRegionMarker({ sceneId: scene.id, label: scene.name }); setShowScenePanel(false); }}
+                                  style={{ background:"none", border:"none", cursor:"pointer", color:"#58aaff", padding:2 }} title="Place marker on map"><MapPin size={10}/></button>
+                              )}
+                              <button onClick={e => { e.stopPropagation(); if (confirm("Delete scene '" + scene.name + "'?")) deleteScene(map.id, scene.id); }}
+                                style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:2 }} title="Delete scene"><X size={10}/></button>
+                            </div>
+                          </div>
+                        ))}
+                        <button onClick={e => { e.stopPropagation(); const name = prompt("Scene name (e.g., Waterdeep, Dragon's Lair):"); if (name) createScene(map.id, name); }}
+                          onMouseEnter={e => e.currentTarget.style.color="#5ee09a"} onMouseLeave={e => e.currentTarget.style.color=T.textFaint}
+                          style={{ width:"100%", padding:"6px 0", background:"none", border:"none", cursor:"pointer", fontFamily:T.ui, fontSize:10, letterSpacing:"0.5px", color:T.textFaint, display:"flex", alignItems:"center", justifyContent:"center", gap:4, transition:"color 0.12s" }}>
+                          <Plus size={10}/> Add Scene
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+
+                  {battleMaps.length === 0 && (
+                    <div style={{ padding:"20px 10px", textAlign:"center" }}>
+                      <Globe size={28} color={T.textFaint} style={{ margin:"0 auto 8px", display:"block", opacity:0.4 }}/>
+                      <p style={{ fontFamily:T.body, fontSize:12, color:T.textFaint, margin:0 }}>No maps yet. Create a map to start organizing your world into scenes.</p>
+                    </div>
+                  )}
+
+                  {/* Props section */}
+                  <div style={{ marginTop:12, paddingTop:12, borderTop:"1px solid " + T.border }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+                      <span style={{ fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", fontWeight:500 }}>Props</span>
+                      <span style={{ fontFamily:T.ui, fontSize:9, color:T.textFaint }}>{props.length} placed</span>
+                    </div>
+                    <button onClick={() => propImgInputRef.current?.click()}
+                      onMouseEnter={e => e.currentTarget.style.background="rgba(88,170,255,0.08)"} onMouseLeave={e => e.currentTarget.style.background="rgba(0,0,0,0.1)"}
+                      style={{ width:"100%", padding:"8px 12px", background:"rgba(0,0,0,0.1)", border:"1px dashed rgba(88,170,255,0.3)", borderRadius:"6px", color:"#58aaff", fontFamily:T.ui, fontSize:10, letterSpacing:"0.5px", cursor:"pointer", transition:"all 0.15s", display:"flex", alignItems:"center", gap:6, justifyContent:"center" }}>
+                      <Upload size={11}/> Upload Prop Image
+                    </button>
+                    {props.length > 0 && (
+                      <div style={{ marginTop:6, display:"flex", flexDirection:"column", gap:2 }}>
+                        {props.map(p => (
+                          <div key={p.id}
+                            onClick={() => setSelectedPropId(p.id === selectedPropId ? null : p.id)}
+                            onMouseEnter={e => e.currentTarget.style.background="rgba(88,170,255,0.06)"} onMouseLeave={e => e.currentTarget.style.background= selectedPropId === p.id ? "rgba(88,170,255,0.08)" : "transparent"}
+                            style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"5px 8px", borderRadius:"4px", cursor:"pointer", background: selectedPropId === p.id ? "rgba(88,170,255,0.08)" : "transparent", transition:"all 0.12s" }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                              <Image size={10} color={selectedPropId === p.id ? "#58aaff" : T.textFaint} />
+                              <span style={{ fontSize:11, fontFamily:T.body, color: selectedPropId === p.id ? "#58aaff" : T.textDim }}>{p.name}</span>
+                            </div>
+                            <div style={{ display:"flex", gap:3 }}>
+                              <button onClick={e => { e.stopPropagation(); updateProp(p.id, { locked: !p.locked }); }}
+                                style={{ background:"none", border:"none", cursor:"pointer", color: p.locked ? "#ffd54f" : T.textFaint, padding:2 }}>{p.locked ? <Lock size={10}/> : <Unlock size={10}/>}</button>
+                              <button onClick={e => { e.stopPropagation(); removeProp(p.id); }}
+                                style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:2 }}><Trash2 size={10}/></button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Active Scene Indicator */}
+                  {activeMapId && activeSceneId && (() => {
+                    const am = battleMaps.find(m => m.id === activeMapId);
+                    const as2 = am ? (am.scenes || []).find(s => s.id === activeSceneId) : null;
+                    return as2 ? (
+                      <div style={{ marginTop:12, padding:"8px 12px", background:"rgba(46,139,87,0.08)", border:"1px solid rgba(46,139,87,0.2)", borderRadius:"6px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                        <div>
+                          <div style={{ fontSize:9, fontFamily:T.ui, color:T.textFaint, letterSpacing:"1px", textTransform:"uppercase" }}>Active Scene</div>
+                          <div style={{ fontSize:12, fontFamily:T.ui, color:"#5ee09a", fontWeight:500 }}>{as2.name}</div>
+                        </div>
+                        <button onClick={() => switchToMapOverview(activeMapId)}
+                          onMouseEnter={e => e.currentTarget.style.background="rgba(46,139,87,0.15)"} onMouseLeave={e => e.currentTarget.style.background="rgba(46,139,87,0.06)"}
+                          style={{ padding:"5px 10px", background:"rgba(46,139,87,0.06)", border:"1px solid rgba(46,139,87,0.2)", borderRadius:"4px", color:"#5ee09a", fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"all 0.12s" }}>
+                          Back to Map
+                        </button>
+                      </div>
+                    ) : null;
+                  })()}
+                </div>
+              </div>
+            )}
+
+            {/* Hidden file inputs for maps/scenes/props */}
+            <input type="file" ref={mapImgInputRef} style={{display:"none"}} accept="image/*" onChange={e => {
+              const file = e.target.files?.[0];
+              const mid = e.target.dataset.mapId;
+              if (!file || !mid) return;
+              const reader = new FileReader();
+              reader.onload = () => {
+                setBattleMaps(prev => prev.map(m => m.id === mid ? {...m, bgSrc: reader.result} : m));
+                if (activeMapId === mid && !activeSceneId) {
+                  const img = new Image();
+                  img.onload = () => setBgImage(img);
+                  img.src = reader.result;
+                }
+              };
+              reader.readAsDataURL(file);
+              e.target.value = "";
+            }} />
+            <input type="file" ref={sceneImgInputRef} style={{display:"none"}} accept="image/*" onChange={e => {
+              const file = e.target.files?.[0];
+              const mid = e.target.dataset.mapId;
+              const sid = e.target.dataset.sceneId;
+              if (!file || !mid || !sid) return;
+              const reader = new FileReader();
+              reader.onload = () => {
+                setBattleMaps(prev => prev.map(m => {
+                  if (m.id !== mid) return m;
+                  return {...m, scenes: (m.scenes || []).map(s => s.id === sid ? {...s, bgSrc: reader.result} : s)};
+                }));
+                if (activeSceneId === sid) {
+                  const img = new Image();
+                  img.onload = () => setBgImage(img);
+                  img.src = reader.result;
+                }
+              };
+              reader.readAsDataURL(file);
+              e.target.value = "";
+            }} />
+            <input type="file" ref={propImgInputRef} style={{display:"none"}} accept="image/*" onChange={handlePropUpload} />
+
+            {/* Region marker placement indicator */}
+            {editingRegionMarker && (
+              <div style={{ position:"absolute", top:12, left:"50%", transform:"translateX(-50%)", zIndex:60, padding:"10px 20px", background:"rgba(88,170,255,0.15)", border:"1px solid rgba(88,170,255,0.4)", borderRadius:"8px", backdropFilter:"blur(8px)", display:"flex", alignItems:"center", gap:10, boxShadow:"0 4px 16px rgba(0,0,6,0.4)" }}>
+                <MapPin size={14} color="#58aaff" />
+                <span style={{ fontFamily:T.ui, fontSize:12, color:"#58aaff", letterSpacing:"0.3px" }}>Click on the map to place marker for "{editingRegionMarker.label}"</span>
+                <button onClick={() => setEditingRegionMarker(null)} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, marginLeft:8 }}><X size={14}/></button>
+              </div>
+            )}
 
             {/* ── LEFT: Floating Toolbar ── */}
             <div style={{
@@ -5876,6 +6638,26 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
             <span style={{ fontSize:6, fontFamily:T.ui, letterSpacing:"0.5px", color:pingMode?"#58aaff":T.textFaint, textTransform:"uppercase", fontWeight:500 }}>Ping</span>
           </button>
 
+          {viewRole === "dm" && (
+            <button onClick={() => setLaserMode(!laserMode)} title="Laser Pointer (L)"
+              onMouseEnter={e => { if (!laserMode) { e.currentTarget.style.background="rgba(255,60,60,0.08)"; e.currentTarget.style.border="1px solid rgba(255,60,60,0.15)"; }}}
+              onMouseLeave={e => { if (!laserMode) { e.currentTarget.style.background="transparent"; e.currentTarget.style.border="1px solid transparent"; }}}
+              style={{ width:46, height:46, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2, background:laserMode?"rgba(255,60,60,0.18)":"transparent", border:"1px solid " + (laserMode?"rgba(255,60,60,0.4)":"transparent"), borderRadius:"8px", cursor:"pointer", transition:"all 0.2s", boxShadow:laserMode?"0 0 12px rgba(255,60,60,0.25)":"none" }}>
+              <Target size={15} color={laserMode ? "#ff4040" : cssVar("--text-faint")} />
+              <span style={{ fontSize:6, fontFamily:T.ui, letterSpacing:"0.5px", color:laserMode?"#ff4040":T.textFaint, textTransform:"uppercase", fontWeight:500 }}>Laser</span>
+            </button>
+          )}
+
+          {viewRole === "dm" && (
+            <button onClick={() => setShowScenePanel(!showScenePanel)} title="Maps & Scenes"
+              onMouseEnter={e => { if (!showScenePanel) { e.currentTarget.style.background="rgba(46,139,87,0.08)"; e.currentTarget.style.border="1px solid rgba(46,139,87,0.15)"; }}}
+              onMouseLeave={e => { if (!showScenePanel) { e.currentTarget.style.background="transparent"; e.currentTarget.style.border="1px solid transparent"; }}}
+              style={{ width:46, height:46, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2, background:showScenePanel?"rgba(46,139,87,0.18)":"transparent", border:"1px solid " + (showScenePanel?"rgba(46,139,87,0.4)":"transparent"), borderRadius:"8px", cursor:"pointer", transition:"all 0.2s", boxShadow:showScenePanel?"0 0 12px rgba(46,139,87,0.25)":"none" }}>
+              <Globe size={15} color={showScenePanel ? "#5ee09a" : cssVar("--text-faint")} />
+              <span style={{ fontSize:6, fontFamily:T.ui, letterSpacing:"0.5px", color:showScenePanel?"#5ee09a":T.textFaint, textTransform:"uppercase", fontWeight:500 }}>Scenes</span>
+            </button>
+          )}
+
           <button onClick={() => setShowDicePanel(!showDicePanel)} title="Dice Roller"
             onMouseEnter={e => { if (!showDicePanel) { e.currentTarget.style.background="var(--crimson-soft)"; e.currentTarget.style.border="1px solid var(--crimson-border)"; }}}
             onMouseLeave={e => { if (!showDicePanel) { e.currentTarget.style.background="transparent"; e.currentTarget.style.border="1px solid transparent"; }}}
@@ -5933,16 +6715,16 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
         {/* ── RIGHT: Sidebar Toggle Tab ── */}
         <button onClick={() => setSidebarOpen(!sidebarOpen)} title={(sidebarOpen ? "Hide" : "Show") + " Sidebar (Tab)"}
           style={{
-            position:"absolute", right: sidebarOpen ? 288 : 0, top:"50%", transform:"translateY(-50%)",
-            zIndex:50, width:22, height:60, display:"flex", alignItems:"center", justifyContent:"center",
-            background:"rgba(8,8,12,0.85)", backdropFilter:"blur(12px)",
+            position:"absolute", right: sidebarOpen ? 380 : 0, top:"50%", transform:"translateY(-50%)",
+            zIndex:50, width:24, height:64, display:"flex", alignItems:"center", justifyContent:"center",
+            background:"rgba(8,8,12,0.9)", backdropFilter:"blur(12px)",
             border:"1px solid var(--crimson-border)",
             borderRight: sidebarOpen ? "none" : undefined,
-            borderRadius: sidebarOpen ? "4px 0 0 4px" : "4px 0 0 4px",
+            borderRadius:"6px 0 0 6px",
             cursor:"pointer", transition:"right 0.25s ease",
-            boxShadow:"-2px 0 8px rgba(0,0,6,0.3)",
+            boxShadow:"-2px 0 12px rgba(0,0,6,0.4)",
           }}>
-          {sidebarOpen ? <ChevronRight size={12} color={T.textMuted} /> : <ChevronLeft size={12} color={T.textMuted} />}
+          {sidebarOpen ? <ChevronRight size={14} color={T.textMuted} /> : <ChevronLeft size={14} color={T.textMuted} />}
         </button>
 
         {/* ── RIGHT: Context Panel ── */}
@@ -6071,311 +6853,391 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
             </div>
 
           ) : selectedToken ? (
-            <div style={{ padding:18, display:"flex", flexDirection:"column", gap:14 }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                <span style={{ fontFamily:T.ui, fontSize:13, letterSpacing:"2.5px", color:T.crimson, textTransform:"uppercase", fontWeight:600 }}>Selected Token</span>
-                <button onClick={() => setSelectedTokenId(null)} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:4 }}><X size={16}/></button>
-              </div>
-
-              <div style={{ display:"flex", alignItems:"center", gap:14 }}>
-                {selectedToken.imageSrc ? (
-                  <div style={{ position:"relative", width:64, height:64, borderRadius:"50%", overflow:"hidden", border:"3px solid rgba(255,220,30,0.6)", flexShrink:0, cursor:"pointer", boxShadow:"0 0 12px rgba(255,220,30,0.15)" }}
-                    onClick={() => tokenImgRef.current?.click()}>
-                    <img src={selectedToken.imageSrc} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+            <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
+              {/* Token Header — always visible */}
+              <div style={{ padding:"16px 18px", borderBottom:"1px solid " + T.border, flexShrink:0, background:"linear-gradient(180deg, rgba(212,67,58,0.03) 0%, transparent 100%)" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:12 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:14 }}>
+                    {selectedToken.imageSrc ? (
+                      <div style={{ position:"relative", width:56, height:56, borderRadius:"50%", overflow:"hidden", border:"3px solid rgba(255,220,30,0.6)", flexShrink:0, cursor:"pointer", boxShadow:"0 0 14px rgba(255,220,30,0.18), inset 0 0 20px rgba(0,0,0,0.15)" }}
+                        onClick={() => tokenImgRef.current?.click()}>
+                        <img src={selectedToken.imageSrc} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
+                      </div>
+                    ) : (
+                      <input type="color" value={selectedToken.color} onChange={e => updateToken(selectedToken.id, { color: e.target.value })}
+                        style={{ width:48, height:48, borderRadius:"50%", border:"3px solid rgba(255,220,30,0.6)", padding:0, cursor:"pointer", background:"none", flexShrink:0 }} />
+                    )}
+                    <div>
+                      <div style={{ fontSize:20, fontFamily:T.ui, color:T.text, fontWeight:600, lineHeight:"1.2", letterSpacing:"0.3px" }}>{selectedToken.name}</div>
+                      <div style={{ fontSize:11, fontFamily:T.ui, color:T.textFaint, marginTop:4, display:"flex", gap:6, alignItems:"center" }}>
+                        <span style={{ textTransform:"capitalize" }}>{selectedToken.size || "medium"}</span>
+                        <span style={{ width:3, height:3, borderRadius:"50%", background:T.textFaint, opacity:0.5 }} />
+                        {selectedToken.ac && <React.Fragment><span>AC {selectedToken.ac}</span><span style={{ width:3, height:3, borderRadius:"50%", background:T.textFaint, opacity:0.5 }} /></React.Fragment>}
+                        <span>{selectedToken.speed || 30}ft</span>
+                      </div>
+                    </div>
                   </div>
-                ) : (
-                  <input type="color" value={selectedToken.color} onChange={e => updateToken(selectedToken.id, { color: e.target.value })}
-                    style={{ width:52, height:52, borderRadius:"50%", border:"3px solid rgba(255,220,30,0.6)", padding:0, cursor:"pointer", background:"none", flexShrink:0 }} />
-                )}
-                <span style={{ fontSize:24, fontFamily:T.body, color:T.text, fontWeight:500 }}>{selectedToken.name}</span>
-              </div>
-              <div style={{ display:"flex", gap:6 }}>
-                <label style={{ flex:1, padding:"8px 0", background:"var(--bg-input)", border:"1px dashed var(--border)", borderRadius:"6px", cursor:"pointer", fontSize:11, color:T.textMuted, textAlign:"center", fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase", transition:"all 0.2s ease" }}
-                  onMouseEnter={e => { e.currentTarget.style.background="rgba(212,67,58,0.06)"; e.currentTarget.style.borderColor="rgba(212,67,58,0.25)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background="var(--bg-input)"; e.currentTarget.style.borderColor="var(--border)"; }}>
-                  {selectedToken.imageSrc ? "Change Image" : "Upload Token Image"}
-                  <input type="file" ref={tokenImgRef} style={{display:"none"}} accept="image/*" onChange={handleTokenImageUpload} />
-                </label>
-                {selectedToken.imageSrc && (
-                  <button onClick={() => { delete tokenImagesCache.current[selectedToken.id]; updateToken(selectedToken.id, { imageSrc: null }); }}
-                    onMouseEnter={e => { e.currentTarget.style.background="rgba(212,67,58,0.08)"; }}
-                    onMouseLeave={e => { e.currentTarget.style.background="var(--bg-input)"; }}
-                    style={{ padding:"8px 12px", background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:"6px", cursor:"pointer", fontSize:11, color:T.textFaint, fontFamily:T.ui, letterSpacing:"0.5px", textTransform:"uppercase", transition:"all 0.2s ease" }}>
-                    Clear
-                  </button>
-                )}
-              </div>
+                  <button onClick={() => setSelectedTokenId(null)}
+                    onMouseEnter={e => { e.currentTarget.style.background="rgba(255,255,255,0.05)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background="transparent"; }}
+                    style={{ background:"transparent", border:"none", cursor:"pointer", color:T.textFaint, padding:6, borderRadius:"6px", transition:"all 0.15s", marginTop:2 }}><X size={16}/></button>
+                </div>
 
-              {/* Token appearance settings */}
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-                <div>
-                  <span style={{ fontFamily:T.ui, fontSize:10, color:T.textMuted, letterSpacing:"0.5px", display:"block", marginBottom:4 }}>SIZE</span>
-                  <select value={selectedToken.size || "medium"} onChange={e => updateToken(selectedToken.id, { size: e.target.value })}
-                    style={{ width:"100%", padding:"6px 8px", fontSize:12, fontFamily:T.ui, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"5px", cursor:"pointer" }}>
-                    <option value="tiny">Tiny</option><option value="small">Small</option><option value="medium">Medium</option>
-                    <option value="large">Large</option><option value="huge">Huge</option><option value="gargantuan">Gargantuan</option>
-                  </select>
-                </div>
-                <div>
-                  <span style={{ fontFamily:T.ui, fontSize:10, color:T.textMuted, letterSpacing:"0.5px", display:"block", marginBottom:4 }}>LABEL (3 char)</span>
-                  <input type="text" maxLength={4} value={selectedToken.label || ""} onChange={e => updateToken(selectedToken.id, { label: e.target.value })}
-                    placeholder={selectedToken.name.substring(0,3)}
-                    style={{ width:"100%", padding:"6px 8px", fontSize:13, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"5px", outline:"none" }} />
-                </div>
-              </div>
-
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-                <div>
-                  <span style={{ fontFamily:T.ui, fontSize:10, color:T.textMuted, letterSpacing:"0.5px", display:"block", marginBottom:4 }}>ARMOR CLASS</span>
-                  <input type="number" value={selectedToken.ac || ""} onChange={e => updateToken(selectedToken.id, { ac: e.target.value ? parseInt(e.target.value) : null })}
-                    placeholder="—"
-                    style={{ width:"100%", padding:"6px 8px", fontSize:13, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"5px", outline:"none" }} />
-                </div>
-                <div>
-                  <span style={{ fontFamily:T.ui, fontSize:10, color:T.textMuted, letterSpacing:"0.5px", display:"block", marginBottom:4 }}>SPEED (ft)</span>
-                  <input type="number" value={selectedToken.speed || 30} onChange={e => updateToken(selectedToken.id, { speed: parseInt(e.target.value) || 30 })}
-                    style={{ width:"100%", padding:"6px 8px", fontSize:13, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"5px", outline:"none" }} />
-                </div>
-              </div>
-
-              {selectedToken.hp != null && selectedToken.maxHp && (
-                <div>
-                  <span style={{ fontFamily:T.ui, fontSize:11, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:8, fontWeight:500 }}>Hit Points</span>
-                  <div style={{ display:"flex", alignItems:"baseline", gap:8, marginBottom:8 }}>
-                    <span style={{ fontSize:40, fontFamily:T.body, fontWeight:300, color: getHpColor(selectedToken.hp, selectedToken.maxHp) }}>
-                      {selectedToken.hp}
-                    </span>
-                    <span style={{ fontSize:18, color:T.textFaint, fontFamily:T.body }}>/ {selectedToken.maxHp}</span>
+                {/* HP bar — always visible if token has HP */}
+                {selectedToken.hp != null && selectedToken.maxHp && (() => {
+                  const hpPct = Math.round(selectedToken.hp / selectedToken.maxHp * 100);
+                  const hpCol = getHpColor(selectedToken.hp, selectedToken.maxHp);
+                  return (
+                  <div style={{ background:"rgba(0,0,0,0.12)", borderRadius:"10px", padding:"12px 14px", border:"1px solid " + T.border }}>
+                    <div style={{ display:"flex", alignItems:"baseline", justifyContent:"space-between", marginBottom:8 }}>
+                      <div style={{ display:"flex", alignItems:"baseline", gap:4 }}>
+                        <span style={{ fontSize:30, fontFamily:T.body, fontWeight:400, color:hpCol, textShadow:"0 0 20px " + hpCol + "33", lineHeight:1 }}>{selectedToken.hp}</span>
+                        <span style={{ fontSize:14, color:T.textFaint, fontFamily:T.body }}>/ {selectedToken.maxHp}</span>
+                      </div>
+                      <span style={{ fontSize:10, fontFamily:T.ui, letterSpacing:"1px", color:T.textFaint, textTransform:"uppercase" }}>HP</span>
+                    </div>
+                    <div style={{ height:6, background:"rgba(255,255,255,0.04)", borderRadius:"3px", overflow:"hidden", marginBottom:10, boxShadow:"inset 0 1px 2px rgba(0,0,0,0.2)" }}>
+                      <div style={{ width:`${hpPct}%`, height:"100%", background:`linear-gradient(90deg, ${hpCol} 0%, ${hpCol}bb 100%)`, transition:"width 0.3s ease", boxShadow:"0 0 8px " + hpCol + "44", borderRadius:"3px" }} />
+                    </div>
+                    <div style={{ display:"flex", gap:3 }}>
+                      {[{d:-10,c:"rgba(212,67,58,0.12)",bc:"rgba(212,67,58,0.25)",tc:"#f06858"},{d:-5,c:"rgba(212,67,58,0.08)",bc:"rgba(212,67,58,0.18)",tc:"#f06858"},{d:-1,c:"rgba(212,67,58,0.05)",bc:"rgba(212,67,58,0.12)",tc:"#f06858"},{d:1,c:"rgba(46,139,87,0.05)",bc:"rgba(46,139,87,0.12)",tc:"#5ee09a"},{d:5,c:"rgba(46,139,87,0.08)",bc:"rgba(46,139,87,0.18)",tc:"#5ee09a"},{d:10,c:"rgba(46,139,87,0.12)",bc:"rgba(46,139,87,0.25)",tc:"#5ee09a"}].map(btn => (
+                        <button key={btn.d} onClick={() => adjustTokenHp(selectedToken.id, btn.d)}
+                          onMouseEnter={e => { e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.boxShadow="0 2px 8px rgba(0,0,6,0.35)"; e.currentTarget.style.filter="brightness(1.2)"; }}
+                          onMouseLeave={e => { e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.boxShadow="none"; e.currentTarget.style.filter="none"; }}
+                          style={{ flex:1, padding:"5px 0", background:btn.c, border:"1px solid " + btn.bc, borderRadius:"5px", color:btn.tc, fontFamily:T.ui, fontSize:11, fontWeight:600, cursor:"pointer", transition:"all 0.15s ease" }}>
+                          {btn.d > 0 ? "+" : ""}{btn.d}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <div style={{ flex:1, height:10, background:"var(--bg-input)", borderRadius:"4px", overflow:"hidden", position:"relative" }}>
-                    <div style={{ width:`${Math.round(selectedToken.hp/selectedToken.maxHp*100)}%`, height:"100%", background:`linear-gradient(90deg, ${getHpColor(selectedToken.hp, selectedToken.maxHp)} 0%, ${getHpColor(selectedToken.hp, selectedToken.maxHp)}cc 100%)`, transition:"width 0.3s ease" }} />
-                  </div>
+                  );
+                })()}
 
-                  <div style={{ display:"flex", gap:6, marginTop:12 }}>
-                    {[{d:-10,c:"rgba(212,67,58,0.15)",bc:"rgba(212,67,58,0.3)",tc:"#f06858"},{d:-5,c:"rgba(212,67,58,0.10)",bc:"rgba(212,67,58,0.2)",tc:"#f06858"},{d:-1,c:"rgba(212,67,58,0.06)",bc:"rgba(212,67,58,0.15)",tc:"#f06858"},{d:1,c:"rgba(46,139,87,0.06)",bc:"rgba(46,139,87,0.15)",tc:"#5ee09a"},{d:5,c:"rgba(46,139,87,0.10)",bc:"rgba(46,139,87,0.2)",tc:"#5ee09a"},{d:10,c:"rgba(46,139,87,0.15)",bc:"rgba(46,139,87,0.3)",tc:"#5ee09a"}].map(btn => (
-                      <button key={btn.d} onClick={() => adjustTokenHp(selectedToken.id, btn.d)}
-                        onMouseEnter={e => { e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.boxShadow="0 2px 6px rgba(0,0,6,0.3)"; }}
-                        onMouseLeave={e => { e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.boxShadow="none"; }}
-                        style={{ flex:1, padding:"8px 0", background:btn.c, border:"1px solid " + btn.bc, borderRadius:"5px", color:btn.tc, fontFamily:T.ui, fontSize:12, letterSpacing:"0.5px", cursor:"pointer", transition:"all 0.15s ease", fontWeight:600 }}>
-                        {btn.d > 0 ? "+" : ""}{btn.d}
-                      </button>
-                    ))}
-                  </div>
-                  <p style={{ fontSize:11, color:T.textFaint, fontStyle:"italic", marginTop:8, fontFamily:T.body }}>Scroll wheel over token to adjust HP</p>
-                </div>
-              )}
-
-              {/* Vision settings */}
-              <div style={{ borderTop:"1px solid " + T.border, paddingTop:12 }}>
-                <span style={{ fontFamily:T.ui, fontSize:11, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:10, fontWeight:500 }}>Vision</span>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
-                  <div>
-                    <span style={{ fontFamily:T.ui, fontSize:10, color:T.textMuted, letterSpacing:"0.5px", display:"block", marginBottom:4 }}>NORMAL (cells)</span>
-                    <input type="number" value={selectedToken.vision || 0} onChange={e => updateToken(selectedToken.id, { vision: parseInt(e.target.value) || 0 })}
-                      style={{ width:"100%", padding:"6px 8px", fontSize:13, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"5px", outline:"none" }} />
-                  </div>
-                  <div>
-                    <span style={{ fontFamily:T.ui, fontSize:10, color:T.textMuted, letterSpacing:"0.5px", display:"block", marginBottom:4 }}>DARKVISION (cells)</span>
-                    <input type="number" value={selectedToken.darkvision || 0} onChange={e => updateToken(selectedToken.id, { darkvision: parseInt(e.target.value) || 0 })}
-                      style={{ width:"100%", padding:"6px 8px", fontSize:13, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"5px", outline:"none" }} />
-                  </div>
-                </div>
-                <p style={{ fontSize:11, color:T.textFaint, fontStyle:"italic", marginTop:6, fontFamily:T.body }}>12 cells = 60ft. Used with Vision Fog.</p>
-              </div>
-
-              {/* Conditions */}
-              <div style={{ borderTop:"1px solid " + T.border, paddingTop:12 }}>
-                <span style={{ fontFamily:T.ui, fontSize:11, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:8, fontWeight:500 }}>Conditions</span>
-                <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:8 }}>
-                  {(tokenConditions[selectedToken.id] || []).map(cond => {
-                    const dc = DND_CONDITIONS.find(d => d.name === cond);
+                {/* Quick Actions row */}
+                <div style={{ display:"flex", gap:4, marginTop:12 }}>
+                  {[
+                    { label: movementMode ? "End Move" : "Move", icon: Compass, onClick: () => { if (selectedToken) { setMovementMode(!movementMode); if (!movementMode) { setMovementPath([]); setMovementOrigin({x:selectedToken.x,y:selectedToken.y}); } } }, active: movementMode },
+                    { label: "Roll d20", icon: Dice6, onClick: () => rollAttack(selectedToken.id) },
+                    { label: selectedToken.hidden ? "Show" : "Hide", icon: selectedToken.hidden ? Eye : EyeOff, onClick: () => updateToken(selectedToken.id, { hidden: !selectedToken.hidden }) },
+                    { label: null, icon: Trash2, onClick: () => removeToken(selectedToken.id), danger: true },
+                  ].map((act, i) => {
+                    const Icon = act.icon;
                     return (
-                      <span key={cond} onClick={() => removeTokenCondition(selectedToken.id, cond)}
-                        style={{ display:"inline-flex", alignItems:"center", gap:4, background:"rgba(0,0,0,0.15)", border:"1px solid " + (dc ? dc.color + "55" : "var(--border-mid)"), padding:"4px 8px", borderRadius:"12px", fontSize:11, fontFamily:T.ui, letterSpacing:"0.3px", color: dc ? dc.color : T.textMuted, cursor:"pointer", transition:"all 0.15s" }}>
-                        <span style={{ width:6, height:6, borderRadius:"50%", background: dc ? dc.color : "#aaa" }} />
-                        {cond} <X size={10}/>
-                      </span>
+                      <button key={i} onClick={act.onClick}
+                        onMouseEnter={e => { e.currentTarget.style.background = act.danger ? "rgba(212,67,58,0.12)" : act.active ? "rgba(212,67,58,0.18)" : "rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor = act.danger ? "rgba(212,67,58,0.35)" : "rgba(255,255,255,0.12)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background = act.active ? "rgba(212,67,58,0.1)" : "rgba(0,0,0,0.1)"; e.currentTarget.style.borderColor = act.active ? "rgba(212,67,58,0.3)" : T.border; }}
+                        style={{ flex: act.label ? 1 : "0 0 36px", padding:"7px 4px", background: act.active ? "rgba(212,67,58,0.1)" : "rgba(0,0,0,0.1)", border:"1px solid " + (act.active ? "rgba(212,67,58,0.3)" : T.border), borderRadius:"6px", color: act.danger ? "rgba(212,67,58,0.7)" : act.active ? "var(--crimson)" : T.textMuted, fontFamily:T.ui, fontSize:10, fontWeight:500, cursor:"pointer", transition:"all 0.15s ease", display:"flex", alignItems:"center", justifyContent:"center", gap:4, letterSpacing:"0.3px" }}>
+                        <Icon size={12} /> {act.label}
+                      </button>
                     );
                   })}
                 </div>
-                <select onChange={e => { addTokenCondition(selectedToken.id, e.target.value); e.target.value = ""; }} value=""
-                  style={{ width:"100%", padding:"6px 8px", fontSize:12, fontFamily:T.ui, background:T.bgInput, border:"1px solid " + T.border, color:T.textMuted, borderRadius:"5px", cursor:"pointer" }}>
-                  <option value="">+ Add Condition</option>
-                  {DND_CONDITIONS.filter(dc => !(tokenConditions[selectedToken.id] || []).includes(dc.name)).map(dc => (
-                    <option key={dc.name} value={dc.name}>{dc.name}</option>
-                  ))}
-                </select>
               </div>
 
-              {/* Notes */}
-              <div style={{ borderTop:"1px solid " + T.border, paddingTop:12 }}>
-                <span style={{ fontFamily:T.ui, fontSize:11, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:8, fontWeight:500 }}>Notes</span>
-                <textarea value={selectedToken.notes || ""} onChange={e => updateToken(selectedToken.id, { notes: e.target.value })}
-                  placeholder="Add notes about this token..."
-                  rows={3}
-                  style={{ width:"100%", padding:"8px 10px", fontSize:13, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"5px", outline:"none", resize:"vertical", lineHeight:"1.5" }} />
+              {/* Tab Bar */}
+              <div style={{ display:"flex", borderBottom:"1px solid " + T.border, flexShrink:0, background:"rgba(0,0,0,0.08)" }}>
+                {[
+                  { id:"stats", label:"Stats", icon: Shield },
+                  { id:"spells", label:"Spells", icon: Wand2 },
+                  { id:"config", label:"Config", icon: Settings },
+                ].map(tab => {
+                  const isActive = tokenPanelTab === tab.id;
+                  const Icon = tab.icon;
+                  return (
+                    <button key={tab.id} onClick={() => setTokenPanelTab(tab.id)}
+                      onMouseEnter={e => { if (!isActive) e.currentTarget.style.background="rgba(255,255,255,0.03)"; }}
+                      onMouseLeave={e => { if (!isActive) e.currentTarget.style.background="transparent"; }}
+                      style={{
+                        flex:1, padding:"11px 0 9px", display:"flex", alignItems:"center", justifyContent:"center", gap:5,
+                        background: isActive ? "rgba(212,67,58,0.06)" : "transparent",
+                        border:"none", borderBottom: isActive ? "2px solid var(--crimson)" : "2px solid transparent",
+                        cursor:"pointer", transition:"all 0.2s",
+                        fontFamily:T.ui, fontSize:10, letterSpacing:"1.2px", textTransform:"uppercase", fontWeight: isActive ? 600 : 400,
+                        color: isActive ? "var(--crimson)" : T.textFaint,
+                      }}>
+                      <Icon size={12} strokeWidth={isActive ? 2.5 : 1.5} /> {tab.label}
+                    </button>
+                  );
+                })}
               </div>
 
-              {/* Actions */}
-              <div style={{ borderTop:"1px solid " + T.border, paddingTop:12 }}>
-                <span style={{ fontFamily:T.ui, fontSize:11, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:10, fontWeight:500 }}>Actions</span>
-                <div style={{ display:"flex", gap:6 }}>
-                  <CrimsonBtn onClick={() => { if (selectedToken) { setMovementMode(!movementMode); if (!movementMode) { setMovementPath([]); setMovementOrigin({x:selectedToken.x,y:selectedToken.y}); } } }} secondary small style={{ flex:1 }}>
-                    {movementMode ? "End Move" : "Move (M)"}
-                  </CrimsonBtn>
-                  <CrimsonBtn onClick={() => rollAttack(selectedToken.id)} secondary small style={{ flex:1 }}>
-                    Roll d20
-                  </CrimsonBtn>
-                </div>
-                <div style={{ display:"flex", gap:6, marginTop:6 }}>
-                  <CrimsonBtn onClick={() => updateToken(selectedToken.id, { hidden: !selectedToken.hidden })} secondary small style={{ flex:1 }}>
-                    {selectedToken.hidden ? <React.Fragment><Eye size={11}/> Show</React.Fragment> : <React.Fragment><EyeOff size={11}/> Hide</React.Fragment>}
-                  </CrimsonBtn>
-                  <CrimsonBtn onClick={() => removeToken(selectedToken.id)} secondary small style={{ flex:1 }}>
-                    <Trash2 size={11}/> Remove
-                  </CrimsonBtn>
-                </div>
-              </div>
+              {/* Tab Content */}
+              <div style={{ flex:1, overflowY:"auto", padding:16 }}>
 
-              {/* Spells */}
-              <div style={{ borderTop:"1px solid " + T.border, paddingTop:12 }}>
-                <span style={{ fontFamily:T.ui, fontSize:12, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:8, fontWeight:500 }}>Spells</span>
+                {/* STATS TAB */}
+                {tokenPanelTab === "stats" && (
+                  <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
+                    {/* Stat Grid */}
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                      {[
+                        { label:"Armor Class", short:"AC", val: selectedToken.ac || "—", key:"ac", type:"number", color:"#6eb5ff" },
+                        { label:"Speed", short:"SPD", val: (selectedToken.speed || 30) + "ft", key:"speed", type:"number", color:"#5ee09a" },
+                      ].map(stat => (
+                        <div key={stat.label} style={{ background:"rgba(0,0,0,0.12)", border:"1px solid " + T.border, borderRadius:"8px", padding:"10px 12px", display:"flex", alignItems:"center", gap:10 }}>
+                          <div style={{ width:36, height:36, borderRadius:"8px", background:"rgba(0,0,0,0.15)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                            <span style={{ fontSize:12, fontFamily:T.ui, color:stat.color, fontWeight:700, letterSpacing:"0.5px" }}>{stat.short}</span>
+                          </div>
+                          <div>
+                            <div style={{ fontSize:18, fontFamily:T.body, color:T.text, fontWeight:500, lineHeight:1 }}>{stat.val}</div>
+                            <div style={{ fontSize:9, fontFamily:T.ui, color:T.textFaint, letterSpacing:"0.8px", textTransform:"uppercase", marginTop:2 }}>{stat.label}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
 
-                {/* Spell DC Control */}
-                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, padding:"8px 10px", background:"var(--bg-input)", borderRadius:"6px", border:"1px solid " + T.border }}>
-                  <span style={{ fontFamily:T.ui, fontSize:11, color:T.textMuted, letterSpacing:"0.5px", textTransform:"uppercase", fontWeight:500 }}>Spell Save DC</span>
-                  <input type="number" min="8" max="20" value={spellDC} onChange={e => setSpellDC(parseInt(e.target.value) || 15)}
-                    style={{ width:48, padding:"4px 6px", fontFamily:T.ui, fontSize:14, background:T.bgCard, border:"1px solid " + T.border, color:T.text, borderRadius:"4px", textAlign:"center", fontWeight:600 }} />
-                </div>
+                    {/* Editable Stats */}
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                      <div>
+                        <span style={{ fontFamily:T.ui, fontSize:9, color:T.textFaint, letterSpacing:"1px", display:"block", marginBottom:4, textTransform:"uppercase" }}>Armor Class</span>
+                        <input type="number" value={selectedToken.ac || ""} onChange={e => updateToken(selectedToken.id, { ac: e.target.value ? parseInt(e.target.value) : null })}
+                          placeholder="—" style={{ width:"100%", padding:"7px 10px", fontSize:13, fontFamily:T.body, background:"rgba(0,0,0,0.12)", border:"1px solid " + T.border, color:T.text, borderRadius:"6px", outline:"none", boxSizing:"border-box" }} />
+                      </div>
+                      <div>
+                        <span style={{ fontFamily:T.ui, fontSize:9, color:T.textFaint, letterSpacing:"1px", display:"block", marginBottom:4, textTransform:"uppercase" }}>Speed (ft)</span>
+                        <input type="number" value={selectedToken.speed || 30} onChange={e => updateToken(selectedToken.id, { speed: parseInt(e.target.value) || 30 })}
+                          style={{ width:"100%", padding:"7px 10px", fontSize:13, fontFamily:T.body, background:"rgba(0,0,0,0.12)", border:"1px solid " + T.border, color:T.text, borderRadius:"6px", outline:"none", boxSizing:"border-box" }} />
+                      </div>
+                    </div>
 
-                {activeSpell && (
-                  <div style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", marginBottom:10, background:"rgba(181,116,255,0.1)", border:"1px solid rgba(181,116,255,0.3)", borderRadius:"8px" }}>
-                    <span style={{ width:10, height:10, borderRadius:"50%", background:activeSpell.color, boxShadow:"0 0 8px " + activeSpell.color }} />
-                    <span style={{ flex:1, fontFamily:T.ui, fontSize:12, color:"#b574ff", letterSpacing:"0.5px", fontWeight:500 }}>Targeting: {activeSpell.name}</span>
-                    <span onClick={() => { setActiveSpell(null); setSpellTarget(null); }} style={{ cursor:"pointer", color:T.textFaint, padding:4, display:"flex" }}><X size={14}/></span>
+                    {/* Conditions */}
+                    <div>
+                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:8 }}>
+                        <span style={{ fontFamily:T.ui, fontSize:10, letterSpacing:"1.2px", color:T.textFaint, textTransform:"uppercase", fontWeight:500 }}>Conditions</span>
+                        <span style={{ fontSize:10, fontFamily:T.ui, color:T.textFaint }}>{(tokenConditions[selectedToken.id] || []).length > 0 ? (tokenConditions[selectedToken.id] || []).length + " active" : ""}</span>
+                      </div>
+                      <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:8 }}>
+                        {(tokenConditions[selectedToken.id] || []).length === 0 && (
+                          <div style={{ width:"100%", padding:"10px 12px", background:"rgba(0,0,0,0.06)", border:"1px dashed " + T.border, borderRadius:"6px", textAlign:"center" }}>
+                            <span style={{ fontSize:11, fontFamily:T.body, color:T.textFaint, fontStyle:"italic" }}>No active conditions</span>
+                          </div>
+                        )}
+                        {(tokenConditions[selectedToken.id] || []).map(cond => {
+                          const dc = DND_CONDITIONS.find(d => d.name === cond);
+                          return (
+                            <span key={cond} onClick={() => removeTokenCondition(selectedToken.id, cond)}
+                              onMouseEnter={e => { e.currentTarget.style.filter="brightness(1.2)"; e.currentTarget.style.transform="scale(1.03)"; }}
+                              onMouseLeave={e => { e.currentTarget.style.filter="none"; e.currentTarget.style.transform="none"; }}
+                              style={{ display:"inline-flex", alignItems:"center", gap:5, background:"rgba(0,0,0,0.15)", border:"1px solid " + (dc ? dc.color + "44" : "var(--border-mid)"), padding:"5px 10px", borderRadius:"14px", fontSize:11, fontFamily:T.ui, letterSpacing:"0.3px", color: dc ? dc.color : T.textMuted, cursor:"pointer", transition:"all 0.15s" }}>
+                              <span style={{ width:7, height:7, borderRadius:"50%", background: dc ? dc.color : "#aaa", boxShadow: dc ? "0 0 6px " + dc.color + "55" : "none" }} />
+                              {cond} <X size={10} style={{ opacity:0.6 }}/>
+                            </span>
+                          );
+                        })}
+                      </div>
+                      <select onChange={e => { addTokenCondition(selectedToken.id, e.target.value); e.target.value = ""; }} value=""
+                        style={{ width:"100%", padding:"7px 10px", fontSize:12, fontFamily:T.ui, background:"rgba(0,0,0,0.12)", border:"1px solid " + T.border, color:T.textMuted, borderRadius:"6px", cursor:"pointer" }}>
+                        <option value="">+ Add Condition</option>
+                        {DND_CONDITIONS.filter(dc => !(tokenConditions[selectedToken.id] || []).includes(dc.name)).map(dc => (
+                          <option key={dc.name} value={dc.name}>{dc.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Notes */}
+                    <div>
+                      <span style={{ fontFamily:T.ui, fontSize:10, letterSpacing:"1.2px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:8, fontWeight:500 }}>Notes</span>
+                      <textarea value={selectedToken.notes || ""} onChange={e => updateToken(selectedToken.id, { notes: e.target.value })}
+                        placeholder="Add notes about this token..."
+                        rows={3}
+                        style={{ width:"100%", padding:"10px 12px", fontSize:13, fontFamily:T.body, background:"rgba(0,0,0,0.12)", border:"1px solid " + T.border, color:T.text, borderRadius:"6px", outline:"none", resize:"vertical", lineHeight:"1.5", boxSizing:"border-box" }} />
+                    </div>
                   </div>
                 )}
 
-                <div style={{ display:"flex", gap:3, flexWrap:"wrap", marginBottom:8 }}>
-                  {[0,1,2,3,4,5,6,7,8,9].map(lvl => (
-                    <button key={"lvl-" + lvl} onClick={() => setSpellLevelFilter(spellLevelFilter === lvl ? -1 : lvl)}
-                      style={{ padding:"5px 10px", fontSize:11, fontFamily:T.ui, letterSpacing:"0.5px", textTransform:"uppercase", background:spellLevelFilter === lvl ? "rgba(181,116,255,0.2)" : "transparent", border:"1px solid " + (spellLevelFilter === lvl ? "rgba(181,116,255,0.5)" : T.border), color:spellLevelFilter === lvl ? "#b574ff" : T.textMuted, borderRadius:"4px", cursor:"pointer", transition:"all 0.15s", fontWeight:spellLevelFilter === lvl ? 600 : 400 }}>
-                      {lvl === 0 ? "C" : lvl}
-                    </button>
-                  ))}
-                </div>
-
-                <input type="text" placeholder="Search spells..."
-                  onChange={e => setSpellSearchFilter(e.target.value.toLowerCase())}
-                  style={{ width:"100%", padding:"8px 10px", fontSize:13, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"6px", marginBottom:8, outline:"none", boxSizing:"border-box" }} />
-
-                {selectedSpellInfo ? (
-                  <div style={{ background:T.bgCard, border:"1px solid " + T.border, borderRadius:"8px", padding:16, marginBottom:12, boxShadow:"0 2px 12px rgba(0,0,6,0.2)" }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"start", marginBottom:12 }}>
-                      <div>
-                        <div style={{ fontSize:18, fontFamily:T.ui, fontWeight:600, color:selectedSpellInfo.color, marginBottom:6, textShadow:"0 0 20px " + selectedSpellInfo.color + "33" }}>{selectedSpellInfo.name}</div>
-                        <div style={{ fontSize:11, fontFamily:T.ui, color:T.textMuted, letterSpacing:"0.5px", display:"flex", gap:8, flexWrap:"wrap" }}>
-                          <span style={{ background:"rgba(181,116,255,0.15)", padding:"2px 8px", borderRadius:"4px", fontWeight:500 }}>{selectedSpellInfo.level === 0 ? "Cantrip" : "Level " + selectedSpellInfo.level}</span>
-                          <span style={{ padding:"2px 0" }}>{selectedSpellInfo.school}</span>
-                          <span style={{ padding:"2px 0", color:T.textFaint }}>{selectedSpellInfo.castTime}</span>
-                        </div>
-                      </div>
-                      <button onClick={() => setSelectedSpellInfo(null)} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:4 }}><X size={16}/></button>
+                {/* SPELLS TAB */}
+                {tokenPanelTab === "spells" && (
+                  <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                    {/* Spell DC Control */}
+                    <div style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", background:"var(--bg-input)", borderRadius:"6px", border:"1px solid " + T.border }}>
+                      <span style={{ fontFamily:T.ui, fontSize:11, color:T.textMuted, letterSpacing:"0.5px", textTransform:"uppercase", fontWeight:500 }}>Spell Save DC</span>
+                      <input type="number" min="8" max="30" value={spellDC} onChange={e => setSpellDC(parseInt(e.target.value) || 15)}
+                        style={{ width:48, padding:"4px 6px", fontFamily:T.ui, fontSize:14, background:T.bgCard, border:"1px solid " + T.border, color:T.text, borderRadius:"4px", textAlign:"center", fontWeight:600 }} />
                     </div>
 
-                    <div style={{ fontSize:12, fontFamily:T.body, color:T.textMuted, marginBottom:10, paddingBottom:10, borderBottom:"1px solid " + T.border }}>
-                      <span style={{ fontWeight:500, color:T.text }}>Range: </span>
-                      {selectedSpellInfo.range > 0 ? selectedSpellInfo.range + " ft" : selectedSpellInfo.shape === "self" ? "Self" : "Touch"}
-                      {selectedSpellInfo.shape === "sphere" && (" (radius " + selectedSpellInfo.radius + " ft)")}
-                      {selectedSpellInfo.shape === "cone" && (" (cone " + selectedSpellInfo.radius + " ft)")}
-                      {selectedSpellInfo.shape === "line" && (" (line " + selectedSpellInfo.radius + " ft)")}
-                      {selectedSpellInfo.shape === "cube" && (" (cube " + selectedSpellInfo.radius + " ft)")}
+                    {activeSpell && (
+                      <div style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", background:"rgba(181,116,255,0.1)", border:"1px solid rgba(181,116,255,0.3)", borderRadius:"8px" }}>
+                        <span style={{ width:10, height:10, borderRadius:"50%", background:activeSpell.color, boxShadow:"0 0 8px " + activeSpell.color }} />
+                        <span style={{ flex:1, fontFamily:T.ui, fontSize:12, color:"#b574ff", letterSpacing:"0.5px", fontWeight:500 }}>Targeting: {activeSpell.name}</span>
+                        <span onClick={() => { setActiveSpell(null); spellTargetRef.current = null; setSpellTarget(null); }} style={{ cursor:"pointer", color:T.textFaint, padding:4, display:"flex" }}><X size={14}/></span>
+                      </div>
+                    )}
+
+                    <div style={{ display:"flex", gap:3, flexWrap:"wrap" }}>
+                      {[0,1,2,3,4,5,6,7,8,9].map(lvl => (
+                        <button key={"lvl-" + lvl} onClick={() => setSpellLevelFilter(spellLevelFilter === lvl ? -1 : lvl)}
+                          style={{ padding:"5px 10px", fontSize:11, fontFamily:T.ui, letterSpacing:"0.5px", textTransform:"uppercase", background:spellLevelFilter === lvl ? "rgba(181,116,255,0.2)" : "transparent", border:"1px solid " + (spellLevelFilter === lvl ? "rgba(181,116,255,0.5)" : T.border), color:spellLevelFilter === lvl ? "#b574ff" : T.textMuted, borderRadius:"4px", cursor:"pointer", transition:"all 0.15s", fontWeight:spellLevelFilter === lvl ? 600 : 400 }}>
+                          {lvl === 0 ? "C" : lvl}
+                        </button>
+                      ))}
                     </div>
 
-                    <div style={{ fontSize:13, fontFamily:T.body, color:T.text, marginBottom:12, lineHeight:"1.5" }}>{selectedSpellInfo.description}</div>
+                    <input type="text" placeholder="Search spells..."
+                      onChange={e => setSpellSearchFilter(e.target.value.toLowerCase())}
+                      style={{ width:"100%", padding:"8px 10px", fontSize:13, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"6px", outline:"none", boxSizing:"border-box" }} />
 
-                    {selectedSpellInfo.damage && (
-                      <div style={{ fontSize:12, fontFamily:T.ui, color:T.textMuted, marginBottom:8, padding:"8px 10px", borderRadius:"6px", background:"rgba(212,67,58,0.06)", border:"1px solid rgba(212,67,58,0.15)" }}>
-                        <span style={{ color:"#f06858", fontWeight:600 }}>Damage:</span> {selectedSpellInfo.damage} <span style={{ color:T.textFaint }}>({selectedSpellInfo.damageType})</span>
-                      </div>
-                    )}
-
-                    {selectedSpellInfo.healing && (
-                      <div style={{ fontSize:12, fontFamily:T.ui, color:T.textMuted, marginBottom:8, padding:"8px 10px", borderRadius:"6px", background:"rgba(46,139,87,0.06)", border:"1px solid rgba(46,139,87,0.15)" }}>
-                        <span style={{ color:"#5ee09a", fontWeight:600 }}>Healing:</span> {selectedSpellInfo.healing}
-                      </div>
-                    )}
-
-                    {selectedSpellInfo.save && (
-                      <div style={{ fontSize:12, fontFamily:T.ui, color:T.textMuted, marginBottom:8 }}>
-                        <span style={{ color:T.text, fontWeight:500 }}>Save:</span> {selectedSpellInfo.save} DC {spellDC}
-                      </div>
-                    )}
-
-                    <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:4 }}>
-                    {selectedSpellInfo.concentration && (
-                      <div style={{ fontSize:11, fontFamily:T.ui, color:"#b574ff", display:"inline-flex", alignItems:"center", gap:4, background:"rgba(181,116,255,0.1)", padding:"4px 10px", borderRadius:"4px" }}>
-                        <Activity size={11} color="#b574ff" /> Concentration
-                      </div>
-                    )}
-                    {selectedSpellInfo.ritual && (
-                      <div style={{ fontSize:11, fontFamily:T.ui, color:"#7c3aed", display:"inline-flex", alignItems:"center", gap:4, background:"rgba(124,58,237,0.1)", padding:"4px 10px", borderRadius:"4px" }}>
-                        <BookOpen size={11} color="#7c3aed" /> Ritual
-                      </div>
-                    )}
-                    {selectedSpellInfo.conditions && selectedSpellInfo.conditions.length > 0 && (
-                      <div style={{ fontSize:11, fontFamily:T.ui, color:"#e8940a", display:"inline-flex", alignItems:"center", gap:4, background:"rgba(232,148,10,0.1)", padding:"4px 10px", borderRadius:"4px" }}>
-                        <AlertTriangle size={11} color="#e8940a" /> {selectedSpellInfo.conditions.join(", ")}
-                      </div>
-                    )}
-                    </div>
-
-                    <button onClick={() => {
-                      if (selectedSpellInfo.shape === "self") {
-                        const cx = selectedToken ? selectedToken.x : 0;
-                        const cy = selectedToken ? selectedToken.y : 0;
-                        castSpell(cx, cy, selectedSpellInfo);
-                        setSelectedSpellInfo(null);
-                      } else if (selectedSpellInfo.shape === "touch") {
-                        // Touch spells go into targeting mode so user can click a token
-                        setActiveSpell(selectedSpellInfo);
-                        setSelectedSpellInfo(null);
-                      } else {
-                        setActiveSpell(selectedSpellInfo);
-                        setSelectedSpellInfo(null);
-                      }
-                    }}
-                      onMouseEnter={e => { e.currentTarget.style.filter="brightness(1.15)"; e.currentTarget.style.transform="translateY(-1px)"; }}
-                      onMouseLeave={e => { e.currentTarget.style.filter="none"; e.currentTarget.style.transform="none"; }}
-                      style={{ width:"100%", marginTop:12, padding:"10px", background:selectedSpellInfo.color, border:"none", borderRadius:"6px", color:"white", fontFamily:T.ui, fontSize:12, fontWeight:600, cursor:"pointer", transition:"all 0.2s", boxShadow:"0 2px 8px " + selectedSpellInfo.color + "55", letterSpacing:"0.5px" }}>
-                      {selectedSpellInfo.shape === "self" ? "Cast on Self" : selectedSpellInfo.shape === "touch" ? "Begin Targeting (Touch)" : "Begin Targeting"}
-                    </button>
-                  </div>
-                ) : (
-                  <div style={{ maxHeight:360, overflowY:"auto", display:"flex", flexDirection:"column", gap:2 }}>
-                    {DND_SPELLS.filter(spell =>
-                      (spellLevelFilter === -1 || spell.level === spellLevelFilter) &&
-                      (spell.name.toLowerCase().includes(spellSearchFilter) || spell.description.toLowerCase().includes(spellSearchFilter))
-                    ).map(spell => {
-                      return (
-                        <div key={spell.name}
-                          onClick={() => setSelectedSpellInfo(spell)}
-                          onMouseEnter={e => { e.currentTarget.style.background="rgba(181,116,255,0.08)"; e.currentTarget.style.borderColor="rgba(181,116,255,0.25)"; e.currentTarget.style.transform="translateX(-2px)"; }}
-                          onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor=T.border; e.currentTarget.style.transform="none"; }}
-                          title={spell.description}
-                          style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", background:"transparent", border:"1px solid " + T.border, borderRadius:"6px", cursor:"pointer", transition:"all 0.15s" }}>
-                          <span style={{ width:8, height:8, borderRadius:"50%", background:spell.color, flexShrink:0, boxShadow:"0 0 6px " + spell.color + "44" }} />
-                          <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ fontFamily:T.ui, fontSize:12, color:T.text, letterSpacing:"0.3px", lineHeight:"1.3", fontWeight:500 }}>{spell.name}</div>
-                            <div style={{ fontFamily:T.body, fontSize:10, color:T.textFaint, lineHeight:"1.2", marginTop:1 }}>
-                              {spell.level === 0 ? "Cantrip" : "Lvl " + spell.level} · {spell.school} · {spell.range > 0 ? spell.range + "ft" : spell.shape === "self" ? "Self" : "Touch"}
-                              {spell.damage ? " · " + spell.damage.split(" ")[0] + " " + (spell.damageType || "") : ""}
-                              {spell.healing ? " · Heals " + spell.healing.split("+")[0] : ""}
+                    {selectedSpellInfo ? (
+                      <div style={{ background:T.bgCard, border:"1px solid " + T.border, borderRadius:"8px", padding:16, boxShadow:"0 2px 12px rgba(0,0,6,0.2)" }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"start", marginBottom:12 }}>
+                          <div>
+                            <div style={{ fontSize:18, fontFamily:T.ui, fontWeight:600, color:selectedSpellInfo.color, marginBottom:6, textShadow:"0 0 20px " + selectedSpellInfo.color + "33" }}>{selectedSpellInfo.name}</div>
+                            <div style={{ fontSize:11, fontFamily:T.ui, color:T.textMuted, letterSpacing:"0.5px", display:"flex", gap:8, flexWrap:"wrap" }}>
+                              <span style={{ background:"rgba(181,116,255,0.15)", padding:"2px 8px", borderRadius:"4px", fontWeight:500 }}>{selectedSpellInfo.level === 0 ? "Cantrip" : "Level " + selectedSpellInfo.level}</span>
+                              <span style={{ padding:"2px 0" }}>{selectedSpellInfo.school}</span>
+                              <span style={{ padding:"2px 0", color:T.textFaint }}>{selectedSpellInfo.castTime}</span>
                             </div>
                           </div>
+                          <button onClick={() => setSelectedSpellInfo(null)} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:4 }}><X size={16}/></button>
                         </div>
-                      );
-                    })}
+
+                        <div style={{ fontSize:12, fontFamily:T.body, color:T.textMuted, marginBottom:10, paddingBottom:10, borderBottom:"1px solid " + T.border }}>
+                          <span style={{ fontWeight:500, color:T.text }}>Range: </span>
+                          {selectedSpellInfo.range > 0 ? selectedSpellInfo.range + " ft" : selectedSpellInfo.shape === "self" ? "Self" : "Touch"}
+                          {selectedSpellInfo.shape === "sphere" && (" (radius " + selectedSpellInfo.radius + " ft)")}
+                          {selectedSpellInfo.shape === "cone" && (" (cone " + selectedSpellInfo.radius + " ft)")}
+                          {selectedSpellInfo.shape === "line" && (" (line " + selectedSpellInfo.radius + " ft)")}
+                          {selectedSpellInfo.shape === "cube" && (" (cube " + selectedSpellInfo.radius + " ft)")}
+                        </div>
+
+                        <div style={{ fontSize:13, fontFamily:T.body, color:T.text, marginBottom:12, lineHeight:"1.5" }}>{selectedSpellInfo.description}</div>
+
+                        {selectedSpellInfo.damage && (
+                          <div style={{ fontSize:12, fontFamily:T.ui, color:T.textMuted, marginBottom:8, padding:"8px 10px", borderRadius:"6px", background:"rgba(212,67,58,0.06)", border:"1px solid rgba(212,67,58,0.15)" }}>
+                            <span style={{ color:"#f06858", fontWeight:600 }}>Damage:</span> {selectedSpellInfo.damage} <span style={{ color:T.textFaint }}>({selectedSpellInfo.damageType})</span>
+                          </div>
+                        )}
+                        {selectedSpellInfo.healing && (
+                          <div style={{ fontSize:12, fontFamily:T.ui, color:T.textMuted, marginBottom:8, padding:"8px 10px", borderRadius:"6px", background:"rgba(46,139,87,0.06)", border:"1px solid rgba(46,139,87,0.15)" }}>
+                            <span style={{ color:"#5ee09a", fontWeight:600 }}>Healing:</span> {selectedSpellInfo.healing}
+                          </div>
+                        )}
+                        {selectedSpellInfo.save && (
+                          <div style={{ fontSize:12, fontFamily:T.ui, color:T.textMuted, marginBottom:8 }}>
+                            <span style={{ color:T.text, fontWeight:500 }}>Save:</span> {selectedSpellInfo.save} DC {spellDC}
+                          </div>
+                        )}
+
+                        <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:4 }}>
+                          {selectedSpellInfo.concentration && (
+                            <div style={{ fontSize:11, fontFamily:T.ui, color:"#b574ff", display:"inline-flex", alignItems:"center", gap:4, background:"rgba(181,116,255,0.1)", padding:"4px 10px", borderRadius:"4px" }}>
+                              <Activity size={11} color="#b574ff" /> Concentration
+                            </div>
+                          )}
+                          {selectedSpellInfo.ritual && (
+                            <div style={{ fontSize:11, fontFamily:T.ui, color:"#7c3aed", display:"inline-flex", alignItems:"center", gap:4, background:"rgba(124,58,237,0.1)", padding:"4px 10px", borderRadius:"4px" }}>
+                              <BookOpen size={11} color="#7c3aed" /> Ritual
+                            </div>
+                          )}
+                          {selectedSpellInfo.conditions && selectedSpellInfo.conditions.length > 0 && (
+                            <div style={{ fontSize:11, fontFamily:T.ui, color:"#e8940a", display:"inline-flex", alignItems:"center", gap:4, background:"rgba(232,148,10,0.1)", padding:"4px 10px", borderRadius:"4px" }}>
+                              <AlertTriangle size={11} color="#e8940a" /> {selectedSpellInfo.conditions.join(", ")}
+                            </div>
+                          )}
+                        </div>
+
+                        <button onClick={() => {
+                          if (selectedSpellInfo.shape === "self") {
+                            const cx = selectedToken ? selectedToken.x : 0;
+                            const cy = selectedToken ? selectedToken.y : 0;
+                            castSpell(cx, cy, selectedSpellInfo);
+                            setSelectedSpellInfo(null);
+                          } else {
+                            setActiveSpell(selectedSpellInfo);
+                            setSelectedSpellInfo(null);
+                          }
+                        }}
+                          onMouseEnter={e => { e.currentTarget.style.filter="brightness(1.15)"; e.currentTarget.style.transform="translateY(-1px)"; }}
+                          onMouseLeave={e => { e.currentTarget.style.filter="none"; e.currentTarget.style.transform="none"; }}
+                          style={{ width:"100%", marginTop:12, padding:"10px", background:selectedSpellInfo.color, border:"none", borderRadius:"6px", color:"white", fontFamily:T.ui, fontSize:12, fontWeight:600, cursor:"pointer", transition:"all 0.2s", boxShadow:"0 2px 8px " + selectedSpellInfo.color + "55", letterSpacing:"0.5px" }}>
+                          {selectedSpellInfo.shape === "self" ? "Cast on Self" : selectedSpellInfo.shape === "touch" ? "Begin Targeting (Touch)" : "Begin Targeting"}
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ maxHeight: "calc(100vh - 420px)", overflowY:"auto", display:"flex", flexDirection:"column", gap:2 }}>
+                        {DND_SPELLS.filter(spell =>
+                          (spellLevelFilter === -1 || spell.level === spellLevelFilter) &&
+                          (spell.name.toLowerCase().includes(spellSearchFilter) || spell.description.toLowerCase().includes(spellSearchFilter))
+                        ).map(spell => (
+                          <div key={spell.name}
+                            onClick={() => setSelectedSpellInfo(spell)}
+                            onMouseEnter={e => { e.currentTarget.style.background="rgba(181,116,255,0.08)"; e.currentTarget.style.borderColor="rgba(181,116,255,0.25)"; e.currentTarget.style.transform="translateX(-2px)"; }}
+                            onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor=T.border; e.currentTarget.style.transform="none"; }}
+                            title={spell.description}
+                            style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", background:"transparent", border:"1px solid " + T.border, borderRadius:"6px", cursor:"pointer", transition:"all 0.15s" }}>
+                            <span style={{ width:8, height:8, borderRadius:"50%", background:spell.color, flexShrink:0, boxShadow:"0 0 6px " + spell.color + "44" }} />
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontFamily:T.ui, fontSize:12, color:T.text, letterSpacing:"0.3px", lineHeight:"1.3", fontWeight:500 }}>{spell.name}</div>
+                              <div style={{ fontFamily:T.body, fontSize:10, color:T.textFaint, lineHeight:"1.2", marginTop:1 }}>
+                                {spell.level === 0 ? "Cantrip" : "Lvl " + spell.level} · {spell.school} · {spell.range > 0 ? spell.range + "ft" : spell.shape === "self" ? "Self" : "Touch"}
+                                {spell.damage ? " · " + spell.damage.split(" ")[0] + " " + (spell.damageType || "") : ""}
+                                {spell.healing ? " · Heals " + spell.healing.split("+")[0] : ""}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* CONFIG TAB */}
+                {tokenPanelTab === "config" && (
+                  <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+                    {/* Token Image */}
+                    <div>
+                      <span style={{ fontFamily:T.ui, fontSize:11, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:8, fontWeight:500 }}>Token Image</span>
+                      <div style={{ display:"flex", gap:6 }}>
+                        <label style={{ flex:1, padding:"10px 0", background:"var(--bg-input)", border:"1px dashed var(--border)", borderRadius:"6px", cursor:"pointer", fontSize:11, color:T.textMuted, textAlign:"center", fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase", transition:"all 0.2s ease" }}
+                          onMouseEnter={e => { e.currentTarget.style.background="rgba(212,67,58,0.06)"; e.currentTarget.style.borderColor="rgba(212,67,58,0.25)"; }}
+                          onMouseLeave={e => { e.currentTarget.style.background="var(--bg-input)"; e.currentTarget.style.borderColor="var(--border)"; }}>
+                          {selectedToken.imageSrc ? "Change Image" : "Upload Token Image"}
+                          <input type="file" ref={tokenImgRef} style={{display:"none"}} accept="image/*" onChange={handleTokenImageUpload} />
+                        </label>
+                        {selectedToken.imageSrc && (
+                          <button onClick={() => { delete tokenImagesCache.current[selectedToken.id]; updateToken(selectedToken.id, { imageSrc: null }); }}
+                            onMouseEnter={e => { e.currentTarget.style.background="rgba(212,67,58,0.08)"; }}
+                            onMouseLeave={e => { e.currentTarget.style.background="var(--bg-input)"; }}
+                            style={{ padding:"10px 12px", background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:"6px", cursor:"pointer", fontSize:11, color:T.textFaint, fontFamily:T.ui, letterSpacing:"0.5px", textTransform:"uppercase", transition:"all 0.2s ease" }}>
+                            Clear
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Size & Label */}
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                      <div>
+                        <span style={{ fontFamily:T.ui, fontSize:10, color:T.textMuted, letterSpacing:"0.5px", display:"block", marginBottom:4 }}>SIZE</span>
+                        <select value={selectedToken.size || "medium"} onChange={e => updateToken(selectedToken.id, { size: e.target.value })}
+                          style={{ width:"100%", padding:"6px 8px", fontSize:12, fontFamily:T.ui, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"5px", cursor:"pointer" }}>
+                          <option value="tiny">Tiny</option><option value="small">Small</option><option value="medium">Medium</option>
+                          <option value="large">Large</option><option value="huge">Huge</option><option value="gargantuan">Gargantuan</option>
+                        </select>
+                      </div>
+                      <div>
+                        <span style={{ fontFamily:T.ui, fontSize:10, color:T.textMuted, letterSpacing:"0.5px", display:"block", marginBottom:4 }}>LABEL (3 char)</span>
+                        <input type="text" maxLength={4} value={selectedToken.label || ""} onChange={e => updateToken(selectedToken.id, { label: e.target.value })}
+                          placeholder={selectedToken.name.substring(0,3)}
+                          style={{ width:"100%", padding:"6px 8px", fontSize:13, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"5px", outline:"none" }} />
+                      </div>
+                    </div>
+
+                    {/* Vision */}
+                    <div>
+                      <span style={{ fontFamily:T.ui, fontSize:11, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:8, fontWeight:500 }}>Vision</span>
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                        <div>
+                          <span style={{ fontFamily:T.ui, fontSize:10, color:T.textMuted, letterSpacing:"0.5px", display:"block", marginBottom:4 }}>NORMAL (cells)</span>
+                          <input type="number" value={selectedToken.vision || 0} onChange={e => updateToken(selectedToken.id, { vision: parseInt(e.target.value) || 0 })}
+                            style={{ width:"100%", padding:"6px 8px", fontSize:13, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"5px", outline:"none" }} />
+                        </div>
+                        <div>
+                          <span style={{ fontFamily:T.ui, fontSize:10, color:T.textMuted, letterSpacing:"0.5px", display:"block", marginBottom:4 }}>DARKVISION (cells)</span>
+                          <input type="number" value={selectedToken.darkvision || 0} onChange={e => updateToken(selectedToken.id, { darkvision: parseInt(e.target.value) || 0 })}
+                            style={{ width:"100%", padding:"6px 8px", fontSize:13, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"5px", outline:"none" }} />
+                        </div>
+                      </div>
+                      <p style={{ fontSize:11, color:T.textFaint, fontStyle:"italic", marginTop:6, fontFamily:T.body }}>12 cells = 60ft. Used with Vision Fog.</p>
+                    </div>
                   </div>
                 )}
               </div>
