@@ -2419,6 +2419,24 @@ function AddEntityModal({ open, onClose, tab, onAdd, data }) {
 // ── Dice expression parser ──
 function parseDiceExpression(expr) {
   const trimmed = expr.trim().toLowerCase();
+
+  // Handle "NxDICE+MOD" notation (e.g., "3x1d4+1" for Magic Missile = 3 separate rolls of 1d4+1)
+  const multiMatch = trimmed.match(/^(\d+)x(.+)$/);
+  if (multiMatch) {
+    const repeatCount = parseInt(multiMatch[1]);
+    const innerExpr = multiMatch[2];
+    let combinedRolls = [];
+    let combinedTotal = 0;
+    let combinedMod = 0;
+    for (let r = 0; r < repeatCount; r++) {
+      const sub = parseDiceExpression(innerExpr);
+      combinedRolls.push(...sub.rolls);
+      combinedTotal += sub.total;
+      combinedMod += sub.modifier;
+    }
+    return { rolls: combinedRolls, modifier: combinedMod, total: combinedTotal, expression: trimmed, details: combinedRolls.length > 0 ? combinedRolls.join(", ") : "no dice" };
+  }
+
   const rolls = [];
   let total = 0;
   let modifier = 0;
@@ -2656,8 +2674,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
 
   // ── Spell system ──
   const [activeSpell, setActiveSpell] = useState(null); // { name, range, shape, radius, color, ... }
-  const [spellTarget, setSpellTarget] = useState(null); // { x, y } world coords for targeting
-  const spellTargetRef = useRef(null);
+  const spellTargetRef = useRef(null); // { x, y } world coords for targeting — ref-only to avoid render storms
   const [spellEffects, setSpellEffects] = useState([]); // [{ id, x, y, spell, startTime }]
   const [spellLog, setSpellLog] = useState([]); // [{ id, msg, time }]
   const [spellDC, setSpellDC] = useState(15);
@@ -3052,7 +3069,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
         return Math.hypot(t.x - worldX, t.y - worldY) <= radiusPx + tokenR;
       });
     } else if (spell.shape === "cone") {
-      const origin = selectedToken || { x: worldX, y: worldY };
+      if (!selectedToken) return [];
+      const origin = selectedToken;
       const dx = worldX - origin.x, dy = worldY - origin.y;
       const angle = Math.atan2(dy, dx);
       const spread = Math.PI / 4;
@@ -3066,7 +3084,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
         return dist <= radiusPx && angleDiff <= spread;
       });
     } else if (spell.shape === "line") {
-      const origin = selectedToken || { x: worldX - gridSize, y: worldY };
+      if (!selectedToken) return [];
+      const origin = selectedToken;
       const dx = worldX - origin.x, dy = worldY - origin.y;
       const dist = Math.hypot(dx, dy) || 1;
       const lineLen = (spell.length / 5) * gridSize;
@@ -3239,7 +3258,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
 
     if (!overrideSpell) {
       setActiveSpell(null);
-      spellTargetRef.current = null; setSpellTarget(null);
+      spellTargetRef.current = null;
     }
     setTimeout(() => setSpellEffects(prev => prev.filter(e => e.id !== id)), 4000);
   };
@@ -4136,7 +4155,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
           ctx.fillStyle = activeSpell.color;
           ctx.fill();
         } else if (activeSpell.shape === "cone") {
-          const origin = selectedToken || { x: curTarget.x, y: curTarget.y };
+          if (!selectedToken) { /* Can't render cone without origin token */ } else {
+          const origin = selectedToken;
           const dx = curTarget.x - origin.x, dy = curTarget.y - origin.y;
           const angle = Math.atan2(dy, dx);
           const coneLenPx = (activeSpell.radius / 5) * gridSize;
@@ -4153,8 +4173,10 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
           ctx.strokeStyle = activeSpell.color + "88";
           ctx.lineWidth = 2;
           ctx.stroke();
+          }
         } else if (activeSpell.shape === "line") {
-          const origin = selectedToken || { x: curTarget.x - gridSize, y: curTarget.y };
+          if (!selectedToken) { /* Can't render line without origin token */ } else {
+          const origin = selectedToken;
           const dx = curTarget.x - origin.x, dy = curTarget.y - origin.y;
           const dist = Math.hypot(dx, dy) || 1;
           const lineLenPx = (activeSpell.length / 5) * gridSize;
@@ -4181,6 +4203,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
           ctx.closePath();
           ctx.fillStyle = activeSpell.color + "88";
           ctx.fill();
+          }
         } else if (activeSpell.shape === "cube") {
           const half = aoeRadiusPx;
           ctx.fillStyle = activeSpell.color + "22";
@@ -5349,7 +5372,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
         setWallStart(null);
         setWallPreview(null);
         setActiveSpell(null);
-        spellTargetRef.current = null; setSpellTarget(null);
+        spellTargetRef.current = null;
         if (movementMode && selectedToken && movementOrigin) {
           // Cancel movement — return token to origin
           setTokens(p => p.map(t => t.id === selectedTokenId ? {...t, x: movementOrigin.x, y: movementOrigin.y} : t));
@@ -5383,8 +5406,15 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
         } else {
           castSpell(w.x, w.y);
         }
+      } else if (activeSpell.shape === "cone" || activeSpell.shape === "line") {
+        // Cone/Line spells need an origin token to determine direction
+        if (!selectedToken) {
+          setSpellLog(prev => [...prev, { id: "log-" + Date.now(), msg: "Select a token first to aim " + activeSpell.name, time: Date.now() }]);
+          setTimeout(() => setSpellLog(prev => prev.slice(1)), 3000);
+          return;
+        }
+        castSpell(w.x, w.y);
       } else if (activeSpell.shape === "touch") {
-        // Touch spells: find the nearest token to the click position
         castSpell(w.x, w.y);
       } else {
         castSpell(w.x, w.y);
@@ -5580,7 +5610,6 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     // Spell targeting preview — use ref to avoid re-creating render callback
     if (activeSpell) {
       spellTargetRef.current = { x: w.x, y: w.y };
-      setSpellTarget({ x: w.x, y: w.y });
     }
 
     // Token hover detection
@@ -7063,7 +7092,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                       <div style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", background:"rgba(181,116,255,0.1)", border:"1px solid rgba(181,116,255,0.3)", borderRadius:"8px" }}>
                         <span style={{ width:10, height:10, borderRadius:"50%", background:activeSpell.color, boxShadow:"0 0 8px " + activeSpell.color }} />
                         <span style={{ flex:1, fontFamily:T.ui, fontSize:12, color:"#b574ff", letterSpacing:"0.5px", fontWeight:500 }}>Targeting: {activeSpell.name}</span>
-                        <span onClick={() => { setActiveSpell(null); spellTargetRef.current = null; setSpellTarget(null); }} style={{ cursor:"pointer", color:T.textFaint, padding:4, display:"flex" }}><X size={14}/></span>
+                        <span onClick={() => { setActiveSpell(null); spellTargetRef.current = null; }} style={{ cursor:"pointer", color:T.textFaint, padding:4, display:"flex" }}><X size={14}/></span>
                       </div>
                     )}
 
@@ -7140,10 +7169,13 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                         </div>
 
                         <button onClick={() => {
+                          if (!selectedToken) {
+                            setSpellLog(prev => [...prev, { id: "log-" + Date.now(), msg: "Select a token first to cast " + selectedSpellInfo.name, time: Date.now() }]);
+                            setTimeout(() => setSpellLog(prev => prev.slice(1)), 3000);
+                            return;
+                          }
                           if (selectedSpellInfo.shape === "self") {
-                            const cx = selectedToken ? selectedToken.x : 0;
-                            const cy = selectedToken ? selectedToken.y : 0;
-                            castSpell(cx, cy, selectedSpellInfo);
+                            castSpell(selectedToken.x, selectedToken.y, selectedSpellInfo);
                             setSelectedSpellInfo(null);
                           } else {
                             setActiveSpell(selectedSpellInfo);
