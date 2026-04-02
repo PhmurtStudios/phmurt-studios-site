@@ -2685,8 +2685,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     // LEVEL 1
     { name:"Alarm", level:1, school:"Abjuration", castTime:"1 minute", range:30, shape:"sphere", radius:20, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:false, ritual:true, conditions:[], description:"Set an alarm that triggers when entered", classes:["Artificer","Bard","Ranger","Wizard"], applyEffect:"utility" },
     { name:"Armor of Agathys", level:1, school:"Abjuration", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Ghostly armor grants 5 temp HP per level", classes:["Warlock"], applyEffect:"buff" },
-    { name:"Bane", level:1, school:"Enchantment", castTime:"1 action", range:30, shape:"sphere", radius:0, damage:"", damageType:"", save:"CHA", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Cursed"], description:"Up to 3 creatures fail attack rolls and saves", classes:["Bard","Cleric"], applyEffect:"debuff" },
-    { name:"Bless", level:1, school:"Enchantment", castTime:"1 action", range:30, shape:"sphere", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:"#ffd54f", healing:"", concentration:true, ritual:false, conditions:["Blessed"], description:"Up to 3 creatures gain +d4 to attacks and saves", classes:["Cleric","Paladin"], applyEffect:"buff" },
+    { name:"Bane", level:1, school:"Enchantment", castTime:"1 action", range:30, shape:"sphere", radius:30, damage:"", damageType:"", save:"CHA", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Cursed"], description:"Up to 3 creatures within range must make CHA saves or subtract d4 from attack rolls and saving throws", classes:["Bard","Cleric"], applyEffect:"debuff" },
+    { name:"Bless", level:1, school:"Enchantment", castTime:"1 action", range:30, shape:"sphere", radius:30, damage:"", damageType:"", save:"", effect:"enchantment", color:"#ffd54f", healing:"", concentration:true, ritual:false, conditions:["Blessed"], description:"Up to 3 creatures within range add d4 to attack rolls and saving throws for the duration", classes:["Cleric","Paladin"], applyEffect:"buff" },
     { name:"Burning Hands", level:1, school:"Evocation", castTime:"1 action", range:0, shape:"cone", radius:15, damage:"3d6 fire", damageType:"fire", save:"DEX", effect:"explosion", color:"#ff6030", healing:"", concentration:false, ritual:false, conditions:[], description:"Flames spread from your hands in a cone", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Command", level:1, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:"#e040fb", healing:"", concentration:false, ritual:false, conditions:["Charmed"], description:"You speak a 1-word command a creature obeys", classes:["Cleric","Paladin"], applyEffect:"control" },
     { name:"Cure Wounds", level:1, school:"Evocation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"heal", color:"#5ee09a", healing:"1d8+mod", concentration:false, ritual:false, conditions:[], description:"Touch heals 1d8 + mod hit points", classes:["Artificer","Bard","Cleric","Druid","Paladin","Ranger"], applyEffect:"heal" },
@@ -2773,7 +2773,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     { name:"Sickening Radiance", level:4, school:"Evocation", castTime:"1 action", range:120, shape:"sphere", radius:30, damage:"2d8 radiant", damageType:"radiant", save:"CON", effect:"radiant", color:"#ffd54f", healing:"", concentration:true, ritual:false, conditions:["Poisoned"], description:"Radiation sickens creatures in sphere", classes:["Wizard"], applyEffect:"damage" },
     { name:"Stoneskin", level:4, school:"Abjuration", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:true, ritual:false, conditions:[], description:"Target gains resistance to physical damage", classes:["Artificer","Druid","Sorcerer","Wizard"], applyEffect:"buff" },
     // LEVEL 5+
-    { name:"Animate Objects", level:5, school:"Transmutation", castTime:"1 action", range:120, shape:"sphere", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Animate multiple objects", classes:["Bard","Sorcerer","Wizard"], applyEffect:"summon" },
+    { name:"Animate Objects", level:5, school:"Transmutation", castTime:"1 action", range:120, shape:"sphere", radius:60, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Objects within range spring to life at your command, attacking your enemies with slam attacks", classes:["Bard","Sorcerer","Wizard"], applyEffect:"summon" },
     { name:"Cloudkill", level:5, school:"Conjuration", castTime:"1 action", range:120, shape:"sphere", radius:20, damage:"5d8 poison", damageType:"poison", save:"CON", effect:"poison", color:"#4caf50", healing:"", concentration:true, ritual:false, conditions:["Poisoned"], description:"Poisonous cloud expands and kills", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Cone of Cold", level:5, school:"Evocation", castTime:"1 action", range:0, shape:"cone", radius:60, damage:"8d8 cold", damageType:"cold", save:"CON", effect:"freeze", color:"#b3e5fc", healing:"", concentration:false, ritual:false, conditions:[], description:"60-ft cone of freezing", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Hold Monster", level:5, school:"Enchantment", castTime:"1 action", range:90, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Paralyzed"], description:"Paralyze any creature", classes:["Bard","Sorcerer","Wizard"], applyEffect:"control" },
@@ -2812,7 +2812,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     { name:"Power Word Stun", level:8, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:"#e040fb", healing:"", concentration:false, ritual:false, conditions:["Stunned"], description:"Stun a creature with 150 HP or fewer", classes:["Bard","Sorcerer","Warlock","Wizard"], applyEffect:"control" },
     { name:"Sunburst", level:8, school:"Evocation", castTime:"1 action", range:150, shape:"sphere", radius:60, damage:"12d6", damageType:"radiant", save:"CON", effect:"radiant", color:"#ffd54f", healing:"", concentration:false, ritual:false, conditions:["Blinded"], description:"Brilliant sunlight deals radiant damage and blinds", classes:["Cleric","Druid","Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Telepathy", level:8, school:"Evocation", castTime:"1 action", range:0, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"psychic", color:"#c77dff", healing:"", concentration:false, ritual:false, conditions:[], description:"Create telepathic link with a creature", classes:["Wizard"], applyEffect:"utility" },
-    { name:"Tsunami", level:8, school:"Conjuration", castTime:"1 minute", range:1, shape:"line", radius:0, damage:"6d10", damageType:"bludgeoning", save:"STR", effect:"shockwave", color:"#90caf9", healing:"", concentration:true, ritual:false, conditions:["Prone"], description:"300-ft wall of water crashes forward", classes:["Druid"], applyEffect:"damage" },
+    { name:"Tsunami", level:8, school:"Conjuration", castTime:"1 minute", range:1, shape:"line", radius:10, length:300, damage:"6d10", damageType:"bludgeoning", save:"STR", effect:"shockwave", color:"#90caf9", healing:"", concentration:true, ritual:false, conditions:["Prone"], description:"A massive wall of water 300 ft long crashes forward, dealing bludgeoning damage and knocking creatures prone", classes:["Druid"], applyEffect:"damage" },
     { name:"Meteor Swarm", level:9, school:"Evocation", castTime:"1 action", range:1000, shape:"sphere", radius:40, damage:"40d6 fire", damageType:"fire", save:"DEX", effect:"explosion", color:"#ff6030", healing:"", concentration:false, ritual:false, conditions:[], description:"Meteors rain from sky", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
     { name:"Power Word Kill", level:9, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:"#e040fb", healing:"", concentration:false, ritual:false, conditions:["Unconscious"], description:"Instantly slay target with 100 or fewer HP", classes:["Sorcerer","Wizard"], applyEffect:"control" },
     { name:"Time Stop", level:9, school:"Transmutation", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:false, ritual:false, conditions:[], description:"Stop time for up to 3 rounds", classes:["Wizard"], applyEffect:"utility" },
@@ -2821,43 +2821,51 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
 
   const findTokensInArea = (worldX, worldY, spell) => {
     if (spell.shape === "single") {
+      // Find closest token within a generous click radius (3 grid cells)
+      const maxDist = gridSize * 3;
       const closest = tokens.reduce((c, t) => {
         const d = Math.hypot(t.x - worldX, t.y - worldY);
-        return !c || d < c.dist ? { token: t, dist: d } : c;
+        return (!c || d < c.dist) && d < maxDist ? { token: t, dist: d } : c;
       }, null);
-      return closest && closest.dist < gridSize * 2 ? [closest.token] : [];
+      return closest ? [closest.token] : [];
     }
     const radiusPx = (spell.radius / 5) * gridSize;
     if (spell.shape === "sphere") {
-      return tokens.filter(t => Math.hypot(t.x - worldX, t.y - worldY) <= radiusPx);
+      // Generous sphere: include tokens whose edge touches the area
+      return tokens.filter(t => {
+        const tokenR = gridSize * 0.4; // approximate token radius
+        return Math.hypot(t.x - worldX, t.y - worldY) <= radiusPx + tokenR;
+      });
     } else if (spell.shape === "cone") {
-      if (!selectedToken) return [];
-      const dx = worldX - selectedToken.x, dy = worldY - selectedToken.y;
+      const origin = selectedToken || { x: worldX, y: worldY };
+      const dx = worldX - origin.x, dy = worldY - origin.y;
       const angle = Math.atan2(dy, dx);
       const spread = Math.PI / 4;
       return tokens.filter(t => {
-        const tx = t.x - selectedToken.x, ty = t.y - selectedToken.y;
+        const tx = t.x - origin.x, ty = t.y - origin.y;
         const dist = Math.hypot(tx, ty);
+        if (dist <= gridSize * 0.3) return true; // tokens at origin always hit
         const tAngle = Math.atan2(ty, tx);
-        const angleDiff = Math.abs(((tAngle - angle + Math.PI) % (Math.PI * 2)) - Math.PI);
+        let angleDiff = Math.abs(tAngle - angle);
+        if (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
         return dist <= radiusPx && angleDiff <= spread;
       });
     } else if (spell.shape === "line") {
-      if (!selectedToken) return [];
-      const dx = worldX - selectedToken.x, dy = worldY - selectedToken.y;
+      const origin = selectedToken || { x: worldX - gridSize, y: worldY };
+      const dx = worldX - origin.x, dy = worldY - origin.y;
       const dist = Math.hypot(dx, dy) || 1;
       const lineLen = (spell.length / 5) * gridSize;
       const nx = dx / dist, ny = dy / dist;
-      const widthPx = (spell.radius / 5) * gridSize;
+      const widthPx = Math.max((spell.radius / 5) * gridSize, gridSize * 0.5); // minimum half-cell width
       return tokens.filter(t => {
-        const tx = t.x - selectedToken.x, ty = t.y - selectedToken.y;
+        const tx = t.x - origin.x, ty = t.y - origin.y;
         const proj = tx * nx + ty * ny;
         if (proj < 0 || proj > lineLen) return false;
         const perpDist = Math.abs(tx * ny - ty * nx);
         return perpDist <= widthPx;
       });
     } else if (spell.shape === "cube") {
-      const half = radiusPx / 2;
+      const half = radiusPx;
       return tokens.filter(t => Math.abs(t.x - worldX) <= half && Math.abs(t.y - worldY) <= half);
     }
     return [];
@@ -2865,7 +2873,10 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
 
   const rollSave = (dc, ability) => {
     const roll = Math.floor(Math.random() * 20) + 1;
-    return roll >= (dc - 10);
+    // Simulate a reasonable save modifier (+0 to +5 depending on ability)
+    const modifiers = { STR: 2, DEX: 3, CON: 2, INT: 1, WIS: 2, CHA: 1 };
+    const mod = modifiers[ability] || 2;
+    return (roll + mod) >= dc;
   };
 
   const castSpell = (worldX, worldY, overrideSpell) => {
@@ -2877,8 +2888,15 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     let hitTokens = [];
     let msgs = [];
 
-    if (spell.shape === "self" || spell.shape === "touch") {
+    if (spell.shape === "self") {
       hitTokens = caster ? [caster] : [];
+    } else if (spell.shape === "touch") {
+      // Touch: find closest token to click within 2 grid cells, or fall back to caster
+      const closest = tokens.reduce((c, t) => {
+        const d = Math.hypot(t.x - worldX, t.y - worldY);
+        return (!c || d < c.dist) && d < gridSize * 2.5 ? { token: t, dist: d } : c;
+      }, null);
+      hitTokens = closest ? [closest.token] : (caster ? [caster] : []);
     } else {
       hitTokens = findTokensInArea(worldX, worldY, spell);
     }
@@ -3779,72 +3797,147 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
     });
 
     // ── Spell range preview (world space) ──
-    if (activeSpell && selectedToken) {
+    if (activeSpell) {
       const rangeInPx = (activeSpell.range / 5) * gridSize;
-      // Range circle
-      if (rangeInPx > 0) {
+      // Range circle — more visible with gradient fill (only shown when a token is selected)
+      if (rangeInPx > 0 && selectedToken) {
         ctx.beginPath();
         ctx.arc(selectedToken.x, selectedToken.y, rangeInPx, 0, Math.PI * 2);
-        ctx.strokeStyle = activeSpell.color + "55";
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([6, 4]);
+        ctx.strokeStyle = activeSpell.color + "66";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 5]);
         ctx.stroke();
         ctx.setLineDash([]);
-        ctx.fillStyle = activeSpell.color + "08";
+        const rangeGrad = ctx.createRadialGradient(selectedToken.x, selectedToken.y, rangeInPx * 0.8, selectedToken.x, selectedToken.y, rangeInPx);
+        rangeGrad.addColorStop(0, "transparent");
+        rangeGrad.addColorStop(1, activeSpell.color + "12");
+        ctx.fillStyle = rangeGrad;
         ctx.fill();
+        // Range label
+        ctx.font = "bold 11px Cinzel";
+        ctx.fillStyle = activeSpell.color + "aa";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "bottom";
+        ctx.fillText(activeSpell.range + " ft", selectedToken.x, selectedToken.y - rangeInPx - 4);
       }
       // Targeting indicator at mouse position
       if (spellTarget) {
         const aoeRadiusPx = (activeSpell.radius / 5) * gridSize;
+        const pulseT = (Date.now() % 1500) / 1500;
+        const pulseAlpha = 0.15 + Math.sin(pulseT * Math.PI * 2) * 0.1;
+
         if (activeSpell.shape === "sphere" && aoeRadiusPx > 0) {
+          // Filled area with pulsing
           ctx.beginPath();
           ctx.arc(spellTarget.x, spellTarget.y, aoeRadiusPx, 0, Math.PI * 2);
+          const grad = ctx.createRadialGradient(spellTarget.x, spellTarget.y, 0, spellTarget.x, spellTarget.y, aoeRadiusPx);
+          grad.addColorStop(0, activeSpell.color + "33");
+          grad.addColorStop(0.7, activeSpell.color + "18");
+          grad.addColorStop(1, activeSpell.color + "08");
+          ctx.fillStyle = grad;
+          ctx.fill();
+          ctx.strokeStyle = activeSpell.color + "aa";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          // Inner ring pulse
+          ctx.beginPath();
+          ctx.arc(spellTarget.x, spellTarget.y, aoeRadiusPx * (0.3 + pulseT * 0.7), 0, Math.PI * 2);
+          ctx.strokeStyle = activeSpell.color + Math.round(pulseAlpha * 255).toString(16).padStart(2, "0");
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          // Center dot
+          ctx.beginPath();
+          ctx.arc(spellTarget.x, spellTarget.y, 4, 0, Math.PI * 2);
+          ctx.fillStyle = activeSpell.color;
+          ctx.fill();
+        } else if (activeSpell.shape === "cone") {
+          const origin = selectedToken || { x: spellTarget.x, y: spellTarget.y };
+          const dx = spellTarget.x - origin.x, dy = spellTarget.y - origin.y;
+          const angle = Math.atan2(dy, dx);
+          const coneLenPx = (activeSpell.radius / 5) * gridSize;
+          const spread = Math.PI / 4;
+          ctx.beginPath();
+          ctx.moveTo(origin.x, origin.y);
+          ctx.arc(origin.x, origin.y, coneLenPx, angle - spread, angle + spread);
+          ctx.closePath();
+          const grad = ctx.createRadialGradient(origin.x, origin.y, 0, origin.x, origin.y, coneLenPx);
+          grad.addColorStop(0, activeSpell.color + "33");
+          grad.addColorStop(1, activeSpell.color + "11");
+          ctx.fillStyle = grad;
+          ctx.fill();
+          ctx.strokeStyle = activeSpell.color + "88";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        } else if (activeSpell.shape === "line") {
+          const origin = selectedToken || { x: spellTarget.x - gridSize, y: spellTarget.y };
+          const dx = spellTarget.x - origin.x, dy = spellTarget.y - origin.y;
+          const dist = Math.hypot(dx, dy) || 1;
+          const lineLenPx = (activeSpell.length / 5) * gridSize;
+          const nx = dx/dist, ny = dy/dist;
+          const widthPx = Math.max((activeSpell.radius / 5) * gridSize, gridSize * 0.5);
+          const ex = origin.x + nx * lineLenPx, ey = origin.y + ny * lineLenPx;
+          const px = -ny * widthPx, py = nx * widthPx;
+          ctx.beginPath();
+          ctx.moveTo(origin.x + px, origin.y + py);
+          ctx.lineTo(ex + px, ey + py);
+          ctx.lineTo(ex - px, ey - py);
+          ctx.lineTo(origin.x - px, origin.y - py);
+          ctx.closePath();
           ctx.fillStyle = activeSpell.color + "22";
           ctx.fill();
           ctx.strokeStyle = activeSpell.color + "88";
           ctx.lineWidth = 2;
           ctx.stroke();
-        } else if (activeSpell.shape === "cone") {
-          const dx = spellTarget.x - selectedToken.x, dy = spellTarget.y - selectedToken.y;
-          const angle = Math.atan2(dy, dx);
-          const coneLenPx = (activeSpell.radius / 5) * gridSize;
-          const spread = Math.PI / 4;
+          // Direction arrow
           ctx.beginPath();
-          ctx.moveTo(selectedToken.x, selectedToken.y);
-          ctx.arc(selectedToken.x, selectedToken.y, coneLenPx, angle - spread, angle + spread);
+          ctx.moveTo(ex, ey);
+          ctx.lineTo(ex - nx * 8 + px * 0.5, ey - ny * 8 + py * 0.5);
+          ctx.lineTo(ex - nx * 8 - px * 0.5, ey - ny * 8 - py * 0.5);
           ctx.closePath();
-          ctx.fillStyle = activeSpell.color + "22";
+          ctx.fillStyle = activeSpell.color + "88";
           ctx.fill();
-          ctx.strokeStyle = activeSpell.color + "66";
-          ctx.lineWidth = 1.5;
-          ctx.stroke();
-        } else if (activeSpell.shape === "line") {
-          const dx = spellTarget.x - selectedToken.x, dy = spellTarget.y - selectedToken.y;
-          const dist = Math.hypot(dx, dy) || 1;
-          const lineLenPx = (activeSpell.length / 5) * gridSize;
-          const nx = dx/dist, ny = dy/dist;
-          const widthPx = (activeSpell.radius / 5) * gridSize;
-          const ex = selectedToken.x + nx * lineLenPx, ey = selectedToken.y + ny * lineLenPx;
-          const px = -ny * widthPx, py = nx * widthPx;
+        } else if (activeSpell.shape === "cube") {
+          const half = aoeRadiusPx;
+          ctx.fillStyle = activeSpell.color + "22";
+          ctx.fillRect(spellTarget.x - half, spellTarget.y - half, half * 2, half * 2);
+          ctx.strokeStyle = activeSpell.color + "88";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(spellTarget.x - half, spellTarget.y - half, half * 2, half * 2);
+          // Center dot
           ctx.beginPath();
-          ctx.moveTo(selectedToken.x + px, selectedToken.y + py);
-          ctx.lineTo(ex + px, ey + py);
-          ctx.lineTo(ex - px, ey - py);
-          ctx.lineTo(selectedToken.x - px, selectedToken.y - py);
-          ctx.closePath();
-          ctx.fillStyle = activeSpell.color + "22";
+          ctx.arc(spellTarget.x, spellTarget.y, 4, 0, Math.PI * 2);
+          ctx.fillStyle = activeSpell.color;
           ctx.fill();
-          ctx.strokeStyle = activeSpell.color + "66";
-          ctx.lineWidth = 1.5;
-          ctx.stroke();
         } else {
-          // Single target crosshair
-          ctx.strokeStyle = activeSpell.color + "99";
-          ctx.lineWidth = 1.5;
-          const sz = gridSize * 0.3;
-          ctx.beginPath(); ctx.moveTo(spellTarget.x - sz, spellTarget.y); ctx.lineTo(spellTarget.x + sz, spellTarget.y); ctx.stroke();
-          ctx.beginPath(); ctx.moveTo(spellTarget.x, spellTarget.y - sz); ctx.lineTo(spellTarget.x, spellTarget.y + sz); ctx.stroke();
-          ctx.beginPath(); ctx.arc(spellTarget.x, spellTarget.y, sz * 0.6, 0, Math.PI * 2); ctx.stroke();
+          // Single target crosshair — much more visible
+          const sz = gridSize * 0.5;
+          // Outer glow
+          ctx.shadowColor = activeSpell.color;
+          ctx.shadowBlur = 10;
+          ctx.strokeStyle = activeSpell.color + "cc";
+          ctx.lineWidth = 2.5;
+          // Crosshair lines
+          ctx.beginPath(); ctx.moveTo(spellTarget.x - sz, spellTarget.y); ctx.lineTo(spellTarget.x - sz * 0.3, spellTarget.y); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(spellTarget.x + sz * 0.3, spellTarget.y); ctx.lineTo(spellTarget.x + sz, spellTarget.y); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(spellTarget.x, spellTarget.y - sz); ctx.lineTo(spellTarget.x, spellTarget.y - sz * 0.3); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(spellTarget.x, spellTarget.y + sz * 0.3); ctx.lineTo(spellTarget.x, spellTarget.y + sz); ctx.stroke();
+          // Center circle with pulse
+          ctx.beginPath(); ctx.arc(spellTarget.x, spellTarget.y, sz * 0.25, 0, Math.PI * 2); ctx.stroke();
+          // Outer rotating ring
+          const rotAngle = (Date.now() % 3000) / 3000 * Math.PI * 2;
+          ctx.beginPath(); ctx.arc(spellTarget.x, spellTarget.y, sz * 0.7, rotAngle, rotAngle + Math.PI * 1.5); ctx.stroke();
+          ctx.shadowBlur = 0;
+          // Snap-to-token highlight: if near a token, show highlight
+          const nearToken = tokens.find(t => Math.hypot(t.x - spellTarget.x, t.y - spellTarget.y) < gridSize * 1.2);
+          if (nearToken) {
+            ctx.beginPath();
+            ctx.arc(nearToken.x, nearToken.y, gridSize * 0.55, 0, Math.PI * 2);
+            ctx.strokeStyle = activeSpell.color + "88";
+            ctx.lineWidth = 3;
+            ctx.setLineDash([4, 4]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
         }
       }
     }
@@ -4910,8 +5003,16 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
 
     // Spell targeting — click to cast
     if (activeSpell) {
-      if (activeSpell.shape === "self" || activeSpell.shape === "touch") {
-        castSpell(selectedToken?.x || w.x, selectedToken?.y || w.y);
+      if (activeSpell.shape === "self") {
+        // Self spells always target the caster's position
+        if (selectedToken) {
+          castSpell(selectedToken.x, selectedToken.y);
+        } else {
+          castSpell(w.x, w.y);
+        }
+      } else if (activeSpell.shape === "touch") {
+        // Touch spells: find the nearest token to the click position
+        castSpell(w.x, w.y);
       } else {
         castSpell(w.x, w.y);
       }
@@ -5846,7 +5947,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
 
         {/* ── RIGHT: Context Panel ── */}
         <div style={{
-          width: sidebarOpen ? 288 : 0, minWidth: sidebarOpen ? 288 : 0,
+          width: sidebarOpen ? 380 : 0, minWidth: sidebarOpen ? 380 : 0,
           background:"linear-gradient(180deg, var(--bg-nav) 0%, var(--bg) 100%)", overflowY: sidebarOpen ? "auto" : "hidden", overflowX:"hidden",
           display:"flex", flexDirection:"column",
           borderLeft: sidebarOpen ? "1px solid var(--crimson-border)" : "none",
@@ -5856,9 +5957,9 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
         }}>
 
           {mode === "combat" ? (
-            <div style={{ padding:14, display:"flex", flexDirection:"column", gap:8 }}>
-              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingBottom:8, borderBottom:"1px solid rgba(212,67,58,0.2)" }}>
-                <span style={{ fontFamily:T.ui, fontSize:10, letterSpacing:"2.5px", color:T.crimson, textTransform:"uppercase", fontWeight:600 }}>
+            <div style={{ padding:18, display:"flex", flexDirection:"column", gap:10 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", paddingBottom:10, borderBottom:"1px solid rgba(212,67,58,0.2)" }}>
+                <span style={{ fontFamily:T.ui, fontSize:13, letterSpacing:"2.5px", color:T.crimson, textTransform:"uppercase", fontWeight:600 }}>
                   {combatLive ? "Round " + round : "Combat Setup"}
                 </span>
                 {combatLive && (
@@ -5970,26 +6071,26 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
             </div>
 
           ) : selectedToken ? (
-            <div style={{ padding:14, display:"flex", flexDirection:"column", gap:12 }}>
+            <div style={{ padding:18, display:"flex", flexDirection:"column", gap:14 }}>
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                <span style={{ fontFamily:T.ui, fontSize:10, letterSpacing:"2.5px", color:T.crimson, textTransform:"uppercase", fontWeight:600 }}>Selected Token</span>
-                <button onClick={() => setSelectedTokenId(null)} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:2 }}><X size={12}/></button>
+                <span style={{ fontFamily:T.ui, fontSize:13, letterSpacing:"2.5px", color:T.crimson, textTransform:"uppercase", fontWeight:600 }}>Selected Token</span>
+                <button onClick={() => setSelectedTokenId(null)} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:4 }}><X size={16}/></button>
               </div>
 
-              <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:14 }}>
                 {selectedToken.imageSrc ? (
-                  <div style={{ position:"relative", width:48, height:48, borderRadius:"50%", overflow:"hidden", border:"2px solid rgba(255,220,30,0.6)", flexShrink:0, cursor:"pointer" }}
+                  <div style={{ position:"relative", width:64, height:64, borderRadius:"50%", overflow:"hidden", border:"3px solid rgba(255,220,30,0.6)", flexShrink:0, cursor:"pointer", boxShadow:"0 0 12px rgba(255,220,30,0.15)" }}
                     onClick={() => tokenImgRef.current?.click()}>
                     <img src={selectedToken.imageSrc} style={{ width:"100%", height:"100%", objectFit:"cover" }} />
                   </div>
                 ) : (
                   <input type="color" value={selectedToken.color} onChange={e => updateToken(selectedToken.id, { color: e.target.value })}
-                    style={{ width:38, height:38, borderRadius:"50%", border:"2px solid rgba(255,220,30,0.6)", padding:0, cursor:"pointer", background:"none", flexShrink:0 }} />
+                    style={{ width:52, height:52, borderRadius:"50%", border:"3px solid rgba(255,220,30,0.6)", padding:0, cursor:"pointer", background:"none", flexShrink:0 }} />
                 )}
-                <span style={{ fontSize:20, fontFamily:T.body, color:T.text, fontWeight:500 }}>{selectedToken.name}</span>
+                <span style={{ fontSize:24, fontFamily:T.body, color:T.text, fontWeight:500 }}>{selectedToken.name}</span>
               </div>
-              <div style={{ display:"flex", gap:4 }}>
-                <label style={{ flex:1, padding:"6px 0", background:"var(--bg-input)", border:"1px dashed var(--border)", borderRadius:"4px", cursor:"pointer", fontSize:8, color:T.textMuted, textAlign:"center", fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase", transition:"all 0.2s ease" }}
+              <div style={{ display:"flex", gap:6 }}>
+                <label style={{ flex:1, padding:"8px 0", background:"var(--bg-input)", border:"1px dashed var(--border)", borderRadius:"6px", cursor:"pointer", fontSize:11, color:T.textMuted, textAlign:"center", fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase", transition:"all 0.2s ease" }}
                   onMouseEnter={e => { e.currentTarget.style.background="rgba(212,67,58,0.06)"; e.currentTarget.style.borderColor="rgba(212,67,58,0.25)"; }}
                   onMouseLeave={e => { e.currentTarget.style.background="var(--bg-input)"; e.currentTarget.style.borderColor="var(--border)"; }}>
                   {selectedToken.imageSrc ? "Change Image" : "Upload Token Image"}
@@ -5999,106 +6100,106 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                   <button onClick={() => { delete tokenImagesCache.current[selectedToken.id]; updateToken(selectedToken.id, { imageSrc: null }); }}
                     onMouseEnter={e => { e.currentTarget.style.background="rgba(212,67,58,0.08)"; }}
                     onMouseLeave={e => { e.currentTarget.style.background="var(--bg-input)"; }}
-                    style={{ padding:"6px 10px", background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:"4px", cursor:"pointer", fontSize:8, color:T.textFaint, fontFamily:T.ui, letterSpacing:"0.5px", textTransform:"uppercase", transition:"all 0.2s ease" }}>
+                    style={{ padding:"8px 12px", background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:"6px", cursor:"pointer", fontSize:11, color:T.textFaint, fontFamily:T.ui, letterSpacing:"0.5px", textTransform:"uppercase", transition:"all 0.2s ease" }}>
                     Clear
                   </button>
                 )}
               </div>
 
               {/* Token appearance settings */}
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
                 <div>
-                  <span style={{ fontFamily:T.ui, fontSize:7, color:T.textMuted, letterSpacing:"0.5px", display:"block", marginBottom:3 }}>SIZE</span>
+                  <span style={{ fontFamily:T.ui, fontSize:10, color:T.textMuted, letterSpacing:"0.5px", display:"block", marginBottom:4 }}>SIZE</span>
                   <select value={selectedToken.size || "medium"} onChange={e => updateToken(selectedToken.id, { size: e.target.value })}
-                    style={{ width:"100%", padding:"4px 6px", fontSize:10, fontFamily:T.ui, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"4px", cursor:"pointer" }}>
+                    style={{ width:"100%", padding:"6px 8px", fontSize:12, fontFamily:T.ui, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"5px", cursor:"pointer" }}>
                     <option value="tiny">Tiny</option><option value="small">Small</option><option value="medium">Medium</option>
                     <option value="large">Large</option><option value="huge">Huge</option><option value="gargantuan">Gargantuan</option>
                   </select>
                 </div>
                 <div>
-                  <span style={{ fontFamily:T.ui, fontSize:7, color:T.textMuted, letterSpacing:"0.5px", display:"block", marginBottom:3 }}>LABEL (3 char)</span>
+                  <span style={{ fontFamily:T.ui, fontSize:10, color:T.textMuted, letterSpacing:"0.5px", display:"block", marginBottom:4 }}>LABEL (3 char)</span>
                   <input type="text" maxLength={4} value={selectedToken.label || ""} onChange={e => updateToken(selectedToken.id, { label: e.target.value })}
                     placeholder={selectedToken.name.substring(0,3)}
-                    style={{ width:"100%", padding:"4px 6px", fontSize:11, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"4px", outline:"none" }} />
+                    style={{ width:"100%", padding:"6px 8px", fontSize:13, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"5px", outline:"none" }} />
                 </div>
               </div>
 
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
                 <div>
-                  <span style={{ fontFamily:T.ui, fontSize:7, color:T.textMuted, letterSpacing:"0.5px", display:"block", marginBottom:3 }}>ARMOR CLASS</span>
+                  <span style={{ fontFamily:T.ui, fontSize:10, color:T.textMuted, letterSpacing:"0.5px", display:"block", marginBottom:4 }}>ARMOR CLASS</span>
                   <input type="number" value={selectedToken.ac || ""} onChange={e => updateToken(selectedToken.id, { ac: e.target.value ? parseInt(e.target.value) : null })}
                     placeholder="—"
-                    style={{ width:"100%", padding:"4px 6px", fontSize:11, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"4px", outline:"none" }} />
+                    style={{ width:"100%", padding:"6px 8px", fontSize:13, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"5px", outline:"none" }} />
                 </div>
                 <div>
-                  <span style={{ fontFamily:T.ui, fontSize:7, color:T.textMuted, letterSpacing:"0.5px", display:"block", marginBottom:3 }}>SPEED (ft)</span>
+                  <span style={{ fontFamily:T.ui, fontSize:10, color:T.textMuted, letterSpacing:"0.5px", display:"block", marginBottom:4 }}>SPEED (ft)</span>
                   <input type="number" value={selectedToken.speed || 30} onChange={e => updateToken(selectedToken.id, { speed: parseInt(e.target.value) || 30 })}
-                    style={{ width:"100%", padding:"4px 6px", fontSize:11, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"4px", outline:"none" }} />
+                    style={{ width:"100%", padding:"6px 8px", fontSize:13, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"5px", outline:"none" }} />
                 </div>
               </div>
 
               {selectedToken.hp != null && selectedToken.maxHp && (
                 <div>
-                  <span style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:6, fontWeight:500 }}>Hit Points</span>
-                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
-                    <span style={{ fontSize:32, fontFamily:T.body, fontWeight:300, color: getHpColor(selectedToken.hp, selectedToken.maxHp) }}>
+                  <span style={{ fontFamily:T.ui, fontSize:11, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:8, fontWeight:500 }}>Hit Points</span>
+                  <div style={{ display:"flex", alignItems:"baseline", gap:8, marginBottom:8 }}>
+                    <span style={{ fontSize:40, fontFamily:T.body, fontWeight:300, color: getHpColor(selectedToken.hp, selectedToken.maxHp) }}>
                       {selectedToken.hp}
                     </span>
-                    <span style={{ fontSize:14, color:T.textFaint, fontFamily:T.body }}>/ {selectedToken.maxHp}</span>
+                    <span style={{ fontSize:18, color:T.textFaint, fontFamily:T.body }}>/ {selectedToken.maxHp}</span>
                   </div>
-                  <div style={{ flex:1, height:8, background:"var(--bg-input)", borderRadius:"3px", overflow:"hidden", position:"relative" }}>
+                  <div style={{ flex:1, height:10, background:"var(--bg-input)", borderRadius:"4px", overflow:"hidden", position:"relative" }}>
                     <div style={{ width:`${Math.round(selectedToken.hp/selectedToken.maxHp*100)}%`, height:"100%", background:`linear-gradient(90deg, ${getHpColor(selectedToken.hp, selectedToken.maxHp)} 0%, ${getHpColor(selectedToken.hp, selectedToken.maxHp)}cc 100%)`, transition:"width 0.3s ease" }} />
                   </div>
 
-                  <div style={{ display:"flex", gap:6, marginTop:10 }}>
+                  <div style={{ display:"flex", gap:6, marginTop:12 }}>
                     {[{d:-10,c:"rgba(212,67,58,0.15)",bc:"rgba(212,67,58,0.3)",tc:"#f06858"},{d:-5,c:"rgba(212,67,58,0.10)",bc:"rgba(212,67,58,0.2)",tc:"#f06858"},{d:-1,c:"rgba(212,67,58,0.06)",bc:"rgba(212,67,58,0.15)",tc:"#f06858"},{d:1,c:"rgba(46,139,87,0.06)",bc:"rgba(46,139,87,0.15)",tc:"#5ee09a"},{d:5,c:"rgba(46,139,87,0.10)",bc:"rgba(46,139,87,0.2)",tc:"#5ee09a"},{d:10,c:"rgba(46,139,87,0.15)",bc:"rgba(46,139,87,0.3)",tc:"#5ee09a"}].map(btn => (
                       <button key={btn.d} onClick={() => adjustTokenHp(selectedToken.id, btn.d)}
                         onMouseEnter={e => { e.currentTarget.style.transform="translateY(-1px)"; e.currentTarget.style.boxShadow="0 2px 6px rgba(0,0,6,0.3)"; }}
                         onMouseLeave={e => { e.currentTarget.style.transform="translateY(0)"; e.currentTarget.style.boxShadow="none"; }}
-                        style={{ flex:1, padding:"7px 0", background:btn.c, border:"1px solid " + btn.bc, borderRadius:"4px", color:btn.tc, fontFamily:T.ui, fontSize:9, letterSpacing:"1px", cursor:"pointer", transition:"all 0.15s ease", fontWeight:500 }}>
+                        style={{ flex:1, padding:"8px 0", background:btn.c, border:"1px solid " + btn.bc, borderRadius:"5px", color:btn.tc, fontFamily:T.ui, fontSize:12, letterSpacing:"0.5px", cursor:"pointer", transition:"all 0.15s ease", fontWeight:600 }}>
                         {btn.d > 0 ? "+" : ""}{btn.d}
                       </button>
                     ))}
                   </div>
-                  <p style={{ fontSize:9, color:T.textFaint, fontStyle:"italic", marginTop:6, fontFamily:T.body }}>Scroll wheel over token to adjust HP</p>
+                  <p style={{ fontSize:11, color:T.textFaint, fontStyle:"italic", marginTop:8, fontFamily:T.body }}>Scroll wheel over token to adjust HP</p>
                 </div>
               )}
 
               {/* Vision settings */}
-              <div style={{ borderTop:"1px solid " + T.border, paddingTop:10 }}>
-                <span style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:8, fontWeight:500 }}>Vision</span>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
+              <div style={{ borderTop:"1px solid " + T.border, paddingTop:12 }}>
+                <span style={{ fontFamily:T.ui, fontSize:11, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:10, fontWeight:500 }}>Vision</span>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
                   <div>
-                    <span style={{ fontFamily:T.ui, fontSize:7, color:T.textMuted, letterSpacing:"0.5px", display:"block", marginBottom:3 }}>NORMAL (cells)</span>
+                    <span style={{ fontFamily:T.ui, fontSize:10, color:T.textMuted, letterSpacing:"0.5px", display:"block", marginBottom:4 }}>NORMAL (cells)</span>
                     <input type="number" value={selectedToken.vision || 0} onChange={e => updateToken(selectedToken.id, { vision: parseInt(e.target.value) || 0 })}
-                      style={{ width:"100%", padding:"4px 6px", fontSize:11, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"4px", outline:"none" }} />
+                      style={{ width:"100%", padding:"6px 8px", fontSize:13, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"5px", outline:"none" }} />
                   </div>
                   <div>
-                    <span style={{ fontFamily:T.ui, fontSize:7, color:T.textMuted, letterSpacing:"0.5px", display:"block", marginBottom:3 }}>DARKVISION (cells)</span>
+                    <span style={{ fontFamily:T.ui, fontSize:10, color:T.textMuted, letterSpacing:"0.5px", display:"block", marginBottom:4 }}>DARKVISION (cells)</span>
                     <input type="number" value={selectedToken.darkvision || 0} onChange={e => updateToken(selectedToken.id, { darkvision: parseInt(e.target.value) || 0 })}
-                      style={{ width:"100%", padding:"4px 6px", fontSize:11, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"4px", outline:"none" }} />
+                      style={{ width:"100%", padding:"6px 8px", fontSize:13, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"5px", outline:"none" }} />
                   </div>
                 </div>
-                <p style={{ fontSize:8, color:T.textFaint, fontStyle:"italic", marginTop:4, fontFamily:T.body }}>12 cells = 60ft. Used with Vision Fog.</p>
+                <p style={{ fontSize:11, color:T.textFaint, fontStyle:"italic", marginTop:6, fontFamily:T.body }}>12 cells = 60ft. Used with Vision Fog.</p>
               </div>
 
               {/* Conditions */}
-              <div style={{ borderTop:"1px solid " + T.border, paddingTop:10 }}>
-                <span style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:6, fontWeight:500 }}>Conditions</span>
-                <div style={{ display:"flex", gap:3, flexWrap:"wrap", marginBottom:6 }}>
+              <div style={{ borderTop:"1px solid " + T.border, paddingTop:12 }}>
+                <span style={{ fontFamily:T.ui, fontSize:11, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:8, fontWeight:500 }}>Conditions</span>
+                <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:8 }}>
                   {(tokenConditions[selectedToken.id] || []).map(cond => {
                     const dc = DND_CONDITIONS.find(d => d.name === cond);
                     return (
                       <span key={cond} onClick={() => removeTokenCondition(selectedToken.id, cond)}
-                        style={{ display:"inline-flex", alignItems:"center", gap:3, background:"rgba(0,0,0,0.15)", border:"1px solid " + (dc ? dc.color + "55" : "var(--border-mid)"), padding:"2px 6px", borderRadius:"10px", fontSize:8, fontFamily:T.ui, letterSpacing:"0.3px", color: dc ? dc.color : T.textMuted, cursor:"pointer", transition:"all 0.15s" }}>
-                        <span style={{ width:5, height:5, borderRadius:"50%", background: dc ? dc.color : "#aaa" }} />
-                        {cond} <X size={7}/>
+                        style={{ display:"inline-flex", alignItems:"center", gap:4, background:"rgba(0,0,0,0.15)", border:"1px solid " + (dc ? dc.color + "55" : "var(--border-mid)"), padding:"4px 8px", borderRadius:"12px", fontSize:11, fontFamily:T.ui, letterSpacing:"0.3px", color: dc ? dc.color : T.textMuted, cursor:"pointer", transition:"all 0.15s" }}>
+                        <span style={{ width:6, height:6, borderRadius:"50%", background: dc ? dc.color : "#aaa" }} />
+                        {cond} <X size={10}/>
                       </span>
                     );
                   })}
                 </div>
                 <select onChange={e => { addTokenCondition(selectedToken.id, e.target.value); e.target.value = ""; }} value=""
-                  style={{ width:"100%", padding:"4px 6px", fontSize:9, fontFamily:T.ui, background:T.bgInput, border:"1px solid " + T.border, color:T.textMuted, borderRadius:"4px", cursor:"pointer" }}>
+                  style={{ width:"100%", padding:"6px 8px", fontSize:12, fontFamily:T.ui, background:T.bgInput, border:"1px solid " + T.border, color:T.textMuted, borderRadius:"5px", cursor:"pointer" }}>
                   <option value="">+ Add Condition</option>
                   {DND_CONDITIONS.filter(dc => !(tokenConditions[selectedToken.id] || []).includes(dc.name)).map(dc => (
                     <option key={dc.name} value={dc.name}>{dc.name}</option>
@@ -6107,17 +6208,17 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
               </div>
 
               {/* Notes */}
-              <div style={{ borderTop:"1px solid " + T.border, paddingTop:10 }}>
-                <span style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:6, fontWeight:500 }}>Notes</span>
+              <div style={{ borderTop:"1px solid " + T.border, paddingTop:12 }}>
+                <span style={{ fontFamily:T.ui, fontSize:11, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:8, fontWeight:500 }}>Notes</span>
                 <textarea value={selectedToken.notes || ""} onChange={e => updateToken(selectedToken.id, { notes: e.target.value })}
                   placeholder="Add notes about this token..."
                   rows={3}
-                  style={{ width:"100%", padding:"6px 8px", fontSize:11, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"4px", outline:"none", resize:"vertical", lineHeight:"1.5" }} />
+                  style={{ width:"100%", padding:"8px 10px", fontSize:13, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"5px", outline:"none", resize:"vertical", lineHeight:"1.5" }} />
               </div>
 
               {/* Actions */}
-              <div style={{ borderTop:"1px solid " + T.border, paddingTop:10 }}>
-                <span style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:8, fontWeight:500 }}>Actions</span>
+              <div style={{ borderTop:"1px solid " + T.border, paddingTop:12 }}>
+                <span style={{ fontFamily:T.ui, fontSize:11, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:10, fontWeight:500 }}>Actions</span>
                 <div style={{ display:"flex", gap:6 }}>
                   <CrimsonBtn onClick={() => { if (selectedToken) { setMovementMode(!movementMode); if (!movementMode) { setMovementPath([]); setMovementOrigin({x:selectedToken.x,y:selectedToken.y}); } } }} secondary small style={{ flex:1 }}>
                     {movementMode ? "End Move" : "Move (M)"}
@@ -6137,28 +6238,28 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
               </div>
 
               {/* Spells */}
-              <div style={{ borderTop:"1px solid " + T.border, paddingTop:10 }}>
-                <span style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:6, fontWeight:500 }}>Spells</span>
+              <div style={{ borderTop:"1px solid " + T.border, paddingTop:12 }}>
+                <span style={{ fontFamily:T.ui, fontSize:12, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:8, fontWeight:500 }}>Spells</span>
 
                 {/* Spell DC Control */}
-                <div style={{ display:"flex", alignItems:"center", gap:4, marginBottom:6, padding:"6px 8px", background:"var(--bg-input)", borderRadius:"4px", border:"1px solid " + T.border }}>
-                  <span style={{ fontFamily:T.ui, fontSize:7, color:T.textMuted, letterSpacing:"0.5px", textTransform:"uppercase" }}>DC</span>
+                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8, padding:"8px 10px", background:"var(--bg-input)", borderRadius:"6px", border:"1px solid " + T.border }}>
+                  <span style={{ fontFamily:T.ui, fontSize:11, color:T.textMuted, letterSpacing:"0.5px", textTransform:"uppercase", fontWeight:500 }}>Spell Save DC</span>
                   <input type="number" min="8" max="20" value={spellDC} onChange={e => setSpellDC(parseInt(e.target.value) || 15)}
-                    style={{ width:35, padding:"3px 4px", fontFamily:T.ui, fontSize:9, background:T.bgCard, border:"1px solid " + T.border, color:T.text, borderRadius:"3px", textAlign:"center" }} />
+                    style={{ width:48, padding:"4px 6px", fontFamily:T.ui, fontSize:14, background:T.bgCard, border:"1px solid " + T.border, color:T.text, borderRadius:"4px", textAlign:"center", fontWeight:600 }} />
                 </div>
 
                 {activeSpell && (
-                  <div style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 8px", marginBottom:8, background:"rgba(181,116,255,0.1)", border:"1px solid rgba(181,116,255,0.3)", borderRadius:"6px" }}>
-                    <span style={{ width:8, height:8, borderRadius:"50%", background:activeSpell.color, boxShadow:"0 0 6px " + activeSpell.color }} />
-                    <span style={{ flex:1, fontFamily:T.ui, fontSize:9, color:"#b574ff", letterSpacing:"0.5px" }}>Targeting: {activeSpell.name}</span>
-                    <span onClick={() => { setActiveSpell(null); setSpellTarget(null); }} style={{ cursor:"pointer", color:T.textFaint, fontSize:10 }}><X size={10}/></span>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", marginBottom:10, background:"rgba(181,116,255,0.1)", border:"1px solid rgba(181,116,255,0.3)", borderRadius:"8px" }}>
+                    <span style={{ width:10, height:10, borderRadius:"50%", background:activeSpell.color, boxShadow:"0 0 8px " + activeSpell.color }} />
+                    <span style={{ flex:1, fontFamily:T.ui, fontSize:12, color:"#b574ff", letterSpacing:"0.5px", fontWeight:500 }}>Targeting: {activeSpell.name}</span>
+                    <span onClick={() => { setActiveSpell(null); setSpellTarget(null); }} style={{ cursor:"pointer", color:T.textFaint, padding:4, display:"flex" }}><X size={14}/></span>
                   </div>
                 )}
 
-                <div style={{ display:"flex", gap:2, flexWrap:"wrap", marginBottom:6 }}>
+                <div style={{ display:"flex", gap:3, flexWrap:"wrap", marginBottom:8 }}>
                   {[0,1,2,3,4,5,6,7,8,9].map(lvl => (
                     <button key={"lvl-" + lvl} onClick={() => setSpellLevelFilter(spellLevelFilter === lvl ? -1 : lvl)}
-                      style={{ padding:"4px 8px", fontSize:7, fontFamily:T.ui, letterSpacing:"0.5px", textTransform:"uppercase", background:spellLevelFilter === lvl ? "rgba(181,116,255,0.2)" : "transparent", border:"1px solid " + (spellLevelFilter === lvl ? "rgba(181,116,255,0.5)" : T.border), color:spellLevelFilter === lvl ? "#b574ff" : T.textMuted, borderRadius:"3px", cursor:"pointer", transition:"all 0.15s" }}>
+                      style={{ padding:"5px 10px", fontSize:11, fontFamily:T.ui, letterSpacing:"0.5px", textTransform:"uppercase", background:spellLevelFilter === lvl ? "rgba(181,116,255,0.2)" : "transparent", border:"1px solid " + (spellLevelFilter === lvl ? "rgba(181,116,255,0.5)" : T.border), color:spellLevelFilter === lvl ? "#b574ff" : T.textMuted, borderRadius:"4px", cursor:"pointer", transition:"all 0.15s", fontWeight:spellLevelFilter === lvl ? 600 : 400 }}>
                       {lvl === 0 ? "C" : lvl}
                     </button>
                   ))}
@@ -6166,69 +6267,92 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
 
                 <input type="text" placeholder="Search spells..."
                   onChange={e => setSpellSearchFilter(e.target.value.toLowerCase())}
-                  style={{ width:"100%", padding:"6px 8px", fontSize:9, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"4px", marginBottom:6, outline:"none", boxSizing:"border-box" }} />
+                  style={{ width:"100%", padding:"8px 10px", fontSize:13, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"6px", marginBottom:8, outline:"none", boxSizing:"border-box" }} />
 
                 {selectedSpellInfo ? (
-                  <div style={{ background:T.bgCard, border:"1px solid " + T.border, borderRadius:"6px", padding:12, marginBottom:12 }}>
-                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"start", marginBottom:10 }}>
+                  <div style={{ background:T.bgCard, border:"1px solid " + T.border, borderRadius:"8px", padding:16, marginBottom:12, boxShadow:"0 2px 12px rgba(0,0,6,0.2)" }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"start", marginBottom:12 }}>
                       <div>
-                        <div style={{ fontSize:14, fontFamily:T.ui, fontWeight:600, color:selectedSpellInfo.color, marginBottom:4 }}>{selectedSpellInfo.name}</div>
-                        <div style={{ fontSize:7, fontFamily:T.ui, color:T.textMuted, letterSpacing:"0.5px", display:"flex", gap:6, marginBottom:8 }}>
-                          <span style={{ background:"rgba(181,116,255,0.15)", padding:"1px 4px", borderRadius:"2px" }}>L{selectedSpellInfo.level}</span>
-                          <span>{selectedSpellInfo.school}</span>
-                          <span>{selectedSpellInfo.castTime}</span>
+                        <div style={{ fontSize:18, fontFamily:T.ui, fontWeight:600, color:selectedSpellInfo.color, marginBottom:6, textShadow:"0 0 20px " + selectedSpellInfo.color + "33" }}>{selectedSpellInfo.name}</div>
+                        <div style={{ fontSize:11, fontFamily:T.ui, color:T.textMuted, letterSpacing:"0.5px", display:"flex", gap:8, flexWrap:"wrap" }}>
+                          <span style={{ background:"rgba(181,116,255,0.15)", padding:"2px 8px", borderRadius:"4px", fontWeight:500 }}>{selectedSpellInfo.level === 0 ? "Cantrip" : "Level " + selectedSpellInfo.level}</span>
+                          <span style={{ padding:"2px 0" }}>{selectedSpellInfo.school}</span>
+                          <span style={{ padding:"2px 0", color:T.textFaint }}>{selectedSpellInfo.castTime}</span>
                         </div>
                       </div>
-                      <button onClick={() => setSelectedSpellInfo(null)} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:0 }}><X size={12}/></button>
+                      <button onClick={() => setSelectedSpellInfo(null)} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:4 }}><X size={16}/></button>
                     </div>
 
-                    <div style={{ fontSize:8, fontFamily:T.body, color:T.textMuted, marginBottom:8, paddingBottom:8, borderBottom:"1px solid " + T.border }}>
-                      {selectedSpellInfo.range > 0 ? selectedSpellInfo.range + "ft" : selectedSpellInfo.shape === "self" ? "Self" : "Touch"}
-                      {selectedSpellInfo.shape === "sphere" && (" (radius " + selectedSpellInfo.radius + "ft)")}
-                      {selectedSpellInfo.shape === "cone" && (" (cone " + selectedSpellInfo.radius + "ft)")}
-                      {selectedSpellInfo.shape === "line" && (" (line " + selectedSpellInfo.radius + "ft)")}
+                    <div style={{ fontSize:12, fontFamily:T.body, color:T.textMuted, marginBottom:10, paddingBottom:10, borderBottom:"1px solid " + T.border }}>
+                      <span style={{ fontWeight:500, color:T.text }}>Range: </span>
+                      {selectedSpellInfo.range > 0 ? selectedSpellInfo.range + " ft" : selectedSpellInfo.shape === "self" ? "Self" : "Touch"}
+                      {selectedSpellInfo.shape === "sphere" && (" (radius " + selectedSpellInfo.radius + " ft)")}
+                      {selectedSpellInfo.shape === "cone" && (" (cone " + selectedSpellInfo.radius + " ft)")}
+                      {selectedSpellInfo.shape === "line" && (" (line " + selectedSpellInfo.radius + " ft)")}
+                      {selectedSpellInfo.shape === "cube" && (" (cube " + selectedSpellInfo.radius + " ft)")}
                     </div>
 
-                    <div style={{ fontSize:9, fontFamily:T.body, color:T.text, marginBottom:8, lineHeight:"1.4" }}>{selectedSpellInfo.description}</div>
+                    <div style={{ fontSize:13, fontFamily:T.body, color:T.text, marginBottom:12, lineHeight:"1.5" }}>{selectedSpellInfo.description}</div>
 
                     {selectedSpellInfo.damage && (
-                      <div style={{ fontSize:8, fontFamily:T.ui, color:T.textMuted, marginBottom:6, padding:"6px 0", borderTop:"1px solid " + T.border, borderBottom:"1px solid " + T.border }}>
-                        <span style={{ color:T.text, fontWeight:500 }}>Damage:</span> {selectedSpellInfo.damage} {selectedSpellInfo.damageType}
+                      <div style={{ fontSize:12, fontFamily:T.ui, color:T.textMuted, marginBottom:8, padding:"8px 10px", borderRadius:"6px", background:"rgba(212,67,58,0.06)", border:"1px solid rgba(212,67,58,0.15)" }}>
+                        <span style={{ color:"#f06858", fontWeight:600 }}>Damage:</span> {selectedSpellInfo.damage} <span style={{ color:T.textFaint }}>({selectedSpellInfo.damageType})</span>
+                      </div>
+                    )}
+
+                    {selectedSpellInfo.healing && (
+                      <div style={{ fontSize:12, fontFamily:T.ui, color:T.textMuted, marginBottom:8, padding:"8px 10px", borderRadius:"6px", background:"rgba(46,139,87,0.06)", border:"1px solid rgba(46,139,87,0.15)" }}>
+                        <span style={{ color:"#5ee09a", fontWeight:600 }}>Healing:</span> {selectedSpellInfo.healing}
                       </div>
                     )}
 
                     {selectedSpellInfo.save && (
-                      <div style={{ fontSize:8, fontFamily:T.ui, color:T.textMuted, marginBottom:6 }}>
+                      <div style={{ fontSize:12, fontFamily:T.ui, color:T.textMuted, marginBottom:8 }}>
                         <span style={{ color:T.text, fontWeight:500 }}>Save:</span> {selectedSpellInfo.save} DC {spellDC}
                       </div>
                     )}
 
+                    <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:4 }}>
                     {selectedSpellInfo.concentration && (
-                      <div style={{ fontSize:8, fontFamily:T.ui, color:"#b574ff", marginBottom:6, display:"inline-block", background:"rgba(181,116,255,0.1)", padding:"2px 6px", borderRadius:"3px", marginRight:6 }}>
-                        Concentration
+                      <div style={{ fontSize:11, fontFamily:T.ui, color:"#b574ff", display:"inline-flex", alignItems:"center", gap:4, background:"rgba(181,116,255,0.1)", padding:"4px 10px", borderRadius:"4px" }}>
+                        <Activity size={11} color="#b574ff" /> Concentration
                       </div>
                     )}
                     {selectedSpellInfo.ritual && (
-                      <div style={{ fontSize:8, fontFamily:T.ui, color:"#7c3aed", display:"inline-block", background:"rgba(124,58,237,0.1)", padding:"2px 6px", borderRadius:"3px" }}>
-                        Ritual
+                      <div style={{ fontSize:11, fontFamily:T.ui, color:"#7c3aed", display:"inline-flex", alignItems:"center", gap:4, background:"rgba(124,58,237,0.1)", padding:"4px 10px", borderRadius:"4px" }}>
+                        <BookOpen size={11} color="#7c3aed" /> Ritual
                       </div>
                     )}
+                    {selectedSpellInfo.conditions && selectedSpellInfo.conditions.length > 0 && (
+                      <div style={{ fontSize:11, fontFamily:T.ui, color:"#e8940a", display:"inline-flex", alignItems:"center", gap:4, background:"rgba(232,148,10,0.1)", padding:"4px 10px", borderRadius:"4px" }}>
+                        <AlertTriangle size={11} color="#e8940a" /> {selectedSpellInfo.conditions.join(", ")}
+                      </div>
+                    )}
+                    </div>
 
                     <button onClick={() => {
-                      if (selectedSpellInfo.shape === "self" || selectedSpellInfo.shape === "touch") {
-                        castSpell(selectedToken.x, selectedToken.y, selectedSpellInfo);
+                      if (selectedSpellInfo.shape === "self") {
+                        const cx = selectedToken ? selectedToken.x : 0;
+                        const cy = selectedToken ? selectedToken.y : 0;
+                        castSpell(cx, cy, selectedSpellInfo);
+                        setSelectedSpellInfo(null);
+                      } else if (selectedSpellInfo.shape === "touch") {
+                        // Touch spells go into targeting mode so user can click a token
+                        setActiveSpell(selectedSpellInfo);
                         setSelectedSpellInfo(null);
                       } else {
                         setActiveSpell(selectedSpellInfo);
                         setSelectedSpellInfo(null);
                       }
                     }}
-                      style={{ width:"100%", marginTop:12, padding:"8px", background:selectedSpellInfo.color, border:"none", borderRadius:"4px", color:"white", fontFamily:T.ui, fontSize:10, fontWeight:600, cursor:"pointer", transition:"all 0.2s" }}>
-                      {selectedSpellInfo.shape === "self" ? "Cast on Self" : selectedSpellInfo.shape === "touch" ? "Cast on Touch" : "Begin Targeting"}
+                      onMouseEnter={e => { e.currentTarget.style.filter="brightness(1.15)"; e.currentTarget.style.transform="translateY(-1px)"; }}
+                      onMouseLeave={e => { e.currentTarget.style.filter="none"; e.currentTarget.style.transform="none"; }}
+                      style={{ width:"100%", marginTop:12, padding:"10px", background:selectedSpellInfo.color, border:"none", borderRadius:"6px", color:"white", fontFamily:T.ui, fontSize:12, fontWeight:600, cursor:"pointer", transition:"all 0.2s", boxShadow:"0 2px 8px " + selectedSpellInfo.color + "55", letterSpacing:"0.5px" }}>
+                      {selectedSpellInfo.shape === "self" ? "Cast on Self" : selectedSpellInfo.shape === "touch" ? "Begin Targeting (Touch)" : "Begin Targeting"}
                     </button>
                   </div>
                 ) : (
-                  <div style={{ maxHeight:240, overflowY:"auto", display:"flex", flexDirection:"column", gap:1 }}>
+                  <div style={{ maxHeight:360, overflowY:"auto", display:"flex", flexDirection:"column", gap:2 }}>
                     {DND_SPELLS.filter(spell =>
                       (spellLevelFilter === -1 || spell.level === spellLevelFilter) &&
                       (spell.name.toLowerCase().includes(spellSearchFilter) || spell.description.toLowerCase().includes(spellSearchFilter))
@@ -6236,15 +6360,17 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null }) {
                       return (
                         <div key={spell.name}
                           onClick={() => setSelectedSpellInfo(spell)}
-                          onMouseEnter={e => { e.currentTarget.style.background="rgba(181,116,255,0.06)"; e.currentTarget.style.borderColor="rgba(181,116,255,0.2)"; }}
-                          onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor=T.border; }}
+                          onMouseEnter={e => { e.currentTarget.style.background="rgba(181,116,255,0.08)"; e.currentTarget.style.borderColor="rgba(181,116,255,0.25)"; e.currentTarget.style.transform="translateX(-2px)"; }}
+                          onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.borderColor=T.border; e.currentTarget.style.transform="none"; }}
                           title={spell.description}
-                          style={{ display:"flex", alignItems:"center", gap:6, padding:"5px 8px", background:"transparent", border:"1px solid " + T.border, borderRadius:"4px", cursor:"pointer", transition:"all 0.15s" }}>
-                          <span style={{ width:6, height:6, borderRadius:"50%", background:spell.color, flexShrink:0 }} />
+                          style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", background:"transparent", border:"1px solid " + T.border, borderRadius:"6px", cursor:"pointer", transition:"all 0.15s" }}>
+                          <span style={{ width:8, height:8, borderRadius:"50%", background:spell.color, flexShrink:0, boxShadow:"0 0 6px " + spell.color + "44" }} />
                           <div style={{ flex:1, minWidth:0 }}>
-                            <div style={{ fontFamily:T.ui, fontSize:8, color:T.text, letterSpacing:"0.3px", lineHeight:"1.2" }}>{spell.name}</div>
-                            <div style={{ fontFamily:T.body, fontSize:6, color:T.textFaint, lineHeight:"1" }}>
-                              L{spell.level} {spell.castTime === "1 action" ? "" : spell.castTime + " · "}{spell.range > 0 ? spell.range + "ft" : spell.shape === "self" ? "Self" : "Touch"}
+                            <div style={{ fontFamily:T.ui, fontSize:12, color:T.text, letterSpacing:"0.3px", lineHeight:"1.3", fontWeight:500 }}>{spell.name}</div>
+                            <div style={{ fontFamily:T.body, fontSize:10, color:T.textFaint, lineHeight:"1.2", marginTop:1 }}>
+                              {spell.level === 0 ? "Cantrip" : "Lvl " + spell.level} · {spell.school} · {spell.range > 0 ? spell.range + "ft" : spell.shape === "self" ? "Self" : "Touch"}
+                              {spell.damage ? " · " + spell.damage.split(" ")[0] + " " + (spell.damageType || "") : ""}
+                              {spell.healing ? " · Heals " + spell.healing.split("+")[0] : ""}
                             </div>
                           </div>
                         </div>
