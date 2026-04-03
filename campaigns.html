@@ -3160,6 +3160,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
   const [turn, setTurn] = useState(0);
   const [round, setRound] = useState(1);
   const [combatLive, setCombatLive] = useState(false);
+  const [turnStateByToken, setTurnStateByToken] = useState({});
+  const [playModePresentation, setPlayModePresentation] = useState("simple");
+  const [playModeResolution, setPlayModeResolution] = useState(null);
   const [conditions, setConditions] = useState({});
   const [addName, setAddName] = useState("");
   const [addInit, setAddInit] = useState("");
@@ -3668,6 +3671,347 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       }
     }
     return spell.healing;
+  };
+
+  const CONDITION_HELP = {
+    Prone: "Melee attacks against you have advantage. Standing costs movement.",
+    Concentrating: "Taking damage can force a Constitution save to maintain concentration.",
+    Restrained: "Speed becomes 0. Attacks against you have advantage; your attacks have disadvantage.",
+    Stunned: "You are incapacitated and fail Strength/Dexterity saves.",
+    Blinded: "You cannot see. Your attack rolls have disadvantage.",
+    Poisoned: "You have disadvantage on attack rolls and ability checks.",
+  };
+
+  const CLASS_RULE_MAP = {
+    Barbarian: { key: "barbarian", features: [{ id: "rage", name: "Rage", type: "bonus", uses: 2, recharge: "long_rest", effect: "Enter rage for melee damage bonus and B/P/S resistance." }] },
+    Bard: { key: "bard", features: [{ id: "bardic_inspiration", name: "Bardic Inspiration", type: "bonus", usesFormula: "cha_mod", recharge: "long_rest", effect: "Grant 1d6 inspiration die to an ally." }] },
+    Cleric: { key: "cleric", features: [{ id: "channel_divinity", name: "Channel Divinity", type: "action", uses: 1, recharge: "short_rest", effect: "Invoke domain divinity effect." }] },
+    Druid: { key: "druid", features: [{ id: "wild_shape", name: "Wild Shape", type: "action", uses: 2, recharge: "short_rest", effect: "Transform into a beast form." }] },
+    Fighter: { key: "fighter", features: [{ id: "second_wind", name: "Second Wind", type: "bonus", uses: 1, recharge: "short_rest", effect: "Regain 1d10 + fighter level HP." }, { id: "action_surge", name: "Action Surge", type: "special", uses: 1, recharge: "short_rest", effect: "Take one additional action this turn." }] },
+    Monk: { key: "monk", features: [{ id: "ki_points", name: "Ki Technique", type: "bonus", pool: "ki", usesFormula: "level", recharge: "short_rest", effect: "Spend 1 ki for Flurry, Patient Defense, or Step of the Wind." }] },
+    Paladin: { key: "paladin", features: [{ id: "lay_on_hands", name: "Lay on Hands", type: "action", pool: "lay_on_hands", usesFormula: "level*5", recharge: "long_rest", effect: "Restore HP from your Lay on Hands pool." }] },
+    Ranger: { key: "ranger", features: [{ id: "hunters_mark_tactic", name: "Hunter's Mark Tactic", type: "bonus", uses: 1, recharge: "long_rest", effect: "Mark target for added weapon damage while active." }] },
+    Rogue: { key: "rogue", features: [{ id: "cunning_action_dash", name: "Cunning Action (Dash)", type: "bonus", uses: null, recharge: "at_will", effect: "Dash as a bonus action." }] },
+    Sorcerer: { key: "sorcerer", features: [{ id: "metamagic_spark", name: "Metamagic Spark", type: "special", pool: "sorcery_points", usesFormula: "level", recharge: "long_rest", effect: "Spend sorcery points to modify spells." }] },
+    Warlock: { key: "warlock", features: [{ id: "eldritch_burst", name: "Eldritch Focus", type: "special", uses: null, recharge: "at_will", effect: "Optimize Eldritch Blast or pact tools this turn." }] },
+    Wizard: { key: "wizard", features: [{ id: "arcane_recovery", name: "Arcane Recovery", type: "special", uses: 1, recharge: "long_rest", effect: "Recover spent spell slots on a short rest." }] },
+    Artificer: { key: "artificer", features: [{ id: "flash_of_genius", name: "Flash of Genius", type: "reaction", usesFormula: "int_mod", recharge: "long_rest", effect: "Add Intelligence modifier to a save/check." }] },
+    "Soup Savant": { key: "soup_savant", features: [{ id: "culinary_edge", name: "Culinary Edge", type: "special", uses: null, recharge: "state", requirement: "validSoupEffectPending", effect: "Add your culinary die to one soup damage/healing roll this turn." }] },
+  };
+
+  const toClassKey = (s) => String(s || "").trim().toLowerCase().replace(/[_\s-]+/g, " ");
+  const toFeatureType = (t) => {
+    const x = String(t || "").toLowerCase();
+    if (x.includes("bonus")) return "bonus";
+    if (x.includes("reaction")) return "reaction";
+    if (x.includes("special")) return "special";
+    return "action";
+  };
+  const deriveClassRule = (className) => {
+    const normalized = toClassKey(className);
+    const exact = Object.keys(CLASS_RULE_MAP).find((k) => toClassKey(k) === normalized);
+    if (exact) return CLASS_RULE_MAP[exact];
+    const dnd = (typeof window !== "undefined" && window.DND_DATA) ? window.DND_DATA : null;
+    const raw = dnd?.abilityUses?.[String(className || "").toLowerCase().replace(/\s+/g, "")] || null;
+    if (!Array.isArray(raw) || !raw.length) return null;
+    return {
+      key: normalized.replace(/\s+/g, "_"),
+      features: raw.map((u, idx) => ({
+        id: (u.name || ("feature_" + idx)).toLowerCase().replace(/\W+/g, "_"),
+        name: u.name || ("Feature " + (idx + 1)),
+        type: toFeatureType(u.type),
+        uses: typeof u.uses === "number" ? u.uses : undefined,
+        usesFormula: typeof u.uses === "string" ? u.uses : undefined,
+        recharge: u.recharge || "rest",
+        pool: u.isPool ? ((u.name || "pool").toLowerCase().replace(/\W+/g, "_")) : undefined,
+        effect: u.desc || "Class feature.",
+      })),
+    };
+  };
+
+  const rollExprTotal = (expr) => {
+    if (!expr || typeof window.CombatEngine === "undefined") return 0;
+    try { return window.CombatEngine.rollDice(expr).total || 0; } catch (_) { return 0; }
+  };
+  const toMod = (score) => Math.floor(((score || 10) - 10) / 2);
+  const profFromLevel = (level) => (typeof window.CombatEngine !== "undefined" ? window.CombatEngine.profBonusFromLevel(level || 1) : 2);
+  const distBetween = (a, b) => (typeof window.CombatEngine !== "undefined" ? window.CombatEngine.calculateDistance(a.x, a.y, b.x, b.y, gridSize) : 0);
+  const hpStateLabel = (hp, maxHp) => {
+    if (hp == null || maxHp == null || maxHp <= 0) return "unknown";
+    const p = hp / maxHp;
+    if (p > 0.9) return "uninjured";
+    if (p > 0.5) return "wounded";
+    if (p > 0.25) return "bloodied";
+    return "near defeat";
+  };
+
+  const defaultTurnState = (token) => ({
+    movementRemaining: token?.speed || 30,
+    actionUsed: false,
+    bonusActionUsed: false,
+    reactionSpent: false,
+    freeObjectUsed: false,
+  });
+
+  const getPartyProfile = (token) => {
+    if (!token || !token.partyId) return null;
+    return (party || []).find((p) => p.id === token.partyId) || null;
+  };
+
+  const getBuilderSnapshotForToken = (token, partyMember) => {
+    const direct = partyMember?.snapshot || partyMember?.builderSnapshot || partyMember?.characterSnapshot;
+    if (direct) return direct;
+    try {
+      const raw = localStorage.getItem("phmurt_builder_5e");
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      const builtName = parsed?.details?.name || "";
+      if (builtName && token?.name && builtName.toLowerCase() === String(token.name).toLowerCase()) return parsed;
+    } catch (_) {}
+    return {};
+  };
+
+  const getCombatProfile = (token) => {
+    const p = getPartyProfile(token) || {};
+    const snap = getBuilderSnapshotForToken(token, p);
+    const cls = p.cls || snap.cls || token.cls || "";
+    const level = p.lv || snap.level || token.level || 1;
+    const spellAbilityKey = (SPELLCASTING_ABILITY[cls] || "").toLowerCase();
+    const fallbackSpellMod = spellAbilityKey && (p[spellAbilityKey] != null || token[spellAbilityKey] != null) ? toMod(p[spellAbilityKey] != null ? p[spellAbilityKey] : token[spellAbilityKey]) : 0;
+    const profile = {
+      name: token.name,
+      className: cls,
+      subclass: p.subclass || p.subclassName || snap.subclass || "",
+      level,
+      species: p.race || p.species || snap.race || "",
+      background: p.background || snap.background || "",
+      abilities: {
+        str: p.str != null ? p.str : token.str != null ? token.str : 10,
+        dex: p.dex != null ? p.dex : token.dex != null ? token.dex : 10,
+        con: p.con != null ? p.con : token.con != null ? token.con : 10,
+        int: p.int != null ? p.int : token.int != null ? token.int : 10,
+        wis: p.wis != null ? p.wis : token.wis != null ? token.wis : 10,
+        cha: p.cha != null ? p.cha : token.cha != null ? token.cha : 10,
+      },
+      proficiencyBonus: profFromLevel(level),
+      ac: token.ac || p.ac || 10,
+      hp: token.hp,
+      maxHp: token.maxHp,
+      speed: token.speed || 30,
+      initiativeBonus: toMod(p.dex != null ? p.dex : token.dex),
+      knownSpells: token.knownSpells || p.knownSpells || snap.selectedSpells || [],
+      preparedSpells: token.preparedSpells || p.preparedSpells || snap.selectedSpells || [],
+      spellSlots: token.spellSlots || p.spellSlots || getMaxSpellSlots(cls, level),
+      usedSlots: token.usedSlots || p.usedSlots || {},
+      spellcastingMod: token.spellcastingMod != null ? token.spellcastingMod : (p.spellcastingMod != null ? p.spellcastingMod : fallbackSpellMod),
+      resources: token.classResources || p.classResources || {},
+      feats: p.feats || snap.feats || [],
+      passives: p.passives || snap.passiveEffects || [],
+      resistances: p.resistances || snap.resistances || [],
+      customFeatures: p.customFeatures || snap.customFeatures || [],
+      equipment: p.equipment || snap.equipment || [],
+      conditions: tokenConditions[token.id] || [],
+      concentrationSpell: token.activeConcentrationSpell || p.concentrationSpell || null,
+    };
+    return profile;
+  };
+
+  const getHostileTargets = (actorToken) => {
+    if (!actorToken) return [];
+    return (tokens || []).filter((t) => t.id !== actorToken.id && (t.hp || 0) > 0 && (actorToken.tokenType === "pc" ? t.tokenType !== "pc" : t.tokenType === "pc"));
+  };
+
+  const getNearestHostileTarget = (actorToken) => {
+    const hostiles = getHostileTargets(actorToken);
+    if (!hostiles.length) return null;
+    return [...hostiles].sort((a, b) => distBetween(actorToken, a) - distBetween(actorToken, b))[0];
+  };
+
+  const ensureClassResources = (token, profile) => {
+    if (!token || token.tokenType !== "pc") return;
+    const baseRule = deriveClassRule(profile.className) || null;
+    if (!baseRule) return;
+    const existing = token.classResources || {};
+    const next = { ...existing };
+    (baseRule.features || []).forEach((f) => {
+      if (f.pool && next[f.pool] == null) {
+        if (f.usesFormula === "level") next[f.pool] = profile.level;
+        else if (f.usesFormula === "level*5") next[f.pool] = profile.level * 5;
+        else if (f.usesFormula === "cha_mod") next[f.pool] = Math.max(1, toMod(profile.abilities.cha));
+        else if (f.usesFormula === "int_mod") next[f.pool] = Math.max(1, toMod(profile.abilities.int));
+      }
+      if (f.id && next[f.id] == null && f.usesFormula) {
+        if (f.usesFormula === "level") next[f.id] = profile.level;
+        else if (f.usesFormula === "level*5") next[f.id] = profile.level * 5;
+        else if (f.usesFormula === "cha_mod") next[f.id] = Math.max(1, toMod(profile.abilities.cha));
+        else if (f.usesFormula === "int_mod") next[f.id] = Math.max(1, toMod(profile.abilities.int));
+      }
+      if (f.id && next[f.id] == null && typeof f.uses === "number") next[f.id] = f.uses;
+    });
+    if (JSON.stringify(existing) !== JSON.stringify(next)) updateToken(token.id, { classResources: next });
+  };
+
+  const addStructuredCombatLog = (lineA, lineB, lineC) => {
+    const row = ["Round " + round + " - " + (combatants[turn]?.name || "Combatant"), lineA || "", lineB || "", lineC || ""].filter(Boolean).join("\n");
+    addCombatLogEntry({ type: "system", text: row });
+  };
+
+  const actionTypeLabel = (type) => {
+    if (type === "bonus") return "Bonus Action";
+    if (type === "reaction") return "Reaction";
+    if (type === "special") return "Special";
+    return "Action";
+  };
+
+  const canUseSlot = (profile, level) => {
+    if (!level || level <= 0) return true;
+    const max = (profile.spellSlots || {})[level] || 0;
+    const used = (profile.usedSlots || {})[level] || 0;
+    return max > used;
+  };
+
+  const getWeaponOptionsForProfile = (profile) => {
+    const weaponTable = (window.CombatEngine && window.CombatEngine.WEAPONS) ? window.CombatEngine.WEAPONS : {};
+    const knownNames = new Set(Object.keys(weaponTable));
+    const fromEquipment = []
+      .concat(profile?.equipment || [])
+      .concat(profile?.weapons || [])
+      .map((w) => (typeof w === "string" ? w : (w?.name || "")))
+      .filter(Boolean)
+      .map((n) => n.trim());
+    const matched = Array.from(new Set(fromEquipment.filter((n) => knownNames.has(n))));
+    if (matched.length) return matched;
+    return weaponNamesList.slice(0, 12);
+  };
+
+  const getLegalActionCards = (actorToken) => {
+    if (!actorToken || actorToken.tokenType !== "pc") return [];
+    const profile = getCombatProfile(actorToken);
+    const ts = turnStateByToken[actorToken.id] || defaultTurnState(actorToken);
+    const nearest = getNearestHostileTarget(actorToken);
+    const nearestDist = nearest ? distBetween(actorToken, nearest) : null;
+    const hostiles = getHostileTargets(actorToken);
+    const cards = [];
+    const pb = profile.proficiencyBonus;
+    const strMod = toMod(profile.abilities.str);
+    const dexMod = toMod(profile.abilities.dex);
+    const classRule = deriveClassRule(profile.className) || null;
+
+    const profileWeapons = getWeaponOptionsForProfile(profile);
+    const weaponName = profileWeapons.includes(pcWeaponPick) ? pcWeaponPick : (profileWeapons[0] || "Longsword");
+    const w = (window.CombatEngine && window.CombatEngine.WEAPONS && window.CombatEngine.WEAPONS[weaponName]) || null;
+    if (w) {
+      const useMod = w.properties.includes("finesse") ? Math.max(strMod, dexMod) : (w.melee ? strMod : dexMod);
+      const toHit = pb + useMod;
+      const damageExpr = w.damage + (useMod >= 0 ? "+" + useMod : String(useMod));
+      const range = w.melee ? (w.range || 5) : (w.range || 20);
+      let disabledReason = "";
+      if (ts.actionUsed) disabledReason = "Action already used this turn.";
+      else if (nearest && nearestDist > range) disabledReason = "Target is " + nearestDist + " ft away. Range is " + range + " ft.";
+      cards.push({
+        id: "weapon_main",
+        panel: "Attack",
+        name: weaponName + " Attack",
+        type: "action",
+        range,
+        roll: "Attack roll",
+        effect: "On hit: " + damageExpr + " " + (w.type || "").toLowerCase() + " damage.",
+        cost: "none",
+        outcome: (w.melee ? "Melee weapon attack. " : "Ranged weapon attack. ") + "+" + toHit + " to hit. On hit: " + damageExpr + " " + (w.type || "").toLowerCase() + ".",
+        disabledReason,
+        resolver: "weapon",
+        data: { weaponName, toHit, damageExpr, damageType: (w.type || "slashing").toLowerCase(), range },
+      });
+    }
+
+    const spellNames = Array.from(new Set([...(profile.preparedSpells || []), ...(profile.knownSpells || [])])).slice(0, 12);
+    spellNames.forEach((name) => {
+      const sp = DND_SPELLS.find((s) => s.name === name);
+      if (!sp) return;
+      const type = String(sp.castTime || "").toLowerCase().includes("bonus") ? "bonus" : String(sp.castTime || "").toLowerCase().includes("reaction") ? "reaction" : "action";
+      let disabledReason = "";
+      if (type === "action" && ts.actionUsed) disabledReason = "Action already used this turn.";
+      if (type === "bonus" && ts.bonusActionUsed) disabledReason = "Bonus Action already used this turn.";
+      if (type === "reaction" && ts.reactionSpent) disabledReason = "Reaction already spent.";
+      if (!disabledReason && sp.level > 0 && !canUseSlot(profile, sp.level)) disabledReason = "No level " + sp.level + " spell slots remaining.";
+      if (!disabledReason && sp.range > 0 && sp.shape !== "self" && sp.shape !== "touch") {
+        const inRange = hostiles.some((t) => distBetween(actorToken, t) <= sp.range);
+        if (!inRange && nearest) disabledReason = "Target is " + nearestDist + " ft away. Range is " + sp.range + " ft.";
+      }
+      const concentrationWarn = sp.concentration && profile.concentrationSpell ? "Starting this spell will end your current concentration on " + profile.concentrationSpell + "." : "";
+      cards.push({
+        id: "spell_" + sp.name.replace(/\W+/g, "_").toLowerCase(),
+        panel: "Spell",
+        name: sp.name,
+        type,
+        range: sp.range > 0 ? (sp.range + " ft, " + (sp.shape === "single" ? "one creature" : sp.shape)) : (sp.shape === "self" ? "Self" : "Touch"),
+        roll: sp.save ? (sp.save + " saving throw") : (sp.damage ? "Spell attack roll" : "none"),
+        effect: sp.healing ? ("Restore " + sp.healing + " HP.") : (sp.damage ? ("Deal " + sp.damage + " " + sp.damageType + " damage.") : sp.description),
+        cost: sp.level > 0 ? ("1 level " + sp.level + " spell slot" + (sp.concentration ? ", concentration" : "")) : (sp.concentration ? "concentration" : "none"),
+        outcome: (actionTypeLabel(type) + " spell. " + (sp.range > 0 ? sp.range + " ft." : "Self/Touch.")) + " " + (sp.healing ? ("Restore " + sp.healing + " HP.") : (sp.damage ? ("Deal " + sp.damage + ".") : sp.description)),
+        disabledReason,
+        concentrationWarn,
+        resolver: "spell",
+        data: { spell: sp },
+      });
+    });
+
+    const classFeatures = [...(classRule?.features || []), ...((profile.customFeatures || []).map((f, idx) => ({
+      id: f.id || ("custom_" + idx),
+      name: f.name || ("Custom Feature " + (idx + 1)),
+      type: f.type || "special",
+      uses: f.uses,
+      recharge: f.recharge || "rest",
+      effect: f.effectText || f.effect || f.desc || "Custom class feature.",
+      requirement: f.requirement,
+    })))];
+
+    classFeatures.forEach((f) => {
+      let disabledReason = "";
+      const res = profile.resources || {};
+      const useType = f.type === "bonus" ? "bonus" : f.type === "reaction" ? "reaction" : f.type === "special" ? "special" : "action";
+      if (useType === "action" && ts.actionUsed) disabledReason = "Action already used this turn.";
+      if (useType === "bonus" && ts.bonusActionUsed) disabledReason = "Bonus Action already used this turn.";
+      if (useType === "reaction" && ts.reactionSpent) disabledReason = "Reaction already spent.";
+      if (!disabledReason && f.requirement === "validSoupEffectPending" && !actorToken.validSoupEffectPending) disabledReason = "Only usable when a valid soup effect is being resolved.";
+      if (!disabledReason && f.id && typeof f.uses === "number" && (res[f.id] || 0) <= 0) disabledReason = "No uses remaining. Refresh on " + (f.recharge || "rest").replace("_", " ") + ".";
+      if (!disabledReason && f.id && f.usesFormula && (res[f.id] || 0) <= 0) disabledReason = "No uses remaining. Refresh on " + (f.recharge || "rest").replace("_", " ") + ".";
+      if (!disabledReason && f.pool && (res[f.pool] || 0) <= 0) disabledReason = "No uses remaining. Refresh on " + (f.recharge || "rest").replace("_", " ") + ".";
+      cards.push({
+        id: "feature_" + f.id,
+        panel: "Class Feature",
+        name: f.name,
+        type: useType,
+        range: "Self",
+        roll: f.pool ? "resource roll / spend" : "none",
+        effect: f.effect,
+        cost: f.pool ? ("Spend from " + f.pool + " pool") : (f.uses != null ? String(f.uses) + " use(s)" : (f.usesFormula ? ("Uses scale with " + f.usesFormula.replace("_", " ")) : "none")),
+        outcome: f.effect,
+        disabledReason,
+        resolver: "feature",
+        data: { feature: f },
+      });
+    });
+
+    ["Dash", "Disengage", "Dodge", "Interact with Object"].forEach((n) => {
+      const disabledReason = n === "Interact with Object" ? (ts.freeObjectUsed ? "Free object interaction already used this turn." : "") : (ts.actionUsed ? "Action already used this turn." : "");
+      cards.push({
+        id: "other_" + n.toLowerCase(),
+        panel: "Other",
+        name: n,
+        type: n === "Interact with Object" ? "special" : "action",
+        range: "Self",
+        roll: "none",
+        effect: n === "Dash" ? "Gain extra movement equal to your speed this turn." : n === "Disengage" ? "Movement does not provoke opportunity attacks this turn." : n === "Dodge" ? "Attackers have disadvantage until your next turn." : "Use your free object interaction this turn.",
+        cost: n === "Interact with Object" ? "Free Object Interaction" : "Action",
+        outcome: n === "Dash" ? "Use your Action to gain extra movement equal to your speed this turn." : n,
+        disabledReason,
+        resolver: "other",
+        data: { kind: n.toLowerCase() },
+      });
+    });
+
+    return cards;
   };
 
   // ── Maps & Scenes system ──
@@ -6286,7 +6630,14 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
             x: cx, y: cy, vision: 0, darkvision: 0, speed: 30,
             hidden: false, size: "medium", label: "", ac: p.ac,
             notes: p.cls + " Lv" + p.lv + (p.race ? " · " + p.race : ""),
-            imageSrc: null, tokenType: "pc"
+            imageSrc: null, tokenType: "pc", partyId: p.id,
+            cls: p.cls, level: p.lv, race: p.race || "",
+            spellSlots: getMaxSpellSlots(p.cls, p.lv),
+            usedSlots: p.usedSlots || {},
+            knownSpells: p.knownSpells || [],
+            preparedSpells: p.preparedSpells || [],
+            spellcastingMod: p.spellcastingMod || 0,
+            classResources: p.classResources || {},
           });
         }
       });
@@ -6410,9 +6761,6 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
         setPingMode(false);
         setLaserMode(false);
         laserPointsRef.current = [];
-        setMovementMode(false);
-        setMovementPath([]);
-        setMovementOrigin(null);
         setContextMenu(null);
         setTokenPopup(null);
         setSelectedPropId(null);
@@ -6427,6 +6775,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
           // Cancel movement — return token to origin
           setTokens(p => p.map(t => t.id === selectedTokenId ? {...t, x: movementOrigin.x, y: movementOrigin.y} : t));
         }
+        setMovementMode(false);
+        setMovementPath([]);
+        setMovementOrigin(null);
       }
       // Spacebar hold for panning during spell targeting
       if (e.key === " " || e.code === "Space") {
@@ -6830,6 +7181,27 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
         if (t.id !== dragState.id) return t;
         return { ...t, x: Math.floor(t.x / gridSize) * gridSize + gridSize / 2, y: Math.floor(t.y / gridSize) * gridSize + gridSize / 2 };
       }));
+      if (dragState.type === "token-move" && movementMode && combatLive) {
+        const activeTokenId = combatants[turn]?.id;
+        if (activeTokenId === dragState.id && movementPath.length > 0) {
+          const spent = movementPath.length * 5;
+          setTurnStateByToken((prev) => {
+            const current = prev[dragState.id] || defaultTurnState(tokens.find((t) => t.id === dragState.id) || selectedToken || {});
+            return {
+              ...prev,
+              [dragState.id]: {
+                ...current,
+                movementRemaining: Math.max(0, (current.movementRemaining ?? 0) - spent),
+              },
+            };
+          });
+          const movedFt = spent;
+          addStructuredCombatLog("Moved " + movedFt + " ft", "Movement remaining updated", "");
+          const tk = tokens.find((t) => t.id === dragState.id);
+          if (tk) setMovementOrigin({ x: tk.x, y: tk.y });
+          setMovementPath([]);
+        }
+      }
     }
     setDrawPoints([]);
     setDragState(null);
@@ -7012,6 +7384,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       if (Object.prototype.hasOwnProperty.call(updates, "knownSpells")) partyUpdates.knownSpells = mergedToken.knownSpells;
       if (Object.prototype.hasOwnProperty.call(updates, "preparedSpells")) partyUpdates.preparedSpells = mergedToken.preparedSpells;
       if (Object.prototype.hasOwnProperty.call(updates, "spellcastingMod")) partyUpdates.spellcastingMod = mergedToken.spellcastingMod;
+      if (Object.prototype.hasOwnProperty.call(updates, "classResources")) partyUpdates.classResources = mergedToken.classResources;
+      if (Object.prototype.hasOwnProperty.call(updates, "activeConcentrationSpell")) partyUpdates.concentrationSpell = mergedToken.activeConcentrationSpell;
       if (Object.keys(partyUpdates).length > 0) onPartyUpdate(mergedToken.partyId, partyUpdates);
     }
     if (mergedToken.npcId != null && setData) {
@@ -7044,8 +7418,19 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
         updates.level = member.lv;
         updates.spellSlots = getMaxSpellSlots(t.cls, member.lv);
       }
+      if (member.cls !== undefined && member.cls !== t.cls) updates.cls = member.cls;
+      if (member.race !== undefined && member.race !== t.race) updates.race = member.race;
+      if (member.subclass !== undefined && member.subclass !== t.subclass) updates.subclass = member.subclass;
       if (member.str !== undefined && member.str !== t.str) updates.str = member.str;
       if (member.dex !== undefined && member.dex !== t.dex) updates.dex = member.dex;
+      if (member.con !== undefined && member.con !== t.con) updates.con = member.con;
+      if (member.int !== undefined && member.int !== t.int) updates.int = member.int;
+      if (member.wis !== undefined && member.wis !== t.wis) updates.wis = member.wis;
+      if (member.cha !== undefined && member.cha !== t.cha) updates.cha = member.cha;
+      if (member.knownSpells !== undefined) updates.knownSpells = member.knownSpells || [];
+      if (member.preparedSpells !== undefined) updates.preparedSpells = member.preparedSpells || [];
+      if (member.usedSlots !== undefined) updates.usedSlots = member.usedSlots || {};
+      if (member.classResources !== undefined) updates.classResources = member.classResources || {};
       if (Object.keys(updates).length > 0) return { ...t, ...updates };
       return t;
     }));
@@ -7094,6 +7479,177 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
   // ── Combat functions ──
   const conditionsList = DND_CONDITIONS.map(c => c.name);
 
+  useEffect(() => {
+    if (!combatLive) return;
+    const current = combatants[turn];
+    if (!current) return;
+    const tk = tokens.find((t) => t.id === current.mapTokenId);
+    if (!tk) return;
+    const profile = getCombatProfile(tk);
+    ensureClassResources(tk, profile);
+    setTurnStateByToken((prev) => {
+      const existing = prev[tk.id];
+      if (existing) return prev;
+      return { ...prev, [tk.id]: defaultTurnState(tk) };
+    });
+  }, [combatLive, combatants, turn, tokens]);
+
+  const spendEconomy = (tokenId, actionType) => {
+    setTurnStateByToken((prev) => {
+      const cur = prev[tokenId] || defaultTurnState(tokens.find((t) => t.id === tokenId));
+      const next = { ...cur };
+      if (actionType === "action") next.actionUsed = true;
+      if (actionType === "bonus") next.bonusActionUsed = true;
+      if (actionType === "reaction") next.reactionSpent = true;
+      return { ...prev, [tokenId]: next };
+    });
+  };
+
+  const resolvePlayModeCard = (card, actorToken) => {
+    if (!card || !actorToken || actorToken.tokenType !== "pc") return;
+    if (card.disabledReason) {
+      setPlayModeResolution({ title: card.name, lines: ["Cannot use this option right now.", card.disabledReason] });
+      return;
+    }
+    const profile = getCombatProfile(actorToken);
+    const target = getNearestHostileTarget(actorToken);
+    if (!target && card.resolver !== "feature" && card.resolver !== "other") {
+      setPlayModeResolution({ title: card.name, lines: ["No valid hostile target found."] });
+      return;
+    }
+    const CE = window.CombatEngine;
+    if (!CE) return;
+
+    if (card.resolver === "weapon") {
+      const d = card.data;
+      const steps = [
+        "Selected: " + card.name,
+        "Choose target: " + target.name,
+        "Confirm advantage/disadvantage: normal",
+      ];
+      const atk = CE.makeAttackRoll(d.toHit, target.ac || 10, "normal", {});
+      steps.push("Roll attack: d20 + " + d.toHit + " = " + atk.total);
+      steps.push("Compare to AC " + (target.ac || 10));
+      if (atk.hit) {
+        const dmgRaw = CE.rollDice(d.damageExpr).total;
+        const rel = CE.getDamageRelations(target);
+        const applied = CE.applyDamageWithRelations(dmgRaw, d.damageType, rel, { magicalWeapon: !!actorToken.magicalWeapon });
+        applyAttackResultToTarget(target.id, target, applied.amount);
+        steps.push("If hit, roll damage: " + d.damageExpr + " = " + dmgRaw);
+        steps.push("Apply modifiers/resistances: " + applied.amount + " final");
+        const remaining = Math.max(0, (target.hp || 0) - applied.amount);
+        steps.push("Result: Hit. " + atk.total + " vs AC " + (target.ac || 10) + ". " + applied.amount + " " + d.damageType + " damage dealt. " + target.name + " has " + remaining + " HP remaining.");
+        addStructuredCombatLog("Attacked " + target.name + " with " + card.name, "Hit for " + applied.amount + " " + d.damageType + " damage", "Action used");
+        addCombatLogEntry({ type: "attack", attacker: actorToken.name, target: target.name, action: card.name, hit: true, damage: applied.amount, roll: atk });
+      } else {
+        steps.push("Result: Miss. " + atk.total + " vs AC " + (target.ac || 10) + ".");
+        addStructuredCombatLog("Attacked " + target.name + " with " + card.name, "Missed", "Action used");
+        addCombatLogEntry({ type: "miss", attacker: actorToken.name, target: target.name, action: card.name, roll: atk });
+      }
+      spendEconomy(actorToken.id, card.type);
+      setPlayModeResolution({ title: card.name, lines: steps });
+      return;
+    }
+
+    if (card.resolver === "spell") {
+      const sp = card.data.spell;
+      const steps = ["Selected: " + sp.name, "Choose target: " + (sp.shape === "self" ? "Self" : (target ? target.name : "Target"))];
+      const slotLv = sp.level;
+      if (slotLv > 0) {
+        const used = (actorToken.usedSlots || {})[slotLv] || 0;
+        updateToken(actorToken.id, { usedSlots: { ...(actorToken.usedSlots || {}), [slotLv]: used + 1 } });
+      }
+      if (sp.concentration) {
+        addTokenCondition(actorToken.id, "Concentrating");
+        updateToken(actorToken.id, { activeConcentrationSpell: sp.name });
+      }
+      if (sp.healing) {
+        const healExpr = String(sp.healing).replace("mod", String(profile.spellcastingMod || 0));
+        const heal = rollExprTotal(healExpr);
+        const newHp = Math.min(actorToken.maxHp || actorToken.hp || heal, (actorToken.hp || 0) + heal);
+        updateToken(actorToken.id, { hp: newHp });
+        steps.push("Roll healing: " + healExpr + " = " + heal);
+        steps.push("Result: " + actorToken.name + " regains " + heal + " HP. Current HP: " + newHp + "/" + (actorToken.maxHp || newHp) + ".");
+        addStructuredCombatLog("Cast " + sp.name, "Healed " + heal + " HP", actionTypeLabel(card.type) + " used");
+      } else if (sp.save) {
+        const tgt = target || actorToken;
+        const saveAb = { STR: "Strength", DEX: "Dexterity", CON: "Constitution", INT: "Intelligence", WIS: "Wisdom", CHA: "Charisma" }[sp.save] || "Dexterity";
+        const dc = 8 + profile.proficiencyBonus + (profile.spellcastingMod || 0);
+        const saveMod = CE.getSaveModifier(tgt, saveAb);
+        const s = CE.makeSavingThrow(dc, saveMod, "normal");
+        const dmg = sp.damage ? rollExprTotal(sp.damage.split(" ").shift()) : 0;
+        const finalDmg = s.success ? Math.floor(dmg / 2) : dmg;
+        if (finalDmg > 0) applyAttackResultToTarget(tgt.id, tgt, finalDmg);
+        steps.push(tgt.name + (s.success ? " succeeded" : " failed") + " " + saveAb + " save, " + s.total + " vs DC " + dc + ".");
+        if (finalDmg > 0) steps.push((s.success ? "Takes half: " : "Takes ") + finalDmg + " " + (sp.damageType || "force") + " damage.");
+        addStructuredCombatLog("Cast " + sp.name + " on " + tgt.name, (s.success ? "Save succeeded" : "Save failed"), finalDmg > 0 ? ("Damage: " + finalDmg) : (actionTypeLabel(card.type) + " used"));
+      } else if (sp.damage) {
+        const tgt = target || actorToken;
+        const atkBonus = profile.proficiencyBonus + (profile.spellcastingMod || 0);
+        const atk = CE.makeAttackRoll(atkBonus, tgt.ac || 10, "normal", {});
+        steps.push("Roll spell attack: d20 + " + atkBonus + " = " + atk.total);
+        if (atk.hit) {
+          const dmg = rollExprTotal(sp.damage.split(" ").shift());
+          applyAttackResultToTarget(tgt.id, tgt, dmg);
+          steps.push("Result: Hit. " + atk.total + " vs AC " + (tgt.ac || 10) + ". " + dmg + " " + (sp.damageType || "force") + " damage dealt.");
+          addStructuredCombatLog("Cast " + sp.name + " on " + tgt.name, "Hit for " + dmg + " " + (sp.damageType || "force"), actionTypeLabel(card.type) + " used");
+        } else {
+          steps.push("Result: Miss.");
+          addStructuredCombatLog("Cast " + sp.name + " on " + tgt.name, "Missed", actionTypeLabel(card.type) + " used");
+        }
+      } else {
+        steps.push("Result: " + sp.description);
+        addStructuredCombatLog("Used " + sp.name, sp.description, actionTypeLabel(card.type) + " used");
+      }
+      spendEconomy(actorToken.id, card.type);
+      setPlayModeResolution({ title: card.name, lines: steps });
+      return;
+    }
+
+    if (card.resolver === "feature") {
+      const f = card.data.feature;
+      const steps = ["Selected: " + f.name, "Type: " + actionTypeLabel(card.type)];
+      if (f.id === "second_wind") {
+        const heal = rollExprTotal("1d10+" + profile.level);
+        const newHp = Math.min(actorToken.maxHp || actorToken.hp || heal, (actorToken.hp || 0) + heal);
+        updateToken(actorToken.id, { hp: newHp, classResources: { ...(actorToken.classResources || {}), [f.id]: Math.max(0, ((actorToken.classResources || {})[f.id] || 1) - 1) } });
+        steps.push("Regain " + heal + " HP. Current HP: " + newHp + "/" + (actorToken.maxHp || newHp) + ".");
+        addStructuredCombatLog("Used Second Wind", "Healed " + heal + " HP", "Bonus Action used");
+      } else if (f.id === "action_surge") {
+        setTurnStateByToken((prev) => ({ ...prev, [actorToken.id]: { ...(prev[actorToken.id] || defaultTurnState(actorToken)), actionUsed: false } }));
+        steps.push("You gain one additional action this turn.");
+        addStructuredCombatLog("Used Action Surge", "Action refreshed", "Special feature used");
+      } else {
+        steps.push("Effect: " + f.effect);
+        addStructuredCombatLog("Used " + f.name, f.effect, actionTypeLabel(card.type) + " used");
+      }
+      if (f.pool) {
+        updateToken(actorToken.id, { classResources: { ...(actorToken.classResources || {}), [f.pool]: Math.max(0, ((actorToken.classResources || {})[f.pool] || 0) - 1) } });
+      } else if (f.id && (typeof f.uses === "number" || f.usesFormula) && f.id !== "second_wind") {
+        updateToken(actorToken.id, { classResources: { ...(actorToken.classResources || {}), [f.id]: Math.max(0, ((actorToken.classResources || {})[f.id] || (typeof f.uses === "number" ? f.uses : 0)) - 1) } });
+      }
+      spendEconomy(actorToken.id, card.type);
+      setPlayModeResolution({ title: card.name, lines: steps });
+      return;
+    }
+
+    if (card.resolver === "other") {
+      const kind = card.data.kind;
+      if (kind === "dash") {
+        setTurnStateByToken((prev) => ({ ...prev, [actorToken.id]: { ...(prev[actorToken.id] || defaultTurnState(actorToken)), actionUsed: true, movementRemaining: ((prev[actorToken.id]?.movementRemaining ?? (actorToken.speed || 30)) + (actorToken.speed || 30)) } }));
+      } else if (kind === "interact with object") {
+        setTurnStateByToken((prev) => ({ ...prev, [actorToken.id]: { ...(prev[actorToken.id] || defaultTurnState(actorToken)), freeObjectUsed: true } }));
+      } else if (kind === "dodge") {
+        updateToken(actorToken.id, { combatDodge: true });
+        spendEconomy(actorToken.id, "action");
+      } else {
+        spendEconomy(actorToken.id, "action");
+      }
+      setPlayModeResolution({ title: card.name, lines: ["Selected: " + card.name, card.effect, "Resolved."] });
+      addStructuredCombatLog("Used " + card.name, card.effect, "Action used");
+    }
+  };
+
   const startCombat = () => {
     setMode("combat");
     const combs = tokens.map(t => {
@@ -7124,6 +7680,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     setTurn(0);
     setRound(1);
     setCombatLive(true);
+    setTurnStateByToken({});
+    setPlayModeResolution(null);
     setConditions({});
     if (combs.length > 0) setSelectedTokenId(combs[0].mapTokenId);
   };
@@ -7147,6 +7705,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     }
     setCombatLive(false);
     setCombatants([]);
+    setTurnStateByToken({});
+    setPlayModeResolution(null);
     setConditions({});
     setMode("select");
   };
@@ -7221,10 +7781,19 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       while (first < combatants.length && combatants[first].hp <= 0) first++;
       setTurn(first);
       if (combatants[first]) setSelectedTokenId(combatants[first].mapTokenId);
+      if (combatants[first]) {
+        const nextToken = tokens.find(t => t.id === combatants[first].mapTokenId);
+        if (nextToken) setTurnStateByToken(prev => ({ ...prev, [nextToken.id]: defaultTurnState(nextToken) }));
+      }
     } else {
       setTurn(nextIdx);
       if (combatants[nextIdx]) setSelectedTokenId(combatants[nextIdx].mapTokenId);
+      if (combatants[nextIdx]) {
+        const nextToken = tokens.find(t => t.id === combatants[nextIdx].mapTokenId);
+        if (nextToken) setTurnStateByToken(prev => ({ ...prev, [nextToken.id]: defaultTurnState(nextToken) }));
+      }
     }
+    setPlayModeResolution(null);
   };
 
   const prevTurn = () => {
@@ -7235,7 +7804,12 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     if (prevIdx >= 0) {
       setTurn(prevIdx);
       if (combatants[prevIdx]) setSelectedTokenId(combatants[prevIdx].mapTokenId);
+      if (combatants[prevIdx]) {
+        const prevToken = tokens.find(t => t.id === combatants[prevIdx].mapTokenId);
+        if (prevToken) setTurnStateByToken(prev => ({ ...prev, [prevToken.id]: defaultTurnState(prevToken) }));
+      }
     }
+    setPlayModeResolution(null);
   };
 
   const adjCombatantHp = (id, d) => {
@@ -8304,7 +8878,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
                         <div style={{ flex:1, height:5, background:"var(--bg-input)", borderRadius:"3px", overflow:"hidden" }}>
                           <div style={{ width: hpPct + "%", height:"100%", background:getHpColor(c.hp, c.maxHp), transition:"width 0.2s", borderRadius:"3px" }} />
                         </div>
-                        <span style={{ fontSize:8, fontFamily:T.body, minWidth:34, textAlign:"center", color: isCurrent ? T.text : T.textMuted }}>{c.hp}/{c.maxHp}</span>
+                        <span style={{ fontSize:8, fontFamily:T.body, minWidth:34, textAlign:"center", color: isCurrent ? T.text : T.textMuted }}>
+                          {viewRole === "player" && c.type !== "pc" && playModePresentation === "simple" ? hpStateLabel(c.hp, c.maxHp) : (c.hp + "/" + c.maxHp)}
+                        </span>
                         <button onClick={e=>{e.stopPropagation();adjCombatantHp(c.id,1);}} style={{ background:"none", border:"none", cursor:"pointer", color:"#5ee09a", fontSize:11, padding:"0 2px", lineHeight:1 }}>+</button>
                         <button onClick={e=>{e.stopPropagation(); const v=prompt("Damage (negative) or Heal (positive):"); if(v) adjCombatantHp(c.id, parseInt(v)); }}
                           style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, fontSize:8, padding:"0 2px", fontFamily:T.ui }}>HP</button>
@@ -8373,26 +8949,133 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
                           )}
                         </div>
                       )}
-                      {isCurrent && linkedToken?.tokenType === "pc" && (
-                        <div style={{ marginTop:6, paddingLeft:24 }}>
-                          <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"1px", color:"#5ee09a", textTransform:"uppercase", marginBottom:3 }}>PC weapon (SRD table)</div>
-                          <div style={{ display:"flex", flexWrap:"wrap", gap:4, alignItems:"center" }}>
-                            <select value={pcWeaponPick} onChange={e => { e.stopPropagation(); setPcWeaponPick(e.target.value); }} onClick={e => e.stopPropagation()}
-                              style={{ flex:1, minWidth:110, padding:"4px 6px", fontSize:9, background:"var(--bg-input)", border:"1px solid var(--border)", color:T.text, borderRadius:"4px" }}>
-                              {weaponNamesList.map(w => <option key={w} value={w}>{w}</option>)}
-                            </select>
-                            <button type="button"
-                              onClick={e => {
-                                e.stopPropagation();
-                                const targetToken = tokens.find(t => t.id !== c.mapTokenId && t.hp > 0 && (t.tokenType === "enemy" || t.monsterData));
-                                if (targetToken) executePcWeaponAction(c.mapTokenId, targetToken.id, pcWeaponPick);
-                                else addCombatLogEntry({ type: "system", text: "No hostile target for weapon attack" });
-                              }}
-                              style={{ padding:"4px 10px", background:"rgba(46,139,87,0.12)", border:"1px solid rgba(46,139,87,0.35)", borderRadius:"4px", color:"#5ee09a", fontFamily:T.ui, fontSize:8, cursor:"pointer" }}>Attack</button>
+                      {isCurrent && linkedToken?.tokenType === "pc" && (() => {
+                        const tk = linkedToken;
+                        const ts = turnStateByToken[tk.id] || defaultTurnState(tk);
+                        const profile = getCombatProfile(tk);
+                        const cards = getLegalActionCards(tk);
+                        const legalCards = cards.filter(x => !x.disabledReason);
+                        const suggested = [...legalCards].sort((a, b) => {
+                          const score = (card) => {
+                            if (card.panel === "Attack") return 90;
+                            if (card.panel === "Spell" && /heal|restore/i.test(card.effect)) return 80;
+                            if (card.panel === "Spell") return 75;
+                            if (card.panel === "Class Feature") return 65;
+                            return 40;
+                          };
+                          return score(b) - score(a);
+                        }).slice(0, 4);
+                        const byPanel = {
+                          Attack: cards.filter(x => x.panel === "Attack"),
+                          Spell: cards.filter(x => x.panel === "Spell"),
+                          "Class Feature": cards.filter(x => x.panel === "Class Feature"),
+                          Other: cards.filter(x => x.panel === "Other"),
+                        };
+                        const condList = tokenConditions[tk.id] || [];
+                        const nearest = getNearestHostileTarget(tk);
+                        const profileWeapons = getWeaponOptionsForProfile(profile);
+                        const selectedWeapon = profileWeapons.includes(pcWeaponPick) ? pcWeaponPick : (profileWeapons[0] || pcWeaponPick);
+                        return (
+                          <div style={{ marginTop:8, paddingLeft:24, borderTop:"1px solid rgba(255,255,255,0.06)", paddingTop:8 }}>
+                            <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:"#5ee09a", textTransform:"uppercase", marginBottom:6 }}>Your Turn</div>
+                            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:4, marginBottom:8 }}>
+                              <div style={{ fontSize:9, color:T.textMuted }}>Movement: <span style={{ color:T.text }}>{ts.movementRemaining} ft remaining</span></div>
+                              <div style={{ fontSize:9, color:T.textMuted }}>Action: <span style={{ color:T.text }}>{ts.actionUsed ? "used" : "not used"}</span></div>
+                              <div style={{ fontSize:9, color:T.textMuted }}>Bonus Action: <span style={{ color:T.text }}>{ts.bonusActionUsed ? "used" : "not used"}</span></div>
+                              <div style={{ fontSize:9, color:T.textMuted }}>Reaction: <span style={{ color:T.text }}>{ts.reactionSpent ? "spent" : "available"}</span></div>
+                              <div style={{ fontSize:9, color:T.textMuted }}>Free Object: <span style={{ color:T.text }}>{ts.freeObjectUsed ? "used" : "available"}</span></div>
+                              <div style={{ fontSize:9, color:T.textMuted }}>Concentration: <span style={{ color:T.text }}>{profile.concentrationSpell || (condList.includes("Concentrating") ? "active" : "none")}</span></div>
+                            </div>
+
+                            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
+                              <div style={{ fontSize:8, fontFamily:T.ui, color:T.textFaint, letterSpacing:"1px", textTransform:"uppercase" }}>Presentation</div>
+                              <div style={{ display:"flex", gap:4 }}>
+                                <button onClick={(e) => { e.stopPropagation(); setPlayModePresentation("simple"); }} style={{ padding:"2px 7px", borderRadius:"3px", border:"1px solid " + (playModePresentation==="simple" ? "rgba(212,67,58,0.35)" : T.border), background: playModePresentation==="simple" ? "rgba(212,67,58,0.12)" : "transparent", color: playModePresentation==="simple" ? "var(--crimson)" : T.textMuted, fontSize:8, fontFamily:T.ui, cursor:"pointer" }}>Simple</button>
+                                <button onClick={(e) => { e.stopPropagation(); setPlayModePresentation("advanced"); }} style={{ padding:"2px 7px", borderRadius:"3px", border:"1px solid " + (playModePresentation==="advanced" ? "rgba(212,67,58,0.35)" : T.border), background: playModePresentation==="advanced" ? "rgba(212,67,58,0.12)" : "transparent", color: playModePresentation==="advanced" ? "var(--crimson)" : T.textMuted, fontSize:8, fontFamily:T.ui, cursor:"pointer" }}>Advanced</button>
+                              </div>
+                            </div>
+
+                            {nearest && (
+                              <div style={{ marginBottom:8, padding:"5px 7px", border:"1px solid rgba(255,255,255,0.1)", borderRadius:"4px", background:"rgba(0,0,0,0.12)", fontSize:9, color:T.textMuted }}>
+                                {(() => {
+                                  const d = distBetween(tk, nearest);
+                                  const threat = d <= 5 ? "High" : d <= 20 ? "Medium" : "Low";
+                                  const concentrating = nearest.activeConcentrationSpell || ((tokenConditions[nearest.id] || []).includes("Concentrating") ? "Concentrating" : null);
+                                  return (
+                                    <span>
+                                      Target focus: <span style={{ color:T.text }}>{nearest.name}</span> · {hpStateLabel(nearest.hp, nearest.maxHp)} · {d} ft · {(nearest.size || "medium")} · Threat: {threat}{concentrating ? (" · " + concentrating) : ""}
+                                    </span>
+                                  );
+                                })()}
+                              </div>
+                            )}
+                            <div style={{ marginBottom:8 }}>
+                              <select value={selectedWeapon} onChange={(e) => { e.stopPropagation(); setPcWeaponPick(e.target.value); }} onClick={(e) => e.stopPropagation()}
+                                style={{ width:"100%", padding:"5px 7px", fontSize:9, background:"var(--bg-input)", border:"1px solid var(--border)", color:T.text, borderRadius:"4px" }}>
+                                {profileWeapons.map(w => <option key={"pmw-"+w} value={w}>{w}</option>)}
+                              </select>
+                            </div>
+
+                            <div style={{ display:"grid", gap:6 }}>
+                              {Object.keys(byPanel).map((panelName) => (
+                                <div key={panelName} style={{ border:"1px solid rgba(255,255,255,0.08)", borderRadius:"6px", padding:"6px", background:"rgba(0,0,0,0.1)" }}>
+                                  <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.textFaint, textTransform:"uppercase", marginBottom:5 }}>{panelName}</div>
+                                  {byPanel[panelName].length === 0 && <div style={{ fontSize:9, color:T.textFaint, fontStyle:"italic" }}>No options</div>}
+                                  {byPanel[panelName].map((card) => (
+                                    <button key={card.id}
+                                      onClick={(e) => { e.stopPropagation(); resolvePlayModeCard(card, tk); }}
+                                      disabled={!!card.disabledReason}
+                                      style={{ width:"100%", textAlign:"left", marginBottom:4, padding:"7px", borderRadius:"5px", border:"1px solid " + (card.disabledReason ? "rgba(255,80,80,0.2)" : "rgba(255,255,255,0.12)"), background: card.disabledReason ? "rgba(120,40,40,0.10)" : "rgba(255,255,255,0.03)", color: card.disabledReason ? "rgba(255,200,200,0.7)" : T.text, cursor: card.disabledReason ? "not-allowed" : "pointer" }}>
+                                      <div style={{ fontSize:11, fontFamily:T.ui, color: card.disabledReason ? "rgba(255,200,200,0.8)" : T.text }}>{card.name}</div>
+                                      {playModePresentation === "simple" ? (
+                                        <div style={{ fontSize:9, color:T.textMuted, marginTop:2 }}>{card.outcome}</div>
+                                      ) : (
+                                        <div style={{ fontSize:8, color:T.textMuted, marginTop:2, lineHeight:1.45 }}>
+                                          <div>Type: {actionTypeLabel(card.type)}</div>
+                                          <div>Range/Target: {card.range}</div>
+                                          <div>Roll: {card.roll}</div>
+                                          <div>Effect: {card.effect}</div>
+                                          <div>Cost: {card.cost}</div>
+                                        </div>
+                                      )}
+                                      {card.disabledReason && <div style={{ fontSize:8, color:"#ff9e9e", marginTop:3 }}>{card.disabledReason}</div>}
+                                      {!card.disabledReason && card.concentrationWarn && <div style={{ fontSize:8, color:"#ffd27a", marginTop:3 }}>{card.concentrationWarn}</div>}
+                                    </button>
+                                  ))}
+                                </div>
+                              ))}
+                            </div>
+
+                            {suggested.length > 0 && (
+                              <div style={{ marginTop:8, border:"1px solid rgba(88,170,255,0.25)", borderRadius:"6px", padding:"7px", background:"rgba(88,170,255,0.08)" }}>
+                                <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:"#58aaff", textTransform:"uppercase", marginBottom:4 }}>Suggested Options</div>
+                                {suggested.map((s) => (
+                                  <div key={"s-" + s.id} style={{ fontSize:9, color:T.text, marginBottom:2 }}>{s.panel === "Spell" && /heal|restore/i.test(s.effect) ? "Best support: " : s.panel === "Attack" ? "Best damage: " : "Class combo: "}{s.name}{nearest ? (" on " + nearest.name) : ""}</div>
+                                ))}
+                                {nearest && <div style={{ fontSize:9, color:T.textMuted, marginTop:4 }}>Good positioning: Move to stay outside opportunity range if you are below half HP.</div>}
+                              </div>
+                            )}
+
+                            {condList.length > 0 && (
+                              <div style={{ marginTop:8, border:"1px solid rgba(255,255,255,0.08)", borderRadius:"6px", padding:"6px", background:"rgba(0,0,0,0.12)" }}>
+                                <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.textFaint, textTransform:"uppercase", marginBottom:4 }}>Conditions</div>
+                                {condList.map((cn) => (
+                                  <div key={"cond-help-"+cn} style={{ fontSize:9, color:T.textMuted, marginBottom:2 }}>
+                                    <span style={{ color:T.text }}>{cn}</span>: {CONDITION_HELP[cn] || "See full rules for exact modifiers."}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+
+                            {playModeResolution && (
+                              <div style={{ marginTop:8, border:"1px solid rgba(94,224,154,0.2)", borderRadius:"6px", padding:"8px", background:"rgba(46,139,87,0.08)" }}>
+                                <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:"#5ee09a", textTransform:"uppercase", marginBottom:4 }}>Resolution: {playModeResolution.title}</div>
+                                {playModeResolution.lines.map((ln, ix) => <div key={"res-"+ix} style={{ fontSize:9, color:T.textMuted, marginBottom:2 }}>{ln}</div>)}
+                              </div>
+                            )}
                           </div>
-                          <div style={{ fontSize:7, color:T.textFaint, marginTop:4, fontStyle:"italic", lineHeight:1.35 }}>STR/DEX from party sheet (Join Party). Mark <strong>magic weapon</strong> on token Stats for B/P/S.</div>
-                        </div>
-                      )}
+                        );
+                      })()}
                     </div>
                   );
                 })}
@@ -8431,7 +9114,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
               {combatLog.map(entry => (
                 <div key={entry.id} style={{ padding:"6px 8px", borderRadius:"4px", background: entry.type === "attack" ? "rgba(212,67,58,0.04)" : entry.type === "miss" ? "rgba(136,136,136,0.04)" : entry.type === "save" ? "rgba(88,170,255,0.04)" : "rgba(255,255,255,0.02)", borderLeft: "2px solid " + (entry.type === "attack" ? (entry.isCrit ? "#ffd700" : "var(--crimson)") : entry.type === "miss" ? "#666" : entry.type === "save" ? (entry.success ? "#5ee09a" : "#58aaff") : T.textFaint), fontSize:9, fontFamily:T.body, color:T.textMuted }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                    <span style={{ fontWeight:500, color:T.text }}>
+                    <span style={{ fontWeight:500, color:T.text, whiteSpace: entry.type === "system" ? "pre-line" : "normal" }}>
                       {entry.type === "attack" && (entry.isCrit ? "💥 CRITICAL! " : "⚔️ ")}
                       {entry.type === "miss" && "💨 "}
                       {entry.type === "save" && "🛡️ "}
