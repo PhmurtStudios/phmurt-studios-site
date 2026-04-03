@@ -2215,6 +2215,48 @@ function confirmLevelUp35() {
 }
 
 // ── INIT ──
+function loadCharacter35FromHandoff() {
+  var params35 = new URLSearchParams(window.location.search);
+  var queryLoadId35 = params35.get('load');
+  var loadId = queryLoadId35 || localStorage.getItem('cb35_load_char_id');
+  if (!loadId || typeof PhmurtDB === 'undefined') return;
+
+  if (!PhmurtDB.getSession()) {
+    localStorage.setItem('cb35_load_char_id', loadId);
+    PhmurtDB.openAuth();
+    return;
+  }
+
+  localStorage.removeItem('cb35_load_char_id');
+  if (queryLoadId35) {
+    params35.delete('load');
+    var clean35 = params35.toString();
+    window.history.replaceState(null, '', window.location.pathname + (clean35 ? '?' + clean35 : ''));
+  }
+
+  PhmurtDB.loadCharacter(loadId).then(function(data) {
+    if (!data||data.edition!=='3.5') return;
+    ['race','cls','alignment','abilities','scoreMethod','arrayAssigned','skillRanks','selectedFeats',
+     'equipChoices','weaponChoices','selectedCantrips','selectedSpells','spellsByLevel','details','level','hpRolls',
+     'levelUpSkills','levelUpFeats','levelUpAbilityBoosts'].forEach(function(k){
+      if (data[k]!==undefined) C35[k]=data[k];
+    });
+    C35.weaponChoices = C35.weaponChoices||{};
+    localStorage.setItem('phmurt_current_char35_id',loadId);
+    renderAbilGrid35(); renderPool35();
+    if (C35.details&&C35.details.name) {
+      var nf=document.getElementById('charName35'); if(nf) nf.value=C35.details.name||'';
+      var af=document.getElementById('charAlignment35'); if(af) af.value=C35.alignment||'';
+    }
+    goToStep35(9,true);
+    setTimeout(function(){
+      document.getElementById('detailsForm35').style.display='none';
+      document.getElementById('finalSheet35').style.display='block';
+      buildFinalSheet35();
+    },100);
+  });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   // Method info default
   document.getElementById('methodInfo35').innerHTML = '<strong>Standard Array</strong>. Assign 15,14,13,12,10,8 to your six ability scores.';
@@ -2231,32 +2273,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
   (function(){  })();
-  // Load saved char
-  var loadId = localStorage.getItem('cb35_load_char_id');
-  if (loadId && typeof PhmurtDB!=='undefined') {
-    localStorage.removeItem('cb35_load_char_id');
-    PhmurtDB.loadCharacter(loadId).then(function(data) {
-      if (!data||data.edition!=='3.5') return;
-      ['race','cls','alignment','abilities','scoreMethod','arrayAssigned','skillRanks','selectedFeats',
-       'equipChoices','weaponChoices','selectedCantrips','selectedSpells','spellsByLevel','details','level','hpRolls',
-       'levelUpSkills','levelUpFeats','levelUpAbilityBoosts'].forEach(function(k){
-        if (data[k]!==undefined) C35[k]=data[k];
-      });
-      C35.weaponChoices = C35.weaponChoices||{};
-      localStorage.setItem('phmurt_current_char35_id',loadId);
-      renderAbilGrid35(); renderPool35();
-      if (C35.details&&C35.details.name) {
-        var nf=document.getElementById('charName35'); if(nf) nf.value=C35.details.name||'';
-        var af=document.getElementById('charAlignment35'); if(af) af.value=C35.alignment||'';
-      }
-      goToStep35(9,true);
-      setTimeout(function(){
-        document.getElementById('detailsForm35').style.display='none';
-        document.getElementById('finalSheet35').style.display='block';
-        buildFinalSheet35();
-      },100);
-    });
-  }
+  loadCharacter35FromHandoff();
+  window.addEventListener('phmurt-auth-change', loadCharacter35FromHandoff);
 });
   </script>
   <div id="ps-site-footer"></div>

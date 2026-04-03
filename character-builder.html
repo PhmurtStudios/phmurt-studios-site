@@ -5603,9 +5603,21 @@ function init(){
 
   // Check if returning from my-characters.html with a character to load
   async function checkLoadCharacter(){
-    const id=localStorage.getItem('phmurt_load_char_id');
+    const params = new URLSearchParams(window.location.search);
+    const queryLoadId = params.get('load');
+    const id = queryLoadId || localStorage.getItem('phmurt_load_char_id');
     if(!id||typeof PhmurtDB==='undefined') return;
+    if (!PhmurtDB.getSession()) {
+      localStorage.setItem('phmurt_load_char_id', id);
+      PhmurtDB.openAuth();
+      return;
+    }
     localStorage.removeItem('phmurt_load_char_id');
+    if (queryLoadId) {
+      params.delete('load');
+      const query = params.toString();
+      window.history.replaceState(null, '', window.location.pathname + (query ? '?' + query : ''));
+    }
     const data=await PhmurtDB.loadCharacter(id);
     if(!data) return;
     // Restore all state fields safely
@@ -7941,7 +7953,19 @@ function editHB35Entity(type, id) {
   openHB35EntityModal(type, id);
 }
 
-window.addEventListener('DOMContentLoaded',function(){ loadHomebrewItems(); loadHomebrewEntities(); loadHomebrew35Entities(); init(); initHomebrewIntegration(); injectHomebrewBuilderButtons(); setTimeout(checkLoadCharacter,200); });
+window.addEventListener('DOMContentLoaded', function(){
+  loadHomebrewItems();
+  loadHomebrewEntities();
+  loadHomebrew35Entities();
+  init();
+  initHomebrewIntegration();
+  injectHomebrewBuilderButtons();
+  setTimeout(checkLoadCharacter, 200);
+  window.addEventListener('phmurt-auth-change', function(){
+    if (localStorage.getItem('phmurt_load_char_id')) checkLoadCharacter();
+    if (localStorage.getItem('cb35_load_char_id')) init35();
+  });
+});
 
 // ═══════════════════════════════════════
 // EDITION TOGGLE
@@ -9252,9 +9276,21 @@ function init35() {
   // Inject 3.5e homebrew builder buttons
   injectHomebrew35BuilderButtons();
   // Load saved char
-  var loadId = localStorage.getItem('cb35_load_char_id');
+  var params35 = new URLSearchParams(window.location.search);
+  var queryLoadId35 = params35.get('load');
+  var loadId = queryLoadId35 || localStorage.getItem('cb35_load_char_id');
   if (loadId && typeof PhmurtDB!=='undefined') {
+    if (!PhmurtDB.getSession()) {
+      localStorage.setItem('cb35_load_char_id', loadId);
+      PhmurtDB.openAuth();
+      return;
+    }
     localStorage.removeItem('cb35_load_char_id');
+    if (queryLoadId35) {
+      params35.delete('load');
+      var clean35 = params35.toString();
+      window.history.replaceState(null, '', window.location.pathname + (clean35 ? '?' + clean35 : ''));
+    }
     PhmurtDB.loadCharacter(loadId).then(function(data) {
       if (!data||data.edition!=='3.5') return;
       ['race','cls','alignment','abilities','scoreMethod','arrayAssigned','skillRanks','selectedFeats',

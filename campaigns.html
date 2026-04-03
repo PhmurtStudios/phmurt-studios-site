@@ -368,6 +368,138 @@ const eid = () => `e${_eid++}`;
 let _id = 100;
 const uid = () => _id++;
 
+const CAMPAIGN_CACHE_KEY = "phmurt_campaign_workspace";
+const CAMPAIGN_SAVE_DELAY_MS = 1200;
+
+const cmClone = (value) => JSON.parse(JSON.stringify(value));
+
+const cmSafeInt = (value, fallback) => {
+  const parsed = parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const cmAbilityMod = (score) => Math.floor((cmSafeInt(score, 10) - 10) / 2);
+
+const cmHumanizeKey = (value) => {
+  return String(value || "")
+    .replace(/[_-]+/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+};
+
+const cmBuilderType = (meta, snapshot) => {
+  if (meta?.builder_type === "35e" || snapshot?.edition === "3.5") return "35e";
+  return "5e";
+};
+
+const cmCharacterBuilderHref = (characterId, builderType) => {
+  if (!characterId) return null;
+  const page = builderType === "35e" ? "character-builder-35.html" : "character-builder.html";
+  return `${page}?load=${encodeURIComponent(characterId)}`;
+};
+
+const cmSessionKey = () => {
+  const session = window.PhmurtDB && typeof window.PhmurtDB.getSession === "function"
+    ? window.PhmurtDB.getSession()
+    : null;
+  return session?.userId ? `user_${session.userId}` : "guest";
+};
+
+const cmCacheKey = () => `${CAMPAIGN_CACHE_KEY}_${cmSessionKey()}`;
+
+const cmReadRoute = () => {
+  const params = new URLSearchParams(window.location.search);
+  const routeTab = params.get("tab");
+  const validTab = ["dashboard", "timeline", "world", "play", "generator", "notes", "settings"].includes(routeTab)
+    ? routeTab
+    : "";
+  return {
+    campaignId: params.get("campaign") || "",
+    tab: validTab || (params.get("role") === "player" ? "play" : "dashboard"),
+    role: params.get("role") || "",
+  };
+};
+
+const cmSyncRoute = (campaignId, tab) => {
+  const params = new URLSearchParams(window.location.search);
+  if (campaignId) params.set("campaign", String(campaignId));
+  else params.delete("campaign");
+  params.set("tab", tab || "dashboard");
+  const query = params.toString();
+  const nextUrl = window.location.pathname + (query ? `?${query}` : "");
+  window.history.replaceState(null, "", nextUrl);
+};
+
+const cmLoadCampaignCache = (scopeKey) => {
+  try {
+    const key = scopeKey ? `${CAMPAIGN_CACHE_KEY}_${scopeKey}` : cmCacheKey();
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !Array.isArray(parsed.campaigns)) return null;
+    return parsed;
+  } catch (err) {
+    console.warn("[CampaignManager] Local cache load failed:", err);
+    return null;
+  }
+};
+
+const cmSaveCampaignCache = (campaigns, activeCampaignId) => {
+  try {
+    localStorage.setItem(cmCacheKey(), JSON.stringify({
+      activeCampaignId,
+      savedAt: Date.now(),
+      campaigns: (campaigns || []).filter(c => c && !c.isExample).map(c => ({
+        id: c.id,
+        data: cmClone(c.data || NEW_CAMPAIGN()),
+        isExample: false,
+      })),
+    }));
+  } catch (err) {
+    console.warn("[CampaignManager] Local cache save failed:", err);
+  }
+};
+
+const cmSnapshotToPartyMember = (meta, snapshot) => {
+  const details = snapshot?.details || {};
+  const abilities = snapshot?.abilities || {};
+  const builderType = cmBuilderType(meta, snapshot);
+  const id = uid();
+  const level = cmSafeInt((meta && meta.level) || snapshot?.level, 1);
+  const dex = cmSafeInt(abilities.dex, 10);
+  const str = cmSafeInt(abilities.str, 10);
+  const con = cmSafeInt(abilities.con, 10);
+  const maxHp = Math.max(
+    1,
+    cmSafeInt(snapshot?.maxHp, Math.max(1, 8 + Math.max(0, level - 1) * 5 + cmAbilityMod(con) * level))
+  );
+  const name = details.name || meta?.name || "Unnamed Character";
+  const sourceCharacterId = meta?.id || null;
+  const sourceBuilderHref = cmCharacterBuilderHref(sourceCharacterId, builderType);
+
+  return {
+    id,
+    actorId: `pc-${id}`,
+    name,
+    cls: cmHumanizeKey(meta?.class || meta?.class_ || snapshot?.cls || snapshot?.class_ || ""),
+    lv: level,
+    hp: Math.max(1, Math.min(maxHp, cmSafeInt(snapshot?.hp, maxHp))),
+    maxHp,
+    ac: Math.max(1, cmSafeInt(snapshot?.ac, 10 + cmAbilityMod(dex))),
+    player: details.player || details.playerName || details.owner || "Player",
+    status: "healthy",
+    race: cmHumanizeKey(meta?.race || snapshot?.race || ""),
+    bio: details.backstory || details.bio || details.notes || "",
+    sheetUrl: sourceBuilderHref,
+    sheetName: sourceBuilderHref ? (builderType === "35e" ? "3.5e Builder" : "5e Builder") : null,
+    str,
+    dex,
+    sourceCharacterId,
+    sourceBuilderType: builderType,
+  };
+};
+
 // ─── FANTASY MAP ICONS (hand-drawn cartography style) ───────────────────────
 
 const MapIconMountain = ({ size=32, color="currentColor" }) => (
@@ -1055,6 +1187,7 @@ function PlayerCharacterForm({ onSubmit, existing, onCancel }) {
 function PlayerCard({ member, onEdit, onUploadSheet, isDm }) {
   const [expanded, setExpanded] = useState(false);
   const fileRef = useRef(null);
+  const builderHref = cmCharacterBuilderHref(member.sourceCharacterId, member.sourceBuilderType);
 
   const handleSheet = (e) => {
     const file = e.target.files[0];
@@ -1114,6 +1247,9 @@ function PlayerCard({ member, onEdit, onUploadSheet, isDm }) {
           <div style={{ display:"flex", gap:6 }}>
             <CrimsonBtn onClick={()=>onEdit(member)} secondary small><Edit3 size={10}/> Edit Character</CrimsonBtn>
             <CrimsonBtn onClick={()=>fileRef.current?.click()} secondary small><Upload size={10}/> {member.sheetName?"Replace":"Upload"} Sheet</CrimsonBtn>
+            {builderHref && (
+              <CrimsonBtn onClick={() => window.open(builderHref, "_blank", "noopener,noreferrer")} secondary small><FileText size={10}/> Open Builder</CrimsonBtn>
+            )}
             {isDm && (
               <CrimsonBtn onClick={()=>onEdit({...member, _remove:true})} secondary small><Trash2 size={10}/> Remove</CrimsonBtn>
             )}
@@ -1192,11 +1328,57 @@ function DashboardView({ data, setData, onNav }) {
   const urgVar = { critical:"critical", high:"danger", medium:"warning", low:"muted" };
   const [joiningParty, setJoiningParty] = useState(false);
   const [editingMember, setEditingMember] = useState(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [libraryChars, setLibraryChars] = useState([]);
+  const [libraryLoading, setLibraryLoading] = useState(false);
+  const [libraryError, setLibraryError] = useState("");
   const [addingQuest, setAddingQuest] = useState(false);
   const [schedOpen, setSchedOpen] = useState(false);
   const [newQuest, setNewQuest] = useState({ title:"", type:"side", status:"active", urgency:"medium", faction:"", region:"" });
   const [encBuilderOpen, setEncBuilderOpen] = useState(false);
   const [encForm, setEncForm] = useState({ name:"", location:"", notes:"", monsterNames:"", includePartyAll:true });
+
+  useEffect(() => {
+    if (!libraryOpen) return;
+    let cancelled = false;
+    const refreshLibrary = () => {
+      if (!window.PhmurtDB || typeof window.PhmurtDB.getCharacters !== "function") {
+        setLibraryChars([]);
+        setLibraryError("Character library is unavailable on this page.");
+        setLibraryLoading(false);
+        return;
+      }
+      if (!window.PhmurtDB.getSession || !window.PhmurtDB.getSession()) {
+        setLibraryChars([]);
+        setLibraryError("Sign in to import from My Characters.");
+        setLibraryLoading(false);
+        return;
+      }
+
+      setLibraryLoading(true);
+      setLibraryError("");
+      window.PhmurtDB.getCharacters()
+        .then(chars => {
+          if (cancelled) return;
+          setLibraryChars(chars || []);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setLibraryChars([]);
+          setLibraryError("Could not load saved characters right now.");
+        })
+        .then(() => {
+          if (!cancelled) setLibraryLoading(false);
+        });
+    };
+
+    refreshLibrary();
+    window.addEventListener("phmurt-auth-change", refreshLibrary);
+    return () => {
+      cancelled = true;
+      window.removeEventListener("phmurt-auth-change", refreshLibrary);
+    };
+  }, [libraryOpen]);
 
   const handlePlayerSubmit = (formData) => {
     if (editingMember) {
@@ -1221,6 +1403,32 @@ function DashboardView({ data, setData, onNav }) {
   const handleSheetUpload = (id) => {
     const url = prompt("Paste the Google Sheets / D&D Beyond URL:");
     if(url) setData(d=>({...d, party:d.party.map(p=>p.id===id?{...p,sheetUrl:url,sheetName:url.includes("dndbeyond")?"D&D Beyond":"Google Sheet"}:p)}));
+  };
+  const importSavedCharacter = (characterMeta) => {
+    if (!characterMeta || !characterMeta.id || !window.PhmurtDB || typeof window.PhmurtDB.loadCharacter !== "function") return;
+    setLibraryLoading(true);
+    setLibraryError("");
+    window.PhmurtDB.loadCharacter(characterMeta.id)
+      .then(snapshot => {
+        if (!snapshot) {
+          setLibraryError("Could not open that saved character.");
+          return;
+        }
+        const importedMember = cmSnapshotToPartyMember(characterMeta, snapshot);
+        setData(d => ({
+          ...d,
+          party: [...(d.party || []), importedMember],
+          activity: [
+            { time: "Just now", text: `Imported ${importedMember.name} from My Characters` },
+            ...(d.activity || []),
+          ].slice(0, 20),
+        }));
+        setLibraryOpen(false);
+      })
+      .catch(() => {
+        setLibraryError("Import failed. Please try again.");
+      })
+      .then(() => setLibraryLoading(false));
   };
   const addQuest = () => {
     if(!newQuest.title) return;
@@ -1306,7 +1514,10 @@ function DashboardView({ data, setData, onNav }) {
         {/* Party */}
         <div>
           <SectionTitle icon={Users} count={data.party.length} action={
-            <LinkBtn onClick={()=>setJoiningParty(true)}><Plus size={10}/> Join Party</LinkBtn>
+            <div style={{ display:"flex", gap:8, flexWrap:"wrap", justifyContent:"flex-end" }}>
+              <LinkBtn onClick={()=>setLibraryOpen(true)}><BookOpen size={10}/> Import Saved</LinkBtn>
+              <LinkBtn onClick={()=>setJoiningParty(true)}><Plus size={10}/> Join Party</LinkBtn>
+            </div>
           }>The Party</SectionTitle>
 
           {data.party.length === 0 && (
@@ -1370,6 +1581,44 @@ function DashboardView({ data, setData, onNav }) {
             onSubmit={handlePlayerSubmit}
             onCancel={()=>{setJoiningParty(false);setEditingMember(null);}}
           />
+        </Modal>
+
+        <Modal open={libraryOpen} onClose={()=>setLibraryOpen(false)} title="Import from My Characters" wide>
+          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+            {libraryError && (
+              <div style={{ padding:"12px 14px", border:`1px solid ${T.crimsonBorder}`, background:T.crimsonSoft, color:T.crimson, fontSize:12 }}>
+                {libraryError}
+              </div>
+            )}
+            {libraryLoading && (
+              <div style={{ padding:"18px 0", textAlign:"center", fontSize:13, color:T.textMuted, fontStyle:"italic" }}>
+                Loading your saved characters...
+              </div>
+            )}
+            {!libraryLoading && !libraryError && libraryChars.length === 0 && (
+              <div style={{ padding:"22px 0", textAlign:"center" }}>
+                <p style={{ margin:"0 0 12px", fontSize:13, color:T.textMuted, fontStyle:"italic" }}>No saved characters found yet.</p>
+                <CrimsonBtn onClick={() => { window.location.href = "character-builder.html"; }}><Plus size={12}/> Open Character Builder</CrimsonBtn>
+              </div>
+            )}
+            {!libraryLoading && libraryChars.map(c => {
+              const builderType = c.builder_type === "35e" ? "35e" : "5e";
+              return (
+                <div key={c.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:12, padding:"12px 14px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px" }}>
+                  <div style={{ minWidth:0 }}>
+                    <div style={{ fontSize:14, color:T.text, fontWeight:300 }}>{c.name || "Unnamed Character"}</div>
+                    <div style={{ fontSize:11, color:T.textFaint, marginTop:4 }}>
+                      {cmHumanizeKey(c.race)} {cmHumanizeKey(c.class || c.class_)}{c.level ? ` Lv${c.level}` : ""} | {builderType === "35e" ? "3.5e" : "5e"}
+                    </div>
+                  </div>
+                  <div style={{ display:"flex", gap:8, flexShrink:0 }}>
+                    <CrimsonBtn onClick={() => window.open(cmCharacterBuilderHref(c.id, builderType), "_blank", "noopener,noreferrer")} secondary small><FileText size={10}/> Edit</CrimsonBtn>
+                    <CrimsonBtn onClick={() => importSavedCharacter(c)} small><Plus size={10}/> Import</CrimsonBtn>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </Modal>
 
         {/* Quests */}
@@ -3160,6 +3409,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
   const [turn, setTurn] = useState(0);
   const [round, setRound] = useState(1);
   const [combatLive, setCombatLive] = useState(false);
+  const [combatTargetByActor, setCombatTargetByActor] = useState({});
   const [turnStateByToken, setTurnStateByToken] = useState({});
   const [playModePresentation, setPlayModePresentation] = useState("simple");
   const [playModeResolution, setPlayModeResolution] = useState(null);
@@ -3818,13 +4068,27 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
 
   const getHostileTargets = (actorToken) => {
     if (!actorToken) return [];
-    return (tokens || []).filter((t) => t.id !== actorToken.id && (t.hp || 0) > 0 && (actorToken.tokenType === "pc" ? t.tokenType !== "pc" : t.tokenType === "pc"));
+    return (tokens || [])
+      .filter((t) => t.id !== actorToken.id && (t.hp || 0) > 0 && (actorToken.tokenType === "pc" ? t.tokenType !== "pc" : t.tokenType === "pc"))
+      .sort((a, b) => distBetween(actorToken, a) - distBetween(actorToken, b));
   };
 
   const getNearestHostileTarget = (actorToken) => {
     const hostiles = getHostileTargets(actorToken);
     if (!hostiles.length) return null;
-    return [...hostiles].sort((a, b) => distBetween(actorToken, a) - distBetween(actorToken, b))[0];
+    return hostiles[0];
+  };
+
+  const getFocusedCombatTarget = (actorToken) => {
+    const hostiles = getHostileTargets(actorToken);
+    if (!hostiles.length) return null;
+    const preferredId = combatTargetByActor[actorToken.id];
+    return hostiles.find((t) => t.id === preferredId) || hostiles[0];
+  };
+
+  const setFocusedCombatTarget = (actorId, targetId) => {
+    if (!actorId || !targetId) return;
+    setCombatTargetByActor((prev) => ({ ...prev, [actorId]: targetId }));
   };
 
   const ensureClassResources = (token, profile) => {
@@ -3888,8 +4152,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     if (!actorToken || actorToken.tokenType !== "pc") return [];
     const profile = getCombatProfile(actorToken);
     const ts = turnStateByToken[actorToken.id] || defaultTurnState(actorToken);
-    const nearest = getNearestHostileTarget(actorToken);
-    const nearestDist = nearest ? distBetween(actorToken, nearest) : null;
+    const focusTarget = getFocusedCombatTarget(actorToken);
+    const focusDist = focusTarget ? distBetween(actorToken, focusTarget) : null;
     const hostiles = getHostileTargets(actorToken);
     const cards = [];
     const pb = profile.proficiencyBonus;
@@ -3907,7 +4171,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       const range = w.melee ? (w.range || 5) : (w.range || 20);
       let disabledReason = "";
       if (ts.actionUsed) disabledReason = "Action already used this turn.";
-      else if (nearest && nearestDist > range) disabledReason = "Target is " + nearestDist + " ft away. Range is " + range + " ft.";
+      else if (!focusTarget) disabledReason = "No hostile target available.";
+      else if (focusDist > range) disabledReason = "Target is " + focusDist + " ft away. Range is " + range + " ft.";
       cards.push({
         id: "weapon_main",
         panel: "Attack",
@@ -3934,9 +4199,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       if (type === "bonus" && ts.bonusActionUsed) disabledReason = "Bonus Action already used this turn.";
       if (type === "reaction" && ts.reactionSpent) disabledReason = "Reaction already spent.";
       if (!disabledReason && sp.level > 0 && !canUseSlot(profile, sp.level)) disabledReason = "No level " + sp.level + " spell slots remaining.";
-      if (!disabledReason && sp.range > 0 && sp.shape !== "self" && sp.shape !== "touch") {
-        const inRange = hostiles.some((t) => distBetween(actorToken, t) <= sp.range);
-        if (!inRange && nearest) disabledReason = "Target is " + nearestDist + " ft away. Range is " + sp.range + " ft.";
+      if (!disabledReason && sp.range > 0 && sp.shape !== "self" && sp.shape !== "touch" && (sp.damage || sp.save)) {
+        if (!focusTarget) disabledReason = "No hostile target available.";
+        else if (focusDist > sp.range) disabledReason = "Target is " + focusDist + " ft away. Range is " + sp.range + " ft.";
       }
       const concentrationWarn = sp.concentration && profile.concentrationSpell ? "Starting this spell will end your current concentration on " + profile.concentrationSpell + "." : "";
       cards.push({
@@ -4040,8 +4305,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     terrainCells: JSON.parse(JSON.stringify(terrainCells)),
     props: JSON.parse(JSON.stringify(props)),
     bgColor, gridSize, showGrid, zoom, pan: {...pan},
+    conditions: JSON.parse(JSON.stringify(conditions)),
     tokenConditions: JSON.parse(JSON.stringify(tokenConditions)),
     combatants: JSON.parse(JSON.stringify(combatants)),
+    combatTargetByActor: JSON.parse(JSON.stringify(combatTargetByActor)),
     combatLive, turn, round,
   });
 
@@ -4059,8 +4326,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     if (state.showGrid !== undefined) setShowGrid(state.showGrid);
     if (state.zoom) setZoom(state.zoom);
     if (state.pan) setPan(state.pan);
-    if (state.tokenConditions) setTokenConditions(state.tokenConditions);
+    setConditions(state.conditions || {});
+    setTokenConditions(state.tokenConditions || {});
     if (state.combatants) setCombatants(state.combatants);
+    setCombatTargetByActor(state.combatTargetByActor || {});
     if (state.combatLive !== undefined) setCombatLive(state.combatLive);
     if (state.turn !== undefined) setTurn(state.turn);
     if (state.round !== undefined) setRound(state.round);
@@ -4095,6 +4364,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
         else {
           // Fresh scene — clear everything
           setTokens([]); setDrawings([]); setFogCells({}); setWalls([]); setTerrainCells({}); setProps([]);
+          setCombatants([]); setCombatLive(false); setTurn(0); setRound(1);
+          setTurnStateByToken({}); setCombatTargetByActor({}); setPlayModeResolution(null);
+          setConditions({}); setTokenConditions({});
           setZoom(1); setPan({x:0,y:0});
         }
       }
@@ -4124,6 +4396,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       setBgImage(null);
     }
     setTokens([]); setDrawings([]); setFogCells({}); setWalls([]); setTerrainCells({}); setProps([]);
+    setCombatants([]); setCombatLive(false); setTurn(0); setRound(1);
+    setTurnStateByToken({}); setCombatTargetByActor({}); setPlayModeResolution(null);
+    setConditions({}); setTokenConditions({});
     setZoom(1); setPan({x:0,y:0});
     setActiveMapId(mapId);
     setActiveSceneId(null);
@@ -4649,6 +4924,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
 
   const selectedToken = tokens.find(t => t.id === selectedTokenId);
   const activeCombatantId = combatLive && combatants[turn] ? combatants[turn].mapTokenId : null;
+  const activeCombatantToken = activeCombatantId ? tokens.find((t) => t.id === activeCombatantId) : null;
+  const activeCombatTargetId = activeCombatantToken ? (getFocusedCombatTarget(activeCombatantToken)?.id || null) : null;
 
   const worldToCanvas = (wx, wy) => ({ x: wx * zoom + pan.x, y: wy * zoom + pan.y });
   const canvasToWorld = (cx, cy) => ({ x: (cx - pan.x) / zoom, y: (cy - pan.y) / zoom });
@@ -5197,12 +5474,13 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       const isSelected = t.id === selectedTokenId;
       const isHovered = t.id === hoveredTokenId;
       const isActiveCombatant = t.id === activeCombatantId;
+      const isActiveTarget = combatLive && t.id === activeCombatTargetId && !isActiveCombatant;
       const isDead = t.hp != null && t.hp <= 0;
       const isPC = t.color === "#2e8b57";
 
       // Find conditions for this token via combatant link
       const linkedCombatant = combatants.find(c => c.mapTokenId === t.id);
-      const tokenConditions = linkedCombatant ? (conditions[linkedCombatant.id] || []) : [];
+      const linkedCombatConditions = linkedCombatant ? (conditions[linkedCombatant.id] || []) : [];
 
       // Vision radius indicator (only for selected token in select mode)
       if (isSelected && fogMode === "vision" && t.vision > 0) {
@@ -5253,6 +5531,18 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
         ctx.arc(t.x, t.y, r + 5, 0, Math.PI * 2);
         ctx.fillStyle = "rgba(" + crimsonColor.join(",") + "," + (0.06 + 0.06 * pulse) + ")";
         ctx.fill();
+      }
+
+      // Focus target ring so the current actor's chosen target is obvious on the map
+      if (isActiveTarget) {
+        const pulse = 0.45 + 0.55 * Math.sin(now / 340);
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, r + 8, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(255, 213, 79, " + (0.55 + 0.35 * pulse) + ")";
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([8, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
       }
 
       // Hover highlight ring
@@ -5403,7 +5693,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       // Also merge combat conditions if available
       const linkedCb = combatants.find(c => c.mapTokenId === t.id);
       const combatConds = linkedCb ? (conditions[linkedCb.id] || []) : [];
-      const allConds = [...new Set([...tConds, ...combatConds])];
+      const allConds = [...new Set([...tConds, ...linkedCombatConditions, ...combatConds])];
       if (allConds.length > 0) {
         const condColorMap = {};
         DND_CONDITIONS.forEach(dc => { condColorMap[dc.name] = dc.color; });
@@ -6568,7 +6858,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     if (typeof window.VFX !== 'undefined' && window.VFX.getActiveEffectCount() > 0) {
       window.VFX.updateAndDrawEffects(ctx);
     }
-  }, [bgColor, bgImage, showGrid, gridSize, zoom, pan, drawings, drawPoints, drawColor, drawWidth, fogCells, fogEnabled, tokens, walls, wallStart, wallPreview, selectedWallType, activeTool, rulerStart, rulerEnd, selectedTokenId, hoveredTokenId, activeCombatantId, combatLive, combatants, conditions, tokenConditions, activeSpell, spellEffects, spellLog, spellDC, fogMode, movementMode, movementPath, movementOrigin, terrainCells, pings, viewRole, props, selectedPropId, battleMaps, activeMapId, activeSceneId, multiTargetSelections, castLevel]);
+  }, [bgColor, bgImage, showGrid, gridSize, zoom, pan, drawings, drawPoints, drawColor, drawWidth, fogCells, fogEnabled, tokens, walls, wallStart, wallPreview, selectedWallType, activeTool, rulerStart, rulerEnd, selectedTokenId, hoveredTokenId, activeCombatantId, activeCombatTargetId, combatLive, combatants, conditions, tokenConditions, activeSpell, spellEffects, spellLog, spellDC, fogMode, movementMode, movementPath, movementOrigin, terrainCells, pings, viewRole, props, selectedPropId, battleMaps, activeMapId, activeSceneId, multiTargetSelections, castLevel]);
 
   // Keep a ref to the latest render function so the animation loop doesn't restart on every dep change
   const renderRef = useRef(render);
@@ -6654,7 +6944,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     syncTimerRef.current = setTimeout(() => {
       const state = {
         tokens, drawings, fogCells, walls, terrainCells, bgColor, gridSize, showGrid,
-        combatLive, combatants, turn, round, conditions, fogMode, pings, props,
+        combatLive, combatants, turn, round, conditions, tokenConditions, combatTargetByActor, fogMode, pings, props,
       };
       // Broadcast via PhmurtRealtime (Supabase channel or localStorage fallback)
       if (typeof PhmurtRealtime !== 'undefined' && activeCampaignId && activeCampaignId !== 'example') {
@@ -6665,7 +6955,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       }
     }, 150);
     return () => clearTimeout(syncTimerRef.current);
-  }, [tokens, drawings, fogCells, walls, terrainCells, bgColor, gridSize, showGrid, combatLive, combatants, turn, round, conditions, fogMode, pings, props, viewRole, activeCampaignId]);
+  }, [tokens, drawings, fogCells, walls, terrainCells, bgColor, gridSize, showGrid, combatLive, combatants, turn, round, conditions, tokenConditions, combatTargetByActor, fogMode, pings, props, viewRole, activeCampaignId]);
 
   // ── Player: Subscribe to DM state via PhmurtRealtime ──
   const realtimeHandleRef = useRef(null);
@@ -6686,7 +6976,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       if (state.combatants) setCombatants(state.combatants);
       if (state.turn !== undefined) setTurn(state.turn);
       if (state.round !== undefined) setRound(state.round);
-      if (state.conditions) setConditions(state.conditions);
+      setConditions(state.conditions || {});
+      setTokenConditions(state.tokenConditions || {});
+      setCombatTargetByActor(state.combatTargetByActor || {});
       if (state.fogMode)   setFogMode(state.fogMode);
       if (state.pings)     setPings(state.pings.filter(p => Date.now() - p.time < 3000));
       if (state.props)     setProps(state.props);
@@ -7182,7 +7474,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
         return { ...t, x: Math.floor(t.x / gridSize) * gridSize + gridSize / 2, y: Math.floor(t.y / gridSize) * gridSize + gridSize / 2 };
       }));
       if (dragState.type === "token-move" && movementMode && combatLive) {
-        const activeTokenId = combatants[turn]?.id;
+        const activeTokenId = combatants[turn]?.mapTokenId;
         if (activeTokenId === dragState.id && movementPath.length > 0) {
           const spent = movementPath.length * 5;
           setTurnStateByToken((prev) => {
@@ -7512,8 +7804,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       return;
     }
     const profile = getCombatProfile(actorToken);
-    const target = getNearestHostileTarget(actorToken);
-    if (!target && card.resolver !== "feature" && card.resolver !== "other") {
+    const target = getFocusedCombatTarget(actorToken);
+    const spellCard = card.resolver === "spell" ? card.data?.spell : null;
+    const canResolveWithoutHostile = card.resolver === "feature" || card.resolver === "other" || !!(spellCard && (spellCard.healing || spellCard.shape === "self"));
+    if (!target && !canResolveWithoutHostile) {
       setPlayModeResolution({ title: card.name, lines: ["No valid hostile target found."] });
       return;
     }
@@ -7525,26 +7819,40 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       const steps = [
         "Selected: " + card.name,
         "Choose target: " + target.name,
-        "Confirm advantage/disadvantage: normal",
       ];
-      const atk = CE.makeAttackRoll(d.toHit, target.ac || 10, "normal", {});
-      steps.push("Roll attack: d20 + " + d.toHit + " = " + atk.total);
-      steps.push("Compare to AC " + (target.ac || 10));
-      if (atk.hit) {
-        const dmgRaw = CE.rollDice(d.damageExpr).total;
-        const rel = CE.getDamageRelations(target);
-        const applied = CE.applyDamageWithRelations(dmgRaw, d.damageType, rel, { magicalWeapon: !!actorToken.magicalWeapon });
-        applyAttackResultToTarget(target.id, target, applied.amount);
-        steps.push("If hit, roll damage: " + d.damageExpr + " = " + dmgRaw);
-        steps.push("Apply modifiers/resistances: " + applied.amount + " final");
-        const remaining = Math.max(0, (target.hp || 0) - applied.amount);
-        steps.push("Result: Hit. " + atk.total + " vs AC " + (target.ac || 10) + ". " + applied.amount + " " + d.damageType + " damage dealt. " + target.name + " has " + remaining + " HP remaining.");
-        addStructuredCombatLog("Attacked " + target.name + " with " + card.name, "Hit for " + applied.amount + " " + d.damageType + " damage", "Action used");
-        addCombatLogEntry({ type: "attack", attacker: actorToken.name, target: target.name, action: card.name, hit: true, damage: applied.amount, roll: atk });
-      } else {
-        steps.push("Result: Miss. " + atk.total + " vs AC " + (target.ac || 10) + ".");
+      const pcStats = {
+        str: profile.abilities.str,
+        dex: profile.abilities.dex,
+        level: profile.level,
+        conditions: (tokenConditions[actorToken.id] || []).map(c => String(c).toLowerCase()),
+      };
+      const engineTarget = buildEngineCombatTarget(target, target.id);
+      const combatOpts = { ...buildCombatEngineOptions(target, actorToken), magicalWeapon: !!actorToken.magicalWeapon };
+      const result = CE.executePcWeaponAttack(pcStats, engineTarget, d.weaponName, combatOpts);
+      const attackResult = result.results?.[0];
+      if (result.error) {
+        setPlayModeResolution({ title: card.name, lines: ["Cannot use this option right now.", result.error] });
+        return;
+      }
+      if (attackResult) {
+        const modeLabel = attackResult.attackRoll?.mode === "advantage" ? "advantage" : attackResult.attackRoll?.mode === "disadvantage" ? "disadvantage" : "normal";
+        steps.push("Confirm advantage/disadvantage: " + modeLabel + (target.combatDodge ? " (target is Dodging)" : "") + (target.combatCover ? ", cover +" + target.combatCover + " AC" : ""));
+        steps.push("Roll attack: " + (attackResult.attackRoll?.details || attackResult.attackRoll?.chosen || "?") + " + " + (attackResult.attackRoll?.modifier ?? d.toHit) + " = " + (attackResult.attackRoll?.total ?? "?"));
+        steps.push("Compare to AC " + (attackResult.attackRoll?.targetAC ?? target.ac ?? 10));
+      }
+      if (attackResult?.hit) {
+        const rawDamage = (attackResult.damage || []).reduce((sum, part) => sum + (part.totalBeforeReduction || part.total || 0), 0);
+        applyAttackResultToTarget(target.id, target, attackResult.totalDamage || 0);
+        steps.push("If hit, roll damage: " + d.damageExpr + " = " + rawDamage);
+        steps.push("Apply modifiers/resistances: " + (attackResult.totalDamage || 0) + " final");
+        const remaining = Math.max(0, (target.hp || 0) - (attackResult.totalDamage || 0));
+        steps.push("Result: Hit. " + attackResult.attackRoll.total + " vs AC " + attackResult.attackRoll.targetAC + ". " + (attackResult.totalDamage || 0) + " " + d.damageType + " damage dealt. " + target.name + " has " + remaining + " HP remaining.");
+        addStructuredCombatLog("Attacked " + target.name + " with " + card.name, "Hit for " + (attackResult.totalDamage || 0) + " " + d.damageType + " damage", "Action used");
+        addCombatLogEntry({ type: "attack", attacker: actorToken.name, target: target.name, action: card.name, hit: true, damage: attackResult.totalDamage || 0, isCrit: !!attackResult.isCrit, roll: attackResult.attackRoll });
+      } else if (attackResult) {
+        steps.push("Result: Miss. " + attackResult.attackRoll.total + " vs AC " + attackResult.attackRoll.targetAC + ".");
         addStructuredCombatLog("Attacked " + target.name + " with " + card.name, "Missed", "Action used");
-        addCombatLogEntry({ type: "miss", attacker: actorToken.name, target: target.name, action: card.name, roll: atk });
+        addCombatLogEntry({ type: "miss", attacker: actorToken.name, target: target.name, action: card.name, roll: attackResult.attackRoll });
       }
       spendEconomy(actorToken.id, card.type);
       setPlayModeResolution({ title: card.name, lines: steps });
@@ -7660,9 +7968,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
         const result = window.CombatEngine.rollInitiative(dexMod);
         init = result.total;
       } else {
-        // Standard d20 + dex mod for PCs/NPCs
-        const dexMod = t.monsterData ? Math.floor(((t.monsterData.dex || 10) - 10) / 2) : 0;
-        init = Math.floor(Math.random() * 20) + 1 + dexMod;
+        const profile = getCombatProfile(t);
+        const dexMod = profile?.initiativeBonus ?? toMod(t.dex);
+        init = typeof window.CombatEngine !== "undefined"
+          ? window.CombatEngine.rollInitiative(dexMod).total
+          : Math.floor(Math.random() * 20) + 1 + dexMod;
       }
       return {
         id: "cb-" + t.id,
@@ -7681,6 +7991,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     setRound(1);
     setCombatLive(true);
     setTurnStateByToken({});
+    setCombatTargetByActor({});
     setPlayModeResolution(null);
     setConditions({});
     if (combs.length > 0) setSelectedTokenId(combs[0].mapTokenId);
@@ -7706,6 +8017,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     setCombatLive(false);
     setCombatants([]);
     setTurnStateByToken({});
+    setCombatTargetByActor({});
     setPlayModeResolution(null);
     setConditions({});
     setMode("select");
@@ -7825,8 +8137,19 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     }
   };
 
-  const addCondition = (id, cond) => { if(!cond) return; setConditions(p => ({...p, [id]: [...(p[id]||[]), cond]})); };
-  const removeCondition = (id, idx) => { setConditions(p => ({...p, [id]: (p[id]||[]).filter((_,i) => i !== idx)})); };
+  const addCondition = (id, cond) => {
+    if (!cond) return;
+    setConditions(p => ({ ...p, [id]: [...new Set([...(p[id] || []), cond])] }));
+    const combatant = combatants.find(c => c.id === id);
+    if (combatant?.mapTokenId) addTokenCondition(combatant.mapTokenId, cond);
+  };
+  const removeCondition = (id, idx) => {
+    const combatant = combatants.find(c => c.id === id);
+    const mergedConds = [...new Set([...(conditions[id] || []), ...(combatant?.mapTokenId ? (tokenConditions[combatant.mapTokenId] || []) : [])])];
+    const condName = mergedConds[idx];
+    setConditions(p => ({ ...p, [id]: (p[id] || []).filter((cond) => cond !== condName) }));
+    if (combatant?.mapTokenId && condName) removeTokenCondition(combatant.mapTokenId, condName);
+  };
   const removeCombatant = (id) => {
     setCombatants(p => p.filter(c => c.id !== id));
     if (turn >= combatants.length - 1) setTurn(t => Math.max(0, t - 1));
@@ -7849,7 +8172,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
   const exportBattleState = () => {
     const state = {
       tokens, drawings, walls, terrainCells, fogCells, bgColor, gridSize, showGrid, fogMode,
-      combatLive, combatants, turn, round, conditions,
+      combatLive, combatants, turn, round, conditions, tokenConditions, combatTargetByActor,
     };
     const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
     const url = URL.createObjectURL(blob);
@@ -7880,7 +8203,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
         if (state.combatants) setCombatants(state.combatants);
         if (state.turn !== undefined) setTurn(state.turn);
         if (state.round !== undefined) setRound(state.round);
-        if (state.conditions) setConditions(state.conditions);
+        setConditions(state.conditions || {});
+        setTokenConditions(state.tokenConditions || {});
+        setCombatTargetByActor(state.combatTargetByActor || {});
       } catch (err) { console.error("Import failed:", err); }
     };
     reader.readAsText(file);
@@ -7894,8 +8219,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       id: "tpl-" + Date.now(),
       name: templateName,
       combatants: combatants.map(c => ({...c})),
+      combatTargetByActor: { ...combatTargetByActor },
       tokens: tokens.map(t => ({...t})),
       conditions: {...conditions},
+      tokenConditions: {...tokenConditions},
     };
     const updated = [...templates, tpl];
     setTemplates(updated);
@@ -7913,7 +8240,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     if (!tpl) return;
     setTokens(tpl.tokens.map(t => ({...t})));
     setCombatants(tpl.combatants.map(c => ({...c})));
-    setConditions({...tpl.conditions});
+    setCombatTargetByActor({ ...(tpl.combatTargetByActor || {}) });
+    setConditions({ ...(tpl.conditions || {}) });
+    setTokenConditions({ ...(tpl.tokenConditions || {}) });
     setCombatLive(tpl.combatants.length > 0);
     if (tpl.combatants.length > 0) { setTurn(0); setRound(1); setMode("combat"); }
   };
@@ -8854,9 +9183,12 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
                   const isCurrent = i === turn;
                   const isDead = c.hp <= 0;
                   const hpPct = Math.round(c.hp / c.maxHp * 100);
-                  const conds = conditions[c.id] || [];
                   const linkedToken = tokens.find(t => t.id === c.mapTokenId);
+                  const conds = [...new Set([...(conditions[c.id] || []), ...(linkedToken ? (tokenConditions[linkedToken.id] || []) : [])])];
                   const monsterData = linkedToken?.monsterData;
+                  const hostileTargets = linkedToken ? getHostileTargets(linkedToken) : [];
+                  const focusTarget = linkedToken ? getFocusedCombatTarget(linkedToken) : null;
+                  const focusDist = (linkedToken && focusTarget) ? distBetween(linkedToken, focusTarget) : null;
                   return (
                     <div key={c.id}
                       onClick={() => setSelectedTokenId(c.mapTokenId)}
@@ -8906,18 +9238,31 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
                       {/* Monster Actions — show for current combatant with monsterData */}
                       {isCurrent && monsterData && monsterData.actions && (
                         <div style={{ marginTop:6, paddingLeft:24 }}>
+                          {hostileTargets.length > 0 && (
+                            <div style={{ marginBottom:6, padding:"6px 7px", border:"1px solid rgba(255,213,79,0.22)", borderRadius:"4px", background:"rgba(255,213,79,0.05)" }}>
+                              <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"1px", color:"#ffd54f", textTransform:"uppercase", marginBottom:4 }}>Focus Target</div>
+                              <select value={focusTarget?.id || ""} onChange={e => { e.stopPropagation(); setFocusedCombatTarget(c.mapTokenId, e.target.value); }} onClick={e => e.stopPropagation()}
+                                style={{ width:"100%", padding:"4px 6px", fontSize:8, background:"rgba(0,0,0,0.16)", border:"1px solid rgba(255,255,255,0.1)", color:T.text, borderRadius:"4px" }}>
+                                {hostileTargets.map((targetToken) => (
+                                  <option key={"m-target-" + c.id + "-" + targetToken.id} value={targetToken.id}>
+                                    {targetToken.name} - {hpStateLabel(targetToken.hp, targetToken.maxHp)} - {distBetween(linkedToken, targetToken)} ft
+                                  </option>
+                                ))}
+                              </select>
+                              {focusTarget && <div style={{ fontSize:8, color:T.textMuted, marginTop:4 }}>Selected: <span style={{ color:T.text }}>{focusTarget.name}</span>{focusDist != null ? " - " + focusDist + " ft" : ""}</div>}
+                            </div>
+                          )}
                           <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"1px", color:T.textFaint, textTransform:"uppercase", marginBottom:3 }}>Actions</div>
                           <div style={{ display:"flex", flexWrap:"wrap", gap:3 }}>
                             {monsterData.actions.map((action, ai) => (
                               <button key={ai}
                                 onClick={e => {
                                   e.stopPropagation();
-                                  // Find nearest enemy target
-                                  const targetToken = tokens.find(t => t.id !== c.mapTokenId && t.hp > 0 && t.tokenType !== c.type);
+                                  const targetToken = focusTarget || (linkedToken ? getFocusedCombatTarget(linkedToken) : null);
                                   if (targetToken) {
                                     executeCombatAction(c.mapTokenId, targetToken.id, ai);
                                   } else {
-                                    addCombatLogEntry({ type: "system", text: "No valid target found for " + action.name });
+                                    addCombatLogEntry({ type: "system", text: "No valid focus target found for " + action.name });
                                   }
                                 }}
                                 onMouseEnter={e => e.currentTarget.style.background="rgba(212,67,58,0.15)"}
@@ -8935,8 +9280,12 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
                                   <button key={ai}
                                     onClick={e => {
                                       e.stopPropagation();
-                                      const targetToken = tokens.find(t => t.id !== c.mapTokenId && t.hp > 0 && t.tokenType !== c.type);
-                                      if (targetToken) executeCombatAction(c.mapTokenId, targetToken.id, { ...action, _isLegendary: true });
+                                      const targetToken = focusTarget || (linkedToken ? getFocusedCombatTarget(linkedToken) : null);
+                                      if (targetToken) {
+                                        executeCombatAction(c.mapTokenId, targetToken.id, { ...action, _isLegendary: true });
+                                      } else {
+                                        addCombatLogEntry({ type: "system", text: "No valid focus target found for " + action.name });
+                                      }
                                     }}
                                     onMouseEnter={e => e.currentTarget.style.background="rgba(255,213,79,0.12)"}
                                     onMouseLeave={e => e.currentTarget.style.background="rgba(255,213,79,0.04)"}
@@ -8972,7 +9321,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
                           Other: cards.filter(x => x.panel === "Other"),
                         };
                         const condList = tokenConditions[tk.id] || [];
-                        const nearest = getNearestHostileTarget(tk);
+                        const nearest = focusTarget;
                         const profileWeapons = getWeaponOptionsForProfile(profile);
                         const selectedWeapon = profileWeapons.includes(pcWeaponPick) ? pcWeaponPick : (profileWeapons[0] || pcWeaponPick);
                         return (
@@ -8994,6 +9343,20 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
                                 <button onClick={(e) => { e.stopPropagation(); setPlayModePresentation("advanced"); }} style={{ padding:"2px 7px", borderRadius:"3px", border:"1px solid " + (playModePresentation==="advanced" ? "rgba(212,67,58,0.35)" : T.border), background: playModePresentation==="advanced" ? "rgba(212,67,58,0.12)" : "transparent", color: playModePresentation==="advanced" ? "var(--crimson)" : T.textMuted, fontSize:8, fontFamily:T.ui, cursor:"pointer" }}>Advanced</button>
                               </div>
                             </div>
+
+                            {hostileTargets.length > 0 && (
+                              <div style={{ marginBottom:8 }}>
+                                <div style={{ fontSize:8, fontFamily:T.ui, color:T.textFaint, letterSpacing:"1px", textTransform:"uppercase", marginBottom:4 }}>Focus Target</div>
+                                <select value={focusTarget?.id || ""} onChange={(e) => { e.stopPropagation(); setFocusedCombatTarget(tk.id, e.target.value); }} onClick={(e) => e.stopPropagation()}
+                                  style={{ width:"100%", padding:"5px 7px", fontSize:9, background:"var(--bg-input)", border:"1px solid rgba(255,213,79,0.25)", color:T.text, borderRadius:"4px" }}>
+                                  {hostileTargets.map((targetToken) => (
+                                    <option key={"pc-target-" + tk.id + "-" + targetToken.id} value={targetToken.id}>
+                                      {targetToken.name} - {hpStateLabel(targetToken.hp, targetToken.maxHp)} - {distBetween(tk, targetToken)} ft
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            )}
 
                             {nearest && (
                               <div style={{ marginBottom:8, padding:"5px 7px", border:"1px solid rgba(255,255,255,0.1)", borderRadius:"4px", background:"rgba(0,0,0,0.12)", fontSize:9, color:T.textMuted }}>
@@ -10109,8 +10472,11 @@ function PlayView({ data, setData, activeCampaignId }) {
   }, [isPlayer]);
 
   const openPlayerView = () => {
-    const url = window.location.href.split("?")[0] + "?role=player";
-    window.open(url, "_blank");
+    const url = new URL(window.location.href);
+    url.searchParams.set("role", "player");
+    url.searchParams.set("tab", "play");
+    if (activeCampaignId) url.searchParams.set("campaign", String(activeCampaignId));
+    window.open(url.toString(), "_blank", "noopener,noreferrer");
   };
 
   return (
@@ -20122,11 +20488,86 @@ function FantasyMapGenerator() {
 }
 
 function CampaignManager() {
+  const initialRoute = cmReadRoute();
   const [campaigns, setCampaigns] = useState([
     { id: "example", data: JSON.parse(JSON.stringify(EXAMPLE_CAMPAIGN)), isExample: true },
   ]);
-  const [activeCampaignId, setActiveCampaignId] = useState("example");
-  const [tab, setTab] = useState("dashboard");
+  const [activeCampaignId, setActiveCampaignId] = useState(initialRoute.campaignId || "example");
+  const [tab, setTab] = useState(initialRoute.tab || "dashboard");
+  const [syncMessage, setSyncMessage] = useState("Loading campaigns...");
+  const saveTimerRef = useRef(null);
+  const hydratedRef = useRef(false);
+
+  const hydrateCampaigns = useCallback(() => {
+    const route = cmReadRoute();
+    const session = window.PhmurtDB && typeof window.PhmurtDB.getSession === "function"
+      ? window.PhmurtDB.getSession()
+      : null;
+    const cache = cmLoadCampaignCache() || (session ? cmLoadCampaignCache("guest") : null);
+    const fallbackCampaigns = (cache?.campaigns || []).map(c => ({
+      id: c.id,
+      data: cmClone(c.data || NEW_CAMPAIGN()),
+      isExample: false,
+    }));
+
+    const applyLoaded = (savedCampaigns, statusText) => {
+      const normalized = (savedCampaigns || [])
+        .filter(Boolean)
+        .map((campaign, index) => ({
+          id: campaign.id || `campaign-${Date.now()}-${index}`,
+          data: cmClone(campaign.data || campaign || NEW_CAMPAIGN()),
+          isExample: false,
+        }));
+      const merged = [
+        { id: "example", data: cmClone(EXAMPLE_CAMPAIGN), isExample: true },
+        ...normalized,
+      ];
+      const resolvedId = [route.campaignId, cache?.activeCampaignId, normalized[0]?.id, "example"]
+        .map(id => id ? String(id) : "")
+        .find(id => id && merged.some(c => String(c.id) === id)) || "example";
+      const resolvedTab = route.tab || (route.role === "player" ? "play" : "dashboard");
+      setCampaigns(merged);
+      setActiveCampaignId(resolvedId);
+      setTab(resolvedTab);
+      cmSyncRoute(resolvedId, resolvedTab);
+      setSyncMessage(statusText);
+      hydratedRef.current = true;
+    };
+
+    if (session && window.PhmurtDB && typeof window.PhmurtDB.getCampaigns === "function") {
+      setSyncMessage("Loading your saved campaigns...");
+      window.PhmurtDB.getCampaigns()
+        .then(rows => {
+          const remoteCampaigns = (rows || []).map((campaign, index) => ({
+            id: campaign.id || `campaign-${Date.now()}-${index}`,
+            data: campaign,
+          }));
+          const localOnlyCampaigns = fallbackCampaigns.filter(localCampaign =>
+            !remoteCampaigns.some(remoteCampaign => String(remoteCampaign.id) === String(localCampaign.id))
+          );
+          const mergedCampaigns = remoteCampaigns.length
+            ? [...remoteCampaigns, ...localOnlyCampaigns]
+            : fallbackCampaigns;
+          applyLoaded(
+            mergedCampaigns,
+            remoteCampaigns.length
+              ? (localOnlyCampaigns.length ? "Synced cloud and local campaigns" : "Synced to your account")
+              : "Ready"
+          );
+          if (remoteCampaigns.length && localOnlyCampaigns.length && typeof window.PhmurtDB.saveCampaign === "function") {
+            localOnlyCampaigns.forEach(localCampaign => {
+              window.PhmurtDB.saveCampaign({ ...cmClone(localCampaign.data || NEW_CAMPAIGN()), id: localCampaign.id }).catch(() => {});
+            });
+          }
+        })
+        .catch(() => {
+          applyLoaded(fallbackCampaigns, fallbackCampaigns.length ? "Loaded from local cache" : "Ready");
+        });
+      return;
+    }
+
+    applyLoaded(fallbackCampaigns, fallbackCampaigns.length ? "Loaded from local cache" : "Sign in to sync campaigns");
+  }, []);
 
   const data = campaigns.find(c=>c.id===activeCampaignId)?.data || NEW_CAMPAIGN();
   const setData = (updater) => {
@@ -20147,6 +20588,58 @@ function CampaignManager() {
       return prev.map(x => x.id === activeCampaignId ? { ...x, data: m } : x);
     });
   }, [activeCampaignId]);
+
+  useEffect(() => {
+    hydrateCampaigns();
+    window.addEventListener("phmurt-auth-change", hydrateCampaigns);
+    return () => {
+      window.removeEventListener("phmurt-auth-change", hydrateCampaigns);
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [hydrateCampaigns]);
+
+  useEffect(() => {
+    cmSyncRoute(activeCampaignId, tab);
+  }, [activeCampaignId, tab]);
+
+  useEffect(() => {
+    if (!hydratedRef.current) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+
+    saveTimerRef.current = setTimeout(() => {
+      cmSaveCampaignCache(campaigns, activeCampaignId);
+
+      const current = campaigns.find(c => c.id === activeCampaignId);
+      if (!current || current.isExample) {
+        const hasCustomCampaign = campaigns.some(c => c && !c.isExample);
+        const signedIn = !!(window.PhmurtDB && window.PhmurtDB.getSession && window.PhmurtDB.getSession());
+        setSyncMessage(
+          current?.isExample && hasCustomCampaign
+            ? "Example campaign is read-only"
+            : (signedIn ? "Create a campaign to save" : "Sign in to sync campaigns")
+        );
+        return;
+      }
+
+      if (!window.PhmurtDB || typeof window.PhmurtDB.saveCampaign !== "function" || !window.PhmurtDB.getSession || !window.PhmurtDB.getSession()) {
+        setSyncMessage("Saved locally");
+        return;
+      }
+
+      const payload = { ...cmClone(current.data || NEW_CAMPAIGN()), id: current.id };
+      window.PhmurtDB.saveCampaign(payload)
+        .then(ok => {
+          setSyncMessage(ok ? "Saved to your account" : "Saved locally");
+        })
+        .catch(() => {
+          setSyncMessage("Saved locally");
+        });
+    }, CAMPAIGN_SAVE_DELAY_MS);
+
+    return () => {
+      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    };
+  }, [campaigns, activeCampaignId]);
 
   const createCampaign = () => {
     const newId = `campaign-${Date.now()}`;
@@ -20193,6 +20686,7 @@ function CampaignManager() {
           ))}
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:16 }}>
+          <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase" }}>{syncMessage}</span>
           <CampaignSelector
             campaigns={campaigns}
             activeCampaignId={activeCampaignId}

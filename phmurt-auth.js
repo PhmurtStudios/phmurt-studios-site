@@ -562,11 +562,15 @@ var PhmurtDB = (function () {
       if (!_session) return Promise.resolve([]);
       var sb = _sb();
       if (sb) {
-        return sb.from('campaigns').select('data')
+        return sb.from('campaigns').select('id, data')
           .eq('owner_id', _session.userId)
           .order('updated_at', { ascending: false })
           .then(function (r) {
-            return (r.data || []).map(function (row) { return row.data; });
+            return (r.data || []).map(function (row) {
+              var campaign = row.data || {};
+              if (!campaign.id && row.id) campaign.id = row.id;
+              return campaign;
+            });
           })
           .catch(function () { return _legacyGetCamps(); });
       }
