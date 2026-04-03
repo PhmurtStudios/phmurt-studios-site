@@ -1443,20 +1443,6 @@ function timelineEventHeadline(ev) {
   return (sp > 24 ? slice.slice(0, sp) : slice) + "…";
 }
 
-function timelineEventTeaser(ev) {
-  if (ev.outcome && ev.outcome.trim()) return ev.outcome.trim();
-  const full = (ev.text || "").trim();
-  if (!full) return "";
-  if (ev.headline && String(ev.headline).trim()) {
-    return full.length > 100 ? full.slice(0, 97) + "…" : full;
-  }
-  const h = timelineEventHeadline(ev);
-  let rest = full.slice(h.replace(/…$/,"").length).trim();
-  if (rest.startsWith("…")) rest = rest.slice(1).trim();
-  if (!rest) return "";
-  return rest.length > 96 ? rest.slice(0, 93) + "…" : rest;
-}
-
 function TimelineView({ data, setData, onNav }) {
   const [open,setOpen] = useState(new Set([data.timeline[0]?.id]));
   const [dmView,setDmView] = useState(true);
@@ -1474,7 +1460,9 @@ function TimelineView({ data, setData, onNav }) {
   const [hoverSession, setHoverSession] = useState(null);
   const [hoverEventKey, setHoverEventKey] = useState(null);
   const [narrow, setNarrow] = useState(typeof window !== "undefined" ? window.innerWidth < 920 : true);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
   const latestSessionId = data.timeline[0]?.id;
+  const activeFilterTally = (filterType !== "all" ? 1 : 0) + (filterCharacter ? 1 : 0) + (filterLocation ? 1 : 0);
 
   useEffect(() => {
     const w = () => setNarrow(window.innerWidth < 920);
@@ -1574,74 +1562,82 @@ function TimelineView({ data, setData, onNav }) {
   const visibleCount = data.timeline.filter(sessionMatchesFilters).length;
 
   return (
-    <div style={{ padding: compactLayout ? "24px 40px" : "32px 56px", maxWidth:1120, margin:"0 auto", transition:"padding 0.25s ease" }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:16, marginBottom:24 }}>
-        <div>
-          <div style={{ fontSize:28, color:T.text, fontWeight:300 }}>Campaign Timeline</div>
-          <p style={{ fontSize:13, color:T.textMuted, fontStyle:"italic", margin:"4px 0 0", fontWeight:300 }}>
-            {data.timeline.length} sessions · {visibleCount} shown
-          </p>
+    <div style={{ padding: compactLayout ? "16px 28px 28px" : "20px 40px 36px", maxWidth:1040, margin:"0 auto", transition:"padding 0.25s ease" }}>
+      <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:12, rowGap:10, marginBottom: filtersExpanded ? 12 : 6 }}>
+        <div style={{ flex:"1 1 160px", minWidth:0 }}>
+          <div style={{ fontSize: compactLayout ? 20 : 22, color:T.text, fontWeight:400, fontFamily:T.body, letterSpacing:"0.02em", lineHeight:1.2 }}>Timeline</div>
+          <div style={{ fontSize:12, color:T.textMuted, fontWeight:300, marginTop:2 }}>
+            {data.timeline.length} session{data.timeline.length !== 1 ? "s" : ""}{visibleCount < data.timeline.length ? ` · ${visibleCount} visible` : ""}
+          </div>
         </div>
-        <div style={{ display:"flex", flexWrap:"wrap", gap:10, alignItems:"center" }}>
-          <ToggleSwitch on={dmView} onToggle={()=>setDmView(!dmView)} label="DM View" />
-          <button type="button" onClick={()=>setCompactLayout(c=>!c)} style={{
-            display:"inline-flex", alignItems:"center", gap:6, padding:"8px 12px", cursor:"pointer",
-            background: compactLayout ? T.crimsonSoft : T.bgInput, border:`1px solid ${compactLayout ? T.crimsonBorder : T.border}`,
-            borderRadius:"2px", fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", textTransform:"uppercase", color: compactLayout ? T.crimson : T.textMuted, fontWeight:500,
-          }}><Layers size={12}/> {compactLayout ? "Comfort" : "Compact"}</button>
-          <CrimsonBtn onClick={()=>setAddingSession(true)}><Plus size={12}/> New Session</CrimsonBtn>
+        {data.timeline.length > 0 && (
+          <div style={{ flex:"2 1 240px", minWidth:0, maxWidth:360, position:"relative" }}>
+            <Search size={13} color={T.textFaint} style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", pointerEvents:"none", opacity:0.7 }}/>
+            <Input value={searchQuery} onChange={setSearchQuery} placeholder="Search…" style={{ paddingLeft:32, paddingTop:7, paddingBottom:7, fontSize:13, background:T.bgInput, borderColor:T.borderMid }} />
+          </div>
+        )}
+        <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:8, marginLeft:"auto" }}>
+          {data.timeline.length > 0 && (
+            <button type="button" onClick={()=>setFiltersExpanded(e => !e)} style={{
+              display:"inline-flex", alignItems:"center", gap:6, padding:"6px 10px", cursor:"pointer",
+              background: activeFilterTally ? T.crimsonSoft : "transparent", border:`1px solid ${activeFilterTally ? T.crimsonBorder : T.border}`,
+              borderRadius:"3px", fontFamily:T.body, fontSize:12, color: activeFilterTally ? T.crimson : T.textMuted, fontWeight:400,
+            }}>
+              <FilterIcon size={13}/>
+              <span>Filters{activeFilterTally ? ` · ${activeFilterTally}` : ""}</span>
+              <ChevronDown size={14} color={T.textMuted} style={{ transform: filtersExpanded ? "rotate(180deg)" : "none", transition:"transform 0.2s ease" }}/>
+            </button>
+          )}
+          <ToggleSwitch on={dmView} onToggle={()=>setDmView(!dmView)} label="DM" />
+          <button type="button" title="Comfort vs compact density" onClick={()=>setCompactLayout(c=>!c)} style={{
+            display:"inline-flex", alignItems:"center", gap:4, padding:"6px 8px", cursor:"pointer",
+            background:"transparent", border:`1px solid ${T.border}`, borderRadius:"3px", color:T.textFaint,
+          }}><Layers size={13}/></button>
+          <CrimsonBtn onClick={()=>setAddingSession(true)}><Plus size={12}/> Session</CrimsonBtn>
         </div>
       </div>
 
-      {/* Search & filters */}
-      {data.timeline.length > 0 && (
+      {data.timeline.length > 0 && filtersExpanded && (
         <div style={{
-          marginBottom:28, padding: compactLayout ? "14px 16px" : "18px 20px",
-          background: T.bgMid, border:`1px solid ${T.border}`, borderRadius:"6px",
-          boxShadow:"0 4px 24px rgba(0,0,0,0.12)",
+          marginBottom:18, padding:"12px 14px",
+          background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px",
+          animation:"fadeIn 0.2s ease",
         }}>
-          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
-            <FilterIcon size={14} color={T.crimson} style={{ flexShrink:0 }}/>
-            <span style={{ fontFamily:T.ui, fontSize:10, letterSpacing:"2px", color:T.crimson, textTransform:"uppercase", fontWeight:500 }}>Narrative filters</span>
-          </div>
-          <div style={{ display:"flex", flexWrap:"wrap", gap:10, marginBottom:14, alignItems:"flex-end" }}>
-            <div style={{ flex:"1 1 220px", minWidth:180, position:"relative" }}>
-              <Search size={14} color={T.textFaint} style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", pointerEvents:"none" }}/>
-              <Input value={searchQuery} onChange={setSearchQuery} placeholder="Search sessions, summaries, events…" style={{ paddingLeft:36 }} />
-            </div>
-            <div style={{ flex:"1 1 160px", minWidth:140 }}>
-              <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:6 }}>Character</span>
-              <Select value={filterCharacter} onChange={setFilterCharacter} style={{ width:"100%" }}>
-                <option value="">All characters</option>
-                {characterOptions.map(name => <option key={name} value={name}>{name}</option>)}
-              </Select>
-            </div>
-            <div style={{ flex:"1 1 160px", minWidth:140 }}>
-              <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:6 }}>Location</span>
-              <Select value={filterLocation} onChange={setFilterLocation} style={{ width:"100%" }}>
-                <option value="">All locations</option>
-                {locationOptions.map(loc => <option key={loc} value={loc}>{loc}</option>)}
-              </Select>
-            </div>
-          </div>
-          <div style={{ display:"flex", flexWrap:"wrap", gap:8, alignItems:"center" }}>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:8, alignItems:"center", marginBottom:10 }}>
+            <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", marginRight:4 }}>Event type</span>
             <button type="button" onClick={()=>setFilterType("all")} style={{
-              padding:"6px 12px", borderRadius:"3px", cursor:"pointer", fontFamily:T.ui, fontSize:9, letterSpacing:"1px", textTransform:"uppercase", fontWeight:500,
-              border:`1px solid ${filterType==="all"?T.crimson:T.border}`,
-              background: filterType==="all" ? T.crimsonSoft : T.bgCard, color: filterType==="all" ? T.crimson : T.textMuted,
-            }}>All types</button>
+              padding:"4px 10px", borderRadius:"3px", cursor:"pointer", fontFamily:T.body, fontSize:11,
+              border:`1px solid ${filterType==="all"?T.crimson:T.borderMid}`,
+              background: filterType==="all" ? T.crimsonSoft : T.bgInput, color: filterType==="all" ? T.crimson : T.textMuted,
+            }}>All</button>
             {TIMELINE_EVENT_TYPES.map(t => {
               const sel = filterType === t.id;
               const accent = cssVar(TIMELINE_EVENT_CSS[t.id] || "--event-encounter");
               return (
                 <button type="button" key={t.id} onClick={()=>setFilterType(t.id)} style={{
-                  padding:"6px 12px", borderRadius:"3px", cursor:"pointer", fontFamily:T.ui, fontSize:9, letterSpacing:"1px", textTransform:"uppercase", fontWeight:500,
-                  border:`1px solid ${sel ? accent : T.border}`,
-                  background: sel ? cssVar("--tag-info-bg") : T.bgCard,
+                  padding:"4px 10px", borderRadius:"3px", cursor:"pointer", fontFamily:T.body, fontSize:11,
+                  border:`1px solid ${sel ? accent : T.borderMid}`,
+                  background: sel ? cssVar("--tag-info-bg") : T.bgInput,
                   color: sel ? accent : T.textMuted,
                 }}>{t.label}</button>
               );
             })}
+          </div>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:10, alignItems:"flex-end" }}>
+            <div style={{ flex:"1 1 140px", minWidth:120 }}>
+              <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:4 }}>Character</span>
+              <Select value={filterCharacter} onChange={setFilterCharacter} style={{ width:"100%", padding:"6px 8px", fontSize:12 }}>
+                <option value="">Any</option>
+                {characterOptions.map(name => <option key={name} value={name}>{name}</option>)}
+              </Select>
+            </div>
+            <div style={{ flex:"1 1 140px", minWidth:120 }}>
+              <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:4 }}>Location</span>
+              <Select value={filterLocation} onChange={setFilterLocation} style={{ width:"100%", padding:"6px 8px", fontSize:12 }}>
+                <option value="">Any</option>
+                {locationOptions.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+              </Select>
+            </div>
           </div>
         </div>
       )}
@@ -1676,30 +1672,21 @@ function TimelineView({ data, setData, onNav }) {
       )}
 
       {visibleCount > 0 && (
-      <div style={{ position:"relative", width:"100%", paddingTop: narrow ? 4 : 24, paddingBottom: narrow ? 4 : 16, paddingLeft: narrow ? (compactLayout ? 28 : 36) : 0 }}>
+      <div style={{ position:"relative", width:"100%", paddingTop: narrow ? 2 : 12, paddingBottom: narrow ? 8 : 20, paddingLeft: narrow ? (compactLayout ? 24 : 30) : 0 }}>
         {!narrow && (
-          <>
-            <div aria-hidden style={{
-              position:"absolute", left:"50%", top:40, bottom:24, width:5, marginLeft:-2.5,
-              borderRadius:4,
-              background:`linear-gradient(180deg, ${T.crimson} 0%, ${T.crimsonDim} 45%, ${T.crimsonBorder} 100%)`,
-              boxShadow:`0 0 28px ${T.crimsonSoft}`,
-              zIndex:0, pointerEvents:"none",
-            }}/>
-            <div style={{ position:"absolute", left:"50%", top:0, transform:"translateX(-50%)", fontFamily:T.ui, fontSize:8, letterSpacing:3, color:T.crimson, textTransform:"uppercase", whiteSpace:"nowrap", zIndex:2, fontWeight:600, display:"flex", flexDirection:"column", alignItems:"center", gap:2 }}>
-              <span>Now</span>
-              <ChevronDown size={12} color={T.crimson} style={{ opacity:0.85 }}/>
-            </div>
-            <div style={{ position:"absolute", left:"50%", bottom:0, transform:"translateX(-50%)", fontFamily:T.ui, fontSize:8, letterSpacing:3, color:T.textFaint, textTransform:"uppercase", whiteSpace:"nowrap", zIndex:2 }}>
-              Earlier
-            </div>
-          </>
+          <div aria-hidden style={{
+            position:"absolute", left:"50%", top:8, bottom:12, width:2, marginLeft:-1,
+            borderRadius:2,
+            background:`linear-gradient(180deg, ${T.crimsonBorder} 0%, ${T.crimsonDim} 45%, ${T.crimsonBorder} 100%)`,
+            opacity:0.85,
+            zIndex:0, pointerEvents:"none",
+          }}/>
         )}
         {narrow && (
           <div style={{
-            position:"absolute", left: compactLayout ? 6 : 8, top:4, bottom:4, width:3, borderRadius:"2px",
-            background:`linear-gradient(180deg, ${T.crimson} 0%, ${T.crimsonDim} 40%, ${T.crimsonBorder} 100%)`,
-            boxShadow:`0 0 12px ${T.crimsonSoft}`, zIndex:0,
+            position:"absolute", left: compactLayout ? 5 : 7, top:2, bottom:8, width:2, borderRadius:"2px",
+            background:`linear-gradient(180deg, ${T.crimsonBorder} 0%, ${T.crimsonDim} 50%, ${T.crimsonBorder} 100%)`,
+            opacity:0.9, zIndex:0,
           }}/>
         )}
 
@@ -1707,17 +1694,17 @@ function TimelineView({ data, setData, onNav }) {
           const isOpen = open.has(s.id);
           if (!sessionMatchesFilters(s)) return null;
           const isLatest = s.id === latestSessionId;
-          const sessionPad = compactLayout ? 18 : 28;
+          const sessionPad = compactLayout ? 14 : 18;
           const onLeft = timelineIdx % 2 === 0;
           const dotMm = compactLayout ? 14 : 18;
           const timelineDot = (
-            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", paddingTop: compactLayout ? 18 : 24 }}>
-              <div style={{ width:2, height: compactLayout ? 10 : 14, background:T.crimsonBorder, borderRadius:1, marginBottom:4 }} />
+            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", paddingTop: compactLayout ? 14 : 18 }}>
+              <div style={{ width:2, height: compactLayout ? 8 : 10, background:T.crimsonBorder, borderRadius:1, marginBottom:3, opacity:0.7 }} />
               <div style={{
                 width: dotMm, height: dotMm, borderRadius:"50%",
                 background: isLatest ? T.crimson : T.bgCard,
                 border:`2px solid ${isLatest ? T.crimson : T.crimsonBorder}`,
-                boxShadow: isLatest ? `0 0 0 4px ${T.crimsonSoft}, 0 2px 8px rgba(0,0,0,0.25)` : "0 2px 6px rgba(0,0,0,0.18)",
+                boxShadow: isLatest ? `0 0 0 3px ${T.crimsonSoft}` : "none",
                 zIndex:2, flexShrink:0,
               }}/>
             </div>
@@ -1725,14 +1712,14 @@ function TimelineView({ data, setData, onNav }) {
 
           const sessionCard = (
               <Section style={{
-                cursor:"default", transition:"box-shadow 0.25s ease, transform 0.2s ease, border-color 0.2s",
+                cursor:"default", transition:"box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease",
                 padding: sessionPad,
-                border:`1px solid ${isLatest ? T.crimsonBorder : T.border}`,
+                border:`1px solid ${isLatest ? T.crimsonBorder : T.borderMid}`,
                 background: timelineIdx % 2 === 0 ? T.bgCard : T.bgMid,
                 boxShadow: hoverSession===s.id
-                  ? `0 8px 28px rgba(0,0,0,0.22), 0 0 0 1px ${T.crimsonBorder}`
-                  : isLatest ? "0 6px 24px rgba(0,0,0,0.18)" : "0 2px 12px rgba(0,0,0,0.10)",
-                transform: hoverSession===s.id ? "translateY(-1px)" : "none",
+                  ? `0 4px 16px rgba(0,0,0,0.12)`
+                  : "0 1px 0 rgba(0,0,0,0.06)",
+                transform: "none",
               }}
                 onMouseEnter={()=>setHoverSession(s.id)}
                 onMouseLeave={()=>setHoverSession(null)}
@@ -1750,34 +1737,35 @@ function TimelineView({ data, setData, onNav }) {
                       <span style={{
                         fontFamily:T.ui, fontSize: compactLayout ? 8 : 9, letterSpacing:"1px", color:T.crimson, fontWeight:600,
                       }}>Session {s.n}</span>
-                      {isLatest && <Tag variant="critical">Latest</Tag>}
+                      {isLatest && <Tag variant="info">Latest</Tag>}
                       {s.dmOnly && <Tag variant="muted"><Lock size={8}/> DM</Tag>}
                     </div>
                     <div style={{
-                      fontFamily:T.ui,
-                      fontSize: compactLayout ? 15 : isLatest ? 23 : 20,
+                      fontFamily:T.body,
+                      fontSize: compactLayout ? 15 : isLatest ? 19 : 17,
                       color:T.text, fontWeight: isLatest ? 500 : 400,
-                      marginBottom:6, lineHeight:1.2, letterSpacing:"0.04em",
+                      marginBottom:4, lineHeight:1.3, letterSpacing:"0.01em",
                     }}>{s.title}</div>
-                    <div style={{ fontSize:11, color:T.textFaint, fontWeight:500, display:"flex", alignItems:"center", gap:8, flexWrap:"wrap", fontFamily:T.ui, letterSpacing:"2px", textTransform:"uppercase" }}>
-                      <Calendar size={11} color={T.textMuted}/> {s.date}
+                    <div style={{ fontSize:11, color:T.textMuted, fontWeight:300, display:"flex", alignItems:"center", gap:6, flexWrap:"wrap", fontFamily:T.body }}>
+                      <Calendar size={11} color={T.textFaint}/> {s.date}
+                      <span style={{ color:T.border }}>|</span>
+                      <span>{s.events?.length||0} events</span>
                     </div>
                   </div>
-                  <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6, flexShrink:0 }}>
-                    <span style={{ fontFamily:T.ui, fontSize:8, color:T.textFaint }}>{s.events?.length||0} events</span>
-                    {isOpen ? <ChevronUp size={16} color={T.crimson}/> : <ChevronDown size={16} color={T.textMuted}/>}
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:4, flexShrink:0, minWidth:28 }}>
+                    {isOpen ? <ChevronUp size={18} color={T.crimson}/> : <ChevronDown size={18} color={T.textMuted}/>}
                   </div>
                 </div>
 
-                {isOpen && <div onClick={e=>e.stopPropagation()} style={{ animation:"fadeIn 0.25s ease" }}>
+                {isOpen && <div onClick={e=>e.stopPropagation()} style={{ animation:"fadeIn 0.22s ease" }}>
                   <p style={{
-                    fontSize: compactLayout ? 12 : 13, color:T.textDim, lineHeight:1.75, margin:"16px 0", fontWeight:300,
-                    borderTop:`1px solid ${T.border}`, paddingTop:16,
+                    fontSize: compactLayout ? 12 : 13, color:T.textDim, lineHeight:1.65, margin:"12px 0 14px", fontWeight:300,
+                    borderTop:`1px solid ${T.borderMid}`, paddingTop:12,
                   }}>{s.summary}</p>
 
                   {/* Events */}
                   {s.events?.length > 0 && (
-                    <div style={{ display:"flex", flexDirection:"column", gap: compactLayout ? 8 : 12, marginBottom:16, paddingLeft: compactLayout ? 8 : 12, borderLeft:`2px solid ${T.border}`, marginTop:4 }}>
+                    <div style={{ display:"flex", flexDirection:"column", gap: compactLayout ? 6 : 8, marginBottom:12, paddingLeft: compactLayout ? 6 : 10, borderLeft:`1px solid ${T.borderMid}`, marginTop:2 }}>
                       {s.events.map(ev => {
                         if(ev.dmOnly && !dmView) return null;
                         if (!eventPassesFilters(ev)) return null;
@@ -1796,19 +1784,20 @@ function TimelineView({ data, setData, onNav }) {
                         const evOpen = expandedEvents.has(evKey);
                         const major = imp === "major";
                         const minor = imp === "minor";
-                        const padY = minor ? (compactLayout ? 5 : 7) : major ? (compactLayout ? 14 : 20) : (compactLayout ? 9 : 13);
-                        const padX = minor ? (compactLayout ? 9 : 11) : major ? (compactLayout ? 16 : 22) : (compactLayout ? 12 : 16);
-                        const iconBox = major ? (compactLayout ? 44 : 52) : minor ? (compactLayout ? 26 : 28) : (compactLayout ? 34 : 38);
+                        const padY = minor ? 5 : major ? 9 : 7;
+                        const padX = minor ? 8 : major ? 12 : 10;
+                        const iconBox = major ? 30 : minor ? 22 : 26;
                         const ScopeIc = ev.scope && scopeIcons[ev.scope] ? scopeIcons[ev.scope] : null;
                         const evHover = hoverEventKey === evKey;
                         const hl = timelineEventHeadline(ev);
-                        const tease = timelineEventTeaser(ev);
+                        const typeLabel = TIMELINE_EVENT_TYPES.find(t=>t.id===ev.type)?.label || ev.type;
+                        const metaParts = [typeLabel];
+                        if (ev.location) metaParts.push(ev.location);
+                        if (s.n) metaParts.push(`Session ${s.n}`);
+                        const metaLine = metaParts.join(" · ");
 
                         return (
-                          <div key={ev.id} style={{ position:"relative", paddingLeft: major ? 10 : 0, marginBottom: major ? 4 : 0 }}>
-                            {major && (
-                              <div style={{ position:"absolute", left:0, top:8, bottom:8, width:5, borderRadius:"3px", background: col, opacity:0.95, boxShadow:`0 0 12px ${col}44` }}/>
-                            )}
+                          <div key={ev.id} style={{ position:"relative", paddingLeft: 0, marginBottom: major ? 10 : 5 }}>
                             <div
                               role="button"
                               tabIndex={0}
@@ -1818,100 +1807,84 @@ function TimelineView({ data, setData, onNav }) {
                               onMouseEnter={()=>setHoverEventKey(evKey)}
                               onMouseLeave={()=>setHoverEventKey(null)}
                               style={{
-                                display:"flex", gap: compactLayout ? 10 : major ? 16 : 12,
+                                display:"flex", gap: 10,
+                                alignItems:"flex-start",
                                 padding:`${padY}px ${padX}px`,
-                                background: minor ? T.bgInput : major ? T.bgMid : T.bg,
-                                borderRadius: major ? 8 : 4,
-                                border:`1px solid ${major ? T.crimsonBorder : T.borderMid}`,
-                                borderLeft:`5px solid ${col}`,
-                                opacity: minor ? 0.9 : (ev.dmOnly ? 0.72 : 1),
+                                background: evHover ? T.bgHover : (minor ? T.bgInput : T.bgCard),
+                                borderRadius: 3,
+                                border:`1px solid ${T.borderMid}`,
+                                borderLeft:`3px solid ${col}`,
+                                boxShadow: evHover ? "0 2px 8px rgba(0,0,0,0.08)" : "0 1px 0 rgba(0,0,0,0.04)",
+                                opacity: minor ? 0.92 : (ev.dmOnly ? 0.75 : 1),
                                 cursor:"pointer",
-                                transition:"background 0.2s, box-shadow 0.2s, transform 0.15s",
-                                boxShadow: evHover ? "0 8px 28px rgba(0,0,0,0.24)" : (major ? "0 4px 18px rgba(0,0,0,0.16), inset 0 1px 0 rgba(255,255,255,0.04)" : "0 2px 8px rgba(0,0,0,0.08)"),
-                                transform: evHover ? (narrow ? "translateX(2px)" : (onLeft ? "translateX(-2px)" : "translateX(2px)")) : "none",
+                                transition:"background 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease",
                               }}
                             >
                               <div style={{
-                                width: iconBox, height: iconBox, borderRadius: major ? 12 : 8, flexShrink:0,
+                                width: iconBox, height: iconBox, borderRadius: 6, flexShrink:0,
                                 display:"flex", alignItems:"center", justifyContent:"center",
-                                background: T.bgHover,
-                                border:`1px solid ${major ? col : T.border}`,
-                                boxShadow: major ? `inset 0 0 0 1px ${col}33` : "none",
+                                background: T.bgMid,
+                                border:`1px solid ${T.borderMid}`,
                               }}>
-                                <EvIcon size={major ? 22 : minor ? 11 : 15} color={col}/>
+                                <EvIcon size={major ? 15 : minor ? 11 : 13} color={col}/>
                               </div>
-                              <div style={{ flex:1, minWidth:0 }}>
-                                <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:6, marginBottom:6 }}>
-                                  <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1.2px", color:col, textTransform:"uppercase", fontWeight:700 }}>
-                                    {TIMELINE_EVENT_TYPES.find(t=>t.id===ev.type)?.label || ev.type}
-                                  </span>
-                                  {major && <Tag variant="critical">Story beat</Tag>}
-                                  {minor && <Tag variant="muted">Background</Tag>}
-                                  {ev.location && (
-                                    <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:10, color:T.textMuted, fontFamily:T.body }}>
-                                      <MapPin size={10} color={col}/> {ev.location}
-                                    </span>
-                                  )}
-                                  {ScopeIc && (
-                                    <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:10, color:T.textMuted }}>
-                                      <ScopeIc size={11}/> {ev.scope}
-                                    </span>
-                                  )}
-                                  {ev.dmOnly && <Lock size={10} color={T.textFaint}/>}
-                                </div>
+                              <div style={{ flex:1, minWidth:0, paddingTop:1 }}>
                                 <div style={{
-                                  fontFamily: major ? T.ui : T.body,
-                                  fontSize: minor ? (compactLayout ? 12 : 12) : major ? (compactLayout ? 15 : 17) : (compactLayout ? 13 : 14),
-                                  color:T.text, fontWeight: major ? 500 : 300,
-                                  lineHeight:1.45,
-                                  letterSpacing: major ? "0.02em" : "normal",
+                                  fontFamily:T.body,
+                                  fontSize: major ? 14 : minor ? 12.5 : 13,
+                                  color:T.text,
+                                  fontWeight: major ? 500 : 400,
+                                  lineHeight:1.35,
                                 }}>{hl}</div>
-                                {!evOpen && tease && (
-                                  <p style={{ fontSize:12, color:T.textMuted, marginTop:8, lineHeight:1.55, fontWeight:300, fontStyle:"italic" }}>{tease}</p>
-                                )}
-                                {(ev.linkedNames||[]).length > 0 && (
-                                  <div style={{ display:"flex", flexWrap:"wrap", gap:5, marginTop:8 }}>
-                                    {(ev.linkedNames||[]).map(name => (
-                                      <span key={name} style={{ fontSize:9, fontFamily:T.ui, letterSpacing:"0.5px", padding:"3px 8px", borderRadius:2, background:T.bgCard, border:`1px solid ${T.border}`, color:T.textDim }}>{name}</span>
-                                    ))}
+                                {!evOpen && (
+                                  <div style={{ fontSize:11, color:T.textMuted, marginTop:3, fontWeight:300, lineHeight:1.4 }}>
+                                    {metaLine}{ev.dmOnly ? <span style={{ color:T.textFaint }}> · DM only</span> : null}
                                   </div>
                                 )}
                                 {evOpen && (
-                                  <div style={{ marginTop:14, paddingTop:14, borderTop:`1px solid ${T.borderMid}` }}>
-                                    <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:8 }}>Full account</span>
-                                    <p style={{ fontSize:14, color:T.textDim, lineHeight:1.8, fontWeight:300, margin:0 }}>{ev.text}</p>
+                                  <div style={{ marginTop:10, paddingTop:10, borderTop:`1px solid ${T.borderMid}`, animation:"fadeIn 0.2s ease" }}>
+                                    <p style={{ fontSize:13, color:T.textDim, lineHeight:1.65, fontWeight:300, margin:0 }}>{ev.text}</p>
                                     {ev.outcome && (
-                                      <div style={{ fontSize:12, color:T.textMuted, fontStyle:"italic", marginTop:12, fontWeight:300, borderLeft:`3px solid ${T.crimsonBorder}`, paddingLeft:12 }}>
+                                      <div style={{ fontSize:12, color:T.textMuted, marginTop:10, fontWeight:300, fontStyle:"italic" }}>
                                         {ev.outcome}
                                       </div>
                                     )}
+                                    <div style={{ fontSize:10, color:T.textFaint, marginTop:10, display:"flex", flexWrap:"wrap", gap:8, alignItems:"center" }}>
+                                      {ScopeIc && <span style={{ display:"inline-flex", alignItems:"center", gap:3 }}><ScopeIc size={10}/> {ev.scope}</span>}
+                                      {ev.location && <span style={{ display:"inline-flex", alignItems:"center", gap:3 }}><MapPin size={10} color={col}/> {ev.location}</span>}
+                                      {major && <span style={{ fontFamily:T.ui, letterSpacing:"0.08em", textTransform:"uppercase" }}>Key beat</span>}
+                                    </div>
+                                    {(ev.linkedNames||[]).length > 0 && (
+                                      <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginTop:8 }}>
+                                        {(ev.linkedNames||[]).map(name => (
+                                          <span key={name} style={{ fontSize:10, padding:"2px 6px", borderRadius:2, background:T.bgInput, border:`1px solid ${T.borderMid}`, color:T.textMuted }}>{name}</span>
+                                        ))}
+                                      </div>
+                                    )}
                                     {onNav && (
-                                      <div style={{ marginTop:14, display:"flex", flexWrap:"wrap", gap:8 }}>
+                                      <div style={{ marginTop:12, display:"flex", flexWrap:"wrap", gap:6 }}>
                                         <button type="button" onClick={e=>{ e.stopPropagation(); onNav("world"); }} style={{
-                                          display:"inline-flex", alignItems:"center", gap:6, padding:"7px 12px", cursor:"pointer",
+                                          display:"inline-flex", alignItems:"center", gap:5, padding:"5px 10px", cursor:"pointer",
                                           background:T.crimsonSoft, border:`1px solid ${T.crimsonBorder}`, borderRadius:"2px",
-                                          fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", color:T.crimson, fontWeight:500,
-                                        }}><Globe size={11}/> World & map</button>
+                                          fontFamily:T.body, fontSize:11, color:T.crimson, fontWeight:500,
+                                        }}><Globe size={12}/> Map</button>
                                         <button type="button" onClick={e=>{ e.stopPropagation(); onNav("play"); }} style={{
-                                          display:"inline-flex", alignItems:"center", gap:6, padding:"7px 12px", cursor:"pointer",
-                                          background:T.bgInput, border:`1px solid ${T.border}`, borderRadius:"2px",
-                                          fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", color:T.textMuted, fontWeight:500,
-                                        }}><Swords size={11}/> Play mode</button>
+                                          display:"inline-flex", alignItems:"center", gap:5, padding:"5px 10px", cursor:"pointer",
+                                          background:T.bgInput, border:`1px solid ${T.borderMid}`, borderRadius:"2px",
+                                          fontFamily:T.body, fontSize:11, color:T.textMuted,
+                                        }}><Swords size={12}/> Play</button>
                                         <button type="button" onClick={e=>{ e.stopPropagation(); onNav("notes"); }} style={{
-                                          display:"inline-flex", alignItems:"center", gap:6, padding:"7px 12px", cursor:"pointer",
-                                          background:T.bgInput, border:`1px solid ${T.border}`, borderRadius:"2px",
-                                          fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", color:T.textMuted, fontWeight:500,
-                                        }}><BookOpen size={11}/> Notes</button>
+                                          display:"inline-flex", alignItems:"center", gap:5, padding:"5px 10px", cursor:"pointer",
+                                          background:T.bgInput, border:`1px solid ${T.borderMid}`, borderRadius:"2px",
+                                          fontFamily:T.body, fontSize:11, color:T.textMuted,
+                                        }}><BookOpen size={12}/> Notes</button>
                                       </div>
                                     )}
                                   </div>
                                 )}
-                                {!evOpen && (
-                                  <span style={{ fontSize:10, color:T.crimson, marginTop:8, display:"inline-block", fontFamily:T.ui, letterSpacing:"1.2px", textTransform:"uppercase", fontWeight:600 }}>Open for details →</span>
-                                )}
                               </div>
-                              <div style={{ flexShrink:0, paddingTop:4 }}>
-                                {evOpen ? <ChevronUp size={16} color={T.crimson}/> : <ChevronDown size={14} color={T.textFaint}/>}
+                              <div style={{ flexShrink:0, paddingTop:2, opacity:0.65 }}>
+                                {evOpen ? <ChevronUp size={15} color={T.crimson}/> : <ChevronDown size={15} color={T.textMuted}/>}
                               </div>
                             </div>
                           </div>
@@ -1922,9 +1895,9 @@ function TimelineView({ data, setData, onNav }) {
 
                   {/* World Changes */}
                   {s.changes?.length > 0 && (
-                    <div style={{ padding:14, background:T.crimsonSoft, border:`1px solid ${T.crimsonBorder}`, borderRadius:"4px", marginBottom:16, boxShadow:"inset 0 1px 0 rgba(255,255,255,0.04)" }}>
-                      <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1.5px", color:T.crimson, textTransform:"uppercase", display:"block", marginBottom:8 }}>World Changes</span>
-                      {s.changes.map((c,ci) => <div key={ci} style={{ fontSize:12, color:T.textDim, fontWeight:300, padding:"3px 0" }}>• {c}</div>)}
+                    <div style={{ padding:10, background:T.bgInput, border:`1px solid ${T.borderMid}`, borderRadius:"3px", marginBottom:12 }}>
+                      <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.textMuted, textTransform:"uppercase", display:"block", marginBottom:6 }}>World changes</span>
+                      {s.changes.map((c,ci) => <div key={ci} style={{ fontSize:12, color:T.textDim, fontWeight:300, padding:"2px 0" }}>· {c}</div>)}
                     </div>
                   )}
 
@@ -1982,7 +1955,7 @@ function TimelineView({ data, setData, onNav }) {
           );
           if (narrow) {
             return (
-              <div key={s.id} style={{ marginBottom: compactLayout ? 16 : 24, position:"relative" }}>
+              <div key={s.id} style={{ marginBottom: compactLayout ? 14 : 18, position:"relative" }}>
                 <div style={{
                   position:"absolute", left: compactLayout ? -22 : -28, top: compactLayout ? 22 : 26,
                   width: compactLayout ? 20 : 24, height:2, background:T.crimsonBorder, borderRadius:1, opacity:0.85,
@@ -1999,7 +1972,7 @@ function TimelineView({ data, setData, onNav }) {
             );
           }
           return (
-            <div key={s.id} style={{ display:"grid", gridTemplateColumns:"minmax(0,1fr) 52px minmax(0,1fr)", alignItems:"start", marginBottom: compactLayout ? 20 : 32, position:"relative", zIndex:1 }}>
+            <div key={s.id} style={{ display:"grid", gridTemplateColumns:"minmax(0,1fr) 48px minmax(0,1fr)", alignItems:"start", marginBottom: compactLayout ? 16 : 22, position:"relative", zIndex:1 }}>
               {onLeft ? (
                 <>
                   <div style={{ display:"flex", justifyContent:"flex-end", paddingRight:8, paddingTop:4 }}>
