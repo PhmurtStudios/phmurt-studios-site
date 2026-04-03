@@ -3427,7 +3427,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
   const [combatLog, setCombatLog] = useState([]);
   const [showCombatLog, setShowCombatLog] = useState(false);
   const [showDiceOverlay, setShowDiceOverlay] = useState(null);
-  const [combatTab, setCombatTab] = useState("monsters");
+  const [combatTab, setCombatTab] = useState("tracker");
   const [pcWeaponPick, setPcWeaponPick] = useState("Longsword");
 
   const weaponNamesList = React.useMemo(() => {
@@ -3436,7 +3436,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
   }, []);
 
   const addCombatLogEntry = (entry) => {
-    setCombatLog(prev => [{...entry, id: Date.now(), time: new Date().toLocaleTimeString()}, ...prev].slice(0, 100));
+    setCombatLog(prev => [{...entry, id: "log-" + Date.now() + "-" + Math.random().toString(16).slice(2), time: new Date().toLocaleTimeString()}, ...prev].slice(0, 100));
   };
 
   const filteredMonsters = React.useMemo(() => {
@@ -3582,6 +3582,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     const attacker = tokens.find(t => t.id === attackerId);
     const target = tokens.find(t => t.id === targetId);
     if (!attacker || !target) return;
+    openCombatSidebar("tracker");
 
     const monster = attacker.monsterData;
     if (!monster) return;
@@ -4277,6 +4278,180 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     });
 
     return cards;
+  };
+
+  const openCombatSidebar = (tabId) => {
+    setSidebarOpen(true);
+    setMode("combat");
+    setCombatTab(tabId || "tracker");
+  };
+
+  const getCombatEntrySummary = (entry) => {
+    if (!entry) return "No combat results yet.";
+    if (entry.text) return entry.text;
+    if (entry.type === "attack") return (entry.isCrit ? "Critical hit: " : "Hit: ") + entry.attacker + " -> " + entry.target;
+    if (entry.type === "miss") return entry.attacker + " misses " + entry.target;
+    if (entry.type === "save") return entry.target + (entry.success ? " saves" : " fails") + " vs " + entry.action;
+    return "Combat update.";
+  };
+
+  const getCombatEntryDetails = (entry) => {
+    if (!entry) return "";
+    if (entry.type === "attack" || entry.type === "miss") {
+      const rollText = entry.roll ? "Roll " + (entry.roll.chosen ?? "?") + " + " + (entry.roll.modifier ?? 0) + " = " + (entry.roll.total ?? "?") : "";
+      const damageText = entry.damage ? String(entry.damage) + " damage" : "";
+      return [entry.action, rollText, damageText].filter(Boolean).join(" | ");
+    }
+    if (entry.type === "save") {
+      return [
+        entry.action,
+        entry.dc ? ("DC " + entry.dc + " " + (entry.ability || "")) : "",
+        entry.damage ? (String(entry.damage) + " damage") : "",
+        entry.conditions?.length ? ("Conditions: " + entry.conditions.join(", ")) : "",
+      ].filter(Boolean).join(" | ");
+    }
+    return "";
+  };
+
+  const getQuickActionScore = (item) => {
+    if (!item) return 0;
+    if (item.panel === "Attack") return item.disabledReason ? 78 : 98;
+    if (item.panel === "Spell") {
+      if (/heal|restore|cure/i.test(item.effect || "")) return item.disabledReason ? 72 : 92;
+      return item.disabledReason ? 68 : 88;
+    }
+    if (item.panel === "Class Feature") return item.disabledReason ? 60 : 82;
+    return item.disabledReason ? 40 : 70;
+  };
+
+  const rollTokenIntoInitiative = (token) => {
+    if (!token) return;
+    const profile = getCombatProfile(token);
+    const initBonus = token.monsterData
+      ? Math.floor(((token.monsterData.dex || 10) - 10) / 2)
+      : (profile?.initiativeBonus ?? toMod(token.dex));
+    const initRoll = typeof window.CombatEngine !== "undefined"
+      ? window.CombatEngine.rollInitiative(initBonus).total
+      : Math.floor(Math.random() * 20) + 1 + initBonus;
+    const row = {
+      id: "cb-" + token.id,
+      mapTokenId: token.id,
+      name: token.name,
+      init: initRoll,
+      hp: token.hp || 0,
+      maxHp: token.maxHp || token.hp || 0,
+      ac: token.ac || profile?.ac || 10,
+      type: token.tokenType === "pc" ? "pc" : (token.tokenType === "npc" ? "npc" : "enemy"),
+      color: token.color,
+    };
+    const currentTokenId = combatLive ? (combatants[turn]?.mapTokenId || token.id) : token.id;
+    const initiativePool = combatLive ? [...combatants.filter(c => c.mapTokenId !== token.id), row] : [row];
+    const sortedRows = initiativePool
+      .sort((a, b) => (b.init || 0) - (a.init || 0) || String(a.name || "").localeCompare(String(b.name || "")));
+    const nextTurnIdx = Math.max(0, sortedRows.findIndex(c => c.mapTokenId === currentTokenId));
+    setCombatants(sortedRows);
+    setTurn(nextTurnIdx);
+    if (!combatLive) {
+      setRound(1);
+      setTurnStateByToken({});
+      setCombatTargetByActor({});
+      setConditions({});
+      setPlayModeResolution(null);
+    }
+    setCombatLive(true);
+    setTurnStateByToken((prev) => ({ ...prev, [token.id]: prev[token.id] || defaultTurnState(token) }));
+    setSelectedTokenId(token.id);
+    addCombatLogEntry({
+      type: "system",
+      text: token.name + " rolls initiative " + initRoll + " (" + (initBonus >= 0 ? "+" : "") + initBonus + " DEX)",
+    });
+    setPlayModeResolution({
+      title: "Initiative: " + token.name,
+      lines: [
+        "Rolled " + initRoll + " total.",
+        "Initiative modifier: " + (initBonus >= 0 ? "+" : "") + initBonus + " DEX.",
+        "Added to the tracker on the right.",
+      ],
+    });
+    openCombatSidebar("tracker");
+  };
+
+  const getPopupQuickActions = (actorToken) => {
+    if (!actorToken) return [];
+    if (actorToken.tokenType === "pc") {
+      return [...getLegalActionCards(actorToken)]
+        .sort((a, b) => getQuickActionScore(b) - getQuickActionScore(a))
+        .slice(0, 6)
+        .map(card => ({
+          key: "pc-" + card.id,
+          label: card.name,
+          helper: card.disabledReason || card.outcome || card.effect || actionTypeLabel(card.type),
+          disabled: !!card.disabledReason,
+          tone: card.panel === "Attack" ? "#f06858" : card.panel === "Spell" ? "#b574ff" : card.panel === "Class Feature" ? "#5ee09a" : "#58aaff",
+          icon: card.panel === "Attack" ? Swords : card.panel === "Spell" ? Wand2 : card.panel === "Class Feature" ? Star : Compass,
+          onClick: () => {
+            resolvePlayModeCard(card, actorToken);
+            openCombatSidebar("tracker");
+            setTokenPopup(null);
+          },
+        }));
+    }
+    const md = actorToken.monsterData;
+    if (!md?.actions?.length) {
+      return [{
+        key: "roll-d20",
+        label: "Roll d20 Check",
+        helper: "Quick GM roll for this token.",
+        disabled: false,
+        tone: "#b574ff",
+        icon: Dice6,
+        onClick: () => {
+          rollAttack(actorToken.id);
+          addCombatLogEntry({ type: "system", text: actorToken.name + " makes a quick d20 roll." });
+          openCombatSidebar("log");
+          setTokenPopup(null);
+        },
+      }];
+    }
+    return md.actions.slice(0, 6).map((action, ai) => {
+      const focusTarget = getFocusedCombatTarget(actorToken);
+      const focusDist = focusTarget ? distBetween(actorToken, focusTarget) : null;
+      const parsed = (typeof window.CombatEngine !== "undefined" && window.CombatEngine.parseAttackAction)
+        ? window.CombatEngine.parseAttackAction(action)
+        : null;
+      const rangeLabel = parsed?.reach
+        ? (parsed.reach + " ft reach")
+        : parsed?.range?.short
+          ? (parsed.range.short + " ft range")
+          : "Uses monster statblock";
+      const disabled = !focusTarget;
+      return {
+        key: "monster-" + ai,
+        label: action.name,
+        helper: disabled ? "No hostile focus target available." : (focusTarget.name + " - " + rangeLabel + (focusDist != null ? " - " + focusDist + " ft away" : "")),
+        disabled,
+        tone: action.name.toLowerCase().includes("multiattack") ? "#ffd54f" : "#f06858",
+        icon: Swords,
+        onClick: () => {
+          const targetToken = getFocusedCombatTarget(actorToken);
+          if (!targetToken) {
+            addCombatLogEntry({ type: "system", text: "No valid focus target found for " + action.name + "." });
+            openCombatSidebar("tracker");
+            return;
+          }
+          executeCombatAction(actorToken.id, targetToken.id, ai);
+          setPlayModeResolution({
+            title: action.name,
+            lines: [
+              actorToken.name + " targets " + targetToken.name + ".",
+              "Result added to the combat feed.",
+            ],
+          });
+          openCombatSidebar("tracker");
+          setTokenPopup(null);
+        },
+      };
+    });
   };
 
   // ── Maps & Scenes system ──
@@ -7520,6 +7695,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       const rect = canvasRef.current.getBoundingClientRect();
       setTokenPopup({ tokenId: hit.id, screenX: e.clientX - rect.left, screenY: e.clientY - rect.top });
       setSelectedTokenId(hit.id);
+      setShowConditionMenu(false);
+      if (combatLive) openCombatSidebar("tracker");
     }
   };
 
@@ -7651,8 +7828,26 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     });
   };
   const removeToken = (id) => {
+    const removedIndex = combatants.findIndex(c => c.mapTokenId === id);
     setTokens(p => p.filter(t => t.id !== id));
+    setCombatants(p => p.filter(c => c.mapTokenId !== id));
+    setCombatTargetByActor(p => {
+      const next = {};
+      Object.keys(p || {}).forEach((k) => {
+        if (k !== id && p[k] !== id) next[k] = p[k];
+      });
+      return next;
+    });
+    setTokenConditions(p => {
+      const next = { ...(p || {}) };
+      delete next[id];
+      return next;
+    });
     if (selectedTokenId === id) setSelectedTokenId(null);
+    if (tokenPopup?.tokenId === id) setTokenPopup(null);
+    if (removedIndex >= 0 && combatants.length > 0) {
+      setTurn(t => Math.max(0, removedIndex < t || t >= combatants.length - 1 ? t - 1 : t));
+    }
   };
   const updateToken = (id, updates) => {
     setTokens(p => {
@@ -7799,6 +7994,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
 
   const resolvePlayModeCard = (card, actorToken) => {
     if (!card || !actorToken || actorToken.tokenType !== "pc") return;
+    openCombatSidebar("tracker");
     if (card.disabledReason) {
       setPlayModeResolution({ title: card.name, lines: ["Cannot use this option right now.", card.disabledReason] });
       return;
@@ -7994,6 +8190,14 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     setCombatTargetByActor({});
     setPlayModeResolution(null);
     setConditions({});
+    setCombatTab("tracker");
+    setSidebarOpen(true);
+    if (combs.length > 0) {
+      addCombatLogEntry({
+        type: "system",
+        text: "Encounter started. " + combs.map(c => c.name + " " + c.init).join(" | "),
+      });
+    }
     if (combs.length > 0) setSelectedTokenId(combs[0].mapTokenId);
   };
 
@@ -8165,6 +8369,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     setTokens(p => [...p, { id: tokenId, name: addName, color: cssVar("--crimson"), hp: hpNum, maxHp: hpNum, x: snap.x, y: snap.y, vision:0, darkvision:0, speed:30, hidden:false }]);
     const newC = { id: "cb-" + Date.now(), mapTokenId: tokenId, name: addName, init: parseInt(addInit), hp: hpNum, maxHp: hpNum, ac: parseInt(addAc) || 12, type: "enemy" };
     setCombatants(p => [...p, newC].sort((a, b) => b.init - a.init));
+    setCombatLive(true);
+    openCombatSidebar("tracker");
     setAddName(""); setAddInit(""); setAddHp(""); setAddAc("");
   };
 
@@ -8495,32 +8701,44 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
               );
             })()}
 
-            {/* Enhanced Token Popup (Owlbear Rodeo style) */}
+            {/* Token command popup */}
             {tokenPopup && (() => {
               const tk = tokens.find(t => t.id === tokenPopup.tokenId);
               if (!tk) return null;
               const hpPct = tk.maxHp ? Math.round(tk.hp / tk.maxHp * 100) : 0;
               const hpCol = tk.maxHp ? getHpColor(tk.hp, tk.maxHp) : "#888";
-              const popupBtnStyle = { display:"flex", alignItems:"center", gap:6, width:"100%", padding:"8px 12px", background:"none", border:"none", textAlign:"left", cursor:"pointer", fontSize:12, fontFamily:T.ui, letterSpacing:"0.3px", transition:"background 0.12s", borderRadius:"4px" };
+              const currentRow = combatants.find(c => c.mapTokenId === tk.id);
+              const isCurrentActor = combatLive && combatants[turn]?.mapTokenId === tk.id;
+              const hostileTargets = getHostileTargets(tk);
+              const focusTarget = getFocusedCombatTarget(tk);
+              const quickActions = getPopupQuickActions(tk);
+              const latestEntry = combatLog[0] || null;
+              const isMovingThisToken = movementMode && selectedTokenId === tk.id;
+              const popupX = Math.max(8, Math.min(tokenPopup.screenX, (canvasRef.current?.width || 600) - 336));
+              const popupY = Math.max(8, Math.min(tokenPopup.screenY, (canvasRef.current?.height || 400) - 530));
+              const popupBtnStyle = { display:"flex", alignItems:"flex-start", gap:8, width:"100%", padding:"8px 10px", background:"none", border:"none", textAlign:"left", cursor:"pointer", fontSize:12, fontFamily:T.ui, letterSpacing:"0.3px", transition:"background 0.12s", borderRadius:"8px" };
               return (
-                <div style={{ position:"absolute", left: Math.min(tokenPopup.screenX, (canvasRef.current?.width || 600) - 260), top: Math.min(tokenPopup.screenY, (canvasRef.current?.height || 400) - 380), background:"rgba(12,12,18,0.95)", backdropFilter:"blur(16px)", border:"1px solid " + T.crimsonBorder, borderRadius:"12px", boxShadow:"0 12px 48px rgba(0,0,6,0.7), 0 0 0 1px rgba(255,255,255,0.03) inset", zIndex:100, width:240, overflow:"hidden" }}
+                <div style={{ position:"absolute", left: popupX, top: popupY, background:"rgba(12,12,18,0.96)", backdropFilter:"blur(16px)", border:"1px solid " + T.crimsonBorder, borderRadius:"14px", boxShadow:"0 16px 52px rgba(0,0,6,0.72), 0 0 0 1px rgba(255,255,255,0.03) inset", zIndex:100, width:318, overflow:"hidden" }}
                   onClick={e => e.stopPropagation()}>
 
                   {/* Header */}
-                  <div style={{ padding:"12px 14px 10px", borderBottom:"1px solid " + T.border, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <div style={{ padding:"12px 14px 10px", borderBottom:"1px solid " + T.border, display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10 }}>
                     <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                       <div style={{ width:32, height:32, borderRadius:"50%", background:tk.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontFamily:T.ui, color:"#fff", fontWeight:700, border:"2px solid rgba(255,220,30,0.4)" }}>
                         {(tk.label || tk.name.substring(0,2)).toUpperCase()}
                       </div>
                       <div>
                         <div style={{ fontSize:14, fontFamily:T.ui, fontWeight:600, color:T.text, lineHeight:1.2 }}>{tk.name}</div>
-                        <div style={{ fontSize:10, fontFamily:T.ui, color:T.textFaint, display:"flex", gap:4 }}>
+                        <div style={{ fontSize:10, fontFamily:T.ui, color:T.textFaint, display:"flex", flexWrap:"wrap", gap:6, marginTop:2 }}>
                           <span style={{ textTransform:"capitalize" }}>{tk.size || "medium"}</span>
+                          <span>{tk.speed || 30} ft</span>
+                          <span>{currentRow ? ("Init " + currentRow.init) : "Not in initiative"}</span>
+                          {isCurrentActor && <span style={{ color:"#ffd54f" }}>Current Turn</span>}
                           {tk.ac && <span>· AC {tk.ac}</span>}
                         </div>
                       </div>
                     </div>
-                    <button onClick={() => setTokenPopup(null)} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:4 }}><X size={14}/></button>
+                    <button onClick={() => { setShowConditionMenu(false); setTokenPopup(null); }} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:4 }}><X size={14}/></button>
                   </div>
 
                   {/* HP Bar */}
@@ -8545,25 +8763,77 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
                     </div>
                   )}
 
+                  {hostileTargets.length > 0 && (
+                    <div style={{ padding:"8px 14px", borderBottom:"1px solid " + T.border, background:"rgba(255,213,79,0.04)" }}>
+                      <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:"#ffd54f", textTransform:"uppercase", marginBottom:5 }}>Focus Target</div>
+                      <select value={focusTarget?.id || ""} onChange={(e) => { setFocusedCombatTarget(tk.id, e.target.value); openCombatSidebar("tracker"); }} onClick={(e) => e.stopPropagation()}
+                        style={{ width:"100%", padding:"6px 8px", fontSize:10, background:"rgba(0,0,0,0.14)", border:"1px solid rgba(255,213,79,0.25)", color:T.text, borderRadius:"6px", outline:"none" }}>
+                        {hostileTargets.map((targetToken) => (
+                          <option key={"popup-target-" + tk.id + "-" + targetToken.id} value={targetToken.id}>
+                            {targetToken.name} - {hpStateLabel(targetToken.hp, targetToken.maxHp)} - {distBetween(tk, targetToken)} ft
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+
                   {/* Actions */}
-                  <div style={{ padding:"4px 6px" }}>
-                    <button onClick={() => { setSelectedTokenId(tk.id); setMovementMode(true); setMovementPath([]); setMovementOrigin({x:tk.x,y:tk.y}); setTokenPopup(null); }}
-                      onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.04)"} onMouseLeave={e => e.currentTarget.style.background="none"}
-                      style={{...popupBtnStyle, color:"#58aaff"}}>
-                      <Compass size={13}/> Move Token
-                    </button>
-                    <button onClick={() => { rollAttack(tk.id); setTokenPopup(null); }}
-                      onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.04)"} onMouseLeave={e => e.currentTarget.style.background="none"}
-                      style={{...popupBtnStyle, color:"#b574ff"}}>
-                      <Dice6 size={13}/> Roll d20
+                  <div style={{ padding:"6px", maxHeight:290, overflowY:"auto" }}>
+                    <button onClick={() => { rollTokenIntoInitiative(tk); setShowConditionMenu(false); setTokenPopup(null); }}
+                      onMouseEnter={e => e.currentTarget.style.background="rgba(255,213,79,0.08)"} onMouseLeave={e => e.currentTarget.style.background="none"}
+                      style={{...popupBtnStyle, color:"#ffd54f"}}>
+                      <Star size={14} style={{ marginTop:1 }}/>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:12, fontWeight:600 }}>{currentRow ? "Reroll Initiative" : "Roll Initiative"}</div>
+                        <div style={{ fontSize:9, color:T.textFaint, marginTop:2 }}>{currentRow ? "Update this token's place in the turn order." : "Add this token to the tracker on the right."}</div>
+                      </div>
                     </button>
 
+                    <button onClick={() => { setSelectedTokenId(tk.id); setMovementMode(!isMovingThisToken); if (!isMovingThisToken) { setMovementPath([]); setMovementOrigin({x:tk.x,y:tk.y}); } openCombatSidebar("tracker"); setShowConditionMenu(false); setTokenPopup(null); }}
+                      onMouseEnter={e => e.currentTarget.style.background="rgba(88,170,255,0.08)"} onMouseLeave={e => e.currentTarget.style.background="none"}
+                      style={{...popupBtnStyle, color:"#58aaff"}}>
+                      <Compass size={14} style={{ marginTop:1 }}/>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:12, fontWeight:600 }}>{isMovingThisToken ? "Finish Move" : "Move Token"}</div>
+                        <div style={{ fontSize:9, color:T.textFaint, marginTop:2 }}>{isMovingThisToken ? "Exit movement mode for this token." : (combatLive ? "Drag to move and spend movement for the active combatant." : "Drag the token and snap it to the grid.")}</div>
+                      </div>
+                    </button>
+
+                    {quickActions.map((act) => {
+                      const Icon = act.icon || Swords;
+                      return (
+                        <button key={act.key} onClick={() => { if (!act.disabled) act.onClick(); }}
+                          disabled={!!act.disabled}
+                          onMouseEnter={e => { if (!act.disabled) e.currentTarget.style.background="rgba(255,255,255,0.04)"; }}
+                          onMouseLeave={e => { if (!act.disabled) e.currentTarget.style.background="none"; }}
+                          style={{ ...popupBtnStyle, color: act.disabled ? "rgba(255,200,200,0.6)" : act.tone, opacity: act.disabled ? 0.6 : 1, cursor: act.disabled ? "not-allowed" : "pointer" }}>
+                          <Icon size={14} style={{ marginTop:1 }}/>
+                          <div style={{ flex:1 }}>
+                            <div style={{ fontSize:12, fontWeight:600, color: act.disabled ? "rgba(255,200,200,0.8)" : T.text }}>{act.label}</div>
+                            <div style={{ fontSize:9, color: act.disabled ? "#ff9e9e" : T.textFaint, marginTop:2 }}>{act.helper}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+
+                    {isCurrentActor && (
+                      <button onClick={() => { nextTurn(); setShowConditionMenu(false); setTokenPopup(null); openCombatSidebar("tracker"); }}
+                      onMouseEnter={e => e.currentTarget.style.background="rgba(94,224,154,0.08)"} onMouseLeave={e => e.currentTarget.style.background="none"}
+                      style={{...popupBtnStyle, color:"#5ee09a"}}>
+                      <SkipForward size={14} style={{ marginTop:1 }}/>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:12, fontWeight:600 }}>End Turn</div>
+                        <div style={{ fontSize:9, color:T.textFaint, marginTop:2 }}>Advance to the next combatant in initiative.</div>
+                      </div>
+                      </button>
+                    )}
+
                     {/* Conditions sub-section */}
-                    <div style={{ position:"relative" }}>
+                    <div style={{ position:"relative", marginTop:2 }}>
                       <button onClick={() => setShowConditionMenu(!showConditionMenu)}
-                        onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.04)"} onMouseLeave={e => e.currentTarget.style.background="none"}
+                        onMouseEnter={e => e.currentTarget.style.background="rgba(232,148,10,0.08)"} onMouseLeave={e => e.currentTarget.style.background="none"}
                         style={{...popupBtnStyle, color:"#e8940a", justifyContent:"space-between"}}>
-                        <span style={{ display:"flex", alignItems:"center", gap:6 }}><AlertTriangle size={13}/> Conditions</span>
+                        <span style={{ display:"flex", alignItems:"center", gap:8 }}><AlertTriangle size={14}/> <span style={{ fontSize:12, fontWeight:600 }}>Conditions</span></span>
                         <ChevronRight size={11}/>
                       </button>
                       {showConditionMenu && (
@@ -8574,6 +8844,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
                               <button key={dc.name} onClick={() => {
                                 if (hasCond) removeTokenCondition(tk.id, dc.name);
                                 else addTokenCondition(tk.id, dc.name);
+                                openCombatSidebar("tracker");
                               }}
                                 onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.04)"} onMouseLeave={e => e.currentTarget.style.background="none"}
                                 style={{ display:"flex", alignItems:"center", gap:6, width:"100%", padding:"6px 10px", background:"none", border:"none", textAlign:"left", cursor:"pointer", fontSize:11, color: hasCond ? dc.color : T.textMuted, fontFamily:T.ui }}>
@@ -8585,19 +8856,6 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
                         </div>
                       )}
                     </div>
-
-                    {combatLive && (
-                      <button onClick={() => {
-                        const result = parseDiceExpression("1d20");
-                        setDiceResult({ value: result.total, type: "initiative", name: tk.name, time: Date.now() });
-                        setTimeout(() => setDiceResult(null), 3000);
-                        setTokenPopup(null);
-                      }}
-                        onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.04)"} onMouseLeave={e => e.currentTarget.style.background="none"}
-                        style={{...popupBtnStyle, color:"#ffd54f"}}>
-                        <Star size={13}/> Roll Initiative
-                      </button>
-                    )}
 
                     {viewRole === "dm" && (
                       <React.Fragment>
@@ -8621,6 +8879,19 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
                       </React.Fragment>
                     )}
                   </div>
+
+                  {(latestEntry || playModeResolution) && (
+                    <div style={{ padding:"10px 14px 12px", borderTop:"1px solid " + T.border, background:"rgba(0,0,0,0.16)" }}>
+                      <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.textFaint, textTransform:"uppercase", marginBottom:5 }}>Latest Result</div>
+                      <div style={{ fontSize:10, fontFamily:T.body, color:T.text, whiteSpace:"pre-line", lineHeight:1.45 }}>
+                        {playModeResolution?.title ? (playModeResolution.title + "\n") : ""}
+                        {playModeResolution?.lines?.length ? playModeResolution.lines.slice(0, 2).join("\n") : getCombatEntrySummary(latestEntry)}
+                      </div>
+                      {!playModeResolution?.lines?.length && getCombatEntryDetails(latestEntry) && (
+                        <div style={{ fontSize:9, fontFamily:T.body, color:T.textMuted, marginTop:4 }}>{getCombatEntryDetails(latestEntry)}</div>
+                      )}
+                    </div>
+                  )}
                 </div>
               );
             })()}
@@ -9072,9 +9343,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       )}
     </div>
 
-    {/* Tab bar: Monsters | Tracker | Log */}
+    {/* Tab bar: Roster | Initiative | Results */}
     <div style={{ display:"flex", borderBottom:"1px solid " + T.border }}>
-      {[{id:"monsters",label:"Monsters"},{id:"tracker",label:"Tracker"},{id:"log",label:"Log"}].map(tab => (
+      {[{id:"monsters",label:"Roster"},{id:"tracker",label:"Initiative"},{id:"log",label:"Results"}].map(tab => (
         <button key={tab.id} onClick={() => setCombatTab(tab.id)}
           style={{ flex:1, padding:"8px 4px", background: combatTab === tab.id ? "rgba(212,67,58,0.08)" : "transparent", border:"none", borderBottom: combatTab === tab.id ? "2px solid var(--crimson)" : "2px solid transparent", cursor:"pointer", fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", color: combatTab === tab.id ? "var(--crimson)" : T.textFaint, transition:"all 0.15s" }}>{tab.label}
           {tab.id === "log" && combatLog.length > 0 && <span style={{ marginLeft:4, padding:"1px 4px", borderRadius:"8px", background:"rgba(212,67,58,0.15)", fontSize:7, color:"var(--crimson)" }}>{combatLog.length}</span>}
@@ -9174,10 +9445,30 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
               <p style={{ fontFamily:T.body, fontSize:13, color:T.textMuted, fontStyle:"italic", fontWeight:300, marginBottom:12 }}>
                 {tokens.length === 0 ? "Place tokens on the map first" : tokens.length + " token" + (tokens.length!==1?"s":"") + " ready"}
               </p>
+              {tokens.length > 0 && (
+                <div style={{ fontFamily:T.body, fontSize:10, color:T.textFaint, marginBottom:12 }}>
+                  Right-click a token to roll initiative and launch its actions, or start all placed tokens together.
+                </div>
+              )}
               <CrimsonBtn onClick={startCombat} disabled={tokens.length === 0}><Swords size={13}/> Start Encounter</CrimsonBtn>
             </div>
           ) : (
             <React.Fragment>
+              {(combatLog[0] || playModeResolution) && (
+                <div style={{ padding:"8px 10px", marginBottom:8, borderRadius:"8px", background:"rgba(0,0,0,0.14)", border:"1px solid rgba(255,255,255,0.08)", borderLeft:"3px solid " + (combatLog[0]?.type === "attack" ? (combatLog[0]?.isCrit ? "#ffd54f" : "var(--crimson)") : combatLog[0]?.type === "save" ? "#58aaff" : "#5ee09a") }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                    <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1.2px", color:"#5ee09a", textTransform:"uppercase", fontWeight:600 }}>Latest Result</div>
+                    {combatLog[0]?.time && <span style={{ fontSize:7, color:T.textFaint, fontFamily:T.ui }}>{combatLog[0].time}</span>}
+                  </div>
+                  <div style={{ fontSize:10, fontFamily:T.body, color:T.text, whiteSpace:"pre-line", lineHeight:1.45 }}>
+                    {playModeResolution?.title ? (playModeResolution.title + "\n") : ""}
+                    {playModeResolution?.lines?.length ? playModeResolution.lines.slice(0, 2).join("\n") : getCombatEntrySummary(combatLog[0])}
+                  </div>
+                  {!playModeResolution?.lines?.length && getCombatEntryDetails(combatLog[0]) && (
+                    <div style={{ fontSize:9, fontFamily:T.body, color:T.textMuted, marginTop:4 }}>{getCombatEntryDetails(combatLog[0])}</div>
+                  )}
+                </div>
+              )}
               <div style={{ display:"flex", flexDirection:"column", gap:2, maxHeight:320, overflowY:"auto" }}>
                 {combatants.map((c, i) => {
                   const isCurrent = i === turn;
