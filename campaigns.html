@@ -952,9 +952,10 @@ function SessionSchedulerInline({ data, setData }) {
 // ─── PLAYER CHARACTER FORM (self-service for players) ───────────────────────
 
 function PlayerCharacterForm({ onSubmit, existing, onCancel }) {
-  const [form, setForm] = useState(existing || {
-    name:"", cls:"", lv:1, hp:10, maxHp:10, ac:10, player:"", status:"healthy",
-    race:"", bio:"", sheetUrl:null, sheetName:null,
+  const [form, setForm] = useState(() => {
+    const blank = { name:"", cls:"", lv:1, hp:10, maxHp:10, ac:10, player:"", status:"healthy", race:"", bio:"", sheetUrl:null, sheetName:null, str:10, dex:10 };
+    if (!existing) return blank;
+    return { ...blank, ...existing, str: existing.str != null ? existing.str : 10, dex: existing.dex != null ? existing.dex : 10 };
   });
   const fileRef = useRef(null);
 
@@ -1017,6 +1018,16 @@ function PlayerCharacterForm({ onSubmit, existing, onCancel }) {
         <div>
           <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.textMuted, textTransform:"uppercase", display:"block", marginBottom:6 }}>AC</span>
           <Input type="number" value={form.ac} onChange={v=>setForm(p=>({...p,ac:parseInt(v)||10}))} />
+        </div>
+      </div>
+      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+        <div>
+          <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.textMuted, textTransform:"uppercase", display:"block", marginBottom:6 }}>STR (combat engine)</span>
+          <Input type="number" value={form.str != null ? form.str : 10} onChange={v=>setForm(p=>({...p,str:Math.max(1,Math.min(30,parseInt(v)||10))}))} />
+        </div>
+        <div>
+          <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.textMuted, textTransform:"uppercase", display:"block", marginBottom:6 }}>DEX</span>
+          <Input type="number" value={form.dex != null ? form.dex : 10} onChange={v=>setForm(p=>({...p,dex:Math.max(1,Math.min(30,parseInt(v)||10))}))} />
         </div>
       </div>
       <div>
@@ -2361,7 +2372,7 @@ function WorldView({ data, setData }) {
   );
   const HillSvg = ({ x, y, s }) => (
     <g transform={`translate(${x},${y}) scale(${s})`}>
-      <path d="M-20,0 Q-10,-18 0,-22 Q10,-18 20,0Z" fill="var(--text-faint)" opacity="0.06" stroke="var(--text-faint)" strokeWidth="0.6" opacity="0.12"/>
+      <path d="M-20,0 Q-10,-18 0,-22 Q10,-18 20,0Z" fill="var(--text-faint)" stroke="var(--text-faint)" strokeWidth="0.6" opacity="0.12"/>
     </g>
   );
   // POI icon renderer for scattered world POIs
@@ -3164,6 +3175,12 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
   const [showCombatLog, setShowCombatLog] = useState(false);
   const [showDiceOverlay, setShowDiceOverlay] = useState(null);
   const [combatTab, setCombatTab] = useState("monsters");
+  const [pcWeaponPick, setPcWeaponPick] = useState("Longsword");
+
+  const weaponNamesList = React.useMemo(() => {
+    if (typeof window.CombatEngine === "undefined" || !window.CombatEngine.WEAPONS) return [];
+    return Object.keys(window.CombatEngine.WEAPONS).sort();
+  }, []);
 
   const addCombatLogEntry = (entry) => {
     setCombatLog(prev => [{...entry, id: Date.now(), time: new Date().toLocaleTimeString()}, ...prev].slice(0, 100));
@@ -3231,6 +3248,81 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
   };
 
   // ── Combat attack execution using CombatEngine ──
+  const buildEngineCombatTarget = (t, tid) => {
+    const md = t.monsterData || {};
+    return {
+      ...md,
+      name: t.name,
+      ac: t.ac != null ? t.ac : md.ac,
+      hp: t.hp,
+      maxHp: t.maxHp,
+      id: t.id,
+      str: t.str != null ? t.str : md.str,
+      dex: t.dex != null ? t.dex : md.dex,
+      conditions: (tokenConditions[tid] || []).map(c => String(c).toLowerCase()),
+    };
+  };
+
+  const buildCombatEngineOptions = (targetToken, attackerToken) => ({
+    targetDodging: !!targetToken.combatDodge,
+    coverACBonus: targetToken.combatCover || 0,
+    magicalWeapon: !!attackerToken.magicalWeapon,
+  });
+
+  const applyAttackResultToTarget = (targetId, targetRef, totalDamage) => {
+    if (!totalDamage || totalDamage <= 0) return;
+    const newHp = Math.max(0, (targetRef.hp || 0) - totalDamage);
+    setTokens(prev => prev.map(t => t.id === targetId ? { ...t, hp: newHp } : t));
+    pushTargetHpToCampaign(targetRef, newHp);
+    const ci = combatants.findIndex(c => c.mapTokenId === targetId);
+    if (ci >= 0) setCombatants(prev => { const n = [...prev]; n[ci] = { ...n[ci], hp: newHp }; return n; });
+  };
+
+  const executePcWeaponAction = (attackerId, targetId, weaponName) => {
+    if (typeof window.CombatEngine === "undefined") return;
+    const CE = window.CombatEngine;
+    const attacker = tokens.find(t => t.id === attackerId);
+    const target = tokens.find(t => t.id === targetId);
+    if (!attacker || !target || attacker.tokenType !== "pc") return;
+    let pcStats = {
+      str: attacker.str != null ? attacker.str : 10,
+      dex: attacker.dex != null ? attacker.dex : 10,
+      lv: attacker.level || 1,
+      conditions: (tokenConditions[attackerId] || []).map(c => String(c).toLowerCase()),
+    };
+    if (attacker.partyId && party && party.length) {
+      const m = party.find(p => p.id === attacker.partyId);
+      if (m) {
+        if (m.str != null) pcStats.str = m.str;
+        if (m.dex != null) pcStats.dex = m.dex;
+        if (m.lv != null) pcStats.lv = m.lv;
+      }
+    }
+    const tgt = buildEngineCombatTarget(target, targetId);
+    const opts = { ...buildCombatEngineOptions(target, attacker), magicalWeapon: !!attacker.magicalWeapon };
+    const result = CE.executePcWeaponAttack(pcStats, tgt, weaponName, opts);
+    if (result.error) {
+      addCombatLogEntry({ type: "system", text: result.error });
+      return;
+    }
+    const r0 = result.results[0];
+    if (r0?.hit) {
+      addCombatLogEntry({ type: "attack", attacker: attacker.name, target: target.name, action: weaponName, hit: true, damage: result.totalDamage, isCrit: r0.isCrit, roll: r0.attackRoll });
+      applyAttackResultToTarget(targetId, target, result.totalDamage);
+      if (typeof window.VFX !== "undefined") {
+        const dtype = r0.damage?.[0]?.type || "slashing";
+        window.VFX.addEffect(window.VFX.createAttackEffect(attacker.x + gridSize / 2, attacker.y + gridSize / 2, target.x + gridSize / 2, target.y + gridSize / 2, weaponName, dtype));
+        window.VFX.addEffect(window.VFX.createDamageNumber(target.x + gridSize / 2, target.y + gridSize / 2 - 10, result.totalDamage, dtype, r0.isCrit));
+      }
+    } else if (r0) {
+      addCombatLogEntry({ type: "miss", attacker: attacker.name, target: target.name, action: weaponName, roll: r0.attackRoll });
+      if (typeof window.VFX !== "undefined") window.VFX.addEffect(window.VFX.createMissEffect(target.x + gridSize / 2, target.y + gridSize / 2));
+    }
+    if (result.results[1]?.type === "onHitSave" && !result.results[1].save?.success && result.results[1].condition) {
+      addTokenCondition(targetId, result.results[1].condition.charAt(0).toUpperCase() + result.results[1].condition.slice(1));
+    }
+  };
+
   const executeCombatAction = (attackerId, targetId, actionOrIndex) => {
     if (typeof window.CombatEngine === 'undefined') return;
     const CE = window.CombatEngine;
@@ -3241,15 +3333,23 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     const monster = attacker.monsterData;
     if (!monster) return;
 
-    const action = typeof actionOrIndex === 'number' ? monster.actions[actionOrIndex] : actionOrIndex;
+    let action = typeof actionOrIndex === 'number' ? monster.actions[actionOrIndex] : actionOrIndex;
     if (!action) return;
+    if (action._isLegendary && typeof CE.resolveLegendaryAction === "function") {
+      const resolved = CE.resolveLegendaryAction(monster, action);
+      if (resolved && resolved.desc) action = resolved;
+    }
+
+    const engineTarget = buildEngineCombatTarget(target, targetId);
+    const combatOpts = buildCombatEngineOptions(target, attacker);
 
     // Check if it's multiattack
     if (action.name.toLowerCase() === "multiattack") {
       const result = CE.executeMultiattack(
         { ...monster, conditions: (tokenConditions[attackerId] || []).map(c => c.toLowerCase()) },
-        { name: target.name, ac: target.ac || 10, hp: target.hp || 0, maxHp: target.maxHp || 0, conditions: (tokenConditions[targetId] || []).map(c => c.toLowerCase()), ...target.monsterData },
-        monster
+        engineTarget,
+        monster,
+        combatOpts
       );
 
       let totalDmg = 0;
@@ -3283,13 +3383,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
         }
       });
 
-      if (totalDmg > 0) {
-        const newHp = Math.max(0, (target.hp || 0) - totalDmg);
-        setTokens(prev => prev.map(t => t.id === targetId ? { ...t, hp: newHp } : t));
-        pushTargetHpToCampaign(target, newHp);
-        const ci = combatants.findIndex(c => c.mapTokenId === targetId);
-        if (ci >= 0) setCombatants(prev => { const n = [...prev]; n[ci] = {...n[ci], hp: newHp}; return n; });
-      }
+      if (totalDmg > 0) applyAttackResultToTarget(targetId, target, totalDmg);
       return;
     }
 
@@ -3298,16 +3392,13 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     if (parsed) {
       const result = CE.executeAttack(
         { ...monster, conditions: (tokenConditions[attackerId] || []).map(c => c.toLowerCase()) },
-        { name: target.name, ac: target.ac || 10, hp: target.hp, maxHp: target.maxHp, conditions: (tokenConditions[targetId] || []).map(c => c.toLowerCase()), ...target.monsterData },
-        action
+        engineTarget,
+        action,
+        combatOpts
       );
       if (result.results[0]?.hit) {
         addCombatLogEntry({ type: "attack", attacker: attacker.name, target: target.name, action: action.name, hit: true, damage: result.totalDamage, isCrit: result.results[0].isCrit, roll: result.results[0].attackRoll });
-        const newHp = Math.max(0, (target.hp || 0) - result.totalDamage);
-        setTokens(prev => prev.map(t => t.id === targetId ? { ...t, hp: newHp } : t));
-        pushTargetHpToCampaign(target, newHp);
-        const ci = combatants.findIndex(c => c.mapTokenId === targetId);
-        if (ci >= 0) setCombatants(prev => { const n = [...prev]; n[ci] = {...n[ci], hp: newHp}; return n; });
+        applyAttackResultToTarget(targetId, target, result.totalDamage);
         if (typeof window.VFX !== 'undefined') {
           const dtype = result.results[0].damage?.[0]?.type || "slashing";
           window.VFX.addEffect(window.VFX.createAttackEffect(attacker.x + gridSize/2, attacker.y + gridSize/2, target.x + gridSize/2, target.y + gridSize/2, action.name, dtype));
@@ -3318,27 +3409,20 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
         addCombatLogEntry({ type: "miss", attacker: attacker.name, target: target.name, action: action.name, roll: result.results[0]?.attackRoll });
         if (typeof window.VFX !== 'undefined') window.VFX.addEffect(window.VFX.createMissEffect(target.x + gridSize/2, target.y + gridSize/2));
       }
-      // On-hit save effects
       if (result.results[1]?.type === "onHitSave" && !result.results[1].save?.success && result.results[1].condition) {
         addTokenCondition(targetId, result.results[1].condition.charAt(0).toUpperCase() + result.results[1].condition.slice(1));
       }
     } else {
-      // Try as save action
       const saveResult = CE.executeSaveAction(
         { ...monster, conditions: (tokenConditions[attackerId] || []).map(c => c.toLowerCase()) },
-        [{ name: target.name, ac: target.ac, id: targetId, conditions: (tokenConditions[targetId] || []).map(c => c.toLowerCase()), ...target.monsterData }],
-        action
+        [engineTarget],
+        action,
+        combatOpts
       );
       if (saveResult.results[0]) {
         const r = saveResult.results[0];
         addCombatLogEntry({ type: "save", attacker: attacker.name, target: target.name, action: action.name, success: r.save?.success, damage: r.damage, conditions: r.conditions, dc: saveResult.parsed?.dc, ability: saveResult.parsed?.ability });
-        if (r.damage > 0) {
-          const newHp = Math.max(0, (target.hp || 0) - r.damage);
-          setTokens(prev => prev.map(t => t.id === targetId ? { ...t, hp: newHp } : t));
-          pushTargetHpToCampaign(target, newHp);
-          const ci = combatants.findIndex(c => c.mapTokenId === targetId);
-          if (ci >= 0) setCombatants(prev => { const n = [...prev]; n[ci] = {...n[ci], hp: newHp}; return n; });
-        }
+        if (r.damage > 0) applyAttackResultToTarget(targetId, target, r.damage);
         if (r.conditions?.length) {
           r.conditions.forEach(c => addTokenCondition(targetId, c.charAt(0).toUpperCase() + c.slice(1)));
         }
@@ -6960,6 +7044,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
         updates.level = member.lv;
         updates.spellSlots = getMaxSpellSlots(t.cls, member.lv);
       }
+      if (member.str !== undefined && member.str !== t.str) updates.str = member.str;
+      if (member.dex !== undefined && member.dex !== t.dex) updates.dex = member.dex;
       if (Object.keys(updates).length > 0) return { ...t, ...updates };
       return t;
     }));
@@ -8287,6 +8373,26 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
                           )}
                         </div>
                       )}
+                      {isCurrent && linkedToken?.tokenType === "pc" && (
+                        <div style={{ marginTop:6, paddingLeft:24 }}>
+                          <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"1px", color:"#5ee09a", textTransform:"uppercase", marginBottom:3 }}>PC weapon (SRD table)</div>
+                          <div style={{ display:"flex", flexWrap:"wrap", gap:4, alignItems:"center" }}>
+                            <select value={pcWeaponPick} onChange={e => { e.stopPropagation(); setPcWeaponPick(e.target.value); }} onClick={e => e.stopPropagation()}
+                              style={{ flex:1, minWidth:110, padding:"4px 6px", fontSize:9, background:"var(--bg-input)", border:"1px solid var(--border)", color:T.text, borderRadius:"4px" }}>
+                              {weaponNamesList.map(w => <option key={w} value={w}>{w}</option>)}
+                            </select>
+                            <button type="button"
+                              onClick={e => {
+                                e.stopPropagation();
+                                const targetToken = tokens.find(t => t.id !== c.mapTokenId && t.hp > 0 && (t.tokenType === "enemy" || t.monsterData));
+                                if (targetToken) executePcWeaponAction(c.mapTokenId, targetToken.id, pcWeaponPick);
+                                else addCombatLogEntry({ type: "system", text: "No hostile target for weapon attack" });
+                              }}
+                              style={{ padding:"4px 10px", background:"rgba(46,139,87,0.12)", border:"1px solid rgba(46,139,87,0.35)", borderRadius:"4px", color:"#5ee09a", fontFamily:T.ui, fontSize:8, cursor:"pointer" }}>Attack</button>
+                          </div>
+                          <div style={{ fontSize:7, color:T.textFaint, marginTop:4, fontStyle:"italic", lineHeight:1.35 }}>STR/DEX from party sheet (Join Party). Mark <strong>magic weapon</strong> on token Stats for B/P/S.</div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -8491,6 +8597,29 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
                           style={{ width:"100%", padding:"7px 10px", fontSize:13, fontFamily:T.body, background:"rgba(0,0,0,0.12)", border:"1px solid " + T.border, color:T.text, borderRadius:"6px", outline:"none", boxSizing:"border-box" }} />
                       </div>
                     </div>
+
+                    {viewRole === "dm" && (
+                      <div style={{ padding:"12px 0", borderTop:"1px solid " + T.border, borderBottom:"1px solid " + T.border }}>
+                        <span style={{ fontFamily:T.ui, fontSize:10, letterSpacing:"1px", color:T.textMuted, textTransform:"uppercase", display:"block", marginBottom:8 }}>5e combat engine</span>
+                        <label style={{ display:"flex", alignItems:"center", gap:8, fontSize:12, color:T.textDim, marginBottom:8, cursor:"pointer" }}>
+                          <input type="checkbox" checked={!!selectedToken.combatDodge} onChange={e => updateToken(selectedToken.id, { combatDodge: e.target.checked })} />
+                          Dodge (attackers have disadvantage)
+                        </label>
+                        <div style={{ marginBottom:8 }}>
+                          <span style={{ fontFamily:T.ui, fontSize:9, color:T.textFaint, display:"block", marginBottom:4 }}>Cover bonus to AC</span>
+                          <select value={String(selectedToken.combatCover || 0)} onChange={e => updateToken(selectedToken.id, { combatCover: parseInt(e.target.value, 10) || 0 })}
+                            style={{ width:"100%", padding:"7px 10px", fontSize:12, background:"rgba(0,0,0,0.12)", border:"1px solid " + T.border, color:T.text, borderRadius:"6px" }}>
+                            <option value="0">None</option>
+                            <option value="2">Half cover (+2)</option>
+                            <option value="5">Three-quarters (+5)</option>
+                          </select>
+                        </div>
+                        <label style={{ display:"flex", alignItems:"center", gap:8, fontSize:12, color:T.textDim, cursor:"pointer" }}>
+                          <input type="checkbox" checked={!!selectedToken.magicalWeapon} onChange={e => updateToken(selectedToken.id, { magicalWeapon: e.target.checked })} />
+                          Attacks are magical (ignore nonmagical B/P/S resist)
+                        </label>
+                      </div>
+                    )}
 
                     {/* Conditions */}
                     <div>
