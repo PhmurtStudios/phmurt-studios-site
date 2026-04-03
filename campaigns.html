@@ -13501,4 +13501,356 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
                           })}
                           {viewRole === "dm" && (
                             <button onClick={e => { e.stopPropagation(); const n = prompt("Scene name:"); if (n) createScene(map.id, n); }}
-                              onMouseEnter={e => e.currentTarget.style.color="#5ee09a"} onMouseLeave={e => e.currentTarget.style.color=T.textFai
+                              onMouseEnter={e => e.currentTarget.style.color="#5ee09a"} onMouseLeave={e => e.currentTarget.style.color=T.textFaint}
+                              style={{ width:"100%", padding:"8px", background:"none", border:"1px dashed rgba(46,139,87,0.25)", borderRadius:"6px", color:T.textFaint, fontFamily:T.ui, fontSize:10, cursor:"pointer", transition:"all 0.12s", display:"flex", alignItems:"center", gap:6, justifyContent:"center", marginTop:4 }}>
+                              <Plus size={10}/> Add Scene
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* TOKENS TAB */}
+                {sideTab === "tokens" && (
+                  <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                    <div style={{ ...secHead(), fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", marginBottom:8, fontWeight:500 }}>Tokens on Map ({tokens.length})</div>
+                    {tokens.length === 0 && (
+                      <div style={{ padding:"20px 10px", textAlign:"center", color:T.textFaint, fontFamily:T.body, fontSize:11, fontStyle:"italic" }}>No tokens placed yet. Drag from party or add monsters.</div>
+                    )}
+                    {tokens.map(t => {
+                      const isSelected = selectedTokenId === t.id;
+                      return (
+                        <div key={t.id} onClick={() => setSelectedTokenId(t.id)}
+                          style={{
+                            display:"flex", alignItems:"center", gap:8, padding:"8px 10px",
+                            background: isSelected ? "rgba(212,67,58,0.06)" : "rgba(0,0,0,0.06)",
+                            border:"1px solid " + (isSelected ? "rgba(212,67,58,0.25)" : T.border),
+                            borderRadius:"6px", cursor:"pointer", transition:"all 0.12s", marginBottom:3
+                          }}>
+                          <div style={{ width:28, height:28, borderRadius:"50%", background:t.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:9, fontFamily:T.ui, color:"#fff", fontWeight:700, flexShrink:0, border: isSelected ? "2px solid var(--crimson)" : "2px solid transparent", overflow:"hidden" }}>
+                            {t.imageSrc ? <img src={t.imageSrc} style={{ width:"100%", height:"100%", objectFit:"cover" }}/> : (t.label || t.name.substring(0,2)).toUpperCase()}
+                          </div>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ fontSize:12, fontFamily:T.ui, color:T.text, fontWeight:500, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{t.name}</div>
+                            <div style={{ fontSize:9, fontFamily:T.ui, color:T.textFaint }}>
+                              {t.tokenType || "creature"} · {t.hp != null && t.maxHp ? (t.hp + "/" + t.maxHp + " HP") : "No HP"}{t.ac ? " · AC " + t.ac : ""}
+                            </div>
+                          </div>
+                          {viewRole === "dm" && (
+                            <button onClick={e => { e.stopPropagation(); setTokens(prev => prev.filter(tk => tk.id !== t.id)); }}
+                              style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:3 }} title="Remove"><X size={11}/></button>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {viewRole === "dm" && (
+                      <div style={{ marginTop:8 }}>
+                        <div style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1px", color:T.textFaint, textTransform:"uppercase", marginBottom:6 }}>Quick Add</div>
+                        <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
+                          {party.filter(p => !tokens.find(t => t.partyId === p.id)).map(p => (
+                            <button key={"add-party-"+p.id} onClick={() => {
+                              const cx = (-pan.x + (canvasRef.current?.width || 800) / 2 / zoom);
+                              const cy = (-pan.y + (canvasRef.current?.height || 600) / 2 / zoom);
+                              setTokens(prev => [...prev, {
+                                id: Date.now() + Math.random(), name: p.name, partyId: p.id,
+                                x: Math.round(cx / gridSize) * gridSize, y: Math.round(cy / gridSize) * gridSize,
+                                color: p.color || "#3b82f6", size: (p.size || "medium").toLowerCase(), tokenSize: 1,
+                                hp: p.hp || p.maxHp || 20, maxHp: p.maxHp || 20, ac: p.ac || 10,
+                                speed: p.speed || 30, tokenType: "pc", vision: p.darkvision || 0,
+                                hidden: false, darkvision: p.darkvision || 0, label: "",
+                                imageSrc: p.portrait || null,
+                              }]);
+                            }}
+                              style={{ padding:"5px 8px", background:"rgba(88,170,255,0.08)", border:"1px solid rgba(88,170,255,0.2)", borderRadius:"4px", color:"#58aaff", fontFamily:T.ui, fontSize:9, cursor:"pointer" }}>
+                              + {p.name}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* SETTINGS TAB */}
+                {sideTab === "settings" && (
+                  <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
+                    <div style={{ fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", marginBottom:4, fontWeight:500 }}>Map Settings</div>
+
+                    {/* Grid Toggle */}
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <span style={{ fontFamily:T.ui, fontSize:11, color:T.text }}>Show Grid</span>
+                      <button onClick={() => setShowGrid(!showGrid)}
+                        style={{ padding:"4px 10px", background: showGrid ? "rgba(46,139,87,0.12)" : "rgba(0,0,0,0.1)", border:"1px solid " + (showGrid ? "rgba(46,139,87,0.3)" : T.border), borderRadius:"4px", cursor:"pointer", color: showGrid ? "#5ee09a" : T.textFaint, fontFamily:T.ui, fontSize:9 }}>
+                        {showGrid ? "ON" : "OFF"}
+                      </button>
+                    </div>
+
+                    {/* Grid Size */}
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <span style={{ fontFamily:T.ui, fontSize:11, color:T.text }}>Grid Size</span>
+                      <div style={{ display:"flex", gap:4, alignItems:"center" }}>
+                        <button onClick={() => setGridSize(Math.max(20, gridSize - 10))} style={{ padding:"3px 8px", background:T.bgInput, border:"1px solid " + T.border, borderRadius:"3px", cursor:"pointer", color:T.text, fontSize:10 }}>-</button>
+                        <span style={{ fontFamily:T.ui, fontSize:10, color:T.text, minWidth:32, textAlign:"center" }}>{gridSize}px</span>
+                        <button onClick={() => setGridSize(Math.min(120, gridSize + 10))} style={{ padding:"3px 8px", background:T.bgInput, border:"1px solid " + T.border, borderRadius:"3px", cursor:"pointer", color:T.text, fontSize:10 }}>+</button>
+                      </div>
+                    </div>
+
+                    {/* Snap */}
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <span style={{ fontFamily:T.ui, fontSize:11, color:T.text }}>Snap to Grid</span>
+                      <button onClick={() => setSnapToGrid(!snapToGrid)}
+                        style={{ padding:"4px 10px", background: snapToGrid ? "rgba(46,139,87,0.12)" : "rgba(0,0,0,0.1)", border:"1px solid " + (snapToGrid ? "rgba(46,139,87,0.3)" : T.border), borderRadius:"4px", cursor:"pointer", color: snapToGrid ? "#5ee09a" : T.textFaint, fontFamily:T.ui, fontSize:9 }}>
+                        {snapToGrid ? "ON" : "OFF"}
+                      </button>
+                    </div>
+
+                    {/* Fog */}
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <span style={{ fontFamily:T.ui, fontSize:11, color:T.text }}>Fog of War</span>
+                      <button onClick={() => setFogEnabled(!fogEnabled)}
+                        style={{ padding:"4px 10px", background: fogEnabled ? "rgba(88,170,255,0.12)" : "rgba(0,0,0,0.1)", border:"1px solid " + (fogEnabled ? "rgba(88,170,255,0.3)" : T.border), borderRadius:"4px", cursor:"pointer", color: fogEnabled ? "#58aaff" : T.textFaint, fontFamily:T.ui, fontSize:9 }}>
+                        {fogEnabled ? "ON" : "OFF"}
+                      </button>
+                    </div>
+
+                    {/* View Role Toggle */}
+                    <div style={{ marginTop:8, padding:"10px 12px", background:"rgba(0,0,0,0.08)", borderRadius:"8px", border:"1px solid " + T.border }}>
+                      <div style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1px", color:T.textFaint, textTransform:"uppercase", marginBottom:8 }}>View Mode</div>
+                      <div style={{ display:"flex", gap:4 }}>
+                        {["dm","player"].map(r => (
+                          <button key={r} onClick={() => setViewRole(r)}
+                            style={{ flex:1, padding:"6px", background: viewRole === r ? "rgba(212,67,58,0.1)" : "transparent", border:"1px solid " + (viewRole === r ? "rgba(212,67,58,0.3)" : T.border), borderRadius:"4px", cursor:"pointer", color: viewRole === r ? "var(--crimson)" : T.textFaint, fontFamily:T.ui, fontSize:9, letterSpacing:"1px", textTransform:"uppercase" }}>
+                            {r}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            );
+          })()}
+
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MAIN APP – Navigation & Campaign Management
+// ═══════════════════════════════════════════════════════════════════════════
+
+function App() {
+  const route = cmReadRoute();
+  const [campaigns, setCampaigns] = useState([]);
+  const [activeCampaignId, setActiveCampaignId] = useState(route.campaignId || null);
+  const [activeTab, setActiveTab] = useState(route.tab || "dashboard");
+  const [loading, setLoading] = useState(true);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [viewRole, setViewRole] = useState(route.role || "dm");
+
+  // ── Load campaigns from cache on mount ──
+  useEffect(() => {
+    const cached = cmLoadCampaignCache();
+    if (cached && cached.campaigns.length > 0) {
+      setCampaigns(cached.campaigns);
+      if (cached.activeCampaignId && cached.campaigns.find(c => c.id === cached.activeCampaignId)) {
+        setActiveCampaignId(cached.activeCampaignId);
+      } else {
+        setActiveCampaignId(cached.campaigns[0].id);
+      }
+    } else {
+      // Create example campaign
+      const example = { id: "example-1", data: NEW_CAMPAIGN(), isExample: true };
+      example.data.name = "Dragon's Reach";
+      example.data.party = [
+        { id:"p1", name:"Thorn Ironshield", class:"Fighter", level:5, hp:45, maxHp:45, ac:18, speed:30, color:"#3b82f6", portrait:null, stats:{str:18,dex:12,con:16,int:10,wis:13,cha:8} },
+        { id:"p2", name:"Elara Nightwhisper", class:"Wizard", level:5, hp:28, maxHp:28, ac:12, speed:30, color:"#a855f7", portrait:null, stats:{str:8,dex:14,con:12,int:20,wis:15,cha:10} },
+        { id:"p3", name:"Bran Oakfoot", class:"Cleric", level:5, hp:38, maxHp:38, ac:16, speed:30, color:"#f59e0b", portrait:null, stats:{str:14,dex:10,con:14,int:12,wis:18,cha:13} },
+      ];
+      setCampaigns([example]);
+      setActiveCampaignId(example.id);
+    }
+    setLoading(false);
+  }, []);
+
+  // ── Auto-save campaigns ──
+  const saveTimerRef = useRef(null);
+  useEffect(() => {
+    if (loading || campaigns.length === 0) return;
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      cmSaveCampaignCache(campaigns, activeCampaignId);
+    }, CAMPAIGN_SAVE_DELAY_MS);
+    return () => clearTimeout(saveTimerRef.current);
+  }, [campaigns, activeCampaignId, loading]);
+
+  // ── Sync URL ──
+  useEffect(() => {
+    if (!loading) cmSyncRoute(activeCampaignId, activeTab);
+  }, [activeCampaignId, activeTab, loading]);
+
+  const activeCampaign = campaigns.find(c => c.id === activeCampaignId);
+  const data = activeCampaign?.data || NEW_CAMPAIGN();
+  const setData = (updater) => {
+    setCampaigns(prev => prev.map(c => c.id === activeCampaignId ? { ...c, data: typeof updater === "function" ? updater(c.data) : updater } : c));
+  };
+
+  const handleCreateCampaign = () => {
+    const name = prompt("Campaign name:");
+    if (!name) return;
+    const newCamp = { id: "camp-" + Date.now(), data: { ...NEW_CAMPAIGN(), name }, isExample: false };
+    setCampaigns(prev => [...prev, newCamp]);
+    setActiveCampaignId(newCamp.id);
+    setActiveTab("dashboard");
+  };
+
+  const handleDeleteCampaign = (id) => {
+    if (!confirm("Delete this campaign permanently?")) return;
+    setCampaigns(prev => prev.filter(c => c.id !== id));
+    if (activeCampaignId === id) {
+      const remaining = campaigns.filter(c => c.id !== id);
+      setActiveCampaignId(remaining.length > 0 ? remaining[0].id : null);
+    }
+  };
+
+  const handlePartyUpdate = (partyId, patch) => {
+    setData(d => ({
+      ...d,
+      party: d.party.map(p => p.id === partyId ? { ...p, ...patch } : p),
+    }));
+  };
+
+  const navItems = [
+    { id:"dashboard", label:"Dashboard", icon: Layout },
+    { id:"timeline", label:"Timeline", icon: Clock },
+    { id:"world", label:"World", icon: Globe },
+    { id:"play", label:"Play", icon: Map },
+  ];
+
+  if (loading) {
+    return (
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100vh", background:"var(--bg)", color:T.textFaint, fontFamily:T.ui, fontSize:14, letterSpacing:"2px" }}>
+        Loading...
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ display:"flex", height:"100vh", background:"var(--bg)", overflow:"hidden" }}>
+      {/* ── Left Navigation Rail ── */}
+      <div style={{
+        width: sidebarCollapsed ? 52 : 200,
+        minWidth: sidebarCollapsed ? 52 : 200,
+        background:"var(--bg-nav)",
+        borderRight:"1px solid var(--crimson-border)",
+        display:"flex", flexDirection:"column",
+        transition:"width 0.25s ease, min-width 0.25s ease",
+        overflow:"hidden", flexShrink:0,
+      }}>
+        {/* Logo / Title */}
+        <div style={{ padding: sidebarCollapsed ? "16px 8px" : "16px 18px", borderBottom:"1px solid " + T.border, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          {!sidebarCollapsed && (
+            <div>
+              <div style={{ fontFamily:T.heading, fontSize:16, color:T.text, letterSpacing:"1.5px" }}>Campaign</div>
+              <div style={{ fontFamily:T.ui, fontSize:8, color:T.crimson, letterSpacing:"2px", textTransform:"uppercase", marginTop:2 }}>Manager</div>
+            </div>
+          )}
+          <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:4 }}>
+            {sidebarCollapsed ? <ChevronRight size={14}/> : <ChevronLeft size={14}/>}
+          </button>
+        </div>
+
+        {/* Campaign Selector */}
+        {!sidebarCollapsed && (
+          <div style={{ padding:"12px 14px", borderBottom:"1px solid " + T.border }}>
+            <CampaignSelector
+              campaigns={campaigns}
+              activeCampaignId={activeCampaignId}
+              onSelect={setActiveCampaignId}
+              onCreate={handleCreateCampaign}
+              onDelete={handleDeleteCampaign}
+            />
+          </div>
+        )}
+
+        {/* Nav Items */}
+        <div style={{ flex:1, padding:"8px 6px", display:"flex", flexDirection:"column", gap:2 }}>
+          {navItems.map(item => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button key={item.id} onClick={() => setActiveTab(item.id)}
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background="rgba(255,255,255,0.03)"; }}
+                onMouseLeave={e => { if (!isActive) e.currentTarget.style.background="transparent"; }}
+                style={{
+                  display:"flex", alignItems:"center", gap:10,
+                  padding: sidebarCollapsed ? "10px 0" : "10px 12px",
+                  justifyContent: sidebarCollapsed ? "center" : "flex-start",
+                  background: isActive ? "rgba(212,67,58,0.08)" : "transparent",
+                  border:"none", borderLeft: isActive ? "3px solid var(--crimson)" : "3px solid transparent",
+                  borderRadius:"0 6px 6px 0", cursor:"pointer", transition:"all 0.15s", width:"100%",
+                }}>
+                <Icon size={16} color={isActive ? "var(--crimson)" : T.textMuted} strokeWidth={isActive ? 2 : 1.5} />
+                {!sidebarCollapsed && (
+                  <span style={{ fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", textTransform:"uppercase", color: isActive ? "var(--crimson)" : T.textMuted, fontWeight: isActive ? 600 : 400 }}>
+                    {item.label}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* View Role Toggle */}
+        {!sidebarCollapsed && (
+          <div style={{ padding:"12px 14px", borderTop:"1px solid " + T.border }}>
+            <div style={{ display:"flex", gap:4 }}>
+              {["dm","player"].map(r => (
+                <button key={r} onClick={() => setViewRole(r)}
+                  style={{ flex:1, padding:"6px", background: viewRole === r ? "rgba(212,67,58,0.1)" : "transparent", border:"1px solid " + (viewRole === r ? "rgba(212,67,58,0.3)" : T.border), borderRadius:"4px", cursor:"pointer", color: viewRole === r ? "var(--crimson)" : T.textFaint, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase" }}>
+                  {r === "dm" ? "DM" : "Player"}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* ── Main Content Area ── */}
+      <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0, overflow:"hidden" }}>
+        {activeTab === "dashboard" && <DashboardView data={data} setData={setData} onNav={setActiveTab} />}
+        {activeTab === "timeline" && <TimelineView data={data} setData={setData} onNav={setActiveTab} />}
+        {activeTab === "world" && <WorldView data={data} setData={setData} />}
+        {activeTab === "play" && (
+          <Battlemap
+            party={data.party || []}
+            npcs={data.npcs || []}
+            viewRole={viewRole}
+            activeCampaignId={activeCampaignId}
+            onPartyUpdate={handlePartyUpdate}
+            setData={setData}
+            campaignEncounters={data.encounters || []}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MOUNT
+// ═══════════════════════════════════════════════════════════════════════════
+const root = ReactDOM.createRoot(document.getElementById("campaign-root"));
+root.render(React.createElement(App));
+
+  </script>
+</body>
+</html>
