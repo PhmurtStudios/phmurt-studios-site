@@ -4373,7 +4373,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
 
   const buildCombatEngineOptions = (targetToken, attackerToken) => {
     const lane = getLineCoverProfile(attackerToken, targetToken);
-    return {
+    const opts = {
       targetDodging: !!targetToken.combatDodge,
       coverACBonus: lane.coverACBonus,
       dexSaveBonus: lane.dexSaveBonus,
@@ -4381,14 +4381,61 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       coverLabel: lane.coverLabel,
       magicalWeapon: !!attackerToken.magicalWeapon,
     };
+
+    // ── BG3: Flanking check ──
+    if (typeof window.CombatEngine !== "undefined" && combatLive) {
+      const allies = tokens.filter(t =>
+        t.id !== attackerToken.id && t.id !== targetToken.id &&
+        t.tokenType === attackerToken.tokenType && (t.hp || 0) > 0
+      );
+      opts.flanking = window.CombatEngine.checkFlanking(attackerToken, targetToken, allies, gridSize);
+    }
+
+    // ── BG3: Height advantage ──
+    if (typeof window.CombatEngine !== "undefined") {
+      opts.heightAdvantage = window.CombatEngine.getHeightAdvantage(attackerToken, targetToken);
+    }
+
+    return opts;
   };
 
   const applyAttackResultToTarget = (targetId, targetRef, totalDamage) => {
     if (!totalDamage || totalDamage <= 0) return;
     const resolvedTarget = targetRef || tokens.find((t) => t.id === targetId);
     if (!resolvedTarget) return;
-    const newHp = Math.max(0, (resolvedTarget.hp || 0) - totalDamage);
-    applyTokenVitalsUpdate(resolvedTarget, newHp);
+
+    // ── Temp HP absorption (BG3) ──
+    const tempHp = resolvedTarget.tempHp || 0;
+    let actualDamage = totalDamage;
+    if (tempHp > 0 && typeof window.CombatEngine !== "undefined") {
+      const result = window.CombatEngine.applyDamageWithTempHp(resolvedTarget.hp || 0, tempHp, totalDamage);
+      updateToken(resolvedTarget.id, { tempHp: result.newTempHp });
+      if (result.tempHpAbsorbed > 0) {
+        addCombatLogEntry({ type:"system", text: resolvedTarget.name + " absorbs " + result.tempHpAbsorbed + " damage with temporary HP (" + result.newTempHp + " temp HP remaining)" });
+      }
+      actualDamage = result.hpLost > 0 ? (resolvedTarget.hp || 0) - result.newHp : 0;
+      applyTokenVitalsUpdate(resolvedTarget, result.newHp);
+    } else {
+      const newHp = Math.max(0, (resolvedTarget.hp || 0) - totalDamage);
+      applyTokenVitalsUpdate(resolvedTarget, newHp);
+    }
+
+    // ── Concentration save (BG3 / 5e) ──
+    if (totalDamage > 0 && typeof window.CombatEngine !== "undefined") {
+      const conds = getMergedConditionsForToken(resolvedTarget);
+      const isConcentrating = conds.includes("Concentrating") || resolvedTarget.activeConcentrationSpell;
+      if (isConcentrating) {
+        const conScore = resolvedTarget.con || resolvedTarget.stats?.con || 10;
+        const save = window.CombatEngine.rollConcentrationSave({ ...resolvedTarget, con: conScore }, totalDamage);
+        if (save.concentrationBroken) {
+          addCombatLogEntry({ type:"save", text: resolvedTarget.name + " FAILS concentration save (DC " + save.dc + ", rolled " + save.total + ") — " + (resolvedTarget.activeConcentrationSpell || "spell") + " ends!" });
+          updateToken(resolvedTarget.id, { activeConcentrationSpell: null });
+          removeTokenCondition(resolvedTarget.id, "Concentrating");
+        } else {
+          addCombatLogEntry({ type:"save", text: resolvedTarget.name + " maintains concentration (DC " + save.dc + ", rolled " + save.total + ")" });
+        }
+      }
+    }
   };
 
   const executePcWeaponAction = (attackerId, targetId, weaponName) => {
@@ -4432,12 +4479,53 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     }
     const r0 = result.results[0];
     if (r0?.hit) {
-      addCombatLogEntry({ type: "attack", attacker: attacker.name, target: target.name, action: weaponName, hit: true, damage: result.totalDamage, isCrit: r0.isCrit, roll: r0.attackRoll });
-      applyAttackResultToTarget(targetId, target, result.totalDamage);
+      let bonusDamage = 0;
+      const bonusLabels = [];
+
+      // ── BG3: Flanking log ──
+      if (opts.flanking) {
+        bonusLabels.push("flanking advantage");
+      }
+      // ── BG3: Height advantage log ──
+      if (opts.heightAdvantage === "advantage") {
+        bonusLabels.push("high ground advantage");
+      }
+
+      // ── BG3: Sneak Attack (Rogue) ──
+      const attackerClass = (attacker.class || attacker.cls || "").toLowerCase();
+      if (attackerClass.includes("rogue") && !attacker._sneakAttackUsedThisTurn) {
+        const allies = tokens.filter(t => t.id !== attacker.id && t.id !== target.id && t.tokenType === attacker.tokenType && (t.hp || 0) > 0);
+        const sneakCheck = CE.checkSneakAttack(
+          { ...pcStats, class: attacker.class || attacker.cls },
+          target, r0.attackRoll?.mode === "advantage", allies, weaponName
+        );
+        if (sneakCheck.eligible) {
+          const sneakRoll = CE.rollSneakAttack(pcStats.lv || 1);
+          bonusDamage += sneakRoll.total;
+          bonusLabels.push("Sneak Attack +" + sneakRoll.total);
+          addCombatLogEntry({ type: "system", text: attacker.name + " triggers Sneak Attack for " + sneakRoll.total + " extra damage (" + sneakRoll.expression + ")" });
+          updateToken(attacker.id, { _sneakAttackUsedThisTurn: true });
+        }
+      }
+
+      // ── BG3: Rage damage (Barbarian) ──
+      if (attackerClass.includes("barbarian") && getMergedConditionsForToken(attacker).includes("Raging")) {
+        const rageDmg = CE.getRageDamage(pcStats.lv || 1);
+        bonusDamage += rageDmg;
+        bonusLabels.push("Rage +" + rageDmg);
+      }
+
+      const totalDmg = result.totalDamage + bonusDamage;
+      const logLabel = bonusLabels.length > 0 ? " (" + bonusLabels.join(", ") + ")" : "";
+      addCombatLogEntry({ type: "attack", attacker: attacker.name, target: target.name, action: weaponName + logLabel, hit: true, damage: totalDmg, isCrit: r0.isCrit, roll: r0.attackRoll });
+      applyAttackResultToTarget(targetId, target, totalDmg);
       if (typeof window.VFX !== "undefined") {
         const dtype = r0.damage?.[0]?.type || "slashing";
         window.VFX.addEffect(window.VFX.createAttackEffect(attacker.x + gridSize / 2, attacker.y + gridSize / 2, target.x + gridSize / 2, target.y + gridSize / 2, weaponName, dtype));
-        window.VFX.addEffect(window.VFX.createDamageNumber(target.x + gridSize / 2, target.y + gridSize / 2 - 10, result.totalDamage, dtype, r0.isCrit));
+        window.VFX.addEffect(window.VFX.createDamageNumber(target.x + gridSize / 2, target.y + gridSize / 2 - 10, totalDmg, dtype, r0.isCrit));
+        if (bonusDamage > 0) {
+          window.VFX.addEffect(window.VFX.createDamageNumber(target.x + gridSize / 2 + 15, target.y + gridSize / 2 - 25, bonusDamage, "radiant", false));
+        }
       }
     } else if (r0) {
       addCombatLogEntry({ type: "miss", attacker: attacker.name, target: target.name, action: weaponName, roll: r0.attackRoll });
@@ -5392,6 +5480,79 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
         data: { kind: entry.name.toLowerCase(), rangeLimit: entry.rangeLimit || null, needsFocus: !!entry.needsFocus },
       });
     });
+
+    // ── BG3: Divine Smite (Paladin) ──
+    const cls = (profile.className || "").toLowerCase();
+    if (cls.includes("paladin") && profile.spellSlots) {
+      for (let slotLvl = 1; slotLvl <= 5; slotLvl++) {
+        const maxSlot = (profile.spellSlots || {})[slotLvl] || 0;
+        const usedSlot = (profile.usedSlots || {})[slotLvl] || 0;
+        if (usedSlot >= maxSlot) continue;
+        const smiteDice = Math.min(5, 1 + slotLvl);
+        cards.push({
+          id: "smite_lv" + slotLvl,
+          panel: "Class Feature",
+          name: "Divine Smite (Lv" + slotLvl + ")",
+          type: "special",
+          range: "Melee",
+          roll: smiteDice + "d8 radiant",
+          effect: "On your next melee hit, deal " + smiteDice + "d8 extra radiant damage (+1d8 vs undead/fiend). Costs 1 level " + slotLvl + " spell slot.",
+          cost: "Level " + slotLvl + " slot (" + (maxSlot - usedSlot) + " left)",
+          outcome: "Extra " + smiteDice + "d8 radiant damage on melee hit.",
+          disabledReason: ts.actionUsed ? "Attack action already used. Smite applies on hit." : (!focusTarget ? "No hostile target available." : ""),
+          resolver: "smite",
+          data: { slotLevel: slotLvl, smiteDice },
+        });
+      }
+    }
+
+    // ── BG3: Action Surge (Fighter) ──
+    if (cls.includes("fighter") && (profile.level || 1) >= 2) {
+      const CE = window.CombatEngine;
+      const maxCharges = CE ? CE.getActionSurgeCharges(profile.level || 1) : 1;
+      const usedSurge = (actorToken.classResources || {}).actionSurge || 0;
+      const surgeLeft = maxCharges - usedSurge;
+      cards.push({
+        id: "feature_action_surge",
+        panel: "Class Feature",
+        name: "Action Surge",
+        type: "special",
+        range: "Self",
+        roll: "none",
+        effect: "Take an additional action this turn. " + surgeLeft + "/" + maxCharges + " charges remaining.",
+        cost: "1 charge (recharges on short rest)",
+        outcome: "Gain an extra action this turn.",
+        disabledReason: surgeLeft <= 0 ? "No Action Surge charges remaining." : "",
+        resolver: "actionSurge",
+        data: { maxCharges },
+      });
+    }
+
+    // ── BG3: Rage (Barbarian) ──
+    if (cls.includes("barbarian")) {
+      const CE = window.CombatEngine;
+      const isRaging = getMergedConditionsForToken(actorToken).includes("Raging");
+      const rageDmg = CE ? CE.getRageDamage(profile.level || 1) : 2;
+      const maxRages = CE ? CE.getRageCharges(profile.level || 1) : 2;
+      const usedRages = (actorToken.classResources || {}).rage || 0;
+      const ragesLeft = maxRages === Infinity ? "∞" : (maxRages - usedRages);
+      cards.push({
+        id: "feature_rage",
+        panel: "Class Feature",
+        name: isRaging ? "End Rage" : "Rage",
+        type: "bonus",
+        range: "Self",
+        roll: "none",
+        effect: isRaging
+          ? "End your rage."
+          : "+" + rageDmg + " melee damage, resist B/P/S, advantage on STR checks/saves. " + ragesLeft + " rages left.",
+        cost: isRaging ? "Free" : "Bonus Action + 1 rage charge",
+        outcome: isRaging ? "Rage ends." : "Gain Raging condition. +" + rageDmg + " melee damage.",
+        disabledReason: !isRaging && ts.bonusActionUsed ? "Bonus Action already used this turn." : (!isRaging && ragesLeft <= 0 ? "No rage charges remaining." : ""),
+        resolver: "rage",
+        data: { rageDmg, isRaging },
+      });
+    }
 
     return cards;
   };
@@ -10566,6 +10727,102 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       }
       setPlayModeResolution({ title: card.name, lines: ["Selected: " + card.name, card.effect, "Resolved."] });
       addStructuredCombatLog("Used " + card.name, card.effect, "Action used");
+      return;
+    }
+
+    // ── Divine Smite resolver ──
+    if (card.resolver === "smite") {
+      if (!target) {
+        setPlayModeResolution({ title: card.name, lines: ["No valid hostile target found."] });
+        return;
+      }
+      const slotLvl = card.data.slotLevel;
+      const smiteDice = card.data.smiteDice;
+      const steps = ["Selected: " + card.name, "Target: " + target.name];
+      // Consume spell slot
+      const usedSlots = { ...(actorToken.usedSlots || {}) };
+      usedSlots[slotLvl] = (usedSlots[slotLvl] || 0) + 1;
+      updateToken(actorToken.id, { usedSlots });
+      // Roll smite damage
+      const isUndead = /undead|fiend/i.test(target.creatureType || target.type || "");
+      const totalDice = smiteDice + (isUndead ? 1 : 0);
+      let smiteDmg = 0;
+      const rolls = [];
+      for (let i = 0; i < totalDice; i++) {
+        const r = Math.floor(Math.random() * 8) + 1;
+        rolls.push(r);
+        smiteDmg += r;
+      }
+      steps.push("Roll " + totalDice + "d8 radiant: [" + rolls.join(", ") + "] = " + smiteDmg + (isUndead ? " (includes +1d8 vs undead/fiend)" : ""));
+      // Apply damage
+      applyAttackResultToTarget(target.id, target, smiteDmg);
+      emitPlayModeVfx(actorToken, target, {
+        mode: "attack",
+        actionName: card.name,
+        damageType: "radiant",
+        amount: smiteDmg,
+        isCrit: false,
+        color: "#ffd700",
+      });
+      const remaining = Math.max(0, (target.hp || 0) - smiteDmg);
+      steps.push("Result: " + smiteDmg + " radiant damage dealt. " + target.name + " has " + remaining + " HP remaining.");
+      addStructuredCombatLog("Used " + card.name + " on " + target.name, "Dealt " + smiteDmg + " radiant damage", "Level " + slotLvl + " slot consumed");
+      addCombatLogEntry({ type: "smite", attacker: actorToken.name, target: target.name, action: card.name, damage: smiteDmg });
+      spendEconomy(actorToken.id, card.type);
+      setPlayModeResolution({ title: card.name, lines: steps });
+      return;
+    }
+
+    // ── Action Surge resolver ──
+    if (card.resolver === "actionSurge") {
+      const steps = ["Selected: Action Surge"];
+      // Consume charge
+      const usedSurge = (actorToken.classResources || {}).actionSurge || 0;
+      updateToken(actorToken.id, { classResources: { ...(actorToken.classResources || {}), actionSurge: usedSurge + 1 } });
+      // Reset action economy — give back the action
+      setTurnStateByToken((prev) => ({
+        ...prev,
+        [actorToken.id]: {
+          ...(prev[actorToken.id] || defaultTurnState(actorToken)),
+          actionUsed: false,
+        },
+      }));
+      emitPlayModeVfx(actorToken, actorToken, { mode: "buff", actionName: "Action Surge", color: "#ffd54f" });
+      steps.push("You gain one additional action this turn.");
+      steps.push("Action economy refreshed — you may take another action.");
+      addStructuredCombatLog("Used Action Surge", "Action refreshed", "1 charge consumed");
+      addCombatLogEntry({ type: "feature", actor: actorToken.name, action: "Action Surge", effect: "Additional action granted" });
+      setPlayModeResolution({ title: card.name, lines: steps });
+      return;
+    }
+
+    // ── Rage resolver ──
+    if (card.resolver === "rage") {
+      const isRaging = card.data.isRaging;
+      const steps = ["Selected: " + card.name];
+      if (isRaging) {
+        // End rage
+        removeTokenCondition(actorToken.id, "Raging");
+        emitPlayModeVfx(actorToken, actorToken, { mode: "buff", actionName: "End Rage", color: "#ff6b6b" });
+        steps.push("Rage ends. Damage bonus and resistances removed.");
+        addStructuredCombatLog("Ended Rage", "Raging condition removed", "Free action");
+        addCombatLogEntry({ type: "feature", actor: actorToken.name, action: "End Rage", effect: "Rage ended" });
+      } else {
+        // Enter rage — consume charge
+        const usedRages = (actorToken.classResources || {}).rage || 0;
+        updateToken(actorToken.id, { classResources: { ...(actorToken.classResources || {}), rage: usedRages + 1 } });
+        addTokenCondition(actorToken.id, "Raging");
+        emitPlayModeVfx(actorToken, actorToken, { mode: "buff", actionName: "Rage", color: "#ff4444", radius: 60 });
+        steps.push("You enter a rage!");
+        steps.push("+" + card.data.rageDmg + " to melee weapon damage rolls.");
+        steps.push("Resistance to bludgeoning, piercing, and slashing damage.");
+        steps.push("Advantage on Strength checks and saves.");
+        addStructuredCombatLog("Entered Rage", "+" + card.data.rageDmg + " melee damage, B/P/S resistance", "Bonus Action + 1 rage charge");
+        addCombatLogEntry({ type: "feature", actor: actorToken.name, action: "Rage", effect: "Entered rage" });
+        spendEconomy(actorToken.id, "bonus");
+      }
+      setPlayModeResolution({ title: card.name, lines: steps });
+      return;
     }
   };
 
@@ -10690,6 +10947,60 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     setMode("select");
   };
 
+  // ── BG3: End-of-turn effects for the OUTGOING creature ──
+  const resolveEndOfTurnEffects = (token) => {
+    if (!token || !combatLive) return;
+    const CE = typeof window.CombatEngine !== "undefined" ? window.CombatEngine : null;
+    if (!CE) return;
+
+    // End-of-turn condition saves (frightened, charmed, stunned, etc.)
+    const conds = getMergedConditionsForToken(token);
+    for (const cond of conds) {
+      const condLower = cond.toLowerCase();
+      if (CE.CONDITIONS_WITH_REPEAT_SAVE && CE.CONDITIONS_WITH_REPEAT_SAVE[condLower]) {
+        const saveDC = token._conditionSaveDC?.[condLower] || 13;
+        const result = CE.rollEndOfTurnSave(
+          buildEngineCombatTarget(token, token.id),
+          condLower, saveDC
+        );
+        if (result && result.removed) {
+          removeTokenCondition(token.id, cond);
+          addCombatLogEntry({ type: "save", text: token.name + " shakes off " + cond + " (DC " + result.dc + ", rolled " + result.total + ")" });
+        } else if (result) {
+          addCombatLogEntry({ type: "save", text: token.name + " fails to shake off " + cond + " (DC " + result.dc + ", rolled " + result.total + ")" });
+        }
+      }
+    }
+
+    // Terrain damage for standing in hazardous terrain
+    const cellX = Math.floor(token.x / gridSize);
+    const cellY = Math.floor(token.y / gridSize);
+    const terrainKey = cellX + "," + cellY;
+    const terrainCell = terrainCells?.[terrainKey];
+    if (terrainCell && CE.TERRAIN_COMBAT_EFFECTS && CE.TERRAIN_COMBAT_EFFECTS[terrainCell]) {
+      const effect = CE.resolveTerrainEffect(
+        buildEngineCombatTarget(token, token.id),
+        terrainCell
+      );
+      if (effect && effect.damageTotal > 0) {
+        addCombatLogEntry({ type: "system", text: token.name + " takes " + effect.damageTotal + " " + (effect.type || "") + " damage from " + terrainCell + " terrain" });
+        applyAttackResultToTarget(token.id, token, effect.damageTotal);
+        if (typeof window.VFX !== "undefined") {
+          window.VFX.addEffect(window.VFX.createDamageNumber(token.x + gridSize / 2, token.y + gridSize / 2 - 10, effect.damageTotal, effect.type || "fire", false));
+        }
+      }
+      if (effect && effect.conditionApplied) {
+        addTokenCondition(token.id, effect.conditionApplied.charAt(0).toUpperCase() + effect.conditionApplied.slice(1));
+        addCombatLogEntry({ type: "system", text: token.name + " is " + effect.conditionApplied + " by " + terrainCell + " terrain" });
+      }
+    }
+
+    // Reset per-turn flags
+    if (token._sneakAttackUsedThisTurn) {
+      updateToken(token.id, { _sneakAttackUsedThisTurn: false });
+    }
+  };
+
   const primeTokenForTurnStart = (token) => {
     if (!token) return;
     const tokenPatch = {
@@ -10791,6 +11102,15 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
 
   const nextTurn = () => {
     cancelCockpitIntent();
+
+    // ── BG3: Resolve end-of-turn effects for the outgoing creature ──
+    if (combatLive && combatants[turn]) {
+      const outgoingToken = tokens.find(t => t.id === combatants[turn].mapTokenId);
+      if (outgoingToken && (outgoingToken.hp || 0) > 0) {
+        resolveEndOfTurnEffects(outgoingToken);
+      }
+    }
+
     let nextIdx = turn + 1;
     while (nextIdx < combatants.length && shouldSkipCombatantRow(combatants[nextIdx])) nextIdx++;
     if (nextIdx >= combatants.length) {
