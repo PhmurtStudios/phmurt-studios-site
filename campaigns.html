@@ -25,9 +25,9 @@
   <script src="phmurt-auth.js"></script>
   <script src="phmurt-realtime.js"></script>
   <script src="phmurt-shell.js"></script>
-  <script src="monster-data.js"></script>
-  <script src="combat-engine.js"></script>
-  <script src="visual-effects.js"></script>
+  <script src="combat-engine.js" defer></script>
+  <script src="visual-effects.js" defer></script>
+  <script src="monster-data.js" defer></script>
   <style>
     #campaign-root {
       width: 100%;
@@ -39,7 +39,7 @@
 </head>
 <body>
   <div id="ps-site-shell"></div>
-  <div id="campaign-root"></div>
+  <div id="campaign-root"><div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#10101e;color:#888;font-family:Georgia,serif;font-size:18px;letter-spacing:2px">Loading Campaign Manager...</div></div>
 
   <!-- React 18 via CDN -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -57,7 +57,8 @@
     const { useState, useEffect, useCallback, useRef } = React;
 
     // Lucide icons from global
-    const { ChevronDown, ChevronRight, ChevronLeft, Swords, Users, MapPin, Crown, Scroll, Clock, Star, BookOpen, Dice6, Target, Heart, CheckCircle, Circle, ArrowRight, Plus, Compass, Mountain, Castle, Skull, Flag, TrendingUp, TrendingDown, Minus, SkipForward, Search, Bell, Settings, X, Edit3, Trash2, Eye, EyeOff, Globe, Layers, Activity, Upload, Download, FileText, Save, Copy, Calendar, Lock, Unlock, ToggleLeft, ToggleRight, AlertTriangle, Package, Shield, Wand2, Map: MapIcon, Link, RefreshCw, ChevronUp, MoreVertical, Check, Image, Bold, Italic, List, Type, Heading } = window.LucideReact || {};
+    const { ChevronDown, ChevronRight, ChevronLeft, Swords, Users, MapPin, Crown, Scroll, Clock, Star, BookOpen, Dice6, Target, Heart, CheckCircle, Circle, ArrowRight, Plus, Compass, Mountain, Castle, Skull, Flag, TrendingUp, TrendingDown, Minus, SkipForward, Search, Bell, Settings, X, Edit3, Trash2, Eye, EyeOff, Globe, Layers, Activity, Upload, Download, FileText, Save, Copy, Calendar, Lock, Unlock, ToggleLeft, ToggleRight, AlertTriangle, Package, Shield, Wand2, Map: MapIcon, Link, RefreshCw, ChevronUp, MoreVertical, Check, Image, Bold, Italic, List, Type, Heading, Filter } = window.LucideReact || {};
+    const FilterIcon = Filter || Layers;
 
 /* ═══════════════════════════════════════════════════════════════════════════
    PHMURT STUDIOS — CAMPAIGN MANAGER
@@ -167,11 +168,11 @@ const EXAMPLE_CAMPAIGN = {
     { id:24, n:24, title:"Into the Shadowfen", date:"2026-03-26",
       summary:"The party ventured into the Shadowfen seeking the Shadow Obelisk. They fought corrupted beasts and discovered Seraphine the Lost guarding a ritual site. After a fierce battle, Seraphine was defeated but the obelisk remains active.",
       events:[
-        { id:"e1", type:"encounter",    text:"Ambush by 6 Blighted Wolves in the outer marshes",  outcome:"Victory — Fenris badly wounded", dmOnly:false },
-        { id:"e2", type:"discovery",    text:"Found Seraphine's journal revealing the Crown's true location", outcome:"New quest lead unlocked", dmOnly:true },
-        { id:"e3", type:"encounter",    text:"Boss fight: Seraphine the Lost (CR 11 Shadow Mage)", outcome:"Seraphine slain, obelisk still active", dmOnly:false },
-        { id:"e4", type:"world_change", text:"The Hollow's grip on Shadowfen weakens slightly", outcome:"Faction power shift", dmOnly:false },
-        { id:"e5", type:"loot",         text:"Acquired Seraphine's Shadow Staff and encoded map", outcome:"Key item obtained", dmOnly:false },
+        { id:"e1", type:"encounter",    text:"Ambush by 6 Blighted Wolves in the outer marshes",  outcome:"Victory — Fenris badly wounded", dmOnly:false, location:"Shadowfen", scope:"party" },
+        { id:"e2", type:"discovery",    text:"Found Seraphine's journal revealing the Crown's true location", outcome:"New quest lead unlocked", dmOnly:true, importance:"major" },
+        { id:"e3", type:"encounter",    text:"Boss fight: Seraphine the Lost (CR 11 Shadow Mage)", outcome:"Seraphine slain, obelisk still active", dmOnly:false, location:"Ritual site", importance:"major" },
+        { id:"e4", type:"world_change", text:"The Hollow's grip on Shadowfen weakens slightly", outcome:"Faction power shift", dmOnly:false, scope:"world" },
+        { id:"e5", type:"loot",         text:"Acquired Seraphine's Shadow Staff and encoded map", outcome:"Key item obtained", dmOnly:false, importance:"minor" },
       ],
       changes:["Seraphine the Lost killed","Hollow power reduced","Aldenmire path revealed"], notes:"Party handled the encounter well. Fenris nearly went down twice.", dmOnly:false },
     { id:23, n:23, title:"The Warden's Warning", date:"2026-03-19",
@@ -1405,18 +1406,60 @@ function DashboardView({ data, setData, onNav }) {
 // TIMELINE
 // ═══════════════════════════════════════════════════════════════════════════
 
-function TimelineView({ data, setData }) {
+const TIMELINE_EVENT_TYPES = [
+  { id:"encounter", label:"Combat" },
+  { id:"discovery", label:"Discovery" },
+  { id:"roleplay", label:"Roleplay" },
+  { id:"world_change", label:"World" },
+  { id:"loot", label:"Loot" },
+  { id:"quest_complete", label:"Quest" },
+];
+
+const TIMELINE_EVENT_CSS = {
+  encounter: "--event-encounter",
+  discovery: "--event-discovery",
+  roleplay: "--event-roleplay",
+  world_change: "--event-worldchange",
+  loot: "--event-loot",
+  quest_complete: "--event-quest",
+};
+
+function inferEventImportance(ev) {
+  if (ev.importance === "major" || ev.importance === "minor" || ev.importance === "standard") return ev.importance;
+  if (ev.type === "quest_complete" || ev.type === "world_change") return "major";
+  if (ev.type === "loot" || ev.type === "discovery") return "minor";
+  if (ev.type === "encounter") return "major";
+  return "standard";
+}
+
+function TimelineView({ data, setData, onNav }) {
   const [open,setOpen] = useState(new Set([data.timeline[0]?.id]));
   const [dmView,setDmView] = useState(true);
   const [addingSession, setAddingSession] = useState(false);
   const [addingEvent, setAddingEvent] = useState(null);
   const [newSession, setNewSession] = useState({ title:"", date:new Date().toISOString().split('T')[0], summary:"", dmOnly:false });
-  const [newEvent, setNewEvent] = useState({ type:"encounter", text:"", outcome:"", dmOnly:false });
+  const [newEvent, setNewEvent] = useState({ type:"encounter", text:"", outcome:"", dmOnly:false, location:"", importance:"standard", scope:"" });
   const [editNotes, setEditNotes] = useState({});
+  const [filterType, setFilterType] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [compactLayout, setCompactLayout] = useState(false);
+  const [expandedEvents, setExpandedEvents] = useState(() => new Set());
+  const [hoverSession, setHoverSession] = useState(null);
+  const [hoverEventKey, setHoverEventKey] = useState(null);
+  const latestSessionId = data.timeline[0]?.id;
 
-  const evIcons = { encounter:Swords, discovery:Search, roleplay:Users, world_change:Globe, loot:Star, quest_complete:CheckCircle };
-  const evCols = { encounter:"#a31515", discovery:"#1e8b4a", roleplay:"#9a8520", world_change:"#2e5a80", loot:"#9a8520", quest_complete:"#4a7028" };
+  const evIcons = { encounter:Swords, discovery:Search, roleplay:Users, world_change:Globe, loot:Package, quest_complete:CheckCircle };
+  const scopeIcons = { character:Heart, world:Globe, party:Users };
+
   const toggle = id => setOpen(s => { const n=new Set(s); n.has(id)?n.delete(id):n.add(id); return n; });
+  const toggleEventKey = (sessionId, evId) => {
+    const key = `${sessionId}:${evId}`;
+    setExpandedEvents(prev => {
+      const n = new Set(prev);
+      n.has(key) ? n.delete(key) : n.add(key);
+      return n;
+    });
+  };
 
   const addSession = () => {
     if(!newSession.title) return;
@@ -1428,26 +1471,95 @@ function TimelineView({ data, setData }) {
   };
   const addEvent = (sessionId) => {
     if(!newEvent.text) return;
-    setData(d=>({...d,timeline:d.timeline.map(s=>s.id===sessionId?{...s,events:[...s.events,{id:eid(),...newEvent}]}:s)}));
-    setNewEvent({ type:"encounter", text:"", outcome:"", dmOnly:false });
+    const payload = { ...newEvent, scope: newEvent.scope || undefined, location: newEvent.location || undefined, importance: newEvent.importance || undefined };
+    if (!payload.scope) delete payload.scope;
+    if (!payload.location) delete payload.location;
+    if (!payload.importance || payload.importance === "standard") delete payload.importance;
+    setData(d=>({...d,timeline:d.timeline.map(s=>s.id===sessionId?{...s,events:[...s.events,{id:eid(),...payload}]}:s)}));
+    setNewEvent({ type:"encounter", text:"", outcome:"", dmOnly:false, location:"", importance:"standard", scope:"" });
     setAddingEvent(null);
   };
   const saveNotes = (sessionId, notes) => {
     setData(d=>({...d,timeline:d.timeline.map(s=>s.id===sessionId?{...s,notes}:s)}));
   };
 
+  const sessionMatchesFilters = (s) => {
+    if (s.dmOnly && !dmView) return false;
+    const q = searchQuery.trim().toLowerCase();
+    const matchStr = (t) => !q || String(t||"").toLowerCase().includes(q);
+    const events = (s.events||[]).filter(ev => !(ev.dmOnly && !dmView));
+    const typeOk = (ev) => filterType === "all" || ev.type === filterType;
+    if (!q && filterType === "all") return true;
+    if (!q && filterType !== "all") return events.some(ev => typeOk(ev));
+    const metaMatch = matchStr(s.title) || matchStr(s.summary) || matchStr(s.date);
+    const eventMatch = events.some(ev => {
+      if (!typeOk(ev)) return false;
+      if (!q) return true;
+      return matchStr(ev.text) || matchStr(ev.outcome) || matchStr(ev.location);
+    });
+    return metaMatch || eventMatch;
+  };
+
+  const visibleCount = data.timeline.filter(sessionMatchesFilters).length;
+
   return (
-    <div style={{ padding:"32px 56px", maxWidth:900, margin:"0 auto" }}>
-      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:32 }}>
+    <div style={{ padding: compactLayout ? "24px 40px" : "32px 56px", maxWidth:960, margin:"0 auto", transition:"padding 0.25s ease" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:16, marginBottom:24 }}>
         <div>
           <div style={{ fontSize:28, color:T.text, fontWeight:300 }}>Campaign Timeline</div>
-          <p style={{ fontSize:13, color:T.textMuted, fontStyle:"italic", margin:"4px 0 0", fontWeight:300 }}>{data.timeline.length} sessions logged</p>
+          <p style={{ fontSize:13, color:T.textMuted, fontStyle:"italic", margin:"4px 0 0", fontWeight:300 }}>
+            {data.timeline.length} sessions · {visibleCount} shown
+          </p>
         </div>
-        <div style={{ display:"flex", gap:12 }}>
+        <div style={{ display:"flex", flexWrap:"wrap", gap:10, alignItems:"center" }}>
           <ToggleSwitch on={dmView} onToggle={()=>setDmView(!dmView)} label="DM View" />
+          <button type="button" onClick={()=>setCompactLayout(c=>!c)} style={{
+            display:"inline-flex", alignItems:"center", gap:6, padding:"8px 12px", cursor:"pointer",
+            background: compactLayout ? T.crimsonSoft : T.bgInput, border:`1px solid ${compactLayout ? T.crimsonBorder : T.border}`,
+            borderRadius:"2px", fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", textTransform:"uppercase", color: compactLayout ? T.crimson : T.textMuted, fontWeight:500,
+          }}><Layers size={12}/> {compactLayout ? "Comfort" : "Compact"}</button>
           <CrimsonBtn onClick={()=>setAddingSession(true)}><Plus size={12}/> New Session</CrimsonBtn>
         </div>
       </div>
+
+      {/* Search & filters */}
+      {data.timeline.length > 0 && (
+        <div style={{
+          marginBottom:28, padding: compactLayout ? "14px 16px" : "18px 20px",
+          background: T.bgMid, border:`1px solid ${T.border}`, borderRadius:"6px",
+          boxShadow:"0 4px 24px rgba(0,0,0,0.12)",
+        }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12 }}>
+            <FilterIcon size={14} color={T.crimson} style={{ flexShrink:0 }}/>
+            <span style={{ fontFamily:T.ui, fontSize:10, letterSpacing:"2px", color:T.crimson, textTransform:"uppercase", fontWeight:500 }}>Narrative filters</span>
+          </div>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:10, marginBottom:14, alignItems:"center" }}>
+            <div style={{ flex:"1 1 220px", minWidth:180, position:"relative" }}>
+              <Search size={14} color={T.textFaint} style={{ position:"absolute", left:12, top:"50%", transform:"translateY(-50%)", pointerEvents:"none" }}/>
+              <Input value={searchQuery} onChange={setSearchQuery} placeholder="Search sessions, summaries, events…" style={{ paddingLeft:36 }} />
+            </div>
+          </div>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:8, alignItems:"center" }}>
+            <button type="button" onClick={()=>setFilterType("all")} style={{
+              padding:"6px 12px", borderRadius:"3px", cursor:"pointer", fontFamily:T.ui, fontSize:9, letterSpacing:"1px", textTransform:"uppercase", fontWeight:500,
+              border:`1px solid ${filterType==="all"?T.crimson:T.border}`,
+              background: filterType==="all" ? T.crimsonSoft : T.bgCard, color: filterType==="all" ? T.crimson : T.textMuted,
+            }}>All types</button>
+            {TIMELINE_EVENT_TYPES.map(t => {
+              const sel = filterType === t.id;
+              const accent = cssVar(TIMELINE_EVENT_CSS[t.id] || "--event-encounter");
+              return (
+                <button type="button" key={t.id} onClick={()=>setFilterType(t.id)} style={{
+                  padding:"6px 12px", borderRadius:"3px", cursor:"pointer", fontFamily:T.ui, fontSize:9, letterSpacing:"1px", textTransform:"uppercase", fontWeight:500,
+                  border:`1px solid ${sel ? accent : T.border}`,
+                  background: sel ? cssVar("--tag-info-bg") : T.bgCard,
+                  color: sel ? accent : T.textMuted,
+                }}>{t.label}</button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Add Session Modal */}
       <Modal open={addingSession} onClose={()=>setAddingSession(false)} title="Log New Session">
@@ -1468,52 +1580,206 @@ function TimelineView({ data, setData }) {
         </Section>
       )}
 
-      <div style={{ position:"relative", paddingLeft:32 }}>
-        {/* Timeline spine */}
-        <div style={{ position:"absolute", left:7, top:0, bottom:0, width:2, background:T.crimsonBorder }}/>
+      {data.timeline.length > 0 && visibleCount === 0 && (
+        <Section style={{ textAlign:"center", padding:32, marginBottom:24 }}>
+          <p style={{ fontSize:14, color:T.textMuted, fontWeight:300, margin:0 }}>No sessions match your search or filters. Try clearing filters or broadening your search.</p>
+          <button type="button" onClick={()=>{ setSearchQuery(""); setFilterType("all"); }} style={{
+            marginTop:14, padding:"8px 16px", cursor:"pointer", background:T.crimsonSoft, border:`1px solid ${T.crimsonBorder}`,
+            borderRadius:"2px", fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", textTransform:"uppercase", color:T.crimson, fontWeight:500,
+          }}>Reset filters</button>
+        </Section>
+      )}
+
+      {visibleCount > 0 && (
+      <div style={{ position:"relative", paddingLeft: compactLayout ? 28 : 36 }}>
+        {/* Timeline spine — gradient + glow */}
+        <div style={{
+          position:"absolute", left: compactLayout ? 6 : 8, top:0, bottom:0, width:3,
+          borderRadius:"2px",
+          background:`linear-gradient(180deg, ${T.crimson} 0%, ${T.crimsonDim} 40%, ${T.crimsonBorder} 100%)`,
+          boxShadow:`0 0 12px ${T.crimsonSoft}`,
+        }}/>
 
         {data.timeline.map((s,idx) => {
           const isOpen = open.has(s.id);
-          if(s.dmOnly && !dmView) return null;
+          if (!sessionMatchesFilters(s)) return null;
+          const isLatest = s.id === latestSessionId;
+          const sessionPad = compactLayout ? 18 : 28;
           return (
-            <div key={s.id} style={{ marginBottom:24, position:"relative" }}>
-              {/* Timeline dot */}
-              <div style={{ position:"absolute", left:-32, top:18, width:16, height:16, borderRadius:"50%",
-                background:idx===0?T.crimson:T.bgCard, border:`2px solid ${idx===0?T.crimson:T.crimsonBorder}` }}/>
+            <div key={s.id} style={{ marginBottom: compactLayout ? 16 : 24, position:"relative" }}>
+              {/* Connector from spine to node */}
+              <div style={{
+                position:"absolute", left: compactLayout ? -22 : -28, top: compactLayout ? 22 : 26,
+                width: compactLayout ? 20 : 24, height:2, background:T.crimsonBorder, borderRadius:1, opacity:0.85,
+              }}/>
+              <div style={{ position:"absolute", left: compactLayout ? -34 : -40, top: compactLayout ? 14 : 18,
+                width: compactLayout ? 14 : 18, height: compactLayout ? 14 : 18, borderRadius:"50%",
+                background: isLatest ? T.crimson : T.bgCard,
+                border:`2px solid ${isLatest ? T.crimson : T.crimsonBorder}`,
+                boxShadow: isLatest ? `0 0 0 4px ${T.crimsonSoft}, 0 2px 8px rgba(0,0,0,0.25)` : "0 2px 6px rgba(0,0,0,0.15)",
+                zIndex:2,
+              }}/>
 
-              <Section style={{ cursor:"pointer", transition:"all 0.2s" }} onClick={()=>toggle(s.id)}>
-                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
-                  <div style={{ flex:1 }}>
-                    <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:6 }}>
-                      <span style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1px", color:T.crimson, fontWeight:500 }}>Session {s.n}</span>
+              <Section style={{
+                cursor:"default", transition:"box-shadow 0.25s ease, transform 0.2s ease, border-color 0.2s",
+                padding: sessionPad,
+                border:`1px solid ${isLatest ? T.crimsonBorder : T.border}`,
+                background: idx % 2 === 0 ? T.bgCard : T.bgMid,
+                boxShadow: hoverSession===s.id
+                  ? `0 8px 28px rgba(0,0,0,0.22), 0 0 0 1px ${T.crimsonBorder}`
+                  : isLatest ? "0 6px 24px rgba(0,0,0,0.18)" : "0 2px 12px rgba(0,0,0,0.10)",
+                transform: hoverSession===s.id ? "translateY(-1px)" : "none",
+              }}
+                onMouseEnter={()=>setHoverSession(s.id)}
+                onMouseLeave={()=>setHoverSession(null)}
+              >
+                {/* Session header — click to expand */}
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={e=>{ if(e.key==="Enter"||e.key===" ") { e.preventDefault(); toggle(s.id); } }}
+                  onClick={()=>toggle(s.id)}
+                  style={{ cursor:"pointer", display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12 }}
+                >
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ display:"flex", alignItems:"center", flexWrap:"wrap", gap:8, marginBottom: compactLayout ? 4 : 6 }}>
+                      <span style={{
+                        fontFamily:T.ui, fontSize: compactLayout ? 8 : 9, letterSpacing:"1px", color:T.crimson, fontWeight:600,
+                      }}>Session {s.n}</span>
+                      {isLatest && <Tag variant="critical">Latest</Tag>}
                       {s.dmOnly && <Tag variant="muted"><Lock size={8}/> DM</Tag>}
                     </div>
-                    <div style={{ fontSize:18, color:T.text, fontWeight:300, marginBottom:4 }}>{s.title}</div>
-                    <div style={{ fontSize:12, color:T.textMuted, fontStyle:"italic", fontWeight:300 }}>{s.date}</div>
+                    <div style={{
+                      fontSize: compactLayout ? 16 : isLatest ? 22 : 19,
+                      color:T.text, fontWeight: isLatest ? 400 : 300,
+                      marginBottom:4, lineHeight:1.25,
+                    }}>{s.title}</div>
+                    <div style={{ fontSize:12, color:T.textMuted, fontStyle:"italic", fontWeight:300, display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+                      <Calendar size={11} color={T.textFaint}/> {s.date}
+                    </div>
                   </div>
-                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6, flexShrink:0 }}>
                     <span style={{ fontFamily:T.ui, fontSize:8, color:T.textFaint }}>{s.events?.length||0} events</span>
-                    {isOpen ? <ChevronUp size={14} color={T.textFaint}/> : <ChevronDown size={14} color={T.textFaint}/>}
+                    {isOpen ? <ChevronUp size={16} color={T.crimson}/> : <ChevronDown size={16} color={T.textMuted}/>}
                   </div>
                 </div>
 
-                {isOpen && <>
-                  <p style={{ fontSize:13, color:T.textDim, lineHeight:1.7, margin:"16px 0", fontWeight:300, borderTop:`1px solid ${T.border}`, paddingTop:16 }}>{s.summary}</p>
+                {isOpen && <div onClick={e=>e.stopPropagation()} style={{ animation:"fadeIn 0.25s ease" }}>
+                  <p style={{
+                    fontSize: compactLayout ? 12 : 13, color:T.textDim, lineHeight:1.75, margin:"16px 0", fontWeight:300,
+                    borderTop:`1px solid ${T.border}`, paddingTop:16,
+                  }}>{s.summary}</p>
 
                   {/* Events */}
                   {s.events?.length > 0 && (
-                    <div style={{ display:"flex", flexDirection:"column", gap:8, marginBottom:16 }}>
+                    <div style={{ display:"flex", flexDirection:"column", gap: compactLayout ? 6 : 10, marginBottom:16 }}>
                       {s.events.map(ev => {
                         if(ev.dmOnly && !dmView) return null;
+                        if (filterType !== "all" && ev.type !== filterType) return null;
+                        const q = searchQuery.trim().toLowerCase();
+                        const matchStr = (t) => !q || String(t||"").toLowerCase().includes(q);
+                        if (q) {
+                          const evMatch = `${ev.text} ${ev.outcome||""} ${ev.location||""}`.toLowerCase().includes(q);
+                          const metaMatch = matchStr(s.title) || matchStr(s.summary) || matchStr(s.date);
+                          if (!evMatch && !metaMatch) return null;
+                        }
+
                         const EvIcon = evIcons[ev.type] || Circle;
+                        const col = cssVar(TIMELINE_EVENT_CSS[ev.type] || "--event-encounter");
+                        const imp = inferEventImportance(ev);
+                        const evKey = `${s.id}:${ev.id}`;
+                        const evOpen = expandedEvents.has(evKey);
+                        const major = imp === "major";
+                        const minor = imp === "minor";
+                        const padY = minor ? (compactLayout ? 6 : 8) : major ? (compactLayout ? 12 : 16) : (compactLayout ? 8 : 12);
+                        const padX = minor ? (compactLayout ? 10 : 12) : major ? (compactLayout ? 14 : 18) : (compactLayout ? 12 : 14);
+                        const ScopeIc = ev.scope && scopeIcons[ev.scope] ? scopeIcons[ev.scope] : null;
+                        const evHover = hoverEventKey === evKey;
+
                         return (
-                          <div key={ev.id} style={{ display:"flex", gap:12, padding:"12px 16px", background:T.bg, borderRadius:"2px", borderLeft:`3px solid ${evCols[ev.type]||T.textFaint}`, opacity:ev.dmOnly?0.6:1 }}>
-                            <EvIcon size={14} color={evCols[ev.type]||T.textFaint} style={{ marginTop:2, flexShrink:0 }}/>
-                            <div style={{ flex:1 }}>
-                              <span style={{ fontSize:13, color:T.text, fontWeight:300 }}>{ev.text}</span>
-                              {ev.outcome && <div style={{ fontSize:11, color:T.textMuted, fontStyle:"italic", marginTop:4, fontWeight:300 }}>{ev.outcome}</div>}
+                          <div key={ev.id} style={{ position:"relative", paddingLeft: major ? 8 : 0 }}>
+                            {major && (
+                              <div style={{ position:"absolute", left:0, top:6, bottom:6, width:4, borderRadius:"2px", background: col, opacity:0.9 }}/>
+                            )}
+                            <div
+                              role="button"
+                              tabIndex={0}
+                              onKeyDown={e=>{ if(e.key==="Enter"||e.key===" ") { e.preventDefault(); toggleEventKey(s.id, ev.id); } }}
+                              onClick={()=>toggleEventKey(s.id, ev.id)}
+                              onMouseEnter={()=>setHoverEventKey(evKey)}
+                              onMouseLeave={()=>setHoverEventKey(null)}
+                              style={{
+                                display:"flex", gap: compactLayout ? 10 : 14,
+                                padding:`${padY}px ${padX}px`,
+                                background: minor ? T.bgInput : T.bg,
+                                borderRadius:"4px",
+                                border:`1px solid ${major ? T.crimsonBorder : T.borderMid}`,
+                                borderLeft:`4px solid ${col}`,
+                                opacity: ev.dmOnly ? 0.72 : 1,
+                                cursor:"pointer",
+                                transition:"background 0.2s, box-shadow 0.2s, transform 0.15s",
+                                boxShadow: evHover ? "0 6px 20px rgba(0,0,0,0.22)" : (major ? "0 2px 12px rgba(0,0,0,0.14)" : "0 1px 4px rgba(0,0,0,0.06)"),
+                                transform: evHover ? "translateX(3px)" : "none",
+                              }}
+                            >
+                              <div style={{
+                                width: major ? 40 : minor ? 28 : 32, height: major ? 40 : minor ? 28 : 32,
+                                borderRadius:"8px", flexShrink:0,
+                                display:"flex", alignItems:"center", justifyContent:"center",
+                                background: T.bgHover,
+                                border:`1px solid ${T.border}`,
+                              }}>
+                                <EvIcon size={major ? 18 : minor ? 12 : 14} color={col}/>
+                              </div>
+                              <div style={{ flex:1, minWidth:0 }}>
+                                <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:6, marginBottom:4 }}>
+                                  <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:col, textTransform:"uppercase", fontWeight:600 }}>
+                                    {TIMELINE_EVENT_TYPES.find(t=>t.id===ev.type)?.label || ev.type}
+                                  </span>
+                                  {major && <Tag variant="critical">Beat</Tag>}
+                                  {minor && <Tag variant="muted">Note</Tag>}
+                                  {ScopeIc && (
+                                    <span style={{ display:"inline-flex", alignItems:"center", gap:4, fontSize:10, color:T.textMuted }}>
+                                      <ScopeIc size={11}/> {ev.scope}
+                                    </span>
+                                  )}
+                                  {ev.dmOnly && <Lock size={10} color={T.textFaint}/>}
+                                </div>
+                                <span style={{
+                                  fontSize: minor ? 12 : major ? 15 : 13,
+                                  color:T.text, fontWeight: major ? 400 : 300,
+                                  lineHeight:1.55,
+                                  display:"block",
+                                }}>{evOpen ? ev.text : (ev.text.length > 140 && !compactLayout ? ev.text.slice(0,140)+"…" : ev.text)}</span>
+                                {ev.outcome && (evOpen || ev.text.length <= 140) && (
+                                  <div style={{ fontSize:11, color:T.textMuted, fontStyle:"italic", marginTop:6, fontWeight:300, borderLeft:`2px solid ${T.crimsonBorder}`, paddingLeft:10 }}>
+                                    {ev.outcome}
+                                  </div>
+                                )}
+                                {evOpen && ev.location && (
+                                  <div style={{ marginTop:8, display:"flex", alignItems:"center", gap:6, fontSize:12, color:T.textDim }}>
+                                    <MapPin size={12} color={col}/> {ev.location}
+                                  </div>
+                                )}
+                                {evOpen && (
+                                  <div style={{ marginTop:12, display:"flex", flexWrap:"wrap", gap:8 }}>
+                                    {onNav && (
+                                      <button type="button" onClick={e=>{ e.stopPropagation(); onNav("world"); }} style={{
+                                        display:"inline-flex", alignItems:"center", gap:6, padding:"6px 10px", cursor:"pointer",
+                                        background:T.crimsonSoft, border:`1px solid ${T.crimsonBorder}`, borderRadius:"2px",
+                                        fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", color:T.crimson, fontWeight:500,
+                                      }}><Globe size={11}/> World & map</button>
+                                    )}
+                                  </div>
+                                )}
+                                {!evOpen && ev.text.length > 140 && (
+                                  <span style={{ fontSize:10, color:T.crimson, marginTop:6, display:"inline-block", fontFamily:T.ui, letterSpacing:"1px" }}>Expand</span>
+                                )}
+                              </div>
+                              <div style={{ flexShrink:0, paddingTop:4 }}>
+                                {evOpen ? <ChevronUp size={14} color={T.textMuted}/> : <ChevronDown size={14} color={T.textFaint}/>}
+                              </div>
                             </div>
-                            {ev.dmOnly && <Lock size={10} color={T.textFaint}/>}
                           </div>
                         );
                       })}
@@ -1522,9 +1788,9 @@ function TimelineView({ data, setData }) {
 
                   {/* World Changes */}
                   {s.changes?.length > 0 && (
-                    <div style={{ padding:12, background:T.crimsonSoft, border:`1px solid ${T.crimsonBorder}`, borderRadius:"2px", marginBottom:16 }}>
-                      <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1.5px", color:T.crimson, textTransform:"uppercase", display:"block", marginBottom:6 }}>World Changes</span>
-                      {s.changes.map((c,ci) => <div key={ci} style={{ fontSize:12, color:T.textDim, fontWeight:300, padding:"2px 0" }}>• {c}</div>)}
+                    <div style={{ padding:14, background:T.crimsonSoft, border:`1px solid ${T.crimsonBorder}`, borderRadius:"4px", marginBottom:16, boxShadow:"inset 0 1px 0 rgba(255,255,255,0.04)" }}>
+                      <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1.5px", color:T.crimson, textTransform:"uppercase", display:"block", marginBottom:8 }}>World Changes</span>
+                      {s.changes.map((c,ci) => <div key={ci} style={{ fontSize:12, color:T.textDim, fontWeight:300, padding:"3px 0" }}>• {c}</div>)}
                     </div>
                   )}
 
@@ -1539,7 +1805,7 @@ function TimelineView({ data, setData }) {
                     </div>
                   )}
 
-                  {/* Add event button */}
+                  {/* Add event */}
                   <div style={{ marginTop:12, paddingTop:12, borderTop:`1px solid ${T.border}` }}>
                     {addingEvent===s.id ? (
                       <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
@@ -1551,8 +1817,21 @@ function TimelineView({ data, setData }) {
                           <option value="loot">Loot</option>
                           <option value="quest_complete">Quest Complete</option>
                         </Select>
+                        <Select value={newEvent.importance||"standard"} onChange={v=>setNewEvent(p=>({...p,importance:v}))} style={{width:"100%"}}>
+                          <option value="standard">Importance · Standard</option>
+                          <option value="major">Major beat</option>
+                          <option value="minor">Minor note</option>
+                        </Select>
+                        <Select value={newEvent.scope||""} onChange={v=>setNewEvent(p=>({...p,scope:v}))} style={{width:"100%"}}>
+                          <option value="">Scope (optional)</option>
+                          <option value="party">Party</option>
+                          <option value="world">World</option>
+                          <option value="character">Character</option>
+                        </Select>
                         <Input value={newEvent.text} onChange={v=>setNewEvent(p=>({...p,text:v}))} placeholder="What happened?" />
                         <Input value={newEvent.outcome} onChange={v=>setNewEvent(p=>({...p,outcome:v}))} placeholder="Outcome (optional)" />
+                        <Input value={newEvent.location} onChange={v=>setNewEvent(p=>({...p,location:v}))} placeholder="Location (optional)" />
+                        <ToggleSwitch on={newEvent.dmOnly} onToggle={()=>setNewEvent(p=>({...p,dmOnly:!p.dmOnly}))} label="DM Only" />
                         <div style={{ display:"flex", gap:8 }}>
                           <CrimsonBtn small onClick={()=>addEvent(s.id)}><Plus size={10}/> Add</CrimsonBtn>
                           <CrimsonBtn small secondary onClick={()=>setAddingEvent(null)}><X size={10}/> Cancel</CrimsonBtn>
@@ -1562,12 +1841,13 @@ function TimelineView({ data, setData }) {
                       <LinkBtn onClick={()=>setAddingEvent(s.id)}><Plus size={10}/> Add Event</LinkBtn>
                     )}
                   </div>
-                </>}
+                </div>}
               </Section>
             </div>
           );
         })}
       </div>
+      )}
     </div>
   );
 }
@@ -2647,7 +2927,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
   const [combatLog, setCombatLog] = useState([]);
   const [showCombatLog, setShowCombatLog] = useState(false);
   const [showDiceOverlay, setShowDiceOverlay] = useState(null);
-  const [sidePanelTab, setSidePanelTab] = useState("monsters");
+  const [combatTab, setCombatTab] = useState("monsters");
 
   const addCombatLogEntry = (entry) => {
     setCombatLog(prev => [{...entry, id: Date.now(), time: new Date().toLocaleTimeString()}, ...prev].slice(0, 100));
@@ -2694,9 +2974,13 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
       maxHp: monster.hp,
       ac: monster.ac,
       speed: parseInt(monster.speed) || 30,
-      type: "enemy",
+      tokenType: "enemy",
       vision: 0,
       hidden: false,
+      darkvision: 0,
+      label: "",
+      notes: `${monster.size} ${monster.type} · CR ${monster.cr}`,
+      imageSrc: null,
       monsterData: monster,
     };
     setTokens(prev => [...prev, newToken]);
@@ -2830,7 +3114,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
     if (typeof window.CombatEngine === 'undefined') return null;
     const monsterTokens = tokens.filter(t => t.monsterData);
     if (monsterTokens.length === 0) return null;
-    const pcTokens = tokens.filter(t => t.type === "pc");
+    const pcTokens = tokens.filter(t => t.tokenType === "pc");
     const partyLevels = pcTokens.length > 0 ? pcTokens.map(t => t.level || 5) : [5, 5, 5, 5]; // Default level 5 party of 4
     const monsterXPs = monsterTokens.map(t => t.monsterData.xp || 0);
     return window.CombatEngine.calculateEncounterDifficulty(partyLevels, monsterXPs);
@@ -5606,7 +5890,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
     }
 
     // ── VFX rendering ──
-    if (typeof window.VFX !== 'undefined') {
+    if (typeof window.VFX !== 'undefined' && window.VFX.getActiveEffectCount() > 0) {
       window.VFX.updateAndDrawEffects(ctx);
     }
   }, [bgColor, bgImage, showGrid, gridSize, zoom, pan, drawings, drawPoints, drawColor, drawWidth, fogCells, fogEnabled, tokens, walls, wallStart, wallPreview, selectedWallType, activeTool, rulerStart, rulerEnd, selectedTokenId, hoveredTokenId, activeCombatantId, combatLive, combatants, conditions, tokenConditions, activeSpell, spellEffects, spellLog, spellDC, fogMode, movementMode, movementPath, movementOrigin, terrainCells, pings, viewRole, props, selectedPropId, battleMaps, activeMapId, activeSceneId, multiTargetSelections, castLevel]);
@@ -7440,8 +7724,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
     {/* Tab bar: Monsters | Tracker | Log */}
     <div style={{ display:"flex", borderBottom:"1px solid " + T.border }}>
       {[{id:"monsters",label:"Monsters"},{id:"tracker",label:"Tracker"},{id:"log",label:"Log"}].map(tab => (
-        <button key={tab.id} onClick={() => setSidePanelTab(tab.id)}
-          style={{ flex:1, padding:"8px 4px", background: sidePanelTab === tab.id ? "rgba(212,67,58,0.08)" : "transparent", border:"none", borderBottom: sidePanelTab === tab.id ? "2px solid var(--crimson)" : "2px solid transparent", cursor:"pointer", fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", color: sidePanelTab === tab.id ? "var(--crimson)" : T.textFaint, transition:"all 0.15s" }}>{tab.label}
+        <button key={tab.id} onClick={() => setCombatTab(tab.id)}
+          style={{ flex:1, padding:"8px 4px", background: combatTab === tab.id ? "rgba(212,67,58,0.08)" : "transparent", border:"none", borderBottom: combatTab === tab.id ? "2px solid var(--crimson)" : "2px solid transparent", cursor:"pointer", fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", color: combatTab === tab.id ? "var(--crimson)" : T.textFaint, transition:"all 0.15s" }}>{tab.label}
           {tab.id === "log" && combatLog.length > 0 && <span style={{ marginLeft:4, padding:"1px 4px", borderRadius:"8px", background:"rgba(212,67,58,0.15)", fontSize:7, color:"var(--crimson)" }}>{combatLog.length}</span>}
         </button>
       ))}
@@ -7449,7 +7733,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
 
     <div style={{ flex:1, overflowY:"auto", padding:"10px 14px" }}>
       {/* MONSTERS TAB */}
-      {sidePanelTab === "monsters" && (
+      {combatTab === "monsters" && (
         <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
           <input value={monsterSearch} onChange={e => setMonsterSearch(e.target.value)} placeholder="Search monsters..."
             style={{ padding:"7px 10px", background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:"4px", color:T.text, fontFamily:T.body, fontSize:11, outline:"none" }} />
@@ -7467,7 +7751,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
           </div>
           <div style={{ fontSize:8, fontFamily:T.ui, color:T.textFaint, letterSpacing:"0.5px" }}>{filteredMonsters.length} monsters found</div>
           <div style={{ display:"flex", flexDirection:"column", gap:2, maxHeight:500, overflowY:"auto" }}>
-            {filteredMonsters.slice(0, 50).map(m => (
+            {filteredMonsters.slice(0, 30).map(m => (
               <div key={m.name} onClick={() => setSelectedMonster(selectedMonster?.name === m.name ? null : m)}
                 style={{ padding:"8px 10px", background: selectedMonster?.name === m.name ? "rgba(212,67,58,0.08)" : "transparent", border: "1px solid " + (selectedMonster?.name === m.name ? "rgba(212,67,58,0.25)" : "transparent"), borderRadius:"5px", cursor:"pointer", transition:"all 0.12s" }}
                 onMouseEnter={e => { if (selectedMonster?.name !== m.name) e.currentTarget.style.background="rgba(255,255,255,0.03)"; }}
@@ -7531,7 +7815,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
       )}
 
       {/* TRACKER TAB */}
-      {sidePanelTab === "tracker" && (
+      {combatTab === "tracker" && (
         <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
           {!combatLive ? (
             <div style={{ textAlign:"center", padding:"28px 0" }}>
@@ -7605,7 +7889,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
                                 onClick={e => {
                                   e.stopPropagation();
                                   // Find nearest enemy target
-                                  const targetToken = tokens.find(t => t.id !== c.mapTokenId && t.hp > 0 && t.type !== c.type);
+                                  const targetToken = tokens.find(t => t.id !== c.mapTokenId && t.hp > 0 && t.tokenType !== c.type);
                                   if (targetToken) {
                                     executeCombatAction(c.mapTokenId, targetToken.id, ai);
                                   } else {
@@ -7627,7 +7911,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
                                   <button key={ai}
                                     onClick={e => {
                                       e.stopPropagation();
-                                      const targetToken = tokens.find(t => t.id !== c.mapTokenId && t.hp > 0 && t.type !== c.type);
+                                      const targetToken = tokens.find(t => t.id !== c.mapTokenId && t.hp > 0 && t.tokenType !== c.type);
                                       if (targetToken) executeCombatAction(c.mapTokenId, targetToken.id, { ...action, _isLegendary: true });
                                     }}
                                     onMouseEnter={e => e.currentTarget.style.background="rgba(255,213,79,0.12)"}
@@ -7668,7 +7952,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
       )}
 
       {/* LOG TAB */}
-      {sidePanelTab === "log" && (
+      {combatTab === "log" && (
         <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
           {combatLog.length === 0 ? (
             <div style={{ textAlign:"center", padding:"28px 0", color:T.textFaint, fontFamily:T.body, fontStyle:"italic", fontSize:11 }}>No combat actions yet</div>
@@ -7699,8 +7983,6 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
       )}
     </div>
   </div>
-)
-
           ) : selectedToken ? (
             <div style={{ display:"flex", flexDirection:"column", height:"100%" }}>
               {/* Token Header — always visible */}
@@ -18718,7 +19000,7 @@ function CampaignManager() {
       <div style={{ flex:1, overflow:"hidden" }}>
         <div style={{ height:"100%", overflowY:"auto" }}>
           {tab==="dashboard" && <DashboardView data={data} setData={setData} onNav={setTab}/>}
-          {tab==="timeline"  && <TimelineView data={data} setData={setData}/>}
+          {tab==="timeline"  && <TimelineView data={data} setData={setData} onNav={setTab}/>}
           {tab==="world"     && <WorldView data={data} setData={setData}/>}
           {tab==="play"      && <PlayView data={data} setData={setData} activeCampaignId={activeCampaignId}/>}
           {tab==="generator" && <FantasyMapGenerator />}
