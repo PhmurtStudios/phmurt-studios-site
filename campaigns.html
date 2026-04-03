@@ -545,6 +545,7 @@ const T = {
   border:        "var(--border)",
   borderMid:     "var(--border-mid)",
   ui:            "'Cinzel', serif",
+  heading:       "'Cinzel', serif",
   body:          "'Spectral', Georgia, serif",
 };
 
@@ -4146,7 +4147,28 @@ function computeVisibleCells(tokens, walls, gridSize, mapW, mapH) {
   return visible;
 }
 
-function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = null, onPartyUpdate = null, setData = null, campaignEncounters = [] }) {
+class BattlemapErrorBoundary extends React.Component {
+  constructor(props) { super(props); this.state = { hasError: false, error: null }; }
+  static getDerivedStateFromError(error) { return { hasError: true, error }; }
+  componentDidCatch(error, info) { console.error("[BattlemapErrorBoundary]", error, info); }
+  render() {
+    if (this.state.hasError) {
+      return React.createElement("div", {
+        style: { padding: 40, textAlign: "center", color: "var(--text-muted)", fontFamily: "'Spectral', serif" }
+      },
+        React.createElement("div", { style: { fontSize: 20, marginBottom: 12, color: "var(--crimson)" } }, "Something went wrong"),
+        React.createElement("p", { style: { fontSize: 13, marginBottom: 16 } }, String(this.state.error?.message || "An unexpected error occurred in the battle map.")),
+        React.createElement("button", {
+          onClick: () => this.setState({ hasError: false, error: null }),
+          style: { padding: "8px 20px", background: "rgba(212,67,58,0.12)", border: "1px solid rgba(212,67,58,0.3)", borderRadius: 6, color: "var(--crimson)", cursor: "pointer", fontFamily: "'Cinzel', serif", fontSize: 12 }
+        }, "Try Again")
+      );
+    }
+    return this.props.children;
+  }
+}
+
+function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null, activeCampaignId = null, onPartyUpdate = null, setData = null, campaignEncounters = [] }) {
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
   const fileRef = useRef(null);
@@ -4157,6 +4179,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
   // ── Core map state ──
   const [gridSize, setGridSize] = useState(40);
   const [showGrid, setShowGrid] = useState(true);
+  const [snapToGrid, setSnapToGrid] = useState(true);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({x:0,y:0});
   const [bgColor, setBgColor] = useState(() => cssVar("--bg") || "#10101e");
@@ -7271,11 +7294,13 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     y: Math.round(wy / gridSize) * gridSize,
   });
 
-  // ── Snap to grid center (for tokens) ──
-  const snapToGridCenter = (wx, wy) => ({
-    x: Math.floor(wx / gridSize) * gridSize + gridSize / 2,
-    y: Math.floor(wy / gridSize) * gridSize + gridSize / 2,
-  });
+  const snapToGridCenter = (wx, wy) => {
+    if (!snapToGrid) return { x: wx, y: wy };
+    return {
+      x: Math.floor(wx / gridSize) * gridSize + gridSize / 2,
+      y: Math.floor(wy / gridSize) * gridSize + gridSize / 2,
+    };
+  };
 
   // ── Canvas rendering ──
   const render = useCallback(() => {
@@ -9427,7 +9452,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       // Mode switching: 1=Select, 2=Draw (DM only), 3=Combat (only when hotbar not active)
       if (!hotbarActive && e.key === "1") { setMode("select"); }
       if (!hotbarActive && e.key === "2" && viewRole === "dm") { setMode("draw"); }
-      if (!hotbarActive && e.key === "3") { setMode("combat"); }
+      if (!hotbarActive && e.key === "3") { setMode("combat"); setSidebarOpen(true); }
       if (e.key === "Tab") {
         if (battleFocusToken && combatLive) {
           e.preventDefault();
@@ -10027,6 +10052,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       } else {
         setTokens(p => p.map(t => {
           if (t.id !== dragState.id) return t;
+          if (!snapToGrid) return t;
           return { ...t, x: Math.floor(t.x / gridSize) * gridSize + gridSize / 2, y: Math.floor(t.y / gridSize) * gridSize + gridSize / 2 };
         }));
       }
@@ -12403,7 +12429,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
           <span style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"2.5px", color:T.textMuted, textTransform:"uppercase", marginBottom:6, fontWeight:600 }}>MODE</span>
           {bmModes.map((m, idx) => (
             <div key={m.id} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:1 }}>
-              <button onClick={() => { if (m.id === "draw" && viewRole === "player") return; setMode(m.id); }} title={m.label + " (" + (idx+1) + ")"}
+              <button onClick={() => { if (m.id === "draw" && viewRole === "player") return; setMode(m.id); if (m.id === "combat") { setSidebarOpen(true); setCombatTab(combatLive ? "tracker" : combatTab); } }} title={m.label + " (" + (idx+1) + ")"}
                 onMouseEnter={e => { if (mode !== m.id) { e.currentTarget.style.background="rgba(212,67,58,0.08)"; e.currentTarget.style.border="1px solid rgba(212,67,58,0.15)"; }}}
                 onMouseLeave={e => { if (mode !== m.id) { e.currentTarget.style.background="transparent"; e.currentTarget.style.border="1px solid transparent"; }}}
                 style={{
@@ -13941,7 +13967,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
                       <div style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1px", color:T.textFaint, textTransform:"uppercase", marginBottom:8 }}>View Mode</div>
                       <div style={{ display:"flex", gap:4 }}>
                         {["dm","player"].map(r => (
-                          <button key={r} onClick={() => setViewRole(r)}
+                          <button key={r} onClick={() => setViewRole && setViewRole(r)}
                             style={{ flex:1, padding:"6px", background: viewRole === r ? "rgba(212,67,58,0.1)" : "transparent", border:"1px solid " + (viewRole === r ? "rgba(212,67,58,0.3)" : T.border), borderRadius:"4px", cursor:"pointer", color: viewRole === r ? "var(--crimson)" : T.textFaint, fontFamily:T.ui, fontSize:9, letterSpacing:"1px", textTransform:"uppercase" }}>
                             {r}
                           </button>
@@ -14150,15 +14176,30 @@ function App() {
         {activeTab === "timeline" && <TimelineView data={data} setData={setData} onNav={setActiveTab} />}
         {activeTab === "world" && <WorldView data={data} setData={setData} />}
         {activeTab === "play" && (
-          <Battlemap
-            party={data.party || []}
-            npcs={data.npcs || []}
-            viewRole={viewRole}
-            activeCampaignId={activeCampaignId}
-            onPartyUpdate={handlePartyUpdate}
-            setData={setData}
-            campaignEncounters={data.encounters || []}
-          />
+          <BattlemapErrorBoundary>
+            <Battlemap
+              party={data.party || []}
+              npcs={data.npcs || []}
+              viewRole={viewRole}
+              setViewRole={setViewRole}
+              activeCampaignId={activeCampaignId}
+              onPartyUpdate={handlePartyUpdate}
+              setData={setData}
+              campaignEncounters={data.encounters || []}
+            />
+          </BattlemapErrorBoundary>
+        )}
+        {!["dashboard","timeline","world","play"].includes(activeTab) && (
+          <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:16 }}>
+            <span style={{ fontFamily:T.ui, fontSize:14, color:T.textFaint, letterSpacing:"2px", textTransform:"uppercase" }}>Coming Soon</span>
+            <p style={{ fontFamily:T.body, fontSize:13, color:T.textMuted, maxWidth:320, textAlign:"center", lineHeight:1.5 }}>
+              This section is under development.
+            </p>
+            <button onClick={() => setActiveTab("dashboard")}
+              style={{ padding:"8px 20px", background:"rgba(212,67,58,0.1)", border:"1px solid rgba(212,67,58,0.3)", borderRadius:6, color:"var(--crimson)", cursor:"pointer", fontFamily:T.ui, fontSize:11, letterSpacing:"1px" }}>
+              Back to Dashboard
+            </button>
+          </div>
         )}
       </div>
     </div>
