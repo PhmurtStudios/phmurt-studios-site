@@ -871,6 +871,10 @@ window.CombatEngine = (() => {
       description: "Speed becomes 0. Ends if grappler is incapacitated or moved out of reach.",
       speedZero: true,
     },
+    hidden: {
+      description: "Unseen and unheard until revealed. Attacks have advantage, attacks against have disadvantage while hidden.",
+      attackAdvantage: true, attackedWithDisadvantage: true,
+    },
     incapacitated: {
       description: "Can't take actions or reactions.",
       noActions: true, noReactions: true,
