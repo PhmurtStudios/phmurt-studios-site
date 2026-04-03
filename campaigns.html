@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co https://unpkg.com https://cdn.jsdelivr.net; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
   <title>Campaign Manager · Phmurt Studios</title>
   <meta name="description" content="Manage your D&D campaigns with our comprehensive campaign manager. Track parties, encounters, sessions, and initiative." />
   <meta property="og:title" content="Campaign Manager · Phmurt Studios" />
@@ -2957,6 +2957,19 @@ function debounce(fn, ms) {
   return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
 }
 
+/** Parse D&D CR for sorting (e.g. "1/4", "1/2", "17") — avoids eval(), which CSP blocks. */
+function parseChallengeRating(cr) {
+  const s = String(cr ?? "").trim();
+  const i = s.indexOf("/");
+  if (i > 0 && i < s.length - 1) {
+    const num = parseFloat(s.slice(0, i));
+    const den = parseFloat(s.slice(i + 1));
+    if (!Number.isNaN(num) && !Number.isNaN(den) && den !== 0) return num / den;
+  }
+  const n = parseFloat(s);
+  return Number.isNaN(n) ? 0 : n;
+}
+
 // ── Line-of-sight helpers (outside component for performance) ──
 function segmentsIntersect(ax, ay, bx, by, cx, cy, dx, dy) {
   const denom = (bx-ax)*(dy-cy) - (by-ay)*(dx-cx);
@@ -3011,7 +3024,7 @@ function computeVisibleCells(tokens, walls, gridSize, mapW, mapH) {
   return visible;
 }
 
-function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPartyUpdate = null }) {
+function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = null, onPartyUpdate = null }) {
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
   const fileRef = useRef(null);
@@ -3097,11 +3110,7 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
 
   const monsterCRs = React.useMemo(() => {
     if (typeof window.SRD_MONSTERS === 'undefined') return [];
-    return [...new Set(window.SRD_MONSTERS.map(m => String(m.cr)))].sort((a,b) => {
-      const na = a.includes("/") ? eval(a) : parseFloat(a);
-      const nb = b.includes("/") ? eval(b) : parseFloat(b);
-      return na - nb;
-    });
+    return [...new Set(window.SRD_MONSTERS.map(m => String(m.cr)))].sort((a, b) => parseChallengeRating(a) - parseChallengeRating(b));
   }, []);
 
   const addMonsterToMap = (monster) => {
@@ -3314,6 +3323,8 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
   const [selectedSpellInfo, setSelectedSpellInfo] = useState(null); // spell object for info panel
   const [tokenPanelTab, setTokenPanelTab] = useState("stats"); // "stats" | "spells" | "config"
   const [sidePanelTab, setSidePanelTab] = useState("scenes"); // "scenes" | "tokens" | "settings"
+  const [showConditionMenu, setShowConditionMenu] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   // ── Multi-target spell system ──
   const [multiTargetSelections, setMultiTargetSelections] = useState([]); // [{tokenId, x, y}, ...]
@@ -7158,12 +7169,6 @@ function Battlemap({ party, npcs, viewRole = "dm", activeCampaignId = null, onPa
     return "default";
   };
 
-  // ── Context menu condition submenu state ──
-  const [showConditionMenu, setShowConditionMenu] = useState(false);
-
-  // ── Sidebar state ──
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-
   return (
     <div style={{ display:"flex", flexDirection:"column", flex:1, minHeight:0 }}>
       {/* Top-level hidden file inputs for reliable label association */}
@@ -9069,12 +9074,12 @@ function PlayView({ data, setData, activeCampaignId }) {
   };
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", height:"calc(100vh - 56px)" }}>
+    <div style={{ display:"flex", flexDirection:"column", flex:1, minHeight:0, height:"100%" }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"12px 24px", borderBottom:"1px solid " + T.border, flexShrink:0 }}>
         <div style={{ display:"flex", alignItems:"center", gap:16 }}>
           <div>
             <div style={{ fontSize:24, color:T.text, fontWeight:300 }}>Play Mode</div>
-            <p style={{ fontSize:11, color:T.textMuted, fontStyle:"italic", margin:"2px 0 0", fontWeight:300 }}>Session {data.sessionsPlayed + 1}</p>
+            <p style={{ fontSize:11, color:T.textMuted, fontStyle:"italic", margin:"2px 0 0", fontWeight:300 }}>Session {(data.sessionsPlayed ?? 0) + 1}</p>
           </div>
           <Tag variant="critical"><span style={{ width:5, height:5, borderRadius:"50%", background:cssVar("--crimson"), display:"inline-block", animation:"pulse 2s infinite" }}/> Live</Tag>
           {isPlayer && <Tag variant="muted">Player View</Tag>}
@@ -9100,13 +9105,15 @@ function PlayView({ data, setData, activeCampaignId }) {
       </div>
 
       {viewMode==="battlemap" ? (
-        <Battlemap party={data.party} npcs={data.npcs} viewRole={isPlayer ? "player" : "dm"} activeCampaignId={activeCampaignId}
-          onPartyUpdate={(partyId, updates) => setData(d => ({...d, party: d.party.map(p => p.id === partyId ? {...p, ...updates} : p)}))} />
+        <div style={{ flex:1, minHeight:0, display:"flex", flexDirection:"column" }}>
+          <Battlemap party={data.party ?? []} npcs={data.npcs ?? []} viewRole={isPlayer ? "player" : "dm"} activeCampaignId={activeCampaignId}
+            onPartyUpdate={(partyId, updates) => setData(d => ({...d, party: (d.party ?? []).map(p => p.id === partyId ? {...p, ...updates} : p)}))} />
+        </div>
       ) : (
         <div style={{ padding:24, overflowY:"auto", flex:1 }}>
-          <SectionTitle icon={Users} count={data.npcs.filter(n=>n.alive).length}>NPC Reference</SectionTitle>
+          <SectionTitle icon={Users} count={(data.npcs ?? []).filter(n=>n.alive).length}>NPC Reference</SectionTitle>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(2,1fr)", gap:12 }}>
-            {data.npcs.filter(n=>n.alive).map(n => (
+            {(data.npcs ?? []).filter(n=>n.alive).map(n => (
               <div key={n.id} style={{
                 padding:"12px 16px", background:T.bgCard, border:"1px solid " + T.border, borderRadius:"4px",
                 borderLeft:"3px solid " + (n.attitude==="allied"||n.attitude==="friendly"?"#2e8b57":n.attitude==="hostile"?cssVar("--crimson"):T.textFaint),
@@ -19144,8 +19151,8 @@ function CampaignManager() {
         </div>
       </nav>
 
-      <div style={{ flex:1, overflow:"hidden" }}>
-        <div style={{ height:"100%", overflowY:"auto" }}>
+      <div style={{ flex:1, overflow:"hidden", minHeight:0, display:"flex", flexDirection:"column" }}>
+        <div style={{ flex:1, minHeight:0, height:"100%", overflowY:"auto", display:"flex", flexDirection:"column" }}>
           {tab==="dashboard" && <DashboardView data={data} setData={setData} onNav={setTab}/>}
           {tab==="timeline"  && <TimelineView data={data} setData={setData} onNav={setTab}/>}
           {tab==="world"     && <WorldView data={data} setData={setData}/>}
