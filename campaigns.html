@@ -25,6 +25,7 @@
   <script src="phmurt-auth.js"></script>
   <script src="phmurt-realtime.js"></script>
   <script src="phmurt-shell.js"></script>
+  <script src="campaign-combat-integration.js"></script>
   <script src="combat-engine.js" defer></script>
   <script src="visual-effects.js" defer></script>
   <script src="monster-data.js" defer></script>
@@ -113,6 +114,9 @@ const NEW_CAMPAIGN = () => ({
   },
   party: [], quests: [], factions: [], regions: [], npcs: [],
   timeline: [], campaignNotes: [],
+  encounters: [],
+  combatLedger: [],
+  battleIntegrationVersion: 1,
   activity: [{ time: "Just now", text: "Campaign created" }],
 });
 
@@ -164,6 +168,16 @@ const EXAMPLE_CAMPAIGN = {
     { id:5, name:"Lord Aldric Valdris",  faction:"Kingdom of Valdris",loc:"Valdris Capital",  attitude:"neutral",  role:"political",   alive:true },
     { id:6, name:"Seraphine the Lost",   faction:"The Hollow",        loc:"Shadowfen",        attitude:"hostile",  role:"lieutenant",  alive:false },
   ],
+  encounters: [
+    { id:"enc-shadowfen-wolves", name:"Shadowfen wolf pack", location:"Shadowfen", notes:"Quick ambush while scouting.",
+      participants: [
+        { type:"partyAll" },
+        { type:"monster", monsterName:"Dire Wolf", count:2 },
+      ],
+    },
+  ],
+  combatLedger: [],
+  battleIntegrationVersion: 1,
   timeline: [
     { id:24, n:24, title:"Into the Shadowfen", date:"2026-03-26",
       summary:"The party ventured into the Shadowfen seeking the Shadow Obelisk. They fought corrupted beasts and discovered Seraphine the Lost guarding a ritual site. After a fierce battle, Seraphine was defeated but the obelisk remains active.",
@@ -1170,6 +1184,8 @@ function DashboardView({ data, setData, onNav }) {
   const [addingQuest, setAddingQuest] = useState(false);
   const [schedOpen, setSchedOpen] = useState(false);
   const [newQuest, setNewQuest] = useState({ title:"", type:"side", status:"active", urgency:"medium", faction:"", region:"" });
+  const [encBuilderOpen, setEncBuilderOpen] = useState(false);
+  const [encForm, setEncForm] = useState({ name:"", location:"", notes:"", monsterNames:"", includePartyAll:true });
 
   const handlePlayerSubmit = (formData) => {
     if (editingMember) {
@@ -1177,13 +1193,16 @@ function DashboardView({ data, setData, onNav }) {
         setData(d=>({...d, party: d.party.filter(p=>p.id!==editingMember.id),
           activity:[{time:"Just now", text:`Removed ${editingMember.name} from party`},...d.activity].slice(0,20)}));
       } else {
-        setData(d=>({...d, party: d.party.map(p=>p.id===editingMember.id?{...p,...formData}:p),
+        setData(d=>({...d, party: d.party.map(p=>p.id===editingMember.id?{...p,...formData, actorId:p.actorId||("pc-"+p.id)}:p),
           activity:[{time:"Just now", text:`${formData.name} updated their character`},...d.activity].slice(0,20)}));
       }
       setEditingMember(null);
     } else {
-      setData(d=>({...d, party: [...d.party, { ...formData, id:uid() }],
-        activity:[{time:"Just now", text:`${formData.name} (${formData.player}) joined the party`},...d.activity].slice(0,20)}));
+      setData(d => {
+        const id = uid();
+        return { ...d, party: [...d.party, { ...formData, id, actorId: "pc-" + id }],
+          activity: [{ time: "Just now", text: `${formData.name} (${formData.player}) joined the party` }, ...d.activity].slice(0, 20) };
+      });
       setJoiningParty(false);
     }
   };
@@ -1198,6 +1217,22 @@ function DashboardView({ data, setData, onNav }) {
       activity:[{time:"Just now",text:`New quest: ${newQuest.title}`},...d.activity].slice(0,20)}));
     setNewQuest({ title:"", type:"side", status:"active", urgency:"medium", faction:"", region:"" });
     setAddingQuest(false);
+  };
+  const saveEncounterBlueprint = () => {
+    if (!encForm.name.trim()) return;
+    const participants = [];
+    if (encForm.includePartyAll) participants.push({ type:"partyAll" });
+    encForm.monsterNames.split(",").map(s => s.trim()).filter(Boolean).forEach(name => {
+      participants.push({ type:"monster", monsterName: name, count:1 });
+    });
+    if (participants.length === 0) return;
+    setData(d => ({
+      ...d,
+      encounters: [...(d.encounters || []), { id: "enc-" + Date.now(), name: encForm.name.trim(), location: encForm.location.trim(), notes: encForm.notes.trim(), participants }],
+      activity: [{ time: "Just now", text: `Encounter saved: ${encForm.name.trim()}` }, ...d.activity].slice(0, 20),
+    }));
+    setEncForm({ name:"", location:"", notes:"", monsterNames:"", includePartyAll:true });
+    setEncBuilderOpen(false);
   };
   const nextN = data.sessionsPlayed + 1;
   const steps = [
@@ -1277,6 +1312,45 @@ function DashboardView({ data, setData, onNav }) {
             ))}
           </div>
         </div>
+
+        {/* Encounters — deploy from Play → Scenes */}
+        <div>
+          <SectionTitle icon={Swords} count={(data.encounters || []).length} action={
+            <LinkBtn onClick={() => { setEncForm({ name:"", location:"", notes:"", monsterNames:"", includePartyAll:true }); setEncBuilderOpen(true); }}><Plus size={10}/> New Encounter</LinkBtn>
+          }>Encounters</SectionTitle>
+          <p style={{ fontSize:12, color:T.textMuted, margin:"0 0 12px", fontWeight:300, lineHeight:1.45 }}>Blueprints link the party and SRD monsters to the battlemap. Monster names must match the compendium exactly (e.g. Dire Wolf).</p>
+          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+            {(data.encounters || []).map(enc => (
+              <div key={enc.id} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, padding:"12px 16px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px" }}>
+                <div style={{ minWidth:0 }}>
+                  <div style={{ fontSize:14, fontWeight:300, color:T.text }}>{enc.name}</div>
+                  <div style={{ fontSize:11, color:T.textFaint, marginTop:4 }}>{enc.location || "—"}{(enc.notes ? " · " + enc.notes.slice(0, 72) + (enc.notes.length > 72 ? "…" : "") : "")}</div>
+                </div>
+                <LinkBtn onClick={() => onNav("play")}>Open Play <ArrowRight size={10}/></LinkBtn>
+              </div>
+            ))}
+            {(data.encounters || []).length === 0 && (
+              <p style={{ fontSize:12, color:T.textFaint, fontStyle:"italic", padding:4 }}>No saved encounters. Create one to spawn tokens in one click during a session.</p>
+            )}
+          </div>
+        </div>
+
+        <Modal open={encBuilderOpen} onClose={() => setEncBuilderOpen(false)} title="Save encounter blueprint">
+          <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+            <Input value={encForm.name} onChange={v => setEncForm(p => ({ ...p, name:v }))} placeholder="Encounter name" />
+            <Input value={encForm.location} onChange={v => setEncForm(p => ({ ...p, location:v }))} placeholder="Location (optional)" />
+            <Textarea value={encForm.notes} onChange={v => setEncForm(p => ({ ...p, notes:v }))} placeholder="DM notes (optional)" rows={2} />
+            <label style={{ display:"flex", alignItems:"center", gap:8, fontSize:13, color:T.textMuted, cursor:"pointer" }}>
+              <input type="checkbox" checked={encForm.includePartyAll} onChange={e => setEncForm(p => ({ ...p, includePartyAll:e.target.checked }))} />
+              Include full party on map
+            </label>
+            <div>
+              <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.textMuted, textTransform:"uppercase", display:"block", marginBottom:6 }}>Monsters (SRD names, comma-separated)</span>
+              <Input value={encForm.monsterNames} onChange={v => setEncForm(p => ({ ...p, monsterNames:v }))} placeholder="e.g. Dire Wolf, Dire Wolf" />
+            </div>
+            <CrimsonBtn onClick={saveEncounterBlueprint}><Swords size={12}/> Save to campaign</CrimsonBtn>
+          </div>
+        </Modal>
 
         {/* Join Party / Edit Character Modal */}
         <Modal open={joiningParty || editingMember !== null} onClose={()=>{setJoiningParty(false);setEditingMember(null);}} title={editingMember ? "Edit Character" : "Join the Party"} wide>
@@ -2262,7 +2336,9 @@ function WorldView({ data, setData }) {
     if(sel?.id===id && selType==="npc") setSel(p=>({...p,...updates}));
   };
   const addEntity = (type, entity) => {
-    const newE = { ...entity, id:uid() };
+    const id = uid();
+    const newE = { ...entity, id };
+    if (type === "npc") newE.actorId = "npc-" + id;
     if(type==="region") setData(d=>({...d,regions:[...d.regions,newE]}));
     if(type==="faction") setData(d=>({...d,factions:[...d.factions,newE]}));
     if(type==="npc") setData(d=>({...d,npcs:[...d.npcs,newE]}));
@@ -3024,7 +3100,7 @@ function computeVisibleCells(tokens, walls, gridSize, mapW, mapH) {
   return visible;
 }
 
-function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = null, onPartyUpdate = null }) {
+function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = null, onPartyUpdate = null, setData = null, campaignEncounters = [] }) {
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
   const fileRef = useRef(null);
@@ -3143,6 +3219,17 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     addCombatLogEntry({ type: "system", text: `${monster.name} (CR ${monster.cr}) added to the battlefield` });
   };
 
+  const pushTargetHpToCampaign = (targetToken, newHp) => {
+    if (!targetToken || newHp == null) return;
+    if (targetToken.partyId && onPartyUpdate) onPartyUpdate(targetToken.partyId, { hp: newHp });
+    if (targetToken.npcId != null && setData) {
+      setData(d => ({
+        ...d,
+        npcs: (d.npcs || []).map(n => n.id === targetToken.npcId ? { ...n, hp: newHp } : n),
+      }));
+    }
+  };
+
   // ── Combat attack execution using CombatEngine ──
   const executeCombatAction = (attackerId, targetId, actionOrIndex) => {
     if (typeof window.CombatEngine === 'undefined') return;
@@ -3197,9 +3284,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       });
 
       if (totalDmg > 0) {
-        setTokens(prev => prev.map(t => t.id === targetId ? { ...t, hp: Math.max(0, (t.hp || 0) - totalDmg) } : t));
+        const newHp = Math.max(0, (target.hp || 0) - totalDmg);
+        setTokens(prev => prev.map(t => t.id === targetId ? { ...t, hp: newHp } : t));
+        pushTargetHpToCampaign(target, newHp);
         const ci = combatants.findIndex(c => c.mapTokenId === targetId);
-        if (ci >= 0) setCombatants(prev => { const n = [...prev]; n[ci] = {...n[ci], hp: Math.max(0, n[ci].hp - totalDmg)}; return n; });
+        if (ci >= 0) setCombatants(prev => { const n = [...prev]; n[ci] = {...n[ci], hp: newHp}; return n; });
       }
       return;
     }
@@ -3214,9 +3303,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       );
       if (result.results[0]?.hit) {
         addCombatLogEntry({ type: "attack", attacker: attacker.name, target: target.name, action: action.name, hit: true, damage: result.totalDamage, isCrit: result.results[0].isCrit, roll: result.results[0].attackRoll });
-        setTokens(prev => prev.map(t => t.id === targetId ? { ...t, hp: Math.max(0, (t.hp || 0) - result.totalDamage) } : t));
+        const newHp = Math.max(0, (target.hp || 0) - result.totalDamage);
+        setTokens(prev => prev.map(t => t.id === targetId ? { ...t, hp: newHp } : t));
+        pushTargetHpToCampaign(target, newHp);
         const ci = combatants.findIndex(c => c.mapTokenId === targetId);
-        if (ci >= 0) setCombatants(prev => { const n = [...prev]; n[ci] = {...n[ci], hp: Math.max(0, n[ci].hp - result.totalDamage)}; return n; });
+        if (ci >= 0) setCombatants(prev => { const n = [...prev]; n[ci] = {...n[ci], hp: newHp}; return n; });
         if (typeof window.VFX !== 'undefined') {
           const dtype = result.results[0].damage?.[0]?.type || "slashing";
           window.VFX.addEffect(window.VFX.createAttackEffect(attacker.x + gridSize/2, attacker.y + gridSize/2, target.x + gridSize/2, target.y + gridSize/2, action.name, dtype));
@@ -3242,9 +3333,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
         const r = saveResult.results[0];
         addCombatLogEntry({ type: "save", attacker: attacker.name, target: target.name, action: action.name, success: r.save?.success, damage: r.damage, conditions: r.conditions, dc: saveResult.parsed?.dc, ability: saveResult.parsed?.ability });
         if (r.damage > 0) {
-          setTokens(prev => prev.map(t => t.id === targetId ? { ...t, hp: Math.max(0, (t.hp || 0) - r.damage) } : t));
+          const newHp = Math.max(0, (target.hp || 0) - r.damage);
+          setTokens(prev => prev.map(t => t.id === targetId ? { ...t, hp: newHp } : t));
+          pushTargetHpToCampaign(target, newHp);
           const ci = combatants.findIndex(c => c.mapTokenId === targetId);
-          if (ci >= 0) setCombatants(prev => { const n = [...prev]; n[ci] = {...n[ci], hp: Math.max(0, n[ci].hp - r.damage)}; return n; });
+          if (ci >= 0) setCombatants(prev => { const n = [...prev]; n[ci] = {...n[ci], hp: newHp}; return n; });
         }
         if (r.conditions?.length) {
           r.conditions.forEach(c => addTokenCondition(targetId, c.charAt(0).toUpperCase() + c.slice(1)));
@@ -3947,10 +4040,6 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       // Consume the slot
       const newUsed = { ...(caster.usedSlots || {}), [slotLevel]: usedSlot + 1 };
       updateToken(caster.id, { usedSlots: newUsed });
-      // Sync to party if linked
-      if (caster.partyId) {
-        syncTokenToParty(caster.id, { usedSlots: newUsed });
-      }
     }
 
     let hitTokens = [];
@@ -6693,7 +6782,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       const isOverToken = Math.hypot(selectedToken.x - w.x, selectedToken.y - w.y) < gridSize * 0.4;
       if (isOverToken) {
         const delta = e.deltaY < 0 ? 1 : -1;
-        setTokens(p => p.map(t => t.id === selectedTokenId ? {...t, hp: Math.max(0, Math.min(t.maxHp, t.hp + delta))} : t));
+        adjustTokenHp(selectedTokenId, delta);
         return;
       }
     }
@@ -6794,6 +6883,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     const dropExtra = {};
     if (parsed.cls) { dropExtra.cls = parsed.cls; dropExtra.level = parsed.level || 1; dropExtra.spellSlots = getMaxSpellSlots(parsed.cls, parsed.level || 1); dropExtra.usedSlots = {}; dropExtra.spellcastingMod = parsed.spellcastingMod || 3; }
     if (parsed.partyId) dropExtra.partyId = parsed.partyId;
+    if (parsed.npcId != null) dropExtra.npcId = parsed.npcId;
     if (parsed.ac) dropExtra.ac = parsed.ac;
     if (parsed.tokenType) dropExtra.tokenType = parsed.tokenType;
     if (parsed.notes) dropExtra.notes = parsed.notes;
@@ -6803,31 +6893,54 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
 
   // ── Token actions ──
   const adjustTokenHp = (id, delta) => {
-    setTokens(p => p.map(t => t.id === id ? {...t, hp: Math.max(0, Math.min(t.maxHp, t.hp + delta))} : t));
+    setTokens(p => {
+      const t = p.find(x => x.id === id);
+      if (!t) return p;
+      const hp = Math.max(0, Math.min(t.maxHp, (t.hp ?? 0) + delta));
+      const merged = { ...t, hp };
+      queueMicrotask(() => flushTokenCampaignSync(merged, { hp }));
+      return p.map(x => x.id === id ? merged : x);
+    });
   };
   const removeToken = (id) => {
     setTokens(p => p.filter(t => t.id !== id));
     if (selectedTokenId === id) setSelectedTokenId(null);
   };
   const updateToken = (id, updates) => {
-    setTokens(p => p.map(t => t.id === id ? {...t, ...updates} : t));
+    setTokens(p => {
+      const t = p.find(x => x.id === id);
+      if (!t) return p;
+      const merged = { ...t, ...updates };
+      queueMicrotask(() => flushTokenCampaignSync(merged, updates));
+      return p.map(x => x.id === id ? merged : x);
+    });
   };
 
-  // ── Bidirectional sync: token <-> party member ──
-  // When token changes, sync relevant fields back to party data
-  const syncTokenToParty = (tokenId, updates) => {
-    if (!onPartyUpdate) return;
-    const token = tokens.find(t => t.id === tokenId);
-    if (!token || !token.partyId) return;
-    // Map token fields back to party member fields
-    const partyUpdates = {};
-    if (updates.hp !== undefined) partyUpdates.hp = updates.hp;
-    if (updates.usedSlots !== undefined) partyUpdates.usedSlots = updates.usedSlots;
-    if (updates.knownSpells !== undefined) partyUpdates.knownSpells = updates.knownSpells;
-    if (updates.preparedSpells !== undefined) partyUpdates.preparedSpells = updates.preparedSpells;
-    if (updates.spellcastingMod !== undefined) partyUpdates.spellcastingMod = updates.spellcastingMod;
-    if (Object.keys(partyUpdates).length > 0) {
-      onPartyUpdate(token.partyId, partyUpdates);
+  // ── Bidirectional sync: token <-> party / NPC campaign records ──
+  const flushTokenCampaignSync = (mergedToken, updates) => {
+    if (!mergedToken || !updates) return;
+    if (mergedToken.partyId && onPartyUpdate) {
+      const partyUpdates = {};
+      if (Object.prototype.hasOwnProperty.call(updates, "hp")) partyUpdates.hp = mergedToken.hp;
+      if (Object.prototype.hasOwnProperty.call(updates, "maxHp")) partyUpdates.maxHp = mergedToken.maxHp;
+      if (Object.prototype.hasOwnProperty.call(updates, "ac")) partyUpdates.ac = mergedToken.ac;
+      if (Object.prototype.hasOwnProperty.call(updates, "usedSlots")) partyUpdates.usedSlots = mergedToken.usedSlots;
+      if (Object.prototype.hasOwnProperty.call(updates, "knownSpells")) partyUpdates.knownSpells = mergedToken.knownSpells;
+      if (Object.prototype.hasOwnProperty.call(updates, "preparedSpells")) partyUpdates.preparedSpells = mergedToken.preparedSpells;
+      if (Object.prototype.hasOwnProperty.call(updates, "spellcastingMod")) partyUpdates.spellcastingMod = mergedToken.spellcastingMod;
+      if (Object.keys(partyUpdates).length > 0) onPartyUpdate(mergedToken.partyId, partyUpdates);
+    }
+    if (mergedToken.npcId != null && setData) {
+      const npcUpdates = {};
+      if (Object.prototype.hasOwnProperty.call(updates, "hp")) npcUpdates.hp = mergedToken.hp;
+      if (Object.prototype.hasOwnProperty.call(updates, "maxHp")) npcUpdates.maxHp = mergedToken.maxHp;
+      if (Object.prototype.hasOwnProperty.call(updates, "ac")) npcUpdates.ac = mergedToken.ac;
+      if (Object.keys(npcUpdates).length > 0) {
+        setData(d => ({
+          ...d,
+          npcs: (d.npcs || []).map(n => n.id === mergedToken.npcId ? { ...n, ...npcUpdates } : n),
+        }));
+      }
     }
   };
 
@@ -6851,6 +6964,21 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       return t;
     }));
   }, [party]);
+
+  useEffect(() => {
+    if (!npcs || npcs.length === 0) return;
+    setTokens(prev => prev.map(t => {
+      if (!t.npcId) return t;
+      const n = npcs.find(x => x.id === t.npcId);
+      if (!n) return t;
+      const updates = {};
+      if (n.hp !== undefined && n.hp !== t.hp) updates.hp = n.hp;
+      if (n.maxHp !== undefined && n.maxHp !== t.maxHp) updates.maxHp = n.maxHp;
+      if (n.ac !== undefined && n.ac !== t.ac) updates.ac = n.ac;
+      if (Object.keys(updates).length > 0) return { ...t, ...updates };
+      return t;
+    }));
+  }, [npcs]);
 
   // ── Dice rolling ──
   const rollD20 = () => {
@@ -6915,10 +7043,87 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
   };
 
   const endCombat = () => {
+    if (combatLive && typeof window.PhmurtCampaignCombat !== "undefined" && setData) {
+      const lines = window.PhmurtCampaignCombat.summarizeTokensForLedger(tokens);
+      window.PhmurtCampaignCombat.appendLedger(setData, {
+        type: "combat_end",
+        title: "Combat ended",
+        summary: "Round " + round + " — " + (lines.length ? lines.join("; ") : "No defeats logged"),
+        round: round,
+        detailLines: lines,
+      });
+      window.PhmurtCampaignCombat.appendTimelineCombatEvent(setData, {
+        headline: "Combat: " + round + " round(s)",
+        text: lines.length ? lines.join(". ") : "Session combat concluded.",
+        outcome: "See combat ledger",
+        dmOnly: false,
+      });
+    }
     setCombatLive(false);
     setCombatants([]);
     setConditions({});
     setMode("select");
+  };
+
+  const deployEncounter = (enc) => {
+    if (typeof window.PhmurtCampaignCombat === "undefined" || viewRole !== "dm") return;
+    const specs = window.PhmurtCampaignCombat.planEncounterDeployment(enc, party, npcs);
+    if (!specs.length) return;
+    const cx = (canvasRef.current?.width / 2 - pan.x) / zoom;
+    const cy = (canvasRef.current?.height / 2 - pan.y) / zoom;
+    const newToks = [];
+    let idx = 0;
+    specs.forEach(spec => {
+      const col = idx % 5;
+      const row = Math.floor(idx / 5);
+      const wx = cx + (col - 2) * gridSize * 2;
+      const wy = cy + row * gridSize * 2;
+      const snap = snapToGridCenter(wx, wy);
+      idx++;
+      if (spec.kind === "pc") {
+        const p = spec.member;
+        const id = "tk-" + Date.now() + "-" + Math.random() + "-" + idx;
+        const slots = getMaxSpellSlots(p.cls, p.lv);
+        newToks.push({
+          id, name: p.name, color: "#2e8b57", hp: p.hp, maxHp: p.maxHp, x: snap.x, y: snap.y,
+          vision: 0, darkvision: 0, speed: 30, hidden: false, size: "medium", label: "", ac: p.ac,
+          notes: (p.cls || "") + " Lv" + (p.lv || 1) + (p.race ? " · " + p.race : ""),
+          imageSrc: null, tokenType: "pc", partyId: p.id,
+          cls: p.cls, level: p.lv, spellSlots: slots, usedSlots: p.usedSlots || {},
+          knownSpells: p.knownSpells || [], preparedSpells: p.preparedSpells || [], spellcastingMod: p.spellcastingMod || 3,
+        });
+      } else if (spec.kind === "npc") {
+        const n = spec.npc;
+        const id = "tk-" + Date.now() + "-" + Math.random() + "-" + idx;
+        newToks.push({
+          id, name: n.name, color: "#58aaff", hp: n.hp ?? null, maxHp: n.maxHp ?? null, x: snap.x, y: snap.y,
+          vision: 0, darkvision: 0, speed: 30, hidden: false, size: "medium", label: "", ac: n.ac ?? null,
+          notes: (n.role || "") + (n.faction ? " · " + n.faction : "") + (n.loc ? " · " + n.loc : ""),
+          imageSrc: null, tokenType: "npc", npcId: n.id,
+        });
+      } else if (spec.kind === "monster") {
+        const m = spec.monster;
+        const id = "tk-" + Date.now() + "-" + Math.random() + "-" + idx;
+        const sizeMap = { Tiny: 0.5, Small: 1, Medium: 1, Large: 2, Huge: 3, Gargantuan: 4 };
+        const sizeMult = sizeMap[m.size] || 1;
+        newToks.push({
+          id, name: m.name, x: snap.x, y: snap.y, color: "#dc143c",
+          size: (m.size || "medium").toLowerCase(), tokenSize: sizeMult,
+          hp: m.hp, maxHp: m.hp, ac: m.ac, speed: (() => { const sm = String(m.speed || "").match(/\d+/); return sm ? parseInt(sm[0], 10) : 30; })(),
+          tokenType: "enemy", vision: 0, darkvision: 0, hidden: false, label: "",
+          notes: `${m.size} ${m.type} · CR ${m.cr}`,
+          imageSrc: null, monsterData: m,
+        });
+      }
+    });
+    setTokens(prev => [...prev, ...newToks]);
+    if (setData && window.PhmurtCampaignCombat) {
+      window.PhmurtCampaignCombat.appendLedger(setData, {
+        type: "encounter_deploy",
+        title: "Encounter deployed",
+        summary: enc.name + " — " + specs.length + " token(s) placed",
+      });
+    }
   };
 
   const nextTurn = () => {
@@ -6951,7 +7156,12 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     setCombatants(p => p.map(c => c.id === id ? {...c, hp: Math.max(0, Math.min(c.maxHp, c.hp + d))} : c));
     const combatant = combatants.find(c => c.id === id);
     if (combatant) {
-      setTokens(p => p.map(t => t.id === combatant.mapTokenId ? {...t, hp: Math.max(0, Math.min(t.maxHp, t.hp + d))} : t));
+      const tok = tokens.find(t => t.id === combatant.mapTokenId);
+      if (tok) {
+        const newHp = Math.max(0, Math.min(tok.maxHp, (tok.hp ?? 0) + d));
+        setTokens(p => p.map(t => t.id === combatant.mapTokenId ? {...t, hp: newHp} : t));
+        pushTargetHpToCampaign(tok, newHp);
+      }
     }
   };
 
@@ -8707,6 +8917,21 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
                       </button>
                     )}
 
+                    {viewRole === "dm" && campaignEncounters && campaignEncounters.length > 0 && (
+                      <div style={{ padding:"10px 12px", background:"rgba(212,67,58,0.06)", border:"1px solid rgba(212,67,58,0.2)", borderRadius:"8px" }}>
+                        <span style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1.2px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:8, fontWeight:600 }}>Campaign encounters</span>
+                        {campaignEncounters.map(enc => (
+                          <button key={enc.id} type="button" onClick={() => deployEncounter(enc)}
+                            onMouseEnter={e => e.currentTarget.style.background="rgba(212,67,58,0.1)"}
+                            onMouseLeave={e => e.currentTarget.style.background="rgba(0,0,0,0.08)"}
+                            style={{ width:"100%", textAlign:"left", marginBottom:6, padding:"8px 10px", background:"rgba(0,0,0,0.08)", border:"1px solid " + T.border, borderRadius:"6px", cursor:"pointer", color:T.text, fontFamily:T.ui, fontSize:11 }}>
+                            <span style={{ display:"inline-flex", alignItems:"center", gap:6 }}><Swords size={11} color={cssVar("--crimson")}/> {enc.name}</span>
+                            {enc.location && <span style={{ fontSize:9, color:T.textFaint, display:"block", marginTop:3 }}>{enc.location}</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
                     {/* Map list */}
                     {battleMaps.map(map => {
                       const isActiveMap = activeMapId === map.id;
@@ -8893,8 +9118,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
                         <span style={secHead("NPCs")}>NPCs</span>
                         {npcs.filter(n => n.alive).map(n => (
                           <div key={n.id}
-                            draggable onDragStart={e => e.dataTransfer.setData("application/token", JSON.stringify({ name:n.name, color:"#58aaff", hp:null, maxHp:null }))}
-                            onClick={() => addToken(n.name, "#58aaff", null, null, { tokenType:"npc", notes:n.role + (n.faction ? " · " + n.faction : "") + (n.loc ? " · " + n.loc : "") })}
+                            draggable onDragStart={e => e.dataTransfer.setData("application/token", JSON.stringify({
+                              name:n.name, color:"#58aaff", hp:n.hp ?? null, maxHp:n.maxHp ?? null, ac:n.ac ?? null, tokenType:"npc", npcId:n.id,
+                              notes:n.role + (n.faction ? " · " + n.faction : "") + (n.loc ? " · " + n.loc : ""),
+                            }))}
+                            onClick={() => addToken(n.name, "#58aaff", n.hp ?? null, n.maxHp ?? null, { tokenType:"npc", npcId:n.id, ac:n.ac ?? null, notes:n.role + (n.faction ? " · " + n.faction : "") + (n.loc ? " · " + n.loc : "") })}
                             onMouseEnter={e => e.currentTarget.style.background="rgba(88,170,255,0.08)"} onMouseLeave={e => e.currentTarget.style.background="rgba(0,0,0,0.06)"}
                             style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", background:"rgba(0,0,0,0.06)", border:"1px solid " + T.border, borderRadius:"6px", cursor:"grab", marginBottom:3, transition:"all 0.12s" }}>
                             <div style={{ width:26, height:26, borderRadius:"50%", background:"rgba(88,170,255,0.2)", display:"flex", alignItems:"center", justifyContent:"center", border:"1px solid rgba(88,170,255,0.3)" }}>
@@ -9107,6 +9335,8 @@ function PlayView({ data, setData, activeCampaignId }) {
       {viewMode==="battlemap" ? (
         <div style={{ flex:1, minHeight:0, display:"flex", flexDirection:"column" }}>
           <Battlemap party={data.party ?? []} npcs={data.npcs ?? []} viewRole={isPlayer ? "player" : "dm"} activeCampaignId={activeCampaignId}
+            setData={setData}
+            campaignEncounters={data.encounters ?? []}
             onPartyUpdate={(partyId, updates) => setData(d => ({...d, party: (d.party ?? []).map(p => p.id === partyId ? {...p, ...updates} : p)}))} />
         </div>
       ) : (
@@ -19094,6 +19324,17 @@ function CampaignManager() {
       return { ...c, data: newData };
     }));
   };
+
+  useEffect(() => {
+    if (!activeCampaignId || typeof window.PhmurtCampaignCombat === "undefined") return;
+    setCampaigns(prev => {
+      const c = prev.find(x => x.id === activeCampaignId);
+      if (!c) return prev;
+      const m = window.PhmurtCampaignCombat.migrateCampaignData(c.data);
+      if (m === c.data) return prev;
+      return prev.map(x => x.id === activeCampaignId ? { ...x, data: m } : x);
+    });
+  }, [activeCampaignId]);
 
   const createCampaign = () => {
     const newId = `campaign-${Date.now()}`;
