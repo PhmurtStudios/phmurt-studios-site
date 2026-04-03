@@ -19,6 +19,7 @@ DND35_DATA.alignments = [
 DND35_DATA.races = {
   human: {
     name:'Human', size:'Medium', speed:30, languages:['Common','One of your choice'],
+    favoredClass:'any',
     asi:{}, bonusSkillPoints:4, bonusFeat:true,
     traits:[
       {name:'Bonus Feat',desc:'Humans gain one extra feat at 1st level.'},
@@ -28,6 +29,7 @@ DND35_DATA.races = {
   },
   elf: {
     name:'Elf', size:'Medium', speed:30, languages:['Common','Elven'],
+    favoredClass:'wizard',
     asi:{dex:2,con:-2},
     traits:[
       {name:'Low-Light Vision',desc:'Elves can see twice as far as a human in dim light.'},
@@ -40,6 +42,7 @@ DND35_DATA.races = {
   },
   dwarf: {
     name:'Dwarf', size:'Medium', speed:20, languages:['Common','Dwarven'],
+    favoredClass:'fighter',
     asi:{con:2,cha:-2},
     traits:[
       {name:'Darkvision',desc:'Dwarves can see in the dark up to 60 feet.'},
@@ -55,6 +58,7 @@ DND35_DATA.races = {
   },
   gnome: {
     name:'Gnome', size:'Small', speed:20, languages:['Common','Gnome'],
+    favoredClass:'bard',
     asi:{con:2,str:-2},
     traits:[
       {name:'Low-Light Vision',desc:'Gnomes can see twice as far as a human in dim light.'},
@@ -70,6 +74,7 @@ DND35_DATA.races = {
   },
   halfling: {
     name:'Halfling', size:'Small', speed:20, languages:['Common','Halfling'],
+    favoredClass:'rogue',
     asi:{dex:2,str:-2},
     traits:[
       {name:'Small Size',desc:'+1 bonus to AC and attacks, +4 bonus on Hide checks.'},
@@ -83,6 +88,7 @@ DND35_DATA.races = {
   },
   halfElf: {
     name:'Half-Elf', size:'Medium', speed:30, languages:['Common','Elven'],
+    favoredClass:'any',
     asi:{},
     traits:[
       {name:'Low-Light Vision',desc:'Half-elves can see twice as far as a human in dim light.'},
@@ -95,6 +101,7 @@ DND35_DATA.races = {
   },
   halfOrc: {
     name:'Half-Orc', size:'Medium', speed:30, languages:['Common','Orc'],
+    favoredClass:'barbarian',
     asi:{str:2,int:-2,cha:-2},
     traits:[
       {name:'Darkvision',desc:'Half-orcs can see in the dark up to 60 feet.'},
@@ -398,7 +405,51 @@ DND35_DATA.feats = [
   {name:'Persuasive',             prereq:'—',           desc:'+2 bonus on Bluff and Intimidate checks.'},
   {name:'Self-Sufficient',        prereq:'—',           desc:'+2 bonus on Heal and Survival checks.'},
   {name:'Improved Critical',      prereq:'Proficiency, BAB +8',desc:'Double the threat range of the chosen weapon.'},
-  {name:'Greater Weapon Focus',   prereq:'Weapon Focus, Fighter 8',desc:'+1 more attack bonus with chosen weapon (+2 total).'}
+  {name:'Greater Weapon Focus',   prereq:'Weapon Focus, Fighter 8',desc:'+1 more attack bonus with chosen weapon (+2 total).'},
+  {name:'Weapon Specialization',  prereq:'Weapon Focus, Fighter 4',desc:'+2 bonus on damage rolls with one chosen weapon.'},
+  {name:'Greater Weapon Specialization',prereq:'Weapon Specialization, Fighter 12',desc:'+2 more damage bonus with chosen weapon (+4 total).'},
+  {name:'Improved Bull Rush',     prereq:'STR 13, Power Attack',desc:'+4 bonus on bull rush, no AoO.'},
+  {name:'Improved Overrun',       prereq:'STR 13, Power Attack',desc:'+4 bonus on overrun, no AoO. Target cannot choose to avoid.'},
+  {name:'Improved Sunder',        prereq:'STR 13, Power Attack',desc:'+4 bonus on sunder, no AoO.'},
+  {name:'Great Cleave',           prereq:'STR 13, Power Attack, Cleave, BAB +4',desc:'No limit on Cleave attacks per round.'},
+  {name:'Improved Trip',          prereq:'INT 13, Combat Expertise',desc:'+4 bonus on trip, no AoO. Free melee attack if trip succeeds.'},
+  {name:'Improved Disarm',        prereq:'INT 13, Combat Expertise',desc:'+4 bonus on disarm, no AoO.'},
+  {name:'Improved Feint',         prereq:'INT 13, Combat Expertise',desc:'Feint in combat as a move action instead of a standard action.'},
+  {name:'Whirlwind Attack',       prereq:'DEX 13, INT 13, Combat Expertise, Dodge, Mobility, Spring Attack, BAB +4',desc:'As a full-round action, make one melee attack against each opponent within reach.'},
+  {name:'Combat Expertise',       prereq:'INT 13',desc:'Trade attack bonus for AC bonus (up to −5 attack / +5 AC).'},
+  {name:'Improved Grapple',       prereq:'DEX 13, Improved Unarmed Strike',desc:'+4 bonus on grapple checks, no AoO.'},
+  {name:'Stunning Fist',          prereq:'DEX 13, WIS 13, Improved Unarmed Strike, BAB +8',desc:'Stun an opponent with an unarmed strike (Fort DC 10 + ½ level + WIS mod).'},
+  {name:'Natural Spell',          prereq:'WIS 13, Wild Shape',desc:'Cast spells while in Wild Shape form.'},
+  {name:'Augment Summoning',      prereq:'Spell Focus (conjuration)',desc:'Summoned creatures gain +4 STR and +4 CON.'},
+  {name:'Spell Focus',            prereq:'—',desc:'+1 to save DCs for spells of one chosen school.'},
+  {name:'Greater Spell Focus',    prereq:'Spell Focus',desc:'+1 more to save DCs for chosen school (+2 total).'},
+  {name:'Greater Spell Penetration',prereq:'Spell Penetration',desc:'+2 more on caster level checks to overcome SR (+4 total).'},
+  {name:'Empower Spell',          prereq:'—',desc:'All variable numeric effects increased by 50%, using two higher spell slots.'},
+  {name:'Maximize Spell',         prereq:'—',desc:'All variable numeric effects maximized, using three higher spell slots.'},
+  {name:'Quicken Spell',          prereq:'—',desc:'Cast a spell as a free action, using four higher spell slots.'},
+  {name:'Extend Spell',           prereq:'—',desc:'Double the duration of a spell, using one higher spell slot.'},
+  {name:'Widen Spell',            prereq:'—',desc:'Double the area of an area spell, using three higher spell slots.'},
+  {name:'Heighten Spell',         prereq:'—',desc:'Cast a spell as if it were a higher level; save DCs adjust accordingly.'},
+  {name:'Craft Wondrous Item',    prereq:'Caster level 3',desc:'Create wondrous magic items.'},
+  {name:'Craft Magic Arms and Armor',prereq:'Caster level 5',desc:'Create magic weapons, armor, and shields.'},
+  {name:'Craft Wand',             prereq:'Caster level 5',desc:'Create magic wands.'},
+  {name:'Craft Rod',              prereq:'Caster level 9',desc:'Create magic rods.'},
+  {name:'Craft Staff',            prereq:'Caster level 12',desc:'Create magic staves.'},
+  {name:'Forge Ring',             prereq:'Caster level 12',desc:'Create magic rings.'},
+  {name:'Improved Two-Weapon Fighting',prereq:'DEX 17, Two-Weapon Fighting, BAB +6',desc:'Get a second off-hand attack at -5.'},
+  {name:'Greater Two-Weapon Fighting',prereq:'DEX 19, Improved Two-Weapon Fighting, BAB +11',desc:'Get a third off-hand attack at -10.'},
+  {name:'Manyshot',               prereq:'DEX 17, Point Blank Shot, Rapid Shot, BAB +6',desc:'Shoot two or more arrows at a single target as a standard action.'},
+  {name:'Improved Precise Shot',  prereq:'DEX 19, Point Blank Shot, Precise Shot, BAB +11',desc:'Ignore anything less than total cover/concealment on ranged attacks.'},
+  {name:'Shot on the Run',        prereq:'DEX 13, Point Blank Shot, Dodge, Mobility, BAB +4',desc:'Move before and after making a ranged attack.'},
+  {name:'Spirited Charge',        prereq:'Mounted Combat, Ride-By Attack',desc:'Double damage (triple with lance) on a mounted charge.'},
+  {name:'Ride-By Attack',         prereq:'Mounted Combat',desc:'Move before and after a mounted charge attack.'},
+  {name:'Extra Turning',          prereq:'Turn/Rebuke Undead',desc:'Gain 4 extra turn/rebuke undead attempts per day.'},
+  {name:'Improved Turning',       prereq:'Turn/Rebuke Undead',desc:'+1 effective level for turning undead.'},
+  {name:'Leadership',             prereq:'Character level 6',desc:'Attract a cohort and followers.'},
+  {name:'Snatch Arrows',          prereq:'DEX 15, Deflect Arrows, Improved Unarmed Strike',desc:'Catch a deflected ranged weapon instead of just deflecting it.'},
+  {name:'Craft Construct',        prereq:'Craft Magic Arms and Armor, Craft Wondrous Item',desc:'Create golems and other constructs.'},
+  {name:'Exotic Weapon Proficiency',prereq:'BAB +1',desc:'Gain proficiency with one exotic weapon.'},
+  {name:'Improved Shield Bash',   prereq:'Shield Proficiency',desc:'Keep shield AC bonus when making a shield bash attack.'}
 ];
 
 // ── SPELLS ──
@@ -714,6 +765,23 @@ DND35_DATA.xpTable = {
   18:153000, 19:171000, 20:190000
 };
 
+// ── MULTICLASS PREREQUISITES (builder guidance) ──
+// 3.5e core does not hard-gate multiclassing by ability score in the same way as 5e,
+// but these guidance thresholds help keep characters playable.
+DND35_DATA.multiclassPrereqs = {
+  barbarian: { str: 13, con: 12 },
+  bard: { cha: 13 },
+  cleric: { wis: 13 },
+  druid: { wis: 13 },
+  fighter: { str: 13 },
+  monk: { dex: 13, wis: 13 },
+  paladin: { str: 13, cha: 13, wis: 12 },
+  ranger: { dex: 13, wis: 12 },
+  rogue: { dex: 13 },
+  sorcerer: { cha: 13 },
+  wizard: { int: 13 }
+};
+
 // ── FEAT LEVELS ──
 DND35_DATA.featLevels = [1, 3, 6, 9, 12, 15, 18];
 DND35_DATA.fighterBonusFeatLevels = [1, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20];
@@ -800,61 +868,60 @@ DND35_DATA.spellsPerDay = {
 // ── CLASS FEATURES BY LEVEL ──
 DND35_DATA.classFeaturesByLevel = {
   barbarian: {
-    1: ['Fast Movement +10 ft', 'Rage 1/day', 'Illiteracy'],
+    1: ['Fast Movement +10 ft', 'Illiteracy', 'Rage 1/day'],
     2: ['Uncanny Dodge'],
-    3: ['Trap Sense +1', 'Rage 2/day'],
+    3: ['Trap Sense +1'],
+    4: ['Rage 2/day'],
     5: ['Improved Uncanny Dodge'],
-    6: ['Trap Sense +2', 'Rage 3/day'],
-    7: ['Damage Reduction 1/-'],
-    9: ['Trap Sense +3', 'Rage 4/day'],
-    11: ['Damage Reduction 2/-'],
-    12: ['Trap Sense +4', 'Rage 5/day'],
-    13: ['Greater Rage', 'Damage Reduction 3/-'],
-    14: ['Trap Sense +5'],
-    15: ['Rage 6/day'],
-    17: ['Damage Reduction 4/-'],
+    6: ['Trap Sense +2'],
+    7: ['Damage Reduction 1/—'],
+    8: ['Rage 3/day'],
+    9: ['Trap Sense +3'],
+    10: ['Damage Reduction 2/—'],
+    11: ['Greater Rage'],
+    12: ['Trap Sense +4', 'Rage 4/day'],
+    13: ['Damage Reduction 3/—'],
+    14: ['Indomitable Will'],
+    15: ['Trap Sense +5'],
+    16: ['Damage Reduction 4/—', 'Rage 5/day'],
+    17: ['Tireless Rage'],
     18: ['Trap Sense +6'],
-    19: ['Mighty Rage', 'Rage 7/day'],
-    20: ['Damage Reduction 5/-']
+    19: ['Damage Reduction 5/—'],
+    20: ['Mighty Rage', 'Rage 6/day']
   },
   bard: {
     1: ['Bardic Music', 'Bardic Knowledge', 'Countersong', 'Fascinate', 'Inspire Courage +1'],
-    2: ['Evasion'],
-    4: ['Inspire Courage +2'],
+    3: ['Inspire Competence'],
     6: ['Suggestion'],
-    8: ['Inspire Courage +3'],
-    10: ['Jack of All Trades'],
-    12: ['Inspire Courage +4'],
-    14: ['Inspire Greatness'],
-    16: ['Inspire Courage +5'],
+    8: ['Inspire Courage +2'],
+    9: ['Inspire Greatness'],
+    12: ['Song of Freedom'],
+    14: ['Inspire Courage +3'],
+    15: ['Inspire Heroics'],
     18: ['Mass Suggestion'],
-    20: ['Inspire Courage +6']
+    20: ['Inspire Courage +4']
   },
   cleric: {
-    1: ['Aura', 'Spontaneous Casting', 'Turn/Rebuke Undead', 'Domain Spells'],
-    5: ['Bonus Feat'],
-    6: ['Improved Turn/Rebuke Undead'],
-    9: ['Bonus Feat'],
-    12: ['Improved Turn/Rebuke Undead'],
-    15: ['Bonus Feat'],
-    18: ['Improved Turn/Rebuke Undead'],
-    20: ['Improved Turn/Rebuke Undead']
+    1: ['Aura', 'Spontaneous Casting (Cure or Inflict)', 'Turn/Rebuke Undead', 'Domain Spells (2 domains)']
   },
   druid: {
-    1: ['Aura', 'Nature Sense', 'Wild Empathy', 'Woodland Stride'],
-    2: ['Wild Shape 1/day (Small/Medium animals)'],
+    1: ['Animal Companion', 'Nature Sense', 'Wild Empathy'],
+    2: ['Woodland Stride'],
     3: ['Trackless Step'],
-    4: ['Wild Shape 2/day'],
-    5: ['Improved Wild Shape (Small/Medium only)'],
-    6: ['Wild Shape 3/day'],
-    8: ['Wild Shape 4/day (can use Large forms)'],
+    4: ['Resist Nature\'s Lure'],
+    5: ['Wild Shape 1/day (Small/Medium animal)'],
+    6: ['Wild Shape 2/day'],
+    7: ['Wild Shape 3/day'],
+    8: ['Wild Shape (Large animal)'],
     9: ['Venom Immunity'],
-    10: ['Wild Shape 5/day'],
-    12: ['Wild Shape 6/day (can use Plant forms)'],
-    15: ['Timeless Body', 'Wild Shape 7/day (can use Huge forms)'],
-    16: ['Wild Shape 8/day (can use Elemental forms)'],
-    18: ['Wild Shape 9/day', 'Thousand Faces'],
-    20: ['Wild Shape 10/day']
+    10: ['Wild Shape 4/day'],
+    11: ['Wild Shape (Tiny animal)'],
+    12: ['Wild Shape (Plant)'],
+    14: ['Wild Shape 5/day'],
+    15: ['Timeless Body', 'Wild Shape (Huge animal)'],
+    16: ['Wild Shape (Elemental 1/day)'],
+    18: ['Wild Shape 6/day (Elemental 3/day)', 'Thousand Faces'],
+    20: ['Wild Shape (Huge elemental)']
   },
   fighter: {
     1: ['Bonus Feat'],
@@ -870,95 +937,82 @@ DND35_DATA.classFeaturesByLevel = {
     20: ['Bonus Feat']
   },
   monk: {
-    1: ['Bonus Feat', 'Flurry of Blows', 'Unarmed Strike 1d6', 'Unarmored AC Bonus +0'],
-    2: ['Bonus Feat'],
-    3: ['Still Mind', 'Unarmored AC Bonus +1', 'Speed +10 ft'],
+    1: ['Bonus Feat', 'Flurry of Blows', 'Unarmed Strike 1d6'],
+    2: ['Bonus Feat', 'Evasion'],
+    3: ['Still Mind', 'Speed +10 ft'],
     4: ['Ki Strike (magic)', 'Slow Fall 20 ft', 'Unarmed Strike 1d8'],
-    5: ['Purity of Body'],
-    6: ['Bonus Feat', 'Speed +20 ft'],
+    5: ['Purity of Body', 'AC Bonus +1'],
+    6: ['Bonus Feat', 'Speed +20 ft', 'Slow Fall 30 ft'],
     7: ['Wholeness of Body'],
-    8: ['Unarmored AC Bonus +2', 'Unarmed Strike 1d10'],
+    8: ['Slow Fall 40 ft', 'Unarmed Strike 1d10'],
     9: ['Improved Evasion', 'Speed +30 ft'],
-    10: ['Ki Strike (lawful)'],
-    11: ['Diamond Body'],
-    12: ['Unarmored AC Bonus +3', 'Speed +40 ft', 'Unarmed Strike 2d6'],
+    10: ['Ki Strike (lawful)', 'Slow Fall 50 ft', 'AC Bonus +2'],
+    11: ['Diamond Body', 'Greater Flurry'],
+    12: ['Slow Fall 60 ft', 'Speed +40 ft', 'Unarmed Strike 2d6'],
     13: ['Diamond Soul'],
-    14: ['Bonus Feat'],
-    15: ['Quivering Palm', 'Speed +50 ft'],
-    16: ['Unarmored AC Bonus +4', 'Ki Strike (adamantine)', 'Unarmed Strike 2d8'],
-    17: ['Timeless Body'],
-    18: ['Unarmored AC Bonus +5', 'Speed +60 ft'],
+    14: ['Slow Fall 70 ft'],
+    15: ['Quivering Palm', 'Speed +50 ft', 'AC Bonus +3'],
+    16: ['Ki Strike (adamantine)', 'Slow Fall 80 ft', 'Unarmed Strike 2d8'],
+    17: ['Timeless Body', 'Tongue of the Sun and Moon'],
+    18: ['Slow Fall 90 ft', 'Speed +60 ft'],
     19: ['Empty Body'],
-    20: ['Perfect Self', 'Unarmed Strike 2d10']
+    20: ['Perfect Self', 'Unarmed Strike 2d10', 'AC Bonus +4', 'Slow Fall (any distance)']
   },
   paladin: {
     1: ['Aura of Good', 'Detect Evil', 'Smite Evil 1/day'],
-    2: ['Divine Grace'],
-    3: ['Aura of Courage', 'Smite Evil 2/day'],
+    2: ['Divine Grace', 'Lay on Hands'],
+    3: ['Aura of Courage', 'Divine Health'],
     4: ['Turn Undead'],
-    5: ['Special Mount', 'Smite Evil 3/day'],
+    5: ['Smite Evil 2/day', 'Special Mount'],
     6: ['Remove Disease 1/week'],
-    7: ['Smite Evil 4/day'],
-    9: ['Remove Disease 2/week', 'Smite Evil 5/day'],
-    11: ['Smite Evil 6/day'],
+    9: ['Remove Disease 2/week'],
+    10: ['Smite Evil 3/day'],
     12: ['Remove Disease 3/week'],
-    13: ['Smite Evil 7/day'],
-    15: ['Remove Disease 4/week'],
-    17: ['Smite Evil 8/day'],
+    15: ['Smite Evil 4/day', 'Remove Disease 4/week'],
     18: ['Remove Disease 5/week'],
-    19: ['Smite Evil 9/day'],
-    20: ['Holy Champion']
+    20: ['Smite Evil 5/day', 'Holy Champion']
   },
   ranger: {
-    1: ['Favored Enemy', 'Track', 'Wild Empathy', 'Combat Style'],
-    2: ['Bonus Feat'],
+    1: ['1st Favored Enemy', 'Track', 'Wild Empathy'],
+    2: ['Combat Style'],
     3: ['Endurance'],
-    4: ['Animal Companion', 'Spells'],
-    5: ['Improved Combat Style'],
-    6: ['Bonus Feat'],
-    8: ['Combat Style Mastery'],
-    10: ['Evasion', 'Bonus Feat'],
-    12: ['Camouflage'],
-    14: ['Bonus Feat'],
-    15: ['Improved Evasion'],
-    16: ['Camouflage (Hide in Plain Sight)'],
-    18: ['Bonus Feat'],
-    20: ['Bonus Feat']
+    4: ['Animal Companion'],
+    5: ['2nd Favored Enemy'],
+    6: ['Improved Combat Style'],
+    7: ['Woodland Stride'],
+    8: ['Swift Tracker'],
+    9: ['Evasion'],
+    10: ['3rd Favored Enemy'],
+    11: ['Combat Style Mastery'],
+    13: ['Camouflage'],
+    15: ['4th Favored Enemy'],
+    17: ['Hide in Plain Sight'],
+    20: ['5th Favored Enemy']
   },
   rogue: {
     1: ['Sneak Attack +1d6', 'Trapfinding'],
     2: ['Evasion'],
-    3: ['Sneak Attack +2d6'],
-    4: ['Uncanny Dodge (lose DEX bonus)'],
+    3: ['Sneak Attack +2d6', 'Trap Sense +1'],
+    4: ['Uncanny Dodge'],
     5: ['Sneak Attack +3d6'],
-    6: ['Improved Uncanny Dodge'],
+    6: ['Trap Sense +2'],
     7: ['Sneak Attack +4d6'],
-    8: ['Improved Evasion'],
-    9: ['Sneak Attack +5d6', 'Debilitating Strike'],
-    10: ['Sneak Attack +6d6', 'Exploit Weakness'],
-    11: ['Sneak Attack +7d6'],
-    12: ['Improved Evasion (better)'],
-    13: ['Sneak Attack +8d6', 'Master Striker'],
+    8: ['Improved Uncanny Dodge'],
+    9: ['Sneak Attack +5d6', 'Trap Sense +3'],
+    10: ['Special Ability'],
+    11: ['Sneak Attack +6d6'],
+    12: ['Trap Sense +4'],
+    13: ['Sneak Attack +7d6', 'Special Ability'],
     14: ['Slippery Mind'],
-    15: ['Sneak Attack +9d6'],
-    16: ['Sneak Attack +10d6', 'Improved Invisibility'],
-    17: ['Sneak Attack +11d6'],
-    18: ['Improved Evasion (perfect)'],
-    19: ['Sneak Attack +12d6', 'Death Attack'],
-    20: ['Sneak Attack +13d6']
+    15: ['Sneak Attack +8d6', 'Trap Sense +5'],
+    16: ['Special Ability'],
+    17: ['Sneak Attack +9d6'],
+    18: ['Trap Sense +6'],
+    19: ['Sneak Attack +10d6', 'Special Ability'],
+    20: ['Special Ability']
   },
   sorcerer: {
-    1: ['Spellcasting', 'Summon Familiar'],
-    3: ['Bonus Feat'],
-    5: ['Bonus Feat'],
-    7: ['Bonus Metamagic Feat'],
-    9: ['Bonus Feat'],
-    11: ['Bonus Metamagic Feat'],
-    13: ['Bonus Feat'],
-    15: ['Bonus Metamagic Feat'],
-    17: ['Bonus Feat'],
-    19: ['Bonus Metamagic Feat'],
-    20: ['Bonus Feat']
+    1: ['Spellcasting (Spontaneous Arcane)', 'Summon Familiar']
   },
   wizard: {
     1: ['Spellcasting', 'Scribe Scroll', 'Summon Familiar', 'Bonus Feat'],
@@ -995,8 +1049,8 @@ DND35_DATA.babProgression = {
 
 // ── SAVE BONUS PROGRESSION ──
 DND35_DATA.saveProgression = {
-  good: [2,2,2,2,3,3,3,3,4,4,4,4,5,5,5,5,6,6,6,6],
-  poor: [0,0,0,0,1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4]
+  good: [2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12],
+  poor: [0,0,1,1,1,2,2,2,3,3,3,4,4,4,5,5,5,6,6,6]
 };
 
 // ── TURNING UNDEAD (Cleric/Paladin) ──
@@ -1020,6 +1074,31 @@ DND35_DATA.smiteEvilUses = [0,1,1,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10];
 
 // ── SNEAK ATTACK PROGRESSION (Rogue) ──
 DND35_DATA.sneakAttack = {
-  dice: [1,1,2,2,3,3,4,4,5,6,7,7,8,8,9,10,11,11,12,13]
+  dice: [1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10]
+};
+
+// ── SPELLS KNOWN (Spontaneous casters) ──
+DND35_DATA.spellsKnown = {
+  bard: {
+    0: [4,5,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6,6],
+    1: [null,2,3,3,4,4,4,4,4,4,4,4,4,4,4,4,5,5,5,5],
+    2: [null,null,null,2,3,3,4,4,4,4,4,4,4,4,4,5,5,5,5,5],
+    3: [null,null,null,null,null,2,3,3,4,4,4,4,4,4,5,5,5,5,5,5],
+    4: [null,null,null,null,null,null,null,2,3,3,4,4,4,4,4,5,5,5,5,5],
+    5: [null,null,null,null,null,null,null,null,null,2,3,3,4,4,4,4,4,5,5,5],
+    6: [null,null,null,null,null,null,null,null,null,null,null,2,3,3,4,4,4,4,5,5]
+  },
+  sorcerer: {
+    0: [4,5,5,6,6,7,7,8,8,9,9,9,9,9,9,9,9,9,9,9],
+    1: [2,2,3,3,4,4,5,5,5,5,5,5,5,5,5,5,5,5,5,5],
+    2: [null,null,1,2,2,3,3,4,4,4,5,5,5,5,5,5,5,5,5,5],
+    3: [null,null,null,null,1,2,2,2,3,3,3,4,4,4,4,5,5,5,5,5],
+    4: [null,null,null,null,null,null,1,2,2,2,3,3,3,4,4,4,4,5,5,5],
+    5: [null,null,null,null,null,null,null,null,1,2,2,2,3,3,3,4,4,4,4,5],
+    6: [null,null,null,null,null,null,null,null,null,null,1,2,2,2,3,3,3,4,4,4],
+    7: [null,null,null,null,null,null,null,null,null,null,null,null,1,2,2,2,3,3,3,4],
+    8: [null,null,null,null,null,null,null,null,null,null,null,null,null,null,1,2,2,2,3,3],
+    9: [null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,1,2,2,3]
+  }
 };
 

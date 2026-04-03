@@ -15244,7 +15244,7 @@ function downloadCityMap() {
         var c = campaigns[cid];
         var btn = document.createElement('button');
         btn.className = 'campaign-selector-btn';
-        btn.innerHTML = c.name || 'Unnamed Campaign';
+        btn.textContent = c.name || 'Unnamed Campaign';
         btn.onclick = function() {
           saveToCampaign(cid, type, data);
           closeExportModal();

@@ -285,9 +285,14 @@
 
   // Wrap toggleTheme to add smooth transition class
   (function enhanceThemeToggle() {
-    const origCheck = setInterval(() => {
-      if (typeof window.toggleTheme !== 'function') return;
-      clearInterval(origCheck);
+    let attempts = 0;
+    const maxAttempts = 20;
+    const tryBind = () => {
+      if (typeof window.toggleTheme !== 'function') {
+        attempts += 1;
+        if (attempts < maxAttempts) setTimeout(tryBind, 150);
+        return;
+      }
       const origToggle = window.toggleTheme;
       window.toggleTheme = function() {
         document.documentElement.classList.add('theme-transition');
@@ -295,9 +300,8 @@
         syncThemeButton();
         setTimeout(() => document.documentElement.classList.remove('theme-transition'), 500);
       };
-    }, 50);
-    // Safety: stop checking after 5s
-    setTimeout(() => clearInterval(origCheck), 5000);
+    };
+    tryBind();
   })();
 
   function ensureShell() {

@@ -1283,6 +1283,12 @@
     let selectedSkill = null;
     let completedSections = [];
     try { completedSections = JSON.parse(localStorage.getItem('learnCompleted')||'[]'); } catch(e){}
+    const esc = (v) => String(v == null ? '' : v)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
 
     // ─── Initialize ───
     document.addEventListener('DOMContentLoaded', function() {
@@ -1312,7 +1318,7 @@
         const cls = completedSections.includes(i) ? 'completed' : '';
         html += '<div class="learn-roadmap-step '+cls+'" onclick="scrollToSection('+i+')">' +
           '<div class="learn-roadmap-dot">'+(completedSections.includes(i)?'✓':(i+1))+'</div>' +
-          '<div class="learn-roadmap-label">'+t+'</div></div>';
+          '<div class="learn-roadmap-label">'+esc(t)+'</div></div>';
       });
       el.innerHTML = html;
     }
@@ -1323,10 +1329,10 @@
       if (!g) return;
       g.innerHTML = ABILITIES.map((a,i) =>
         '<div class="learn-ability" data-ability="'+i+'">'+
-          '<div class="learn-ability-name">'+a.abbr+'</div>'+
+          '<div class="learn-ability-name">'+esc(a.abbr)+'</div>'+
           '<div class="learn-ability-bar"><div class="learn-ability-fill" style="width:'+(Math.random()*40+50)+'%"></div></div>'+
-          '<div class="learn-ability-desc">'+a.name+'</div>'+
-          '<div class="learn-ability-detail"><strong>'+a.name+':</strong> '+a.description+'<br><br><em>"'+a.example+'"</em></div>'+
+          '<div class="learn-ability-desc">'+esc(a.name)+'</div>'+
+          '<div class="learn-ability-detail"><strong>'+esc(a.name)+':</strong> '+esc(a.description)+'<br><br><em>"'+esc(a.example)+'"</em></div>'+
         '</div>'
       ).join('');
     }
@@ -1334,21 +1340,21 @@
     function initRaces() {
       const g = document.getElementById('racesGrid');
       if (!g) return;
-      g.innerHTML = RACES.map(r=>'<div class="learn-card"><div class="learn-card-title">'+r.name+'</div><div class="learn-card-desc">'+r.desc+'</div></div>').join('');
+      g.innerHTML = RACES.map(r=>'<div class="learn-card"><div class="learn-card-title">'+esc(r.name)+'</div><div class="learn-card-desc">'+esc(r.desc)+'</div></div>').join('');
     }
 
     function initClasses() {
       const g = document.getElementById('classesGrid');
       if (!g) return;
-      g.innerHTML = CLASSES.map(c=>'<div class="learn-card"><div class="learn-card-title">'+c.name+'</div><div class="learn-card-desc">'+c.desc+'</div></div>').join('');
+      g.innerHTML = CLASSES.map(c=>'<div class="learn-card"><div class="learn-card-title">'+esc(c.name)+'</div><div class="learn-card-desc">'+esc(c.desc)+'</div></div>').join('');
     }
 
     function initChecklist() {
       const el = document.getElementById('checklistItems');
       if (!el) return;
       el.innerHTML = CHECKLIST_ITEMS.map(item => {
-        let label = item.label;
-        if (item.link) label += '<a href="'+item.link+'" class="learn-check-link">'+item.linkText+'</a>'+(item.linkEnd||'');
+        let label = esc(item.label);
+        if (item.link) label += '<a href="'+esc(item.link)+'" class="learn-check-link">'+esc(item.linkText)+'</a>'+esc(item.linkEnd||'');
         return '<div class="learn-check-item"><div class="learn-check-box"></div><div class="learn-check-label">'+label+'</div></div>';
       }).join('');
       el.querySelectorAll('.learn-check-item').forEach(item => {
@@ -1381,7 +1387,7 @@
           const dc=12, ok=roll>=dc, n20=roll===20, n1=roll===1;
           const msg = n20?'Natural 20!':n1?'Natural 1...':'You rolled a '+roll+'!';
           const out = n20?'Critical Success!':n1?'Critical Fail!':ok?'Beats DC '+dc+' — Success!':'Fails DC '+dc+' — Try again.';
-          result.innerHTML='<strong>'+msg+'</strong><br>'+out;
+          result.innerHTML='<strong>'+esc(msg)+'</strong><br>'+esc(out);
           markComplete(1);
         },600);
       });
@@ -1421,7 +1427,7 @@
       const res = document.getElementById('skillResult');
       const dc = document.getElementById('dcInput');
       if (!picker) return;
-      picker.innerHTML = SKILLS.map(s=>'<button class="learn-skill-btn" data-skill="'+s+'">'+s+'</button>').join('');
+      picker.innerHTML = SKILLS.map(s=>'<button class="learn-skill-btn" data-skill="'+esc(s)+'">'+esc(s)+'</button>').join('');
       picker.querySelectorAll('button').forEach(b => {
         b.addEventListener('click', function(){
           picker.querySelectorAll('button').forEach(x=>x.classList.remove('active'));
@@ -1438,7 +1444,7 @@
         const total = roll+mod, ok = total>=d;
         res.style.display='flex';
         res.className='learn-sim-result '+(ok?'success':'fail');
-        res.innerHTML='<div><div style="font-family:Cinzel,serif;font-size:16px;margin-bottom:6px;"><strong>'+selectedSkill+'</strong></div><div style="font-size:13px;margin-bottom:10px;">d20: <strong>'+roll+'</strong> + Modifier: <strong>'+mod+'</strong> = <strong>'+total+'</strong></div><div style="font-weight:bold;">'+(ok?'✓ Success! ('+total+' ≥ '+d+')':'✗ Failed ('+total+' < '+d+')')+'</div></div>';
+        res.innerHTML='<div><div style="font-family:Cinzel,serif;font-size:16px;margin-bottom:6px;"><strong>'+esc(selectedSkill)+'</strong></div><div style="font-size:13px;margin-bottom:10px;">d20: <strong>'+roll+'</strong> + Modifier: <strong>'+mod+'</strong> = <strong>'+total+'</strong></div><div style="font-weight:bold;">'+(ok?'✓ Success! ('+total+' ≥ '+d+')':'✗ Failed ('+total+' < '+d+')')+'</div></div>';
         markComplete(6);
       });
     }
@@ -1448,7 +1454,7 @@
       QUIZ_QUESTIONS.forEach(q => {
         const c = document.getElementById(q.id+'-options');
         if (!c) return;
-        c.innerHTML = q.options.map((o,i)=>'<button class="learn-quiz-option" data-question="'+q.id+'" data-index="'+i+'">'+o.text+'</button>').join('');
+        c.innerHTML = q.options.map((o,i)=>'<button class="learn-quiz-option" data-question="'+esc(q.id)+'" data-index="'+i+'">'+esc(o.text)+'</button>').join('');
         c.querySelectorAll('button').forEach(btn => {
           btn.addEventListener('click', function(){
             const idx=parseInt(this.dataset.index);

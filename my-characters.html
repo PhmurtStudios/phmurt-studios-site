@@ -65,6 +65,14 @@
   <script>
     /* ── Character list with cloud sync ─────────────────────────────── */
     var _mcChars = [];  // in-memory character list
+    function _escHtml(v) {
+      return String(v == null ? '' : v)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
 
     function renderCharacterList() {
       var session   = window.PhmurtDB ? window.PhmurtDB.getSession() : null;
@@ -88,9 +96,9 @@
 
       list.innerHTML = _mcChars.map(function (c) {
         var id      = encodeURIComponent(c.id !== undefined ? c.id : '');
-        var name    = c.name  || 'Unnamed Character';
-        var race    = c.race  || '';
-        var cls     = c.class || c.class_ || '';
+        var name    = _escHtml(c.name  || 'Unnamed Character');
+        var race    = _escHtml(c.race  || '');
+        var cls     = _escHtml(c.class || c.class_ || '');
         var level   = c.level ? '· Level ' + c.level : '';
         var builder = c.builder_type || '5e';
         var editHref = (builder === '35e' ? 'character-builder-35.html' : 'character-builder.html') + '?load=' + id;

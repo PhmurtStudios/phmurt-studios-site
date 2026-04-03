@@ -19,13 +19,13 @@
      .saveCampaign(campaign)              → Promise<bool>
      .getCampaigns()                      → Promise<array>
      .deleteCampaign(id)                  → Promise<bool>
+    .saveUserSyncBlob(blob)              → Promise<{success,error?}>
+    .loadUserSyncBlob()                  → Promise<object|null>
      .openAuth()                          → void
    ═══════════════════════════════════════════════════════════════════ */
 var PhmurtDB = (function () {
 
   /* ── Config ──────────────────────────────────────────────────────── */
-  var ADMIN_EMAILS = ['dreverad@icloud.com', 'dreverad18@gmail.com'];
-
   /* ── State ───────────────────────────────────────────────────────── */
   var _session   = null;
   var _listeners = [];
@@ -36,8 +36,8 @@ var PhmurtDB = (function () {
   }
 
   /* ── Session factory ─────────────────────────────────────────────── */
-  function _isAdmin(email, profileFlag) {
-    return !!(profileFlag || ADMIN_EMAILS.indexOf((email || '').toLowerCase()) !== -1);
+  function _isAdmin(profileFlag) {
+    return !!profileFlag;
   }
 
   function _makeSession(user, profile) {
@@ -49,7 +49,7 @@ var PhmurtDB = (function () {
       name:        name,
       email:       user.email || '',
       displayName: name,
-      isAdmin:     _isAdmin(user.email, profile && profile.is_admin),
+      isAdmin:     _isAdmin(profile && profile.is_admin),
       isSuperuser: !!(profile && profile.is_superuser),
       isBanned:    !!(profile && profile.is_banned)
     };
@@ -303,9 +303,9 @@ var PhmurtDB = (function () {
             if (!user) throw new Error('Sign-up failed. Please try again.');
             return sb.from('profiles').upsert({
               id: user.id, name: dnam, email: ne,
-              is_admin: ADMIN_EMAILS.indexOf(ne) !== -1
+              is_admin: false
             }, { onConflict: 'id' }).then(function () {
-              var sess = _makeSession(user, { name: dnam, is_admin: ADMIN_EMAILS.indexOf(ne) !== -1 });
+              var sess = _makeSession(user, { name: dnam, is_admin: false });
               _session = sess;
               _fireChange();
               return sess;
@@ -324,7 +324,7 @@ var PhmurtDB = (function () {
         var u = { userId: _uid(), name: dnam, email: ne, passwordHash: hash, createdAt: new Date().toISOString() };
         users[ne] = u;
         _legacySaveUsers(users);
-        var sess = { userId: u.userId, name: dnam, email: ne, displayName: dnam, isAdmin: ADMIN_EMAILS.indexOf(ne) !== -1 };
+        var sess = { userId: u.userId, name: dnam, email: ne, displayName: dnam, isAdmin: false };
         _legacySetSession(sess);
         _session = sess;
         _fireChange();
@@ -369,7 +369,7 @@ var PhmurtDB = (function () {
       if (!u) return Promise.reject(new Error('No account found with that email.'));
       return _legacyHashPwd(password, ne).then(function (hash) {
         if (hash !== u.passwordHash) throw new Error('Incorrect password.');
-        var sess = { userId: u.userId, name: u.name, email: ne, displayName: u.name, isAdmin: ADMIN_EMAILS.indexOf(ne) !== -1 };
+        var sess = { userId: u.userId, name: u.name, email: ne, displayName: u.name, isAdmin: false };
         _legacySetSession(sess);
         _session = sess;
         _fireChange();
@@ -592,6 +592,50 @@ var PhmurtDB = (function () {
       }
       _legacyDeleteCampLocal(id);
       return Promise.resolve(true);
+    },
+
+    /* ── User Sync Blob (cross-device app state) ─────────────── */
+    saveUserSyncBlob: function (blob) {
+      if (!_session) return Promise.resolve({ success: false, error: 'Not signed in.' });
+      var sb = _sb();
+      if (sb) {
+        return sb.auth.getUser()
+          .then(function (r) {
+            var user = r.data && r.data.user;
+            if (!user) throw new Error('No active user.');
+            var meta = Object.assign({}, user.user_metadata || {});
+            meta.phmurt_sync_blob_v1 = blob || null;
+            return sb.auth.updateUser({ data: meta });
+          })
+          .then(function (r2) {
+            if (r2.error) throw r2.error;
+            return { success: true };
+          })
+          .catch(function (e) {
+            return { success: false, error: e && e.message ? e.message : 'Sync save failed' };
+          });
+      }
+      try {
+        _lsSet('phmurt_sync_blob_' + _session.userId, blob || null);
+        return Promise.resolve({ success: true });
+      } catch (e2) {
+        return Promise.resolve({ success: false, error: e2.message });
+      }
+    },
+
+    loadUserSyncBlob: function () {
+      if (!_session) return Promise.resolve(null);
+      var sb = _sb();
+      if (sb) {
+        return sb.auth.getUser()
+          .then(function (r) {
+            var user = r.data && r.data.user;
+            var meta = user && user.user_metadata ? user.user_metadata : {};
+            return meta.phmurt_sync_blob_v1 || null;
+          })
+          .catch(function () { return null; });
+      }
+      return Promise.resolve(_lsGet('phmurt_sync_blob_' + _session.userId) || null);
     },
 
     /* ══════════════════════════════════════════════════════════

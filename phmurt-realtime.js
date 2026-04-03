@@ -67,9 +67,10 @@ var PhmurtRealtime = (function () {
 
       // Also listen for DB snapshot updates (for late joiners via Realtime Postgres)
       if (role === 'player') {
+        var safeFilterCampaignId = String(campaignId).replace(/[^a-zA-Z0-9_\-]/g, '');
         channel.on(
           'postgres_changes',
-          { event: 'UPDATE', schema: 'public', table: 'battle_map_snapshots', filter: 'campaign_id=eq.' + campaignId },
+          { event: 'UPDATE', schema: 'public', table: 'battle_map_snapshots', filter: 'campaign_id=eq.' + safeFilterCampaignId },
           function (payload) {
             if (payload.new && payload.new.state && typeof onState === 'function') {
               onState(payload.new.state);
@@ -181,22 +182,23 @@ var PhmurtRealtime = (function () {
 
   /* ── localStorage polling fallback ────────────────────────────── */
   function _startLocalStoragePoll(campaignId, role, onState) {
+    if (role === 'dm') {
+      return { leave: function () {} };
+    }
     var lsKey = SYNC_KEY + ':' + campaignId;
     var _lastSeen = null;
     var _interval = null;
 
-    if (role === 'player') {
-      _interval = setInterval(function () {
-        try {
-          var raw = localStorage.getItem(lsKey);
-          if (raw && raw !== _lastSeen) {
-            _lastSeen = raw;
-            var state = JSON.parse(raw);
-            if (typeof onState === 'function') onState(state);
-          }
-        } catch (e) {}
-      }, 250);
-    }
+    _interval = setInterval(function () {
+      try {
+        var raw = localStorage.getItem(lsKey);
+        if (raw && raw !== _lastSeen) {
+          _lastSeen = raw;
+          var state = JSON.parse(raw);
+          if (typeof onState === 'function') onState(state);
+        }
+      } catch (e) {}
+    }, 250);
 
     return {
       leave: function () {

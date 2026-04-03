@@ -2,6 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';">
+<meta http-equiv="X-Content-Type-Options" content="nosniff">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), usb=(), payment=(), serial=(), bluetooth=()">
 <title>Phmurt Studios — Superuser Setup</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb" crossorigin="anonymous"></script>
 <script src="supabase-config.js"></script>
@@ -25,7 +29,13 @@
 <body>
 <div class="box">
   <h1>Superuser Setup</h1>
-  <p>This page creates the <code>dreverad@icloud.com</code> superuser account and promotes it to admin + superuser in the profiles table.</p>
+  <p>This utility creates or promotes a superuser account in the <code>profiles</code> table. Use a strong unique password, run once, then remove this file from deployment.</p>
+
+  <div style="display:grid;gap:10px;margin-bottom:18px;">
+    <input id="super-email" type="email" placeholder="Superuser email" style="padding:10px 12px;background:#0f0d0d;border:1px solid rgba(255,255,255,0.12);color:#f5ede0;border-radius:4px;">
+    <input id="super-name" type="text" placeholder="Display name" style="padding:10px 12px;background:#0f0d0d;border:1px solid rgba(255,255,255,0.12);color:#f5ede0;border-radius:4px;">
+    <input id="super-pass" type="password" autocomplete="new-password" placeholder="Strong password (min 12 chars)" style="padding:10px 12px;background:#0f0d0d;border:1px solid rgba(255,255,255,0.12);color:#f5ede0;border-radius:4px;">
+  </div>
 
   <div class="step" id="step-config">
     <div class="step-title">1. Supabase Connection</div>
@@ -49,10 +59,6 @@
 
 <script>
 (function() {
-  var SUPER_EMAIL = 'dreverad@icloud.com';
-  var SUPER_PASS  = '+diceGoblin18';
-  var SUPER_NAME  = 'Phmurt';
-
   var sb = (typeof phmurtSupabase !== 'undefined') ? phmurtSupabase : null;
   var btn = document.getElementById('run-btn');
 
@@ -71,6 +77,17 @@
   btn.disabled = false;
 
   btn.addEventListener('click', async function() {
+    var SUPER_EMAIL = (document.getElementById('super-email').value || '').trim().toLowerCase();
+    var SUPER_NAME  = (document.getElementById('super-name').value || '').trim() || 'Admin';
+    var SUPER_PASS  = document.getElementById('super-pass').value || '';
+    if (!SUPER_EMAIL || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(SUPER_EMAIL)) {
+      setStatus('signup', 'Enter a valid superuser email.', 'err');
+      return;
+    }
+    if (SUPER_PASS.length < 12) {
+      setStatus('signup', 'Use a password with at least 12 characters.', 'err');
+      return;
+    }
     btn.disabled = true;
 
     // Step 2 — create auth account

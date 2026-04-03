@@ -1263,6 +1263,11 @@ function escapeHtml(str) {
   if (str == null) return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
+function renderEscapedErrors(lines) {
+  if (!Array.isArray(lines)) return "";
+  return lines.map(function (line) { return escapeHtml(line); }).join('<br>');
+}
+function esc35(v) { return escapeHtml(v); }
 
 // ══════════════════════════════════════════════════════════════
 // MULTICLASS LEVEL-UP UI
@@ -4950,11 +4955,35 @@ function initLevelingMethod(){
 
 // ── Storage keys ─────────────────────────────────────────────
 var HOMEBREW_KEY = 'phmurt_homebrew_items';
+var HOMEBREW_SYNC_META_KEY = 'phmurt_homebrew_sync_meta_v1';
 
 // ── Runtime state ─────────────────────────────────────────────
 DND_DATA.homebrewDB = {};          // id -> item, homebrew only
 var _homebrewModalMode = 'create'; // 'create' | 'edit'
 var _homebrewEditId    = null;
+var _hbCloudSyncTimer  = null;
+var _hbCloudSyncBusy   = false;
+var _hbApplyingCloud   = false;
+
+function _hbSyncMetaRead() {
+  try { return JSON.parse(localStorage.getItem(HOMEBREW_SYNC_META_KEY) || '{}') || {}; }
+  catch (e) { return {}; }
+}
+function _hbSyncMetaWrite(meta) {
+  try { localStorage.setItem(HOMEBREW_SYNC_META_KEY, JSON.stringify(meta || {})); } catch (e) {}
+}
+function _hbMarkLocalUpdated(kind) {
+  if (_hbApplyingCloud) return;
+  var meta = _hbSyncMetaRead();
+  meta[kind] = Date.now();
+  _hbSyncMetaWrite(meta);
+}
+function _hbLocalStamp(kind, hasData) {
+  var meta = _hbSyncMetaRead();
+  var stamp = parseInt(meta[kind], 10);
+  if (Number.isFinite(stamp) && stamp > 0) return stamp;
+  return hasData ? 1 : 0;
+}
 
 // ── Bootstrap: load from localStorage on page ready ──────────
 function loadHomebrewItems() {
@@ -4975,6 +5004,8 @@ function loadHomebrewItems() {
 function saveHomebrewItems() {
   try {
     localStorage.setItem(HOMEBREW_KEY, JSON.stringify(DND_DATA.homebrewDB));
+    _hbMarkLocalUpdated('items');
+    scheduleHomebrewCloudSync();
   } catch(e) {
     console.warn('Homebrew save error:', e);
   }
@@ -5239,7 +5270,7 @@ function saveHomebrewItem() {
 
   var errEl = document.getElementById('hb-error');
   if (result.errors) {
-    errEl.innerHTML = result.errors.join('<br>');
+    errEl.innerHTML = renderEscapedErrors(result.errors);
     errEl.style.display = '';
     return;
   }
@@ -5266,7 +5297,10 @@ function saveHomebrewItem() {
   var shareEl = document.getElementById('hbe-share-community');
   if (shareEl && shareEl.checked) {
     hbShareEntry('item', item.id).then(function(result) {
-      if (result.error) showRestToast('Share Failed', result.error);
+      if (result.error) {
+        if (/sign in required/i.test(result.error) && typeof PhmurtDB !== 'undefined' && PhmurtDB.openAuth) PhmurtDB.openAuth();
+        showRestToast('Share Failed', result.error);
+      }
       else showRestToast('Shared!', '"' + item.name + '" is now in the community compendium.');
     });
   } else if (shareEl && !shareEl.checked && item.shared) {
@@ -5712,6 +5746,8 @@ function loadHomebrewEntities() {
 function saveHomebrewEntities() {
   try {
     localStorage.setItem(HOMEBREW_ENTITIES_KEY, JSON.stringify(_homebrewEntities));
+    _hbMarkLocalUpdated('entities5e');
+    scheduleHomebrewCloudSync();
   } catch(e) { console.warn('Homebrew entity save error:', e); }
 }
 
@@ -6333,7 +6369,7 @@ function saveHBEntity() {
     if (!name) errors.push('Race name is required.');
     var asiRaw = g('asi');
     if (!asiRaw) errors.push('ASI is required (e.g. str:2, cha:1).');
-    if (errors.length) { errEl.innerHTML=errors.join('<br>'); errEl.style.display=''; return; }
+    if (errors.length) { errEl.innerHTML=renderEscapedErrors(errors); errEl.style.display=''; return; }
 
     var asi = {};
     asiRaw.split(',').forEach(function(part){
@@ -6385,7 +6421,7 @@ function saveHBEntity() {
   } else if (type === 'class') {
     var name = g('name');
     if (!name) errors.push('Class name is required.');
-    if (errors.length) { errEl.innerHTML=errors.join('<br>'); errEl.style.display=''; return; }
+    if (errors.length) { errEl.innerHTML=renderEscapedErrors(errors); errEl.style.display=''; return; }
 
     var skillOpts  = g('skillOptions') ? g('skillOptions').split(',').map(function(v){return v.trim();}).filter(Boolean) : ['Any skill'];
     var armorProf  = g('armorProf')  ? g('armorProf').split(',').map(function(v){return v.trim();}).filter(Boolean) : [];
@@ -6501,7 +6537,7 @@ function saveHBEntity() {
     if(!featDesc) errors.push('Feature description is required.');
     var skills = g('skills').split(',').map(function(v){return v.trim();}).filter(Boolean);
     if(!skills.length) errors.push('At least one skill is required.');
-    if(errors.length){ errEl.innerHTML=errors.join('<br>'); errEl.style.display=''; return; }
+    if(errors.length){ errEl.innerHTML=renderEscapedErrors(errors); errEl.style.display=''; return; }
 
     var tools     = g('tools')     ? g('tools').split(',').map(function(v){return v.trim();}).filter(Boolean)  : [];
     var langNames = g('languageNames') ? g('languageNames').split(',').map(function(v){return v.trim();}).filter(Boolean) : [];
@@ -6540,7 +6576,7 @@ function saveHBEntity() {
       return f;
     }) : [];
     if(!features.length) errors.push('At least one feature is required.');
-    if(errors.length){ errEl.innerHTML=errors.join('<br>'); errEl.style.display=''; return; }
+    if(errors.length){ errEl.innerHTML=renderEscapedErrors(errors); errEl.style.display=''; return; }
 
     var expandedSpells = g('expandedSpells') ? g('expandedSpells').split('\n').filter(Boolean).map(function(line){
       var p=line.split('|');
@@ -6597,6 +6633,7 @@ function saveHBEntity() {
   if (shareEl && shareEl.checked) {
     hbShareEntry(type, entry.id).then(function(result) {
       if (result.error) {
+        if (/sign in required/i.test(result.error) && typeof PhmurtDB !== 'undefined' && PhmurtDB.openAuth) PhmurtDB.openAuth();
         showRestToast('Share Failed', result.error);
       } else {
         showRestToast('Shared!', '"' + entry.name + '" is now in the community compendium.');
@@ -6683,8 +6720,11 @@ async function hbShareEntry(type, id) {
   if (!entry) return { error: 'Entry not found.' };
 
   var session = (typeof PhmurtDB !== 'undefined') ? PhmurtDB.getSession() : null;
-  var authorName = session ? session.name : 'Anonymous';
-  var userId     = session ? session.userId : 'anon';
+  if (!session || !session.userId) {
+    return { error: 'Sign in required to upload homebrew.' };
+  }
+  var authorName = session.name || session.displayName || 'Creator';
+  var userId     = session.userId;
 
   var row = {
     id:          'hbc-' + id,
@@ -7081,6 +7121,9 @@ function _hbcWireMineButtons(container) {
         : await hbUnshareEntry(type, id);
 
       if (result.error) {
+        if (/sign in required/i.test(result.error) && typeof PhmurtDB !== 'undefined' && PhmurtDB.openAuth) {
+          PhmurtDB.openAuth();
+        }
         showRestToast('Error', result.error);
         self.textContent = action === 'share' ? '↑ Share' : '✓ Shared';
         self.disabled = false;
@@ -7103,7 +7146,7 @@ async function _hbcLoadCommunity(container) {
   if (!S.communityData) {
     var result = await hbFetchCompendium();
     if (result.error && result.data.length === 0) {
-      container.innerHTML = '<div style="text-align:center;padding:24px;font-size:13px;color:var(--text-faint);">'+result.error+'</div>';
+      container.innerHTML = '<div style="text-align:center;padding:24px;font-size:13px;color:var(--text-faint);">'+escapeHtml(result.error)+'</div>';
       return;
     }
     S.communityData = result.data;
@@ -7383,6 +7426,8 @@ function loadHomebrew35Entities() {
 function saveHomebrew35Entities() {
   try {
     localStorage.setItem(HOMEBREW_35_ENTITIES_KEY, JSON.stringify(_homebrew35Entities));
+    _hbMarkLocalUpdated('entities35');
+    scheduleHomebrewCloudSync();
   } catch(e) { console.warn('3.5e homebrew save error:', e); }
 }
 
@@ -7789,7 +7834,7 @@ function saveHB35Entity() {
   if (type === 'race') {
     var name = _g35('name');
     if (!name) errors.push('Race name is required.');
-    if (errors.length) { if(errEl){ errEl.innerHTML=errors.join('<br>'); errEl.style.display=''; } return; }
+    if (errors.length) { if(errEl){ errEl.innerHTML=renderEscapedErrors(errors); errEl.style.display=''; } return; }
 
     var asi = {
       str: _gn35('asi_str'),
@@ -7819,7 +7864,7 @@ function saveHB35Entity() {
   } else if (type === 'class') {
     var name = _g35('name');
     if (!name) errors.push('Class name is required.');
-    if (errors.length) { if(errEl){ errEl.innerHTML=errors.join('<br>'); errEl.style.display=''; } return; }
+    if (errors.length) { if(errEl){ errEl.innerHTML=renderEscapedErrors(errors); errEl.style.display=''; } return; }
 
     var saveMap = {fortitude:'fort',reflex:'ref',fort:'fort',ref:'ref',will:'will'};
     var goodSaves = _g35('goodSaves').split(',').map(function(v){var s=v.trim().toLowerCase(); return saveMap[s]||s;}).filter(Boolean);
@@ -7877,7 +7922,7 @@ function saveHB35Entity() {
   } else if (type === 'feat') {
     var name = _g35('name');
     if (!name) errors.push('Feat name is required.');
-    if (errors.length) { if(errEl){ errEl.innerHTML=errors.join('<br>'); errEl.style.display=''; } return; }
+    if (errors.length) { if(errEl){ errEl.innerHTML=renderEscapedErrors(errors); errEl.style.display=''; } return; }
 
     entry = {
       id: _hbe35EditId || _homebrew35EntityId('feat', name),
@@ -7889,7 +7934,7 @@ function saveHB35Entity() {
   } else if (type === 'spell') {
     var name = _g35('name');
     if (!name) errors.push('Spell name is required.');
-    if (errors.length) { if(errEl){ errEl.innerHTML=errors.join('<br>'); errEl.style.display=''; } return; }
+    if (errors.length) { if(errEl){ errEl.innerHTML=renderEscapedErrors(errors); errEl.style.display=''; } return; }
 
     // Get selected classes
     var spellClasses = [];
@@ -7953,6 +7998,116 @@ function editHB35Entity(type, id) {
   openHB35EntityModal(type, id);
 }
 
+function _hbBuildSyncBundle() {
+  return {
+    version: 1,
+    updatedAt: Date.now(),
+    items: {
+      updatedAt: _hbLocalStamp('items', Object.keys(DND_DATA.homebrewDB || {}).length > 0),
+      data: JSON.parse(JSON.stringify(DND_DATA.homebrewDB || {})),
+    },
+    entities5e: {
+      updatedAt: _hbLocalStamp('entities5e', ['races','classes','backgrounds','subclasses'].some(function (k) { return Object.keys((_homebrewEntities[k] || {})).length > 0; })),
+      data: JSON.parse(JSON.stringify(_homebrewEntities || { races:{}, classes:{}, backgrounds:{}, subclasses:{} })),
+    },
+    entities35: {
+      updatedAt: _hbLocalStamp('entities35', ['races','classes','feats','spells'].some(function (k) { return Object.keys((_homebrew35Entities[k] || {})).length > 0; })),
+      data: JSON.parse(JSON.stringify(_homebrew35Entities || { races:{}, classes:{}, feats:{}, spells:{} })),
+    }
+  };
+}
+
+function _hbApplyCloudBundle(bundle) {
+  if (!bundle || typeof bundle !== 'object') return;
+  _hbApplyingCloud = true;
+  try {
+    // Items
+    Object.keys(DND_DATA.homebrewDB || {}).forEach(function (id) { delete DND_DATA.itemDB[id]; });
+    DND_DATA.homebrewDB = {};
+    Object.values((bundle.items && bundle.items.data) || {}).forEach(function (item) { _registerHomebrewItem(item); });
+
+    // 5e entities
+    ['races','classes','backgrounds','subclasses'].forEach(function (type) {
+      Object.keys(_homebrewEntities[type] || {}).forEach(function (id) { _removeHomebrewEntity(type, id); });
+    });
+    ['races','classes','backgrounds','subclasses'].forEach(function (type) {
+      Object.values(((bundle.entities5e && bundle.entities5e.data && bundle.entities5e.data[type]) || {})).forEach(function (entry) {
+        _injectHomebrewEntity(type, entry);
+      });
+    });
+
+    // 3.5 entities
+    ['races','classes','feats','spells'].forEach(function (type) {
+      Object.keys(_homebrew35Entities[type] || {}).forEach(function (id) { _removeHomebrew35Entity(type, id); });
+    });
+    ['races','classes','feats','spells'].forEach(function (type) {
+      Object.values(((bundle.entities35 && bundle.entities35.data && bundle.entities35.data[type]) || {})).forEach(function (entry) {
+        _injectHomebrew35Entity(type, entry);
+      });
+    });
+
+    // Persist local mirrors
+    saveHomebrewItems();
+    saveHomebrewEntities();
+    saveHomebrew35Entities();
+    _hbSyncMetaWrite({
+      items: (bundle.items && bundle.items.updatedAt) || Date.now(),
+      entities5e: (bundle.entities5e && bundle.entities5e.updatedAt) || Date.now(),
+      entities35: (bundle.entities35 && bundle.entities35.updatedAt) || Date.now(),
+    });
+    if (typeof renderRaces === 'function') renderRaces();
+    if (typeof renderClasses === 'function') renderClasses();
+    if (typeof renderBackgrounds === 'function') renderBackgrounds();
+    if (typeof renderCatalog === 'function') renderCatalog();
+    if (typeof buildCatalogFilters === 'function') buildCatalogFilters();
+    if (typeof renderRaces35 === 'function') renderRaces35();
+    if (typeof renderClasses35 === 'function') renderClasses35();
+    if (typeof renderFeats35 === 'function') renderFeats35();
+  } finally {
+    _hbApplyingCloud = false;
+  }
+}
+
+function pushHomebrewCloudSync() {
+  if (_hbApplyingCloud || _hbCloudSyncBusy) return;
+  if (!window.PhmurtDB || !PhmurtDB.getSession || !PhmurtDB.getSession() || typeof PhmurtDB.saveUserSyncBlob !== 'function') return;
+  _hbCloudSyncBusy = true;
+  var payload = _hbBuildSyncBundle();
+  PhmurtDB.saveUserSyncBlob(payload)
+    .catch(function () {})
+    .then(function () { _hbCloudSyncBusy = false; });
+}
+
+function scheduleHomebrewCloudSync() {
+  if (_hbApplyingCloud) return;
+  clearTimeout(_hbCloudSyncTimer);
+  _hbCloudSyncTimer = setTimeout(pushHomebrewCloudSync, 1200);
+}
+
+function syncHomebrewWithCloud() {
+  if (!window.PhmurtDB || !PhmurtDB.getSession || !PhmurtDB.getSession() || typeof PhmurtDB.loadUserSyncBlob !== 'function') return;
+  PhmurtDB.loadUserSyncBlob()
+    .then(function (remote) {
+      if (!remote || typeof remote !== 'object') {
+        scheduleHomebrewCloudSync();
+        return;
+      }
+      var local = _hbBuildSyncBundle();
+      var localNewest = Math.max(local.items.updatedAt || 0, local.entities5e.updatedAt || 0, local.entities35.updatedAt || 0);
+      var remoteNewest = Math.max(
+        (remote.items && remote.items.updatedAt) || 0,
+        (remote.entities5e && remote.entities5e.updatedAt) || 0,
+        (remote.entities35 && remote.entities35.updatedAt) || 0
+      );
+      if (remoteNewest > localNewest + 1000) {
+        _hbApplyCloudBundle(remote);
+      } else if (localNewest > remoteNewest + 1000) {
+        scheduleHomebrewCloudSync();
+      }
+    })
+    .catch(function () {});
+}
+
 window.addEventListener('DOMContentLoaded', function(){
   loadHomebrewItems();
   loadHomebrewEntities();
@@ -7962,9 +8117,11 @@ window.addEventListener('DOMContentLoaded', function(){
   injectHomebrewBuilderButtons();
   setTimeout(checkLoadCharacter, 200);
   window.addEventListener('phmurt-auth-change', function(){
+    syncHomebrewWithCloud();
     if (localStorage.getItem('phmurt_load_char_id')) checkLoadCharacter();
     if (localStorage.getItem('cb35_load_char_id')) init35();
   });
+  syncHomebrewWithCloud();
 });
 
 // ═══════════════════════════════════════
@@ -8029,8 +8186,12 @@ var C35 = {
   selectedFeats: [],
   equipChoices: {}, weaponChoices: {},
   selectedCantrips: [], selectedSpells: [],
+  spellsByLevel: {},
   details: {},
-  level: 1, rollLog: []
+  level: 1, rollLog: [],
+  hpRolls: [12], levelUpSkills: {}, levelUpFeats: [], levelUpAbilityBoosts: [],
+  classes: [],
+  levelHistory: []
 };
 
 var STANDARD_ARRAY35 = [15,14,13,12,10,8];
@@ -8043,21 +8204,95 @@ var slots35Used = {};
 // ── UTILS ──
 function mod35(s) { return Math.floor(((parseInt(s)||8)-10)/2); }
 function ms35(s) { var m = mod35(s); return (m>=0?'+':'')+m; }
+function ensureClasses35() {
+  if (!Array.isArray(C35.classes) || !C35.classes.length) {
+    var fallbackCls = C35.cls || null;
+    var fallbackLevel = Math.max(1, parseInt(C35.level) || 1);
+    C35.classes = fallbackCls ? [{ cls: fallbackCls, level: fallbackLevel }] : [];
+  }
+  if (!Array.isArray(C35.levelHistory) || !C35.levelHistory.length) {
+    C35.levelHistory = [];
+    C35.classes.forEach(function(entry) {
+      var lv = Math.max(0, parseInt(entry.level) || 0);
+      for (var i = 0; i < lv; i++) C35.levelHistory.push(entry.cls);
+    });
+  }
+  var computed = C35.classes.reduce(function(acc, entry){ return acc + (parseInt(entry.level) || 0); }, 0);
+  C35.level = Math.max(1, computed || parseInt(C35.level) || 1);
+  if (!C35.cls && C35.classes[0]) C35.cls = C35.classes[0].cls;
+}
+function totalLevel35() { ensureClasses35(); return C35.level; }
+function classLevel35(clsKey) {
+  ensureClasses35();
+  var row = C35.classes.find(function(c){ return c.cls === clsKey; });
+  return row ? (parseInt(row.level) || 0) : 0;
+}
+function primaryClass35() { ensureClasses35(); return C35.cls || (C35.classes[0] && C35.classes[0].cls) || null; }
+function activeSpellClass35() {
+  ensureClasses35();
+  var explicit = primaryClass35();
+  if (explicit && DND35_DATA.classes[explicit] && DND35_DATA.classes[explicit].spellcastingAbility) return explicit;
+  var casters = C35.classes.filter(function(entry){ var d = DND35_DATA.classes[entry.cls]; return d && d.spellcastingAbility; }).sort(function(a,b){ return (b.level||0) - (a.level||0); });
+  return casters[0] ? casters[0].cls : explicit;
+}
+function classBreakdownText35() {
+  ensureClasses35();
+  return C35.classes.map(function(entry){ var d = DND35_DATA.classes[entry.cls]; return (d ? d.name : entry.cls) + ' ' + entry.level; }).join(' / ');
+}
+function favoredClass35() {
+  if (!C35.race) return null;
+  var race = DND35_DATA.races[C35.race] || {};
+  return race.favoredClass || null;
+}
+function multiclassPenalty35() {
+  ensureClasses35();
+  if (!C35.classes || C35.classes.length <= 1) return { applies: false, reason: '' };
+  var favored = favoredClass35();
+  if (favored === 'any') return { applies: false, reason: '' };
+  var tracked = C35.classes.filter(function(entry){ if (!entry || !entry.cls) return false; if (!entry.level || entry.level <= 0) return false; if (favored && entry.cls === favored) return false; return true; });
+  if (tracked.length <= 1) return { applies: false, reason: '' };
+  var levels = tracked.map(function(e){ return parseInt(e.level) || 0; });
+  return (Math.max.apply(null, levels) - Math.min.apply(null, levels)) > 1 ? { applies: true, reason: 'Non-favored classes differ by more than 1 level.' } : { applies: false, reason: '' };
+}
+function meetsMulticlassPrereq35(clsKey) {
+  var req = DND35_DATA.multiclassPrereqs && DND35_DATA.multiclassPrereqs[clsKey];
+  if (!req) return true;
+  return Object.keys(req).every(function(ability){ return ts35(ability) >= req[ability]; });
+}
+function isClassSkillAny35(skillName) {
+  ensureClasses35();
+  return C35.classes.some(function(entry){ var cls = DND35_DATA.classes[entry.cls]; return cls && cls.classSkills && cls.classSkills.includes(skillName); });
+}
 function ts35(a) {
   var base = C35.abilities[a]||8;
   if (!C35.race) return base;
   return base + (DND35_DATA.races[C35.race].asi[a]||0);
 }
 function bab35() {
-  if (!C35.cls) return 0;
-  return DND35_DATA.classes[C35.cls].babProg === 'good' ? 1 : 0;
+  ensureClasses35();
+  var total = 0;
+  C35.classes.forEach(function(entry){
+    var cls = DND35_DATA.classes[entry.cls]; if (!cls) return;
+    var lvl = parseInt(entry.level) || 0; if (lvl <= 0) return;
+    var babData = DND35_DATA.babProgression[lvl];
+    if (!babData || !babData[cls.babProg]) return;
+    total += parseInt(babData[cls.babProg][0]) || 0;
+  });
+  return total;
 }
 function save35(type) {
-  if (!C35.cls) return 0;
-  var cls = DND35_DATA.classes[C35.cls];
-  var isGood = cls.goodSaves.includes(type);
+  ensureClasses35();
+  if (!C35.classes.length) return 0;
+  var base = 0;
+  C35.classes.forEach(function(entry){
+    var cls = DND35_DATA.classes[entry.cls]; if (!cls) return;
+    var lvl = parseInt(entry.level) || 0; if (lvl <= 0) return;
+    var isGood = cls.goodSaves.includes(type);
+    var arr = isGood ? DND35_DATA.saveProgression.good : DND35_DATA.saveProgression.poor;
+    base += parseInt(arr[lvl - 1]) || 0;
+  });
   var abilMap = {fort:'con',ref:'dex',will:'wis'};
-  return (isGood?2:0) + mod35(ts35(abilMap[type]));
+  return base + mod35(ts35(abilMap[type]));
 }
 function babAtLevel35(level) {
   if (!C35.cls || !DND35_DATA.babProgression) return 0;
@@ -8085,8 +8320,7 @@ function getFeaturesUpToLevel35(level) {
   var processedFeatures = new Set();
   for (var lvl = 1; lvl <= level; lvl++) {
     if (classFeatData[lvl]) {
-      var featsAtLevel = classFeatData[lvl];
-      featsAtLevel.forEach(function(feat) {
+      classFeatData[lvl].forEach(function(feat) {
         if (!processedFeatures.has(feat)) {
           processedFeatures.add(feat);
           features.push({level: lvl, name: feat});
@@ -8103,11 +8337,19 @@ function updateSpellTabVisibility35() {
   spellTabEl.style.display = cls.spellcastingAbility ? '' : 'none';
 }
 function spTotal35() {
-  if (!C35.cls) return 0;
-  var cls = DND35_DATA.classes[C35.cls];
-  var intMod = mod35(ts35('int'));
-  var pts = Math.max(1, cls.skillPoints + intMod);
-  pts *= 4;
+  ensureClasses35();
+  if (!C35.levelHistory.length) return 0;
+  var pts = 0;
+  for (var i = 0; i < C35.levelHistory.length; i++) {
+    var clsKey = C35.levelHistory[i];
+    var cls = DND35_DATA.classes[clsKey];
+    if (!cls) continue;
+    var perLevel = Math.max(1, cls.skillPoints + mod35(ts35('int')));
+    if (C35.race === 'human') perLevel += 1;
+    if (i === 0) perLevel *= 4;
+    pts += perLevel;
+  }
+  return Math.max(pts, 4);
   if (C35.race === 'human') pts += 4;
   var base = Math.max(pts, 4);
   if (C35.level && C35.level > 1) {
@@ -8119,38 +8361,25 @@ function spTotal35() {
 }
 function spSpent35() {
   var spent = 0;
-  var cls = C35.cls ? DND35_DATA.classes[C35.cls] : null;
   Object.entries(C35.skillRanks).forEach(function(kv) {
     var id = kv[0]; var ranks = parseInt(kv[1])||0;
     if (ranks <= 0) return;
-    var isClass = cls && cls.classSkills.includes(DND35_DATA.skills[id].name);
+    var isClass = isClassSkillAny35(DND35_DATA.skills[id].name);
     spent += isClass ? ranks : ranks * 2;
   });
   return spent;
 }
-function maxRank35(isClass) { return isClass ? 4 : 2; }
+function maxRank35(isClass) {
+  var max = totalLevel35() + 3;
+  return isClass ? max : Math.floor(max / 2);
+}
 function featCount35() {
-  var n = 1;
+  ensureClasses35();
+  var n = 0;
+  DND35_DATA.featLevels.forEach(function(lvl) { if (lvl <= totalLevel35()) n++; });
   if (C35.race === 'human') n++;
-  if (C35.cls === 'fighter') n++;
-  var level = C35.level || 1;
-  if (level > 1) {
-    if (DND35_DATA.featLevels) {
-      for (var i = 0; i < DND35_DATA.featLevels.length; i++) {
-        if (DND35_DATA.featLevels[i] > 1 && DND35_DATA.featLevels[i] <= level) {
-          n++;
-        }
-      }
-    }
-    if (C35.cls === 'fighter' && DND35_DATA.fighterBonusFeatLevels) {
-      for (var j = 0; j < DND35_DATA.fighterBonusFeatLevels.length; j++) {
-        var fLevel = DND35_DATA.fighterBonusFeatLevels[j];
-        if (fLevel > 1 && fLevel <= level) {
-          n++;
-        }
-      }
-    }
-  }
+  var fighterLevel = classLevel35('fighter');
+  DND35_DATA.fighterBonusFeatLevels.forEach(function(lvl) { if (lvl <= fighterLevel) n++; });
   return n;
 }
 
@@ -8274,12 +8503,21 @@ function renderClasses35() {
 }
 function selectClass35(id) {
   C35.cls = id; C35.skillRanks = {}; C35.equipChoices = {}; C35.weaponChoices = {};
+  C35.classes = [{ cls: id, level: 1 }];
+  C35.levelHistory = [id];
+  C35.level = 1;
+  var firstLevelHP = (DND35_DATA.classes[id] ? DND35_DATA.classes[id].hitDie : 8) + mod35(ts35('con'));
+  if (firstLevelHP < 1) firstLevelHP = 1;
+  C35.hpRolls = [firstLevelHP];
+  C35.selectedCantrips = [];
+  C35.selectedSpells = [];
+  C35.spellsByLevel = {};
   document.querySelectorAll('#classCards35 .cb-card').forEach(function(c,i) {
     c.classList.toggle('selected', Object.keys(DND35_DATA.classes)[i]===id);
   });
   document.getElementById('sl35-class').textContent = DND35_DATA.classes[id].name;
   var step8 = document.getElementById('step35-8');
-  if (step8) step8.style.opacity = DND35_DATA.classes[id].spellcastingAbility ? '1' : '0.4';
+  if (step8) step8.style.opacity = activeSpellClass35() && DND35_DATA.classes[activeSpellClass35()] && DND35_DATA.classes[activeSpellClass35()].spellcastingAbility ? '1' : '0.4';
   renderClassDetail35(id); updateMini35();
 }
 function renderClassDetail35(id) {
@@ -8459,11 +8697,13 @@ function renderSkills35() {
   document.getElementById('sp35Remaining').textContent = rem;
   document.getElementById('sp35Remaining').style.color = rem<0?'var(--crimson)':rem===0?'#4eda80':'';
   var alert35 = document.getElementById('skillAlert35');
-  if (cls) alert35.innerHTML = '<strong>'+cls.name+'</strong> gets <strong>'+(cls.skillPoints)+'+INT modifier</strong> skill points per level (×4 at 1st level). Class skills cost 1 pt/rank (max 4). Cross-class cost 2 pts/rank (max 2). <em>Trained-only skills (†) require at least 1 rank.</em>';
+  var classMax = totalLevel35() + 3;
+  var crossMax = Math.floor(classMax / 2);
+  if (cls) alert35.innerHTML = '<strong>'+cls.name+'</strong> gets <strong>'+(cls.skillPoints)+'+INT modifier</strong> skill points per level (×4 at 1st level). Class skills cost 1 pt/rank (max '+classMax+'). Cross-class cost 2 pts/rank (max '+crossMax+'). <em>Trained-only skills (†) require at least 1 rank.</em>';
   var tbody = document.getElementById('skillRows35'); tbody.innerHTML = '';
   Object.entries(DND35_DATA.skills).forEach(function(kv) {
     var id = kv[0]; var skill = kv[1];
-    var isClass = cls && cls.classSkills.includes(skill.name);
+    var isClass = isClassSkillAny35(skill.name);
     var ranks = parseInt(C35.skillRanks[id])||0;
     var max = maxRank35(isClass);
     var abilMod = mod35(ts35(skill.ability));
@@ -8483,8 +8723,7 @@ function renderSkills35() {
   });
 }
 function setRank35(id, val) {
-  var cls = C35.cls ? DND35_DATA.classes[C35.cls] : null;
-  var isClass = cls && cls.classSkills.includes(DND35_DATA.skills[id].name);
+  var isClass = isClassSkillAny35(DND35_DATA.skills[id].name);
   var max = maxRank35(isClass);
   var ranks = Math.max(0, Math.min(max, parseInt(val)||0));
   C35.skillRanks[id] = ranks;
@@ -8507,7 +8746,7 @@ function renderFeats35() {
     var d = document.createElement('div');
     d.className = 't35-feat'+(isSel?' selected':'');
     d.onclick = function() { toggleFeat35(feat.name, count); };
-    d.innerHTML = '<div class="t35-feat-name">'+feat.name+'</div><div class="t35-feat-prereq">Prereq: '+feat.prereq+'</div><div class="t35-feat-desc">'+feat.desc+'</div>';
+    d.innerHTML = '<div class="t35-feat-name">'+esc35(feat.name)+'</div><div class="t35-feat-prereq">Prereq: '+esc35(feat.prereq)+'</div><div class="t35-feat-desc">'+esc35(feat.desc)+'</div>';
     list.appendChild(d);
   });
 }
@@ -8530,7 +8769,7 @@ function renderEquipment35() {
     if (!Array.isArray(choice)||choice.length===0) return;
     if (choice.length===1) {
       var d = document.createElement('div'); d.className = 'cb-equip-choice';
-      d.innerHTML = '<div class="cb-equip-label">Always Included</div><div style="font-size:15px;color:var(--text-muted);font-style:italic;padding:4px 0;">✓ '+choice[0]+'</div>';
+      d.innerHTML = '<div class="cb-equip-label">Always Included</div><div style="font-size:15px;color:var(--text-muted);font-style:italic;padding:4px 0;">✓ '+esc35(choice[0])+'</div>';
       fixed.appendChild(d);
     } else {
       var idx = ci;
@@ -8547,15 +8786,15 @@ function renderEquipment35() {
           weapDrop = '<div style="margin-top:12px;"><div style="font-family:\'Cinzel\',serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);margin-bottom:8px;">Choose Specific Weapon</div>'+
             '<select style="background:var(--bg-input);border:1px solid rgba(212,67,58,0.3);color:var(--white);font-family:\'Spectral\',serif;font-size:14px;padding:7px 10px;width:100%;" onchange="if(!C35.weaponChoices)C35.weaponChoices={};C35.weaponChoices[\''+wKey+'\']=this.value;renderEquipment35();">'+
             '<option value="">Select a weapon...</option>'+
-            allW.map(function(w){return '<option value="'+w.name+'" '+(curW===w.name?'selected':'')+'>'+w.name+' — '+w.damage+' '+w.type+'</option>';}).join('')+
-            '</select>'+(curW?'<div style="font-size:12px;color:var(--text-muted);margin-top:5px;">✓ '+curW+'</div>':'')+
+            allW.map(function(w){return '<option value="'+esc35(w.name)+'" '+(curW===w.name?'selected':'')+'>'+esc35(w.name)+' — '+esc35(w.damage)+' '+esc35(w.type)+'</option>';}).join('')+
+            '</select>'+(curW?'<div style="font-size:12px;color:var(--text-muted);margin-top:5px;">✓ '+esc35(curW)+'</div>':'')+
             '</div>';
         }
       }
       d2.innerHTML = '<div class="cb-equip-label" style="'+(req?'color:var(--crimson);':'')+'">'+
         (req?'⚠ ':'')+'Choice '+(idx+1)+'. Pick One'+(req?' (Required)':'')+'</div>'+
         '<div class="cb-equip-options">'+choice.map(function(opt,j){
-          return '<div class="cb-equip-option'+(C35.equipChoices[idx]===j?' selected':'')+'" onclick="C35.equipChoices['+idx+']='+j+';C35.weaponChoices={};renderEquipment35();">'+(C35.equipChoices[idx]===j?'✓ ':'')+opt+'</div>';
+          return '<div class="cb-equip-option'+(C35.equipChoices[idx]===j?' selected':'')+'" onclick="C35.equipChoices['+idx+']='+j+';C35.weaponChoices={};renderEquipment35();">'+(C35.equipChoices[idx]===j?'✓ ':'')+esc35(opt)+'</div>';
         }).join('')+'</div>'+weapDrop;
       cont.appendChild(d2);
       ci++;
@@ -8574,7 +8813,7 @@ function renderSpells35() {
     if (title) title.textContent = 'No Spellcasting';
     if (sub) sub.textContent = 'This class does not use spells at 1st level';
     if (nextBtn) nextBtn.textContent = 'Skip → Continue to Details';
-    cont.innerHTML = '<div class="cb-detail" style="text-align:center;padding:56px 32px;"><div style="font-size:56px;margin-bottom:20px;opacity:.2;">⚔</div><div class="cb-detail-title">'+(cls?cls.name:'This class')+'. No Spellcasting</div><div class="cb-detail-sub" style="margin-top:10px;">Click continue to move on.</div></div>';
+    cont.innerHTML = '<div class="cb-detail" style="text-align:center;padding:56px 32px;"><div style="font-size:56px;margin-bottom:20px;opacity:.2;">⚔</div><div class="cb-detail-title">'+esc35(cls?cls.name:'This class')+'. No Spellcasting</div><div class="cb-detail-sub" style="margin-top:10px;">Click continue to move on.</div></div>';
     return;
   }
   if (title) title.textContent = 'Spells';
@@ -8782,20 +9021,19 @@ function switchTab35(name) {
   if (panel) panel.classList.add('active');
 }
 function buildFinalSheet35() {
+  ensureClasses35();
   if (!C35.race||!C35.cls) return;
   var race = DND35_DATA.races[C35.race];
-  var cls = DND35_DATA.classes[C35.cls];
+  var clsKey = primaryClass35();
+  var cls = DND35_DATA.classes[clsKey];
   var conMod = mod35(ts35('con')); var dexMod = mod35(ts35('dex'));
   var strMod = mod35(ts35('str'));
-  var level = C35.level || 1;
-  var maxHP = cls.hitDie + conMod; if (maxHP<1) maxHP=1;
-  if (level > 1) {
-    for (var lvl = 2; lvl <= level; lvl++) {
-      var hpGain = Math.max(1, Math.floor(cls.hitDie / 2) + 1 + conMod);
-      maxHP += hpGain;
-    }
+  var maxHP = (C35.hpRolls||[]).reduce(function(a,b){ return a + (parseInt(b)||0); }, 0);
+  if (!maxHP) {
+    maxHP = (cls ? cls.hitDie : 8) + conMod;
+    if (maxHP < 1) maxHP = 1;
   }
-  var babVal = babAtLevel35(level);
+  var babVal = bab35();
   // Compute AC from equipment
   var armorBonus=0; var shieldBonus=0;
   var equip=cls.equipment||[]; var ci=0;
@@ -8818,27 +9056,28 @@ function buildFinalSheet35() {
     return armorKey?DND35_DATA.armor[armorKey].maxDex:dexMod;
   })());
   var ac = 10+effectiveDex+armorBonus+shieldBonus;
-  sheet35State = {race:race,cls:cls,maxHP:maxHP,ac:ac,babVal:babVal,dexMod:dexMod,strMod:strMod,conMod:conMod,armorBonus:armorBonus,shieldBonus:shieldBonus};
+  sheet35State = {race:race,cls:cls,maxHP:maxHP,ac:ac,babVal:babVal,dexMod:dexMod,strMod:strMod,conMod:conMod,armorBonus:armorBonus,shieldBonus:shieldBonus,classes:C35.classes.slice(),spellClassKey:activeSpellClass35()};
 
   // Header
   var name = (C35.details&&C35.details.name)||'Unnamed Adventurer';
   document.getElementById('cs35-name').textContent = name;
-  document.getElementById('cs35-class').textContent = race.name+' '+cls.name+' · Level '+level+' · '+(C35.alignment||'');
-  var fortSave = saveAtLevel35('fort', level);
-  var refSave = saveAtLevel35('ref', level);
-  var willSave = saveAtLevel35('will', level);
+  document.getElementById('cs35-class').textContent = race.name+' · '+classBreakdownText35()+' · Level '+totalLevel35()+' · '+(C35.alignment||'');
+  var xpPenalty = multiclassPenalty35();
   document.getElementById('cs35-tags').innerHTML = [
     '<span class="cs-tag">'+race.size+'</span>',
     '<span class="cs-tag">'+race.speed+' ft</span>',
     '<span class="cs-tag">BAB '+(babVal>=0?'+':'')+babVal+'</span>',
-    '<span class="cs-tag">Fort '+(fortSave>=0?'+':'')+fortSave+'</span>',
-    '<span class="cs-tag">Ref '+(refSave>=0?'+':'')+refSave+'</span>',
-    '<span class="cs-tag">Will '+(willSave>=0?'+':'')+willSave+'</span>'
+    '<span class="cs-tag">Fort '+(save35('fort')>=0?'+':'')+save35('fort')+'</span>',
+    '<span class="cs-tag">Ref '+(save35('ref')>=0?'+':'')+save35('ref')+'</span>',
+    '<span class="cs-tag">Will '+(save35('will')>=0?'+':'')+save35('will')+'</span>',
+    xpPenalty.applies ? '<span class="cs-tag" style="border-color:var(--crimson);color:var(--crimson);">XP Penalty -20%</span>' : ''
   ].join('');
 
   // Spell tab visibility
+  var spellCls = activeSpellClass35();
+  var spellClsData = spellCls ? DND35_DATA.classes[spellCls] : null;
   var spellTabEl = document.getElementById('cs35-spell-tab');
-  if (spellTabEl) spellTabEl.style.display = cls.spellcastingAbility ? '' : 'none';
+  if (spellTabEl) spellTabEl.style.display = (spellClsData && spellClsData.spellcastingAbility) ? '' : 'none';
 
   buildMainTab35(maxHP,ac,babVal,dexMod,strMod);
   buildCombatTab35();
@@ -9140,7 +9379,7 @@ function renderInv35() {
   if (!inv35Items.length) { el.innerHTML='<div style="font-size:13px;color:var(--text-faint);font-style:italic;padding:8px 0;">No items.</div>'; return; }
   el.innerHTML = '<div class="cs-action-title">Equipment</div>'+
     inv35Items.map(function(item,i){
-      return '<div class="cs-item-row"><span class="cs-item-name">'+item.name+'</span>'+
+      return '<div class="cs-item-row"><span class="cs-item-name">'+esc35(item.name)+'</span>'+
         '<input class="cs-item-qty" type="number" value="'+item.qty+'" min="0" onchange="inv35Items['+i+'].qty=parseInt(this.value)||0;">'+
         '<button onclick="inv35Items.splice('+i+',1);renderInv35();" style="background:none;border:none;color:var(--text-faint);cursor:pointer;font-size:16px;">×</button></div>';
     }).join('');
@@ -9156,16 +9395,16 @@ function buildFeaturesTab35() {
   var level = C35.level || 1;
   var classFeatures = getFeaturesUpToLevel35(level);
   var featuresHTML = classFeatures.map(function(f){
-    return '<div class="cs-feature-card" style="margin-bottom:8px;"><div class="cs-feature-card-top"><span class="cs-feature-card-name">Level '+f.level+': '+f.name+'</span></div></div>';
+    return '<div class="cs-feature-card" style="margin-bottom:8px;"><div class="cs-feature-card-top"><span class="cs-feature-card-name">Level '+f.level+': '+esc35(f.name)+'</span></div></div>';
   }).join('');
   var html = '<div class="cs-action-title">Class Features (Levels 1-'+level+')</div>'+
     (classFeatures.length ? featuresHTML : '<div style="color:var(--text-faint);font-style:italic;">No features available.</div>')+
     '<div class="cs-action-title" style="margin-top:24px;">Racial Traits</div>'+
-    race.traits.map(function(t){return '<div class="cs-feature-card" style="margin-bottom:8px;"><div class="cs-feature-card-top"><span class="cs-feature-card-name">'+t.name+'</span></div><div class="cs-feature-card-desc">'+t.desc+'</div></div>';}).join('');
+    race.traits.map(function(t){return '<div class="cs-feature-card" style="margin-bottom:8px;"><div class="cs-feature-card-top"><span class="cs-feature-card-name">'+esc35(t.name)+'</span></div><div class="cs-feature-card-desc">'+esc35(t.desc)+'</div></div>';}).join('');
   var profHTML = '<div class="cs-action-title" style="margin-top:24px;">Proficiencies</div><div class="cs-prof-list">'+
-    '<span class="cs-prof-category">Armor</span>'+(cls.armorProf.join(', ')||'None')+
-    '<span class="cs-prof-category">Weapons</span>'+cls.weaponProf.join(', ')+
-    '<span class="cs-prof-category">Languages</span>'+race.languages.join(', ')+
+    '<span class="cs-prof-category">Armor</span>'+esc35(cls.armorProf.join(', ')||'None')+
+    '<span class="cs-prof-category">Weapons</span>'+esc35(cls.weaponProf.join(', '))+
+    '<span class="cs-prof-category">Languages</span>'+esc35(race.languages.join(', '))+
   '</div>';
   document.getElementById('tab35-features').innerHTML = html+profHTML;
 }
@@ -9234,13 +9473,21 @@ async function saveChar35() {
   var session = PhmurtDB.getSession();
   if (!session) { PhmurtDB.openAuth(); if(status) status.textContent='Sign in to save.'; return; }
   if (btn) { btn.textContent='Saving...'; btn.disabled=true; }
+  ensureClasses35();
   var snapshot = {
     edition:'3.5', race:C35.race, cls:C35.cls, alignment:C35.alignment,
     abilities:{...C35.abilities}, scoreMethod:C35.scoreMethod, arrayAssigned:{...C35.arrayAssigned},
     skillRanks:{...C35.skillRanks}, selectedFeats:[...C35.selectedFeats],
     equipChoices:{...C35.equipChoices}, weaponChoices:{...(C35.weaponChoices||{})},
     selectedCantrips:[...C35.selectedCantrips], selectedSpells:[...C35.selectedSpells],
-    details:{...C35.details}, level:C35.level||1, savedAt:Date.now()
+    spellsByLevel: C35.spellsByLevel ? JSON.parse(JSON.stringify(C35.spellsByLevel)) : {},
+    details:{...C35.details}, level:C35.level||1, hpRolls:[...(C35.hpRolls||[])],
+    classes: C35.classes ? JSON.parse(JSON.stringify(C35.classes)) : [],
+    levelHistory: [...(C35.levelHistory||[])],
+    levelUpSkills: C35.levelUpSkills ? JSON.parse(JSON.stringify(C35.levelUpSkills)) : {},
+    levelUpFeats:[...(C35.levelUpFeats||[])],
+    levelUpAbilityBoosts: C35.levelUpAbilityBoosts ? JSON.parse(JSON.stringify(C35.levelUpAbilityBoosts)) : {},
+    savedAt:Date.now()
   };
   var existingId = localStorage.getItem('phmurt_current_char35_id')||undefined;
   var r = await PhmurtDB.saveCharacter(snapshot, existingId);
@@ -9257,11 +9504,14 @@ async function saveChar35() {
 
 // ── MINI SUMMARY ──
 function updateMini35() {
+  ensureClasses35();
   var el = document.getElementById('miniSummary35'); if (!el) return;
   var lines = [];
   if (C35.details&&C35.details.name) lines.push({l:'Name',v:C35.details.name});
   if (C35.race) lines.push({l:'Race',v:DND35_DATA.races[C35.race].name});
-  if (C35.cls) lines.push({l:'Class',v:DND35_DATA.classes[C35.cls].name+' (3.5)'});
+  if (C35.cls) lines.push({l:'Class',v:classBreakdownText35()+' (3.5e)'});
+  if (C35.level) lines.push({l:'Level',v:totalLevel35()});
+  if (multiclassPenalty35().applies) lines.push({l:'XP',v:'-20% penalty'});
   if (C35.alignment) lines.push({l:'Alignment',v:C35.alignment});
   el.innerHTML = lines.map(function(l){
     return '<div class="cb-mini-stat"><span class="cb-mini-stat-label">'+l.l+'</span><span class="cb-mini-stat-val">'+l.v+'</span></div>';
@@ -9270,8 +9520,8 @@ function updateMini35() {
 
 // ── INIT ──
 function init35() {
-  // Method info default
   document.getElementById('methodInfo35').innerHTML = '<strong>Standard Array</strong>: Assign 15,14,13,12,10,8 to your six ability scores.';
+  ensureClasses35();
   renderRaces35(); renderClasses35(); renderAbilGrid35(); renderPool35(); updateMini35();
   // Inject 3.5e homebrew builder buttons
   injectHomebrew35BuilderButtons();
@@ -9294,9 +9544,17 @@ function init35() {
     PhmurtDB.loadCharacter(loadId).then(function(data) {
       if (!data||data.edition!=='3.5') return;
       ['race','cls','alignment','abilities','scoreMethod','arrayAssigned','skillRanks','selectedFeats',
-       'equipChoices','weaponChoices','selectedCantrips','selectedSpells','details','level'].forEach(function(k){
+       'equipChoices','weaponChoices','selectedCantrips','selectedSpells','spellsByLevel','details','level','hpRolls',
+       'levelUpSkills','levelUpFeats','levelUpAbilityBoosts','classes','levelHistory'].forEach(function(k){
         if (data[k]!==undefined) C35[k]=data[k];
       });
+      ensureClasses35();
+      if (Array.isArray(C35.selectedFeats)) {
+        C35.selectedFeats = C35.selectedFeats.map(function(f){
+          if (typeof f === 'number' && DND35_DATA.feats && DND35_DATA.feats[f]) return DND35_DATA.feats[f].name;
+          return f;
+        }).filter(Boolean);
+      }
       C35.weaponChoices = C35.weaponChoices||{};
       localStorage.setItem('phmurt_current_char35_id',loadId);
       renderAbilGrid35(); renderPool35();

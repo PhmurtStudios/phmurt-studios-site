@@ -4071,6 +4071,7 @@ const WALL_TYPES = {
 
 // ── Phase 4: Multiplayer & Extensibility constants ──
 const SYNC_KEY = 'phmurt-battlemap-sync';
+const getSyncStorageKey = (campaignId) => SYNC_KEY + ":" + (campaignId || "local");
 const TEMPLATE_KEY = 'phmurt-encounter-templates';
 
 function debounce(fn, ms) {
@@ -5056,13 +5057,18 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     return !!normalizedOwner && getViewerOwnerTags().has(normalizedOwner);
   };
 
+  const builderSnapshotCacheRef = useRef({ raw: null, parsed: null });
   const getBuilderSnapshotForToken = (token, partyMember) => {
     const direct = partyMember?.snapshot || partyMember?.builderSnapshot || partyMember?.characterSnapshot;
     if (direct) return direct;
     try {
       const raw = localStorage.getItem("phmurt_builder_5e");
       if (!raw) return {};
-      const parsed = JSON.parse(raw);
+      let parsed = builderSnapshotCacheRef.current.parsed;
+      if (!parsed || builderSnapshotCacheRef.current.raw !== raw) {
+        parsed = JSON.parse(raw);
+        builderSnapshotCacheRef.current = { raw, parsed };
+      }
       const builtName = parsed?.details?.name || "";
       if (builtName && token?.name && builtName.toLowerCase() === String(token.name).toLowerCase()) return parsed;
     } catch (_) {}
@@ -5164,7 +5170,13 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       }
       if (f.id && next[f.id] == null && typeof f.uses === "number") next[f.id] = f.uses;
     });
-    if (JSON.stringify(existing) !== JSON.stringify(next)) updateToken(token.id, { classResources: next });
+    const keys = new Set([...Object.keys(existing), ...Object.keys(next)]);
+    let changed = false;
+    keys.forEach((k) => {
+      if (changed) return;
+      if (existing[k] !== next[k]) changed = true;
+    });
+    if (changed) updateToken(token.id, { classResources: next });
   };
 
   const addStructuredCombatLog = (lineA, lineB, lineC) => {
@@ -5223,10 +5235,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
     }
     const profile = getCombatProfile(actorToken);
     const ts = turnStateByToken[actorToken.id] || defaultTurnState(actorToken);
-    const focusTarget = getFocusedCombatTarget(actorToken);
+    const hostiles = getHostileTargets(actorToken);
+    const preferredId = combatTargetByActor[actorToken.id];
+    const focusTarget = hostiles.find((t) => t.id === preferredId) || hostiles[0] || null;
     const focusDist = focusTarget ? distBetween(actorToken, focusTarget) : null;
     const focusLane = focusTarget ? getLineCoverProfile(actorToken, focusTarget) : null;
-    const hostiles = getHostileTargets(actorToken);
     const cards = [];
     const pb = profile.proficiencyBonus;
     const strMod = toMod(profile.abilities.str);
@@ -9094,10 +9107,14 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
   useEffect(() => {
     if (!party || party.length === 0) return;
     setTokens(prev => {
-      const existingNames = new Set(prev.map(t => t.name));
+      const existingPartyIds = new Set(
+        prev
+          .filter(t => t.tokenType === "pc" && t.partyId != null)
+          .map(t => String(t.partyId))
+      );
       const newTokens = [];
       party.forEach((p, idx) => {
-        if (!existingNames.has(p.name)) {
+        if (!existingPartyIds.has(String(p.id))) {
           const offsetX = (idx % 5) * gridSize;
           const offsetY = Math.floor(idx / 5) * gridSize;
           const cx = gridSize * 2 + offsetX + gridSize / 2;
@@ -9128,6 +9145,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
   const syncTimerRef = useRef(null);
   const suppressRealtimeBroadcastRef = useRef(false);
   useEffect(() => {
+    if (viewRole !== "dm") return;
     if (suppressRealtimeBroadcastRef.current) {
       suppressRealtimeBroadcastRef.current = false;
       return;
@@ -9144,7 +9162,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
         PhmurtRealtime.broadcastState(activeCampaignId, state);
       } else {
         // Fallback: localStorage only (same-device or no campaign)
-        try { localStorage.setItem(SYNC_KEY, JSON.stringify(state)); } catch {}
+        try { localStorage.setItem(getSyncStorageKey(activeCampaignId), JSON.stringify(state)); } catch {}
       }
     }, 150);
     return () => clearTimeout(syncTimerRef.current);
@@ -9152,7 +9170,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
 
   // ── Player: Subscribe to DM state via PhmurtRealtime ──
   const realtimeHandleRef = useRef(null);
+  const syncFallbackLastRawRef = useRef(null);
   useEffect(() => {
+    if (viewRole === "dm") return;
     const applyState = (state) => {
       if (!state) return;
       suppressRealtimeBroadcastRef.current = true;
@@ -9188,8 +9208,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", activeCampaignId = 
       // Fallback: poll localStorage (same device only)
       const interval = setInterval(() => {
         try {
-          const raw = localStorage.getItem(SYNC_KEY);
-          if (raw) applyState(JSON.parse(raw));
+          const fallbackKey = getSyncStorageKey(activeCampaignId);
+          const raw = localStorage.getItem(fallbackKey) || localStorage.getItem(SYNC_KEY);
+          if (!raw || raw === syncFallbackLastRawRef.current) return;
+          syncFallbackLastRawRef.current = raw;
+          applyState(JSON.parse(raw));
         } catch {}
       }, 250);
       realtimeHandleRef.current = { leave: () => clearInterval(interval) };

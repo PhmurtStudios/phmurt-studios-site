@@ -58,6 +58,8 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   if (url.protocol === 'chrome-extension:') return;
   if (url.origin !== self.location.origin) return;
+  // Avoid caching API-like data requests; keep them network-only.
+  if ((request.headers.get('accept') || '').includes('application/json')) return;
 
   // Network-first for HTML pages (always get fresh content)
   if (request.mode === 'navigate' || (request.headers.get('accept') || '').includes('text/html')) {
@@ -85,6 +87,9 @@ self.addEventListener('fetch', (event) => {
 
   // Stale-while-revalidate for assets (CSS, JS, images)
   // Serves cached version immediately, fetches fresh copy in background
+  const dest = request.destination || '';
+  const isStaticAsset = dest === 'style' || dest === 'script' || dest === 'image' || dest === 'font';
+  if (!isStaticAsset) return;
   event.respondWith(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.match(request).then((cachedResponse) => {
@@ -112,6 +117,8 @@ self.addEventListener('message', (event) => {
     self.skipWaiting();
   }
   if (event.data && event.data.type === 'CLEAR_CACHE') {
-    caches.delete(CACHE_NAME);
+    event.waitUntil(
+      caches.keys().then((cacheNames) => Promise.all(cacheNames.map((name) => caches.delete(name))))
+    );
   }
 });

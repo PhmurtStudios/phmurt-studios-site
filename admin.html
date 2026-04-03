@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="X-Content-Type-Options" content="nosniff" />
 <meta name="referrer" content="strict-origin-when-cross-origin" />
+<meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), usb=(), payment=(), serial=(), bluetooth=()">
 <title>Admin Dashboard – Phmurt Studios</title>
 <!-- NOTE: unsafe-eval is required by @babel/standalone to compile JSX at runtime.
      This is acceptable for an admin-only page, but should be reviewed if Babel usage changes. -->
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-ancestors 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'; object-src 'none';">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Spectral:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
@@ -34,10 +35,9 @@
 (function () {
 
   /* ── Config ──────────────────────────────────────────────────────── */
-  var ADMIN_EMAILS  = ['dreverad@icloud.com', 'dreverad18@gmail.com'];
   var EXPECTED_HASH = '1100000000000000100000001001110010011100101000000000010000000110'; // ← replace with your hash after first run
   var IMG_OK_KEY    = 'phmurt_admin_img_ok'; // sessionStorage flag
-  var ADMIN_HASH_KEY = 'phmurt_admin_key_hash'; // localStorage key for dynamic hash storage
+  var ADMIN_ATTEMPTS_KEY = 'phmurt_admin_signin_attempts_v1';
 
   /* ── Hide page immediately so nothing flashes ───────────────────── */
   document.documentElement.style.visibility = 'hidden';
@@ -79,38 +79,16 @@
     } catch (e) {}
     return null;
   }
-  function getUsers() {
-    // Try localStorage first, fall back to cookie backup
-    try {
-      var raw = localStorage.getItem('phmurt_users_db');
-      if (raw) { var p = JSON.parse(raw); if (p && typeof p === 'object') return p; }
-    } catch (e) {}
-    try {
-      var cr = getCookie('phmurt_udb');
-      if (cr) { var cp = JSON.parse(cr); if (cp && typeof cp === 'object') { try { localStorage.setItem('phmurt_users_db', cr); } catch(e) {} return cp; } }
-    } catch (e) {}
-    return {};
-  }
   function isAdminSession(s) {
     if (!s) return false;
-    var e = (s.email || '').trim().toLowerCase();
-    return s.isAdmin === true || ADMIN_EMAILS.indexOf(e) !== -1;
+    return s.isAdmin === true || s.isSuperuser === true;
   }
 
-  /* ── Helpers: password hashing (same as phmurt-auth.js) ─────────── */
-  function hashPassword(password, email) {
-    var str = password + ':' + email.toLowerCase();
-    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(str))
-      .then(function (buf) {
-        return Array.from(new Uint8Array(buf))
-          .map(function (b) { return b.toString(16).padStart(2, '0'); })
-          .join('');
-      });
-  }
   function setSession(user) {
     var s = { userId: user.userId, name: user.name, email: user.email,
               displayName: user.name,
-              isAdmin: ADMIN_EMAILS.indexOf(user.email) !== -1 };
+              isAdmin: user.isAdmin === true,
+              isSuperuser: user.isSuperuser === true };
     var json = JSON.stringify(s);
     try { localStorage.setItem('phmurt_auth_session', json); } catch (e) {}
     setCookie('phmurt_sess', json, 30);  // 30-day cookie backup
@@ -230,11 +208,7 @@
               });
             } else {
               /* Normal mode — verify hash */
-              /* Check localStorage first, then fall back to hardcoded hash */
-              var storedHash = null;
-              try { storedHash = localStorage.getItem(ADMIN_HASH_KEY); } catch (e) {}
-              var expectedForVerification = storedHash || EXPECTED_HASH;
-              var dist = hammingDist(hash, expectedForVerification);
+              var dist = hammingDist(hash, EXPECTED_HASH);
               if (dist <= 6) {
                 setStatus('✓ Image verified.', '#2e8b57');
                 sessionStorage.setItem(IMG_OK_KEY, 'true');
@@ -271,7 +245,7 @@
           /* Tabs */
           '<div style="display:flex;border-bottom:1px solid rgba(255,255,255,0.09);margin-bottom:22px;">' +
             '<button id="ag-tab-in" style="flex:1;padding:9px;background:transparent;border:none;border-bottom:2px solid #d4433a;color:#d4433a;font-family:Cinzel,serif;font-size:11px;letter-spacing:1.5px;cursor:pointer;">Sign In</button>' +
-            '<button id="ag-tab-up" style="flex:1;padding:9px;background:transparent;border:none;border-bottom:2px solid transparent;color:#8c7d6e;font-family:Cinzel,serif;font-size:11px;letter-spacing:1.5px;cursor:pointer;">Create Account</button>' +
+            '<button id="ag-tab-up" style="flex:1;padding:9px;background:transparent;border:none;border-bottom:2px solid transparent;color:#8c7d6e;font-family:Cinzel,serif;font-size:11px;letter-spacing:1.5px;cursor:pointer;">Sign Up Disabled</button>' +
           '</div>' +
 
           '<div id="ag-err" style="' + C.err + '"></div>' +
@@ -289,7 +263,7 @@
             '<div style="' + C.field + '"><label style="' + C.label + '">Email Address</label><input id="ag-up-email" type="email" autocomplete="email" placeholder="you@example.com" style="' + C.input + '" /></div>' +
             '<div style="' + C.field + '"><label style="' + C.label + '">Password</label><input id="ag-up-pass" type="password" autocomplete="new-password" placeholder="Min. 8 characters" style="' + C.input + '" /></div>' +
             '<div style="' + C.field + '"><label style="' + C.label + '">Confirm Password</label><input id="ag-up-pass2" type="password" autocomplete="new-password" placeholder="Repeat password" style="' + C.input + '" /></div>' +
-            '<button id="ag-up-submit" style="' + C.btn + '">Create Account</button>' +
+            '<button id="ag-up-submit" style="' + C.btn + '">Sign Up Disabled</button>' +
           '</div>' +
 
           '<p style="font-family:Spectral,serif;font-size:12px;color:#574843;text-align:center;margin-top:20px;">Only registered admin accounts can proceed.</p>' +
@@ -303,7 +277,38 @@
         var b = document.getElementById(id);
         if (b) { b.disabled = on; b.style.opacity = on ? '0.6' : '1'; }
       }
+      function readAttempts() {
+        try {
+          var raw = sessionStorage.getItem(ADMIN_ATTEMPTS_KEY);
+          var arr = raw ? JSON.parse(raw) : [];
+          return Array.isArray(arr) ? arr : [];
+        } catch (_) { return []; }
+      }
+      function pruneAttempts(arr) {
+        var now = Date.now();
+        return arr.filter(function (t) { return (now - t) < (10 * 60 * 1000); });
+      }
+      function writeAttempts(arr) {
+        try { sessionStorage.setItem(ADMIN_ATTEMPTS_KEY, JSON.stringify(arr)); } catch (_) {}
+      }
+      function getLockMsRemaining() {
+        var arr = pruneAttempts(readAttempts());
+        writeAttempts(arr);
+        if (arr.length < 8) return 0;
+        var oldest = arr[0];
+        var remaining = (10 * 60 * 1000) - (Date.now() - oldest);
+        return Math.max(0, remaining);
+      }
+      function registerAttempt() {
+        var arr = pruneAttempts(readAttempts());
+        arr.push(Date.now());
+        writeAttempts(arr);
+      }
+      function clearAttempts() {
+        try { sessionStorage.removeItem(ADMIN_ATTEMPTS_KEY); } catch (_) {}
+      }
       function grantAccess() {
+        clearAttempts();
         gate.innerHTML = '<div style="text-align:center;"><div style="font-size:28px;margin-bottom:16px;">✓</div><p style="font-family:Spectral,serif;color:#2e8b57;font-size:16px;">Access granted. Welcome.</p></div>';
         setTimeout(function () { gate.remove(); }, 900);
       }
@@ -336,23 +341,24 @@
       });
 
       /* Sign In */
-      function tryLocalSignIn(email, pass) {
-        var users = getUsers();
-        var user  = users[email];
-        if (!user) { showErr('No account found with that email.'); setLoading('ag-in-submit', false); return; }
-        hashPassword(pass, email).then(function (hash) {
-          if (hash !== user.passwordHash) { showErr('Incorrect password.'); setLoading('ag-in-submit', false); return; }
-          afterSignIn(setSession(user));
-        }).catch(function () { showErr('Sign in failed. Try again.'); setLoading('ag-in-submit', false); });
+      function tryLocalSignIn() {
+        showErr('Local fallback auth is disabled for admin security. Configure Supabase and sign in with your admin account.');
+        setLoading('ag-in-submit', false);
       }
 
       document.getElementById('ag-in-submit').addEventListener('click', function () {
         showErr('');
+        var lockMs = getLockMsRemaining();
+        if (lockMs > 0) {
+          showErr('Too many sign-in attempts. Try again in ' + Math.ceil(lockMs / 1000) + ' seconds.');
+          return;
+        }
         var email = (document.getElementById('ag-in-email').value || '').trim().toLowerCase();
         var pass  = document.getElementById('ag-in-pass').value;
         if (!email) { showErr('Email is required.'); return; }
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showErr('Please enter a valid email address.'); return; }
         if (!pass)  { showErr('Password is required.'); return; }
+        registerAttempt();
         setLoading('ag-in-submit', true);
 
         var sbClient = (typeof phmurtSupabase !== 'undefined') ? phmurtSupabase : null;
@@ -361,69 +367,40 @@
           sbClient.auth.signInWithPassword({ email: email, password: pass })
             .then(function (result) {
               if (result.error) {
-                /* Supabase failed — fall back to local hash auth */
-                tryLocalSignIn(email, pass);
+                showErr(result.error.message || 'Sign in failed.');
+                setLoading('ag-in-submit', false);
                 return;
               }
               var user = result.data && result.data.user;
               if (!user) { showErr('Sign in failed. Try again.'); setLoading('ag-in-submit', false); return; }
-              /* Check is_admin flag in profiles, also honour ADMIN_EMAILS */
-              sbClient.from('profiles').select('is_admin').eq('id', user.id).maybeSingle()
+              /* Require role flags from profiles table (no email allowlist bypass). */
+              sbClient.from('profiles').select('*').eq('id', user.id).maybeSingle()
                 .then(function (pr) {
-                  var isAdm = (pr.data && pr.data.is_admin) || (ADMIN_EMAILS.indexOf(email) !== -1);
+                  var isAdm = !!(pr.data && (pr.data.is_admin || pr.data.is_superuser));
                   if (!isAdm) {
                     showErr('This account does not have admin privileges.');
                     setLoading('ag-in-submit', false);
                     return;
                   }
                   /* Write a compatible session so the rest of the gate recognises it */
-                  var dispName = (user.user_metadata && user.user_metadata.name) || email.split('@')[0];
-                  setSession({ userId: user.id, name: dispName, email: email, isAdmin: true });
+                  var dispName = (pr.data && pr.data.name) || (user.user_metadata && user.user_metadata.name) || email.split('@')[0];
+                  setSession({ userId: user.id, name: dispName, email: email, isAdmin: !!(pr.data && pr.data.is_admin), isSuperuser: !!(pr.data && pr.data.is_superuser) });
                   grantAccess();
                 })
                 .catch(function () {
-                  /* Profile fetch failed — still grant if email is in ADMIN_EMAILS */
-                  if (ADMIN_EMAILS.indexOf(email) !== -1) {
-                    var dispName = email.split('@')[0];
-                    setSession({ userId: user.id, name: dispName, email: email, isAdmin: true });
-                    grantAccess();
-                  } else {
-                    showErr('Could not verify admin status. Try again.');
-                    setLoading('ag-in-submit', false);
-                  }
+                  showErr('Could not verify admin status. Try again.');
+                  setLoading('ag-in-submit', false);
                 });
             })
             .catch(function () { showErr('Sign in failed. Try again.'); setLoading('ag-in-submit', false); });
         } else {
-          /* No Supabase — local hash auth only */
-          tryLocalSignIn(email, pass);
+          tryLocalSignIn();
         }
       });
 
       /* Create Account */
       document.getElementById('ag-up-submit').addEventListener('click', function () {
-        showErr('');
-        var name  = (document.getElementById('ag-up-name').value  || '').trim();
-        var email = (document.getElementById('ag-up-email').value || '').trim().toLowerCase();
-        var pass  = document.getElementById('ag-up-pass').value;
-        var pass2 = document.getElementById('ag-up-pass2').value;
-        if (!name)           { showErr('Display name is required.'); return; }
-        if (!email)          { showErr('Email is required.'); return; }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { showErr('Please enter a valid email address.'); return; }
-        if (!pass)           { showErr('Password is required.'); return; }
-        if (pass.length < 8) { showErr('Password must be at least 8 characters.'); return; }
-        if (pass !== pass2)  { showErr('Passwords do not match.'); return; }
-        var users = getUsers();
-        if (users[email])    { showErr('An account with that email already exists.'); return; }
-        setLoading('ag-up-submit', true);
-        hashPassword(pass, email).then(function (hash) {
-          var uidBytes = new Uint8Array(8); crypto.getRandomValues(uidBytes);
-          var uid = 'user_' + Date.now().toString(36) + '_' + Array.from(uidBytes).map(function(b){return b.toString(16).padStart(2,'0');}).join('');
-          var user = { userId: uid, name: name, email: email, passwordHash: hash, createdAt: new Date().toISOString() };
-          users[email] = user;
-          localStorage.setItem('phmurt_users_db', JSON.stringify(users));
-          afterSignIn(setSession(user));
-        }).catch(function () { showErr('Account creation failed. Try again.'); setLoading('ag-up-submit', false); });
+        showErr('Account creation is disabled in the admin portal. Create accounts via the main site sign-up flow.');
       });
 
       /* Enter key */
@@ -438,20 +415,15 @@
 
     /* ── Decide which stage to start on ──────────────────────────────── */
     if (sessionStorage.getItem(IMG_OK_KEY) === 'true') {
-      /* Image already verified this session — check if also signed in */
-      var s = getSession();
-      if (isAdminSession(s)) { gate.remove(); return; } /* fully authenticated (local) */
-      /* Also check for a live Supabase session */
+      /* Image already verified this session — require live Supabase role check */
       var sbClient = (typeof phmurtSupabase !== 'undefined') ? phmurtSupabase : null;
       if (sbClient) {
         sbClient.auth.getSession().then(function (r) {
           var sess = r.data && r.data.session;
           if (sess && sess.user) {
-            var email = (sess.user.email || '').toLowerCase();
-            if (ADMIN_EMAILS.indexOf(email) !== -1) { gate.remove(); return; }
-            sbClient.from('profiles').select('is_admin').eq('id', sess.user.id).maybeSingle()
+            sbClient.from('profiles').select('*').eq('id', sess.user.id).maybeSingle()
               .then(function (pr) {
-                if (pr.data && pr.data.is_admin) { gate.remove(); return; }
+                if (pr.data && (pr.data.is_admin || pr.data.is_superuser)) { gate.remove(); return; }
                 renderAuthStage();
               })
               .catch(function () { renderAuthStage(); });
@@ -855,6 +827,11 @@ function DashboardPage({ onNavigate }) {
       db.from('site_visits').select('id', { count: 'exact', head: true }).gte('visited_at', today.toISOString()),
       db.from('profiles').select('id, name, email, created_at, is_admin, is_banned').order('created_at', { ascending: false }).limit(5),
     ]);
+    if (users.error) throw users.error;
+    if (chars.error) throw chars.error;
+    if (camps.error) throw camps.error;
+    if (visits.error) throw visits.error;
+    if (recent.error) throw recent.error;
     return {
       users:   users.count  || 0,
       chars:   chars.count  || 0,
@@ -944,11 +921,12 @@ function DashboardPage({ onNavigate }) {
           <div className="card-body">
             {[
               { label: 'Auth Backend',         value: sb ? 'Supabase ✓' : 'Local (not configured)', ok: !!sb },
-              { label: 'Session Persistence',  value: 'Cookie + localStorage', ok: true },
+              { label: 'Session Persistence',  value: 'Supabase session (no local auth fallback)', ok: !!sb },
               { label: 'Character Cloud Sync', value: 'Enabled', ok: true },
               { label: 'Campaign Cloud Sync',  value: 'Enabled', ok: true },
-              { label: 'Page Visit Tracking',  value: 'Enabled', ok: true },
-              { label: 'Admin Gate',           value: '2-Factor (image + account)', ok: true },
+              { label: 'Page Visit Tracking',  value: sb ? 'Enabled' : 'Unavailable', ok: !!sb },
+              { label: 'Admin Gate',           value: 'Image key + role verification', ok: true },
+              { label: 'Sign-in Throttling',   value: '8 attempts / 10 min window', ok: true },
             ].map((item, i) => (
               <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderBottom:'1px solid var(--border-mid)'}}>
                 <span style={{fontSize:'13px'}}>{item.label}</span>
@@ -967,7 +945,7 @@ function DashboardPage({ onNavigate }) {
 // ═══════════════════════════════
 // CAMPAIGNS PAGE  (live Supabase data)
 // ═══════════════════════════════
-function CampaignsPage({ addToast }) {
+function CampaignsPage({ addToast, canDeleteContent }) {
   const [search, setSearch] = useState('');
   const { data: campaigns, loading, error, refetch } = useAdminQuery(async (db) => {
     const { data, error } = await db
@@ -987,6 +965,7 @@ function CampaignsPage({ addToast }) {
   });
 
   async function deleteCampaign(id) {
+    if (!canDeleteContent) { addToast('Only superusers can delete campaigns.', 'error'); return; }
     if (!confirm('Delete this campaign? This cannot be undone.')) return;
     const { error } = await sb.from('campaigns').delete().eq('id', id);
     if (error) { addToast('Delete failed: ' + error.message, 'error'); return; }
@@ -1028,7 +1007,7 @@ function CampaignsPage({ addToast }) {
                     <td>{timeAgo(c.updated_at)}</td>
                     <td>{formatDate(c.created_at)}</td>
                     <td>
-                      <button className="btn btn-sm btn-danger" onClick={() => deleteCampaign(c.id)}>Delete</button>
+                      <button className="btn btn-sm btn-danger" onClick={() => deleteCampaign(c.id)} disabled={!canDeleteContent}>Delete</button>
                     </td>
                   </tr>
                 );
@@ -1044,7 +1023,7 @@ function CampaignsPage({ addToast }) {
 // ═══════════════════════════════
 // USERS PAGE  (live Supabase data)
 // ═══════════════════════════════
-function UsersPage({ addToast }) {
+function UsersPage({ addToast, canManageAdmins }) {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [selectedUser, setSelectedUser] = useState(null);
@@ -1052,7 +1031,7 @@ function UsersPage({ addToast }) {
   const { data: users, loading, error, refetch } = useAdminQuery(async (db) => {
     const { data, error } = await db
       .from('profiles')
-      .select('id, name, email, created_at, is_admin, is_superuser, is_banned')
+      .select('*')
       .order('created_at', { ascending: false })
       .limit(500);
     if (error) throw error;
@@ -1077,6 +1056,7 @@ function UsersPage({ addToast }) {
   }
 
   async function toggleAdmin(user) {
+    if (!canManageAdmins) { addToast('Only superusers can change admin roles.', 'error'); return; }
     if (user.is_superuser) { addToast('Superuser accounts cannot be modified.', 'error'); return; }
     const next = !user.is_admin;
     const { error } = await sb.from('profiles').update({ is_admin: next }).eq('id', user.id);
@@ -1086,8 +1066,9 @@ function UsersPage({ addToast }) {
   }
 
   async function deleteUser(id, user) {
+    if (!canManageAdmins) { addToast('Only superusers can delete users.', 'error'); return; }
     if (user && user.is_superuser) { addToast('Superuser accounts cannot be deleted.', 'error'); return; }
-    if (!confirm('Permanently delete this user and all their data? This cannot be undone.')) return;
+    if (!confirm('Delete this profile row? If auth/user data exists elsewhere, remove it separately.')) return;
     const { error } = await sb.from('profiles').delete().eq('id', id);
     if (error) { addToast('Delete failed: ' + error.message, 'error'); return; }
     addToast('User deleted.', 'error');
@@ -1153,11 +1134,11 @@ function UsersPage({ addToast }) {
           onClose={() => setSelectedUser(null)}
           footer={
             <div className="btn-group">
-              <button className="btn btn-danger btn-sm" onClick={() => deleteUser(selectedUser.id)}>Delete</button>
+              <button className="btn btn-danger btn-sm" onClick={() => deleteUser(selectedUser.id, selectedUser)}>Delete</button>
               <button className={`btn btn-sm ${selectedUser.is_banned ? 'btn-primary' : 'btn-danger'}`} onClick={() => toggleBan(selectedUser)}>
                 {selectedUser.is_banned ? 'Unban' : 'Ban'}
               </button>
-              <button className="btn btn-sm" onClick={() => toggleAdmin(selectedUser)}>
+              <button className="btn btn-sm" onClick={() => toggleAdmin(selectedUser)} disabled={!canManageAdmins}>
                 {selectedUser.is_admin ? 'Remove Admin' : 'Make Admin'}
               </button>
             </div>
@@ -1180,7 +1161,7 @@ function UsersPage({ addToast }) {
 // ═══════════════════════════════
 // CHARACTERS PAGE  (live Supabase data)
 // ═══════════════════════════════
-function CharactersPage({ addToast }) {
+function CharactersPage({ addToast, canDeleteContent }) {
   const [search, setSearch] = useState('');
 
   const { data: characters, loading, error, refetch } = useAdminQuery(async (db) => {
@@ -1205,6 +1186,7 @@ function CharactersPage({ addToast }) {
   });
 
   async function deleteCharacter(id) {
+    if (!canDeleteContent) { addToast('Only superusers can delete characters.', 'error'); return; }
     if (!confirm('Delete this character sheet? This cannot be undone.')) return;
     const { error } = await sb.from('characters').delete().eq('id', id);
     if (error) { addToast('Delete failed: ' + error.message, 'error'); return; }
@@ -1248,7 +1230,7 @@ function CharactersPage({ addToast }) {
                     <td><span className="badge badge-info">{c.builder_type || '5e'}</span></td>
                     <td>{timeAgo(c.updated_at)}</td>
                     <td>
-                      <button className="btn btn-sm btn-danger" onClick={() => deleteCharacter(c.id)}>Delete</button>
+                      <button className="btn btn-sm btn-danger" onClick={() => deleteCharacter(c.id)} disabled={!canDeleteContent}>Delete</button>
                     </td>
                   </tr>
                 );
@@ -1265,38 +1247,152 @@ function CharactersPage({ addToast }) {
 // TRAFFIC PAGE  (live site_visits data)
 // ═══════════════════════════════
 function TrafficPage() {
+  const [rangeDays, setRangeDays] = useState(14);
+  const [pageQuery, setPageQuery] = useState('');
+  const [showOnlySuspicious, setShowOnlySuspicious] = useState(false);
+
   const { data: visits, loading, error, refetch } = useAdminQuery(async (db) => {
+    const cutoff = new Date(Date.now() - (rangeDays * 24 * 60 * 60 * 1000)).toISOString();
     const { data, error } = await db
       .from('site_visits')
-      .select('id, page, visited_at')
+      .select('id, page, visited_at, user_id')
+      .gte('visited_at', cutoff)
       .order('visited_at', { ascending: false })
-      .limit(2000);
+      .limit(rangeDays >= 60 ? 5000 : 3000);
     if (error) throw error;
     return data || [];
-  });
+  }, [rangeDays]);
+
+  const normalizePath = useCallback((p) => {
+    const raw = String(p || '/').trim() || '/';
+    if (raw.length > 180) return raw.slice(0, 177) + '...';
+    return raw;
+  }, []);
+
+  const isSuspiciousPath = useCallback((p) => {
+    const v = String(p || '').toLowerCase();
+    return (
+      v.indexOf('<') !== -1 ||
+      v.indexOf('>') !== -1 ||
+      v.indexOf('javascript:') !== -1 ||
+      v.indexOf('%3c') !== -1 ||
+      v.indexOf('%3e') !== -1 ||
+      v.indexOf('union%20select') !== -1 ||
+      v.indexOf('..') !== -1 ||
+      v.indexOf('script') !== -1
+    );
+  }, []);
 
   const stats = useMemo(() => {
-    if (!visits) return { byPage: {}, byDay: {}, total: 0 };
-    const byPage = {}, byDay = {};
+    if (!visits) return {
+      byPage: {}, byDay: {}, byHour: {}, total: 0, uniqueUsers: 0, anonymous: 0,
+      suspiciousCount: 0, suspiciousByPath: {}, previousWindowTotal: 0, peakHour: null,
+    };
+    const byPage = {}, byDay = {}, byHour = {}, suspiciousByPath = {};
+    const userSet = new Set();
+    const now = Date.now();
+    const currentWindowMs = rangeDays * 24 * 60 * 60 * 1000;
+    const prevStart = now - (currentWindowMs * 2);
+    const currStart = now - currentWindowMs;
+    let previousWindowTotal = 0;
+    let anonymous = 0;
+    let suspiciousCount = 0;
     visits.forEach(v => {
-      const p = v.page || '/';
+      const p = normalizePath(v.page || '/');
       byPage[p] = (byPage[p] || 0) + 1;
       const d = (v.visited_at || '').slice(0, 10);
       if (d) byDay[d] = (byDay[d] || 0) + 1;
+      const hr = (v.visited_at || '').slice(11, 13);
+      if (hr) byHour[hr] = (byHour[hr] || 0) + 1;
+      if (v.user_id) userSet.add(v.user_id);
+      else anonymous += 1;
+      if (isSuspiciousPath(p)) {
+        suspiciousCount += 1;
+        suspiciousByPath[p] = (suspiciousByPath[p] || 0) + 1;
+      }
+      const ts = Date.parse(v.visited_at || 0);
+      if (!isNaN(ts) && ts >= prevStart && ts < currStart) previousWindowTotal += 1;
     });
-    return { byPage, byDay, total: visits.length };
-  }, [visits]);
+    const peakHour = Object.entries(byHour).sort((a, b) => b[1] - a[1])[0] || null;
+    return {
+      byPage,
+      byDay,
+      byHour,
+      total: visits.length,
+      uniqueUsers: userSet.size,
+      anonymous: anonymous,
+      suspiciousCount,
+      suspiciousByPath,
+      previousWindowTotal,
+      peakHour,
+    };
+  }, [visits, rangeDays, normalizePath, isSuspiciousPath]);
 
-  const topPages   = Object.entries(stats.byPage).sort((a,b) => b[1]-a[1]).slice(0, 20);
-  const recentDays = Object.entries(stats.byDay).sort((a,b) => b[0].localeCompare(a[0])).slice(0, 14);
+  const topPages = useMemo(() => {
+    const q = pageQuery.trim().toLowerCase();
+    return Object.entries(stats.byPage)
+      .filter(([page]) => !q || page.toLowerCase().indexOf(q) !== -1)
+      .filter(([page]) => !showOnlySuspicious || isSuspiciousPath(page))
+      .sort((a,b) => b[1]-a[1])
+      .slice(0, 25);
+  }, [stats.byPage, pageQuery, showOnlySuspicious, isSuspiciousPath]);
+
+  const recentDays = Object.entries(stats.byDay).sort((a,b) => b[0].localeCompare(a[0])).slice(0, Math.min(rangeDays, 30));
   const maxDay     = Math.max(1, ...recentDays.map(([,v]) => v));
   const today      = new Date().toISOString().slice(0,10);
+  const previous = stats.previousWindowTotal || 0;
+  const deltaPct = previous > 0 ? Math.round(((stats.total - previous) / previous) * 100) : null;
+  const suspiciousTop = Object.entries(stats.suspiciousByPath).sort((a, b) => b[1] - a[1]).slice(0, 10);
+
+  function exportCsv() {
+    function csvSafe(value) {
+      var s = String(value == null ? '' : value);
+      if (/^[=\-+@]/.test(s)) s = "'" + s; // Prevent CSV formula injection when opened in spreadsheets.
+      return '"' + s.replace(/"/g, '""') + '"';
+    }
+    const rows = [['id', 'page', 'visited_at', 'user_id']]
+      .concat((visits || []).map(v => [
+        csvSafe(v.id || ''),
+        csvSafe(v.page || '/'),
+        csvSafe(v.visited_at || ''),
+        csvSafe(v.user_id || ''),
+      ]));
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'traffic-' + rangeDays + 'd.csv';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
 
   return (
     <div>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px'}}>
         <h1 style={{fontFamily:'Cinzel, serif',fontSize:'20px',fontWeight:600,letterSpacing:'1px'}}>Site Traffic</h1>
-        <button className="btn" onClick={refetch}><Icons.Refresh /> Refresh</button>
+        <div style={{display:'flex',gap:'8px'}}>
+          <button className="btn btn-sm" onClick={exportCsv}>Export CSV</button>
+          <button className="btn" onClick={refetch}><Icons.Refresh /> Refresh</button>
+        </div>
+      </div>
+
+      <div style={{display:'flex',gap:'12px',alignItems:'center',flexWrap:'wrap',marginBottom:'18px'}}>
+        <div className="filter-pills" style={{marginBottom:0}}>
+          {[7, 14, 30, 90].map((d) => (
+            <span key={d} className={`pill ${rangeDays===d?'active':''}`} onClick={() => setRangeDays(d)}>{d}d</span>
+          ))}
+        </div>
+        <div className="search-bar" style={{marginBottom:0,maxWidth:'320px'}}>
+          <Icons.Search />
+          <input placeholder="Filter page path..." value={pageQuery} onChange={e => setPageQuery(e.target.value)} />
+        </div>
+        <label style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'12px',color:'var(--text-muted)',cursor:'pointer'}}>
+          <input type="checkbox" checked={showOnlySuspicious} onChange={e => setShowOnlySuspicious(e.target.checked)} />
+          Suspicious paths only
+        </label>
       </div>
 
       {loading && <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)',fontFamily:'Spectral,serif'}}>Loading…</div>}
@@ -1308,7 +1404,7 @@ function TrafficPage() {
             <div className="stat-card">
               <div className="stat-label">Visits Tracked</div>
               <div className="stat-value">{stats.total}</div>
-              <div className="stat-sub">Most recent 2,000</div>
+              <div className="stat-sub">Last {rangeDays} days</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">Unique Pages</div>
@@ -1319,6 +1415,23 @@ function TrafficPage() {
               <div className="stat-label">Today</div>
               <div className="stat-value">{stats.byDay[today] || 0}</div>
               <div className="stat-sub">Page loads since midnight</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Logged Users</div>
+              <div className="stat-value">{stats.uniqueUsers}</div>
+              <div className="stat-sub">{stats.anonymous} anonymous visits</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Trend vs Prior Window</div>
+              <div className="stat-value">
+                {deltaPct == null ? 'N/A' : (deltaPct > 0 ? '+' : '') + deltaPct + '%'}
+              </div>
+              <div className="stat-sub">Compared with previous {rangeDays} days</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">Suspicious Paths</div>
+              <div className="stat-value">{stats.suspiciousCount}</div>
+              <div className="stat-sub">Potential probes / malformed URLs</div>
             </div>
           </div>
 
@@ -1340,7 +1453,7 @@ function TrafficPage() {
             </div>
 
             <div className="card">
-              <div className="card-header"><h2>Daily Visits — Last 14 Days</h2></div>
+              <div className="card-header"><h2>Daily Visits</h2></div>
               <div className="card-body" style={{padding:0}}>
                 {recentDays.length === 0 && <div className="empty-state"><p>No visit data yet.</p></div>}
                 {recentDays.map(([day, count]) => (
@@ -1350,6 +1463,41 @@ function TrafficPage() {
                       <div style={{height:'100%',width:`${Math.round(count/maxDay*100)}%`,background:'var(--crimson)',borderRadius:'3px'}} />
                     </div>
                     <span style={{fontSize:'12px',color:'var(--text-muted)',minWidth:'28px',textAlign:'right',flexShrink:0}}>{count}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px',marginTop:'16px'}}>
+            <div className="card">
+              <div className="card-header"><h2>Hourly Distribution (UTC)</h2></div>
+              <div className="card-body" style={{padding:0}}>
+                {Array.from({ length: 24 }).map((_, idx) => {
+                  const key = String(idx).padStart(2, '0');
+                  const count = stats.byHour[key] || 0;
+                  const peak = stats.peakHour ? stats.peakHour[1] : 1;
+                  return (
+                    <div key={key} style={{display:'flex',alignItems:'center',padding:'8px 24px',borderBottom:'1px solid var(--border-mid)',gap:'12px'}}>
+                      <span style={{fontSize:'12px',color:'var(--text-dim)',minWidth:'46px',flexShrink:0}}>{key}:00</span>
+                      <div style={{flex:1,height:'5px',background:'var(--bg)',borderRadius:'3px',overflow:'hidden'}}>
+                        <div style={{height:'100%',width:`${Math.round((count / Math.max(1, peak)) * 100)}%`,background:'var(--crimson)',borderRadius:'3px'}} />
+                      </div>
+                      <span style={{fontSize:'12px',color:'var(--text-muted)',minWidth:'28px',textAlign:'right',flexShrink:0}}>{count}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="card-header"><h2>Suspicious Path Watchlist</h2></div>
+              <div className="card-body" style={{padding:0}}>
+                {suspiciousTop.length === 0 && <div className="empty-state"><p>No suspicious path patterns detected.</p></div>}
+                {suspiciousTop.map(([path, count]) => (
+                  <div key={path} style={{display:'flex',alignItems:'center',padding:'10px 24px',borderBottom:'1px solid var(--border-mid)',gap:'12px'}}>
+                    <span className="mono" style={{fontSize:'11px',color:'var(--text)',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{path}</span>
+                    <span style={{fontSize:'12px',color:'var(--danger)',minWidth:'28px',textAlign:'right',flexShrink:0}}>{count}</span>
                   </div>
                 ))}
               </div>
@@ -1369,19 +1517,14 @@ function TrafficPage() {
 // SETTINGS PAGE
 // ═══════════════════════════════
 // ── Manage Admins card (used inside SettingsPage) ────────────────────────────
-function AdminKeySetupCard({ addToast }) {
+function AdminKeySetupCard({ addToast, canManageAdmins }) {
   const [storedHash, setStoredHash] = useState('');
   const [computedHash, setComputedHash] = useState('');
   const [keyImage, setKeyImage] = useState(null);
   const [status, setStatus] = useState('');
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem('phmurt_admin_key_hash');
-      setStoredHash(stored || 'Not configured');
-    } catch (e) {
-      setStoredHash('Error reading storage');
-    }
+    setStoredHash('Configured via EXPECTED_HASH in admin source');
   }, []);
 
   function computeDHash(imgEl) {
@@ -1426,31 +1569,32 @@ function AdminKeySetupCard({ addToast }) {
   }
 
   function saveKeyHash() {
+    if (!canManageAdmins) {
+      addToast('Only superusers can change the admin key hash.', 'error');
+      return;
+    }
     if (!computedHash) {
       addToast('No hash computed. Please upload an image first.', 'error');
       return;
     }
-    try {
-      localStorage.setItem('phmurt_admin_key_hash', computedHash);
-      setStoredHash(computedHash);
-      setComputedHash('');
-      setKeyImage(null);
-      setStatus('');
-      addToast('Admin key hash updated successfully.', 'success');
-    } catch (e) {
-      addToast('Failed to save hash: ' + e.message, 'error');
+    if (!navigator.clipboard || !navigator.clipboard.writeText) {
+      addToast('Clipboard access unavailable. Copy the hash manually from preview.', 'error');
+      return;
     }
+    navigator.clipboard.writeText(computedHash)
+      .then(() => addToast('Hash copied. Update EXPECTED_HASH in admin.html and redeploy.', 'success'))
+      .catch(() => addToast('Could not copy hash automatically. Copy it manually from the preview.', 'error'));
   }
 
   function clearKeyHash() {
-    if (!confirm('Clear the stored key hash? Admins will need to re-enter the image after page reload.')) return;
-    try {
-      localStorage.removeItem('phmurt_admin_key_hash');
-      setStoredHash('Not configured');
-      addToast('Admin key hash cleared.', 'success');
-    } catch (e) {
-      addToast('Failed to clear hash: ' + e.message, 'error');
+    if (!canManageAdmins) {
+      addToast('Only superusers can clear the admin key hash.', 'error');
+      return;
     }
+    setComputedHash('');
+    setKeyImage(null);
+    setStatus('');
+    addToast('Preview cleared.', 'info');
   }
 
   return (
@@ -1458,7 +1602,7 @@ function AdminKeySetupCard({ addToast }) {
       <div className="card-header"><h2>Admin Key Setup</h2></div>
       <div className="card-body">
         <p style={{fontSize:'13px',color:'var(--text-muted)',marginBottom:'20px',lineHeight:'1.7'}}>
-          Configure the admin access key image. All admins must upload this same image to access the admin panel. Upload a new image to update the hash across all admin accounts.
+          Generate a key image hash. To rotate the admin key, copy the new hash and replace <code style={{background:'var(--bg)',padding:'2px 6px',borderRadius:'3px',fontSize:'11px'}}>EXPECTED_HASH</code> in <code style={{background:'var(--bg)',padding:'2px 6px',borderRadius:'3px',fontSize:'11px'}}>admin.html</code>, then redeploy.
         </p>
 
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'20px',marginBottom:'24px'}}>
@@ -1480,7 +1624,7 @@ function AdminKeySetupCard({ addToast }) {
             <label style={{display:'block',border:'2px dashed var(--crimson-border)',borderRadius:'3px',padding:'20px',textAlign:'center',cursor:'pointer',transition:'all 0.2s',background:'var(--bg-input)'}}>
               <div style={{fontSize:'24px',marginBottom:'8px'}}>🖼</div>
               <div style={{fontSize:'12px',color:'var(--text-muted)',fontFamily:'Spectral,serif'}}>Click to upload image</div>
-              <input type="file" accept="image/*" onChange={handleImageUpload} style={{display:'none'}} />
+              <input type="file" accept="image/*" onChange={handleImageUpload} disabled={!canManageAdmins} style={{display:'none'}} />
             </label>
           </div>
         </div>
@@ -1505,7 +1649,7 @@ function AdminKeySetupCard({ addToast }) {
             <div style={{display:'flex',gap:'10px'}}>
               <button onClick={saveKeyHash}
                 style={{flex:1,padding:'10px',background:'var(--crimson)',color:'#f5f0e8',border:'none',fontFamily:'Cinzel,serif',fontSize:'11px',letterSpacing:'1.5px',textTransform:'uppercase',cursor:'pointer',borderRadius:'3px'}}>
-                Save Key Hash
+                Copy Hash
               </button>
               <button onClick={() => { setComputedHash(''); setKeyImage(null); setStatus(''); }}
                 style={{flex:1,padding:'10px',background:'transparent',color:'var(--text-muted)',border:'1px solid var(--border)',fontFamily:'Cinzel,serif',fontSize:'11px',letterSpacing:'1.5px',textTransform:'uppercase',cursor:'pointer',borderRadius:'3px'}}>
@@ -1519,7 +1663,7 @@ function AdminKeySetupCard({ addToast }) {
           <div style={{display:'flex',gap:'10px'}}>
             <button onClick={clearKeyHash}
               style={{flex:1,padding:'10px',background:'transparent',color:'var(--danger)',border:'1px solid rgba(212,67,58,0.3)',fontFamily:'Cinzel,serif',fontSize:'11px',letterSpacing:'1.5px',textTransform:'uppercase',cursor:'pointer',borderRadius:'3px'}}>
-              Clear Stored Hash
+              Clear Preview
             </button>
           </div>
         )}
@@ -1528,7 +1672,7 @@ function AdminKeySetupCard({ addToast }) {
   );
 }
 
-function ManageAdminsCard({ addToast }) {
+function ManageAdminsCard({ addToast, canManageAdmins }) {
   const [admins, setAdmins]     = useState([]);
   const [loading, setLoading]   = useState(true);
   const [email, setEmail]       = useState('');
@@ -1537,7 +1681,7 @@ function ManageAdminsCard({ addToast }) {
   function fetchAdmins() {
     if (!sb) { setLoading(false); return; }
     setLoading(true);
-    sb.from('profiles').select('id, name, email, is_admin, is_superuser')
+    sb.from('profiles').select('*')
       .eq('is_admin', true).order('email')
       .then(r => { setAdmins(r.data || []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -1545,6 +1689,7 @@ function ManageAdminsCard({ addToast }) {
   useEffect(() => { fetchAdmins(); }, []);
 
   async function grantAdmin() {
+    if (!canManageAdmins) { addToast('Only superusers can grant admin access.', 'error'); return; }
     if (!sb) { addToast('Supabase not configured.', 'error'); return; }
     const addr = email.trim().toLowerCase();
     if (!addr) { addToast('Enter an email address.', 'error'); return; }
@@ -1562,6 +1707,7 @@ function ManageAdminsCard({ addToast }) {
   }
 
   async function revokeAdmin(user) {
+    if (!canManageAdmins) { addToast('Only superusers can revoke admin access.', 'error'); return; }
     if (!sb) return;
     if (!confirm('Remove admin access from ' + user.email + '?')) return;
     const { error } = await sb.from('profiles').update({ is_admin: false }).eq('id', user.id);
@@ -1588,8 +1734,8 @@ function ManageAdminsCard({ addToast }) {
                   style={{width:'100%',padding:'9px 12px',background:'var(--bg-input)',border:'1px solid var(--border)',color:'var(--text)',fontFamily:'Spectral,serif',fontSize:'13px',borderRadius:'3px',outline:'none'}}
                 />
               </div>
-              <button onClick={grantAdmin} disabled={working || !email.trim()}
-                style={{padding:'9px 20px',background:'var(--crimson)',color:'#f5f0e8',border:'none',fontFamily:'Cinzel,serif',fontSize:'11px',letterSpacing:'1.5px',textTransform:'uppercase',cursor:'pointer',borderRadius:'3px',opacity:(working||!email.trim())?0.5:1,whiteSpace:'nowrap'}}>
+              <button onClick={grantAdmin} disabled={!canManageAdmins || working || !email.trim()}
+                style={{padding:'9px 20px',background:'var(--crimson)',color:'#f5f0e8',border:'none',fontFamily:'Cinzel,serif',fontSize:'11px',letterSpacing:'1.5px',textTransform:'uppercase',cursor:'pointer',borderRadius:'3px',opacity:(!canManageAdmins||working||!email.trim())?0.5:1,whiteSpace:'nowrap'}}>
                 {working ? 'Granting…' : 'Grant Admin'}
               </button>
             </div>
@@ -1636,7 +1782,7 @@ function ManageAdminsCard({ addToast }) {
   );
 }
 
-function SettingsPage({ addToast }) {
+function SettingsPage({ addToast, canManageAdmins }) {
   const sbConfigured = !!sb;
 
   return (
@@ -1660,11 +1806,12 @@ function SettingsPage({ addToast }) {
           <div className="card-header"><h2>Admin Access</h2></div>
           <div className="card-body">
             <p style={{fontSize:'13px',color:'var(--text-muted)',lineHeight:'1.7',marginBottom:'16px'}}>
-              Admin access is controlled by the email list in the gate script at the top of this file and in <code style={{background:'var(--bg)',padding:'2px 6px',borderRadius:'3px',fontSize:'11px'}}>phmurt-auth.js</code>.
+              Admin access is controlled by <code style={{background:'var(--bg)',padding:'2px 6px',borderRadius:'3px',fontSize:'11px'}}>profiles.is_admin</code> / <code style={{background:'var(--bg)',padding:'2px 6px',borderRadius:'3px',fontSize:'11px'}}>profiles.is_superuser</code> in Supabase. Email allowlist fallback is disabled for tighter security.
             </p>
             {[
-              { label: '2-Factor Gate', desc: 'Image hash + account sign-in required', on: true },
-              { label: 'Session Cookies', desc: 'Auth persists via 30-day cookie backup', on: true },
+              { label: '2-Factor Gate', desc: 'Image key + account role verification required', on: true },
+              { label: 'Supabase Role Checks', desc: 'Admin/superuser flags validated before access', on: sbConfigured },
+              { label: 'Sign-in Throttling', desc: 'Temporary lock after repeated failed attempts', on: true },
               { label: 'Cloud Sync', desc: 'Characters & campaigns synced to Supabase', on: sbConfigured },
               { label: 'Visit Tracking', desc: 'Page loads logged to site_visits table', on: sbConfigured },
             ].map((s, i) => (
@@ -1679,9 +1826,9 @@ function SettingsPage({ addToast }) {
           </div>
         </div>
 
-        <ManageAdminsCard addToast={addToast} />
+        <ManageAdminsCard addToast={addToast} canManageAdmins={canManageAdmins} />
 
-        <AdminKeySetupCard addToast={addToast} />
+        <AdminKeySetupCard addToast={addToast} canManageAdmins={canManageAdmins} />
 
         <div className="card" style={{gridColumn:'1 / -1'}}>
           <div className="card-header"><h2>Database Schema</h2></div>
@@ -1696,14 +1843,15 @@ create table if not exists public.profiles (
   name       text,
   email      text,
   is_admin   boolean default false,
+  is_superuser boolean default false,
   is_banned  boolean default false,
   created_at timestamptz default now()
 );
 alter table public.profiles enable row level security;
-create policy "Public read"   on public.profiles for select using (true);
-create policy "Own update"    on public.profiles for update using (auth.uid() = id);
-create policy "Admin all"     on public.profiles for all using (
-  exists (select 1 from public.profiles where id = auth.uid() and is_admin = true));
+create policy "Self read"     on public.profiles for select using (auth.uid() = id);
+create policy "Self update"   on public.profiles for update using (auth.uid() = id);
+create policy "Superuser all" on public.profiles for all using (
+  exists (select 1 from public.profiles where id = auth.uid() and is_superuser = true));
 
 -- characters
 create table if not exists public.characters (
@@ -1716,6 +1864,10 @@ create table if not exists public.characters (
 );
 alter table public.characters enable row level security;
 create policy "Own access" on public.characters for all using (auth.uid() = owner_id);
+create policy "Admin read" on public.characters for select using (
+  exists (select 1 from public.profiles where id = auth.uid() and (is_admin = true or is_superuser = true)));
+create policy "Superuser delete" on public.characters for delete using (
+  exists (select 1 from public.profiles where id = auth.uid() and is_superuser = true));
 
 -- campaigns
 create table if not exists public.campaigns (
@@ -1727,6 +1879,10 @@ create table if not exists public.campaigns (
 );
 alter table public.campaigns enable row level security;
 create policy "Own access" on public.campaigns for all using (auth.uid() = owner_id);
+create policy "Admin read" on public.campaigns for select using (
+  exists (select 1 from public.profiles where id = auth.uid() and (is_admin = true or is_superuser = true)));
+create policy "Superuser delete" on public.campaigns for delete using (
+  exists (select 1 from public.profiles where id = auth.uid() and is_superuser = true));
 
 -- site_visits
 create table if not exists public.site_visits (
@@ -1738,7 +1894,7 @@ create table if not exists public.site_visits (
 alter table public.site_visits enable row level security;
 create policy "Anon insert" on public.site_visits for insert with check (true);
 create policy "Admin read"  on public.site_visits for select using (
-  exists (select 1 from public.profiles where id = auth.uid() and is_admin = true));
+  exists (select 1 from public.profiles where id = auth.uid() and (is_admin = true or is_superuser = true)));
 
 -- auto-create profile on signup
 create or replace function public.handle_new_user()
@@ -1767,6 +1923,7 @@ function AdminApp() {
   const [page, setPage] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toasts, setToasts] = useState([]);
+  const [viewer, setViewer] = useState(null);
   const toastId = useRef(0);
 
   const addToast = useCallback((message, type = 'info') => {
@@ -1774,6 +1931,33 @@ function AdminApp() {
     setToasts(prev => [...prev, { id, message, type }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000);
   }, []);
+
+  useEffect(() => {
+    if (!sb || !sb.auth) return;
+    sb.auth.getSession()
+      .then(({ data }) => {
+        const user = data && data.session && data.session.user;
+        if (!user) return;
+        return sb.from('profiles')
+          .select('*')
+          .eq('id', user.id)
+          .maybeSingle()
+          .then(({ data: profile }) => {
+            const email = (profile && profile.email) || user.email || '';
+            const name = (profile && profile.name) || (user.user_metadata && user.user_metadata.name) || (email ? email.split('@')[0] : 'Admin');
+            setViewer({
+              id: user.id,
+              email: email,
+              name: name,
+              isAdmin: !!(profile && profile.is_admin),
+              isSuperuser: !!(profile && profile.is_superuser),
+            });
+          });
+      })
+      .catch(() => {});
+  }, []);
+
+  const canManageAdmins = !!(viewer && viewer.isSuperuser);
 
   const navItems = [
     { section: 'Overview' },
@@ -1791,11 +1975,11 @@ function AdminApp() {
   const renderPage = () => {
     switch(page) {
       case 'dashboard':  return <DashboardPage onNavigate={setPage} />;
-      case 'users':      return <UsersPage addToast={addToast} />;
-      case 'characters': return <CharactersPage addToast={addToast} />;
-      case 'campaigns':  return <CampaignsPage addToast={addToast} />;
+      case 'users':      return <UsersPage addToast={addToast} canManageAdmins={canManageAdmins} />;
+      case 'characters': return <CharactersPage addToast={addToast} canDeleteContent={canManageAdmins} />;
+      case 'campaigns':  return <CampaignsPage addToast={addToast} canDeleteContent={canManageAdmins} />;
       case 'traffic':    return <TrafficPage />;
-      case 'settings':   return <SettingsPage addToast={addToast} />;
+      case 'settings':   return <SettingsPage addToast={addToast} canManageAdmins={canManageAdmins} />;
       default:           return <DashboardPage onNavigate={setPage} />;
     }
   };
@@ -1864,8 +2048,13 @@ function AdminApp() {
               <Icons.Moon />
             </button>
             <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-              <div style={{width:'28px',height:'28px',borderRadius:'50%',background:'var(--crimson)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',fontFamily:'Cinzel',color:'#f5f0e8'}}>A</div>
-              <span style={{fontSize:'13px'}}>Aaron M.</span>
+              <div style={{width:'28px',height:'28px',borderRadius:'50%',background:'var(--crimson)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',fontFamily:'Cinzel',color:'#f5f0e8'}}>
+                {((viewer && viewer.name) ? viewer.name : 'Admin').charAt(0).toUpperCase()}
+              </div>
+              <span style={{fontSize:'13px'}}>
+                {(viewer && viewer.name) || 'Admin'}
+                {(viewer && viewer.isSuperuser) ? ' (Superuser)' : ''}
+              </span>
             </div>
           </div>
         </div>

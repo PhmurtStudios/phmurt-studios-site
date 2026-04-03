@@ -564,7 +564,9 @@ var C35 = {
   selectedCantrips: [], selectedSpells: [],
   details: {},
   level: 1, rollLog: [],
-  hpRolls: [12], levelUpSkills: {}, levelUpFeats: [], levelUpAbilityBoosts: []
+  hpRolls: [12], levelUpSkills: {}, levelUpFeats: [], levelUpAbilityBoosts: [],
+  classes: [],
+  levelHistory: []
 };
 
 var STANDARD_ARRAY35 = [15,14,13,12,10,8];
@@ -577,63 +579,168 @@ var slots35Used = {};
 // ── UTILS ──
 function mod35(s) { return Math.floor(((parseInt(s)||8)-10)/2); }
 function ms35(s) { var m = mod35(s); return (m>=0?'+':'')+m; }
+function ensureClasses35() {
+  if (!Array.isArray(C35.classes) || !C35.classes.length) {
+    var fallbackCls = C35.cls || null;
+    var fallbackLevel = Math.max(1, parseInt(C35.level) || 1);
+    C35.classes = fallbackCls ? [{ cls: fallbackCls, level: fallbackLevel }] : [];
+  }
+  if (!Array.isArray(C35.levelHistory) || !C35.levelHistory.length) {
+    C35.levelHistory = [];
+    C35.classes.forEach(function(entry) {
+      var lv = Math.max(0, parseInt(entry.level) || 0);
+      for (var i = 0; i < lv; i++) C35.levelHistory.push(entry.cls);
+    });
+  }
+  var computed = C35.classes.reduce(function(acc, entry){ return acc + (parseInt(entry.level) || 0); }, 0);
+  C35.level = Math.max(1, computed || parseInt(C35.level) || 1);
+  if (!C35.cls && C35.classes[0]) C35.cls = C35.classes[0].cls;
+}
+function totalLevel35() {
+  ensureClasses35();
+  return C35.level;
+}
+function classLevel35(clsKey) {
+  ensureClasses35();
+  var row = C35.classes.find(function(c){ return c.cls === clsKey; });
+  return row ? (parseInt(row.level) || 0) : 0;
+}
+function primaryClass35() {
+  ensureClasses35();
+  return C35.cls || (C35.classes[0] && C35.classes[0].cls) || null;
+}
+function activeSpellClass35() {
+  ensureClasses35();
+  var explicit = primaryClass35();
+  if (explicit && DND35_DATA.classes[explicit] && DND35_DATA.classes[explicit].spellcastingAbility) return explicit;
+  var casters = C35.classes.filter(function(entry){
+    var d = DND35_DATA.classes[entry.cls];
+    return d && d.spellcastingAbility;
+  }).sort(function(a,b){ return (b.level||0) - (a.level||0); });
+  return casters[0] ? casters[0].cls : explicit;
+}
+function classBreakdownText35() {
+  ensureClasses35();
+  return C35.classes
+    .map(function(entry){
+      var d = DND35_DATA.classes[entry.cls];
+      return (d ? d.name : entry.cls) + ' ' + entry.level;
+    })
+    .join(' / ');
+}
+function favoredClass35() {
+  if (!C35.race) return null;
+  var race = DND35_DATA.races[C35.race] || {};
+  return race.favoredClass || null;
+}
+function multiclassPenalty35() {
+  ensureClasses35();
+  if (!C35.classes || C35.classes.length <= 1) return { applies: false, reason: '' };
+  var favored = favoredClass35();
+  if (favored === 'any') return { applies: false, reason: '' };
+  var tracked = C35.classes.filter(function(entry){
+    if (!entry || !entry.cls) return false;
+    if (!entry.level || entry.level <= 0) return false;
+    if (favored && entry.cls === favored) return false;
+    return true;
+  });
+  if (tracked.length <= 1) return { applies: false, reason: '' };
+  var levels = tracked.map(function(e){ return parseInt(e.level) || 0; });
+  var minLv = Math.min.apply(null, levels);
+  var maxLv = Math.max.apply(null, levels);
+  if ((maxLv - minLv) > 1) {
+    return { applies: true, reason: 'Non-favored classes differ by more than 1 level.' };
+  }
+  return { applies: false, reason: '' };
+}
+function meetsMulticlassPrereq35(clsKey) {
+  var req = DND35_DATA.multiclassPrereqs && DND35_DATA.multiclassPrereqs[clsKey];
+  if (!req) return true;
+  return Object.keys(req).every(function(ability){
+    return ts35(ability) >= req[ability];
+  });
+}
+function isClassSkillAny35(skillName) {
+  ensureClasses35();
+  return C35.classes.some(function(entry){
+    var cls = DND35_DATA.classes[entry.cls];
+    return cls && cls.classSkills && cls.classSkills.includes(skillName);
+  });
+}
 function ts35(a) {
   var base = C35.abilities[a]||8;
   if (!C35.race) return base;
   return base + (DND35_DATA.races[C35.race].asi[a]||0);
 }
 function bab35() {
-  if (!C35.cls) return 0;
-  var cls = DND35_DATA.classes[C35.cls];
-  var babData = DND35_DATA.babProgression[C35.level];
-  if (!babData) return 0;
-  var progType = cls.babProg;
-  return babData[progType] ? babData[progType][0] : 0;
+  ensureClasses35();
+  var total = 0;
+  C35.classes.forEach(function(entry){
+    var cls = DND35_DATA.classes[entry.cls];
+    if (!cls) return;
+    var lvl = parseInt(entry.level) || 0;
+    if (lvl <= 0) return;
+    var babData = DND35_DATA.babProgression[lvl];
+    if (!babData || !babData[cls.babProg]) return;
+    total += parseInt(babData[cls.babProg][0]) || 0;
+  });
+  return total;
 }
 function save35(type) {
-  if (!C35.cls) return 0;
-  var cls = DND35_DATA.classes[C35.cls];
-  var isGood = cls.goodSaves.includes(type);
+  ensureClasses35();
+  if (!C35.classes.length) return 0;
+  var base = 0;
+  C35.classes.forEach(function(entry){
+    var cls = DND35_DATA.classes[entry.cls];
+    if (!cls) return;
+    var lvl = parseInt(entry.level) || 0;
+    if (lvl <= 0) return;
+    var isGood = cls.goodSaves.includes(type);
+    var arr = isGood ? DND35_DATA.saveProgression.good : DND35_DATA.saveProgression.poor;
+    base += parseInt(arr[lvl - 1]) || 0;
+  });
   var abilMap = {fort:'con',ref:'dex',will:'wis'};
-  var baseSave = isGood ? DND35_DATA.saveProgression.good[C35.level-1] : DND35_DATA.saveProgression.poor[C35.level-1];
-  return baseSave + mod35(ts35(abilMap[type]));
+  return base + mod35(ts35(abilMap[type]));
 }
 function spTotal35() {
-  if (!C35.cls) return 0;
-  var cls = DND35_DATA.classes[C35.cls];
-  var pts = Math.max(1, cls.skillPoints + mod35(ts35('int')));
-  pts *= 4;
-  if (C35.race === 'human') pts += 4;
-  for (var i = 2; i <= C35.level; i++) {
+  ensureClasses35();
+  if (!C35.levelHistory.length) return 0;
+  var pts = 0;
+  for (var i = 0; i < C35.levelHistory.length; i++) {
+    var clsKey = C35.levelHistory[i];
+    var cls = DND35_DATA.classes[clsKey];
+    if (!cls) continue;
     var perLevel = Math.max(1, cls.skillPoints + mod35(ts35('int')));
     if (C35.race === 'human') perLevel += 1;
+    if (i === 0) perLevel *= 4;
     pts += perLevel;
   }
   return Math.max(pts, 4);
 }
 function spSpent35() {
   var spent = 0;
-  var cls = C35.cls ? DND35_DATA.classes[C35.cls] : null;
   Object.entries(C35.skillRanks).forEach(function(kv) {
     var id = kv[0]; var ranks = parseInt(kv[1])||0;
     if (ranks <= 0) return;
-    var isClass = cls && cls.classSkills.includes(DND35_DATA.skills[id].name);
+    var isClass = isClassSkillAny35(DND35_DATA.skills[id].name);
     spent += isClass ? ranks : ranks * 2;
   });
   return spent;
 }
 function maxRank35(isClass) {
-  var max = C35.level + 3;
+  var max = totalLevel35() + 3;
   return isClass ? max : Math.floor(max / 2);
 }
 function featCount35() {
+  ensureClasses35();
   var n = 0;
   DND35_DATA.featLevels.forEach(function(lvl) {
-    if (lvl <= C35.level) n++;
+    if (lvl <= totalLevel35()) n++;
   });
   if (C35.race === 'human') n++;
+  var fighterLevel = classLevel35('fighter');
   DND35_DATA.fighterBonusFeatLevels.forEach(function(lvl) {
-    if (lvl <= C35.level && C35.cls === 'fighter') n++;
+    if (lvl <= fighterLevel) n++;
   });
   return n;
 }
@@ -730,6 +837,14 @@ var classFlavorTexts35 = {
   sorcerer: "Wild magic unleashed within",
   wizard: "Master of arcane knowledge"
 };
+function esc35(v) {
+  return String(v == null ? '' : v)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
 
 function renderRaces35() {
   var c = document.getElementById('raceCards35'); c.innerHTML = '';
@@ -740,7 +855,7 @@ function renderRaces35() {
     d.onclick = function() { selectRace35(id); };
     var asi = Object.entries(race.asi).map(function(e) { return DND35_DATA.abilityShort[e[0]]+(e[1]>0?'+':'')+e[1]; }).join(', ')||'No ASI';
     var flavor = raceFlavorTexts35[id] || '';
-    d.innerHTML = '<div class="cb-card-name">'+race.name+'</div><div class="cb-card-detail">'+(flavor?'<div style="font-size:12px;margin-bottom:6px;color:var(--crimson);">'+flavor+'</div>':'')+asi+' · '+race.size+' · '+race.speed+' ft</div>';
+    d.innerHTML = '<div class="cb-card-name">'+esc35(race.name)+'</div><div class="cb-card-detail">'+(flavor?'<div style="font-size:12px;margin-bottom:6px;color:var(--crimson);">'+esc35(flavor)+'</div>':'')+esc35(asi)+' · '+esc35(race.size)+' · '+esc35(race.speed)+' ft</div>';
     c.appendChild(d);
   });
 }
@@ -761,11 +876,14 @@ function renderRaceDetail35(id) {
   var badges = Object.entries(race.asi).map(function(e) {
     return '<span class="cb-asi-badge">'+DND35_DATA.abilityShort[e[0]]+(e[1]>0?'+':'')+e[1]+'</span>';
   }).join('');
-  var html = '<div class="cb-detail"><div class="cb-detail-title">'+race.name+'</div>';
-  html += '<div class="cb-detail-sub">'+race.size+' · '+race.speed+' ft · '+race.languages.join(', ')+'</div>';
+  var html = '<div class="cb-detail"><div class="cb-detail-title">'+esc35(race.name)+'</div>';
+  html += '<div class="cb-detail-sub">'+esc35(race.size)+' · '+esc35(race.speed)+' ft · '+esc35(race.languages.join(', '))+'</div>';
+  if (race.favoredClass) {
+    html += '<div class="cb-alert" style="margin:8px 0 14px;"><strong>Favored Class:</strong> '+esc35(race.favoredClass==='any'?'Any':(DND35_DATA.classes[race.favoredClass]?DND35_DATA.classes[race.favoredClass].name:race.favoredClass))+' (no XP penalty for this class mix).</div>';
+  }
   html += '<div class="cb-asi-badges">'+badges+'</div><div class="cb-detail-body">';
   race.traits.forEach(function(t) {
-    html += '<div class="cb-trait"><div class="cb-trait-name">'+t.name+'</div><div class="cb-trait-desc">'+t.desc+'</div></div>';
+    html += '<div class="cb-trait"><div class="cb-trait-name">'+esc35(t.name)+'</div><div class="cb-trait-desc">'+esc35(t.desc)+'</div></div>';
   });
   html += '</div></div>';
   document.getElementById('raceDetail35').innerHTML = html;
@@ -781,18 +899,27 @@ function renderClasses35() {
     d.onclick = function() { selectClass35(id); };
     var bab = cls.babProg==='good'?'Good BAB':cls.babProg==='medium'?'Med BAB':'Poor BAB';
     var flavor = classFlavorTexts35[id] || '';
-    d.innerHTML = '<div class="cb-card-name">'+cls.name+'</div><div class="cb-card-detail">'+(flavor?'<div style="font-size:12px;margin-bottom:6px;color:var(--crimson);">'+flavor+'</div>':'')+' d'+cls.hitDie+' HD · '+bab+' · '+cls.skillPoints+'+INT skills</div><div class="cb-card-badge">'+cls.primaryAbility.toUpperCase()+'</div>';
+    d.innerHTML = '<div class="cb-card-name">'+esc35(cls.name)+'</div><div class="cb-card-detail">'+(flavor?'<div style="font-size:12px;margin-bottom:6px;color:var(--crimson);">'+esc35(flavor)+'</div>':'')+' d'+cls.hitDie+' HD · '+esc35(bab)+' · '+cls.skillPoints+'+INT skills</div><div class="cb-card-badge">'+esc35(cls.primaryAbility.toUpperCase())+'</div>';
     c.appendChild(d);
   });
 }
 function selectClass35(id) {
   C35.cls = id; C35.skillRanks = {}; C35.equipChoices = {}; C35.weaponChoices = {};
+  C35.classes = [{ cls: id, level: 1 }];
+  C35.levelHistory = [id];
+  C35.level = 1;
+  var firstLevelHP = (DND35_DATA.classes[id] ? DND35_DATA.classes[id].hitDie : 8) + mod35(ts35('con'));
+  if (firstLevelHP < 1) firstLevelHP = 1;
+  C35.hpRolls = [firstLevelHP];
+  C35.selectedCantrips = [];
+  C35.selectedSpells = [];
+  C35.spellsByLevel = {};
   document.querySelectorAll('#classCards35 .cb-card').forEach(function(c,i) {
     c.classList.toggle('selected', Object.keys(DND35_DATA.classes)[i]===id);
   });
   document.getElementById('sl35-class').textContent = DND35_DATA.classes[id].name;
   var step8 = document.getElementById('step35-8');
-  if (step8) step8.style.opacity = DND35_DATA.classes[id].spellcastingAbility ? '1' : '0.4';
+  if (step8) step8.style.opacity = activeSpellClass35() && DND35_DATA.classes[activeSpellClass35()] && DND35_DATA.classes[activeSpellClass35()].spellcastingAbility ? '1' : '0.4';
   renderClassDetail35(id); updateMini35();
 }
 function renderClassDetail35(id) {
@@ -805,13 +932,19 @@ function renderClassDetail35(id) {
   var fort = cls.goodSaves.includes('fort')?'Good':'Poor';
   var ref = cls.goodSaves.includes('ref')?'Good':'Poor';
   var will = cls.goodSaves.includes('will')?'Good':'Poor';
-  var html = '<div class="cb-detail"><div class="cb-detail-title">'+cls.name+'</div>';
+  var html = '<div class="cb-detail"><div class="cb-detail-title">'+esc35(cls.name)+'</div>';
   html += '<div class="cb-detail-sub">d'+cls.hitDie+' HD · BAB '+bab+' · Fort '+fort+' · Ref '+ref+' · Will '+will+'</div>';
   html += '<div class="cb-detail-body">';
-  html += '<div class="cb-trait"><div class="cb-trait-name">Class Skills ('+cls.skillPoints+'+INT per level)</div><div class="cb-trait-desc">'+cls.classSkills.join(', ')+'</div></div>';
-  html += '<div class="cb-trait"><div class="cb-trait-name">Armor Proficiencies</div><div class="cb-trait-desc">'+(cls.armorProf.join(', ')||'None')+'</div></div>';
+  html += '<div class="cb-trait"><div class="cb-trait-name">Class Skills ('+cls.skillPoints+'+INT per level)</div><div class="cb-trait-desc">'+esc35(cls.classSkills.join(', '))+'</div></div>';
+  html += '<div class="cb-trait"><div class="cb-trait-name">Armor Proficiencies</div><div class="cb-trait-desc">'+esc35(cls.armorProf.join(', ')||'None')+'</div></div>';
+  if (DND35_DATA.multiclassPrereqs && DND35_DATA.multiclassPrereqs[id]) {
+    var reqTxt = Object.keys(DND35_DATA.multiclassPrereqs[id]).map(function(ab){
+      return DND35_DATA.abilityShort[ab] + ' ' + DND35_DATA.multiclassPrereqs[id][ab];
+    }).join(', ');
+    html += '<div class="cb-trait"><div class="cb-trait-name">Multiclass Guidance</div><div class="cb-trait-desc">'+esc35(reqTxt)+'</div></div>';
+  }
   cls.features.forEach(function(f) {
-    html += '<div class="cb-trait"><div class="cb-trait-name">Level '+f.level+': '+f.name+'</div><div class="cb-trait-desc">'+f.desc+'</div></div>';
+    html += '<div class="cb-trait"><div class="cb-trait-name">Level '+f.level+': '+esc35(f.name)+'</div><div class="cb-trait-desc">'+esc35(f.desc)+'</div></div>';
   });
   html += '</div></div>';
   document.getElementById('classDetail35').innerHTML = html;
@@ -976,11 +1109,13 @@ function renderSkills35() {
   document.getElementById('sp35Remaining').textContent = rem;
   document.getElementById('sp35Remaining').style.color = rem<0?'var(--crimson)':rem===0?'#4eda80':'';
   var alert35 = document.getElementById('skillAlert35');
-  if (cls) alert35.innerHTML = '<strong>'+cls.name+'</strong> gets <strong>'+(cls.skillPoints)+'+INT modifier</strong> skill points per level (×4 at 1st level). Class skills cost 1 pt/rank (max 4). Cross-class cost 2 pts/rank (max 2). <em>Trained-only skills (†) require at least 1 rank.</em>';
+  var classMax = totalLevel35() + 3;
+  var crossMax = Math.floor(classMax / 2);
+  if (cls) alert35.innerHTML = '<strong>'+cls.name+'</strong> gets <strong>'+(cls.skillPoints)+'+INT modifier</strong> skill points per level (×4 at 1st level). Class skills cost 1 pt/rank (max '+classMax+'). Cross-class cost 2 pts/rank (max '+crossMax+'). <em>Trained-only skills (†) require at least 1 rank.</em>';
   var tbody = document.getElementById('skillRows35'); tbody.innerHTML = '';
   Object.entries(DND35_DATA.skills).forEach(function(kv) {
     var id = kv[0]; var skill = kv[1];
-    var isClass = cls && cls.classSkills.includes(skill.name);
+    var isClass = isClassSkillAny35(skill.name);
     var ranks = parseInt(C35.skillRanks[id])||0;
     var max = maxRank35(isClass);
     var abilMod = mod35(ts35(skill.ability));
@@ -1000,8 +1135,7 @@ function renderSkills35() {
   });
 }
 function setRank35(id, val) {
-  var cls = C35.cls ? DND35_DATA.classes[C35.cls] : null;
-  var isClass = cls && cls.classSkills.includes(DND35_DATA.skills[id].name);
+  var isClass = isClassSkillAny35(DND35_DATA.skills[id].name);
   var max = maxRank35(isClass);
   var ranks = Math.max(0, Math.min(max, parseInt(val)||0));
   C35.skillRanks[id] = ranks;
@@ -1013,18 +1147,20 @@ function setRank35(id, val) {
 
 // ── STEP 6: FEATS ──
 function renderFeats35() {
+  ensureClasses35();
   var count = featCount35();
+  var fighterBonusCount = DND35_DATA.fighterBonusFeatLevels.filter(function(lvl){ return lvl <= classLevel35('fighter'); }).length;
   document.getElementById('featInfo35').innerHTML =
     '<strong>Choose '+count+' feat'+(count>1?'s':'')+'</strong>. '+C35.selectedFeats.length+'/'+count+' selected.'+
     (C35.race==='human'?' Includes Human bonus feat.':'')+
-    (C35.cls==='fighter'?' Includes Fighter bonus combat feat.':'');
+    (fighterBonusCount>0?' Includes Fighter bonus combat feat progression.':'');
   var list = document.getElementById('featList35'); list.innerHTML = '';
   DND35_DATA.feats.forEach(function(feat) {
     var isSel = C35.selectedFeats.includes(feat.name);
     var d = document.createElement('div');
     d.className = 't35-feat'+(isSel?' selected':'');
     d.onclick = function() { toggleFeat35(feat.name, count); };
-    d.innerHTML = '<div class="t35-feat-name">'+feat.name+'</div><div class="t35-feat-prereq">Prereq: '+feat.prereq+'</div><div class="t35-feat-desc">'+feat.desc+'</div>';
+    d.innerHTML = '<div class="t35-feat-name">'+esc35(feat.name)+'</div><div class="t35-feat-prereq">Prereq: '+esc35(feat.prereq)+'</div><div class="t35-feat-desc">'+esc35(feat.desc)+'</div>';
     list.appendChild(d);
   });
 }
@@ -1047,7 +1183,7 @@ function renderEquipment35() {
     if (!Array.isArray(choice)||choice.length===0) return;
     if (choice.length===1) {
       var d = document.createElement('div'); d.className = 'cb-equip-choice';
-      d.innerHTML = '<div class="cb-equip-label">Always Included</div><div style="font-size:15px;color:var(--text-muted);font-style:italic;padding:4px 0;">✓ '+choice[0]+'</div>';
+      d.innerHTML = '<div class="cb-equip-label">Always Included</div><div style="font-size:15px;color:var(--text-muted);font-style:italic;padding:4px 0;">✓ '+esc35(choice[0])+'</div>';
       fixed.appendChild(d);
     } else {
       var idx = ci;
@@ -1064,15 +1200,15 @@ function renderEquipment35() {
           weapDrop = '<div style="margin-top:12px;"><div style="font-family:\'Cinzel\',serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);margin-bottom:8px;">Choose Specific Weapon</div>'+
             '<select style="background:var(--bg-input);border:1px solid rgba(212,67,58,0.3);color:var(--white);font-family:\'Spectral\',serif;font-size:14px;padding:7px 10px;width:100%;" onchange="if(!C35.weaponChoices)C35.weaponChoices={};C35.weaponChoices[\''+wKey+'\']=this.value;renderEquipment35();">'+
             '<option value="">Select a weapon...</option>'+
-            allW.map(function(w){return '<option value="'+w.name+'" '+(curW===w.name?'selected':'')+'>'+w.name+' — '+w.damage+' '+w.type+'</option>';}).join('')+
-            '</select>'+(curW?'<div style="font-size:12px;color:var(--text-muted);margin-top:5px;">✓ '+curW+'</div>':'')+
+            allW.map(function(w){return '<option value="'+esc35(w.name)+'" '+(curW===w.name?'selected':'')+'>'+esc35(w.name)+' — '+esc35(w.damage)+' '+esc35(w.type)+'</option>';}).join('')+
+            '</select>'+(curW?'<div style="font-size:12px;color:var(--text-muted);margin-top:5px;">✓ '+esc35(curW)+'</div>':'')+
             '</div>';
         }
       }
       d2.innerHTML = '<div class="cb-equip-label" style="'+(req?'color:var(--crimson);':'')+'">'+
         (req?'⚠ ':'')+'Choice '+(idx+1)+'. Pick One'+(req?' (Required)':'')+'</div>'+
         '<div class="cb-equip-options">'+choice.map(function(opt,j){
-          return '<div class="cb-equip-option'+(C35.equipChoices[idx]===j?' selected':'')+'" onclick="C35.equipChoices['+idx+']='+j+';C35.weaponChoices={};renderEquipment35();">'+(C35.equipChoices[idx]===j?'✓ ':'')+opt+'</div>';
+          return '<div class="cb-equip-option'+(C35.equipChoices[idx]===j?' selected':'')+'" onclick="C35.equipChoices['+idx+']='+j+';C35.weaponChoices={};renderEquipment35();">'+(C35.equipChoices[idx]===j?'✓ ':'')+esc35(opt)+'</div>';
         }).join('')+'</div>'+weapDrop;
       cont.appendChild(d2);
       ci++;
@@ -1082,14 +1218,15 @@ function renderEquipment35() {
 
 // ── STEP 8: SPELLS ──
 function renderSpells35() {
-  var cls = C35.cls ? DND35_DATA.classes[C35.cls] : null;
+  var spellClsKey = activeSpellClass35();
+  var cls = spellClsKey ? DND35_DATA.classes[spellClsKey] : null;
   var title = document.getElementById('spellTitle35');
   var sub = document.getElementById('spellSub35');
   var nextBtn = document.getElementById('spellNextBtn35');
   var cont = document.getElementById('spellsContent35');
-  var lvl = C35.level || 1;
-  var isPreparedCaster = (C35.cls==='cleric'||C35.cls==='druid');
-  var isHalfCaster = (C35.cls==='paladin'||C35.cls==='ranger');
+  var lvl = spellClsKey ? classLevel35(spellClsKey) : (C35.level || 1);
+  var isPreparedCaster = (spellClsKey==='cleric'||spellClsKey==='druid');
+  var isHalfCaster = (spellClsKey==='paladin'||spellClsKey==='ranger');
 
   // Check if class has spells at current level
   var hasSpellsAtLevel = cls && cls.spellcastingAbility;
@@ -1105,13 +1242,13 @@ function renderSpells35() {
   if (title) title.textContent = 'Spells';
   if (sub) sub.textContent = lvl > 1 ? 'Spells available at level '+lvl : 'Choose your starting spells';
   if (nextBtn) nextBtn.textContent = 'Continue to Details →';
-  var spList = DND35_DATA.spells[C35.cls];
+  var spList = DND35_DATA.spells[spellClsKey];
   if (!spList) { cont.innerHTML = '<div class="cb-alert">Spell list unavailable.</div>'; return; }
   var sm = mod35(ts35(cls.spellcastingAbility));
   var dc = 10+sm;
 
   // Get spells per day table for this class
-  var spdTable = DND35_DATA.spellsPerDay[C35.cls];
+  var spdTable = DND35_DATA.spellsPerDay[spellClsKey];
 
   // Determine max spell level available
   var maxSpellLevel = 0;
@@ -1182,7 +1319,15 @@ function renderSpells35() {
       html += '</div></div>';
     } else {
       // Known caster - allow selection
-      var knownCount = spLvl === 1 ? (cls.spellcastingAbility==='int' ? 3+Math.max(0,sm) : 4) : 2;
+      var knownCount;
+      var knownTable = DND35_DATA.spellsKnown && DND35_DATA.spellsKnown[spellClsKey];
+      if (knownTable && knownTable[spLvl] && knownTable[spLvl][lvl-1] != null) {
+        knownCount = knownTable[spLvl][lvl-1];
+      } else if (spLvl === 1) {
+        knownCount = cls.spellcastingAbility==='int' ? 3+Math.max(0,sm) : 4;
+      } else {
+        knownCount = 2;
+      }
       knownCount = Math.max(1, knownCount);
       var selected = C35.spellsByLevel[spLvl] || [];
       // Also include level1 selectedSpells for backwards compat
@@ -1388,12 +1533,18 @@ function switchTab35(name) {
   if (panel) panel.classList.add('active');
 }
 function buildFinalSheet35() {
+  ensureClasses35();
   if (!C35.race||!C35.cls) return;
   var race = DND35_DATA.races[C35.race];
-  var cls = DND35_DATA.classes[C35.cls];
+  var clsKey = primaryClass35();
+  var cls = DND35_DATA.classes[clsKey];
   var conMod = mod35(ts35('con')); var dexMod = mod35(ts35('dex'));
   var strMod = mod35(ts35('str'));
-  var maxHP = cls.hitDie+conMod; if (maxHP<1) maxHP=1;
+  var maxHP = (C35.hpRolls||[]).reduce(function(a,b){ return a + (parseInt(b)||0); }, 0);
+  if (!maxHP) {
+    maxHP = (cls ? cls.hitDie : 8) + conMod;
+    if (maxHP < 1) maxHP = 1;
+  }
   var babVal = bab35();
   // Compute AC from equipment
   var armorBonus=0; var shieldBonus=0;
@@ -1417,24 +1568,28 @@ function buildFinalSheet35() {
     return armorKey?DND35_DATA.armor[armorKey].maxDex:dexMod;
   })());
   var ac = 10+effectiveDex+armorBonus+shieldBonus;
-  sheet35State = {race:race,cls:cls,maxHP:maxHP,ac:ac,babVal:babVal,dexMod:dexMod,strMod:strMod,conMod:conMod,armorBonus:armorBonus,shieldBonus:shieldBonus};
+  sheet35State = {race:race,cls:cls,maxHP:maxHP,ac:ac,babVal:babVal,dexMod:dexMod,strMod:strMod,conMod:conMod,armorBonus:armorBonus,shieldBonus:shieldBonus,classes:C35.classes.slice(),spellClassKey:activeSpellClass35()};
 
   // Header
   var name = (C35.details&&C35.details.name)||'Unnamed Adventurer';
   document.getElementById('cs35-name').textContent = name;
-  document.getElementById('cs35-class').textContent = race.name+' '+cls.name+' · Level '+C35.level+' · '+(C35.alignment||'');
+  document.getElementById('cs35-class').textContent = race.name+' · '+classBreakdownText35()+' · Level '+totalLevel35()+' · '+(C35.alignment||'');
+  var xpPenalty = multiclassPenalty35();
   document.getElementById('cs35-tags').innerHTML = [
     '<span class="cs-tag">'+race.size+'</span>',
     '<span class="cs-tag">'+race.speed+' ft</span>',
     '<span class="cs-tag">BAB '+(babVal>=0?'+':'')+babVal+'</span>',
     '<span class="cs-tag">Fort '+(save35('fort')>=0?'+':'')+save35('fort')+'</span>',
     '<span class="cs-tag">Ref '+(save35('ref')>=0?'+':'')+save35('ref')+'</span>',
-    '<span class="cs-tag">Will '+(save35('will')>=0?'+':'')+save35('will')+'</span>'
+    '<span class="cs-tag">Will '+(save35('will')>=0?'+':'')+save35('will')+'</span>',
+    xpPenalty.applies ? '<span class="cs-tag" style="border-color:var(--crimson);color:var(--crimson);">XP Penalty -20%</span>' : ''
   ].join('');
 
   // Spell tab visibility
+  var spellCls = activeSpellClass35();
+  var spellClsData = spellCls ? DND35_DATA.classes[spellCls] : null;
   var spellTabEl = document.getElementById('cs35-spell-tab');
-  if (spellTabEl) spellTabEl.style.display = cls.spellcastingAbility ? '' : 'none';
+  if (spellTabEl) spellTabEl.style.display = (spellClsData && spellClsData.spellcastingAbility) ? '' : 'none';
 
   buildMainTab35(maxHP,ac,babVal,dexMod,strMod);
   buildCombatTab35();
@@ -1465,7 +1620,11 @@ function buildMainTab35(maxHP,ac,babVal,dexMod,strMod) {
   }).join('');
 
   var cls = sheet35State.cls;
-  var uses = DND35_DATA.abilityUses&&DND35_DATA.abilityUses[C35.cls]||[];
+  var uses = [];
+  C35.classes.forEach(function(entry) {
+    var clsUses = DND35_DATA.abilityUses && DND35_DATA.abilityUses[entry.cls];
+    if (clsUses) clsUses.forEach(function(u){ if (!uses.find(function(x){ return x.name === u.name; })) uses.push(u); });
+  });
   var trackersHTML = '';
   if (uses.length) {
     trackersHTML = '<div class="cs-box" style="padding:14px;margin-top:12px;"><div class="cs-box-title">Limited Use Abilities</div>'+
@@ -1486,9 +1645,8 @@ function buildMainTab35(maxHP,ac,babVal,dexMod,strMod) {
       }).join('')+'</div>';
   }
 
-  // Death saves state
   var curHP = parseInt(document.getElementById('hp35cur')?.value || maxHP);
-  var showDeathSaves = curHP <= 0;
+  var showDying = curHP <= 0;
   
   // Conditions state
   var activeConditions = window.activeConditions35 || {};
@@ -1544,15 +1702,17 @@ function buildMainTab35(maxHP,ac,babVal,dexMod,strMod) {
       '<div class="cs-box" style="padding:14px;"><div class="cs-box-title">Key Skills. Click to Roll</div>'+buildKeySkills35()+'</div>'+
     '</div>'+
   '</div>';
-  // Add death saves section if HP = 0
-  if (showDeathSaves) {
-    var successPips = Array.from({length:3}, function(_,i) {
-      return '<div class="cs-death-pip '+(C35.deathSaveSuccesses && C35.deathSaveSuccesses > i ? 'success' : '')+'" onclick="C35.deathSaveSuccesses=C35.deathSaveSuccesses||0;C35.deathSaveSuccesses='+(C35.deathSaveSuccesses && C35.deathSaveSuccesses > i ? i : i+1)+';buildMainTab35('+maxHP+','+sheet35State.ac+','+sheet35State.babVal+','+sheet35State.dexMod+','+sheet35State.strMod+');" title="Click to toggle"></div>';
-    }).join('');
-    var failurePips = Array.from({length:3}, function(_,i) {
-      return '<div class="cs-death-pip '+(C35.deathSaveFailures && C35.deathSaveFailures > i ? 'failure' : '')+'" onclick="C35.deathSaveFailures=C35.deathSaveFailures||0;C35.deathSaveFailures='+(C35.deathSaveFailures && C35.deathSaveFailures > i ? i : i+1)+';buildMainTab35('+maxHP+','+sheet35State.ac+','+sheet35State.babVal+','+sheet35State.dexMod+','+sheet35State.strMod+');" title="Click to toggle"></div>';
-    }).join('');
-    html += '<div class="cs-death-saves"><div class="cs-death-saves-title">Death Saves (Unconscious)</div><div class="cs-death-saves-row"><div class="cs-death-saves-col"><div class="cs-death-saves-label">Successes</div><div class="cs-death-pips">'+successPips+'</div></div><div class="cs-death-saves-col"><div class="cs-death-saves-label">Failures</div><div class="cs-death-pips">'+failurePips+'</div></div></div><button class="cs-death-save-btn" onclick="rollDeathSave35('+maxHP+','+sheet35State.ac+','+sheet35State.babVal+','+sheet35State.dexMod+','+sheet35State.strMod+')">Roll Death Save (d20)</button></div>';
+  if (showDying) {
+    var conScore = ts35('con');
+    var deathThreshold = -conScore;
+    html += '<div class="cs-death-saves" style="background:rgba(212,67,58,0.08);border:1px solid var(--crimson-border);padding:16px;margin-top:16px;">';
+    html += '<div class="cs-death-saves-title" style="color:var(--crimson);margin-bottom:8px;">Dying (3.5e Rules)</div>';
+    html += '<div style="font-size:13px;color:var(--text-dim);line-height:1.7;margin-bottom:12px;">';
+    html += '<strong>0 HP</strong>: Disabled — one standard OR move action per round; strenuous action deals 1 damage.<br>';
+    html += '<strong>-1 to '+(deathThreshold+1)+' HP</strong>: Dying — unconscious, lose 1 HP/round. Each round: DC 10 CON check to stabilize.<br>';
+    html += '<strong>'+deathThreshold+' HP or lower</strong>: Dead.</div>';
+    html += '<button class="cs-death-save-btn" onclick="rollStabilize35('+maxHP+','+sheet35State.ac+','+sheet35State.babVal+','+sheet35State.dexMod+','+sheet35State.strMod+')">Roll Stabilization (DC 10 CON)</button>';
+    html += '</div>';
   }
   
   // Add conditions tracker
@@ -1568,11 +1728,10 @@ function buildMainTab35(maxHP,ac,babVal,dexMod,strMod) {
 }
 
 function buildKeySkills35() {
-  var cls = C35.cls?DND35_DATA.classes[C35.cls]:null;
   var allSk = Object.entries(DND35_DATA.skills).sort(function(a,b){
     var rA=parseInt(C35.skillRanks[a[0]])||0; var rB=parseInt(C35.skillRanks[b[0]])||0;
-    var cA=cls&&cls.classSkills.includes(a[1].name)?1:0;
-    var cB=cls&&cls.classSkills.includes(b[1].name)?1:0;
+    var cA=isClassSkillAny35(a[1].name)?1:0;
+    var cB=isClassSkillAny35(b[1].name)?1:0;
     return rA!==rB?rB-rA:cB-cA;
   }).slice(0,12);
   return allSk.map(function(kv){
@@ -1607,19 +1766,41 @@ function buildCombatTab35() {
     ci++;
   });
   var defaults={fighter:[{name:'Longsword',damage:'1d8',type:'S',crit:'19-20/×2',range:'—'}],barbarian:[{name:'Greataxe',damage:'1d12',type:'S',crit:'×3',range:'—'}],monk:[{name:'Unarmed Strike',damage:'1d6',type:'B',crit:'×2',range:'—'}],rogue:[{name:'Short Sword',damage:'1d6',type:'P',crit:'19-20/×2',range:'—'}]};
-  if(defaults[C35.cls])defaults[C35.cls].forEach(function(w){if(!weapons.find(function(x){return x.name===w.name;}))weapons.push(w);});
+  var pCls = primaryClass35();
+  if(defaults[pCls])defaults[pCls].forEach(function(w){if(!weapons.find(function(x){return x.name===w.name;}))weapons.push(w);});
+
+  // Compute full iterative attack sequence from combined multiclass BAB
+  var iterativeAttacks = [];
+  var combinedBAB = 0;
+  C35.classes.forEach(function(entry){
+    var c = DND35_DATA.classes[entry.cls];
+    if (!c) return;
+    var babArr = DND35_DATA.babProgression[entry.level];
+    if (babArr && babArr[c.babProg]) combinedBAB += babArr[c.babProg][0] || 0;
+  });
+  var iterBAB = combinedBAB;
+  while (iterBAB > 0) {
+    iterativeAttacks.push(iterBAB);
+    iterBAB -= 5;
+  }
+  if (!iterativeAttacks.length) iterativeAttacks = [babVal];
 
   var html = '<button class="cs-init-btn" onclick="rollCheck35(\'Initiative\',\'Combat Initiative\','+initMod+')">⚔ Roll Initiative ('+(initMod>=0?'+':'')+initMod+')</button>'+
     '<div class="cs-action-section"><div class="cs-action-title">Weapon Attacks. Click to Roll</div>';
+  if (iterativeAttacks.length > 1) {
+    html += '<div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">Full Attack BAB: '+iterativeAttacks.map(function(b){return (b>=0?'+':'')+b;}).join('/')+'</div>';
+  }
   if (weapons.length) {
     html += weapons.map(function(w){
       var isRanged=w.range&&w.range!=='—'&&parseInt(w.range)>5;
-      var atkMod=(isRanged?dexMod:strMod)+babVal;
+      var baseMod=isRanged?dexMod:strMod;
       var dmgMod=isRanged?dexMod:strMod;
       var crit=w.crit||'×2';
-      return '<div class="cs-attack-card" onclick="rollWeapon35(\''+w.name.replace(/'/g,"\\'")+'\','+atkMod+','+dmgMod+',\''+w.damage+'\')">'+
-        '<div><div class="cs-attack-name">'+w.name+'</div><div style="font-size:11px;color:var(--text-faint);font-style:italic;">Crit '+crit+' · '+w.type+'</div></div>'+
-        '<div class="cs-attack-stats"><span class="cs-attack-atk">ATK '+(atkMod>=0?'+':'')+atkMod+'</span><span class="cs-attack-dmg">'+w.damage+(dmgMod>=0?'+':'')+dmgMod+' '+w.type+'</span></div>'+
+      var atkBonuses = iterativeAttacks.map(function(b){ return b + baseMod; });
+      var atkStr = atkBonuses.map(function(b){ return (b>=0?'+':'')+b; }).join('/');
+      return '<div class="cs-attack-card" onclick="rollWeapon35(\''+w.name.replace(/'/g,"\\'")+'\','+atkBonuses[0]+','+dmgMod+',\''+w.damage+'\')">'+
+        '<div><div class="cs-attack-name">'+w.name+'</div><div style="font-size:11px;color:var(--text-faint);font-style:italic;">Crit '+crit+' · '+w.type+(iterativeAttacks.length>1?' · Full: '+atkStr:'')+'</div></div>'+
+        '<div class="cs-attack-stats"><span class="cs-attack-atk">ATK '+atkStr+'</span><span class="cs-attack-dmg">'+w.damage+(dmgMod>=0?'+':'')+dmgMod+' '+w.type+'</span></div>'+
         '<span class="cs-attack-hint">▸ Roll</span></div>';
     }).join('');
   } else {
@@ -1658,12 +1839,11 @@ function buildCombatTab35() {
 }
 
 function buildSkillsTab35() {
-  var cls = C35.cls?DND35_DATA.classes[C35.cls]:null;
   var html = '<div class="cs-action-title" style="margin-bottom:12px;">All Skills. Click to Roll</div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">';
   Object.entries(DND35_DATA.skills).forEach(function(kv){
     var id=kv[0]; var skill=kv[1];
-    var isClass=cls&&cls.classSkills.includes(skill.name);
+    var isClass=isClassSkillAny35(skill.name);
     var ranks=parseInt(C35.skillRanks[id])||0;
     var abilMod=mod35(ts35(skill.ability));
     var total=ranks+abilMod;
@@ -1680,22 +1860,29 @@ function buildSkillsTab35() {
 }
 
 function buildSpellsTab35() {
-  var cls = sheet35State.cls;
+  var spellClsKey = activeSpellClass35();
+  var cls = spellClsKey ? DND35_DATA.classes[spellClsKey] : null;
+  var classLv = spellClsKey ? classLevel35(spellClsKey) : 0;
   var el = document.getElementById('tab35-spells');
-  if (!cls.spellcastingAbility) {
-    el.innerHTML = '<div class="cs-no-spell"><div style="font-size:48px;opacity:.15;margin-bottom:16px;">⚔</div><div style="font-family:\'Cinzel\',serif;font-size:10px;letter-spacing:4px;color:var(--text-muted);text-transform:uppercase;">'+cls.name+'. No Spellcasting</div></div>';
+  if (!cls || !cls.spellcastingAbility) {
+    el.innerHTML = '<div class="cs-no-spell"><div style="font-size:48px;opacity:.15;margin-bottom:16px;">⚔</div><div style="font-family:\'Cinzel\',serif;font-size:10px;letter-spacing:4px;color:var(--text-muted);text-transform:uppercase;">No Spellcasting</div></div>';
     return;
   }
   var sm = mod35(ts35(cls.spellcastingAbility));
-  var slotTable = {cleric:[3,1],druid:[3,1],wizard:[3,1],sorcerer:[5,3],bard:[2,0],paladin:[0,0],ranger:[0,0]};
-  var slots = slotTable[C35.cls]||[2,0];
+  var slotsByLevel = {};
+  var table = DND35_DATA.spellsPerDay[spellClsKey] || {};
+  for (var sl = 0; sl <= 9; sl++) {
+    if (table[sl] && table[sl][classLv - 1] != null) slotsByLevel[sl] = table[sl][classLv - 1];
+  }
+  var slots0 = slotsByLevel[0] || 0;
+  var slots1 = slotsByLevel[1] || 0;
   var html = '<div class="cs-spell-stats">'+
     '<div class="cs-spell-stat"><div class="cs-spell-stat-val">'+DND35_DATA.abilityShort[cls.spellcastingAbility]+'</div><div class="cs-spell-stat-label">Ability</div></div>'+
     '<div class="cs-spell-stat"><div class="cs-spell-stat-val">'+(10+sm)+'</div><div class="cs-spell-stat-label">Save DC</div></div>'+
-    '<div class="cs-spell-stat"><div class="cs-spell-stat-val">Lv 1</div><div class="cs-spell-stat-label">Caster Level</div></div>'+
+    '<div class="cs-spell-stat"><div class="cs-spell-stat-val">Lv '+classLv+'</div><div class="cs-spell-stat-label">Caster Level</div></div>'+
   '</div>';
-  if (slots[0]>0) {
-    html += '<div class="cs-action-title" style="margin-bottom:10px;">Cantrips / Orisons (At Will)</div>';
+  if (slots0>0) {
+    html += '<div class="cs-action-title" style="margin-bottom:10px;">Cantrips / Orisons ('+slots0+'/day)</div>';
     html += C35.selectedCantrips.map(function(sp){
       return '<div class="cs-spell-item cs-spell-prepared">'+
         '<div class="cs-spell-item-dot" onclick="rollCheck35(\'Spell\',\''+sp+'\','+(bab35()+sm)+')" style="cursor:pointer;"></div>'+
@@ -1704,22 +1891,34 @@ function buildSpellsTab35() {
       '</div>';
     }).join('')||'<div style="font-size:13px;color:var(--text-faint);font-style:italic;">No cantrips selected.</div>';
   }
-  if (slots[1]>0) {
-    var used1 = slots35Used[1]||0;
-    var pips = Array.from({length:slots[1]},function(_,j){
-      return '<div class="cs-slot-pip '+(j<used1?'used':'available')+'" onclick="slots35Used[1]='+(j<used1?j:'Math.min('+(j+1)+','+slots[1]+')')+';buildSpellsTab35();" title="'+(j<used1?'Restore':'Expend')+'"></div>';
+
+  var levelNames = ['','1st','2nd','3rd','4th','5th','6th','7th','8th','9th'];
+  var isPrepared = (spellClsKey==='cleric'||spellClsKey==='druid');
+  for (var slotLvl = 1; slotLvl <= 9; slotLvl++) {
+    var slotsAtLvl = slotsByLevel[slotLvl];
+    if (slotsAtLvl === undefined || slotsAtLvl === null || slotsAtLvl <= 0) continue;
+    var bonusSlotsLvl = (sm >= slotLvl) ? Math.floor((sm - slotLvl) / 4) + 1 : 0;
+    var totalSlotsLvl = slotsAtLvl + bonusSlotsLvl;
+    var usedLvl = slots35Used[slotLvl] || 0;
+    var pipsLvl = Array.from({length:totalSlotsLvl}, function(_,j){
+      return '<div class="cs-slot-pip '+(j<usedLvl?'used':'available')+'" onclick="slots35Used['+slotLvl+']='+(j<usedLvl?j:'Math.min('+(j+1)+','+totalSlotsLvl+')')+';buildSpellsTab35();" title="'+(j<usedLvl?'Restore':'Expend')+'"></div>';
     }).join('');
-    html += '<div class="cs-slot-section" style="margin-top:20px;"><div class="cs-slot-header"><span>1st-Level Spells ('+slots[1]+'/day)</span><div class="cs-slot-pips">'+pips+'</div></div></div>';
-    html += C35.selectedSpells.map(function(sp){
-      return '<div class="cs-spell-item cs-spell-prepared">'+
-        '<div class="cs-spell-item-dot" onclick="rollCheck35(\'Spell\',\''+sp+'\','+(bab35()+sm)+')" style="cursor:pointer;"></div>'+
-        '<span class="cs-spell-name" onclick="showSpellInfo35(\''+sp.replace(/'/g,"\\'")+'\');" style="cursor:pointer;">'+sp+'</span>'+
-        '<span class="cs-spell-atk" onclick="rollCheck35(\'Spell\',\''+sp+'\','+(bab35()+sm)+')" style="cursor:pointer;">▸ Roll</span>'+
-      '</div>';
-    }).join('')||'<div style="font-size:13px;color:var(--text-faint);font-style:italic;">No spells selected.</div>';
-  }
-  if (C35.cls==='cleric'||C35.cls==='druid') {
-    html += '<div class="cb-alert" style="margin-top:16px;"><strong>Prepared Caster</strong>. '+cls.name+'s prepare '+(Math.max(1,sm+1))+' 1st-level spells per day from the full class list.</div>';
+    html += '<div class="cs-slot-section" style="margin-top:20px;"><div class="cs-slot-header"><span>'+levelNames[slotLvl]+'-Level Spells ('+totalSlotsLvl+'/day)</span><div class="cs-slot-pips">'+pipsLvl+'</div></div></div>';
+
+    var spellsForLvl = (slotLvl === 1) ? (C35.selectedSpells || []) : ((C35.spellsByLevel && C35.spellsByLevel[slotLvl]) || []);
+    if (isPrepared) {
+      html += '<div style="font-size:12px;color:var(--text-muted);font-style:italic;margin:6px 0;">Prepare from the full '+cls.name+' list each day.</div>';
+    } else if (spellsForLvl.length) {
+      html += spellsForLvl.map(function(sp){
+        return '<div class="cs-spell-item cs-spell-prepared">'+
+          '<div class="cs-spell-item-dot" onclick="rollCheck35(\'Spell\',\''+sp+'\','+(bab35()+sm)+')" style="cursor:pointer;"></div>'+
+          '<span class="cs-spell-name" onclick="showSpellInfo35(\''+sp.replace(/'/g,"\\'")+'\');" style="cursor:pointer;">'+sp+'</span>'+
+          '<span class="cs-spell-atk" onclick="rollCheck35(\'Spell\',\''+sp+'\','+(bab35()+sm)+')" style="cursor:pointer;">▸ Roll</span>'+
+        '</div>';
+      }).join('');
+    } else {
+      html += '<div style="font-size:13px;color:var(--text-faint);font-style:italic;">No spells selected for this level.</div>';
+    }
   }
   el.innerHTML = html;
 }
@@ -1760,7 +1959,7 @@ function renderInv35() {
   if (!inv35Items.length) { el.innerHTML='<div style="font-size:13px;color:var(--text-faint);font-style:italic;padding:8px 0;">No items.</div>'; return; }
   el.innerHTML = '<div class="cs-action-title">Equipment</div>'+
     inv35Items.map(function(item,i){
-      return '<div class="cs-item-row"><span class="cs-item-name">'+item.name+'</span>'+
+      return '<div class="cs-item-row"><span class="cs-item-name">'+esc35(item.name)+'</span>'+
         '<input class="cs-item-qty" type="number" value="'+item.qty+'" min="0" onchange="inv35Items['+i+'].qty=parseInt(this.value)||0;">'+
         '<button onclick="inv35Items.splice('+i+',1);renderInv35();" style="background:none;border:none;color:var(--text-faint);cursor:pointer;font-size:16px;">×</button></div>';
     }).join('');
@@ -1772,14 +1971,49 @@ function addInv35() {
 }
 
 function buildFeaturesTab35() {
-  var race = sheet35State.race; var cls = sheet35State.cls;
-  var html = '<div class="cs-action-title">Class Features</div>'+
-    cls.features.map(function(f){return '<div class="cs-feature-card" style="margin-bottom:8px;"><div class="cs-feature-card-top"><span class="cs-feature-card-name">Level '+f.level+': '+f.name+'</span></div><div class="cs-feature-card-desc">'+f.desc+'</div></div>';}).join('')+
+  var race = sheet35State.race;
+  ensureClasses35();
+  var classFeatureBlocks = [];
+  C35.classes.forEach(function(entry){
+    var cls = DND35_DATA.classes[entry.cls];
+    if (!cls) return;
+    var classLv = parseInt(entry.level) || 0;
+    var detailedFeatures = (cls.features||[]).filter(function(f){ return (parseInt(f.level)||0) <= classLv; });
+    var levelFeatures = DND35_DATA.classFeaturesByLevel[entry.cls] || {};
+    var levelFeatureCards = [];
+    for (var lv = 1; lv <= classLv; lv++) {
+      var featsAtLv = levelFeatures[lv];
+      if (!featsAtLv) continue;
+      featsAtLv.forEach(function(fname){
+        var detailed = detailedFeatures.find(function(f){ return f.name === fname || fname.indexOf(f.name) === 0; });
+        var desc = detailed ? detailed.desc : '';
+        levelFeatureCards.push('<div class="cs-feature-card" style="margin-bottom:8px;"><div class="cs-feature-card-top"><span class="cs-feature-card-name">Level '+lv+': '+esc35(fname)+'</span></div>'+(desc?'<div class="cs-feature-card-desc">'+esc35(desc)+'</div>':'')+'</div>');
+      });
+    }
+    detailedFeatures.forEach(function(f){
+      var alreadyShown = false;
+      for (var lv2 = 1; lv2 <= classLv; lv2++) {
+        var featsAtLv2 = levelFeatures[lv2];
+        if (featsAtLv2 && featsAtLv2.some(function(fn){ return fn === f.name || fn.indexOf(f.name) === 0; })) { alreadyShown = true; break; }
+      }
+      if (!alreadyShown) {
+        levelFeatureCards.push('<div class="cs-feature-card" style="margin-bottom:8px;"><div class="cs-feature-card-top"><span class="cs-feature-card-name">Level '+f.level+': '+esc35(f.name)+'</span></div><div class="cs-feature-card-desc">'+esc35(f.desc)+'</div></div>');
+      }
+    });
+    classFeatureBlocks.push('<div class="cs-action-title" style="margin-top:10px;">'+cls.name+' Features (Level '+classLv+')</div>');
+    if (!levelFeatureCards.length) {
+      classFeatureBlocks.push('<div style="font-size:13px;color:var(--text-faint);font-style:italic;padding:4px 0 10px;">No features tracked for this class level yet.</div>');
+    } else {
+      classFeatureBlocks.push(levelFeatureCards.join(''));
+    }
+  });
+  var html = '<div class="cs-action-title">Class Features</div>'+classFeatureBlocks.join('')+
     '<div class="cs-action-title" style="margin-top:24px;">Racial Traits</div>'+
     race.traits.map(function(t){return '<div class="cs-feature-card" style="margin-bottom:8px;"><div class="cs-feature-card-top"><span class="cs-feature-card-name">'+t.name+'</span></div><div class="cs-feature-card-desc">'+t.desc+'</div></div>';}).join('');
+  var primary = DND35_DATA.classes[primaryClass35()];
   var profHTML = '<div class="cs-action-title" style="margin-top:24px;">Proficiencies</div><div class="cs-prof-list">'+
-    '<span class="cs-prof-category">Armor</span>'+(cls.armorProf.join(', ')||'None')+
-    '<span class="cs-prof-category">Weapons</span>'+cls.weaponProf.join(', ')+
+    '<span class="cs-prof-category">Armor</span>'+((primary && primary.armorProf.join(', '))||'See class entries above')+
+    '<span class="cs-prof-category">Weapons</span>'+((primary && primary.weaponProf.join(', '))||'See class entries above')+
     '<span class="cs-prof-category">Languages</span>'+race.languages.join(', ')+
   '</div>';
   document.getElementById('tab35-features').innerHTML = html+profHTML;
@@ -1802,43 +2036,31 @@ function buildNotesTab35() {
 }
 
 
-// ── DEATH SAVES ──
-function rollDeathSave35(maxHP, ac, babVal, dexMod, strMod) {
+// ── STABILIZATION (3.5e) ──
+function rollStabilize35(maxHP, ac, babVal, dexMod, strMod) {
+  var conMod = mod35(ts35('con'));
   var roll = Math.ceil(Math.random()*20);
+  var total = roll + conMod;
+  var dc = 10;
+  var success = total >= dc;
   var isCrit = roll === 20;
   var isFail = roll === 1;
-  
-  // 20 regains 1 HP, 1 counts as 2 failures, 10+ is success
-  if (isCrit) {
-    // Regain 1 HP
-    var curInput = document.getElementById('hp35cur');
-    if (curInput) curInput.value = '1';
-    clampHP35();
-    C35.deathSaveSuccesses = 0;
-    C35.deathSaveFailures = 0;
-    showToast35('Critical Success','You regain 1 hit point!');
-  } else if (isFail) {
-    // Count as 2 failures
-    C35.deathSaveFailures = (C35.deathSaveFailures || 0) + 2;
-    if (C35.deathSaveFailures >= 3) {
-      showToast35('Character Dead','Three failed death saves. Your character has died.');
-    }
-  } else if (roll >= 10) {
-    // Success
-    C35.deathSaveSuccesses = (C35.deathSaveSuccesses || 0) + 1;
-    if (C35.deathSaveSuccesses >= 3) {
-      showToast35('Stabilized','Three successful death saves. You are stabilized.');
-    }
+
+  if (success) {
+    showToast35('Stabilized','CON check '+total+' vs DC '+dc+'. You stop losing HP. You remain unconscious until healed above 0 HP.');
   } else {
-    // Failure
-    C35.deathSaveFailures = (C35.deathSaveFailures || 0) + 1;
-    if (C35.deathSaveFailures >= 3) {
-      showToast35('Character Dead','Three failed death saves. Your character has died.');
+    adjHP35(-1);
+    var curHP = parseInt(document.getElementById('hp35cur').value) || 0;
+    var deathHP = -ts35('con');
+    if (curHP <= deathHP) {
+      showToast35('Character Dead','CON check '+total+' vs DC '+dc+' failed. You lose 1 HP and have reached '+deathHP+' HP.');
+    } else {
+      showToast35('Still Dying','CON check '+total+' vs DC '+dc+' failed. Lose 1 HP (now '+curHP+').');
     }
   }
-  
-  C35.rollLog.unshift({ts:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),type:'Death Save',label:'Death Save',roll:roll,bonus:0,total:roll,crit:isCrit,fail:isFail});
-  showDice35({type:'Death Save',label:'Death Save',dice:[{val:roll,sides:20,isCrit:isCrit,isFail:isFail}],bonus:0,total:roll,isCrit:isCrit,isFail:isFail});
+
+  C35.rollLog.unshift({ts:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),type:'Stabilize',label:'CON Check (DC '+dc+')',roll:roll,bonus:conMod,total:total,crit:isCrit,fail:isFail});
+  showDice35({type:'Stabilize',label:'CON Check',dice:[{val:roll,sides:20,isCrit:isCrit,isFail:isFail}],bonus:conMod,total:total,isCrit:isCrit,isFail:isFail});
   renderRollLog35();
   buildMainTab35(maxHP,ac,babVal,dexMod,strMod);
 }
@@ -1854,9 +2076,10 @@ function toggleCondition35(condition, maxHP, ac, babVal, dexMod, strMod) {
 function adjHP35(d) {
   var inp = document.getElementById('hp35cur'); if (!inp) return;
   var max = parseInt(document.getElementById('hp35max').textContent)||0;
+  var minHP = -ts35('con');
   var cur = parseInt(inp.value)||0;
-  var nv = Math.max(0,Math.min(max,cur+d));
-  inp.value=nv; inp.style.color=nv===0?'var(--crimson)':nv<=Math.floor(max/2)?'#e8a020':'var(--text)';
+  var nv = Math.max(minHP, Math.min(max, cur+d));
+  inp.value=nv; inp.style.color=nv<=0?'var(--crimson)':nv<=Math.floor(max/2)?'#e8a020':'var(--text)';
 }
 function applyHP35(mode) {
   var amt = parseInt(document.getElementById('hp35adj').value)||0; if (amt<=0) return;
@@ -1866,8 +2089,9 @@ function applyHP35(mode) {
 function clampHP35() {
   var inp = document.getElementById('hp35cur'); if (!inp) return;
   var max = parseInt(document.getElementById('hp35max').textContent)||0;
-  var val = Math.max(0,Math.min(max,parseInt(inp.value)||0));
-  inp.value=val; inp.style.color=val===0?'var(--crimson)':val<=Math.floor(max/2)?'#e8a020':'var(--text)';
+  var minHP = -ts35('con');
+  var val = Math.max(minHP, Math.min(max, parseInt(inp.value)||0));
+  inp.value=val; inp.style.color=val<=0?'var(--crimson)':val<=Math.floor(max/2)?'#e8a020':'var(--text)';
 }
 
 // ── REST ──
@@ -1892,6 +2116,7 @@ function showToast35(title,msg) {
 
 // ── SAVE ──
 async function saveChar35() {
+  ensureClasses35();
   var btn = document.getElementById('cs35-save-btn');
   var status = document.getElementById('cs35-save-status');
   if (typeof PhmurtDB==='undefined') { if(status) status.textContent='Auth not loaded.'; return; }
@@ -1906,6 +2131,8 @@ async function saveChar35() {
     selectedCantrips:[...C35.selectedCantrips], selectedSpells:[...C35.selectedSpells],
     spellsByLevel: C35.spellsByLevel ? JSON.parse(JSON.stringify(C35.spellsByLevel)) : {},
     details:{...C35.details}, level:C35.level, hpRolls:[...(C35.hpRolls||[])],
+    classes: C35.classes ? JSON.parse(JSON.stringify(C35.classes)) : [],
+    levelHistory: [...(C35.levelHistory||[])],
     levelUpSkills: C35.levelUpSkills ? JSON.parse(JSON.stringify(C35.levelUpSkills)) : {},
     levelUpFeats:[...(C35.levelUpFeats||[])],
     levelUpAbilityBoosts: C35.levelUpAbilityBoosts ? JSON.parse(JSON.stringify(C35.levelUpAbilityBoosts)) : {},
@@ -1926,12 +2153,14 @@ async function saveChar35() {
 
 // ── MINI SUMMARY ──
 function updateMini35() {
+  ensureClasses35();
   var el = document.getElementById('miniSummary35'); if (!el) return;
   var lines = [];
   if (C35.details&&C35.details.name) lines.push({l:'Name',v:C35.details.name});
   if (C35.race) lines.push({l:'Race',v:DND35_DATA.races[C35.race].name});
-  if (C35.cls) lines.push({l:'Class',v:DND35_DATA.classes[C35.cls].name+' (3.5e)'});
-  if (C35.level) lines.push({l:'Level',v:C35.level});
+  if (C35.cls) lines.push({l:'Class',v:classBreakdownText35()+' (3.5e)'});
+  if (C35.level) lines.push({l:'Level',v:totalLevel35()});
+  if (multiclassPenalty35().applies) lines.push({l:'XP',v:'-20% penalty'});
   if (C35.alignment) lines.push({l:'Alignment',v:C35.alignment});
   el.innerHTML = lines.map(function(l){
     return '<div class="cb-mini-stat"><span class="cb-mini-stat-label">'+l.l+'</span><span class="cb-mini-stat-val">'+l.v+'</span></div>';
@@ -1940,16 +2169,18 @@ function updateMini35() {
 
 // ── LEVEL UP SYSTEM ──
 function openLevelUpModal35() {
-  if (C35.level >= 20) {
+  ensureClasses35();
+  if (totalLevel35() >= 20) {
     alert('Character is already at maximum level (20).');
     return;
   }
-  var newLevel = C35.level + 1;
-  document.getElementById('lu35-from').textContent = C35.level;
+  var newLevel = totalLevel35() + 1;
+  document.getElementById('lu35-from').textContent = totalLevel35();
   document.getElementById('lu35-to').textContent = newLevel;
 
   C35.levelUpState = {
     newLevel: newLevel,
+    selectedClass: primaryClass35(),
     selectedSkills: {},
     selectedFeats: [],
     selectedAbilityBoosts: [],
@@ -1976,17 +2207,51 @@ function closeLevelUpModal35() {
   setTimeout(function() { modal.innerHTML = ''; }, 300);
 }
 
+function luSelectLevelClass35(clsKey) {
+  if (!C35.levelUpState) return;
+  C35.levelUpState.selectedClass = clsKey;
+  C35.levelUpState.selectedSkills = {};
+  C35.levelUpState.selectedFeats = [];
+  C35.levelUpState.hpRoll = null;
+  renderLevelUpModal35();
+}
+
 function renderLevelUpModal35() {
   if (!C35.levelUpState) return;
-  var cls = DND35_DATA.classes[C35.cls];
+  ensureClasses35();
+  var selectedClassKey = C35.levelUpState.selectedClass || primaryClass35();
+  var cls = DND35_DATA.classes[selectedClassKey];
+  if (!cls) return;
   var newLvl = C35.levelUpState.newLevel;
+  var currentClassLevel = classLevel35(selectedClassKey);
+  var nextClassLevel = currentClassLevel + 1;
+  var isNewClass = currentClassLevel === 0;
   var hitDie = cls.hitDie;
   var conMod = mod35(ts35('con'));
   var content = '';
 
   content += '<div class="lu-section">';
-  content += '<div class="lu-section-title">Class Features</div>';
-  var features = DND35_DATA.classFeaturesByLevel[C35.cls] && DND35_DATA.classFeaturesByLevel[C35.cls][newLvl] || [];
+  content += '<div class="lu-section-title">Class to Advance</div>';
+  content += '<div class="lu-section-body" style="margin-bottom:10px;">Choose an existing class level or add a new multiclass level.</div>';
+  Object.entries(DND35_DATA.classes).forEach(function(kv){
+    var key = kv[0];
+    var data = kv[1];
+    var lv = classLevel35(key);
+    var isExisting = lv > 0;
+    var eligible = true;
+    var selected = key === selectedClassKey;
+    var req = DND35_DATA.multiclassPrereqs && DND35_DATA.multiclassPrereqs[key];
+    var reqTxt = req ? Object.keys(req).map(function(ab){ return DND35_DATA.abilityShort[ab] + ' ' + req[ab]; }).join(', ') : 'None';
+    content += '<div onclick="' + (eligible ? ('luSelectLevelClass35(\''+key+'\')') : '') + '" style="padding:10px 12px;border:1px solid ' + (selected ? 'var(--crimson)' : 'var(--border)') + ';background:' + (selected ? 'var(--crimson-soft)' : 'var(--bg-card)') + ';margin-bottom:6px;cursor:' + (eligible ? 'pointer' : 'not-allowed') + ';opacity:' + (eligible ? '1' : '0.45') + ';">';
+    content += '<div style="display:flex;justify-content:space-between;align-items:baseline;"><strong>'+esc35(data.name)+'</strong><span style="font-size:11px;color:var(--text-muted);">'+(isExisting ? ('Level '+lv+' → '+(lv+1)) : 'New class (Level 1)')+'</span></div>';
+    if (!isExisting) content += '<div style="font-size:11px;color:var(--text-faint);margin-top:4px;">Suggested ability baseline: '+esc35(reqTxt)+(meetsMulticlassPrereq35(key)?'':' (below suggestion)')+'</div>';
+    content += '</div>';
+  });
+  content += '</div>';
+
+  content += '<div class="lu-section">';
+  content += '<div class="lu-section-title">Class Features ('+cls.name+' '+nextClassLevel+')</div>';
+  var features = DND35_DATA.classFeaturesByLevel[selectedClassKey] && DND35_DATA.classFeaturesByLevel[selectedClassKey][nextClassLevel] || [];
   if (features.length > 0) {
     content += '<ul class="lu-feature-list">';
     features.forEach(function(feat) {
@@ -2000,19 +2265,30 @@ function renderLevelUpModal35() {
 
   content += '<div class="lu-section">';
   content += '<div class="lu-section-title">Stats</div>';
-  var newBAB = DND35_DATA.babProgression[newLvl] ? DND35_DATA.babProgression[newLvl][cls.babProg][0] : 0;
-  var oldBAB = DND35_DATA.babProgression[C35.level] ? DND35_DATA.babProgression[C35.level][cls.babProg][0] : 0;
+  var simulatedClassLevels = C35.classes.map(function(c){ return { cls: c.cls, level: c.level }; });
+  var existingRow = simulatedClassLevels.find(function(c){ return c.cls === selectedClassKey; });
+  if (existingRow) existingRow.level += 1; else simulatedClassLevels.push({ cls: selectedClassKey, level: 1 });
+  var oldBAB = bab35();
+  var newBAB = simulatedClassLevels.reduce(function(acc, entry){
+    var c = DND35_DATA.classes[entry.cls];
+    if (!c) return acc;
+    var row = DND35_DATA.babProgression[entry.level];
+    return acc + ((row && row[c.babProg] && row[c.babProg][0]) || 0);
+  }, 0);
   var fortGood = cls.goodSaves.includes('fort');
   var refGood = cls.goodSaves.includes('ref');
   var willGood = cls.goodSaves.includes('will');
-  var newFortBase = fortGood ? DND35_DATA.saveProgression.good[newLvl-1] : DND35_DATA.saveProgression.poor[newLvl-1];
-  var newRefBase = refGood ? DND35_DATA.saveProgression.good[newLvl-1] : DND35_DATA.saveProgression.poor[newLvl-1];
-  var newWillBase = willGood ? DND35_DATA.saveProgression.good[newLvl-1] : DND35_DATA.saveProgression.poor[newLvl-1];
+  var oldFort = save35('fort');
+  var oldRef = save35('ref');
+  var oldWill = save35('will');
+  var fortDelta = fortGood ? ((DND35_DATA.saveProgression.good[nextClassLevel-1]||0) - (DND35_DATA.saveProgression.good[Math.max(0,nextClassLevel-2)]||0)) : ((DND35_DATA.saveProgression.poor[nextClassLevel-1]||0) - (DND35_DATA.saveProgression.poor[Math.max(0,nextClassLevel-2)]||0));
+  var refDelta = refGood ? ((DND35_DATA.saveProgression.good[nextClassLevel-1]||0) - (DND35_DATA.saveProgression.good[Math.max(0,nextClassLevel-2)]||0)) : ((DND35_DATA.saveProgression.poor[nextClassLevel-1]||0) - (DND35_DATA.saveProgression.poor[Math.max(0,nextClassLevel-2)]||0));
+  var willDelta = willGood ? ((DND35_DATA.saveProgression.good[nextClassLevel-1]||0) - (DND35_DATA.saveProgression.good[Math.max(0,nextClassLevel-2)]||0)) : ((DND35_DATA.saveProgression.poor[nextClassLevel-1]||0) - (DND35_DATA.saveProgression.poor[Math.max(0,nextClassLevel-2)]||0));
   content += '<div class="lu-stat-row">';
-  content += '<div class="lu-stat"><div class="lu-stat-label">BAB</div><div class="lu-stat-val">'+(newBAB>=0?'+':'')+newBAB+'</div></div>';
-  content += '<div class="lu-stat"><div class="lu-stat-label">Fort Save</div><div class="lu-stat-val">'+(newFortBase+mod35(ts35('con'))>=0?'+':'')+newFortBase+mod35(ts35('con'))+'</div></div>';
-  content += '<div class="lu-stat"><div class="lu-stat-label">Ref Save</div><div class="lu-stat-val">'+(newRefBase+mod35(ts35('dex'))>=0?'+':'')+newRefBase+mod35(ts35('dex'))+'</div></div>';
-  content += '<div class="lu-stat"><div class="lu-stat-label">Will Save</div><div class="lu-stat-val">'+(newWillBase+mod35(ts35('wis'))>=0?'+':'')+newWillBase+mod35(ts35('wis'))+'</div></div>';
+  content += '<div class="lu-stat"><div class="lu-stat-label">BAB</div><div class="lu-stat-val">'+(oldBAB>=0?'+':'')+oldBAB+' → '+(newBAB>=0?'+':'')+newBAB+'</div></div>';
+  content += '<div class="lu-stat"><div class="lu-stat-label">Fort Save</div><div class="lu-stat-val">'+(oldFort>=0?'+':'')+oldFort+' → '+((oldFort+fortDelta)>=0?'+':'')+(oldFort+fortDelta)+'</div></div>';
+  content += '<div class="lu-stat"><div class="lu-stat-label">Ref Save</div><div class="lu-stat-val">'+(oldRef>=0?'+':'')+oldRef+' → '+((oldRef+refDelta)>=0?'+':'')+(oldRef+refDelta)+'</div></div>';
+  content += '<div class="lu-stat"><div class="lu-stat-label">Will Save</div><div class="lu-stat-val">'+(oldWill>=0?'+':'')+oldWill+' → '+((oldWill+willDelta)>=0?'+':'')+(oldWill+willDelta)+'</div></div>';
   content += '</div>';
   content += '</div>';
 
@@ -2036,7 +2312,8 @@ function renderLevelUpModal35() {
   content += '</div>';
 
   var isFeatLevel = DND35_DATA.featLevels.includes(newLvl);
-  var isFighterBonusFeat = C35.cls === 'fighter' && DND35_DATA.fighterBonusFeatLevels.includes(newLvl);
+  var fighterNewLevel = classLevel35('fighter') + (selectedClassKey === 'fighter' ? 1 : 0);
+  var isFighterBonusFeat = selectedClassKey === 'fighter' && DND35_DATA.fighterBonusFeatLevels.includes(fighterNewLevel);
   var featCount = (isFeatLevel ? 1 : 0) + (isFighterBonusFeat ? 1 : 0);
   if (featCount > 0) {
     content += '<div class="lu-section">';
@@ -2061,14 +2338,14 @@ function renderLevelUpModal35() {
 
   var spellcaster = cls.spellcastingAbility;
   if (spellcaster) {
-    var spellsTable = DND35_DATA.spellsPerDay[C35.cls];
+    var spellsTable = DND35_DATA.spellsPerDay[selectedClassKey];
     if (spellsTable) {
       content += '<div class="lu-section">';
       content += '<div class="lu-section-title">Spells Per Day</div>';
       content += '<div class="lu-section-body">';
       for (var lvl = 0; lvl <= 9; lvl++) {
         if (spellsTable[lvl]) {
-          var slots = spellsTable[lvl][newLvl-1];
+          var slots = spellsTable[lvl][nextClassLevel-1];
           if (slots !== null) {
             content += '<div>Level '+lvl+': '+slots+' spells</div>';
           }
@@ -2085,10 +2362,13 @@ function renderLevelUpModal35() {
 }
 
 function renderLevelUpSkills35() {
-  var cls = DND35_DATA.classes[C35.cls];
+  var clsKey = C35.levelUpState && C35.levelUpState.selectedClass;
+  var cls = clsKey ? DND35_DATA.classes[clsKey] : null;
+  if (!cls) return;
   var skillPointsPerLevel = Math.max(1, cls.skillPoints + mod35(ts35('int')));
   if (C35.race === 'human') skillPointsPerLevel += 1;
 
+  var spent = 0;
   var html = '';
   Object.entries(DND35_DATA.skills).forEach(function(kv) {
     var id = kv[0];
@@ -2100,11 +2380,13 @@ function renderLevelUpSkills35() {
     var maxRank = C35.levelUpState.newLevel + 3;
     var maxForSkill = isClass ? maxRank : Math.floor(maxRank / 2);
 
+    spent += isClass ? addedRanks : (addedRanks * 2);
     html += '<div class="lu-skill-item">';
     html += '<input type="number" class="lu-skill-input" id="luSkill_'+id+'" min="0" max="'+(maxForSkill-currentRanks)+'" value="'+addedRanks+'" onchange="luUpdateSkill35(\''+id+'\')">';
     html += '<span class="lu-skill-label">'+skill.name+' ('+DND35_DATA.abilityShort[skill.ability]+')'+(!isClass?' [cross-class]':'')+' - '+newRanks+'/'+maxForSkill+'</span>';
     html += '</div>';
   });
+  html = '<div style="font-size:12px;color:' + (spent > skillPointsPerLevel ? 'var(--crimson)' : 'var(--text-muted)') + ';margin-bottom:8px;">Spent: ' + spent + ' / ' + skillPointsPerLevel + ' points</div>' + html;
 
   document.getElementById('luSkillList35').innerHTML = html;
 }
@@ -2122,16 +2404,19 @@ function renderLevelUpFeats35() {
   var list = document.getElementById('luFeatList35');
   if (!list) return;
 
-  var cls = DND35_DATA.classes[C35.cls];
+  var clsKey = C35.levelUpState.selectedClass;
   var newLvl = C35.levelUpState.newLevel;
   var isFeatLevel = DND35_DATA.featLevels.includes(newLvl);
-  var isFighterBonusFeat = C35.cls === 'fighter' && DND35_DATA.fighterBonusFeatLevels.includes(newLvl);
+  var fighterNewLevel = classLevel35('fighter') + (clsKey === 'fighter' ? 1 : 0);
+  var isFighterBonusFeat = clsKey === 'fighter' && DND35_DATA.fighterBonusFeatLevels.includes(fighterNewLevel);
+  var maxFeats = (isFeatLevel ? 1 : 0) + (isFighterBonusFeat ? 1 : 0);
+  if (maxFeats <= 0) { list.innerHTML = '<div class="lu-section-body">No feat selection at this level.</div>'; return; }
 
   var html = '';
   var feats = DND35_DATA.feats || [];
   feats.forEach(function(feat, idx) {
-    var isSelected = C35.levelUpState.selectedFeats.includes(idx);
-    html += '<div class="lu-feat-item '+(isSelected?'selected':'')+'" onclick="luToggleFeat35('+idx+')">';
+    var isSelected = C35.levelUpState.selectedFeats.includes(feat.name);
+    html += '<div class="lu-feat-item '+(isSelected?'selected':'')+'" onclick="luToggleFeat35('+idx+','+maxFeats+')">';
     html += '<div class="lu-feat-item-name">'+feat.name+'</div>';
     html += '<div class="lu-feat-item-desc">'+feat.desc+'</div>';
     html += '</div>';
@@ -2141,17 +2426,23 @@ function renderLevelUpFeats35() {
 }
 
 function luToggleFeat35(featIdx) {
-  var idx = C35.levelUpState.selectedFeats.indexOf(featIdx);
+  var maxFeats = arguments.length > 1 ? (parseInt(arguments[1]) || 0) : 0;
+  var feat = (DND35_DATA.feats || [])[featIdx];
+  if (!feat) return;
+  var featName = feat.name;
+  var idx = C35.levelUpState.selectedFeats.indexOf(featName);
   if (idx >= 0) {
     C35.levelUpState.selectedFeats.splice(idx, 1);
   } else {
-    C35.levelUpState.selectedFeats.push(featIdx);
+    if (maxFeats > 0 && C35.levelUpState.selectedFeats.length >= maxFeats) return;
+    C35.levelUpState.selectedFeats.push(featName);
   }
   renderLevelUpFeats35();
 }
 
 function luRollHP35() {
-  var hitDie = DND35_DATA.classes[C35.cls].hitDie;
+  var clsKey = C35.levelUpState ? C35.levelUpState.selectedClass : C35.cls;
+  var hitDie = (DND35_DATA.classes[clsKey] || {}).hitDie || 8;
   var roll = Math.floor(Math.random() * hitDie) + 1;
   document.getElementById('luHPRoll35').value = roll;
   C35.levelUpState.hpRoll = roll;
@@ -2167,19 +2458,54 @@ function luSelectAbility35(abil) {
     btn.classList.remove('selected');
   });
   C35.levelUpState.selectedAbilityBoosts = [abil];
-  event.target.classList.add('selected');
+  document.querySelectorAll('.lu-ability-btn').forEach(function(btn) {
+    if (btn.textContent === DND35_DATA.abilityShort[abil]) btn.classList.add('selected');
+  });
 }
 
 function confirmLevelUp35() {
   if (!C35.levelUpState) return;
+  ensureClasses35();
 
   var newLvl = C35.levelUpState.newLevel;
-  var hitDie = DND35_DATA.classes[C35.cls].hitDie;
+  var selectedClassKey = C35.levelUpState.selectedClass || primaryClass35();
+  var selectedClass = DND35_DATA.classes[selectedClassKey];
+  if (!selectedClass) return;
+  var hitDie = selectedClass.hitDie;
   var conMod = mod35(ts35('con'));
   var hpGain = (C35.levelUpState.hpRoll || Math.floor(hitDie/2)+1) + conMod;
   if (hpGain < 1) hpGain = 1;
 
-  C35.level = newLvl;
+  var skillPointsPerLevel = Math.max(1, selectedClass.skillPoints + mod35(ts35('int'))) + (C35.race === 'human' ? 1 : 0);
+  var skillSpent = 0;
+  Object.entries(C35.levelUpState.selectedSkills).forEach(function(kv) {
+    var id = kv[0];
+    var ranks = parseInt(kv[1]) || 0;
+    if (ranks <= 0) return;
+    var isClass = selectedClass.classSkills.includes(DND35_DATA.skills[id].name);
+    skillSpent += isClass ? ranks : (ranks * 2);
+  });
+  if (skillSpent > skillPointsPerLevel) {
+    alert('You assigned too many skill points for this level ('+skillSpent+'/'+skillPointsPerLevel+').');
+    return;
+  }
+
+  var isFeatLevel = DND35_DATA.featLevels.includes(newLvl);
+  var fighterNewLevel = classLevel35('fighter') + (selectedClassKey === 'fighter' ? 1 : 0);
+  var requiredFeatChoices = (isFeatLevel ? 1 : 0) + ((selectedClassKey === 'fighter' && DND35_DATA.fighterBonusFeatLevels.includes(fighterNewLevel)) ? 1 : 0);
+  if (C35.levelUpState.selectedFeats.length < requiredFeatChoices) {
+    alert('Choose '+(requiredFeatChoices - C35.levelUpState.selectedFeats.length)+' more feat(s) before leveling.');
+    return;
+  }
+
+  var classEntry = C35.classes.find(function(c){ return c.cls === selectedClassKey; });
+  if (!classEntry) {
+    classEntry = { cls: selectedClassKey, level: 0 };
+    C35.classes.push(classEntry);
+  }
+  classEntry.level += 1;
+  C35.levelHistory.push(selectedClassKey);
+  C35.level = totalLevel35();
   C35.hpRolls = C35.hpRolls || [];
   C35.hpRolls.push(hpGain);
 
@@ -2238,9 +2564,16 @@ function loadCharacter35FromHandoff() {
     if (!data||data.edition!=='3.5') return;
     ['race','cls','alignment','abilities','scoreMethod','arrayAssigned','skillRanks','selectedFeats',
      'equipChoices','weaponChoices','selectedCantrips','selectedSpells','spellsByLevel','details','level','hpRolls',
-     'levelUpSkills','levelUpFeats','levelUpAbilityBoosts'].forEach(function(k){
+     'levelUpSkills','levelUpFeats','levelUpAbilityBoosts','classes','levelHistory'].forEach(function(k){
       if (data[k]!==undefined) C35[k]=data[k];
     });
+    ensureClasses35();
+    if (Array.isArray(C35.selectedFeats)) {
+      C35.selectedFeats = C35.selectedFeats.map(function(f){
+        if (typeof f === 'number' && DND35_DATA.feats && DND35_DATA.feats[f]) return DND35_DATA.feats[f].name;
+        return f;
+      }).filter(Boolean);
+    }
     C35.weaponChoices = C35.weaponChoices||{};
     localStorage.setItem('phmurt_current_char35_id',loadId);
     renderAbilGrid35(); renderPool35();
@@ -2260,6 +2593,7 @@ function loadCharacter35FromHandoff() {
 document.addEventListener('DOMContentLoaded', function() {
   // Method info default
   document.getElementById('methodInfo35').innerHTML = '<strong>Standard Array</strong>. Assign 15,14,13,12,10,8 to your six ability scores.';
+  ensureClasses35();
   renderRaces35(); renderClasses35(); renderAbilGrid35(); renderPool35(); updateMini35();
   // Mobile nav
   var ham=document.getElementById('hamburger'),menu=document.getElementById('mobileMenu'),close=document.getElementById('mobileClose');

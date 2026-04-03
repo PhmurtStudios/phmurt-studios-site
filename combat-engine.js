@@ -718,7 +718,10 @@ window.CombatEngine = (() => {
       if (targetAutoFailsStrDexSave(targetConds) && (parsed.ability === "Strength" || parsed.ability === "Dexterity")) {
         saveResult = { success: false, autoFail: true, total: -999, dc: parsed.dc, details: "auto-fail" };
       } else {
-        const saveMod = getSaveModifier(target, parsed.ability);
+        const coverSaveBonus = ((options || {}).dexSaveBonus || 0) && parsed.ability === "Dexterity"
+          ? Number((options || {}).dexSaveBonus) || 0
+          : 0;
+        const saveMod = getSaveModifier(target, parsed.ability) + coverSaveBonus;
         let saveAdv = "normal";
         if (targetConds.includes("restrained") && parsed.ability === "Dexterity") saveAdv = "disadvantage";
         saveResult = makeSavingThrow(parsed.dc, saveMod, saveAdv);
@@ -910,6 +913,10 @@ window.CombatEngine = (() => {
     unconscious: {
       description: "Incapacitated. Can't move or speak. Unaware. Drop everything. Fall prone. Auto-fail STR and DEX saves. Attacks have advantage. Hits within 5ft are auto-crits.",
       noActions: true, noMovement: true, autoFailStrDex: true, attackedWithAdvantage: true, autoCritMelee: true,
+    },
+    dead: {
+      description: "Dead. Removed from turn actions and reactions unless a table override restores the creature.",
+      noActions: true, noMovement: true, noReactions: true,
     },
   };
 
