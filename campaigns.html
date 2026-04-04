@@ -495,12 +495,91 @@
 
     /* ═══ RESPONSIVE ═══ */
     @media (max-width: 900px) {
-      .cm-focus-strip { max-width: 340px; }
-      .cm-confirm-flyout { width: 240px; }
-      .cm-log-overlay { width: 220px; }
+      .cm-focus-strip { max-width: calc(100vw - 16px); }
+      .cm-confirm-flyout { width: min(280px, calc(100vw - 16px)); }
+      .cm-log-overlay { width: min(260px, calc(100vw - 16px)); }
+      .cm-cond-editor { width: min(260px, calc(100vw - 16px)); }
     }
     @media (max-width: 640px) {
-      .cm-focus-strip { display: none; }
+      .cm-top-strip {
+        margin: max(8px, env(safe-area-inset-top)) 6px 0;
+        padding: 4px 5px;
+        gap: 4px;
+      }
+      .cm-round-badge {
+        padding: 2px 6px;
+        font-size: 8px;
+        letter-spacing: 1px;
+      }
+      .cm-init-chip {
+        padding: 2px 3px;
+        gap: 0;
+      }
+      .cm-init-info {
+        display: none;
+      }
+      .cm-init-avatar {
+        width: 26px;
+        height: 26px;
+      }
+      .cm-turn-controls {
+        gap: 3px;
+      }
+      .cm-turn-btn {
+        min-height: 34px;
+        padding: 0 9px;
+      }
+      .cm-focus-strip {
+        display: flex;
+        left: 6px;
+        right: 6px;
+        bottom: calc(56px + env(safe-area-inset-bottom));
+        max-width: none;
+        padding: 6px 8px 6px 6px;
+      }
+      .cm-focus-name {
+        max-width: 42vw;
+        font-size: 11px;
+      }
+      .cm-focus-stats {
+        gap: 5px;
+      }
+      .cm-hp-adjust {
+        gap: 2px;
+      }
+      .cm-hp-btn {
+        width: 26px;
+        height: 26px;
+      }
+      .cm-confirm-flyout {
+        top: auto;
+        left: 6px;
+        right: 6px;
+        bottom: calc(108px + env(safe-area-inset-bottom));
+        width: auto;
+        max-height: min(42dvh, 280px);
+        border-radius: 14px;
+      }
+      .cm-log-overlay {
+        left: 6px;
+        right: 6px;
+        bottom: calc(108px + env(safe-area-inset-bottom));
+        width: auto;
+        max-height: min(36dvh, 240px);
+      }
+      .cm-hotbar {
+        margin: 0 6px calc(6px + env(safe-area-inset-bottom));
+        padding: 4px 4px;
+      }
+      .cm-hot-slot {
+        min-width: 68px;
+        padding: 6px 8px;
+      }
+      .cm-cond-editor {
+        left: 0;
+        width: calc(100vw - 12px);
+        max-height: 180px;
+      }
     }
   </style>
 </head>
@@ -618,6 +697,7 @@ const NEW_CAMPAIGN = () => ({
   timeline: [], campaignNotes: [],
   encounters: [],
   combatLedger: [],
+  worldMap: { pendingLaunch: null, lastRoute: null, lastFocusedRegionId: null },
   battleIntegrationVersion: 1,
   activity: [{ time: "Just now", text: "Campaign created" }],
 });
@@ -679,6 +759,11 @@ const EXAMPLE_CAMPAIGN = {
     },
   ],
   combatLedger: [],
+  worldMap: {
+    pendingLaunch: null,
+    lastRoute: { from:"Thornhaven", to:"Shadowfen", miles:164, etaDays:7.1, threat:"high" },
+    lastFocusedRegionId: 5,
+  },
   battleIntegrationVersion: 1,
   timeline: [
     { id:24, n:24, title:"Into the Shadowfen", date:"2026-03-26",
@@ -759,6 +844,66 @@ const PowerBar = ({ val, max, color }) => (
     <div style={{ width:`${Math.round(val/max*100)}%`, height:"100%", background:color||T.crimson, transition:"width 0.3s ease" }} />
   </div>
 );
+
+const WORLD_STATE_META = {
+  stable:      { label:"Stable",      color:"#5ee09a", icon:"S", glow:"rgba(94,224,154,0.18)" },
+  tense:       { label:"Tense",       color:"#ffd54f", icon:"!", glow:"rgba(255,213,79,0.18)" },
+  patrolled:   { label:"Patrolled",   color:"#9bb8ff", icon:"P", glow:"rgba(155,184,255,0.16)" },
+  rebuilding:  { label:"Rebuilding",  color:"#5ee09a", icon:"R", glow:"rgba(94,224,154,0.16)" },
+  corrupted:   { label:"Corrupted",   color:"#b574ff", icon:"C", glow:"rgba(181,116,255,0.18)" },
+  cursed:      { label:"Cursed",      color:"#b574ff", icon:"C", glow:"rgba(181,116,255,0.2)" },
+  blighted:    { label:"Blighted",    color:"#d4433a", icon:"B", glow:"rgba(212,67,58,0.2)" },
+  dangerous:   { label:"Dangerous",   color:"#d4433a", icon:"D", glow:"rgba(212,67,58,0.2)" },
+  destroyed:   { label:"Destroyed",   color:"#f06858", icon:"X", glow:"rgba(240,104,88,0.24)" },
+  conquered:   { label:"Conquered",   color:"#e8940a", icon:"K", glow:"rgba(232,148,10,0.18)" },
+  cleared:     { label:"Cleared",     color:"#5ee09a", icon:"V", glow:"rgba(94,224,154,0.16)" },
+  hidden:      { label:"Hidden",      color:"#8a7c70", icon:"?", glow:"rgba(138,124,112,0.12)" },
+  discovered:  { label:"Discovered",  color:"#9bb8ff", icon:"o", glow:"rgba(155,184,255,0.16)" },
+};
+
+const WORLD_THREAT_SCORE = { low:1, medium:2, high:3, extreme:4 };
+const WORLD_OVERLAYS = [
+  { id:"all", label:"All" },
+  { id:"factions", label:"Factions" },
+  { id:"danger", label:"Danger" },
+  { id:"quests", label:"Quests" },
+  { id:"discovery", label:"Discovery" },
+];
+const WORLD_ZOOM_PRESETS = {
+  world: { zoom:0.25, pan:{ x:60, y:30 } },
+  region:{ zoom:1.1, pan:null },
+  local: { zoom:2.6, pan:null },
+  site:  { zoom:4.2, pan:null },
+};
+
+function getWorldStateMeta(state) {
+  const key = String(state || "stable").toLowerCase();
+  return WORLD_STATE_META[key] || { label: state || "Stable", color:"#a4b5cc", icon:"*", glow:"rgba(164,181,204,0.14)" };
+}
+
+function getWorldThreatColor(threat) {
+  if (threat === "extreme") return "#f06858";
+  if (threat === "high") return "#e8940a";
+  if (threat === "medium") return "#f5c45c";
+  return "#5ee09a";
+}
+
+function getWorldTravelCost(region) {
+  const typeCost = {
+    city:0.9, town:1, hamlet:1.05, kingdom:0.95, castle:1,
+    wilderness:1.35, forest:1.45, mountain:1.8, dungeon:1.55, ruins:1.35, route:0.75,
+  };
+  const threatCost = { low:1, medium:1.12, high:1.3, extreme:1.6 };
+  return (typeCost[region?.type] || 1.15) * (threatCost[region?.threat] || 1);
+}
+
+function normalizeWorldMapState(worldMap) {
+  return {
+    pendingLaunch: worldMap?.pendingLaunch || null,
+    lastRoute: worldMap?.lastRoute || null,
+    lastFocusedRegionId: worldMap?.lastFocusedRegionId || null,
+  };
+}
 
 /* ═══════════════════════════════════════════════════════════════════════════
    COMBAT HUD V2 — Minimal-footprint, decision-speed-first components
@@ -1195,11 +1340,13 @@ const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, sel
 const TokenActionRing = ({ visible, token, actions, screenX, screenY, tokenRadius, onAction, onMove, moveLabel, onEndTurn, onDismiss, resolution }) => {
   if (!visible || !token) return null;
 
+  const isCompactMobile = typeof window !== "undefined" && window.innerWidth <= 640;
   const moveDisabled = moveLabel === "0 ft";
   // Arrange actions in a ring around the token
-  const maxSlots = 8;
+  const maxSlots = isCompactMobile ? 6 : 8;
   const visibleActions = actions.slice(0, maxSlots);
-  const ringRadius = Math.max(72, tokenRadius + 52);
+  const ringRadius = Math.max(isCompactMobile ? 58 : 72, tokenRadius + (isCompactMobile ? 38 : 52));
+  const actionButtonSize = isCompactMobile ? 48 : 56;
 
   // Calculate slot positions in a semicircle below the token
   const getSlotPosition = (idx, total) => {
@@ -1223,11 +1370,11 @@ const TokenActionRing = ({ visible, token, actions, screenX, screenY, tokenRadiu
     }}>
       {/* Move button — always at top */}
       <div style={{ position: "absolute", left: "50%", top: -(ringRadius - 8), transform: "translateX(-50%)", pointerEvents: "auto" }}>
-        <button onClick={onMove} disabled={moveDisabled}
+        <button type="button" onClick={onMove} disabled={moveDisabled}
           style={{
             background: moveDisabled ? "rgba(255,255,255,0.03)" : "rgba(88,170,255,0.12)",
             border: "1px solid " + (moveDisabled ? "rgba(255,255,255,0.06)" : "rgba(88,170,255,0.35)"),
-            borderRadius: 10, padding: "6px 14px", cursor: moveDisabled ? "default" : "pointer",
+            borderRadius: 10, padding: isCompactMobile ? "8px 12px" : "6px 14px", cursor: moveDisabled ? "default" : "pointer",
             display: "flex", alignItems: "center", gap: 6,
             backdropFilter: "blur(8px)", boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
             opacity: moveDisabled ? 0.4 : 1, transition: "all 0.15s",
@@ -1253,11 +1400,11 @@ const TokenActionRing = ({ visible, token, actions, screenX, screenY, tokenRadiu
             transform: "translate(-50%, -50%)",
             pointerEvents: "auto",
           }}>
-            <button onClick={() => !isDisabled && onAction(action)}
+            <button type="button" onClick={() => !isDisabled && onAction(action)}
               disabled={isDisabled}
               title={action.helper || action.label}
               style={{
-                width: 56, height: 56,
+                width: actionButtonSize, height: actionButtonSize,
                 borderRadius: 12,
                 background: isDisabled ? "rgba(255,255,255,0.02)" : "rgba(10,10,16,0.88)",
                 border: "1px solid " + (isDisabled ? "rgba(255,255,255,0.05)" : toneColor.replace(")", ",0.35)").replace("rgb(", "rgba(")),
@@ -1269,9 +1416,9 @@ const TokenActionRing = ({ visible, token, actions, screenX, screenY, tokenRadiu
               }}
               onMouseEnter={e => { if (!isDisabled) { e.currentTarget.style.transform = "scale(1.12)"; e.currentTarget.style.boxShadow = "0 6px 24px rgba(0,0,0,0.6)"; } }}
               onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = isDisabled ? "none" : "0 4px 16px rgba(0,0,0,0.5)"; }}>
-              <Icon size={14} color={isDisabled ? T.textFaint : toneColor} />
+              <Icon size={isCompactMobile ? 13 : 14} color={isDisabled ? T.textFaint : toneColor} />
               <span style={{
-                fontFamily: T.ui, fontSize: 7, color: isDisabled ? T.textFaint : T.text,
+                 fontFamily: T.ui, fontSize: isCompactMobile ? 6 : 7, color: isDisabled ? T.textFaint : T.text,
                 textAlign: "center", lineHeight: 1.1, letterSpacing: "0.3px",
                 maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
               }}>
@@ -1293,7 +1440,7 @@ const TokenActionRing = ({ visible, token, actions, screenX, screenY, tokenRadiu
 
       {/* End Turn button — bottom center */}
       <div style={{ position: "absolute", left: "50%", top: ringRadius + 12, transform: "translateX(-50%)", pointerEvents: "auto" }}>
-        <button onClick={onEndTurn}
+        <button type="button" onClick={onEndTurn}
           style={{
             background: "rgba(212,67,58,0.1)", border: "1px solid rgba(212,67,58,0.3)",
             borderRadius: 8, padding: "5px 16px", cursor: "pointer",
@@ -1310,8 +1457,12 @@ const TokenActionRing = ({ visible, token, actions, screenX, screenY, tokenRadiu
       {/* Resolution popup — shows result of last action */}
       {resolution && (
         <div onClick={onDismiss} style={{
-          position: "absolute", left: ringRadius + 20, top: -20,
-          width: 220, pointerEvents: "auto", cursor: "pointer",
+          position: "absolute",
+          left: isCompactMobile ? "50%" : ringRadius + 20,
+          top: isCompactMobile ? ringRadius + 52 : -20,
+          transform: isCompactMobile ? "translateX(-50%)" : "none",
+          width: isCompactMobile ? 200 : 220,
+          pointerEvents: "auto", cursor: "pointer",
           background: "rgba(10,10,16,0.92)", backdropFilter: "blur(12px)",
           border: "1px solid rgba(212,67,58,0.2)", borderRadius: 12,
           padding: "10px 12px", boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
@@ -3418,18 +3569,24 @@ function TimelineView({ data, setData, onNav }) {
 // WORLD STATE
 // ═══════════════════════════════════════════════════════════════════════════
 
-function WorldView({ data, setData }) {
+function WorldView({ data, setData, onNav }) {
   const [sel,setSel] = useState(null);
   const [selType,setSelType] = useState(null);
   const [tab,setTab] = useState("map");
   const [editing,setEditing] = useState(false);
   const [addingEntity,setAddingEntity] = useState(false);
+  const [worldOverlay,setWorldOverlay] = useState("all");
+  const [worldSearch,setWorldSearch] = useState("");
+  const [routeDraft,setRouteDraft] = useState({ fromId: null, toId: null });
+  const [isMapCompact,setIsMapCompact] = useState(() => typeof window !== "undefined" ? window.innerWidth < 860 : false);
+  const worldMapState = normalizeWorldMapState(data.worldMap);
 
   // ── Map state — starts zoomed out to see the whole continent ──
   const [mapZoom, setMapZoom] = useState(0.25);
   const [mapPan, setMapPan] = useState({ x: 60, y: 30 });
   const [dragging, setDragging] = useState(null);
   const mapRef = useRef(null);
+  const mapTouchRef = useRef({ active: false });
   const [zoomLevel, setZoomLevel] = useState("continent"); // continent | kingdom | local | detail
 
   // Update zoom level label
@@ -3439,6 +3596,12 @@ function WorldView({ data, setData }) {
     else if (mapZoom < 3.0) setZoomLevel("local");
     else setZoomLevel("detail");
   }, [mapZoom]);
+
+  useEffect(() => {
+    const onResize = () => setIsMapCompact(window.innerWidth < 860);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
 
   const conns = (type,ent) => {
@@ -3562,6 +3725,83 @@ function WorldView({ data, setData }) {
   }, [dragging]);
 
   const handleMouseUp = useCallback(() => setDragging(null), []);
+
+  const getMapPoint = (e) => {
+    const p = e?.touches?.[0] || e?.changedTouches?.[0] || e || { clientX: 0, clientY: 0 };
+    return { clientX: p.clientX || 0, clientY: p.clientY || 0 };
+  };
+
+  const getMapPinchMetrics = (e) => {
+    if (!mapRef.current || !e?.touches || e.touches.length < 2) return null;
+    const rect = mapRef.current.getBoundingClientRect();
+    const a = e.touches[0];
+    const b = e.touches[1];
+    const centerX = ((a.clientX + b.clientX) / 2) - rect.left;
+    const centerY = ((a.clientY + b.clientY) / 2) - rect.top;
+    const distance = Math.max(1, Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY));
+    return {
+      centerX,
+      centerY,
+      distance,
+      worldX: (centerX - mapPan.x) / mapZoom,
+      worldY: (centerY - mapPan.y) / mapZoom,
+    };
+  };
+
+  const handleMapTouchStart = useCallback((e) => {
+    e.preventDefault();
+    if (e.touches && e.touches.length >= 2) {
+      const pinch = getMapPinchMetrics(e);
+      if (!pinch) return;
+      mapTouchRef.current = {
+        active: true,
+        mode: "pinch",
+        distance: pinch.distance,
+        zoom: mapZoom,
+        worldX: pinch.worldX,
+        worldY: pinch.worldY,
+      };
+      setDragging(null);
+      return;
+    }
+    if (!e.touches || e.touches.length !== 1) return;
+    const p = getMapPoint(e);
+    mapTouchRef.current = { active: true, mode: "drag" };
+    handleMouseDown({ button: 0, clientX: p.clientX, clientY: p.clientY });
+  }, [handleMouseDown, mapPan.x, mapPan.y, mapZoom]);
+
+  const handleMapTouchMove = useCallback((e) => {
+    if (!mapTouchRef.current.active) return;
+    e.preventDefault();
+    if (mapTouchRef.current.mode === "pinch" && e.touches && e.touches.length >= 2) {
+      const pinch = getMapPinchMetrics(e);
+      if (!pinch) return;
+      const baseDistance = mapTouchRef.current.distance || pinch.distance;
+      const baseZoom = mapTouchRef.current.zoom || mapZoom;
+      const nextZoom = Math.max(0.12, Math.min(8, baseZoom * (pinch.distance / baseDistance)));
+      setMapZoom(nextZoom);
+      setMapPan({
+        x: pinch.centerX - (mapTouchRef.current.worldX || pinch.worldX) * nextZoom,
+        y: pinch.centerY - (mapTouchRef.current.worldY || pinch.worldY) * nextZoom,
+      });
+      return;
+    }
+    if (!e.touches || e.touches.length !== 1) return;
+    const p = getMapPoint(e);
+    handleMouseMove({ clientX: p.clientX, clientY: p.clientY });
+  }, [handleMouseMove, mapPan.x, mapPan.y, mapZoom]);
+
+  const handleMapTouchEnd = useCallback((e) => {
+    if (!mapTouchRef.current.active) return;
+    e.preventDefault();
+    const mode = mapTouchRef.current.mode;
+    mapTouchRef.current = { active: false };
+    if (mode === "pinch") {
+      setDragging(null);
+      return;
+    }
+    handleMouseUp();
+  }, [handleMouseUp]);
 
   const selectRegion = (r) => { setSel(r); setSelType("region"); setEditing(false); };
 
@@ -3721,41 +3961,234 @@ function WorldView({ data, setData }) {
 
   const roadList = roads();
 
+  const worldNodes = useMemo(() => mapRegions.map((r) => {
+    const faction = data.factions.find((f) => f.name === r.ctrl) || null;
+    const quests = data.quests.filter((q) => q.region === r.name);
+    const activeQuests = quests.filter((q) => q.status !== "completed");
+    const npcs = data.npcs.filter((n) => n.loc === r.name);
+    const encounters = (data.encounters || []).filter((enc) => enc.location === r.name);
+    const timelineEvents = (data.timeline || [])
+      .flatMap((session) => (session.events || []).map((ev) => ({
+        ...ev,
+        sessionTitle: session.title,
+        date: session.date,
+      })))
+      .filter((ev) => ev.location === r.name || (ev.linkedNames || []).some((name) => npcs.some((n) => n.name === name)))
+      .slice(0, 4);
+    const stateMeta = getWorldStateMeta(r.state);
+    const searched = !worldSearch.trim() || [r.name, r.type, r.state, r.ctrl, ...quests.map((q) => q.title), ...npcs.map((n) => n.name)]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(worldSearch.trim().toLowerCase());
+    return {
+      ...r,
+      key: "region-" + r.id,
+      label: r.name,
+      discovered: r.visited || String(r.state || "").toLowerCase() !== "hidden",
+      faction,
+      quests,
+      activeQuests,
+      npcs,
+      encounters,
+      timelineEvents,
+      stateMeta,
+      searched,
+      travelWeight: getWorldTravelCost(r),
+      dangerScore: WORLD_THREAT_SCORE[r.threat] || 1,
+    };
+  }), [mapRegions, data.factions, data.quests, data.npcs, data.encounters, data.timeline, worldSearch]);
+
+  const worldNodesById = useMemo(() => {
+    const map = {};
+    worldNodes.forEach((node) => { map[node.id] = node; });
+    return map;
+  }, [worldNodes]);
+
+  const activeRoute = useMemo(() => {
+    if (!routeDraft.fromId || !routeDraft.toId || routeDraft.fromId === routeDraft.toId) return null;
+    const startNode = worldNodesById[routeDraft.fromId];
+    const endNode = worldNodesById[routeDraft.toId];
+    if (!startNode || !endNode) return null;
+
+    const graph = {};
+    roadList.forEach((rd) => {
+      const fromId = rd.from.id;
+      const toId = rd.to.id;
+      if (!graph[fromId]) graph[fromId] = [];
+      if (!graph[toId]) graph[toId] = [];
+      const edgeWeight = rd.dist * (((worldNodesById[fromId]?.travelWeight || 1) + (worldNodesById[toId]?.travelWeight || 1)) / 2) * (rd.major ? 0.8 : 1);
+      graph[fromId].push({ id: toId, dist: rd.dist, weight: edgeWeight, road: rd });
+      graph[toId].push({ id: fromId, dist: rd.dist, weight: edgeWeight, road: rd });
+    });
+
+    const distances = { [startNode.id]: 0 };
+    const hops = { [startNode.id]: 0 };
+    const prev = {};
+    const pending = new Set([startNode.id]);
+    while (pending.size) {
+      let current = null;
+      let best = Infinity;
+      pending.forEach((id) => {
+        const d = distances[id];
+        if (d < best) { best = d; current = id; }
+      });
+      if (current === null || current === endNode.id) break;
+      pending.delete(current);
+      (graph[current] || []).forEach((edge) => {
+        const nextDistance = (distances[current] || 0) + edge.weight;
+        if (nextDistance < (distances[edge.id] ?? Infinity)) {
+          distances[edge.id] = nextDistance;
+          hops[edge.id] = (hops[current] || 0) + edge.dist;
+          prev[edge.id] = { id: current, road: edge.road };
+          pending.add(edge.id);
+        }
+      });
+    }
+    if (!(endNode.id in prev) && startNode.id !== endNode.id) return { from: startNode, to: endNode, segments: [], names:[startNode.name, endNode.name], miles: 0, etaDays: 0, blocked:true, threat:"unknown" };
+    const segments = [];
+    const pathIds = [endNode.id];
+    let cursor = endNode.id;
+    while (cursor !== startNode.id && prev[cursor]) {
+      segments.unshift(prev[cursor].road);
+      cursor = prev[cursor].id;
+      pathIds.unshift(cursor);
+    }
+    const rawMiles = (hops[endNode.id] || Math.hypot(startNode.mx - endNode.mx, startNode.my - endNode.my)) / 18;
+    const threatScore = pathIds.reduce((sum, id) => sum + (worldNodesById[id]?.dangerScore || 1), 0) / Math.max(pathIds.length, 1);
+    return {
+      from: startNode,
+      to: endNode,
+      segments,
+      names: pathIds.map((id) => worldNodesById[id]?.name).filter(Boolean),
+      miles: Math.round(rawMiles),
+      etaDays: Math.max(0.2, Math.round((rawMiles / 24) * 10) / 10),
+      threat: threatScore >= 3.3 ? "extreme" : threatScore >= 2.5 ? "high" : threatScore >= 1.7 ? "medium" : "low",
+      blocked: false,
+    };
+  }, [roadList, routeDraft.fromId, routeDraft.toId, worldNodesById]);
+
+  const selectedWorldNode = useMemo(() => {
+    if (!sel) return null;
+    if (selType === "region") return worldNodesById[sel.id] || sel;
+    if (selType === "poi") return sel;
+    return null;
+  }, [sel, selType, worldNodesById]);
+
+  const setWorldMapPatch = (patch) => {
+    setData((d) => ({
+      ...d,
+      worldMap: {
+        ...normalizeWorldMapState(d.worldMap),
+        ...patch,
+      },
+    }));
+  };
+
+  const clearWorldRoute = () => {
+    setRouteDraft({ fromId: null, toId: null });
+    setWorldMapPatch({ lastRoute: null });
+  };
+
+  const focusWorldNode = (node, layer = "region") => {
+    if (!node) return;
+    const rect = mapRef.current?.getBoundingClientRect();
+    const viewportW = rect?.width || 1200;
+    const viewportH = rect?.height || 800;
+    const targetZoom = WORLD_ZOOM_PRESETS[layer]?.zoom || (layer === "site" ? 4.2 : 1.4);
+    setMapZoom(targetZoom);
+    setMapPan({
+      x: viewportW * (isMapCompact ? 0.5 : 0.42) - node.mx * targetZoom,
+      y: viewportH * 0.48 - node.my * targetZoom,
+    });
+    setSel(node);
+    setSelType("region");
+    setEditing(false);
+    setWorldMapPatch({ lastFocusedRegionId: node.id });
+  };
+
+  const queueEncounterLaunch = (encounter, node) => {
+    if (!encounter || !node) return;
+    setWorldMapPatch({
+      pendingLaunch: {
+        launchId: "world-launch-" + Date.now(),
+        type: "encounter",
+        encounterId: encounter.id,
+        regionId: node.id,
+        location: node.name,
+      },
+      lastFocusedRegionId: node.id,
+    });
+    if (onNav) onNav("play");
+  };
+
+  useEffect(() => {
+    if (activeRoute && !activeRoute.blocked) {
+      setWorldMapPatch({
+        lastRoute: {
+          from: activeRoute.from.name,
+          to: activeRoute.to.name,
+          miles: activeRoute.miles,
+          etaDays: activeRoute.etaDays,
+          threat: activeRoute.threat,
+        },
+      });
+    }
+  }, [activeRoute?.from?.id, activeRoute?.to?.id, activeRoute?.miles, activeRoute?.etaDays, activeRoute?.threat]);
+
   return (
-    <div style={{ display:"flex", flexDirection:"column", height:"calc(100vh - 56px)", overflow:"hidden" }}>
+    <div style={{ display:"flex", flexDirection:"column", height:"calc(100dvh - 56px)", overflow:"hidden" }}>
       {/* Top bar */}
-      <div style={{ display:"flex", alignItems:"center", gap:0, padding:"0 24px", borderBottom:`1px solid ${T.border}`, flexShrink:0, background:T.bgNav }}>
+      <div style={{ display:"flex", alignItems:"center", gap:0, rowGap:6, flexWrap:"wrap", padding:"0 12px 8px", borderBottom:`1px solid ${T.border}`, flexShrink:0, background:T.bgNav }}>
         {["map","regions","factions","npcs"].map(t => (
           <button key={t} onClick={()=>{setTab(t);if(t!=="map"){setSel(null);setEditing(false);}}} style={{
-            padding:"14px 24px", background:"transparent", border:"none", cursor:"pointer",
+            padding:"14px clamp(12px, 2.2vw, 24px)", background:"transparent", border:"none", cursor:"pointer",
             fontFamily:T.ui, fontSize:9, letterSpacing:"2px", textTransform:"uppercase", fontWeight:500,
             color:tab===t?T.crimson:T.textMuted, transition:"all 0.3s",
             borderBottom:tab===t?`2px solid ${T.crimson}`:"2px solid transparent",
           }}>{t==="map"?"Fantasy Map":t}</button>
         ))}
-        <div style={{ marginLeft:"auto", display:"flex", gap:8, alignItems:"center" }}>
+        <div style={{ marginLeft:"auto", display:"flex", gap:8, alignItems:"center", justifyContent:"flex-end", flexWrap:"wrap" }}>
           {tab==="map" && <>
             <span style={{ fontFamily:T.ui, fontSize:8, color:T.crimson, letterSpacing:"1px", fontWeight:500 }}>{zoomLevel.toUpperCase()}</span>
             <span style={{ fontFamily:T.ui, fontSize:8, color:T.textMuted, letterSpacing:"1px" }}>{Math.round(mapZoom*100)}%</span>
             <button onClick={()=>setMapZoom(z=>Math.min(8,z*1.3))} style={{ padding:"4px 8px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontSize:13, cursor:"pointer", borderRadius:"2px" }}>+</button>
             <button onClick={()=>setMapZoom(z=>Math.max(0.12,z*0.77))} style={{ padding:"4px 8px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontSize:13, cursor:"pointer", borderRadius:"2px" }}>−</button>
-            <button onClick={()=>{setMapZoom(0.25);setMapPan({x:60,y:30});}} style={{ padding:"4px 10px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Continent</button>
-            <button onClick={()=>{setMapZoom(1);setMapPan({x:-1200,y:-800});}} style={{ padding:"4px 10px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Kingdom</button>
-            <button onClick={()=>{setMapZoom(2.5);setMapPan({x:-4500,y:-3200});}} style={{ padding:"4px 10px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Local</button>
-            {tab==="map" && <div style={{ position:"relative" }}>
-              
-              <Search size={11} color={T.textFaint} style={{ position:"absolute", left:8, top:"50%", transform:"translateY(-50%)" }}/>
-            </div>}
+            <button onClick={()=>{setMapZoom(WORLD_ZOOM_PRESETS.world.zoom);setMapPan(WORLD_ZOOM_PRESETS.world.pan);}} style={{ padding:"4px 10px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>World</button>
+            <button onClick={()=>focusWorldNode(selectedWorldNode?.mx != null ? selectedWorldNode : (worldNodes.find((n)=>n.id===worldMapState.lastFocusedRegionId) || worldNodes[0]), "region")} style={{ padding:"4px 10px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Region</button>
+            <button onClick={()=>focusWorldNode(selectedWorldNode?.mx != null ? selectedWorldNode : (worldNodes.find((n)=>n.id===worldMapState.lastFocusedRegionId) || worldNodes[0]), "local")} style={{ padding:"4px 10px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Local</button>
+            {selectedWorldNode?.mx != null && selectedWorldNode?.type === "dungeon" && <button onClick={()=>focusWorldNode(selectedWorldNode, "site")} style={{ padding:"4px 10px", background:"rgba(212,67,58,0.08)", border:`1px solid ${T.crimsonBorder}`, color:T.crimson, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Site</button>}
+            {activeRoute && <button onClick={clearWorldRoute} style={{ padding:"4px 10px", background:"rgba(94,224,154,0.08)", border:"1px solid rgba(94,224,154,0.22)", color:"#5ee09a", fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Clear Route</button>}
+            <div style={{ display:"flex", gap:4, padding:"3px", border:`1px solid ${T.border}`, borderRadius:"999px", background:"rgba(0,0,0,0.14)", maxWidth:isMapCompact ? "100%" : 420, overflowX:"auto" }}>
+              {WORLD_OVERLAYS.map((overlay) => (
+                <button key={overlay.id} onClick={()=>setWorldOverlay(overlay.id)} style={{
+                  padding:"5px 10px", border:"none", borderRadius:"999px", cursor:"pointer", whiteSpace:"nowrap",
+                  fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase",
+                  color:worldOverlay===overlay.id?T.text:T.textFaint,
+                  background:worldOverlay===overlay.id?"rgba(212,67,58,0.14)":"transparent",
+                  transition:"all 0.15s ease",
+                }}>{overlay.label}</button>
+              ))}
+            </div>
+            <div style={{ position:"relative", minWidth:isMapCompact ? 148 : 220 }}>
+              <Search size={11} color={T.textFaint} style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)" }}/>
+              <input value={worldSearch} onChange={(e)=>setWorldSearch(e.target.value)} placeholder="Find locations, NPCs, quests..."
+                style={{
+                  width:"100%", padding:"8px 10px 8px 28px", background:"rgba(0,0,0,0.12)", border:`1px solid ${T.border}`,
+                  borderRadius:"999px", color:T.text, fontFamily:T.body, fontSize:12, outline:"none", boxSizing:"border-box",
+                }} />
+            </div>
           </>}
           <CrimsonBtn onClick={()=>setAddingEntity(true)} small><Plus size={11}/> Add</CrimsonBtn>
         </div>
       </div>
 
-      <div style={{ display:"flex", flex:1, overflow:"hidden" }}>
+      <div style={{ display:"flex", flex:1, overflow:"hidden", position:"relative" }}>
         {/* ══════════ FANTASY MAP TAB — Multi-scale continental map ══════════ */}
         {tab==="map" && (
-          <div ref={mapRef} style={{ flex:1, overflow:"hidden", cursor:dragging?"grabbing":"grab", position:"relative", background:T.bg }}
+          <div ref={mapRef} style={{ flex:1, overflow:"hidden", cursor:dragging?"grabbing":"grab", position:"relative", background:T.bg, touchAction:"none", WebkitUserSelect:"none", userSelect:"none" }}
             onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
+            onTouchStart={handleMapTouchStart} onTouchMove={handleMapTouchMove} onTouchEnd={handleMapTouchEnd} onTouchCancel={handleMapTouchEnd}
             onWheel={handleWheel}>
             <svg width="100%" height="100%" style={{ display:"block" }}>
               <defs>
@@ -3841,13 +4274,27 @@ function WorldView({ data, setData }) {
                     <path key={`road-${i}`} d={rd.path} stroke="var(--text-faint)" strokeWidth={mapZoom > 2 ? 0.8 : 1.5} fill="none" strokeDasharray="6,6" opacity="0.35" strokeLinecap="round"/>
                   ))}
                 </g>}
+                {activeRoute && !activeRoute.blocked && (
+                  <g>
+                    {activeRoute.segments.map((rd, i) => (
+                      <path key={`active-route-${i}`} d={rd.path} stroke={getWorldThreatColor(activeRoute.threat)} strokeWidth={mapZoom > 1.8 ? 4 : 7} fill="none" opacity="0.75" strokeLinecap="round" strokeDasharray="22,12">
+                        <animate attributeName="stroke-dashoffset" from="0" to="-68" dur="2.4s" repeatCount="indefinite" />
+                      </path>
+                    ))}
+                  </g>
+                )}
 
                 {/* ═══ LAYER 5: Region markers — scale-dependent icon/label sizing ═══ */}
-                {mapRegions.map(r => {
+                {worldNodes.filter(node => node.searched).map(node => {
+                  const r = node;
                   const active = sel?.id===r.id && selType==="region";
                   const threatCol = tCols[r.threat] || "var(--text-muted)";
                   const isBig = r.type==="city"||r.type==="kingdom"||r.type==="capital";
                   const isSmall = r.type==="hamlet"||r.type==="ruins"||r.type==="dungeon";
+                  const isOrigin = routeDraft.fromId === r.id;
+                  const isDestination = routeDraft.toId === r.id;
+                  const routeNode = !!activeRoute && activeRoute.names.includes(r.name);
+                  const dimUndiscovered = worldOverlay === "discovery" && !r.discovered;
                   // Hide small settlements at continent zoom
                   if(isSmall && mapZoom < 0.5) return null;
                   // Scale icons inversely with zoom for readability at all levels
@@ -3855,35 +4302,57 @@ function WorldView({ data, setData }) {
                   const iconSize = Math.max(18, Math.min(baseSize, baseSize / Math.max(mapZoom*0.8, 0.5)));
                   const fontSize = isBig ? Math.max(8, 16/Math.max(mapZoom*0.7,0.4)) : Math.max(6, 12/Math.max(mapZoom*0.7,0.4));
                   return (
-                    <g key={r.id} onClick={(e)=>{e.stopPropagation(); selectRegion(r);}} style={{ cursor:"pointer" }}>
+                    <g key={r.key || r.id} onClick={(e)=>{e.stopPropagation(); selectRegion(r);}} style={{ cursor:"pointer", opacity: dimUndiscovered ? 0.35 : 1 }}>
                       {/* Glow ring on selection */}
                       {active && <circle cx={r.mx} cy={r.my} r={isBig?50:35} fill="none" stroke="var(--crimson)" strokeWidth="2.5" opacity="0.5" strokeDasharray="8,5">
                         <animate attributeName="stroke-dashoffset" from="0" to="26" dur="2s" repeatCount="indefinite"/>
                       </circle>}
+                      {routeNode && !active && <circle cx={r.mx} cy={r.my} r={isBig?50:35} fill="none" stroke={getWorldThreatColor(activeRoute.threat)} strokeWidth="2.5" opacity="0.35" strokeDasharray="10,7"/>}
+                      {((worldOverlay==="all" || worldOverlay==="danger") && (r.threat==="high" || r.threat==="extreme")) && <circle cx={r.mx} cy={r.my} r={isBig?84:58} fill={threatCol} opacity={r.threat==="extreme"?0.1:0.06} stroke={threatCol} strokeWidth="1" strokeDasharray="10,10" strokeOpacity="0.2"/>}
+                      {((worldOverlay==="all" || worldOverlay==="quests") && r.activeQuests?.length > 0 && mapZoom > 0.45) && <circle cx={r.mx} cy={r.my} r={isBig?66:46} fill="none" stroke="#ffd54f" strokeWidth="2" opacity="0.45" strokeDasharray="4,7"/>}
+                      {((worldOverlay==="all" || worldOverlay==="factions") && r.faction) && <circle cx={r.mx} cy={r.my} r={Math.max(18, iconSize * 0.72)} fill={r.faction.color} opacity={isBig && mapZoom < 0.6 ? 0.12 : 0.08}/>}
                       {/* City glow at continental zoom */}
                       {isBig && mapZoom < 0.6 && <circle cx={r.mx} cy={r.my} r="30" fill={threatCol} opacity="0.08"/>}
                       {/* Icon */}
                       <g transform={`translate(${r.mx - iconSize/2},${r.my - iconSize/2})`}>
-                        {(() => { const FI = getFantasyIcon(r.type); return <FI size={iconSize} color={threatCol} />; })()}
+                        {(() => { const FI = getFantasyIcon(r.type); return <FI size={iconSize} color={dimUndiscovered ? T.textFaint : threatCol} />; })()}
                       </g>
+                      {(isOrigin || isDestination) && (
+                        <g transform={`translate(${r.mx + (isBig?28:20)},${r.my - (isBig?30:22)})`}>
+                          <circle r="10" fill={isOrigin ? "#5ee09a" : "#f06858"} opacity="0.95"/>
+                          <text x="0" y="3" textAnchor="middle" fill="#0d0f13" fontFamily="'Cinzel', serif" fontSize="8" fontWeight="700">{isOrigin ? "A" : "B"}</text>
+                        </g>
+                      )}
                       {/* Label — always show for kingdoms/cities, show others when zoomed */}
                       {(isBig || mapZoom > 0.4) && (
-                        <text x={r.mx} y={r.my + (isBig?40:28)} textAnchor="middle" fill="var(--text)" fontFamily="'Cinzel', serif" fontSize={fontSize} fontWeight={isBig?"600":"500"} letterSpacing={isBig?"2.5":"1.5"} opacity={active?1:0.85} style={{ textTransform:"uppercase", pointerEvents:"none" }}>
-                          {r.name}
+                        <text x={r.mx} y={r.my + (isBig?40:28)} textAnchor="middle" fill={dimUndiscovered ? "var(--text-muted)" : "var(--text)"} fontFamily="'Cinzel', serif" fontSize={fontSize} fontWeight={isBig?"600":"500"} letterSpacing={isBig?"2.5":"1.5"} opacity={active?1:0.85} style={{ textTransform:"uppercase", pointerEvents:"none" }}>
+                          {r.discovered ? r.name : "Undiscovered Site"}
                         </text>
                       )}
                       {/* Faction/state subtitle — kingdom zoom+ */}
                       {mapZoom > 0.8 && (
-                        <text x={r.mx} y={r.my + (isBig?54:40)} textAnchor="middle" fill="var(--text-muted)" fontFamily="'Spectral', serif" fontSize={Math.max(6,10/Math.max(mapZoom*0.7,0.5))} fontStyle="italic" fontWeight="300" opacity="0.65" style={{ pointerEvents:"none" }}>
+                        <text x={r.mx} y={r.my + (isBig?54:40)} textAnchor="middle" fill={r.stateMeta?.color || "var(--text-muted)"} fontFamily="'Spectral', serif" fontSize={Math.max(6,10/Math.max(mapZoom*0.7,0.5))} fontStyle="italic" fontWeight="300" opacity="0.72" style={{ pointerEvents:"none" }}>
                           {r.ctrl ? r.ctrl : r.type} — {r.state}
                         </text>
                       )}
                       {/* Threat pip — local zoom+ */}
                       {mapZoom > 1.0 && (
-                        <circle cx={r.mx + (isBig?28:20)} cy={r.my - (isBig?24:16)} r="5" fill={threatCol} opacity="0.7"/>
+                        <circle cx={r.mx + (isBig?28:20)} cy={r.my - (isBig?24:16)} r="5" fill={r.stateMeta?.color || threatCol} opacity="0.8"/>
+                      )}
+                      {r.activeQuests?.length > 0 && mapZoom > 1.15 && (
+                        <g transform={`translate(${r.mx-(isBig?30:22)},${r.my-(isBig?24:18)})`}>
+                          <circle r="8" fill="rgba(255,213,79,0.14)" stroke="#ffd54f" strokeWidth="0.8"/>
+                          <text x="0" y="3" textAnchor="middle" fill="#ffd54f" fontFamily="'Cinzel', serif" fontSize="7" fontWeight="700">{r.activeQuests.length}</text>
+                        </g>
+                      )}
+                      {r.encounters?.length > 0 && mapZoom > 1.1 && (
+                        <g transform={`translate(${r.mx+(isBig?44:34)},${r.my+(isBig?18:14)})`}>
+                          <circle r="8" fill="rgba(212,67,58,0.16)" stroke="#f06858" strokeWidth="0.8"/>
+                          <path d="M-3,-2 L3,4 M3,-2 L-3,4" stroke="#f06858" strokeWidth="1.4" strokeLinecap="round"/>
+                        </g>
                       )}
                       {/* Visited marker — local zoom+ */}
-                      {r.visited && mapZoom > 1.2 && (
+                      {r.discovered && (worldOverlay==="all" || worldOverlay==="discovery") && mapZoom > 1.2 && (
                         <g transform={`translate(${r.mx-(isBig?28:20)},${r.my-(isBig?26:18)})`}>
                           <circle r="6" fill="var(--bg-card)" stroke="var(--text-muted)" strokeWidth="0.7"/>
                           <path d="M-2.5,0 L-0.5,2.5 L3,-2.5" stroke="#5ee09a" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
@@ -3907,7 +4376,7 @@ function WorldView({ data, setData }) {
                 {mapZoom > 1.5 && pois.map(p => <POISvg key={p.id} poi={p} zoom={mapZoom}/>)}
 
                 {/* ═══ LAYER 7: Weather overlay ═══ */}
-                {mapZoom > 0.4 && data.factions.map(wz => (
+                {false && mapZoom > 0.4 && data.factions.map(wz => (
                   <g key={wz.key} opacity={0.12 + (mapZoom > 1 ? 0.08 : 0)}>
                     {wz.type==="rain" && <><circle cx={wz.x} cy={wz.y} r={wz.r} fill="rgba(110,160,250,0.08)" stroke="rgba(110,160,250,0.15)" strokeWidth="1" strokeDasharray="8,6"/>
                       {mapZoom > 1 && [0,1,2,3,4,5].map(ri => <line key={`r-${ri}`} x1={wz.x-wz.r*0.6+ri*(wz.r*0.24)} y1={wz.y-20} x2={wz.x-wz.r*0.6+ri*(wz.r*0.24)-8} y2={wz.y+20} stroke="rgba(110,160,250,0.2)" strokeWidth="1" strokeLinecap="round"/>)}</>}
@@ -3921,7 +4390,7 @@ function WorldView({ data, setData }) {
                 ))}
 
                 {/* ═══ LAYER 8: Encounter zones — visible at local zoom+ ═══ */}
-                {mapZoom > 1.8 && [].map(ez => (
+                {false && mapZoom > 1.8 && [].map(ez => (
                   <g key={ez.key} opacity="0.25" style={{cursor:"pointer"}} onClick={(e)=>{e.stopPropagation();setSel({...ez,id:ez.id});setSelType("encounter");}}>
                     <circle cx={ez.x} cy={ez.y} r={ez.r} fill="rgba(212,67,58,0.04)" stroke="rgba(212,67,58,0.2)" strokeWidth="1" strokeDasharray="6,4"/>
                     {mapZoom > 2.5 && <>
@@ -4002,7 +4471,42 @@ function WorldView({ data, setData }) {
               </div>
             )}
 
-            {/* Travel info panel */}</div>
+            {/* Travel info panel */}
+            {(activeRoute || routeDraft.fromId || routeDraft.toId || worldMapState.lastRoute) && (
+              <div style={{
+                position:"absolute", left:"50%", bottom:isMapCompact ? 12 : 16, transform:"translateX(-50%)",
+                padding:"12px 16px", borderRadius:999, pointerEvents:"auto",
+                background:"rgba(7,8,12,0.9)", border:"1px solid rgba(94,224,154,0.2)",
+                boxShadow:"0 18px 40px rgba(0,0,0,0.35)", backdropFilter:"blur(12px)",
+                display:"flex", alignItems:"center", gap:12, maxWidth:"calc(100% - 24px)",
+              }}>
+                <MapPin size={14} color="#5ee09a" />
+                <div style={{ minWidth:0 }}>
+                  <div style={{ fontFamily:T.ui, fontSize:10, letterSpacing:"1.2px", textTransform:"uppercase", color:"#5ee09a", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                    {activeRoute
+                      ? `${activeRoute.from.name} -> ${activeRoute.to.name}`
+                      : (routeDraft.fromId || routeDraft.toId)
+                        ? `${worldNodesById[routeDraft.fromId]?.name || "Choose start"} -> ${worldNodesById[routeDraft.toId]?.name || "Choose destination"}`
+                        : `${worldMapState.lastRoute?.from || "Route"} -> ${worldMapState.lastRoute?.to || "destination"}`}
+                  </div>
+                  <div style={{ fontSize:11, color:T.textMuted, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                    {(activeRoute && !activeRoute.blocked)
+                      ? `${activeRoute.miles} miles - ${activeRoute.etaDays} days - ${activeRoute.threat} risk`
+                      : activeRoute?.blocked
+                        ? "No connected road route between these locations yet"
+                      : (routeDraft.fromId || routeDraft.toId)
+                        ? "Pick the other endpoint from any region panel"
+                      : worldMapState.lastRoute
+                        ? `${worldMapState.lastRoute.miles} miles - ${worldMapState.lastRoute.etaDays} days - ${worldMapState.lastRoute.threat} risk`
+                        : "Select a start and destination from a region panel."}
+                  </div>
+                </div>
+                {(activeRoute || routeDraft.fromId || routeDraft.toId) && <button type="button" onClick={clearWorldRoute} style={{
+                  border:"none", background:"transparent", color:T.textFaint, cursor:"pointer", padding:4,
+                }}><X size={14}/></button>}
+              </div>
+            )}
+          </div>
         )}
 
         {/* ══════════ LIST TABS (regions / factions / npcs) ══════════ */}
@@ -4097,9 +4601,27 @@ function WorldView({ data, setData }) {
         )}
 
         {/* ══════════ DETAIL PANEL (right side) ══════════ */}
-        <div style={{ width:sel?360:0, overflowY:"auto", overflowX:"hidden", transition:"width 0.25s ease", flexShrink:0, borderLeft:sel?`1px solid ${T.border}`:"none" }}>
+        <div style={{
+          width: sel ? ((tab==="map" && isMapCompact) ? "100%" : 360) : 0,
+          overflowY:"auto",
+          overflowX:"hidden",
+          transition:"width 0.25s ease, max-height 0.25s ease, transform 0.25s ease",
+          flexShrink:0,
+          borderLeft:(sel && !(tab==="map" && isMapCompact))?`1px solid ${T.border}`:"none",
+          position:(sel && tab==="map" && isMapCompact) ? "absolute" : "relative",
+          right:0,
+          bottom:0,
+          left:(sel && tab==="map" && isMapCompact) ? 0 : "auto",
+          zIndex:(sel && tab==="map" && isMapCompact) ? 20 : 1,
+          maxHeight:(sel && tab==="map" && isMapCompact) ? "58%" : "none",
+          background:(sel && tab==="map" && isMapCompact) ? "rgba(7,8,12,0.96)" : "transparent",
+          borderTop:(sel && tab==="map" && isMapCompact) ? `1px solid ${T.crimsonBorder}` : "none",
+          boxShadow:(sel && tab==="map" && isMapCompact) ? "0 -24px 60px rgba(0,0,0,0.45)" : "none",
+          borderRadius:(sel && tab==="map" && isMapCompact) ? "18px 18px 0 0" : 0,
+          backdropFilter:(sel && tab==="map" && isMapCompact) ? "blur(14px)" : "none",
+        }}>
           {sel && (
-            <div style={{ padding:24, width:360 }}>
+            <div style={{ padding: tab==="map" && isMapCompact ? 18 : 24, width: (tab==="map" && isMapCompact) ? "100%" : 360, boxSizing:"border-box" }}>
               <Section>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
@@ -4145,9 +4667,9 @@ function WorldView({ data, setData }) {
                       <ToggleSwitch on={sel.alive} onToggle={()=>{updateNpc(sel.id,{alive:!sel.alive});setSel(p=>({...p,alive:!p.alive}));}} label="Alive" />
                     </>}
                   </div>
-                ) : (
+                ) : (!(tab==="map" && selType==="region" && selectedWorldNode) && (
                   <div style={{ padding:14, background:T.bg, border:`1px solid ${T.crimsonBorder}`, borderRadius:"2px", marginBottom:20 }}>
-                    {selType==="region" && <>
+                    {selType==="region" && !(tab==="map" && selectedWorldNode) && <>
                       <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Type: <span style={{color:T.textDim}}>{sel.type}</span></div>
                       <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>State: <span style={{color:T.textDim,fontStyle:"italic"}}>{sel.state}</span></div>
                       <div style={{ fontSize:12, color:T.textMuted }}>Threat: <Tag variant={sel.threat==="extreme"?"critical":sel.threat==="high"?"danger":sel.threat==="medium"?"warning":"success"}>{sel.threat}</Tag></div>
@@ -4163,22 +4685,158 @@ function WorldView({ data, setData }) {
                       <div style={{ fontSize:12, color:T.textMuted }}>Status: <span style={{color:T.textDim}}>{sel.alive?"Alive":"Deceased"}</span></div>
                     </>}
                   </div>
+                ))}
+
+                {tab==="map" && selType==="region" && selectedWorldNode && !editing && (
+                  <div style={{ display:"flex", flexDirection:"column", gap:12, marginBottom:20 }}>
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
+                      {[
+                        { label:"Quests", value:selectedWorldNode.activeQuests?.length || 0, color:"#ffd54f" },
+                        { label:"NPCs", value:selectedWorldNode.npcs?.length || 0, color:"#9bb8ff" },
+                        { label:"Encounters", value:selectedWorldNode.encounters?.length || 0, color:"#f06858" },
+                      ].map((stat) => (
+                        <div key={stat.label} style={{
+                          padding:"10px 8px", borderRadius:12, textAlign:"center",
+                          border:`1px solid ${T.border}`, background:"rgba(0,0,0,0.12)",
+                        }}>
+                          <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1.2px", color:T.textFaint, textTransform:"uppercase", marginBottom:6 }}>{stat.label}</div>
+                          <div style={{ fontFamily:T.ui, fontSize:18, color:stat.color, fontWeight:700 }}>{stat.value}</div>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={{
+                      padding:14, borderRadius:14,
+                      border:`1px solid ${selectedWorldNode.stateMeta?.color || T.border}`,
+                      background:selectedWorldNode.stateMeta?.glow || "rgba(255,255,255,0.03)",
+                    }}>
+                      <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:10, marginBottom:10 }}>
+                        <div style={{ fontFamily:T.ui, fontSize:11, letterSpacing:"1px", textTransform:"uppercase", color:selectedWorldNode.stateMeta?.color || T.textMuted }}>
+                          {selectedWorldNode.stateMeta?.label || selectedWorldNode.state}
+                        </div>
+                        <Tag variant={selectedWorldNode.threat==="extreme"?"critical":selectedWorldNode.threat==="high"?"danger":selectedWorldNode.threat==="medium"?"warning":"success"}>{selectedWorldNode.threat}</Tag>
+                      </div>
+                      <div style={{ fontSize:13, color:T.textDim, fontStyle:"italic", lineHeight:1.55 }}>
+                        {selectedWorldNode.discovered
+                          ? `${selectedWorldNode.name} is currently ${String(selectedWorldNode.stateMeta?.label || selectedWorldNode.state || "stable").toLowerCase()} under ${selectedWorldNode.ctrl || "independent control"}.`
+                          : "This location has been marked on the campaign map but has not been discovered by the party yet."}
+                      </div>
+                    </div>
+
+                    {activeRoute && (
+                      <div style={{ padding:14, borderRadius:14, border:"1px solid rgba(94,224,154,0.2)", background:"rgba(94,224,154,0.06)" }}>
+                        <div style={{ fontFamily:T.ui, fontSize:10, letterSpacing:"1.3px", textTransform:"uppercase", color:"#5ee09a", marginBottom:8 }}>Route Plan</div>
+                        {activeRoute.blocked ? (
+                          <div style={{ fontSize:12, color:T.textMuted, fontStyle:"italic" }}>No connected road route between those locations yet.</div>
+                        ) : (
+                          <>
+                            <div style={{ fontSize:18, color:T.text, fontFamily:T.ui, marginBottom:6 }}>{activeRoute.from.name} -> {activeRoute.to.name}</div>
+                            <div style={{ fontSize:12, color:T.textMuted, lineHeight:1.6 }}>
+                              {activeRoute.miles} miles - {activeRoute.etaDays} days by road - Risk <span style={{ color:getWorldThreatColor(activeRoute.threat), textTransform:"capitalize" }}>{activeRoute.threat}</span>
+                            </div>
+                            <div style={{ fontSize:11, color:T.textFaint, fontStyle:"italic", marginTop:8 }}>{activeRoute.names.join(" -> ")}</div>
+                          </>
+                        )}
+                      </div>
+                    )}
+
+                    <div style={{ display:"grid", gridTemplateColumns:isMapCompact?"1fr 1fr":"1fr 1fr", gap:8 }}>
+                      <CrimsonBtn small onClick={()=>setRouteDraft((p)=>({ ...p, fromId:selectedWorldNode.id }))} secondary={routeDraft.fromId!==selectedWorldNode.id}>
+                        <MapPin size={12}/> Set Start
+                      </CrimsonBtn>
+                      <CrimsonBtn small onClick={()=>setRouteDraft((p)=>({ ...p, toId:selectedWorldNode.id }))} secondary={routeDraft.toId!==selectedWorldNode.id}>
+                        <Target size={12}/> Set Destination
+                      </CrimsonBtn>
+                      <CrimsonBtn small onClick={()=>focusWorldNode(selectedWorldNode, selectedWorldNode.type==="dungeon" ? "site" : selectedWorldNode.type==="city" ? "local" : "region")} secondary>
+                        <Eye size={12}/> Drill In
+                      </CrimsonBtn>
+                      {selectedWorldNode.encounters?.length === 1 ? (
+                        <CrimsonBtn small onClick={()=>queueEncounterLaunch(selectedWorldNode.encounters[0], selectedWorldNode)}>
+                          <Swords size={12}/> Launch Encounter
+                        </CrimsonBtn>
+                      ) : (
+                        <CrimsonBtn small onClick={()=>onNav && onNav("play")} secondary>
+                          <Swords size={12}/> Open Play
+                        </CrimsonBtn>
+                      )}
+                    </div>
+
+                    {(selectedWorldNode.activeQuests?.length > 0 || selectedWorldNode.encounters?.length > 0 || selectedWorldNode.npcs?.length > 0 || selectedWorldNode.timelineEvents?.length > 0) && (
+                      <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                        {selectedWorldNode.activeQuests?.length > 0 && (
+                          <div>
+                            <div style={{ fontFamily:T.ui, fontSize:8, color:T.textFaint, letterSpacing:"2px", textTransform:"uppercase", marginBottom:8 }}>Active Quests</div>
+                            {selectedWorldNode.activeQuests.map((q) => (
+                              <div key={"world-q-" + q.id} style={{ padding:"10px 12px", border:`1px solid ${T.border}`, borderRadius:10, background:"rgba(0,0,0,0.08)", marginBottom:6 }}>
+                                <div style={{ fontSize:13, color:T.text, fontWeight:300 }}>{q.title}</div>
+                                <div style={{ marginTop:4, display:"flex", gap:6, flexWrap:"wrap" }}>
+                                  <Tag variant={q.urgency==="critical"?"critical":q.urgency==="high"?"danger":q.urgency==="medium"?"warning":"muted"}>{q.urgency}</Tag>
+                                  <Tag variant="muted">{q.status}</Tag>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {selectedWorldNode.encounters?.length > 0 && (
+                          <div>
+                            <div style={{ fontFamily:T.ui, fontSize:8, color:T.textFaint, letterSpacing:"2px", textTransform:"uppercase", marginBottom:8 }}>Encounters</div>
+                            {selectedWorldNode.encounters.map((enc) => (
+                              <div key={"world-enc-" + enc.id} style={{ padding:"10px 12px", border:"1px solid rgba(212,67,58,0.22)", borderRadius:10, background:"rgba(212,67,58,0.05)", marginBottom:6 }}>
+                                <div style={{ fontSize:13, color:T.text, fontWeight:300 }}>{enc.name}</div>
+                                <div style={{ fontSize:11, color:T.textFaint, marginTop:4, fontStyle:"italic" }}>{enc.notes || "Ready to stage in Play Mode."}</div>
+                                <div style={{ marginTop:8 }}>
+                                  <LinkBtn onClick={()=>queueEncounterLaunch(enc, selectedWorldNode)}><Swords size={10}/> Launch This Encounter</LinkBtn>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {selectedWorldNode.npcs?.length > 0 && (
+                          <div>
+                            <div style={{ fontFamily:T.ui, fontSize:8, color:T.textFaint, letterSpacing:"2px", textTransform:"uppercase", marginBottom:8 }}>NPCs On Site</div>
+                            {selectedWorldNode.npcs.map((n) => (
+                              <button key={"world-n-" + n.id} onClick={()=>{setSel(n);setSelType("npc");setEditing(false);}} style={{
+                                width:"100%", textAlign:"left", padding:"10px 12px", border:`1px solid ${T.border}`, borderRadius:10,
+                                background:"rgba(0,0,0,0.08)", color:T.text, cursor:"pointer", marginBottom:6,
+                              }}>
+                                <div style={{ fontSize:13, fontWeight:300 }}>{n.name}</div>
+                                <div style={{ fontSize:11, color:T.textFaint, marginTop:4, fontStyle:"italic" }}>{n.role || "NPC"} - {n.faction || "Independent"}</div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                        {selectedWorldNode.timelineEvents?.length > 0 && (
+                          <div>
+                            <div style={{ fontFamily:T.ui, fontSize:8, color:T.textFaint, letterSpacing:"2px", textTransform:"uppercase", marginBottom:8 }}>Recent Events</div>
+                            {selectedWorldNode.timelineEvents.map((ev) => (
+                              <div key={"world-ev-" + ev.id} style={{ padding:"10px 12px", border:`1px solid ${T.border}`, borderRadius:10, background:"rgba(0,0,0,0.08)", marginBottom:6 }}>
+                                <div style={{ fontSize:12, color:T.textDim, fontStyle:"italic" }}>{ev.headline || ev.text || "Campaign event"}</div>
+                                <div style={{ fontFamily:T.ui, fontSize:8, color:T.textFaint, letterSpacing:"1px", marginTop:6, textTransform:"uppercase" }}>{ev.sessionTitle || "Session"} - {ev.date || ""}</div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
 
-                <SectionTitle icon={Layers}>Connections</SectionTitle>
-                <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                  {conns(selType,sel).map((c,i) => (
-                    <div key={i} onClick={()=>{setSel(c.e);setSelType(c.type);setEditing(false);}} style={{
-                      padding:"12px 14px", background:T.bg, cursor:"pointer", borderRadius:"2px",
-                      border:`1px solid ${T.border}`, borderLeft:`3px solid ${c.type==="faction"?(c.e.color||T.crimson):T.textFaint}`,
-                      transition:"all 0.15s",
-                    }}>
-                      <span style={{ fontFamily:T.ui, fontSize:7, color:T.textFaint, letterSpacing:"2px", textTransform:"uppercase", display:"block", marginBottom:3 }}>{c.label}</span>
-                      <span style={{ fontSize:13, fontWeight:300, color:T.text }}>{c.e.name||c.e.title}</span>
-                    </div>
-                  ))}
-                  {conns(selType,sel).length===0 && <p style={{ fontSize:12, color:T.textFaint, fontStyle:"italic", fontWeight:300 }}>No connections.</p>}
-                </div>
+                {!(tab==="map" && selType==="region" && selectedWorldNode) && <>
+                  <SectionTitle icon={Layers}>Connections</SectionTitle>
+                  <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                    {conns(selType,sel).map((c,i) => (
+                      <div key={i} onClick={()=>{setSel(c.e);setSelType(c.type);setEditing(false);}} style={{
+                        padding:"12px 14px", background:T.bg, cursor:"pointer", borderRadius:"2px",
+                        border:`1px solid ${T.border}`, borderLeft:`3px solid ${c.type==="faction"?(c.e.color||T.crimson):T.textFaint}`,
+                        transition:"all 0.15s",
+                      }}>
+                        <span style={{ fontFamily:T.ui, fontSize:7, color:T.textFaint, letterSpacing:"2px", textTransform:"uppercase", display:"block", marginBottom:3 }}>{c.label}</span>
+                        <span style={{ fontSize:13, fontWeight:300, color:T.text }}>{c.e.name||c.e.title}</span>
+                      </div>
+                    ))}
+                    {conns(selType,sel).length===0 && <p style={{ fontSize:12, color:T.textFaint, fontStyle:"italic", fontWeight:300 }}>No connections.</p>}
+                  </div>
+                </>}
 
                 {/* POI details */}
                 {selType==="poi" && !editing && (
@@ -4466,13 +5124,14 @@ class BattlemapErrorBoundary extends React.Component {
   }
 }
 
-function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null, activeCampaignId = null, onPartyUpdate = null, setData = null, campaignEncounters = [] }) {
+function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null, activeCampaignId = null, onPartyUpdate = null, setData = null, campaignEncounters = [], worldMapCommand = null }) {
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
   const fileRef = useRef(null);
   const tokenImgRef = useRef(null);
   const tokenImagesCache = useRef({});
   const wheelHandlerRef = useRef(null);
+  const touchGestureRef = useRef({ active: false, pointer: null });
 
   // ── Core map state ──
   const [gridSize, setGridSize] = useState(40);
@@ -9842,9 +10501,37 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     return () => { window.removeEventListener("keydown", handleKey); window.removeEventListener("keyup", handleKeyUp); };
   }, [selectedToken, battleFocusToken, launcherToken, tokenPopup, movementMode, movementOrigin, selectedTokenId, activeSpell, pendingCombatAction, combatLive]);
 
+  const getPointerPoint = (e) => {
+    const p = e?.touches?.[0] || e?.changedTouches?.[0] || e || { clientX: 0, clientY: 0 };
+    return { clientX: p.clientX || 0, clientY: p.clientY || 0 };
+  };
+
+  const getTouchGestureMetrics = (e) => {
+    if (!canvasRef.current || !e?.touches || e.touches.length < 2) return null;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const a = e.touches[0];
+    const b = e.touches[1];
+    const centerX = ((a.clientX + b.clientX) / 2) - rect.left;
+    const centerY = ((a.clientY + b.clientY) / 2) - rect.top;
+    const distance = Math.max(1, Math.hypot(a.clientX - b.clientX, a.clientY - b.clientY));
+    return {
+      centerX,
+      centerY,
+      distance,
+      worldX: (centerX - pan.x) / zoom,
+      worldY: (centerY - pan.y) / zoom,
+    };
+  };
+
+  const toCanvasPointerEvent = (e, button = 0) => {
+    const p = getPointerPoint(e);
+    return { button, clientX: p.clientX, clientY: p.clientY, preventDefault: () => {}, stopPropagation: () => {} };
+  };
+
   const getMouseWorld = (e) => {
     const rect = canvasRef.current.getBoundingClientRect();
-    const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+    const p = getPointerPoint(e);
+    const cx = p.clientX - rect.left, cy = p.clientY - rect.top;
     return canvasToWorld(cx, cy);
   };
 
@@ -10358,6 +11045,59 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     setDrawPoints([]);
     setDragState(null);
     if (activeTool === "ruler") { setRulerStart(null); setRulerEnd(null); }
+  };
+
+  const handleTouchStart = (e) => {
+    e.preventDefault();
+    if (e.touches && e.touches.length >= 2) {
+      const pinch = getTouchGestureMetrics(e);
+      if (!pinch) return;
+      touchGestureRef.current = {
+        active: true,
+        mode: "pinch",
+        distance: pinch.distance,
+        zoom,
+        worldX: pinch.worldX,
+        worldY: pinch.worldY,
+      };
+      setDragState(null);
+      return;
+    }
+    if (!e.touches || e.touches.length !== 1) return;
+    touchGestureRef.current = { active: true, mode: "drag", pointer: e.touches[0].identifier };
+    handleMouseDown(toCanvasPointerEvent(e, 0));
+  };
+
+  const handleTouchMove = (e) => {
+    if (!touchGestureRef.current.active) return;
+    e.preventDefault();
+    if (touchGestureRef.current.mode === "pinch" && e.touches && e.touches.length >= 2) {
+      const pinch = getTouchGestureMetrics(e);
+      if (!pinch) return;
+      const baseDistance = touchGestureRef.current.distance || pinch.distance;
+      const baseZoom = touchGestureRef.current.zoom || zoom;
+      const nextZoom = Math.max(0.25, Math.min(4, baseZoom * (pinch.distance / baseDistance)));
+      setZoom(nextZoom);
+      setPan({
+        x: pinch.centerX - (touchGestureRef.current.worldX || pinch.worldX) * nextZoom,
+        y: pinch.centerY - (touchGestureRef.current.worldY || pinch.worldY) * nextZoom,
+      });
+      return;
+    }
+    if (!e.touches || e.touches.length !== 1) return;
+    handleMouseMove(toCanvasPointerEvent(e, 0));
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!touchGestureRef.current.active) return;
+    e.preventDefault();
+    const touchMode = touchGestureRef.current.mode;
+    touchGestureRef.current = { active: false, pointer: null };
+    if (touchMode === "pinch") {
+      setDragState(null);
+      return;
+    }
+    handleMouseUp();
   };
 
   const handleContextMenu = (e) => {
@@ -11424,6 +12164,22 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     }
   };
 
+  useEffect(() => {
+    if (!worldMapCommand?.launchId || worldMapCommand.type !== "encounter") return;
+    const encounter = (campaignEncounters || []).find((enc) => String(enc.id) === String(worldMapCommand.encounterId));
+    if (encounter && viewRole === "dm") deployEncounter(encounter);
+    if (setData) {
+      setData((d) => ({
+        ...d,
+        worldMap: {
+          ...normalizeWorldMapState(d.worldMap),
+          pendingLaunch: null,
+          lastFocusedRegionId: worldMapCommand.regionId || normalizeWorldMapState(d.worldMap).lastFocusedRegionId,
+        },
+      }));
+    }
+  }, [worldMapCommand?.launchId, viewRole]);
+
   const nextTurn = () => {
     cancelCockpitIntent();
 
@@ -11754,9 +12510,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0 }}>
           <div ref={wrapRef} style={{ flex:1, position:"relative", overflow:"hidden", background:bgColor, boxShadow: "inset 0 0 40px rgba(0,0,6,0.7), inset 0 3px 20px rgba(0,0,6,0.5), inset 0 0 6px rgba(0,0,6,0.4)", cursor:getCursor(), transition:"box-shadow 0.3s ease" }}
             onDragOver={handleDragOver} onDrop={handleDrop}>
-            <canvas ref={canvasRef} style={{ display:"block", width:"100%", height:"100%", position:"absolute", top:0, left:0 }}
+            <canvas ref={canvasRef} style={{ display:"block", width:"100%", height:"100%", position:"absolute", top:0, left:0, touchAction:"none", WebkitUserSelect:"none", userSelect:"none" }}
               onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp}
-              onMouseLeave={handleMouseUp} onContextMenu={handleContextMenu} />
+              onMouseLeave={handleMouseUp} onTouchStart={handleTouchStart} onTouchMove={handleTouchMove} onTouchEnd={handleTouchEnd} onTouchCancel={handleTouchEnd} onContextMenu={handleContextMenu} />
             {/* Map file input moved to top-level for reliable label association */}
 
             {/* Canvas edge overlays — subtle borders that integrate panels with map */}
@@ -14336,7 +15092,7 @@ function App() {
   const [activeCampaignId, setActiveCampaignId] = useState(route.campaignId || null);
   const [activeTab, setActiveTab] = useState(route.tab || "dashboard");
   const [loading, setLoading] = useState(true);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => typeof window !== "undefined" ? window.innerWidth < 900 : false);
   const [viewRole, setViewRole] = useState(route.role || "dm");
 
   const playAssetsReadyRef = useRef(false);
@@ -14368,6 +15124,15 @@ function App() {
     }
     const id = requestAnimationFrame(() => setLoading(false));
     return () => cancelAnimationFrame(id);
+  }, []);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 900) setSidebarCollapsed(true);
+    };
+    window.addEventListener("resize", handleResize);
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   // ── Defer heavy Play-tab scripts until first visit (combat engine, VFX, monster DB) ──
@@ -14458,14 +15223,14 @@ function App() {
 
   if (loading) {
     return (
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100vh", background:"var(--bg)", color:T.textFaint, fontFamily:T.ui, fontSize:14, letterSpacing:"2px" }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100dvh", background:"var(--bg)", color:T.textFaint, fontFamily:T.ui, fontSize:14, letterSpacing:"2px" }}>
         Loading...
       </div>
     );
   }
 
   return (
-    <div style={{ display:"flex", height:"100vh", background:"var(--bg)", overflow:"hidden" }}>
+    <div style={{ display:"flex", height:"100dvh", background:"var(--bg)", overflow:"hidden" }}>
       {/* ── Left Navigation Rail ── */}
       <div style={{
         width: sidebarCollapsed ? 52 : 200,
@@ -14550,7 +15315,7 @@ function App() {
       <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0, overflow:"hidden" }}>
         {activeTab === "dashboard" && <DashboardView data={data} setData={setData} onNav={setActiveTab} />}
         {activeTab === "timeline" && <TimelineView data={data} setData={setData} onNav={setActiveTab} />}
-        {activeTab === "world" && <WorldView data={data} setData={setData} />}
+        {activeTab === "world" && <WorldView data={data} setData={setData} onNav={setActiveTab} />}
         {activeTab === "play" && (
           <BattlemapErrorBoundary>
             <Battlemap
@@ -14562,6 +15327,7 @@ function App() {
               onPartyUpdate={handlePartyUpdate}
               setData={setData}
               campaignEncounters={data.encounters || []}
+              worldMapCommand={data.worldMap?.pendingLaunch || null}
             />
           </BattlemapErrorBoundary>
         )}
