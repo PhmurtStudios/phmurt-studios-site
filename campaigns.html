@@ -905,10 +905,10 @@ const ATLAS_ISLANDS = [
 ];
 
 const ATLAS_WATER_BODIES = [
-  { shape:"path", d:"M2910,1840 C3110,1780 3350,1830 3460,1970 C3390,2200 3110,2320 2860,2200 C2750,2060 2770,1920 2910,1840Z", label:"Lake Aster" },
-  { shape:"path", d:"M1670,2990 C1820,2870 2030,2920 2120,3080 C2050,3270 1830,3350 1640,3250 C1550,3170 1550,3070 1670,2990Z", label:"Lake Vesper" },
-  { shape:"path", d:"M4290,3410 C4460,3270 4680,3290 4840,3460 C4830,3680 4570,3790 4330,3710 C4230,3630 4200,3500 4290,3410Z", label:"Ember Gulf" },
-  { shape:"ellipse", cx:1120, cy:2320, rx:120, ry:84, label:"Mossfen" },
+  { shape:"path", d:"M2910,1840 C3110,1780 3350,1830 3460,1970 C3390,2200 3110,2320 2860,2200 C2750,2060 2770,1920 2910,1840Z", label:"Lake Aster", lx:3160, ly:2050 },
+  { shape:"path", d:"M1670,2990 C1820,2870 2030,2920 2120,3080 C2050,3270 1830,3350 1640,3250 C1550,3170 1550,3070 1670,2990Z", label:"Lake Vesper", lx:1880, ly:3180 },
+  { shape:"path", d:"M4290,3410 C4460,3270 4680,3290 4840,3460 C4830,3680 4570,3790 4330,3710 C4230,3630 4200,3500 4290,3410Z", label:"Ember Gulf", lx:4560, ly:3520 },
+  { shape:"ellipse", cx:1120, cy:2320, rx:120, ry:84, label:"Mossfen", lx:1120, ly:2435 },
 ];
 
 const ATLAS_RIVERS = [
@@ -938,36 +938,11 @@ const ATLAS_RANGE_LABELS = [
   { x:2240, y:3360, label:"Moonvale Wilds", rotate:-10 },
 ];
 
+/* Ridge paths only — atlas style uses contour lines, not icon peaks */
 const ATLAS_MOUNTAIN_RANGES = [
-  {
-    id:"ironspine",
-    ridge:"M1420,1290 C1650,1160 1890,1100 2130,1120 C2390,1140 2620,1200 2870,1320",
-    peaks:[
-      { x:1490, y:1250, s:1.08 }, { x:1600, y:1210, s:1.35 }, { x:1710, y:1180, s:1.2 },
-      { x:1820, y:1150, s:1.46 }, { x:1950, y:1130, s:1.1 }, { x:2060, y:1110, s:1.42 },
-      { x:2190, y:1130, s:1.18 }, { x:2310, y:1150, s:1.34 }, { x:2440, y:1180, s:1.12 },
-      { x:2560, y:1210, s:1.4 }, { x:2680, y:1250, s:1.16 },
-    ],
-  },
-  {
-    id:"stormcrown",
-    ridge:"M3040,1200 C3260,1080 3490,1040 3750,1080 C4000,1120 4250,1220 4490,1380",
-    peaks:[
-      { x:3110, y:1150, s:1.24 }, { x:3230, y:1110, s:1.52 }, { x:3360, y:1080, s:1.2 },
-      { x:3500, y:1060, s:1.48 }, { x:3630, y:1060, s:1.18 }, { x:3760, y:1080, s:1.44 },
-      { x:3900, y:1120, s:1.24 }, { x:4040, y:1170, s:1.36 }, { x:4200, y:1240, s:1.22 },
-      { x:4350, y:1330, s:1.34 },
-    ],
-  },
-  {
-    id:"sundered",
-    ridge:"M4130,1790 C4290,1720 4450,1700 4650,1740 C4860,1810 5030,1930 5170,2090",
-    peaks:[
-      { x:4200, y:1750, s:1.08 }, { x:4320, y:1720, s:1.32 }, { x:4440, y:1710, s:1.12 },
-      { x:4570, y:1730, s:1.38 }, { x:4710, y:1760, s:1.16 }, { x:4850, y:1820, s:1.34 },
-      { x:4980, y:1900, s:1.14 }, { x:5100, y:2010, s:1.28 },
-    ],
-  },
+  { id:"ironspine", ridge:"M1420,1290 C1650,1160 1890,1100 2130,1120 C2390,1140 2620,1200 2870,1320", peaks:[] },
+  { id:"stormcrown", ridge:"M3040,1200 C3260,1080 3490,1040 3750,1080 C4000,1120 4250,1220 4490,1380", peaks:[] },
+  { id:"sundered", ridge:"M4130,1790 C4290,1720 4450,1700 4650,1740 C4860,1810 5030,1930 5170,2090", peaks:[] },
 ];
 
 const ATLAS_PROVINCES = [
@@ -1036,18 +1011,6 @@ const ATLAS_REGION_LAYOUTS = {
   route:      { radius:300, label:"Passage" },
   default:    { radius:280, label:"Landmark" },
 };
-
-const ATLAS_TERRAIN_BANDS = [
-  { type:"mountain", label:"The Ironspine", cx:1620, cy:1190, spread:580, count:26, dir:-0.16 },
-  { type:"mountain", label:"Stormcrown Range", cx:3250, cy:820, spread:760, count:30, dir:0.1 },
-  { type:"mountain", label:"Sundered Ridge", cx:4560, cy:1770, spread:620, count:24, dir:0.45 },
-  { type:"forest", cx:1760, cy:1860, spread:420, count:34 },
-  { type:"forest", cx:3680, cy:2460, spread:480, count:38 },
-  { type:"forest", cx:2100, cy:3460, spread:380, count:24 },
-  { type:"forest", cx:4380, cy:3320, spread:320, count:20 },
-  { type:"hill", cx:2400, cy:2460, spread:520, count:24 },
-  { type:"hill", cx:3940, cy:2860, spread:420, count:18 },
-];
 
 function getWorldStateMeta(state) {
   const key = String(state || "stable").toLowerCase();
@@ -4011,44 +3974,6 @@ function WorldView({ data, setData, onNav }) {
     setEditing(false);
   };
 
-  // ── Continental terrain generation — mountain ranges, forests, hills ──
-  const terrainFeatures = useCallback(() => {
-    const features = [];
-    ATLAS_TERRAIN_BANDS.forEach((band, bandIdx) => {
-      if (band.type === "mountain") {
-        for (let i=0; i<band.count; i++) {
-          const t = (i / Math.max(1, band.count - 1)) - 0.5;
-          const baseX = band.cx + Math.cos(band.dir) * t * band.spread;
-          const baseY = band.cy + Math.sin(band.dir) * t * band.spread * 0.62;
-          features.push({
-            type:"mountain",
-            x:baseX + seedF(bandIdx,i,1)*120-60,
-            y:baseY + seedF(bandIdx,i,2)*80-40,
-            scale:0.7 + seedF(bandIdx,i,3)*0.95,
-            key:`mt-${bandIdx}-${i}`
-          });
-        }
-        return;
-      }
-      for (let i=0; i<band.count; i++) {
-        const a = (i / Math.max(1, band.count)) * Math.PI * 2 + seedF(bandIdx,i,5) * 0.6;
-        const d = band.spread * (0.18 + seedF(bandIdx,i,4) * 0.82);
-        const x = band.cx + Math.cos(a) * d + seedF(bandIdx,i,6)*60-30;
-        const y = band.cy + Math.sin(a) * d + seedF(bandIdx,i,7)*50-25;
-        features.push({
-          type: band.type === "forest" ? "tree" : "hill",
-          x,
-          y,
-          scale: band.type === "forest" ? 0.52 + seedF(bandIdx,i,8) * 0.72 : 0.38 + seedF(bandIdx,i,9) * 0.38,
-          key:`${band.type}-${bandIdx}-${i}`
-        });
-      }
-    });
-    return features;
-  }, [seedF]);
-
-  const terrain = terrainFeatures();
-
   // ── Kingdom territory polygons (convex hulls of faction-controlled regions) ──
   const territories = useCallback(() => {
     return ATLAS_PROVINCES.map((province) => {
@@ -4086,25 +4011,6 @@ function WorldView({ data, setData, onNav }) {
     setAddingEntity(false);
   };
 
-  // ── Inline SVG terrain renderers for the map ──
-  const MtnSvg = ({ x, y, s }) => (
-    <g transform={`translate(${x},${y}) scale(${s})`}>
-      <path d="M0,0 L-24,-44 Q-19,-52,-11,-49 L0,-62 L11,-49 Q19,-52,24,-44 L0,0Z" fill="#b9ab7e" opacity="0.28" stroke="#8c7d58" strokeWidth="1.3"/>
-      <path d="M0,-62 L-7,-47 L-2,-50 L0,-56 L2,-50 L7,-47 L0,-62Z" fill="#f3edd5" opacity="0.42"/>
-      <path d="M-8,-36 Q-3,-46,0,-62" stroke="#7f7150" strokeWidth="0.7" opacity="0.3" fill="none"/>
-    </g>
-  );
-  const TreeSvg = ({ x, y, s }) => (
-    <g transform={`translate(${x},${y}) scale(${s})`}>
-      <line x1="0" y1="0" x2="0" y2="-12" stroke="#837650" strokeWidth="1.2" opacity="0.35"/>
-      <path d="M0,-30 C-8,-30,-14,-24,-13,-18 C-16,-17,-15,-12,-12,-11 C-13,-8,-9,-5,-5,-6 C-4,-3,4,-3,5,-6 C9,-5,13,-8,12,-11 C15,-12,16,-17,13,-18 C14,-24,8,-30,0,-30Z" fill="#70825d" opacity="0.10" stroke="#7d734f" strokeWidth="0.8"/>
-    </g>
-  );
-  const HillSvg = ({ x, y, s }) => (
-    <g transform={`translate(${x},${y}) scale(${s})`}>
-      <path d="M-20,0 Q-10,-18 0,-22 Q10,-18 20,0Z" fill="#b5a87e" stroke="#8b7e57" strokeWidth="0.6" opacity="0.14"/>
-    </g>
-  );
   // POI icon renderer for scattered world POIs
   const POISvg = ({ poi, zoom: z }) => {
     const iconSize = z > 3 ? 28 : 22;
@@ -4349,7 +4255,7 @@ function WorldView({ data, setData, onNav }) {
       <div style={{ display:"flex", flex:1, overflow:"hidden", position:"relative" }}>
         {/* ══════════ FANTASY MAP TAB — Multi-scale continental map ══════════ */}
         {tab==="map" && (
-          <div ref={mapRef} style={{ flex:1, overflow:"hidden", cursor:dragging?"grabbing":"grab", position:"relative", background:T.bg, touchAction:"none", WebkitUserSelect:"none", userSelect:"none" }}
+          <div ref={mapRef} style={{ flex:1, overflow:"hidden", cursor:dragging?"grabbing":"grab", position:"relative", background:"linear-gradient(165deg, #e8ddc8 0%, #ddd0b8 45%, #d4c6a8 100%)", touchAction:"none", WebkitUserSelect:"none", userSelect:"none" }}
             onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
             onTouchStart={handleMapTouchStart} onTouchMove={handleMapTouchMove} onTouchEnd={handleMapTouchEnd} onTouchCancel={handleMapTouchEnd}
             onWheel={handleWheel}>
@@ -4357,22 +4263,23 @@ function WorldView({ data, setData, onNav }) {
               <defs>
                 {/* Parchment texture filter */}
                 <filter id="parchment">
-                  <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="5" result="noise"/>
-                  <feDiffuseLighting in="noise" lightingColor="var(--bg-card)" surfaceScale="1.2" result="lit"><feDistantLight azimuth="45" elevation="55"/></feDiffuseLighting>
-                  <feComposite in="SourceGraphic" in2="lit" operator="arithmetic" k1="0.7" k2="0.35" k3="0" k4="0"/>
+                  <feTurbulence type="fractalNoise" baseFrequency="0.018" numOctaves="4" result="noise"/>
+                  <feDiffuseLighting in="noise" lightingColor="#f2ead8" surfaceScale="0.55" result="lit"><feDistantLight azimuth="52" elevation="48"/></feDiffuseLighting>
+                  <feComposite in="SourceGraphic" in2="lit" operator="arithmetic" k1="0.35" k2="0.2" k3="0" k4="0"/>
                 </filter>
                 <clipPath id="atlasLandClip">
                   <path d={ATLAS_LAND_PATH} />
                   {ATLAS_ISLANDS.map((isle, idx) => <path key={`atlas-isle-clip-${idx}`} d={isle.path} />)}
                 </clipPath>
-                <radialGradient id="atlasLandFill" cx="50%" cy="45%" r="75%">
-                  <stop offset="0%" stopColor="#d9cc9d" />
-                  <stop offset="100%" stopColor="#cabd8d" />
+                <radialGradient id="atlasLandFill" cx="48%" cy="42%" r="78%">
+                  <stop offset="0%" stopColor="#e6dcc0" />
+                  <stop offset="55%" stopColor="#d8ca9f" />
+                  <stop offset="100%" stopColor="#cbb88a" />
                 </radialGradient>
                 <linearGradient id="atlasSeaFill" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#7ea9a0" />
-                  <stop offset="55%" stopColor="#87b2aa" />
-                  <stop offset="100%" stopColor="#769f98" />
+                  <stop offset="0%" stopColor="#8aa9a2" />
+                  <stop offset="48%" stopColor="#92b0a8" />
+                  <stop offset="100%" stopColor="#7d9b94" />
                 </linearGradient>
                 <pattern id="atlasContourPat" x="0" y="0" width="420" height="300" patternUnits="userSpaceOnUse">
                   <path d="M-20,140 C40,88 112,68 180,84 C250,100 320,82 430,30" stroke="#7a7150" strokeWidth="2.4" fill="none" opacity="0.16"/>
@@ -4383,9 +4290,9 @@ function WorldView({ data, setData, onNav }) {
                 </pattern>
                 {/* Water pattern */}
                 <pattern id="waterPat" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
-                  <path d="M0,40 Q20,35 40,40 Q60,45 80,40" stroke="#618a83" strokeWidth="0.5" fill="none" opacity="0.22"/>
-                  <path d="M0,55 Q20,50 40,55 Q60,60 80,55" stroke="#618a83" strokeWidth="0.3" fill="none" opacity="0.14"/>
-                  <path d="M0,25 Q20,20 40,25 Q60,30 80,25" stroke="#618a83" strokeWidth="0.3" fill="none" opacity="0.12"/>
+                  <path d="M0,40 Q20,35 40,40 Q60,45 80,40" stroke="#6d8f89" strokeWidth="0.45" fill="none" opacity="0.14"/>
+                  <path d="M0,55 Q20,50 40,55 Q60,60 80,55" stroke="#6d8f89" strokeWidth="0.28" fill="none" opacity="0.09"/>
+                  <path d="M0,25 Q20,20 40,25 Q60,30 80,25" stroke="#6d8f89" strokeWidth="0.28" fill="none" opacity="0.08"/>
                 </pattern>
                 {/* Glow for cities */}
                 <filter id="cityGlow">
@@ -4396,20 +4303,19 @@ function WorldView({ data, setData, onNav }) {
 
               <g transform={`translate(${mapPan.x},${mapPan.y}) scale(${mapZoom})`}>
                 {/* ═══ LAYER 0: Base map — always visible ═══ */}
-                <rect x="0" y="0" width={MAP_W} height={MAP_H} rx="12" fill="url(#atlasSeaFill)" filter="url(#parchment)"/>
-                <rect x="40" y="40" width={MAP_W-80} height={MAP_H-80} rx="26" fill="none" stroke="rgba(232,186,64,0.10)" strokeWidth="2"/>
-                <rect x="0" y="0" width={MAP_W} height={MAP_H} fill="url(#waterPat)" opacity="0.35"/>
-                <path d={ATLAS_LAND_PATH} fill="rgba(211,198,151,0.16)" stroke="#729c94" strokeWidth="22" opacity="0.7" strokeLinejoin="miter"/>
-                <path d={ATLAS_LAND_PATH} fill="url(#atlasLandFill)" stroke="#4f7f78" strokeWidth="8" strokeLinejoin="miter"/>
-                <path d={ATLAS_LAND_PATH} fill="url(#atlasContourPat)" opacity="0.24" stroke="none"/>
+                <rect x="0" y="0" width={MAP_W} height={MAP_H} rx="10" fill="url(#atlasSeaFill)" filter="url(#parchment)"/>
+                <rect x="0" y="0" width={MAP_W} height={MAP_H} fill="url(#waterPat)" opacity="0.22"/>
+                <path d={ATLAS_LAND_PATH} fill="rgba(218,204,168,0.22)" stroke="#6a9088" strokeWidth="14" opacity="0.55" strokeLinejoin="round"/>
+                <path d={ATLAS_LAND_PATH} fill="url(#atlasLandFill)" stroke="#5a7a73" strokeWidth="3.2" strokeLinejoin="round"/>
+                <path d={ATLAS_LAND_PATH} fill="url(#atlasContourPat)" opacity="0.2" stroke="none"/>
                 {ATLAS_ISLANDS.map((isle, idx) => (
                   <g key={`atlas-isle-${idx}`}>
-                    <path d={isle.path} fill={isle.fill || "#c7bc8f"} opacity={isle.opacity || 0.96} stroke="#4f7f78" strokeWidth="4" strokeLinejoin="miter"/>
+                    <path d={isle.path} fill={isle.fill || "#d4c9a2"} opacity={isle.opacity || 0.96} stroke="#5a7a73" strokeWidth="2.4" strokeLinejoin="round"/>
                     <path d={isle.path} fill="url(#atlasContourPat)" opacity="0.2" stroke="none"/>
                   </g>
                 ))}
                 {ATLAS_SEA_LABELS.map((sLabel, idx) => (
-                  <text key={`sea-label-${idx}`} x={sLabel.x} y={sLabel.y} textAnchor="middle" fill="#3c645c" fontFamily="'Spectral', serif" fontSize={sLabel.size} letterSpacing={sLabel.spacing * 0.35} opacity={sLabel.opacity || 0.32} fontStyle="italic" transform={`rotate(${sLabel.rotate} ${sLabel.x} ${sLabel.y})`} style={{ pointerEvents:"none" }}>
+                  <text key={`sea-label-${idx}`} x={sLabel.x} y={sLabel.y} textAnchor="middle" fill="#4a6b64" fontFamily="'Spectral', serif" fontSize={sLabel.size} letterSpacing={sLabel.spacing * 0.35} opacity={sLabel.opacity || 0.38} fontStyle="italic" transform={`rotate(${sLabel.rotate} ${sLabel.x} ${sLabel.y})`} style={{ pointerEvents:"none" }}>
                     {sLabel.label}
                   </text>
                 ))}
@@ -4452,11 +4358,14 @@ function WorldView({ data, setData, onNav }) {
                 <g clipPath="url(#atlasLandClip)">
                   {ATLAS_WATER_BODIES.map((body, idx) => (
                     body.shape === "ellipse"
-                      ? <ellipse key={`body-${idx}`} cx={body.cx} cy={body.cy} rx={body.rx} ry={body.ry} fill="#89b0a8" opacity="0.96" stroke="#4f7f78" strokeWidth="3"/>
-                      : <path key={`body-${idx}`} d={body.d} fill="#89b0a8" opacity="0.96" stroke="#4f7f78" strokeWidth="3" strokeLinejoin="miter"/>
+                      ? <ellipse key={`body-${idx}`} cx={body.cx} cy={body.cy} rx={body.rx} ry={body.ry} fill="#8eb4ac" opacity="0.94" stroke="#5f8a82" strokeWidth="2"/>
+                      : <path key={`body-${idx}`} d={body.d} fill="#8eb4ac" opacity="0.94" stroke="#5f8a82" strokeWidth="2" strokeLinejoin="round"/>
+                  ))}
+                  {mapZoom < 1.85 && ATLAS_WATER_BODIES.map((body, idx) => body.label && body.lx != null && (
+                    <text key={`lake-lbl-${idx}`} x={body.lx} y={body.ly} textAnchor="middle" fill="#4d6f68" fontFamily="'Spectral', serif" fontSize={Math.max(11, 18 / Math.max(mapZoom, 0.4))} fontStyle="italic" letterSpacing="0.6" opacity="0.55" style={{ pointerEvents:"none" }}>{body.label}</text>
                   ))}
                   {ATLAS_RIVERS.map((riverPath, idx) => (
-                    <path key={`atlas-river-${idx}`} d={riverPath} stroke="#5e8f88" strokeWidth={idx < 3 ? 4.4 : 2.6} fill="none" opacity={idx < 3 ? 0.9 : 0.68} strokeLinecap="square" strokeLinejoin="round"/>
+                    <path key={`atlas-river-${idx}`} d={riverPath} stroke="#5a7d76" strokeWidth={idx < 3 ? 3.2 : 2} fill="none" opacity={idx < 3 ? 0.78 : 0.55} strokeLinecap="round" strokeLinejoin="round"/>
                   ))}
                 </g>
                 {mapZoom < 1.4 && ATLAS_RANGE_LABELS.map((mLabel, idx) => (
@@ -4470,9 +4379,9 @@ function WorldView({ data, setData, onNav }) {
                   const activeProvince = atlasProvinceId === t.id || selectedWorldNode?.atlasProvinceId === t.id;
                   return (
                   <g key={`terr-${i}`} clipPath="url(#atlasLandClip)" style={{ cursor:"pointer" }} onClick={(e)=>{ e.stopPropagation(); setAtlasProvinceId(t.id); if (t.capitalNode) selectRegion(t.capitalNode); }}>
-                    <path d={t.path} fill={t.fill || "#d6c999"} opacity={activeProvince ? 0.24 : 0.12} stroke={activeProvince ? "#547d74" : "#8b7d56"} strokeWidth={activeProvince ? 3.8 : (mapZoom > 0.6 ? 1.8 : 2.4)} strokeOpacity={activeProvince ? 0.8 : 0.34} strokeDasharray={activeProvince ? "0" : "14,12"} strokeLinecap="square" strokeLinejoin="miter"/>
+                    <path d={t.path} fill={t.fill || "#d6c999"} opacity={activeProvince ? 0.18 : 0.07} stroke={activeProvince ? "#7a6b4a" : "#a89872"} strokeWidth={activeProvince ? 2.4 : 1.2} strokeOpacity={activeProvince ? 0.55 : 0.28} strokeLinejoin="round"/>
                     {mapZoom < 1.3 && t.labelX != null && (
-                      <text x={t.labelX} y={t.labelY} textAnchor="middle" fill={activeProvince ? "#4f3d1c" : "#594626"} stroke="rgba(245,238,214,0.45)" strokeWidth={Math.max(1.5, 3 / Math.max(mapZoom, 0.5))} paintOrder="stroke" fontFamily="'Cinzel', serif" fontSize={Math.max(26, 58 / Math.max(mapZoom, 0.38))} fontWeight="600" letterSpacing="2.2" opacity={activeProvince ? 0.9 : 0.7} style={{ pointerEvents:"none" }}>
+                      <text x={t.labelX} y={t.labelY} textAnchor="middle" fill={activeProvince ? "#3d3220" : "#4a3f28"} stroke="rgba(252,248,236,0.5)" strokeWidth={Math.max(1, 2.2 / Math.max(mapZoom, 0.5))} paintOrder="stroke" fontFamily="'Cinzel', serif" fontSize={Math.max(28, 64 / Math.max(mapZoom, 0.36))} fontWeight="600" letterSpacing="3.5" opacity={activeProvince ? 0.92 : 0.76} style={{ pointerEvents:"none", textTransform:"uppercase" }}>
                         {t.name}
                       </text>
                     )}
@@ -4485,26 +4394,21 @@ function WorldView({ data, setData, onNav }) {
                 <g clipPath="url(#atlasLandClip)">
                   {ATLAS_MOUNTAIN_RANGES.map((range) => (
                     <g key={`ridge-${range.id}`}>
-                      <path d={range.ridge} fill="none" stroke="#8e7f58" strokeWidth="12" opacity="0.14" strokeLinecap="square" strokeLinejoin="round"/>
-                      <path d={range.ridge} fill="none" stroke="#f5efd7" strokeWidth="2.6" opacity="0.16" strokeLinecap="square" strokeLinejoin="round"/>
-                      {range.peaks.map((peak, peakIdx) => <MtnSvg key={`${range.id}-${peakIdx}`} x={peak.x} y={peak.y} s={peak.s}/>)}
+                      <path d={range.ridge} fill="none" stroke="#9a8b62" strokeWidth="8" opacity="0.11" strokeLinecap="round" strokeLinejoin="round"/>
+                      <path d={range.ridge} fill="none" stroke="#f2ead4" strokeWidth="1.8" opacity="0.14" strokeLinecap="round" strokeLinejoin="round"/>
                     </g>
                   ))}
-                {/* Hills — visible at kingdom zoom and closer */}
-                {mapZoom > 0.7 && terrain.filter(t=>t.type==="hill").map(t => <HillSvg key={t.key} x={t.x} y={t.y} s={t.scale}/>)}
-                {/* Forests — visible from kingdom zoom */}
-                  {mapZoom > 0.8 && terrain.filter(t=>t.type==="tree").map(t => <TreeSvg key={t.key} x={t.x} y={t.y} s={t.scale}/>)}
                 </g>
 
                 {/* ═══ LAYER 4: Roads — major roads at kingdom zoom, minor at local ═══ */}
                 {<g clipPath="url(#atlasLandClip)" opacity={mapZoom > 0.5 ? Math.min(1, (mapZoom-0.5)*1.5) : 0} style={{ transition:"opacity 0.3s" }}>
                   {roadList.filter(rd=>rd.major).map((rd,i) => (
-                    <path key={`mroad-${i}`} d={rd.path} stroke="#8a7b53" strokeWidth={mapZoom > 1.5 ? 1.3 : 2.6} fill="none" strokeDasharray={mapZoom > 2 ? "10,10" : "18,16"} opacity="0.42" strokeLinecap="round"/>
+                    <path key={`mroad-${i}`} d={rd.path} stroke="#b8a67a" strokeWidth={mapZoom > 1.5 ? 1 : 1.8} fill="none" strokeDasharray={mapZoom > 2 ? "12,14" : "22,20"} opacity="0.32" strokeLinecap="round"/>
                   ))}
                 </g>}
                 {mapZoom > 0.8 && <g clipPath="url(#atlasLandClip)" opacity={Math.min(1, (mapZoom-0.8)*2)} style={{ transition:"opacity 0.3s" }}>
                   {roadList.filter(rd=>!rd.major).map((rd,i) => (
-                    <path key={`road-${i}`} d={rd.path} stroke="#8a7b53" strokeWidth={mapZoom > 2 ? 0.8 : 1.3} fill="none" strokeDasharray="8,8" opacity="0.24" strokeLinecap="round"/>
+                    <path key={`road-${i}`} d={rd.path} stroke="#c4b48c" strokeWidth={mapZoom > 2 ? 0.65 : 1} fill="none" strokeDasharray="10,12" opacity="0.18" strokeLinecap="round"/>
                   ))}
                 </g>}
                 {activeRoute && !activeRoute.blocked && (
@@ -4525,40 +4429,30 @@ function WorldView({ data, setData, onNav }) {
                   const isBig = r.type==="city"||r.type==="kingdom"||r.type==="capital";
                   const isSmall = r.type==="hamlet"||r.type==="ruins"||r.type==="dungeon";
                   const atlasPlaceVisible = ["city","capital","kingdom","town","castle"].includes(r.type) || (["hamlet","ruins","dungeon"].includes(r.type) && mapZoom > 1.35);
-                  const isOrigin = routeDraft.fromId === r.id;
-                  const isDestination = routeDraft.toId === r.id;
-                  const routeNode = !!activeRoute && activeRoute.names.includes(r.name);
                   const dimUndiscovered = worldOverlay === "discovery" && !r.discovered;
                   if(!atlasPlaceVisible && !active) return null;
                   if(!r.discovered && worldOverlay !== "discovery" && !active) return null;
                   if(isSmall && mapZoom < 0.72 && !active) return null;
-                  // Scale icons inversely with zoom for readability at all levels
-                  const baseSize = isBig ? 60 : isSmall ? 30 : 42;
-                  const iconSize = Math.max(18, Math.min(baseSize, baseSize / Math.max(mapZoom*0.8, 0.5)));
-                  const dotRadius = Math.max(4, Math.min(isBig ? 13 : 8, (isBig ? 11 : 6) / Math.max(mapZoom*0.7, 0.45)));
-                  const fontSize = isBig ? Math.max(14, 30/Math.max(mapZoom*0.72,0.35)) : Math.max(10, 18/Math.max(mapZoom*0.8,0.45));
-                  const labelYOffset = isBig ? Math.max(34, 42 / Math.max(mapZoom*0.75,0.55)) : Math.max(20, 28 / Math.max(mapZoom*0.85,0.6));
+                  const sqHalf = Math.max(2.5, Math.min(isBig ? 5.5 : 3.8, (isBig ? 5 : 3.2) / Math.max(mapZoom*0.72, 0.42)));
+                  const fontSize = isBig ? Math.max(13, 26/Math.max(mapZoom*0.72,0.35)) : Math.max(9, 15/Math.max(mapZoom*0.8,0.45));
+                  const labelYOffset = isBig ? Math.max(30, 38 / Math.max(mapZoom*0.75,0.55)) : Math.max(18, 24 / Math.max(mapZoom*0.85,0.6));
                   return (
                     <g key={r.key || r.id} onClick={(e)=>{e.stopPropagation(); selectRegion(r);}} style={{ cursor:"pointer", opacity: dimUndiscovered ? 0.35 : 1 }}>
-                      {/* Glow ring on selection */}
-                      {active && <circle cx={r.mx} cy={r.my} r={isBig?50:35} fill="none" stroke="#658f86" strokeWidth="4" opacity="0.7">
-                        {false && <animate attributeName="stroke-dashoffset" from="0" to="26" dur="2s" repeatCount="indefinite"/>}
-                      </circle>}
-                      {false && routeNode && !active && <circle cx={r.mx} cy={r.my} r={isBig?50:35} fill="none" stroke={getWorldThreatColor(activeRoute.threat)} strokeWidth="2.5" opacity="0.35" strokeDasharray="10,7"/>}
+                      {active && <rect x={r.mx - sqHalf - 10} y={r.my - sqHalf - 10} width={(sqHalf + 10) * 2} height={(sqHalf + 10) * 2} fill="none" stroke="#7a9088" strokeWidth="2" opacity="0.45" rx="2"/>}
+                      {false && activeRoute && activeRoute.names.includes(r.name) && !active && <circle cx={r.mx} cy={r.my} r={isBig?50:35} fill="none" stroke={getWorldThreatColor(activeRoute.threat)} strokeWidth="2.5" opacity="0.35" strokeDasharray="10,7"/>}
                       {false && (worldOverlay==="atlas" && ["corrupted","cursed","blighted","destroyed","conquered"].includes(String(r.state || "").toLowerCase())) && <circle cx={r.mx} cy={r.my} r={isBig?84:58} fill={r.stateMeta?.color || threatCol} opacity="0.08" stroke={r.stateMeta?.color || threatCol} strokeWidth="1" strokeOpacity="0.18"/>}
-                      {(worldOverlay==="quests" && r.activeQuests?.length > 0 && mapZoom > 0.5) && <circle cx={r.mx} cy={r.my} r={isBig?66:46} fill="none" stroke="#ffd54f" strokeWidth="2" opacity="0.5" strokeDasharray="4,7"/>}
-                      {false && ((worldOverlay==="atlas" || worldOverlay==="quests") && r.faction) && <circle cx={r.mx} cy={r.my} r={Math.max(18, iconSize * 0.72)} fill={r.faction.color} opacity={isBig && mapZoom < 0.6 ? 0.1 : 0.08}/>}
-                      <circle cx={r.mx} cy={r.my} r={dotRadius + 4} fill="rgba(242,234,207,0.52)" opacity={active ? 0.95 : 0.45} />
-                      <circle cx={r.mx} cy={r.my} r={dotRadius} fill={active ? "#3b2d17" : (dimUndiscovered ? "#7d765f" : "#4c4229")} stroke={active ? "#f8f0d8" : "#c7bc8f"} strokeWidth={active ? 2.5 : 1.5} />
-                      {false && (isOrigin || isDestination) && (
+                      {false && (worldOverlay==="quests" && r.activeQuests?.length > 0 && mapZoom > 0.5) && <circle cx={r.mx} cy={r.my} r={isBig?66:46} fill="none" stroke="#ffd54f" strokeWidth="2" opacity="0.5" strokeDasharray="4,7"/>}
+                      {false && ((worldOverlay==="atlas" || worldOverlay==="quests") && r.faction) && <circle cx={r.mx} cy={r.my} r={24} fill={r.faction.color} opacity={isBig && mapZoom < 0.6 ? 0.1 : 0.08}/>}
+                      <rect x={r.mx - sqHalf} y={r.my - sqHalf} width={sqHalf * 2} height={sqHalf * 2} fill={active ? "#2e2414" : (dimUndiscovered ? "#6b6454" : "#3d3422")} stroke={active ? "#f5eed8" : "#b5a67e"} strokeWidth={active ? 1.4 : 1}/>
+                      {false && (routeDraft.fromId === r.id || routeDraft.toId === r.id) && (
                         <g transform={`translate(${r.mx + (isBig?28:20)},${r.my - (isBig?30:22)})`}>
-                          <circle r="10" fill={isOrigin ? "#5ee09a" : "#f06858"} opacity="0.95"/>
-                          <text x="0" y="3" textAnchor="middle" fill="#0d0f13" fontFamily="'Cinzel', serif" fontSize="8" fontWeight="700">{isOrigin ? "A" : "B"}</text>
+                          <circle r="10" fill={routeDraft.fromId === r.id ? "#5ee09a" : "#f06858"} opacity="0.95"/>
+                          <text x="0" y="3" textAnchor="middle" fill="#0d0f13" fontFamily="'Cinzel', serif" fontSize="8" fontWeight="700">{routeDraft.fromId === r.id ? "A" : "B"}</text>
                         </g>
                       )}
                       {/* Label — always show for kingdoms/cities, show others when zoomed */}
                       {(isBig || mapZoom > (isSmall ? 1.0 : 0.62) || active) && (
-                        <text x={r.mx} y={r.my + labelYOffset} textAnchor="middle" fill={dimUndiscovered ? "#6f6a55" : "#4c4025"} stroke="rgba(246,240,221,0.48)" strokeWidth={isBig ? 1.6 : 1} paintOrder="stroke" fontFamily="'Spectral', serif" fontSize={fontSize} fontStyle="italic" fontWeight={isBig?"600":"500"} letterSpacing={isBig?"1.2":"0.5"} opacity={active?0.95:0.9} style={{ pointerEvents:"none" }}>
+                        <text x={r.mx} y={r.my + labelYOffset} textAnchor="middle" fill={dimUndiscovered ? "#6f6a55" : "#4c4025"} stroke="rgba(252,248,236,0.55)" strokeWidth={isBig ? 1.2 : 0.85} paintOrder="stroke" fontFamily="'Spectral', serif" fontSize={fontSize} fontStyle={isBig ? "normal" : "italic"} fontWeight={isBig?"600":"500"} letterSpacing={isBig?"0.35":"0.4"} opacity={active?0.95:0.88} style={{ pointerEvents:"none" }}>
                           {r.discovered ? r.name : "Undiscovered Site"}
                         </text>
                       )}
@@ -4589,16 +4483,6 @@ function WorldView({ data, setData, onNav }) {
                         <g transform={`translate(${r.mx-(isBig?28:20)},${r.my-(isBig?26:18)})`}>
                           <circle r="6" fill="var(--bg-card)" stroke="var(--text-muted)" strokeWidth="0.7"/>
                           <path d="M-2.5,0 L-0.5,2.5 L3,-2.5" stroke="#5ee09a" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
-                        </g>
-                      )}
-                      {/* Building cluster hint at detail zoom for towns/cities */}
-                      {mapZoom > 3 && (isBig || r.type==="town") && (
-                        <g opacity="0.2">
-                          {[0,1,2,3,4].map(bi => {
-                            const bx = r.mx + Math.cos(bi*1.3)*35 + seedF(bi,r.mx,1)*20-10;
-                            const by = r.my + Math.sin(bi*1.3)*30 + seedF(bi,r.my,2)*15-8;
-                            return <rect key={`b-${bi}`} x={bx-4} y={by-4} width={8+seedF(bi,3,3)*6} height={7+seedF(bi,4,4)*5} fill="var(--text-faint)" rx="1"/>;
-                          })}
                         </g>
                       )}
                     </g>
@@ -4637,34 +4521,34 @@ function WorldView({ data, setData, onNav }) {
                 {/* ═══ LAYER 9: Travel route overlay (removed) ═══ */}
 
                 {/* ═══ LAYER 10: Compass rose ═══ */}
-                <g transform={`translate(${MAP_W-200},${MAP_H-200})`} opacity="0.3">
-                  <line x1="0" y1="-55" x2="0" y2="55" stroke="var(--text-faint)" strokeWidth="2"/>
-                  <line x1="-55" y1="0" x2="55" y2="0" stroke="var(--text-faint)" strokeWidth="2"/>
-                  <line x1="-35" y1="-35" x2="35" y2="35" stroke="var(--text-faint)" strokeWidth="0.8"/>
-                  <line x1="35" y1="-35" x2="-35" y2="35" stroke="var(--text-faint)" strokeWidth="0.8"/>
-                  <polygon points="0,-60 -7,-40 7,-40" fill="var(--crimson)"/>
-                  <polygon points="0,60 -5,42 5,42" fill="var(--text-faint)"/>
-                  <text x="0" y="-68" textAnchor="middle" fill="var(--text-muted)" fontFamily="'Cinzel', serif" fontSize="14" fontWeight="600">N</text>
-                  <text x="68" y="5" textAnchor="middle" fill="var(--text-faint)" fontFamily="'Cinzel', serif" fontSize="10">E</text>
-                  <text x="-68" y="5" textAnchor="middle" fill="var(--text-faint)" fontFamily="'Cinzel', serif" fontSize="10">W</text>
-                  <text x="0" y="80" textAnchor="middle" fill="var(--text-faint)" fontFamily="'Cinzel', serif" fontSize="10">S</text>
+                <g transform={`translate(${MAP_W-200},${MAP_H-200})`} opacity="0.14" style={{ pointerEvents:"none" }}>
+                  <line x1="0" y1="-48" x2="0" y2="48" stroke="#7a7260" strokeWidth="1.2"/>
+                  <line x1="-48" y1="0" x2="48" y2="0" stroke="#7a7260" strokeWidth="1.2"/>
+                  <line x1="-30" y1="-30" x2="30" y2="30" stroke="#9a9078" strokeWidth="0.6"/>
+                  <line x1="30" y1="-30" x2="-30" y2="30" stroke="#9a9078" strokeWidth="0.6"/>
+                  <polygon points="0,-52 -6,-36 6,-36" fill="#6b5c42"/>
+                  <polygon points="0,52 -4,38 4,38" fill="#9a9078"/>
+                  <text x="0" y="-60" textAnchor="middle" fill="#5c5344" fontFamily="'Cinzel', serif" fontSize="12" fontWeight="600">N</text>
+                  <text x="58" y="4" textAnchor="middle" fill="#8a8070" fontFamily="'Cinzel', serif" fontSize="9">E</text>
+                  <text x="-58" y="4" textAnchor="middle" fill="#8a8070" fontFamily="'Cinzel', serif" fontSize="9">W</text>
+                  <text x="0" y="72" textAnchor="middle" fill="#8a8070" fontFamily="'Cinzel', serif" fontSize="9">S</text>
                 </g>
 
                 {/* Map title cartouche */}
                 <g transform={`translate(${MAP_W-980},${MAP_H-300})`}>
-                  <text x="0" y="0" textAnchor="start" fill="#6d5a22" fontFamily="'Cinzel', serif" fontSize="132" fontWeight="600" letterSpacing="10" opacity="0.72" style={{ textTransform:"uppercase" }}>
+                  <text x="0" y="0" textAnchor="start" fill="#5c4a28" fontFamily="'Cinzel', serif" fontSize="118" fontWeight="600" letterSpacing="12" opacity="0.62" style={{ textTransform:"uppercase" }}>
                     {data.name || "The Realm"}
                   </text>
                 </g>
 
                 {/* Scale bar — visible at kingdom zoom+ */}
                 {mapZoom > 0.5 && (
-                  <g transform={`translate(${MAP_W-500},${MAP_H-80})`} opacity="0.3">
-                    <line x1="0" y1="0" x2="200" y2="0" stroke="var(--text-faint)" strokeWidth="2"/>
-                    <line x1="0" y1="-6" x2="0" y2="6" stroke="var(--text-faint)" strokeWidth="1.5"/>
-                    <line x1="200" y1="-6" x2="200" y2="6" stroke="var(--text-faint)" strokeWidth="1.5"/>
-                    <line x1="100" y1="-4" x2="100" y2="4" stroke="var(--text-faint)" strokeWidth="1"/>
-                    <text x="100" y="18" textAnchor="middle" fill="var(--text-faint)" fontFamily="'Spectral', serif" fontSize="10">100 leagues</text>
+                  <g transform={`translate(${MAP_W-500},${MAP_H-80})`} opacity="0.38" style={{ pointerEvents:"none" }}>
+                    <line x1="0" y1="0" x2="200" y2="0" stroke="#7a6e58" strokeWidth="1.4"/>
+                    <line x1="0" y1="-5" x2="0" y2="5" stroke="#7a6e58" strokeWidth="1.2"/>
+                    <line x1="200" y1="-5" x2="200" y2="5" stroke="#7a6e58" strokeWidth="1.2"/>
+                    <line x1="100" y1="-3" x2="100" y2="3" stroke="#9a8e78" strokeWidth="0.9"/>
+                    <text x="100" y="17" textAnchor="middle" fill="#6b5f4c" fontFamily="'Spectral', serif" fontSize="11" fontStyle="italic">100 leagues</text>
                   </g>
                 )}
               </g>
@@ -4672,7 +4556,7 @@ function WorldView({ data, setData, onNav }) {
 
             {/* Zoom level indicator */}
             <div style={{ position:"absolute", top:12, right:12, display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6, pointerEvents:"none" }}>
-              <div style={{ padding:"6px 14px", background:T.bgCard, border:`1px solid ${T.crimsonBorder}`, borderRadius:"3px", fontFamily:T.ui, fontSize:8, color:T.crimson, letterSpacing:"2px", textTransform:"uppercase", opacity:0.85 }}>
+              <div style={{ padding:"6px 14px", background:"rgba(252,248,238,0.88)", border:"1px solid rgba(122,110,88,0.35)", borderRadius:"4px", fontFamily:"'Cinzel', serif", fontSize:9, color:"#5c5344", letterSpacing:"2.5px", textTransform:"uppercase", opacity:0.92, boxShadow:"0 2px 12px rgba(60,48,32,0.06)" }}>
                 {zoomLevel} view
               </div>
               {false && mapZoom > 2.0 && <div style={{ padding:"4px 10px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"2px", fontFamily:T.body, fontSize:9, color:T.textMuted, fontStyle:"italic", opacity:0.7 }}>
@@ -4707,21 +4591,21 @@ function WorldView({ data, setData, onNav }) {
             {(activeRoute || routeDraft.fromId || routeDraft.toId || worldMapState.lastRoute) && (
               <div style={{
                 position:"absolute", left:"50%", bottom:isMapCompact ? 12 : 16, transform:"translateX(-50%)",
-                padding:"12px 16px", borderRadius:999, pointerEvents:"auto",
-                background:"rgba(7,8,12,0.9)", border:"1px solid rgba(94,224,154,0.2)",
-                boxShadow:"0 18px 40px rgba(0,0,0,0.35)", backdropFilter:"blur(12px)",
+                padding:"12px 18px", borderRadius:12, pointerEvents:"auto",
+                background:"rgba(248,242,228,0.94)", border:"1px solid rgba(122,110,88,0.35)",
+                boxShadow:"0 14px 36px rgba(50,42,28,0.12)",
                 display:"flex", alignItems:"center", gap:12, maxWidth:"calc(100% - 24px)",
               }}>
-                <MapPin size={14} color="#5ee09a" />
+                <MapPin size={14} color="#4a6b52" />
                 <div style={{ minWidth:0 }}>
-                  <div style={{ fontFamily:T.ui, fontSize:10, letterSpacing:"1.2px", textTransform:"uppercase", color:"#5ee09a", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                  <div style={{ fontFamily:"'Cinzel', serif", fontSize:10, letterSpacing:"1.4px", textTransform:"uppercase", color:"#3d4a38", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
                     {activeRoute
                       ? `${activeRoute.from.name} -> ${activeRoute.to.name}`
                       : (routeDraft.fromId || routeDraft.toId)
                         ? `${worldNodesById[routeDraft.fromId]?.name || "Choose start"} -> ${worldNodesById[routeDraft.toId]?.name || "Choose destination"}`
                         : `${worldMapState.lastRoute?.from || "Route"} -> ${worldMapState.lastRoute?.to || "destination"}`}
                   </div>
-                  <div style={{ fontSize:11, color:T.textMuted, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                  <div style={{ fontSize:11, color:"#6b5f4c", fontFamily:T.body, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
                     {(activeRoute && !activeRoute.blocked)
                       ? `${activeRoute.miles} miles - ${activeRoute.etaDays} days - ${activeRoute.threat} risk`
                       : activeRoute?.blocked
