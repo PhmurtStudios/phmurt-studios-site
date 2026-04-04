@@ -16,6 +16,11 @@
   <meta name="twitter:card" content="summary_large_image" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="preconnect" href="https://unpkg.com" crossorigin />
+  <link rel="dns-prefetch" href="https://unpkg.com" />
+  <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+  <link rel="preload" href="https://unpkg.com/react@18/umd/react.production.min.js" as="script" crossorigin />
+  <link rel="preload" href="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" as="script" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/x-icon" href="favicon.ico" />
   <link rel="stylesheet" href="style.css" />
@@ -26,9 +31,8 @@
   <script src="phmurt-realtime.js"></script>
   <script src="phmurt-shell.js"></script>
   <script src="campaign-combat-integration.js"></script>
-  <script src="combat-engine.js" defer></script>
-  <script src="visual-effects.js" defer></script>
-  <script src="monster-data.js" defer></script>
+  <!-- Play-tab assets (combat engine, VFX, SRD monsters) load on demand via __loadCampaignPlayAssets — see campaign-play-loader.js -->
+  <script src="campaign-play-loader.js"></script>
   <style>
     #campaign-root {
       width: 100%;
@@ -925,11 +929,11 @@ const ActionHotbar = ({ visible, token, moveLabel, actions, selectedActionKey, o
             className={"cm-hot-slot" + (isSelected ? " is-selected" : "")}
             disabled={!!action.disabled}
             onClick={() => onChooseAction(action)}
-            title={(action.disabledReason || action.name) + " — press " + keyLabel}
+            title={(action.disabledReason || action.label) + " — press " + keyLabel}
             style={{ borderColor: isSelected ? (action.tone || "rgba(212,67,58,0.35)") : undefined }}>
             <span className="cm-hot-key">{keyLabel}</span>
             <span className="cm-hot-icon" style={{ color: action.disabled ? T.textFaint : (action.tone || T.text) }}>
-              <Icon size={12} /> {action.name.length > 10 ? action.name.substring(0, 9) + "…" : action.name}
+              <Icon size={12} /> {action.label.length > 10 ? action.label.substring(0, 9) + "…" : action.label}
             </span>
             <span className="cm-hot-sub">{action.cost || "Free"} · {action.panel}</span>
           </button>
@@ -4148,18 +4152,22 @@ function computeVisibleCells(tokens, walls, gridSize, mapW, mapH) {
 }
 
 class BattlemapErrorBoundary extends React.Component {
-  constructor(props) { super(props); this.state = { hasError: false, error: null }; }
+  constructor(props) { super(props); this.state = { hasError: false, error: null, errorInfo: null }; }
   static getDerivedStateFromError(error) { return { hasError: true, error }; }
-  componentDidCatch(error, info) { console.error("[BattlemapErrorBoundary]", error, info); }
+  componentDidCatch(error, info) { console.error("[BattlemapErrorBoundary]", error, info); this.setState({ errorInfo: info }); }
   render() {
     if (this.state.hasError) {
+      const stack = this.state.error?.stack || "";
+      const componentStack = this.state.errorInfo?.componentStack || "";
       return React.createElement("div", {
         style: { padding: 40, textAlign: "center", color: "var(--text-muted)", fontFamily: "'Spectral', serif" }
       },
         React.createElement("div", { style: { fontSize: 20, marginBottom: 12, color: "var(--crimson)" } }, "Something went wrong"),
         React.createElement("p", { style: { fontSize: 13, marginBottom: 16 } }, String(this.state.error?.message || "An unexpected error occurred in the battle map.")),
+        React.createElement("pre", { style: { fontSize: 10, textAlign: "left", maxHeight: 200, overflow: "auto", background: "rgba(0,0,0,0.3)", padding: 12, borderRadius: 8, marginBottom: 12, whiteSpace: "pre-wrap", wordBreak: "break-all", color: "#f06858" } }, stack),
+        componentStack && React.createElement("pre", { style: { fontSize: 10, textAlign: "left", maxHeight: 120, overflow: "auto", background: "rgba(0,0,0,0.2)", padding: 12, borderRadius: 8, marginBottom: 12, whiteSpace: "pre-wrap", wordBreak: "break-all", color: "#ffd54f" } }, "Component stack:" + componentStack),
         React.createElement("button", {
-          onClick: () => this.setState({ hasError: false, error: null }),
+          onClick: () => this.setState({ hasError: false, error: null, errorInfo: null }),
           style: { padding: "8px 20px", background: "rgba(212,67,58,0.12)", border: "1px solid rgba(212,67,58,0.3)", borderRadius: 6, color: "var(--crimson)", cursor: "pointer", fontFamily: "'Cinzel', serif", fontSize: 12 }
         }, "Try Again")
       );
@@ -7834,7 +7842,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       const isActiveCombatant = t.id === activeCombatantId;
       const isActiveTarget = combatLive && t.id === activeCombatTargetId && !isActiveCombatant;
       const isDead = t.hp != null && t.hp <= 0;
-      const isPC = t.color === "#2e8b57";
+      const isPC = t.tokenType === "pc" || t.color === "#2e8b57";
 
       const linkedCombatant = combatants.find(c => c.mapTokenId === t.id);
       const allConds = getMergedConditionsForToken(t);
@@ -14001,6 +14009,11 @@ function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [viewRole, setViewRole] = useState(route.role || "dm");
 
+  const playAssetsReadyRef = useRef(false);
+  const [playAssetsReady, setPlayAssetsReady] = useState(false);
+  const [playLoadError, setPlayLoadError] = useState(null);
+  const [playLoadAttempt, setPlayLoadAttempt] = useState(0);
+
   // ── Load campaigns from cache on mount ──
   useEffect(() => {
     const cached = cmLoadCampaignCache();
@@ -14023,8 +14036,41 @@ function App() {
       setCampaigns([example]);
       setActiveCampaignId(example.id);
     }
-    setLoading(false);
+    const id = requestAnimationFrame(() => setLoading(false));
+    return () => cancelAnimationFrame(id);
   }, []);
+
+  // ── Defer heavy Play-tab scripts until first visit (combat engine, VFX, monster DB) ──
+  useEffect(() => {
+    if (activeTab !== "play") return;
+    if (playAssetsReadyRef.current) {
+      setPlayAssetsReady(true);
+      setPlayLoadError(null);
+      return;
+    }
+    setPlayAssetsReady(false);
+    setPlayLoadError(null);
+    let cancelled = false;
+    const loader = typeof window.__loadCampaignPlayAssets === "function" ? window.__loadCampaignPlayAssets : null;
+    if (!loader) {
+      playAssetsReadyRef.current = true;
+      setPlayAssetsReady(true);
+      return;
+    }
+    loader()
+      .then(() => {
+        if (cancelled) return;
+        playAssetsReadyRef.current = true;
+        setPlayAssetsReady(true);
+        setPlayLoadError(null);
+      })
+      .catch((e) => {
+        if (cancelled) return;
+        setPlayLoadError(String(e && e.message ? e.message : e));
+        setPlayAssetsReady(false);
+      });
+    return () => { cancelled = true; };
+  }, [activeTab, playLoadAttempt]);
 
   // ── Auto-save campaigns ──
   const saveTimerRef = useRef(null);
@@ -14119,99 +14165,4 @@ function App() {
           <div style={{ padding:"12px 14px", borderBottom:"1px solid " + T.border }}>
             <CampaignSelector
               campaigns={campaigns}
-              activeCampaignId={activeCampaignId}
-              onSelect={setActiveCampaignId}
-              onCreate={handleCreateCampaign}
-              onDelete={handleDeleteCampaign}
-            />
-          </div>
-        )}
-
-        {/* Nav Items */}
-        <div style={{ flex:1, padding:"8px 6px", display:"flex", flexDirection:"column", gap:2 }}>
-          {navItems.map(item => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-            return (
-              <button key={item.id} onClick={() => setActiveTab(item.id)}
-                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background="rgba(255,255,255,0.03)"; }}
-                onMouseLeave={e => { if (!isActive) e.currentTarget.style.background="transparent"; }}
-                style={{
-                  display:"flex", alignItems:"center", gap:10,
-                  padding: sidebarCollapsed ? "10px 0" : "10px 12px",
-                  justifyContent: sidebarCollapsed ? "center" : "flex-start",
-                  background: isActive ? "rgba(212,67,58,0.08)" : "transparent",
-                  border:"none", borderLeft: isActive ? "3px solid var(--crimson)" : "3px solid transparent",
-                  borderRadius:"0 6px 6px 0", cursor:"pointer", transition:"all 0.15s", width:"100%",
-                }}>
-                <Icon size={16} color={isActive ? "var(--crimson)" : T.textMuted} strokeWidth={isActive ? 2 : 1.5} />
-                {!sidebarCollapsed && (
-                  <span style={{ fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", textTransform:"uppercase", color: isActive ? "var(--crimson)" : T.textMuted, fontWeight: isActive ? 600 : 400 }}>
-                    {item.label}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* View Role Toggle */}
-        {!sidebarCollapsed && (
-          <div style={{ padding:"12px 14px", borderTop:"1px solid " + T.border }}>
-            <div style={{ display:"flex", gap:4 }}>
-              {["dm","player"].map(r => (
-                <button key={r} onClick={() => setViewRole(r)}
-                  style={{ flex:1, padding:"6px", background: viewRole === r ? "rgba(212,67,58,0.1)" : "transparent", border:"1px solid " + (viewRole === r ? "rgba(212,67,58,0.3)" : T.border), borderRadius:"4px", cursor:"pointer", color: viewRole === r ? "var(--crimson)" : T.textFaint, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase" }}>
-                  {r === "dm" ? "DM" : "Player"}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* ── Main Content Area ── */}
-      <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0, overflow:"hidden" }}>
-        {activeTab === "dashboard" && <DashboardView data={data} setData={setData} onNav={setActiveTab} />}
-        {activeTab === "timeline" && <TimelineView data={data} setData={setData} onNav={setActiveTab} />}
-        {activeTab === "world" && <WorldView data={data} setData={setData} />}
-        {activeTab === "play" && (
-          <BattlemapErrorBoundary>
-            <Battlemap
-              party={data.party || []}
-              npcs={data.npcs || []}
-              viewRole={viewRole}
-              setViewRole={setViewRole}
-              activeCampaignId={activeCampaignId}
-              onPartyUpdate={handlePartyUpdate}
-              setData={setData}
-              campaignEncounters={data.encounters || []}
-            />
-          </BattlemapErrorBoundary>
-        )}
-        {!["dashboard","timeline","world","play"].includes(activeTab) && (
-          <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", flexDirection:"column", gap:16 }}>
-            <span style={{ fontFamily:T.ui, fontSize:14, color:T.textFaint, letterSpacing:"2px", textTransform:"uppercase" }}>Coming Soon</span>
-            <p style={{ fontFamily:T.body, fontSize:13, color:T.textMuted, maxWidth:320, textAlign:"center", lineHeight:1.5 }}>
-              This section is under development.
-            </p>
-            <button onClick={() => setActiveTab("dashboard")}
-              style={{ padding:"8px 20px", background:"rgba(212,67,58,0.1)", border:"1px solid rgba(212,67,58,0.3)", borderRadius:6, color:"var(--crimson)", cursor:"pointer", fontFamily:T.ui, fontSize:11, letterSpacing:"1px" }}>
-              Back to Dashboard
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// MOUNT
-// ═══════════════════════════════════════════════════════════════════════════
-const root = ReactDOM.createRoot(document.getElementById("campaign-root"));
-root.render(React.createElement(App));
-
-  </script>
-</body>
-</html>
+             
