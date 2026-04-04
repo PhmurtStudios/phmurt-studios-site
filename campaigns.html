@@ -31,7 +31,11 @@
   <script src="phmurt-realtime.js"></script>
   <script src="phmurt-shell.js"></script>
   <script src="campaign-combat-integration.js"></script>
-  <!-- Play-tab assets (combat engine, VFX, SRD monsters) load on demand via __loadCampaignPlayAssets — see campaign-play-loader.js -->
+  <!-- Play-tab assets: combat engine, VFX, SRD monsters -->
+  <script src="combat-engine.js"></script>
+  <script src="visual-effects.js"></script>
+  <script src="monster-data.js"></script>
+  <!-- Optional deferred loader (kept for backwards compat) -->
   <script src="campaign-play-loader.js"></script>
   <style>
     #campaign-root {
@@ -14165,4 +14169,87 @@ function App() {
           <div style={{ padding:"12px 14px", borderBottom:"1px solid " + T.border }}>
             <CampaignSelector
               campaigns={campaigns}
-             
+              activeCampaignId={activeCampaignId}
+              onSelect={setActiveCampaignId}
+              onCreate={handleCreateCampaign}
+              onDelete={handleDeleteCampaign}
+            />
+          </div>
+        )}
+
+        {/* Nav Items */}
+        <div style={{ flex:1, padding:"8px 6px", display:"flex", flexDirection:"column", gap:2 }}>
+          {navItems.map(item => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button key={item.id} onClick={() => setActiveTab(item.id)}
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background="rgba(255,255,255,0.03)"; }}
+                onMouseLeave={e => { if (!isActive) e.currentTarget.style.background="transparent"; }}
+                style={{
+                  display:"flex", alignItems:"center", gap:10,
+                  padding: sidebarCollapsed ? "10px 0" : "10px 12px",
+                  justifyContent: sidebarCollapsed ? "center" : "flex-start",
+                  background: isActive ? "rgba(212,67,58,0.08)" : "transparent",
+                  border:"none", borderLeft: isActive ? "3px solid var(--crimson)" : "3px solid transparent",
+                  borderRadius:"0 6px 6px 0", cursor:"pointer", transition:"all 0.15s", width:"100%",
+                }}>
+                <Icon size={16} color={isActive ? "var(--crimson)" : T.textMuted} strokeWidth={isActive ? 2 : 1.5} />
+                {!sidebarCollapsed && (
+                  <span style={{ fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", textTransform:"uppercase", color: isActive ? "var(--crimson)" : T.textMuted, fontWeight: isActive ? 600 : 400 }}>
+                    {item.label}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* View Role Toggle */}
+        {!sidebarCollapsed && (
+          <div style={{ padding:"12px 14px", borderTop:"1px solid " + T.border }}>
+            <div style={{ display:"flex", gap:4 }}>
+              {["dm","player"].map(r => (
+                <button key={r} onClick={() => setViewRole(r)}
+                  style={{ flex:1, padding:"6px", background: viewRole === r ? "rgba(212,67,58,0.1)" : "transparent", border:"1px solid " + (viewRole === r ? "rgba(212,67,58,0.3)" : T.border), borderRadius:"4px", cursor:"pointer", color: viewRole === r ? "var(--crimson)" : T.textFaint, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase" }}>
+                  {r === "dm" ? "DM" : "Player"}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Main Content Area */}
+      <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0, overflow:"hidden" }}>
+        {activeTab === "dashboard" && <DashboardView data={data} setData={setData} onNav={setActiveTab} />}
+        {activeTab === "timeline" && <TimelineView data={data} setData={setData} onNav={setActiveTab} />}
+        {activeTab === "world" && <WorldView data={data} setData={setData} />}
+        {activeTab === "play" && (
+          <BattlemapErrorBoundary>
+            <Battlemap
+              party={data.party || []}
+              npcs={data.npcs || []}
+              viewRole={viewRole}
+              setViewRole={setViewRole}
+              activeCampaignId={activeCampaignId}
+              onPartyUpdate={handlePartyUpdate}
+              setData={setData}
+              campaignEncounters={data.encounters || []}
+            />
+          </BattlemapErrorBoundary>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MOUNT
+// ═══════════════════════════════════════════════════════════════════════════
+const root = ReactDOM.createRoot(document.getElementById("campaign-root"));
+root.render(React.createElement(App));
+
+  </script>
+</body>
+</html>
