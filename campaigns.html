@@ -875,82 +875,127 @@ const WORLD_ZOOM_PRESETS = {
 };
 
 const ATLAS_LAND_PATH = [
-  "M1130,1270",
-  "C1080,860 1480,540 2100,500",
-  "C2640,440 3380,530 3980,650",
-  "C4560,780 4960,1120 5110,1560",
-  "C5230,1940 5250,2550 5130,2990",
-  "C5020,3410 4620,3710 4050,3880",
-  "C3460,4050 2750,4130 2150,4000",
-  "C1600,3890 1220,3550 1080,3070",
-  "C930,2560 900,1840 1130,1270Z",
+  "M840,2980",
+  "C700,2780 700,2500 870,2280",
+  "C760,2060 780,1760 1040,1560",
+  "C980,1260 1120,970 1460,810",
+  "C1700,580 2100,500 2500,620",
+  "C2800,520 3210,500 3590,620",
+  "C3880,560 4290,610 4620,800",
+  "C4920,820 5200,970 5360,1220",
+  "C5590,1380 5670,1710 5520,2010",
+  "C5680,2300 5670,2620 5460,2910",
+  "C5370,3250 5110,3500 4770,3630",
+  "C4550,3900 4120,4050 3610,3970",
+  "C3200,4140 2730,4150 2350,3950",
+  "C2050,4040 1700,3980 1440,3790",
+  "C1140,3700 940,3460 900,3160",
+  "C790,3110 760,3040 840,2980Z",
 ].join(" ");
 
 const ATLAS_ISLANDS = [
-  { path:"M655,1400 C735,1270 935,1240 1030,1370 C1015,1520 850,1610 700,1545 C620,1510 605,1460 655,1400Z", fill:"#161719", opacity:0.86 },
-  { path:"M5080,800 C5160,660 5370,650 5490,790 C5480,930 5305,1020 5140,960 C5050,920 5020,860 5080,800Z", fill:"#15181b", opacity:0.88 },
-  { path:"M5200,3400 C5310,3250 5550,3220 5650,3365 C5630,3540 5450,3630 5280,3570 C5180,3510 5150,3460 5200,3400Z", fill:"#15181b", opacity:0.88 },
-  { path:"M720,3310 C840,3200 1030,3250 1090,3410 C1040,3560 850,3635 720,3530 C660,3470 650,3370 720,3310Z", fill:"#15181b", opacity:0.9 },
+  { path:"M520,980 C720,760 1030,760 1210,970 C1190,1190 910,1330 650,1240 C500,1190 460,1080 520,980Z", fill:"#c6ba8d", opacity:0.96 },
+  { path:"M5340,760 C5490,610 5730,620 5860,810 C5800,1010 5540,1080 5370,960 C5280,900 5270,830 5340,760Z", fill:"#c7bb8e", opacity:0.95 },
+  { path:"M5230,3290 C5420,3140 5670,3170 5800,3390 C5710,3620 5410,3680 5220,3520 C5140,3440 5150,3350 5230,3290Z", fill:"#c8bc8e", opacity:0.95 },
+  { path:"M510,3350 C650,3220 900,3240 1010,3410 C960,3590 700,3700 530,3590 C450,3520 440,3430 510,3350Z", fill:"#c9bd91", opacity:0.96 },
+  { path:"M3940,460 C4090,380 4280,430 4370,580 C4320,720 4140,780 3990,700 C3890,650 3870,540 3940,460Z", fill:"#cbbf92", opacity:0.92 },
+  { path:"M1820,4030 C1930,3900 2140,3880 2240,4030 C2190,4180 1980,4250 1830,4160 C1760,4110 1750,4080 1820,4030Z", fill:"#c7bb8e", opacity:0.93 },
 ];
 
 const ATLAS_WATER_BODIES = [
-  { shape:"ellipse", cx:3030, cy:2070, rx:350, ry:210, label:"The Glassmere" },
-  { shape:"ellipse", cx:1880, cy:3120, rx:210, ry:145, label:"Lake Vesper" },
-  { shape:"path", d:"M4340,3650 C4460,3430 4700,3370 4890,3530 C4885,3780 4610,3925 4390,3830 C4320,3780 4290,3720 4340,3650Z", label:"Ember Gulf" },
+  { shape:"path", d:"M2910,1840 C3110,1780 3350,1830 3460,1970 C3390,2200 3110,2320 2860,2200 C2750,2060 2770,1920 2910,1840Z", label:"Lake Aster" },
+  { shape:"path", d:"M1670,2990 C1820,2870 2030,2920 2120,3080 C2050,3270 1830,3350 1640,3250 C1550,3170 1550,3070 1670,2990Z", label:"Lake Vesper" },
+  { shape:"path", d:"M4290,3410 C4460,3270 4680,3290 4840,3460 C4830,3680 4570,3790 4330,3710 C4230,3630 4200,3500 4290,3410Z", label:"Ember Gulf" },
+  { shape:"ellipse", cx:1120, cy:2320, rx:120, ry:84, label:"Mossfen" },
 ];
 
 const ATLAS_RIVERS = [
-  "M1780,740 C1820,1050 1690,1310 1750,1610 C1800,1930 1730,2240 1830,2550 C1920,2840 1900,3000 1910,3120",
-  "M3070,660 C2980,980 3010,1230 2920,1510 C2830,1760 2900,1920 3010,2060",
-  "M4410,820 C4340,1150 4440,1410 4370,1700 C4310,1980 4450,2260 4390,2550 C4310,2880 4380,3190 4320,3500",
-  "M1370,1530 C1540,1490 1650,1540 1750,1610",
-  "M2260,1770 C2510,1860 2760,1970 3010,2060",
-  "M3530,1620 C3320,1740 3160,1880 3010,2060",
-  "M5100,2130 C4860,2140 4620,2290 4390,2550",
+  "M1850,930 C1900,1210 1790,1410 1860,1670 C1940,1940 1900,2210 1980,2460 C2070,2740 2060,2900 2010,3080",
+  "M3220,820 C3120,1080 3150,1290 3050,1540 C2960,1760 2970,1890 2910,1960",
+  "M4470,970 C4380,1260 4480,1490 4410,1750 C4350,2010 4470,2230 4410,2480 C4350,2760 4390,3020 4320,3300",
+  "M1470,1620 C1660,1560 1770,1590 1860,1670",
+  "M2210,1760 C2440,1870 2680,1950 2910,1960",
+  "M3520,1700 C3320,1780 3120,1870 2910,1960",
+  "M5030,2120 C4800,2170 4590,2280 4410,2480",
+  "M2550,2820 C2480,2960 2340,3050 2120,3080",
+  "M3770,2850 C3950,2940 4120,3090 4320,3300",
 ];
 
 const ATLAS_SEA_LABELS = [
-  { x:520, y:2150, label:"WESTERLY VEIL", rotate:-90, size:22, spacing:8, opacity:0.28 },
-  { x:5480, y:2200, label:"OPAL REACH", rotate:90, size:22, spacing:8, opacity:0.28 },
-  { x:3000, y:350, label:"CROWN SEA", rotate:0, size:24, spacing:10, opacity:0.24 },
-  { x:2950, y:4260, label:"SOUTHERN BRINE", rotate:0, size:24, spacing:10, opacity:0.22 },
+  { x:620, y:2170, label:"Sea of Frost", rotate:-18, size:34, spacing:8, opacity:0.34 },
+  { x:5480, y:1760, label:"Sea of Winds", rotate:8, size:34, spacing:8, opacity:0.34 },
+  { x:3040, y:410, label:"Crownwater Expanse", rotate:0, size:30, spacing:10, opacity:0.22 },
+  { x:4200, y:4010, label:"Sea of Twilight", rotate:-4, size:30, spacing:10, opacity:0.22 },
+  { x:5040, y:2830, label:"Sea of Silver", rotate:23, size:30, spacing:10, opacity:0.3 },
 ];
 
 const ATLAS_RANGE_LABELS = [
-  { x:1670, y:1120, label:"THE IRONSPINE", rotate:-18 },
-  { x:3320, y:930, label:"STORMCROWN RANGE", rotate:8 },
-  { x:4550, y:1650, label:"THE SUNDERED RIDGE", rotate:20 },
-  { x:2060, y:3380, label:"MOONVALE WILDS", rotate:-8 },
+  { x:2150, y:1390, label:"Ironspine Range", rotate:-8 },
+  { x:3500, y:1320, label:"Stormcrown Range", rotate:10 },
+  { x:4670, y:1910, label:"Sundered Ridge", rotate:18 },
+  { x:2240, y:3360, label:"Moonvale Wilds", rotate:-10 },
+];
+
+const ATLAS_MOUNTAIN_RANGES = [
+  {
+    id:"ironspine",
+    ridge:"M1420,1290 C1650,1160 1890,1100 2130,1120 C2390,1140 2620,1200 2870,1320",
+    peaks:[
+      { x:1490, y:1250, s:1.08 }, { x:1600, y:1210, s:1.35 }, { x:1710, y:1180, s:1.2 },
+      { x:1820, y:1150, s:1.46 }, { x:1950, y:1130, s:1.1 }, { x:2060, y:1110, s:1.42 },
+      { x:2190, y:1130, s:1.18 }, { x:2310, y:1150, s:1.34 }, { x:2440, y:1180, s:1.12 },
+      { x:2560, y:1210, s:1.4 }, { x:2680, y:1250, s:1.16 },
+    ],
+  },
+  {
+    id:"stormcrown",
+    ridge:"M3040,1200 C3260,1080 3490,1040 3750,1080 C4000,1120 4250,1220 4490,1380",
+    peaks:[
+      { x:3110, y:1150, s:1.24 }, { x:3230, y:1110, s:1.52 }, { x:3360, y:1080, s:1.2 },
+      { x:3500, y:1060, s:1.48 }, { x:3630, y:1060, s:1.18 }, { x:3760, y:1080, s:1.44 },
+      { x:3900, y:1120, s:1.24 }, { x:4040, y:1170, s:1.36 }, { x:4200, y:1240, s:1.22 },
+      { x:4350, y:1330, s:1.34 },
+    ],
+  },
+  {
+    id:"sundered",
+    ridge:"M4130,1790 C4290,1720 4450,1700 4650,1740 C4860,1810 5030,1930 5170,2090",
+    peaks:[
+      { x:4200, y:1750, s:1.08 }, { x:4320, y:1720, s:1.32 }, { x:4440, y:1710, s:1.12 },
+      { x:4570, y:1730, s:1.38 }, { x:4710, y:1760, s:1.16 }, { x:4850, y:1820, s:1.34 },
+      { x:4980, y:1900, s:1.14 }, { x:5100, y:2010, s:1.28 },
+    ],
+  },
 ];
 
 const ATLAS_PROVINCES = [
   {
-    id:"essear", name:"Essear", path:"M1110,1370 C1240,960 1670,720 2240,730 C2580,750 2850,950 3000,1320 C3020,1680 2790,1970 2390,2140 C1920,2240 1450,2140 1160,1830 C1040,1700 1010,1530 1110,1370Z",
-    labelX:1980, labelY:1490, cityX:1550, cityY:1320, spreadX:420, spreadY:260, fill:"#d6c892"
+    id:"essear", name:"Essear", path:"M1020,1490 C1180,1100 1580,860 2140,840 C2500,860 2780,1020 2980,1290 C2920,1560 2730,1850 2380,2090 C1950,2170 1550,2100 1270,1860 C1080,1730 980,1610 1020,1490Z",
+    labelX:1940, labelY:1510, cityX:1580, cityY:1320, spreadX:430, spreadY:260, fill:"#dacd9c"
   },
   {
-    id:"beltros", name:"Beltros", path:"M2900,1020 C3280,740 3950,660 4540,800 C4930,950 5080,1310 4880,1700 C4520,1930 4010,2010 3480,1950 C3100,1790 2890,1500 2900,1020Z",
-    labelX:3770, labelY:1390, cityX:3700, cityY:1200, spreadX:430, spreadY:250, fill:"#d5c68f"
+    id:"beltros", name:"Beltros", path:"M2970,1280 C3160,910 3540,760 4100,820 C4500,900 4800,1120 4950,1450 C4790,1750 4510,1950 4060,2020 C3600,2030 3220,1940 2940,1720 C2900,1550 2910,1400 2970,1280Z",
+    labelX:3880, labelY:1440, cityX:3790, cityY:1220, spreadX:440, spreadY:250, fill:"#d5c794"
   },
   {
-    id:"theanas", name:"Theanas", path:"M4100,1840 C4490,1620 4990,1710 5400,2080 C5470,2490 5230,2860 4850,3050 C4510,3050 4190,2880 3980,2570 C3900,2240 3950,2020 4100,1840Z",
-    labelX:4800, labelY:2230, cityX:4720, cityY:2050, spreadX:340, spreadY:300, fill:"#d3c38d"
+    id:"theanas", name:"Theanas", path:"M3990,2090 C4290,1820 4750,1770 5240,2000 C5410,2320 5340,2690 5040,2990 C4680,3000 4330,2890 4040,2660 C3910,2440 3900,2250 3990,2090Z",
+    labelX:4770, labelY:2270, cityX:4710, cityY:2070, spreadX:340, spreadY:290, fill:"#d0c089"
   },
   {
-    id:"fara", name:"Fara", path:"M990,2550 C1260,2190 1760,2160 2120,2450 C2260,2840 2200,3310 1880,3650 C1500,3900 1080,3810 800,3450 C760,3070 830,2790 990,2550Z",
-    labelX:1420, labelY:3160, cityX:1280, cityY:2850, spreadX:350, spreadY:300, fill:"#d8c994"
+    id:"fara", name:"Fara", path:"M860,2760 C1130,2380 1590,2280 2050,2510 C2180,2880 2090,3310 1790,3660 C1400,3850 1010,3740 740,3400 C690,3140 720,2920 860,2760Z",
+    labelX:1320, labelY:3220, cityX:1260, cityY:2860, spreadX:350, spreadY:290, fill:"#ddcf9f"
   },
   {
-    id:"elonia", name:"Elonia", path:"M2080,2470 C2440,2190 2940,2200 3290,2500 C3360,2960 3180,3550 2820,3870 C2350,3980 1990,3770 1800,3350 C1770,2950 1840,2650 2080,2470Z",
-    labelX:2550, labelY:3240, cityX:2420, cityY:2920, spreadX:390, spreadY:280, fill:"#d7ca97"
+    id:"elonia", name:"Elonia", path:"M2080,2560 C2390,2250 2840,2220 3220,2470 C3320,2880 3190,3410 2860,3820 C2420,3970 2000,3790 1800,3420 C1750,3060 1840,2760 2080,2560Z",
+    labelX:2540, labelY:3260, cityX:2440, cityY:2930, spreadX:390, spreadY:280, fill:"#d7c995"
   },
   {
-    id:"cyrin", name:"Cyrin", path:"M3050,2440 C3440,2190 3920,2200 4360,2480 C4560,2940 4470,3460 4100,3850 C3570,4040 3120,3890 2810,3520 C2760,3060 2810,2690 3050,2440Z",
-    labelX:3650, labelY:3160, cityX:3510, cityY:2960, spreadX:380, spreadY:260, fill:"#d5c690"
+    id:"cyrin", name:"Cyrin", path:"M3010,2510 C3430,2190 3910,2250 4370,2550 C4500,2980 4370,3460 4010,3810 C3490,3950 3050,3800 2800,3440 C2770,3060 2840,2750 3010,2510Z",
+    labelX:3660, labelY:3200, cityX:3500, cityY:2960, spreadX:380, spreadY:260, fill:"#d4c590"
   },
   {
-    id:"dravina", name:"Dravina", path:"M4230,3000 C4540,2810 5030,2880 5290,3190 C5280,3560 5030,3840 4610,3870 C4320,3810 4120,3560 4080,3270 C4090,3140 4140,3060 4230,3000Z",
-    labelX:4730, labelY:3290, cityX:4680, cityY:3510, spreadX:300, spreadY:220, fill:"#d3c08a"
+    id:"dravina", name:"Dravina", path:"M4220,3110 C4520,2900 4950,2920 5240,3190 C5190,3550 4910,3800 4510,3810 C4250,3750 4050,3530 4040,3300 C4070,3210 4130,3150 4220,3110Z",
+    labelX:4710, labelY:3320, cityX:4680, cityY:3500, spreadX:300, spreadY:220, fill:"#d2c08a"
   },
 ];
 
@@ -4042,20 +4087,20 @@ function WorldView({ data, setData, onNav }) {
   // ── Inline SVG terrain renderers for the map ──
   const MtnSvg = ({ x, y, s }) => (
     <g transform={`translate(${x},${y}) scale(${s})`}>
-      <path d="M0,0 L-18,-35 Q-15,-42,-8,-40 L0,-50 L8,-40 Q15,-42,18,-35 L0,0Z" fill="var(--text-faint)" opacity="0.12" stroke="var(--text-faint)" strokeWidth="1.2"/>
-      <path d="M0,-50 L-5,-38 L-2,-40 L0,-45 L2,-40 L5,-38 L0,-50Z" fill="var(--text-muted)" opacity="0.18"/>
-      <path d="M-6,-30 Q-3,-36,0,-50" stroke="var(--text-faint)" strokeWidth="0.5" opacity="0.2" fill="none"/>
+      <path d="M0,0 L-24,-44 Q-19,-52,-11,-49 L0,-62 L11,-49 Q19,-52,24,-44 L0,0Z" fill="#b9ab7e" opacity="0.28" stroke="#8c7d58" strokeWidth="1.3"/>
+      <path d="M0,-62 L-7,-47 L-2,-50 L0,-56 L2,-50 L7,-47 L0,-62Z" fill="#f3edd5" opacity="0.42"/>
+      <path d="M-8,-36 Q-3,-46,0,-62" stroke="#7f7150" strokeWidth="0.7" opacity="0.3" fill="none"/>
     </g>
   );
   const TreeSvg = ({ x, y, s }) => (
     <g transform={`translate(${x},${y}) scale(${s})`}>
-      <line x1="0" y1="0" x2="0" y2="-12" stroke="var(--text-faint)" strokeWidth="1.5" opacity="0.5"/>
-      <path d="M0,-30 C-8,-30,-14,-24,-13,-18 C-16,-17,-15,-12,-12,-11 C-13,-8,-9,-5,-5,-6 C-4,-3,4,-3,5,-6 C9,-5,13,-8,12,-11 C15,-12,16,-17,13,-18 C14,-24,8,-30,0,-30Z" fill="var(--text-faint)" opacity="0.1" stroke="var(--text-faint)" strokeWidth="0.9"/>
+      <line x1="0" y1="0" x2="0" y2="-12" stroke="#837650" strokeWidth="1.2" opacity="0.35"/>
+      <path d="M0,-30 C-8,-30,-14,-24,-13,-18 C-16,-17,-15,-12,-12,-11 C-13,-8,-9,-5,-5,-6 C-4,-3,4,-3,5,-6 C9,-5,13,-8,12,-11 C15,-12,16,-17,13,-18 C14,-24,8,-30,0,-30Z" fill="#70825d" opacity="0.10" stroke="#7d734f" strokeWidth="0.8"/>
     </g>
   );
   const HillSvg = ({ x, y, s }) => (
     <g transform={`translate(${x},${y}) scale(${s})`}>
-      <path d="M-20,0 Q-10,-18 0,-22 Q10,-18 20,0Z" fill="var(--text-faint)" stroke="var(--text-faint)" strokeWidth="0.6" opacity="0.12"/>
+      <path d="M-20,0 Q-10,-18 0,-22 Q10,-18 20,0Z" fill="#b5a87e" stroke="#8b7e57" strokeWidth="0.6" opacity="0.14"/>
     </g>
   );
   // POI icon renderer for scattered world POIs
@@ -4319,9 +4364,9 @@ function WorldView({ data, setData, onNav }) {
                   {ATLAS_ISLANDS.map((isle, idx) => <path key={`atlas-isle-clip-${idx}`} d={isle.path} />)}
                 </clipPath>
                 <radialGradient id="atlasLandFill" cx="50%" cy="45%" r="75%">
-                  <stop offset="0%" stopColor="#d8cca0" />
-                  <stop offset="72%" stopColor="#cbbf91" />
-                  <stop offset="100%" stopColor="#baae80" />
+                  <stop offset="0%" stopColor="#ddd0a5" />
+                  <stop offset="58%" stopColor="#d1c494" />
+                  <stop offset="100%" stopColor="#c1b280" />
                 </radialGradient>
                 <linearGradient id="atlasSeaFill" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#7ea9a0" />
@@ -4357,17 +4402,17 @@ function WorldView({ data, setData, onNav }) {
                 <rect x="0" y="0" width={MAP_W} height={MAP_H} rx="12" fill="url(#atlasSeaFill)" filter="url(#parchment)"/>
                 <rect x="40" y="40" width={MAP_W-80} height={MAP_H-80} rx="26" fill="none" stroke="rgba(232,186,64,0.10)" strokeWidth="2"/>
                 <rect x="0" y="0" width={MAP_W} height={MAP_H} fill="url(#waterPat)" opacity="0.35"/>
-                <path d={ATLAS_LAND_PATH} fill="rgba(211,198,151,0.16)" stroke="rgba(92,130,122,0.38)" strokeWidth="52" opacity="0.95" filter="url(#atlasCoastGlow)"/>
-                <path d={ATLAS_LAND_PATH} fill="url(#atlasLandFill)" stroke="#658f86" strokeWidth="10"/>
-                <path d={ATLAS_LAND_PATH} fill="url(#atlasContourPat)" opacity="0.34" stroke="none"/>
+                <path d={ATLAS_LAND_PATH} fill="rgba(211,198,151,0.18)" stroke="rgba(92,130,122,0.44)" strokeWidth="56" opacity="0.96" filter="url(#atlasCoastGlow)"/>
+                <path d={ATLAS_LAND_PATH} fill="url(#atlasLandFill)" stroke="#5e8b82" strokeWidth="10"/>
+                <path d={ATLAS_LAND_PATH} fill="url(#atlasContourPat)" opacity="0.38" stroke="none"/>
                 {ATLAS_ISLANDS.map((isle, idx) => (
                   <g key={`atlas-isle-${idx}`}>
-                    <path d={isle.path} fill="#c7bc8f" opacity="0.96" stroke="#658f86" strokeWidth="4"/>
+                    <path d={isle.path} fill={isle.fill || "#c7bc8f"} opacity={isle.opacity || 0.96} stroke="#5f8c83" strokeWidth="4"/>
                     <path d={isle.path} fill="url(#atlasContourPat)" opacity="0.26" stroke="none"/>
                   </g>
                 ))}
                 {ATLAS_SEA_LABELS.map((sLabel, idx) => (
-                  <text key={`sea-label-${idx}`} x={sLabel.x} y={sLabel.y} textAnchor="middle" fill="#395d56" fontFamily="'Spectral', serif" fontSize={sLabel.size} letterSpacing={sLabel.spacing * 0.5} opacity="0.6" fontStyle="italic" transform={`rotate(${sLabel.rotate} ${sLabel.x} ${sLabel.y})`} style={{ pointerEvents:"none" }}>
+                  <text key={`sea-label-${idx}`} x={sLabel.x} y={sLabel.y} textAnchor="middle" fill="#3c645c" fontFamily="'Spectral', serif" fontSize={sLabel.size} letterSpacing={sLabel.spacing * 0.35} opacity={sLabel.opacity || 0.32} fontStyle="italic" transform={`rotate(${sLabel.rotate} ${sLabel.x} ${sLabel.y})`} style={{ pointerEvents:"none" }}>
                     {sLabel.label}
                   </text>
                 ))}
@@ -4410,15 +4455,15 @@ function WorldView({ data, setData, onNav }) {
                 <g clipPath="url(#atlasLandClip)">
                   {ATLAS_WATER_BODIES.map((body, idx) => (
                     body.shape === "ellipse"
-                      ? <ellipse key={`body-${idx}`} cx={body.cx} cy={body.cy} rx={body.rx} ry={body.ry} fill="rgba(19,32,45,0.72)" stroke="rgba(232,186,64,0.08)" strokeWidth="3"/>
-                      : <path key={`body-${idx}`} d={body.d} fill="rgba(19,32,45,0.72)" stroke="rgba(232,186,64,0.08)" strokeWidth="3"/>
+                      ? <ellipse key={`body-${idx}`} cx={body.cx} cy={body.cy} rx={body.rx} ry={body.ry} fill="#8fb5ad" opacity="0.92" stroke="#5e8b82" strokeWidth="4"/>
+                      : <path key={`body-${idx}`} d={body.d} fill="#8fb5ad" opacity="0.92" stroke="#5e8b82" strokeWidth="4"/>
                   ))}
                   {ATLAS_RIVERS.map((riverPath, idx) => (
-                    <path key={`atlas-river-${idx}`} d={riverPath} stroke="rgba(137,156,180,0.42)" strokeWidth={idx < 3 ? 4 : 2.2} fill="none" opacity={idx < 3 ? 0.72 : 0.45} strokeLinecap="round"/>
+                    <path key={`atlas-river-${idx}`} d={riverPath} stroke="#6f9f97" strokeWidth={idx < 3 ? 6 : 3.4} fill="none" opacity={idx < 3 ? 0.76 : 0.52} strokeLinecap="round"/>
                   ))}
                 </g>
                 {mapZoom < 1.4 && ATLAS_RANGE_LABELS.map((mLabel, idx) => (
-                  <text key={`range-label-${idx}`} x={mLabel.x} y={mLabel.y} textAnchor="middle" fill="rgba(184,157,130,0.42)" fontFamily="'Cinzel', serif" fontSize={Math.max(12, 19 / Math.max(mapZoom, 0.35))} letterSpacing="4" opacity="0.34" transform={`rotate(${mLabel.rotate} ${mLabel.x} ${mLabel.y})`} style={{ textTransform:"uppercase", pointerEvents:"none" }}>
+                  <text key={`range-label-${idx}`} x={mLabel.x} y={mLabel.y} textAnchor="middle" fill="#7f714f" fontFamily="'Spectral', serif" fontSize={Math.max(13, 22 / Math.max(mapZoom, 0.35))} letterSpacing="1.8" opacity="0.34" fontStyle="italic" transform={`rotate(${mLabel.rotate} ${mLabel.x} ${mLabel.y})`} style={{ pointerEvents:"none" }}>
                     {mLabel.label}
                   </text>
                 ))}
@@ -4428,9 +4473,9 @@ function WorldView({ data, setData, onNav }) {
                   const activeProvince = atlasProvinceId === t.id || selectedWorldNode?.atlasProvinceId === t.id;
                   return (
                   <g key={`terr-${i}`} clipPath="url(#atlasLandClip)" style={{ cursor:"pointer" }} onClick={(e)=>{ e.stopPropagation(); setAtlasProvinceId(t.id); if (t.capitalNode) selectRegion(t.capitalNode); }}>
-                    <path d={t.path} fill={t.fill || "#d6c999"} opacity={activeProvince ? 0.22 : 0.09} stroke={activeProvince ? "#5f857c" : "#94845c"} strokeWidth={activeProvince ? 4 : (mapZoom > 0.6 ? 1.2 : 2.2)} strokeOpacity={activeProvince ? 0.75 : 0.22} strokeDasharray={activeProvince ? "0" : "24,14"}/>
+                    <path d={t.path} fill={t.fill || "#d6c999"} opacity={activeProvince ? 0.28 : 0.14} stroke={activeProvince ? "#5c857c" : "#8f815a"} strokeWidth={activeProvince ? 4.4 : (mapZoom > 0.6 ? 1.4 : 2.2)} strokeOpacity={activeProvince ? 0.76 : 0.22} strokeDasharray={activeProvince ? "0" : "18,14"}/>
                     {mapZoom < 1.3 && t.labelX != null && (
-                      <text x={t.labelX} y={t.labelY} textAnchor="middle" fill={activeProvince ? "#4d3d1d" : "#5a4d2e"} fontFamily="'Spectral', serif" fontSize={Math.max(20, 36 / Math.max(mapZoom, 0.38))} letterSpacing="1.6" opacity={activeProvince ? 0.88 : 0.62} style={{ pointerEvents:"none" }}>
+                      <text x={t.labelX} y={t.labelY} textAnchor="middle" fill={activeProvince ? "#4f3d1c" : "#594626"} stroke="rgba(245,238,214,0.45)" strokeWidth={Math.max(1.5, 3 / Math.max(mapZoom, 0.5))} paintOrder="stroke" fontFamily="'Cinzel', serif" fontSize={Math.max(26, 58 / Math.max(mapZoom, 0.38))} fontWeight="600" letterSpacing="2.2" opacity={activeProvince ? 0.9 : 0.7} style={{ pointerEvents:"none" }}>
                         {t.name}
                       </text>
                     )}
@@ -4441,11 +4486,17 @@ function WorldView({ data, setData, onNav }) {
                 {/* ═══ LAYER 3: Terrain features — scale-dependent ═══ */}
                 {/* Mountains — always visible (they define the landscape) */}
                 <g clipPath="url(#atlasLandClip)">
-                  {false && terrain.filter(t=>t.type==="mountain").map(t => <MtnSvg key={t.key} x={t.x} y={t.y} s={t.scale}/>)}
+                  {ATLAS_MOUNTAIN_RANGES.map((range) => (
+                    <g key={`ridge-${range.id}`}>
+                      <path d={range.ridge} fill="none" stroke="#8e7f58" strokeWidth="18" opacity="0.10" strokeLinecap="round"/>
+                      <path d={range.ridge} fill="none" stroke="#f5efd7" strokeWidth="4" opacity="0.14" strokeLinecap="round"/>
+                      {range.peaks.map((peak, peakIdx) => <MtnSvg key={`${range.id}-${peakIdx}`} x={peak.x} y={peak.y} s={peak.s}/>)}
+                    </g>
+                  ))}
                 {/* Hills — visible at kingdom zoom and closer */}
-                {false && mapZoom > 0.5 && terrain.filter(t=>t.type==="hill").map(t => <HillSvg key={t.key} x={t.x} y={t.y} s={t.scale}/>)}
+                {mapZoom > 0.7 && terrain.filter(t=>t.type==="hill").map(t => <HillSvg key={t.key} x={t.x} y={t.y} s={t.scale}/>)}
                 {/* Forests — visible from kingdom zoom */}
-                  {false && mapZoom > 0.4 && terrain.filter(t=>t.type==="tree").map(t => <TreeSvg key={t.key} x={t.x} y={t.y} s={t.scale}/>)}
+                  {mapZoom > 0.8 && terrain.filter(t=>t.type==="tree").map(t => <TreeSvg key={t.key} x={t.x} y={t.y} s={t.scale}/>)}
                 </g>
 
                 {/* ═══ LAYER 4: Roads — major roads at kingdom zoom, minor at local ═══ */}
@@ -4510,7 +4561,7 @@ function WorldView({ data, setData, onNav }) {
                       )}
                       {/* Label — always show for kingdoms/cities, show others when zoomed */}
                       {(isBig || mapZoom > (isSmall ? 1.0 : 0.62) || active) && (
-                        <text x={r.mx} y={r.my + labelYOffset} textAnchor="middle" fill={dimUndiscovered ? "#6f6a55" : "#4c4025"} fontFamily="'Spectral', serif" fontSize={fontSize} fontStyle="italic" fontWeight={isBig?"600":"500"} letterSpacing={isBig?"1.8":"0.6"} opacity={active?0.95:0.88} style={{ pointerEvents:"none" }}>
+                        <text x={r.mx} y={r.my + labelYOffset} textAnchor="middle" fill={dimUndiscovered ? "#6f6a55" : "#4c4025"} stroke="rgba(246,240,221,0.48)" strokeWidth={isBig ? 1.6 : 1} paintOrder="stroke" fontFamily="'Spectral', serif" fontSize={fontSize} fontStyle="italic" fontWeight={isBig?"600":"500"} letterSpacing={isBig?"1.2":"0.5"} opacity={active?0.95:0.9} style={{ pointerEvents:"none" }}>
                           {r.discovered ? r.name : "Undiscovered Site"}
                         </text>
                       )}
