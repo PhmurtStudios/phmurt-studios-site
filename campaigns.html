@@ -603,8 +603,11 @@
     const { useState, useEffect, useCallback, useRef, useMemo } = React;
 
     // Lucide icons from global
-    const { ChevronDown, ChevronRight, ChevronLeft, Swords, Users, MapPin, Crown, Scroll, Clock, Star, BookOpen, Dice6, Target, Heart, CheckCircle, Circle, ArrowRight, Plus, Compass, Mountain, Castle, Skull, Flag, TrendingUp, TrendingDown, Minus, SkipForward, Search, Bell, Settings, X, Edit3, Trash2, Eye, EyeOff, Globe, Layers, Activity, Upload, Download, FileText, Save, Copy, Calendar, Lock, Unlock, ToggleLeft, ToggleRight, AlertTriangle, Package, Shield, Wand2, Map: MapIcon, Link, RefreshCw, ChevronUp, MoreVertical, Check, Image, Bold, Italic, List, Type, Heading, Filter } = window.LucideReact || {};
+    const { ChevronDown, ChevronRight, ChevronLeft, Swords, Users, MapPin, Crown, Scroll, Clock, Star, BookOpen, Dice6, Target, Heart, CheckCircle, Circle, ArrowRight, Plus, Compass, Mountain, Castle, Skull, Flag, TrendingUp, TrendingDown, Minus, SkipForward, Search, Bell, Settings, X, Edit3, Trash2, Eye, EyeOff, Globe, Layers, Activity, Upload, Download, FileText, Save, Copy, Calendar, Lock, Unlock, ToggleLeft, ToggleRight, AlertTriangle, Package, Shield, Wand2, Map: MapIcon, LayoutDashboard, Link, RefreshCw, ChevronUp, MoreVertical, Check, Image, Bold, Italic, List, Type, Heading, Filter } = window.LucideReact || {};
     const FilterIcon = Filter || Layers;
+    /* Play tab: Lucide "Map" is imported as MapIcon so we do not use the JS built-in Map. Dashboard: Layout was never imported—use LayoutDashboard (fallback Layers). */
+    const DashboardNavIcon = LayoutDashboard || Layers;
+    const PlayNavIcon = MapIcon || MapPin;
 
 /* ═══════════════════════════════════════════════════════════════════════════
    PHMURT STUDIOS — CAMPAIGN MANAGER
@@ -15005,10 +15008,10 @@ function App() {
   };
 
   const navItems = [
-    { id:"dashboard", label:"Dashboard", icon: Layout },
+    { id:"dashboard", label:"Dashboard", icon: DashboardNavIcon },
     { id:"timeline", label:"Timeline", icon: Clock },
     { id:"world", label:"World", icon: Globe },
-    { id:"play", label:"Play", icon: Map },
+    { id:"play", label:"Play", icon: PlayNavIcon },
   ];
 
   if (loading) {
