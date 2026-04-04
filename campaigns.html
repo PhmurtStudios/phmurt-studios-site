@@ -863,11 +863,9 @@ const WORLD_STATE_META = {
 
 const WORLD_THREAT_SCORE = { low:1, medium:2, high:3, extreme:4 };
 const WORLD_OVERLAYS = [
-  { id:"all", label:"All" },
-  { id:"factions", label:"Factions" },
-  { id:"danger", label:"Danger" },
+  { id:"atlas", label:"Atlas" },
   { id:"quests", label:"Quests" },
-  { id:"discovery", label:"Discovery" },
+  { id:"discovery", label:"Secrets" },
 ];
 const WORLD_ZOOM_PRESETS = {
   world: { zoom:0.25, pan:{ x:60, y:30 } },
@@ -875,6 +873,101 @@ const WORLD_ZOOM_PRESETS = {
   local: { zoom:2.6, pan:null },
   site:  { zoom:4.2, pan:null },
 };
+
+const ATLAS_LAND_PATH = [
+  "M1130,1270",
+  "C1080,860 1480,540 2100,500",
+  "C2640,440 3380,530 3980,650",
+  "C4560,780 4960,1120 5110,1560",
+  "C5230,1940 5250,2550 5130,2990",
+  "C5020,3410 4620,3710 4050,3880",
+  "C3460,4050 2750,4130 2150,4000",
+  "C1600,3890 1220,3550 1080,3070",
+  "C930,2560 900,1840 1130,1270Z",
+].join(" ");
+
+const ATLAS_ISLANDS = [
+  { path:"M655,1400 C735,1270 935,1240 1030,1370 C1015,1520 850,1610 700,1545 C620,1510 605,1460 655,1400Z", fill:"#161719", opacity:0.86 },
+  { path:"M5080,800 C5160,660 5370,650 5490,790 C5480,930 5305,1020 5140,960 C5050,920 5020,860 5080,800Z", fill:"#15181b", opacity:0.88 },
+  { path:"M5200,3400 C5310,3250 5550,3220 5650,3365 C5630,3540 5450,3630 5280,3570 C5180,3510 5150,3460 5200,3400Z", fill:"#15181b", opacity:0.88 },
+  { path:"M720,3310 C840,3200 1030,3250 1090,3410 C1040,3560 850,3635 720,3530 C660,3470 650,3370 720,3310Z", fill:"#15181b", opacity:0.9 },
+];
+
+const ATLAS_WATER_BODIES = [
+  { shape:"ellipse", cx:3030, cy:2070, rx:350, ry:210, label:"The Glassmere" },
+  { shape:"ellipse", cx:1880, cy:3120, rx:210, ry:145, label:"Lake Vesper" },
+  { shape:"path", d:"M4340,3650 C4460,3430 4700,3370 4890,3530 C4885,3780 4610,3925 4390,3830 C4320,3780 4290,3720 4340,3650Z", label:"Ember Gulf" },
+];
+
+const ATLAS_RIVERS = [
+  "M1780,740 C1820,1050 1690,1310 1750,1610 C1800,1930 1730,2240 1830,2550 C1920,2840 1900,3000 1910,3120",
+  "M3070,660 C2980,980 3010,1230 2920,1510 C2830,1760 2900,1920 3010,2060",
+  "M4410,820 C4340,1150 4440,1410 4370,1700 C4310,1980 4450,2260 4390,2550 C4310,2880 4380,3190 4320,3500",
+  "M1370,1530 C1540,1490 1650,1540 1750,1610",
+  "M2260,1770 C2510,1860 2760,1970 3010,2060",
+  "M3530,1620 C3320,1740 3160,1880 3010,2060",
+  "M5100,2130 C4860,2140 4620,2290 4390,2550",
+];
+
+const ATLAS_SEA_LABELS = [
+  { x:520, y:2150, label:"WESTERLY VEIL", rotate:-90, size:22, spacing:8, opacity:0.28 },
+  { x:5480, y:2200, label:"OPAL REACH", rotate:90, size:22, spacing:8, opacity:0.28 },
+  { x:3000, y:350, label:"CROWN SEA", rotate:0, size:24, spacing:10, opacity:0.24 },
+  { x:2950, y:4260, label:"SOUTHERN BRINE", rotate:0, size:24, spacing:10, opacity:0.22 },
+];
+
+const ATLAS_RANGE_LABELS = [
+  { x:1670, y:1120, label:"THE IRONSPINE", rotate:-18 },
+  { x:3320, y:930, label:"STORMCROWN RANGE", rotate:8 },
+  { x:4550, y:1650, label:"THE SUNDERED RIDGE", rotate:20 },
+  { x:2060, y:3380, label:"MOONVALE WILDS", rotate:-8 },
+];
+
+const ATLAS_FACTION_SEATS = [
+  { x:1680, y:1500, spreadX:360, spreadY:260, angle:0.45 },
+  { x:3130, y:1140, spreadX:420, spreadY:260, angle:1.15 },
+  { x:4520, y:1680, spreadX:350, spreadY:300, angle:2.45 },
+  { x:4050, y:3120, spreadX:360, spreadY:280, angle:3.3 },
+  { x:2500, y:3320, spreadX:440, spreadY:250, angle:4.05 },
+  { x:1500, y:2650, spreadX:330, spreadY:300, angle:5.0 },
+];
+
+const ATLAS_FREE_SEATS = [
+  { x:2380, y:1830, spreadX:260, spreadY:180, angle:1.8 },
+  { x:3520, y:1960, spreadX:280, spreadY:200, angle:2.2 },
+  { x:2850, y:2620, spreadX:320, spreadY:220, angle:4.8 },
+  { x:1980, y:3120, spreadX:300, spreadY:200, angle:5.6 },
+  { x:4700, y:2500, spreadX:250, spreadY:220, angle:2.7 },
+  { x:1260, y:2010, spreadX:260, spreadY:200, angle:5.9 },
+];
+
+const ATLAS_REGION_LAYOUTS = {
+  kingdom:    { radius:120, label:"Kingdom" },
+  capital:    { radius:80,  label:"Capital" },
+  city:       { radius:150, label:"City" },
+  town:       { radius:250, label:"Settlement" },
+  castle:     { radius:210, label:"Stronghold" },
+  hamlet:     { radius:320, label:"Hamlet" },
+  wilderness: { radius:420, label:"Wildland" },
+  forest:     { radius:400, label:"Forest" },
+  mountain:   { radius:380, label:"Highlands" },
+  dungeon:    { radius:470, label:"Dungeon" },
+  ruins:      { radius:460, label:"Ruin" },
+  route:      { radius:300, label:"Passage" },
+  default:    { radius:280, label:"Landmark" },
+};
+
+const ATLAS_TERRAIN_BANDS = [
+  { type:"mountain", label:"The Ironspine", cx:1620, cy:1190, spread:580, count:26, dir:-0.16 },
+  { type:"mountain", label:"Stormcrown Range", cx:3250, cy:820, spread:760, count:30, dir:0.1 },
+  { type:"mountain", label:"Sundered Ridge", cx:4560, cy:1770, spread:620, count:24, dir:0.45 },
+  { type:"forest", cx:1760, cy:1860, spread:420, count:34 },
+  { type:"forest", cx:3680, cy:2460, spread:480, count:38 },
+  { type:"forest", cx:2100, cy:3460, spread:380, count:24 },
+  { type:"forest", cx:4380, cy:3320, spread:320, count:20 },
+  { type:"hill", cx:2400, cy:2460, spread:520, count:24 },
+  { type:"hill", cx:3940, cy:2860, spread:420, count:18 },
+];
 
 function getWorldStateMeta(state) {
   const key = String(state || "stable").toLowerCase();
@@ -3575,7 +3668,7 @@ function WorldView({ data, setData, onNav }) {
   const [tab,setTab] = useState("map");
   const [editing,setEditing] = useState(false);
   const [addingEntity,setAddingEntity] = useState(false);
-  const [worldOverlay,setWorldOverlay] = useState("all");
+  const [worldOverlay,setWorldOverlay] = useState("atlas");
   const [worldSearch,setWorldSearch] = useState("");
   const [routeDraft,setRouteDraft] = useState({ fromId: null, toId: null });
   const [isMapCompact,setIsMapCompact] = useState(() => typeof window !== "undefined" ? window.innerWidth < 860 : false);
@@ -3620,26 +3713,50 @@ function WorldView({ data, setData, onNav }) {
   const seed = useCallback((s) => { let h=0; for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;} return h; }, []);
   const seedF = useCallback((x,y,i) => { const v = Math.sin(x*12.9898+y*78.233+i*43758.5453)*43758.5453; return v - Math.floor(v); }, []);
 
+  const getFactionSeatMap = useCallback(() => {
+    const seats = {};
+    (data.factions || []).forEach((f, idx) => {
+      const base = ATLAS_FACTION_SEATS[idx % ATLAS_FACTION_SEATS.length];
+      const lap = Math.floor(idx / ATLAS_FACTION_SEATS.length);
+      seats[f.name] = {
+        ...base,
+        x: Math.max(980, Math.min(MAP_W - 980, base.x + lap * 140 * (idx % 2 === 0 ? 1 : -1))),
+        y: Math.max(780, Math.min(MAP_H - 780, base.y + lap * 120 * (idx % 3 === 0 ? 1 : -1))),
+      };
+    });
+    return seats;
+  }, [data.factions]);
+
   // ── Region map positions — spread across the continent ──
   const regionPositions = useCallback(() => {
-    const pad=400;
-    return data.regions.map((r,i) => {
-      const s = seed(r.name+r.id);
-      const angle = (i / Math.max(data.regions.length,1)) * Math.PI * 2 + (s%100)/200;
-      const dist = 0.2 + (Math.abs(s%400)/700);
-      // Kingdoms/capitals get more central placement, hamlets/dungeons get pushed outward
-      const centralBias = (r.type==="kingdom"||r.type==="capital"||r.type==="city") ? 0.6 : 1.0;
-      const x = Math.round(MAP_W/2 + Math.cos(angle) * (MAP_W/2 - pad) * dist * centralBias);
-      const y = Math.round(MAP_H/2 + Math.sin(angle) * (MAP_H/2 - pad) * dist * centralBias);
-      return { ...r, mx: Math.max(pad, Math.min(MAP_W-pad, x)), my: Math.max(pad, Math.min(MAP_H-pad, y)) };
+    const pad=560;
+    const factionSeats = getFactionSeatMap();
+    const seatUsage = {};
+    return data.regions.map((r) => {
+      const s = seed(String(r.name || "") + String(r.id || "") + String(r.type || ""));
+      const freeSeatIndex = Math.abs(s) % ATLAS_FREE_SEATS.length;
+      const seatKey = r.ctrl && factionSeats[r.ctrl] ? r.ctrl : "free-" + freeSeatIndex;
+      const seat = factionSeats[r.ctrl] || ATLAS_FREE_SEATS[freeSeatIndex];
+      const used = seatUsage[seatKey] || 0;
+      seatUsage[seatKey] = used + 1;
+      const layout = ATLAS_REGION_LAYOUTS[r.type] || ATLAS_REGION_LAYOUTS.default;
+      const angle = seat.angle + used * 0.92 + ((Math.abs(s) % 120) - 60) / 180;
+      const radius = layout.radius * (0.74 + (Math.abs(s) % 100) / 180) + used * 34;
+      const x = Math.round(seat.x + Math.cos(angle) * Math.min(seat.spreadX, radius));
+      const y = Math.round(seat.y + Math.sin(angle) * Math.min(seat.spreadY, radius * 0.84));
+      return {
+        ...r,
+        mx: Math.max(pad, Math.min(MAP_W-pad, x)),
+        my: Math.max(pad, Math.min(MAP_H-pad, y)),
+        atlasLabel: layout.label,
+      };
     });
-  }, [data.regions, seed]);
+  }, [data.regions, getFactionSeatMap, seed]);
 
   const mapRegions = regionPositions();
 
   // ── Procedural POIs (dungeons, ruins, shrines, caves scattered across the world) ──
   const worldPOIs = useCallback(() => {
-    const pois = [];
     const types = ["dungeon","ruins","dungeon","ruins","cave","shrine","cave","tower","grove","monolith"];
     const names = ["Darkhollow Crypt","Shattered Pillar","The Sunken Vault","Serpent's Den","Whispering Grotto",
       "Moonlit Shrine","Dragon's Maw Cave","Old Watchtower","The Twisted Grove","The Standing Stone",
@@ -3648,18 +3765,20 @@ function WorldView({ data, setData, onNav }) {
       "Tidal Caves","Blightmoor Ruins","Gnarled Root Temple","Shadowpeak Mine","The Silent Obelisk",
       "Windscour Heights","Blackwater Grotto","Duskfall Sanctum","The Petrified Circle","Ironmaw Depths",
       "Thornkeep Ruins","Mistwalker's Shrine","The Frozen Barrow","Starfall Crater","Ashveil Catacombs"];
-    for (let i=0; i<35; i++) {
-      const a = seedF(i,7,3)*Math.PI*2;
-      const d = 600 + seedF(i,11,5)*1800;
-      const x = Math.round(MAP_W/2 + Math.cos(a)*d + seedF(i,3,1)*400-200);
-      const y = Math.round(MAP_H/2 + Math.sin(a)*d*0.75 + seedF(i,5,2)*300-150);
-      if(x>200 && x<MAP_W-200 && y>200 && y<MAP_H-200) {
-        const threat = ["low","medium","high","extreme"][Math.floor(seedF(i,9,4)*4)];
-        pois.push({ id:`poi-${i}`, name:names[i%names.length], type:types[i%types.length], x:Math.max(300,Math.min(MAP_W-300,x)), y:Math.max(300,Math.min(MAP_H-300,y)), threat });
-      }
-    }
-    return pois;
-  }, [seedF]);
+    const poiAnchors = [
+      { x:1220, y:940 }, { x:2120, y:680 }, { x:3870, y:850 }, { x:4760, y:1240 },
+      { x:4950, y:2410 }, { x:4290, y:3630 }, { x:2890, y:3840 }, { x:1280, y:3100 },
+      { x:960, y:2100 }, { x:2560, y:1380 }, { x:3500, y:2880 }, { x:1830, y:3440 },
+    ];
+    return poiAnchors.map((anchor, i) => ({
+      id:`poi-${i}`,
+      name:names[(Math.abs(seed(names[i % names.length])) + i) % names.length],
+      type:types[i % types.length],
+      x:Math.round(anchor.x + seedF(i,3,1) * 120 - 60),
+      y:Math.round(anchor.y + seedF(i,5,2) * 110 - 55),
+      threat:["low","medium","high","extreme"][Math.floor(seedF(i,9,4) * 4)],
+    }));
+  }, [seed, seedF]);
 
   const pois = worldPOIs();
 
@@ -3808,60 +3927,36 @@ function WorldView({ data, setData, onNav }) {
   // ── Continental terrain generation — mountain ranges, forests, hills ──
   const terrainFeatures = useCallback(() => {
     const features = [];
-    // Large mountain ranges spanning the continent
-    const mtRanges = [
-      { cx:800, cy:600, spread:500, count:22, dir:0.3 },
-      { cx:4200, cy:900, spread:450, count:20, dir:-0.4 },
-      { cx:2800, cy:400, spread:600, count:28, dir:0.1 },
-      { cx:1200, cy:3200, spread:400, count:16, dir:0.6 },
-      { cx:4800, cy:2800, spread:350, count:14, dir:-0.2 },
-      { cx:3000, cy:2200, spread:300, count:12, dir:0.5 },
-      { cx:5200, cy:1600, spread:280, count:10, dir:-0.1 },
-      { cx:600, cy:2000, spread:250, count:9, dir:0.8 },
-    ];
-    mtRanges.forEach((range,ri) => {
-      for(let i=0;i<range.count;i++){
-        // Elongated ranges — mountains follow a directional line
-        const t = (i/range.count - 0.5) * 2;
-        const baseX = range.cx + Math.cos(range.dir)*t*range.spread;
-        const baseY = range.cy + Math.sin(range.dir)*t*range.spread*0.6;
-        const x = baseX + seedF(ri,i,1)*100-50;
-        const y = baseY + seedF(ri,i,2)*70-35;
-        const s = 0.7 + seedF(ri,i,3)*1.0;
-        features.push({ type:"mountain", x, y, scale:s, key:`mt-${ri}-${i}` });
+    ATLAS_TERRAIN_BANDS.forEach((band, bandIdx) => {
+      if (band.type === "mountain") {
+        for (let i=0; i<band.count; i++) {
+          const t = (i / Math.max(1, band.count - 1)) - 0.5;
+          const baseX = band.cx + Math.cos(band.dir) * t * band.spread;
+          const baseY = band.cy + Math.sin(band.dir) * t * band.spread * 0.62;
+          features.push({
+            type:"mountain",
+            x:baseX + seedF(bandIdx,i,1)*120-60,
+            y:baseY + seedF(bandIdx,i,2)*80-40,
+            scale:0.7 + seedF(bandIdx,i,3)*0.95,
+            key:`mt-${bandIdx}-${i}`
+          });
+        }
+        return;
+      }
+      for (let i=0; i<band.count; i++) {
+        const a = (i / Math.max(1, band.count)) * Math.PI * 2 + seedF(bandIdx,i,5) * 0.6;
+        const d = band.spread * (0.18 + seedF(bandIdx,i,4) * 0.82);
+        const x = band.cx + Math.cos(a) * d + seedF(bandIdx,i,6)*60-30;
+        const y = band.cy + Math.sin(a) * d + seedF(bandIdx,i,7)*50-25;
+        features.push({
+          type: band.type === "forest" ? "tree" : "hill",
+          x,
+          y,
+          scale: band.type === "forest" ? 0.52 + seedF(bandIdx,i,8) * 0.72 : 0.38 + seedF(bandIdx,i,9) * 0.38,
+          key:`${band.type}-${bandIdx}-${i}`
+        });
       }
     });
-    // Dense forest clusters
-    const forests = [
-      { cx:1800, cy:1600, spread:400, count:28 },
-      { cx:600, cy:1500, spread:300, count:20 },
-      { cx:3800, cy:2400, spread:350, count:24 },
-      { cx:3200, cy:1000, spread:250, count:16 },
-      { cx:1000, cy:800, spread:280, count:18 },
-      { cx:5000, cy:800, spread:220, count:14 },
-      { cx:2200, cy:3400, spread:300, count:20 },
-      { cx:4400, cy:3600, spread:260, count:16 },
-      { cx:1400, cy:2600, spread:200, count:12 },
-      { cx:3600, cy:600, spread:180, count:10 },
-      { cx:5400, cy:2200, spread:200, count:12 },
-      { cx:800, cy:3800, spread:240, count:15 },
-    ];
-    forests.forEach((f,fi) => {
-      for(let i=0;i<f.count;i++){
-        const a = (i/f.count)*Math.PI*2 + seedF(fi,i,5)*0.6;
-        const d = f.spread * (0.15 + seedF(fi,i,4)*0.85);
-        const x = f.cx + Math.cos(a)*d + seedF(fi,i,6)*60-30;
-        const y = f.cy + Math.sin(a)*d + seedF(fi,i,7)*50-25;
-        const s = 0.5 + seedF(fi,i,8)*0.7;
-        features.push({ type:"tree", x, y, scale:s, key:`tr-${fi}-${i}` });
-      }
-    });
-    // Scattered small hills (visible at medium zoom)
-    for(let i=0;i<60;i++){
-      const x = 400 + seedF(i,20,1)*(MAP_W-800);
-      const y = 400 + seedF(i,20,2)*(MAP_H-800);
-      features.push({ type:"hill", x, y, scale:0.4+seedF(i,20,3)*0.4, key:`hill-${i}` });
-    }
     return features;
   }, [seedF]);
 
@@ -3878,27 +3973,37 @@ function WorldView({ data, setData, onNav }) {
     });
     const results = [];
     Object.entries(factionRegions).forEach(([fName, regs]) => {
-      if(regs.length < 2) return;
       const faction = data.factions.find(f=>f.name===fName);
       if(!faction) return;
-      // Simple convex hull approximation: sort by angle from centroid
       const cx = regs.reduce((s,r)=>s+r.mx,0)/regs.length;
       const cy = regs.reduce((s,r)=>s+r.my,0)/regs.length;
+      if(regs.length === 1) {
+        const r = regs[0];
+        const rx = 260;
+        const ry = 180;
+        results.push({
+          faction:fName,
+          color:faction.color,
+          labelX:r.mx,
+          labelY:r.my-90,
+          path:`M${r.mx-rx},${r.my} C${r.mx-rx},${r.my-ry} ${r.mx+rx},${r.my-ry} ${r.mx+rx},${r.my} C${r.mx+rx},${r.my+ry} ${r.mx-rx},${r.my+ry} ${r.mx-rx},${r.my}Z`
+        });
+        return;
+      }
       const sorted = [...regs].sort((a,b) => Math.atan2(a.my-cy,a.mx-cx) - Math.atan2(b.my-cy,b.mx-cx));
-      // Expand outward for territory border
       const points = sorted.map(r => {
         const dx = r.mx-cx, dy = r.my-cy;
         const d = Math.hypot(dx,dy) || 1;
-        return { x: r.mx + (dx/d)*180, y: r.my + (dy/d)*140 };
+        return { x: r.mx + (dx/d)*300, y: r.my + (dy/d)*220 };
       });
       const path = points.map((p,i) => {
         if(i===0) return `M${Math.round(p.x)},${Math.round(p.y)}`;
         const prev = points[(i-1+points.length)%points.length];
-        const cpx = (prev.x+p.x)/2 + (Math.sin(i*1.5)*40);
-        const cpy = (prev.y+p.y)/2 + (Math.cos(i*1.7)*30);
+        const cpx = (prev.x+p.x)/2 + (Math.sin(i*1.5)*55);
+        const cpy = (prev.y+p.y)/2 + (Math.cos(i*1.7)*42);
         return `Q${Math.round(cpx)},${Math.round(cpy)} ${Math.round(p.x)},${Math.round(p.y)}`;
       }).join(" ") + "Z";
-      results.push({ faction:fName, color:faction.color, path });
+      results.push({ faction:fName, color:faction.color, path, labelX:cx, labelY:cy-110 });
     });
     return results;
   }, [mapRegions, data.factions]);
@@ -3960,6 +4065,7 @@ function WorldView({ data, setData, onNav }) {
   };
 
   const roadList = roads();
+  const atlasTerritories = territories();
 
   const worldNodes = useMemo(() => mapRegions.map((r) => {
     const faction = data.factions.find((f) => f.name === r.ctrl) || null;
@@ -4146,7 +4252,7 @@ function WorldView({ data, setData, onNav }) {
             fontFamily:T.ui, fontSize:9, letterSpacing:"2px", textTransform:"uppercase", fontWeight:500,
             color:tab===t?T.crimson:T.textMuted, transition:"all 0.3s",
             borderBottom:tab===t?`2px solid ${T.crimson}`:"2px solid transparent",
-          }}>{t==="map"?"Fantasy Map":t}</button>
+          }}>{t==="map"?"Atlas":t}</button>
         ))}
         <div style={{ marginLeft:"auto", display:"flex", gap:8, alignItems:"center", justifyContent:"flex-end", flexWrap:"wrap" }}>
           {tab==="map" && <>
@@ -4154,7 +4260,7 @@ function WorldView({ data, setData, onNav }) {
             <span style={{ fontFamily:T.ui, fontSize:8, color:T.textMuted, letterSpacing:"1px" }}>{Math.round(mapZoom*100)}%</span>
             <button onClick={()=>setMapZoom(z=>Math.min(8,z*1.3))} style={{ padding:"4px 8px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontSize:13, cursor:"pointer", borderRadius:"2px" }}>+</button>
             <button onClick={()=>setMapZoom(z=>Math.max(0.12,z*0.77))} style={{ padding:"4px 8px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontSize:13, cursor:"pointer", borderRadius:"2px" }}>−</button>
-            <button onClick={()=>{setMapZoom(WORLD_ZOOM_PRESETS.world.zoom);setMapPan(WORLD_ZOOM_PRESETS.world.pan);}} style={{ padding:"4px 10px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>World</button>
+            <button onClick={()=>{setMapZoom(WORLD_ZOOM_PRESETS.world.zoom);setMapPan(WORLD_ZOOM_PRESETS.world.pan);}} style={{ padding:"4px 10px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Atlas</button>
             <button onClick={()=>focusWorldNode(selectedWorldNode?.mx != null ? selectedWorldNode : (worldNodes.find((n)=>n.id===worldMapState.lastFocusedRegionId) || worldNodes[0]), "region")} style={{ padding:"4px 10px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Region</button>
             <button onClick={()=>focusWorldNode(selectedWorldNode?.mx != null ? selectedWorldNode : (worldNodes.find((n)=>n.id===worldMapState.lastFocusedRegionId) || worldNodes[0]), "local")} style={{ padding:"4px 10px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Local</button>
             {selectedWorldNode?.mx != null && selectedWorldNode?.type === "dungeon" && <button onClick={()=>focusWorldNode(selectedWorldNode, "site")} style={{ padding:"4px 10px", background:"rgba(212,67,58,0.08)", border:`1px solid ${T.crimsonBorder}`, color:T.crimson, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Site</button>}
@@ -4198,6 +4304,24 @@ function WorldView({ data, setData, onNav }) {
                   <feDiffuseLighting in="noise" lightingColor="var(--bg-card)" surfaceScale="1.2" result="lit"><feDistantLight azimuth="45" elevation="55"/></feDiffuseLighting>
                   <feComposite in="SourceGraphic" in2="lit" operator="arithmetic" k1="0.7" k2="0.35" k3="0" k4="0"/>
                 </filter>
+                <clipPath id="atlasLandClip">
+                  <path d={ATLAS_LAND_PATH} />
+                  {ATLAS_ISLANDS.map((isle, idx) => <path key={`atlas-isle-clip-${idx}`} d={isle.path} />)}
+                </clipPath>
+                <radialGradient id="atlasLandFill" cx="50%" cy="45%" r="75%">
+                  <stop offset="0%" stopColor="#221d19" />
+                  <stop offset="72%" stopColor="#171514" />
+                  <stop offset="100%" stopColor="#111317" />
+                </radialGradient>
+                <linearGradient id="atlasSeaFill" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#0b1118" />
+                  <stop offset="55%" stopColor="#0f141b" />
+                  <stop offset="100%" stopColor="#0a0e13" />
+                </linearGradient>
+                <filter id="atlasCoastGlow">
+                  <feGaussianBlur stdDeviation="18" result="blur"/>
+                  <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                </filter>
                 {/* Water pattern */}
                 <pattern id="waterPat" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
                   <path d="M0,40 Q20,35 40,40 Q60,45 80,40" stroke="var(--crimson-border)" strokeWidth="0.5" fill="none" opacity="0.25"/>
@@ -4213,7 +4337,22 @@ function WorldView({ data, setData, onNav }) {
 
               <g transform={`translate(${mapPan.x},${mapPan.y}) scale(${mapZoom})`}>
                 {/* ═══ LAYER 0: Base map — always visible ═══ */}
-                <rect x="0" y="0" width={MAP_W} height={MAP_H} rx="12" fill="var(--bg-card)" stroke="var(--crimson-border)" strokeWidth="3" filter="url(#parchment)"/>
+                <rect x="0" y="0" width={MAP_W} height={MAP_H} rx="12" fill="url(#atlasSeaFill)" filter="url(#parchment)"/>
+                <rect x="40" y="40" width={MAP_W-80} height={MAP_H-80} rx="26" fill="none" stroke="rgba(232,186,64,0.10)" strokeWidth="2"/>
+                <rect x="0" y="0" width={MAP_W} height={MAP_H} fill="url(#waterPat)" opacity="0.35"/>
+                <path d={ATLAS_LAND_PATH} fill="rgba(125,94,70,0.08)" stroke="rgba(212,67,58,0.10)" strokeWidth="52" opacity="0.95" filter="url(#atlasCoastGlow)"/>
+                <path d={ATLAS_LAND_PATH} fill="url(#atlasLandFill)" stroke="rgba(232,186,64,0.22)" strokeWidth="10"/>
+                {ATLAS_ISLANDS.map((isle, idx) => (
+                  <g key={`atlas-isle-${idx}`}>
+                    <path d={isle.path} fill={isle.fill} opacity={isle.opacity} stroke="rgba(232,186,64,0.18)" strokeWidth="4"/>
+                    <path d={isle.path} fill="rgba(212,67,58,0.05)" stroke="none"/>
+                  </g>
+                ))}
+                {ATLAS_SEA_LABELS.map((sLabel, idx) => (
+                  <text key={`sea-label-${idx}`} x={sLabel.x} y={sLabel.y} textAnchor="middle" fill="rgba(199,210,224,0.6)" fontFamily="'Cinzel', serif" fontSize={sLabel.size} letterSpacing={sLabel.spacing} opacity={sLabel.opacity} transform={`rotate(${sLabel.rotate} ${sLabel.x} ${sLabel.y})`} style={{ textTransform:"uppercase", pointerEvents:"none" }}>
+                    {sLabel.label}
+                  </text>
+                ))}
 
                 {/* ═══ LAYER 1: Continental geography — ocean, coastlines, major water ═══ */}
                 {/* Western ocean */}
@@ -4249,33 +4388,57 @@ function WorldView({ data, setData, onNav }) {
                   <path d="M3800,1200 Q3600,1400 3150,1600" stroke="var(--crimson-border)" strokeWidth="1.2" fill="none" opacity="0.15" strokeLinecap="round"/>
                   <path d="M5200,2000 Q4900,2100 4500,2200" stroke="var(--crimson-border)" strokeWidth="1.2" fill="none" opacity="0.15" strokeLinecap="round"/>
                 </>}
+                <g clipPath="url(#atlasLandClip)">
+                  {ATLAS_WATER_BODIES.map((body, idx) => (
+                    body.shape === "ellipse"
+                      ? <ellipse key={`body-${idx}`} cx={body.cx} cy={body.cy} rx={body.rx} ry={body.ry} fill="rgba(19,32,45,0.72)" stroke="rgba(232,186,64,0.08)" strokeWidth="3"/>
+                      : <path key={`body-${idx}`} d={body.d} fill="rgba(19,32,45,0.72)" stroke="rgba(232,186,64,0.08)" strokeWidth="3"/>
+                  ))}
+                  {ATLAS_RIVERS.map((riverPath, idx) => (
+                    <path key={`atlas-river-${idx}`} d={riverPath} stroke="rgba(137,156,180,0.42)" strokeWidth={idx < 3 ? 4 : 2.2} fill="none" opacity={idx < 3 ? 0.72 : 0.45} strokeLinecap="round"/>
+                  ))}
+                </g>
+                {mapZoom < 1.4 && ATLAS_RANGE_LABELS.map((mLabel, idx) => (
+                  <text key={`range-label-${idx}`} x={mLabel.x} y={mLabel.y} textAnchor="middle" fill="rgba(184,157,130,0.42)" fontFamily="'Cinzel', serif" fontSize={Math.max(12, 19 / Math.max(mapZoom, 0.35))} letterSpacing="4" opacity="0.34" transform={`rotate(${mLabel.rotate} ${mLabel.x} ${mLabel.y})`} style={{ textTransform:"uppercase", pointerEvents:"none" }}>
+                    {mLabel.label}
+                  </text>
+                ))}
 
                 {/* ═══ LAYER 2: Kingdom territories — visible at continent/kingdom zoom ═══ */}
-                {mapZoom < 2.5 && territories().map((t,i) => (
-                  <path key={`terr-${i}`} d={t.path} fill={t.color} opacity={0.06 + (mapZoom > 0.5 ? 0.04 : 0)} stroke={t.color} strokeWidth={mapZoom > 0.6 ? 1.5 : 2.5} strokeDasharray="12,8" strokeOpacity="0.3"/>
+                {mapZoom < 2.5 && atlasTerritories.map((t,i) => (
+                  <g key={`terr-${i}`} clipPath="url(#atlasLandClip)">
+                    <path d={t.path} fill={t.color} opacity={0.08 + (mapZoom > 0.55 ? 0.05 : 0)} stroke={t.color} strokeWidth={mapZoom > 0.6 ? 1.2 : 2.2} strokeOpacity="0.24"/>
+                    {mapZoom < 1.3 && t.labelX != null && (
+                      <text x={t.labelX} y={t.labelY} textAnchor="middle" fill={t.color} fontFamily="'Cinzel', serif" fontSize={Math.max(16, 26 / Math.max(mapZoom, 0.32))} letterSpacing="6" opacity="0.18" style={{ textTransform:"uppercase", pointerEvents:"none" }}>
+                        {String(t.faction || "").replace(/^The\s+/i, "")}
+                      </text>
+                    )}
+                  </g>
                 ))}
 
                 {/* ═══ LAYER 3: Terrain features — scale-dependent ═══ */}
                 {/* Mountains — always visible (they define the landscape) */}
-                {terrain.filter(t=>t.type==="mountain").map(t => <MtnSvg key={t.key} x={t.x} y={t.y} s={t.scale}/>)}
+                <g clipPath="url(#atlasLandClip)">
+                  {terrain.filter(t=>t.type==="mountain").map(t => <MtnSvg key={t.key} x={t.x} y={t.y} s={t.scale}/>)}
                 {/* Hills — visible at kingdom zoom and closer */}
                 {mapZoom > 0.5 && terrain.filter(t=>t.type==="hill").map(t => <HillSvg key={t.key} x={t.x} y={t.y} s={t.scale}/>)}
                 {/* Forests — visible from kingdom zoom */}
-                {mapZoom > 0.4 && terrain.filter(t=>t.type==="tree").map(t => <TreeSvg key={t.key} x={t.x} y={t.y} s={t.scale}/>)}
+                  {mapZoom > 0.4 && terrain.filter(t=>t.type==="tree").map(t => <TreeSvg key={t.key} x={t.x} y={t.y} s={t.scale}/>)}
+                </g>
 
                 {/* ═══ LAYER 4: Roads — major roads at kingdom zoom, minor at local ═══ */}
-                {<g opacity={mapZoom > 0.5 ? Math.min(1, (mapZoom-0.5)*1.5) : 0} style={{ transition:"opacity 0.3s" }}>
+                {<g clipPath="url(#atlasLandClip)" opacity={mapZoom > 0.5 ? Math.min(1, (mapZoom-0.5)*1.5) : 0} style={{ transition:"opacity 0.3s" }}>
                   {roadList.filter(rd=>rd.major).map((rd,i) => (
                     <path key={`mroad-${i}`} d={rd.path} stroke="var(--text-faint)" strokeWidth={mapZoom > 1.5 ? 1.5 : 3} fill="none" strokeDasharray={mapZoom > 2 ? "10,8" : "16,12"} opacity="0.5" strokeLinecap="round"/>
                   ))}
                 </g>}
-                {mapZoom > 0.8 && <g opacity={Math.min(1, (mapZoom-0.8)*2)} style={{ transition:"opacity 0.3s" }}>
+                {mapZoom > 0.8 && <g clipPath="url(#atlasLandClip)" opacity={Math.min(1, (mapZoom-0.8)*2)} style={{ transition:"opacity 0.3s" }}>
                   {roadList.filter(rd=>!rd.major).map((rd,i) => (
                     <path key={`road-${i}`} d={rd.path} stroke="var(--text-faint)" strokeWidth={mapZoom > 2 ? 0.8 : 1.5} fill="none" strokeDasharray="6,6" opacity="0.35" strokeLinecap="round"/>
                   ))}
                 </g>}
                 {activeRoute && !activeRoute.blocked && (
-                  <g>
+                  <g clipPath="url(#atlasLandClip)">
                     {activeRoute.segments.map((rd, i) => (
                       <path key={`active-route-${i}`} d={rd.path} stroke={getWorldThreatColor(activeRoute.threat)} strokeWidth={mapZoom > 1.8 ? 4 : 7} fill="none" opacity="0.75" strokeLinecap="round" strokeDasharray="22,12">
                         <animate attributeName="stroke-dashoffset" from="0" to="-68" dur="2.4s" repeatCount="indefinite" />
@@ -4295,8 +4458,8 @@ function WorldView({ data, setData, onNav }) {
                   const isDestination = routeDraft.toId === r.id;
                   const routeNode = !!activeRoute && activeRoute.names.includes(r.name);
                   const dimUndiscovered = worldOverlay === "discovery" && !r.discovered;
-                  // Hide small settlements at continent zoom
-                  if(isSmall && mapZoom < 0.5) return null;
+                  if(!r.discovered && worldOverlay !== "discovery" && !active) return null;
+                  if(isSmall && mapZoom < 0.72 && !active) return null;
                   // Scale icons inversely with zoom for readability at all levels
                   const baseSize = isBig ? 60 : isSmall ? 30 : 42;
                   const iconSize = Math.max(18, Math.min(baseSize, baseSize / Math.max(mapZoom*0.8, 0.5)));
@@ -4308,9 +4471,9 @@ function WorldView({ data, setData, onNav }) {
                         <animate attributeName="stroke-dashoffset" from="0" to="26" dur="2s" repeatCount="indefinite"/>
                       </circle>}
                       {routeNode && !active && <circle cx={r.mx} cy={r.my} r={isBig?50:35} fill="none" stroke={getWorldThreatColor(activeRoute.threat)} strokeWidth="2.5" opacity="0.35" strokeDasharray="10,7"/>}
-                      {((worldOverlay==="all" || worldOverlay==="danger") && (r.threat==="high" || r.threat==="extreme")) && <circle cx={r.mx} cy={r.my} r={isBig?84:58} fill={threatCol} opacity={r.threat==="extreme"?0.1:0.06} stroke={threatCol} strokeWidth="1" strokeDasharray="10,10" strokeOpacity="0.2"/>}
-                      {((worldOverlay==="all" || worldOverlay==="quests") && r.activeQuests?.length > 0 && mapZoom > 0.45) && <circle cx={r.mx} cy={r.my} r={isBig?66:46} fill="none" stroke="#ffd54f" strokeWidth="2" opacity="0.45" strokeDasharray="4,7"/>}
-                      {((worldOverlay==="all" || worldOverlay==="factions") && r.faction) && <circle cx={r.mx} cy={r.my} r={Math.max(18, iconSize * 0.72)} fill={r.faction.color} opacity={isBig && mapZoom < 0.6 ? 0.12 : 0.08}/>}
+                      {(worldOverlay==="atlas" && ["corrupted","cursed","blighted","destroyed","conquered"].includes(String(r.state || "").toLowerCase())) && <circle cx={r.mx} cy={r.my} r={isBig?84:58} fill={r.stateMeta?.color || threatCol} opacity="0.08" stroke={r.stateMeta?.color || threatCol} strokeWidth="1" strokeOpacity="0.18"/>}
+                      {(worldOverlay==="quests" && r.activeQuests?.length > 0 && mapZoom > 0.5) && <circle cx={r.mx} cy={r.my} r={isBig?66:46} fill="none" stroke="#ffd54f" strokeWidth="2" opacity="0.5" strokeDasharray="4,7"/>}
+                      {((worldOverlay==="atlas" || worldOverlay==="quests") && r.faction) && <circle cx={r.mx} cy={r.my} r={Math.max(18, iconSize * 0.72)} fill={r.faction.color} opacity={isBig && mapZoom < 0.6 ? 0.1 : 0.08}/>}
                       {/* City glow at continental zoom */}
                       {isBig && mapZoom < 0.6 && <circle cx={r.mx} cy={r.my} r="30" fill={threatCol} opacity="0.08"/>}
                       {/* Icon */}
@@ -4324,15 +4487,15 @@ function WorldView({ data, setData, onNav }) {
                         </g>
                       )}
                       {/* Label — always show for kingdoms/cities, show others when zoomed */}
-                      {(isBig || mapZoom > 0.4) && (
+                      {(isBig || mapZoom > (isSmall ? 1.0 : 0.62) || active) && (
                         <text x={r.mx} y={r.my + (isBig?40:28)} textAnchor="middle" fill={dimUndiscovered ? "var(--text-muted)" : "var(--text)"} fontFamily="'Cinzel', serif" fontSize={fontSize} fontWeight={isBig?"600":"500"} letterSpacing={isBig?"2.5":"1.5"} opacity={active?1:0.85} style={{ textTransform:"uppercase", pointerEvents:"none" }}>
                           {r.discovered ? r.name : "Undiscovered Site"}
                         </text>
                       )}
                       {/* Faction/state subtitle — kingdom zoom+ */}
-                      {mapZoom > 0.8 && (
+                      {mapZoom > 1.05 && (
                         <text x={r.mx} y={r.my + (isBig?54:40)} textAnchor="middle" fill={r.stateMeta?.color || "var(--text-muted)"} fontFamily="'Spectral', serif" fontSize={Math.max(6,10/Math.max(mapZoom*0.7,0.5))} fontStyle="italic" fontWeight="300" opacity="0.72" style={{ pointerEvents:"none" }}>
-                          {r.ctrl ? r.ctrl : r.type} — {r.state}
+                          {r.ctrl || r.atlasLabel || r.type} / {r.stateMeta?.label || r.state || "Stable"}
                         </text>
                       )}
                       {/* Threat pip — local zoom+ */}
@@ -4352,7 +4515,7 @@ function WorldView({ data, setData, onNav }) {
                         </g>
                       )}
                       {/* Visited marker — local zoom+ */}
-                      {r.discovered && (worldOverlay==="all" || worldOverlay==="discovery") && mapZoom > 1.2 && (
+                      {r.discovered && worldOverlay==="discovery" && mapZoom > 1.2 && (
                         <g transform={`translate(${r.mx-(isBig?28:20)},${r.my-(isBig?26:18)})`}>
                           <circle r="6" fill="var(--bg-card)" stroke="var(--text-muted)" strokeWidth="0.7"/>
                           <path d="M-2.5,0 L-0.5,2.5 L3,-2.5" stroke="#5ee09a" strokeWidth="1.4" fill="none" strokeLinecap="round"/>
@@ -4373,7 +4536,7 @@ function WorldView({ data, setData, onNav }) {
                 })}
 
                 {/* ═══ LAYER 6: World POIs — visible at local zoom+ ═══ */}
-                {mapZoom > 1.5 && pois.map(p => <POISvg key={p.id} poi={p} zoom={mapZoom}/>)}
+                {mapZoom > 2.0 && pois.map(p => <POISvg key={p.id} poi={p} zoom={mapZoom}/>)}
 
                 {/* ═══ LAYER 7: Weather overlay ═══ */}
                 {false && mapZoom > 0.4 && data.factions.map(wz => (
@@ -4445,7 +4608,7 @@ function WorldView({ data, setData, onNav }) {
               <div style={{ padding:"6px 14px", background:T.bgCard, border:`1px solid ${T.crimsonBorder}`, borderRadius:"3px", fontFamily:T.ui, fontSize:8, color:T.crimson, letterSpacing:"2px", textTransform:"uppercase", opacity:0.85 }}>
                 {zoomLevel} view
               </div>
-              {mapZoom > 1.5 && <div style={{ padding:"4px 10px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"2px", fontFamily:T.body, fontSize:9, color:T.textMuted, fontStyle:"italic", opacity:0.7 }}>
+              {mapZoom > 2.0 && <div style={{ padding:"4px 10px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"2px", fontFamily:T.body, fontSize:9, color:T.textMuted, fontStyle:"italic", opacity:0.7 }}>
                 {pois.length} points of interest
               </div>}
             </div>
@@ -4454,9 +4617,11 @@ function WorldView({ data, setData, onNav }) {
             {mapZoom > 0.5 && (
               <div style={{ position:"absolute", bottom:12, left:12, width:200, height:150, background:T.bgCard, border:`1px solid ${T.crimsonBorder}`, borderRadius:"3px", overflow:"hidden", opacity:0.88 }}>
                 <svg width="200" height="150" viewBox={`0 0 ${MAP_W} ${MAP_H}`}>
-                  <rect width={MAP_W} height={MAP_H} fill="var(--bg-card)" opacity="0.5"/>
+                  <rect width={MAP_W} height={MAP_H} fill="#0b1118" opacity="0.72"/>
+                  <path d={ATLAS_LAND_PATH} fill="#1b1815" stroke="rgba(232,186,64,0.16)" strokeWidth="18"/>
+                  {ATLAS_ISLANDS.map((isle, i) => <path key={`mm-isle-${i}`} d={isle.path} fill="#171716" opacity="0.82"/>)}
                   {/* Territory fills */}
-                  {territories().map((t,i) => <path key={`mt-${i}`} d={t.path} fill={t.color} opacity="0.12"/>)}
+                  {atlasTerritories.map((t,i) => <path key={`mt-${i}`} d={t.path} fill={t.color} opacity="0.16"/>)}
                   {/* Region dots */}
                   {mapRegions.map(r => <circle key={r.id} cx={r.mx} cy={r.my} r={(r.type==="city"||r.type==="kingdom")?30:18} fill={tCols[r.threat]||"var(--text-muted)"} opacity="0.5"/>)}
                   {/* Viewport indicator */}
