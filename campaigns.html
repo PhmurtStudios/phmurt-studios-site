@@ -1040,6 +1040,292 @@ const CombatLogOverlay = ({ open, entries, latestResolution, onClear }) => {
   );
 };
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   INITIATIVE BAR — BG3-style horizontal turn order across top of battlemap
+   ═══════════════════════════════════════════════════════════════════════════ */
+const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, selectedTokenId, onSelectToken, onNextTurn, onPrevTurn, turnState, getHpColor, getMergedConditions, getDeathState, onToggleLog, onEndCombat, logOpen }) => {
+  if (!combatants || combatants.length === 0) return null;
+  const scrollRef = React.useRef(null);
+
+  // Auto-scroll to active combatant
+  React.useEffect(() => {
+    if (scrollRef.current) {
+      const active = scrollRef.current.querySelector('[data-active="true"]');
+      if (active) active.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+    }
+  }, [turn]);
+
+  return (
+    <div style={{
+      position: "absolute", top: 0, left: 0, right: 0, zIndex: 50,
+      background: "linear-gradient(180deg, rgba(6,6,12,0.94) 0%, rgba(6,6,12,0.85) 80%, rgba(6,6,12,0) 100%)",
+      backdropFilter: "blur(12px)",
+      padding: "8px 12px 16px",
+      pointerEvents: "auto",
+    }}>
+      {/* Round & Turn Label */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, padding: "0 4px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ fontFamily: T.ui, fontSize: 9, letterSpacing: "2px", color: "#ffd54f", textTransform: "uppercase", fontWeight: 600 }}>
+            Round {round}
+          </span>
+          <span style={{ fontFamily: T.ui, fontSize: 9, letterSpacing: "1.5px", color: T.textFaint, textTransform: "uppercase" }}>
+            Turn {turn + 1} / {combatants.length}
+          </span>
+        </div>
+        <div style={{ display: "flex", gap: 4 }}>
+          <button onClick={onPrevTurn} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "3px 10px", cursor: "pointer", color: T.textFaint, fontFamily: T.ui, fontSize: 9, letterSpacing: "1px" }}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.08)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.04)"}>
+            PREV
+          </button>
+          <button onClick={onNextTurn} style={{ background: "rgba(212,67,58,0.12)", border: "1px solid rgba(212,67,58,0.3)", borderRadius: 6, padding: "3px 14px", cursor: "pointer", color: "var(--crimson)", fontFamily: T.ui, fontSize: 9, letterSpacing: "1px", fontWeight: 600 }}
+            onMouseEnter={e => e.currentTarget.style.background = "rgba(212,67,58,0.2)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(212,67,58,0.12)"}>
+            END TURN
+          </button>
+          {onToggleLog && (
+            <button onClick={onToggleLog} style={{ background: logOpen ? "rgba(255,213,79,0.12)" : "rgba(255,255,255,0.04)", border: "1px solid " + (logOpen ? "rgba(255,213,79,0.3)" : "rgba(255,255,255,0.08)"), borderRadius: 6, padding: "3px 10px", cursor: "pointer", color: logOpen ? "#ffd54f" : T.textFaint, fontFamily: T.ui, fontSize: 9, letterSpacing: "1px" }}
+              onMouseEnter={e => e.currentTarget.style.background = logOpen ? "rgba(255,213,79,0.18)" : "rgba(255,255,255,0.08)"} onMouseLeave={e => e.currentTarget.style.background = logOpen ? "rgba(255,213,79,0.12)" : "rgba(255,255,255,0.04)"}>
+              LOG
+            </button>
+          )}
+          {onEndCombat && (
+            <button onClick={onEndCombat} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "3px 10px", cursor: "pointer", color: "#f06858", fontFamily: T.ui, fontSize: 9, letterSpacing: "1px" }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.08)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.04)"}>
+              END
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Combatant Portraits */}
+      <div ref={scrollRef} style={{ display: "flex", gap: 4, overflowX: "auto", overflowY: "hidden", scrollbarWidth: "none", padding: "2px 0" }}>
+        {combatants.map((c, idx) => {
+          const tk = tokens.find(t => t.id === c.mapTokenId);
+          if (!tk) return null;
+          const isActive = idx === turn;
+          const isSelected = tk.id === selectedTokenId;
+          const isDead = (tk.hp || 0) <= 0;
+          const hpPct = tk.maxHp ? Math.max(0, Math.min(100, Math.round((tk.hp || 0) / tk.maxHp * 100))) : 0;
+          const hpCol = tk.maxHp ? getHpColor(tk.hp || 0, tk.maxHp) : "#666";
+          const conds = getMergedConditions(tk);
+          const deathState = getDeathState(tk);
+          const isPC = tk.tokenType === "pc";
+          const ts = turnState[tk.id];
+          const actionUsed = ts?.actionUsed;
+          const bonusUsed = ts?.bonusActionUsed;
+
+          return (
+            <div key={c.id} data-active={isActive ? "true" : "false"}
+              onClick={() => onSelectToken(tk.id)}
+              style={{
+                flex: "0 0 auto",
+                width: isActive ? 72 : 52,
+                cursor: "pointer",
+                opacity: isDead && !isActive ? 0.35 : 1,
+                transition: "all 0.2s ease",
+                position: "relative",
+              }}>
+              {/* Active indicator glow */}
+              {isActive && (
+                <div style={{ position: "absolute", inset: -2, borderRadius: 12, border: "2px solid var(--crimson)", boxShadow: "0 0 12px rgba(212,67,58,0.4)", pointerEvents: "none" }} />
+              )}
+              {isSelected && !isActive && (
+                <div style={{ position: "absolute", inset: -1, borderRadius: 11, border: "1px solid rgba(88,170,255,0.5)", pointerEvents: "none" }} />
+              )}
+              <div style={{
+                background: isActive ? "rgba(212,67,58,0.15)" : "rgba(255,255,255,0.03)",
+                border: "1px solid " + (isActive ? "rgba(212,67,58,0.4)" : "rgba(255,255,255,0.06)"),
+                borderRadius: 10, padding: isActive ? "6px 4px 4px" : "4px 3px 3px",
+                display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+                transition: "all 0.2s ease",
+              }}
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
+                onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}>
+                {/* Token circle */}
+                <div style={{
+                  width: isActive ? 32 : 24, height: isActive ? 32 : 24,
+                  borderRadius: "50%", background: tk.color || "#666",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: isActive ? 11 : 8, fontFamily: T.ui, color: "#fff", fontWeight: 700,
+                  border: isDead ? "2px solid #f06858" : (isPC ? "2px solid rgba(46,139,87,0.6)" : "2px solid rgba(255,255,255,0.1)"),
+                  position: "relative", overflow: "hidden",
+                }}>
+                  {isDead ? <X size={isActive ? 14 : 10} color="#f06858" /> : (tk.label || tk.name.substring(0, 2)).toUpperCase()}
+                </div>
+                {/* Name */}
+                <div style={{
+                  fontFamily: T.ui, fontSize: isActive ? 8 : 7,
+                  color: isActive ? T.text : T.textFaint,
+                  textAlign: "center", lineHeight: 1.1,
+                  maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  letterSpacing: "0.5px",
+                }}>
+                  {tk.name.length > 8 ? tk.name.substring(0, 7) + "…" : tk.name}
+                </div>
+                {/* HP micro-bar */}
+                {!isDead && tk.maxHp > 0 && (
+                  <div style={{ width: "90%", height: 2, background: "rgba(255,255,255,0.06)", borderRadius: 1, overflow: "hidden" }}>
+                    <div style={{ width: hpPct + "%", height: "100%", background: hpCol, borderRadius: 1 }} />
+                  </div>
+                )}
+                {/* Init number */}
+                <div style={{ fontFamily: T.ui, fontSize: 7, color: T.textFaint, letterSpacing: "0.5px" }}>
+                  {c.init}
+                </div>
+                {/* Action economy dots for active combatant */}
+                {isActive && !isDead && (
+                  <div style={{ display: "flex", gap: 3, marginTop: 1 }}>
+                    <div title="Action" style={{ width: 5, height: 5, borderRadius: "50%", background: actionUsed ? "rgba(255,255,255,0.08)" : "var(--crimson)", border: "1px solid " + (actionUsed ? "rgba(255,255,255,0.1)" : "rgba(212,67,58,0.5)") }} />
+                    <div title="Bonus" style={{ width: 5, height: 5, borderRadius: "50%", background: bonusUsed ? "rgba(255,255,255,0.08)" : "#ffd54f", border: "1px solid " + (bonusUsed ? "rgba(255,255,255,0.1)" : "rgba(255,213,79,0.5)") }} />
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TOKEN ACTION RING — BG3-style actions floating around the active token
+   Appears on the canvas overlay, positioned relative to the token
+   ═══════════════════════════════════════════════════════════════════════════ */
+const TokenActionRing = ({ visible, token, actions, screenX, screenY, tokenRadius, onAction, onMove, moveLabel, onEndTurn, onDismiss, resolution }) => {
+  if (!visible || !token) return null;
+
+  const moveDisabled = moveLabel === "0 ft";
+  // Arrange actions in a ring around the token
+  const maxSlots = 8;
+  const visibleActions = actions.slice(0, maxSlots);
+  const ringRadius = Math.max(72, tokenRadius + 52);
+
+  // Calculate slot positions in a semicircle below the token
+  const getSlotPosition = (idx, total) => {
+    // Spread actions in an arc from -120° to +120° (bottom half)
+    const startAngle = -Math.PI * 0.65;
+    const endAngle = Math.PI * 0.65;
+    const angle = total === 1 ? Math.PI / 2 : startAngle + (endAngle - startAngle) * (idx / (total - 1));
+    return {
+      x: Math.cos(angle) * ringRadius,
+      y: Math.sin(angle) * ringRadius,
+    };
+  };
+
+  return (
+    <div style={{
+      position: "absolute",
+      left: screenX, top: screenY,
+      pointerEvents: "none",
+      zIndex: 45,
+      transform: "translate(-50%, -50%)",
+    }}>
+      {/* Move button — always at top */}
+      <div style={{ position: "absolute", left: "50%", top: -(ringRadius - 8), transform: "translateX(-50%)", pointerEvents: "auto" }}>
+        <button onClick={onMove} disabled={moveDisabled}
+          style={{
+            background: moveDisabled ? "rgba(255,255,255,0.03)" : "rgba(88,170,255,0.12)",
+            border: "1px solid " + (moveDisabled ? "rgba(255,255,255,0.06)" : "rgba(88,170,255,0.35)"),
+            borderRadius: 10, padding: "6px 14px", cursor: moveDisabled ? "default" : "pointer",
+            display: "flex", alignItems: "center", gap: 6,
+            backdropFilter: "blur(8px)", boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+            opacity: moveDisabled ? 0.4 : 1, transition: "all 0.15s",
+          }}
+          onMouseEnter={e => { if (!moveDisabled) e.currentTarget.style.background = "rgba(88,170,255,0.2)"; }}
+          onMouseLeave={e => { if (!moveDisabled) e.currentTarget.style.background = "rgba(88,170,255,0.12)"; }}>
+          <Compass size={12} color={moveDisabled ? T.textFaint : "#58aaff"} />
+          <span style={{ fontFamily: T.ui, fontSize: 9, letterSpacing: "1px", color: moveDisabled ? T.textFaint : "#58aaff", fontWeight: 600 }}>{moveLabel}</span>
+        </button>
+      </div>
+
+      {/* Action slots in ring */}
+      {visibleActions.map((action, idx) => {
+        const pos = getSlotPosition(idx, visibleActions.length);
+        const Icon = action.icon || Swords;
+        const isDisabled = !!action.disabled;
+        const toneColor = action.tone || "var(--crimson)";
+
+        return (
+          <div key={"ring-" + action.key} style={{
+            position: "absolute",
+            left: pos.x, top: pos.y,
+            transform: "translate(-50%, -50%)",
+            pointerEvents: "auto",
+          }}>
+            <button onClick={() => !isDisabled && onAction(action)}
+              disabled={isDisabled}
+              title={action.helper || action.label}
+              style={{
+                width: 56, height: 56,
+                borderRadius: 12,
+                background: isDisabled ? "rgba(255,255,255,0.02)" : "rgba(10,10,16,0.88)",
+                border: "1px solid " + (isDisabled ? "rgba(255,255,255,0.05)" : toneColor.replace(")", ",0.35)").replace("rgb(", "rgba(")),
+                cursor: isDisabled ? "default" : "pointer",
+                display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 2,
+                backdropFilter: "blur(10px)", boxShadow: isDisabled ? "none" : "0 4px 16px rgba(0,0,0,0.5)",
+                opacity: isDisabled ? 0.3 : 1, transition: "all 0.15s",
+                padding: 3,
+              }}
+              onMouseEnter={e => { if (!isDisabled) { e.currentTarget.style.transform = "scale(1.12)"; e.currentTarget.style.boxShadow = "0 6px 24px rgba(0,0,0,0.6)"; } }}
+              onMouseLeave={e => { e.currentTarget.style.transform = "scale(1)"; e.currentTarget.style.boxShadow = isDisabled ? "none" : "0 4px 16px rgba(0,0,0,0.5)"; }}>
+              <Icon size={14} color={isDisabled ? T.textFaint : toneColor} />
+              <span style={{
+                fontFamily: T.ui, fontSize: 7, color: isDisabled ? T.textFaint : T.text,
+                textAlign: "center", lineHeight: 1.1, letterSpacing: "0.3px",
+                maxWidth: "100%", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              }}>
+                {action.label.length > 9 ? action.label.substring(0, 8) + "…" : action.label}
+              </span>
+            </button>
+            {/* Keyboard hint */}
+            <div style={{
+              position: "absolute", top: -6, right: -4,
+              background: "rgba(6,6,12,0.9)", border: "1px solid rgba(255,255,255,0.12)",
+              borderRadius: 4, padding: "1px 4px",
+              fontFamily: T.ui, fontSize: 7, color: T.textFaint, letterSpacing: "0.5px",
+            }}>
+              {idx + 1}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* End Turn button — bottom center */}
+      <div style={{ position: "absolute", left: "50%", top: ringRadius + 12, transform: "translateX(-50%)", pointerEvents: "auto" }}>
+        <button onClick={onEndTurn}
+          style={{
+            background: "rgba(212,67,58,0.1)", border: "1px solid rgba(212,67,58,0.3)",
+            borderRadius: 8, padding: "5px 16px", cursor: "pointer",
+            backdropFilter: "blur(8px)", boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+            display: "flex", alignItems: "center", gap: 6, transition: "all 0.15s",
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = "rgba(212,67,58,0.2)"}
+          onMouseLeave={e => e.currentTarget.style.background = "rgba(212,67,58,0.1)"}>
+          <SkipForward size={11} color="var(--crimson)" />
+          <span style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1px", color: "var(--crimson)", fontWeight: 600, textTransform: "uppercase" }}>End Turn</span>
+        </button>
+      </div>
+
+      {/* Resolution popup — shows result of last action */}
+      {resolution && (
+        <div onClick={onDismiss} style={{
+          position: "absolute", left: ringRadius + 20, top: -20,
+          width: 220, pointerEvents: "auto", cursor: "pointer",
+          background: "rgba(10,10,16,0.92)", backdropFilter: "blur(12px)",
+          border: "1px solid rgba(212,67,58,0.2)", borderRadius: 12,
+          padding: "10px 12px", boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
+        }}>
+          <div style={{ fontFamily: T.ui, fontSize: 10, fontWeight: 600, color: "var(--crimson)", letterSpacing: "0.5px", marginBottom: 4 }}>{resolution.title}</div>
+          {resolution.lines.map((line, i) => (
+            <div key={i} style={{ fontFamily: T.body, fontSize: 10, color: i === resolution.lines.length - 1 ? T.text : T.textMuted, lineHeight: 1.4, marginTop: 2 }}>{line}</div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 /* ── Legacy compatibility wrappers (keep old names working for non-combat code) ── */
 const EconomyDot = () => null;
 const ActionEconomy = () => null;
@@ -11485,23 +11771,63 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             <div style={{ position:"absolute", bottom:0, left:0, width:16, height:16, borderBottom:"2px solid var(--crimson-border)", borderLeft:"2px solid var(--crimson-border)", pointerEvents:"none", zIndex:6, opacity:cockpitModeActive ? 0 : 0.6 }} />
             <div style={{ position:"absolute", bottom:0, right:0, width:16, height:16, borderBottom:"2px solid var(--crimson-border)", borderRight:"2px solid var(--crimson-border)", pointerEvents:"none", zIndex:6, opacity:cockpitModeActive ? 0 : (sidebarOpen?0.6:0.3) }} />
 
+            {/* ── BG3-style Initiative Bar (top of battlemap) ── */}
+            {combatLive && combatants.length > 0 && (
+              <InitiativeBar
+                combatants={combatants}
+                tokens={tokens}
+                turn={turn}
+                round={round}
+                activeCombatantId={activeCombatantToken?.id || null}
+                selectedTokenId={selectedTokenId}
+                onSelectToken={setSelectedTokenId}
+                onNextTurn={() => { nextTurn(); dismissTurnPopup(); }}
+                onPrevTurn={prevTurn}
+                turnState={turnStateByToken}
+                getHpColor={getHpColor}
+                getMergedConditions={getMergedConditionsForToken}
+                getDeathState={getDeathSaveState}
+                onToggleLog={() => { setCombatLogOpen(prev => !prev); setPendingCombatAction(null); }}
+                onEndCombat={viewRole === "dm" ? endCombat : undefined}
+                logOpen={combatLogOpen}
+              />
+            )}
+
+            {/* ── BG3-style Token Action Ring (around active token) ── */}
+            {(() => {
+              const ringToken = activeCombatantToken;
+              const ringVisible = combatLive && !!ringToken && !movementMode && !combatLogOpen;
+              if (!ringVisible || !ringToken) return null;
+              const sx = ringToken.x * zoom + pan.x;
+              const sy = ringToken.y * zoom + pan.y;
+              const tokenScreenRadius = (gridSize / 2) * zoom;
+              const ringActions = getCockpitTrayActions(ringToken);
+              const moveFt = getEffectiveMovementRemaining(ringToken) + " ft";
+              return (
+                <TokenActionRing
+                  visible={true}
+                  token={ringToken}
+                  actions={ringActions}
+                  screenX={sx}
+                  screenY={sy}
+                  tokenRadius={tokenScreenRadius}
+                  onAction={(action) => {
+                    if (action.onClick) { action.onClick(); }
+                    else { chooseCockpitAction(action); }
+                  }}
+                  onMove={() => startCockpitMovement(ringToken)}
+                  moveLabel={moveFt}
+                  onEndTurn={() => { nextTurn(); dismissTurnPopup(); }}
+                  onDismiss={() => setPlayModeResolution(null)}
+                  resolution={playModeResolution}
+                />
+              );
+            })()}
+
             {cockpitModeActive && (
               <div className="cm-combat-shell">
-                {/* ── TOP: Initiative Rail ── */}
-                <CombatTopBar
-                  combatLive={combatLive}
-                  round={round}
-                  turn={visibleTopTurn}
-                  combatants={visibleTopCombatants}
-                  tokens={tokens}
-                  canControlTurn={viewRole === "dm" || !!(activeCombatantToken && canControlTokenForViewer(activeCombatantToken))}
-                  logOpen={combatLogOpen}
-                  onUndo={prevTurn}
-                  onNextTurn={() => { nextTurn(); dismissTurnPopup(); }}
-                  onToggleLog={() => { setCombatLogOpen(prev => !prev); setPendingCombatAction(null); }}
-                  onSelectCombatant={(id) => { setSelectedTokenId(id); }}
-                  onEndCombat={endCombat}
-                />
+                {/* ── TOP: Initiative Rail (replaced by new InitiativeBar above) ── */}
+                {/* CombatTopBar hidden — InitiativeBar + TokenActionRing now handle BG3-style combat UI */}
 
                 {/* ── BOTTOM-LEFT: Focus Strip (active unit summary) ── */}
                 <FocusStrip
@@ -11546,9 +11872,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   onClear={() => { setCombatLog([]); setPlayModeResolution(null); }}
                 />
 
-                {/* ── BOTTOM: Action Hotbar ── */}
+                {/* ── BOTTOM: Action Hotbar (hidden when TokenActionRing is active) ── */}
                 <ActionHotbar
-                  visible={!!tokenPopup && !!launcherToken && launcherCanAct && !combatLogOpen}
+                  visible={!!tokenPopup && !!launcherToken && launcherCanAct && !combatLogOpen && movementMode}
                   token={launcherToken}
                   moveLabel={launcherToken ? (getEffectiveMovementRemaining(launcherToken) + " ft") : "0 ft"}
                   actions={launcherActions}
