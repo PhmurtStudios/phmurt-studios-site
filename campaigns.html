@@ -923,22 +923,55 @@ const ATLAS_RANGE_LABELS = [
   { x:2060, y:3380, label:"MOONVALE WILDS", rotate:-8 },
 ];
 
+const ATLAS_PROVINCES = [
+  {
+    id:"essear", name:"Essear", path:"M1110,1370 C1240,960 1670,720 2240,730 C2580,750 2850,950 3000,1320 C3020,1680 2790,1970 2390,2140 C1920,2240 1450,2140 1160,1830 C1040,1700 1010,1530 1110,1370Z",
+    labelX:1980, labelY:1490, cityX:1550, cityY:1320, spreadX:420, spreadY:260, fill:"#d6c892"
+  },
+  {
+    id:"beltros", name:"Beltros", path:"M2900,1020 C3280,740 3950,660 4540,800 C4930,950 5080,1310 4880,1700 C4520,1930 4010,2010 3480,1950 C3100,1790 2890,1500 2900,1020Z",
+    labelX:3770, labelY:1390, cityX:3700, cityY:1200, spreadX:430, spreadY:250, fill:"#d5c68f"
+  },
+  {
+    id:"theanas", name:"Theanas", path:"M4100,1840 C4490,1620 4990,1710 5400,2080 C5470,2490 5230,2860 4850,3050 C4510,3050 4190,2880 3980,2570 C3900,2240 3950,2020 4100,1840Z",
+    labelX:4800, labelY:2230, cityX:4720, cityY:2050, spreadX:340, spreadY:300, fill:"#d3c38d"
+  },
+  {
+    id:"fara", name:"Fara", path:"M990,2550 C1260,2190 1760,2160 2120,2450 C2260,2840 2200,3310 1880,3650 C1500,3900 1080,3810 800,3450 C760,3070 830,2790 990,2550Z",
+    labelX:1420, labelY:3160, cityX:1280, cityY:2850, spreadX:350, spreadY:300, fill:"#d8c994"
+  },
+  {
+    id:"elonia", name:"Elonia", path:"M2080,2470 C2440,2190 2940,2200 3290,2500 C3360,2960 3180,3550 2820,3870 C2350,3980 1990,3770 1800,3350 C1770,2950 1840,2650 2080,2470Z",
+    labelX:2550, labelY:3240, cityX:2420, cityY:2920, spreadX:390, spreadY:280, fill:"#d7ca97"
+  },
+  {
+    id:"cyrin", name:"Cyrin", path:"M3050,2440 C3440,2190 3920,2200 4360,2480 C4560,2940 4470,3460 4100,3850 C3570,4040 3120,3890 2810,3520 C2760,3060 2810,2690 3050,2440Z",
+    labelX:3650, labelY:3160, cityX:3510, cityY:2960, spreadX:380, spreadY:260, fill:"#d5c690"
+  },
+  {
+    id:"dravina", name:"Dravina", path:"M4230,3000 C4540,2810 5030,2880 5290,3190 C5280,3560 5030,3840 4610,3870 C4320,3810 4120,3560 4080,3270 C4090,3140 4140,3060 4230,3000Z",
+    labelX:4730, labelY:3290, cityX:4680, cityY:3510, spreadX:300, spreadY:220, fill:"#d3c08a"
+  },
+];
+
 const ATLAS_FACTION_SEATS = [
-  { x:1680, y:1500, spreadX:360, spreadY:260, angle:0.45 },
-  { x:3130, y:1140, spreadX:420, spreadY:260, angle:1.15 },
-  { x:4520, y:1680, spreadX:350, spreadY:300, angle:2.45 },
-  { x:4050, y:3120, spreadX:360, spreadY:280, angle:3.3 },
-  { x:2500, y:3320, spreadX:440, spreadY:250, angle:4.05 },
-  { x:1500, y:2650, spreadX:330, spreadY:300, angle:5.0 },
+  { provinceId:"beltros", x:3700, y:1230, spreadX:390, spreadY:220, angle:1.15 },
+  { provinceId:"essear", x:1660, y:1340, spreadX:420, spreadY:240, angle:0.45 },
+  { provinceId:"fara", x:1380, y:2860, spreadX:360, spreadY:280, angle:5.0 },
+  { provinceId:"elonia", x:2430, y:2940, spreadX:380, spreadY:250, angle:4.05 },
+  { provinceId:"cyrin", x:3520, y:2960, spreadX:370, spreadY:250, angle:3.3 },
+  { provinceId:"theanas", x:4740, y:2140, spreadX:320, spreadY:260, angle:2.45 },
+  { provinceId:"dravina", x:4680, y:3490, spreadX:260, spreadY:200, angle:2.65 },
 ];
 
 const ATLAS_FREE_SEATS = [
-  { x:2380, y:1830, spreadX:260, spreadY:180, angle:1.8 },
-  { x:3520, y:1960, spreadX:280, spreadY:200, angle:2.2 },
-  { x:2850, y:2620, spreadX:320, spreadY:220, angle:4.8 },
-  { x:1980, y:3120, spreadX:300, spreadY:200, angle:5.6 },
-  { x:4700, y:2500, spreadX:250, spreadY:220, angle:2.7 },
-  { x:1260, y:2010, spreadX:260, spreadY:200, angle:5.9 },
+  { provinceId:"essear", x:2120, y:1600, spreadX:250, spreadY:170, angle:1.8 },
+  { provinceId:"beltros", x:3330, y:1710, spreadX:260, spreadY:180, angle:2.2 },
+  { provinceId:"elonia", x:2760, y:2860, spreadX:300, spreadY:200, angle:4.8 },
+  { provinceId:"fara", x:1860, y:3180, spreadX:260, spreadY:180, angle:5.6 },
+  { provinceId:"theanas", x:4470, y:2410, spreadX:240, spreadY:200, angle:2.7 },
+  { provinceId:"cyrin", x:3920, y:3180, spreadX:260, spreadY:180, angle:4.2 },
+  { provinceId:"dravina", x:4720, y:3420, spreadX:240, spreadY:180, angle:2.4 },
 ];
 
 const ATLAS_REGION_LAYOUTS = {
@@ -3666,6 +3699,7 @@ function WorldView({ data, setData, onNav }) {
   const [sel,setSel] = useState(null);
   const [selType,setSelType] = useState(null);
   const [tab,setTab] = useState("map");
+  const [atlasProvinceId,setAtlasProvinceId] = useState(null);
   const [editing,setEditing] = useState(false);
   const [addingEntity,setAddingEntity] = useState(false);
   const [worldOverlay,setWorldOverlay] = useState("atlas");
@@ -3748,6 +3782,7 @@ function WorldView({ data, setData, onNav }) {
         ...r,
         mx: Math.max(pad, Math.min(MAP_W-pad, x)),
         my: Math.max(pad, Math.min(MAP_H-pad, y)),
+        atlasProvinceId: seat.provinceId || "essear",
         atlasLabel: layout.label,
       };
     });
@@ -3922,7 +3957,12 @@ function WorldView({ data, setData, onNav }) {
     handleMouseUp();
   }, [handleMouseUp]);
 
-  const selectRegion = (r) => { setSel(r); setSelType("region"); setEditing(false); };
+  const selectRegion = (r) => {
+    setSel(r);
+    setSelType("region");
+    setAtlasProvinceId(r?.atlasProvinceId || null);
+    setEditing(false);
+  };
 
   // ── Continental terrain generation — mountain ranges, forests, hills ──
   const terrainFeatures = useCallback(() => {
@@ -3964,49 +4004,18 @@ function WorldView({ data, setData, onNav }) {
 
   // ── Kingdom territory polygons (convex hulls of faction-controlled regions) ──
   const territories = useCallback(() => {
-    const factionRegions = {};
-    mapRegions.forEach(r => {
-      if(r.ctrl) {
-        if(!factionRegions[r.ctrl]) factionRegions[r.ctrl] = [];
-        factionRegions[r.ctrl].push(r);
-      }
+    return ATLAS_PROVINCES.map((province) => {
+      const nodes = mapRegions.filter((r) => r.atlasProvinceId === province.id);
+      const capitalNode = nodes.find((r) => ["kingdom","capital","city"].includes(r.type)) || nodes[0] || null;
+      const dominantCtrl = capitalNode?.ctrl || nodes.find((r) => r.ctrl)?.ctrl || province.name;
+      return {
+        ...province,
+        faction: dominantCtrl,
+        capitalNode,
+        regionCount: nodes.length,
+      };
     });
-    const results = [];
-    Object.entries(factionRegions).forEach(([fName, regs]) => {
-      const faction = data.factions.find(f=>f.name===fName);
-      if(!faction) return;
-      const cx = regs.reduce((s,r)=>s+r.mx,0)/regs.length;
-      const cy = regs.reduce((s,r)=>s+r.my,0)/regs.length;
-      if(regs.length === 1) {
-        const r = regs[0];
-        const rx = 260;
-        const ry = 180;
-        results.push({
-          faction:fName,
-          color:faction.color,
-          labelX:r.mx,
-          labelY:r.my-90,
-          path:`M${r.mx-rx},${r.my} C${r.mx-rx},${r.my-ry} ${r.mx+rx},${r.my-ry} ${r.mx+rx},${r.my} C${r.mx+rx},${r.my+ry} ${r.mx-rx},${r.my+ry} ${r.mx-rx},${r.my}Z`
-        });
-        return;
-      }
-      const sorted = [...regs].sort((a,b) => Math.atan2(a.my-cy,a.mx-cx) - Math.atan2(b.my-cy,b.mx-cx));
-      const points = sorted.map(r => {
-        const dx = r.mx-cx, dy = r.my-cy;
-        const d = Math.hypot(dx,dy) || 1;
-        return { x: r.mx + (dx/d)*300, y: r.my + (dy/d)*220 };
-      });
-      const path = points.map((p,i) => {
-        if(i===0) return `M${Math.round(p.x)},${Math.round(p.y)}`;
-        const prev = points[(i-1+points.length)%points.length];
-        const cpx = (prev.x+p.x)/2 + (Math.sin(i*1.5)*55);
-        const cpy = (prev.y+p.y)/2 + (Math.cos(i*1.7)*42);
-        return `Q${Math.round(cpx)},${Math.round(cpy)} ${Math.round(p.x)},${Math.round(p.y)}`;
-      }).join(" ") + "Z";
-      results.push({ faction:fName, color:faction.color, path, labelX:cx, labelY:cy-110 });
-    });
-    return results;
-  }, [mapRegions, data.factions]);
+  }, [mapRegions]);
 
   const updateFaction = (id, updates) => {
     setData(d=>({...d, factions:d.factions.map(f=>f.id===id?{...f,...updates}:f)}));
@@ -4209,6 +4218,7 @@ function WorldView({ data, setData, onNav }) {
     });
     setSel(node);
     setSelType("region");
+    setAtlasProvinceId(node?.atlasProvinceId || null);
     setEditing(false);
     setWorldMapPatch({ lastFocusedRegionId: node.id });
   };
@@ -4247,7 +4257,7 @@ function WorldView({ data, setData, onNav }) {
       {/* Top bar */}
       <div style={{ display:"flex", alignItems:"center", gap:0, rowGap:6, flexWrap:"wrap", padding:"0 12px 8px", borderBottom:`1px solid ${T.border}`, flexShrink:0, background:T.bgNav }}>
         {["map","regions","factions","npcs"].map(t => (
-          <button key={t} onClick={()=>{setTab(t);if(t!=="map"){setSel(null);setEditing(false);}}} style={{
+          <button key={t} onClick={()=>{setTab(t);if(t!=="map"){setSel(null);setAtlasProvinceId(null);setEditing(false);}}} style={{
             padding:"14px clamp(12px, 2.2vw, 24px)", background:"transparent", border:"none", cursor:"pointer",
             fontFamily:T.ui, fontSize:9, letterSpacing:"2px", textTransform:"uppercase", fontWeight:500,
             color:tab===t?T.crimson:T.textMuted, transition:"all 0.3s",
@@ -4414,16 +4424,19 @@ function WorldView({ data, setData, onNav }) {
                 ))}
 
                 {/* ═══ LAYER 2: Kingdom territories — visible at continent/kingdom zoom ═══ */}
-                {mapZoom < 2.5 && atlasTerritories.map((t,i) => (
-                  <g key={`terr-${i}`} clipPath="url(#atlasLandClip)">
-                    <path d={t.path} fill="#d6c999" opacity={0.05 + (mapZoom > 0.55 ? 0.03 : 0)} stroke="#94845c" strokeWidth={mapZoom > 0.6 ? 1.2 : 2.2} strokeOpacity="0.22" strokeDasharray="24,14"/>
+                {mapZoom < 2.5 && atlasTerritories.map((t,i) => {
+                  const activeProvince = atlasProvinceId === t.id || selectedWorldNode?.atlasProvinceId === t.id;
+                  return (
+                  <g key={`terr-${i}`} clipPath="url(#atlasLandClip)" style={{ cursor:"pointer" }} onClick={(e)=>{ e.stopPropagation(); setAtlasProvinceId(t.id); if (t.capitalNode) selectRegion(t.capitalNode); }}>
+                    <path d={t.path} fill={t.fill || "#d6c999"} opacity={activeProvince ? 0.22 : 0.09} stroke={activeProvince ? "#5f857c" : "#94845c"} strokeWidth={activeProvince ? 4 : (mapZoom > 0.6 ? 1.2 : 2.2)} strokeOpacity={activeProvince ? 0.75 : 0.22} strokeDasharray={activeProvince ? "0" : "24,14"}/>
                     {mapZoom < 1.3 && t.labelX != null && (
-                      <text x={t.labelX} y={t.labelY} textAnchor="middle" fill="#5a4d2e" fontFamily="'Spectral', serif" fontSize={Math.max(20, 36 / Math.max(mapZoom, 0.38))} letterSpacing="1.6" opacity="0.62" style={{ pointerEvents:"none" }}>
-                        {String(t.faction || "").replace(/^The\s+/i, "").replace(/^(Kingdom|Empire|Realm|Duchy)\s+of\s+/i, "")}
+                      <text x={t.labelX} y={t.labelY} textAnchor="middle" fill={activeProvince ? "#4d3d1d" : "#5a4d2e"} fontFamily="'Spectral', serif" fontSize={Math.max(20, 36 / Math.max(mapZoom, 0.38))} letterSpacing="1.6" opacity={activeProvince ? 0.88 : 0.62} style={{ pointerEvents:"none" }}>
+                        {t.name}
                       </text>
                     )}
                   </g>
-                ))}
+                  );
+                })}
 
                 {/* ═══ LAYER 3: Terrain features — scale-dependent ═══ */}
                 {/* Mountains — always visible (they define the landscape) */}
@@ -4463,10 +4476,12 @@ function WorldView({ data, setData, onNav }) {
                   const threatCol = tCols[r.threat] || "var(--text-muted)";
                   const isBig = r.type==="city"||r.type==="kingdom"||r.type==="capital";
                   const isSmall = r.type==="hamlet"||r.type==="ruins"||r.type==="dungeon";
+                  const atlasPlaceVisible = ["city","capital","kingdom","town","castle"].includes(r.type) || (["hamlet","ruins","dungeon"].includes(r.type) && mapZoom > 1.35);
                   const isOrigin = routeDraft.fromId === r.id;
                   const isDestination = routeDraft.toId === r.id;
                   const routeNode = !!activeRoute && activeRoute.names.includes(r.name);
                   const dimUndiscovered = worldOverlay === "discovery" && !r.discovered;
+                  if(!atlasPlaceVisible && !active) return null;
                   if(!r.discovered && worldOverlay !== "discovery" && !active) return null;
                   if(isSmall && mapZoom < 0.72 && !active) return null;
                   // Scale icons inversely with zoom for readability at all levels
