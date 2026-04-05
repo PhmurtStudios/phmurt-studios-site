@@ -13868,7 +13868,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           return;
         }
         // Set focus to the clicked target and resolve the attack
-        setFocusTokenId(clickedToken.token.id);
+        setFocusedCombatTarget(attacker.id, clickedToken.token.id);
+        setSelectedTokenId(attacker.id);
         setActiveWeapon(null);
         weaponTargetRef.current = null;
         setHoveredTokenId(null);
@@ -14829,7 +14830,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       return;
     }
     const CE = window.CombatEngine;
-    if (!CE) return;
+    if (!CE) {
+      setPlayModeResolution({ title: card.name, lines: ["Combat engine not loaded.", "Check that combat-engine.js is in the same folder as campaigns.html and refresh."] });
+      return;
+    }
     const breaksHidden =
       card.resolver === "weapon" ||
       (card.resolver === "spell" && !!spellCard && !!(spellCard.damage || spellCard.save || spellCard.conditions?.length)) ||
@@ -17661,14 +17665,14 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
                             <div style={{ display:"grid", gap:6 }}>
                               {Object.keys(byPanel).map((panelName) => (
-                                <div key={panelName} style={{ border:"1px solid rgba(255,255,255,0.08)", borderRadius:"6px", padding:"6px", background:"rgba(0,0,0,0.1)" }}>
+                                <div key={panelName} style={{ border:"1px solid var(--border-mid)", borderRadius:"6px", padding:"6px", background:"var(--bg-hover-subtle)" }}>
                                   <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.textFaint, textTransform:"uppercase", marginBottom:5 }}>{panelName}</div>
                                   {byPanel[panelName].length === 0 && <div style={{ fontSize:9, color:T.textFaint, fontStyle:"italic" }}>No options</div>}
                                   {byPanel[panelName].map((card) => (
                                     <button key={card.id}
                                       onClick={(e) => { e.stopPropagation(); if (card.resolver === "weapon") { setActiveWeapon({ card, actorToken: tk }); weaponTargetRef.current = null; } else { resolvePlayModeCard(card, tk); } }}
                                       disabled={!!card.disabledReason}
-                                      style={{ width:"100%", textAlign:"left", marginBottom:4, padding:"7px", borderRadius:"5px", border:"1px solid " + (card.disabledReason ? "rgba(255,80,80,0.2)" : "rgba(255,255,255,0.12)"), background: card.disabledReason ? "rgba(120,40,40,0.10)" : "rgba(255,255,255,0.03)", color: card.disabledReason ? "rgba(255,200,200,0.7)" : T.text, cursor: card.disabledReason ? "not-allowed" : "pointer" }}>
+                                      style={{ width:"100%", textAlign:"left", marginBottom:4, padding:"7px", borderRadius:"5px", border:"1px solid " + (card.disabledReason ? "rgba(255,80,80,0.2)" : "var(--border)"), background: card.disabledReason ? "rgba(120,40,40,0.10)" : "var(--action-card-bg)", color: card.disabledReason ? "rgba(255,200,200,0.7)" : T.text, cursor: card.disabledReason ? "not-allowed" : "pointer" }}>
                                       <div style={{ fontSize:11, fontFamily:T.ui, color: card.disabledReason ? "rgba(255,200,200,0.8)" : T.text }}>{card.name}</div>
                                       {playModePresentation === "simple" ? (
                                         <div style={{ fontSize:9, color:T.textMuted, marginTop:2 }}>{card.outcome}</div>
