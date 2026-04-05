@@ -8558,6 +8558,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           if (seq.result.hit) {
             totalDmg += seq.result.totalDamage || 0;
             addCombatLogEntry({ type: "attack", attacker: attacker.name, target: target.name, action: seq.action.name, hit: true, damage: seq.result.totalDamage, isCrit: seq.result.isCrit, roll: seq.result.attackRoll });
+            pushCombatRoll(
+              attacker.name + " \u2694 " + target.name + (seq.result.isCrit ? " CRITICAL!" : " HIT!"),
+              "Attack: " + (seq.result.attackRoll?.details || "d20") + " + " + (seq.result.attackRoll?.modifier ?? "?") + " = " + (seq.result.attackRoll?.total ?? "?") + " vs AC " + (seq.result.attackRoll?.targetAC ?? target.ac ?? 10) + "  |  Damage: " + (seq.result.totalDamage || 0),
+              seq.result.isCrit ? "crit" : "hit"
+            );
             // Trigger VFX
             const dtype = seq.result.damage?.[0]?.type || "slashing";
             if (typeof window.VFX !== 'undefined') {
@@ -8569,6 +8574,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             spawnFloatingTextForToken(targetId, "damage", { total: seq.result.totalDamage, damageType: dtype, isCrit: seq.result.isCrit });
           } else {
             addCombatLogEntry({ type: "miss", attacker: attacker.name, target: target.name, action: seq.action.name, roll: seq.result.attackRoll });
+            pushCombatRoll(
+              attacker.name + " \u2694 " + target.name + " MISS",
+              "Attack: " + (seq.result.attackRoll?.details || "d20") + " + " + (seq.result.attackRoll?.modifier ?? "?") + " = " + (seq.result.attackRoll?.total ?? "?") + " vs AC " + (seq.result.attackRoll?.targetAC ?? target.ac ?? 10),
+              "miss"
+            );
             if (typeof window.VFX !== 'undefined') {
               window.VFX.addEffect(window.VFX.createMissEffect(target.x + gridSize/2, target.y + gridSize/2));
             }
@@ -8602,6 +8612,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       if (result.results[0]?.hit) {
         const dtype = result.results[0].damage?.[0]?.type || "slashing";
         addCombatLogEntry({ type: "attack", attacker: attacker.name, target: target.name, action: action.name, hit: true, damage: result.totalDamage, isCrit: result.results[0].isCrit, roll: result.results[0].attackRoll });
+        pushCombatRoll(
+          attacker.name + " \u2694 " + target.name + (result.results[0].isCrit ? " CRITICAL!" : " HIT!"),
+          "Attack: " + (result.results[0].attackRoll?.details || "d20") + " + " + (result.results[0].attackRoll?.modifier ?? "?") + " = " + (result.results[0].attackRoll?.total ?? "?") + " vs AC " + (result.results[0].attackRoll?.targetAC ?? target.ac ?? 10) + "  |  Damage: " + (result.totalDamage || 0) + " " + dtype,
+          result.results[0].isCrit ? "crit" : "hit"
+        );
         applyAttackResultToTarget(targetId, target, result.totalDamage, dtype);
         if (typeof window.VFX !== 'undefined') {
           window.VFX.addEffect(window.VFX.createAttackEffect(attacker.x + gridSize/2, attacker.y + gridSize/2, target.x + gridSize/2, target.y + gridSize/2, action.name, dtype));
@@ -8611,6 +8626,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         spawnFloatingTextForToken(targetId, "damage", { total: result.totalDamage, damageType: dtype, isCrit: result.results[0].isCrit });
       } else {
         addCombatLogEntry({ type: "miss", attacker: attacker.name, target: target.name, action: action.name, roll: result.results[0]?.attackRoll });
+        pushCombatRoll(
+          attacker.name + " \u2694 " + target.name + " MISS",
+          "Attack: " + (result.results[0]?.attackRoll?.details || "d20") + " + " + (result.results[0]?.attackRoll?.modifier ?? "?") + " = " + (result.results[0]?.attackRoll?.total ?? "?") + " vs AC " + (result.results[0]?.attackRoll?.targetAC ?? target.ac ?? 10),
+          "miss"
+        );
         if (typeof window.VFX !== 'undefined') window.VFX.addEffect(window.VFX.createMissEffect(target.x + gridSize/2, target.y + gridSize/2));
         spawnFloatingTextForToken(targetId, "miss", {});
       }
@@ -8747,6 +8767,14 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       triggerActionAnim("melee_attack", token, target);
     }
   };
+  // ── Combat Roll Display (top banner) ──
+  const [combatRollLog, setCombatRollLog] = useState([]); // [{ id, msg, detail, type, time }]
+  const pushCombatRoll = (msg, detail, type) => {
+    const id = "roll-" + Date.now() + "-" + Math.random();
+    setCombatRollLog(prev => [...prev, { id, msg, detail: detail || "", type: type || "attack", time: Date.now() }]);
+    setTimeout(() => setCombatRollLog(prev => prev.filter(r => r.id !== id)), 5000);
+  };
+
   const [spellLog, setSpellLog] = useState([]); // [{ id, msg, time }]
   const [spellDC, setSpellDC] = useState(15);
   const [spellLevelFilter, setSpellLevelFilter] = useState(-1); // -1 for all
@@ -12008,7 +12036,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       const rangeFt = aw.card?.data?.range || 5;
       const rangePx = (rangeFt / 5) * gridSize;
       const isMelee = rangeFt <= 10;
-      const wColor = isMelee ? "#f06858" : "#58aaff";
+      const wColor = isMelee ? (cssVar("--crimson") || "#f06858") : "#58aaff";
       // Range circle from attacker
       if (attacker && rangePx > 0) {
         ctx.beginPath();
@@ -12076,7 +12104,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       ctx.textAlign = "center";
       ctx.textBaseline = "top";
       const canvasWidth = canvasRef.current?.width || 800;
-      ctx.fillStyle = "rgba(0,0,0,0.7)";
+      const _isLt = cssVar("--bg").includes("244") || cssVar("--bg").includes("f4f");
+      ctx.fillStyle = _isLt ? "rgba(255,255,255,0.85)" : "rgba(0,0,0,0.7)";
       const lblW = ctx.measureText(labelText).width + 24;
       ctx.fillRect((canvasWidth / 2) - lblW / 2, 10, lblW, 28);
       ctx.fillStyle = wColor;
@@ -13168,12 +13197,12 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       const speedCells = getMovementBudgetCells(selectedToken);
       const used = Math.min(movementPath.length, speedCells);
       const remaining = Math.max(0, speedCells - used);
-      ctx.fillStyle = "rgba(0,0,6,0.70)";
+      ctx.fillStyle = (cssVar("--bg").includes("244") || cssVar("--bg").includes("f4f")) ? "rgba(255,255,255,0.85)" : "rgba(0,0,6,0.70)";
       ctx.fillRect(w/2 - 80, 8, 160, 28);
       ctx.strokeStyle = "rgba(46,139,87,0.6)";
       ctx.lineWidth = 1;
       ctx.strokeRect(w/2 - 80, 8, 160, 28);
-      ctx.fillStyle = remaining > 0 ? "#5ee09a" : "#f06858";
+      ctx.fillStyle = remaining > 0 ? "#5ee09a" : (cssVar("--crimson") || "#f06858");
       ctx.font = "bold 11px Cinzel";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
@@ -13189,14 +13218,14 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         if (age > 1) return;
         const alpha = Math.max(0, 1 - age * age);
         ctx.globalAlpha = alpha;
-        ctx.fillStyle = "rgba(0,0,6,0.7)";
+        ctx.fillStyle = (cssVar("--bg").includes("244") || cssVar("--bg").includes("f4f")) ? "rgba(255,255,255,0.85)" : "rgba(0,0,6,0.7)";
         const msgW = ctx.measureText(log.msg).width + 16;
         ctx.fillRect(12, yOffset, msgW, 24);
         ctx.globalAlpha = 1;
         ctx.strokeStyle = "rgba(181,116,255,0.4)";
         ctx.lineWidth = 1;
         ctx.strokeRect(12, yOffset, msgW, 24);
-        ctx.fillStyle = "#b574ff";
+        ctx.fillStyle = (cssVar("--bg").includes("244") || cssVar("--bg").includes("f4f")) ? "#7c3aed" : "#b574ff";
         ctx.font = "11px Cinzel";
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
@@ -13207,11 +13236,61 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       });
     }
 
+    // ── Combat Roll Display (top-center banner) ──
+    if (combatRollLog.length > 0) {
+      const now = Date.now();
+      const isLight = cssVar("--bg").trim() === "#f4f0e6" || cssVar("--bg").includes("244");
+      const rollBg = isLight ? "rgba(255,255,255,0.92)" : "rgba(0,0,6,0.88)";
+      const rollBorder = isLight ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.12)";
+      const rollTextColor = isLight ? "#1a1a2e" : "#f2e8d6";
+      let rollY = 46;
+      combatRollLog.forEach(roll => {
+        const age = (now - roll.time) / 5000;
+        if (age > 1) return;
+        const alpha = age < 0.8 ? 1 : Math.max(0, 1 - (age - 0.8) * 5);
+        const typeColor = roll.type === "crit" ? "#ffd700" : roll.type === "hit" ? "#5ee09a" : roll.type === "miss" ? "#f06858" : "#b574ff";
+        ctx.globalAlpha = alpha;
+        ctx.font = "bold 12px Cinzel";
+        const msgW = Math.max(ctx.measureText(roll.msg).width, ctx.measureText(roll.detail).width * 0.85) + 28;
+        const boxW = Math.min(msgW, w - 40);
+        const boxX = (w - boxW) / 2;
+        const boxH = roll.detail ? 42 : 26;
+        // Background
+        ctx.fillStyle = rollBg;
+        ctx.beginPath();
+        ctx.roundRect(boxX, rollY, boxW, boxH, 6);
+        ctx.fill();
+        // Border
+        ctx.strokeStyle = typeColor + "88";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(boxX, rollY, boxW, boxH, 6);
+        ctx.stroke();
+        // Left accent bar
+        ctx.fillStyle = typeColor;
+        ctx.fillRect(boxX, rollY + 4, 3, boxH - 8);
+        // Main text
+        ctx.fillStyle = typeColor;
+        ctx.font = "bold 12px Cinzel";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.fillText(roll.msg, w / 2, rollY + 5);
+        // Detail text
+        if (roll.detail) {
+          ctx.fillStyle = rollTextColor;
+          ctx.font = "10px Cinzel";
+          ctx.fillText(roll.detail, w / 2, rollY + 23);
+        }
+        ctx.globalAlpha = 1;
+        rollY += boxH + 4;
+      });
+    }
+
     // ── VFX rendering ──
     if (typeof window.VFX !== 'undefined' && window.VFX.getActiveEffectCount() > 0) {
       window.VFX.updateAndDrawEffects(ctx);
     }
-  }, [bgColor, bgImage, showGrid, gridSize, zoom, pan, drawings, drawPoints, drawColor, drawWidth, fogCells, fogEnabled, tokens, walls, wallStart, wallPreview, selectedWallType, activeTool, rulerStart, rulerEnd, selectedTokenId, hoveredTokenId, activeCombatantId, activeCombatTargetId, combatLive, combatants, conditions, tokenConditions, activeSpell, spellEffects, spellLog, spellDC, fogMode, movementMode, movementPath, movementOrigin, turnStateByToken, terrainCells, pings, viewRole, props, selectedPropId, battleMaps, activeMapId, activeSceneId, multiTargetSelections, castLevel]);
+  }, [bgColor, bgImage, showGrid, gridSize, zoom, pan, drawings, drawPoints, drawColor, drawWidth, fogCells, fogEnabled, tokens, walls, wallStart, wallPreview, selectedWallType, activeTool, rulerStart, rulerEnd, selectedTokenId, hoveredTokenId, activeCombatantId, activeCombatTargetId, combatLive, combatants, conditions, tokenConditions, activeSpell, spellEffects, spellLog, combatRollLog, spellDC, fogMode, movementMode, movementPath, movementOrigin, turnStateByToken, terrainCells, pings, viewRole, props, selectedPropId, battleMaps, activeMapId, activeSceneId, multiTargetSelections, castLevel]);
 
   // Keep a ref to the latest render function so the animation loop doesn't restart on every dep change
   const renderRef = useRef(render);
@@ -13222,7 +13301,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   const animActiveRef = useRef(false);
   useEffect(() => {
     const hasFloatingText = typeof window.CombatFlowUI !== "undefined" && window.CombatFlowUI.hasActiveTexts();
-    const needsAnim = combatLive || pings.length > 0 || spellEffects.length > 0 || actionAnims.length > 0 || spellLog.length > 0 || !!activeSpell || !!activeWeapon || laserMode || (activeMapId && !activeSceneId) || hasFloatingText;
+    const needsAnim = combatLive || pings.length > 0 || spellEffects.length > 0 || actionAnims.length > 0 || spellLog.length > 0 || combatRollLog.length > 0 || !!activeSpell || !!activeWeapon || laserMode || (activeMapId && !activeSceneId) || hasFloatingText;
     if (!needsAnim) {
       animActiveRef.current = false;
       return;
@@ -13238,7 +13317,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     };
     animate();
     return () => { running = false; animActiveRef.current = false; cancelAnimationFrame(animRef.current); };
-  }, [combatLive, pings.length, spellEffects.length, actionAnims.length, spellLog.length, activeSpell, activeWeapon, laserMode, activeMapId, activeSceneId]);
+  }, [combatLive, pings.length, spellEffects.length, actionAnims.length, spellLog.length, combatRollLog.length, activeSpell, activeWeapon, laserMode, activeMapId, activeSceneId]);
 
   useEffect(() => { if (!combatLive && pings.length === 0 && spellLog.length === 0) render(); }, [render, combatLive, pings, spellLog]);
 
@@ -14611,6 +14690,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         steps.push("Apply modifiers/resistances: " + (attackResult.totalDamage || 0) + " final");
         const remaining = Math.max(0, (target.hp || 0) - (attackResult.totalDamage || 0));
         steps.push("Result: Hit. " + attackResult.attackRoll.total + " vs AC " + attackResult.attackRoll.targetAC + ". " + (attackResult.totalDamage || 0) + " " + d.damageType + " damage dealt. " + target.name + " has " + remaining + " HP remaining.");
+        pushCombatRoll(
+          actorToken.name + " \u2694 " + target.name + (attackResult.isCrit ? " CRITICAL!" : " HIT!"),
+          "Attack: " + (attackResult.attackRoll?.details || "d20") + " + " + (attackResult.attackRoll?.modifier ?? d.toHit) + " = " + (attackResult.attackRoll?.total ?? "?") + " vs AC " + (attackResult.attackRoll?.targetAC ?? target.ac ?? 10) + "  |  Damage: " + d.damageExpr + " = " + (attackResult.totalDamage || 0) + " " + d.damageType,
+          attackResult.isCrit ? "crit" : "hit"
+        );
         addStructuredCombatLog("Attacked " + target.name + " with " + card.name, "Hit for " + (attackResult.totalDamage || 0) + " " + d.damageType + " damage", "Action used");
         addCombatLogEntry({ type: "attack", attacker: actorToken.name, target: target.name, action: card.name, hit: true, damage: attackResult.totalDamage || 0, isCrit: !!attackResult.isCrit, roll: attackResult.attackRoll });
       } else if (attackResult) {
@@ -14621,6 +14705,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           color: "#999",
         });
         steps.push("Result: Miss. " + attackResult.attackRoll.total + " vs AC " + attackResult.attackRoll.targetAC + ".");
+        pushCombatRoll(
+          actorToken.name + " \u2694 " + target.name + " MISS",
+          "Attack: " + (attackResult.attackRoll?.details || "d20") + " + " + (attackResult.attackRoll?.modifier ?? d.toHit) + " = " + (attackResult.attackRoll?.total ?? "?") + " vs AC " + (attackResult.attackRoll?.targetAC ?? target.ac ?? 10),
+          "miss"
+        );
         addStructuredCombatLog("Attacked " + target.name + " with " + card.name, "Missed", "Action used");
         addCombatLogEntry({ type: "miss", attacker: actorToken.name, target: target.name, action: card.name, roll: attackResult.attackRoll });
       }
@@ -16090,18 +16179,18 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               </div>
             )}
             {!cockpitModeActive && movementMode && !pingMode && !activeSpell && (
-              <div style={{ position:"absolute", top:14, left:80, background:"rgba(46,139,87,0.85)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"#f2e8d6", letterSpacing:"1.5px", pointerEvents:"none", zIndex:10, border:"1px solid rgba(46,139,87,0.4)", boxShadow:"0 2px 10px rgba(46,139,87,0.25)" }}>
+              <div style={{ position:"absolute", top:14, left:80, background:"rgba(46,139,87,0.85)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"#fff", letterSpacing:"1.5px", pointerEvents:"none", zIndex:10, border:"1px solid rgba(46,139,87,0.4)", boxShadow:"0 2px 10px rgba(46,139,87,0.25)" }}>
                 MOVEMENT MODE (M to toggle, Esc to cancel)
               </div>
             )}
             {!cockpitModeActive && activeWeapon && (
-              <div style={{ position:"absolute", top:14, left:80, background: (activeWeapon.card?.data?.range || 5) <= 10 ? "rgba(240,104,88,0.88)" : "rgba(88,170,255,0.88)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"#f2e8d6", letterSpacing:"1.5px", pointerEvents:"none", zIndex:10, border:"1px solid " + ((activeWeapon.card?.data?.range || 5) <= 10 ? "rgba(240,104,88,0.5)" : "rgba(88,170,255,0.5)"), boxShadow:"0 2px 10px " + ((activeWeapon.card?.data?.range || 5) <= 10 ? "rgba(240,104,88,0.3)" : "rgba(88,170,255,0.3)"), display:"flex", alignItems:"center", gap:8 }}>
+              <div style={{ position:"absolute", top:14, left:80, background: (activeWeapon.card?.data?.range || 5) <= 10 ? "rgba(240,104,88,0.88)" : "rgba(88,170,255,0.88)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"#fff", letterSpacing:"1.5px", pointerEvents:"none", zIndex:10, border:"1px solid " + ((activeWeapon.card?.data?.range || 5) <= 10 ? "rgba(240,104,88,0.5)" : "rgba(88,170,255,0.5)"), boxShadow:"0 2px 10px " + ((activeWeapon.card?.data?.range || 5) <= 10 ? "rgba(240,104,88,0.3)" : "rgba(88,170,255,0.3)"), display:"flex", alignItems:"center", gap:8 }}>
                 <span style={{ width:7, height:7, borderRadius:"50%", background: (activeWeapon.card?.data?.range || 5) <= 10 ? "#f06858" : "#58aaff" }} />
                 {((activeWeapon.card?.data?.range || 5) <= 10 ? "\u2694 " : "\uD83C\uDFF9 ") + (activeWeapon.card?.name || "ATTACK").toUpperCase()} — click target token · right-click/Esc to cancel
               </div>
             )}
             {!cockpitModeActive && activeSpell && (
-              <div style={{ position:"absolute", top:14, left:80, background:"rgba(181,116,255,0.88)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"#f2e8d6", letterSpacing:"1.5px", pointerEvents:"none", zIndex:10, border:"1px solid rgba(181,116,255,0.5)", boxShadow:"0 2px 10px rgba(181,116,255,0.3)", display:"flex", alignItems:"center", gap:8 }}>
+              <div style={{ position:"absolute", top:14, left:80, background:"rgba(181,116,255,0.88)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"#fff", letterSpacing:"1.5px", pointerEvents:"none", zIndex:10, border:"1px solid rgba(181,116,255,0.5)", boxShadow:"0 2px 10px rgba(181,116,255,0.3)", display:"flex", alignItems:"center", gap:8 }}>
                 <span style={{ width:7, height:7, borderRadius:"50%", background:activeSpell.color, boxShadow:"0 0 6px " + activeSpell.color }} />
                 SPELL: {activeSpell.name.toUpperCase()}{castLevel && castLevel > activeSpell.level ? " (LV" + castLevel + ")" : ""}{MULTI_TARGET_SPELLS[activeSpell.name] ? " — " + multiTargetSelections.length + "/" + getMultiTargetCount(activeSpell, castLevel, selectedToken?.level||1) + " targets" : ""} — click to {MULTI_TARGET_SPELLS[activeSpell.name] ? "select targets" : "cast"} · right-click/Esc to cancel · Space+drag or scroll to pan/zoom
               </div>
@@ -16109,7 +16198,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
             {/* Player view badge */}
             {!cockpitModeActive && viewRole === "player" && (
-              <div style={{ position:"absolute", top:10, right:10, background:"rgba(88,170,255,0.85)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"#f2e8d6", letterSpacing:"1.5px", pointerEvents:"none", border:"1px solid rgba(88,170,255,0.4)", boxShadow:"0 2px 10px rgba(88,170,255,0.25)" }}>
+              <div style={{ position:"absolute", top:10, right:10, background:"rgba(88,170,255,0.85)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"#fff", letterSpacing:"1.5px", pointerEvents:"none", border:"1px solid rgba(88,170,255,0.4)", boxShadow:"0 2px 10px rgba(88,170,255,0.25)" }}>
                 PLAYER VIEW
               </div>
             )}
