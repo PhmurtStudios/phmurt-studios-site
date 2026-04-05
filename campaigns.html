@@ -2045,7 +2045,7 @@ const EnhancedCombatLogSidebar = ({ open, entries, round, viewRole, onClose, onC
    ENHANCED ACTION PANEL — categorized D&D 5e actions with economy tracking
    ═══════════════════════════════════════════════════════════════════════════ */
 const EnhancedActionPanel = ({ visible, token, turnState, viewRole, onSelectAction, onSelectCategory, selectedCategory, onEndTurn, onMove, moveLabel, actionCards }) => {
-  const [activeTab, setActiveTab] = useState("actions");
+  const [activeTab, setActiveTab] = useState("weapons");
   const [spellLevelTab, setSpellLevelTab] = useState("all");
   const [hoveredCard, setHoveredCard] = useState(null);
 
@@ -2078,8 +2078,8 @@ const EnhancedActionPanel = ({ visible, token, turnState, viewRole, onSelectActi
   };
 
   const tabs = [
+    { id: "weapons", label: "Attack", count: weaponCards.length, accent: "var(--action-color-weapon, #ef4444)" },
     { id: "actions", label: "Actions", count: otherCards.length, accent: "var(--action-color-action, #dc143c)" },
-    { id: "weapons", label: "Weapons", count: weaponCards.length, accent: "var(--action-color-weapon, #ef4444)" },
     { id: "spells", label: "Spells", count: spellCards.length, accent: "var(--action-color-spell, #a78bfa)" },
     { id: "features", label: "Features", count: featureCards.length, accent: "var(--action-color-feature, #f59e0b)" },
   ];
@@ -2131,8 +2131,8 @@ const EnhancedActionPanel = ({ visible, token, turnState, viewRole, onSelectActi
   );
 
   const emptyMessages = {
+    weapons: "No weapons equipped. Link a character from the builder to see attack options.",
     actions: "Standard D&D 5e actions: Dash, Dodge, Disengage, Hide, Help, Ready, Search, and Use an Object.",
-    weapons: "No weapons equipped. Link a character from the builder to see their weapons.",
     spells: "No spells known. Link a character from the builder to see their spells.",
     features: "No class features available at this level.",
   };
@@ -6461,6 +6461,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   const [selectedActionCategory, setSelectedActionCategory] = useState(null);
   const [rollResultCard, setRollResultCard] = useState(null);
   const [actionPanelVisible, setActionPanelVisible] = useState(false);
+  const [setupTab, setSetupTab] = useState("bg");
 
   // ── Floating combat text helper — spawns animated damage numbers above tokens ──
   const spawnFloatingTextForToken = useCallback((tokenId, type, opts) => {
@@ -14120,6 +14121,164 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   onChooseAction={chooseCockpitAction}
                   onClose={dismissTurnPopup}
                 />
+              </div>
+            )}
+
+            {/* ── BOTTOM: Map Setup Bar (shown when combat is NOT live) ── */}
+            {!combatLive && viewRole === "dm" && (
+              <div className="cm-action-panel" style={{ zIndex: 29 }}>
+                <div className="cm-action-panel-header">
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span className="cm-action-panel-title">Map Setup</span>
+                    <span style={{ fontSize: 9, color: "var(--text-faint)", fontFamily: T.body }}>Configure your battlemap before starting combat</span>
+                  </div>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button type="button" className="cm-action-card" style={{ "--action-color": "var(--action-color-endturn, #5ee09a)", padding: "4px 10px", minWidth: "auto" }}
+                      onClick={() => { setMode("combat"); setSidebarOpen(true); }}>
+                      <span style={{ fontSize: 10, color: "var(--action-color-endturn, #5ee09a)" }}>Start Encounter</span>
+                    </button>
+                  </div>
+                </div>
+                <div className="cm-action-tabs">
+                  {[
+                    { id: "bg", label: "Background", accent: "var(--action-color-movement, #29b6f6)" },
+                    { id: "grid", label: "Grid & View", accent: "var(--action-color-feature, #f59e0b)" },
+                    { id: "tokens", label: "Tokens", accent: "var(--action-color-action, #dc143c)" },
+                    { id: "scenes", label: "Scenes", accent: "#5ee09a" },
+                  ].map(tab => (
+                    <button key={tab.id} type="button"
+                      className={"cm-action-tab" + ((setupTab || "bg") === tab.id ? " is-active" : "")}
+                      style={(setupTab || "bg") === tab.id ? { "--tab-accent": tab.accent } : {}}
+                      onClick={() => setSetupTab(tab.id)}>
+                      <span>{tab.label}</span>
+                    </button>
+                  ))}
+                </div>
+                <div style={{ padding: "10px 14px", maxHeight: 160, overflowY: "auto" }}>
+                  {/* Background tab */}
+                  {(setupTab || "bg") === "bg" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 9, color: "var(--text-faint)", fontFamily: T.ui, letterSpacing: "1px", textTransform: "uppercase", minWidth: 60 }}>Presets</span>
+                        {bgPresets.map(p => (
+                          <button key={p.c} onClick={() => setBgColor(p.c)} title={p.l}
+                            style={{ width: 28, height: 28, borderRadius: 6, background: p.c, border: bgColor === p.c ? "2px solid var(--crimson, #dc143c)" : "1px solid var(--border, rgba(255,255,255,0.1))", cursor: "pointer", transition: "all 0.12s", boxShadow: bgColor === p.c ? "0 0 8px rgba(212,67,58,0.3)" : "none" }} />
+                        ))}
+                        <input type="color" value={bgColor} onChange={e => setBgColor(e.target.value)} title="Custom color"
+                          style={{ width: 28, height: 28, border: "1px solid var(--border)", background: "none", padding: 0, cursor: "pointer", borderRadius: 6 }} />
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 9, color: "var(--text-faint)", fontFamily: T.ui, letterSpacing: "1px", textTransform: "uppercase", minWidth: 60 }}>Map Image</span>
+                        <button onClick={() => mapImgInputRef.current?.click()} className="cm-action-card" style={{ "--action-color": "var(--action-color-movement, #29b6f6)", padding: "4px 10px", minWidth: "auto" }}>
+                          <span style={{ fontSize: 10 }}>{bgImage ? "Replace Image" : "Upload Image"}</span>
+                        </button>
+                        {bgImage && (
+                          <button onClick={() => setBgImage(null)} className="cm-action-card" style={{ "--action-color": "#ef4444", padding: "4px 10px", minWidth: "auto" }}>
+                            <span style={{ fontSize: 10 }}>Clear</span>
+                          </button>
+                        )}
+                        <span style={{ fontSize: 9, color: "var(--text-faint)", fontFamily: T.body, fontStyle: "italic" }}>{bgImage ? (bgImage.width + " x " + bgImage.height + " px") : "Drag & drop or click upload"}</span>
+                      </div>
+                    </div>
+                  )}
+                  {/* Grid tab */}
+                  {(setupTab || "bg") === "grid" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 9, color: "var(--text-faint)", fontFamily: T.ui, letterSpacing: "1px", textTransform: "uppercase", minWidth: 60 }}>Grid Size</span>
+                        {[20, 30, 40, 50, 60, 80].map(s => (
+                          <button key={s} onClick={() => setGridSize(s)}
+                            className={"cm-action-card" + (gridSize === s ? " is-selected" : "")}
+                            style={{ "--action-color": "var(--action-color-feature, #f59e0b)", padding: "4px 8px", minWidth: "auto" }}>
+                            <span style={{ fontSize: 10 }}>{s}px</span>
+                          </button>
+                        ))}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <span style={{ fontSize: 9, color: "var(--text-faint)", fontFamily: T.ui, letterSpacing: "1px", textTransform: "uppercase", minWidth: 60 }}>Options</span>
+                        <button onClick={() => setShowGrid(!showGrid)}
+                          className={"cm-action-card" + (showGrid ? " is-selected" : "")}
+                          style={{ "--action-color": "var(--action-color-feature, #f59e0b)", padding: "4px 10px", minWidth: "auto" }}>
+                          <span style={{ fontSize: 10 }}>{showGrid ? "Grid On" : "Grid Off"}</span>
+                        </button>
+                        <button onClick={() => setSnapToGrid(!snapToGrid)}
+                          className={"cm-action-card" + (snapToGrid ? " is-selected" : "")}
+                          style={{ "--action-color": "var(--action-color-feature, #f59e0b)", padding: "4px 10px", minWidth: "auto" }}>
+                          <span style={{ fontSize: 10 }}>{snapToGrid ? "Snap On" : "Snap Off"}</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {/* Tokens tab */}
+                  {(setupTab || "bg") === "tokens" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 9, color: "var(--text-faint)", fontFamily: T.ui, letterSpacing: "1px", textTransform: "uppercase", minWidth: 60 }}>Add PC</span>
+                        {(party || []).filter(p => !tokens.some(t => t.partyId === p.id)).map(p => (
+                          <button key={p.id} className="cm-action-card" style={{ "--action-color": "var(--action-color-action, #dc143c)", padding: "4px 10px", minWidth: "auto" }}
+                            onClick={() => {
+                              const t = {
+                                id: "tok-" + Date.now() + "-" + Math.random().toString(36).slice(2,6),
+                                name: p.name || "PC", label: (p.name || "PC").substring(0,3),
+                                x: 200 + Math.random()*300, y: 200 + Math.random()*300,
+                                hp: p.hp || 20, maxHp: p.maxHp || 20, ac: p.ac || 10,
+                                tokenType: "pc", partyId: p.id, player: p.player || "",
+                                str: p.str, dex: p.dex, con: p.con, int: p.int, wis: p.wis, cha: p.cha,
+                                speed: p.speed || 30, cls: p.cls || "", level: p.lv || 1,
+                              };
+                              setTokens(prev => [...prev, t]);
+                            }}>
+                            <span style={{ fontSize: 10 }}>{p.name || "PC"}</span>
+                          </button>
+                        ))}
+                        {(party || []).filter(p => !tokens.some(t => t.partyId === p.id)).length === 0 && (
+                          <span style={{ fontSize: 9, color: "var(--text-faint)", fontStyle: "italic" }}>All party members placed, or none in roster</span>
+                        )}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 9, color: "var(--text-faint)", fontFamily: T.ui, letterSpacing: "1px", textTransform: "uppercase", minWidth: 60 }}>Custom</span>
+                        <button className="cm-action-card" style={{ "--action-color": "#a78bfa", padding: "4px 10px", minWidth: "auto" }}
+                          onClick={() => { tokenImgRef.current?.click(); }}>
+                          <span style={{ fontSize: 10 }}>Upload Token Image</span>
+                        </button>
+                        <span style={{ fontSize: 9, color: "var(--text-faint)", fontFamily: T.body, fontStyle: "italic" }}>Or drag images onto the map</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <span style={{ fontSize: 9, color: "var(--text-faint)", fontFamily: T.ui, letterSpacing: "1px", textTransform: "uppercase", minWidth: 60 }}>Monsters</span>
+                        <button className="cm-action-card" style={{ "--action-color": "#ef4444", padding: "4px 10px", minWidth: "auto" }}
+                          onClick={() => { setMode("combat"); setSidebarOpen(true); setCombatTab("monsters"); }}>
+                          <span style={{ fontSize: 10 }}>Open Monster Roster</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  {/* Scenes tab */}
+                  {(setupTab || "bg") === "scenes" && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        <button className="cm-action-card" style={{ "--action-color": "#5ee09a", padding: "4px 10px", minWidth: "auto" }}
+                          onClick={() => setShowScenePanel(true)}>
+                          <span style={{ fontSize: 10 }}>Open Scene Manager</span>
+                        </button>
+                        <span style={{ fontSize: 9, color: "var(--text-faint)", fontFamily: T.body }}>
+                          {battleMaps.length} map{battleMaps.length !== 1 ? "s" : ""} configured
+                        </span>
+                      </div>
+                      {battleMaps.length > 0 && (
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          {battleMaps.map(map => (
+                            <button key={map.id} className={"cm-action-card" + (activeMapId === map.id ? " is-selected" : "")}
+                              style={{ "--action-color": "#5ee09a", padding: "5px 10px", minWidth: "auto" }}
+                              onClick={() => switchToMapOverview(map.id)}>
+                              <span style={{ fontSize: 10 }}>{map.name}</span>
+                              <span style={{ fontSize: 8, color: "var(--text-faint)" }}>{(map.scenes || []).length} scenes</span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
