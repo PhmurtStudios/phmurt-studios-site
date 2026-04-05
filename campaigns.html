@@ -37,6 +37,7 @@
   <script src="monster-data.js"></script>
   <!-- Optional deferred loader (kept for backwards compat) -->
   <script src="campaign-play-loader.js"></script>
+  <script src="combat-flow-ui.js"></script>
   <style>
     #campaign-root {
       width: 100%;
@@ -579,6 +580,549 @@
         left: 0;
         width: calc(100vw - 12px);
         max-height: 180px;
+      }
+    }
+
+    /* ═══ ENHANCED COMBAT ACTION PANEL — categorized action grid ═══ */
+    .cm-action-panel {
+      position: absolute;
+      bottom: 52px;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 8px 10px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      background: rgba(7,8,12,0.94);
+      backdrop-filter: blur(18px);
+      box-shadow: 0 -8px 32px rgba(0,0,8,0.5);
+      max-width: 720px;
+      transition: transform 200ms ease, opacity 160ms ease;
+      z-index: 29;
+    }
+    .cm-action-panel.is-hidden {
+      transform: translateX(-50%) translateY(20px);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .cm-action-panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 4px 4px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .cm-action-panel-title {
+      font: 700 10px/1 'Cinzel', serif;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: rgba(242,232,214,0.5);
+    }
+    .cm-action-panel-economy {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .cm-economy-pip {
+      display: flex;
+      align-items: center;
+      gap: 3px;
+      font: 600 8px/1 'Cinzel', serif;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+    }
+    .cm-economy-pip .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      border: 1.5px solid currentColor;
+      transition: background 150ms ease;
+    }
+    .cm-economy-pip .dot.is-available {
+      background: currentColor;
+      box-shadow: 0 0 6px currentColor;
+    }
+    .cm-economy-pip.action { color: #dc143c; }
+    .cm-economy-pip.bonus { color: #ffa726; }
+    .cm-economy-pip.reaction { color: #ab47bc; }
+    .cm-economy-pip.movement { color: #29b6f6; }
+
+    .cm-action-grid {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .cm-action-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      width: 76px;
+      height: 62px;
+      padding: 6px 4px;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      background: rgba(255,255,255,0.02);
+      color: #f4ead6;
+      cursor: pointer;
+      transition: all 120ms ease;
+      position: relative;
+    }
+    .cm-action-card:hover:not(.is-disabled) {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.12);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .cm-action-card.is-selected {
+      border-color: var(--action-color, rgba(220,20,60,0.4));
+      background: color-mix(in srgb, var(--action-color, #dc143c) 8%, transparent);
+      box-shadow: 0 0 12px color-mix(in srgb, var(--action-color, #dc143c) 15%, transparent);
+    }
+    .cm-action-card.is-disabled {
+      opacity: 0.28;
+      cursor: not-allowed;
+    }
+    .cm-action-card-hotkey {
+      position: absolute;
+      top: 2px;
+      right: 4px;
+      font: 700 7px/1 'Cinzel', serif;
+      color: rgba(242,232,214,0.2);
+    }
+    .cm-action-card-icon {
+      font-size: 18px;
+      line-height: 1;
+    }
+    .cm-action-card-label {
+      font: 700 8px/1 'Cinzel', serif;
+      letter-spacing: 0.4px;
+      text-transform: uppercase;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 72px;
+    }
+    .cm-action-card-cost {
+      font: 400 7px/1 'Spectral', serif;
+      color: rgba(242,232,214,0.35);
+      text-transform: capitalize;
+    }
+
+    /* ═══ ROLL RESULT CARD — appears in confirm flyout ═══ */
+    .cm-roll-result {
+      padding: 8px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(255,255,255,0.02);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .cm-roll-result-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .cm-roll-result-action {
+      font: 700 11px/1 'Cinzel', serif;
+      color: #f4ead6;
+      letter-spacing: 0.6px;
+    }
+    .cm-roll-result-verdict {
+      font: 700 9px/1 'Cinzel', serif;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+    .cm-roll-result-verdict.is-hit {
+      color: #5ee09a;
+      background: rgba(94,224,154,0.1);
+      border: 1px solid rgba(94,224,154,0.2);
+    }
+    .cm-roll-result-verdict.is-miss {
+      color: #ef5350;
+      background: rgba(239,83,80,0.1);
+      border: 1px solid rgba(239,83,80,0.2);
+    }
+    .cm-roll-result-verdict.is-crit {
+      color: #ffd54f;
+      background: rgba(255,213,79,0.12);
+      border: 1px solid rgba(255,213,79,0.25);
+      animation: cm-crit-pulse 0.6s ease-in-out 2;
+    }
+    @keyframes cm-crit-pulse {
+      0%, 100% { box-shadow: 0 0 0 rgba(255,213,79,0); }
+      50% { box-shadow: 0 0 12px rgba(255,213,79,0.3); }
+    }
+    .cm-roll-section {
+      padding: 5px 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.04);
+      background: rgba(255,255,255,0.015);
+    }
+    .cm-roll-section-label {
+      font: 600 7px/1 'Cinzel', serif;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: rgba(242,232,214,0.35);
+      margin-bottom: 3px;
+    }
+    .cm-roll-section-value {
+      font: 500 11px/1.3 'Spectral', serif;
+      color: #f4ead6;
+    }
+    .cm-roll-dice {
+      font-family: 'Courier New', monospace;
+      font-weight: 700;
+      color: #90caf9;
+    }
+    .cm-roll-verdict-text {
+      font: 700 10px/1 'Cinzel', serif;
+      letter-spacing: 0.5px;
+    }
+    .cm-dmg-line {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 2px 0;
+    }
+    .cm-dmg-type-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .cm-dmg-total {
+      margin-top: 4px;
+      padding-top: 4px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      font: 700 12px/1 'Cinzel', serif;
+      color: #dc143c;
+      text-align: right;
+    }
+
+    /* ═══ ENHANCED COMBAT LOG SIDEBAR ═══ */
+    .cm-log-sidebar {
+      position: absolute;
+      top: 50px;
+      right: 8px;
+      bottom: 52px;
+      width: 300px;
+      pointer-events: auto;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      background: rgba(7,8,12,0.94);
+      backdrop-filter: blur(18px);
+      box-shadow: -8px 12px 36px rgba(0,0,8,0.45);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: transform 200ms ease, opacity 160ms ease;
+      z-index: 29;
+    }
+    .cm-log-sidebar.is-hidden {
+      transform: translateX(calc(100% + 20px));
+      opacity: 0;
+      pointer-events: none;
+    }
+    .cm-log-sidebar-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0;
+    }
+    .cm-log-sidebar-title {
+      font: 700 10px/1 'Cinzel', serif;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: rgba(242,232,214,0.6);
+    }
+    .cm-log-sidebar-close {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 6px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      color: rgba(242,232,214,0.4);
+      cursor: pointer;
+      font: 700 8px/1 'Cinzel', serif;
+    }
+    .cm-log-sidebar-close:hover { background: rgba(255,255,255,0.06); }
+    .cm-log-entries {
+      flex: 1;
+      overflow-y: auto;
+      padding: 6px 8px;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.08) transparent;
+    }
+    .cm-log-entries::-webkit-scrollbar { width: 4px; }
+    .cm-log-entries::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+    .cm-log-entry-card {
+      padding: 8px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.04);
+      background: rgba(255,255,255,0.015);
+      margin-bottom: 4px;
+      cursor: pointer;
+      transition: background 100ms ease;
+    }
+    .cm-log-entry-card:hover { background: rgba(255,255,255,0.03); }
+    .cm-log-entry-card.is-expanded { background: rgba(255,255,255,0.025); }
+    .cm-log-entry-headline {
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+    }
+    .cm-log-entry-icon {
+      font-size: 12px;
+      line-height: 1.4;
+      flex-shrink: 0;
+    }
+    .cm-log-entry-text {
+      font: 500 11px/1.4 'Spectral', serif;
+      color: #f4ead6;
+      flex: 1;
+      min-width: 0;
+    }
+    .cm-log-entry-time {
+      font: 400 8px/1 'Spectral', serif;
+      color: rgba(242,232,214,0.25);
+      flex-shrink: 0;
+    }
+    .cm-log-entry-details {
+      margin-top: 6px;
+      padding-top: 5px;
+      border-top: 1px solid rgba(255,255,255,0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .cm-log-entry-detail-line {
+      font: 400 10px/1.4 'Spectral', serif;
+      padding-left: 20px;
+    }
+    .cm-log-entry-detail-line.is-bold {
+      font-weight: 700;
+    }
+    .cm-log-round-divider {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 0 4px;
+    }
+    .cm-log-round-divider::before,
+    .cm-log-round-divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: rgba(255,255,255,0.06);
+    }
+    .cm-log-round-label {
+      font: 700 8px/1 'Cinzel', serif;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: rgba(255,213,79,0.5);
+      white-space: nowrap;
+    }
+
+    /* ═══ DM / PLAYER VIEW INDICATOR ═══ */
+    .cm-view-indicator {
+      position: absolute;
+      top: 50px;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: auto;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font: 700 9px/1 'Cinzel', serif;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      transition: all 200ms ease;
+      z-index: 30;
+      cursor: pointer;
+    }
+    .cm-view-indicator.is-dm {
+      background: rgba(220,20,60,0.12);
+      border: 1px solid rgba(220,20,60,0.25);
+      color: #dc143c;
+    }
+    .cm-view-indicator.is-player {
+      background: rgba(94,224,154,0.08);
+      border: 1px solid rgba(94,224,154,0.2);
+      color: #5ee09a;
+    }
+    .cm-view-indicator:hover {
+      transform: translateX(-50%) scale(1.03);
+    }
+    .cm-view-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 6px currentColor;
+    }
+
+    /* ═══ TARGET INDICATOR — BG3-style reticle on focused target ═══ */
+    .cm-target-reticle {
+      position: absolute;
+      pointer-events: none;
+      border: 2px solid rgba(220,20,60,0.5);
+      border-radius: 50%;
+      box-shadow: 0 0 8px rgba(220,20,60,0.2), inset 0 0 8px rgba(220,20,60,0.1);
+      animation: cm-reticle-spin 4s linear infinite;
+      z-index: 27;
+    }
+    @keyframes cm-reticle-spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    .cm-target-reticle::before,
+    .cm-target-reticle::after {
+      content: "";
+      position: absolute;
+      background: rgba(220,20,60,0.6);
+    }
+    .cm-target-reticle::before {
+      top: 50%; left: -6px; right: -6px;
+      height: 1px;
+      transform: translateY(-50%);
+    }
+    .cm-target-reticle::after {
+      left: 50%; top: -6px; bottom: -6px;
+      width: 1px;
+      transform: translateX(-50%);
+    }
+
+    /* ═══ WEAPON / SPELL SELECTION SUBPANEL ═══ */
+    .cm-sub-panel {
+      padding: 6px;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(0,0,0,0.2);
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      max-height: 200px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.08) transparent;
+    }
+    .cm-sub-panel::-webkit-scrollbar { width: 3px; }
+    .cm-sub-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+    .cm-sub-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: 1px solid rgba(255,255,255,0.04);
+      background: rgba(255,255,255,0.015);
+      cursor: pointer;
+      transition: all 100ms ease;
+    }
+    .cm-sub-item:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08); }
+    .cm-sub-item.is-selected {
+      border-color: rgba(220,20,60,0.3);
+      background: rgba(220,20,60,0.06);
+    }
+    .cm-sub-item-name {
+      font: 600 10px/1.2 'Spectral', serif;
+      color: #f4ead6;
+      flex: 1;
+    }
+    .cm-sub-item-meta {
+      font: 400 9px/1 'Spectral', serif;
+      color: rgba(242,232,214,0.4);
+    }
+    .cm-sub-item-tag {
+      font: 700 7px/1 'Cinzel', serif;
+      letter-spacing: 0.5px;
+      padding: 2px 5px;
+      border-radius: 4px;
+      text-transform: uppercase;
+    }
+
+    /* ═══ ACTION CONFIRM BUTTON (BG3-style) ═══ */
+    .cm-confirm-action-btn {
+      width: 100%;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(220,20,60,0.25);
+      background: linear-gradient(135deg, rgba(220,20,60,0.08), rgba(220,20,60,0.04));
+      color: #dc143c;
+      font: 700 10px/1 'Cinzel', serif;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 120ms ease;
+    }
+    .cm-confirm-action-btn:hover:not(:disabled) {
+      background: linear-gradient(135deg, rgba(220,20,60,0.14), rgba(220,20,60,0.08));
+      border-color: rgba(220,20,60,0.35);
+      box-shadow: 0 0 16px rgba(220,20,60,0.12);
+    }
+    .cm-confirm-action-btn:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    .cm-confirm-action-btn.is-spell {
+      border-color: rgba(124,77,255,0.25);
+      background: linear-gradient(135deg, rgba(124,77,255,0.08), rgba(124,77,255,0.04));
+      color: #b574ff;
+    }
+    .cm-confirm-action-btn.is-spell:hover:not(:disabled) {
+      background: linear-gradient(135deg, rgba(124,77,255,0.14), rgba(124,77,255,0.08));
+      border-color: rgba(124,77,255,0.35);
+      box-shadow: 0 0 16px rgba(124,77,255,0.12);
+    }
+
+    /* ═══ RESPONSIVE ADDITIONS ═══ */
+    @media (max-width: 900px) {
+      .cm-log-sidebar { width: min(300px, calc(100vw - 16px)); }
+      .cm-action-panel { max-width: calc(100vw - 16px); }
+    }
+    @media (max-width: 640px) {
+      .cm-log-sidebar {
+        top: auto;
+        left: 6px;
+        right: 6px;
+        bottom: calc(56px + env(safe-area-inset-bottom));
+        width: auto;
+        max-height: 50vh;
+        border-radius: 14px;
+      }
+      .cm-action-panel {
+        left: 6px;
+        right: 6px;
+        transform: none;
+        bottom: calc(6px + env(safe-area-inset-bottom));
+        border-radius: 14px;
+      }
+      .cm-action-card {
+        width: 64px;
+        height: 54px;
+      }
+      .cm-view-indicator {
+        top: auto;
+        bottom: calc(120px + env(safe-area-inset-bottom));
       }
     }
   </style>
@@ -1294,7 +1838,7 @@ const ConfirmFlyout = ({ open, uiMode, token, pendingAction, activeSpell, focusT
   );
 };
 
-/* ── Combat Log Overlay (bottom-right, toggleable) ── */
+/* ── Combat Log Overlay (bottom-right, toggleable) — LEGACY kept for non-sidebar use ── */
 const CombatLogOverlay = ({ open, entries, latestResolution, onClear }) => {
   const latestLines = latestResolution?.lines || [];
   return (
@@ -1318,6 +1862,242 @@ const CombatLogOverlay = ({ open, entries, latestResolution, onClear }) => {
         </div>
       ))}
     </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ENHANCED COMBAT LOG SIDEBAR — detailed roll breakdowns, expandable entries
+   ═══════════════════════════════════════════════════════════════════════════ */
+const EnhancedCombatLogSidebar = ({ open, entries, round, viewRole, onClose, onClear, getTokenById }) => {
+  const [expandedIds, setExpandedIds] = React.useState({});
+  const scrollRef = React.useRef(null);
+  const CFUI = typeof window.CombatFlowUI !== "undefined" ? window.CombatFlowUI : null;
+
+  // Auto-scroll to top when new entries arrive
+  React.useEffect(() => {
+    if (scrollRef.current && entries.length > 0) {
+      scrollRef.current.scrollTop = 0;
+    }
+  }, [entries.length]);
+
+  const toggleExpand = (id) => setExpandedIds(prev => ({ ...prev, [id]: !prev[id] }));
+
+  const formatEntry = (entry) => {
+    if (!CFUI) {
+      // Fallback: basic format
+      return {
+        id: entry.id, time: entry.time, type: entry.type,
+        icon: "⚔️", color: "#f4ead6",
+        headline: entry.text || entry.action || (entry.attacker ? (entry.attacker + " → " + (entry.target || "?")) : "Event"),
+        sublines: entry.damage ? [{ text: entry.damage + " damage", accent: "#dc143c", bold: true }] : [],
+        expandable: false,
+      };
+    }
+    return CFUI.formatLogEntry(entry, viewRole, getTokenById);
+  };
+
+  return (
+    <div className={"cm-log-sidebar" + (open ? "" : " is-hidden")}>
+      <div className="cm-log-sidebar-header">
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span className="cm-log-sidebar-title">Combat Log</span>
+          <span style={{ font: "400 8px/1 'Spectral', serif", color: T.textFaint }}>
+            Round {round} · {entries.length} events
+          </span>
+        </div>
+        <div style={{ display: "flex", gap: 4 }}>
+          <button type="button" className="cm-log-sidebar-close" onClick={onClear}>Clear</button>
+          <button type="button" className="cm-log-sidebar-close" onClick={onClose}>
+            <X size={10} />
+          </button>
+        </div>
+      </div>
+
+      <div className="cm-log-entries" ref={scrollRef}>
+        {entries.length === 0 ? (
+          <div style={{ font: "400 11px/1.4 'Spectral', serif", color: T.textMuted, padding: "16px 8px", textAlign: "center" }}>
+            No events yet. Actions will appear here as combat unfolds.
+          </div>
+        ) : entries.map((entry, idx) => {
+          const fmt = formatEntry(entry);
+          if (!fmt) return null;
+          const isExpanded = !!expandedIds[entry.id];
+          const hasDetails = fmt.expandable && fmt.sublines && fmt.sublines.length > 0;
+
+          // Insert round dividers
+          const prevEntry = entries[idx - 1];
+          const showRoundDivider = entry.type === "round" || (idx === 0 && round > 1);
+
+          return (
+            <React.Fragment key={entry.id}>
+              {entry.type === "round" && (
+                <div className="cm-log-round-divider">
+                  <span className="cm-log-round-label">{entry.text || "Round " + (entry.round || "?")}</span>
+                </div>
+              )}
+              {entry.type !== "round" && (
+                <div className={"cm-log-entry-card" + (isExpanded ? " is-expanded" : "")}
+                  onClick={() => hasDetails && toggleExpand(entry.id)}>
+                  <div className="cm-log-entry-headline">
+                    <span className="cm-log-entry-icon">{fmt.icon}</span>
+                    <span className="cm-log-entry-text" style={{ color: fmt.color }}>{fmt.headline}</span>
+                    <span className="cm-log-entry-time">{fmt.time}</span>
+                  </div>
+
+                  {/* Expandable details */}
+                  {isExpanded && hasDetails && (
+                    <div className="cm-log-entry-details">
+                      {fmt.sublines.map((line, li) => (
+                        <div key={"sl-" + li}
+                          className={"cm-log-entry-detail-line" + (line.bold ? " is-bold" : "")}
+                          style={{ color: line.accent || T.textMuted }}>
+                          {line.text}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Expand indicator */}
+                  {hasDetails && !isExpanded && (
+                    <div style={{ marginTop: 3, paddingLeft: 20, font: "400 8px/1 'Cinzel', serif", color: T.textFaint, letterSpacing: "0.6px" }}>
+                      Click to expand
+                    </div>
+                  )}
+                </div>
+              )}
+            </React.Fragment>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ENHANCED ACTION PANEL — categorized D&D 5e actions with economy tracking
+   ═══════════════════════════════════════════════════════════════════════════ */
+const EnhancedActionPanel = ({ visible, token, turnState, viewRole, onSelectAction, onSelectCategory, selectedCategory, onEndTurn, onMove, moveLabel }) => {
+  if (!visible || !token) return null;
+
+  const CFUI = typeof window.CombatFlowUI !== "undefined" ? window.CombatFlowUI : null;
+  const cats = CFUI ? CFUI.ACTION_CATEGORIES : {};
+  const avail = CFUI ? CFUI.getAvailableActions(turnState) : { action: true, bonus: true, reaction: true, move: true, moveFt: 30 };
+
+  const actionIcons = {
+    attack: "⚔️", castSpell: "✨", dash: "💨", dodge: "🛡️",
+    disengage: "🔀", help: "🤝", hide: "👁️", ready: "⏳",
+    useObject: "🎒", grapple: "🤼", shove: "💪",
+  };
+
+  const categories = Object.values(cats);
+  const moveDisabled = !avail.move;
+  const isPC = token.tokenType === "pc";
+
+  return (
+    <div className={"cm-action-panel" + (visible ? "" : " is-hidden")}>
+      {/* Economy header */}
+      <div className="cm-action-panel-header">
+        <span className="cm-action-panel-title">{token.name}'s Turn</span>
+        <div className="cm-action-panel-economy">
+          <div className="cm-economy-pip movement">
+            <span className="dot" style={avail.move ? { background: "#29b6f6", boxShadow: "0 0 6px #29b6f6" } : {}} />
+            <span>{avail.moveFt || 0} ft</span>
+          </div>
+          <div className="cm-economy-pip action">
+            <span className={"dot" + (avail.action ? " is-available" : "")} />
+            <span>Action</span>
+          </div>
+          <div className="cm-economy-pip bonus">
+            <span className={"dot" + (avail.bonus ? " is-available" : "")} />
+            <span>Bonus</span>
+          </div>
+          <div className="cm-economy-pip reaction">
+            <span className={"dot" + (avail.reaction ? " is-available" : "")} />
+            <span>React</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Action grid */}
+      <div className="cm-action-grid">
+        {/* Move card */}
+        <button type="button"
+          className={"cm-action-card" + (moveDisabled ? " is-disabled" : "")}
+          style={{ "--action-color": "#29b6f6" }}
+          disabled={moveDisabled}
+          onClick={onMove}
+          title={moveDisabled ? "No movement remaining" : "Move (" + moveLabel + ")"}>
+          <span className="cm-action-card-hotkey">M</span>
+          <span className="cm-action-card-icon">🏃</span>
+          <span className="cm-action-card-label">Move</span>
+          <span className="cm-action-card-cost">{avail.moveFt || 0} ft</span>
+        </button>
+
+        {/* Standard action cards */}
+        {categories.map(cat => {
+          const disabled = cat.cost === "action" ? !avail.action : (cat.cost === "bonus" ? !avail.bonus : false);
+          const isSelected = selectedCategory === cat.id;
+          return (
+            <button key={cat.id} type="button"
+              className={"cm-action-card" + (disabled ? " is-disabled" : "") + (isSelected ? " is-selected" : "")}
+              style={{ "--action-color": cat.color }}
+              disabled={disabled}
+              onClick={() => onSelectCategory(cat.id)}
+              title={disabled ? "Action already used" : cat.desc}>
+              <span className="cm-action-card-hotkey">{cat.hotkey}</span>
+              <span className="cm-action-card-icon">{actionIcons[cat.id] || "⚔️"}</span>
+              <span className="cm-action-card-label">{cat.label}</span>
+              <span className="cm-action-card-cost">{cat.cost}</span>
+            </button>
+          );
+        })}
+
+        {/* End Turn card */}
+        <button type="button" className="cm-action-card"
+          style={{ "--action-color": "#5ee09a", borderColor: "rgba(94,224,154,0.2)", background: "rgba(94,224,154,0.04)" }}
+          onClick={onEndTurn}>
+          <span className="cm-action-card-hotkey">E</span>
+          <span className="cm-action-card-icon" style={{ color: "#5ee09a" }}>⏭️</span>
+          <span className="cm-action-card-label" style={{ color: "#5ee09a" }}>End Turn</span>
+          <span className="cm-action-card-cost">Free</span>
+        </button>
+      </div>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   VIEW MODE INDICATOR — shows DM or Player badge, clickable to toggle
+   ═══════════════════════════════════════════════════════════════════════════ */
+const ViewModeIndicator = ({ viewRole, onToggle }) => {
+  if (!viewRole) return null;
+  const isDM = viewRole === "dm";
+  return (
+    <div className={"cm-view-indicator" + (isDM ? " is-dm" : " is-player")}
+      onClick={onToggle} title={"Current view: " + (isDM ? "Dungeon Master" : "Player") + ". Click to toggle."}>
+      <span className="cm-view-dot" />
+      <span>{isDM ? "DM View" : "Player View"}</span>
+      {isDM ? <Eye size={11} /> : <EyeOff size={11} />}
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TARGET RETICLE — animated crosshair around the focused combat target
+   ═══════════════════════════════════════════════════════════════════════════ */
+const TargetReticle = ({ target, gridSize, zoom, pan }) => {
+  if (!target || (target.hp || 0) <= 0) return null;
+  const sizeMult = ({ tiny: 0.5, small: 1, medium: 1, large: 2, huge: 3, gargantuan: 4 })[target.size || "medium"] || 1;
+  const tokenPx = gridSize * sizeMult;
+  const reticleSize = tokenPx * zoom + 16;
+  const sx = target.x * zoom + pan.x + (tokenPx * zoom / 2) - reticleSize / 2;
+  const sy = target.y * zoom + pan.y + (tokenPx * zoom / 2) - reticleSize / 2;
+  return (
+    <div className="cm-target-reticle" style={{
+      left: sx, top: sy,
+      width: reticleSize, height: reticleSize,
+      borderRadius: "50%",
+    }} />
   );
 };
 
@@ -5322,8 +6102,78 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   }, []);
 
   const addCombatLogEntry = (entry) => {
-    setCombatLog(prev => [{...entry, id: "log-" + Date.now() + "-" + Math.random().toString(16).slice(2), time: new Date().toLocaleTimeString()}, ...prev].slice(0, 100));
+    const enriched = {...entry, id: "log-" + Date.now() + "-" + Math.random().toString(16).slice(2), time: new Date().toLocaleTimeString()};
+    setCombatLog(prev => [enriched, ...prev].slice(0, 100));
+    return enriched;
   };
+
+  // ── New state for enhanced combat UI ──
+  const [combatLogSidebarOpen, setCombatLogSidebarOpen] = useState(false);
+  const [expandedLogEntries, setExpandedLogEntries] = useState({});
+  const [selectedActionCategory, setSelectedActionCategory] = useState(null);
+  const [rollResultCard, setRollResultCard] = useState(null);
+  const [actionPanelVisible, setActionPanelVisible] = useState(false);
+
+  // ── Floating combat text helper — spawns animated damage numbers above tokens ──
+  const spawnFloatingTextForToken = useCallback((tokenId, type, opts) => {
+    if (typeof window.CombatFlowUI === "undefined") return;
+    const CFUI = window.CombatFlowUI;
+    const tok = tokens.find(t => t.id === tokenId);
+    if (!tok) return;
+    const x = tok.x;
+    const y = tok.y;
+
+    switch (type) {
+      case "damage":
+        if (opts.breakdown && opts.breakdown.length > 0) {
+          CFUI.spawnDamageText(x, y, {
+            miss: false,
+            isCrit: !!opts.isCrit,
+            damageBreakdown: opts.breakdown.map(b => ({
+              type: b.type || "untyped",
+              total: b.total || 0,
+              applied: b.applied != null ? b.applied : b.total,
+              relation: b.relation || "normal",
+            })),
+            totalDamage: opts.total || 0,
+            damageType: opts.damageType || "untyped",
+          });
+        } else if (opts.total > 0) {
+          const cfg = CFUI.getDamageConfig(opts.damageType || "untyped");
+          CFUI.spawnFloatingText({
+            x, y,
+            text: "-" + opts.total,
+            style: opts.isCrit ? "crit" : "damage",
+            color: cfg.color,
+            glow: cfg.glow,
+          });
+        }
+        break;
+      case "miss":
+        CFUI.spawnFloatingText({ x, y, text: opts.fumble ? "FUMBLE!" : "MISS", style: "miss", color: "#888", glow: "#555" });
+        break;
+      case "crit":
+        CFUI.spawnFloatingText({ x, y: y - 18, text: "CRITICAL!", style: "crit", color: "#ffd54f", glow: "#ffab00" });
+        break;
+      case "heal":
+        CFUI.spawnHealText(x, y, opts.amount || 0);
+        break;
+      case "save":
+        CFUI.spawnSaveText(x, y, opts.success, opts.label);
+        break;
+      case "condition":
+        CFUI.spawnConditionText(x, y, opts.name || "?", opts.applied !== false);
+        break;
+      case "death":
+        CFUI.spawnDeathText(x, y, opts.text);
+        break;
+      case "info":
+        CFUI.spawnInfoText(x, y, opts.text || "", opts.color);
+        break;
+      default:
+        break;
+    }
+  }, [tokens]);
 
   const filteredMonsters = React.useMemo(() => {
     if (typeof window.SRD_MONSTERS === 'undefined') return [];
@@ -5613,19 +6463,22 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
       const totalDmg = result.totalDamage + bonusDamage;
       const logLabel = bonusLabels.length > 0 ? " (" + bonusLabels.join(", ") + ")" : "";
+      const dtype = r0.damage?.[0]?.type || "slashing";
       addCombatLogEntry({ type: "attack", attacker: attacker.name, target: target.name, action: weaponName + logLabel, hit: true, damage: totalDmg, isCrit: r0.isCrit, roll: r0.attackRoll });
       applyAttackResultToTarget(targetId, target, totalDmg);
       if (typeof window.VFX !== "undefined") {
-        const dtype = r0.damage?.[0]?.type || "slashing";
         window.VFX.addEffect(window.VFX.createAttackEffect(attacker.x + gridSize / 2, attacker.y + gridSize / 2, target.x + gridSize / 2, target.y + gridSize / 2, weaponName, dtype));
         window.VFX.addEffect(window.VFX.createDamageNumber(target.x + gridSize / 2, target.y + gridSize / 2 - 10, totalDmg, dtype, r0.isCrit));
         if (bonusDamage > 0) {
           window.VFX.addEffect(window.VFX.createDamageNumber(target.x + gridSize / 2 + 15, target.y + gridSize / 2 - 25, bonusDamage, "radiant", false));
         }
       }
+      // Floating combat text
+      spawnFloatingTextForToken(targetId, "damage", { total: totalDmg, damageType: dtype, isCrit: r0.isCrit });
     } else if (r0) {
       addCombatLogEntry({ type: "miss", attacker: attacker.name, target: target.name, action: weaponName, roll: r0.attackRoll });
       if (typeof window.VFX !== "undefined") window.VFX.addEffect(window.VFX.createMissEffect(target.x + gridSize / 2, target.y + gridSize / 2));
+      spawnFloatingTextForToken(targetId, "miss", {});
     }
     if (result.results[1]?.type === "onHitSave" && !result.results[1].save?.success && result.results[1].condition) {
       addTokenCondition(targetId, result.results[1].condition.charAt(0).toUpperCase() + result.results[1].condition.slice(1));
@@ -5638,49 +6491,78 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   });
 
   const emitPlayModeVfx = (actorToken, targetToken, options = {}) => {
-    if (typeof window.VFX === "undefined" || !actorToken) return;
+    if (!actorToken) return;
     const opts = options || {};
     const origin = getTokenCenterPoint(actorToken);
     const target = getTokenCenterPoint(targetToken || actorToken);
     const actionName = opts.actionName || actorToken.name || "Action";
     const damageType = opts.damageType || "force";
+    const CFUI = typeof window.CombatFlowUI !== "undefined" ? window.CombatFlowUI : null;
+    const hasVFX = typeof window.VFX !== "undefined";
 
     if (opts.mode === "attack") {
-      window.VFX.addEffect(window.VFX.createAttackEffect(origin.x, origin.y, target.x, target.y, actionName, damageType));
-      if (opts.amount > 0) window.VFX.addEffect(window.VFX.createDamageNumber(target.x, target.y - 10, opts.amount, damageType, !!opts.isCrit));
-      if (opts.rollValue != null) window.VFX.addEffect(window.VFX.createDiceAnimation(origin.x, origin.y, 20, opts.rollValue, opts.color || "#ffd54f"));
+      if (hasVFX) {
+        window.VFX.addEffect(window.VFX.createAttackEffect(origin.x, origin.y, target.x, target.y, actionName, damageType));
+        if (opts.amount > 0) window.VFX.addEffect(window.VFX.createDamageNumber(target.x, target.y - 10, opts.amount, damageType, !!opts.isCrit));
+        if (opts.rollValue != null) window.VFX.addEffect(window.VFX.createDiceAnimation(origin.x, origin.y, 20, opts.rollValue, opts.color || "#ffd54f"));
+      }
+      // Floating combat text
+      if (CFUI && targetToken) {
+        if (opts.isCrit) CFUI.spawnFloatingText({ x: target.x, y: target.y - 20, text: "CRITICAL!", style: "crit", color: "#ffd54f", glow: "#ffab00" });
+        if (opts.amount > 0) {
+          const cfg = CFUI.getDamageConfig(damageType);
+          CFUI.spawnFloatingText({ x: target.x, y: target.y, text: "-" + opts.amount, style: opts.isCrit ? "crit" : "damage", color: cfg.color, glow: cfg.glow, delay: opts.isCrit ? 300 : 0 });
+        }
+      }
       return;
     }
 
     if (opts.mode === "miss") {
-      window.VFX.addEffect(window.VFX.createMissEffect(target.x, target.y));
-      if (opts.rollValue != null) window.VFX.addEffect(window.VFX.createDiceAnimation(origin.x, origin.y, 20, opts.rollValue, opts.color || "#999"));
+      if (hasVFX) {
+        window.VFX.addEffect(window.VFX.createMissEffect(target.x, target.y));
+        if (opts.rollValue != null) window.VFX.addEffect(window.VFX.createDiceAnimation(origin.x, origin.y, 20, opts.rollValue, opts.color || "#999"));
+      }
+      if (CFUI && targetToken) CFUI.spawnFloatingText({ x: target.x, y: target.y, text: "MISS", style: "miss", color: "#888", glow: "#555" });
       return;
     }
 
     if (opts.mode === "save") {
-      window.VFX.addEffect(window.VFX.createSaveEffect(origin.x, origin.y, target.x, target.y, actionName, opts.parsed || {}));
-      if (opts.amount > 0) window.VFX.addEffect(window.VFX.createDamageNumber(target.x, target.y, opts.amount, damageType, false));
+      if (hasVFX) {
+        window.VFX.addEffect(window.VFX.createSaveEffect(origin.x, origin.y, target.x, target.y, actionName, opts.parsed || {}));
+        if (opts.amount > 0) window.VFX.addEffect(window.VFX.createDamageNumber(target.x, target.y, opts.amount, damageType, false));
+      }
+      if (CFUI && targetToken) {
+        CFUI.spawnSaveText(target.x, target.y, opts.saveSuccess, opts.saveSuccess ? "SAVED" : "FAILED");
+        if (opts.amount > 0) {
+          const cfg = CFUI.getDamageConfig(damageType);
+          CFUI.spawnFloatingText({ x: target.x, y: target.y, text: "-" + opts.amount, style: "damage", color: cfg.color, glow: cfg.glow, delay: 200 });
+        }
+      }
       return;
     }
 
     if (opts.mode === "heal") {
-      window.VFX.addEffect(window.VFX.createHealEffect(target.x, target.y, opts.amount || 0));
+      if (hasVFX) window.VFX.addEffect(window.VFX.createHealEffect(target.x, target.y, opts.amount || 0));
+      if (CFUI && targetToken) CFUI.spawnHealText(target.x, target.y, opts.amount || 0);
       return;
     }
 
     if (opts.mode === "condition") {
-      window.VFX.addEffect(window.VFX.createConditionEffect(target.x, target.y, opts.conditionName || actionName));
+      if (hasVFX) window.VFX.addEffect(window.VFX.createConditionEffect(target.x, target.y, opts.conditionName || actionName));
+      if (CFUI && targetToken) CFUI.spawnConditionText(target.x, target.y, opts.conditionName || actionName, true);
       return;
     }
 
     if (opts.mode === "shockwave") {
-      window.VFX.addEffect(window.VFX.createShockwaveEffect(target.x, target.y, opts.radius || 40));
+      if (hasVFX) window.VFX.addEffect(window.VFX.createShockwaveEffect(target.x, target.y, opts.radius || 40));
       return;
     }
 
-    window.VFX.addEffect(window.VFX.createBuffEffect(target.x, target.y, opts.color || "#58aaff"));
-    if (opts.rollValue != null) window.VFX.addEffect(window.VFX.createDiceAnimation(origin.x, origin.y, 20, opts.rollValue, opts.color || "#58aaff"));
+    if (hasVFX) {
+      window.VFX.addEffect(window.VFX.createBuffEffect(target.x, target.y, opts.color || "#58aaff"));
+      if (opts.rollValue != null) window.VFX.addEffect(window.VFX.createDiceAnimation(origin.x, origin.y, 20, opts.rollValue, opts.color || "#58aaff"));
+    }
+    if (CFUI && targetToken) CFUI.spawnInfoText(target.x, target.y, actionName, opts.color || "#58aaff");
   };
 
   const executeCombatAction = (attackerId, targetId, actionOrIndex) => {
@@ -5734,17 +6616,20 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             totalDmg += seq.result.totalDamage || 0;
             addCombatLogEntry({ type: "attack", attacker: attacker.name, target: target.name, action: seq.action.name, hit: true, damage: seq.result.totalDamage, isCrit: seq.result.isCrit, roll: seq.result.attackRoll });
             // Trigger VFX
+            const dtype = seq.result.damage?.[0]?.type || "slashing";
             if (typeof window.VFX !== 'undefined') {
-              const dtype = seq.result.damage?.[0]?.type || "slashing";
               window.VFX.addEffect(window.VFX.createAttackEffect(attacker.x + gridSize/2, attacker.y + gridSize/2, target.x + gridSize/2, target.y + gridSize/2, seq.action.name, dtype));
               window.VFX.addEffect(window.VFX.createDamageNumber(target.x + gridSize/2, target.y + gridSize/2 - 10, seq.result.totalDamage, dtype, seq.result.isCrit));
               window.VFX.addEffect(window.VFX.createDiceAnimation(attacker.x + gridSize/2, attacker.y + gridSize/2, 20, seq.result.attackRoll?.chosen || 0));
             }
+            // Floating combat text
+            spawnFloatingTextForToken(targetId, "damage", { total: seq.result.totalDamage, damageType: dtype, isCrit: seq.result.isCrit });
           } else {
             addCombatLogEntry({ type: "miss", attacker: attacker.name, target: target.name, action: seq.action.name, roll: seq.result.attackRoll });
             if (typeof window.VFX !== 'undefined') {
               window.VFX.addEffect(window.VFX.createMissEffect(target.x + gridSize/2, target.y + gridSize/2));
             }
+            spawnFloatingTextForToken(targetId, "miss", {});
           }
         } else if (seq.type === "save" && seq.result) {
           addCombatLogEntry({ type: "save", attacker: attacker.name, target: target.name, action: seq.action.name, success: seq.result.save?.success, damage: seq.result.damage, conditions: seq.result.conditions });
@@ -5772,17 +6657,19 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         combatOpts
       );
       if (result.results[0]?.hit) {
+        const dtype = result.results[0].damage?.[0]?.type || "slashing";
         addCombatLogEntry({ type: "attack", attacker: attacker.name, target: target.name, action: action.name, hit: true, damage: result.totalDamage, isCrit: result.results[0].isCrit, roll: result.results[0].attackRoll });
         applyAttackResultToTarget(targetId, target, result.totalDamage);
         if (typeof window.VFX !== 'undefined') {
-          const dtype = result.results[0].damage?.[0]?.type || "slashing";
           window.VFX.addEffect(window.VFX.createAttackEffect(attacker.x + gridSize/2, attacker.y + gridSize/2, target.x + gridSize/2, target.y + gridSize/2, action.name, dtype));
           window.VFX.addEffect(window.VFX.createDamageNumber(target.x + gridSize/2, target.y + gridSize/2 - 10, result.totalDamage, dtype, result.results[0].isCrit));
           window.VFX.addEffect(window.VFX.createDiceAnimation(attacker.x + gridSize/2, attacker.y + gridSize/2, 20, result.results[0].attackRoll?.chosen || 0));
         }
+        spawnFloatingTextForToken(targetId, "damage", { total: result.totalDamage, damageType: dtype, isCrit: result.results[0].isCrit });
       } else {
         addCombatLogEntry({ type: "miss", attacker: attacker.name, target: target.name, action: action.name, roll: result.results[0]?.attackRoll });
         if (typeof window.VFX !== 'undefined') window.VFX.addEffect(window.VFX.createMissEffect(target.x + gridSize/2, target.y + gridSize/2));
+        spawnFloatingTextForToken(targetId, "miss", {});
       }
       if (result.results[1]?.type === "onHitSave" && !result.results[1].save?.success && result.results[1].condition) {
         addTokenCondition(targetId, result.results[1].condition.charAt(0).toUpperCase() + result.results[1].condition.slice(1));
@@ -5871,8 +6758,16 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
   // ── Token conditions (independent of combat) ──
   const [tokenConditions, setTokenConditions] = useState({}); // { tokenId: ["Blinded", ...] }
-  const addTokenCondition = (tokenId, cond) => { if (!cond) return; setTokenConditions(p => ({...p, [tokenId]: [...(p[tokenId]||[]).filter(c=>c!==cond), cond]})); };
-  const removeTokenCondition = (tokenId, cond) => { setTokenConditions(p => ({...p, [tokenId]: (p[tokenId]||[]).filter(c=>c!==cond)})); };
+  const addTokenCondition = (tokenId, cond) => {
+    if (!cond) return;
+    setTokenConditions(p => ({...p, [tokenId]: [...(p[tokenId]||[]).filter(c=>c!==cond), cond]}));
+    spawnFloatingTextForToken(tokenId, "condition", { name: cond, applied: true });
+    if (cond === "Dead") spawnFloatingTextForToken(tokenId, "death", { text: "DEFEATED" });
+  };
+  const removeTokenCondition = (tokenId, cond) => {
+    setTokenConditions(p => ({...p, [tokenId]: (p[tokenId]||[]).filter(c=>c!==cond)}));
+    spawnFloatingTextForToken(tokenId, "condition", { name: cond, applied: false });
+  };
 
   // ── Spell system ──
   const [activeSpell, setActiveSpell] = useState(null); // { name, range, shape, radius, color, ... }
@@ -10211,6 +11106,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       ctx.restore();
     }
 
+    // ══ FLOATING COMBAT TEXT — render in world space above tokens ══
+    if (typeof window.CombatFlowUI !== "undefined" && window.CombatFlowUI.hasActiveTexts()) {
+      window.CombatFlowUI.renderFloatingTexts(ctx, zoom, performance.now());
+    }
+
     // ══ END WORLD SPACE — restore the pan/zoom transform ══
     ctx.restore();
 
@@ -10328,7 +11228,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   // Uses renderRef so the loop itself doesn't restart when render deps change (avoids jitter during zoom/pan)
   const animActiveRef = useRef(false);
   useEffect(() => {
-    const needsAnim = combatLive || pings.length > 0 || spellEffects.length > 0 || spellLog.length > 0 || !!activeSpell || laserMode || (activeMapId && !activeSceneId);
+    const hasFloatingText = typeof window.CombatFlowUI !== "undefined" && window.CombatFlowUI.hasActiveTexts();
+    const needsAnim = combatLive || pings.length > 0 || spellEffects.length > 0 || spellLog.length > 0 || !!activeSpell || laserMode || (activeMapId && !activeSceneId) || hasFloatingText;
     if (!needsAnim) {
       animActiveRef.current = false;
       return;
@@ -11375,6 +12276,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     const maxHpValue = t.maxHp != null ? t.maxHp : Math.max(0, (t.hp ?? 0) + delta);
     const hp = Math.max(0, Math.min(maxHpValue, (t.hp ?? 0) + delta));
     applyTokenVitalsUpdate(t, hp);
+    // Floating combat text for manual HP adjustments
+    if (delta < 0) spawnFloatingTextForToken(id, "damage", { total: Math.abs(delta), damageType: "untyped" });
+    else if (delta > 0) spawnFloatingTextForToken(id, "heal", { amount: delta });
   };
   const removeToken = (id) => {
     const removedIndex = combatants.findIndex(c => c.mapTokenId === id);
@@ -11678,6 +12582,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           actionName: sp.name,
           damageType: sp.damageType || "force",
           amount: finalDmg,
+          saveSuccess: s.success,
           parsed: { shape: sp.shape || "sphere", radius: sp.radius || sp.range || 30, length: sp.length || sp.range || 30, breathType: sp.damageType || "force" },
         });
         if (sp.conditions?.length && !s.success) {
@@ -12120,11 +13025,16 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     setPlayModeResolution(null);
     setPendingCombatAction(null);
     setCombatLogOpen(false);
+    setCombatLogSidebarOpen(false);
+    setSelectedActionCategory(null);
+    setRollResultCard(null);
     setConditions({});
     setDismissedTurnPopupKey("");
     setTokenPopup(null);
     setShowConditionMenu(false);
     setMode("select");
+    // Clear floating combat text
+    if (typeof window.CombatFlowUI !== "undefined") window.CombatFlowUI.clearFloatingTexts();
   };
 
   // ── BG3: End-of-turn effects for the OUTGOING creature ──
@@ -12643,6 +13553,14 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             <div style={{ position:"absolute", bottom:0, left:0, width:16, height:16, borderBottom:"2px solid var(--crimson-border)", borderLeft:"2px solid var(--crimson-border)", pointerEvents:"none", zIndex:6, opacity:cockpitModeActive ? 0 : 0.6 }} />
             <div style={{ position:"absolute", bottom:0, right:0, width:16, height:16, borderBottom:"2px solid var(--crimson-border)", borderRight:"2px solid var(--crimson-border)", pointerEvents:"none", zIndex:6, opacity:cockpitModeActive ? 0 : (sidebarOpen?0.6:0.3) }} />
 
+            {/* ── DM/Player View Indicator ── */}
+            {combatLive && setViewRole && (
+              <ViewModeIndicator
+                viewRole={viewRole}
+                onToggle={() => setViewRole(prev => prev === "dm" ? "player" : "dm")}
+              />
+            )}
+
             {/* ── BG3-style Initiative Bar (top of battlemap) ── */}
             {combatLive && combatants.length > 0 && (
               <InitiativeBar
@@ -12659,11 +13577,19 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                 getHpColor={getHpColor}
                 getMergedConditions={getMergedConditionsForToken}
                 getDeathState={getDeathSaveState}
-                onToggleLog={() => { setCombatLogOpen(prev => !prev); setPendingCombatAction(null); }}
+                onToggleLog={() => { setCombatLogSidebarOpen(prev => !prev); setCombatLogOpen(prev => !prev); setPendingCombatAction(null); }}
                 onEndCombat={viewRole === "dm" ? endCombat : undefined}
-                logOpen={combatLogOpen}
+                logOpen={combatLogSidebarOpen || combatLogOpen}
               />
             )}
+
+            {/* ── Target Reticle — animated crosshair on focused enemy ── */}
+            {combatLive && activeCombatantToken && (() => {
+              const focusTargetId = combatTargetByActor[activeCombatantToken.id];
+              const focusTarget = focusTargetId ? tokens.find(t => t.id === focusTargetId) : null;
+              if (!focusTarget || focusTarget.id === activeCombatantToken.id) return null;
+              return <TargetReticle target={focusTarget} gridSize={gridSize} zoom={zoom} pan={pan} />;
+            })()}
 
             {/* ── BG3-style Token Action Ring (around active token) ── */}
             {(() => {
@@ -12736,13 +13662,26 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   onCancel={() => { cancelCockpitIntent(); dismissTurnPopup(); }}
                 />
 
-                {/* ── BOTTOM-RIGHT: Combat Log Overlay ── */}
-                <CombatLogOverlay
-                  open={combatLogOpen}
+                {/* ── RIGHT: Enhanced Combat Log Sidebar ── */}
+                <EnhancedCombatLogSidebar
+                  open={combatLogSidebarOpen}
                   entries={combatLog}
-                  latestResolution={playModeResolution}
+                  round={round}
+                  viewRole={viewRole}
+                  onClose={() => { setCombatLogSidebarOpen(false); setCombatLogOpen(false); }}
                   onClear={() => { setCombatLog([]); setPlayModeResolution(null); }}
+                  getTokenById={(id) => tokens.find(t => t.id === id)}
                 />
+
+                {/* ── BOTTOM-RIGHT: Legacy Combat Log Overlay (fallback when sidebar closed) ── */}
+                {!combatLogSidebarOpen && (
+                  <CombatLogOverlay
+                    open={combatLogOpen}
+                    entries={combatLog}
+                    latestResolution={playModeResolution}
+                    onClear={() => { setCombatLog([]); setPlayModeResolution(null); }}
+                  />
+                )}
 
                 {/* ── BOTTOM: Action Hotbar (hidden when TokenActionRing is active) ── */}
                 <ActionHotbar
@@ -12756,6 +13695,49 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   onClose={dismissTurnPopup}
                 />
               </div>
+            )}
+
+            {/* ── BOTTOM: Enhanced Action Panel (categorized D&D 5e actions) ── */}
+            {combatLive && activeCombatantToken && !movementMode && !combatLogSidebarOpen && (
+              <EnhancedActionPanel
+                visible={true}
+                token={activeCombatantToken}
+                turnState={turnStateByToken[activeCombatantToken?.id]}
+                viewRole={viewRole}
+                selectedCategory={selectedActionCategory}
+                onSelectCategory={(catId) => {
+                  setSelectedActionCategory(prev => prev === catId ? null : catId);
+                  // Trigger the corresponding action from the token's action ring
+                  if (activeCombatantToken) {
+                    const ringActions = getCockpitTrayActions(activeCombatantToken);
+                    const CFUI = typeof window.CombatFlowUI !== "undefined" ? window.CombatFlowUI : null;
+                    const cat = CFUI ? CFUI.ACTION_CATEGORIES[catId] : null;
+                    if (cat && catId === "dash") {
+                      const dashAction = ringActions.find(a => a.label.toLowerCase() === "dash");
+                      if (dashAction && dashAction.onClick) dashAction.onClick();
+                    } else if (cat && catId === "dodge") {
+                      const dodgeAction = ringActions.find(a => a.label.toLowerCase() === "dodge");
+                      if (dodgeAction && dodgeAction.onClick) dodgeAction.onClick();
+                    } else if (cat && catId === "disengage") {
+                      const disAction = ringActions.find(a => a.label.toLowerCase() === "disengage");
+                      if (disAction && disAction.onClick) disAction.onClick();
+                    } else if (cat && catId === "hide") {
+                      const hideAction = ringActions.find(a => a.label.toLowerCase() === "hide");
+                      if (hideAction && hideAction.onClick) hideAction.onClick();
+                    } else if (cat && catId === "help") {
+                      const helpAction = ringActions.find(a => a.label.toLowerCase() === "help");
+                      if (helpAction && helpAction.onClick) helpAction.onClick();
+                    }
+                  }
+                }}
+                onSelectAction={(action) => {
+                  if (action.onClick) action.onClick();
+                  else chooseCockpitAction(action);
+                }}
+                onEndTurn={() => { nextTurn(); dismissTurnPopup(); }}
+                onMove={() => activeCombatantToken && startCockpitMovement(activeCombatantToken)}
+                moveLabel={activeCombatantToken ? (getEffectiveMovementRemaining(activeCombatantToken) + " ft") : "0 ft"}
+              />
             )}
 
             {false && (() => {
