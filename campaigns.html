@@ -587,20 +587,20 @@
     /* ═══ ENHANCED COMBAT ACTION PANEL — categorized action grid ═══ */
     /* ── Action Panel: full-width bottom bar ── */
     .cm-action-panel {
-      position: absolute;
+      position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
       pointer-events: auto;
       display: flex;
       flex-direction: column;
-      min-height: 220px;
-      border-top: 1px solid var(--border, rgba(255,255,255,0.08));
-      background: var(--action-panel-bg, rgba(7,8,12,0.96));
-      backdrop-filter: blur(18px);
-      box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
+      min-height: 260px;
+      border-top: 2px solid var(--action-panel-accent, rgba(212,67,58,0.35));
+      background: var(--action-panel-bg, rgba(7,8,12,0.97));
+      backdrop-filter: blur(24px);
+      box-shadow: 0 -6px 32px rgba(0,0,0,0.5), 0 -1px 0 var(--action-panel-accent, rgba(212,67,58,0.15));
       transition: transform 200ms ease, opacity 160ms ease;
-      z-index: 29;
+      z-index: 9999;
     }
     .cm-action-panel.is-hidden {
       transform: translateY(100%);
@@ -1351,6 +1351,93 @@
         top: auto;
         bottom: calc(120px + env(safe-area-inset-bottom));
       }
+    }
+
+    /* ═══ LIGHT MODE OVERRIDES for action panel + combat UI ═══ */
+    html.light-mode .cm-action-panel {
+      background: rgba(255,255,255,0.97);
+      border-top: 2px solid rgba(212,67,58,0.3);
+      box-shadow: 0 -6px 32px rgba(0,0,0,0.12), 0 -1px 0 rgba(212,67,58,0.1);
+    }
+    html.light-mode .cm-action-panel-header {
+      border-bottom-color: rgba(0,0,0,0.08);
+    }
+    html.light-mode .cm-action-panel-title {
+      color: #1e293b;
+    }
+    html.light-mode .cm-economy-pip.movement { color: #0284c7; }
+    html.light-mode .cm-economy-pip.action { color: #dc143c; }
+    html.light-mode .cm-economy-pip.bonus { color: #d97706; }
+    html.light-mode .cm-economy-pip.reaction { color: #9333ea; }
+    html.light-mode .cm-economy-pip .dot {
+      border-color: currentColor;
+    }
+    html.light-mode .cm-action-tabs {
+      border-bottom-color: rgba(0,0,0,0.08);
+    }
+    html.light-mode .cm-action-tab {
+      color: #64748b;
+    }
+    html.light-mode .cm-action-tab:hover {
+      color: #1e293b;
+    }
+    html.light-mode .cm-action-tab.is-active {
+      color: #1e293b;
+    }
+    html.light-mode .cm-action-tab-count {
+      background: rgba(0,0,0,0.06);
+      color: #475569;
+    }
+    html.light-mode .cm-action-grid {
+      scrollbar-color: rgba(0,0,0,0.12) transparent;
+    }
+    html.light-mode .cm-action-card {
+      background: rgba(0,0,0,0.02);
+      border-color: rgba(0,0,0,0.1);
+      color: #1e293b;
+    }
+    html.light-mode .cm-action-card:hover:not(.is-disabled) {
+      background: rgba(0,0,0,0.05);
+      border-color: rgba(0,0,0,0.18);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    html.light-mode .cm-action-card.is-selected {
+      border-color: rgba(220,20,60,0.35);
+      background: rgba(220,20,60,0.06);
+    }
+    html.light-mode .cm-action-card-label {
+      color: #1e293b;
+    }
+    html.light-mode .cm-action-card-cost {
+      color: #64748b;
+    }
+    html.light-mode .cm-action-card-hotkey {
+      color: rgba(0,0,0,0.2);
+    }
+    html.light-mode .cm-spell-subtab {
+      color: #64748b;
+    }
+    html.light-mode .cm-spell-subtab:hover {
+      color: #334155;
+      background: rgba(0,0,0,0.04);
+    }
+    html.light-mode .cm-spell-subtab.is-active {
+      color: #7c3aed;
+      border-color: rgba(124,58,237,0.25);
+      background: rgba(124,58,237,0.06);
+    }
+    /* Light mode for right sidebar (combat sidebar + character sheet) */
+    html.light-mode .cm-right-sidebar {
+      background: rgba(255,255,255,0.97);
+    }
+    html.light-mode .cm-right-sidebar-header {
+      border-bottom-color: rgba(0,0,0,0.08);
+    }
+    html.light-mode .cm-right-sidebar-title {
+      color: #1e293b;
+    }
+    html.light-mode .cm-log-sidebar {
+      background: rgba(255,255,255,0.97);
     }
   </style>
 </head>
@@ -14311,25 +14398,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             )}
 
 
-            {/* ── BOTTOM: Enhanced Action Panel (full-width categorized D&D 5e actions) ── */}
-            {combatLive && activeCombatantToken && !movementMode && !combatLogSidebarOpen && (
-              <EnhancedActionPanel
-                visible={true}
-                token={activeCombatantToken}
-                turnState={turnStateByToken[activeCombatantToken?.id]}
-                viewRole={viewRole}
-                selectedCategory={selectedActionCategory}
-                actionCards={activeCombatantToken ? getPopupQuickActions(activeCombatantToken) : []}
-                onSelectCategory={setSelectedActionCategory}
-                onSelectAction={(action) => {
-                  if (action.onClick) action.onClick();
-                  else chooseCockpitAction(action);
-                }}
-                onEndTurn={() => { nextTurn(); dismissTurnPopup(); }}
-                onMove={() => activeCombatantToken && startCockpitMovement(activeCombatantToken)}
-                moveLabel={activeCombatantToken ? (getEffectiveMovementRemaining(activeCombatantToken) + " ft") : "0 ft"}
-              />
-            )}
+            {/* Action panel moved outside wrapRef for proper layout */}
 
             {false && (() => {
               /* ── DEAD CODE: Legacy top HUD bar ── */
