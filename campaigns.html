@@ -596,18 +596,20 @@
     /* ── Action Panel: full-width bottom bar ── */
     .cm-action-panel {
       position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
+      bottom: 10px;
+      left: 16px;
+      right: 16px;
       pointer-events: auto;
       display: flex;
       flex-direction: column;
-      border-top: 2px solid var(--action-panel-accent, rgba(212,67,58,0.35));
+      border: 2px solid var(--action-panel-accent, rgba(212,67,58,0.25));
+      border-radius: 16px;
       background: var(--action-panel-bg, rgba(7,8,12,0.97));
       backdrop-filter: blur(24px);
-      box-shadow: 0 -6px 32px rgba(0,0,0,0.5), 0 -1px 0 var(--action-panel-accent, rgba(212,67,58,0.15));
+      box-shadow: 0 -6px 32px rgba(0,0,0,0.5), 0 4px 20px rgba(0,0,0,0.3);
       transition: transform 200ms ease, opacity 160ms ease;
       z-index: 9999;
+      overflow: hidden;
     }
     .cm-action-panel.is-hidden {
       transform: translateY(100%);
@@ -1363,8 +1365,8 @@
     /* ═══ LIGHT MODE OVERRIDES for action panel + combat UI ═══ */
     html.light-mode .cm-action-panel {
       background: rgba(255,255,255,0.97);
-      border-top: 2px solid rgba(212,67,58,0.3);
-      box-shadow: 0 -6px 32px rgba(0,0,0,0.12), 0 -1px 0 rgba(212,67,58,0.1);
+      border-color: rgba(212,67,58,0.25);
+      box-shadow: 0 -6px 32px rgba(0,0,0,0.08), 0 4px 20px rgba(0,0,0,0.06);
     }
     html.light-mode .cm-action-panel-header {
       border-bottom-color: rgba(0,0,0,0.08);
@@ -2524,41 +2526,43 @@ const EnhancedActionPanel = ({ visible, token, turnState, viewRole, onSelectActi
 
   return (
     <div className={"cm-action-panel" + (visible ? "" : " is-hidden")}>
-      {/* Economy header bar */}
+      {/* ── Turn Flow Header: Name + Step Tracker + End Turn ── */}
       <div className="cm-action-panel-header">
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flex: 1 }}>
           <span className="cm-action-panel-title">{token.name}</span>
-          <div className="cm-action-panel-economy">
-            <div className="cm-economy-pip movement" title={"Movement: " + (avail.moveFt || 0) + " ft remaining"}>
-              <span className={"dot" + (avail.move ? " is-available" : "")} />
-              <span>{avail.moveFt || 0} ft</span>
-            </div>
-            <div className="cm-economy-pip action" title={avail.action ? "Action available" : "Action spent"}>
-              <span className={"dot" + (avail.action ? " is-available" : "")} />
-              <span>Action</span>
-            </div>
-            <div className="cm-economy-pip bonus" title={avail.bonus ? "Bonus Action available" : "Bonus Action spent"}>
-              <span className={"dot" + (avail.bonus ? " is-available" : "")} />
-              <span>Bonus</span>
-            </div>
-            <div className="cm-economy-pip reaction" title={avail.reaction ? "Reaction available" : "Reaction spent"}>
-              <span className={"dot" + (avail.reaction ? " is-available" : "")} />
-              <span>React</span>
-            </div>
+          {/* Turn Flow Steps */}
+          <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+            {[
+              { key: "move", label: "MOVE", sub: (avail.moveFt || 0) + "ft", ready: avail.move, color: "var(--action-color-movement, #29b6f6)", onClick: onMove },
+              { key: "action", label: "ACTION", sub: avail.action ? "Ready" : "Spent", ready: avail.action, color: "var(--action-color-action, #dc143c)", onClick: null },
+              { key: "bonus", label: "BONUS", sub: avail.bonus ? "Ready" : "Spent", ready: avail.bonus, color: "var(--action-color-bonus, #ffa726)", onClick: null },
+              { key: "react", label: "REACT", sub: avail.reaction ? "Ready" : "Spent", ready: avail.reaction, color: "var(--action-color-reaction, #ab47bc)", onClick: null },
+            ].map((step, i, arr) => (
+              <React.Fragment key={step.key}>
+                <button type="button" onClick={step.onClick || undefined} disabled={!step.ready}
+                  style={{
+                    display:"flex", flexDirection:"column", alignItems:"center", gap:1,
+                    padding:"4px 10px", borderRadius:8, cursor: step.onClick && step.ready ? "pointer" : "default",
+                    background: step.ready ? "color-mix(in srgb, " + step.color + " 12%, transparent)" : "var(--bg-hover-subtle, rgba(0,0,0,0.05))",
+                    border: "1.5px solid " + (step.ready ? step.color : "transparent"),
+                    opacity: step.ready ? 1 : 0.4,
+                    transition: "all 0.15s ease",
+                  }}>
+                  <span style={{ fontFamily:T.ui, fontSize:8, fontWeight:700, letterSpacing:"1px", color: step.ready ? step.color : "var(--text-faint)" }}>{step.label}</span>
+                  <span style={{ fontFamily:"'Spectral',serif", fontSize:7, color:"var(--text-faint)" }}>{step.sub}</span>
+                </button>
+                {i < arr.length - 1 && (
+                  <span style={{ color:"var(--text-faint)", fontSize:8, margin:"0 1px" }}>{"\u203A"}</span>
+                )}
+              </React.Fragment>
+            ))}
           </div>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button type="button" className={"cm-action-card" + (moveDisabled ? " is-disabled" : "")}
-            style={{ "--action-color": "var(--action-color-movement, #29b6f6)", padding: "6px 14px", minWidth: "auto" }}
-            disabled={moveDisabled} onClick={onMove}>
-            <span style={{ fontSize: 11, fontWeight: 600 }}>Move</span>
-          </button>
-          <button type="button" className="cm-action-card"
-            style={{ "--action-color": "var(--action-color-endturn, #5ee09a)", padding: "6px 14px", minWidth: "auto" }}
-            onClick={onEndTurn} title="End Turn (E)">
-            <span style={{ fontSize: 11, fontWeight: 600, color: "var(--action-color-endturn, #5ee09a)" }}>End Turn</span>
-          </button>
-        </div>
+        <button type="button" className="cm-action-card"
+          style={{ "--action-color": "var(--action-color-endturn, #5ee09a)", padding: "6px 16px", minWidth: "auto", borderRadius: 8 }}
+          onClick={onEndTurn} title="End Turn (E)">
+          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--action-color-endturn, #5ee09a)", letterSpacing: "1px" }}>END TURN</span>
+        </button>
       </div>
 
       {/* Main tab bar */}
@@ -2802,30 +2806,67 @@ const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, sel
         })}
       </div>
 
-      {/* ── Combat Roll Log (attack/damage rolls displayed in top bar) ── */}
+      {/* ── Combat Roll Log — BIG visible dice roll banners ── */}
       {combatRollLog && combatRollLog.length > 0 && (
-        <div style={{ display:"flex", gap:4, padding:"4px 4px 0", overflowX:"auto", scrollbarWidth:"none", marginTop: 2 }}>
-          {combatRollLog.slice().reverse().map(roll => {
+        <div style={{ display:"flex", flexDirection:"column", gap:3, padding:"6px 8px 2px" }}>
+          {combatRollLog.slice().reverse().slice(0, 4).map(roll => {
             const age = (Date.now() - roll.time) / 5000;
             if (age > 1) return null;
-            const opacity = age < 0.7 ? 1 : Math.max(0.05, 1 - (age - 0.7) * 3.3);
-            const color = roll.type === "crit" ? "#ffd700" : roll.type === "hit" ? "#5ee09a" : roll.type === "miss" ? "#f06858" : "#b574ff";
-            const icon = roll.type === "crit" ? "\u2728" : roll.type === "hit" ? "\u2694\uFE0F" : roll.type === "miss" ? "\u274C" : "\u2728";
+            const opacity = age < 0.6 ? 1 : Math.max(0.05, 1 - (age - 0.6) * 2.5);
+            const isCrit = roll.type === "crit";
+            const isHit = roll.type === "hit";
+            const isMiss = roll.type === "miss";
+            const color = isCrit ? "#ffd700" : isHit ? "#5ee09a" : isMiss ? "#f06858" : "#b574ff";
+            const bgColor = isCrit ? "rgba(255,215,0,0.12)" : isHit ? "rgba(94,224,154,0.08)" : isMiss ? "rgba(240,104,88,0.08)" : "rgba(181,116,255,0.08)";
+            const icon = isCrit ? "\u2728" : isHit ? "\u2694\uFE0F" : isMiss ? "\u274C" : "\u2728";
+            const resultLabel = isCrit ? "CRITICAL HIT!" : isHit ? "HIT!" : isMiss ? "MISS" : "EFFECT";
+            /* Parse d20 roll from detail string */
+            const d20Match = roll.detail ? roll.detail.match(/= (\d+) vs AC (\d+)/) : null;
+            const rollTotal = d20Match ? d20Match[1] : null;
+            const targetAC = d20Match ? d20Match[2] : null;
+            const dmgMatch = roll.detail ? roll.detail.match(/Damage:\s*(.+)/) : null;
+            const dmgText = dmgMatch ? dmgMatch[1] : null;
             return (
               <div key={roll.id} style={{
-                display:"flex", alignItems:"center", gap:6, padding:"4px 10px",
-                background:"var(--action-card-bg, rgba(255,255,255,0.03))",
-                border:"1px solid " + color + "44",
-                borderLeft:"3px solid " + color,
-                borderRadius:6, opacity: opacity, flexShrink:0,
+                display:"flex", alignItems:"center", gap:10, padding:"8px 14px",
+                background: bgColor,
+                border:"2px solid " + color + "66",
+                borderLeft:"5px solid " + color,
+                borderRadius:10, opacity,
+                boxShadow: isCrit ? "0 0 20px rgba(255,215,0,0.25), inset 0 0 20px rgba(255,215,0,0.05)" : "0 2px 12px rgba(0,0,0,0.2)",
+                animation: isCrit ? "none" : "none",
               }}>
-                <span style={{ fontSize:11 }}>{icon}</span>
-                <div style={{ minWidth:0 }}>
-                  <div style={{ fontFamily:"'Cinzel', serif", fontSize:9, fontWeight:700, color: color, whiteSpace:"nowrap", letterSpacing:"0.3px" }}>
-                    {roll.msg}
+                {/* Big d20 result */}
+                {rollTotal && (
+                  <div style={{
+                    width:44, height:44, borderRadius:8,
+                    background: color + "22", border:"2px solid " + color,
+                    display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                    flexShrink:0,
+                  }}>
+                    <div style={{ fontFamily:"'Cinzel', serif", fontSize:20, fontWeight:900, color, lineHeight:1 }}>{rollTotal}</div>
+                    <div style={{ fontSize:7, color:"var(--text-faint)", letterSpacing:"0.5px" }}>vs AC {targetAC}</div>
                   </div>
-                  {roll.detail && (
-                    <div style={{ fontFamily:"'Spectral', serif", fontSize:7, color:"var(--text-muted, #9a8870)", whiteSpace:"nowrap", marginTop:1, maxWidth: 280, overflow:"hidden", textOverflow:"ellipsis" }}>
+                )}
+                {/* Icon when no d20 */}
+                {!rollTotal && <span style={{ fontSize:28, flexShrink:0 }}>{icon}</span>}
+                {/* Info */}
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    <span style={{ fontFamily:"'Cinzel', serif", fontSize:13, fontWeight:800, color, letterSpacing:"1px", textTransform:"uppercase" }}>
+                      {resultLabel}
+                    </span>
+                    <span style={{ fontFamily:"'Cinzel', serif", fontSize:11, color:"var(--text-dim, #ccc)", fontWeight:600 }}>
+                      {roll.msg.replace(/ HIT!| MISS| CRITICAL!/, "")}
+                    </span>
+                  </div>
+                  {dmgText && (
+                    <div style={{ fontFamily:"'Spectral', serif", fontSize:11, color: isHit || isCrit ? "#5ee09a" : "var(--text-muted)", marginTop:2, fontWeight:600 }}>
+                      {isCrit ? "\u{1F4A5} " : isHit ? "\u{1F5E1}\uFE0F " : ""}{dmgText}
+                    </div>
+                  )}
+                  {!dmgText && roll.detail && (
+                    <div style={{ fontFamily:"'Spectral', serif", fontSize:9, color:"var(--text-muted)", marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                       {roll.detail}
                     </div>
                   )}
@@ -12093,29 +12134,47 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
       ctx.globalAlpha = 1;
 
-      // HP bar (prominent, wider, with backdrop)
+      // HP bar (always visible during combat, prominent with rounded corners)
       const hpFrac = t.maxHp ? Math.max(0, (t.hp || 0) / t.maxHp) : 0;
-      if (t.hp != null && t.maxHp && (isSelected || isHovered || isActiveCombatant || isDead || hpFrac < 1)) {
-        const barW = gridSize * 0.84, barH = 6;
-        const barX = t.x - barW/2, barY = t.y + r + 6;
+      const showHpBar = t.hp != null && t.maxHp && (combatLive || isSelected || isHovered || isActiveCombatant || isDead || hpFrac < 1);
+      if (showHpBar) {
+        const barW = gridSize * 0.92 * sizeMult, barH = 5;
+        const barR = barH / 2;
+        const barX = t.x - barW/2, barY = t.y + r + 5;
         // Backdrop shadow
-        ctx.fillStyle = "rgba(0,0,0,0.4)";
-        ctx.fillRect(barX - 1, barY - 1, barW + 2, barH + 2);
+        ctx.fillStyle = "rgba(0,0,0,0.5)";
+        ctx.beginPath();
+        drawRoundedRectPath(ctx, barX - 1, barY - 1, barW + 2, barH + 2, barR + 1);
+        ctx.fill();
         // Bar background
         ctx.fillStyle = "rgba(0,0,0,0.75)";
-        ctx.fillRect(barX, barY, barW, barH);
+        ctx.beginPath();
+        drawRoundedRectPath(ctx, barX, barY, barW, barH, barR);
+        ctx.fill();
         // HP fill
         if (hpFrac > 0) {
+          ctx.save();
+          ctx.beginPath();
+          drawRoundedRectPath(ctx, barX, barY, barW, barH, barR);
+          ctx.clip();
           ctx.fillStyle = getHpColor(t.hp, t.maxHp);
           ctx.fillRect(barX, barY, barW * hpFrac, barH);
-          // Shine on HP bar
-          ctx.fillStyle = "rgba(255,255,255,0.15)";
+          // Shine
+          ctx.fillStyle = "rgba(255,255,255,0.18)";
           ctx.fillRect(barX, barY, barW * hpFrac, barH * 0.4);
+          ctx.restore();
         }
-        // Bar border
-        ctx.strokeStyle = "rgba(0,0,0,0.5)";
-        ctx.lineWidth = 0.5;
-        ctx.strokeRect(barX, barY, barW, barH);
+        // HP text (show on hover/selected/active)
+        if (isSelected || isHovered || isActiveCombatant) {
+          const hpText = (t.hp || 0) + "/" + t.maxHp;
+          ctx.font = "bold " + Math.max(7, gridSize * 0.14) + "px Cinzel";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "top";
+          ctx.fillStyle = "rgba(0,0,0,0.6)";
+          ctx.fillText(hpText, t.x + 0.5, barY + barH + 1.5);
+          ctx.fillStyle = "#fff";
+          ctx.fillText(hpText, t.x, barY + barH + 1);
+        }
       }
 
       // Condition indicators (small colored dots around top of token)
@@ -12154,7 +12213,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       // Active combatant name label below token
       if (isActiveCombatant && combatLive) {
         ctx.fillStyle = "rgba(0,0,0,0.7)";
-        const nameY = t.y + r + (t.hp != null ? 16 : 8);
+        const nameY = t.y + r + (t.hp != null && t.maxHp ? 22 : 8);
         const nameW = ctx.measureText(t.name).width + 8;
         ctx.fillRect(t.x - nameW/2, nameY - 5, nameW, 12);
         ctx.fillStyle = "#f2e8d6";
@@ -12268,17 +12327,56 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           ctx.stroke();
           ctx.globalAlpha = 1;
           ctx.restore();
-          // Target name + range info above token
-          ctx.fillStyle = inRange ? "#5ee09a" : "#ff6666";
-          ctx.font = "bold " + Math.round(gridSize * 0.28) + "px Cinzel";
+          // Target name + hit chance + damage preview above token
+          const distFt = Math.round(distToHov / gridSize * 5);
+          const tAC = hovTk.ac || 10;
+          const wData = activeWeapon.card?.data;
+          const toHitBonus = wData ? wData.toHit : 0;
+          const damageExpr = wData ? wData.damageExpr : "?";
+          const damageType = wData ? wData.damageType : "";
+          // Compute hit chance: need to roll >= (AC - toHit) on d20, minimum 1 always misses, 20 always hits
+          const needed = tAC - toHitBonus;
+          const hitChance = Math.min(100, Math.max(5, Math.round((21 - Math.max(2, needed)) / 20 * 100)));
+          const labelY = hovTk.y - gridSize * 0.65;
+          const fs1 = Math.round(gridSize * 0.26);
+          const fs2 = Math.round(gridSize * 0.20);
+          const fs3 = Math.round(gridSize * 0.18);
           ctx.textAlign = "center";
           ctx.textBaseline = "bottom";
-          const distFt = Math.round(distToHov / gridSize * 5);
-          ctx.fillText(hovTk.name + " (" + distFt + "ft)", hovTk.x, hovTk.y - gridSize * 0.65);
-          if (!inRange) {
+          if (inRange) {
+            // Name
+            ctx.fillStyle = "#5ee09a";
+            ctx.font = "bold " + fs1 + "px Cinzel";
+            ctx.fillText(hovTk.name, hovTk.x, labelY);
+            // Hit chance bar background
+            const barW = gridSize * 1.2;
+            const barH = gridSize * 0.12;
+            const barX = hovTk.x - barW / 2;
+            const barY = labelY - fs1 * 0.3 - barH;
+            ctx.fillStyle = "rgba(0,0,0,0.5)";
+            ctx.beginPath();
+            drawRoundedRectPath(ctx, barX, barY, barW, barH, barH / 2);
+            ctx.fill();
+            // Hit chance bar fill
+            const hitColor = hitChance >= 70 ? "#5ee09a" : hitChance >= 40 ? "#ffd54f" : "#f06858";
+            ctx.fillStyle = hitColor;
+            ctx.beginPath();
+            drawRoundedRectPath(ctx, barX, barY, Math.max(barH, barW * hitChance / 100), barH, barH / 2);
+            ctx.fill();
+            // Hit chance text
+            ctx.fillStyle = hitColor;
+            ctx.font = "bold " + fs2 + "px Cinzel";
+            ctx.fillText(hitChance + "% to hit (AC " + tAC + ")", hovTk.x, barY - 2);
+            // Damage preview
+            ctx.fillStyle = "#e2e8f0";
+            ctx.font = fs3 + "px Spectral";
+            ctx.fillText(damageExpr + " " + damageType + "  |  " + distFt + " ft", hovTk.x, barY - 2 - fs2 * 1.1);
+          } else {
             ctx.fillStyle = "#ff6666";
-            ctx.font = Math.round(gridSize * 0.2) + "px Cinzel";
-            ctx.fillText("Out of range", hovTk.x, hovTk.y - gridSize * 0.65 - gridSize * 0.28);
+            ctx.font = "bold " + fs1 + "px Cinzel";
+            ctx.fillText(hovTk.name + " (" + distFt + "ft)", hovTk.x, labelY);
+            ctx.font = fs2 + "px Cinzel";
+            ctx.fillText("Out of range (" + (wData ? wData.range : "?") + " ft max)", hovTk.x, labelY - fs1 * 1.1);
           }
         }
 
