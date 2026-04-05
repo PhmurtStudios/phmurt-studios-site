@@ -28,6 +28,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
   <script src="supabase-config.js"></script>
   <script src="phmurt-auth.js"></script>
+  <script src="phmurt-char-sync.js"></script>
   <script src="phmurt-realtime.js"></script>
   <script src="phmurt-shell.js"></script>
   <script src="campaign-combat-integration.js"></script>
@@ -651,27 +652,28 @@
     .cm-economy-pip.movement { color: #29b6f6; }
 
     .cm-action-grid {
-      display: flex;
-      gap: 4px;
-      flex-wrap: wrap;
-      justify-content: center;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 6px;
+      padding: 8px 10px;
     }
     .cm-action-card {
       display: flex;
       flex-direction: column;
-      align-items: center;
+      align-items: stretch;
       justify-content: center;
       gap: 3px;
-      width: 76px;
-      height: 62px;
-      padding: 6px 4px;
+      min-width: 0;
+      padding: 6px 8px;
       border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 12px;
+      border-radius: 8px;
       background: rgba(255,255,255,0.02);
       color: #f4ead6;
       cursor: pointer;
       transition: all 120ms ease;
       position: relative;
+      text-align: left;
+      font-family: 'Spectral', serif;
     }
     .cm-action-card:hover:not(.is-disabled) {
       background: rgba(255,255,255,0.06);
@@ -1976,92 +1978,208 @@ const EnhancedCombatLogSidebar = ({ open, entries, round, viewRole, onClose, onC
 /* ═══════════════════════════════════════════════════════════════════════════
    ENHANCED ACTION PANEL — categorized D&D 5e actions with economy tracking
    ═══════════════════════════════════════════════════════════════════════════ */
-const EnhancedActionPanel = ({ visible, token, turnState, viewRole, onSelectAction, onSelectCategory, selectedCategory, onEndTurn, onMove, moveLabel }) => {
+const EnhancedActionPanel = ({ visible, token, turnState, viewRole, onSelectAction, onSelectCategory, selectedCategory, onEndTurn, onMove, moveLabel, actionCards }) => {
+  const [activeTab, setActiveTab] = useState("weapons");
+  const [hoveredCard, setHoveredCard] = useState(null);
+
   if (!visible || !token) return null;
 
   const CFUI = typeof window.CombatFlowUI !== "undefined" ? window.CombatFlowUI : null;
-  const cats = CFUI ? CFUI.ACTION_CATEGORIES : {};
   const avail = CFUI ? CFUI.getAvailableActions(turnState) : { action: true, bonus: true, reaction: true, move: true, moveFt: 30 };
-
-  const actionIcons = {
-    attack: "⚔️", castSpell: "✨", dash: "💨", dodge: "🛡️",
-    disengage: "🔀", help: "🤝", hide: "👁️", ready: "⏳",
-    useObject: "🎒", grapple: "🤼", shove: "💪",
-  };
-
-  const categories = Object.values(cats);
   const moveDisabled = !avail.move;
   const isPC = token.tokenType === "pc";
 
+  /* Group action cards by panel type for tab display */
+  const cards = actionCards || [];
+  const weaponCards = cards.filter(c => c.panel === "Attack");
+  const spellCards = cards.filter(c => c.panel === "Spell");
+  const featureCards = cards.filter(c => c.panel === "Class Feature");
+  const otherCards = cards.filter(c => c.panel === "Other" || c.panel === "Utility");
+
+  /* Organize spells by level */
+  const cantrips = spellCards.filter(c => c.data?.spell?.level === 0);
+  const levelSpells = spellCards.filter(c => c.data?.spell?.level > 0);
+
+  const tabs = [
+    { id: "weapons", label: "Weapons", icon: "⚔️", count: weaponCards.length, color: "#ef4444" },
+    { id: "spells", label: "Spells", icon: "✨", count: spellCards.length, color: "#8b5cf6" },
+    { id: "features", label: "Features", icon: "🔥", count: featureCards.length, color: "#f59e0b" },
+    { id: "utility", label: "Actions", icon: "🛡️", count: otherCards.length, color: "#6b7280" },
+  ].filter(t => t.count > 0 || t.id === "utility");
+
+  const getActiveCards = () => {
+    switch (activeTab) {
+      case "weapons": return weaponCards;
+      case "spells": return spellCards;
+      case "features": return featureCards;
+      case "utility": return otherCards;
+      default: return [];
+    }
+  };
+
+  const costColor = (type) => {
+    if (type === "action") return "#22c55e";
+    if (type === "bonus") return "#f97316";
+    if (type === "reaction") return "#a78bfa";
+    if (type === "special") return "#6b7280";
+    return "#94a3b8";
+  };
+
+  const costLabel = (type) => {
+    if (type === "action") return "A";
+    if (type === "bonus") return "B";
+    if (type === "reaction") return "R";
+    return "F";
+  };
+
   return (
-    <div className={"cm-action-panel" + (visible ? "" : " is-hidden")}>
-      {/* Economy header */}
-      <div className="cm-action-panel-header">
-        <span className="cm-action-panel-title">{token.name}'s Turn</span>
-        <div className="cm-action-panel-economy">
-          <div className="cm-economy-pip movement">
-            <span className="dot" style={avail.move ? { background: "#29b6f6", boxShadow: "0 0 6px #29b6f6" } : {}} />
-            <span>{avail.moveFt || 0} ft</span>
+    <div className={"cm-action-panel" + (visible ? "" : " is-hidden")} style={{ maxWidth: 900 }}>
+      {/* Economy header bar */}
+      <div className="cm-action-panel-header" style={{ display: "flex", alignItems: "center", gap: 12, padding: "6px 16px", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span className="cm-action-panel-title" style={{ fontSize: 12, letterSpacing: "0.5px" }}>{token.name}</span>
+          <div className="cm-action-panel-economy" style={{ gap: 6 }}>
+            <div className="cm-economy-pip movement" title={"Movement: " + (avail.moveFt || 0) + " ft remaining"}>
+              <span className="dot" style={avail.move ? { background: "#29b6f6", boxShadow: "0 0 6px #29b6f6" } : {}} />
+              <span>{avail.moveFt || 0} ft</span>
+            </div>
+            <div className="cm-economy-pip action" title={avail.action ? "Action available" : "Action spent"}>
+              <span className={"dot" + (avail.action ? " is-available" : "")} />
+              <span>Action</span>
+            </div>
+            <div className="cm-economy-pip bonus" title={avail.bonus ? "Bonus Action available" : "Bonus Action spent"}>
+              <span className={"dot" + (avail.bonus ? " is-available" : "")} />
+              <span>Bonus</span>
+            </div>
+            <div className="cm-economy-pip reaction" title={avail.reaction ? "Reaction available" : "Reaction spent"}>
+              <span className={"dot" + (avail.reaction ? " is-available" : "")} />
+              <span>React</span>
+            </div>
           </div>
-          <div className="cm-economy-pip action">
-            <span className={"dot" + (avail.action ? " is-available" : "")} />
-            <span>Action</span>
-          </div>
-          <div className="cm-economy-pip bonus">
-            <span className={"dot" + (avail.bonus ? " is-available" : "")} />
-            <span>Bonus</span>
-          </div>
-          <div className="cm-economy-pip reaction">
-            <span className={"dot" + (avail.reaction ? " is-available" : "")} />
-            <span>React</span>
-          </div>
+        </div>
+        <div style={{ display: "flex", gap: 4 }}>
+          <button type="button" className={"cm-action-card" + (moveDisabled ? " is-disabled" : "")}
+            style={{ "--action-color": "#29b6f6", padding: "4px 10px", minWidth: "auto" }}
+            disabled={moveDisabled} onClick={onMove} title={moveDisabled ? "No movement remaining" : "Move"}>
+            <span style={{ fontSize: 11 }}>🏃 Move</span>
+          </button>
+          <button type="button" className="cm-action-card"
+            style={{ "--action-color": "#5ee09a", padding: "4px 10px", minWidth: "auto", borderColor: "rgba(94,224,154,0.2)", background: "rgba(94,224,154,0.04)" }}
+            onClick={onEndTurn} title="End Turn (E)">
+            <span style={{ fontSize: 11, color: "#5ee09a" }}>⏭️ End Turn</span>
+          </button>
         </div>
       </div>
 
-      {/* Action grid */}
-      <div className="cm-action-grid">
-        {/* Move card */}
-        <button type="button"
-          className={"cm-action-card" + (moveDisabled ? " is-disabled" : "")}
-          style={{ "--action-color": "#29b6f6" }}
-          disabled={moveDisabled}
-          onClick={onMove}
-          title={moveDisabled ? "No movement remaining" : "Move (" + moveLabel + ")"}>
-          <span className="cm-action-card-hotkey">M</span>
-          <span className="cm-action-card-icon">🏃</span>
-          <span className="cm-action-card-label">Move</span>
-          <span className="cm-action-card-cost">{avail.moveFt || 0} ft</span>
-        </button>
-
-        {/* Standard action cards */}
-        {categories.map(cat => {
-          const disabled = cat.cost === "action" ? !avail.action : (cat.cost === "bonus" ? !avail.bonus : false);
-          const isSelected = selectedCategory === cat.id;
-          return (
-            <button key={cat.id} type="button"
-              className={"cm-action-card" + (disabled ? " is-disabled" : "") + (isSelected ? " is-selected" : "")}
-              style={{ "--action-color": cat.color }}
-              disabled={disabled}
-              onClick={() => onSelectCategory(cat.id)}
-              title={disabled ? "Action already used" : cat.desc}>
-              <span className="cm-action-card-hotkey">{cat.hotkey}</span>
-              <span className="cm-action-card-icon">{actionIcons[cat.id] || "⚔️"}</span>
-              <span className="cm-action-card-label">{cat.label}</span>
-              <span className="cm-action-card-cost">{cat.cost}</span>
-            </button>
-          );
-        })}
-
-        {/* End Turn card */}
-        <button type="button" className="cm-action-card"
-          style={{ "--action-color": "#5ee09a", borderColor: "rgba(94,224,154,0.2)", background: "rgba(94,224,154,0.04)" }}
-          onClick={onEndTurn}>
-          <span className="cm-action-card-hotkey">E</span>
-          <span className="cm-action-card-icon" style={{ color: "#5ee09a" }}>⏭️</span>
-          <span className="cm-action-card-label" style={{ color: "#5ee09a" }}>End Turn</span>
-          <span className="cm-action-card-cost">Free</span>
-        </button>
+      {/* Tab bar for action categories */}
+      <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "0 8px", gap: 2 }}>
+        {tabs.map(tab => (
+          <button key={tab.id} type="button"
+            onClick={() => setActiveTab(tab.id)}
+            style={{
+              background: activeTab === tab.id ? "rgba(255,255,255,0.06)" : "transparent",
+              border: "none", borderBottom: activeTab === tab.id ? ("2px solid " + tab.color) : "2px solid transparent",
+              color: activeTab === tab.id ? "#e2e8f0" : "#64748b",
+              padding: "6px 12px", cursor: "pointer", fontSize: 11, fontFamily: "'Cinzel',serif",
+              letterSpacing: "0.5px", display: "flex", alignItems: "center", gap: 6, transition: "all 0.15s",
+            }}>
+            <span style={{ fontSize: 13 }}>{tab.icon}</span>
+            <span>{tab.label}</span>
+            <span style={{
+              background: tab.color + "22", color: tab.color, fontSize: 9, padding: "1px 5px",
+              borderRadius: 8, fontFamily: "monospace", minWidth: 16, textAlign: "center",
+            }}>{tab.count}</span>
+          </button>
+        ))}
       </div>
+
+      {/* Action cards grid */}
+      <div className="cm-action-grid" style={{ padding: "8px 10px", gap: 6, gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", maxHeight: 180, overflowY: "auto" }}>
+        {activeTab === "spells" && cantrips.length > 0 && (
+          <div style={{ gridColumn: "1 / -1", fontSize: 9, color: "#8b5cf6", letterSpacing: "1px", fontFamily: "'Cinzel',serif", textTransform: "uppercase", padding: "2px 4px", opacity: 0.7 }}>
+            Cantrips
+          </div>
+        )}
+        {activeTab === "spells" && cantrips.map(card => (
+          <button key={card.id} type="button"
+            className={"cm-action-card" + (card.disabled ? " is-disabled" : "")}
+            style={{ "--action-color": "#8b5cf6", padding: "6px 8px", textAlign: "left" }}
+            disabled={card.disabled}
+            onClick={card.onClick}
+            onMouseEnter={() => setHoveredCard(card)}
+            onMouseLeave={() => setHoveredCard(null)}
+            title={card.disabled ? card.helper : card.effect}>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ fontSize: 8, color: costColor(card.actionType), fontWeight: 700, width: 12, textAlign: "center", background: costColor(card.actionType) + "22", borderRadius: 3, padding: "1px 0" }}>{costLabel(card.actionType)}</span>
+              <span className="cm-action-card-label" style={{ fontSize: 11, flex: 1 }}>{card.label}</span>
+            </div>
+            <span style={{ fontSize: 9, color: "#94a3b8", fontStyle: "italic", marginTop: 2, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{card.effect}</span>
+          </button>
+        ))}
+        {activeTab === "spells" && levelSpells.length > 0 && (
+          <div style={{ gridColumn: "1 / -1", fontSize: 9, color: "#a78bfa", letterSpacing: "1px", fontFamily: "'Cinzel',serif", textTransform: "uppercase", padding: "4px 4px 2px", opacity: 0.7 }}>
+            Leveled Spells
+          </div>
+        )}
+        {activeTab === "spells" && levelSpells.map(card => (
+          <button key={card.id} type="button"
+            className={"cm-action-card" + (card.disabled ? " is-disabled" : "")}
+            style={{ "--action-color": "#a78bfa", padding: "6px 8px", textAlign: "left" }}
+            disabled={card.disabled}
+            onClick={card.onClick}
+            onMouseEnter={() => setHoveredCard(card)}
+            onMouseLeave={() => setHoveredCard(null)}
+            title={card.disabled ? card.helper : card.effect}>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ fontSize: 8, color: costColor(card.actionType), fontWeight: 700, width: 12, textAlign: "center", background: costColor(card.actionType) + "22", borderRadius: 3, padding: "1px 0" }}>{costLabel(card.actionType)}</span>
+              <span className="cm-action-card-label" style={{ fontSize: 11, flex: 1 }}>{card.label}</span>
+              <span style={{ fontSize: 8, color: "#64748b", fontFamily: "monospace" }}>L{card.data?.spell?.level}</span>
+            </div>
+            <span style={{ fontSize: 9, color: "#94a3b8", fontStyle: "italic", marginTop: 2, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{card.cost || card.effect}</span>
+          </button>
+        ))}
+        {activeTab !== "spells" && getActiveCards().map(card => (
+          <button key={card.id} type="button"
+            className={"cm-action-card" + (card.disabled ? " is-disabled" : "")}
+            style={{ "--action-color": activeTab === "weapons" ? "#ef4444" : activeTab === "features" ? "#f59e0b" : "#6b7280", padding: "6px 8px", textAlign: "left" }}
+            disabled={card.disabled}
+            onClick={card.onClick}
+            onMouseEnter={() => setHoveredCard(card)}
+            onMouseLeave={() => setHoveredCard(null)}
+            title={card.disabled ? card.helper : card.effect}>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <span style={{ fontSize: 8, color: costColor(card.actionType), fontWeight: 700, width: 12, textAlign: "center", background: costColor(card.actionType) + "22", borderRadius: 3, padding: "1px 0" }}>{costLabel(card.actionType)}</span>
+              <span className="cm-action-card-label" style={{ fontSize: 11, flex: 1 }}>{card.label}</span>
+              {card.range && card.range !== "Self" && <span style={{ fontSize: 8, color: "#64748b" }}>{card.range}</span>}
+            </div>
+            <span style={{ fontSize: 9, color: "#94a3b8", fontStyle: "italic", marginTop: 2, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{card.effect}</span>
+          </button>
+        ))}
+        {getActiveCards().length === 0 && activeTab !== "spells" && (
+          <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: 12, color: "#475569", fontSize: 11, fontStyle: "italic" }}>
+            {activeTab === "weapons" ? "No weapons equipped. Import a character from the builder to see their weapons." :
+             activeTab === "features" ? "No class features available." :
+             "Standard D&D 5e actions available."}
+          </div>
+        )}
+      </div>
+
+      {/* Hover tooltip */}
+      {hoveredCard && (
+        <div style={{
+          position: "absolute", bottom: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)",
+          background: "rgba(15,23,42,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 6,
+          padding: "10px 14px", maxWidth: 320, minWidth: 200, zIndex: 50, backdropFilter: "blur(12px)",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+        }}>
+          <div style={{ fontSize: 13, color: "#e2e8f0", fontWeight: 500, marginBottom: 4 }}>{hoveredCard.label}</div>
+          <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 4 }}>{hoveredCard.cost}</div>
+          <div style={{ fontSize: 11, color: "#cbd5e1", lineHeight: 1.5 }}>{hoveredCard.effect}</div>
+          {hoveredCard.helper && hoveredCard.helper !== hoveredCard.effect && (
+            <div style={{ fontSize: 10, color: "#64748b", marginTop: 4, fontStyle: "italic" }}>{hoveredCard.helper}</div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
@@ -2229,8 +2347,14 @@ const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, sel
                     <div style={{ width: hpPct + "%", height: "100%", background: hpCol, borderRadius: 1 }} />
                   </div>
                 )}
-                {/* Init number */}
-                <div style={{ fontFamily: T.ui, fontSize: 7, color: T.textFaint, letterSpacing: "0.5px" }}>
+                {/* Initiative roll badge */}
+                <div title={"Initiative: " + c.init + (c.initRoll ? (" (d20: " + c.initRoll + " + " + ((c.init || 0) - (c.initRoll || 0)) + ")") : "")}
+                  style={{
+                    fontFamily: "monospace", fontSize: isActive ? 9 : 7, color: isActive ? "#ffd54f" : T.textFaint,
+                    letterSpacing: "0.5px", fontWeight: isActive ? 700 : 400,
+                    background: isActive ? "rgba(255,213,79,0.1)" : "transparent",
+                    padding: isActive ? "1px 4px" : 0, borderRadius: 3,
+                  }}>
                   {c.init}
                 </div>
                 {/* Action economy dots for active combatant */}
@@ -2625,6 +2749,32 @@ const cmSnapshotToPartyMember = (meta, snapshot) => {
   const sourceCharacterId = meta?.id || null;
   const sourceBuilderHref = cmCharacterBuilderHref(sourceCharacterId, builderType);
 
+  /* Extract combat-relevant data from the full builder snapshot */
+  const weapons = [];
+  const spells = [];
+  const cantrips = [];
+  const subclass = snapshot?.subclasses ? Object.values(snapshot.subclasses)[0] || "" : "";
+
+  /* Weapons from inventory */
+  if (Array.isArray(snapshot?.inventoryItems)) {
+    snapshot.inventoryItems.forEach(item => {
+      if (item && item.equipped !== false && (item.category === "weapon" || item.category === "Weapon" ||
+          /sword|axe|bow|dagger|mace|hammer|spear|crossbow|glaive|halberd|pike|lance|rapier|javelin|trident|flail|morningstar|whip|warhammer|maul|scimitar|shortsword|longsword|greatsword|greataxe|handaxe|club|staff|quarterstaff|sling|dart|blowgun/i.test(item.name || ""))) {
+        weapons.push(item.name);
+      }
+    });
+  }
+  /* Also from weaponChoices */
+  if (snapshot?.weaponChoices) {
+    Object.values(snapshot.weaponChoices).forEach(wn => {
+      if (wn && !weapons.includes(wn)) weapons.push(wn);
+    });
+  }
+
+  /* Spells and cantrips */
+  if (Array.isArray(snapshot?.selectedCantrips)) cantrips.push(...snapshot.selectedCantrips);
+  if (Array.isArray(snapshot?.selectedSpells)) spells.push(...snapshot.selectedSpells);
+
   return {
     id,
     actorId: `pc-${id}`,
@@ -2642,8 +2792,20 @@ const cmSnapshotToPartyMember = (meta, snapshot) => {
     sheetName: sourceBuilderHref ? (builderType === "35e" ? "3.5e Builder" : "5e Builder") : null,
     str,
     dex,
+    con,
+    int: cmSafeInt(abilities.int, 10),
+    wis: cmSafeInt(abilities.wis, 10),
+    cha: cmSafeInt(abilities.cha, 10),
     sourceCharacterId,
     sourceBuilderType: builderType,
+    /* Combat-relevant builder data */
+    equipment: weapons,
+    knownSpells: [...cantrips, ...spells],
+    preparedSpells: [...cantrips, ...spells],
+    subclass: subclass,
+    background: snapshot?.background || "",
+    builderSnapshot: snapshot || null,
+    _lastSyncAt: Date.now(),
   };
 };
 
@@ -3335,6 +3497,9 @@ function PlayerCard({ member, onEdit, onUploadSheet, isDm }) {
   const [expanded, setExpanded] = useState(false);
   const fileRef = useRef(null);
   const builderHref = cmCharacterBuilderHref(member.sourceCharacterId, member.sourceBuilderType);
+  const isLinked = !!member.sourceCharacterId;
+  const syncAge = member._lastSyncAt ? Date.now() - member._lastSyncAt : null;
+  const syncLabel = syncAge !== null ? (syncAge < 60000 ? "Just synced" : syncAge < 3600000 ? Math.round(syncAge/60000) + "m ago" : syncAge < 86400000 ? Math.round(syncAge/3600000) + "h ago" : "Synced") : null;
 
   const handleSheet = (e) => {
     const file = e.target.files[0];
@@ -3344,19 +3509,21 @@ function PlayerCard({ member, onEdit, onUploadSheet, isDm }) {
 
   return (
     <div style={{
-      background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px",
-      boxShadow:"0 2px 8px rgba(0,0,0,0.08)", transition:"all 0.2s", overflow:"hidden",
+      background:T.bgCard, border:`1px solid ${isLinked ? "rgba(16,185,129,0.25)" : T.border}`, borderRadius:"4px",
+      boxShadow: isLinked ? "0 2px 8px rgba(16,185,129,0.06)" : "0 2px 8px rgba(0,0,0,0.08)", transition:"all 0.2s", overflow:"hidden",
     }}>
       <input type="file" ref={fileRef} style={{display:"none"}} accept=".pdf,.png,.jpg,.jpeg,.json" onChange={handleSheet} />
       {/* Compact header — always visible */}
       <div onClick={()=>setExpanded(!expanded)} style={{ padding:"16px 20px", cursor:"pointer", display:"flex", alignItems:"center", gap:12 }}>
-        <div style={{ width:36, height:36, borderRadius:"50%", background:T.crimsonSoft, border:`1px solid ${T.crimsonBorder}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-          <span style={{ fontFamily:T.ui, fontSize:12, color:T.crimson, fontWeight:500 }}>{member.name.charAt(0)}</span>
+        <div style={{ width:36, height:36, borderRadius:"50%", background: isLinked ? "rgba(16,185,129,0.08)" : T.crimsonSoft, border:`1px solid ${isLinked ? "rgba(16,185,129,0.3)" : T.crimsonBorder}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, position:"relative" }}>
+          <span style={{ fontFamily:T.ui, fontSize:12, color: isLinked ? "#10b981" : T.crimson, fontWeight:500 }}>{member.name.charAt(0)}</span>
+          {isLinked && <span title="Linked to Character Builder" style={{ position:"absolute", bottom:-2, right:-2, width:10, height:10, borderRadius:"50%", background:"#10b981", border:"2px solid " + T.bgCard, boxShadow:"0 0 4px rgba(16,185,129,0.4)" }}/>}
         </div>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <span style={{ fontSize:15, color:T.text, fontWeight:300 }}>{member.name}</span>
             <Tag variant="muted">Lv{member.lv} {member.cls}</Tag>
+            {isLinked && <span style={{ fontSize:9, color:"#10b981", fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase", opacity:0.8 }}>{syncLabel || "Linked"}</span>}
           </div>
           <div style={{ fontSize:11, color:T.textFaint, fontWeight:300, marginTop:2 }}>
             {member.player}{member.race ? ` — ${member.race}` : ""}
@@ -3385,17 +3552,39 @@ function PlayerCard({ member, onEdit, onUploadSheet, isDm }) {
             ))}
           </div>
           {member.bio && <p style={{ fontSize:13, color:T.textDim, fontStyle:"italic", fontWeight:300, lineHeight:1.7, margin:"0 0 12px" }}>{member.bio}</p>}
+          {/* Sync status bar for linked characters */}
+          {isLinked && (
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12, padding:"8px 12px", background:"rgba(16,185,129,0.05)", borderRadius:"3px", border:"1px solid rgba(16,185,129,0.15)" }}>
+              <span style={{ width:6, height:6, borderRadius:"50%", background:"#10b981", flexShrink:0 }}/>
+              <span style={{ fontSize:11, color:"#10b981", fontFamily:T.ui, letterSpacing:"0.5px", flex:1 }}>
+                Linked to Character Builder {syncLabel ? `\u00b7 ${syncLabel}` : ""}
+              </span>
+              {builderHref && (
+                <a href={builderHref} target="_blank" rel="noreferrer" style={{ fontSize:10, color:"#10b981", textDecoration:"underline", opacity:0.8 }}>Edit in Builder</a>
+              )}
+            </div>
+          )}
           {member.sheetName && (
             <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12 }}>
               <FileText size={11} color={T.textFaint}/>
               <a href={member.sheetUrl} target="_blank" rel="noreferrer" style={{ fontSize:11, color:T.crimson, textDecoration:"none" }}>{member.sheetName}</a>
             </div>
           )}
-          <div style={{ display:"flex", gap:6 }}>
+          <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
             <CrimsonBtn onClick={()=>onEdit(member)} secondary small><Edit3 size={10}/> Edit Character</CrimsonBtn>
             <CrimsonBtn onClick={()=>fileRef.current?.click()} secondary small><Upload size={10}/> {member.sheetName?"Replace":"Upload"} Sheet</CrimsonBtn>
             {builderHref && (
               <CrimsonBtn onClick={() => window.open(builderHref, "_blank", "noopener,noreferrer")} secondary small><FileText size={10}/> Open Builder</CrimsonBtn>
+            )}
+            {isLinked && (
+              <CrimsonBtn onClick={() => {
+                if (!member.sourceCharacterId || typeof PhmurtDB === "undefined") return;
+                PhmurtDB.loadCharacter(member.sourceCharacterId).then(snap => {
+                  if (!snap) return;
+                  const fields = typeof PhmurtCharSync !== "undefined" ? PhmurtCharSync.extractPartyFields(snap, { id: member.sourceCharacterId }) : null;
+                  if (fields) onEdit({ ...member, ...fields, _syncDigest: fields._digest || "", _lastSyncAt: Date.now() });
+                });
+              }} secondary small><RefreshCw size={10}/> Re-sync</CrimsonBtn>
             )}
             {isDm && (
               <CrimsonBtn onClick={()=>onEdit({...member, _remove:true})} secondary small><Trash2 size={10}/> Remove</CrimsonBtn>
@@ -4533,6 +4722,54 @@ function WorldView({ data, setData, onNav }) {
   // ── Continental map — 6000×4500 world ──
   const MAP_W = 6000, MAP_H = 4500;
 
+  /* ── Custom atlas: if campaign has generated atlas data, use it instead of defaults ── */
+  const customAtlas = data.generatedAtlas || null;
+  const atlasLandPath = customAtlas?.landPath || ATLAS_LAND_PATH;
+  const atlasIslands = customAtlas?.islands || ATLAS_ISLANDS;
+  const atlasWaterBodies = customAtlas?.waterBodies || ATLAS_WATER_BODIES;
+  const atlasRivers = customAtlas?.rivers || ATLAS_RIVERS;
+  const atlasSeaLabels = customAtlas?.seaLabels || ATLAS_SEA_LABELS;
+  const atlasRangeLabels = customAtlas?.rangeLabels || ATLAS_RANGE_LABELS;
+  const atlasMountainRanges = customAtlas?.mountainRanges || ATLAS_MOUNTAIN_RANGES;
+  const atlasProvinces = customAtlas?.provinces || ATLAS_PROVINCES;
+  const atlasFactionSeats = customAtlas?.factionSeats || ATLAS_FACTION_SEATS;
+  const atlasFreeSeats = customAtlas?.freeSeats || ATLAS_FREE_SEATS;
+
+  /* ── Atlas import handler: paste JS constants from atlas-to-campaign.py output ── */
+  const [showAtlasImport, setShowAtlasImport] = useState(false);
+  const importAtlasData = useCallback((jsText) => {
+    try {
+      /* Evaluate the JS constants in a sandboxed scope */
+      const fn = new Function(jsText + `
+        return {
+          landPath: typeof ATLAS_LAND_PATH !== 'undefined' ? ATLAS_LAND_PATH : null,
+          islands: typeof ATLAS_ISLANDS !== 'undefined' ? ATLAS_ISLANDS : [],
+          waterBodies: typeof ATLAS_WATER_BODIES !== 'undefined' ? ATLAS_WATER_BODIES : [],
+          rivers: typeof ATLAS_RIVERS !== 'undefined' ? ATLAS_RIVERS : [],
+          seaLabels: typeof ATLAS_SEA_LABELS !== 'undefined' ? ATLAS_SEA_LABELS : [],
+          rangeLabels: typeof ATLAS_RANGE_LABELS !== 'undefined' ? ATLAS_RANGE_LABELS : [],
+          mountainRanges: typeof ATLAS_MOUNTAIN_RANGES !== 'undefined' ? ATLAS_MOUNTAIN_RANGES : [],
+          provinces: typeof ATLAS_PROVINCES !== 'undefined' ? ATLAS_PROVINCES : [],
+          factionSeats: typeof ATLAS_FACTION_SEATS !== 'undefined' ? ATLAS_FACTION_SEATS : [],
+          freeSeats: typeof ATLAS_FREE_SEATS !== 'undefined' ? ATLAS_FREE_SEATS : [],
+        };
+      `);
+      const atlas = fn();
+      if (atlas.landPath) {
+        setData(d => ({
+          ...d,
+          generatedAtlas: atlas,
+          activity: [{ time: "Just now", text: "Imported custom atlas map" }, ...(d.activity || [])].slice(0, 40),
+        }));
+        setShowAtlasImport(false);
+        return true;
+      }
+    } catch (e) {
+      console.warn("[WorldView] Atlas import failed:", e);
+    }
+    return false;
+  }, [setData]);
+
   // Deterministic hash seed
   const seed = useCallback((s) => { let h=0; for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;} return h; }, []);
   const seedF = useCallback((x,y,i) => { const v = Math.sin(x*12.9898+y*78.233+i*43758.5453)*43758.5453; return v - Math.floor(v); }, []);
@@ -4540,8 +4777,8 @@ function WorldView({ data, setData, onNav }) {
   const getFactionSeatMap = useCallback(() => {
     const seats = {};
     (data.factions || []).forEach((f, idx) => {
-      const base = ATLAS_FACTION_SEATS[idx % ATLAS_FACTION_SEATS.length];
-      const lap = Math.floor(idx / ATLAS_FACTION_SEATS.length);
+      const base = atlasFactionSeats[idx % atlasFactionSeats.length];
+      const lap = Math.floor(idx / atlasFactionSeats.length);
       seats[f.name] = {
         ...base,
         x: Math.max(980, Math.min(MAP_W - 980, base.x + lap * 140 * (idx % 2 === 0 ? 1 : -1))),
@@ -4558,9 +4795,9 @@ function WorldView({ data, setData, onNav }) {
     const seatUsage = {};
     return data.regions.map((r) => {
       const s = seed(String(r.name || "") + String(r.id || "") + String(r.type || ""));
-      const freeSeatIndex = Math.abs(s) % ATLAS_FREE_SEATS.length;
+      const freeSeatIndex = Math.abs(s) % atlasFreeSeats.length;
       const seatKey = r.ctrl && factionSeats[r.ctrl] ? r.ctrl : "free-" + freeSeatIndex;
-      const seat = factionSeats[r.ctrl] || ATLAS_FREE_SEATS[freeSeatIndex];
+      const seat = factionSeats[r.ctrl] || atlasFreeSeats[freeSeatIndex];
       const used = seatUsage[seatKey] || 0;
       seatUsage[seatKey] = used + 1;
       const layout = ATLAS_REGION_LAYOUTS[r.type] || ATLAS_REGION_LAYOUTS.default;
@@ -4756,7 +4993,7 @@ function WorldView({ data, setData, onNav }) {
 
   // ── Kingdom territory polygons (convex hulls of faction-controlled regions) ──
   const territories = useCallback(() => {
-    return ATLAS_PROVINCES.map((province) => {
+    return atlasProvinces.map((province) => {
       const nodes = mapRegions.filter((r) => r.atlasProvinceId === province.id);
       const capitalNode = nodes.find((r) => ["kingdom","capital","city"].includes(r.type)) || nodes[0] || null;
       const dominantCtrl = capitalNode?.ctrl || nodes.find((r) => r.ctrl)?.ctrl || province.name;
@@ -5048,8 +5285,8 @@ function WorldView({ data, setData, onNav }) {
                   <feComposite in="SourceGraphic" in2="lit" operator="arithmetic" k1="0.35" k2="0.2" k3="0" k4="0"/>
                 </filter>
                 <clipPath id="atlasLandClip">
-                  <path d={ATLAS_LAND_PATH} />
-                  {ATLAS_ISLANDS.map((isle, idx) => <path key={`atlas-isle-clip-${idx}`} d={isle.path} />)}
+                  <path d={atlasLandPath} />
+                  {atlasIslands.map((isle, idx) => <path key={`atlas-isle-clip-${idx}`} d={isle.path} />)}
                 </clipPath>
                 <radialGradient id="atlasLandFill" cx="48%" cy="42%" r="78%">
                   <stop offset="0%" stopColor="#e6dcc0" />
@@ -5085,16 +5322,16 @@ function WorldView({ data, setData, onNav }) {
                 {/* ═══ LAYER 0: Base map — always visible ═══ */}
                 <rect x="0" y="0" width={MAP_W} height={MAP_H} rx="10" fill="url(#atlasSeaFill)" filter="url(#parchment)"/>
                 <rect x="0" y="0" width={MAP_W} height={MAP_H} fill="url(#waterPat)" opacity="0.22"/>
-                <path d={ATLAS_LAND_PATH} fill="rgba(218,204,168,0.22)" stroke="#6a9088" strokeWidth="14" opacity="0.55" strokeLinejoin="round"/>
-                <path d={ATLAS_LAND_PATH} fill="url(#atlasLandFill)" stroke="#5a7a73" strokeWidth="3.2" strokeLinejoin="round"/>
-                <path d={ATLAS_LAND_PATH} fill="url(#atlasContourPat)" opacity="0.2" stroke="none"/>
-                {ATLAS_ISLANDS.map((isle, idx) => (
+                <path d={atlasLandPath} fill="rgba(218,204,168,0.22)" stroke="#6a9088" strokeWidth="14" opacity="0.55" strokeLinejoin="round"/>
+                <path d={atlasLandPath} fill="url(#atlasLandFill)" stroke="#5a7a73" strokeWidth="3.2" strokeLinejoin="round"/>
+                <path d={atlasLandPath} fill="url(#atlasContourPat)" opacity="0.2" stroke="none"/>
+                {atlasIslands.map((isle, idx) => (
                   <g key={`atlas-isle-${idx}`}>
                     <path d={isle.path} fill={isle.fill || "#d4c9a2"} opacity={isle.opacity || 0.96} stroke="#5a7a73" strokeWidth="2.4" strokeLinejoin="round"/>
                     <path d={isle.path} fill="url(#atlasContourPat)" opacity="0.2" stroke="none"/>
                   </g>
                 ))}
-                {ATLAS_SEA_LABELS.map((sLabel, idx) => (
+                {atlasSeaLabels.map((sLabel, idx) => (
                   <text key={`sea-label-${idx}`} x={sLabel.x} y={sLabel.y} textAnchor="middle" fill="#4a6b64" fontFamily="'Spectral', serif" fontSize={sLabel.size} letterSpacing={sLabel.spacing * 0.35} opacity={sLabel.opacity || 0.38} fontStyle="italic" transform={`rotate(${sLabel.rotate} ${sLabel.x} ${sLabel.y})`} style={{ pointerEvents:"none" }}>
                     {sLabel.label}
                   </text>
@@ -5136,19 +5373,19 @@ function WorldView({ data, setData, onNav }) {
                 </>}
                 </>}
                 <g clipPath="url(#atlasLandClip)">
-                  {ATLAS_WATER_BODIES.map((body, idx) => (
+                  {atlasWaterBodies.map((body, idx) => (
                     body.shape === "ellipse"
                       ? <ellipse key={`body-${idx}`} cx={body.cx} cy={body.cy} rx={body.rx} ry={body.ry} fill="#8eb4ac" opacity="0.94" stroke="#5f8a82" strokeWidth="2"/>
                       : <path key={`body-${idx}`} d={body.d} fill="#8eb4ac" opacity="0.94" stroke="#5f8a82" strokeWidth="2" strokeLinejoin="round"/>
                   ))}
-                  {mapZoom < 1.85 && ATLAS_WATER_BODIES.map((body, idx) => body.label && body.lx != null && (
+                  {mapZoom < 1.85 && atlasWaterBodies.map((body, idx) => body.label && body.lx != null && (
                     <text key={`lake-lbl-${idx}`} x={body.lx} y={body.ly} textAnchor="middle" fill="#4d6f68" fontFamily="'Spectral', serif" fontSize={Math.max(11, 18 / Math.max(mapZoom, 0.4))} fontStyle="italic" letterSpacing="0.6" opacity="0.55" style={{ pointerEvents:"none" }}>{body.label}</text>
                   ))}
-                  {ATLAS_RIVERS.map((riverPath, idx) => (
+                  {atlasRivers.map((riverPath, idx) => (
                     <path key={`atlas-river-${idx}`} d={riverPath} stroke="#5a7d76" strokeWidth={idx < 3 ? 3.2 : 2} fill="none" opacity={idx < 3 ? 0.78 : 0.55} strokeLinecap="round" strokeLinejoin="round"/>
                   ))}
                 </g>
-                {mapZoom < 1.4 && ATLAS_RANGE_LABELS.map((mLabel, idx) => (
+                {mapZoom < 1.4 && atlasRangeLabels.map((mLabel, idx) => (
                   <text key={`range-label-${idx}`} x={mLabel.x} y={mLabel.y} textAnchor="middle" fill="#7f714f" fontFamily="'Spectral', serif" fontSize={Math.max(13, 22 / Math.max(mapZoom, 0.35))} letterSpacing="1.8" opacity="0.34" fontStyle="italic" transform={`rotate(${mLabel.rotate} ${mLabel.x} ${mLabel.y})`} style={{ pointerEvents:"none" }}>
                     {mLabel.label}
                   </text>
@@ -5172,7 +5409,7 @@ function WorldView({ data, setData, onNav }) {
                 {/* ═══ LAYER 3: Terrain features — scale-dependent ═══ */}
                 {/* Mountains — always visible (they define the landscape) */}
                 <g clipPath="url(#atlasLandClip)">
-                  {ATLAS_MOUNTAIN_RANGES.map((range) => (
+                  {atlasMountainRanges.map((range) => (
                     <g key={`ridge-${range.id}`}>
                       <path d={range.ridge} fill="none" stroke="#9a8b62" strokeWidth="8" opacity="0.11" strokeLinecap="round" strokeLinejoin="round"/>
                       <path d={range.ridge} fill="none" stroke="#f2ead4" strokeWidth="1.8" opacity="0.14" strokeLinecap="round" strokeLinejoin="round"/>
@@ -5334,23 +5571,82 @@ function WorldView({ data, setData, onNav }) {
               </g>
             </svg>
 
-            {/* Zoom level indicator */}
-            <div style={{ position:"absolute", top:12, right:12, display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6, pointerEvents:"none" }}>
-              <div style={{ padding:"6px 14px", background:"rgba(252,248,238,0.88)", border:"1px solid rgba(122,110,88,0.35)", borderRadius:"4px", fontFamily:"'Cinzel', serif", fontSize:9, color:"#5c5344", letterSpacing:"2.5px", textTransform:"uppercase", opacity:0.92, boxShadow:"0 2px 12px rgba(60,48,32,0.06)" }}>
+            {/* Zoom level indicator + Atlas import button */}
+            <div style={{ position:"absolute", top:12, right:12, display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6, zIndex:10 }}>
+              <div style={{ padding:"6px 14px", background:"rgba(252,248,238,0.88)", border:"1px solid rgba(122,110,88,0.35)", borderRadius:"4px", fontFamily:"'Cinzel', serif", fontSize:9, color:"#5c5344", letterSpacing:"2.5px", textTransform:"uppercase", opacity:0.92, boxShadow:"0 2px 12px rgba(60,48,32,0.06)", pointerEvents:"none" }}>
                 {zoomLevel} view
               </div>
-              {false && mapZoom > 2.0 && <div style={{ padding:"4px 10px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"2px", fontFamily:T.body, fontSize:9, color:T.textMuted, fontStyle:"italic", opacity:0.7 }}>
+              {isDM && (
+                <button onClick={() => setShowAtlasImport(true)} style={{ padding:"5px 12px", background:"rgba(30,26,22,0.85)", backdropFilter:"blur(8px)", border:"1px solid rgba(232,186,64,0.35)", borderRadius:"4px", fontFamily:"'Cinzel', serif", fontSize:9, color:"#e8ba40", letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", boxShadow:"0 2px 10px rgba(0,0,0,0.3)", transition:"all 0.2s" }}
+                  onMouseEnter={e => { e.target.style.borderColor = "rgba(232,186,64,0.7)"; e.target.style.color = "#f5d66a"; }}
+                  onMouseLeave={e => { e.target.style.borderColor = "rgba(232,186,64,0.35)"; e.target.style.color = "#e8ba40"; }}
+                  title="Import a custom atlas generated by atlas-to-campaign.py"
+                >Import Atlas</button>
+              )}
+              {data.generatedAtlas && (
+                <div style={{ padding:"3px 10px", background:"rgba(46,120,76,0.18)", border:"1px solid rgba(46,120,76,0.35)", borderRadius:"3px", fontFamily:T.ui, fontSize:8, color:"#5ec48a", letterSpacing:"1.2px", textTransform:"uppercase", pointerEvents:"none" }}>
+                  Custom Atlas
+                </div>
+              )}
+              {false && mapZoom > 2.0 && <div style={{ padding:"4px 10px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"2px", fontFamily:T.body, fontSize:9, color:T.textMuted, fontStyle:"italic", opacity:0.7, pointerEvents:"none" }}>
                 {pois.length} points of interest
               </div>}
             </div>
+
+            {/* Atlas Import Modal */}
+            {showAtlasImport && (
+              <div style={{ position:"absolute", inset:0, zIndex:100, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.6)", backdropFilter:"blur(4px)" }}
+                onClick={e => { if (e.target === e.currentTarget) setShowAtlasImport(false); }}>
+                <div style={{ width:560, maxHeight:"80vh", background:"#1e1a16", border:"1px solid rgba(232,186,64,0.3)", borderRadius:8, padding:24, boxShadow:"0 24px 64px rgba(0,0,0,0.7)", display:"flex", flexDirection:"column", gap:14 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                    <h3 style={{ margin:0, fontFamily:"'Cinzel', serif", fontSize:16, color:"#e8ba40", letterSpacing:"1.5px" }}>Import Generated Atlas</h3>
+                    <button onClick={() => setShowAtlasImport(false)} style={{ background:"none", border:"none", color:"#888", fontSize:18, cursor:"pointer", padding:"4px 8px" }}>&times;</button>
+                  </div>
+                  <p style={{ margin:0, fontFamily:T.body, fontSize:12, color:"#a09080", lineHeight:1.6 }}>
+                    Paste the JavaScript output from <code style={{ background:"rgba(255,255,255,0.06)", padding:"2px 6px", borderRadius:3, fontSize:11, color:"#d4c4a0" }}>atlas-to-campaign.py</code> below.
+                    This replaces the default map with your custom generated world.
+                  </p>
+                  <textarea
+                    id="atlasImportTextarea"
+                    placeholder="const ATLAS_LAND_PATH = &quot;M ...&quot;;\nconst ATLAS_ISLANDS = [ ... ];\n..."
+                    style={{ width:"100%", height:220, background:"#0e0c0a", border:"1px solid rgba(255,255,255,0.1)", borderRadius:4, padding:12, fontFamily:"'Courier New', monospace", fontSize:11, color:"#c8b890", resize:"vertical", outline:"none" }}
+                  />
+                  <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
+                    {data.generatedAtlas && (
+                      <button onClick={() => {
+                        setData(d => {
+                          const { generatedAtlas, ...rest } = d;
+                          return { ...rest, activity: [{ time: "Just now", text: "Reverted to default atlas map" }, ...(d.activity || [])].slice(0, 40) };
+                        });
+                        setShowAtlasImport(false);
+                      }} style={{ padding:"8px 18px", background:"rgba(180,60,60,0.15)", border:"1px solid rgba(180,60,60,0.4)", borderRadius:4, fontFamily:T.ui, fontSize:11, color:"#d46a6a", cursor:"pointer", letterSpacing:"0.5px" }}>
+                        Revert to Default
+                      </button>
+                    )}
+                    <button onClick={() => setShowAtlasImport(false)} style={{ padding:"8px 18px", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:4, fontFamily:T.ui, fontSize:11, color:"#a09080", cursor:"pointer" }}>
+                      Cancel
+                    </button>
+                    <button onClick={() => {
+                      const ta = document.getElementById("atlasImportTextarea");
+                      if (ta && ta.value.trim()) {
+                        const ok = importAtlasData(ta.value.trim());
+                        if (!ok) alert("Import failed — check the console for details. Make sure you pasted the full JS output.");
+                      }
+                    }} style={{ padding:"8px 22px", background:"linear-gradient(135deg, rgba(232,186,64,0.2), rgba(200,160,40,0.1))", border:"1px solid rgba(232,186,64,0.5)", borderRadius:4, fontFamily:"'Cinzel', serif", fontSize:11, color:"#e8ba40", cursor:"pointer", letterSpacing:"1px" }}>
+                      Import
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Minimap overlay — always visible when zoomed past continent */}
             {false && mapZoom > 0.5 && (
               <div style={{ position:"absolute", bottom:12, left:12, width:200, height:150, background:T.bgCard, border:`1px solid ${T.crimsonBorder}`, borderRadius:"3px", overflow:"hidden", opacity:0.88 }}>
                 <svg width="200" height="150" viewBox={`0 0 ${MAP_W} ${MAP_H}`}>
                   <rect width={MAP_W} height={MAP_H} fill="#0b1118" opacity="0.72"/>
-                  <path d={ATLAS_LAND_PATH} fill="#1b1815" stroke="rgba(232,186,64,0.16)" strokeWidth="18"/>
-                  {ATLAS_ISLANDS.map((isle, i) => <path key={`mm-isle-${i}`} d={isle.path} fill="#171716" opacity="0.82"/>)}
+                  <path d={atlasLandPath} fill="#1b1815" stroke="rgba(232,186,64,0.16)" strokeWidth="18"/>
+                  {atlasIslands.map((isle, i) => <path key={`mm-isle-${i}`} d={isle.path} fill="#171716" opacity="0.82"/>)}
                   {/* Territory fills */}
                   {atlasTerritories.map((t,i) => <path key={`mt-${i}`} d={t.path} fill={t.color} opacity="0.16"/>)}
                   {/* Region dots */}
@@ -7138,8 +7434,25 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
   const builderSnapshotCacheRef = useRef({ raw: null, parsed: null });
   const getBuilderSnapshotForToken = (token, partyMember) => {
+    /* 1. Direct snapshot stored on the party member (from import or sync) */
     const direct = partyMember?.snapshot || partyMember?.builderSnapshot || partyMember?.characterSnapshot;
     if (direct) return direct;
+
+    /* 2. If the party member has a sourceCharacterId, try to load from PhmurtCharSync mailbox */
+    if (partyMember?.sourceCharacterId && typeof PhmurtCharSync !== "undefined") {
+      const pending = PhmurtCharSync.applyPendingUpdates([partyMember]);
+      if (pending && pending[0] && pending[0]._lastSyncAt) {
+        // Mailbox had data - but we need the full snapshot, not just fields
+        // Try async load from PhmurtDB (will be cached after first call)
+        const cacheKey = "phmurt_builder_snap_" + partyMember.sourceCharacterId;
+        try {
+          const cached = sessionStorage.getItem(cacheKey);
+          if (cached) return JSON.parse(cached);
+        } catch (_) {}
+      }
+    }
+
+    /* 3. Fallback: match by name against the active builder localStorage */
     try {
       const raw = localStorage.getItem("phmurt_builder_5e");
       if (!raw) return {};
@@ -7152,6 +7465,55 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       if (builtName && token?.name && builtName.toLowerCase() === String(token.name).toLowerCase()) return parsed;
     } catch (_) {}
     return {};
+  };
+
+  /* Eagerly load and cache builder snapshots for all linked party members */
+  const loadLinkedSnapshots = useCallback(() => {
+    if (typeof PhmurtDB === "undefined" || !PhmurtDB.getSession || !PhmurtDB.getSession()) return;
+    const party = data?.party || [];
+    party.forEach(member => {
+      if (!member.sourceCharacterId) return;
+      const cacheKey = "phmurt_builder_snap_" + member.sourceCharacterId;
+      try { if (sessionStorage.getItem(cacheKey)) return; } catch (_) {}
+      PhmurtDB.loadCharacter(member.sourceCharacterId).then(snap => {
+        if (!snap) return;
+        try { sessionStorage.setItem(cacheKey, JSON.stringify(snap)); } catch (_) {}
+        /* Also store weapons/spells on the party member for immediate combat access */
+        setData(d => ({
+          ...d,
+          party: (d.party || []).map(p =>
+            p.sourceCharacterId === member.sourceCharacterId && !p.builderSnapshot
+              ? { ...p, builderSnapshot: snap }
+              : p
+          ),
+        }));
+      }).catch(() => {});
+    });
+  }, [data?.party?.length]);
+
+  useEffect(() => { loadLinkedSnapshots(); }, [loadLinkedSnapshots]);
+
+  /* Extract weapon names from a builder snapshot for combat profile */
+  const _extractWeaponsFromSnapshot = (snap) => {
+    if (!snap) return [];
+    const weaponTable = (window.CombatEngine && window.CombatEngine.WEAPONS) ? window.CombatEngine.WEAPONS : {};
+    const knownNames = new Set(Object.keys(weaponTable));
+    const weapons = [];
+    /* From inventory items */
+    if (Array.isArray(snap.inventoryItems)) {
+      snap.inventoryItems.forEach(item => {
+        if (item && item.name && knownNames.has(item.name) && item.equipped !== false) {
+          weapons.push(item.name);
+        }
+      });
+    }
+    /* From weapon choices */
+    if (snap.weaponChoices) {
+      Object.values(snap.weaponChoices).forEach(wn => {
+        if (wn && knownNames.has(wn) && !weapons.includes(wn)) weapons.push(wn);
+      });
+    }
+    return weapons;
   };
 
   const getCombatProfile = (token) => {
@@ -7182,8 +7544,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       maxHp: token.maxHp,
       speed: token.speed || 30,
       initiativeBonus: toMod(p.dex != null ? p.dex : token.dex != null ? token.dex : token.monsterData?.dex),
-      knownSpells: token.knownSpells || p.knownSpells || snap.selectedSpells || [],
-      preparedSpells: token.preparedSpells || p.preparedSpells || snap.selectedSpells || [],
+      knownSpells: token.knownSpells || p.knownSpells || [...(snap.selectedCantrips || []), ...(snap.selectedSpells || [])],
+      preparedSpells: token.preparedSpells || p.preparedSpells || [...(snap.selectedCantrips || []), ...(snap.selectedSpells || [])],
       spellSlots: token.spellSlots || p.spellSlots || getMaxSpellSlots(cls, level),
       usedSlots: token.usedSlots || p.usedSlots || {},
       spellcastingMod: token.spellcastingMod != null ? token.spellcastingMod : (p.spellcastingMod != null ? p.spellcastingMod : fallbackSpellMod),
@@ -7192,7 +7554,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       passives: p.passives || snap.passiveEffects || [],
       resistances: p.resistances || snap.resistances || [],
       customFeatures: p.customFeatures || snap.customFeatures || [],
-      equipment: p.equipment || snap.equipment || [],
+      equipment: p.equipment || snap.equipment || _extractWeaponsFromSnapshot(snap),
       conditions: tokenConditions[token.id] || [],
       concentrationSpell: token.activeConcentrationSpell || p.concentrationSpell || null,
     };
@@ -12950,24 +13312,33 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       return next;
     });
     const combs = preparedTokens.map(t => {
-      let init;
+      let init, initRoll, initMod;
       if (t.monsterData && typeof window.CombatEngine !== 'undefined') {
-        // Use CombatEngine for monsters
         const dexMod = Math.floor(((t.monsterData.dex || 10) - 10) / 2);
         const result = window.CombatEngine.rollInitiative(dexMod);
         init = result.total;
+        initRoll = result.roll != null ? result.roll : (result.total - dexMod);
+        initMod = dexMod;
       } else {
         const profile = getCombatProfile(t);
         const dexMod = profile?.initiativeBonus ?? toMod(t.dex);
-        init = typeof window.CombatEngine !== "undefined"
-          ? window.CombatEngine.rollInitiative(dexMod).total
-          : Math.floor(Math.random() * 20) + 1 + dexMod;
+        if (typeof window.CombatEngine !== "undefined") {
+          const result = window.CombatEngine.rollInitiative(dexMod);
+          init = result.total;
+          initRoll = result.roll != null ? result.roll : (result.total - dexMod);
+        } else {
+          initRoll = Math.floor(Math.random() * 20) + 1;
+          init = initRoll + dexMod;
+        }
+        initMod = dexMod;
       }
       return {
         id: "cb-" + t.id,
         mapTokenId: t.id,
         name: t.name,
         init: init,
+        initRoll: initRoll,
+        initMod: initMod,
         hp: t.hp || 30,
         maxHp: t.maxHp || 30,
         ac: t.ac || 12,
@@ -13705,6 +14076,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                 turnState={turnStateByToken[activeCombatantToken?.id]}
                 viewRole={viewRole}
                 selectedCategory={selectedActionCategory}
+                actionCards={activeCombatantToken ? getPopupQuickActions(activeCombatantToken) : []}
                 onSelectCategory={(catId) => {
                   setSelectedActionCategory(prev => prev === catId ? null : catId);
                   // Trigger the corresponding action from the token's action ring
@@ -15842,6 +16214,56 @@ function App() {
     if (!loading) cmSyncRoute(activeCampaignId, activeTab);
   }, [activeCampaignId, activeTab, loading]);
 
+  // ── Character Sync: listen for builder pushes and patch party members live ──
+  useEffect(() => {
+    if (loading || typeof PhmurtCharSync === "undefined") return;
+    const handler = (e) => {
+      const { characterId, fields } = (e && e.detail) || {};
+      if (!characterId || !fields) return;
+      const cid = String(characterId);
+      setCampaigns(prev => prev.map(camp => {
+        if (!camp.data || !Array.isArray(camp.data.party)) return camp;
+        let changed = false;
+        const newParty = camp.data.party.map(member => {
+          if (String(member.sourceCharacterId) !== cid) return member;
+          if (member._syncDigest && member._syncDigest === fields._digest) return member;
+          changed = true;
+          return { ...member,
+            name: fields.name || member.name,
+            cls: fields.cls || member.cls,
+            race: fields.race || member.race,
+            lv: fields.lv || member.lv,
+            maxHp: fields.maxHp || member.maxHp,
+            hp: Math.min(member.hp || member.maxHp, fields.maxHp || member.maxHp),
+            ac: fields.ac || member.ac,
+            str: fields.str || member.str,
+            dex: fields.dex || member.dex,
+            con: fields.con,
+            bio: fields.bio || member.bio,
+            player: fields.player || member.player,
+            _syncDigest: fields._digest,
+            _lastSyncAt: Date.now(),
+          };
+        });
+        if (!changed) return camp;
+        return { ...camp, data: { ...camp.data, party: newParty,
+          activity: [{ time: "Just now", text: `${fields.name || "Character"} synced from builder` }, ...(camp.data.activity || [])].slice(0, 40),
+        }};
+      }));
+    };
+    window.addEventListener(PhmurtCharSync.EVENT_CHAR_UPDATED, handler);
+
+    /* On mount, check the mailbox for any pending updates from builder saves that happened while this page was closed */
+    setCampaigns(prev => prev.map(camp => {
+      if (!camp.data || !Array.isArray(camp.data.party)) return camp;
+      const patched = PhmurtCharSync.applyPendingUpdates(camp.data.party);
+      if (patched === camp.data.party) return camp;
+      return { ...camp, data: { ...camp.data, party: patched } };
+    }));
+
+    return () => window.removeEventListener(PhmurtCharSync.EVENT_CHAR_UPDATED, handler);
+  }, [loading]);
+
   const activeCampaign = campaigns.find(c => c.id === activeCampaignId);
   const data = activeCampaign?.data || NEW_CAMPAIGN();
   const setData = (updater) => {
@@ -15867,10 +16289,22 @@ function App() {
   };
 
   const handlePartyUpdate = (partyId, patch) => {
-    setData(d => ({
-      ...d,
-      party: d.party.map(p => p.id === partyId ? { ...p, ...patch } : p),
-    }));
+    setData(d => {
+      const updated = d.party.map(p => p.id === partyId ? { ...p, ...patch } : p);
+      /* ── Bidirectional sync: push HP/condition changes back to builder ── */
+      if (typeof PhmurtCharSync !== "undefined") {
+        const member = updated.find(p => p.id === partyId);
+        if (member && member.sourceCharacterId) {
+          PhmurtCharSync.pushCampaignState(member.sourceCharacterId, activeCampaignId, {
+            hp: member.hp, maxHp: member.maxHp,
+            conditions: member.conditions || [],
+            tempHp: member.tempHp || 0,
+            status: member.status || "healthy",
+          });
+        }
+      }
+      return { ...d, party: updated };
+    });
   };
 
   const navItems = [
