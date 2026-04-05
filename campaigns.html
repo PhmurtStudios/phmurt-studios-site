@@ -786,6 +786,164 @@
       text-transform: capitalize;
     }
 
+    /* ═══ RIGHT SIDEBAR — map setup + character sheet ═══ */
+    .cm-right-sidebar {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 300px;
+      pointer-events: auto;
+      display: flex;
+      flex-direction: column;
+      background: var(--action-panel-bg, rgba(7,8,12,0.96));
+      backdrop-filter: blur(18px);
+      border-left: 1px solid var(--border, rgba(255,255,255,0.08));
+      box-shadow: -4px 0 24px rgba(0,0,0,0.4);
+      z-index: 28;
+      overflow-y: auto;
+      transition: transform 200ms ease, opacity 160ms ease;
+    }
+    .cm-right-sidebar-header {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--action-panel-divider, rgba(255,255,255,0.04));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    .cm-right-sidebar-title {
+      font: 700 10px/1 'Cinzel', serif;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--text-muted, rgba(242,232,214,0.5));
+    }
+    .cm-right-sidebar-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 14px;
+    }
+    .cm-char-sheet-portrait {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--action-panel-divider, rgba(255,255,255,0.04));
+      margin-bottom: 10px;
+    }
+    .cm-char-sheet-avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font: 700 16px/1 'Cinzel', serif;
+      color: #fff;
+      border: 2px solid var(--border, rgba(255,255,255,0.12));
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .cm-char-sheet-name {
+      font: 700 14px/1.2 'Cinzel', serif;
+      color: var(--text, #f2e8d6);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .cm-char-sheet-subtitle {
+      font: 400 10px/1.3 'Spectral', serif;
+      color: var(--text-faint, rgba(242,232,214,0.35));
+      margin-top: 3px;
+    }
+    .cm-char-sheet-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .cm-char-sheet-stat {
+      padding: 6px 4px;
+      border-radius: 8px;
+      text-align: center;
+      background: var(--action-card-bg, rgba(255,255,255,0.03));
+      border: 1px solid var(--action-card-border, rgba(255,255,255,0.06));
+    }
+    .cm-char-sheet-stat-label {
+      font: 700 7px/1 'Cinzel', serif;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-faint, rgba(242,232,214,0.35));
+    }
+    .cm-char-sheet-stat-value {
+      font: 700 16px/1.2 'Spectral', serif;
+      color: var(--text, #f2e8d6);
+      margin-top: 2px;
+    }
+    .cm-char-sheet-stat-mod {
+      font: 400 9px/1 'Spectral', serif;
+      color: var(--text-muted, rgba(242,232,214,0.5));
+      margin-top: 1px;
+    }
+    .cm-char-sheet-section {
+      margin-bottom: 10px;
+    }
+    .cm-char-sheet-section-title {
+      font: 700 8px/1 'Cinzel', serif;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text-faint, rgba(242,232,214,0.35));
+      padding-bottom: 5px;
+      border-bottom: 1px solid var(--action-panel-divider, rgba(255,255,255,0.04));
+      margin-bottom: 6px;
+    }
+    .cm-char-sheet-hp-bar {
+      height: 8px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .cm-char-sheet-hp-fill {
+      height: 100%;
+      border-radius: 999px;
+      transition: width 0.3s ease;
+    }
+    .cm-char-sheet-item {
+      font: 400 11px/1.4 'Spectral', serif;
+      color: var(--text-muted, rgba(242,232,214,0.5));
+      padding: 3px 0;
+    }
+    .cm-char-sheet-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font: 400 9px/1 'Spectral', serif;
+      background: var(--action-card-bg, rgba(255,255,255,0.03));
+      border: 1px solid var(--action-card-border, rgba(255,255,255,0.06));
+      color: var(--text-muted, rgba(242,232,214,0.5));
+      margin: 2px 2px;
+    }
+    @media (max-width: 900px) {
+      .cm-right-sidebar { width: 260px; }
+    }
+    @media (max-width: 640px) {
+      .cm-right-sidebar {
+        position: absolute;
+        top: auto;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        width: auto;
+        max-height: 60vh;
+        border-left: none;
+        border-top: 1px solid var(--border, rgba(255,255,255,0.08));
+        border-radius: 14px 14px 0 0;
+      }
+    }
+
     /* ═══ ROLL RESULT CARD — appears in confirm flyout ═══ */
     .cm-roll-result {
       padding: 8px;
@@ -2042,10 +2200,341 @@ const EnhancedCombatLogSidebar = ({ open, entries, round, viewRole, onClose, onC
 };
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   TOKEN CHARACTER SHEET — right sidebar showing linked character details
+   ═══════════════════════════════════════════════════════════════════════════ */
+const TokenCharacterSheet = ({ token, partyMember, combatProfile, onClose, onOpenBuilder }) => {
+  if (!token) return null;
+  const pm = partyMember || {};
+  const cp = combatProfile || {};
+  const abilities = cp.abilities || {};
+  const toMod = (v) => { const m = Math.floor((v - 10) / 2); return m >= 0 ? "+" + m : String(m); };
+  const hpPct = token.maxHp ? Math.max(0, Math.min(100, Math.round((token.hp || 0) / token.maxHp * 100))) : 0;
+  const hpColor = hpPct > 60 ? "var(--action-color-endturn, #5ee09a)" : hpPct > 30 ? "var(--action-color-feature, #f59e0b)" : "#ef4444";
+  const equipment = cp.equipment || pm.equipment || [];
+  const knownSpells = cp.knownSpells || pm.knownSpells || [];
+  const feats = cp.feats || [];
+  const conditions = cp.conditions || [];
+  const name = token.name || pm.name || "Unknown";
+  const subtitle = [pm.race || cp.species, pm.cls || cp.className, cp.level ? ("Lv " + cp.level) : null, pm.subclass || cp.subclass].filter(Boolean).join(" · ") || token.tokenType || "Creature";
+
+  return (
+    <div className="cm-right-sidebar">
+      <div className="cm-right-sidebar-header">
+        <span className="cm-right-sidebar-title">Character</span>
+        <div style={{ display: "flex", gap: 6 }}>
+          {pm.sheetUrl && (
+            <button type="button" className="cm-action-card" style={{ "--action-color": "var(--action-color-movement, #29b6f6)", padding: "3px 8px", minWidth: "auto" }}
+              onClick={() => onOpenBuilder && onOpenBuilder(pm.sheetUrl)}>
+              <span style={{ fontSize: 9 }}>Open Builder</span>
+            </button>
+          )}
+          <button type="button" onClick={onClose}
+            style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--border, rgba(255,255,255,0.08))", borderRadius: 8, color: "var(--text-faint)", cursor: "pointer", padding: "3px 6px", fontSize: 11 }}>✕</button>
+        </div>
+      </div>
+      <div className="cm-right-sidebar-body">
+        {/* Portrait row */}
+        <div className="cm-char-sheet-portrait">
+          <div className="cm-char-sheet-avatar" style={{ background: token.color || "#555", borderColor: token.tokenType === "pc" ? "var(--action-color-movement, #29b6f6)" : "var(--border)" }}>
+            {token.imageSrc
+              ? <img src={token.imageSrc} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              : (token.label || name.substring(0, 2)).toUpperCase()}
+          </div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div className="cm-char-sheet-name">{name}</div>
+            <div className="cm-char-sheet-subtitle">{subtitle}</div>
+            {pm.player && <div className="cm-char-sheet-subtitle" style={{ marginTop: 1 }}>Player: {pm.player}</div>}
+          </div>
+        </div>
+
+        {/* HP / AC / Speed */}
+        <div className="cm-char-sheet-section">
+          <div className="cm-char-sheet-section-title">Vitals</div>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+            <span style={{ font: "700 18px/1 'Spectral', serif", color: hpColor }}>{token.hp != null ? token.hp : "?"}/{token.maxHp || "?"}</span>
+            <span style={{ font: "400 10px/1 'Spectral', serif", color: "var(--text-faint)" }}>
+              AC {token.ac || cp.ac || "?"} · Speed {token.speed || cp.speed || 30} ft
+            </span>
+          </div>
+          <div className="cm-char-sheet-hp-bar">
+            <div className="cm-char-sheet-hp-fill" style={{ width: hpPct + "%", background: "linear-gradient(90deg," + hpColor + "," + hpColor + "cc)", boxShadow: "0 0 8px " + hpColor + "55" }} />
+          </div>
+        </div>
+
+        {/* Ability scores */}
+        <div className="cm-char-sheet-section">
+          <div className="cm-char-sheet-section-title">Abilities</div>
+          <div className="cm-char-sheet-stats">
+            {["str", "dex", "con", "int", "wis", "cha"].map(ab => {
+              const val = abilities[ab] != null ? abilities[ab] : (token[ab] != null ? token[ab] : 10);
+              return (
+                <div key={ab} className="cm-char-sheet-stat">
+                  <div className="cm-char-sheet-stat-label">{ab}</div>
+                  <div className="cm-char-sheet-stat-value">{val}</div>
+                  <div className="cm-char-sheet-stat-mod">{toMod(val)}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Proficiency & Initiative */}
+        <div className="cm-char-sheet-section">
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {cp.proficiencyBonus && <span className="cm-char-sheet-chip">Prof +{cp.proficiencyBonus}</span>}
+            {cp.initiativeBonus != null && <span className="cm-char-sheet-chip">Init {cp.initiativeBonus >= 0 ? "+" : ""}{cp.initiativeBonus}</span>}
+            {cp.spellcastingMod != null && cp.spellcastingMod !== 0 && <span className="cm-char-sheet-chip">Spell Mod +{cp.spellcastingMod}</span>}
+          </div>
+        </div>
+
+        {/* Conditions */}
+        {conditions.length > 0 && (
+          <div className="cm-char-sheet-section">
+            <div className="cm-char-sheet-section-title">Conditions</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              {conditions.map(c => <span key={c} className="cm-char-sheet-chip" style={{ color: "#ef4444", borderColor: "rgba(239,68,68,0.2)" }}>{c}</span>)}
+            </div>
+          </div>
+        )}
+
+        {/* Equipment / Weapons */}
+        {equipment.length > 0 && (
+          <div className="cm-char-sheet-section">
+            <div className="cm-char-sheet-section-title">Equipment</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              {equipment.map((w, i) => <span key={i} className="cm-char-sheet-chip">{typeof w === "string" ? w : (w.name || "Item")}</span>)}
+            </div>
+          </div>
+        )}
+
+        {/* Spells */}
+        {knownSpells.length > 0 && (
+          <div className="cm-char-sheet-section">
+            <div className="cm-char-sheet-section-title">Spells ({knownSpells.length})</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              {knownSpells.slice(0, 20).map((sp, i) => <span key={i} className="cm-char-sheet-chip">{typeof sp === "string" ? sp : (sp.name || "Spell")}</span>)}
+              {knownSpells.length > 20 && <span className="cm-char-sheet-chip" style={{ fontStyle: "italic" }}>+{knownSpells.length - 20} more</span>}
+            </div>
+          </div>
+        )}
+
+        {/* Spell Slots */}
+        {cp.spellSlots && Object.keys(cp.spellSlots).some(k => cp.spellSlots[k] > 0) && (
+          <div className="cm-char-sheet-section">
+            <div className="cm-char-sheet-section-title">Spell Slots</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              {Object.keys(cp.spellSlots).sort((a, b) => a - b).filter(k => cp.spellSlots[k] > 0).map(lv => {
+                const used = (cp.usedSlots || {})[lv] || 0;
+                const max = cp.spellSlots[lv];
+                return <span key={lv} className="cm-char-sheet-chip" style={{ color: used >= max ? "var(--text-faint)" : "var(--action-color-spell, #a78bfa)" }}>Lv{lv}: {max - used}/{max}</span>;
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Feats */}
+        {feats.length > 0 && (
+          <div className="cm-char-sheet-section">
+            <div className="cm-char-sheet-section-title">Feats</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+              {feats.map((f, i) => <span key={i} className="cm-char-sheet-chip">{typeof f === "string" ? f : (f.name || "Feat")}</span>)}
+            </div>
+          </div>
+        )}
+
+        {/* Notes / Bio */}
+        {(pm.bio || token.notes) && (
+          <div className="cm-char-sheet-section">
+            <div className="cm-char-sheet-section-title">Notes</div>
+            <div className="cm-char-sheet-item" style={{ whiteSpace: "pre-wrap", maxHeight: 80, overflowY: "auto" }}>{pm.bio || token.notes}</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MAP SETUP SIDEBAR — right-side panel for configuring the battlemap
+   ═══════════════════════════════════════════════════════════════════════════ */
+const MapSetupSidebar = ({ setupTab, setSetupTab, bgColor, setBgColor, bgImage, setBgImage, bgPresets,
+  gridSize, setGridSize, showGrid, setShowGrid, snapToGrid, setSnapToGrid,
+  party, tokens, setTokens, battleMaps, activeMapId, switchToMapOverview,
+  setShowScenePanel, setMode, setSidebarOpen, setCombatTab,
+  mapImgInputRef, tokenImgRef, T }) => {
+
+  return (
+    <div className="cm-right-sidebar">
+      <div className="cm-right-sidebar-header">
+        <span className="cm-right-sidebar-title">Map Setup</span>
+        <button type="button" className="cm-action-card" style={{ "--action-color": "var(--action-color-endturn, #5ee09a)", padding: "3px 8px", minWidth: "auto" }}
+          onClick={() => { setMode("combat"); setSidebarOpen(true); }}>
+          <span style={{ fontSize: 9, color: "var(--action-color-endturn, #5ee09a)" }}>Start Encounter</span>
+        </button>
+      </div>
+
+      {/* Tab bar */}
+      <div className="cm-action-tabs">
+        {[
+          { id: "bg", label: "Background", accent: "var(--action-color-movement, #29b6f6)" },
+          { id: "grid", label: "Grid", accent: "var(--action-color-feature, #f59e0b)" },
+          { id: "tokens", label: "Tokens", accent: "var(--action-color-action, #dc143c)" },
+          { id: "scenes", label: "Scenes", accent: "#5ee09a" },
+        ].map(tab => (
+          <button key={tab.id} type="button"
+            className={"cm-action-tab" + ((setupTab || "bg") === tab.id ? " is-active" : "")}
+            style={(setupTab || "bg") === tab.id ? { "--tab-accent": tab.accent } : {}}
+            onClick={() => setSetupTab(tab.id)}>
+            <span>{tab.label}</span>
+          </button>
+        ))}
+      </div>
+
+      <div className="cm-right-sidebar-body">
+        {/* Background tab */}
+        {(setupTab || "bg") === "bg" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div>
+              <div style={{ font: "700 8px/1 'Cinzel', serif", letterSpacing: "1px", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: 8 }}>Color Presets</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {bgPresets.map(p => (
+                  <button key={p.c} onClick={() => setBgColor(p.c)} title={p.l}
+                    style={{ width: 32, height: 32, borderRadius: 8, background: p.c, border: bgColor === p.c ? "2px solid var(--crimson, #dc143c)" : "1px solid var(--border, rgba(255,255,255,0.1))", cursor: "pointer", transition: "all 0.12s", boxShadow: bgColor === p.c ? "0 0 8px rgba(212,67,58,0.3)" : "none" }} />
+                ))}
+                <input type="color" value={bgColor} onChange={e => setBgColor(e.target.value)} title="Custom color"
+                  style={{ width: 32, height: 32, border: "1px solid var(--border)", background: "none", padding: 0, cursor: "pointer", borderRadius: 8 }} />
+              </div>
+            </div>
+            <div>
+              <div style={{ font: "700 8px/1 'Cinzel', serif", letterSpacing: "1px", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: 8 }}>Map Image</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+                <button onClick={() => mapImgInputRef.current?.click()} className="cm-action-card" style={{ "--action-color": "var(--action-color-movement, #29b6f6)", padding: "4px 10px", minWidth: "auto" }}>
+                  <span style={{ fontSize: 10 }}>{bgImage ? "Replace" : "Upload"}</span>
+                </button>
+                {bgImage && (
+                  <button onClick={() => setBgImage(null)} className="cm-action-card" style={{ "--action-color": "#ef4444", padding: "4px 10px", minWidth: "auto" }}>
+                    <span style={{ fontSize: 10 }}>Clear</span>
+                  </button>
+                )}
+              </div>
+              {bgImage && <div style={{ font: "400 9px/1 'Spectral', serif", color: "var(--text-faint)", marginTop: 6 }}>{bgImage.width} × {bgImage.height} px</div>}
+            </div>
+          </div>
+        )}
+
+        {/* Grid tab */}
+        {(setupTab || "bg") === "grid" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div>
+              <div style={{ font: "700 8px/1 'Cinzel', serif", letterSpacing: "1px", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: 8 }}>Grid Size</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {[20, 30, 40, 50, 60, 80].map(s => (
+                  <button key={s} onClick={() => setGridSize(s)}
+                    className={"cm-action-card" + (gridSize === s ? " is-selected" : "")}
+                    style={{ "--action-color": "var(--action-color-feature, #f59e0b)", padding: "5px 10px", minWidth: "auto" }}>
+                    <span style={{ fontSize: 10 }}>{s}px</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <div style={{ font: "700 8px/1 'Cinzel', serif", letterSpacing: "1px", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: 8 }}>Options</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => setShowGrid(!showGrid)}
+                  className={"cm-action-card" + (showGrid ? " is-selected" : "")}
+                  style={{ "--action-color": "var(--action-color-feature, #f59e0b)", padding: "5px 12px", minWidth: "auto" }}>
+                  <span style={{ fontSize: 10 }}>{showGrid ? "Grid On" : "Grid Off"}</span>
+                </button>
+                <button onClick={() => setSnapToGrid(!snapToGrid)}
+                  className={"cm-action-card" + (snapToGrid ? " is-selected" : "")}
+                  style={{ "--action-color": "var(--action-color-feature, #f59e0b)", padding: "5px 12px", minWidth: "auto" }}>
+                  <span style={{ fontSize: 10 }}>{snapToGrid ? "Snap On" : "Snap Off"}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Tokens tab */}
+        {(setupTab || "bg") === "tokens" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div>
+              <div style={{ font: "700 8px/1 'Cinzel', serif", letterSpacing: "1px", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: 8 }}>Party Members</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {(party || []).filter(p => !tokens.some(t => t.partyId === p.id)).map(p => (
+                  <button key={p.id} className="cm-action-card" style={{ "--action-color": "var(--action-color-action, #dc143c)", padding: "6px 12px", minWidth: "auto", textAlign: "left" }}
+                    onClick={() => {
+                      const t = {
+                        id: "tok-" + Date.now() + "-" + Math.random().toString(36).slice(2,6),
+                        name: p.name || "PC", label: (p.name || "PC").substring(0,3),
+                        x: 200 + Math.random()*300, y: 200 + Math.random()*300,
+                        hp: p.hp || 20, maxHp: p.maxHp || 20, ac: p.ac || 10,
+                        tokenType: "pc", partyId: p.id, player: p.player || "",
+                        str: p.str, dex: p.dex, con: p.con, int: p.int, wis: p.wis, cha: p.cha,
+                        speed: p.speed || 30, cls: p.cls || "", level: p.lv || 1,
+                      };
+                      setTokens(prev => [...prev, t]);
+                    }}>
+                    <span style={{ fontSize: 10 }}>+ {p.name || "PC"}</span>
+                  </button>
+                ))}
+                {(party || []).filter(p => !tokens.some(t => t.partyId === p.id)).length === 0 && (
+                  <span style={{ font: "400 10px/1.4 'Spectral', serif", color: "var(--text-faint)", fontStyle: "italic" }}>All placed or none in roster</span>
+                )}
+              </div>
+            </div>
+            <div>
+              <div style={{ font: "700 8px/1 'Cinzel', serif", letterSpacing: "1px", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: 8 }}>Custom</div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                <button className="cm-action-card" style={{ "--action-color": "#a78bfa", padding: "5px 12px", minWidth: "auto" }}
+                  onClick={() => { tokenImgRef.current?.click(); }}>
+                  <span style={{ fontSize: 10 }}>Upload Token</span>
+                </button>
+                <button className="cm-action-card" style={{ "--action-color": "#ef4444", padding: "5px 12px", minWidth: "auto" }}
+                  onClick={() => { setMode("combat"); setSidebarOpen(true); setCombatTab("monsters"); }}>
+                  <span style={{ fontSize: 10 }}>Monster Roster</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Scenes tab */}
+        {(setupTab || "bg") === "scenes" && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <button className="cm-action-card" style={{ "--action-color": "#5ee09a", padding: "5px 12px", minWidth: "auto" }}
+              onClick={() => setShowScenePanel(true)}>
+              <span style={{ fontSize: 10 }}>Scene Manager</span>
+            </button>
+            <span style={{ font: "400 10px/1 'Spectral', serif", color: "var(--text-faint)" }}>
+              {battleMaps.length} map{battleMaps.length !== 1 ? "s" : ""} configured
+            </span>
+            {battleMaps.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {battleMaps.map(map => (
+                  <button key={map.id} className={"cm-action-card" + (activeMapId === map.id ? " is-selected" : "")}
+                    style={{ "--action-color": "#5ee09a", padding: "6px 12px", minWidth: "auto", textAlign: "left" }}
+                    onClick={() => switchToMapOverview(map.id)}>
+                    <div style={{ display: "flex", justifyContent: "space-between", width: "100%" }}>
+                      <span style={{ fontSize: 10 }}>{map.name}</span>
+                      <span style={{ fontSize: 8, color: "var(--text-faint)" }}>{(map.scenes || []).length} scenes</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
    ENHANCED ACTION PANEL — categorized D&D 5e actions with economy tracking
    ═══════════════════════════════════════════════════════════════════════════ */
 const EnhancedActionPanel = ({ visible, token, turnState, viewRole, onSelectAction, onSelectCategory, selectedCategory, onEndTurn, onMove, moveLabel, actionCards }) => {
-  const [activeTab, setActiveTab] = useState("weapons");
+  const [activeTab, setActiveTab] = useState("common");
   const [spellLevelTab, setSpellLevelTab] = useState("all");
   const [hoveredCard, setHoveredCard] = useState(null);
 
@@ -2061,6 +2550,30 @@ const EnhancedActionPanel = ({ visible, token, turnState, viewRole, onSelectActi
   const spellCards = cards.filter(c => c.panel === "Spell");
   const featureCards = cards.filter(c => c.panel === "Class Feature");
   const otherCards = cards.filter(c => c.panel === "Other" || c.panel === "Utility");
+
+  /* ── "Common" tab: BG3-style top 5 most-used actions ── */
+  /* Priority: first weapon attack, then core D&D actions (Dash, Dodge, Disengage, Shove/Hide) */
+  const COMMON_ACTION_NAMES = ["dash", "dodge", "disengage", "shove", "hide"];
+  const commonCards = (() => {
+    const result = [];
+    /* First: primary weapon attack (first weapon card) */
+    if (weaponCards.length > 0) result.push(weaponCards[0]);
+    /* Then: core actions by priority */
+    COMMON_ACTION_NAMES.forEach(name => {
+      if (result.length >= 5) return;
+      const found = otherCards.find(c => (c.label || "").toLowerCase().includes(name));
+      if (found) result.push(found);
+    });
+    /* Fill remaining slots with weapon attacks */
+    if (result.length < 5) {
+      weaponCards.slice(1).forEach(c => { if (result.length < 5 && !result.includes(c)) result.push(c); });
+    }
+    /* Fill any remaining with other utility actions */
+    if (result.length < 5) {
+      otherCards.forEach(c => { if (result.length < 5 && !result.includes(c)) result.push(c); });
+    }
+    return result.slice(0, 5);
+  })();
 
   /* Organize spells by level */
   const spellsByLevel = {};
@@ -2078,6 +2591,7 @@ const EnhancedActionPanel = ({ visible, token, turnState, viewRole, onSelectActi
   };
 
   const tabs = [
+    { id: "common", label: "Common", count: commonCards.length, accent: "var(--action-color-weapon, #ef4444)" },
     { id: "weapons", label: "Attack", count: weaponCards.length, accent: "var(--action-color-weapon, #ef4444)" },
     { id: "actions", label: "Actions", count: otherCards.length, accent: "var(--action-color-action, #dc143c)" },
     { id: "spells", label: "Spells", count: spellCards.length, accent: "var(--action-color-spell, #a78bfa)" },
@@ -2086,6 +2600,7 @@ const EnhancedActionPanel = ({ visible, token, turnState, viewRole, onSelectActi
 
   const getActiveCards = () => {
     switch (activeTab) {
+      case "common": return commonCards;
       case "actions": return otherCards;
       case "weapons": return weaponCards;
       case "spells": return getFilteredSpells();
@@ -2131,6 +2646,7 @@ const EnhancedActionPanel = ({ visible, token, turnState, viewRole, onSelectActi
   );
 
   const emptyMessages = {
+    common: "Your most-used actions at a glance. Link a character to see attacks, Dash, Dodge, and more.",
     weapons: "No weapons equipped. Link a character from the builder to see attack options.",
     actions: "Standard D&D 5e actions: Dash, Dodge, Disengage, Hide, Help, Ready, Search, and Use an Object.",
     spells: "No spells known. Link a character from the builder to see their spells.",
@@ -14124,162 +14640,39 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               </div>
             )}
 
-            {/* ── BOTTOM: Map Setup Bar (shown when combat is NOT live) ── */}
-            {!combatLive && viewRole === "dm" && (
-              <div className="cm-action-panel" style={{ zIndex: 29 }}>
-                <div className="cm-action-panel-header">
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span className="cm-action-panel-title">Map Setup</span>
-                    <span style={{ fontSize: 9, color: "var(--text-faint)", fontFamily: T.body }}>Configure your battlemap before starting combat</span>
-                  </div>
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button type="button" className="cm-action-card" style={{ "--action-color": "var(--action-color-endturn, #5ee09a)", padding: "4px 10px", minWidth: "auto" }}
-                      onClick={() => { setMode("combat"); setSidebarOpen(true); }}>
-                      <span style={{ fontSize: 10, color: "var(--action-color-endturn, #5ee09a)" }}>Start Encounter</span>
-                    </button>
-                  </div>
-                </div>
-                <div className="cm-action-tabs">
-                  {[
-                    { id: "bg", label: "Background", accent: "var(--action-color-movement, #29b6f6)" },
-                    { id: "grid", label: "Grid & View", accent: "var(--action-color-feature, #f59e0b)" },
-                    { id: "tokens", label: "Tokens", accent: "var(--action-color-action, #dc143c)" },
-                    { id: "scenes", label: "Scenes", accent: "#5ee09a" },
-                  ].map(tab => (
-                    <button key={tab.id} type="button"
-                      className={"cm-action-tab" + ((setupTab || "bg") === tab.id ? " is-active" : "")}
-                      style={(setupTab || "bg") === tab.id ? { "--tab-accent": tab.accent } : {}}
-                      onClick={() => setSetupTab(tab.id)}>
-                      <span>{tab.label}</span>
-                    </button>
-                  ))}
-                </div>
-                <div style={{ padding: "10px 14px", maxHeight: 160, overflowY: "auto" }}>
-                  {/* Background tab */}
-                  {(setupTab || "bg") === "bg" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: 9, color: "var(--text-faint)", fontFamily: T.ui, letterSpacing: "1px", textTransform: "uppercase", minWidth: 60 }}>Presets</span>
-                        {bgPresets.map(p => (
-                          <button key={p.c} onClick={() => setBgColor(p.c)} title={p.l}
-                            style={{ width: 28, height: 28, borderRadius: 6, background: p.c, border: bgColor === p.c ? "2px solid var(--crimson, #dc143c)" : "1px solid var(--border, rgba(255,255,255,0.1))", cursor: "pointer", transition: "all 0.12s", boxShadow: bgColor === p.c ? "0 0 8px rgba(212,67,58,0.3)" : "none" }} />
-                        ))}
-                        <input type="color" value={bgColor} onChange={e => setBgColor(e.target.value)} title="Custom color"
-                          style={{ width: 28, height: 28, border: "1px solid var(--border)", background: "none", padding: 0, cursor: "pointer", borderRadius: 6 }} />
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 9, color: "var(--text-faint)", fontFamily: T.ui, letterSpacing: "1px", textTransform: "uppercase", minWidth: 60 }}>Map Image</span>
-                        <button onClick={() => mapImgInputRef.current?.click()} className="cm-action-card" style={{ "--action-color": "var(--action-color-movement, #29b6f6)", padding: "4px 10px", minWidth: "auto" }}>
-                          <span style={{ fontSize: 10 }}>{bgImage ? "Replace Image" : "Upload Image"}</span>
-                        </button>
-                        {bgImage && (
-                          <button onClick={() => setBgImage(null)} className="cm-action-card" style={{ "--action-color": "#ef4444", padding: "4px 10px", minWidth: "auto" }}>
-                            <span style={{ fontSize: 10 }}>Clear</span>
-                          </button>
-                        )}
-                        <span style={{ fontSize: 9, color: "var(--text-faint)", fontFamily: T.body, fontStyle: "italic" }}>{bgImage ? (bgImage.width + " x " + bgImage.height + " px") : "Drag & drop or click upload"}</span>
-                      </div>
-                    </div>
-                  )}
-                  {/* Grid tab */}
-                  {(setupTab || "bg") === "grid" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <span style={{ fontSize: 9, color: "var(--text-faint)", fontFamily: T.ui, letterSpacing: "1px", textTransform: "uppercase", minWidth: 60 }}>Grid Size</span>
-                        {[20, 30, 40, 50, 60, 80].map(s => (
-                          <button key={s} onClick={() => setGridSize(s)}
-                            className={"cm-action-card" + (gridSize === s ? " is-selected" : "")}
-                            style={{ "--action-color": "var(--action-color-feature, #f59e0b)", padding: "4px 8px", minWidth: "auto" }}>
-                            <span style={{ fontSize: 10 }}>{s}px</span>
-                          </button>
-                        ))}
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <span style={{ fontSize: 9, color: "var(--text-faint)", fontFamily: T.ui, letterSpacing: "1px", textTransform: "uppercase", minWidth: 60 }}>Options</span>
-                        <button onClick={() => setShowGrid(!showGrid)}
-                          className={"cm-action-card" + (showGrid ? " is-selected" : "")}
-                          style={{ "--action-color": "var(--action-color-feature, #f59e0b)", padding: "4px 10px", minWidth: "auto" }}>
-                          <span style={{ fontSize: 10 }}>{showGrid ? "Grid On" : "Grid Off"}</span>
-                        </button>
-                        <button onClick={() => setSnapToGrid(!snapToGrid)}
-                          className={"cm-action-card" + (snapToGrid ? " is-selected" : "")}
-                          style={{ "--action-color": "var(--action-color-feature, #f59e0b)", padding: "4px 10px", minWidth: "auto" }}>
-                          <span style={{ fontSize: 10 }}>{snapToGrid ? "Snap On" : "Snap Off"}</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  {/* Tokens tab */}
-                  {(setupTab || "bg") === "tokens" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: 9, color: "var(--text-faint)", fontFamily: T.ui, letterSpacing: "1px", textTransform: "uppercase", minWidth: 60 }}>Add PC</span>
-                        {(party || []).filter(p => !tokens.some(t => t.partyId === p.id)).map(p => (
-                          <button key={p.id} className="cm-action-card" style={{ "--action-color": "var(--action-color-action, #dc143c)", padding: "4px 10px", minWidth: "auto" }}
-                            onClick={() => {
-                              const t = {
-                                id: "tok-" + Date.now() + "-" + Math.random().toString(36).slice(2,6),
-                                name: p.name || "PC", label: (p.name || "PC").substring(0,3),
-                                x: 200 + Math.random()*300, y: 200 + Math.random()*300,
-                                hp: p.hp || 20, maxHp: p.maxHp || 20, ac: p.ac || 10,
-                                tokenType: "pc", partyId: p.id, player: p.player || "",
-                                str: p.str, dex: p.dex, con: p.con, int: p.int, wis: p.wis, cha: p.cha,
-                                speed: p.speed || 30, cls: p.cls || "", level: p.lv || 1,
-                              };
-                              setTokens(prev => [...prev, t]);
-                            }}>
-                            <span style={{ fontSize: 10 }}>{p.name || "PC"}</span>
-                          </button>
-                        ))}
-                        {(party || []).filter(p => !tokens.some(t => t.partyId === p.id)).length === 0 && (
-                          <span style={{ fontSize: 9, color: "var(--text-faint)", fontStyle: "italic" }}>All party members placed, or none in roster</span>
-                        )}
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 9, color: "var(--text-faint)", fontFamily: T.ui, letterSpacing: "1px", textTransform: "uppercase", minWidth: 60 }}>Custom</span>
-                        <button className="cm-action-card" style={{ "--action-color": "#a78bfa", padding: "4px 10px", minWidth: "auto" }}
-                          onClick={() => { tokenImgRef.current?.click(); }}>
-                          <span style={{ fontSize: 10 }}>Upload Token Image</span>
-                        </button>
-                        <span style={{ fontSize: 9, color: "var(--text-faint)", fontFamily: T.body, fontStyle: "italic" }}>Or drag images onto the map</span>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: 9, color: "var(--text-faint)", fontFamily: T.ui, letterSpacing: "1px", textTransform: "uppercase", minWidth: 60 }}>Monsters</span>
-                        <button className="cm-action-card" style={{ "--action-color": "#ef4444", padding: "4px 10px", minWidth: "auto" }}
-                          onClick={() => { setMode("combat"); setSidebarOpen(true); setCombatTab("monsters"); }}>
-                          <span style={{ fontSize: 10 }}>Open Monster Roster</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                  {/* Scenes tab */}
-                  {(setupTab || "bg") === "scenes" && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        <button className="cm-action-card" style={{ "--action-color": "#5ee09a", padding: "4px 10px", minWidth: "auto" }}
-                          onClick={() => setShowScenePanel(true)}>
-                          <span style={{ fontSize: 10 }}>Open Scene Manager</span>
-                        </button>
-                        <span style={{ fontSize: 9, color: "var(--text-faint)", fontFamily: T.body }}>
-                          {battleMaps.length} map{battleMaps.length !== 1 ? "s" : ""} configured
-                        </span>
-                      </div>
-                      {battleMaps.length > 0 && (
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                          {battleMaps.map(map => (
-                            <button key={map.id} className={"cm-action-card" + (activeMapId === map.id ? " is-selected" : "")}
-                              style={{ "--action-color": "#5ee09a", padding: "5px 10px", minWidth: "auto" }}
-                              onClick={() => switchToMapOverview(map.id)}>
-                              <span style={{ fontSize: 10 }}>{map.name}</span>
-                              <span style={{ fontSize: 8, color: "var(--text-faint)" }}>{(map.scenes || []).length} scenes</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
+            {/* ── RIGHT SIDEBAR: Character Sheet (when token selected) ── */}
+            {selectedToken && !combatLogSidebarOpen && (() => {
+              const _pm = getPartyProfile(selectedToken);
+              const _cp = getCombatProfile(selectedToken);
+              return (
+                <TokenCharacterSheet
+                  token={selectedToken}
+                  partyMember={_pm}
+                  combatProfile={_cp}
+                  onClose={() => setSelectedTokenId(null)}
+                  onOpenBuilder={(url) => { if (url) window.open(url, "_blank"); }}
+                />
+              );
+            })()}
+
+            {/* ── RIGHT SIDEBAR: Map Setup (when no token selected, no combat) ── */}
+            {!selectedToken && !combatLive && viewRole === "dm" && !combatLogSidebarOpen && (
+              <MapSetupSidebar
+                setupTab={setupTab} setSetupTab={setSetupTab}
+                bgColor={bgColor} setBgColor={setBgColor}
+                bgImage={bgImage} setBgImage={setBgImage}
+                bgPresets={bgPresets}
+                gridSize={gridSize} setGridSize={setGridSize}
+                showGrid={showGrid} setShowGrid={setShowGrid}
+                snapToGrid={snapToGrid} setSnapToGrid={setSnapToGrid}
+                party={party} tokens={tokens} setTokens={setTokens}
+                battleMaps={battleMaps} activeMapId={activeMapId}
+                switchToMapOverview={switchToMapOverview}
+                setShowScenePanel={setShowScenePanel}
+                setMode={setMode} setSidebarOpen={setSidebarOpen} setCombatTab={setCombatTab}
+                mapImgInputRef={mapImgInputRef} tokenImgRef={tokenImgRef}
+                T={T}
+              />
             )}
 
             {/* ── BOTTOM: Enhanced Action Panel (full-width categorized D&D 5e actions) ── */}
