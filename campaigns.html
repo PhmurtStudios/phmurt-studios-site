@@ -2200,368 +2200,6 @@ const EnhancedCombatLogSidebar = ({ open, entries, round, viewRole, onClose, onC
 };
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   UNIFIED RIGHT SIDEBAR — character sheet + map setup in one panel
-   ═══════════════════════════════════════════════════════════════════════════ */
-const RightSidebar = ({ token, partyMember, combatProfile, onClose, onOpenBuilder,
-  setupTab, setSetupTab, bgColor, setBgColor, bgImage, setBgImage, bgPresets,
-  gridSize, setGridSize, showGrid, setShowGrid, snapToGrid, setSnapToGrid,
-  party, tokens, setTokens, battleMaps, activeMapId, switchToMapOverview,
-  setShowScenePanel, setMode, setSidebarOpen, setCombatTab,
-  mapImgInputRef, tokenImgRef, combatLive, viewRole, T }) => {
-
-  const [mapSetupOpen, setMapSetupOpen] = useState(false);
-  const isDM = viewRole === "dm";
-
-  /* ─── Character Sheet Section (when a token is selected) ─── */
-  const renderCharacter = () => {
-    if (!token) return null;
-    const pm = partyMember || {};
-    const cp = combatProfile || {};
-    const abilities = cp.abilities || {};
-    const toMod = (v) => { const m = Math.floor((v - 10) / 2); return m >= 0 ? "+" + m : String(m); };
-    const hpPct = token.maxHp ? Math.max(0, Math.min(100, Math.round((token.hp || 0) / token.maxHp * 100))) : 0;
-    const hpColor = hpPct > 60 ? "var(--action-color-endturn, #5ee09a)" : hpPct > 30 ? "var(--action-color-feature, #f59e0b)" : "#ef4444";
-    const equipment = cp.equipment || pm.equipment || [];
-    const knownSpells = cp.knownSpells || pm.knownSpells || [];
-    const feats = cp.feats || [];
-    const conditions = cp.conditions || [];
-    const resistances = cp.resistances || [];
-    const passives = cp.passives || [];
-    const customFeatures = cp.customFeatures || [];
-    const name = token.name || pm.name || "Unknown";
-    const subtitle = [pm.race || cp.species, pm.cls || cp.className, cp.level ? ("Lv " + cp.level) : null, pm.subclass || cp.subclass].filter(Boolean).join(" · ") || token.tokenType || "Creature";
-    const profBonus = cp.proficiencyBonus || 0;
-    const savingThrows = ["str","dex","con","int","wis","cha"].map(ab => {
-      const val = abilities[ab] != null ? abilities[ab] : (token[ab] != null ? token[ab] : 10);
-      const mod = Math.floor((val - 10) / 2);
-      return { ab, mod, val };
-    });
-
-    return (
-      <React.Fragment>
-        {/* Portrait row */}
-        <div className="cm-char-sheet-portrait">
-          <div className="cm-char-sheet-avatar" style={{ background: token.color || "#555", borderColor: token.tokenType === "pc" ? "var(--action-color-movement, #29b6f6)" : "var(--border)" }}>
-            {token.imageSrc
-              ? <img src={token.imageSrc} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-              : (token.label || name.substring(0, 2)).toUpperCase()}
-          </div>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div className="cm-char-sheet-name">{name}</div>
-            <div className="cm-char-sheet-subtitle">{subtitle}</div>
-            {pm.player && <div className="cm-char-sheet-subtitle" style={{ marginTop: 1 }}>Player: {pm.player}</div>}
-            {pm.background && <div className="cm-char-sheet-subtitle" style={{ marginTop: 1 }}>Background: {pm.background}</div>}
-          </div>
-        </div>
-
-        {/* HP / AC / Speed — big visual block */}
-        <div className="cm-char-sheet-section">
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 6 }}>
-            <div className="cm-char-sheet-stat" style={{ borderColor: hpColor + "44" }}>
-              <div className="cm-char-sheet-stat-label" style={{ color: hpColor }}>HP</div>
-              <div className="cm-char-sheet-stat-value" style={{ color: hpColor, fontSize: 18 }}>{token.hp != null ? token.hp : "?"}</div>
-              <div className="cm-char-sheet-stat-mod">/ {token.maxHp || "?"}</div>
-            </div>
-            <div className="cm-char-sheet-stat">
-              <div className="cm-char-sheet-stat-label">AC</div>
-              <div className="cm-char-sheet-stat-value">{token.ac || cp.ac || "?"}</div>
-              <div className="cm-char-sheet-stat-mod">armor</div>
-            </div>
-            <div className="cm-char-sheet-stat">
-              <div className="cm-char-sheet-stat-label">Speed</div>
-              <div className="cm-char-sheet-stat-value">{token.speed || cp.speed || 30}</div>
-              <div className="cm-char-sheet-stat-mod">ft</div>
-            </div>
-          </div>
-          <div className="cm-char-sheet-hp-bar">
-            <div className="cm-char-sheet-hp-fill" style={{ width: hpPct + "%", background: "linear-gradient(90deg," + hpColor + "," + hpColor + "cc)", boxShadow: "0 0 8px " + hpColor + "55" }} />
-          </div>
-        </div>
-
-        {/* Ability scores — 6 blocks */}
-        <div className="cm-char-sheet-section">
-          <div className="cm-char-sheet-section-title">Ability Scores</div>
-          <div className="cm-char-sheet-stats">
-            {savingThrows.map(st => (
-              <div key={st.ab} className="cm-char-sheet-stat">
-                <div className="cm-char-sheet-stat-label">{st.ab}</div>
-                <div className="cm-char-sheet-stat-value">{st.val}</div>
-                <div className="cm-char-sheet-stat-mod">{toMod(st.val)}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Quick info chips — prof, init, spell mod, passive perception */}
-        <div className="cm-char-sheet-section">
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {profBonus > 0 && <span className="cm-char-sheet-chip" style={{ color: "var(--action-color-movement, #29b6f6)" }}>Proficiency +{profBonus}</span>}
-            {cp.initiativeBonus != null && <span className="cm-char-sheet-chip">Initiative {cp.initiativeBonus >= 0 ? "+" : ""}{cp.initiativeBonus}</span>}
-            {cp.spellcastingMod != null && cp.spellcastingMod !== 0 && <span className="cm-char-sheet-chip" style={{ color: "var(--action-color-spell, #a78bfa)" }}>Spell Save DC {8 + profBonus + cp.spellcastingMod}</span>}
-            {cp.spellcastingMod != null && cp.spellcastingMod !== 0 && <span className="cm-char-sheet-chip" style={{ color: "var(--action-color-spell, #a78bfa)" }}>Spell Atk +{profBonus + cp.spellcastingMod}</span>}
-            <span className="cm-char-sheet-chip">Passive Perc {10 + Math.floor(((abilities.wis || 10) - 10) / 2)}</span>
-          </div>
-        </div>
-
-        {/* Saving Throws */}
-        <div className="cm-char-sheet-section">
-          <div className="cm-char-sheet-section-title">Saving Throws</div>
-          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-            {savingThrows.map(st => (
-              <span key={"sv-"+st.ab} className="cm-char-sheet-chip">{st.ab.toUpperCase()} {st.mod >= 0 ? "+" : ""}{st.mod}</span>
-            ))}
-          </div>
-        </div>
-
-        {/* Conditions */}
-        {conditions.length > 0 && (
-          <div className="cm-char-sheet-section">
-            <div className="cm-char-sheet-section-title">Conditions</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-              {conditions.map(c => <span key={c} className="cm-char-sheet-chip" style={{ color: "#ef4444", borderColor: "rgba(239,68,68,0.2)", background: "rgba(239,68,68,0.06)" }}>{c}</span>)}
-            </div>
-          </div>
-        )}
-
-        {/* Resistances / Immunities */}
-        {resistances.length > 0 && (
-          <div className="cm-char-sheet-section">
-            <div className="cm-char-sheet-section-title">Resistances & Immunities</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-              {resistances.map((r, i) => <span key={i} className="cm-char-sheet-chip" style={{ color: "var(--action-color-feature, #f59e0b)" }}>{typeof r === "string" ? r : (r.name || r.type || "Resist")}</span>)}
-            </div>
-          </div>
-        )}
-
-        {/* Equipment / Weapons */}
-        {equipment.length > 0 && (
-          <div className="cm-char-sheet-section">
-            <div className="cm-char-sheet-section-title">Weapons & Equipment</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-              {equipment.map((w, i) => <span key={i} className="cm-char-sheet-chip" style={{ color: "var(--action-color-weapon, #ef4444)" }}>{typeof w === "string" ? w : (w.name || "Item")}</span>)}
-            </div>
-          </div>
-        )}
-
-        {/* Spell Slots */}
-        {cp.spellSlots && Object.keys(cp.spellSlots).some(k => cp.spellSlots[k] > 0) && (
-          <div className="cm-char-sheet-section">
-            <div className="cm-char-sheet-section-title">Spell Slots</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-              {Object.keys(cp.spellSlots).sort((a, b) => a - b).filter(k => cp.spellSlots[k] > 0).map(lv => {
-                const used = (cp.usedSlots || {})[lv] || 0;
-                const max = cp.spellSlots[lv];
-                const remaining = max - used;
-                return (
-                  <div key={lv} className="cm-char-sheet-stat" style={{ padding: "4px 8px", minWidth: 48 }}>
-                    <div className="cm-char-sheet-stat-label">Lv {lv}</div>
-                    <div className="cm-char-sheet-stat-value" style={{ fontSize: 14, color: remaining > 0 ? "var(--action-color-spell, #a78bfa)" : "var(--text-faint)" }}>{remaining}</div>
-                    <div className="cm-char-sheet-stat-mod">/ {max}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Spells */}
-        {knownSpells.length > 0 && (
-          <div className="cm-char-sheet-section">
-            <div className="cm-char-sheet-section-title">Known Spells ({knownSpells.length})</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-              {knownSpells.slice(0, 30).map((sp, i) => <span key={i} className="cm-char-sheet-chip" style={{ color: "var(--action-color-spell, #a78bfa)" }}>{typeof sp === "string" ? sp : (sp.name || "Spell")}</span>)}
-              {knownSpells.length > 30 && <span className="cm-char-sheet-chip" style={{ fontStyle: "italic" }}>+{knownSpells.length - 30} more</span>}
-            </div>
-          </div>
-        )}
-
-        {/* Feats & Features */}
-        {(feats.length > 0 || customFeatures.length > 0 || passives.length > 0) && (
-          <div className="cm-char-sheet-section">
-            <div className="cm-char-sheet-section-title">Features & Feats</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-              {feats.map((f, i) => <span key={"ft-"+i} className="cm-char-sheet-chip" style={{ color: "var(--action-color-feature, #f59e0b)" }}>{typeof f === "string" ? f : (f.name || "Feat")}</span>)}
-              {customFeatures.map((f, i) => <span key={"cf-"+i} className="cm-char-sheet-chip">{typeof f === "string" ? f : (f.name || "Feature")}</span>)}
-              {passives.map((p, i) => <span key={"ps-"+i} className="cm-char-sheet-chip">{typeof p === "string" ? p : (p.name || "Passive")}</span>)}
-            </div>
-          </div>
-        )}
-
-        {/* Notes / Bio */}
-        {(pm.bio || token.notes) && (
-          <div className="cm-char-sheet-section">
-            <div className="cm-char-sheet-section-title">Notes</div>
-            <div className="cm-char-sheet-item" style={{ whiteSpace: "pre-wrap", maxHeight: 100, overflowY: "auto" }}>{pm.bio || token.notes}</div>
-          </div>
-        )}
-
-        {/* Open in Builder button */}
-        {pm.sheetUrl && (
-          <div className="cm-char-sheet-section" style={{ paddingTop: 4 }}>
-            <button type="button" className="cm-action-card" style={{ "--action-color": "var(--action-color-movement, #29b6f6)", padding: "8px 12px", width: "100%", textAlign: "center" }}
-              onClick={() => onOpenBuilder && onOpenBuilder(pm.sheetUrl)}>
-              <span style={{ fontSize: 11 }}>Open Full Character in Builder</span>
-            </button>
-          </div>
-        )}
-      </React.Fragment>
-    );
-  };
-
-  /* ─── Map Setup Section (collapsible, always available in DM mode) ─── */
-  const renderMapSetup = () => {
-    if (!isDM) return null;
-    const isOpen = !token ? true : mapSetupOpen;
-    return (
-      <React.Fragment>
-        {/* Divider + toggle when token is shown */}
-        {token && (
-          <div style={{ margin: "8px 0 4px", borderTop: "1px solid var(--action-panel-divider, rgba(255,255,255,0.06))", paddingTop: 8 }}>
-            <button type="button" onClick={() => setMapSetupOpen(!mapSetupOpen)}
-              style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", background: "none", border: "none", cursor: "pointer", padding: "4px 0", color: "var(--text-muted)" }}>
-              <span style={{ font: "700 8px/1 'Cinzel', serif", letterSpacing: "1px", textTransform: "uppercase", color: "var(--text-faint)" }}>Map Settings</span>
-              <span style={{ fontSize: 10, color: "var(--text-faint)", transition: "transform 0.2s", transform: isOpen ? "rotate(180deg)" : "rotate(0deg)" }}>▾</span>
-            </button>
-          </div>
-        )}
-
-        {isOpen && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 14, paddingTop: token ? 4 : 0 }}>
-            {/* Background */}
-            <div>
-              <div style={{ font: "700 8px/1 'Cinzel', serif", letterSpacing: "1px", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: 8 }}>Background</div>
-              <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 8 }}>
-                {bgPresets.map(p => (
-                  <button key={p.c} onClick={() => setBgColor(p.c)} title={p.l}
-                    style={{ width: 28, height: 28, borderRadius: 6, background: p.c, border: bgColor === p.c ? "2px solid var(--crimson, #dc143c)" : "1px solid var(--border, rgba(255,255,255,0.1))", cursor: "pointer", transition: "all 0.12s" }} />
-                ))}
-                <input type="color" value={bgColor} onChange={e => setBgColor(e.target.value)} title="Custom"
-                  style={{ width: 28, height: 28, border: "1px solid var(--border)", background: "none", padding: 0, cursor: "pointer", borderRadius: 6 }} />
-              </div>
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <button onClick={() => mapImgInputRef.current?.click()} className="cm-action-card" style={{ "--action-color": "var(--action-color-movement, #29b6f6)", padding: "4px 10px", minWidth: "auto" }}>
-                  <span style={{ fontSize: 9 }}>{bgImage ? "Replace Image" : "Upload Map"}</span>
-                </button>
-                {bgImage && <button onClick={() => setBgImage(null)} className="cm-action-card" style={{ "--action-color": "#ef4444", padding: "4px 10px", minWidth: "auto" }}><span style={{ fontSize: 9 }}>Clear</span></button>}
-              </div>
-            </div>
-
-            {/* Grid */}
-            <div>
-              <div style={{ font: "700 8px/1 'Cinzel', serif", letterSpacing: "1px", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: 8 }}>Grid</div>
-              <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 6 }}>
-                {[20, 30, 40, 50, 60, 80].map(s => (
-                  <button key={s} onClick={() => setGridSize(s)} className={"cm-action-card" + (gridSize === s ? " is-selected" : "")}
-                    style={{ "--action-color": "var(--action-color-feature, #f59e0b)", padding: "3px 7px", minWidth: "auto" }}>
-                    <span style={{ fontSize: 9 }}>{s}px</span>
-                  </button>
-                ))}
-              </div>
-              <div style={{ display: "flex", gap: 6 }}>
-                <button onClick={() => setShowGrid(!showGrid)} className={"cm-action-card" + (showGrid ? " is-selected" : "")}
-                  style={{ "--action-color": "var(--action-color-feature, #f59e0b)", padding: "4px 10px", minWidth: "auto" }}>
-                  <span style={{ fontSize: 9 }}>{showGrid ? "Grid On" : "Grid Off"}</span>
-                </button>
-                <button onClick={() => setSnapToGrid(!snapToGrid)} className={"cm-action-card" + (snapToGrid ? " is-selected" : "")}
-                  style={{ "--action-color": "var(--action-color-feature, #f59e0b)", padding: "4px 10px", minWidth: "auto" }}>
-                  <span style={{ fontSize: 9 }}>{snapToGrid ? "Snap On" : "Snap Off"}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Tokens */}
-            <div>
-              <div style={{ font: "700 8px/1 'Cinzel', serif", letterSpacing: "1px", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: 8 }}>Tokens</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 6 }}>
-                {(party || []).filter(p => !tokens.some(t => t.partyId === p.id)).map(p => (
-                  <button key={p.id} className="cm-action-card" style={{ "--action-color": "var(--action-color-action, #dc143c)", padding: "5px 10px", minWidth: "auto", textAlign: "left" }}
-                    onClick={() => {
-                      const t = {
-                        id: "tok-" + Date.now() + "-" + Math.random().toString(36).slice(2,6),
-                        name: p.name || "PC", label: (p.name || "PC").substring(0,3),
-                        x: 200 + Math.random()*300, y: 200 + Math.random()*300,
-                        hp: p.hp || 20, maxHp: p.maxHp || 20, ac: p.ac || 10,
-                        tokenType: "pc", partyId: p.id, player: p.player || "",
-                        str: p.str, dex: p.dex, con: p.con, int: p.int, wis: p.wis, cha: p.cha,
-                        speed: p.speed || 30, cls: p.cls || "", level: p.lv || 1,
-                      };
-                      setTokens(prev => [...prev, t]);
-                    }}>
-                    <span style={{ fontSize: 9 }}>+ {p.name || "PC"}</span>
-                  </button>
-                ))}
-              </div>
-              <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                <button className="cm-action-card" style={{ "--action-color": "#a78bfa", padding: "4px 10px", minWidth: "auto" }}
-                  onClick={() => tokenImgRef.current?.click()}>
-                  <span style={{ fontSize: 9 }}>Upload Token</span>
-                </button>
-                <button className="cm-action-card" style={{ "--action-color": "#ef4444", padding: "4px 10px", minWidth: "auto" }}
-                  onClick={() => { setMode("combat"); setSidebarOpen(true); setCombatTab("monsters"); }}>
-                  <span style={{ fontSize: 9 }}>Monsters</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Scenes */}
-            <div>
-              <div style={{ font: "700 8px/1 'Cinzel', serif", letterSpacing: "1px", textTransform: "uppercase", color: "var(--text-faint)", marginBottom: 8 }}>Scenes</div>
-              <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 4 }}>
-                <button className="cm-action-card" style={{ "--action-color": "#5ee09a", padding: "4px 10px", minWidth: "auto" }}
-                  onClick={() => setShowScenePanel(true)}>
-                  <span style={{ fontSize: 9 }}>Scene Manager</span>
-                </button>
-                <span style={{ font: "400 9px/1.4 'Spectral', serif", color: "var(--text-faint)", alignSelf: "center" }}>{battleMaps.length} map{battleMaps.length !== 1 ? "s" : ""}</span>
-              </div>
-              {battleMaps.length > 0 && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                  {battleMaps.map(map => (
-                    <button key={map.id} className={"cm-action-card" + (activeMapId === map.id ? " is-selected" : "")}
-                      style={{ "--action-color": "#5ee09a", padding: "5px 10px", minWidth: "auto", textAlign: "left" }}
-                      onClick={() => switchToMapOverview(map.id)}>
-                      <span style={{ fontSize: 9 }}>{map.name} ({(map.scenes || []).length})</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Start Encounter */}
-            {!combatLive && (
-              <button type="button" className="cm-action-card" style={{ "--action-color": "var(--action-color-endturn, #5ee09a)", padding: "10px 12px", width: "100%", textAlign: "center" }}
-                onClick={() => { setMode("combat"); setSidebarOpen(true); }}>
-                <span style={{ fontSize: 11, color: "var(--action-color-endturn, #5ee09a)", fontWeight: 700, letterSpacing: "0.5px" }}>Start Encounter</span>
-              </button>
-            )}
-          </div>
-        )}
-      </React.Fragment>
-    );
-  };
-
-  return (
-    <div className="cm-right-sidebar">
-      <div className="cm-right-sidebar-header">
-        <span className="cm-right-sidebar-title">{token ? (token.name || "Character") : "Map Setup"}</span>
-        {token && (
-          <button type="button" onClick={onClose}
-            style={{ background: "rgba(255,255,255,0.03)", border: "1px solid var(--border, rgba(255,255,255,0.08))", borderRadius: 8, color: "var(--text-faint)", cursor: "pointer", padding: "3px 6px", fontSize: 11 }}>✕</button>
-        )}
-      </div>
-      <div className="cm-right-sidebar-body">
-        {renderCharacter()}
-        {renderMapSetup()}
-        {!token && !isDM && (
-          <div style={{ padding: "20px 0", textAlign: "center", font: "400 11px/1.5 'Spectral', serif", color: "var(--text-faint)" }}>
-            Click a token on the map to view its character sheet.
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-
-/* ═══════════════════════════════════════════════════════════════════════════
    ENHANCED ACTION PANEL — categorized D&D 5e actions with economy tracking
    ═══════════════════════════════════════════════════════════════════════════ */
 const EnhancedActionPanel = ({ visible, token, turnState, viewRole, onSelectAction, onSelectCategory, selectedCategory, onEndTurn, onMove, moveLabel, actionCards }) => {
@@ -14671,35 +14309,6 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               </div>
             )}
 
-            {/* ── RIGHT SIDEBAR: unified character sheet + map setup ── */}
-            {!combatLogSidebarOpen && (selectedToken || (!combatLive && viewRole === "dm")) && (() => {
-              const _pm = selectedToken ? getPartyProfile(selectedToken) : null;
-              const _cp = selectedToken ? getCombatProfile(selectedToken) : null;
-              return (
-                <RightSidebar
-                  token={selectedToken}
-                  partyMember={_pm}
-                  combatProfile={_cp}
-                  onClose={() => setSelectedTokenId(null)}
-                  onOpenBuilder={(url) => { if (url) window.open(url, "_blank"); }}
-                  setupTab={setupTab} setSetupTab={setSetupTab}
-                  bgColor={bgColor} setBgColor={setBgColor}
-                  bgImage={bgImage} setBgImage={setBgImage}
-                  bgPresets={bgPresets}
-                  gridSize={gridSize} setGridSize={setGridSize}
-                  showGrid={showGrid} setShowGrid={setShowGrid}
-                  snapToGrid={snapToGrid} setSnapToGrid={setSnapToGrid}
-                  party={party} tokens={tokens} setTokens={setTokens}
-                  battleMaps={battleMaps} activeMapId={activeMapId}
-                  switchToMapOverview={switchToMapOverview}
-                  setShowScenePanel={setShowScenePanel}
-                  setMode={setMode} setSidebarOpen={setSidebarOpen} setCombatTab={setCombatTab}
-                  mapImgInputRef={mapImgInputRef} tokenImgRef={tokenImgRef}
-                  combatLive={combatLive} viewRole={viewRole}
-                  T={T}
-                />
-              );
-            })()}
 
             {/* ── BOTTOM: Enhanced Action Panel (full-width categorized D&D 5e actions) ── */}
             {combatLive && activeCombatantToken && !movementMode && !combatLogSidebarOpen && (
@@ -16751,18 +16360,277 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               </div>
             </div>
           ) : (
-            /* Non-combat sidebar - show general info */
-            <div style={{ padding:16 }}>
-              <div style={{ fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", marginBottom:12 }}>
-                {selectedToken ? "Selected: " + selectedToken.name : "No token selected"}
-              </div>
-              {selectedToken && (
-                <div style={{ fontSize:12, fontFamily:T.body, color:T.textMuted, lineHeight:1.8 }}>
-                  HP: {selectedToken.hp || 0}/{selectedToken.maxHp || 0}<br/>
-                  AC: {selectedToken.ac || "?"}<br/>
-                  Speed: {selectedToken.speed || 30} ft
-                </div>
-              )}
+            /* Non-combat sidebar — character sheet + map setup */
+            <div style={{ padding: 0, display: "flex", flexDirection: "column", height: "100%", overflowY: "auto" }}>
+              {(() => {
+                const _pm = selectedToken ? getPartyProfile(selectedToken) : null;
+                const _cp = selectedToken ? getCombatProfile(selectedToken) : null;
+                const abilities = _cp?.abilities || {};
+                const _toMod = (v) => { const m = Math.floor((v - 10) / 2); return m >= 0 ? "+" + m : String(m); };
+                const hpPct = selectedToken?.maxHp ? Math.max(0, Math.min(100, Math.round((selectedToken.hp || 0) / selectedToken.maxHp * 100))) : 0;
+                const hpCol = hpPct > 60 ? "#5ee09a" : hpPct > 30 ? "#f59e0b" : "#ef4444";
+                const equipment = _cp?.equipment || _pm?.equipment || [];
+                const knownSpells = _cp?.knownSpells || _pm?.knownSpells || [];
+                const feats = _cp?.feats || [];
+                const conditions = _cp?.conditions || [];
+                const resistances = _cp?.resistances || [];
+                const passives = _cp?.passives || [];
+                const customFeatures = _cp?.customFeatures || [];
+                const profBonus = _cp?.proficiencyBonus || 0;
+                const savingThrows = ["str","dex","con","int","wis","cha"].map(ab => {
+                  const val = abilities[ab] != null ? abilities[ab] : (selectedToken?.[ab] != null ? selectedToken[ab] : 10);
+                  return { ab, val, mod: Math.floor((val - 10) / 2) };
+                });
+
+                return (
+                  <React.Fragment>
+                    {/* ── Character Section ── */}
+                    {selectedToken ? (
+                      <div style={{ padding: "16px 18px", borderBottom: "1px solid " + T.border }}>
+                        {/* Portrait */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+                          <div style={{ width: 56, height: 56, borderRadius: "50%", background: selectedToken.color || "#555", border: "2px solid " + (selectedToken.tokenType === "pc" ? "#29b6f6" : T.border), overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontFamily: T.ui, fontSize: 16, fontWeight: 700, flexShrink: 0 }}>
+                            {selectedToken.imageSrc ? <img src={selectedToken.imageSrc} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (selectedToken.label || selectedToken.name?.substring(0,2) || "??").toUpperCase()}
+                          </div>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{ fontFamily: T.ui, fontSize: 16, fontWeight: 700, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selectedToken.name}</div>
+                            <div style={{ fontFamily: T.body, fontSize: 11, color: T.textMuted, marginTop: 2 }}>
+                              {[_pm?.race || _cp?.species, _pm?.cls || _cp?.className, _cp?.level ? "Lv " + _cp.level : null, _pm?.subclass || _cp?.subclass].filter(Boolean).join(" · ") || selectedToken.tokenType || "Creature"}
+                            </div>
+                            {_pm?.player && <div style={{ fontFamily: T.body, fontSize: 10, color: T.textFaint, marginTop: 2 }}>Player: {_pm.player}</div>}
+                            {_pm?.background && <div style={{ fontFamily: T.body, fontSize: 10, color: T.textFaint }}>Background: {_pm.background}</div>}
+                          </div>
+                          <button onClick={() => setSelectedTokenId(null)} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid " + T.border, borderRadius: 8, color: T.textFaint, cursor: "pointer", padding: "4px 7px", fontSize: 12, flexShrink: 0 }}>✕</button>
+                        </div>
+
+                        {/* HP / AC / Speed */}
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 10 }}>
+                          <div style={{ padding: "8px 6px", borderRadius: 10, textAlign: "center", background: "rgba(0,0,0,0.15)", border: "1px solid " + hpCol + "33" }}>
+                            <div style={{ fontFamily: T.ui, fontSize: 7, letterSpacing: "1px", textTransform: "uppercase", color: hpCol }}>HP</div>
+                            <div style={{ fontFamily: T.body, fontSize: 22, fontWeight: 700, color: hpCol, lineHeight: 1.1 }}>{selectedToken.hp != null ? selectedToken.hp : "?"}</div>
+                            <div style={{ fontFamily: T.body, fontSize: 10, color: T.textFaint }}>/ {selectedToken.maxHp || "?"}</div>
+                          </div>
+                          <div style={{ padding: "8px 6px", borderRadius: 10, textAlign: "center", background: "rgba(0,0,0,0.15)", border: "1px solid " + T.border }}>
+                            <div style={{ fontFamily: T.ui, fontSize: 7, letterSpacing: "1px", textTransform: "uppercase", color: T.textFaint }}>AC</div>
+                            <div style={{ fontFamily: T.body, fontSize: 22, fontWeight: 700, color: T.text, lineHeight: 1.1 }}>{selectedToken.ac || _cp?.ac || "?"}</div>
+                            <div style={{ fontFamily: T.body, fontSize: 10, color: T.textFaint }}>armor</div>
+                          </div>
+                          <div style={{ padding: "8px 6px", borderRadius: 10, textAlign: "center", background: "rgba(0,0,0,0.15)", border: "1px solid " + T.border }}>
+                            <div style={{ fontFamily: T.ui, fontSize: 7, letterSpacing: "1px", textTransform: "uppercase", color: T.textFaint }}>Speed</div>
+                            <div style={{ fontFamily: T.body, fontSize: 22, fontWeight: 700, color: T.text, lineHeight: 1.1 }}>{selectedToken.speed || _cp?.speed || 30}</div>
+                            <div style={{ fontFamily: T.body, fontSize: 10, color: T.textFaint }}>ft</div>
+                          </div>
+                        </div>
+                        <div style={{ height: 8, background: "rgba(255,255,255,0.05)", borderRadius: 999, overflow: "hidden", marginBottom: 14 }}>
+                          <div style={{ width: hpPct + "%", height: "100%", background: "linear-gradient(90deg," + hpCol + "," + hpCol + "cc)", borderRadius: 999, boxShadow: "0 0 10px " + hpCol + "55", transition: "width 0.3s ease" }} />
+                        </div>
+
+                        {/* Ability Scores */}
+                        <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1px", textTransform: "uppercase", color: T.textFaint, marginBottom: 6 }}>Ability Scores</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 4, marginBottom: 14 }}>
+                          {savingThrows.map(st => (
+                            <div key={st.ab} style={{ padding: "6px 2px", borderRadius: 8, textAlign: "center", background: "rgba(0,0,0,0.12)", border: "1px solid " + T.border }}>
+                              <div style={{ fontFamily: T.ui, fontSize: 7, letterSpacing: "0.8px", textTransform: "uppercase", color: T.textFaint }}>{st.ab}</div>
+                              <div style={{ fontFamily: T.body, fontSize: 18, fontWeight: 700, color: T.text, lineHeight: 1.2 }}>{st.val}</div>
+                              <div style={{ fontFamily: T.body, fontSize: 10, color: T.textMuted }}>{_toMod(st.val)}</div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Quick chips */}
+                        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 12 }}>
+                          {profBonus > 0 && <span style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(41,182,246,0.08)", border: "1px solid rgba(41,182,246,0.2)", color: "#29b6f6" }}>Prof +{profBonus}</span>}
+                          {_cp?.initiativeBonus != null && <span style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(255,255,255,0.03)", border: "1px solid " + T.border, color: T.textMuted }}>Init {_cp.initiativeBonus >= 0 ? "+" : ""}{_cp.initiativeBonus}</span>}
+                          {_cp?.spellcastingMod != null && _cp.spellcastingMod !== 0 && <span style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.2)", color: "#a78bfa" }}>DC {8 + profBonus + _cp.spellcastingMod}</span>}
+                          <span style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(255,255,255,0.03)", border: "1px solid " + T.border, color: T.textMuted }}>PP {10 + Math.floor(((abilities.wis || 10) - 10) / 2)}</span>
+                        </div>
+
+                        {/* Saving Throws */}
+                        <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1px", textTransform: "uppercase", color: T.textFaint, marginBottom: 6 }}>Saving Throws</div>
+                        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 12 }}>
+                          {savingThrows.map(st => (
+                            <span key={"sv-"+st.ab} style={{ padding: "3px 7px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(0,0,0,0.1)", border: "1px solid " + T.border, color: T.textMuted }}>{st.ab.toUpperCase()} {st.mod >= 0 ? "+" : ""}{st.mod}</span>
+                          ))}
+                        </div>
+
+                        {/* Conditions */}
+                        {conditions.length > 0 && (
+                          <div style={{ marginBottom: 12 }}>
+                            <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1px", textTransform: "uppercase", color: T.textFaint, marginBottom: 6 }}>Conditions</div>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                              {conditions.map(c => <span key={c} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444" }}>{c}</span>)}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Resistances */}
+                        {resistances.length > 0 && (
+                          <div style={{ marginBottom: 12 }}>
+                            <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1px", textTransform: "uppercase", color: T.textFaint, marginBottom: 6 }}>Resistances</div>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                              {resistances.map((r, i) => <span key={i} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", color: "#f59e0b" }}>{typeof r === "string" ? r : (r.name || r.type || "Resist")}</span>)}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Equipment */}
+                        {equipment.length > 0 && (
+                          <div style={{ marginBottom: 12 }}>
+                            <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1px", textTransform: "uppercase", color: T.textFaint, marginBottom: 6 }}>Weapons & Equipment</div>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                              {equipment.map((w, i) => <span key={i} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", color: "#ef4444" }}>{typeof w === "string" ? w : (w.name || "Item")}</span>)}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Spell Slots */}
+                        {_cp?.spellSlots && Object.keys(_cp.spellSlots).some(k => _cp.spellSlots[k] > 0) && (
+                          <div style={{ marginBottom: 12 }}>
+                            <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1px", textTransform: "uppercase", color: T.textFaint, marginBottom: 6 }}>Spell Slots</div>
+                            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                              {Object.keys(_cp.spellSlots).sort((a, b) => a - b).filter(k => _cp.spellSlots[k] > 0).map(lv => {
+                                const used = (_cp.usedSlots || {})[lv] || 0;
+                                const max = _cp.spellSlots[lv];
+                                const rem = max - used;
+                                return (
+                                  <div key={lv} style={{ padding: "5px 8px", borderRadius: 8, textAlign: "center", background: "rgba(0,0,0,0.12)", border: "1px solid " + (rem > 0 ? "rgba(167,139,250,0.2)" : T.border), minWidth: 42 }}>
+                                    <div style={{ fontFamily: T.ui, fontSize: 7, letterSpacing: "0.8px", color: T.textFaint }}>Lv {lv}</div>
+                                    <div style={{ fontFamily: T.body, fontSize: 16, fontWeight: 700, color: rem > 0 ? "#a78bfa" : T.textFaint }}>{rem}</div>
+                                    <div style={{ fontFamily: T.body, fontSize: 9, color: T.textFaint }}>/ {max}</div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Known Spells */}
+                        {knownSpells.length > 0 && (
+                          <div style={{ marginBottom: 12 }}>
+                            <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1px", textTransform: "uppercase", color: T.textFaint, marginBottom: 6 }}>Spells ({knownSpells.length})</div>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                              {knownSpells.slice(0, 30).map((sp, i) => <span key={i} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.15)", color: "#a78bfa" }}>{typeof sp === "string" ? sp : (sp.name || "Spell")}</span>)}
+                              {knownSpells.length > 30 && <span style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, color: T.textFaint, fontStyle: "italic" }}>+{knownSpells.length - 30} more</span>}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Feats & Features */}
+                        {(feats.length > 0 || customFeatures.length > 0 || passives.length > 0) && (
+                          <div style={{ marginBottom: 12 }}>
+                            <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1px", textTransform: "uppercase", color: T.textFaint, marginBottom: 6 }}>Features & Feats</div>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                              {feats.map((f, i) => <span key={"ft-"+i} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)", color: "#f59e0b" }}>{typeof f === "string" ? f : (f.name || "Feat")}</span>)}
+                              {customFeatures.map((f, i) => <span key={"cf-"+i} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(255,255,255,0.03)", border: "1px solid " + T.border, color: T.textMuted }}>{typeof f === "string" ? f : (f.name || "Feature")}</span>)}
+                              {passives.map((p, i) => <span key={"ps-"+i} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(255,255,255,0.03)", border: "1px solid " + T.border, color: T.textMuted }}>{typeof p === "string" ? p : (p.name || "Passive")}</span>)}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Bio */}
+                        {(_pm?.bio || selectedToken.notes) && (
+                          <div style={{ marginBottom: 12 }}>
+                            <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1px", textTransform: "uppercase", color: T.textFaint, marginBottom: 6 }}>Notes</div>
+                            <div style={{ fontSize: 11, fontFamily: T.body, color: T.textMuted, lineHeight: 1.5, whiteSpace: "pre-wrap", maxHeight: 120, overflowY: "auto" }}>{_pm?.bio || selectedToken.notes}</div>
+                          </div>
+                        )}
+
+                        {/* Open Builder */}
+                        {_pm?.sheetUrl && (
+                          <button onClick={() => window.open(_pm.sheetUrl, "_blank")}
+                            style={{ width: "100%", padding: "10px", background: "rgba(41,182,246,0.08)", border: "1px solid rgba(41,182,246,0.25)", borderRadius: 8, color: "#29b6f6", fontFamily: T.ui, fontSize: 11, fontWeight: 600, letterSpacing: "0.5px", cursor: "pointer", textTransform: "uppercase", marginBottom: 12 }}>
+                            Open in Character Builder
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ padding: "16px 18px" }}>
+                        <div style={{ fontFamily: T.ui, fontSize: 10, letterSpacing: "1.5px", color: T.textFaint, textTransform: "uppercase", marginBottom: 10 }}>Click a token to view its character sheet</div>
+                      </div>
+                    )}
+
+                    {/* ── Map Setup Section (always visible for DM) ── */}
+                    {viewRole === "dm" && (
+                      <div style={{ padding: "14px 18px", borderTop: "1px solid " + T.border }}>
+                        <div style={{ fontFamily: T.ui, fontSize: 9, letterSpacing: "1.2px", textTransform: "uppercase", color: T.textFaint, marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <span>Map Settings</span>
+                          {!combatLive && (
+                            <button onClick={() => { setMode("combat"); setSidebarOpen(true); }}
+                              style={{ padding: "4px 10px", background: "rgba(94,224,154,0.08)", border: "1px solid rgba(94,224,154,0.25)", borderRadius: 6, color: "#5ee09a", fontFamily: T.ui, fontSize: 9, fontWeight: 600, cursor: "pointer", letterSpacing: "0.5px" }}>
+                              Start Encounter
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Background */}
+                        <div style={{ marginBottom: 12 }}>
+                          <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: T.textFaint, marginBottom: 6, textTransform: "uppercase" }}>Background</div>
+                          <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 6 }}>
+                            {bgPresets.map(p => (
+                              <button key={p.c} onClick={() => setBgColor(p.c)} title={p.l}
+                                style={{ width: 26, height: 26, borderRadius: 6, background: p.c, border: bgColor === p.c ? "2px solid " + T.crimson : "1px solid " + T.border, cursor: "pointer" }} />
+                            ))}
+                            <input type="color" value={bgColor} onChange={e => setBgColor(e.target.value)}
+                              style={{ width: 26, height: 26, border: "1px solid " + T.border, background: "none", padding: 0, cursor: "pointer", borderRadius: 6 }} />
+                          </div>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <button onClick={() => mapImgInputRef.current?.click()} style={{ padding: "5px 10px", background: "rgba(41,182,246,0.08)", border: "1px solid rgba(41,182,246,0.2)", borderRadius: 6, color: "#29b6f6", fontFamily: T.ui, fontSize: 9, cursor: "pointer" }}>{bgImage ? "Replace Map" : "Upload Map"}</button>
+                            {bgImage && <button onClick={() => setBgImage(null)} style={{ padding: "5px 10px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 6, color: "#ef4444", fontFamily: T.ui, fontSize: 9, cursor: "pointer" }}>Clear</button>}
+                          </div>
+                        </div>
+
+                        {/* Grid */}
+                        <div style={{ marginBottom: 12 }}>
+                          <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: T.textFaint, marginBottom: 6, textTransform: "uppercase" }}>Grid</div>
+                          <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 6 }}>
+                            {[20, 30, 40, 50, 60, 80].map(s => (
+                              <button key={s} onClick={() => setGridSize(s)}
+                                style={{ padding: "4px 8px", background: gridSize === s ? "rgba(245,158,11,0.12)" : "rgba(0,0,0,0.1)", border: "1px solid " + (gridSize === s ? "rgba(245,158,11,0.3)" : T.border), borderRadius: 5, color: gridSize === s ? "#f59e0b" : T.textMuted, fontFamily: T.ui, fontSize: 9, cursor: "pointer" }}>{s}px</button>
+                            ))}
+                          </div>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            <button onClick={() => setShowGrid(!showGrid)} style={{ padding: "4px 10px", background: showGrid ? "rgba(245,158,11,0.12)" : "rgba(0,0,0,0.1)", border: "1px solid " + (showGrid ? "rgba(245,158,11,0.3)" : T.border), borderRadius: 5, color: showGrid ? "#f59e0b" : T.textMuted, fontFamily: T.ui, fontSize: 9, cursor: "pointer" }}>{showGrid ? "Grid On" : "Grid Off"}</button>
+                            <button onClick={() => setSnapToGrid(!snapToGrid)} style={{ padding: "4px 10px", background: snapToGrid ? "rgba(245,158,11,0.12)" : "rgba(0,0,0,0.1)", border: "1px solid " + (snapToGrid ? "rgba(245,158,11,0.3)" : T.border), borderRadius: 5, color: snapToGrid ? "#f59e0b" : T.textMuted, fontFamily: T.ui, fontSize: 9, cursor: "pointer" }}>{snapToGrid ? "Snap On" : "Snap Off"}</button>
+                          </div>
+                        </div>
+
+                        {/* Tokens */}
+                        <div style={{ marginBottom: 12 }}>
+                          <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: T.textFaint, marginBottom: 6, textTransform: "uppercase" }}>Tokens</div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 6 }}>
+                            {(party || []).filter(p => !tokens.some(t => t.partyId === p.id)).map(p => (
+                              <button key={p.id} onClick={() => {
+                                const t = { id: "tok-" + Date.now() + "-" + Math.random().toString(36).slice(2,6), name: p.name || "PC", label: (p.name || "PC").substring(0,3), x: 200 + Math.random()*300, y: 200 + Math.random()*300, hp: p.hp || 20, maxHp: p.maxHp || 20, ac: p.ac || 10, tokenType: "pc", partyId: p.id, player: p.player || "", str: p.str, dex: p.dex, con: p.con, int: p.int, wis: p.wis, cha: p.cha, speed: p.speed || 30, cls: p.cls || "", level: p.lv || 1 };
+                                setTokens(prev => [...prev, t]);
+                              }} style={{ padding: "5px 10px", background: "rgba(220,20,60,0.06)", border: "1px solid rgba(220,20,60,0.15)", borderRadius: 6, color: T.crimson, fontFamily: T.ui, fontSize: 9, cursor: "pointer", textAlign: "left" }}>+ {p.name || "PC"}</button>
+                            ))}
+                          </div>
+                          <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+                            <button onClick={() => tokenImgRef.current?.click()} style={{ padding: "5px 10px", background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.2)", borderRadius: 6, color: "#a78bfa", fontFamily: T.ui, fontSize: 9, cursor: "pointer" }}>Upload Token</button>
+                            <button onClick={() => { setMode("combat"); setSidebarOpen(true); setCombatTab("monsters"); }} style={{ padding: "5px 10px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 6, color: "#ef4444", fontFamily: T.ui, fontSize: 9, cursor: "pointer" }}>Monsters</button>
+                          </div>
+                        </div>
+
+                        {/* Scenes */}
+                        <div style={{ marginBottom: 12 }}>
+                          <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: T.textFaint, marginBottom: 6, textTransform: "uppercase" }}>Scenes</div>
+                          <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 4 }}>
+                            <button onClick={() => setShowScenePanel(true)} style={{ padding: "5px 10px", background: "rgba(94,224,154,0.08)", border: "1px solid rgba(94,224,154,0.2)", borderRadius: 6, color: "#5ee09a", fontFamily: T.ui, fontSize: 9, cursor: "pointer" }}>Scene Manager</button>
+                            <span style={{ fontFamily: T.body, fontSize: 10, color: T.textFaint, alignSelf: "center" }}>{battleMaps.length} map{battleMaps.length !== 1 ? "s" : ""}</span>
+                          </div>
+                          {battleMaps.length > 0 && (
+                            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                              {battleMaps.map(map => (
+                                <button key={map.id} onClick={() => switchToMapOverview(map.id)} style={{ padding: "5px 10px", background: activeMapId === map.id ? "rgba(94,224,154,0.12)" : "rgba(0,0,0,0.08)", border: "1px solid " + (activeMapId === map.id ? "rgba(94,224,154,0.3)" : T.border), borderRadius: 6, color: activeMapId === map.id ? "#5ee09a" : T.textMuted, fontFamily: T.ui, fontSize: 9, cursor: "pointer", textAlign: "left" }}>{map.name} ({(map.scenes || []).length})</button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </React.Fragment>
+                );
+              })()}
             </div>
           )}
         </div>
