@@ -7471,8 +7471,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   /* Eagerly load and cache builder snapshots for all linked party members */
   const loadLinkedSnapshots = useCallback(() => {
     if (typeof PhmurtDB === "undefined" || !PhmurtDB.getSession || !PhmurtDB.getSession()) return;
-    const party = data?.party || [];
-    party.forEach(member => {
+    (party || []).forEach(member => {
       if (!member.sourceCharacterId) return;
       const cacheKey = "phmurt_builder_snap_" + member.sourceCharacterId;
       try { if (sessionStorage.getItem(cacheKey)) return; } catch (_) {}
@@ -7480,17 +7479,19 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         if (!snap) return;
         try { sessionStorage.setItem(cacheKey, JSON.stringify(snap)); } catch (_) {}
         /* Also store weapons/spells on the party member for immediate combat access */
-        setData(d => ({
-          ...d,
-          party: (d.party || []).map(p =>
-            p.sourceCharacterId === member.sourceCharacterId && !p.builderSnapshot
-              ? { ...p, builderSnapshot: snap }
-              : p
-          ),
-        }));
+        if (setData) {
+          setData(d => ({
+            ...d,
+            party: (d.party || []).map(p =>
+              p.sourceCharacterId === member.sourceCharacterId && !p.builderSnapshot
+                ? { ...p, builderSnapshot: snap }
+                : p
+            ),
+          }));
+        }
       }).catch(() => {});
     });
-  }, [data?.party?.length]);
+  }, [party?.length]);
 
   useEffect(() => { loadLinkedSnapshots(); }, [loadLinkedSnapshots]);
 
