@@ -4674,7 +4674,8 @@ function TimelineView({ data, setData, onNav }) {
 // WORLD STATE
 // ═══════════════════════════════════════════════════════════════════════════
 
-function WorldView({ data, setData, onNav }) {
+function WorldView({ data, setData, onNav, viewRole = "dm" }) {
+  const isDM = viewRole === "dm";
   const [sel,setSel] = useState(null);
   const [selType,setSelType] = useState(null);
   const [tab,setTab] = useState("map");
@@ -16408,7 +16409,7 @@ function App() {
       <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0, overflow:"hidden" }}>
         {activeTab === "dashboard" && <DashboardView data={data} setData={setData} onNav={setActiveTab} />}
         {activeTab === "timeline" && <TimelineView data={data} setData={setData} onNav={setActiveTab} />}
-        {activeTab === "world" && <WorldView data={data} setData={setData} />}
+        {activeTab === "world" && <WorldView data={data} setData={setData} onNav={setActiveTab} viewRole={viewRole} />}
         {activeTab === "play" && (
           <BattlemapErrorBoundary>
             <Battlemap
