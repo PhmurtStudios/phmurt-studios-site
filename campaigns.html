@@ -59,6 +59,14 @@
     }
     .cm-combat-shell * { box-sizing: border-box; }
 
+    /* ═══ INITIATIVE BAR (BG3-style, top of battlemap) ═══ */
+    .cm-initiative-bar-wrapper {
+      background: linear-gradient(180deg, rgba(6,6,12,0.94) 0%, rgba(6,6,12,0.85) 80%, rgba(6,6,12,0) 100%);
+    }
+    html.light-mode .cm-initiative-bar-wrapper {
+      background: linear-gradient(180deg, rgba(247,240,222,0.96) 0%, rgba(247,240,222,0.88) 80%, rgba(247,240,222,0) 100%);
+    }
+
     /* ═══ TOP BAR — initiative rail + round counter ═══ */
     .cm-top-strip {
       position: relative;
@@ -68,11 +76,11 @@
       gap: 6px;
       padding: 4px 8px;
       margin: 6px 8px 0;
-      border: 1px solid rgba(255,255,255,0.06);
+      border: 1px solid var(--top-strip-border, rgba(255,255,255,0.06));
       border-radius: 12px;
-      background: rgba(7,8,12,0.88);
+      background: var(--top-strip-bg, rgba(7,8,12,0.88));
       backdrop-filter: blur(14px);
-      box-shadow: 0 8px 28px rgba(0,0,8,0.45);
+      box-shadow: var(--top-strip-shadow, 0 8px 28px rgba(0,0,8,0.45));
     }
 
     .cm-round-badge {
@@ -117,7 +125,7 @@
       transition: background 100ms ease, border-color 100ms ease;
       flex-shrink: 0;
     }
-    .cm-init-chip:hover { background: rgba(255,255,255,0.04); }
+    .cm-init-chip:hover { background: var(--bg-hover-subtle, rgba(255,255,255,0.04)); }
     .cm-init-chip.is-active {
       background: rgba(255,213,79,0.07);
       border-color: rgba(255,213,79,0.22);
@@ -128,10 +136,10 @@
       width: 24px; height: 24px;
       border-radius: 50%;
       display: flex; align-items: center; justify-content: center;
-      color: #fff;
+      color: var(--text, #fff);
       font: 700 8px 'Cinzel', serif;
       overflow: hidden;
-      border: 2px solid rgba(255,255,255,0.06);
+      border: 2px solid var(--border-mid, rgba(255,255,255,0.06));
       flex-shrink: 0;
       position: relative;
     }
@@ -153,7 +161,7 @@
     }
     .cm-init-name {
       font: 700 9px/1.1 'Cinzel', serif;
-      color: rgba(242,232,214,0.8);
+      color: var(--text-dim, rgba(242,232,214,0.8));
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       max-width: 64px;
     }
@@ -161,7 +169,7 @@
     .cm-init-meta {
       font: 400 7px/1 'Spectral', serif;
       letter-spacing: 0.3px;
-      color: rgba(242,232,214,0.38);
+      color: var(--text-faint, rgba(242,232,214,0.38));
       white-space: nowrap;
     }
 
@@ -799,7 +807,7 @@
       background: var(--action-panel-bg, rgba(7,8,12,0.96));
       backdrop-filter: blur(18px);
       border-left: 1px solid var(--border, rgba(255,255,255,0.08));
-      box-shadow: -4px 0 24px rgba(0,0,0,0.4);
+      box-shadow: var(--sidebar-shadow, -4px 0 24px rgba(0,0,0,0.4));
       z-index: 28;
       overflow-y: auto;
       transition: transform 200ms ease, opacity 160ms ease;
@@ -839,7 +847,7 @@
       align-items: center;
       justify-content: center;
       font: 700 16px/1 'Cinzel', serif;
-      color: #fff;
+      color: var(--text, #fff);
       border: 2px solid var(--border, rgba(255,255,255,0.12));
       overflow: hidden;
       flex-shrink: 0;
@@ -899,7 +907,7 @@
     }
     .cm-char-sheet-hp-bar {
       height: 8px;
-      background: rgba(255,255,255,0.05);
+      background: var(--hp-bar-track, rgba(255,255,255,0.05));
       border-radius: 999px;
       overflow: hidden;
       margin-top: 6px;
@@ -1425,18 +1433,85 @@
       border-color: rgba(124,58,237,0.25);
       background: rgba(124,58,237,0.06);
     }
+    /* Light mode for top strip (initiative rail) */
+    html.light-mode .cm-top-strip {
+      background: var(--top-strip-bg);
+      border-color: var(--top-strip-border);
+      box-shadow: var(--top-strip-shadow);
+    }
+    html.light-mode .cm-round-badge {
+      background: rgba(180,120,0,0.08);
+      border-color: rgba(180,120,0,0.2);
+      color: #a07000;
+    }
+    html.light-mode .cm-init-chip:hover {
+      background: var(--bg-hover-subtle);
+    }
+    html.light-mode .cm-init-chip.is-active {
+      background: rgba(180,120,0,0.08);
+      border-color: rgba(180,120,0,0.25);
+    }
+    html.light-mode .cm-init-avatar {
+      color: var(--text);
+      border-color: var(--border-mid);
+    }
+    html.light-mode .cm-init-chip.is-active .cm-init-avatar {
+      border-color: rgba(180,120,0,0.7);
+      box-shadow: 0 0 10px rgba(180,120,0,0.18);
+    }
+    html.light-mode .cm-init-name {
+      color: var(--text-dim);
+    }
+    html.light-mode .cm-init-chip.is-active .cm-init-name {
+      color: #a07000;
+    }
+    html.light-mode .cm-init-meta {
+      color: var(--text-faint);
+    }
     /* Light mode for right sidebar (combat sidebar + character sheet) */
     html.light-mode .cm-right-sidebar {
-      background: rgba(255,255,255,0.97);
+      background: rgba(247,240,222,0.97);
+      box-shadow: var(--sidebar-shadow);
+      border-left-color: var(--border);
     }
     html.light-mode .cm-right-sidebar-header {
       border-bottom-color: rgba(0,0,0,0.08);
     }
     html.light-mode .cm-right-sidebar-title {
-      color: #1e293b;
+      color: var(--text-muted);
+    }
+    html.light-mode .cm-char-sheet-avatar {
+      color: var(--text);
+      border-color: var(--border);
+    }
+    html.light-mode .cm-char-sheet-name {
+      color: var(--text);
+    }
+    html.light-mode .cm-char-sheet-subtitle {
+      color: var(--text-faint);
+    }
+    html.light-mode .cm-char-sheet-stat {
+      background: var(--action-card-bg);
+      border-color: var(--action-card-border);
+    }
+    html.light-mode .cm-char-sheet-stat-label {
+      color: var(--text-faint);
+    }
+    html.light-mode .cm-char-sheet-stat-value {
+      color: var(--text);
+    }
+    html.light-mode .cm-char-sheet-stat-mod {
+      color: var(--text-muted);
+    }
+    html.light-mode .cm-char-sheet-section-title {
+      color: var(--text-faint);
+      border-bottom-color: var(--action-panel-divider);
+    }
+    html.light-mode .cm-char-sheet-hp-bar {
+      background: var(--hp-bar-track);
     }
     html.light-mode .cm-log-sidebar {
-      background: rgba(255,255,255,0.97);
+      background: rgba(247,240,222,0.97);
     }
   </style>
 </head>
@@ -1964,16 +2039,54 @@ const TurnControls = ({ combatLive, canControlTurn, onUndo, onNextTurn, onToggle
   </div>
 );
 
-/* ── Top Bar (initiative rail + round badge + controls) ── */
-const CombatTopBar = ({ combatLive, round, turn, combatants, tokens, canControlTurn, logOpen, onUndo, onNextTurn, onToggleLog, onSelectCombatant, onEndCombat }) => (
-  <div className="cm-top-strip">
-    <div className="cm-round-badge">
-      {combatLive ? ("R" + round + " · T" + (turn + 1) + "/" + Math.max(1, combatants.length)) : "Setup"}
+/* ── Top Bar (initiative rail + round badge + controls + roll display) ── */
+const CombatTopBar = ({ combatLive, round, turn, combatants, tokens, canControlTurn, logOpen, onUndo, onNextTurn, onToggleLog, onSelectCombatant, onEndCombat, combatRollLog }) => {
+  const rollTypeColor = (type) => type === "crit" ? "#ffd700" : type === "hit" ? "#5ee09a" : type === "miss" ? "#f06858" : "#b574ff";
+  const rollTypeIcon = (type) => type === "crit" ? "\u2728" : type === "hit" ? "\u2694\uFE0F" : type === "miss" ? "\u26A0\uFE0F" : "\u2728";
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
+      <div className="cm-top-strip">
+        <div className="cm-round-badge">
+          {combatLive ? ("R" + round + " · T" + (turn + 1) + "/" + Math.max(1, combatants.length)) : "Setup"}
+        </div>
+        <InitiativeStrip combatants={combatants} tokens={tokens} turn={turn} round={round} onSelectCombatant={onSelectCombatant} />
+        <TurnControls combatLive={combatLive} canControlTurn={canControlTurn} logOpen={logOpen} onUndo={onUndo} onNextTurn={onNextTurn} onToggleLog={onToggleLog} onEndCombat={onEndCombat} />
+      </div>
+      {combatRollLog && combatRollLog.length > 0 && (
+        <div style={{ display:"flex", gap:4, padding:"3px 8px", margin:"0 8px", overflowX:"auto", scrollbarWidth:"none" }}>
+          {combatRollLog.map(roll => {
+            const age = (Date.now() - roll.time) / 5000;
+            if (age > 1) return null;
+            const opacity = age < 0.7 ? 1 : Math.max(0, 1 - (age - 0.7) * 3.3);
+            const color = rollTypeColor(roll.type);
+            return (
+              <div key={roll.id} style={{
+                display:"flex", alignItems:"center", gap:6, padding:"4px 10px",
+                background:"var(--action-card-bg, rgba(255,255,255,0.03))",
+                border:"1px solid " + color + "55",
+                borderLeft:"3px solid " + color,
+                borderRadius:6, opacity: opacity, flexShrink:0,
+                transition:"opacity 200ms ease",
+              }}>
+                <span style={{ fontSize:12 }}>{rollTypeIcon(roll.type)}</span>
+                <div style={{ minWidth:0 }}>
+                  <div style={{ fontFamily:"'Cinzel', serif", fontSize:10, fontWeight:700, color: color, whiteSpace:"nowrap", letterSpacing:"0.5px" }}>
+                    {roll.msg}
+                  </div>
+                  {roll.detail && (
+                    <div style={{ fontFamily:"'Spectral', serif", fontSize:8, color:"var(--text-muted, #9a8870)", whiteSpace:"nowrap", marginTop:1 }}>
+                      {roll.detail}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
-    <InitiativeStrip combatants={combatants} tokens={tokens} turn={turn} round={round} onSelectCombatant={onSelectCombatant} />
-    <TurnControls combatLive={combatLive} canControlTurn={canControlTurn} logOpen={logOpen} onUndo={onUndo} onNextTurn={onNextTurn} onToggleLog={onToggleLog} onEndCombat={onEndCombat} />
-  </div>
-);
+  );
+};
 
 /* ── Focus Strip (compact active-unit summary, bottom-left) ── */
 const FocusStrip = ({ token, combatant, conditions, moveLabel, actionReady, bonusReady, reactionReady, canAdjustHp, onAdjustHp, onToggleCondition }) => {
@@ -2542,7 +2655,7 @@ const TargetReticle = ({ target, gridSize, zoom, pan }) => {
 /* ═══════════════════════════════════════════════════════════════════════════
    INITIATIVE BAR — BG3-style horizontal turn order across top of battlemap
    ═══════════════════════════════════════════════════════════════════════════ */
-const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, selectedTokenId, onSelectToken, onNextTurn, onPrevTurn, turnState, getHpColor, getMergedConditions, getDeathState, onToggleLog, onEndCombat, logOpen }) => {
+const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, selectedTokenId, onSelectToken, onNextTurn, onPrevTurn, turnState, getHpColor, getMergedConditions, getDeathState, onToggleLog, onEndCombat, logOpen, combatRollLog }) => {
   if (!combatants || combatants.length === 0) return null;
   const scrollRef = React.useRef(null);
 
@@ -2555,9 +2668,8 @@ const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, sel
   }, [turn]);
 
   return (
-    <div style={{
+    <div className="cm-initiative-bar-wrapper" style={{
       position: "absolute", top: 0, left: 0, right: 0, zIndex: 50,
-      background: "linear-gradient(180deg, rgba(6,6,12,0.94) 0%, rgba(6,6,12,0.85) 80%, rgba(6,6,12,0) 100%)",
       backdropFilter: "blur(12px)",
       padding: "8px 12px 16px",
       pointerEvents: "auto",
@@ -2573,23 +2685,23 @@ const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, sel
           </span>
         </div>
         <div style={{ display: "flex", gap: 4 }}>
-          <button onClick={onPrevTurn} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "3px 10px", cursor: "pointer", color: T.textFaint, fontFamily: T.ui, fontSize: 9, letterSpacing: "1px" }}
-            onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.08)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.04)"}>
+          <button onClick={onPrevTurn} style={{ background: "var(--bg-hover-subtle)", border: "1px solid var(--border-mid)", borderRadius: 6, padding: "3px 10px", cursor: "pointer", color: T.textFaint, fontFamily: T.ui, fontSize: 9, letterSpacing: "1px" }}
+            onMouseEnter={e => e.currentTarget.style.background = "var(--bg-hover)"} onMouseLeave={e => e.currentTarget.style.background = "var(--bg-hover-subtle)"}>
             PREV
           </button>
-          <button onClick={onNextTurn} style={{ background: "rgba(212,67,58,0.12)", border: "1px solid rgba(212,67,58,0.3)", borderRadius: 6, padding: "3px 14px", cursor: "pointer", color: "var(--crimson)", fontFamily: T.ui, fontSize: 9, letterSpacing: "1px", fontWeight: 600 }}
-            onMouseEnter={e => e.currentTarget.style.background = "rgba(212,67,58,0.2)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(212,67,58,0.12)"}>
+          <button onClick={onNextTurn} style={{ background: T.crimsonSoft, border: "1px solid var(--crimson-border)", borderRadius: 6, padding: "3px 14px", cursor: "pointer", color: T.crimson, fontFamily: T.ui, fontSize: 9, letterSpacing: "1px", fontWeight: 600 }}
+            onMouseEnter={e => e.currentTarget.style.opacity = "0.85"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
             END TURN
           </button>
           {onToggleLog && (
-            <button onClick={onToggleLog} style={{ background: logOpen ? "rgba(255,213,79,0.12)" : "rgba(255,255,255,0.04)", border: "1px solid " + (logOpen ? "rgba(255,213,79,0.3)" : "rgba(255,255,255,0.08)"), borderRadius: 6, padding: "3px 10px", cursor: "pointer", color: logOpen ? "#ffd54f" : T.textFaint, fontFamily: T.ui, fontSize: 9, letterSpacing: "1px" }}
-              onMouseEnter={e => e.currentTarget.style.background = logOpen ? "rgba(255,213,79,0.18)" : "rgba(255,255,255,0.08)"} onMouseLeave={e => e.currentTarget.style.background = logOpen ? "rgba(255,213,79,0.12)" : "rgba(255,255,255,0.04)"}>
+            <button onClick={onToggleLog} style={{ background: logOpen ? "rgba(255,213,79,0.12)" : "var(--bg-hover-subtle)", border: "1px solid " + (logOpen ? "rgba(255,213,79,0.3)" : "var(--border-mid)"), borderRadius: 6, padding: "3px 10px", cursor: "pointer", color: logOpen ? "#ffd54f" : T.textFaint, fontFamily: T.ui, fontSize: 9, letterSpacing: "1px" }}
+              onMouseEnter={e => e.currentTarget.style.opacity = "0.85"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
               LOG
             </button>
           )}
           {onEndCombat && (
-            <button onClick={onEndCombat} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 6, padding: "3px 10px", cursor: "pointer", color: "#f06858", fontFamily: T.ui, fontSize: 9, letterSpacing: "1px" }}
-              onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.08)"} onMouseLeave={e => e.currentTarget.style.background = "rgba(255,255,255,0.04)"}>
+            <button onClick={onEndCombat} style={{ background: "var(--bg-hover-subtle)", border: "1px solid var(--border-mid)", borderRadius: 6, padding: "3px 10px", cursor: "pointer", color: "#f06858", fontFamily: T.ui, fontSize: 9, letterSpacing: "1px" }}
+              onMouseEnter={e => e.currentTarget.style.opacity = "0.85"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
               END
             </button>
           )}
@@ -2632,21 +2744,21 @@ const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, sel
                 <div style={{ position: "absolute", inset: -1, borderRadius: 11, border: "1px solid rgba(88,170,255,0.5)", pointerEvents: "none" }} />
               )}
               <div style={{
-                background: isActive ? "rgba(212,67,58,0.15)" : "rgba(255,255,255,0.03)",
-                border: "1px solid " + (isActive ? "rgba(212,67,58,0.4)" : "rgba(255,255,255,0.06)"),
+                background: isActive ? T.crimsonSoft : "var(--bg-hover-subtle)",
+                border: "1px solid " + (isActive ? "var(--crimson-border)" : "var(--border-mid)"),
                 borderRadius: 10, padding: isActive ? "6px 4px 4px" : "4px 3px 3px",
                 display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
                 transition: "all 0.2s ease",
               }}
-                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "rgba(255,255,255,0.06)"; }}
-                onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "rgba(255,255,255,0.03)"; }}>
+                onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = "var(--bg-hover)"; }}
+                onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = "var(--bg-hover-subtle)"; }}>
                 {/* Token circle */}
                 <div style={{
                   width: isActive ? 32 : 24, height: isActive ? 32 : 24,
                   borderRadius: "50%", background: tk.color || "#666",
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: isActive ? 11 : 8, fontFamily: T.ui, color: "#fff", fontWeight: 700,
-                  border: isDead ? "2px solid #f06858" : (isPC ? "2px solid rgba(46,139,87,0.6)" : "2px solid rgba(255,255,255,0.1)"),
+                  border: isDead ? "2px solid #f06858" : (isPC ? "2px solid rgba(46,139,87,0.6)" : "2px solid var(--border)"),
                   position: "relative", overflow: "hidden",
                 }}>
                   {isDead ? <X size={isActive ? 14 : 10} color="#f06858" /> : (tk.label || tk.name.substring(0, 2)).toUpperCase()}
@@ -2663,7 +2775,7 @@ const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, sel
                 </div>
                 {/* HP micro-bar */}
                 {!isDead && tk.maxHp > 0 && (
-                  <div style={{ width: "90%", height: 2, background: "rgba(255,255,255,0.06)", borderRadius: 1, overflow: "hidden" }}>
+                  <div style={{ width: "90%", height: 2, background: "var(--border-mid)", borderRadius: 1, overflow: "hidden" }}>
                     <div style={{ width: hpPct + "%", height: "100%", background: hpCol, borderRadius: 1 }} />
                   </div>
                 )}
@@ -2680,8 +2792,8 @@ const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, sel
                 {/* Action economy dots for active combatant */}
                 {isActive && !isDead && (
                   <div style={{ display: "flex", gap: 3, marginTop: 1 }}>
-                    <div title="Action" style={{ width: 5, height: 5, borderRadius: "50%", background: actionUsed ? "rgba(255,255,255,0.08)" : "var(--crimson)", border: "1px solid " + (actionUsed ? "rgba(255,255,255,0.1)" : "rgba(212,67,58,0.5)") }} />
-                    <div title="Bonus" style={{ width: 5, height: 5, borderRadius: "50%", background: bonusUsed ? "rgba(255,255,255,0.08)" : "#ffd54f", border: "1px solid " + (bonusUsed ? "rgba(255,255,255,0.1)" : "rgba(255,213,79,0.5)") }} />
+                    <div title="Action" style={{ width: 5, height: 5, borderRadius: "50%", background: actionUsed ? "var(--border-mid)" : "var(--crimson)", border: "1px solid " + (actionUsed ? "var(--border)" : "var(--crimson-border)") }} />
+                    <div title="Bonus" style={{ width: 5, height: 5, borderRadius: "50%", background: bonusUsed ? "var(--border-mid)" : "#ffd54f", border: "1px solid " + (bonusUsed ? "var(--border)" : "rgba(255,213,79,0.5)") }} />
                   </div>
                 )}
               </div>
@@ -2689,6 +2801,40 @@ const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, sel
           );
         })}
       </div>
+
+      {/* ── Combat Roll Log (attack/damage rolls displayed in top bar) ── */}
+      {combatRollLog && combatRollLog.length > 0 && (
+        <div style={{ display:"flex", gap:4, padding:"4px 4px 0", overflowX:"auto", scrollbarWidth:"none", marginTop: 2 }}>
+          {combatRollLog.slice().reverse().map(roll => {
+            const age = (Date.now() - roll.time) / 5000;
+            if (age > 1) return null;
+            const opacity = age < 0.7 ? 1 : Math.max(0.05, 1 - (age - 0.7) * 3.3);
+            const color = roll.type === "crit" ? "#ffd700" : roll.type === "hit" ? "#5ee09a" : roll.type === "miss" ? "#f06858" : "#b574ff";
+            const icon = roll.type === "crit" ? "\u2728" : roll.type === "hit" ? "\u2694\uFE0F" : roll.type === "miss" ? "\u274C" : "\u2728";
+            return (
+              <div key={roll.id} style={{
+                display:"flex", alignItems:"center", gap:6, padding:"4px 10px",
+                background:"var(--action-card-bg, rgba(255,255,255,0.03))",
+                border:"1px solid " + color + "44",
+                borderLeft:"3px solid " + color,
+                borderRadius:6, opacity: opacity, flexShrink:0,
+              }}>
+                <span style={{ fontSize:11 }}>{icon}</span>
+                <div style={{ minWidth:0 }}>
+                  <div style={{ fontFamily:"'Cinzel', serif", fontSize:9, fontWeight:700, color: color, whiteSpace:"nowrap", letterSpacing:"0.3px" }}>
+                    {roll.msg}
+                  </div>
+                  {roll.detail && (
+                    <div style={{ fontFamily:"'Spectral', serif", fontSize:7, color:"var(--text-muted, #9a8870)", whiteSpace:"nowrap", marginTop:1, maxWidth: 280, overflow:"hidden", textOverflow:"ellipsis" }}>
+                      {roll.detail}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };
@@ -11814,12 +11960,13 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         ctx.setLineDash([]);
       }
 
-      // Hover highlight ring
+      // Hover highlight ring (brighter during weapon targeting)
       if (isHovered && !isSelected && !isActiveCombatant) {
+        const hoverIntensity = activeWeapon ? 0.55 : 0.25;
         ctx.beginPath();
         ctx.arc(t.x, t.y, r + 4, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(255,255,255,0.25)";
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = activeWeapon ? "rgba(94,224,154," + hoverIntensity + ")" : "rgba(255,255,255," + hoverIntensity + ")";
+        ctx.lineWidth = activeWeapon ? 3 : 2;
         ctx.stroke();
       }
 
@@ -12037,80 +12184,118 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       const rangePx = (rangeFt / 5) * gridSize;
       const isMelee = rangeFt <= 10;
       const wColor = isMelee ? (cssVar("--crimson") || "#f06858") : "#58aaff";
+      const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 300); // smooth pulse 0-1
       // Range circle from attacker
       if (attacker && rangePx > 0) {
         ctx.beginPath();
         ctx.arc(attacker.x, attacker.y, rangePx, 0, Math.PI * 2);
-        ctx.strokeStyle = wColor + "55";
-        ctx.lineWidth = 2;
-        ctx.setLineDash([6, 4]);
+        ctx.strokeStyle = wColor + "44";
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([8, 6]);
         ctx.stroke();
         ctx.setLineDash([]);
-        // Filled range
+        // Subtle filled range
         const rGrad = ctx.createRadialGradient(attacker.x, attacker.y, 0, attacker.x, attacker.y, rangePx);
-        rGrad.addColorStop(0, wColor + "08");
-        rGrad.addColorStop(0.8, wColor + "04");
+        rGrad.addColorStop(0, wColor + "06");
+        rGrad.addColorStop(0.85, wColor + "03");
         rGrad.addColorStop(1, wColor + "00");
         ctx.fillStyle = rGrad;
+        ctx.beginPath();
+        ctx.arc(attacker.x, attacker.y, rangePx, 0, Math.PI * 2);
         ctx.fill();
       }
-      // Targeting crosshair at mouse position
       const wt = weaponTargetRef.current;
-      if (wt) {
-        const sz = gridSize * 0.5;
-        // Snap-to-token highlight
-        const nearToken = tokens.find(t => t.id !== attacker?.id && Math.hypot(t.x - wt.x, t.y - wt.y) < gridSize * 1.2);
-        if (nearToken) {
-          const inRange = attacker ? Math.hypot(nearToken.x - attacker.x, nearToken.y - attacker.y) <= rangePx * 1.5 : true;
+      if (wt && attacker) {
+        // ── Dotted line from attacker to cursor (ranged) or short line (melee) ──
+        if (!isMelee) {
+          // Ranged: dotted trajectory line from attacker to cursor
+          ctx.save();
           ctx.beginPath();
-          ctx.arc(nearToken.x, nearToken.y, gridSize * 0.55, 0, Math.PI * 2);
-          ctx.strokeStyle = inRange ? wColor + "cc" : "#ff000088";
-          ctx.lineWidth = 3;
-          ctx.setLineDash(inRange ? [] : [4, 4]);
+          ctx.moveTo(attacker.x, attacker.y);
+          ctx.lineTo(wt.x, wt.y);
+          ctx.strokeStyle = wColor + "88";
+          ctx.lineWidth = 2;
+          ctx.setLineDash([6, 6]);
           ctx.stroke();
           ctx.setLineDash([]);
-          // Token name label
-          ctx.fillStyle = inRange ? wColor : "#ff6666";
+          // Arrowhead at cursor
+          const angle = Math.atan2(wt.y - attacker.y, wt.x - attacker.x);
+          const arrLen = gridSize * 0.3;
+          ctx.beginPath();
+          ctx.moveTo(wt.x, wt.y);
+          ctx.lineTo(wt.x - Math.cos(angle - 0.4) * arrLen, wt.y - Math.sin(angle - 0.4) * arrLen);
+          ctx.moveTo(wt.x, wt.y);
+          ctx.lineTo(wt.x - Math.cos(angle + 0.4) * arrLen, wt.y - Math.sin(angle + 0.4) * arrLen);
+          ctx.strokeStyle = wColor + "bb";
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+          ctx.restore();
+        } else {
+          // Melee: short arc from attacker toward cursor
+          const angle = Math.atan2(wt.y - attacker.y, wt.x - attacker.x);
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(attacker.x, attacker.y, gridSize * 0.6, angle - 0.5, angle + 0.5);
+          ctx.strokeStyle = wColor + "66";
+          ctx.lineWidth = 3;
+          ctx.stroke();
+          ctx.restore();
+        }
+
+        // ── Hovered token glow (pulsing ring) ──
+        const hovTk = hoveredTokenId ? tokens.find(t => t.id === hoveredTokenId) : null;
+        if (hovTk && hovTk.id !== attacker.id) {
+          const distToHov = Math.hypot(hovTk.x - attacker.x, hovTk.y - attacker.y);
+          const inRange = distToHov <= rangePx + gridSize * 0.5;
+          const glowColor = inRange ? "#5ee09a" : "#ff4444";
+          const glowAlpha = 0.4 + 0.5 * pulse;
+          const tr = gridSize * 0.48;
+          // Outer pulsing glow
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(hovTk.x, hovTk.y, tr + 6 + pulse * 4, 0, Math.PI * 2);
+          ctx.strokeStyle = glowColor;
+          ctx.globalAlpha = glowAlpha * 0.3;
+          ctx.lineWidth = 4;
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+          // Inner ring
+          ctx.beginPath();
+          ctx.arc(hovTk.x, hovTk.y, tr + 3, 0, Math.PI * 2);
+          ctx.strokeStyle = glowColor;
+          ctx.globalAlpha = glowAlpha;
+          ctx.lineWidth = 2.5;
+          ctx.stroke();
+          ctx.globalAlpha = 1;
+          ctx.restore();
+          // Target name + range info above token
+          ctx.fillStyle = inRange ? "#5ee09a" : "#ff6666";
           ctx.font = "bold " + Math.round(gridSize * 0.28) + "px Cinzel";
           ctx.textAlign = "center";
           ctx.textBaseline = "bottom";
-          ctx.fillText(nearToken.name, nearToken.x, nearToken.y - gridSize * 0.6);
+          const distFt = Math.round(distToHov / gridSize * 5);
+          ctx.fillText(hovTk.name + " (" + distFt + "ft)", hovTk.x, hovTk.y - gridSize * 0.65);
           if (!inRange) {
             ctx.fillStyle = "#ff6666";
-            ctx.font = Math.round(gridSize * 0.22) + "px Cinzel";
-            ctx.fillText("Out of range", nearToken.x, nearToken.y - gridSize * 0.6 - gridSize * 0.3);
+            ctx.font = Math.round(gridSize * 0.2) + "px Cinzel";
+            ctx.fillText("Out of range", hovTk.x, hovTk.y - gridSize * 0.65 - gridSize * 0.28);
           }
         }
-        // Crosshair
-        ctx.shadowColor = wColor;
-        ctx.shadowBlur = 8;
-        ctx.strokeStyle = wColor + "cc";
-        ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(wt.x - sz, wt.y); ctx.lineTo(wt.x - sz * 0.3, wt.y); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(wt.x + sz * 0.3, wt.y); ctx.lineTo(wt.x + sz, wt.y); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(wt.x, wt.y - sz); ctx.lineTo(wt.x, wt.y - sz * 0.3); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(wt.x, wt.y + sz * 0.3); ctx.lineTo(wt.x, wt.y + sz); ctx.stroke();
-        // Rotating ring
-        const rotAngle = (Date.now() % 2000) / 2000 * Math.PI * 2;
-        ctx.beginPath(); ctx.arc(wt.x, wt.y, sz * 0.6, rotAngle, rotAngle + Math.PI * 1.4); ctx.stroke();
-        ctx.shadowBlur = 0;
+
+        // ── Crosshair at cursor (when no token is hovered) ──
+        if (!hovTk) {
+          const sz = gridSize * 0.4;
+          ctx.shadowColor = wColor;
+          ctx.shadowBlur = 6;
+          ctx.strokeStyle = wColor + "aa";
+          ctx.lineWidth = 1.5;
+          ctx.beginPath(); ctx.moveTo(wt.x - sz, wt.y); ctx.lineTo(wt.x - sz * 0.3, wt.y); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(wt.x + sz * 0.3, wt.y); ctx.lineTo(wt.x + sz, wt.y); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(wt.x, wt.y - sz); ctx.lineTo(wt.x, wt.y - sz * 0.3); ctx.stroke();
+          ctx.beginPath(); ctx.moveTo(wt.x, wt.y + sz * 0.3); ctx.lineTo(wt.x, wt.y + sz); ctx.stroke();
+          ctx.shadowBlur = 0;
+        }
       }
-      // Weapon name label at top of viewport
-      ctx.save();
-      ctx.setTransform(1, 0, 0, 1, 0, 0);
-      const labelText = isMelee ? "\u2694 " + (aw.card?.name || "Attack") + " \u2014 Click target" : "\ud83c\udff9 " + (aw.card?.name || "Attack") + " \u2014 Click target";
-      ctx.fillStyle = wColor + "dd";
-      ctx.font = "bold 14px Cinzel";
-      ctx.textAlign = "center";
-      ctx.textBaseline = "top";
-      const canvasWidth = canvasRef.current?.width || 800;
-      const _isLt = cssVar("--bg").includes("244") || cssVar("--bg").includes("f4f");
-      ctx.fillStyle = _isLt ? "rgba(255,255,255,0.85)" : "rgba(0,0,0,0.7)";
-      const lblW = ctx.measureText(labelText).width + 24;
-      ctx.fillRect((canvasWidth / 2) - lblW / 2, 10, lblW, 28);
-      ctx.fillStyle = wColor;
-      ctx.fillText(labelText, canvasWidth / 2, 16);
-      ctx.restore();
     }
 
     // ── Spell range preview (world space) ──
@@ -13236,8 +13421,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       });
     }
 
-    // ── Combat Roll Display (top-center banner) ──
-    if (combatRollLog.length > 0) {
+    // ── Combat Roll Display (canvas fallback — only when initiative bar JSX isn't showing) ──
+    if (combatRollLog.length > 0 && !combatLive) {
       const now = Date.now();
       const isLight = cssVar("--bg").trim() === "#f4f0e6" || cssVar("--bg").includes("244");
       const rollBg = isLight ? "rgba(255,255,255,0.92)" : "rgba(0,0,6,0.88)";
@@ -13634,6 +13819,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       if (activeWeapon) {
         setActiveWeapon(null);
         weaponTargetRef.current = null;
+        setHoveredTokenId(null);
+        e.preventDefault();
+        return;
       }
       // If spell targeting is active, right-click cancels it
       if (activeSpell) {
@@ -13663,26 +13851,27 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     // ── Weapon targeting — LEFT CLICK on token to attack ──
     if (activeWeapon) {
       const { card, actorToken: attacker } = activeWeapon;
-      // Find closest token to click within 3 grid cells
+      // Find closest token to click within 1 grid cell (tight targeting)
       const clickedToken = tokens.reduce((c, t) => {
-        if (t.id === attacker.id) return c; // Can't target self with weapon
+        if (t.id === attacker.id) return c; // Can't target self
         if (t.hidden && viewRole === "player") return c;
         const d = Math.hypot(t.x - w.x, t.y - w.y);
-        return (!c || d < c.dist) && d < gridSize * 3 ? { token: t, dist: d } : c;
+        return (!c || d < c.dist) && d < gridSize * 1.0 ? { token: t, dist: d } : c;
       }, null);
       if (clickedToken) {
-        // Check range: weapon range in feet, grid size = 5ft per cell
-        const rangePx = ((card.data?.range || 5) / 5) * gridSize;
+        // Check range: weapon range in feet, grid = 5ft per cell (+ 2.5ft diagonal tolerance = half a cell)
+        const rangePx = ((card.data?.range || 5) / 5) * gridSize + gridSize * 0.5;
         const distToTarget = Math.hypot(clickedToken.token.x - attacker.x, clickedToken.token.y - attacker.y);
-        if (distToTarget > rangePx * 1.5) { // 1.5x tolerance for diagonal movement
-          setSpellLog(prev => [...prev, { id: "log-" + Date.now(), msg: clickedToken.token.name + " is out of range for " + card.name + " (" + (card.data?.range || 5) + " ft)", time: Date.now() }]);
+        if (distToTarget > rangePx) {
+          setSpellLog(prev => [...prev, { id: "log-" + Date.now(), msg: clickedToken.token.name + " is out of range (" + Math.round(distToTarget / gridSize * 5) + "ft / " + (card.data?.range || 5) + "ft)", time: Date.now() }]);
           setTimeout(() => setSpellLog(prev => prev.slice(1)), 3000);
           return;
         }
-        // Set focus to the clicked target and resolve the attack with direct target override
+        // Set focus to the clicked target and resolve the attack
         setFocusTokenId(clickedToken.token.id);
         setActiveWeapon(null);
         weaponTargetRef.current = null;
+        setHoveredTokenId(null);
         resolvePlayModeCard(card, attacker, clickedToken.token);
         openCombatSidebar("tracker");
       } else {
@@ -14053,13 +14242,18 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       return;
     }
 
-    // Weapon targeting preview — use ref to avoid re-creating render callback
-    if (activeWeapon && !dragState) {
+    // Weapon targeting preview — update ref AND run hover detection for glow
+    if (activeWeapon) {
       weaponTargetRef.current = { x: w.x, y: w.y };
-      return;
-    }
-    if (activeWeapon && dragState?.type === "pan") {
-      weaponTargetRef.current = { x: w.x, y: w.y };
+      // Run hover detection during weapon targeting so tokens glow when you hover
+      const hitHover = [...tokens].reverse().find(t => {
+        if (t.id === activeWeapon.actorToken?.id) return false; // skip self
+        if (t.hidden && viewRole === "player") return false;
+        return Math.hypot(t.x - w.x, t.y - w.y) < gridSize * 0.7;
+      });
+      const newHover = hitHover ? hitHover.id : null;
+      if (newHover !== hoveredTokenId) setHoveredTokenId(newHover);
+      if (dragState?.type !== "pan") return;
     }
 
     // Spell targeting preview — use ref to avoid re-creating render callback
@@ -14288,8 +14482,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
   const handleContextMenu = (e) => {
     e.preventDefault();
-    // During spell targeting, right-click cancels (handled in mouseDown), don't show context menu
-    if (activeSpell) return;
+    // During weapon/spell targeting, right-click cancels (handled in mouseDown), don't show context menu
+    if (activeWeapon || activeSpell) return;
     const w = getMouseWorld(e);
     // Check props first
     if (viewRole === "dm") {
@@ -15794,6 +15988,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                 onToggleLog={() => { setCombatLogSidebarOpen(prev => !prev); setCombatLogOpen(prev => !prev); setPendingCombatAction(null); }}
                 onEndCombat={viewRole === "dm" ? endCombat : undefined}
                 logOpen={combatLogSidebarOpen || combatLogOpen}
+                combatRollLog={combatRollLog}
               />
             )}
 
