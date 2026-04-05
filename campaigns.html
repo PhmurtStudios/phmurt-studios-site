@@ -585,27 +585,24 @@
     }
 
     /* ═══ ENHANCED COMBAT ACTION PANEL — categorized action grid ═══ */
+    /* ── Action Panel: full-width bottom bar ── */
     .cm-action-panel {
       position: absolute;
-      bottom: 52px;
-      left: 50%;
-      transform: translateX(-50%);
+      bottom: 0;
+      left: 0;
+      right: 0;
       pointer-events: auto;
       display: flex;
       flex-direction: column;
-      gap: 6px;
-      padding: 8px 10px;
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 16px;
-      background: rgba(7,8,12,0.94);
+      border-top: 1px solid var(--border, rgba(255,255,255,0.08));
+      background: var(--action-panel-bg, rgba(7,8,12,0.96));
       backdrop-filter: blur(18px);
-      box-shadow: 0 -8px 32px rgba(0,0,8,0.5);
-      max-width: 720px;
+      box-shadow: 0 -4px 24px rgba(0,0,0,0.4);
       transition: transform 200ms ease, opacity 160ms ease;
       z-index: 29;
     }
     .cm-action-panel.is-hidden {
-      transform: translateX(-50%) translateY(20px);
+      transform: translateY(100%);
       opacity: 0;
       pointer-events: none;
     }
@@ -613,14 +610,14 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 4px 4px;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
+      padding: 6px 16px;
+      border-bottom: 1px solid var(--action-panel-divider, rgba(255,255,255,0.04));
     }
     .cm-action-panel-title {
       font: 700 10px/1 'Cinzel', serif;
       letter-spacing: 1.2px;
       text-transform: uppercase;
-      color: rgba(242,232,214,0.5);
+      color: var(--text-muted, rgba(242,232,214,0.5));
     }
     .cm-action-panel-economy {
       display: flex;
@@ -646,16 +643,91 @@
       background: currentColor;
       box-shadow: 0 0 6px currentColor;
     }
-    .cm-economy-pip.action { color: #dc143c; }
-    .cm-economy-pip.bonus { color: #ffa726; }
-    .cm-economy-pip.reaction { color: #ab47bc; }
-    .cm-economy-pip.movement { color: #29b6f6; }
+    .cm-economy-pip.action { color: var(--action-color-action, #dc143c); }
+    .cm-economy-pip.bonus { color: var(--action-color-bonus, #ffa726); }
+    .cm-economy-pip.reaction { color: var(--action-color-reaction, #ab47bc); }
+    .cm-economy-pip.movement { color: var(--action-color-movement, #29b6f6); }
+
+    /* Tab bar */
+    .cm-action-tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--action-panel-divider, rgba(255,255,255,0.06));
+      padding: 0 12px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .cm-action-tabs::-webkit-scrollbar { display: none; }
+    .cm-action-tab {
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      color: var(--text-faint, #64748b);
+      padding: 7px 14px;
+      cursor: pointer;
+      font: 500 10px/1 'Cinzel', serif;
+      letter-spacing: 0.6px;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .cm-action-tab:hover { color: var(--text, #e2e8f0); }
+    .cm-action-tab.is-active {
+      color: var(--text, #e2e8f0);
+      border-bottom-color: var(--tab-accent, var(--crimson, #dc143c));
+    }
+    .cm-action-tab-count {
+      font: 600 8px/1 monospace;
+      padding: 1px 5px;
+      border-radius: 8px;
+      min-width: 16px;
+      text-align: center;
+    }
+
+    /* Spell level subtabs */
+    .cm-spell-subtabs {
+      display: flex;
+      gap: 2px;
+      padding: 4px 12px;
+      border-bottom: 1px solid var(--action-panel-divider, rgba(255,255,255,0.04));
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .cm-spell-subtabs::-webkit-scrollbar { display: none; }
+    .cm-spell-subtab {
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      color: var(--text-faint, #64748b);
+      padding: 3px 10px;
+      cursor: pointer;
+      font: 500 9px/1 'Cinzel', serif;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      transition: all 0.12s;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .cm-spell-subtab:hover { color: var(--text-muted, #94a3b8); background: var(--action-card-hover-bg, rgba(255,255,255,0.03)); }
+    .cm-spell-subtab.is-active {
+      color: var(--action-color-spell, #a78bfa);
+      border-color: color-mix(in srgb, var(--action-color-spell, #a78bfa) 30%, transparent);
+      background: color-mix(in srgb, var(--action-color-spell, #a78bfa) 6%, transparent);
+    }
 
     .cm-action-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
       gap: 6px;
-      padding: 8px 10px;
+      padding: 8px 12px;
+      max-height: 160px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: var(--action-panel-divider, rgba(255,255,255,0.08)) transparent;
     }
     .cm-action-card {
       display: flex;
@@ -664,11 +736,11 @@
       justify-content: center;
       gap: 3px;
       min-width: 0;
-      padding: 6px 8px;
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 8px;
-      background: rgba(255,255,255,0.02);
-      color: #f4ead6;
+      padding: 6px 10px;
+      border: 1px solid var(--action-card-border, rgba(255,255,255,0.06));
+      border-radius: 6px;
+      background: var(--action-card-bg, rgba(255,255,255,0.02));
+      color: var(--text, #f4ead6);
       cursor: pointer;
       transition: all 120ms ease;
       position: relative;
@@ -676,10 +748,9 @@
       font-family: 'Spectral', serif;
     }
     .cm-action-card:hover:not(.is-disabled) {
-      background: rgba(255,255,255,0.06);
-      border-color: rgba(255,255,255,0.12);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      background: var(--action-card-hover-bg, rgba(255,255,255,0.06));
+      border-color: var(--action-card-hover-border, rgba(255,255,255,0.12));
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     }
     .cm-action-card.is-selected {
       border-color: var(--action-color, rgba(220,20,60,0.4));
@@ -695,25 +766,23 @@
       top: 2px;
       right: 4px;
       font: 700 7px/1 'Cinzel', serif;
-      color: rgba(242,232,214,0.2);
+      color: var(--text-faint, rgba(242,232,214,0.2));
     }
     .cm-action-card-icon {
       font-size: 18px;
       line-height: 1;
     }
     .cm-action-card-label {
-      font: 700 8px/1 'Cinzel', serif;
+      font: 700 9px/1 'Cinzel', serif;
       letter-spacing: 0.4px;
       text-transform: uppercase;
-      text-align: center;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 72px;
     }
     .cm-action-card-cost {
       font: 400 7px/1 'Spectral', serif;
-      color: rgba(242,232,214,0.35);
+      color: var(--text-faint, rgba(242,232,214,0.35));
       text-transform: capitalize;
     }
 
@@ -1099,7 +1168,7 @@
     /* ═══ RESPONSIVE ADDITIONS ═══ */
     @media (max-width: 900px) {
       .cm-log-sidebar { width: min(300px, calc(100vw - 16px)); }
-      .cm-action-panel { max-width: calc(100vw - 16px); }
+      .cm-action-panel { /* full width on mobile too */ }
     }
     @media (max-width: 640px) {
       .cm-log-sidebar {
@@ -1112,10 +1181,7 @@
         border-radius: 14px;
       }
       .cm-action-panel {
-        left: 6px;
-        right: 6px;
-        transform: none;
-        bottom: calc(6px + env(safe-area-inset-bottom));
+        bottom: 0;
         border-radius: 14px;
       }
       .cm-action-card {
@@ -1979,7 +2045,8 @@ const EnhancedCombatLogSidebar = ({ open, entries, round, viewRole, onClose, onC
    ENHANCED ACTION PANEL — categorized D&D 5e actions with economy tracking
    ═══════════════════════════════════════════════════════════════════════════ */
 const EnhancedActionPanel = ({ visible, token, turnState, viewRole, onSelectAction, onSelectCategory, selectedCategory, onEndTurn, onMove, moveLabel, actionCards }) => {
-  const [activeTab, setActiveTab] = useState("weapons");
+  const [activeTab, setActiveTab] = useState("actions");
+  const [spellLevelTab, setSpellLevelTab] = useState("all");
   const [hoveredCard, setHoveredCard] = useState(null);
 
   if (!visible || !token) return null;
@@ -1987,9 +2054,8 @@ const EnhancedActionPanel = ({ visible, token, turnState, viewRole, onSelectActi
   const CFUI = typeof window.CombatFlowUI !== "undefined" ? window.CombatFlowUI : null;
   const avail = CFUI ? CFUI.getAvailableActions(turnState) : { action: true, bonus: true, reaction: true, move: true, moveFt: 30 };
   const moveDisabled = !avail.move;
-  const isPC = token.tokenType === "pc";
 
-  /* Group action cards by panel type for tab display */
+  /* Group action cards by panel type */
   const cards = actionCards || [];
   const weaponCards = cards.filter(c => c.panel === "Attack");
   const spellCards = cards.filter(c => c.panel === "Spell");
@@ -1997,32 +2063,43 @@ const EnhancedActionPanel = ({ visible, token, turnState, viewRole, onSelectActi
   const otherCards = cards.filter(c => c.panel === "Other" || c.panel === "Utility");
 
   /* Organize spells by level */
-  const cantrips = spellCards.filter(c => c.data?.spell?.level === 0);
-  const levelSpells = spellCards.filter(c => c.data?.spell?.level > 0);
+  const spellsByLevel = {};
+  spellCards.forEach(c => {
+    const lv = c.data?.spell?.level ?? 0;
+    if (!spellsByLevel[lv]) spellsByLevel[lv] = [];
+    spellsByLevel[lv].push(c);
+  });
+  const spellLevels = Object.keys(spellsByLevel).map(Number).sort((a, b) => a - b);
+
+  const getFilteredSpells = () => {
+    if (spellLevelTab === "all") return spellCards;
+    const lv = parseInt(spellLevelTab, 10);
+    return spellsByLevel[lv] || [];
+  };
 
   const tabs = [
-    { id: "weapons", label: "Weapons", icon: "⚔️", count: weaponCards.length, color: "#ef4444" },
-    { id: "spells", label: "Spells", icon: "✨", count: spellCards.length, color: "#8b5cf6" },
-    { id: "features", label: "Features", icon: "🔥", count: featureCards.length, color: "#f59e0b" },
-    { id: "utility", label: "Actions", icon: "🛡️", count: otherCards.length, color: "#6b7280" },
-  ].filter(t => t.count > 0 || t.id === "utility");
+    { id: "actions", label: "Actions", count: otherCards.length, accent: "var(--action-color-action, #dc143c)" },
+    { id: "weapons", label: "Weapons", count: weaponCards.length, accent: "var(--action-color-weapon, #ef4444)" },
+    { id: "spells", label: "Spells", count: spellCards.length, accent: "var(--action-color-spell, #a78bfa)" },
+    { id: "features", label: "Features", count: featureCards.length, accent: "var(--action-color-feature, #f59e0b)" },
+  ];
 
   const getActiveCards = () => {
     switch (activeTab) {
+      case "actions": return otherCards;
       case "weapons": return weaponCards;
-      case "spells": return spellCards;
+      case "spells": return getFilteredSpells();
       case "features": return featureCards;
-      case "utility": return otherCards;
       default: return [];
     }
   };
 
   const costColor = (type) => {
-    if (type === "action") return "#22c55e";
-    if (type === "bonus") return "#f97316";
-    if (type === "reaction") return "#a78bfa";
-    if (type === "special") return "#6b7280";
-    return "#94a3b8";
+    if (type === "action") return "var(--cost-action, #22c55e)";
+    if (type === "bonus") return "var(--cost-bonus, #f97316)";
+    if (type === "reaction") return "var(--cost-reaction, #a78bfa)";
+    if (type === "special") return "var(--cost-special, #6b7280)";
+    return "var(--text-faint, #94a3b8)";
   };
 
   const costLabel = (type) => {
@@ -2032,15 +2109,43 @@ const EnhancedActionPanel = ({ visible, token, turnState, viewRole, onSelectActi
     return "F";
   };
 
+  const activeAccent = tabs.find(t => t.id === activeTab)?.accent || "var(--crimson)";
+
+  const renderCard = (card, accentOverride) => (
+    <button key={card.id} type="button"
+      className={"cm-action-card" + (card.disabled ? " is-disabled" : "")}
+      style={{ "--action-color": accentOverride || activeAccent }}
+      disabled={card.disabled}
+      onClick={() => onSelectAction && onSelectAction(card)}
+      onMouseEnter={() => setHoveredCard(card)}
+      onMouseLeave={() => setHoveredCard(null)}
+      title={card.disabled ? card.helper : card.effect}>
+      <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+        <span style={{ fontSize: 8, fontWeight: 700, width: 14, textAlign: "center", borderRadius: 3, padding: "2px 0", color: costColor(card.actionType), background: "color-mix(in srgb, " + costColor(card.actionType) + " 15%, transparent)" }}>{costLabel(card.actionType)}</span>
+        <span className="cm-action-card-label" style={{ flex: 1 }}>{card.label}</span>
+        {card.data?.spell?.level > 0 && <span style={{ fontSize: 8, color: "var(--text-faint)", fontFamily: "monospace" }}>L{card.data.spell.level}</span>}
+        {card.range && card.range !== "Self" && !card.data?.spell && <span style={{ fontSize: 8, color: "var(--text-faint)" }}>{card.range}</span>}
+      </div>
+      <span style={{ fontSize: 9, color: "var(--text-faint, #94a3b8)", fontStyle: "italic", marginTop: 2, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{card.effect}</span>
+    </button>
+  );
+
+  const emptyMessages = {
+    actions: "Standard D&D 5e actions: Dash, Dodge, Disengage, Hide, Help, Ready, Search, and Use an Object.",
+    weapons: "No weapons equipped. Link a character from the builder to see their weapons.",
+    spells: "No spells known. Link a character from the builder to see their spells.",
+    features: "No class features available at this level.",
+  };
+
   return (
-    <div className={"cm-action-panel" + (visible ? "" : " is-hidden")} style={{ maxWidth: 900 }}>
+    <div className={"cm-action-panel" + (visible ? "" : " is-hidden")}>
       {/* Economy header bar */}
-      <div className="cm-action-panel-header" style={{ display: "flex", alignItems: "center", gap: 12, padding: "6px 16px", justifyContent: "space-between" }}>
+      <div className="cm-action-panel-header">
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span className="cm-action-panel-title" style={{ fontSize: 12, letterSpacing: "0.5px" }}>{token.name}</span>
-          <div className="cm-action-panel-economy" style={{ gap: 6 }}>
+          <span className="cm-action-panel-title">{token.name}</span>
+          <div className="cm-action-panel-economy">
             <div className="cm-economy-pip movement" title={"Movement: " + (avail.moveFt || 0) + " ft remaining"}>
-              <span className="dot" style={avail.move ? { background: "#29b6f6", boxShadow: "0 0 6px #29b6f6" } : {}} />
+              <span className={"dot" + (avail.move ? " is-available" : "")} />
               <span>{avail.moveFt || 0} ft</span>
             </div>
             <div className="cm-economy-pip action" title={avail.action ? "Action available" : "Action spent"}>
@@ -2057,109 +2162,52 @@ const EnhancedActionPanel = ({ visible, token, turnState, viewRole, onSelectActi
             </div>
           </div>
         </div>
-        <div style={{ display: "flex", gap: 4 }}>
+        <div style={{ display: "flex", gap: 6 }}>
           <button type="button" className={"cm-action-card" + (moveDisabled ? " is-disabled" : "")}
-            style={{ "--action-color": "#29b6f6", padding: "4px 10px", minWidth: "auto" }}
-            disabled={moveDisabled} onClick={onMove} title={moveDisabled ? "No movement remaining" : "Move"}>
-            <span style={{ fontSize: 11 }}>🏃 Move</span>
+            style={{ "--action-color": "var(--action-color-movement, #29b6f6)", padding: "4px 10px", minWidth: "auto" }}
+            disabled={moveDisabled} onClick={onMove}>
+            <span style={{ fontSize: 10 }}>Move</span>
           </button>
           <button type="button" className="cm-action-card"
-            style={{ "--action-color": "#5ee09a", padding: "4px 10px", minWidth: "auto", borderColor: "rgba(94,224,154,0.2)", background: "rgba(94,224,154,0.04)" }}
+            style={{ "--action-color": "var(--action-color-endturn, #5ee09a)", padding: "4px 10px", minWidth: "auto" }}
             onClick={onEndTurn} title="End Turn (E)">
-            <span style={{ fontSize: 11, color: "#5ee09a" }}>⏭️ End Turn</span>
+            <span style={{ fontSize: 10, color: "var(--action-color-endturn, #5ee09a)" }}>End Turn</span>
           </button>
         </div>
       </div>
 
-      {/* Tab bar for action categories */}
-      <div style={{ display: "flex", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: "0 8px", gap: 2 }}>
+      {/* Main tab bar */}
+      <div className="cm-action-tabs">
         {tabs.map(tab => (
           <button key={tab.id} type="button"
-            onClick={() => setActiveTab(tab.id)}
-            style={{
-              background: activeTab === tab.id ? "rgba(255,255,255,0.06)" : "transparent",
-              border: "none", borderBottom: activeTab === tab.id ? ("2px solid " + tab.color) : "2px solid transparent",
-              color: activeTab === tab.id ? "#e2e8f0" : "#64748b",
-              padding: "6px 12px", cursor: "pointer", fontSize: 11, fontFamily: "'Cinzel',serif",
-              letterSpacing: "0.5px", display: "flex", alignItems: "center", gap: 6, transition: "all 0.15s",
-            }}>
-            <span style={{ fontSize: 13 }}>{tab.icon}</span>
+            className={"cm-action-tab" + (activeTab === tab.id ? " is-active" : "")}
+            style={activeTab === tab.id ? { "--tab-accent": tab.accent } : {}}
+            onClick={() => setActiveTab(tab.id)}>
             <span>{tab.label}</span>
-            <span style={{
-              background: tab.color + "22", color: tab.color, fontSize: 9, padding: "1px 5px",
-              borderRadius: 8, fontFamily: "monospace", minWidth: 16, textAlign: "center",
-            }}>{tab.count}</span>
+            {tab.count > 0 && <span className="cm-action-tab-count" style={{ background: "color-mix(in srgb, " + tab.accent + " 15%, transparent)", color: tab.accent }}>{tab.count}</span>}
           </button>
         ))}
       </div>
 
+      {/* Spell level subtabs */}
+      {activeTab === "spells" && spellLevels.length > 1 && (
+        <div className="cm-spell-subtabs">
+          <button type="button" className={"cm-spell-subtab" + (spellLevelTab === "all" ? " is-active" : "")} onClick={() => setSpellLevelTab("all")}>All</button>
+          {spellLevels.map(lv => (
+            <button key={lv} type="button" className={"cm-spell-subtab" + (spellLevelTab === String(lv) ? " is-active" : "")} onClick={() => setSpellLevelTab(String(lv))}>
+              {lv === 0 ? "Cantrips" : ("Level " + lv)}
+              <span style={{ marginLeft: 4, opacity: 0.6, fontSize: 8 }}>({(spellsByLevel[lv] || []).length})</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Action cards grid */}
-      <div className="cm-action-grid" style={{ padding: "8px 10px", gap: 6, gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", maxHeight: 180, overflowY: "auto" }}>
-        {activeTab === "spells" && cantrips.length > 0 && (
-          <div style={{ gridColumn: "1 / -1", fontSize: 9, color: "#8b5cf6", letterSpacing: "1px", fontFamily: "'Cinzel',serif", textTransform: "uppercase", padding: "2px 4px", opacity: 0.7 }}>
-            Cantrips
-          </div>
-        )}
-        {activeTab === "spells" && cantrips.map(card => (
-          <button key={card.id} type="button"
-            className={"cm-action-card" + (card.disabled ? " is-disabled" : "")}
-            style={{ "--action-color": "#8b5cf6", padding: "6px 8px", textAlign: "left" }}
-            disabled={card.disabled}
-            onClick={card.onClick}
-            onMouseEnter={() => setHoveredCard(card)}
-            onMouseLeave={() => setHoveredCard(null)}
-            title={card.disabled ? card.helper : card.effect}>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ fontSize: 8, color: costColor(card.actionType), fontWeight: 700, width: 12, textAlign: "center", background: costColor(card.actionType) + "22", borderRadius: 3, padding: "1px 0" }}>{costLabel(card.actionType)}</span>
-              <span className="cm-action-card-label" style={{ fontSize: 11, flex: 1 }}>{card.label}</span>
-            </div>
-            <span style={{ fontSize: 9, color: "#94a3b8", fontStyle: "italic", marginTop: 2, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{card.effect}</span>
-          </button>
-        ))}
-        {activeTab === "spells" && levelSpells.length > 0 && (
-          <div style={{ gridColumn: "1 / -1", fontSize: 9, color: "#a78bfa", letterSpacing: "1px", fontFamily: "'Cinzel',serif", textTransform: "uppercase", padding: "4px 4px 2px", opacity: 0.7 }}>
-            Leveled Spells
-          </div>
-        )}
-        {activeTab === "spells" && levelSpells.map(card => (
-          <button key={card.id} type="button"
-            className={"cm-action-card" + (card.disabled ? " is-disabled" : "")}
-            style={{ "--action-color": "#a78bfa", padding: "6px 8px", textAlign: "left" }}
-            disabled={card.disabled}
-            onClick={card.onClick}
-            onMouseEnter={() => setHoveredCard(card)}
-            onMouseLeave={() => setHoveredCard(null)}
-            title={card.disabled ? card.helper : card.effect}>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ fontSize: 8, color: costColor(card.actionType), fontWeight: 700, width: 12, textAlign: "center", background: costColor(card.actionType) + "22", borderRadius: 3, padding: "1px 0" }}>{costLabel(card.actionType)}</span>
-              <span className="cm-action-card-label" style={{ fontSize: 11, flex: 1 }}>{card.label}</span>
-              <span style={{ fontSize: 8, color: "#64748b", fontFamily: "monospace" }}>L{card.data?.spell?.level}</span>
-            </div>
-            <span style={{ fontSize: 9, color: "#94a3b8", fontStyle: "italic", marginTop: 2, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{card.cost || card.effect}</span>
-          </button>
-        ))}
-        {activeTab !== "spells" && getActiveCards().map(card => (
-          <button key={card.id} type="button"
-            className={"cm-action-card" + (card.disabled ? " is-disabled" : "")}
-            style={{ "--action-color": activeTab === "weapons" ? "#ef4444" : activeTab === "features" ? "#f59e0b" : "#6b7280", padding: "6px 8px", textAlign: "left" }}
-            disabled={card.disabled}
-            onClick={card.onClick}
-            onMouseEnter={() => setHoveredCard(card)}
-            onMouseLeave={() => setHoveredCard(null)}
-            title={card.disabled ? card.helper : card.effect}>
-            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-              <span style={{ fontSize: 8, color: costColor(card.actionType), fontWeight: 700, width: 12, textAlign: "center", background: costColor(card.actionType) + "22", borderRadius: 3, padding: "1px 0" }}>{costLabel(card.actionType)}</span>
-              <span className="cm-action-card-label" style={{ fontSize: 11, flex: 1 }}>{card.label}</span>
-              {card.range && card.range !== "Self" && <span style={{ fontSize: 8, color: "#64748b" }}>{card.range}</span>}
-            </div>
-            <span style={{ fontSize: 9, color: "#94a3b8", fontStyle: "italic", marginTop: 2, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{card.effect}</span>
-          </button>
-        ))}
-        {getActiveCards().length === 0 && activeTab !== "spells" && (
-          <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: 12, color: "#475569", fontSize: 11, fontStyle: "italic" }}>
-            {activeTab === "weapons" ? "No weapons equipped. Import a character from the builder to see their weapons." :
-             activeTab === "features" ? "No class features available." :
-             "Standard D&D 5e actions available."}
+      <div className="cm-action-grid">
+        {getActiveCards().map(card => renderCard(card))}
+        {getActiveCards().length === 0 && (
+          <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: 16, color: "var(--text-faint, #475569)", fontSize: 11, fontStyle: "italic" }}>
+            {emptyMessages[activeTab] || "No actions available."}
           </div>
         )}
       </div>
@@ -2168,15 +2216,15 @@ const EnhancedActionPanel = ({ visible, token, turnState, viewRole, onSelectActi
       {hoveredCard && (
         <div style={{
           position: "absolute", bottom: "calc(100% + 8px)", left: "50%", transform: "translateX(-50%)",
-          background: "rgba(15,23,42,0.95)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 6,
-          padding: "10px 14px", maxWidth: 320, minWidth: 200, zIndex: 50, backdropFilter: "blur(12px)",
+          background: "var(--action-panel-bg, rgba(15,23,42,0.95))", border: "1px solid var(--action-panel-divider, rgba(255,255,255,0.1))", borderRadius: 6,
+          padding: "10px 14px", maxWidth: 340, minWidth: 220, zIndex: 50, backdropFilter: "blur(12px)",
           boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
         }}>
-          <div style={{ fontSize: 13, color: "#e2e8f0", fontWeight: 500, marginBottom: 4 }}>{hoveredCard.label}</div>
-          <div style={{ fontSize: 10, color: "#94a3b8", marginBottom: 4 }}>{hoveredCard.cost}</div>
-          <div style={{ fontSize: 11, color: "#cbd5e1", lineHeight: 1.5 }}>{hoveredCard.effect}</div>
+          <div style={{ fontSize: 13, color: "var(--text, #e2e8f0)", fontWeight: 500, marginBottom: 4 }}>{hoveredCard.label}</div>
+          {hoveredCard.cost && <div style={{ fontSize: 10, color: "var(--text-faint, #94a3b8)", marginBottom: 4 }}>{hoveredCard.cost}</div>}
+          <div style={{ fontSize: 11, color: "var(--text-muted, #cbd5e1)", lineHeight: 1.5 }}>{hoveredCard.effect}</div>
           {hoveredCard.helper && hoveredCard.helper !== hoveredCard.effect && (
-            <div style={{ fontSize: 10, color: "#64748b", marginTop: 4, fontStyle: "italic" }}>{hoveredCard.helper}</div>
+            <div style={{ fontSize: 10, color: "var(--text-faint, #64748b)", marginTop: 4, fontStyle: "italic" }}>{hoveredCard.helper}</div>
           )}
         </div>
       )}
@@ -2378,6 +2426,9 @@ const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, sel
    Appears on the canvas overlay, positioned relative to the token
    ═══════════════════════════════════════════════════════════════════════════ */
 const TokenActionRing = ({ visible, token, actions, screenX, screenY, tokenRadius, onAction, onMove, moveLabel, onEndTurn, onDismiss, resolution }) => {
+  /* Disabled: actions now shown in the full-width bottom EnhancedActionPanel */
+  return null;
+
   if (!visible || !token) return null;
 
   const isCompactMobile = typeof window !== "undefined" && window.innerWidth <= 640;
@@ -8046,6 +8097,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       return [...getLegalActionCards(actorToken)]
         .sort((a, b) => getQuickActionScore(b) - getQuickActionScore(a))
         .map(card => ({
+          id: card.id,
           key: "pc-" + card.id,
           panel: card.panel,
           actionType: card.type,
@@ -8055,6 +8107,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           cost: card.cost || actionTypeLabel(card.type),
           range: card.range || "Self",
           disabled: !!card.disabledReason,
+          data: card.data || null,
           tone: getActionPanelMeta(card.panel).tone,
           icon: getActionPanelMeta(card.panel).icon,
           onClick: () => {
@@ -14070,7 +14123,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               </div>
             )}
 
-            {/* ── BOTTOM: Enhanced Action Panel (categorized D&D 5e actions) ── */}
+            {/* ── BOTTOM: Enhanced Action Panel (full-width categorized D&D 5e actions) ── */}
             {combatLive && activeCombatantToken && !movementMode && !combatLogSidebarOpen && (
               <EnhancedActionPanel
                 visible={true}
@@ -14079,31 +14132,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                 viewRole={viewRole}
                 selectedCategory={selectedActionCategory}
                 actionCards={activeCombatantToken ? getPopupQuickActions(activeCombatantToken) : []}
-                onSelectCategory={(catId) => {
-                  setSelectedActionCategory(prev => prev === catId ? null : catId);
-                  // Trigger the corresponding action from the token's action ring
-                  if (activeCombatantToken) {
-                    const ringActions = getCockpitTrayActions(activeCombatantToken);
-                    const CFUI = typeof window.CombatFlowUI !== "undefined" ? window.CombatFlowUI : null;
-                    const cat = CFUI ? CFUI.ACTION_CATEGORIES[catId] : null;
-                    if (cat && catId === "dash") {
-                      const dashAction = ringActions.find(a => a.label.toLowerCase() === "dash");
-                      if (dashAction && dashAction.onClick) dashAction.onClick();
-                    } else if (cat && catId === "dodge") {
-                      const dodgeAction = ringActions.find(a => a.label.toLowerCase() === "dodge");
-                      if (dodgeAction && dodgeAction.onClick) dodgeAction.onClick();
-                    } else if (cat && catId === "disengage") {
-                      const disAction = ringActions.find(a => a.label.toLowerCase() === "disengage");
-                      if (disAction && disAction.onClick) disAction.onClick();
-                    } else if (cat && catId === "hide") {
-                      const hideAction = ringActions.find(a => a.label.toLowerCase() === "hide");
-                      if (hideAction && hideAction.onClick) hideAction.onClick();
-                    } else if (cat && catId === "help") {
-                      const helpAction = ringActions.find(a => a.label.toLowerCase() === "help");
-                      if (helpAction && helpAction.onClick) helpAction.onClick();
-                    }
-                  }
-                }}
+                onSelectCategory={setSelectedActionCategory}
                 onSelectAction={(action) => {
                   if (action.onClick) action.onClick();
                   else chooseCockpitAction(action);
