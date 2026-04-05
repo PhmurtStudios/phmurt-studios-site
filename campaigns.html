@@ -8712,6 +8712,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     spawnFloatingTextForToken(tokenId, "condition", { name: cond, applied: false });
   };
 
+  // ── Weapon targeting system ──
+  const [activeWeapon, setActiveWeapon] = useState(null); // { card, actorToken } — set when weapon card clicked, cleared on target click or cancel
+  const weaponTargetRef = useRef(null); // { x, y } world coords for weapon targeting cursor
+
   // ── Spell system ──
   const [activeSpell, setActiveSpell] = useState(null); // { name, range, shape, radius, color, ... }
   const spellTargetRef = useRef(null); // { x, y } world coords for targeting — ref-only to avoid render storms
@@ -9664,6 +9668,14 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           tone: getActionPanelMeta(card.panel).tone,
           icon: getActionPanelMeta(card.panel).icon,
           onClick: () => {
+            if (card.resolver === "weapon") {
+              // Enter targeting mode — click on a token on the map to attack
+              setActiveWeapon({ card, actorToken });
+              weaponTargetRef.current = null;
+              if (!combatLive) dismissTurnPopup();
+              else setShowConditionMenu(false);
+              return;
+            }
             resolvePlayModeCard(card, actorToken);
             openCombatSidebar("tracker");
             if (!combatLive) dismissTurnPopup();
@@ -11122,6 +11134,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   const cancelCockpitIntent = () => {
     setPendingCombatAction(null);
     setCombatLogOpen(false);
+    setActiveWeapon(null);
+    weaponTargetRef.current = null;
     setActiveSpell(null);
     spellTargetRef.current = null;
     setMultiTargetSelections([]);
@@ -11986,6 +12000,89 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         ctx.setLineDash([]);
       }
     });
+
+    // ── Weapon targeting preview (world space) ──
+    if (activeWeapon) {
+      const aw = activeWeapon;
+      const attacker = aw.actorToken;
+      const rangeFt = aw.card?.data?.range || 5;
+      const rangePx = (rangeFt / 5) * gridSize;
+      const isMelee = rangeFt <= 10;
+      const wColor = isMelee ? "#f06858" : "#58aaff";
+      // Range circle from attacker
+      if (attacker && rangePx > 0) {
+        ctx.beginPath();
+        ctx.arc(attacker.x, attacker.y, rangePx, 0, Math.PI * 2);
+        ctx.strokeStyle = wColor + "55";
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Filled range
+        const rGrad = ctx.createRadialGradient(attacker.x, attacker.y, 0, attacker.x, attacker.y, rangePx);
+        rGrad.addColorStop(0, wColor + "08");
+        rGrad.addColorStop(0.8, wColor + "04");
+        rGrad.addColorStop(1, wColor + "00");
+        ctx.fillStyle = rGrad;
+        ctx.fill();
+      }
+      // Targeting crosshair at mouse position
+      const wt = weaponTargetRef.current;
+      if (wt) {
+        const sz = gridSize * 0.5;
+        // Snap-to-token highlight
+        const nearToken = tokens.find(t => t.id !== attacker?.id && Math.hypot(t.x - wt.x, t.y - wt.y) < gridSize * 1.2);
+        if (nearToken) {
+          const inRange = attacker ? Math.hypot(nearToken.x - attacker.x, nearToken.y - attacker.y) <= rangePx * 1.5 : true;
+          ctx.beginPath();
+          ctx.arc(nearToken.x, nearToken.y, gridSize * 0.55, 0, Math.PI * 2);
+          ctx.strokeStyle = inRange ? wColor + "cc" : "#ff000088";
+          ctx.lineWidth = 3;
+          ctx.setLineDash(inRange ? [] : [4, 4]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          // Token name label
+          ctx.fillStyle = inRange ? wColor : "#ff6666";
+          ctx.font = "bold " + Math.round(gridSize * 0.28) + "px Cinzel";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "bottom";
+          ctx.fillText(nearToken.name, nearToken.x, nearToken.y - gridSize * 0.6);
+          if (!inRange) {
+            ctx.fillStyle = "#ff6666";
+            ctx.font = Math.round(gridSize * 0.22) + "px Cinzel";
+            ctx.fillText("Out of range", nearToken.x, nearToken.y - gridSize * 0.6 - gridSize * 0.3);
+          }
+        }
+        // Crosshair
+        ctx.shadowColor = wColor;
+        ctx.shadowBlur = 8;
+        ctx.strokeStyle = wColor + "cc";
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(wt.x - sz, wt.y); ctx.lineTo(wt.x - sz * 0.3, wt.y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(wt.x + sz * 0.3, wt.y); ctx.lineTo(wt.x + sz, wt.y); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(wt.x, wt.y - sz); ctx.lineTo(wt.x, wt.y - sz * 0.3); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(wt.x, wt.y + sz * 0.3); ctx.lineTo(wt.x, wt.y + sz); ctx.stroke();
+        // Rotating ring
+        const rotAngle = (Date.now() % 2000) / 2000 * Math.PI * 2;
+        ctx.beginPath(); ctx.arc(wt.x, wt.y, sz * 0.6, rotAngle, rotAngle + Math.PI * 1.4); ctx.stroke();
+        ctx.shadowBlur = 0;
+      }
+      // Weapon name label at top of viewport
+      ctx.save();
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      const labelText = isMelee ? "\u2694 " + (aw.card?.name || "Attack") + " \u2014 Click target" : "\ud83c\udff9 " + (aw.card?.name || "Attack") + " \u2014 Click target";
+      ctx.fillStyle = wColor + "dd";
+      ctx.font = "bold 14px Cinzel";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      const canvasWidth = canvasRef.current?.width || 800;
+      ctx.fillStyle = "rgba(0,0,0,0.7)";
+      const lblW = ctx.measureText(labelText).width + 24;
+      ctx.fillRect((canvasWidth / 2) - lblW / 2, 10, lblW, 28);
+      ctx.fillStyle = wColor;
+      ctx.fillText(labelText, canvasWidth / 2, 16);
+      ctx.restore();
+    }
 
     // ── Spell range preview (world space) ──
     if (activeSpell) {
@@ -13125,7 +13222,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   const animActiveRef = useRef(false);
   useEffect(() => {
     const hasFloatingText = typeof window.CombatFlowUI !== "undefined" && window.CombatFlowUI.hasActiveTexts();
-    const needsAnim = combatLive || pings.length > 0 || spellEffects.length > 0 || actionAnims.length > 0 || spellLog.length > 0 || !!activeSpell || laserMode || (activeMapId && !activeSceneId) || hasFloatingText;
+    const needsAnim = combatLive || pings.length > 0 || spellEffects.length > 0 || actionAnims.length > 0 || spellLog.length > 0 || !!activeSpell || !!activeWeapon || laserMode || (activeMapId && !activeSceneId) || hasFloatingText;
     if (!needsAnim) {
       animActiveRef.current = false;
       return;
@@ -13141,7 +13238,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     };
     animate();
     return () => { running = false; animActiveRef.current = false; cancelAnimationFrame(animRef.current); };
-  }, [combatLive, pings.length, spellEffects.length, actionAnims.length, spellLog.length, activeSpell, laserMode, activeMapId, activeSceneId]);
+  }, [combatLive, pings.length, spellEffects.length, actionAnims.length, spellLog.length, activeSpell, activeWeapon, laserMode, activeMapId, activeSceneId]);
 
   useEffect(() => { if (!combatLive && pings.length === 0 && spellLog.length === 0) render(); }, [render, combatLive, pings, spellLog]);
 
@@ -13376,6 +13473,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         setEditingRegionMarker(null);
         setWallStart(null);
         setWallPreview(null);
+        setActiveWeapon(null);
+        weaponTargetRef.current = null;
         setActiveSpell(null);
         spellTargetRef.current = null;
         setMultiTargetSelections([]);
@@ -13452,6 +13551,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   const handleMouseDown = (e) => {
     // Right-click handled by contextMenu handler, not here
     if (e.button === 2) {
+      // If weapon targeting is active, right-click cancels it
+      if (activeWeapon) {
+        setActiveWeapon(null);
+        weaponTargetRef.current = null;
+      }
       // If spell targeting is active, right-click cancels it
       if (activeSpell) {
         setActiveSpell(null);
@@ -13461,7 +13565,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       }
       return;
     }
-    // Middle mouse button always initiates pan (even during spell targeting)
+    // Middle mouse button always initiates pan (even during targeting)
     if (e.button === 1) {
       setDragState({ type: "pan", startX: e.clientX, startY: e.clientY, panX: pan.x, panY: pan.y });
       return;
@@ -13471,9 +13575,41 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     setShowConditionMenu(false);
     const w = getMouseWorld(e);
 
-    // Space+click during spell targeting = pan (don't cast, don't deselect)
-    if (activeSpell && spaceHeldRef.current) {
+    // Space+click during targeting = pan (don't attack/cast, don't deselect)
+    if ((activeWeapon || activeSpell) && spaceHeldRef.current) {
       setDragState({ type: "pan", startX: e.clientX, startY: e.clientY, panX: pan.x, panY: pan.y });
+      return;
+    }
+
+    // ── Weapon targeting — LEFT CLICK on token to attack ──
+    if (activeWeapon) {
+      const { card, actorToken: attacker } = activeWeapon;
+      // Find closest token to click within 3 grid cells
+      const clickedToken = tokens.reduce((c, t) => {
+        if (t.id === attacker.id) return c; // Can't target self with weapon
+        if (t.hidden && viewRole === "player") return c;
+        const d = Math.hypot(t.x - w.x, t.y - w.y);
+        return (!c || d < c.dist) && d < gridSize * 3 ? { token: t, dist: d } : c;
+      }, null);
+      if (clickedToken) {
+        // Check range: weapon range in feet, grid size = 5ft per cell
+        const rangePx = ((card.data?.range || 5) / 5) * gridSize;
+        const distToTarget = Math.hypot(clickedToken.token.x - attacker.x, clickedToken.token.y - attacker.y);
+        if (distToTarget > rangePx * 1.5) { // 1.5x tolerance for diagonal movement
+          setSpellLog(prev => [...prev, { id: "log-" + Date.now(), msg: clickedToken.token.name + " is out of range for " + card.name + " (" + (card.data?.range || 5) + " ft)", time: Date.now() }]);
+          setTimeout(() => setSpellLog(prev => prev.slice(1)), 3000);
+          return;
+        }
+        // Set focus to the clicked target and resolve the attack with direct target override
+        setFocusTokenId(clickedToken.token.id);
+        setActiveWeapon(null);
+        weaponTargetRef.current = null;
+        resolvePlayModeCard(card, attacker, clickedToken.token);
+        openCombatSidebar("tracker");
+      } else {
+        setSpellLog(prev => [...prev, { id: "log-" + Date.now(), msg: "Click on a target token to attack with " + card.name, time: Date.now() }]);
+        setTimeout(() => setSpellLog(prev => prev.slice(1)), 2000);
+      }
       return;
     }
 
@@ -13838,6 +13974,15 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       return;
     }
 
+    // Weapon targeting preview — use ref to avoid re-creating render callback
+    if (activeWeapon && !dragState) {
+      weaponTargetRef.current = { x: w.x, y: w.y };
+      return;
+    }
+    if (activeWeapon && dragState?.type === "pan") {
+      weaponTargetRef.current = { x: w.x, y: w.y };
+    }
+
     // Spell targeting preview — use ref to avoid re-creating render callback
     // Don't return early if we're panning (space+drag or middle-click+drag)
     if (activeSpell && !dragState) {
@@ -13848,7 +13993,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     if (activeSpell && dragState?.type === "pan") {
       // Update spell target AND continue to pan handler below (skip hover detection)
       spellTargetRef.current = { x: w.x, y: w.y };
-    } else if (!activeSpell) {
+    } else if (!activeWeapon && !activeSpell) {
       // Token hover detection (only when NOT spell targeting to avoid re-render storms)
       const hitHover = [...tokens].reverse().find(t => {
         if (t.hidden && viewRole === "player") return false;
@@ -14390,7 +14535,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     });
   };
 
-  const resolvePlayModeCard = (card, actorToken) => {
+  const resolvePlayModeCard = (card, actorToken, overrideTarget) => {
     if (!card || !actorToken || actorToken.tokenType !== "pc") return;
     openCombatSidebar("tracker");
     const lockReason = getActionLockReasonForToken(actorToken);
@@ -14403,7 +14548,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       return;
     }
     const profile = getCombatProfile(actorToken);
-    const target = getFocusedCombatTarget(actorToken);
+    const target = overrideTarget || getFocusedCombatTarget(actorToken);
     const spellCard = card.resolver === "spell" ? card.data?.spell : null;
     const canResolveWithoutHostile = card.resolver === "feature" || card.resolver === "other" || !!(spellCard && (spellCard.healing || spellCard.shape === "self"));
     if (!target && !canResolveWithoutHostile) {
@@ -15487,6 +15632,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   ];
 
   const getCursor = () => {
+    if (activeWeapon) return "crosshair";
     if (activeSpell) return "crosshair";
     if (pingMode) return "crosshair";
     if (laserMode) return "none";
@@ -15946,6 +16092,12 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             {!cockpitModeActive && movementMode && !pingMode && !activeSpell && (
               <div style={{ position:"absolute", top:14, left:80, background:"rgba(46,139,87,0.85)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"#f2e8d6", letterSpacing:"1.5px", pointerEvents:"none", zIndex:10, border:"1px solid rgba(46,139,87,0.4)", boxShadow:"0 2px 10px rgba(46,139,87,0.25)" }}>
                 MOVEMENT MODE (M to toggle, Esc to cancel)
+              </div>
+            )}
+            {!cockpitModeActive && activeWeapon && (
+              <div style={{ position:"absolute", top:14, left:80, background: (activeWeapon.card?.data?.range || 5) <= 10 ? "rgba(240,104,88,0.88)" : "rgba(88,170,255,0.88)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"#f2e8d6", letterSpacing:"1.5px", pointerEvents:"none", zIndex:10, border:"1px solid " + ((activeWeapon.card?.data?.range || 5) <= 10 ? "rgba(240,104,88,0.5)" : "rgba(88,170,255,0.5)"), boxShadow:"0 2px 10px " + ((activeWeapon.card?.data?.range || 5) <= 10 ? "rgba(240,104,88,0.3)" : "rgba(88,170,255,0.3)"), display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ width:7, height:7, borderRadius:"50%", background: (activeWeapon.card?.data?.range || 5) <= 10 ? "#f06858" : "#58aaff" }} />
+                {((activeWeapon.card?.data?.range || 5) <= 10 ? "\u2694 " : "\uD83C\uDFF9 ") + (activeWeapon.card?.name || "ATTACK").toUpperCase()} — click target token · right-click/Esc to cancel
               </div>
             )}
             {!cockpitModeActive && activeSpell && (
@@ -17230,7 +17382,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                                   {byPanel[panelName].length === 0 && <div style={{ fontSize:9, color:T.textFaint, fontStyle:"italic" }}>No options</div>}
                                   {byPanel[panelName].map((card) => (
                                     <button key={card.id}
-                                      onClick={(e) => { e.stopPropagation(); resolvePlayModeCard(card, tk); }}
+                                      onClick={(e) => { e.stopPropagation(); if (card.resolver === "weapon") { setActiveWeapon({ card, actorToken: tk }); weaponTargetRef.current = null; } else { resolvePlayModeCard(card, tk); } }}
                                       disabled={!!card.disabledReason}
                                       style={{ width:"100%", textAlign:"left", marginBottom:4, padding:"7px", borderRadius:"5px", border:"1px solid " + (card.disabledReason ? "rgba(255,80,80,0.2)" : "rgba(255,255,255,0.12)"), background: card.disabledReason ? "rgba(120,40,40,0.10)" : "rgba(255,255,255,0.03)", color: card.disabledReason ? "rgba(255,200,200,0.7)" : T.text, cursor: card.disabledReason ? "not-allowed" : "pointer" }}>
                                       <div style={{ fontSize:11, fontFamily:T.ui, color: card.disabledReason ? "rgba(255,200,200,0.8)" : T.text }}>{card.name}</div>
