@@ -2806,76 +2806,85 @@ const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, sel
         })}
       </div>
 
-      {/* ── Combat Roll Log — BIG visible dice roll banners ── */}
-      {combatRollLog && combatRollLog.length > 0 && (
-        <div style={{ display:"flex", flexDirection:"column", gap:3, padding:"6px 8px 2px" }}>
-          {combatRollLog.slice().reverse().slice(0, 4).map(roll => {
-            const age = (Date.now() - roll.time) / 5000;
-            if (age > 1) return null;
-            const opacity = age < 0.6 ? 1 : Math.max(0.05, 1 - (age - 0.6) * 2.5);
-            const isCrit = roll.type === "crit";
-            const isHit = roll.type === "hit";
-            const isMiss = roll.type === "miss";
-            const color = isCrit ? "#ffd700" : isHit ? "#5ee09a" : isMiss ? "#f06858" : "#b574ff";
-            const bgColor = isCrit ? "rgba(255,215,0,0.12)" : isHit ? "rgba(94,224,154,0.08)" : isMiss ? "rgba(240,104,88,0.08)" : "rgba(181,116,255,0.08)";
-            const icon = isCrit ? "\u2728" : isHit ? "\u2694\uFE0F" : isMiss ? "\u274C" : "\u2728";
-            const resultLabel = isCrit ? "CRITICAL HIT!" : isHit ? "HIT!" : isMiss ? "MISS" : "EFFECT";
-            /* Parse d20 roll from detail string */
-            const d20Match = roll.detail ? roll.detail.match(/= (\d+) vs AC (\d+)/) : null;
-            const rollTotal = d20Match ? d20Match[1] : null;
-            const targetAC = d20Match ? d20Match[2] : null;
-            const dmgMatch = roll.detail ? roll.detail.match(/Damage:\s*(.+)/) : null;
-            const dmgText = dmgMatch ? dmgMatch[1] : null;
-            return (
-              <div key={roll.id} style={{
-                display:"flex", alignItems:"center", gap:10, padding:"8px 14px",
-                background: bgColor,
-                border:"2px solid " + color + "66",
-                borderLeft:"5px solid " + color,
-                borderRadius:10, opacity,
-                boxShadow: isCrit ? "0 0 20px rgba(255,215,0,0.25), inset 0 0 20px rgba(255,215,0,0.05)" : "0 2px 12px rgba(0,0,0,0.2)",
-                animation: isCrit ? "none" : "none",
+    </div>
+  );
+};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   COMBAT ROLL DISPLAY — Separate floating panel so it doesn't push init bar
+   Centered horizontally, positioned below initiative portraits
+   ═══════════════════════════════════════════════════════════════════════════ */
+const CombatRollDisplay = ({ combatRollLog }) => {
+  if (!combatRollLog || combatRollLog.length === 0) return null;
+  const now = Date.now();
+  const visibleRolls = combatRollLog.slice().reverse().slice(0, 3).filter(r => (now - r.time) / 5000 < 1);
+  if (visibleRolls.length === 0) return null;
+
+  return (
+    <div style={{
+      position:"absolute", top: 90, left:"50%", transform:"translateX(-50%)",
+      zIndex:51, pointerEvents:"none",
+      display:"flex", flexDirection:"column", gap:4, width: "min(480px, 80%)",
+    }}>
+      {visibleRolls.map(roll => {
+        const age = (now - roll.time) / 5000;
+        const opacity = age < 0.6 ? 1 : Math.max(0.05, 1 - (age - 0.6) * 2.5);
+        const isCrit = roll.type === "crit";
+        const isHit = roll.type === "hit";
+        const isMiss = roll.type === "miss";
+        const color = isCrit ? "#ffd700" : isHit ? "#5ee09a" : isMiss ? "#f06858" : "#b574ff";
+        const bgColor = isCrit ? "rgba(255,215,0,0.15)" : isHit ? "rgba(94,224,154,0.12)" : isMiss ? "rgba(240,104,88,0.12)" : "rgba(181,116,255,0.12)";
+        const resultLabel = isCrit ? "CRITICAL HIT!" : isHit ? "HIT!" : isMiss ? "MISS" : "EFFECT";
+        const d20Match = roll.detail ? roll.detail.match(/= (\d+) vs AC (\d+)/) : null;
+        const rollTotal = d20Match ? d20Match[1] : null;
+        const targetAC = d20Match ? d20Match[2] : null;
+        const dmgMatch = roll.detail ? roll.detail.match(/Damage:\s*(.+)/) : null;
+        const dmgText = dmgMatch ? dmgMatch[1] : null;
+        return (
+          <div key={roll.id} style={{
+            display:"flex", alignItems:"center", gap:10, padding:"10px 16px",
+            background: bgColor,
+            backdropFilter:"blur(16px)",
+            border:"2px solid " + color + "55",
+            borderLeft:"5px solid " + color,
+            borderRadius:12, opacity,
+            boxShadow: "0 4px 20px rgba(0,0,0,0.35)" + (isCrit ? ", 0 0 30px rgba(255,215,0,0.2)" : ""),
+          }}>
+            {rollTotal && (
+              <div style={{
+                width:48, height:48, borderRadius:10,
+                background: color + "22", border:"2px solid " + color,
+                display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                flexShrink:0,
               }}>
-                {/* Big d20 result */}
-                {rollTotal && (
-                  <div style={{
-                    width:44, height:44, borderRadius:8,
-                    background: color + "22", border:"2px solid " + color,
-                    display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-                    flexShrink:0,
-                  }}>
-                    <div style={{ fontFamily:"'Cinzel', serif", fontSize:20, fontWeight:900, color, lineHeight:1 }}>{rollTotal}</div>
-                    <div style={{ fontSize:7, color:"var(--text-faint)", letterSpacing:"0.5px" }}>vs AC {targetAC}</div>
-                  </div>
-                )}
-                {/* Icon when no d20 */}
-                {!rollTotal && <span style={{ fontSize:28, flexShrink:0 }}>{icon}</span>}
-                {/* Info */}
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                    <span style={{ fontFamily:"'Cinzel', serif", fontSize:13, fontWeight:800, color, letterSpacing:"1px", textTransform:"uppercase" }}>
-                      {resultLabel}
-                    </span>
-                    <span style={{ fontFamily:"'Cinzel', serif", fontSize:11, color:"var(--text-dim, #ccc)", fontWeight:600 }}>
-                      {roll.msg.replace(/ HIT!| MISS| CRITICAL!/, "")}
-                    </span>
-                  </div>
-                  {dmgText && (
-                    <div style={{ fontFamily:"'Spectral', serif", fontSize:11, color: isHit || isCrit ? "#5ee09a" : "var(--text-muted)", marginTop:2, fontWeight:600 }}>
-                      {isCrit ? "\u{1F4A5} " : isHit ? "\u{1F5E1}\uFE0F " : ""}{dmgText}
-                    </div>
-                  )}
-                  {!dmgText && roll.detail && (
-                    <div style={{ fontFamily:"'Spectral', serif", fontSize:9, color:"var(--text-muted)", marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                      {roll.detail}
-                    </div>
-                  )}
-                </div>
+                <div style={{ fontFamily:"'Cinzel', serif", fontSize:22, fontWeight:900, color, lineHeight:1 }}>{rollTotal}</div>
+                <div style={{ fontSize:7, color:"var(--text-faint)", letterSpacing:"0.5px" }}>vs AC {targetAC}</div>
               </div>
-            );
-          })}
-        </div>
-      )}
+            )}
+            {!rollTotal && <span style={{ fontSize:30, flexShrink:0 }}>{isCrit ? "\u2728" : isHit ? "\u2694\uFE0F" : isMiss ? "\u274C" : "\u2728"}</span>}
+            <div style={{ flex:1, minWidth:0 }}>
+              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                <span style={{ fontFamily:"'Cinzel', serif", fontSize:14, fontWeight:800, color, letterSpacing:"1px", textTransform:"uppercase" }}>
+                  {resultLabel}
+                </span>
+                <span style={{ fontFamily:"'Cinzel', serif", fontSize:11, color:"var(--text-dim, #ccc)", fontWeight:600 }}>
+                  {roll.msg.replace(/ HIT!| MISS| CRITICAL!/, "")}
+                </span>
+              </div>
+              {dmgText && (
+                <div style={{ fontFamily:"'Spectral', serif", fontSize:12, color: isHit || isCrit ? "#5ee09a" : "var(--text-muted)", marginTop:2, fontWeight:600 }}>
+                  {dmgText}
+                </div>
+              )}
+              {!dmgText && roll.detail && (
+                <div style={{ fontFamily:"'Spectral', serif", fontSize:10, color:"var(--text-muted)", marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                  {roll.detail}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 };
@@ -5384,6 +5393,205 @@ function renderActionAnimation(ctx, anim, gridSize, now) {
       const ag=ctx.createRadialGradient(cx,cy,0,cx,cy,gridSize*0.8);
       ag.addColorStop(0,`rgba(255,100,50,${ep*0.2})`); ag.addColorStop(1,"rgba(255,50,0,0)");
       ctx.fillStyle=ag; ctx.beginPath(); ctx.arc(cx,cy,gridSize*0.8,0,Math.PI*2); ctx.fill();
+      break; }
+
+    // ── CROSSBOW BOLT: fast dark bolt with fletching, impact sparks ──
+    case "crossbow_bolt": {
+      const px = casterCx + (targetCx - casterCx) * ep, py = casterCy + (targetCy - casterCy) * ep;
+      const angle = Math.atan2(targetCy - casterCy, targetCx - casterCx);
+      const boltLen = gridSize * 0.35;
+      // Bolt shaft
+      ctx.save(); ctx.translate(px, py); ctx.rotate(angle);
+      ctx.strokeStyle = `rgba(80,60,40,${alpha})`; ctx.lineWidth = 2.5; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(-boltLen, 0); ctx.lineTo(boltLen * 0.3, 0); ctx.stroke();
+      // Bolt head (dark metal point)
+      ctx.fillStyle = `rgba(60,60,70,${alpha})`;
+      ctx.beginPath(); ctx.moveTo(boltLen * 0.3, 0); ctx.lineTo(boltLen * 0.15, -3); ctx.lineTo(boltLen * 0.5, 0); ctx.lineTo(boltLen * 0.15, 3); ctx.closePath(); ctx.fill();
+      // Fletching
+      ctx.fillStyle = `rgba(180,40,40,${alpha * 0.7})`;
+      ctx.beginPath(); ctx.moveTo(-boltLen, 0); ctx.lineTo(-boltLen * 0.7, -4); ctx.lineTo(-boltLen * 0.6, 0); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-boltLen, 0); ctx.lineTo(-boltLen * 0.7, 4); ctx.lineTo(-boltLen * 0.6, 0); ctx.closePath(); ctx.fill();
+      ctx.restore();
+      // Trail
+      const trailStart = Math.max(0, ep - 0.15);
+      ctx.strokeStyle = `rgba(120,100,80,${alpha * 0.3})`; ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(casterCx + (targetCx - casterCx) * trailStart, casterCy + (targetCy - casterCy) * trailStart);
+      ctx.lineTo(px, py); ctx.stroke();
+      // Impact sparks
+      if (ep > 0.85) { const impactP = (ep - 0.85) / 0.15;
+        for (let i = 0; i < 10; i++) { const sa = (i / 10) * Math.PI * 2 + angle, sd = gridSize * 0.3 * impactP;
+          ctx.fillStyle = `rgba(255,200,100,${(1 - impactP) * 0.8})`; ctx.beginPath();
+          ctx.arc(targetCx + Math.cos(sa) * sd, targetCy + Math.sin(sa) * sd, 1.5, 0, Math.PI * 2); ctx.fill(); } }
+      break; }
+
+    // ── ARROW SHOT: graceful arc with feathered trail ──
+    case "arrow_shot": {
+      const px = casterCx + (targetCx - casterCx) * ep, py = casterCy + (targetCy - casterCy) * ep - Math.sin(ep * Math.PI) * gridSize * 0.3;
+      const prevP = Math.max(0, ep - 0.05);
+      const prevX = casterCx + (targetCx - casterCx) * prevP, prevY = casterCy + (targetCy - casterCy) * prevP - Math.sin(prevP * Math.PI) * gridSize * 0.3;
+      const angle = Math.atan2(py - prevY, px - prevX);
+      const arrLen = gridSize * 0.3;
+      ctx.save(); ctx.translate(px, py); ctx.rotate(angle);
+      // Arrow shaft
+      ctx.strokeStyle = `rgba(160,130,80,${alpha})`; ctx.lineWidth = 2; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(-arrLen, 0); ctx.lineTo(arrLen * 0.3, 0); ctx.stroke();
+      // Arrowhead
+      ctx.fillStyle = `rgba(180,180,190,${alpha})`;
+      ctx.beginPath(); ctx.moveTo(arrLen * 0.5, 0); ctx.lineTo(arrLen * 0.2, -3.5); ctx.lineTo(arrLen * 0.2, 3.5); ctx.closePath(); ctx.fill();
+      // Feathers
+      ctx.strokeStyle = `rgba(200,200,200,${alpha * 0.6})`; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(-arrLen, 0); ctx.lineTo(-arrLen * 0.8, -4); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(-arrLen, 0); ctx.lineTo(-arrLen * 0.8, 4); ctx.stroke();
+      ctx.restore();
+      // Streaking trail
+      for (let i = 1; i < 6; i++) { const tp = Math.max(0, ep - i * 0.03);
+        const tx = casterCx + (targetCx - casterCx) * tp, ty = casterCy + (targetCy - casterCy) * tp - Math.sin(tp * Math.PI) * gridSize * 0.3;
+        ctx.fillStyle = `rgba(200,180,120,${alpha * (1 - i / 6) * 0.3})`; ctx.beginPath(); ctx.arc(tx, ty, 1.5, 0, Math.PI * 2); ctx.fill(); }
+      // Impact
+      if (ep > 0.9) { const ip = (ep - 0.9) / 0.1;
+        for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2, d = gridSize * 0.2 * ip;
+          ctx.fillStyle = `rgba(200,180,120,${(1 - ip) * 0.6})`; ctx.beginPath(); ctx.arc(targetCx + Math.cos(a) * d, targetCy + Math.sin(a) * d, 1.5, 0, Math.PI * 2); ctx.fill(); } }
+      break; }
+
+    // ── THROWN PROJECTILE: tumbling spin ──
+    case "thrown_projectile": {
+      const px = casterCx + (targetCx - casterCx) * ep, py = casterCy + (targetCy - casterCy) * ep;
+      const spinAngle = ep * Math.PI * 6;
+      ctx.save(); ctx.translate(px, py); ctx.rotate(spinAngle);
+      ctx.fillStyle = `rgba(160,140,100,${alpha})`; ctx.beginPath();
+      ctx.moveTo(0, -gridSize * 0.15); ctx.lineTo(-gridSize * 0.06, gridSize * 0.15); ctx.lineTo(gridSize * 0.06, gridSize * 0.15); ctx.closePath(); ctx.fill();
+      ctx.restore();
+      if (ep > 0.85) { const ip = (ep - 0.85) / 0.15;
+        for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2, d = gridSize * 0.25 * ip;
+          ctx.fillStyle = `rgba(160,140,100,${(1 - ip) * 0.5})`; ctx.beginPath(); ctx.arc(targetCx + Math.cos(a) * d, targetCy + Math.sin(a) * d, 2, 0, Math.PI * 2); ctx.fill(); } }
+      break; }
+
+    // ── SWORD SLASH: wide sweeping arc with trail ──
+    case "sword_slash": {
+      const sweepArc = Math.PI * 1.8;
+      const startAngle = Math.atan2(targetCy - casterCy, targetCx - casterCx) - sweepArc / 2;
+      const curAngle = startAngle + sweepArc * ep;
+      const bladeLen = gridSize * 0.65;
+      // Blade trail (fading arc)
+      for (let i = 0; i < 12; i++) { const ta = curAngle - (i / 12) * sweepArc * 0.4;
+        const bx = cx + Math.cos(ta) * bladeLen, by = cy + Math.sin(ta) * bladeLen;
+        ctx.fillStyle = `rgba(220,220,240,${alpha * (1 - i / 12) * 0.4})`; ctx.beginPath(); ctx.arc(bx, by, 2.5, 0, Math.PI * 2); ctx.fill(); }
+      // Blade edge
+      const tipX = cx + Math.cos(curAngle) * bladeLen, tipY = cy + Math.sin(curAngle) * bladeLen;
+      ctx.strokeStyle = (anim.color || "rgba(220,220,240,0.9)"); ctx.lineWidth = gridSize * 0.1; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(cx + Math.cos(curAngle) * gridSize * 0.15, cy + Math.sin(curAngle) * gridSize * 0.15);
+      ctx.lineTo(tipX, tipY); ctx.stroke();
+      // Sparks at tip
+      for (let i = 0; i < 5; i++) { const a = curAngle + (Math.random() - 0.5) * 0.8, d = bladeLen * (0.7 + Math.random() * 0.3);
+        ctx.fillStyle = `rgba(255,240,200,${alpha * 0.6})`; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * d, cy + Math.sin(a) * d, 1.5, 0, Math.PI * 2); ctx.fill(); }
+      break; }
+
+    // ── HEAVY SLASH: wider, more powerful arc with screen shake feel ──
+    case "heavy_slash": {
+      const sweepArc = Math.PI * 2.0;
+      const startAngle = Math.atan2(targetCy - casterCy, targetCx - casterCx) - sweepArc / 3;
+      const curAngle = startAngle + sweepArc * easeIn(ep);
+      const bladeLen = gridSize * 0.8;
+      // Wide impact trail
+      for (let i = 0; i < 16; i++) { const ta = curAngle - (i / 16) * sweepArc * 0.5;
+        const bx = cx + Math.cos(ta) * bladeLen, by = cy + Math.sin(ta) * bladeLen;
+        ctx.fillStyle = `rgba(255,180,80,${alpha * (1 - i / 16) * 0.5})`; ctx.beginPath(); ctx.arc(bx, by, 3, 0, Math.PI * 2); ctx.fill(); }
+      // Thick blade
+      const tipX = cx + Math.cos(curAngle) * bladeLen, tipY = cy + Math.sin(curAngle) * bladeLen;
+      ctx.strokeStyle = (anim.color || "rgba(255,200,120,0.9)"); ctx.lineWidth = gridSize * 0.18; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(cx + Math.cos(curAngle) * gridSize * 0.1, cy + Math.sin(curAngle) * gridSize * 0.1);
+      ctx.lineTo(tipX, tipY); ctx.stroke();
+      // Shockwave ring at end
+      if (ep > 0.7) { const rp = (ep - 0.7) / 0.3;
+        ctx.strokeStyle = `rgba(255,200,100,${(1 - rp) * 0.5})`; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(cx, cy, gridSize * 0.4 + gridSize * 0.6 * rp, 0, Math.PI * 2); ctx.stroke(); }
+      break; }
+
+    // ── BLUNT IMPACT: slam with shockwave ripples ──
+    case "blunt_impact": {
+      const impactTime = 0.4;
+      if (progress < impactTime) {
+        const wp = progress / impactTime;
+        const dx = targetCx - casterCx, dy = targetCy - casterCy;
+        const headX = casterCx + dx * easeIn(wp), headY = casterCy + dy * easeIn(wp);
+        ctx.fillStyle = `rgba(180,180,190,${alpha})`; ctx.beginPath();
+        ctx.arc(headX, headY, gridSize * 0.12, 0, Math.PI * 2); ctx.fill();
+      } else {
+        const rp = (progress - impactTime) / (1 - impactTime);
+        // Shockwave rings
+        for (let r = 0; r < 3; r++) { const rrp = Math.max(0, Math.min(1, (rp - r * 0.12) / 0.6));
+          ctx.strokeStyle = `rgba(200,180,150,${(1 - rrp) * 0.6})`; ctx.lineWidth = 3 - r;
+          ctx.beginPath(); ctx.arc(targetCx, targetCy, gridSize * (0.2 + 0.6 * rrp), 0, Math.PI * 2); ctx.stroke(); }
+        // Debris particles
+        for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2, d = gridSize * 0.5 * rp;
+          ctx.fillStyle = `rgba(140,120,100,${(1 - rp) * 0.5})`; ctx.beginPath();
+          ctx.arc(targetCx + Math.cos(a) * d, targetCy + Math.sin(a) * d - gridSize * 0.3 * rp, 2, 0, Math.PI * 2); ctx.fill(); }
+      }
+      break; }
+
+    // ── DAGGER STAB: quick precise jab ──
+    case "dagger_stab": {
+      const angle = Math.atan2(targetCy - casterCy, targetCx - casterCx);
+      const stabDist = gridSize * 0.5;
+      const jabProgress = progress < 0.4 ? easeIn(progress / 0.4) : 1 - easeOut((progress - 0.4) / 0.6);
+      const dx = Math.cos(angle) * stabDist * jabProgress, dy = Math.sin(angle) * stabDist * jabProgress;
+      ctx.save(); ctx.translate(cx + dx, cy + dy); ctx.rotate(angle + Math.PI / 4);
+      // Blade
+      ctx.fillStyle = `rgba(190,190,200,${alpha})`;
+      ctx.beginPath(); ctx.moveTo(0, -gridSize * 0.15); ctx.lineTo(-gridSize * 0.04, 0); ctx.lineTo(0, gridSize * 0.04); ctx.lineTo(gridSize * 0.04, 0); ctx.closePath(); ctx.fill();
+      // Handle
+      ctx.fillStyle = `rgba(100,70,40,${alpha})`;
+      ctx.fillRect(-gridSize * 0.03, gridSize * 0.04, gridSize * 0.06, gridSize * 0.08);
+      ctx.restore();
+      // Blood effect on hit
+      if (progress > 0.35 && progress < 0.7) { const bp = (progress - 0.35) / 0.35;
+        for (let i = 0; i < 5; i++) { const a = angle + (Math.random() - 0.5), d = gridSize * 0.2 * bp;
+          ctx.fillStyle = `rgba(180,30,30,${(1 - bp) * 0.5})`; ctx.beginPath();
+          ctx.arc(cx + Math.cos(angle) * stabDist * 0.8 + Math.cos(a) * d, cy + Math.sin(angle) * stabDist * 0.8 + Math.sin(a) * d, 1.5, 0, Math.PI * 2); ctx.fill(); } }
+      break; }
+
+    // ── SPEAR THRUST: linear forward thrust ──
+    case "spear_thrust": {
+      const angle = Math.atan2(targetCy - casterCy, targetCx - casterCx);
+      const thrustDist = gridSize * 0.7;
+      const tp = progress < 0.5 ? easeIn(progress / 0.5) : 1;
+      const retract = progress > 0.5 ? (progress - 0.5) / 0.5 : 0;
+      const dist = thrustDist * tp * (1 - retract * 0.6);
+      ctx.save(); ctx.translate(cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist); ctx.rotate(angle);
+      // Shaft
+      ctx.strokeStyle = `rgba(140,110,70,${alpha})`; ctx.lineWidth = 2.5; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(-gridSize * 0.3, 0); ctx.lineTo(gridSize * 0.1, 0); ctx.stroke();
+      // Spearhead
+      ctx.fillStyle = `rgba(180,180,190,${alpha})`;
+      ctx.beginPath(); ctx.moveTo(gridSize * 0.2, 0); ctx.lineTo(gridSize * 0.08, -4); ctx.lineTo(gridSize * 0.08, 4); ctx.closePath(); ctx.fill();
+      ctx.restore();
+      // Impact flash
+      if (progress > 0.45 && progress < 0.65) { const fp = (progress - 0.45) / 0.2;
+        ctx.fillStyle = `rgba(255,255,200,${(1 - fp) * 0.4})`;
+        ctx.beginPath(); ctx.arc(cx + Math.cos(angle) * thrustDist, cy + Math.sin(angle) * thrustDist, gridSize * 0.15 * fp, 0, Math.PI * 2); ctx.fill(); }
+      break; }
+
+    // ── STAFF STRIKE: overhead swing ──
+    case "staff_strike": {
+      const angle = Math.atan2(targetCy - casterCy, targetCx - casterCx);
+      const swingArc = Math.PI * 1.2;
+      const startA = angle - Math.PI / 2 - swingArc / 2;
+      const curA = startA + swingArc * easeOut(ep);
+      const staffLen = gridSize * 0.7;
+      const tipX = cx + Math.cos(curA) * staffLen, tipY = cy + Math.sin(curA) * staffLen;
+      // Staff body
+      ctx.strokeStyle = `rgba(120,90,50,${alpha})`; ctx.lineWidth = gridSize * 0.06; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(cx + Math.cos(curA) * gridSize * 0.1, cy + Math.sin(curA) * gridSize * 0.1);
+      ctx.lineTo(tipX, tipY); ctx.stroke();
+      // Trail
+      for (let i = 0; i < 8; i++) { const ta = curA - (i / 8) * swingArc * 0.3;
+        const tx = cx + Math.cos(ta) * staffLen, ty = cy + Math.sin(ta) * staffLen;
+        ctx.fillStyle = `rgba(180,160,120,${alpha * (1 - i / 8) * 0.3})`; ctx.beginPath(); ctx.arc(tx, ty, 2, 0, Math.PI * 2); ctx.fill(); }
+      // Ground impact
+      if (ep > 0.8) { const ip = (ep - 0.8) / 0.2;
+        ctx.strokeStyle = `rgba(180,160,120,${(1 - ip) * 0.4})`; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(tipX, tipY, gridSize * 0.3 * ip, 0, Math.PI * 2); ctx.stroke(); }
       break; }
   }
   ctx.restore();
@@ -8620,6 +8828,27 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     y: (token?.y || 0) + gridSize / 2,
   });
 
+  // ── Determine weapon-specific animation type from weapon name ──
+  const getWeaponAnimType = (weaponName) => {
+    if (!weaponName) return "melee_attack";
+    const wn = weaponName.toLowerCase();
+    if (wn.includes("crossbow")) return "crossbow_bolt";
+    if (wn.includes("longbow") || wn.includes("shortbow") || wn.includes("bow")) return "arrow_shot";
+    if (wn.includes("javelin") || wn.includes("dart") || wn.includes("sling")) return "thrown_projectile";
+    if (wn.includes("greataxe") || wn.includes("battleaxe") || wn.includes("halberd") || wn.includes("glaive")) return "heavy_slash";
+    if (wn.includes("greatsword") || wn.includes("longsword") || wn.includes("rapier") || wn.includes("scimitar") || wn.includes("shortsword")) return "sword_slash";
+    if (wn.includes("mace") || wn.includes("warhammer") || wn.includes("maul") || wn.includes("flail") || wn.includes("morningstar")) return "blunt_impact";
+    if (wn.includes("dagger") || wn.includes("knife")) return "dagger_stab";
+    if (wn.includes("spear") || wn.includes("pike") || wn.includes("lance") || wn.includes("trident")) return "spear_thrust";
+    if (wn.includes("staff") || wn.includes("quarterstaff")) return "staff_strike";
+    // Fallback: check if ranged via CombatEngine
+    const CE = window.CombatEngine;
+    if (CE && CE.WEAPONS && CE.WEAPONS[weaponName]) {
+      return CE.WEAPONS[weaponName].melee ? "melee_attack" : "ranged_attack";
+    }
+    return "melee_attack";
+  };
+
   const emitPlayModeVfx = (actorToken, targetToken, options = {}) => {
     if (!actorToken) return;
     const opts = options || {};
@@ -8628,14 +8857,14 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     const actionName = opts.actionName || actorToken.name || "Action";
     const damageType = opts.damageType || "force";
     const CFUI = typeof window.CombatFlowUI !== "undefined" ? window.CombatFlowUI : null;
-    const hasVFX = typeof window.VFX !== "undefined";
 
     if (opts.mode === "attack") {
-      if (hasVFX) {
-        window.VFX.addEffect(window.VFX.createAttackEffect(origin.x, origin.y, target.x, target.y, actionName, damageType));
-        if (opts.amount > 0) window.VFX.addEffect(window.VFX.createDamageNumber(target.x, target.y - 10, opts.amount, damageType, !!opts.isCrit));
-        if (opts.rollValue != null) window.VFX.addEffect(window.VFX.createDiceAnimation(origin.x, origin.y, 20, opts.rollValue, opts.color || "#ffd54f"));
+      // Determine animation type from weapon name
+      const animType = opts.weaponName ? getWeaponAnimType(opts.weaponName) : (opts.isRanged ? "ranged_attack" : "melee_attack");
+      if (opts.isCrit) {
+        triggerActionAnim("critical_hit", actorToken, targetToken, "#ffd700");
       }
+      triggerActionAnim(animType, actorToken, targetToken, opts.isCrit ? "#ffd700" : (opts.color || "#e0d0b0"));
       // Floating combat text
       if (CFUI && targetToken) {
         if (opts.isCrit) CFUI.spawnFloatingText({ x: target.x, y: target.y - 20, text: "CRITICAL!", style: "crit", color: "#ffd54f", glow: "#ffab00" });
@@ -8648,19 +8877,13 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     }
 
     if (opts.mode === "miss") {
-      if (hasVFX) {
-        window.VFX.addEffect(window.VFX.createMissEffect(target.x, target.y));
-        if (opts.rollValue != null) window.VFX.addEffect(window.VFX.createDiceAnimation(origin.x, origin.y, 20, opts.rollValue, opts.color || "#999"));
-      }
+      triggerActionAnim("miss", targetToken || actorToken, null, "#888");
       if (CFUI && targetToken) CFUI.spawnFloatingText({ x: target.x, y: target.y, text: "MISS", style: "miss", color: "#888", glow: "#555" });
       return;
     }
 
     if (opts.mode === "save") {
-      if (hasVFX) {
-        window.VFX.addEffect(window.VFX.createSaveEffect(origin.x, origin.y, target.x, target.y, actionName, opts.parsed || {}));
-        if (opts.amount > 0) window.VFX.addEffect(window.VFX.createDamageNumber(target.x, target.y, opts.amount, damageType, false));
-      }
+      triggerActionAnim(opts.saveSuccess ? "block" : "melee_attack", targetToken || actorToken, null, opts.saveSuccess ? "#58aaff" : "#f06858");
       if (CFUI && targetToken) {
         CFUI.spawnSaveText(target.x, target.y, opts.saveSuccess, opts.saveSuccess ? "SAVED" : "FAILED");
         if (opts.amount > 0) {
@@ -8672,26 +8895,24 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     }
 
     if (opts.mode === "heal") {
-      if (hasVFX) window.VFX.addEffect(window.VFX.createHealEffect(target.x, target.y, opts.amount || 0));
+      triggerActionAnim("second_wind", targetToken || actorToken, null, "#5ee09a");
       if (CFUI && targetToken) CFUI.spawnHealText(target.x, target.y, opts.amount || 0);
       return;
     }
 
     if (opts.mode === "condition") {
-      if (hasVFX) window.VFX.addEffect(window.VFX.createConditionEffect(target.x, target.y, opts.conditionName || actionName));
+      triggerActionAnim("grapple", targetToken || actorToken, null, "#ab47bc");
       if (CFUI && targetToken) CFUI.spawnConditionText(target.x, target.y, opts.conditionName || actionName, true);
       return;
     }
 
     if (opts.mode === "shockwave") {
-      if (hasVFX) window.VFX.addEffect(window.VFX.createShockwaveEffect(target.x, target.y, opts.radius || 40));
+      triggerActionAnim("action_surge", targetToken || actorToken, null, opts.color || "#58aaff");
       return;
     }
 
-    if (hasVFX) {
-      window.VFX.addEffect(window.VFX.createBuffEffect(target.x, target.y, opts.color || "#58aaff"));
-      if (opts.rollValue != null) window.VFX.addEffect(window.VFX.createDiceAnimation(origin.x, origin.y, 20, opts.rollValue, opts.color || "#58aaff"));
-    }
+    // Default: buff/info
+    triggerActionAnim("dodge", actorToken, null, opts.color || "#58aaff");
     if (CFUI && targetToken) CFUI.spawnInfoText(target.x, target.y, actionName, opts.color || "#58aaff");
   };
 
@@ -8932,7 +9153,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     const id = Date.now() + Math.random();
     const durations = { melee_attack:0.4, ranged_attack:0.5, dodge:0.6, dash:0.5, disengage:0.4, shove:0.4, grapple:0.6, hide:0.5, help:0.5,
       death_save_success:0.6, death_save_fail:0.6, critical_hit:0.7, miss:0.3, block:0.4, opportunity_attack:0.4,
-      second_wind:0.7, action_surge:0.8, sneak_attack:0.5, divine_smite:0.6, rage:1.0 };
+      second_wind:0.7, action_surge:0.8, sneak_attack:0.5, divine_smite:0.6, rage:1.0,
+      crossbow_bolt:0.5, arrow_shot:0.55, thrown_projectile:0.45, heavy_slash:0.5, sword_slash:0.4,
+      blunt_impact:0.45, dagger_stab:0.3, spear_thrust:0.4, staff_strike:0.4 };
     const anim = { id, type, x: token?.x||0, y: token?.y||0, casterX: token?.x||0, casterY: token?.y||0,
       targetX: target?.x||token?.x||0, targetY: target?.y||token?.y||0, startTime: Date.now(), duration: durations[type]||0.5, color: color||"#ffffff" };
     setActionAnims(prev => [...prev, anim]);
@@ -12301,83 +12524,148 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           ctx.restore();
         }
 
-        // ── Hovered token glow (pulsing ring) ──
+        // ── Hovered token targeting tooltip (grouped HP + hit odds + damage) ──
         const hovTk = hoveredTokenId ? tokens.find(t => t.id === hoveredTokenId) : null;
         if (hovTk && hovTk.id !== attacker.id) {
           const distToHov = Math.hypot(hovTk.x - attacker.x, hovTk.y - attacker.y);
           const inRange = distToHov <= rangePx + gridSize * 0.5;
           const glowColor = inRange ? "#5ee09a" : "#ff4444";
-          const glowAlpha = 0.4 + 0.5 * pulse;
           const tr = gridSize * 0.48;
-          // Outer pulsing glow
+          // Subtle highlight ring on target (no pulsing — clean)
           ctx.save();
           ctx.beginPath();
-          ctx.arc(hovTk.x, hovTk.y, tr + 6 + pulse * 4, 0, Math.PI * 2);
+          ctx.arc(hovTk.x, hovTk.y, tr + 4, 0, Math.PI * 2);
           ctx.strokeStyle = glowColor;
-          ctx.globalAlpha = glowAlpha * 0.3;
-          ctx.lineWidth = 4;
-          ctx.stroke();
-          ctx.globalAlpha = 1;
-          // Inner ring
-          ctx.beginPath();
-          ctx.arc(hovTk.x, hovTk.y, tr + 3, 0, Math.PI * 2);
-          ctx.strokeStyle = glowColor;
-          ctx.globalAlpha = glowAlpha;
-          ctx.lineWidth = 2.5;
+          ctx.globalAlpha = 0.7;
+          ctx.lineWidth = 3;
           ctx.stroke();
           ctx.globalAlpha = 1;
           ctx.restore();
-          // Target name + hit chance + damage preview above token
+
+          // ── Grouped tooltip panel with dark backdrop ──
           const distFt = Math.round(distToHov / gridSize * 5);
           const tAC = hovTk.ac || 10;
           const wData = activeWeapon.card?.data;
           const toHitBonus = wData ? wData.toHit : 0;
           const damageExpr = wData ? wData.damageExpr : "?";
           const damageType = wData ? wData.damageType : "";
-          // Compute hit chance: need to roll >= (AC - toHit) on d20, minimum 1 always misses, 20 always hits
           const needed = tAC - toHitBonus;
           const hitChance = Math.min(100, Math.max(5, Math.round((21 - Math.max(2, needed)) / 20 * 100)));
-          const labelY = hovTk.y - gridSize * 0.65;
-          const fs1 = Math.round(gridSize * 0.26);
-          const fs2 = Math.round(gridSize * 0.20);
-          const fs3 = Math.round(gridSize * 0.18);
+          const hitColor = hitChance >= 70 ? "#5ee09a" : hitChance >= 40 ? "#ffd54f" : "#f06858";
+
+          // Tooltip dimensions
+          const pW = gridSize * 2.4;
+          const pH = inRange ? gridSize * 1.5 : gridSize * 0.9;
+          const pX = hovTk.x - pW / 2;
+          const pY = hovTk.y - tr - pH - 12;
+          const pR = 8;
+          const fs1 = Math.round(gridSize * 0.24);
+          const fs2 = Math.round(gridSize * 0.18);
+          const fs3 = Math.round(gridSize * 0.16);
+
+          // Dark panel background
+          ctx.save();
+          ctx.shadowColor = "rgba(0,0,0,0.5)";
+          ctx.shadowBlur = 12;
+          ctx.shadowOffsetY = 2;
+          ctx.fillStyle = "rgba(12, 8, 4, 0.92)";
+          ctx.beginPath();
+          drawRoundedRectPath(ctx, pX, pY, pW, pH, pR);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+          // Border
+          ctx.strokeStyle = inRange ? "rgba(94,224,154,0.4)" : "rgba(255,68,68,0.4)";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          ctx.restore();
+
+          // Pointer arrow
+          ctx.fillStyle = "rgba(12, 8, 4, 0.92)";
+          ctx.beginPath();
+          ctx.moveTo(hovTk.x - 6, pY + pH);
+          ctx.lineTo(hovTk.x, pY + pH + 6);
+          ctx.lineTo(hovTk.x + 6, pY + pH);
+          ctx.closePath();
+          ctx.fill();
+
+          const cX = pX + pW / 2; // center x
+          let curY = pY + 10;
+
+          // Name row
           ctx.textAlign = "center";
-          ctx.textBaseline = "bottom";
-          if (inRange) {
-            // Name
-            ctx.fillStyle = "#5ee09a";
-            ctx.font = "bold " + fs1 + "px Cinzel";
-            ctx.fillText(hovTk.name, hovTk.x, labelY);
-            // Hit chance bar background
-            const barW = gridSize * 1.2;
-            const barH = gridSize * 0.12;
-            const barX = hovTk.x - barW / 2;
-            const barY = labelY - fs1 * 0.3 - barH;
-            ctx.fillStyle = "rgba(0,0,0,0.5)";
+          ctx.textBaseline = "top";
+          ctx.fillStyle = "#f2e8d6";
+          ctx.font = "bold " + fs1 + "px Cinzel";
+          ctx.fillText(hovTk.name, cX, curY);
+          curY += fs1 + 4;
+
+          // HP bar (inside tooltip)
+          const hpFrac = hovTk.maxHp ? Math.max(0, (hovTk.hp || 0) / hovTk.maxHp) : 0;
+          if (hovTk.maxHp) {
+            const bW = pW - 20, bH = 6, bX = pX + 10, bY = curY;
+            const hpCol = getHpColor(hovTk.hp || 0, hovTk.maxHp);
+            ctx.fillStyle = "rgba(255,255,255,0.08)";
             ctx.beginPath();
-            drawRoundedRectPath(ctx, barX, barY, barW, barH, barH / 2);
+            drawRoundedRectPath(ctx, bX, bY, bW, bH, 3);
             ctx.fill();
-            // Hit chance bar fill
-            const hitColor = hitChance >= 70 ? "#5ee09a" : hitChance >= 40 ? "#ffd54f" : "#f06858";
-            ctx.fillStyle = hitColor;
-            ctx.beginPath();
-            drawRoundedRectPath(ctx, barX, barY, Math.max(barH, barW * hitChance / 100), barH, barH / 2);
-            ctx.fill();
-            // Hit chance text
-            ctx.fillStyle = hitColor;
-            ctx.font = "bold " + fs2 + "px Cinzel";
-            ctx.fillText(hitChance + "% to hit (AC " + tAC + ")", hovTk.x, barY - 2);
-            // Damage preview
-            ctx.fillStyle = "#e2e8f0";
+            if (hpFrac > 0) {
+              ctx.fillStyle = hpCol;
+              ctx.beginPath();
+              drawRoundedRectPath(ctx, bX, bY, Math.max(bH, bW * hpFrac), bH, 3);
+              ctx.fill();
+            }
+            // HP text right of bar
+            ctx.textAlign = "right";
             ctx.font = fs3 + "px Spectral";
-            ctx.fillText(damageExpr + " " + damageType + "  |  " + distFt + " ft", hovTk.x, barY - 2 - fs2 * 1.1);
-          } else {
-            ctx.fillStyle = "#ff6666";
-            ctx.font = "bold " + fs1 + "px Cinzel";
-            ctx.fillText(hovTk.name + " (" + distFt + "ft)", hovTk.x, labelY);
-            ctx.font = fs2 + "px Cinzel";
-            ctx.fillText("Out of range (" + (wData ? wData.range : "?") + " ft max)", hovTk.x, labelY - fs1 * 1.1);
+            ctx.fillStyle = hpCol;
+            ctx.fillText((hovTk.hp || 0) + "/" + hovTk.maxHp, pX + pW - 10, bY + bH + 2);
+            ctx.textAlign = "left";
+            ctx.fillStyle = "#94a3b8";
+            ctx.fillText("AC " + tAC, pX + 10, bY + bH + 2);
+            curY = bY + bH + fs3 + 6;
           }
+
+          if (inRange) {
+            // Hit chance row
+            const hitBarW = pW - 20, hitBarH = 5, hitBarX = pX + 10, hitBarY = curY;
+            ctx.fillStyle = "rgba(255,255,255,0.06)";
+            ctx.beginPath();
+            drawRoundedRectPath(ctx, hitBarX, hitBarY, hitBarW, hitBarH, 2);
+            ctx.fill();
+            ctx.fillStyle = hitColor;
+            ctx.beginPath();
+            drawRoundedRectPath(ctx, hitBarX, hitBarY, Math.max(hitBarH, hitBarW * hitChance / 100), hitBarH, 2);
+            ctx.fill();
+            curY = hitBarY + hitBarH + 4;
+
+            // Hit % and damage on same row
+            ctx.textAlign = "left";
+            ctx.font = "bold " + fs2 + "px Cinzel";
+            ctx.fillStyle = hitColor;
+            ctx.fillText(hitChance + "% hit", pX + 10, curY);
+            ctx.textAlign = "right";
+            ctx.fillStyle = "#e2e8f0";
+            ctx.font = fs2 + "px Spectral";
+            ctx.fillText(damageExpr + " " + damageType, pX + pW - 10, curY);
+            curY += fs2 + 3;
+
+            // Distance
+            ctx.textAlign = "center";
+            ctx.font = fs3 + "px Spectral";
+            ctx.fillStyle = "#64748b";
+            ctx.fillText(distFt + " ft", cX, curY);
+          } else {
+            // Out of range
+            ctx.textAlign = "center";
+            ctx.font = "bold " + fs2 + "px Cinzel";
+            ctx.fillStyle = "#f06858";
+            ctx.fillText("Out of range", cX, curY);
+            curY += fs2 + 3;
+            ctx.font = fs3 + "px Spectral";
+            ctx.fillStyle = "#94a3b8";
+            ctx.fillText(distFt + " ft / " + (wData ? wData.range : "?") + " ft max", cX, curY);
+          }
+          ctx.textAlign = "left";
         }
 
         // ── Crosshair at cursor (when no token is hovered) ──
@@ -14976,6 +15264,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         emitPlayModeVfx(actorToken, target, {
           mode: "attack",
           actionName: card.name,
+          weaponName: d.weaponName,
           damageType: d.damageType,
           amount: attackResult.totalDamage || 0,
           isCrit: !!attackResult.isCrit,
@@ -15269,7 +15558,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         if (offhandAttack?.hit) {
           const finalDamage = offhandResult.totalDamage || offhandAttack.totalDamage || 0;
           applyAttackResultToTarget(target.id, target, finalDamage, w.type || "slashing");
-          emitPlayModeVfx(actorToken, target, { mode: "attack", actionName: offhandWeapon, damageType: w.type || "slashing", amount: finalDamage, isCrit: !!offhandAttack.isCrit, rollValue: offhandAttack.attackRoll?.chosen ?? null, color: "#ffd54f" });
+          emitPlayModeVfx(actorToken, target, { mode: "attack", actionName: offhandWeapon, weaponName: offhandWeapon, damageType: w.type || "slashing", amount: finalDamage, isCrit: !!offhandAttack.isCrit, rollValue: offhandAttack.attackRoll?.chosen ?? null, color: "#ffd54f" });
           addCombatLogEntry({ type: "attack", attacker: actorToken.name, target: target.name, action: offhandWeapon + " (Offhand)", hit: true, damage: finalDamage, isCrit: !!offhandAttack.isCrit, roll: offhandAttack.attackRoll });
           setPlayModeResolution({ title: card.name, lines: ["Attack with " + offhandWeapon + ".", "Hit for " + finalDamage + " " + (w.type || "slashing") + " damage.", "Bonus Action used."] });
         } else if (offhandAttack) {
@@ -16094,13 +16383,12 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               />
             )}
 
-            {/* ── Target Reticle — animated crosshair on focused enemy ── */}
-            {combatLive && activeCombatantToken && (() => {
-              const focusTargetId = combatTargetByActor[activeCombatantToken.id];
-              const focusTarget = focusTargetId ? tokens.find(t => t.id === focusTargetId) : null;
-              if (!focusTarget || focusTarget.id === activeCombatantToken.id) return null;
-              return <TargetReticle target={focusTarget} gridSize={gridSize} zoom={zoom} pan={pan} />;
-            })()}
+            {/* ── Floating Roll Display (separate from init bar so it doesn't cover content) ── */}
+            {combatLive && combatRollLog.length > 0 && (
+              <CombatRollDisplay combatRollLog={combatRollLog} />
+            )}
+
+            {/* Target Reticle removed — replaced by canvas-based targeting UI */}
 
             {/* ── BG3-style Token Action Ring (around active token) ── */}
             {(() => {
