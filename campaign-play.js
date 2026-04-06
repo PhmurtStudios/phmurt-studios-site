@@ -109,27 +109,52 @@ function renderActionAnimation(ctx, anim, gridSize, now) {
   const alpha = 1 - progress;
   switch (anim.type) {
     case "melee_attack": {
-      const arc = Math.PI * 1.5, start = Math.PI * 0.25 - arc/2, cur = start + arc * ep;
-      const r = gridSize * 0.6;
-      const sx = cx + Math.cos(cur - arc/2) * r, sy = cy + Math.sin(cur - arc/2) * r;
-      const ex = cx + Math.cos(cur) * r, ey = cy + Math.sin(cur) * r;
-      ctx.strokeStyle = anim.color || "rgba(255,220,180,0.9)"; ctx.lineWidth = gridSize * 0.15; ctx.lineCap = "round";
-      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
-      for (let i = 0; i < 8; i++) { const a = cur + (Math.random()-0.5)*0.5, d = r*(1-progress*0.5);
-        ctx.fillStyle = `rgba(255,200,100,${alpha*0.7})`; ctx.beginPath(); ctx.arc(cx+Math.cos(a)*d, cy+Math.sin(a)*d, 2, 0, Math.PI*2); ctx.fill(); }
+      const arc = Math.PI * 1.8, start = Math.PI * 0.25 - arc/2, cur = start + arc * easeOut(ep);
+      const r = gridSize * 0.7;
+      // Sweeping slash trail (fading afterimage)
+      for (let i = 0; i < 14; i++) { const ta = cur - (i / 14) * arc * 0.5;
+        const bx = cx + Math.cos(ta) * r, by = cy + Math.sin(ta) * r;
+        const trailAlpha = alpha * (1 - i / 14) * 0.5;
+        ctx.fillStyle = `rgba(255,220,160,${trailAlpha})`; ctx.beginPath(); ctx.arc(bx, by, 3 - i * 0.15, 0, Math.PI*2); ctx.fill(); }
+      // Main blade edge with glow
+      const tipX = cx + Math.cos(cur) * r, tipY = cy + Math.sin(cur) * r;
+      ctx.shadowColor = anim.color || "rgba(255,200,120,0.8)"; ctx.shadowBlur = 12;
+      ctx.strokeStyle = anim.color || "rgba(255,230,190,0.95)"; ctx.lineWidth = gridSize * 0.14; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(cx + Math.cos(cur) * gridSize * 0.12, cy + Math.sin(cur) * gridSize * 0.12);
+      ctx.lineTo(tipX, tipY); ctx.stroke();
+      ctx.shadowBlur = 0;
+      // Sparks flying off the swing
+      for (let i = 0; i < 10; i++) { const a = cur + (Math.random()-0.5)*0.8, d = r*(0.6+Math.random()*0.4);
+        const sparkSize = 1 + Math.random() * 2;
+        ctx.fillStyle = `rgba(255,${180+Math.random()*75},80,${alpha*0.7})`; ctx.beginPath(); ctx.arc(cx+Math.cos(a)*d, cy+Math.sin(a)*d, sparkSize, 0, Math.PI*2); ctx.fill(); }
+      // Impact shockwave at end of swing
+      if (ep > 0.75) { const ip = (ep - 0.75) / 0.25;
+        ctx.strokeStyle = `rgba(255,220,150,${(1-ip)*0.4})`; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(tipX, tipY, gridSize * 0.35 * ip, 0, Math.PI*2); ctx.stroke(); }
       break; }
     case "ranged_attack": {
       const px = casterCx + (targetCx - casterCx) * ep, py = casterCy + (targetCy - casterCy) * ep;
       const angle = Math.atan2(targetCy - casterCy, targetCx - casterCx);
-      ctx.strokeStyle = `rgba(200,180,100,${alpha})`; ctx.lineWidth = 2;
-      const ts = Math.max(0, ep - 0.3);
-      ctx.beginPath(); ctx.moveTo(casterCx+(targetCx-casterCx)*ts, casterCy+(targetCy-casterCy)*ts); ctx.lineTo(px, py); ctx.stroke();
+      // Glowing trail
+      const trailLen = 8;
+      for (let i = 1; i <= trailLen; i++) { const tp = Math.max(0, ep - i * 0.025);
+        const tx = casterCx + (targetCx - casterCx) * tp, ty = casterCy + (targetCy - casterCy) * tp;
+        ctx.fillStyle = `rgba(220,200,130,${alpha * (1 - i / trailLen) * 0.35})`; ctx.beginPath(); ctx.arc(tx, ty, 2.5 - i * 0.2, 0, Math.PI*2); ctx.fill(); }
+      // Projectile with glow
       ctx.save(); ctx.translate(px, py); ctx.rotate(angle);
-      ctx.fillStyle = `rgba(200,180,100,${alpha})`; ctx.beginPath();
-      ctx.moveTo(gridSize*0.2, 0); ctx.lineTo(-gridSize*0.1, gridSize*0.08); ctx.lineTo(-gridSize*0.08, 0); ctx.lineTo(-gridSize*0.1, -gridSize*0.08);
-      ctx.closePath(); ctx.fill(); ctx.restore();
-      if (ep > 0.85) { for (let i=0;i<8;i++) { const a=(i/8)*Math.PI*2, d=gridSize*0.3*(ep-0.85)/0.15;
-        ctx.fillStyle=`rgba(200,180,100,${(1-(ep-0.85)/0.15)*0.6})`; ctx.beginPath(); ctx.arc(px+Math.cos(a)*d,py+Math.sin(a)*d,2,0,Math.PI*2); ctx.fill(); }}
+      ctx.shadowColor = "rgba(255,220,100,0.6)"; ctx.shadowBlur = 8;
+      ctx.fillStyle = `rgba(230,210,140,${alpha})`; ctx.beginPath();
+      ctx.moveTo(gridSize*0.22, 0); ctx.lineTo(-gridSize*0.08, gridSize*0.07); ctx.lineTo(-gridSize*0.06, 0); ctx.lineTo(-gridSize*0.08, -gridSize*0.07);
+      ctx.closePath(); ctx.fill();
+      ctx.shadowBlur = 0; ctx.restore();
+      // Impact burst
+      if (ep > 0.85) { const ip = (ep - 0.85) / 0.15;
+        for (let i=0;i<12;i++) { const a=(i/12)*Math.PI*2 + angle*0.5, d=gridSize*0.35*ip;
+          const sparkAlpha = (1-ip) * 0.7;
+          ctx.fillStyle=`rgba(255,220,120,${sparkAlpha})`; ctx.beginPath(); ctx.arc(targetCx+Math.cos(a)*d,targetCy+Math.sin(a)*d,2,0,Math.PI*2); ctx.fill(); }
+        // Flash ring
+        ctx.strokeStyle = `rgba(255,240,180,${(1-ip)*0.5})`; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(targetCx, targetCy, gridSize*0.25*ip, 0, Math.PI*2); ctx.stroke(); }
       break; }
     case "dodge": {
       for (let r=0;r<3;r++) { const rp=Math.max(0,Math.min(1,(ep-r*0.15)/(1-r*0.15))); const rad=gridSize*0.8*rp;
@@ -180,13 +205,27 @@ function renderActionAnimation(ctx, anim, gridSize, now) {
       ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,gridSize*0.8*(1-ep),0,Math.PI*2); ctx.fill();
       break; }
     case "critical_hit": {
-      const br=gridSize*0.3, mr=gridSize*1.2, cr=br+(mr-br)*ep;
-      const g=ctx.createRadialGradient(cx,cy,cr*0.3,cx,cy,cr);
-      g.addColorStop(0,`rgba(255,255,100,${alpha*0.8})`); g.addColorStop(0.5,`rgba(255,200,50,${alpha*0.4})`); g.addColorStop(1,"rgba(255,100,0,0)");
+      const br=gridSize*0.3, mr=gridSize*1.5, cr=br+(mr-br)*ep;
+      // Dramatic golden explosion burst
+      ctx.shadowColor = "rgba(255,200,50,0.8)"; ctx.shadowBlur = 20;
+      const g=ctx.createRadialGradient(cx,cy,cr*0.15,cx,cy,cr);
+      g.addColorStop(0,`rgba(255,255,180,${alpha*0.9})`); g.addColorStop(0.3,`rgba(255,220,80,${alpha*0.6})`); g.addColorStop(0.7,`rgba(255,150,30,${alpha*0.25})`); g.addColorStop(1,"rgba(255,80,0,0)");
       ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,cr,0,Math.PI*2); ctx.fill();
-      for (let i=0;i<16;i++) { const a=(i/16)*Math.PI*2, rl=gridSize*1.5*ep;
-        ctx.strokeStyle=`rgba(255,200,50,${alpha*0.6})`; ctx.lineWidth=2; ctx.beginPath();
-        ctx.moveTo(cx+Math.cos(a)*br,cy+Math.sin(a)*br); ctx.lineTo(cx+Math.cos(a)*(br+rl),cy+Math.sin(a)*(br+rl)); ctx.stroke(); }
+      ctx.shadowBlur = 0;
+      // Star burst rays — longer, with varying lengths
+      for (let i=0;i<20;i++) { const a=(i/20)*Math.PI*2, rl=gridSize*(1.2+Math.sin(i*3.7)*0.4)*ep;
+        const rayWidth = i % 2 === 0 ? 3 : 1.5;
+        ctx.strokeStyle=`rgba(255,${200+Math.sin(i*2)*55},50,${alpha*0.7})`; ctx.lineWidth=rayWidth; ctx.lineCap="round"; ctx.beginPath();
+        ctx.moveTo(cx+Math.cos(a)*br*0.5,cy+Math.sin(a)*br*0.5); ctx.lineTo(cx+Math.cos(a)*(br+rl),cy+Math.sin(a)*(br+rl)); ctx.stroke(); }
+      // Inner white flash
+      if (progress < 0.3) { const flashAlpha = (1 - progress/0.3) * 0.6;
+        ctx.fillStyle = `rgba(255,255,255,${flashAlpha})`; ctx.beginPath(); ctx.arc(cx,cy,gridSize*0.4*(1-progress/0.3)+gridSize*0.15,0,Math.PI*2); ctx.fill(); }
+      // Floating sparks
+      for (let i=0;i<16;i++) { const a=(i/16)*Math.PI*2+progress*2, d=gridSize*(0.5+1.2*ep);
+        const sparkAlpha = alpha * (1 - (i%3)*0.2);
+        ctx.fillStyle=`rgba(255,${180+i*4},${30+i*8},${sparkAlpha*0.6})`; ctx.beginPath();
+        ctx.arc(cx+Math.cos(a)*d,cy+Math.sin(a)*d-gridSize*0.3*ep,2+Math.random(),0,Math.PI*2); ctx.fill(); }
+      ctx.lineCap="butt";
       break; }
     case "miss": {
       for (let i=0;i<3;i++) { const ly=targetCy+(i-1)*gridSize*0.15;
@@ -219,21 +258,54 @@ function renderActionAnimation(ctx, anim, gridSize, now) {
         ctx.fillStyle=`rgba(255,200,50,${(1-pp)*0.7})`; ctx.beginPath(); ctx.arc(cx+Math.cos(a)*d,cy+Math.sin(a)*d-gridSize*0.4*pp,2,0,Math.PI*2); ctx.fill();}
       break; }
     case "sneak_attack": {
-      const da=-Math.PI/3+Math.PI*0.4*ep, dr=gridSize*0.5;
+      const da=-Math.PI/3+Math.PI*0.5*ep, dr=gridSize*0.55;
+      // Shadow wisps coiling around the strike
+      for(let i=0;i<10;i++){const sp=(progress+i*0.06)%1, a=(i/10)*Math.PI*2+progress*3;
+        const d=gridSize*(0.3+0.4*sp)*(1-sp*0.5), rise = -gridSize*0.15*sp;
+        ctx.fillStyle=`rgba(60,20,100,${(1-sp)*0.45})`; ctx.beginPath();
+        ctx.arc(cx+Math.cos(a)*d,cy+Math.sin(a)*d+rise,2.5-sp,0,Math.PI*2); ctx.fill();}
+      // Dagger strike from the shadows
       ctx.save(); ctx.translate(cx+Math.cos(da)*dr,cy+Math.sin(da)*dr); ctx.rotate(da+Math.PI/2);
-      ctx.fillStyle=`rgba(100,50,150,${alpha*0.8})`; ctx.beginPath();
-      ctx.moveTo(0,gridSize*0.2); ctx.lineTo(-gridSize*0.08,-gridSize*0.1); ctx.lineTo(0,-gridSize*0.15); ctx.lineTo(gridSize*0.08,-gridSize*0.1);
-      ctx.closePath(); ctx.fill(); ctx.restore();
-      for(let i=0;i<8;i++){const sp=(progress+i*0.08)%1, a=(i/8)*Math.PI*2, d=gridSize*0.5*(1-sp);
-        ctx.fillStyle=`rgba(50,20,80,${(1-sp)*0.5})`; ctx.beginPath(); ctx.arc(cx+Math.cos(a)*d,cy+Math.sin(a)*d,2,0,Math.PI*2); ctx.fill();}
+      ctx.shadowColor = "rgba(120,50,200,0.6)"; ctx.shadowBlur = 10;
+      ctx.fillStyle=`rgba(140,80,200,${alpha*0.85})`; ctx.beginPath();
+      ctx.moveTo(0,gridSize*0.22); ctx.lineTo(-gridSize*0.07,-gridSize*0.12); ctx.lineTo(0,-gridSize*0.18); ctx.lineTo(gridSize*0.07,-gridSize*0.12);
+      ctx.closePath(); ctx.fill();
+      ctx.shadowBlur = 0; ctx.restore();
+      // Purple burst on impact
+      if (ep > 0.5 && ep < 0.9) { const bp = (ep - 0.5) / 0.4;
+        const burstGrad = ctx.createRadialGradient(cx,cy,0,cx,cy,gridSize*0.5);
+        burstGrad.addColorStop(0,`rgba(120,50,200,${(1-bp)*0.25})`);
+        burstGrad.addColorStop(1,"rgba(60,20,120,0)");
+        ctx.fillStyle=burstGrad; ctx.beginPath(); ctx.arc(cx,cy,gridSize*0.5*bp,0,Math.PI*2); ctx.fill(); }
       break; }
     case "divine_smite": {
-      const bo=Math.sin(progress*Math.PI)*0.6;
-      ctx.strokeStyle=`rgba(255,220,100,${bo})`; ctx.lineWidth=gridSize*0.3; ctx.lineCap="round";
-      ctx.beginPath(); ctx.moveTo(cx,cy-gridSize*1.5); ctx.lineTo(cx,cy); ctx.stroke();
-      const g=ctx.createRadialGradient(cx,cy,0,cx,cy,gridSize);
-      g.addColorStop(0,`rgba(255,255,150,${alpha*0.7})`); g.addColorStop(1,"rgba(255,180,50,0)");
-      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,gridSize*ep,0,Math.PI*2); ctx.fill();
+      const bo=Math.sin(progress*Math.PI)*0.8;
+      // Pillar of golden light descending from above
+      ctx.save();
+      ctx.shadowColor = "rgba(255,220,80,0.7)"; ctx.shadowBlur = 25;
+      const pillarWidth = gridSize * 0.35 * bo;
+      const pillarGrad = ctx.createLinearGradient(cx, cy - gridSize * 2, cx, cy);
+      pillarGrad.addColorStop(0, `rgba(255,255,200,0)`);
+      pillarGrad.addColorStop(0.3, `rgba(255,240,150,${bo * 0.6})`);
+      pillarGrad.addColorStop(0.7, `rgba(255,220,80,${bo * 0.8})`);
+      pillarGrad.addColorStop(1, `rgba(255,200,50,${bo * 0.9})`);
+      ctx.fillStyle = pillarGrad;
+      ctx.fillRect(cx - pillarWidth/2, cy - gridSize * 2, pillarWidth, gridSize * 2);
+      ctx.shadowBlur = 0; ctx.restore();
+      // Radiant burst at ground level
+      const g=ctx.createRadialGradient(cx,cy,0,cx,cy,gridSize*1.2);
+      g.addColorStop(0,`rgba(255,255,180,${alpha*0.75})`); g.addColorStop(0.4,`rgba(255,220,80,${alpha*0.4})`); g.addColorStop(1,"rgba(255,160,30,0)");
+      ctx.fillStyle=g; ctx.beginPath(); ctx.arc(cx,cy,gridSize*1.2*ep,0,Math.PI*2); ctx.fill();
+      // Holy symbol / cross flash (brief)
+      if (progress < 0.4) { const flashAlpha = (1 - progress/0.4) * 0.4;
+        ctx.strokeStyle = `rgba(255,255,200,${flashAlpha})`; ctx.lineWidth = 3; ctx.lineCap = "round";
+        ctx.beginPath(); ctx.moveTo(cx, cy - gridSize*0.3); ctx.lineTo(cx, cy + gridSize*0.2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx - gridSize*0.2, cy - gridSize*0.1); ctx.lineTo(cx + gridSize*0.2, cy - gridSize*0.1); ctx.stroke(); ctx.lineCap = "butt"; }
+      // Rising golden motes
+      for (let i=0;i<10;i++) { const pp=(progress+i*0.08)%1, a=(i/10)*Math.PI*2;
+        const d = gridSize * 0.5 * pp, rise = -gridSize * 0.8 * pp;
+        ctx.fillStyle=`rgba(255,220,80,${(1-pp)*0.6})`; ctx.beginPath();
+        ctx.arc(cx+Math.cos(a)*d,cy+rise,2,0,Math.PI*2); ctx.fill(); }
       break; }
     case "rage": {
       for(let i=0;i<8;i++){const a=(i/8)*Math.PI*2, fx=cx+Math.cos(a)*(gridSize*0.4+gridSize*0.15*Math.sin(progress*Math.PI*4));
@@ -246,63 +318,77 @@ function renderActionAnimation(ctx, anim, gridSize, now) {
       ctx.fillStyle=ag; ctx.beginPath(); ctx.arc(cx,cy,gridSize*0.8,0,Math.PI*2); ctx.fill();
       break; }
 
-    // ── CROSSBOW BOLT: fast dark bolt with fletching, impact sparks ──
+    // ── CROSSBOW BOLT: snappy dark bolt with metallic gleam and violent impact ──
     case "crossbow_bolt": {
       const px = casterCx + (targetCx - casterCx) * ep, py = casterCy + (targetCy - casterCy) * ep;
       const angle = Math.atan2(targetCy - casterCy, targetCx - casterCx);
-      const boltLen = gridSize * 0.35;
-      // Bolt shaft
+      const boltLen = gridSize * 0.38;
+      // Speed trail (thin streaks)
+      for (let i = 1; i <= 6; i++) { const tp = Math.max(0, ep - i * 0.02);
+        const tx = casterCx + (targetCx - casterCx) * tp, ty = casterCy + (targetCy - casterCy) * tp;
+        ctx.fillStyle = `rgba(100,80,60,${alpha * (1 - i/6) * 0.4})`; ctx.beginPath(); ctx.arc(tx, ty, 1.5, 0, Math.PI*2); ctx.fill(); }
+      // Bolt with subtle glow
       ctx.save(); ctx.translate(px, py); ctx.rotate(angle);
-      ctx.strokeStyle = `rgba(80,60,40,${alpha})`; ctx.lineWidth = 2.5; ctx.lineCap = "round";
+      ctx.shadowColor = "rgba(140,120,90,0.4)"; ctx.shadowBlur = 5;
+      // Shaft
+      ctx.strokeStyle = `rgba(70,55,35,${alpha})`; ctx.lineWidth = 2.5; ctx.lineCap = "round";
       ctx.beginPath(); ctx.moveTo(-boltLen, 0); ctx.lineTo(boltLen * 0.3, 0); ctx.stroke();
-      // Bolt head (dark metal point)
-      ctx.fillStyle = `rgba(60,60,70,${alpha})`;
-      ctx.beginPath(); ctx.moveTo(boltLen * 0.3, 0); ctx.lineTo(boltLen * 0.15, -3); ctx.lineTo(boltLen * 0.5, 0); ctx.lineTo(boltLen * 0.15, 3); ctx.closePath(); ctx.fill();
-      // Fletching
-      ctx.fillStyle = `rgba(180,40,40,${alpha * 0.7})`;
-      ctx.beginPath(); ctx.moveTo(-boltLen, 0); ctx.lineTo(-boltLen * 0.7, -4); ctx.lineTo(-boltLen * 0.6, 0); ctx.closePath(); ctx.fill();
-      ctx.beginPath(); ctx.moveTo(-boltLen, 0); ctx.lineTo(-boltLen * 0.7, 4); ctx.lineTo(-boltLen * 0.6, 0); ctx.closePath(); ctx.fill();
-      ctx.restore();
-      // Trail
-      const trailStart = Math.max(0, ep - 0.15);
-      ctx.strokeStyle = `rgba(120,100,80,${alpha * 0.3})`; ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(casterCx + (targetCx - casterCx) * trailStart, casterCy + (targetCy - casterCy) * trailStart);
-      ctx.lineTo(px, py); ctx.stroke();
-      // Impact sparks
-      if (ep > 0.85) { const impactP = (ep - 0.85) / 0.15;
-        for (let i = 0; i < 10; i++) { const sa = (i / 10) * Math.PI * 2 + angle, sd = gridSize * 0.3 * impactP;
-          ctx.fillStyle = `rgba(255,200,100,${(1 - impactP) * 0.8})`; ctx.beginPath();
-          ctx.arc(targetCx + Math.cos(sa) * sd, targetCy + Math.sin(sa) * sd, 1.5, 0, Math.PI * 2); ctx.fill(); } }
+      // Dark metal head
+      ctx.fillStyle = `rgba(50,50,60,${alpha})`;
+      ctx.beginPath(); ctx.moveTo(boltLen * 0.3, 0); ctx.lineTo(boltLen * 0.15, -3.5); ctx.lineTo(boltLen * 0.55, 0); ctx.lineTo(boltLen * 0.15, 3.5); ctx.closePath(); ctx.fill();
+      // Crimson fletching
+      ctx.fillStyle = `rgba(170,35,35,${alpha * 0.75})`;
+      ctx.beginPath(); ctx.moveTo(-boltLen, 0); ctx.lineTo(-boltLen * 0.65, -5); ctx.lineTo(-boltLen * 0.55, 0); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-boltLen, 0); ctx.lineTo(-boltLen * 0.65, 5); ctx.lineTo(-boltLen * 0.55, 0); ctx.closePath(); ctx.fill();
+      ctx.shadowBlur = 0; ctx.restore();
+      // Violent impact sparks
+      if (ep > 0.82) { const impactP = (ep - 0.82) / 0.18;
+        // White flash at point of impact
+        if (impactP < 0.3) { ctx.fillStyle = `rgba(255,255,240,${(1-impactP/0.3)*0.35})`; ctx.beginPath();
+          ctx.arc(targetCx, targetCy, gridSize * 0.12, 0, Math.PI*2); ctx.fill(); }
+        // Sparks flying outward from impact
+        for (let i = 0; i < 12; i++) { const sa = (i / 12) * Math.PI * 2 + angle * 0.3, sd = gridSize * 0.35 * impactP;
+          const sparkSize = 1 + Math.random() * 1.5;
+          ctx.fillStyle = `rgba(255,${180+Math.random()*60},${60+Math.random()*60},${(1 - impactP) * 0.75})`; ctx.beginPath();
+          ctx.arc(targetCx + Math.cos(sa) * sd, targetCy + Math.sin(sa) * sd, sparkSize, 0, Math.PI * 2); ctx.fill(); } }
       break; }
 
-    // ── ARROW SHOT: graceful arc with feathered trail ──
+    // ── ARROW SHOT: graceful parabolic arc with luminous trail and thud impact ──
     case "arrow_shot": {
-      const px = casterCx + (targetCx - casterCx) * ep, py = casterCy + (targetCy - casterCy) * ep - Math.sin(ep * Math.PI) * gridSize * 0.3;
-      const prevP = Math.max(0, ep - 0.05);
-      const prevX = casterCx + (targetCx - casterCx) * prevP, prevY = casterCy + (targetCy - casterCy) * prevP - Math.sin(prevP * Math.PI) * gridSize * 0.3;
+      const arcHeight = gridSize * 0.4;
+      const px = casterCx + (targetCx - casterCx) * ep, py = casterCy + (targetCy - casterCy) * ep - Math.sin(ep * Math.PI) * arcHeight;
+      const prevP = Math.max(0, ep - 0.04);
+      const prevX = casterCx + (targetCx - casterCx) * prevP, prevY = casterCy + (targetCy - casterCy) * prevP - Math.sin(prevP * Math.PI) * arcHeight;
       const angle = Math.atan2(py - prevY, px - prevX);
-      const arrLen = gridSize * 0.3;
+      const arrLen = gridSize * 0.33;
+      // Luminous arc trail (longer, with glow)
+      for (let i = 1; i < 10; i++) { const tp = Math.max(0, ep - i * 0.02);
+        const tx = casterCx + (targetCx - casterCx) * tp, ty = casterCy + (targetCy - casterCy) * tp - Math.sin(tp * Math.PI) * arcHeight;
+        const trailAlpha = alpha * (1 - i / 10) * 0.35;
+        ctx.fillStyle = `rgba(220,200,140,${trailAlpha})`; ctx.beginPath(); ctx.arc(tx, ty, 2 - i * 0.12, 0, Math.PI * 2); ctx.fill(); }
       ctx.save(); ctx.translate(px, py); ctx.rotate(angle);
-      // Arrow shaft
-      ctx.strokeStyle = `rgba(160,130,80,${alpha})`; ctx.lineWidth = 2; ctx.lineCap = "round";
+      // Arrow with subtle golden glow
+      ctx.shadowColor = "rgba(200,180,100,0.3)"; ctx.shadowBlur = 5;
+      // Shaft
+      ctx.strokeStyle = `rgba(150,120,70,${alpha})`; ctx.lineWidth = 2; ctx.lineCap = "round";
       ctx.beginPath(); ctx.moveTo(-arrLen, 0); ctx.lineTo(arrLen * 0.3, 0); ctx.stroke();
-      // Arrowhead
-      ctx.fillStyle = `rgba(180,180,190,${alpha})`;
-      ctx.beginPath(); ctx.moveTo(arrLen * 0.5, 0); ctx.lineTo(arrLen * 0.2, -3.5); ctx.lineTo(arrLen * 0.2, 3.5); ctx.closePath(); ctx.fill();
-      // Feathers
-      ctx.strokeStyle = `rgba(200,200,200,${alpha * 0.6})`; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(-arrLen, 0); ctx.lineTo(-arrLen * 0.8, -4); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(-arrLen, 0); ctx.lineTo(-arrLen * 0.8, 4); ctx.stroke();
-      ctx.restore();
-      // Streaking trail
-      for (let i = 1; i < 6; i++) { const tp = Math.max(0, ep - i * 0.03);
-        const tx = casterCx + (targetCx - casterCx) * tp, ty = casterCy + (targetCy - casterCy) * tp - Math.sin(tp * Math.PI) * gridSize * 0.3;
-        ctx.fillStyle = `rgba(200,180,120,${alpha * (1 - i / 6) * 0.3})`; ctx.beginPath(); ctx.arc(tx, ty, 1.5, 0, Math.PI * 2); ctx.fill(); }
-      // Impact
-      if (ep > 0.9) { const ip = (ep - 0.9) / 0.1;
-        for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2, d = gridSize * 0.2 * ip;
-          ctx.fillStyle = `rgba(200,180,120,${(1 - ip) * 0.6})`; ctx.beginPath(); ctx.arc(targetCx + Math.cos(a) * d, targetCy + Math.sin(a) * d, 1.5, 0, Math.PI * 2); ctx.fill(); } }
+      // Gleaming arrowhead
+      ctx.fillStyle = `rgba(190,190,200,${alpha})`;
+      ctx.beginPath(); ctx.moveTo(arrLen * 0.55, 0); ctx.lineTo(arrLen * 0.2, -4); ctx.lineTo(arrLen * 0.2, 4); ctx.closePath(); ctx.fill();
+      // White feathers
+      ctx.fillStyle = `rgba(220,215,200,${alpha * 0.65})`;
+      ctx.beginPath(); ctx.moveTo(-arrLen, 0); ctx.lineTo(-arrLen * 0.75, -4.5); ctx.lineTo(-arrLen * 0.6, 0); ctx.closePath(); ctx.fill();
+      ctx.beginPath(); ctx.moveTo(-arrLen, 0); ctx.lineTo(-arrLen * 0.75, 4.5); ctx.lineTo(-arrLen * 0.6, 0); ctx.closePath(); ctx.fill();
+      ctx.shadowBlur = 0; ctx.restore();
+      // Satisfying impact — dust puff and embedded arrow flash
+      if (ep > 0.88) { const ip = (ep - 0.88) / 0.12;
+        // Small dust cloud at impact point
+        for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2 + angle, d = gridSize * 0.25 * ip;
+          ctx.fillStyle = `rgba(180,160,120,${(1 - ip) * 0.5})`; ctx.beginPath();
+          ctx.arc(targetCx + Math.cos(a) * d, targetCy + Math.sin(a) * d - gridSize * 0.1 * ip, 2, 0, Math.PI * 2); ctx.fill(); }
+        // Brief flash ring
+        ctx.strokeStyle = `rgba(200,180,120,${(1-ip)*0.4})`; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(targetCx, targetCy, gridSize * 0.18 * ip, 0, Math.PI*2); ctx.stroke(); }
       break; }
 
     // ── THROWN PROJECTILE: tumbling spin ──
@@ -318,109 +404,180 @@ function renderActionAnimation(ctx, anim, gridSize, now) {
           ctx.fillStyle = `rgba(160,140,100,${(1 - ip) * 0.5})`; ctx.beginPath(); ctx.arc(targetCx + Math.cos(a) * d, targetCy + Math.sin(a) * d, 2, 0, Math.PI * 2); ctx.fill(); } }
       break; }
 
-    // ── SWORD SLASH: wide sweeping arc with trail ──
+    // ── SWORD SLASH: elegant sweeping arc with silver light trail ──
     case "sword_slash": {
-      const sweepArc = Math.PI * 1.8;
+      const sweepArc = Math.PI * 2.0;
       const startAngle = Math.atan2(targetCy - casterCy, targetCx - casterCx) - sweepArc / 2;
-      const curAngle = startAngle + sweepArc * ep;
-      const bladeLen = gridSize * 0.65;
-      // Blade trail (fading arc)
-      for (let i = 0; i < 12; i++) { const ta = curAngle - (i / 12) * sweepArc * 0.4;
+      const curAngle = startAngle + sweepArc * easeOut(ep);
+      const bladeLen = gridSize * 0.72;
+      // Luminous arc trail (fading crescent)
+      ctx.save();
+      for (let i = 0; i < 18; i++) { const ta = curAngle - (i / 18) * sweepArc * 0.45;
         const bx = cx + Math.cos(ta) * bladeLen, by = cy + Math.sin(ta) * bladeLen;
-        ctx.fillStyle = `rgba(220,220,240,${alpha * (1 - i / 12) * 0.4})`; ctx.beginPath(); ctx.arc(bx, by, 2.5, 0, Math.PI * 2); ctx.fill(); }
-      // Blade edge
+        const trailSize = 3.5 - i * 0.15;
+        const trailAlpha = alpha * (1 - i / 18) * 0.5;
+        ctx.fillStyle = `rgba(200,210,240,${trailAlpha})`; ctx.beginPath(); ctx.arc(bx, by, Math.max(0.5, trailSize), 0, Math.PI * 2); ctx.fill(); }
+      // Silver blade with glow
       const tipX = cx + Math.cos(curAngle) * bladeLen, tipY = cy + Math.sin(curAngle) * bladeLen;
-      ctx.strokeStyle = (anim.color || "rgba(220,220,240,0.9)"); ctx.lineWidth = gridSize * 0.1; ctx.lineCap = "round";
-      ctx.beginPath(); ctx.moveTo(cx + Math.cos(curAngle) * gridSize * 0.15, cy + Math.sin(curAngle) * gridSize * 0.15);
+      ctx.shadowColor = "rgba(180,200,255,0.6)"; ctx.shadowBlur = 10;
+      ctx.strokeStyle = (anim.color || "rgba(220,225,245,0.95)"); ctx.lineWidth = gridSize * 0.1; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(cx + Math.cos(curAngle) * gridSize * 0.12, cy + Math.sin(curAngle) * gridSize * 0.12);
       ctx.lineTo(tipX, tipY); ctx.stroke();
-      // Sparks at tip
-      for (let i = 0; i < 5; i++) { const a = curAngle + (Math.random() - 0.5) * 0.8, d = bladeLen * (0.7 + Math.random() * 0.3);
-        ctx.fillStyle = `rgba(255,240,200,${alpha * 0.6})`; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * d, cy + Math.sin(a) * d, 1.5, 0, Math.PI * 2); ctx.fill(); }
+      ctx.shadowBlur = 0;
+      // Gleaming sparks at tip
+      for (let i = 0; i < 8; i++) { const a = curAngle + (Math.random() - 0.5) * 0.6, d = bladeLen * (0.65 + Math.random() * 0.35);
+        ctx.fillStyle = `rgba(255,${240+Math.random()*15},${200+Math.random()*55},${alpha * 0.7})`; ctx.beginPath(); ctx.arc(cx + Math.cos(a) * d, cy + Math.sin(a) * d, 1 + Math.random() * 1.5, 0, Math.PI * 2); ctx.fill(); }
+      // Slash line flash (brief bright arc segment at the current position)
+      if (progress > 0.2 && progress < 0.7) {
+        const flashAlpha = Math.sin((progress - 0.2) / 0.5 * Math.PI) * 0.3;
+        ctx.strokeStyle = `rgba(255,255,255,${flashAlpha})`; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(cx, cy, bladeLen, curAngle - 0.3, curAngle + 0.1); ctx.stroke(); }
+      ctx.restore();
       break; }
 
-    // ── HEAVY SLASH: wider, more powerful arc with screen shake feel ──
+    // ── HEAVY SLASH: brutal overhead cleave with seismic impact ──
     case "heavy_slash": {
-      const sweepArc = Math.PI * 2.0;
+      const sweepArc = Math.PI * 2.2;
       const startAngle = Math.atan2(targetCy - casterCy, targetCx - casterCx) - sweepArc / 3;
       const curAngle = startAngle + sweepArc * easeIn(ep);
-      const bladeLen = gridSize * 0.8;
-      // Wide impact trail
-      for (let i = 0; i < 16; i++) { const ta = curAngle - (i / 16) * sweepArc * 0.5;
+      const bladeLen = gridSize * 0.9;
+      // Thick burning trail
+      for (let i = 0; i < 20; i++) { const ta = curAngle - (i / 20) * sweepArc * 0.5;
         const bx = cx + Math.cos(ta) * bladeLen, by = cy + Math.sin(ta) * bladeLen;
-        ctx.fillStyle = `rgba(255,180,80,${alpha * (1 - i / 16) * 0.5})`; ctx.beginPath(); ctx.arc(bx, by, 3, 0, Math.PI * 2); ctx.fill(); }
-      // Thick blade
+        const trailSize = 4 - i * 0.15;
+        ctx.fillStyle = `rgba(255,${150+i*4},${40+i*3},${alpha * (1 - i / 20) * 0.55})`; ctx.beginPath(); ctx.arc(bx, by, Math.max(0.5, trailSize), 0, Math.PI * 2); ctx.fill(); }
+      // Massive blade with orange glow
       const tipX = cx + Math.cos(curAngle) * bladeLen, tipY = cy + Math.sin(curAngle) * bladeLen;
-      ctx.strokeStyle = (anim.color || "rgba(255,200,120,0.9)"); ctx.lineWidth = gridSize * 0.18; ctx.lineCap = "round";
-      ctx.beginPath(); ctx.moveTo(cx + Math.cos(curAngle) * gridSize * 0.1, cy + Math.sin(curAngle) * gridSize * 0.1);
+      ctx.shadowColor = "rgba(255,160,50,0.7)"; ctx.shadowBlur = 15;
+      ctx.strokeStyle = (anim.color || "rgba(255,210,130,0.95)"); ctx.lineWidth = gridSize * 0.2; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(cx + Math.cos(curAngle) * gridSize * 0.08, cy + Math.sin(curAngle) * gridSize * 0.08);
       ctx.lineTo(tipX, tipY); ctx.stroke();
-      // Shockwave ring at end
-      if (ep > 0.7) { const rp = (ep - 0.7) / 0.3;
-        ctx.strokeStyle = `rgba(255,200,100,${(1 - rp) * 0.5})`; ctx.lineWidth = 3;
-        ctx.beginPath(); ctx.arc(cx, cy, gridSize * 0.4 + gridSize * 0.6 * rp, 0, Math.PI * 2); ctx.stroke(); }
+      ctx.shadowBlur = 0;
+      // Ground-pound shockwave on impact (delayed to end of swing)
+      if (ep > 0.65) { const rp = (ep - 0.65) / 0.35;
+        // Double expanding rings
+        for (let r = 0; r < 2; r++) { const rrp = Math.max(0, Math.min(1, (rp - r * 0.15) / 0.7));
+          ctx.strokeStyle = `rgba(255,${180+r*40},${80+r*40},${(1 - rrp) * 0.5})`; ctx.lineWidth = 3 - r;
+          ctx.beginPath(); ctx.arc(tipX, tipY, gridSize * (0.3 + 0.7 * rrp), 0, Math.PI * 2); ctx.stroke(); }
+        // Debris/dust particles rising
+        for (let i = 0; i < 10; i++) { const a = (i / 10) * Math.PI * 2 + rp * 0.5, d = gridSize * 0.5 * rp;
+          ctx.fillStyle = `rgba(180,150,100,${(1 - rp) * 0.5})`; ctx.beginPath();
+          ctx.arc(tipX + Math.cos(a) * d, tipY + Math.sin(a) * d - gridSize * 0.4 * rp * rp, 2.5 - rp, 0, Math.PI * 2); ctx.fill(); } }
       break; }
 
-    // ── BLUNT IMPACT: slam with shockwave ripples ──
+    // ── BLUNT IMPACT: devastating slam with concussive shockwave ──
     case "blunt_impact": {
-      const impactTime = 0.4;
+      const impactTime = 0.35;
       if (progress < impactTime) {
         const wp = progress / impactTime;
         const dx = targetCx - casterCx, dy = targetCy - casterCy;
         const headX = casterCx + dx * easeIn(wp), headY = casterCy + dy * easeIn(wp);
-        ctx.fillStyle = `rgba(180,180,190,${alpha})`; ctx.beginPath();
-        ctx.arc(headX, headY, gridSize * 0.12, 0, Math.PI * 2); ctx.fill();
+        // Weapon head with motion blur trail
+        for (let i = 0; i < 5; i++) { const twp = Math.max(0, wp - i * 0.04);
+          const tx = casterCx + dx * easeIn(twp), ty = casterCy + dy * easeIn(twp);
+          ctx.fillStyle = `rgba(160,160,180,${(1 - i/5) * alpha * 0.4})`; ctx.beginPath();
+          ctx.arc(tx, ty, gridSize * (0.14 - i * 0.02), 0, Math.PI * 2); ctx.fill(); }
+        ctx.shadowColor = "rgba(200,200,220,0.5)"; ctx.shadowBlur = 8;
+        ctx.fillStyle = `rgba(190,190,210,${alpha})`; ctx.beginPath();
+        ctx.arc(headX, headY, gridSize * 0.14, 0, Math.PI * 2); ctx.fill();
+        ctx.shadowBlur = 0;
       } else {
         const rp = (progress - impactTime) / (1 - impactTime);
-        // Shockwave rings
-        for (let r = 0; r < 3; r++) { const rrp = Math.max(0, Math.min(1, (rp - r * 0.12) / 0.6));
-          ctx.strokeStyle = `rgba(200,180,150,${(1 - rrp) * 0.6})`; ctx.lineWidth = 3 - r;
-          ctx.beginPath(); ctx.arc(targetCx, targetCy, gridSize * (0.2 + 0.6 * rrp), 0, Math.PI * 2); ctx.stroke(); }
-        // Debris particles
-        for (let i = 0; i < 8; i++) { const a = (i / 8) * Math.PI * 2, d = gridSize * 0.5 * rp;
-          ctx.fillStyle = `rgba(140,120,100,${(1 - rp) * 0.5})`; ctx.beginPath();
-          ctx.arc(targetCx + Math.cos(a) * d, targetCy + Math.sin(a) * d - gridSize * 0.3 * rp, 2, 0, Math.PI * 2); ctx.fill(); }
+        // White flash on impact
+        if (rp < 0.15) { const flashAlpha = (1 - rp/0.15) * 0.5;
+          ctx.fillStyle = `rgba(255,255,255,${flashAlpha})`; ctx.beginPath();
+          ctx.arc(targetCx, targetCy, gridSize * 0.3, 0, Math.PI * 2); ctx.fill(); }
+        // Concentric shockwave rings
+        for (let r = 0; r < 4; r++) { const rrp = Math.max(0, Math.min(1, (rp - r * 0.1) / 0.55));
+          ctx.strokeStyle = `rgba(200,180,150,${(1 - rrp) * 0.55})`; ctx.lineWidth = 3.5 - r * 0.8;
+          ctx.beginPath(); ctx.arc(targetCx, targetCy, gridSize * (0.15 + 0.8 * rrp), 0, Math.PI * 2); ctx.stroke(); }
+        // Heavy debris flying outward and upward
+        for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2, d = gridSize * 0.6 * rp;
+          const py = -gridSize * 0.5 * rp * (1 - (i % 3) * 0.2);
+          ctx.fillStyle = `rgba(${120+i*8},${100+i*5},${80+i*3},${(1 - rp) * 0.6})`; ctx.beginPath();
+          ctx.arc(targetCx + Math.cos(a) * d, targetCy + Math.sin(a) * d + py, 2 + Math.random(), 0, Math.PI * 2); ctx.fill(); }
+        // Ground crack lines radiating from impact
+        for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2 + 0.3, len = gridSize * 0.5 * Math.min(1, rp * 2);
+          ctx.strokeStyle = `rgba(100,80,60,${(1 - rp) * 0.35})`; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(targetCx, targetCy);
+          ctx.lineTo(targetCx + Math.cos(a) * len + Math.sin(i * 3.7) * 4, targetCy + Math.sin(a) * len + Math.cos(i * 2.3) * 4); ctx.stroke(); }
       }
       break; }
 
-    // ── DAGGER STAB: quick precise jab ──
+    // ── DAGGER STAB: lightning-fast precision strike with crimson flash ──
     case "dagger_stab": {
       const angle = Math.atan2(targetCy - casterCy, targetCx - casterCx);
-      const stabDist = gridSize * 0.5;
-      const jabProgress = progress < 0.4 ? easeIn(progress / 0.4) : 1 - easeOut((progress - 0.4) / 0.6);
+      const stabDist = gridSize * 0.55;
+      const jabProgress = progress < 0.3 ? easeIn(progress / 0.3) : 1 - easeOut((progress - 0.3) / 0.7);
       const dx = Math.cos(angle) * stabDist * jabProgress, dy = Math.sin(angle) * stabDist * jabProgress;
+      // Speed lines leading into the stab
+      if (progress < 0.5) { const slAlpha = (1 - progress/0.5) * 0.3;
+        for (let i = 0; i < 4; i++) { const offset = (i - 1.5) * gridSize * 0.08;
+          const perpX = -Math.sin(angle) * offset, perpY = Math.cos(angle) * offset;
+          ctx.strokeStyle = `rgba(200,200,220,${slAlpha})`; ctx.lineWidth = 1;
+          ctx.beginPath(); ctx.moveTo(cx + perpX - Math.cos(angle) * gridSize * 0.2, cy + perpY - Math.sin(angle) * gridSize * 0.2);
+          ctx.lineTo(cx + dx + perpX, cy + dy + perpY); ctx.stroke(); } }
       ctx.save(); ctx.translate(cx + dx, cy + dy); ctx.rotate(angle + Math.PI / 4);
-      // Blade
-      ctx.fillStyle = `rgba(190,190,200,${alpha})`;
-      ctx.beginPath(); ctx.moveTo(0, -gridSize * 0.15); ctx.lineTo(-gridSize * 0.04, 0); ctx.lineTo(0, gridSize * 0.04); ctx.lineTo(gridSize * 0.04, 0); ctx.closePath(); ctx.fill();
+      // Blade with metallic sheen
+      ctx.shadowColor = "rgba(200,200,220,0.5)"; ctx.shadowBlur = 6;
+      ctx.fillStyle = `rgba(200,200,215,${alpha})`;
+      ctx.beginPath(); ctx.moveTo(0, -gridSize * 0.17); ctx.lineTo(-gridSize * 0.04, 0); ctx.lineTo(0, gridSize * 0.05); ctx.lineTo(gridSize * 0.04, 0); ctx.closePath(); ctx.fill();
       // Handle
-      ctx.fillStyle = `rgba(100,70,40,${alpha})`;
-      ctx.fillRect(-gridSize * 0.03, gridSize * 0.04, gridSize * 0.06, gridSize * 0.08);
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = `rgba(90,60,35,${alpha})`;
+      ctx.fillRect(-gridSize * 0.03, gridSize * 0.05, gridSize * 0.06, gridSize * 0.09);
       ctx.restore();
-      // Blood effect on hit
-      if (progress > 0.35 && progress < 0.7) { const bp = (progress - 0.35) / 0.35;
-        for (let i = 0; i < 5; i++) { const a = angle + (Math.random() - 0.5), d = gridSize * 0.2 * bp;
-          ctx.fillStyle = `rgba(180,30,30,${(1 - bp) * 0.5})`; ctx.beginPath();
-          ctx.arc(cx + Math.cos(angle) * stabDist * 0.8 + Math.cos(a) * d, cy + Math.sin(angle) * stabDist * 0.8 + Math.sin(a) * d, 1.5, 0, Math.PI * 2); ctx.fill(); } }
+      // Blood spray on impact — more dramatic with directional splatter
+      if (progress > 0.25 && progress < 0.75) { const bp = (progress - 0.25) / 0.5;
+        const impactX = cx + Math.cos(angle) * stabDist * 0.85, impactY = cy + Math.sin(angle) * stabDist * 0.85;
+        for (let i = 0; i < 8; i++) {
+          const spread = angle + (Math.random() - 0.3) * 1.2; // Biased forward
+          const d = gridSize * (0.1 + 0.3 * bp) * (0.5 + Math.random() * 0.5);
+          const dropSize = 1 + Math.random() * 2;
+          ctx.fillStyle = `rgba(${150+Math.random()*40},20,20,${(1 - bp) * 0.55})`; ctx.beginPath();
+          ctx.arc(impactX + Math.cos(spread) * d, impactY + Math.sin(spread) * d, dropSize, 0, Math.PI * 2); ctx.fill(); }
+        // Brief crimson flash at point of impact
+        if (bp < 0.3) { ctx.fillStyle = `rgba(200,40,40,${(1-bp/0.3)*0.25})`; ctx.beginPath();
+          ctx.arc(impactX, impactY, gridSize * 0.15, 0, Math.PI * 2); ctx.fill(); } }
       break; }
 
-    // ── SPEAR THRUST: linear forward thrust ──
+    // ── SPEAR THRUST: powerful linear lunge with piercing flash ──
     case "spear_thrust": {
       const angle = Math.atan2(targetCy - casterCy, targetCx - casterCx);
-      const thrustDist = gridSize * 0.7;
-      const tp = progress < 0.5 ? easeIn(progress / 0.5) : 1;
+      const thrustDist = gridSize * 0.75;
+      const tp = progress < 0.45 ? easeIn(progress / 0.45) : 1;
       const retract = progress > 0.5 ? (progress - 0.5) / 0.5 : 0;
       const dist = thrustDist * tp * (1 - retract * 0.6);
+      // Thrust motion lines
+      if (progress < 0.6) { const mlAlpha = (1 - progress/0.6) * 0.25;
+        for (let i = 0; i < 3; i++) { const offset = (i - 1) * gridSize * 0.06;
+          const perpX = -Math.sin(angle) * offset, perpY = Math.cos(angle) * offset;
+          ctx.strokeStyle = `rgba(180,160,120,${mlAlpha})`; ctx.lineWidth = 0.8;
+          ctx.beginPath(); ctx.moveTo(cx + perpX, cy + perpY);
+          ctx.lineTo(cx + Math.cos(angle) * dist + perpX, cy + Math.sin(angle) * dist + perpY); ctx.stroke(); } }
       ctx.save(); ctx.translate(cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist); ctx.rotate(angle);
-      // Shaft
-      ctx.strokeStyle = `rgba(140,110,70,${alpha})`; ctx.lineWidth = 2.5; ctx.lineCap = "round";
-      ctx.beginPath(); ctx.moveTo(-gridSize * 0.3, 0); ctx.lineTo(gridSize * 0.1, 0); ctx.stroke();
-      // Spearhead
-      ctx.fillStyle = `rgba(180,180,190,${alpha})`;
-      ctx.beginPath(); ctx.moveTo(gridSize * 0.2, 0); ctx.lineTo(gridSize * 0.08, -4); ctx.lineTo(gridSize * 0.08, 4); ctx.closePath(); ctx.fill();
-      ctx.restore();
-      // Impact flash
-      if (progress > 0.45 && progress < 0.65) { const fp = (progress - 0.45) / 0.2;
-        ctx.fillStyle = `rgba(255,255,200,${(1 - fp) * 0.4})`;
-        ctx.beginPath(); ctx.arc(cx + Math.cos(angle) * thrustDist, cy + Math.sin(angle) * thrustDist, gridSize * 0.15 * fp, 0, Math.PI * 2); ctx.fill(); }
+      // Long shaft with wood grain feel
+      ctx.shadowColor = "rgba(160,140,90,0.3)"; ctx.shadowBlur = 4;
+      ctx.strokeStyle = `rgba(130,100,60,${alpha})`; ctx.lineWidth = 2.8; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(-gridSize * 0.35, 0); ctx.lineTo(gridSize * 0.1, 0); ctx.stroke();
+      // Gleaming spearhead
+      ctx.fillStyle = `rgba(190,190,205,${alpha})`;
+      ctx.beginPath(); ctx.moveTo(gridSize * 0.24, 0); ctx.lineTo(gridSize * 0.08, -4.5); ctx.lineTo(gridSize * 0.08, 4.5); ctx.closePath(); ctx.fill();
+      // Edge highlight on spearhead
+      ctx.strokeStyle = `rgba(255,255,255,${alpha * 0.3})`; ctx.lineWidth = 0.5;
+      ctx.beginPath(); ctx.moveTo(gridSize * 0.24, 0); ctx.lineTo(gridSize * 0.08, -4.5); ctx.stroke();
+      ctx.shadowBlur = 0; ctx.restore();
+      // Piercing impact — bright flash and blood mist
+      if (progress > 0.4 && progress < 0.7) { const fp = (progress - 0.4) / 0.3;
+        const impX = cx + Math.cos(angle) * thrustDist, impY = cy + Math.sin(angle) * thrustDist;
+        // White pierce flash
+        ctx.fillStyle = `rgba(255,255,220,${(1 - fp) * 0.45})`;
+        ctx.beginPath(); ctx.arc(impX, impY, gridSize * 0.18 * fp, 0, Math.PI * 2); ctx.fill();
+        // Directional blood mist
+        for (let i = 0; i < 6; i++) { const spread = angle + (Math.random() - 0.3) * 0.8;
+          const d = gridSize * 0.2 * fp * (0.5 + Math.random() * 0.5);
+          ctx.fillStyle = `rgba(170,30,30,${(1 - fp) * 0.4})`; ctx.beginPath();
+          ctx.arc(impX + Math.cos(spread) * d, impY + Math.sin(spread) * d, 1.5, 0, Math.PI * 2); ctx.fill(); } }
       break; }
 
     // ── STAFF STRIKE: overhead swing ──
@@ -1577,6 +1734,37 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     syncTokenDefeatConditions(tokenRef, normalizedHp, defeatPatch);
     pushTargetHpToCampaign(tokenRef, normalizedHp);
     syncCombatantHpRow(tokenRef.id, normalizedHp, tokenRef.maxHp);
+
+    // ── Auto-end combat when all enemies of one side are defeated ──
+    if (combatLive && normalizedHp <= 0) {
+      // Use setTimeout so token state has time to propagate
+      setTimeout(() => {
+        setTokens(currentTokens => {
+          // Check if all enemies (non-PC) are at 0 HP
+          const livingEnemies = currentTokens.filter(t =>
+            t.tokenType !== "pc" && t.color !== "#2e8b57" &&
+            (t.hp || 0) > 0 && !t.hidden
+          );
+          // Only consider tokens that are actually in combat (have combatant entries)
+          const combatEnemies = livingEnemies.filter(t =>
+            combatants.some(c => c.mapTokenId === t.id)
+          );
+          if (combatEnemies.length === 0 && combatants.length > 0) {
+            // All enemies defeated — announce victory and end combat
+            addCombatLogEntry({ type: "system", text: "All enemies have been defeated! Combat ends." });
+            spawnInlineFloat(
+              currentTokens.find(t => t.tokenType === "pc")?.x || 0,
+              currentTokens.find(t => t.tokenType === "pc")?.y || 0,
+              "VICTORY!", "#ffd700", "crit"
+            );
+            // Delay endCombat slightly so the victory float is visible
+            setTimeout(() => endCombat(), 1500);
+          }
+          return currentTokens; // Don't mutate, just read
+        });
+      }, 100);
+    }
+
     return { hp: normalizedHp, ...defeatPatch };
   };
 
@@ -2260,11 +2448,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   const [actionAnims, setActionAnims] = useState([]); // [{ id, type, x, y, casterX, casterY, targetX, targetY, startTime, duration, color }]
   const triggerActionAnim = (type, token, target, color) => {
     const id = Date.now() + Math.random();
-    const durations = { melee_attack:0.4, ranged_attack:0.5, dodge:0.6, dash:0.5, disengage:0.4, shove:0.4, grapple:0.6, hide:0.5, help:0.5,
-      death_save_success:0.6, death_save_fail:0.6, critical_hit:0.7, miss:0.3, block:0.4, opportunity_attack:0.4,
-      second_wind:0.7, action_surge:0.8, sneak_attack:0.5, divine_smite:0.6, rage:1.0,
-      crossbow_bolt:0.5, arrow_shot:0.55, thrown_projectile:0.45, heavy_slash:0.5, sword_slash:0.4,
-      blunt_impact:0.45, dagger_stab:0.3, spear_thrust:0.4, staff_strike:0.4 };
+    const durations = { melee_attack:0.55, ranged_attack:0.55, dodge:0.6, dash:0.5, disengage:0.4, shove:0.45, grapple:0.6, hide:0.5, help:0.5,
+      death_save_success:0.6, death_save_fail:0.6, critical_hit:0.85, miss:0.3, block:0.4, opportunity_attack:0.45,
+      second_wind:0.7, action_surge:0.8, sneak_attack:0.6, divine_smite:0.8, rage:1.0,
+      crossbow_bolt:0.5, arrow_shot:0.6, thrown_projectile:0.5, heavy_slash:0.6, sword_slash:0.5,
+      blunt_impact:0.55, dagger_stab:0.35, spear_thrust:0.5, staff_strike:0.45 };
     const anim = { id, type, x: token?.x||0, y: token?.y||0, casterX: token?.x||0, casterY: token?.y||0,
       targetX: target?.x||token?.x||0, targetY: target?.y||token?.y||0, startTime: Date.now(), duration: durations[type]||0.5, color: color||"#ffffff" };
     setActionAnims(prev => [...prev, anim]);
@@ -11528,7 +11716,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                         )}
                       </div>
                       {/* Monster Actions — show for current combatant with monsterData */}
-                      {false && isCurrent && monsterData && monsterData.actions && (
+                      {isCurrent && monsterData && monsterData.actions && (
                         <div style={{ marginTop:6, paddingLeft:24 }}>
                           {hostileTargets.length > 0 && (
                             <div style={{ marginBottom:6, padding:"6px 7px", border:"1px solid rgba(255,213,79,0.22)", borderRadius:"4px", background:"rgba(255,213,79,0.05)" }}>
