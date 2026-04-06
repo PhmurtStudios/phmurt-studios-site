@@ -125,9 +125,9 @@
   var C = {
     label:  'font-family:Cinzel,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#8c7d6e;display:block;margin-bottom:6px;',
     input:  'width:100%;padding:10px 12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.09);color:#f5ede0;font-family:Spectral,serif;font-size:14px;border-radius:3px;box-sizing:border-box;outline:none;',
-    btn:    'width:100%;padding:12px;background:#d4433a;color:#f5f0e8;border:none;font-family:Cinzel,serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border-radius:3px;margin-top:8px;',
-    err:    'font-family:Spectral,serif;font-size:13px;color:#d4433a;background:rgba(212,67,58,0.1);border-radius:3px;padding:10px 12px;margin-bottom:14px;display:none;',
-    ok:     'font-family:Spectral,serif;font-size:13px;color:#2e8b57;',
+    btn:    'width:100%;padding:12px;background:#c9a84c;color:#f5f0e8;border:none;font-family:Cinzel,serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border-radius:3px;margin-top:8px;',
+    err:    'font-family:Spectral,serif;font-size:13px;color:#c9a84c;background:rgba(201,168,76,0.08);border-radius:3px;padding:10px 12px;margin-bottom:14px;display:none;',
+    ok:     'font-family:Spectral,serif;font-size:13px;color:#5ee09a;',
     field:  'margin-bottom:14px;'
   };
 
@@ -138,7 +138,7 @@
     document.documentElement.style.visibility = 'visible';
 
     var gate = document.createElement('div');
-    gate.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0c0a0a;display:flex;align-items:center;justify-content:center;padding:24px;font-family:Cinzel,serif;color:#f5ede0;';
+    gate.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0a0a10;display:flex;align-items:center;justify-content:center;padding:24px;font-family:Cinzel,serif;color:#f5ede0;';
     document.body.appendChild(gate);
 
     /* ── STAGE 1: Image upload ──────────────────────────────────────── */
@@ -149,12 +149,12 @@
           '<div style="font-size:10px;letter-spacing:3px;color:#574843;text-transform:uppercase;margin-bottom:20px;">' +
             (isSetup ? 'First-Time Setup' : 'Admin Access — Step 1 of 2') +
           '</div>' +
-          '<h2 style="font-size:24px;font-weight:400;color:#d4433a;margin:0 0 10px;letter-spacing:1px;">Key Image Required</h2>' +
+          '<h2 style="font-size:24px;font-weight:400;color:#c9a84c;margin:0 0 10px;letter-spacing:1px;">Key Image Required</h2>' +
           '<p style="font-family:Spectral,serif;font-size:15px;color:#8c7d6e;line-height:1.6;margin:0 0 32px;">' +
             (isSetup ? 'No key image is set yet. Upload yours now to register it.' : 'Upload the image you were given to proceed.') +
           '</p>' +
 
-          '<label id="ag-img-label" style="display:flex;flex-direction:column;align-items:center;gap:10px;border:1px dashed rgba(212,67,58,0.35);border-radius:6px;padding:36px 24px;cursor:pointer;transition:border-color .2s;">' +
+          '<label id="ag-img-label" style="display:flex;flex-direction:column;align-items:center;gap:10px;border:1px dashed rgba(201,168,76,0.3);border-radius:6px;padding:36px 24px;cursor:pointer;transition:border-color .2s;">' +
             '<span style="font-size:36px;">🖼</span>' +
             '<span style="font-size:13px;color:#8c7d6e;font-family:Spectral,serif;">Click or drag image here</span>' +
             '<input type="file" id="ag-img-input" accept="image/*" style="display:none;" />' +
@@ -165,7 +165,7 @@
           (isSetup ?
             '<div id="ag-hash-wrap" style="display:none;margin-top:16px;text-align:left;">' +
               '<p style="font-size:12px;color:#8c7d6e;margin:0 0 8px;font-family:Spectral,serif;">Your hash — paste into <code>EXPECTED_HASH</code> and redeploy:</p>' +
-              '<code id="ag-hash-val" style="display:block;background:#111010;border:1px solid rgba(255,255,255,0.09);border-radius:4px;padding:10px;font-size:11px;word-break:break-all;color:#d4433a;cursor:pointer;" title="Click to copy"></code>' +
+              '<code id="ag-hash-val" style="display:block;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.09);border-radius:4px;padding:10px;font-size:11px;word-break:break-all;color:#c9a84c;cursor:pointer;" title="Click to copy"></code>' +
               '<button id="ag-hash-continue" style="' + C.btn + 'margin-top:12px;">Continue to Sign In →</button>' +
             '</div>'
           : '') +
@@ -181,7 +181,7 @@
       }
 
       function processImage(file) {
-        if (!file || !file.type.startsWith('image/')) { setStatus('Please upload an image file.', '#d4433a'); return; }
+        if (!file || !file.type.startsWith('image/')) { setStatus('Please upload an image file.', '#c9a84c'); return; }
         setStatus('Analysing…', '#8c7d6e');
         var reader = new FileReader();
         reader.onload = function (ev) {
@@ -195,7 +195,7 @@
               val.textContent = hash;
               wrap.style.display = 'block';
               label.style.display = 'none';
-              setStatus('Hash computed. Copy it into the code, then redeploy.', '#2e8b57');
+              setStatus('Hash computed. Copy it into the code, then redeploy.', '#5ee09a');
               val.addEventListener('click', function () {
                 navigator.clipboard.writeText(hash).then(function () {
                   val.textContent = '✓ Copied!';
@@ -210,26 +210,26 @@
               /* Normal mode — verify hash */
               var dist = hammingDist(hash, EXPECTED_HASH);
               if (dist <= 6) {
-                setStatus('✓ Image verified.', '#2e8b57');
+                setStatus('✓ Image verified.', '#5ee09a');
                 sessionStorage.setItem(IMG_OK_KEY, 'true');
                 setTimeout(renderAuthStage, 700);
               } else {
-                setStatus('✗ Wrong image. Try again.', '#d4433a');
+                setStatus('✗ Wrong image. Try again.', '#c9a84c');
                 input.value = '';
               }
             }
           };
-          img.onerror = function () { setStatus('Could not read image.', '#d4433a'); };
+          img.onerror = function () { setStatus('Could not read image.', '#c9a84c'); };
           img.src = ev.target.result;
         };
         reader.readAsDataURL(file);
       }
 
       input.addEventListener('change', function () { if (input.files[0]) processImage(input.files[0]); });
-      label.addEventListener('dragover', function (e) { e.preventDefault(); label.style.borderColor = '#d4433a'; });
-      label.addEventListener('dragleave', function () { label.style.borderColor = 'rgba(212,67,58,0.35)'; });
+      label.addEventListener('dragover', function (e) { e.preventDefault(); label.style.borderColor = '#c9a84c'; });
+      label.addEventListener('dragleave', function () { label.style.borderColor = 'rgba(201,168,76,0.3)'; });
       label.addEventListener('drop', function (e) {
-        e.preventDefault(); label.style.borderColor = 'rgba(212,67,58,0.35)';
+        e.preventDefault(); label.style.borderColor = 'rgba(201,168,76,0.3)';
         if (e.dataTransfer.files[0]) processImage(e.dataTransfer.files[0]);
       });
     }
@@ -240,11 +240,11 @@
       gate.innerHTML =
         '<div style="max-width:400px;width:100%;">' +
           '<div style="font-size:10px;letter-spacing:3px;color:#574843;text-transform:uppercase;margin-bottom:20px;text-align:center;">Admin Access — Step 2 of 2</div>' +
-          '<h2 style="font-size:22px;font-weight:400;color:#d4433a;margin:0 0 24px;letter-spacing:1px;text-align:center;">Sign In</h2>' +
+          '<h2 style="font-size:22px;font-weight:400;color:#c9a84c;margin:0 0 24px;letter-spacing:1px;text-align:center;">Sign In</h2>' +
 
           /* Tabs */
           '<div style="display:flex;border-bottom:1px solid rgba(255,255,255,0.09);margin-bottom:22px;">' +
-            '<button id="ag-tab-in" style="flex:1;padding:9px;background:transparent;border:none;border-bottom:2px solid #d4433a;color:#d4433a;font-family:Cinzel,serif;font-size:11px;letter-spacing:1.5px;cursor:pointer;">Sign In</button>' +
+            '<button id="ag-tab-in" style="flex:1;padding:9px;background:transparent;border:none;border-bottom:2px solid #c9a84c;color:#c9a84c;font-family:Cinzel,serif;font-size:11px;letter-spacing:1.5px;cursor:pointer;">Sign In</button>' +
             '<button id="ag-tab-up" style="flex:1;padding:9px;background:transparent;border:none;border-bottom:2px solid transparent;color:#8c7d6e;font-family:Cinzel,serif;font-size:11px;letter-spacing:1.5px;cursor:pointer;">Sign Up Disabled</button>' +
           '</div>' +
 
@@ -309,7 +309,7 @@
       }
       function grantAccess() {
         clearAttempts();
-        gate.innerHTML = '<div style="text-align:center;"><div style="font-size:28px;margin-bottom:16px;">✓</div><p style="font-family:Spectral,serif;color:#2e8b57;font-size:16px;">Access granted. Welcome.</p></div>';
+        gate.innerHTML = '<div style="text-align:center;"><div style="font-size:28px;margin-bottom:16px;">✓</div><p style="font-family:Spectral,serif;color:#5ee09a;font-size:16px;">Access granted. Welcome.</p></div>';
         setTimeout(function () { gate.remove(); }, 900);
       }
       function afterSignIn(session) {
@@ -327,7 +327,7 @@
         mode = 'in'; showErr('');
         document.getElementById('ag-panel-in').style.display = 'block';
         document.getElementById('ag-panel-up').style.display = 'none';
-        document.getElementById('ag-tab-in').style.cssText += 'color:#d4433a;border-bottom-color:#d4433a;';
+        document.getElementById('ag-tab-in').style.cssText += 'color:#c9a84c;border-bottom-color:#c9a84c;';
         document.getElementById('ag-tab-up').style.cssText += 'color:#8c7d6e;border-bottom-color:transparent;';
         document.getElementById('ag-in-email').focus();
       });
@@ -336,7 +336,7 @@
         document.getElementById('ag-panel-in').style.display = 'none';
         document.getElementById('ag-panel-up').style.display = 'block';
         document.getElementById('ag-tab-in').style.cssText += 'color:#8c7d6e;border-bottom-color:transparent;';
-        document.getElementById('ag-tab-up').style.cssText += 'color:#d4433a;border-bottom-color:#d4433a;';
+        document.getElementById('ag-tab-up').style.cssText += 'color:#c9a84c;border-bottom-color:#c9a84c;';
         document.getElementById('ag-up-name').focus();
       });
 
@@ -450,90 +450,95 @@
    ═══════════════════════════════ */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
-  --bg:#0c0a0a;--bg-nav:#080607;--bg-card:#111010;--bg-hover:#1c1515;
-  --bg-mid:#181212;--text:#f5ede0;--text-dim:#c8bfb0;--text-muted:#8c7d6e;
-  --text-faint:#574843;--crimson:#d4433a;--crimson-dim:#8b2219;
-  --crimson-soft:rgba(212,67,58,0.13);--crimson-border:rgba(212,67,58,0.32);
-  --border:rgba(255,255,255,0.09);--border-mid:rgba(255,255,255,0.05);
-  --bg-input:rgba(255,255,255,0.04);--border-subtle:rgba(255,255,255,0.06);
-  --success:#2e8b57;--warning:#e8940a;--danger:#e8605a;--info:#58aaff;
+  --bg:#0a0a10;--bg-nav:#08080e;--bg-card:rgba(255,255,255,0.02);--bg-hover:rgba(255,255,255,0.04);
+  --bg-mid:rgba(255,255,255,0.015);--text:#f2e8d6;--text-dim:#c8bfb0;--text-muted:#8c7d6e;
+  --text-faint:#574843;--accent:#c9a84c;--accent-dim:#a08230;
+  --accent-soft:rgba(201,168,76,0.1);--accent-border:rgba(201,168,76,0.3);
+  --green:#5ee09a;--green-soft:rgba(94,224,154,0.08);--green-border:rgba(94,224,154,0.25);
+  --border:rgba(255,255,255,0.06);--border-mid:rgba(255,255,255,0.04);
+  --bg-input:rgba(255,255,255,0.03);--border-subtle:rgba(255,255,255,0.05);
+  --success:#5ee09a;--warning:#e8940a;--danger:#ef4444;--info:#58aaff;
+  /* Legacy alias */
+  --crimson:#c9a84c;--crimson-dim:#a08230;--crimson-soft:rgba(201,168,76,0.1);--crimson-border:rgba(201,168,76,0.3);
 }
 html.light-mode{
-  --bg:#f0e7d4;--bg-nav:#f9f2e4;--bg-card:#e9dfc9;--bg-hover:#ddd0b8;
-  --bg-mid:#d4c8ac;--text:#140902;--text-dim:#342010;--text-muted:#6a4028;
-  --text-faint:#9a6845;--crimson:#8b1a10;--crimson-dim:#5e1009;
-  --crimson-soft:rgba(139,26,16,0.11);--crimson-border:rgba(139,26,16,0.34);
-  --border:rgba(20,9,2,0.15);--border-mid:rgba(20,9,2,0.08);
-  --bg-input:rgba(20,9,2,0.06);--border-subtle:rgba(20,9,2,0.10);
+  --bg:#f0e7d4;--bg-nav:#f9f2e4;--bg-card:rgba(20,9,2,0.03);--bg-hover:rgba(20,9,2,0.06);
+  --bg-mid:rgba(20,9,2,0.02);--text:#140902;--text-dim:#342010;--text-muted:#6a4028;
+  --text-faint:#9a6845;--accent:#8b6a1e;--accent-dim:#6b5018;
+  --accent-soft:rgba(139,106,30,0.1);--accent-border:rgba(139,106,30,0.3);
+  --green:#2e8b57;--green-soft:rgba(46,139,87,0.08);--green-border:rgba(46,139,87,0.25);
+  --border:rgba(20,9,2,0.12);--border-mid:rgba(20,9,2,0.06);
+  --bg-input:rgba(20,9,2,0.04);--border-subtle:rgba(20,9,2,0.08);
+  --crimson:#8b6a1e;--crimson-dim:#6b5018;--crimson-soft:rgba(139,106,30,0.1);--crimson-border:rgba(139,106,30,0.3);
 }
 html{scroll-behavior:smooth;background:var(--bg);}
 body{background:var(--bg);color:var(--text);font-family:'Spectral',Georgia,serif;min-height:100vh;-webkit-font-smoothing:antialiased;}
-::selection{background:var(--crimson);color:#f5f0e8;}
-:focus-visible{outline:2px solid var(--crimson);outline-offset:2px;}
+::selection{background:var(--accent);color:#f5f0e8;}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
 
 /* Layout */
 .admin-layout{display:flex;min-height:100vh;}
-.admin-sidebar{width:260px;background:var(--bg-nav);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;transition:transform 0.3s ease;}
+.admin-sidebar{width:260px;background:rgba(10,10,16,0.92);backdrop-filter:blur(20px) saturate(1.1);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;transition:transform 0.3s ease;}
 .admin-main{flex:1;margin-left:260px;min-height:100vh;}
-.admin-topbar{height:56px;background:var(--bg-nav);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:90;}
+.admin-topbar{height:56px;background:rgba(10,10,16,0.88);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 32px;position:sticky;top:0;z-index:90;}
 .admin-content{padding:32px;}
 
 /* Sidebar */
 .sidebar-brand{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px;}
-.sidebar-brand h1{font-family:'Cinzel',serif;font-size:15px;font-weight:600;letter-spacing:1px;color:var(--crimson);}
+.sidebar-brand h1{font-family:'Cinzel',serif;font-size:15px;font-weight:600;letter-spacing:1px;color:var(--accent);}
 .sidebar-brand .brand-sub{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);font-family:'Cinzel',serif;}
 .sidebar-nav{flex:1;padding:16px 0;overflow-y:auto;}
 .sidebar-section{padding:0 12px;margin-bottom:8px;}
-.sidebar-section-label{font-family:'Cinzel',serif;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:var(--text-faint);padding:8px 12px 4px;display:block;}
-.sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:4px;cursor:pointer;color:var(--text-dim);font-size:13.5px;transition:all 0.15s ease;border:1px solid transparent;}
+.sidebar-section-label{font-family:'Cinzel',serif;font-size:9px;letter-spacing:2.5px;text-transform:uppercase;color:rgba(201,168,76,0.4);padding:8px 12px 4px;display:block;font-weight:600;}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;cursor:pointer;color:var(--text-dim);font-size:13.5px;transition:all 0.15s ease;border:1px solid transparent;}
 .sidebar-item:hover{background:var(--bg-hover);color:var(--text);}
-.sidebar-item.active{background:var(--crimson-soft);color:var(--crimson);border-color:var(--crimson-border);}
+.sidebar-item.active{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-border);}
 .sidebar-item svg{width:16px;height:16px;opacity:0.7;flex-shrink:0;}
 .sidebar-item.active svg{opacity:1;}
 .sidebar-footer{padding:16px 24px;border-top:1px solid var(--border);font-size:11px;color:var(--text-faint);}
 
 /* Cards & Panels */
-.card{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;overflow:hidden;}
-.card-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
-.card-header h2{font-family:'Cinzel',serif;font-size:14px;font-weight:600;letter-spacing:1px;}
+.card{background:rgba(255,255,255,0.015);border:1px solid rgba(255,255,255,0.04);border-radius:10px;overflow:hidden;}
+.card-header{padding:20px 24px;border-bottom:1px solid rgba(255,255,255,0.04);display:flex;align-items:center;justify-content:space-between;}
+.card-header h2{font-family:'Cinzel',serif;font-size:14px;font-weight:600;letter-spacing:1px;color:var(--text);}
 .card-body{padding:24px;}
 .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;}
-.stat-card{background:var(--bg-card);border:1px solid var(--border);border-radius:4px;padding:20px 24px;}
-.stat-label{font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
+.stat-card{background:rgba(255,255,255,0.015);border:1px solid rgba(255,255,255,0.04);border-radius:10px;padding:20px 24px;}
+.stat-label{font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(201,168,76,0.5);margin-bottom:8px;font-weight:600;}
 .stat-value{font-size:28px;font-weight:600;color:var(--text);}
 .stat-sub{font-size:12px;color:var(--text-muted);margin-top:4px;}
 
 /* Tables */
 .data-table{width:100%;border-collapse:collapse;font-size:13px;}
-.data-table th{font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);padding:12px 16px;text-align:left;border-bottom:1px solid var(--border);background:var(--bg-mid);}
+.data-table th{font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:rgba(201,168,76,0.6);padding:12px 16px;text-align:left;border-bottom:1px solid var(--border);background:rgba(255,255,255,0.01);font-weight:600;}
 .data-table td{padding:12px 16px;border-bottom:1px solid var(--border-mid);color:var(--text-dim);}
 .data-table tr:hover td{background:var(--bg-hover);}
 .data-table .mono{font-family:'Courier New',monospace;font-size:11px;color:var(--text-faint);}
 
 /* Badges */
-.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:2px;font-family:'Cinzel',serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;font-weight:600;}
-.badge-active{background:rgba(78,218,128,0.15);color:#2e8b57;border:1px solid rgba(78,218,128,0.3);}
-.badge-suspended{background:rgba(212,67,58,0.15);color:#e8605a;border:1px solid rgba(212,67,58,0.3);}
-.badge-pending{background:rgba(243,156,18,0.15);color:#e8940a;border:1px solid rgba(243,156,18,0.3);}
-.badge-inactive{background:rgba(140,125,110,0.15);color:var(--text-muted);border:1px solid var(--border);}
-.badge-admin{background:rgba(212,67,58,0.15);color:var(--crimson);border:1px solid var(--crimson-border);}
-.badge-info{background:rgba(52,152,219,0.15);color:#58aaff;border:1px solid rgba(52,152,219,0.3);}
+.badge{display:inline-flex;align-items:center;padding:3px 10px;border-radius:999px;font-family:'Cinzel',serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;font-weight:600;}
+.badge-active{background:rgba(94,224,154,0.08);color:#5ee09a;border:1px solid rgba(94,224,154,0.2);}
+.badge-suspended{background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.2);}
+.badge-pending{background:rgba(243,156,18,0.1);color:#e8940a;border:1px solid rgba(243,156,18,0.2);}
+.badge-inactive{background:rgba(140,125,110,0.1);color:var(--text-muted);border:1px solid var(--border);}
+.badge-admin{background:rgba(201,168,76,0.08);color:var(--accent);border:1px solid var(--accent-border);}
+.badge-info{background:rgba(167,139,250,0.08);color:#a78bfa;border:1px solid rgba(167,139,250,0.2);}
 
 /* Buttons */
-.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border);border-radius:2px;font-family:'Cinzel',serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all 0.15s ease;background:transparent;color:var(--text-dim);}
-.btn:hover{background:var(--bg-hover);color:var(--text);}
-.btn-primary{background:var(--crimson);color:#f5f0e8;border-color:var(--crimson);}
-.btn-primary:hover{background:var(--crimson-dim);}
-.btn-danger{border-color:rgba(212,67,58,0.4);color:#e8605a;}
-.btn-danger:hover{background:rgba(212,67,58,0.1);}
-.btn-sm{padding:5px 10px;font-size:9px;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border);border-radius:8px;font-family:'Cinzel',serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all 0.18s ease;background:transparent;color:var(--text-dim);}
+.btn:hover{background:var(--bg-hover);color:var(--text);border-color:rgba(201,168,76,0.15);}
+.btn-primary{background:rgba(201,168,76,0.12);color:var(--accent);border-color:var(--accent-border);}
+.btn-primary:hover{background:rgba(201,168,76,0.2);}
+.btn-danger{border-color:rgba(239,68,68,0.3);color:#ef4444;}
+.btn-danger:hover{background:rgba(239,68,68,0.08);}
+.btn-sm{padding:5px 10px;font-size:9px;border-radius:6px;}
 .btn-group{display:flex;gap:8px;}
 
 /* Forms */
 .form-group{margin-bottom:20px;}
 .form-label{display:block;font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;}
-.form-input{width:100%;padding:10px 12px;background:var(--bg-input);border:1px solid var(--border);color:var(--text);font-family:'Spectral',serif;font-size:14px;border-radius:2px;transition:border-color 0.15s ease;}
-.form-input:focus{border-color:var(--crimson-border);outline:none;}
+.form-input{width:100%;padding:10px 12px;background:var(--bg-input);border:1px solid var(--border);color:var(--text);font-family:'Spectral',serif;font-size:14px;border-radius:8px;transition:border-color 0.15s ease;}
+.form-input:focus{border-color:var(--accent-border);outline:none;}
 .form-input::placeholder{color:var(--text-faint);}
 select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%238c7d6e' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px;}
 
@@ -541,16 +546,17 @@ select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csv
 .tab-bar{display:flex;gap:0;border-bottom:1px solid var(--border);margin-bottom:24px;}
 .tab-item{padding:12px 20px;font-family:'Cinzel',serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.15s ease;}
 .tab-item:hover{color:var(--text);}
-.tab-item.active{color:var(--crimson);border-bottom-color:var(--crimson);}
+.tab-item.active{color:var(--accent);border-bottom-color:var(--accent);}
 
 /* Search */
 .search-bar{position:relative;max-width:300px;}
-.search-bar input{width:100%;padding:8px 12px 8px 36px;background:var(--bg-input);border:1px solid var(--border);color:var(--text);font-family:'Spectral',serif;font-size:13px;border-radius:2px;}
+.search-bar input{width:100%;padding:8px 12px 8px 36px;background:var(--bg-input);border:1px solid var(--border);color:var(--text);font-family:'Spectral',serif;font-size:13px;border-radius:8px;transition:border-color 0.15s;}
+.search-bar input:focus{border-color:var(--accent-border);outline:none;}
 .search-bar svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text-faint);}
 
 /* Modal */
 .modal-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:500;animation:fadeIn 0.15s ease;}
-.modal{background:var(--bg-card);border:1px solid var(--crimson-border);border-radius:4px;max-width:560px;width:90%;max-height:85vh;overflow-y:auto;}
+.modal{background:rgba(10,10,16,0.96);backdrop-filter:blur(20px);border:1px solid rgba(201,168,76,0.15);border-radius:12px;max-width:560px;width:90%;max-height:85vh;overflow-y:auto;box-shadow:0 24px 64px rgba(0,0,0,0.5);}
 .modal-header{padding:20px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
 .modal-header h3{font-family:'Cinzel',serif;font-size:14px;font-weight:600;letter-spacing:1px;}
 .modal-body{padding:24px;}
@@ -558,14 +564,14 @@ select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csv
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
 
 /* Key display */
-.key-block{background:var(--bg);border:1px solid var(--border);border-radius:2px;padding:12px 16px;font-family:'Courier New',monospace;font-size:11px;color:var(--text-faint);word-break:break-all;line-height:1.6;max-height:120px;overflow-y:auto;}
+.key-block{background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.04);border-radius:8px;padding:12px 16px;font-family:'Courier New',monospace;font-size:11px;color:var(--text-faint);word-break:break-all;line-height:1.6;max-height:120px;overflow-y:auto;}
 
 /* Permissions tree */
 .perm-group{margin-bottom:16px;}
 .perm-group-header{font-family:'Cinzel',serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);padding:8px 0;border-bottom:1px solid var(--border-mid);margin-bottom:8px;}
 .perm-item{display:flex;align-items:center;gap:10px;padding:6px 0 6px 16px;font-size:13px;color:var(--text-dim);}
 .perm-check{width:16px;height:16px;border:1px solid var(--border);border-radius:2px;background:var(--bg-input);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
-.perm-check.checked{background:var(--crimson);border-color:var(--crimson);}
+.perm-check.checked{background:var(--accent);border-color:var(--accent);}
 .perm-check.checked::after{content:'✓';color:#fff;font-size:10px;}
 
 /* Timeline / Audit */
@@ -576,12 +582,12 @@ select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csv
 .audit-action .audit-detail{font-size:11px;color:var(--text-faint);margin-top:4px;}
 
 /* Rate limit display */
-.rate-bar{height:6px;background:var(--bg);border-radius:3px;overflow:hidden;margin-top:6px;}
+.rate-bar{height:6px;background:rgba(255,255,255,0.03);border-radius:3px;overflow:hidden;margin-top:6px;}
 .rate-fill{height:100%;border-radius:3px;transition:width 0.3s ease;}
 
 /* Toggle switch */
 .toggle{width:36px;height:20px;border-radius:10px;background:var(--border);cursor:pointer;position:relative;transition:background 0.2s ease;flex-shrink:0;}
-.toggle.on{background:var(--crimson);}
+.toggle.on{background:var(--green);}
 .toggle::after{content:'';position:absolute;width:16px;height:16px;border-radius:50%;background:var(--text);top:2px;left:2px;transition:transform 0.2s ease;}
 .toggle.on::after{transform:translateX(16px);}
 
@@ -610,13 +616,13 @@ select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csv
   transition:all 0.15s ease;
 }
 .admin-stat-card:hover{
-  border-color:var(--crimson-border);
-  box-shadow:0 2px 8px rgba(212,67,58,0.1);
+  border-color:var(--accent-border);
+  box-shadow:0 2px 8px rgba(201,168,76,0.08);
 }
 .admin-stat-value{
   font-family:'Cinzel',serif;
   font-size:32px;
-  color:var(--crimson);
+  color:var(--accent);
   font-weight:700;
   margin:12px 0 4px;
 }
@@ -637,7 +643,7 @@ select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csv
   max-height:300px;
   overflow-y:auto;
   border:1px solid var(--border);
-  border-radius:4px;
+  border-radius:10px;
 }
 .admin-activity-item{
   padding:12px 16px;
@@ -657,9 +663,9 @@ select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csv
 
 /* Toasts */
 .toast-container{position:fixed;bottom:24px;right:24px;z-index:600;display:flex;flex-direction:column;gap:8px;}
-.toast{padding:12px 20px;border-radius:4px;font-size:13px;color:#f5f0e8;animation:slideUp 0.2s ease;}
-.toast-success{background:#2e8b57;}
-.toast-error{background:#e8605a;}
+.toast{padding:12px 20px;border-radius:10px;font-size:13px;color:#f5f0e8;animation:slideUp 0.2s ease;backdrop-filter:blur(12px);}
+.toast-success{background:rgba(94,224,154,0.9);}
+.toast-error{background:rgba(239,68,68,0.9);}
 .toast-info{background:#58aaff;}
 @keyframes slideUp{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
 
@@ -669,13 +675,13 @@ select.form-input{appearance:none;background-image:url("data:image/svg+xml,%3Csv
 .empty-state p{font-size:14px;margin-bottom:16px;}
 
 /* JSON viewer */
-.json-view{background:var(--bg);border:1px solid var(--border);border-radius:2px;padding:16px;font-family:'Courier New',monospace;font-size:11px;color:var(--text-faint);white-space:pre-wrap;max-height:300px;overflow-y:auto;line-height:1.6;}
+.json-view{background:rgba(255,255,255,0.01);border:1px solid rgba(255,255,255,0.04);border-radius:8px;padding:16px;font-family:'Courier New',monospace;font-size:11px;color:var(--text-faint);white-space:pre-wrap;max-height:300px;overflow-y:auto;line-height:1.6;}
 
 /* Pill filters */
 .filter-pills{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
 .pill{padding:5px 14px;border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--text-muted);cursor:pointer;transition:all 0.15s;font-family:'Spectral',serif;}
-.pill:hover{border-color:var(--crimson-border);color:var(--text);}
-.pill.active{background:var(--crimson-soft);border-color:var(--crimson-border);color:var(--crimson);}
+.pill:hover{border-color:var(--accent-border);color:var(--text);}
+.pill.active{background:var(--accent-soft);border-color:var(--accent-border);color:var(--accent);}
 </style>
 </head>
 <body>
@@ -714,16 +720,7 @@ function useAdminQuery(fetchFn, deps = []) {
   return { data, loading, error, refetch: fetch_ };
 }
 
-// ── Placeholder for legacy mock references still in old pages ──────
-const MOCK_TENANTS   = [];
-const MOCK_USERS     = [];
-const MOCK_SIGNING_KEYS = [];
-const MOCK_CLIENTS   = [];
-const MOCK_ROLES     = [];
-const MOCK_PERMISSIONS = {};
-const MOCK_AUDIT_LOG = [];
-const MOCK_RATE_LIMITS = [];
-// (duplicate mock declarations removed — empty stubs above are used for legacy compat)
+// (Legacy mock data removed — all pages now use live Supabase queries)
 
 // ═══════════════════════════════
 // ICONS (inline SVG components)
@@ -772,11 +769,6 @@ function timeAgo(iso) {
   if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
   return Math.floor(diff / 86400) + 'd ago';
 }
-function getTenantName(id) {
-  const t = MOCK_TENANTS.find(t => t.id === id);
-  return t ? t.name : id;
-}
-
 // ═══════════════════════════════
 // TOAST SYSTEM
 // ═══════════════════════════════
@@ -842,7 +834,7 @@ function DashboardPage({ onNavigate }) {
   });
 
   if (loading) return <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)',fontFamily:'Spectral,serif'}}>Loading…</div>;
-  if (error)   return <div style={{padding:'40px',color:'var(--crimson)',fontFamily:'Spectral,serif'}}>{error}</div>;
+  if (error)   return <div style={{padding:'40px',color:'var(--danger)',fontFamily:'Spectral,serif'}}>{error}</div>;
 
   const s = stats || { users:0, chars:0, camps:0, visits:0, recent:[] };
 
@@ -930,7 +922,7 @@ function DashboardPage({ onNavigate }) {
             ].map((item, i) => (
               <div key={i} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderBottom:'1px solid var(--border-mid)'}}>
                 <span style={{fontSize:'13px'}}>{item.label}</span>
-                <span style={{fontSize:'12px',color:item.ok?'#2e8b57':'#e8605a',display:'flex',alignItems:'center',gap:'4px'}}>
+                <span style={{fontSize:'12px',color:item.ok?'#5ee09a':'#ef4444',display:'flex',alignItems:'center',gap:'4px'}}>
                   {item.ok ? <span style={{fontSize:'10px'}}>✓</span> : <span style={{fontSize:'10px'}}>✗</span>} {item.value}
                 </span>
               </div>
@@ -986,7 +978,7 @@ function CampaignsPage({ addToast, canDeleteContent }) {
       </div>
 
       {loading && <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)',fontFamily:'Spectral,serif'}}>Loading…</div>}
-      {error   && <div style={{padding:'20px',color:'var(--crimson)',fontFamily:'Spectral,serif'}}>{error}</div>}
+      {error   && <div style={{padding:'20px',color:'var(--danger)',fontFamily:'Spectral,serif'}}>{error}</div>}
 
       {!loading && !error && (
         <div className="card">
@@ -1095,7 +1087,7 @@ function UsersPage({ addToast, canManageAdmins }) {
       </div>
 
       {loading && <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)',fontFamily:'Spectral,serif'}}>Loading…</div>}
-      {error   && <div style={{padding:'20px',color:'var(--crimson)',fontFamily:'Spectral,serif'}}>{error}</div>}
+      {error   && <div style={{padding:'20px',color:'var(--danger)',fontFamily:'Spectral,serif'}}>{error}</div>}
 
       {!loading && !error && (
         <div className="card">
@@ -1112,7 +1104,7 @@ function UsersPage({ addToast, canManageAdmins }) {
                   <td style={{fontWeight:600,color:'var(--text)'}}>{u.name || '—'}</td>
                   <td className="mono">{u.email}</td>
                   <td>
-                    {u.is_superuser && <span className="badge badge-admin" style={{marginRight:'4px',background:'rgba(212,67,58,0.15)',color:'#d4433a'}}>Superuser</span>}
+                    {u.is_superuser && <span className="badge badge-admin" style={{marginRight:'4px',background:'rgba(201,168,76,0.12)',color:'#c9a84c'}}>Superuser</span>}
                     {u.is_admin && !u.is_superuser && <span className="badge badge-admin" style={{marginRight:'4px'}}>Admin</span>}
                     {u.is_banned ? <span className="badge badge-suspended">Banned</span>
                                  : <span className="badge badge-active">Active</span>}
@@ -1207,7 +1199,7 @@ function CharactersPage({ addToast, canDeleteContent }) {
       </div>
 
       {loading && <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)',fontFamily:'Spectral,serif'}}>Loading…</div>}
-      {error   && <div style={{padding:'20px',color:'var(--crimson)',fontFamily:'Spectral,serif'}}>{error}</div>}
+      {error   && <div style={{padding:'20px',color:'var(--danger)',fontFamily:'Spectral,serif'}}>{error}</div>}
 
       {!loading && !error && (
         <div className="card">
@@ -1396,7 +1388,7 @@ function TrafficPage() {
       </div>
 
       {loading && <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)',fontFamily:'Spectral,serif'}}>Loading…</div>}
-      {error   && <div style={{padding:'20px',color:'var(--crimson)',fontFamily:'Spectral,serif'}}>{error}</div>}
+      {error   && <div style={{padding:'20px',color:'var(--danger)',fontFamily:'Spectral,serif'}}>{error}</div>}
 
       {!loading && !error && (
         <>
@@ -1443,8 +1435,8 @@ function TrafficPage() {
                 {topPages.map(([page, count]) => (
                   <div key={page} style={{display:'flex',alignItems:'center',padding:'10px 24px',borderBottom:'1px solid var(--border-mid)',gap:'12px'}}>
                     <span className="mono" style={{fontSize:'11px',color:'var(--text)',flex:1,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{page}</span>
-                    <div style={{width:'80px',height:'5px',background:'var(--bg)',borderRadius:'3px',overflow:'hidden',flexShrink:0}}>
-                      <div style={{height:'100%',width:`${Math.round(count/topPages[0][1]*100)}%`,background:'var(--crimson)',borderRadius:'3px'}} />
+                    <div style={{width:'80px',height:'5px',background:'rgba(255,255,255,0.03)',borderRadius:'3px',overflow:'hidden',flexShrink:0}}>
+                      <div style={{height:'100%',width:`${Math.round(count/topPages[0][1]*100)}%`,background:'var(--accent)',borderRadius:'3px'}} />
                     </div>
                     <span style={{fontSize:'12px',color:'var(--text-muted)',minWidth:'28px',textAlign:'right',flexShrink:0}}>{count}</span>
                   </div>
@@ -1459,8 +1451,8 @@ function TrafficPage() {
                 {recentDays.map(([day, count]) => (
                   <div key={day} style={{display:'flex',alignItems:'center',padding:'8px 24px',borderBottom:'1px solid var(--border-mid)',gap:'12px'}}>
                     <span style={{fontSize:'12px',color:'var(--text-dim)',minWidth:'90px',flexShrink:0}}>{day}</span>
-                    <div style={{flex:1,height:'5px',background:'var(--bg)',borderRadius:'3px',overflow:'hidden'}}>
-                      <div style={{height:'100%',width:`${Math.round(count/maxDay*100)}%`,background:'var(--crimson)',borderRadius:'3px'}} />
+                    <div style={{flex:1,height:'5px',background:'rgba(255,255,255,0.03)',borderRadius:'3px',overflow:'hidden'}}>
+                      <div style={{height:'100%',width:`${Math.round(count/maxDay*100)}%`,background:'var(--accent)',borderRadius:'3px'}} />
                     </div>
                     <span style={{fontSize:'12px',color:'var(--text-muted)',minWidth:'28px',textAlign:'right',flexShrink:0}}>{count}</span>
                   </div>
@@ -1480,8 +1472,8 @@ function TrafficPage() {
                   return (
                     <div key={key} style={{display:'flex',alignItems:'center',padding:'8px 24px',borderBottom:'1px solid var(--border-mid)',gap:'12px'}}>
                       <span style={{fontSize:'12px',color:'var(--text-dim)',minWidth:'46px',flexShrink:0}}>{key}:00</span>
-                      <div style={{flex:1,height:'5px',background:'var(--bg)',borderRadius:'3px',overflow:'hidden'}}>
-                        <div style={{height:'100%',width:`${Math.round((count / Math.max(1, peak)) * 100)}%`,background:'var(--crimson)',borderRadius:'3px'}} />
+                      <div style={{flex:1,height:'5px',background:'rgba(255,255,255,0.03)',borderRadius:'3px',overflow:'hidden'}}>
+                        <div style={{height:'100%',width:`${Math.round((count / Math.max(1, peak)) * 100)}%`,background:'var(--accent)',borderRadius:'3px'}} />
                       </div>
                       <span style={{fontSize:'12px',color:'var(--text-muted)',minWidth:'28px',textAlign:'right',flexShrink:0}}>{count}</span>
                     </div>
@@ -1602,13 +1594,13 @@ function AdminKeySetupCard({ addToast, canManageAdmins }) {
       <div className="card-header"><h2>Admin Key Setup</h2></div>
       <div className="card-body">
         <p style={{fontSize:'13px',color:'var(--text-muted)',marginBottom:'20px',lineHeight:'1.7'}}>
-          Generate a key image hash. To rotate the admin key, copy the new hash and replace <code style={{background:'var(--bg)',padding:'2px 6px',borderRadius:'3px',fontSize:'11px'}}>EXPECTED_HASH</code> in <code style={{background:'var(--bg)',padding:'2px 6px',borderRadius:'3px',fontSize:'11px'}}>admin.html</code>, then redeploy.
+          Generate a key image hash. To rotate the admin key, copy the new hash and replace <code style={{background:'rgba(255,255,255,0.04)',padding:'2px 6px',borderRadius:'4px',fontSize:'11px'}}>EXPECTED_HASH</code> in <code style={{background:'rgba(255,255,255,0.04)',padding:'2px 6px',borderRadius:'4px',fontSize:'11px'}}>admin.html</code>, then redeploy.
         </p>
 
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'20px',marginBottom:'24px'}}>
           <div>
             <div style={{fontSize:'11px',letterSpacing:'1.5px',textTransform:'uppercase',color:'var(--text-muted)',display:'block',marginBottom:'10px',fontFamily:'Cinzel,serif'}}>Current Key Hash</div>
-            <div style={{background:'var(--bg-input)',border:'1px solid var(--border)',borderRadius:'3px',padding:'12px',fontSize:'11px',fontFamily:'monospace',color:'var(--crimson)',wordBreak:'break-all',minHeight:'60px',display:'flex',alignItems:'center',justifyContent:'center',textAlign:'center'}}>
+            <div style={{background:'var(--bg-input)',border:'1px solid var(--border)',borderRadius:'8px',padding:'12px',fontSize:'11px',fontFamily:'monospace',color:'var(--accent)',wordBreak:'break-all',minHeight:'60px',display:'flex',alignItems:'center',justifyContent:'center',textAlign:'center'}}>
               {storedHash === 'Not configured' ? (
                 <span style={{color:'var(--text-muted)'}}>No key configured yet</span>
               ) : storedHash.length > 50 ? (
@@ -1621,7 +1613,7 @@ function AdminKeySetupCard({ addToast, canManageAdmins }) {
 
           <div>
             <div style={{fontSize:'11px',letterSpacing:'1.5px',textTransform:'uppercase',color:'var(--text-muted)',display:'block',marginBottom:'10px',fontFamily:'Cinzel,serif'}}>Upload New Key Image</div>
-            <label style={{display:'block',border:'2px dashed var(--crimson-border)',borderRadius:'3px',padding:'20px',textAlign:'center',cursor:'pointer',transition:'all 0.2s',background:'var(--bg-input)'}}>
+            <label style={{display:'block',border:'2px dashed var(--accent-border)',borderRadius:'8px',padding:'20px',textAlign:'center',cursor:'pointer',transition:'all 0.2s',background:'var(--bg-input)'}}>
               <div style={{fontSize:'24px',marginBottom:'8px'}}>🖼</div>
               <div style={{fontSize:'12px',color:'var(--text-muted)',fontFamily:'Spectral,serif'}}>Click to upload image</div>
               <input type="file" accept="image/*" onChange={handleImageUpload} disabled={!canManageAdmins} style={{display:'none'}} />
@@ -1630,7 +1622,7 @@ function AdminKeySetupCard({ addToast, canManageAdmins }) {
         </div>
 
         {status && (
-          <div style={{padding:'10px 12px',background:'rgba(212,67,58,0.1)',border:'1px solid rgba(212,67,58,0.2)',borderRadius:'3px',fontSize:'12px',color:'var(--text-muted)',marginBottom:'16px'}}>
+          <div style={{padding:'10px 12px',background:'rgba(201,168,76,0.06)',border:'1px solid rgba(201,168,76,0.15)',borderRadius:'8px',fontSize:'12px',color:'var(--text-muted)',marginBottom:'16px'}}>
             {status}
           </div>
         )}
@@ -1638,7 +1630,7 @@ function AdminKeySetupCard({ addToast, canManageAdmins }) {
         {computedHash && (
           <div style={{background:'var(--bg-mid)',border:'1px solid var(--border)',borderRadius:'3px',padding:'16px',marginBottom:'16px'}}>
             <div style={{fontSize:'11px',letterSpacing:'1.5px',textTransform:'uppercase',color:'var(--text-muted)',display:'block',marginBottom:'10px',fontFamily:'Cinzel,serif'}}>New Hash Preview</div>
-            <div style={{background:'var(--bg)',border:'1px solid var(--border)',borderRadius:'3px',padding:'12px',fontSize:'11px',fontFamily:'monospace',color:'var(--crimson)',wordBreak:'break-all',marginBottom:'12px'}}>
+            <div style={{background:'rgba(255,255,255,0.01)',border:'1px solid rgba(255,255,255,0.04)',borderRadius:'8px',padding:'12px',fontSize:'11px',fontFamily:'monospace',color:'var(--accent)',wordBreak:'break-all',marginBottom:'12px'}}>
               {computedHash}
             </div>
             {keyImage && (
@@ -1648,7 +1640,7 @@ function AdminKeySetupCard({ addToast, canManageAdmins }) {
             )}
             <div style={{display:'flex',gap:'10px'}}>
               <button onClick={saveKeyHash}
-                style={{flex:1,padding:'10px',background:'var(--crimson)',color:'#f5f0e8',border:'none',fontFamily:'Cinzel,serif',fontSize:'11px',letterSpacing:'1.5px',textTransform:'uppercase',cursor:'pointer',borderRadius:'3px'}}>
+                style={{flex:1,padding:'10px',background:'rgba(201,168,76,0.12)',color:'var(--accent)',border:'1px solid rgba(201,168,76,0.3)',fontFamily:'Cinzel,serif',fontSize:'11px',letterSpacing:'1.5px',textTransform:'uppercase',cursor:'pointer',borderRadius:'8px'}}>
                 Copy Hash
               </button>
               <button onClick={() => { setComputedHash(''); setKeyImage(null); setStatus(''); }}
@@ -1662,7 +1654,7 @@ function AdminKeySetupCard({ addToast, canManageAdmins }) {
         {storedHash !== 'Not configured' && !computedHash && (
           <div style={{display:'flex',gap:'10px'}}>
             <button onClick={clearKeyHash}
-              style={{flex:1,padding:'10px',background:'transparent',color:'var(--danger)',border:'1px solid rgba(212,67,58,0.3)',fontFamily:'Cinzel,serif',fontSize:'11px',letterSpacing:'1.5px',textTransform:'uppercase',cursor:'pointer',borderRadius:'3px'}}>
+              style={{flex:1,padding:'10px',background:'transparent',color:'var(--danger)',border:'1px solid rgba(239,68,68,0.2)',fontFamily:'Cinzel,serif',fontSize:'11px',letterSpacing:'1.5px',textTransform:'uppercase',cursor:'pointer',borderRadius:'8px'}}>
               Clear Preview
             </button>
           </div>
@@ -1731,11 +1723,11 @@ function ManageAdminsCard({ addToast, canManageAdmins }) {
                   type="email" value={email} onChange={e => setEmail(e.target.value)}
                   placeholder="user@example.com"
                   onKeyDown={e => e.key === 'Enter' && grantAdmin()}
-                  style={{width:'100%',padding:'9px 12px',background:'var(--bg-input)',border:'1px solid var(--border)',color:'var(--text)',fontFamily:'Spectral,serif',fontSize:'13px',borderRadius:'3px',outline:'none'}}
+                  style={{width:'100%',padding:'9px 12px',background:'var(--bg-input)',border:'1px solid var(--border)',color:'var(--text)',fontFamily:'Spectral,serif',fontSize:'13px',borderRadius:'8px',outline:'none'}}
                 />
               </div>
               <button onClick={grantAdmin} disabled={!canManageAdmins || working || !email.trim()}
-                style={{padding:'9px 20px',background:'var(--crimson)',color:'#f5f0e8',border:'none',fontFamily:'Cinzel,serif',fontSize:'11px',letterSpacing:'1.5px',textTransform:'uppercase',cursor:'pointer',borderRadius:'3px',opacity:(!canManageAdmins||working||!email.trim())?0.5:1,whiteSpace:'nowrap'}}>
+                style={{padding:'9px 20px',background:'rgba(201,168,76,0.12)',color:'var(--accent)',border:'1px solid rgba(201,168,76,0.3)',fontFamily:'Cinzel,serif',fontSize:'11px',letterSpacing:'1.5px',textTransform:'uppercase',cursor:'pointer',borderRadius:'8px',opacity:(!canManageAdmins||working||!email.trim())?0.5:1,whiteSpace:'nowrap'}}>
                 {working ? 'Granting…' : 'Grant Admin'}
               </button>
             </div>
@@ -1756,15 +1748,15 @@ function ManageAdminsCard({ addToast, canManageAdmins }) {
                         <td><code style={{fontSize:'12px'}}>{u.email}</code></td>
                         <td>
                           {u.is_superuser
-                            ? <span style={{fontSize:'11px',padding:'3px 8px',background:'rgba(212,67,58,0.15)',color:'var(--crimson)',border:'1px solid var(--crimson-border)',borderRadius:'3px'}}>Superuser</span>
-                            : <span style={{fontSize:'11px',padding:'3px 8px',background:'rgba(52,152,219,0.1)',color:'var(--info)',border:'1px solid rgba(52,152,219,0.2)',borderRadius:'3px'}}>Admin</span>
+                            ? <span style={{fontSize:'11px',padding:'3px 8px',background:'rgba(201,168,76,0.08)',color:'var(--accent)',border:'1px solid rgba(201,168,76,0.2)',borderRadius:'999px'}}>Superuser</span>
+                            : <span style={{fontSize:'11px',padding:'3px 8px',background:'rgba(167,139,250,0.08)',color:'#a78bfa',border:'1px solid rgba(167,139,250,0.2)',borderRadius:'999px'}}>Admin</span>
                           }
                         </td>
                         <td>
                           {u.is_superuser
                             ? <span style={{fontSize:'11px',color:'var(--text-faint)'}}>Protected</span>
                             : <button onClick={() => revokeAdmin(u)}
-                                style={{padding:'5px 12px',background:'rgba(212,67,58,0.12)',color:'var(--danger)',border:'1px solid rgba(212,67,58,0.2)',fontFamily:'Cinzel,serif',fontSize:'10px',letterSpacing:'1px',cursor:'pointer',borderRadius:'3px'}}>
+                                style={{padding:'5px 12px',background:'rgba(239,68,68,0.06)',color:'var(--danger)',border:'1px solid rgba(239,68,68,0.15)',fontFamily:'Cinzel,serif',fontSize:'10px',letterSpacing:'1px',cursor:'pointer',borderRadius:'8px'}}>
                                 Revoke
                               </button>
                           }
@@ -1793,11 +1785,11 @@ function SettingsPage({ addToast, canManageAdmins }) {
         <div className="card">
           <div className="card-header"><h2>Supabase Connection</h2></div>
           <div className="card-body">
-            <div style={{padding:'12px',background: sbConfigured ? 'rgba(78,218,128,0.08)' : 'rgba(212,67,58,0.08)',border:`1px solid ${sbConfigured?'rgba(78,218,128,0.2)':'rgba(212,67,58,0.2)'}`,borderRadius:'4px',fontSize:'13px',color:sbConfigured?'#2e8b57':'#e8605a',marginBottom:'20px'}}>
+            <div style={{padding:'12px',background: sbConfigured ? 'rgba(94,224,154,0.06)' : 'rgba(239,68,68,0.06)',border:`1px solid ${sbConfigured?'rgba(94,224,154,0.15)':'rgba(239,68,68,0.15)'}`,borderRadius:'8px',fontSize:'13px',color:sbConfigured?'#5ee09a':'#ef4444',marginBottom:'20px'}}>
               {sbConfigured ? '✓ Supabase is connected. Cloud auth and data sync are active.' : '✗ Supabase is not configured. Open supabase-config.js and set your URL and anon key.'}
             </div>
             <p style={{fontSize:'13px',color:'var(--text-muted)',lineHeight:'1.7',margin:0}}>
-              To configure Supabase, open <code style={{background:'var(--bg)',padding:'2px 6px',borderRadius:'3px',fontSize:'11px'}}>supabase-config.js</code> and set <code style={{background:'var(--bg)',padding:'2px 6px',borderRadius:'3px',fontSize:'11px'}}>SUPABASE_URL</code> and <code style={{background:'var(--bg)',padding:'2px 6px',borderRadius:'3px',fontSize:'11px'}}>SUPABASE_ANON_KEY</code> from your Supabase project dashboard under Settings → API.
+              To configure Supabase, open <code style={{background:'rgba(255,255,255,0.04)',padding:'2px 6px',borderRadius:'4px',fontSize:'11px'}}>supabase-config.js</code> and set <code style={{background:'rgba(255,255,255,0.04)',padding:'2px 6px',borderRadius:'4px',fontSize:'11px'}}>SUPABASE_URL</code> and <code style={{background:'rgba(255,255,255,0.04)',padding:'2px 6px',borderRadius:'4px',fontSize:'11px'}}>SUPABASE_ANON_KEY</code> from your Supabase project dashboard under Settings → API.
             </p>
           </div>
         </div>
@@ -1806,7 +1798,7 @@ function SettingsPage({ addToast, canManageAdmins }) {
           <div className="card-header"><h2>Admin Access</h2></div>
           <div className="card-body">
             <p style={{fontSize:'13px',color:'var(--text-muted)',lineHeight:'1.7',marginBottom:'16px'}}>
-              Admin access is controlled by <code style={{background:'var(--bg)',padding:'2px 6px',borderRadius:'3px',fontSize:'11px'}}>profiles.is_admin</code> / <code style={{background:'var(--bg)',padding:'2px 6px',borderRadius:'3px',fontSize:'11px'}}>profiles.is_superuser</code> in Supabase. Email allowlist fallback is disabled for tighter security.
+              Admin access is controlled by <code style={{background:'rgba(255,255,255,0.04)',padding:'2px 6px',borderRadius:'4px',fontSize:'11px'}}>profiles.is_admin</code> / <code style={{background:'rgba(255,255,255,0.04)',padding:'2px 6px',borderRadius:'4px',fontSize:'11px'}}>profiles.is_superuser</code> in Supabase. Email allowlist fallback is disabled for tighter security.
             </p>
             {[
               { label: '2-Factor Gate', desc: 'Image key + account role verification required', on: true },
@@ -2026,7 +2018,7 @@ function AdminApp() {
           })}
         </nav>
         <div className="sidebar-footer">
-          <a href="index.html" style={{color:'var(--crimson)',textDecoration:'none',fontSize:'12px',fontFamily:'Cinzel, serif',letterSpacing:'1px'}}>
+          <a href="index.html" style={{color:'var(--accent)',textDecoration:'none',fontSize:'12px',fontFamily:'Cinzel, serif',letterSpacing:'1px'}}>
             ← Back to Site
           </a>
         </div>
@@ -2044,11 +2036,11 @@ function AdminApp() {
             </span>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:'16px'}}>
-            <button className="btn btn-sm" onClick={toggleTheme} style={{border:'1px solid var(--crimson-border)',borderRadius:'50%',width:'32px',height:'32px',padding:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
+            <button className="btn btn-sm" onClick={toggleTheme} style={{border:'1px solid var(--accent-border)',borderRadius:'50%',width:'32px',height:'32px',padding:0,display:'flex',alignItems:'center',justifyContent:'center'}}>
               <Icons.Moon />
             </button>
             <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-              <div style={{width:'28px',height:'28px',borderRadius:'50%',background:'var(--crimson)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',fontFamily:'Cinzel',color:'#f5f0e8'}}>
+              <div style={{width:'28px',height:'28px',borderRadius:'50%',background:'rgba(201,168,76,0.15)',border:'1px solid rgba(201,168,76,0.3)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:'11px',fontFamily:'Cinzel',color:'var(--accent)'}}>
                 {((viewer && viewer.name) ? viewer.name : 'Admin').charAt(0).toUpperCase()}
               </div>
               <span style={{fontSize:'13px'}}>

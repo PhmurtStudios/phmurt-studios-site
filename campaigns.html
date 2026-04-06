@@ -2452,9 +2452,9 @@ const EnhancedActionPanel = ({ visible, token, turnState, viewRole, onSelectActi
 
   /* Group action cards by panel type */
   const cards = actionCards || [];
-  const weaponCards = cards.filter(c => c.panel === "Attack");
+  const weaponCards = cards.filter(c => c.panel === "Attack" || c.panel === "Multiattack" || c.panel === "Save / AoE");
   const spellCards = cards.filter(c => c.panel === "Spell");
-  const featureCards = cards.filter(c => c.panel === "Class Feature");
+  const featureCards = cards.filter(c => c.panel === "Class Feature" || c.panel === "Legendary");
   const otherCards = cards.filter(c => c.panel === "Other" || c.panel === "Utility");
 
   /* ── "Common" tab: BG3-style top 5 most-used actions ── */
