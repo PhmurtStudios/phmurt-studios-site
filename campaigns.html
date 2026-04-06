@@ -2907,74 +2907,128 @@ const TurnBanner = ({ announcement }) => {
 const CombatRollDisplay = ({ combatRollLog }) => {
   if (!combatRollLog || combatRollLog.length === 0) return null;
   const now = Date.now();
-  const visibleRolls = combatRollLog.slice().reverse().slice(0, 3).filter(r => (now - r.time) / 5000 < 1);
+  const visibleRolls = combatRollLog.slice().reverse().slice(0, 3).filter(r => (now - r.time) / 6000 < 1);
   if (visibleRolls.length === 0) return null;
 
+  // The most recent roll gets the big D20 splash
+  const latestRoll = visibleRolls[0];
+  const latestAge = (now - latestRoll.time) / 6000;
+  const showSplash = latestAge < 0.5; // big splash for first 3 seconds
+  const latestD20Match = latestRoll.detail ? latestRoll.detail.match(/= (\d+) vs AC (\d+)/) : null;
+  const splashTotal = latestD20Match ? latestD20Match[1] : null;
+  const splashAC = latestD20Match ? latestD20Match[2] : null;
+  const splashCrit = latestRoll.type === "crit";
+  const splashHit = latestRoll.type === "hit";
+  const splashMiss = latestRoll.type === "miss";
+  const splashColor = splashCrit ? "#ffd700" : splashHit ? "#5ee09a" : splashMiss ? "#f06858" : "#b574ff";
+  const splashScale = showSplash ? (latestAge < 0.05 ? 0.3 + latestAge * 14 : (latestAge < 0.15 ? 1 : 1 - (latestAge - 0.15) * 0.15)) : 0.6;
+  const splashOpacity = showSplash ? (latestAge < 0.05 ? latestAge * 20 : (latestAge < 0.35 ? 1 : Math.max(0, 1 - (latestAge - 0.35) * 6))) : 0;
+
   return (
-    <div style={{
-      position:"absolute", top: 160, left:"50%", transform:"translateX(-50%)",
-      zIndex:51, pointerEvents:"none",
-      display:"flex", flexDirection:"column", gap:4, width: "min(480px, 80%)",
-    }}>
-      {visibleRolls.map(roll => {
-        const age = (now - roll.time) / 5000;
-        const opacity = age < 0.6 ? 1 : Math.max(0.05, 1 - (age - 0.6) * 2.5);
-        const isCrit = roll.type === "crit";
-        const isHit = roll.type === "hit";
-        const isMiss = roll.type === "miss";
-        const color = isCrit ? "#ffd700" : isHit ? "#5ee09a" : isMiss ? "#f06858" : "#b574ff";
-        const bgColor = isCrit ? "rgba(255,215,0,0.15)" : isHit ? "rgba(94,224,154,0.12)" : isMiss ? "rgba(240,104,88,0.12)" : "rgba(181,116,255,0.12)";
-        const resultLabel = isCrit ? "CRITICAL HIT!" : isHit ? "HIT!" : isMiss ? "MISS" : "EFFECT";
-        const d20Match = roll.detail ? roll.detail.match(/= (\d+) vs AC (\d+)/) : null;
-        const rollTotal = d20Match ? d20Match[1] : null;
-        const targetAC = d20Match ? d20Match[2] : null;
-        const dmgMatch = roll.detail ? roll.detail.match(/Damage:\s*(.+)/) : null;
-        const dmgText = dmgMatch ? dmgMatch[1] : null;
-        return (
-          <div key={roll.id} style={{
-            display:"flex", alignItems:"center", gap:10, padding:"10px 16px",
-            background: bgColor,
-            backdropFilter:"blur(16px)",
-            border:"2px solid " + color + "55",
-            borderLeft:"5px solid " + color,
-            borderRadius:12, opacity,
-            boxShadow: "0 4px 20px rgba(0,0,0,0.35)" + (isCrit ? ", 0 0 30px rgba(255,215,0,0.2)" : ""),
+    <div style={{ position:"absolute", top:0, left:0, right:0, bottom:0, zIndex:51, pointerEvents:"none", overflow:"hidden" }}>
+      {/* ── Big D20 splash in center of screen ── */}
+      {splashTotal && splashOpacity > 0.01 && (
+        <div style={{
+          position:"absolute", top:"38%", left:"50%",
+          transform: "translate(-50%, -50%) scale(" + splashScale + ")",
+          opacity: splashOpacity,
+          display:"flex", flexDirection:"column", alignItems:"center", gap:4,
+          transition: "none",
+        }}>
+          {/* D20 shape */}
+          <div style={{
+            width: 100, height: 100, borderRadius: 16,
+            background: "radial-gradient(circle at 35% 35%, " + splashColor + "33, " + splashColor + "11 70%, transparent)",
+            border: "3px solid " + splashColor,
+            display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+            boxShadow: "0 0 60px " + splashColor + "44, 0 0 120px " + splashColor + "22, inset 0 0 30px " + splashColor + "11",
+            position:"relative",
           }}>
-            {rollTotal && (
-              <div style={{
-                width:48, height:48, borderRadius:10,
-                background: color + "22", border:"2px solid " + color,
-                display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
-                flexShrink:0,
-              }}>
-                <div style={{ fontFamily:"'Cinzel', serif", fontSize:22, fontWeight:900, color, lineHeight:1 }}>{rollTotal}</div>
-                <div style={{ fontSize:7, color:"var(--text-faint)", letterSpacing:"0.5px" }}>vs AC {targetAC}</div>
-              </div>
-            )}
-            {!rollTotal && <span style={{ fontSize:30, flexShrink:0 }}>{isCrit ? "\u2728" : isHit ? "\u2694\uFE0F" : isMiss ? "\u274C" : "\u2728"}</span>}
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                <span style={{ fontFamily:"'Cinzel', serif", fontSize:14, fontWeight:800, color, letterSpacing:"1px", textTransform:"uppercase" }}>
-                  {resultLabel}
-                </span>
-                <span style={{ fontFamily:"'Cinzel', serif", fontSize:11, color:"var(--text-dim, #ccc)", fontWeight:600 }}>
-                  {roll.msg.replace(/ HIT!| MISS| CRITICAL!/, "")}
-                </span>
-              </div>
-              {dmgText && (
-                <div style={{ fontFamily:"'Spectral', serif", fontSize:12, color: isHit || isCrit ? "#5ee09a" : "var(--text-muted)", marginTop:2, fontWeight:600 }}>
-                  {dmgText}
-                </div>
-              )}
-              {!dmgText && roll.detail && (
-                <div style={{ fontFamily:"'Spectral', serif", fontSize:10, color:"var(--text-muted)", marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
-                  {roll.detail}
-                </div>
-              )}
+            <div style={{ fontFamily:"'Cinzel', serif", fontSize: 48, fontWeight:900, color: splashColor, lineHeight:1, textShadow: "0 0 20px " + splashColor + "88, 0 2px 4px rgba(0,0,0,0.5)" }}>
+              {splashTotal}
+            </div>
+            <div style={{ fontSize: 10, color: splashColor, letterSpacing:"1.5px", fontFamily:"'Cinzel', serif", fontWeight:700, opacity: 0.8 }}>
+              vs AC {splashAC}
             </div>
           </div>
-        );
-      })}
+          {/* Result label under D20 */}
+          <div style={{
+            fontFamily:"'Cinzel', serif", fontSize: 22, fontWeight:900,
+            color: splashColor, letterSpacing:"3px", textTransform:"uppercase",
+            textShadow: "0 0 20px " + splashColor + "66, 0 2px 8px rgba(0,0,0,0.8)",
+          }}>
+            {splashCrit ? "CRITICAL HIT!" : splashHit ? "HIT!" : splashMiss ? "MISS" : "EFFECT"}
+          </div>
+        </div>
+      )}
+
+      {/* ── Roll log cards (right side) ── */}
+      <div style={{
+        position:"absolute", top: 80, right: 16,
+        display:"flex", flexDirection:"column", gap:6, width: 340, maxWidth: "35%",
+      }}>
+        {visibleRolls.map(roll => {
+          const age = (now - roll.time) / 6000;
+          const opacity = age < 0.5 ? 1 : Math.max(0.05, 1 - (age - 0.5) * 2);
+          const isCrit = roll.type === "crit";
+          const isHit = roll.type === "hit";
+          const isMiss = roll.type === "miss";
+          const color = isCrit ? "#ffd700" : isHit ? "#5ee09a" : isMiss ? "#f06858" : "#b574ff";
+          const bgColor = isCrit ? "rgba(255,215,0,0.15)" : isHit ? "rgba(94,224,154,0.12)" : isMiss ? "rgba(240,104,88,0.12)" : "rgba(181,116,255,0.12)";
+          const resultLabel = isCrit ? "CRITICAL HIT!" : isHit ? "HIT!" : isMiss ? "MISS" : "EFFECT";
+          const d20Match = roll.detail ? roll.detail.match(/= (\d+) vs AC (\d+)/) : null;
+          const rollTotal = d20Match ? d20Match[1] : null;
+          const targetAC = d20Match ? d20Match[2] : null;
+          const dmgMatch = roll.detail ? roll.detail.match(/Damage:\s*(.+)/) : null;
+          const dmgText = dmgMatch ? dmgMatch[1] : null;
+          const rollBreakdown = roll.detail ? roll.detail.match(/Attack:\s*(.+?)\s*(?:\||$)/) : null;
+          const rollExpr = rollBreakdown ? rollBreakdown[1] : null;
+          return (
+            <div key={roll.id} style={{
+              display:"flex", alignItems:"center", gap:10, padding:"10px 14px",
+              background: bgColor,
+              backdropFilter:"blur(16px)",
+              border:"2px solid " + color + "55",
+              borderLeft:"5px solid " + color,
+              borderRadius:12, opacity,
+              boxShadow: "0 4px 20px rgba(0,0,0,0.45)" + (isCrit ? ", 0 0 30px rgba(255,215,0,0.3)" : ""),
+            }}>
+              {rollTotal && (
+                <div style={{
+                  width:48, height:48, borderRadius:10,
+                  background: color + "22", border:"2px solid " + color,
+                  display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
+                  flexShrink:0,
+                }}>
+                  <div style={{ fontFamily:"'Cinzel', serif", fontSize:22, fontWeight:900, color, lineHeight:1 }}>{rollTotal}</div>
+                  <div style={{ fontSize:7, color:"var(--text-faint)", letterSpacing:"0.5px" }}>vs AC {targetAC}</div>
+                </div>
+              )}
+              {!rollTotal && <span style={{ fontSize:28, flexShrink:0 }}>{isCrit ? "\u2728" : isHit ? "\u2694\uFE0F" : isMiss ? "\u274C" : "\u2728"}</span>}
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <span style={{ fontFamily:"'Cinzel', serif", fontSize:13, fontWeight:800, color, letterSpacing:"1px", textTransform:"uppercase" }}>
+                    {resultLabel}
+                  </span>
+                </div>
+                <div style={{ fontFamily:"'Cinzel', serif", fontSize:10, color:"var(--text-dim, #ccc)", fontWeight:600, marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                  {roll.msg.replace(/ HIT!| MISS| CRITICAL!/, "")}
+                </div>
+                {rollExpr && (
+                  <div style={{ fontFamily:"'Spectral', serif", fontSize:10, color:"var(--text-muted)", marginTop:2, opacity:0.8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                    {rollExpr}
+                  </div>
+                )}
+                {dmgText && (
+                  <div style={{ fontFamily:"'Spectral', serif", fontSize:12, color: isHit || isCrit ? "#5ee09a" : "var(--text-muted)", marginTop:2, fontWeight:700 }}>
+                    {dmgText}
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
@@ -8413,6 +8467,17 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   const [actionPanelVisible, setActionPanelVisible] = useState(false);
   const [setupTab, setSetupTab] = useState("bg");
 
+  // ── Token flash/shake on damage ──
+  const [tokenFlashes, setTokenFlashes] = useState({}); // { tokenId: { type, time } }
+  const flashToken = (tokenId, type) => {
+    setTokenFlashes(prev => ({ ...prev, [tokenId]: { type, time: Date.now() } }));
+    setTimeout(() => setTokenFlashes(prev => {
+      const next = { ...prev };
+      delete next[tokenId];
+      return next;
+    }), 600);
+  };
+
   // ── Floating combat text helper — spawns animated damage numbers above tokens ──
   const spawnFloatingTextForToken = useCallback((tokenId, type, opts) => {
     if (typeof window.CombatFlowUI === "undefined") return;
@@ -8876,6 +8941,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       applyAttackResultToTarget(targetId, target, totalDmg, dtype);
       // Floating combat text + weapon-specific animation
       spawnFloatingTextForToken(targetId, "damage", { total: totalDmg, damageType: dtype, isCrit: r0.isCrit });
+      flashToken(targetId, "damage");
       emitPlayModeVfx(attacker, target, { mode: "attack", actionName: weaponName, weaponName: weaponName, damageType: dtype, amount: totalDmg, isCrit: r0.isCrit, isRanged: !!(CE.isRangedWeapon ? CE.isRangedWeapon(weaponName) : (weaponName||"").toLowerCase().match(/bow|crossbow|dart|sling|javelin|thrown/)) });
       // Special class animations
       const cls = (attacker.class || attacker.cls || "").toLowerCase();
@@ -8883,6 +8949,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     } else if (r0) {
       addCombatLogEntry({ type: "miss", attacker: attacker.name, target: target.name, action: weaponName, roll: r0.attackRoll });
       spawnFloatingTextForToken(targetId, "miss", {});
+      flashToken(targetId, "miss");
       emitPlayModeVfx(attacker, target, { mode: "miss" });
     }
     if (result.results[1]?.type === "onHitSave" && !result.results[1].save?.success && result.results[1].condition) {
@@ -8913,10 +8980,12 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           addCombatLogEntry({ type: "attack", attacker: attacker.name, target: target.name, action: weaponName + " (Extra Attack " + (i + 1) + ")" + extraLogLabel, hit: true, damage: extraTotalDmg, isCrit: extraAttack.isCrit, roll: extraAttack.attackRoll });
           applyAttackResultToTarget(targetId, target, extraTotalDmg, extraDtype);
           spawnFloatingTextForToken(targetId, "damage", { total: extraTotalDmg, damageType: extraDtype, isCrit: extraAttack.isCrit });
+          flashToken(targetId, "damage");
           emitPlayModeVfx(attacker, target, { mode: "attack", actionName: weaponName + " (Extra Attack)", weaponName: weaponName, damageType: extraDtype, amount: extraTotalDmg, isCrit: extraAttack.isCrit, isRanged: !!(CE.isRangedWeapon ? CE.isRangedWeapon(weaponName) : (weaponName||"").toLowerCase().match(/bow|crossbow|dart|sling|javelin|thrown/)) });
         } else if (extraAttack) {
           addCombatLogEntry({ type: "miss", attacker: attacker.name, target: target.name, action: weaponName + " (Extra Attack " + (i + 1) + ")", roll: extraAttack.attackRoll });
           spawnFloatingTextForToken(targetId, "miss", {});
+          flashToken(targetId, "miss");
           emitPlayModeVfx(attacker, target, { mode: "miss" });
         }
       }
@@ -9074,6 +9143,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             // Trigger VFX via action animation system
             const dtype = seq.result.damage?.[0]?.type || "slashing";
             spawnFloatingTextForToken(targetId, "damage", { total: seq.result.totalDamage, damageType: dtype, isCrit: seq.result.isCrit });
+            flashToken(targetId, "damage");
             { // Monster action VFX lookup
               const monsterAnimKey = (seq.action.name || "").trim();
               const mavfx = typeof MONSTER_ACTION_VFX !== "undefined" && MONSTER_ACTION_VFX[monsterAnimKey];
@@ -9092,6 +9162,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               "miss"
             );
             spawnFloatingTextForToken(targetId, "miss", {});
+            flashToken(targetId, "miss");
             triggerActionAnim("miss", target, null, "#888");
           }
         } else if (seq.type === "save" && seq.result) {
@@ -9128,6 +9199,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         );
         applyAttackResultToTarget(targetId, target, result.totalDamage, dtype);
         spawnFloatingTextForToken(targetId, "damage", { total: result.totalDamage, damageType: dtype, isCrit: result.results[0].isCrit });
+        flashToken(targetId, "damage");
         { // Monster action VFX
           const monsterAnimKey = (action.name || "").trim();
           const mavfx = typeof MONSTER_ACTION_VFX !== "undefined" && MONSTER_ACTION_VFX[monsterAnimKey];
@@ -9146,6 +9218,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           "miss"
         );
         spawnFloatingTextForToken(targetId, "miss", {});
+        flashToken(targetId, "miss");
         triggerActionAnim("miss", target, null, "#888");
       }
       if (result.results[1]?.type === "onHitSave" && !result.results[1].save?.success && result.results[1].condition) {
@@ -9290,7 +9363,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   const pushCombatRoll = (msg, detail, type) => {
     const id = "roll-" + Date.now() + "-" + Math.random();
     setCombatRollLog(prev => [...prev, { id, msg, detail: detail || "", type: type || "attack", time: Date.now() }]);
-    setTimeout(() => setCombatRollLog(prev => prev.filter(r => r.id !== id)), 5000);
+    setTimeout(() => setCombatRollLog(prev => prev.filter(r => r.id !== id)), 6500);
   };
 
   const [spellLog, setSpellLog] = useState([]); // [{ id, msg, time }]
@@ -9454,6 +9527,54 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     if (p > 0.5) return "wounded";
     if (p > 0.25) return "bloodied";
     return "near defeat";
+  };
+
+  // ── Combat Turn Phase State Machine ──
+  // Phases: "start" → "act" → "resolve" → "done"
+  // "start" = beginning of turn, show guidance
+  // "act" = player is choosing actions
+  // "resolve" = action is resolving (dice rolling, animation)
+  // "done" = all resources spent, prompt end turn
+  const [combatTurnPhase, setCombatTurnPhase] = useState("act");
+  const [turnGuidanceMsg, setTurnGuidanceMsg] = useState(null);
+
+  // Compute suggested next action for turn guidance
+  const getTurnGuidance = (token) => {
+    if (!token || !combatLive) return null;
+    const ts = turnStateByToken[token.id] || defaultTurnState(token);
+    const moveFt = getEffectiveMovementRemaining(token);
+    const hostiles = getHostileTargets(token);
+    const nearestHostile = hostiles[0] || null;
+    const distToNearest = nearestHostile ? distBetween(token, nearestHostile) : Infinity;
+    const reach = getThreatReachFt(token);
+
+    // Phase: everything spent
+    if (ts.actionUsed && ts.bonusActionUsed && moveFt <= 0) {
+      return { phase: "done", msg: "Turn complete — all resources spent", hint: "End Turn", icon: "check", color: "#5ee09a" };
+    }
+    // Phase: action spent, still have movement
+    if (ts.actionUsed && moveFt > 0 && distToNearest <= reach * 2) {
+      return { phase: "act", msg: "Action spent — reposition or end turn", hint: "Move or End Turn", icon: "move", color: "#58aaff" };
+    }
+    if (ts.actionUsed && !ts.bonusActionUsed) {
+      return { phase: "act", msg: "Action spent — bonus action available", hint: "Use Bonus Action or End Turn", icon: "bonus", color: "#ffa726" };
+    }
+    if (ts.actionUsed) {
+      return { phase: "done", msg: "Action spent", hint: "End Turn", icon: "check", color: "#5ee09a" };
+    }
+    // Phase: has action, no target in range
+    if (!ts.actionUsed && nearestHostile && distToNearest > reach) {
+      return { phase: "act", msg: nearestHostile.name + " is " + Math.round(distToNearest) + " ft away", hint: "Move Closer or Use Ranged", icon: "move", color: "#58aaff" };
+    }
+    // Phase: has action, target in range
+    if (!ts.actionUsed && nearestHostile && distToNearest <= reach) {
+      return { phase: "act", msg: nearestHostile.name + " in reach", hint: "Select an Action", icon: "attack", color: "#f06858" };
+    }
+    // Default
+    if (!ts.actionUsed) {
+      return { phase: "act", msg: "Your turn", hint: "Select an Action", icon: "attack", color: "#f06858" };
+    }
+    return null;
   };
 
   const defaultTurnState = (token) => ({
@@ -10218,16 +10339,16 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               // Always enter targeting mode — user clicks a target to resolve
               setActiveWeapon({ card, actorToken });
               weaponTargetRef.current = null;
-              if (!combatLive) dismissTurnPopup();
-              else setShowConditionMenu(false);
+              dismissTurnPopup(); // Must dismiss popup so canvas receives clicks
+              setShowConditionMenu(false);
               return;
             }
             if (card.resolver === "spell" && card.data?.spell && !card.data.spell.healing && card.data.spell.shape !== "self") {
               // Offensive/targeted spells also enter targeting mode
               setActiveWeapon({ card, actorToken });
               weaponTargetRef.current = null;
-              if (!combatLive) dismissTurnPopup();
-              else setShowConditionMenu(false);
+              dismissTurnPopup(); // Must dismiss popup so canvas receives clicks
+              setShowConditionMenu(false);
               return;
             }
             resolvePlayModeCard(card, actorToken);
@@ -10365,6 +10486,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             };
             setActiveWeapon({ card: monsterCard, actorToken });
             weaponTargetRef.current = null;
+            dismissTurnPopup(); // Must dismiss popup so canvas receives clicks
             setShowConditionMenu(false);
             return;
           }
@@ -12146,6 +12268,39 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       }
     }
 
+    // ── Tactical Overlays: Threat Zones ──
+    if (combatLive && !fogMode?.startsWith?.("paint")) {
+      const activeTk = activeCombatantId ? tokens.find(t => t.id === activeCombatantId) : null;
+      tokens.forEach(t => {
+        if ((t.hp || 0) <= 0) return;
+        if (t.hidden && viewRole === "player") return;
+        const reach = getThreatReachFt(t);
+        if (reach <= 0) return;
+        // Only show threat zones for enemies of the active combatant
+        if (activeTk && activeTk.tokenType === t.tokenType) return;
+        if (!activeTk && viewRole === "player" && t.tokenType === "pc") return;
+        const reachPx = (reach / 5) * gridSize;
+        const canReact = canTokenTakeReactionNow(t);
+        const alpha = canReact ? 0.08 : 0.03;
+        const strokeAlpha = canReact ? 0.25 : 0.08;
+        const sizeMult = ({ tiny:0.5, small:1, medium:1, large:2, huge:3, gargantuan:4 })[t.size || "medium"] || 1;
+        const tokenR = gridSize * 0.44 * sizeMult;
+        // Filled threat area
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, reachPx + tokenR, 0, Math.PI * 2);
+        ctx.fillStyle = canReact ? "rgba(220,60,50," + alpha + ")" : "rgba(180,100,60," + alpha + ")";
+        ctx.fill();
+        // Dashed border
+        ctx.setLineDash([6, 4]);
+        ctx.strokeStyle = canReact ? "rgba(220,60,50," + strokeAlpha + ")" : "rgba(180,100,60," + strokeAlpha + ")";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      });
+    }
+
     // Movement overlay
     if (movementMode && selectedToken) {
       const speedCells = getMovementBudgetCells(selectedToken);
@@ -12182,6 +12337,36 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         });
         ctx.stroke();
         ctx.setLineDash([]);
+      }
+
+      // ── Opportunity Attack Warning Zones ──
+      if (combatLive && !selectedToken.combatDisengage) {
+        const hostileThreats = getHostileTargets(selectedToken).filter(h => canTokenTakeReactionNow(h) && getThreatReachFt(h) > 0);
+        hostileThreats.forEach(hostile => {
+          const reachFt = getThreatReachFt(hostile);
+          const reachPx = (reachFt / 5) * gridSize;
+          const hostSizeMult = ({ tiny:0.5, small:1, medium:1, large:2, huge:3, gargantuan:4 })[hostile.size || "medium"] || 1;
+          const hostR = gridSize * 0.44 * hostSizeMult;
+          const currentDist = Math.hypot(selectedToken.x - hostile.x, selectedToken.y - hostile.y);
+          const inReach = currentDist <= reachPx + hostR + gridSize * 0.5;
+          if (inReach) {
+            // Draw danger zone boundary
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(hostile.x, hostile.y, reachPx + hostR, 0, Math.PI * 2);
+            ctx.setLineDash([8, 4]);
+            ctx.strokeStyle = "rgba(255,60,40,0.4)";
+            ctx.lineWidth = 2;
+            ctx.stroke();
+            ctx.setLineDash([]);
+            // Small label
+            ctx.font = "bold 9px 'Cinzel', serif";
+            ctx.fillStyle = "rgba(255,60,40,0.8)";
+            ctx.textAlign = "center";
+            ctx.fillText("OA ZONE", hostile.x, hostile.y - reachPx - hostR - 4);
+            ctx.restore();
+          }
+        });
       }
     }
 
@@ -12266,6 +12451,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       const isHovered = t.id === hoveredTokenId;
       const isActiveCombatant = t.id === activeCombatantId;
       const isActiveTarget = combatLive && t.id === activeCombatTargetId && !isActiveCombatant;
+      const isValidTarget = activeWeapon && activeWeapon.actorToken.id !== t.id && (t.hp || 0) > 0 && !(t.hidden && viewRole === "player");
       const isDead = t.hp != null && t.hp <= 0;
       const isPC = t.tokenType === "pc" || t.color === "#2e8b57";
 
@@ -12348,6 +12534,18 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         ctx.setLineDash([]);
       }
 
+      // Valid target highlight during ability targeting
+      if (isValidTarget && !isSelected && !isHovered) {
+        ctx.save();
+        const pulseVal = 0.4 + 0.3 * Math.sin(Date.now() / 400);
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, r + 6, 0, Math.PI * 2);
+        ctx.strokeStyle = "rgba(94,224,154," + pulseVal + ")";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+      }
+
       // Hover highlight ring (brighter during weapon targeting)
       if (isHovered && !isSelected && !isActiveCombatant) {
         const hoverIntensity = activeWeapon ? 0.55 : 0.25;
@@ -12381,6 +12579,27 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       // Dead/unconscious desaturation
       if (isDead) {
         ctx.globalAlpha = Math.max(ctx.globalAlpha * 0.5, 0.2);
+      }
+
+      // Token flash/shake effect
+      const flash = tokenFlashes[t.id];
+      if (flash) {
+        const flashAge = (Date.now() - flash.time) / 600;
+        if (flashAge < 1) {
+          const shakeAmt = flash.type === "damage" ? 3 * (1 - flashAge) : 1.5 * (1 - flashAge);
+          const shakeX = Math.sin(flashAge * Math.PI * 6) * shakeAmt;
+          const shakeY = Math.cos(flashAge * Math.PI * 4) * shakeAmt;
+          ctx.translate(shakeX, shakeY);
+          // Flash overlay
+          if (flash.type === "damage" && flashAge < 0.3) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(t.x, t.y, r + 4, 0, Math.PI * 2);
+            ctx.fillStyle = "rgba(255,60,40," + (0.4 * (1 - flashAge / 0.3)) + ")";
+            ctx.fill();
+            ctx.restore();
+          }
+        }
       }
 
       // Token circle — image or color fill
@@ -12677,9 +12896,19 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           const hitChance = Math.min(100, Math.max(5, Math.round((21 - Math.max(2, needed)) / 20 * 100)));
           const hitColor = hitChance >= 70 ? "#5ee09a" : hitChance >= 40 ? "#ffd54f" : "#f06858";
 
+          // Outcome prediction — parse "1d8+3" or "2d6+5" style damage expressions
+          const diceMatch = (damageExpr || "").match(/^(\d+)d(\d+)/);
+          const modMatch = (damageExpr || "").match(/[+-]\d+/);
+          const dmgMod = modMatch ? parseInt(modMatch[0]) : 0;
+          const avgDamage = diceMatch ? (parseInt(diceMatch[1]) * (parseInt(diceMatch[2]) + 1) / 2 + dmgMod) : 0;
+          const minDamage = diceMatch ? Math.max(1, parseInt(diceMatch[1]) + dmgMod) : 0;
+          const maxDamage = diceMatch ? (parseInt(diceMatch[1]) * parseInt(diceMatch[2]) + dmgMod) : 0;
+          const expectedDamage = Math.round(avgDamage * hitChance / 100);
+          const killChance = hovTk.hp > 0 ? Math.min(100, Math.round(hitChance * Math.min(1, maxDamage / hovTk.hp) * 100) / 100) : 0;
+
           // Tooltip dimensions
           const pW = gridSize * 2.4;
-          const pH = inRange ? gridSize * 1.5 : gridSize * 0.9;
+          const pH = inRange ? (diceMatch ? gridSize * 2.1 : gridSize * 1.5) : gridSize * 0.9;
           const pX = hovTk.x - pW / 2;
           const pY = hovTk.y - tr - pH - 12;
           const pR = 8;
@@ -12772,6 +13001,20 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             ctx.font = fs2 + "px Spectral";
             ctx.fillText(damageExpr + " " + damageType, pX + pW - 10, curY);
             curY += fs2 + 3;
+
+            // Damage range
+            if (diceMatch) {
+              ctx.fillStyle = "#ccc";
+              ctx.font = "bold 10px 'Cinzel', serif";
+              ctx.textAlign = "left";
+              ctx.fillText("Dmg: " + minDamage + "-" + maxDamage + " (avg " + Math.round(avgDamage) + ")", pX + 10, curY);
+              curY += 14;
+              // Expected damage & kill chance
+              ctx.font = "9px 'Cinzel', serif";
+              ctx.fillStyle = killChance >= 50 ? "#5ee09a" : "#ffd54f";
+              ctx.fillText("Expected: ~" + expectedDamage + " dmg" + (hovTk.hp <= maxDamage ? "  |  Kill: " + killChance + "%" : ""), pX + 10, curY);
+              curY += 14;
+            }
 
             // Distance
             ctx.textAlign = "center";
@@ -16582,6 +16825,33 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               <CombatRollDisplay combatRollLog={combatRollLog} />
             )}
 
+            {/* Turn guidance banner */}
+            {combatLive && activeCombatantToken && !activeWeapon && !activeSpell && !movementMode && (() => {
+              const guidance = getTurnGuidance(activeCombatantToken);
+              if (!guidance) return null;
+              const isDone = guidance.phase === "done";
+              return (
+                <div style={{
+                  position:"absolute", bottom: 190, left:"50%", transform:"translateX(-50%)",
+                  zIndex:30, pointerEvents:"none",
+                  display:"flex", alignItems:"center", gap:10,
+                  padding:"8px 20px", borderRadius:10,
+                  background: isDone ? "rgba(94,224,154,0.12)" : "rgba(10,10,18,0.75)",
+                  backdropFilter:"blur(8px)",
+                  border:"1px solid " + guidance.color + "44",
+                  boxShadow:"0 4px 16px rgba(0,0,0,0.3)",
+                }}>
+                  <div style={{ width:8, height:8, borderRadius:"50%", background: guidance.color, boxShadow:"0 0 8px " + guidance.color + "88" }} />
+                  <div style={{ fontFamily:"'Cinzel', serif", fontSize:11, color: guidance.color, fontWeight:700, letterSpacing:"1px", textTransform:"uppercase" }}>
+                    {guidance.hint}
+                  </div>
+                  <div style={{ fontFamily:"'Spectral', serif", fontSize:10, color:"var(--text-muted, #999)", fontWeight:500 }}>
+                    {guidance.msg}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* Target Reticle removed — replaced by canvas-based targeting UI */}
 
             {/* ── BG3-style Token Action Ring (around active token) ── */}
@@ -17060,8 +17330,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               );
             })()}
 
-            {/* Token command popup */}
-            {!cockpitModeActive && tokenPopup && (() => {
+            {/* Token command popup — hidden during ability targeting so canvas gets clicks */}
+            {!cockpitModeActive && tokenPopup && !activeWeapon && (() => {
               const tk = tokens.find(t => t.id === tokenPopup.tokenId);
               if (!tk) return null;
               if (!canUseTurnPopupForToken(tk)) return null;
@@ -18332,7 +18602,14 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               <button onClick={() => setCombatLog([])}
                 style={{ alignSelf:"flex-end", padding:"3px 8px", background:"rgba(212,67,58,0.06)", border:"1px solid rgba(212,67,58,0.15)", borderRadius:"3px", cursor:"pointer", color:T.textFaint, fontFamily:T.ui, fontSize:7, letterSpacing:"0.5px", marginBottom:4 }}>Clear Log</button>
               {combatLog.map(entry => (
-                <div key={entry.id} style={{ padding:"6px 8px", borderRadius:"4px", background: entry.type === "attack" ? "rgba(212,67,58,0.04)" : entry.type === "miss" ? "rgba(136,136,136,0.04)" : entry.type === "save" ? "rgba(88,170,255,0.04)" : "rgba(255,255,255,0.02)", borderLeft: "2px solid " + (entry.type === "attack" ? (entry.isCrit ? "#ffd700" : "var(--crimson)") : entry.type === "miss" ? "#666" : entry.type === "save" ? (entry.success ? "#5ee09a" : "#58aaff") : T.textFaint), fontSize:9, fontFamily:T.body, color:T.textMuted }}>
+                <div key={entry.id} onClick={() => {
+                  const attackerTk = entry.attacker ? tokens.find(t => t.name === entry.attacker) : null;
+                  const targetTk = entry.target ? tokens.find(t => t.name === entry.target) : null;
+                  if (targetTk) { setSelectedTokenId(targetTk.id); setHoveredTokenId(targetTk.id); setTimeout(() => setHoveredTokenId(null), 1500); }
+                  else if (attackerTk) { setSelectedTokenId(attackerTk.id); }
+                }} style={{ padding:"6px 8px", borderRadius:"4px", background: entry.type === "attack" ? "rgba(212,67,58,0.04)" : entry.type === "miss" ? "rgba(136,136,136,0.04)" : entry.type === "save" ? "rgba(88,170,255,0.04)" : "rgba(255,255,255,0.02)", borderLeft: "2px solid " + (entry.type === "attack" ? (entry.isCrit ? "#ffd700" : "var(--crimson)") : entry.type === "miss" ? "#666" : entry.type === "save" ? (entry.success ? "#5ee09a" : "#58aaff") : T.textFaint), fontSize:9, fontFamily:T.body, color:T.textMuted, cursor: (entry.attacker || entry.target) ? "pointer" : "default", transition: "all 0.15s ease" }}
+                  onMouseEnter={e => { if (entry.attacker || entry.target) e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = entry.type === "attack" ? "rgba(212,67,58,0.04)" : entry.type === "miss" ? "rgba(136,136,136,0.04)" : entry.type === "save" ? "rgba(88,170,255,0.04)" : "rgba(255,255,255,0.02)"; }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                     <span style={{ fontWeight:500, color:T.text, whiteSpace: entry.type === "system" ? "pre-line" : "normal" }}>
                       {entry.type === "attack" && (entry.isCrit ? "💥 CRITICAL! " : "⚔️ ")}
