@@ -1572,7 +1572,7 @@
     const { useState, useEffect, useCallback, useRef, useMemo } = React;
 
     // Lucide icons from global
-    const { ChevronDown, ChevronRight, ChevronLeft, Swords, Users, MapPin, Crown, Scroll, Clock, Star, BookOpen, Dice6, Target, Heart, CheckCircle, Circle, ArrowRight, Plus, Compass, Mountain, Castle, Skull, Flag, TrendingUp, TrendingDown, Minus, SkipForward, Search, Bell, Settings, X, Edit3, Trash2, Eye, EyeOff, Globe, Layers, Activity, Upload, Download, FileText, Save, Copy, Calendar, Lock, Unlock, ToggleLeft, ToggleRight, AlertTriangle, Package, Shield, Wand2, Map: MapIcon, LayoutDashboard, Link, RefreshCw, ChevronUp, MoreVertical, Check, Image, Bold, Italic, List, Type, Heading, Filter } = window.LucideReact || {};
+    const { ChevronDown, ChevronRight, ChevronLeft, Swords, Users, MapPin, Crown, Scroll, Clock, Star, BookOpen, Dice6, Target, Heart, CheckCircle, Circle, ArrowRight, Plus, Compass, Mountain, Castle, Skull, Flag, TrendingUp, TrendingDown, Minus, SkipForward, Search, Bell, Settings, X, Edit3, Trash2, Eye, EyeOff, Globe, Layers, Activity, Upload, Download, FileText, Save, Copy, Calendar, Lock, Unlock, ToggleLeft, ToggleRight, AlertTriangle, Package, Shield, Wand2, Map: MapIcon, LayoutDashboard, Link, RefreshCw, ChevronUp, MoreVertical, Check, Image, Bold, Italic, List, Type, Heading, Filter, Flame, TreePine, Anchor, Sparkles } = window.LucideReact || {};
     const FilterIcon = Filter || Layers;
     /* Play tab: Lucide "Map" is imported as MapIcon so we do not use the JS built-in Map. Dashboard: Layout was never imported—use LayoutDashboard (fallback Layers). */
     const DashboardNavIcon = LayoutDashboard || Layers;
@@ -1611,6 +1611,137 @@ const T = {
 /* Read a computed CSS variable value — needed for <canvas> fillStyle/strokeStyle
    which cannot interpret var() references. */
 const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CAMPAIGN THEMES
+// ═══════════════════════════════════════════════════════════════════════════
+// Each theme overrides CSS custom properties on the root element when active.
+// "classic" uses no overrides — it inherits the site default (crimson/dark).
+
+const CAMPAIGN_THEMES = {
+  classic: {
+    label: "Classic",
+    desc: "The original dark crimson aesthetic",
+    icon: "Shield",
+    preview: { accent: "#d4433a", bg: "#0e0c0b", card: "#181412" },
+    vars: {},  // no overrides — uses site defaults
+  },
+  tavern: {
+    label: "Tavern",
+    desc: "Warm hearth-fire amber & aged wood",
+    icon: "Flame",
+    preview: { accent: "#c8913a", bg: "#120e08", card: "#1a1409" },
+    vars: {
+      "--crimson": "#c8913a",
+      "--crimson-dim": "rgba(200,145,58,0.15)",
+      "--crimson-soft": "rgba(200,145,58,0.06)",
+      "--crimson-border": "rgba(200,145,58,0.18)",
+      "--bg": "#120e08",
+      "--bg-nav": "#0f0b06",
+      "--bg-card": "#1a1409",
+      "--bg-hover": "#22190d",
+      "--bg-mid": "#1e1610",
+      "--bg-input": "#161008",
+      "--bg-subtle": "#1a1409",
+      "--border": "rgba(200,145,58,0.10)",
+      "--border-mid": "rgba(200,145,58,0.06)",
+    },
+  },
+  fortress: {
+    label: "Dark Fortress",
+    desc: "Cold stone walls & steel-blue torchlight",
+    icon: "Castle",
+    preview: { accent: "#5b8fb9", bg: "#0a0c10", card: "#10141a" },
+    vars: {
+      "--crimson": "#5b8fb9",
+      "--crimson-dim": "rgba(91,143,185,0.15)",
+      "--crimson-soft": "rgba(91,143,185,0.06)",
+      "--crimson-border": "rgba(91,143,185,0.18)",
+      "--bg": "#0a0c10",
+      "--bg-nav": "#080a0e",
+      "--bg-card": "#10141a",
+      "--bg-hover": "#161c26",
+      "--bg-mid": "#121620",
+      "--bg-input": "#0c1018",
+      "--bg-subtle": "#10141a",
+      "--border": "rgba(91,143,185,0.10)",
+      "--border-mid": "rgba(91,143,185,0.06)",
+    },
+  },
+  forest: {
+    label: "Enchanted Forest",
+    desc: "Mossy greens & fey-touched emerald glow",
+    icon: "TreePine",
+    preview: { accent: "#3da66e", bg: "#080e09", card: "#0e1810" },
+    vars: {
+      "--crimson": "#3da66e",
+      "--crimson-dim": "rgba(61,166,110,0.15)",
+      "--crimson-soft": "rgba(61,166,110,0.06)",
+      "--crimson-border": "rgba(61,166,110,0.18)",
+      "--bg": "#080e09",
+      "--bg-nav": "#060c07",
+      "--bg-card": "#0e1810",
+      "--bg-hover": "#142018",
+      "--bg-mid": "#101a12",
+      "--bg-input": "#0a140c",
+      "--bg-subtle": "#0e1810",
+      "--border": "rgba(61,166,110,0.10)",
+      "--border-mid": "rgba(61,166,110,0.06)",
+    },
+  },
+  seafarer: {
+    label: "Seafarer",
+    desc: "Deep navy waters & gold compass-light",
+    icon: "Anchor",
+    preview: { accent: "#c9a84c", bg: "#08090e", card: "#0e1018" },
+    vars: {
+      "--crimson": "#c9a84c",
+      "--crimson-dim": "rgba(201,168,76,0.15)",
+      "--crimson-soft": "rgba(201,168,76,0.06)",
+      "--crimson-border": "rgba(201,168,76,0.18)",
+      "--bg": "#08090e",
+      "--bg-nav": "#060810",
+      "--bg-card": "#0e1018",
+      "--bg-hover": "#161a28",
+      "--bg-mid": "#111420",
+      "--bg-input": "#0a0e18",
+      "--bg-subtle": "#0e1018",
+      "--border": "rgba(201,168,76,0.10)",
+      "--border-mid": "rgba(201,168,76,0.06)",
+    },
+  },
+};
+
+// Apply a campaign theme by setting CSS custom properties on <html>.
+// Pass null or "classic" to restore defaults.
+function applyCampaignTheme(themeKey) {
+  const root = document.documentElement;
+  // First clear any previously applied campaign theme vars
+  const allVarNames = new Set();
+  Object.values(CAMPAIGN_THEMES).forEach(t => Object.keys(t.vars).forEach(v => allVarNames.add(v)));
+  allVarNames.forEach(v => root.style.removeProperty(v));
+  // Now apply the new theme
+  const theme = CAMPAIGN_THEMES[themeKey];
+  if (theme && theme.vars) {
+    Object.entries(theme.vars).forEach(([prop, val]) => {
+      root.style.setProperty(prop, val);
+    });
+  }
+}
+
+// Campaign type definitions
+const CAMPAIGN_TYPES = {
+  traditional: {
+    label: "Traditional",
+    desc: "Simplified battlemap for theater-of-mind play. No combat engine — focus on story, quests, and world-building.",
+    icon: "BookOpen",
+  },
+  live: {
+    label: "Live",
+    desc: "Full interactive battlemap with combat engine, initiative tracking, and real-time multiplayer features.",
+    icon: "Swords",
+  },
+};
 
 /* Get HP color based on health percentage. Consistent across all locations. */
 const getHpColor = (hp, maxHp) => {
@@ -1658,6 +1789,7 @@ const CONDITION_HELP = {
 
 const NEW_CAMPAIGN = () => ({
   name: "Untitled Campaign", status: "active", startDate: new Date().toISOString().slice(0,10),
+  theme: "classic", campaignType: "live",
   nextSession: "", sessionsPlayed: 0,
   sessionSchedule: { dayOfWeek: 6, hour: 19, minute: 0, frequency: "weekly", timezone: "EST" },
   modules: {
@@ -1678,6 +1810,7 @@ const NEW_CAMPAIGN = () => ({
 
 const EXAMPLE_CAMPAIGN = {
   name: "The Shattered Crown", status: "active", startDate: "2025-09-14",
+  theme: "classic", campaignType: "live",
   nextSession: "2026-04-02T19:00:00", sessionsPlayed: 24,
   sessionSchedule: { dayOfWeek: 3, hour: 19, minute: 0, frequency: "weekly", timezone: "EST" },
   modules: {
@@ -4260,6 +4393,302 @@ function PlayerCard({ member, onEdit, onUploadSheet, isDm }) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// NEW CAMPAIGN MODAL
+// ═══════════════════════════════════════════════════════════════════════════
+
+const SparklesIcon = Sparkles || Star;
+const THEME_ICON_MAP = { Shield, Flame: Flame || Star, Castle, TreePine: TreePine || Mountain, Anchor: Anchor || Compass };
+const TYPE_ICON_MAP = { BookOpen, Swords };
+
+function NewCampaignModal({ open, onClose, onConfirm }) {
+  const [name, setName] = useState("");
+  const [theme, setTheme] = useState("classic");
+  const [campaignType, setCampaignType] = useState("live");
+  const [step, setStep] = useState(0); // 0=name+theme, 1=type, 2=confirm
+
+  // Reset state when modal opens
+  useEffect(() => {
+    if (open) { setName(""); setTheme("classic"); setCampaignType("live"); setStep(0); }
+  }, [open]);
+
+  if (!open) return null;
+
+  const handleCreate = () => {
+    if (!name.trim()) return;
+    onConfirm({ name: name.trim(), theme, campaignType });
+  };
+
+  const themeKeys = Object.keys(CAMPAIGN_THEMES);
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,6,0.75)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:32 }}
+      onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: T.bgCard, border: `1px solid ${T.crimsonBorder}`, borderRadius:"6px",
+        width: 660, maxHeight:"88vh", overflow:"hidden", display:"flex", flexDirection:"column",
+        boxShadow:"0 16px 48px rgba(0,0,6,0.60)",
+      }}>
+        {/* Header */}
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"20px 28px", borderBottom:`1px solid ${T.border}` }}>
+          <div style={{ display:"flex", alignItems:"center", gap:12 }}>
+            <SparklesIcon size={16} color={T.crimson} />
+            <span style={{ fontFamily:T.ui, fontSize:12, letterSpacing:"2.5px", color:T.crimson, textTransform:"uppercase", fontWeight:500 }}>New Campaign</span>
+          </div>
+          <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:4 }}><X size={16}/></button>
+        </div>
+
+        {/* Step indicator */}
+        <div style={{ display:"flex", gap:0, padding:"0 28px", borderBottom:`1px solid ${T.border}` }}>
+          {["Name & Theme", "Campaign Type", "Confirm"].map((label, i) => (
+            <button key={i} onClick={() => { if (i < step || (i === 1 && name.trim())) setStep(i); }}
+              style={{
+                flex:1, padding:"12px 8px", background:"transparent", border:"none", cursor: i <= step ? "pointer" : "default",
+                borderBottom: step === i ? `2px solid ${T.crimson}` : "2px solid transparent",
+                color: step === i ? T.crimson : (i < step ? T.textDim : T.textFaint),
+                fontFamily:T.ui, fontSize:8, letterSpacing:"1.5px", textTransform:"uppercase", transition:"all 0.2s",
+              }}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Content */}
+        <div style={{ padding:"28px", overflowY:"auto", flex:1 }}>
+
+          {/* ── Step 0: Name & Theme ── */}
+          {step === 0 && (
+            <div>
+              {/* Campaign Name */}
+              <div style={{ marginBottom:28 }}>
+                <label style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:8 }}>Campaign Name</label>
+                <input value={name} onChange={e => setName(e.target.value)} placeholder="Enter campaign name..."
+                  autoFocus
+                  onKeyDown={e => { if (e.key === "Enter" && name.trim()) setStep(1); }}
+                  style={{
+                    width:"100%", padding:"12px 16px", background:T.bgInput, border:`1px solid ${T.border}`, borderRadius:"4px",
+                    color:T.text, fontFamily:T.body, fontSize:15, outline:"none", boxSizing:"border-box",
+                  }}
+                />
+              </div>
+
+              {/* Theme Picker */}
+              <div>
+                <label style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:12 }}>Choose a Theme</label>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(5, 1fr)", gap:10 }}>
+                  {themeKeys.map(key => {
+                    const t = CAMPAIGN_THEMES[key];
+                    const isActive = theme === key;
+                    const IconComp = THEME_ICON_MAP[t.icon] || Shield;
+                    return (
+                      <div key={key} onClick={() => setTheme(key)}
+                        style={{
+                          cursor:"pointer", padding:"16px 10px", borderRadius:"6px", textAlign:"center",
+                          background: isActive ? `${t.preview.accent}15` : T.bgInput,
+                          border: isActive ? `2px solid ${t.preview.accent}` : `1px solid ${T.border}`,
+                          transition:"all 0.2s", position:"relative",
+                        }}>
+                        {/* Color preview strip */}
+                        <div style={{ position:"absolute", top:0, left:0, right:0, height:3, borderRadius:"6px 6px 0 0", background: t.preview.accent, opacity: isActive ? 1 : 0.3 }} />
+                        <div style={{ marginBottom:8, marginTop:4 }}>
+                          <IconComp size={20} color={isActive ? t.preview.accent : T.textMuted} />
+                        </div>
+                        <div style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1px", color: isActive ? t.preview.accent : T.textDim, textTransform:"uppercase", fontWeight: isActive ? 600 : 400 }}>
+                          {t.label}
+                        </div>
+                        <div style={{ fontSize:9, color:T.textFaint, fontFamily:T.body, marginTop:4, lineHeight:"1.3" }}>
+                          {t.desc}
+                        </div>
+                        {/* Theme preview swatch */}
+                        <div style={{ display:"flex", gap:3, justifyContent:"center", marginTop:8 }}>
+                          <div style={{ width:12, height:12, borderRadius:2, background:t.preview.bg, border:`1px solid ${T.border}` }} title="Background" />
+                          <div style={{ width:12, height:12, borderRadius:2, background:t.preview.card, border:`1px solid ${T.border}` }} title="Card" />
+                          <div style={{ width:12, height:12, borderRadius:2, background:t.preview.accent, border:`1px solid ${T.border}` }} title="Accent" />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div style={{ display:"flex", justifyContent:"flex-end", marginTop:24 }}>
+                <CrimsonBtn onClick={() => { if (name.trim()) setStep(1); }} disabled={!name.trim()}>
+                  Next <ArrowRight size={12} />
+                </CrimsonBtn>
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 1: Campaign Type ── */}
+          {step === 1 && (
+            <div>
+              <label style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", display:"block", marginBottom:16 }}>Select Campaign Type</label>
+              <div style={{ display:"flex", gap:16 }}>
+                {Object.entries(CAMPAIGN_TYPES).map(([key, ct]) => {
+                  const isActive = campaignType === key;
+                  const IconComp = TYPE_ICON_MAP[ct.icon] || BookOpen;
+                  return (
+                    <div key={key} onClick={() => setCampaignType(key)}
+                      style={{
+                        flex:1, cursor:"pointer", padding:"24px 20px", borderRadius:"6px",
+                        background: isActive ? "rgba(212,67,58,0.06)" : T.bgInput,
+                        border: isActive ? `2px solid ${T.crimson}` : `1px solid ${T.border}`,
+                        transition:"all 0.2s",
+                      }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
+                        <IconComp size={22} color={isActive ? T.crimson : T.textMuted} />
+                        <span style={{ fontFamily:T.ui, fontSize:12, letterSpacing:"1.5px", color: isActive ? T.crimson : T.textDim, textTransform:"uppercase", fontWeight:500 }}>
+                          {ct.label}
+                        </span>
+                      </div>
+                      <p style={{ fontFamily:T.body, fontSize:13, color:T.textMuted, lineHeight:"1.5", margin:0 }}>
+                        {ct.desc}
+                      </p>
+                      {/* Feature bullets */}
+                      <div style={{ marginTop:14, display:"flex", flexDirection:"column", gap:6 }}>
+                        {key === "traditional" ? (
+                          <>
+                            <FeatureBullet active={isActive} text="Simplified battlemap (no combat engine)" />
+                            <FeatureBullet active={isActive} text="Story, quest & world tracking" />
+                            <FeatureBullet active={isActive} text="Great for theater-of-mind games" />
+                          </>
+                        ) : (
+                          <>
+                            <FeatureBullet active={isActive} text="Full interactive battlemap" />
+                            <FeatureBullet active={isActive} text="Combat engine with initiative tracking" />
+                            <FeatureBullet active={isActive} text="Real-time multiplayer sync" />
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div style={{ display:"flex", justifyContent:"space-between", marginTop:24 }}>
+                <CrimsonBtn onClick={() => setStep(0)} secondary>Back</CrimsonBtn>
+                <CrimsonBtn onClick={() => setStep(2)}>Next <ArrowRight size={12} /></CrimsonBtn>
+              </div>
+            </div>
+          )}
+
+          {/* ── Step 2: Confirm ── */}
+          {step === 2 && (
+            <div>
+              <div style={{ textAlign:"center", marginBottom:24 }}>
+                <SparklesIcon size={28} color={T.crimson} />
+                <div style={{ fontFamily:T.heading, fontSize:18, color:T.text, marginTop:12 }}>{name}</div>
+              </div>
+              <div style={{ display:"flex", gap:16, marginBottom:24 }}>
+                {/* Theme summary */}
+                <div style={{ flex:1, padding:"16px", background:T.bgInput, borderRadius:"6px", border:`1px solid ${T.border}` }}>
+                  <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", marginBottom:8 }}>Theme</div>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    {(() => {
+                      const t = CAMPAIGN_THEMES[theme];
+                      const IconComp = THEME_ICON_MAP[t.icon] || Shield;
+                      return (
+                        <>
+                          <IconComp size={16} color={t.preview.accent} />
+                          <span style={{ fontFamily:T.ui, fontSize:11, color:T.text, letterSpacing:"1px" }}>{t.label}</span>
+                          <div style={{ display:"flex", gap:3, marginLeft:"auto" }}>
+                            <div style={{ width:10, height:10, borderRadius:2, background:t.preview.bg, border:`1px solid ${T.border}` }} />
+                            <div style={{ width:10, height:10, borderRadius:2, background:t.preview.card, border:`1px solid ${T.border}` }} />
+                            <div style={{ width:10, height:10, borderRadius:2, background:t.preview.accent, border:`1px solid ${T.border}` }} />
+                          </div>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+                {/* Type summary */}
+                <div style={{ flex:1, padding:"16px", background:T.bgInput, borderRadius:"6px", border:`1px solid ${T.border}` }}>
+                  <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1.5px", color:T.textFaint, textTransform:"uppercase", marginBottom:8 }}>Type</div>
+                  <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                    {(() => {
+                      const ct = CAMPAIGN_TYPES[campaignType];
+                      const IconComp = TYPE_ICON_MAP[ct.icon] || BookOpen;
+                      return (
+                        <>
+                          <IconComp size={16} color={T.crimson} />
+                          <span style={{ fontFamily:T.ui, fontSize:11, color:T.text, letterSpacing:"1px" }}>{ct.label}</span>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </div>
+              <div style={{ display:"flex", justifyContent:"space-between" }}>
+                <CrimsonBtn onClick={() => setStep(1)} secondary>Back</CrimsonBtn>
+                <CrimsonBtn onClick={handleCreate}>
+                  <Plus size={12} /> Create Campaign
+                </CrimsonBtn>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const FeatureBullet = ({ active, text }) => (
+  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+    <CheckCircle size={11} color={active ? T.crimson : T.textFaint} />
+    <span style={{ fontFamily:T.body, fontSize:11, color: active ? T.textDim : T.textFaint }}>{text}</span>
+  </div>
+);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CAMPAIGN TYPE MIGRATION MODAL (for existing campaigns missing campaignType)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function CampaignTypeMigrationModal({ open, campaignName, onChoose }) {
+  const [choice, setChoice] = useState("live");
+  if (!open) return null;
+
+  return (
+    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,6,0.75)", zIndex:1001, display:"flex", alignItems:"center", justifyContent:"center", padding:32 }}>
+      <div onClick={e => e.stopPropagation()} style={{
+        background: T.bgCard, border: `1px solid ${T.crimsonBorder}`, borderRadius:"6px",
+        width: 560, overflow:"hidden", display:"flex", flexDirection:"column",
+        boxShadow:"0 16px 48px rgba(0,0,6,0.60)",
+      }}>
+        <div style={{ padding:"20px 28px", borderBottom:`1px solid ${T.border}` }}>
+          <span style={{ fontFamily:T.ui, fontSize:11, letterSpacing:"2px", color:T.crimson, textTransform:"uppercase", fontWeight:500 }}>Campaign Type Required</span>
+        </div>
+        <div style={{ padding:28 }}>
+          <p style={{ fontFamily:T.body, fontSize:14, color:T.textDim, lineHeight:"1.5", marginTop:0, marginBottom:20 }}>
+            <strong style={{ color:T.text }}>{campaignName}</strong> was created before campaign types were added. Please choose a type to continue:
+          </p>
+          <div style={{ display:"flex", gap:12, marginBottom:24 }}>
+            {Object.entries(CAMPAIGN_TYPES).map(([key, ct]) => {
+              const isActive = choice === key;
+              const IconComp = TYPE_ICON_MAP[ct.icon] || BookOpen;
+              return (
+                <div key={key} onClick={() => setChoice(key)}
+                  style={{
+                    flex:1, cursor:"pointer", padding:"18px 14px", borderRadius:"6px",
+                    background: isActive ? "rgba(212,67,58,0.06)" : T.bgInput,
+                    border: isActive ? `2px solid ${T.crimson}` : `1px solid ${T.border}`, transition:"all 0.2s",
+                  }}>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                    <IconComp size={18} color={isActive ? T.crimson : T.textMuted} />
+                    <span style={{ fontFamily:T.ui, fontSize:10, letterSpacing:"1px", color: isActive ? T.crimson : T.textDim, textTransform:"uppercase" }}>{ct.label}</span>
+                  </div>
+                  <p style={{ fontFamily:T.body, fontSize:11, color:T.textMuted, lineHeight:"1.4", margin:0 }}>{ct.desc}</p>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ display:"flex", justifyContent:"flex-end" }}>
+            <CrimsonBtn onClick={() => onChoose(choice)}><Check size={12} /> Confirm</CrimsonBtn>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // CAMPAIGN SELECTOR
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -4291,11 +4720,17 @@ function CampaignSelector({ campaigns, activeCampaignId, onSelect, onCreate, onD
                 background: c.id===activeCampaignId ? T.crimsonSoft : "transparent",
                 borderBottom:`1px solid ${T.borderMid}`, transition:"background 0.15s",
               }}>
-                <div>
-                  <div style={{ fontSize:13, color:T.text, fontWeight:300 }}>{c.data.name}</div>
-                  <div style={{ fontSize:10, color:T.textFaint, fontStyle:"italic" }}>
-                    {c.data.party.length} players · {c.data.sessionsPlayed} sessions
-                    {c.isExample && " · Example"}
+                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  {c.data.theme && CAMPAIGN_THEMES[c.data.theme] && (
+                    <div style={{ width:6, height:6, borderRadius:"50%", background:CAMPAIGN_THEMES[c.data.theme].preview.accent, flexShrink:0 }} />
+                  )}
+                  <div>
+                    <div style={{ fontSize:13, color:T.text, fontWeight:300 }}>{c.data.name}</div>
+                    <div style={{ fontSize:10, color:T.textFaint, fontStyle:"italic" }}>
+                      {c.data.party.length} players · {c.data.sessionsPlayed} sessions
+                      {c.isExample && " · Example"}
+                      {c.data.campaignType && ` · ${c.data.campaignType === "traditional" ? "Traditional" : "Live"}`}
+                    </div>
                   </div>
                 </div>
                 {!c.isExample && c.id !== activeCampaignId && (
@@ -5128,13 +5563,21 @@ function App() {
     setCampaigns(prev => prev.map(c => c.id === activeCampaignId ? { ...c, data: typeof updater === "function" ? updater(c.data) : updater } : c));
   };
 
+  // ── New Campaign modal state ──
+  const [showNewCampaignModal, setShowNewCampaignModal] = useState(false);
+  // ── Migration prompt state ──
+  const [migrationCampaignId, setMigrationCampaignId] = useState(null);
+
   const handleCreateCampaign = () => {
-    const name = prompt("Campaign name:");
-    if (!name) return;
-    const newCamp = { id: "camp-" + Date.now(), data: { ...NEW_CAMPAIGN(), name }, isExample: false };
+    setShowNewCampaignModal(true);
+  };
+
+  const handleConfirmNewCampaign = ({ name, theme, campaignType }) => {
+    const newCamp = { id: "camp-" + Date.now(), data: { ...NEW_CAMPAIGN(), name, theme, campaignType }, isExample: false };
     setCampaigns(prev => [...prev, newCamp]);
     setActiveCampaignId(newCamp.id);
     setActiveTab("dashboard");
+    setShowNewCampaignModal(false);
   };
 
   const handleDeleteCampaign = (id) => {
@@ -5145,6 +5588,35 @@ function App() {
       setActiveCampaignId(remaining.length > 0 ? remaining[0].id : null);
     }
   };
+
+  // ── Apply theme whenever active campaign changes ──
+  useEffect(() => {
+    const camp = campaigns.find(c => c.id === activeCampaignId);
+    const themeKey = camp?.data?.theme || "classic";
+    applyCampaignTheme(themeKey);
+    return () => applyCampaignTheme(null); // clean up on unmount
+  }, [activeCampaignId, campaigns]);
+
+  // ── Migration: prompt for campaignType on existing campaigns that lack it ──
+  useEffect(() => {
+    if (!activeCampaignId || loading) return;
+    const camp = campaigns.find(c => c.id === activeCampaignId);
+    if (camp && !camp.isExample && camp.data && !camp.data.campaignType) {
+      setMigrationCampaignId(activeCampaignId);
+    }
+  }, [activeCampaignId, loading]);
+
+  const handleMigrationChoice = (type) => {
+    setCampaigns(prev => prev.map(c =>
+      c.id === migrationCampaignId
+        ? { ...c, data: { ...c.data, campaignType: type, theme: c.data.theme || "classic" } }
+        : c
+    ));
+    setMigrationCampaignId(null);
+  };
+
+  // Check if current campaign is "traditional" (for feature gating)
+  const isTraditional = activeCampaign?.data?.campaignType === "traditional";
 
   const handlePartyUpdate = (partyId, patch) => {
     setData(d => {
@@ -5414,6 +5886,7 @@ function App() {
                 onPartyUpdate: handlePartyUpdate,
                 setData: setData,
                 campaignEncounters: data.encounters || [],
+                isTraditional: isTraditional,
               })
             )
           ) : (
@@ -5421,6 +5894,20 @@ function App() {
           )
         )}
       </div>
+
+      {/* ══ New Campaign Modal ══ */}
+      <NewCampaignModal
+        open={showNewCampaignModal}
+        onClose={() => setShowNewCampaignModal(false)}
+        onConfirm={handleConfirmNewCampaign}
+      />
+
+      {/* ══ Campaign Type Migration Modal ══ */}
+      <CampaignTypeMigrationModal
+        open={migrationCampaignId !== null}
+        campaignName={campaigns.find(c => c.id === migrationCampaignId)?.data?.name || "Campaign"}
+        onChoose={handleMigrationChoice}
+      />
 
       {/* ══ Invite Players Modal ══ */}
       {showInvitePanel && (

@@ -2070,7 +2070,45 @@
               <textarea class="gen-control-input" id="monsterConcept" rows="5" placeholder="e.g., 'A fire-breathing turtle the size of a house that lives in volcanos', 'An ancient evil wizard surrounded by shadows', or 'A magical ice golem with crystalline armor'"></textarea>
               <p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">The AI will parse your description for creature type, size, environment, theme, and abilities. Be descriptive! Include keywords like 'fire', 'ancient', 'undead', 'dragon', 'shadow', etc.</p>
             </div>
-            <div class="gen-button-group">
+
+            <!-- Advanced Options Toggle -->
+            <div style="margin-top: 16px;">
+              <button class="gen-button" style="width: 100%; background: var(--bg-subtle); border: 1px solid var(--border);" onclick="toggleMonsterAdvancedOptions(this)">▼ Advanced Options</button>
+            </div>
+
+            <!-- Advanced Options (Hidden by default) -->
+            <div id="monsterAdvancedOptions" style="display: none; margin-top: 16px; padding: 16px; background: var(--bg-subtle); border-left: 3px solid var(--crimson); border-radius: 4px;">
+              <div class="gen-control-group">
+                <label class="gen-control-label">Challenge Rating (CR) Preference</label>
+                <select class="gen-control-input" id="monsterCRPref">
+                  <option value="auto" selected>Auto-detect from concept</option>
+                  <option value="0">0 (Minion)</option>
+                  <option value="0.5">1/2 (Very Easy)</option>
+                  <option value="1">1 (Easy)</option>
+                  <option value="3">3 (Easy/Medium)</option>
+                  <option value="5">5 (Medium)</option>
+                  <option value="8">8 (Hard)</option>
+                  <option value="11">11 (Very Hard)</option>
+                  <option value="15">15 (Deadly)</option>
+                  <option value="20">20 (Near-Legendary)</option>
+                  <option value="25">25+ (Legendary)</option>
+                </select>
+              </div>
+              <div class="gen-control-group">
+                <label class="gen-control-label">Environment (Optional)</label>
+                <input type="text" class="gen-control-input" id="monsterEnvironment" placeholder="e.g., 'volcanic cavern', 'ancient forest', 'frozen tundra'" />
+              </div>
+              <div class="gen-control-group">
+                <label class="gen-control-label">Motivation/Purpose (Optional)</label>
+                <input type="text" class="gen-control-input" id="monsterMotivation" placeholder="e.g., 'guards treasure', 'hunts prey', 'spreads plague'" />
+              </div>
+              <div class="gen-control-group">
+                <label class="gen-control-label">Special Features (Optional)</label>
+                <input type="text" class="gen-control-input" id="monsterFeatures" placeholder="e.g., 'intelligent', 'can speak common', 'has minions'" />
+              </div>
+            </div>
+
+            <div class="gen-button-group" style="margin-top: 16px;">
               <button class="gen-button primary" onclick="generateMonsterFromConcept()">Generate from Description</button>
               <button class="gen-button" onclick="randomizeAllMonster()">Randomize All</button>
             </div>
@@ -5433,6 +5471,18 @@
       psToast(`${type} "${name}" pinned to notes!`, 2000);
     }
 
+    // Toggle visibility of Advanced Options in Quick Generate
+    function toggleMonsterAdvancedOptions(button) {
+      const advancedDiv = document.getElementById('monsterAdvancedOptions');
+      if (advancedDiv.style.display === 'none') {
+        advancedDiv.style.display = 'block';
+        button.textContent = '▲ Advanced Options';
+      } else {
+        advancedDiv.style.display = 'none';
+        button.textContent = '▼ Advanced Options';
+      }
+    }
+
     // ═══════════════════════════════ FANTASY MAP ENGINE ═══════════════════════════════
     // Full engine loaded from external file: fantasy-map-engine.js
     // See that file for: terrain generation, kingdom/settlement/road/POI systems,
@@ -5464,7 +5514,277 @@
         'Who Walks Between','the Unforgotten','the Consuming','of Many Eyes','the Silent']
     };
 
-    function generateCreatureName(concept) {
+    // ── Deep Concept Parser — Extracts meaningful structure from user input ──
+    // This is the core of the new system: parse the concept deeply to drive all downstream generation
+    function analyzeConceptDeep(concept, options = {}) {
+      const lower = concept.toLowerCase();
+
+      // Extract sentences for processing
+      const sentences = concept.split(/[.!?]+/).filter(s => s.trim().length > 0);
+
+      // Basic NLP for noun/verb/adjective extraction
+      const words = lower.split(/\s+/);
+
+      // ── Noun phrase extraction ──
+      const creatureNouns = [];
+      const materialNouns = [];
+      const locationNouns = [];
+      const adjectives = [];
+      const verbs = [];
+
+      // Common creature-related nouns
+      const creaturesKeywords = ['dragon','beast','creature','monster','demon','angel','god','spirit','ghost','wisp','wraith','serpent','wolf','bear','spider','dragon','turtle','turtle','snake','owl','cat','bird','fish','slug','worm'];
+      const materialsKeywords = ['crystal','ice','fire','stone','bone','metal','crystal','gem','coral','wood','silk','shadow','light','darkness','void','force'];
+      const locationKeywords = ['cave','forest','mountain','ocean','desert','sky','volcano','temple','tomb','castle','dungeon','realm','world','plane','dimension','shadow'];
+
+      for (const word of words) {
+        const clean = word.replace(/[^a-z]/g, '');
+        if (creaturesKeywords.includes(clean)) creatureNouns.push(clean);
+        if (materialsKeywords.includes(clean)) materialNouns.push(clean);
+        if (locationKeywords.includes(clean)) locationNouns.push(clean);
+      }
+
+      // ── Adjective and descriptor extraction via keyword matching ──
+      const descriptors = ['ancient','primordial','elder','young','small','large','huge','tiny','massive','mighty','weak','strong','fast','slow','burning','frozen','icy','hot','cold','dark','light','shadowy','ethereal','corporeal','magical','mystical','cursed','blessed','fallen','twisted','pure','corrupted','wild','tame','fierce','gentle','peaceful','violent'];
+
+      for (const desc of descriptors) {
+        if (lower.includes(desc)) adjectives.push(desc);
+      }
+
+      // ── Verb extraction (action/ability words) ──
+      const actionWords = ['breathes','flies','swims','crawls','walks','runs','hunts','kills','devours','guards','protects','attacks','defends','summons','casts','channels','emits','radiates','glows','burns','freezes','poisons','drains','steals','controls','commands','speaks','roars','shrieks'];
+
+      for (const action of actionWords) {
+        if (lower.includes(action)) verbs.push(action);
+      }
+
+      // ── Multi-word phrase extraction ──
+      const phrases = [];
+      const phrasePatterns = [
+        /(?:made of|composed of|covered in|adorned with)\s+([^,.!?]+)/gi,
+        /(?:that|which|who)\s+(?:breathes|emits|radiates|channels|controls)\s+([^,.!?]+)/gi,
+        /(?:dwelling in|living in|inhabiting|haunting)\s+(?:the\s+)?([^,.!?]+)/gi,
+        /([a-z]+(?:\s+[a-z]+)?)\s+(?:dragon|beast|creature|monster|spirit|elemental)/gi
+      ];
+
+      for (const pattern of phrasePatterns) {
+        let match;
+        while ((match = pattern.exec(lower)) !== null) {
+          if (match[1] && match[1].length < 50) {
+            phrases.push(match[1].trim());
+          }
+        }
+      }
+
+      // ── Element detection (from CONCEPT_KEYWORDS) ──
+      const elements = [];
+      const elementMap = CONCEPT_KEYWORDS.elements;
+      for (const [elem, keywords] of Object.entries(elementMap)) {
+        for (const keyword of keywords) {
+          if (lower.includes(keyword)) {
+            elements.push(elem);
+            break;
+          }
+        }
+      }
+
+      // ── Environment detection ──
+      const environments = [];
+      const envMap = CONCEPT_KEYWORDS.environments;
+      for (const [env, keywords] of Object.entries(envMap)) {
+        for (const keyword of keywords) {
+          if (lower.includes(keyword)) {
+            environments.push(env);
+            break;
+          }
+        }
+      }
+
+      // ── Theme/archetype detection ──
+      const themes = [];
+      const themeMap = CONCEPT_KEYWORDS.archetypes;
+      for (const [theme, keywords] of Object.entries(themeMap)) {
+        for (const keyword of keywords) {
+          if (lower.includes(keyword)) {
+            themes.push(theme);
+            break;
+          }
+        }
+      }
+
+      // ── Emotional tone detection ──
+      let emotionalTone = 'neutral';
+      if (/evil|dark|malevolent|sinister|cruel|vicious|savage|bloodthirsty/.test(lower)) emotionalTone = 'malevolent';
+      else if (/good|holy|divine|sacred|noble|pure|righteous|benevolent/.test(lower)) emotionalTone = 'benevolent';
+      else if (/wild|feral|primal|bestial|untamed/.test(lower)) emotionalTone = 'wild';
+      else if (/ancient|primordial|elder|timeless|eternal|forgotten/.test(lower)) emotionalTone = 'ancient';
+      else if (/corrupted|twisted|tainted|fallen|warped|perverted/.test(lower)) emotionalTone = 'corrupted';
+      else if (/mystic|arcane|enchanted|magical|ethereal/.test(lower)) emotionalTone = 'mystical';
+
+      // ── Relationship parsing ──
+      const relationships = [];
+      const relPatterns = [
+        /(?:servant of|follower of|worships|serves)\s+([^,.!?]+)/gi,
+        /(?:born from|created by|forged by|made by)\s+([^,.!?]+)/gi,
+        /(?:bound to|chained to|linked to|cursed by)\s+([^,.!?]+)/gi
+      ];
+
+      for (const pattern of relPatterns) {
+        let match;
+        while ((match = pattern.exec(lower)) !== null) {
+          if (match[1]) relationships.push(match[1].trim());
+        }
+      }
+
+      // ── Unique tokens (words not in standard keywords) ──
+      const uniqueTokens = [];
+      const commonWords = new Set(['the','a','an','and','or','is','are','was','were','be','been','that','this','it','its','to','for','of','in','on','at','by','with','from','up','about','as','out','into','over','under','like','size','sized','lives','living','has','have','had','can','could','would','should','will','very','much','also','just','only','even','more','most','some','any','all','each','every','both','such','than','then','when','where','how','what','who','which','whom','whose','there','here','now','ago','back','down','off','away','well','still','yet','house','around','behind','before','after','upon','along','during','without','within','between','among','through','until','because','since','while','once','though','whether','really','being','make','made','makes','their','them','they','your','you','our','ours','mine','myself','kind','type','sort','thing','things','those','these']);
+
+      for (const word of words) {
+        const clean = word.replace(/[^a-z-]/g, '').toLowerCase();
+        // Keep hyphenated compounds (e.g., "fire-breathing") and meaningful words
+        if (clean.length > 4 && !commonWords.has(clean) &&
+            !creaturesKeywords.includes(clean) && !materialsKeywords.includes(clean) &&
+            !locationKeywords.includes(clean) && !descriptors.includes(clean) &&
+            !actionWords.includes(clean)) {
+          uniqueTokens.push(clean);
+        }
+      }
+
+      // Also extract hyphenated compounds from original concept
+      const compoundMatches = lower.match(/[a-z]+-[a-z]+/g) || [];
+      for (const compound of compoundMatches) {
+        if (!uniqueTokens.includes(compound)) uniqueTokens.push(compound);
+      }
+
+      // Build the profile object
+      const profile = {
+        creatureNouns: [...new Set(creatureNouns)],
+        materialNouns: [...new Set(materialNouns)],
+        locationNouns: [...new Set(locationNouns)],
+        adjectives: [...new Set(adjectives)],
+        verbs: [...new Set(verbs)],
+        phrases: [...new Set(phrases)],
+        elements: [...new Set(elements)] || ['fire'],
+        environments: [...new Set(environments)] || [],
+        themes: [...new Set(themes)] || ['predator'],
+        emotionalTone,
+        uniqueTokens: [...new Set(uniqueTokens)],
+        relationships,
+        userEnvironment: options.environment || (environments.length > 0 ? environments[0] : null),
+        userMotivation: options.motivation || null,
+        userFeatures: options.features || null,
+        userCR: options.cr || 'auto',
+        rawConcept: concept
+      };
+
+      return profile;
+    }
+
+    function generateCreatureName(concept, profile = null) {
+      // If profile provided, derive a name from key concepts
+      if (profile && (profile.uniqueTokens.length > 0 || profile.adjectives.length > 0 || profile.creatureNouns.length > 0)) {
+
+        // Helper: morph a word into a fantasy syllable
+        const morphSyllable = (word) => {
+          if (!word || word.length < 2) return '';
+          const vowels = 'aeiou';
+          // Take a pronounceable chunk (2-4 chars)
+          let chunk = word.substring(0, Math.min(4, word.length));
+          // If it ends on a consonant cluster, add a vowel
+          if (chunk.length >= 2 && !vowels.includes(chunk[chunk.length - 1]) && !vowels.includes(chunk[chunk.length - 2])) {
+            chunk += ['a','i','o','u'][Math.floor(Math.random() * 4)];
+          }
+          return chunk;
+        };
+
+        // Helper: combine two words into a fantasy compound
+        const fuseWords = (w1, w2) => {
+          const s1 = morphSyllable(w1);
+          const s2 = w2 ? w2.substring(0, Math.min(4, w2.length)) : NAME_PARTS.suffixes[Math.floor(Math.random() * NAME_PARTS.suffixes.length)];
+          let fused = s1 + s2;
+          // Clean up double vowels or awkward combos
+          fused = fused.replace(/([aeiou])\1/g, '$1');
+          return fused.charAt(0).toUpperCase() + fused.slice(1);
+        };
+
+        // Gather source words in priority order
+        const sourceWords = [];
+        // Prioritize creature nouns and unique tokens
+        if (profile.creatureNouns.length > 0) sourceWords.push(...profile.creatureNouns);
+        if (profile.materialNouns.length > 0) sourceWords.push(...profile.materialNouns);
+        if (profile.uniqueTokens.length > 0) sourceWords.push(...profile.uniqueTokens);
+        if (profile.adjectives.length > 0) sourceWords.push(...profile.adjectives);
+
+        // Build the base name from 1-2 source words
+        let baseName = '';
+        if (sourceWords.length >= 2) {
+          baseName = fuseWords(sourceWords[0], sourceWords[1]);
+        } else if (sourceWords.length === 1) {
+          baseName = fuseWords(sourceWords[0], null);
+        }
+
+        // Determine a title based on concept
+        let title = '';
+        const titleOptions = {
+          malevolent: [' the Dread',' the Fell',' the Accursed',' the Terrible',' the Merciless'],
+          benevolent: [' the Radiant',' the Blessed',' the Luminous',' the Hallowed',' the Merciful'],
+          ancient: [' the Elder',' the Eternal',' the Primordial',' the Ageless',' the Firstborn'],
+          corrupted: [' the Twisted',' the Blighted',' the Defiled',' the Forsaken',' the Tainted'],
+          wild: [' the Untamed',' the Savage',' the Primal',' the Feral',' the Wild'],
+          mystical: [' the Arcane',' the Ensorcelled',' the Enigmatic',' the Veiled',' the Eldritch']
+        };
+
+        if (titleOptions[profile.emotionalTone]) {
+          const pool = titleOptions[profile.emotionalTone];
+          title = pool[Math.floor(Math.random() * pool.length)];
+        } else if (profile.verbs.length > 0) {
+          const verbTitles = {
+            'breathes': [' the Drake',' the Flame-Tongued',' the Exhaler'],
+            'hunts': [' the Stalker',' the Hunter',' the Pursuer'],
+            'guards': [' the Sentinel',' the Warden',' the Guardian'],
+            'flies': [' the Skyborn',' the Winged',' the Soaring'],
+            'devours': [' the Ravenous',' the All-Consuming',' the Devourer'],
+            'summons': [' the Caller',' the Conjurer',' the Beckoner'],
+            'burns': [' the Incinerator',' the Scorcher',' the Embered'],
+            'freezes': [' the Hoarfrost',' the Glacial',' the Rimecaster'],
+            'drains': [' the Siphon',' the Hollower',' the Thirst'],
+            'roars': [' the Thunderous',' the Deafening',' the Warcaller'],
+            'crawls': [' the Creeping',' the Lurker',' the Underfoot'],
+            'poisons': [' the Venomous',' the Blight-Bearer',' the Toxic']
+          };
+          for (const [verb, titles] of Object.entries(verbTitles)) {
+            if (profile.verbs.includes(verb)) {
+              title = titles[Math.floor(Math.random() * titles.length)];
+              break;
+            }
+          }
+        }
+
+        // If no verb-based title, try element-based
+        if (!title && profile.elements.length > 0) {
+          const elemTitles = {
+            fire: [' of the Flame',' the Embered',' the Pyroclast'],
+            ice: [' of the Frost',' the Rimecold',' the Glacial'],
+            lightning: [' of the Storm',' the Voltaic',' the Thunderborn'],
+            poison: [' the Venomous',' the Miasmic',' of the Blight'],
+            necrotic: [' of the Grave',' the Deathbound',' the Hollow'],
+            radiant: [' the Luminous',' of the Dawn',' the Hallowed'],
+            psychic: [' the Mindbender',' of the Void',' the Dreamwalker'],
+            force: [' the Arcane',' the Spellwoven',' of the Rift']
+          };
+          const elPool = elemTitles[profile.elements[0]];
+          if (elPool) title = elPool[Math.floor(Math.random() * elPool.length)];
+        }
+
+        // 80% chance to use concept-derived name
+        if (baseName && baseName.length >= 4 && Math.random() < 0.8) {
+          // 60% chance to include a title
+          return baseName + (Math.random() < 0.6 ? (title || '') : '');
+        }
+      }
+
+      // Fallback to random generation
       const pre = NAME_PARTS.prefixes[Math.floor(Math.random() * NAME_PARTS.prefixes.length)];
       const mid = NAME_PARTS.middles[Math.floor(Math.random() * NAME_PARTS.middles.length)];
       const suf = NAME_PARTS.suffixes[Math.floor(Math.random() * NAME_PARTS.suffixes.length)];
@@ -6910,14 +7230,33 @@
       };
     }
 
-    function generateMonsterAI(concept) {
+    function generateMonsterAI(concept, options = {}) {
+      // ── Use the deep concept parser for rich feature extraction ──
+      const profile = analyzeConceptDeep(concept, options);
+
+      // ── Fallback to old simple decomposition for compatibility ──
       const analysis = decomposeConcept(concept);
       const size = detectSize(concept);
       let type = detectType(concept);
-      const element = analysis.elements[0];
+      const lower = concept.toLowerCase();
+
+      // Smart element selection — prefer the element most aligned with the concept's tone
+      let element;
+      const detectedElements = profile.elements && profile.elements.length > 0 ? profile.elements : analysis.elements;
+      if (detectedElements.length > 1) {
+        // If concept has positive/holy keywords, prefer radiant over necrotic
+        if (/serene|holy|sacred|divine|blessed|peaceful|pure|celestial|protect/.test(lower)) {
+          element = detectedElements.find(e => e === 'radiant') || detectedElements.find(e => e === 'force') || detectedElements[0];
+        } else if (/evil|dark|shadow|death|undead|corrupt|twisted|curse/.test(lower)) {
+          element = detectedElements.find(e => e === 'necrotic') || detectedElements[0];
+        } else {
+          element = detectedElements[0];
+        }
+      } else {
+        element = detectedElements[0] || 'force';
+      }
       const archetypes = analysis.archetypes;
       const environments = analysis.environments;
-      const lower = concept.toLowerCase();
 
       // Detect compound types from concept
       const compoundTypes = [];
@@ -6947,12 +7286,19 @@
       if (/aberrant|far realm|eldritch|void/.test(lower)) origin = 'Aberrant';
       if (/undead|death|necrotic/.test(lower)) origin = 'Necrotic';
 
-      // Determine CR from concept complexity + keywords
+      // Determine CR from concept complexity + keywords, or from user preference
       let cr;
-      if (/\b(ancient|legendary|mythic|elder|arch|supreme|god|titan|avatar)\b/.test(lower)) cr = 15 + Math.floor(Math.random() * 10);
-      else if (/\b(powerful|mighty|great|elder|boss|lord|king|queen)\b/.test(lower)) cr = 8 + Math.floor(Math.random() * 7);
-      else if (/\b(young|lesser|minor|small|weak|baby)\b/.test(lower)) cr = [0.25, 0.5, 1, 2][Math.floor(Math.random() * 4)];
-      else cr = 2 + Math.floor(Math.random() * 8);
+      if (options.cr && options.cr !== 'auto') {
+        cr = parseFloat(options.cr);
+      } else if (/\b(ancient|legendary|mythic|elder|arch|supreme|god|titan|avatar)\b/.test(lower)) {
+        cr = 15 + Math.floor(Math.random() * 10);
+      } else if (/\b(powerful|mighty|great|elder|boss|lord|king|queen)\b/.test(lower)) {
+        cr = 8 + Math.floor(Math.random() * 7);
+      } else if (/\b(young|lesser|minor|small|weak|baby)\b/.test(lower)) {
+        cr = [0.25, 0.5, 1, 2][Math.floor(Math.random() * 4)];
+      } else {
+        cr = 2 + Math.floor(Math.random() * 8);
+      }
 
       // Size can bump CR
       if (size === 'Huge') cr = Math.max(cr, 5);
@@ -6975,7 +7321,8 @@
       if (nameMatch) {
         name = nameMatch[1].trim();
       } else {
-        name = generateCreatureName(concept);
+        // Use the profile-aware name generator for concept-driven names
+        name = generateCreatureName(concept, profile);
       }
 
       // Check for stationary
@@ -7021,6 +7368,10 @@
       // Parse the user's concept for specific abilities they described
       const conceptAbilities = parseConceptAbilities(concept, name, crData, stats);
 
+      // ── PROFILE-DRIVEN UNIQUE TRAITS & ACTIONS ──
+      // Generate unique abilities directly from the concept profile's phrases, verbs, adjectives
+      const profileAbilities = generateProfileDrivenAbilities(profile, name, crData, stats, element, cr);
+
       // Generate baseline traits
       const traitCount = 2 + Math.floor(Math.random() * 3);
       const baseTraits = [];
@@ -7037,9 +7388,9 @@
       // Merge with template-based abilities
       const templateAbilities = generateAbilitiesFromTemplates(concept, cr, crData, name, element);
 
-      // Concept-parsed abilities take priority, then templates, then base
-      const allTraits = [...conceptAbilities.traits, ...enhancements.traits, ...templateAbilities.traits];
-      const allActions = [...conceptAbilities.actions, ...enhancements.actions, ...templateAbilities.actions];
+      // Profile-driven abilities take top priority, then concept-parsed, then templates, then base
+      const allTraits = [...profileAbilities.traits, ...conceptAbilities.traits, ...enhancements.traits, ...templateAbilities.traits];
+      const allActions = [...profileAbilities.actions, ...conceptAbilities.actions, ...enhancements.actions, ...templateAbilities.actions];
 
       // Deduplicate by name
       const seenTraitNames = new Set();
@@ -7079,9 +7430,9 @@
         acType = acTypes[Math.floor(Math.random() * acTypes.length)];
       }
 
-      // ── DESCRIPTION & LORE — rich narrative paragraphs ──
-      const description = generateRichDescription(name, typeDisplay, size, element, concept, isCorrupted, environments);
-      const lore = generateRichLore(name, typeDisplay, element, concept, isCorrupted, environments, archetypes, origin);
+      // ── DESCRIPTION & LORE — rich narrative paragraphs using concept profile ──
+      const description = generateRichDescription(name, typeDisplay, size, element, concept, isCorrupted, environments, profile);
+      const lore = generateRichLore(name, typeDisplay, element, concept, isCorrupted, environments, archetypes, origin, profile);
 
       // ── LOOT ──
       const loot = generateLoot(name, type, element, cr, concept, isCorrupted);
@@ -7105,6 +7456,226 @@
         traits, actions, legendaryActions, description, lore, loot,
         isStationary, isCorrupted, concept
       };
+    }
+
+    // ── Generate unique traits and actions from the concept profile ──
+    function generateProfileDrivenAbilities(profile, name, crData, stats, element, cr) {
+      const traits = [];
+      const actions = [];
+      if (!profile) return { traits, actions };
+
+      const dc = crData.saveDC;
+      const atkBonus = crData.atkBonus;
+      const dmgType = elementToDamageType(element);
+      const diceCount = Math.max(1, Math.floor(cr / 3));
+      const dice = `${diceCount}d${[6,8,10][Math.floor(Math.random() * 3)]}`;
+      const saves = ['Strength','Dexterity','Constitution','Intelligence','Wisdom','Charisma'];
+      const conditions = ['frightened','stunned','restrained','blinded','charmed','poisoned','paralyzed'];
+
+      // ── Helper: capitalize phrase into a trait name ──
+      const titleCase = (s) => s.split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+      // ── Helper: pick a thematic save based on element/tone ──
+      const thematicSave = () => {
+        if (element === 'psychic' || element === 'force') return 'Wisdom';
+        if (element === 'fire' || element === 'lightning' || element === 'ice') return 'Dexterity';
+        if (element === 'poison' || element === 'necrotic') return 'Constitution';
+        return saves[Math.floor(Math.random() * saves.length)];
+      };
+
+      // ── Helper: pick thematic condition ──
+      const thematicCondition = () => {
+        if (element === 'ice') return 'restrained';
+        if (element === 'psychic') return 'stunned';
+        if (element === 'necrotic') return 'frightened';
+        if (element === 'poison') return 'poisoned';
+        if (element === 'radiant') return 'blinded';
+        return conditions[Math.floor(Math.random() * conditions.length)];
+      };
+
+      // ══════════════════════════════════════════════════════════════
+      // 1. PHRASE-DERIVED TRAITS — extract multi-word phrases and
+      //    turn them into unique named traits
+      // ══════════════════════════════════════════════════════════════
+      const usedPhrases = new Set();
+
+      // Parse "made of X", "covered in X", "adorned with X" → passive trait
+      const badPhraseWords = new Set(['evil','good','big','small','old','new','dark','light','large','huge','tiny','dead','great','little','young','wild']);
+      for (const phrase of profile.phrases) {
+        if (usedPhrases.has(phrase) || traits.length >= 3) break;
+        // Skip phrases that are too long, too short, or would make bad trait names
+        if (phrase.length > 40 || phrase.split(/\s+/).length > 5) continue;
+        if (phrase.split(/\s+/).length < 2 && (phrase.length < 5 || badPhraseWords.has(phrase.toLowerCase()))) continue;
+        usedPhrases.add(phrase);
+        const traitName = titleCase(phrase);
+
+        // Generate a trait description that mechanically represents the phrase
+        const templates = [
+          `The ${name}'s ${phrase} grants it exceptional resilience. It has advantage on saving throws against ${thematicSave()} effects, and creatures that hit the ${name} with a melee attack take ${dice} ${dmgType} damage.`,
+          `The ${phrase} covering the ${name} radiates power. At the start of each of the ${name}'s turns, each creature within 10 feet must succeed on a DC ${dc} ${thematicSave()} saving throw or take ${dice} ${dmgType} damage.`,
+          `Thanks to its ${phrase}, the ${name} is immune to the ${thematicCondition()} condition and has resistance to ${dmgType} damage. Its attacks leave lingering traces of its essence.`
+        ];
+        traits.push({
+          name: traitName,
+          description: templates[Math.floor(Math.random() * templates.length)]
+        });
+      }
+
+      // ══════════════════════════════════════════════════════════════
+      // 2. ADJECTIVE-DERIVED TRAITS — unique descriptors become
+      //    passive abilities
+      // ══════════════════════════════════════════════════════════════
+      const adjectiveTraitMap = {
+        'ancient': { name: 'Timeless Resilience', desc: `The ${name} has existed for eons, granting it legendary fortitude. It has advantage on all saving throws and cannot be surprised.` },
+        'primordial': { name: 'Primordial Essence', desc: `The ${name} radiates the raw energy of creation. Each creature that starts its turn within 15 feet takes ${dice} ${dmgType} damage as reality warps around it.` },
+        'ethereal': { name: 'Ethereal Phasing', desc: `The ${name} exists partially in the Ethereal Plane. It can move through other creatures and objects as if they were difficult terrain. It takes ${diceCount}d10 force damage if it ends its turn inside an object.` },
+        'cursed': { name: 'Curse-Touched', desc: `A dark curse clings to the ${name}. Any creature that damages the ${name} must succeed on a DC ${dc} Charisma saving throw or be cursed for 1 minute, taking ${diceCount}d6 necrotic damage at the start of each of its turns while cursed.` },
+        'blessed': { name: 'Divine Blessing', desc: `The ${name} is bathed in holy light. It regains ${diceCount}d8 hit points at the start of each of its turns, and undead creatures within 30 feet have disadvantage on attack rolls.` },
+        'mighty': { name: 'Overwhelming Might', desc: `The ${name}'s raw strength is staggering. It deals double damage to objects and structures, and creatures it hits with a melee attack must succeed on a DC ${dc} Strength saving throw or be pushed 15 feet and knocked prone.` },
+        'fast': { name: 'Blinding Speed', desc: `The ${name} moves with supernatural swiftness. It can take the Dash or Disengage action as a bonus action on each of its turns. Opportunity attacks against it have disadvantage.` },
+        'massive': { name: 'Colossal Presence', desc: `The sheer mass of the ${name} shakes the ground. Each creature within 10 feet of the ${name} when it moves must succeed on a DC ${dc} Dexterity saving throw or be knocked prone.` },
+        'magical': { name: 'Arcane Saturation', desc: `The ${name} is suffused with magical energy. Its attacks count as magical, and it has advantage on saving throws against spells and other magical effects.` },
+        'wild': { name: 'Feral Instinct', desc: `The ${name} cannot be surprised and has advantage on initiative rolls. When it is reduced to half its hit points, it enters a frenzy, gaining an extra attack on each of its turns.` },
+        'fierce': { name: 'Savage Fury', desc: `When the ${name} hits a creature with a melee attack, it can make one additional melee attack as a bonus action. This additional attack deals ${diceCount}d6 extra ${dmgType} damage.` },
+        'gentle': { name: 'Calming Aura', desc: `Creatures within 30 feet of the ${name} must succeed on a DC ${dc} Wisdom saving throw or be unable to take hostile actions until the end of their next turn.` },
+        'twisted': { name: 'Warped Reality', desc: `The space around the ${name} is distorted. Ranged attacks that pass through any space within 10 feet of the ${name} are made with disadvantage. Spells cast within this area require a DC ${dc} spellcasting ability check or fizzle.` },
+        'dark': { name: 'Shroud of Darkness', desc: `The ${name} is surrounded by unnatural darkness in a 15-foot radius. This darkness cannot be dispelled by nonmagical light. Creatures in the darkness other than the ${name} are blinded.` },
+        'burning': { name: 'Living Inferno', desc: `The ${name}'s body radiates extreme heat. Each creature that starts its turn within 5 feet takes ${dice} fire damage. Flammable objects within 10 feet that aren't being worn or carried ignite.` },
+        'frozen': { name: 'Permafrost Body', desc: `The ${name}'s touch freezes everything it contacts. Each creature that hits the ${name} with a melee attack takes ${dice} cold damage, and the ground within 15 feet of the ${name} is difficult terrain due to ice.` },
+        'shadowy': { name: 'Shadow Melding', desc: `While in dim light or darkness, the ${name} can use a bonus action to become invisible until it attacks or moves into bright light. While invisible this way, it has advantage on Stealth checks.` }
+      };
+
+      for (const adj of profile.adjectives) {
+        if (traits.length >= 4) break;
+        const traitData = adjectiveTraitMap[adj];
+        if (traitData && !traits.find(t => t.name === traitData.name)) {
+          traits.push({ name: traitData.name, description: traitData.desc });
+        }
+      }
+
+      // ══════════════════════════════════════════════════════════════
+      // 3. VERB-DERIVED ACTIONS — verbs from the concept become
+      //    unique named actions
+      // ══════════════════════════════════════════════════════════════
+      const verbActionMap = {
+        'breathes': { name: (prof) => `${titleCase(prof.elements[0] || 'arcane')} Breath (Recharge 5-6)`, gen: (prof) => {
+          const el = prof.elements[0] || 'fire';
+          const dt = elementToDamageType(el);
+          const d = Math.max(3, Math.floor(cr / 2));
+          return `The ${name} exhales a torrent of ${el === 'fire' ? 'searing flames' : el === 'ice' ? 'freezing mist' : el === 'lightning' ? 'crackling electricity' : el === 'poison' ? 'noxious fumes' : 'destructive energy'} in a ${30 + cr * 2}-foot cone. Each creature in that area must make a DC ${dc} Dexterity saving throw, taking ${d}d8 ${dt} damage on a failed save, or half as much on a success.`;
+        }},
+        'hunts': { name: () => 'Predatory Strike', gen: () => `The ${name} targets one creature it can see within 60 feet and marks it as prey. Until the end of the ${name}'s next turn, the ${name} has advantage on attack rolls against the marked creature, deals an extra ${diceCount}d8 damage on hits against it, and can move up to its speed toward the creature as a bonus action.` },
+        'guards': { name: () => 'Sentinel\'s Rebuke', gen: () => `When a creature within 5 feet of the ${name} makes an attack against a target other than the ${name}, the ${name} can use its reaction to make a melee attack against the attacking creature. If the attack hits, the creature takes ${diceCount}d8 + ${getModifier(stats.str)} ${dmgType} damage and its speed is reduced to 0 until the end of its turn.` },
+        'devours': { name: () => 'Devouring Maw', gen: () => `Melee Weapon Attack: +${atkBonus} to hit, reach 5 ft., one Medium or smaller creature. Hit: ${Math.max(2,diceCount)}d10 + ${getModifier(stats.str)} piercing damage. If this reduces the target to 0 hit points, the ${name} swallows it. A swallowed creature is blinded, restrained, and takes ${diceCount}d8 acid damage at the start of each of the ${name}'s turns.` },
+        'summons': { name: () => 'Call Servants (1/Day)', gen: () => `The ${name} summons ${Math.max(2, Math.floor(cr / 3))} creatures tied to its nature. These appear within 60 feet in unoccupied spaces and act on the ${name}'s initiative. They obey its telepathic commands and remain for 1 hour or until the ${name} is destroyed.` },
+        'radiates': { name: () => `Radiant Pulse (Recharge 5-6)`, gen: () => `The ${name} releases a burst of concentrated ${dmgType} energy in a ${20 + cr}-foot radius. Each creature in that area must make a DC ${dc} ${thematicSave()} saving throw, taking ${Math.max(3, Math.floor(cr / 2))}d8 ${dmgType} damage on a failed save, or half as much on a success. Creatures that fail are also ${thematicCondition()} until the end of their next turn.` },
+        'glows': { name: () => 'Blinding Radiance', gen: () => `The ${name}'s body pulses with intense light. As a bonus action, it can emit a flash in a 30-foot radius. Each creature in that area that can see the ${name} must succeed on a DC ${dc} Constitution saving throw or be blinded until the end of its next turn.` },
+        'burns': { name: () => 'Immolating Touch', gen: () => `Melee Spell Attack: +${atkBonus} to hit, reach 5 ft., one target. Hit: ${Math.max(2,diceCount)}d8 fire damage, and the target ignites. An ignited creature takes ${diceCount}d6 fire damage at the start of each of its turns until it or another creature uses an action to douse the flames.` },
+        'freezes': { name: () => 'Flash Freeze', gen: () => `The ${name} targets one creature within 30 feet. The target must succeed on a DC ${dc} Constitution saving throw or take ${Math.max(2,diceCount)}d8 cold damage and be restrained as ice encases its body. At the end of each of its turns, the restrained creature can repeat the save, shattering the ice on a success.` },
+        'drains': { name: () => 'Essence Drain', gen: () => `Melee Spell Attack: +${atkBonus} to hit, reach 5 ft., one creature. Hit: ${Math.max(2,diceCount)}d8 necrotic damage, and the ${name} regains hit points equal to half the damage dealt. The target's hit point maximum is reduced by the amount of necrotic damage taken until it finishes a long rest.` },
+        'controls': { name: () => 'Dominating Will', gen: () => `The ${name} targets one creature it can see within 60 feet. The target must succeed on a DC ${dc} Wisdom saving throw or be charmed by the ${name} for 1 minute. While charmed, the creature is under the ${name}'s control and acts on the ${name}'s turn. The creature can repeat the save at the end of each of its turns, ending the effect on a success.` },
+        'roars': { name: () => 'Terrifying Roar (Recharge 5-6)', gen: () => `The ${name} releases a devastating roar. Each creature within 60 feet that can hear it must succeed on a DC ${dc} Wisdom saving throw or be frightened for 1 minute and take ${diceCount}d6 thunder damage. A frightened creature can repeat the save at the end of each of its turns.` },
+        'flies': { name: () => 'Diving Strike', gen: () => `If the ${name} is flying and dives at least 30 feet straight toward a target and then hits it with a melee attack on the same turn, the attack deals an extra ${Math.max(2,diceCount)}d6 damage, and the target must succeed on a DC ${dc} Strength saving throw or be knocked prone.` },
+        'crawls': { name: () => 'Ambush Predator', gen: () => `The ${name} has advantage on attack rolls against any creature it has surprised. If it hits a surprised creature, the target takes an extra ${Math.max(2,diceCount)}d6 ${dmgType} damage and must succeed on a DC ${dc} Constitution saving throw or be ${thematicCondition()} until the end of its next turn.` },
+        'poisons': { name: () => 'Virulent Injection', gen: () => `Melee Weapon Attack: +${atkBonus} to hit, reach 5 ft., one creature. Hit: ${diceCount}d6 piercing damage plus ${Math.max(2,diceCount)}d8 poison damage. The target must succeed on a DC ${dc} Constitution saving throw or be poisoned for 1 minute. While poisoned, the creature takes ${diceCount}d6 poison damage at the start of each of its turns.` },
+        'casts': { name: () => 'Arcane Barrage', gen: () => `The ${name} launches ${Math.min(3, Math.max(1, Math.floor(cr / 4)))} bolts of magical energy at targets it can see within 120 feet. Each bolt requires a ranged spell attack (+${atkBonus} to hit) and deals ${diceCount}d10 ${dmgType} damage on a hit.` },
+        'channels': { name: () => `Channeled ${titleCase(dmgType)} (Recharge 5-6)`, gen: () => `The ${name} channels energy for a devastating attack. Each creature in a 60-foot line that is 5 feet wide must make a DC ${dc} ${thematicSave()} saving throw, taking ${Math.max(4, Math.floor(cr * 0.8))}d6 ${dmgType} damage on a failed save, or half as much on a success.` }
+      };
+
+      for (const verb of profile.verbs) {
+        if (actions.length >= 3) break;
+        const actionData = verbActionMap[verb];
+        if (actionData) {
+          const actionName = typeof actionData.name === 'function' ? actionData.name(profile) : actionData.name;
+          if (!actions.find(a => a.name === actionName)) {
+            actions.push({ name: actionName, description: actionData.gen(profile) });
+          }
+        }
+      }
+
+      // ══════════════════════════════════════════════════════════════
+      // 4. UNIQUE TOKEN TRAITS — words unique to this concept that
+      //    don't match standard keywords become flavor traits
+      // ══════════════════════════════════════════════════════════════
+      // Filter tokens that would make poor trait names
+      const badTraitTokens = new Set(['house','size','sized','living','lives','victims','sleeping','things','stuff','really','being','person','place','world','realm','area','side','part','form','body','head','face','eyes','hand','hands','feet','foot','back','front','left','right','above','below','inside','outside','other','evil','good','male','female','large','small','very','also','just','because','about','after','before','until','since','while','once','treasures','treasure','gold','silver','around','volcanos','volcano','created','protect','their','underground','vault','enchanted','reflects','magic','wounded','creatures','bathe','waters','sacred','invisible','golem','spirit','creature','beast','monster','dragon','demon','angel','beneath','dead','mountain','caverns','frozen','commands','legions','wraiths','souls','breath']);
+      const goodTokens = profile.uniqueTokens.filter(t => !badTraitTokens.has(t) && t.length > 3);
+      // Also filter out hyphenated compounds that overlap with elements (e.g., "fire-breathing" when fire is already an element)
+      const filteredGoodTokens = goodTokens.filter(t => {
+        // Don't use tokens that are element-related — those are already handled
+        if (/fire|ice|frost|cold|flame|burn|shadow|dark|lightning|storm|poison|venom|holy|divine|radiant|arcane|magic|psychic|mind|death|necrotic/.test(t)) return false;
+        return true;
+      });
+      if (filteredGoodTokens.length > 0 && traits.length < 4) {
+        for (const token of filteredGoodTokens.slice(0, 2)) {
+          if (traits.length >= 4) break;
+          const capToken = titleCase(token);
+          const uniqueTraitTemplates = [
+            { name: `${capToken} Essence`, description: `The essence of ${token} permeates the ${name}'s very being. Creatures within 15 feet sense an overwhelming aura of ${token}. The ${name} has advantage on saving throws related to its ${token} nature, and its attacks carry the weight of ${token}, dealing an extra ${diceCount}d4 ${dmgType} damage.` },
+            { name: `Aspect of ${capToken}`, description: `The ${name} embodies the concept of ${token} in physical form. Once per turn, when it hits a creature with an attack, it can force the target to make a DC ${dc} ${thematicSave()} saving throw or be ${thematicCondition()} until the end of its next turn as the power of ${token} overwhelms them.` },
+            { name: `${capToken} Ward`, description: `The ${name}'s connection to ${token} shields it from harm. It has resistance to ${dmgType} damage and is immune to the ${thematicCondition()} condition. When it takes damage from a spell, the spell's caster takes ${diceCount}d4 ${dmgType} damage.` }
+          ];
+          const template = uniqueTraitTemplates[Math.floor(Math.random() * uniqueTraitTemplates.length)];
+          if (!traits.find(t => t.name === template.name)) {
+            traits.push(template);
+          }
+        }
+      }
+
+      // ══════════════════════════════════════════════════════════════
+      // 5. MOTIVATION-DERIVED TRAIT — if user provided motivation
+      // ══════════════════════════════════════════════════════════════
+      if (profile.userMotivation && traits.length < 5) {
+        const mot = profile.userMotivation.toLowerCase();
+        let motTrait;
+        if (/protect|guard|defend/.test(mot)) {
+          motTrait = { name: 'Unwavering Protector', description: `Driven by its purpose to ${profile.userMotivation.toLowerCase()}, the ${name} gains advantage on attack rolls against any creature that has damaged an ally within the last round. It can use its reaction to impose disadvantage on an attack roll against a creature within 5 feet of it.` };
+        } else if (/destroy|conquer|dominate/.test(mot)) {
+          motTrait = { name: 'Relentless Destroyer', description: `The ${name}'s drive to ${profile.userMotivation.toLowerCase()} fuels its fury. When it reduces a creature to 0 hit points, it can immediately move up to half its speed and make one additional melee attack. It deals double damage to objects and structures.` };
+        } else if (/collect|hoard|gather/.test(mot)) {
+          motTrait = { name: 'Obsessive Hoarder', description: `The ${name}'s compulsion to ${profile.userMotivation.toLowerCase()} makes it fiercely territorial. It has advantage on attack rolls against any creature carrying items it covets. Creatures within 30 feet cannot hide objects from it (it has truesight regarding hidden items).` };
+        } else {
+          motTrait = { name: 'Driven Purpose', description: `The ${name} is consumed by its desire to ${profile.userMotivation.toLowerCase()}. This single-minded focus grants it advantage on saving throws against being charmed, frightened, or having its mind read. It cannot be persuaded to abandon its purpose.` };
+        }
+        traits.push(motTrait);
+      }
+
+      // ══════════════════════════════════════════════════════════════
+      // 6. SPECIAL FEATURES — if user provided via advanced options
+      // ══════════════════════════════════════════════════════════════
+      if (profile.userFeatures) {
+        const features = profile.userFeatures.split(/[,;]+/).map(f => f.trim()).filter(f => f.length > 2);
+        for (const feat of features.slice(0, 2)) {
+          const featName = titleCase(feat);
+          if (traits.length < 5 && !traits.find(t => t.name === featName)) {
+            traits.push({
+              name: featName,
+              description: `The ${name} possesses the ability of ${feat.toLowerCase()}. This manifests as a DC ${dc} ${thematicSave()} effect: creatures affected take ${dice} ${dmgType} damage, and on a failed save are ${thematicCondition()} until the end of their next turn.`
+            });
+          }
+          if (actions.length < 4 && !actions.find(a => a.name === featName + ' Strike')) {
+            actions.push({
+              name: featName + ' Strike',
+              description: `The ${name} channels its ${feat.toLowerCase()} into a devastating attack. Melee or Ranged Attack: +${atkBonus} to hit, reach 10 ft. or range 60 ft., one target. Hit: ${Math.max(2,diceCount)}d8 + ${getModifier(stats.str)} ${dmgType} damage. On a hit, the target must also succeed on a DC ${dc} ${thematicSave()} saving throw or suffer the effects of the ${name}'s ${feat.toLowerCase()}.`
+            });
+          }
+        }
+      }
+
+      // ══════════════════════════════════════════════════════════════
+      // 7. RELATIONSHIP-DERIVED TRAITS
+      // ══════════════════════════════════════════════════════════════
+      if (profile.relationships.length > 0 && traits.length < 5) {
+        const rel = profile.relationships[0];
+        // Only use short relationship strings as trait names
+        const relName = rel.split(/\s+/).length <= 4 ? titleCase(rel) : titleCase(rel.split(/\s+/).slice(0, 3).join(' '));
+        traits.push({
+          name: `Bound to ${relName}`,
+          description: `The ${name}'s connection to ${rel} grants it power beyond its natural ability. Once per day, when the ${name} is reduced to 0 hit points, it can instead drop to 1 hit point as energy surges from its bond with ${rel}. Additionally, it can communicate telepathically with creatures within 120 feet.`
+        });
+      }
+
+      return { traits, actions };
     }
 
     // ── Parse specific abilities from the user's concept description ──
@@ -7413,81 +7984,144 @@
     }
 
     // ── Rich description paragraph — derived from user's concept ──
-    function generateRichDescription(name, type, size, element, concept, isCorrupted, environments) {
+    function generateRichDescription(name, type, size, element, concept, isCorrupted, environments, profile = null) {
       const lower = concept.toLowerCase();
+      let description = '';
 
-      // Polish the concept into proper D&D flavor text
-      // Remove redundant words like "a" at the beginning
+      // Start with the user's concept as the anchor
       let polished = concept.trim();
-
-      // Capitalize first letter
+      // Strip leading articles ("A", "An", "The") to avoid "is a a ..."
+      polished = polished.replace(/^(a|an|the)\s+/i, '');
       polished = polished.charAt(0).toUpperCase() + polished.slice(1);
+
+      // Determine if name already has "the" (e.g., "Turtofire the Ageless")
+      const namePrefix = /^the /i.test(name) || / the /i.test(name) ? '' : 'The ';
 
       // If it doesn't mention the creature name, work it in naturally
       if (!polished.toLowerCase().includes(name.toLowerCase())) {
-        polished = `The ${name} is a ${polished.toLowerCase()}.`;
+        description = `${namePrefix}${name} is ${(/^[aeiou]/i.test(polished) ? 'an' : 'a')} ${polished.toLowerCase()}.`;
       } else {
-        // If the concept mentions the name, ensure it's capitalized properly
-        polished = polished.replace(new RegExp(name, 'gi'), name);
+        description = polished.replace(new RegExp(name, 'gi'), name);
       }
 
-      // Expand terse descriptions into more evocative prose
-      if (!/\. /.test(polished) && polished.length < 150) {
-        // Single-sentence concept — expand it
-        const expansions = [];
+      // ── Deepen the description with sensory details derived from the concept ──
+      if (!description.endsWith('.')) description += '.';
 
-        if (/fire|flame|burn|blaze/.test(lower)) {
-          expansions.push("Tongues of flame lick across its form, leaving trails of ash in the air.");
-        } else if (/ice|frost|frozen|cold|chill/.test(lower)) {
-          expansions.push("Its very presence chills the air, and frost spreads beneath its feet.");
-        } else if (/shadow|dark|void|night/.test(lower)) {
-          expansions.push("Shadows pool around it, as if light itself fears to touch its frame.");
-        } else if (/lightning|electric|storm|thunder/.test(lower)) {
-          expansions.push("Crackling electricity arcs across its surface, and the smell of ozone fills the air.");
-        } else if (/poison|toxic|venom/.test(lower)) {
-          expansions.push("A sickly miasma surrounds it, and noxious fumes seep from its form.");
-        } else if (/holy|divine|radiant|celestial|sacred/.test(lower)) {
-          expansions.push("An aura of divine light surrounds it, filling the hearts of observers with awe and reverence.");
-        } else if (/undead|death|necrotic|bones|corpse/.test(lower)) {
-          expansions.push("The stench of the grave clings to it, and its movements are accompanied by an eerie wail.");
-        } else if (/dragon|wyrm|drake|draconic/.test(lower)) {
-          expansions.push("Its scales shimmer with an otherworldly iridescence, and ancient power radiates from within.");
+      // Add sensory expansion if description is terse (less than 2 sentences or very short)
+      if (description.split(/\.\s+/).length < 2 || description.length < 100) {
+        const sensoryAdds = [];
+
+        // Use profile adjectives and elements for sensory details — check concept keywords for best match
+        if (profile) {
+          // Use the concept text to determine the BEST sensory match (not just first element detected)
+          if (/water|aquatic|ocean|sea|lake|river|fluid|wave/.test(lower)) {
+            sensoryAdds.push("Water cascades endlessly across its form, and the soothing sound of gentle waves fills the air around it.");
+          } else if (/serene|peace|calm|tranquil|gentle|soothing/.test(lower)) {
+            sensoryAdds.push("A profound sense of peace radiates from it, calming the hearts and minds of all who draw near.");
+          } else if (/holy|divine|radiant|celestial|sacred|blessed|spirit/.test(lower)) {
+            sensoryAdds.push("An ethereal glow surrounds it, casting soft light that soothes wounds and eases troubled minds.");
+          } else if (profile.elements.includes('fire') || /fire|flame|burn|blaze|lava/.test(lower)) {
+            sensoryAdds.push("Tongues of flame lick across its form, leaving trails of ash and heat in the air.");
+          } else if (profile.elements.includes('ice') || /ice|frost|frozen|cold/.test(lower)) {
+            sensoryAdds.push("Its very presence chills the air, and frost spreads beneath its feet with each step.");
+          } else if (/shadow|dark|void|night|darkness/.test(lower)) {
+            sensoryAdds.push("Shadows pool around it, as if light itself fears to touch its frame.");
+          } else if (profile.elements.includes('lightning') || /lightning|electric|storm|thunder/.test(lower)) {
+            sensoryAdds.push("Crackling electricity arcs across its surface, and the acrid smell of ozone fills the air.");
+          } else if (profile.elements.includes('poison') || /poison|toxic|venom/.test(lower)) {
+            sensoryAdds.push("A sickly miasma surrounds it, and noxious fumes seep from its form.");
+          } else if (profile.elements.includes('radiant')) {
+            sensoryAdds.push("An aura of divine light surrounds it, filling the hearts of observers with awe and reverence.");
+          } else if (profile.elements.includes('necrotic')) {
+            sensoryAdds.push("The stench of the grave clings to it, and its movements are accompanied by an eerie wail.");
+          }
+
+          // Add behavioral note from verbs
+          if (profile.verbs.length > 0) {
+            const verb = profile.verbs[0];
+            if (verb === 'flies') sensoryAdds.push(`The ${name} moves with powerful, purposeful flight, its wings beating with ancient grace.`);
+            else if (verb === 'hunts') sensoryAdds.push(`The ${name} moves with predatory grace, every muscle coiled and ready to strike.`);
+            else if (verb === 'guards') sensoryAdds.push(`The ${name} stands sentinel with unwavering focus, radiating an air of grim determination.`);
+          }
+        } else {
+          // Fallback sensory details based on element/type
+          if (/fire|flame|burn|blaze|lava|volcanic/.test(lower)) {
+            sensoryAdds.push("Tongues of flame lick across its form, leaving trails of ash in the air.");
+          } else if (/ice|frost|frozen|cold|chill|glacier|arctic/.test(lower)) {
+            sensoryAdds.push("Its very presence chills the air, and frost spreads beneath its feet.");
+          } else if (/shadow|dark|void|night|darkness/.test(lower)) {
+            sensoryAdds.push("Shadows pool around it, as if light itself fears to touch its frame.");
+          } else if (/lightning|electric|storm|thunder|bolt/.test(lower)) {
+            sensoryAdds.push("Crackling electricity arcs across its surface, and the smell of ozone fills the air.");
+          } else if (/poison|toxic|venom|acid|corrosive/.test(lower)) {
+            sensoryAdds.push("A sickly miasma surrounds it, and noxious fumes seep from its form.");
+          } else if (/holy|divine|radiant|celestial|sacred|blessed/.test(lower)) {
+            sensoryAdds.push("An aura of divine light surrounds it, filling hearts with awe and reverence.");
+          } else if (/undead|death|necrotic|bones|corpse|skeletal/.test(lower)) {
+            sensoryAdds.push("The stench of the grave clings to it, and its movements are accompanied by an eerie wail.");
+          } else if (/dragon|wyrm|drake|draconic|reptilian/.test(lower)) {
+            sensoryAdds.push("Its scales shimmer with an otherworldly iridescence, and ancient power radiates from within.");
+          } else if (/evil|dark|sinister|malevolent|cruel/.test(lower)) {
+            sensoryAdds.push("An oppressive aura of malice hangs about it, making the air feel thick and hard to breathe. Those who meet its gaze feel a chill run down their spine.");
+          } else if (/good|noble|righteous|benevolent/.test(lower)) {
+            sensoryAdds.push("There is an unmistakable nobility in its bearing, a quiet dignity that commands respect from all who behold it.");
+          } else if (/construct|golem|mechanical|machine/.test(lower)) {
+            sensoryAdds.push("Gears whir and arcane sigils pulse beneath its surface, the hum of magical engineering filling the air.");
+          }
         }
 
-        if (expansions.length > 0) {
-          polished = polished + " " + expansions[0];
+        // Always provide at least some sensory details
+        if (sensoryAdds.length === 0) {
+          const genericSensory = [
+            `Its presence commands attention — an unmistakable air of power and danger surrounds ${name}.`,
+            `There is something deeply unsettling about the way it moves, a wrongness that triggers primal fear in all who witness it.`,
+            `The air itself seems to thicken in its presence, as though reality bends around its formidable frame.`,
+            `Its eyes gleam with an intelligence that goes beyond mere instinct, watching, calculating, waiting.`
+          ];
+          sensoryAdds.push(genericSensory[Math.floor(Math.random() * genericSensory.length)]);
+        }
+
+        if (sensoryAdds.length > 0) {
+          description += ' ' + sensoryAdds[Math.floor(Math.random() * sensoryAdds.length)];
         }
       }
 
       // Ensure it ends with proper punctuation
-      if (!polished.endsWith('.')) {
-        polished += '.';
-      }
+      if (!description.endsWith('.')) description += '.';
 
-      // Limit to 2-3 sentences max
-      const sentences = polished.split(/(?<=[.!?])\s+/);
-      polished = sentences.slice(0, 3).join(' ');
+      // Limit to 2-4 sentences
+      const sentences = description.split(/(?<=[.!?])\s+/);
+      description = sentences.slice(0, 4).join(' ');
 
-      return polished;
+      return description;
     }
 
-    // ── Rich lore paragraph — derived from concept ──
-    function generateRichLore(name, type, element, concept, isCorrupted, environments, archetypes, origin) {
+    // ── Rich lore paragraph — deeply derived from concept ──
+    function generateRichLore(name, type, element, concept, isCorrupted, environments, archetypes, origin, profile = null) {
       const lower = concept.toLowerCase();
       const loreFragments = [];
 
       // ═════════════════════════════════════════════════════════════════════
-      // ORIGIN STORY — hook from concept keywords
+      // ORIGIN STORY — hook from concept keywords and profile relationships
       // ═════════════════════════════════════════════════════════════════════
-      if (/ancient|primordial|elder|old|forgotten|ages? past/.test(lower)) {
+      if (profile && profile.relationships.length > 0) {
+        const rel = profile.relationships[0];
+        if (/servant|follower|worships|serves/.test(rel)) {
+          loreFragments.push(`Bound to serve ${rel} since time immemorial`);
+        } else if (/born|created|forged|made/.test(rel)) {
+          loreFragments.push(`Forged by ${rel}, this creature arose as a testament to power and dominion`);
+        } else if (/cursed|bound|chained|linked/.test(rel)) {
+          loreFragments.push(`Cursed and bound by ${rel}, forever seeking escape from its eternal chains`);
+        }
+      } else if (/ancient|primordial|elder|old|forgotten|ages? past/.test(lower)) {
         loreFragments.push(`Created in a forgotten age by ${origin === 'Artificial' ? 'master artificers' : origin === 'Supernatural' ? 'ancient deities' : 'powerful mages'}`);
       } else if (/tribe|clan|people|civilization|culture/.test(lower)) {
         loreFragments.push(`Forged by a ${/peace|peaceful|serene/.test(lower) ? 'peaceful' : 'proud'} culture as a guardian of their most sacred values`);
       } else if (/temple|shrine|sanctum|holy|divine|sacred/.test(lower)) {
         loreFragments.push(`Manifested within a holy sanctum, bound to the sacred ${element || 'arcane'} forces that dwell there`);
-      } else if (/curse|cursed|doom|fate/.test(lower)) {
-        loreFragments.push(`Cursed into existence as punishment for ancient sins`);
-      } else if (/experiment|creation|craft|forge|build/.test(lower)) {
+      } else if (/curse|cursed|doom|fate|damned/.test(lower)) {
+        loreFragments.push(`Cursed into existence as punishment for ancient sins and transgressions`);
+      } else if (/experiment|creation|craft|forge|build|made|built/.test(lower)) {
         loreFragments.push(`Deliberately crafted by ${origin === 'Artificial' ? 'skilled artificers' : 'powerful sorcerers'} to be the ultimate ${type.toLowerCase()}`);
       } else {
         loreFragments.push(`Born from ${origin === 'Supernatural' ? 'divine intervention' : origin === 'Artificial' ? 'arcane engineering' : 'raw magical energy'}`);
@@ -7497,9 +8131,9 @@
       // CORRUPTION ARC — if applicable
       // ═════════════════════════════════════════════════════════════════════
       if (isCorrupted) {
-        if (/fell|darkness|tainted|twisted|warped|corrupted|dark ritual/.test(lower)) {
+        if (/fell|darkness|tainted|twisted|warped|corrupted|dark ritual|corruption/.test(lower)) {
           loreFragments.push(`but over time it fell to corruption, twisted by dark rituals and malevolent magic`);
-        } else if (/betrayed|forsaken|abandoned|forgotten/.test(lower)) {
+        } else if (/betrayed|forsaken|abandoned|forgotten|cast aside/.test(lower)) {
           loreFragments.push(`until it was betrayed by those who created it, and in its despair, it turned to darker purposes`);
         } else {
           loreFragments.push(`though over centuries its magic soured, twisting its original noble purpose into something sinister`);
@@ -7507,23 +8141,96 @@
       }
 
       // ═════════════════════════════════════════════════════════════════════
-      // PURPOSE / ROLE — what it does now
+      // PURPOSE / ROLE — what it does now (use profile motivation if available)
       // ═════════════════════════════════════════════════════════════════════
-      if (/guardian|protect|defend|defend|sentinel|watchman/.test(lower)) {
-        loreFragments.push(`Now it stands as ${isCorrupted ? 'a twisted guardian of forbidden knowledge' : 'an eternal sentinel, fierce and unwavering'}`);
-      } else if (/hunt|hunt|predator|prey/.test(lower)) {
-        loreFragments.push(`It now stalks the lands as a relentless predator, driven by ${isCorrupted ? 'malice' : 'its ancient nature'}`);
-      } else if (/seek|quest|search|wander/.test(lower)) {
-        loreFragments.push(`It wanders the realm, forever seeking ${isCorrupted ? 'revenge or chaos' : 'its true purpose'}`);
-      } else if (/dwell|lair|nest|home|roost/.test(lower)) {
-        loreFragments.push(`It has made its lair in the deepest, most dangerous places, ${isCorrupted ? 'a blight upon the land' : 'where few dare to venture'}`);
-      } else if (/plague|curse|scourge|bane|terror/.test(lower)) {
-        loreFragments.push(`It has become a scourge upon the land, ${isCorrupted ? 'feared and reviled by all' : 'respected for its power and majesty'}`);
+      if (profile && profile.userMotivation) {
+        loreFragments.push(`its purpose now is to ${profile.userMotivation}`);
+      } else if (/guardian|protect|defend|sentinel|watchman|warden/.test(lower)) {
+        loreFragments.push(`now it stands as ${isCorrupted ? 'a twisted guardian of forbidden knowledge' : 'an eternal sentinel, fierce and unwavering in its duty'}`);
+      } else if (/hunt|predator|prey|stalks|stalk/.test(lower)) {
+        loreFragments.push(`it now stalks the lands as a relentless predator, driven by ${isCorrupted ? 'malice and hunger' : 'its ancient nature and instincts'}`);
+      } else if (/seek|quest|search|wander|roams/.test(lower)) {
+        loreFragments.push(`it wanders the realm, forever seeking ${isCorrupted ? 'revenge, chaos, or conquest' : 'its true purpose or lost home'}`);
+      } else if (/dwell|lair|nest|home|roost|haunt/.test(lower)) {
+        loreFragments.push(`it has made its lair in the deepest, most dangerous places, ${isCorrupted ? 'a blight upon the land' : 'where few dare to venture unprepared'}`);
+      } else if (/plague|curse|scourge|bane|terror|spreads/.test(lower)) {
+        loreFragments.push(`it has become a scourge upon the land, ${isCorrupted ? 'feared and reviled by all who know of its existence' : 'respected for its power and majesty'}`);
       } else {
-        loreFragments.push('Now it ' + (isCorrupted ? 'spreads darkness and despair wherever it goes' : 'represents ' + (element || 'ancient') + ' power incarnate'));
+        loreFragments.push('it ' + (isCorrupted ? 'now spreads darkness and despair wherever it goes' : 'now embodies the raw power of ' + (element || 'ancient magic') + ', a force of nature unto itself'));
       }
 
-      return loreFragments.join(', ') + '.';
+      // ═════════════════════════════════════════════════════════════════════
+      // BEHAVIORAL DETAILS — derived from profile or concept verbs
+      // ═════════════════════════════════════════════════════════════════════
+      const behaviorParts = [];
+      if (profile && profile.verbs.length > 0) {
+        const verbBehavior = {
+          'breathes': `Those who have witnessed its devastating breath speak of it in hushed whispers around campfires`,
+          'hunts': `It hunts with a patience and cunning that few can match, often toying with its quarry before the final strike`,
+          'guards': `It guards its charge with tireless vigilance, striking down any who dare approach without permission`,
+          'flies': `It commands the skies with terrifying grace, casting a shadow across the land like a living eclipse`,
+          'devours': `Its appetite is legendary — entire caravans have vanished into its maw without a trace`,
+          'summons': `It calls lesser creatures to its side with a thought, commanding legions that share its dark purpose`,
+          'burns': `Everything in its wake is left charred and smoldering, a trail of devastation marking its passage`,
+          'freezes': `The temperature drops sharply in its presence, and those caught in its gaze find their limbs growing numb`,
+          'drains': `Survivors describe an overwhelming sensation of weakness and cold as it feeds, their very life force slipping away`,
+          'roars': `Its roar can be heard for miles, a sound that sends flocks of birds scattering and villages into panic`,
+          'crawls': `It moves with unsettling silence despite its mass, appearing where least expected`,
+          'poisons': `A trail of withered plants and sickened animals marks its path through the land`,
+          'casts': `The arcane energies it commands warp the fabric of reality itself in its presence`,
+          'controls': `Its will bends the minds of lesser beings, turning allies against each other with a mere thought`,
+          'radiates': `The energy it radiates can be felt from a great distance, a palpable pressure against the skin and soul`
+        };
+        for (const verb of profile.verbs) {
+          if (verbBehavior[verb]) {
+            behaviorParts.push(verbBehavior[verb]);
+            break;
+          }
+        }
+      }
+      if (behaviorParts.length === 0) {
+        const genericBehaviors = [
+          `Those who survive an encounter describe an overwhelming aura of dread and wrongness`,
+          `Scholars debate whether it is truly malevolent or simply an apex predator following its nature`,
+          `Its very presence warps the environment around it, leaving a trail of devastation in its wake`,
+          `Adventurers who have faced it and lived speak of an intelligence behind its eyes that chills the soul`
+        ];
+        behaviorParts.push(genericBehaviors[Math.floor(Math.random() * genericBehaviors.length)]);
+      }
+
+      // ═════════════════════════════════════════════════════════════════════
+      // CONCEPT-SPECIFIC FLAVOR — reference unique aspects from the concept
+      // ═════════════════════════════════════════════════════════════════════
+      if (profile && profile.creatureNouns.length > 0) {
+        const noun = profile.creatureNouns[0];
+        const nounFlavor = {
+          'turtle': `Despite its resemblance to a common ${noun}, there is nothing gentle about the ${name} — its shell is harder than adamantine and its jaws can crush steel`,
+          'dragon': `Even among its kind, the ${name} is feared and respected, a force of nature unto itself`,
+          'wolf': `The ${name} possesses the cunning instincts of the pack ${noun} magnified a hundredfold, able to coordinate attacks with supernatural precision`,
+          'bear': `With the raw power of the mightiest ${noun} and the intelligence of a master strategist, the ${name} is a terror on any battlefield`,
+          'spider': `Like the ${noun} at the center of its web, the ${name} is patient, calculating, and utterly lethal`,
+          'serpent': `With the sinuous grace of the ${noun} and powers far beyond any natural creature, the ${name} strikes without warning`,
+          'owl': `The ${name} watches from the shadows with the keen eyes of an ${noun}, missing nothing in its domain`
+        };
+        if (nounFlavor[noun]) {
+          behaviorParts.push(nounFlavor[noun]);
+        }
+      }
+
+      // Assemble final lore — origin sentence + purpose + behavior sentence(s)
+      let lore = '';
+      if (loreFragments.length > 0) {
+        lore = loreFragments[0].charAt(0).toUpperCase() + loreFragments[0].slice(1);
+        for (let i = 1; i < loreFragments.length; i++) {
+          lore += ', ' + loreFragments[i];
+        }
+        lore += '. ';
+      }
+      lore += behaviorParts[0].charAt(0).toUpperCase() + behaviorParts[0].slice(1) + '.';
+      if (behaviorParts.length > 1) {
+        lore += ' ' + behaviorParts[1].charAt(0).toUpperCase() + behaviorParts[1].slice(1) + '.';
+      }
+      return lore;
     }
 
     // ── Loot generation ──
@@ -7703,6 +8410,18 @@
         return;
       }
 
+      // ── Gather optional advanced options ──
+      const crPref = document.getElementById('monsterCRPref')?.value;
+      const environment = document.getElementById('monsterEnvironment')?.value;
+      const motivation = document.getElementById('monsterMotivation')?.value;
+      const features = document.getElementById('monsterFeatures')?.value;
+
+      const options = {};
+      if (crPref && crPref !== 'auto') options.cr = crPref;
+      if (environment) options.environment = environment;
+      if (motivation) options.motivation = motivation;
+      if (features) options.features = features;
+
       const button = event?.target;
       if (button) {
         button.textContent = 'Analyzing concept...';
@@ -7718,7 +8437,7 @@
       // Small timeout for UI update
       setTimeout(() => {
         try {
-          const monster = generateMonsterAI(concept);
+          const monster = generateMonsterAI(concept, options);
           // Store the original concept for display in stat block
           monster.concept = concept;
           lastGeneratedMonster = monster;

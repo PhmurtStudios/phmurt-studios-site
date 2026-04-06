@@ -1431,7 +1431,7 @@ const DND_SPELLS = [
 ];
 
 
-function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null, activeCampaignId = null, onPartyUpdate = null, setData = null, campaignEncounters = [], worldMapCommand = null }) {
+function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null, activeCampaignId = null, onPartyUpdate = null, setData = null, campaignEncounters = [], worldMapCommand = null, isTraditional = false }) {
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
   const fileRef = useRef(null);
@@ -1482,7 +1482,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   const [combatants, setCombatants] = useState([]);
   const [turn, setTurn] = useState(0);
   const [round, setRound] = useState(1);
-  const [combatLive, setCombatLive] = useState(false);
+  const [combatLive, _setCombatLive] = useState(false);
+  const setCombatLive = isTraditional ? () => {} : _setCombatLive; // gate combat in traditional mode
   const [combatTargetByActor, setCombatTargetByActor] = useState({});
   const [turnStateByToken, setTurnStateByToken] = useState({});
   const [playModePresentation, setPlayModePresentation] = useState("simple");
@@ -10020,9 +10021,13 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     { c:"#143040", l:"Water" }, { c:"#4a3e30", l:"Sand" },
   ];
 
-  const bmModes = viewRole === "player"
-    ? [{ id:"select", icon:Target, label:"Select" }, { id:"combat", icon:Swords, label:"Combat" }]
-    : [{ id:"select", icon:Target, label:"Select" }, { id:"draw", icon:Edit3, label:"Draw" }, { id:"combat", icon:Swords, label:"Combat" }];
+  const bmModes = isTraditional
+    ? (viewRole === "player"
+      ? [{ id:"select", icon:Target, label:"Select" }]
+      : [{ id:"select", icon:Target, label:"Select" }, { id:"draw", icon:Edit3, label:"Draw" }])
+    : (viewRole === "player"
+      ? [{ id:"select", icon:Target, label:"Select" }, { id:"combat", icon:Swords, label:"Combat" }]
+      : [{ id:"select", icon:Target, label:"Select" }, { id:"draw", icon:Edit3, label:"Draw" }, { id:"combat", icon:Swords, label:"Combat" }]);
 
   const drawToolDefs = [
     { id:"draw", label:"Draw", icon:Edit3 },
@@ -11519,7 +11524,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           <div style={{ display:"flex", borderBottom:"1px solid rgba(255,255,255,0.04)", flexShrink:0, padding:"0 4px" }}>
             {[
               {id:"inspect",label:"Inspect",icon:Eye, roles:["dm","player"]},
-              {id:"combat",label:"Combat",icon:Swords, roles:["dm","player"]},
+              ...(isTraditional ? [] : [{id:"combat",label:"Combat",icon:Swords, roles:["dm","player"]}]),
               {id:"tokens",label:"Tokens",icon:Users, roles:["dm"]},
               {id:"map",label:"Map",icon:Globe, roles:["dm"]},
               {id:"settings",label:"Settings",icon:Settings, roles:["dm"]},
