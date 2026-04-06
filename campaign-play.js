@@ -10021,6 +10021,29 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   const subtleBorder = lm("rgba(255,255,255,0.08)", "rgba(0,0,0,0.1)");
   const subtleBorderFaint = lm("rgba(255,255,255,0.04)", "rgba(0,0,0,0.06)");
   const hoverBg = lm("rgba(255,255,255,0.06)", "rgba(0,0,0,0.06)");
+  /* ── Theme-aware text colors (cream-on-dark ↔ dark-on-light) ── */
+  const tx = lm("#f2e8d6", "#1a0e04");                      // primary text
+  const tx90 = lm("rgba(242,232,214,0.9)", "rgba(12,4,0,0.88)");
+  const tx85 = lm("rgba(242,232,214,0.85)", "rgba(12,4,0,0.82)");
+  const tx80 = lm("rgba(242,232,214,0.8)", "rgba(12,4,0,0.75)");
+  const tx70 = lm("rgba(242,232,214,0.7)", "rgba(12,4,0,0.65)");
+  const tx60 = lm("rgba(242,232,214,0.6)", "rgba(12,4,0,0.55)");
+  const tx50 = lm("rgba(242,232,214,0.5)", "rgba(12,4,0,0.45)");
+  const tx40 = lm("rgba(242,232,214,0.4)", "rgba(12,4,0,0.38)");
+  const tx35 = lm("rgba(242,232,214,0.35)", "rgba(12,4,0,0.32)");
+  const tx30 = lm("rgba(242,232,214,0.3)", "rgba(12,4,0,0.28)");
+  const tx25 = lm("rgba(242,232,214,0.25)", "rgba(12,4,0,0.22)");
+  const tx20 = lm("rgba(242,232,214,0.2)", "rgba(12,4,0,0.18)");
+  const tx15 = lm("rgba(242,232,214,0.15)", "rgba(12,4,0,0.12)");
+  /* ── Theme-aware border/surface colors ── */
+  const bd04 = lm("rgba(255,255,255,0.04)", "rgba(0,0,0,0.06)");
+  const bd06 = lm("rgba(255,255,255,0.06)", "rgba(0,0,0,0.08)");
+  const bd08 = lm("rgba(255,255,255,0.08)", "rgba(0,0,0,0.1)");
+  const bg02 = lm("rgba(255,255,255,0.02)", "rgba(0,0,0,0.02)");
+  const bg03 = lm("rgba(255,255,255,0.03)", "rgba(0,0,0,0.03)");
+  const bg04 = lm("rgba(255,255,255,0.04)", "rgba(0,0,0,0.04)");
+  const bg06 = lm("rgba(255,255,255,0.06)", "rgba(0,0,0,0.06)");
+  const bg08 = lm("rgba(255,255,255,0.08)", "rgba(0,0,0,0.08)");
   const panelShadow = lm("0 20px 58px rgba(0,0,8,0.78)", "0 20px 58px rgba(0,0,0,0.18)");
   const bgPresets = isLightMode ? [
     { c:"#f5ede0", l:"Parchment" }, { c:"#e8dcc8", l:"Tan" }, { c:"#d5cbb5", l:"Stone" },
@@ -10382,9 +10405,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12 }}>
                     <div style={{ minWidth:0 }}>
                       <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
-                        <span style={{ fontFamily:T.ui, fontSize:11, letterSpacing:"1.8px", color:"#f2e8d6", textTransform:"uppercase", fontWeight:600 }}>{battleSceneLabel}</span>
+                        <span style={{ fontFamily:T.ui, fontSize:11, letterSpacing:"1.8px", color:tx, textTransform:"uppercase", fontWeight:600 }}>{battleSceneLabel}</span>
                         <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:"#58aaff", textTransform:"uppercase", border:"1px solid rgba(88,170,255,0.25)", borderRadius:"999px", padding:"2px 8px", background:"rgba(88,170,255,0.08)" }}>{modeLabel}</span>
-                        <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:viewRole === "dm" ? "#ffd54f" : "#58aaff", textTransform:"uppercase", border:"1px solid rgba(255,255,255,0.08)", borderRadius:"999px", padding:"2px 8px", background:"rgba(255,255,255,0.03)" }}>{viewRole === "dm" ? "DM View" : "Player View"}</span>
+                        <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:viewRole === "dm" ? "#ffd54f" : "#58aaff", textTransform:"uppercase", border:"1px solid "+bd08, borderRadius:"999px", padding:"2px 8px", background:bg03 }}>{viewRole === "dm" ? "DM View" : "Player View"}</span>
                       </div>
                       <div style={{ marginTop:7, display:"flex", flexWrap:"wrap", gap:8, alignItems:"center" }}>
                         <div style={{ fontFamily:T.ui, fontSize:10, color:"#ffd54f", letterSpacing:"1px", textTransform:"uppercase" }}>
@@ -10402,7 +10425,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                       {combatLive && viewRole === "dm" && (
                         <React.Fragment>
                           <button onClick={prevTurn} title="Undo turn / previous combatant"
-                            style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"8px 10px", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, background:"rgba(255,255,255,0.03)", color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer" }}>
+                            style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"8px 10px", border:"1px solid "+bd08, borderRadius:10, background:bg03, color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer" }}>
                             <RefreshCw size={12} /> Undo
                           </button>
                           <button onClick={nextTurn}
@@ -10413,7 +10436,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                       )}
                       {viewRole === "dm" && (
                         <button onClick={() => setSidebarOpen(prev => !prev)} title="Toggle initiative rail"
-                          style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"8px 10px", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, background:"rgba(255,255,255,0.03)", color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer" }}>
+                          style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"8px 10px", border:"1px solid "+bd08, borderRadius:10, background:bg03, color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer" }}>
                           <Activity size={12} /> Tracker
                         </button>
                       )}
@@ -10448,7 +10471,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               const controllerLabel = getPartyProfile(battleFocusToken)?.player || battleFocusToken.player || (battleFocusToken.tokenType === "pc" ? "Player" : "DM");
               return (
                 <div style={{ position:"absolute", left:80, top:108, width:320, maxHeight:"calc(100% - 224px)", zIndex:24, background: lm("rgba(10,10,16,0.92)", "rgba(247,240,222,0.95)"), backdropFilter:"blur(16px)", border: lm("1px solid rgba(255,255,255,0.08)", "1px solid rgba(0,0,0,0.1)"), borderRadius:16, boxShadow: lm("0 18px 44px rgba(0,0,8,0.55)", "0 18px 44px rgba(0,0,0,0.12)"), overflow:"hidden", display:"flex", flexDirection:"column" }}>
-                  <div style={{ padding:"12px 14px", borderBottom:"1px solid rgba(255,255,255,0.08)", background:"linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))" }}>
+                  <div style={{ padding:"12px 14px", borderBottom:"1px solid "+bd08, background:"linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))" }}>
                     <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                       <div style={{ width:48, height:48, borderRadius:"50%", background:battleFocusToken.color, border:"2px solid " + (battleFocusToken.id === activeCombatantId ? "#ffd54f" : "rgba(255,255,255,0.12)"), overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontFamily:T.ui, fontSize:14, fontWeight:700, boxShadow:battleFocusToken.id === activeCombatantId ? "0 0 18px rgba(255,213,79,0.3)" : "none", flexShrink:0 }}>
                         {battleFocusToken.imageSrc ? <img src={battleFocusToken.imageSrc} style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (battleFocusToken.label || battleFocusToken.name.substring(0,2)).toUpperCase()}
@@ -10459,7 +10482,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                           {(battleFocusToken.tokenType || "creature").toUpperCase()} · {controllerLabel} · {(battleFocusToken.size || "medium").toUpperCase()}{battleFocusCombatant ? " · Init " + battleFocusCombatant.init : ""}
                         </div>
                       </div>
-                      <button onClick={() => { setSelectedTokenId(null); setBattleFocusPanelCollapsed(true); }} style={{ background:"rgba(255,255,255,0.03)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:10, color:T.textFaint, cursor:"pointer", padding:6 }}><X size={14} /></button>
+                      <button onClick={() => { setSelectedTokenId(null); setBattleFocusPanelCollapsed(true); }} style={{ background:bg03, border:"1px solid "+bd08, borderRadius:10, color:T.textFaint, cursor:"pointer", padding:6 }}><X size={14} /></button>
                     </div>
                     {battleFocusToken.hp != null && battleFocusToken.maxHp && (
                       <div style={{ marginTop:10 }}>
@@ -10513,7 +10536,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     <div style={{ marginTop:12, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.textFaint, textTransform:"uppercase" }}>Rules Now</div>
                     <div style={{ display:"flex", flexDirection:"column", gap:6, marginTop:8 }}>
                       {(hints.length ? hints : [{ tone:T.textMuted, text: battleFocusCanAct ? "No blocking conditions detected. Choose an action below or open the full panel." : "Inspecting this unit. Actions unlock on its turn or for owned characters." }]).map((hint, ix) => (
-                        <div key={"battle-hint-"+ix} style={{ padding:"8px 9px", borderRadius:10, border:"1px solid rgba(255,255,255,0.06)", background:"rgba(0,0,0,0.14)", fontFamily:T.body, fontSize:11, color:T.textMuted, lineHeight:1.35 }}>
+                        <div key={"battle-hint-"+ix} style={{ padding:"8px 9px", borderRadius:10, border:"1px solid "+bd06, background:"rgba(0,0,0,0.14)", fontFamily:T.body, fontSize:11, color:T.textMuted, lineHeight:1.35 }}>
                           <span style={{ color:hint.tone || T.text, fontFamily:T.ui, fontSize:8, letterSpacing:"0.9px", textTransform:"uppercase", marginRight:6 }}>Rule</span>
                           {hint.text}
                         </div>
@@ -10559,7 +10582,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                         </button>
                       )}
                       {trayToken && trayCanAct && (
-                        <button onClick={() => openTurnPopupForToken(trayToken)} style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"8px 10px", border:"1px solid rgba(255,255,255,0.08)", borderRadius:12, background:"rgba(255,255,255,0.03)", color:T.text, cursor:"pointer", fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase" }}>
+                        <button onClick={() => openTurnPopupForToken(trayToken)} style={{ display:"inline-flex", alignItems:"center", gap:6, padding:"8px 10px", border:"1px solid "+bd08, borderRadius:12, background:bg03, color:T.text, cursor:"pointer", fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase" }}>
                           <MoreVertical size={12} /> Side Panel
                         </button>
                       )}
@@ -10572,7 +10595,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                         <button key={"tray-"+act.key} onClick={() => { if (!act.disabled) act.onClick(); }}
                           disabled={!!act.disabled}
                           title={act.disabledReason || act.effect || act.name}
-                          style={{ minWidth:148, maxWidth:220, display:"flex", alignItems:"flex-start", gap:8, padding:"10px 11px", borderRadius:14, background:act.disabled ? "rgba(0,0,0,0.18)" : "rgba(255,255,255,0.04)", border:"1px solid " + (act.disabled ? "rgba(255,255,255,0.06)" : (act.tone || "#fff") + "33"), cursor:act.disabled ? "not-allowed" : "pointer", color:act.disabled ? T.textFaint : T.text, textAlign:"left", opacity:act.disabled ? 0.6 : 1, flex:"0 0 auto" }}>
+                          style={{ minWidth:148, maxWidth:220, display:"flex", alignItems:"flex-start", gap:8, padding:"10px 11px", borderRadius:14, background:act.disabled ? "rgba(0,0,0,0.18)" : bg04, border:"1px solid " + (act.disabled ? bg06 : (act.tone || "#fff") + "33"), cursor:act.disabled ? "not-allowed" : "pointer", color:act.disabled ? T.textFaint : T.text, textAlign:"left", opacity:act.disabled ? 0.6 : 1, flex:"0 0 auto" }}>
                           <ActIcon size={14} style={{ marginTop:2, color:act.disabled ? T.textFaint : (act.tone || T.text) }} />
                           <div style={{ minWidth:0, flex:1 }}>
                             <div style={{ fontFamily:T.ui, fontSize:11, fontWeight:600, letterSpacing:"0.4px", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{act.name}</div>
@@ -10592,13 +10615,13 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             })()}
 
             {/* Zoom indicator */}
-            <div style={{ position:"absolute", bottom:12, left: cockpitModeActive ? 18 : 80, background:"rgba(0,0,0,0.55)", backdropFilter:"blur(4px)", padding:"5px 12px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"rgba(255,255,255,0.7)", letterSpacing:"1.5px", pointerEvents:"none", border:"1px solid rgba(255,255,255,0.08)", zIndex:8 }}>
+            <div style={{ position:"absolute", bottom:12, left: cockpitModeActive ? 18 : 80, background:"rgba(0,0,0,0.55)", backdropFilter:"blur(4px)", padding:"5px 12px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"rgba(255,255,255,0.7)", letterSpacing:"1.5px", pointerEvents:"none", border:"1px solid "+bd08, zIndex:8 }}>
               {Math.round(zoom*100)}%
             </div>
 
             {/* Mode indicators (stacked top-left) */}
             {!cockpitModeActive && pingMode && (
-              <div style={{ position:"absolute", top:14, left:80, background:"rgba(88,170,255,0.85)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"#f2e8d6", letterSpacing:"1.5px", pointerEvents:"none", zIndex:10, border:"1px solid rgba(88,170,255,0.4)", boxShadow:"0 2px 10px rgba(88,170,255,0.25)" }}>
+              <div style={{ position:"absolute", top:14, left:80, background:"rgba(88,170,255,0.85)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:tx, letterSpacing:"1.5px", pointerEvents:"none", zIndex:10, border:"1px solid rgba(88,170,255,0.4)", boxShadow:"0 2px 10px rgba(88,170,255,0.25)" }}>
                 PING MODE (click to ping, Esc to cancel)
               </div>
             )}
@@ -10641,7 +10664,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             {diceResult && (
               <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", background: diceResult.crit ? "rgba(46,139,87,0.95)" : diceResult.fumble ? "rgba(212,67,58,0.95)" : panelBg, padding:"16px 28px", borderRadius:"8px", zIndex:200, textAlign:"center", border: diceResult.crit ? "2px solid #5ee09a" : diceResult.fumble ? "2px solid #e8605a" : "1px solid " + subtleBorder, pointerEvents:"none", boxShadow:"0 4px 20px rgba(0,0,6,0.50)" }}>
                 <div style={{ fontSize:10, fontFamily:T.ui, color:"rgba(255,255,255,0.6)", letterSpacing:"2px", textTransform:"uppercase", marginBottom:4 }}>{diceResult.name ? diceResult.name + (diceResult.type === "attack" ? " attacks" : diceResult.type === "initiative" ? " initiative" : diceResult.type === "save" ? "" : diceResult.type === "perception" ? " perception" : "") : "d20"}</div>
-                <div style={{ fontSize:36, fontFamily:T.ui, color:"#f2e8d6", fontWeight:700 }}>{diceResult.value}</div>
+                <div style={{ fontSize:36, fontFamily:T.ui, color:tx, fontWeight:700 }}>{diceResult.value}</div>
                 {diceResult.crit && <div style={{ fontSize:10, fontFamily:T.ui, color:"#5ee09a", letterSpacing:"2px", marginTop:2 }}>NAT 20!</div>}
                 {diceResult.fumble && <div style={{ fontSize:10, fontFamily:T.ui, color:"#f06858", letterSpacing:"2px", marginTop:2 }}>NAT 1!</div>}
               </div>
@@ -10653,7 +10676,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                 <div style={{ padding:"10px 12px", borderBottom:"1px solid " + T.border, display:"flex", alignItems:"center", gap:8 }}>
                   <input type="text" value={diceInput} onChange={e=>setDiceInput(e.target.value)} placeholder="2d6+3, 1d20, etc" onKeyDown={e=>{ if(e.key==="Enter") rollDiceExpression(diceInput); }}
                     style={{ flex:1, padding:"4px 6px", fontSize:10, fontFamily:T.body, background:T.bgInput, border:"1px solid " + T.border, color:T.text, borderRadius:"2px", outline:"none" }} />
-                  <button onClick={() => rollDiceExpression(diceInput)} style={{ background:cssVar("--crimson"), border:"none", color:"#f2e8d6", padding:"4px 8px", borderRadius:"2px", cursor:"pointer", fontSize:9, fontFamily:T.ui, fontWeight:500 }}>Roll</button>
+                  <button onClick={() => rollDiceExpression(diceInput)} style={{ background:cssVar("--crimson"), border:"none", color:tx, padding:"4px 8px", borderRadius:"2px", cursor:"pointer", fontSize:9, fontFamily:T.ui, fontWeight:500 }}>Roll</button>
                 </div>
                 <div style={{ flex:1, overflowY:"auto", padding:"8px" }}>
                   {rollHistory.length === 0 ? (
@@ -10681,17 +10704,17 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   onMouseLeave={() => setContextMenu(null)}>
                   <div style={{ padding:"8px 14px", fontSize:12, color:T.text, fontWeight:600, borderBottom:"1px solid " + T.border, fontFamily:T.ui, letterSpacing:"0.3px" }}>{pk.name}</div>
                   <button onClick={() => { updateProp(pk.id, { layer: pk.layer === "above" ? "below" : "above" }); setContextMenu(null); }}
-                    onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.04)"} onMouseLeave={e => e.currentTarget.style.background="none"}
+                    onMouseEnter={e => e.currentTarget.style.background=bg04} onMouseLeave={e => e.currentTarget.style.background="none"}
                     style={{...menuBtnStyle, color:T.textMuted}}>
                     {pk.layer === "above" ? "Move Below Tokens" : "Move Above Tokens"}
                   </button>
                   <button onClick={() => { updateProp(pk.id, { locked: !pk.locked }); setContextMenu(null); }}
-                    onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.04)"} onMouseLeave={e => e.currentTarget.style.background="none"}
+                    onMouseEnter={e => e.currentTarget.style.background=bg04} onMouseLeave={e => e.currentTarget.style.background="none"}
                     style={{...menuBtnStyle, color:T.textMuted}}>
                     {pk.locked ? "Unlock" : "Lock Position"}
                   </button>
                   <button onClick={() => { updateProp(pk.id, { rotation: (pk.rotation || 0) + 45 }); setContextMenu(null); }}
-                    onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.04)"} onMouseLeave={e => e.currentTarget.style.background="none"}
+                    onMouseEnter={e => e.currentTarget.style.background=bg04} onMouseLeave={e => e.currentTarget.style.background="none"}
                     style={{...menuBtnStyle, color:T.textMuted}}>
                     Rotate 45°
                   </button>
@@ -10918,7 +10941,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     {actionSections.map((section) => {
                       const SectionIcon = section.meta.icon || Swords;
                       return (
-                        <div key={"action-section-"+section.name} style={{ border:"1px solid rgba(255,255,255,0.08)", borderRadius:"14px", background:"rgba(255,255,255,0.02)", padding:8 }}>
+                        <div key={"action-section-"+section.name} style={{ border:"1px solid "+bd08, borderRadius:"14px", background:bg02, padding:8 }}>
                           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:7 }}>
                             <div style={{ display:"flex", alignItems:"center", gap:7, color:section.meta.tone, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase" }}>
                               <SectionIcon size={12} />
@@ -10948,7 +10971,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                                   <div style={{ flex:1, minWidth:0 }}>
                                     <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:8 }}>
                                       <div style={{ fontSize:12, fontWeight:600, color: act.disabled ? "rgba(255,200,200,0.8)" : T.text, lineHeight:1.25 }}>{act.label}</div>
-                                      <span style={{ flexShrink:0, fontSize:7, fontFamily:T.ui, color:act.disabled ? "#ff9e9e" : act.tone, letterSpacing:"0.8px", textTransform:"uppercase", border:"1px solid " + (act.disabled ? "rgba(255,158,158,0.25)" : act.tone + "33"), borderRadius:"999px", padding:"2px 6px", background:"rgba(255,255,255,0.03)" }}>
+                                      <span style={{ flexShrink:0, fontSize:7, fontFamily:T.ui, color:act.disabled ? "#ff9e9e" : act.tone, letterSpacing:"0.8px", textTransform:"uppercase", border:"1px solid " + (act.disabled ? "rgba(255,158,158,0.25)" : act.tone + "33"), borderRadius:"999px", padding:"2px 6px", background:bg03 }}>
                                         {actionTypeLabel(act.actionType || "action")}
                                       </span>
                                     </div>
@@ -10972,7 +10995,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                       <button onClick={() => setShowConditionMenu(!showConditionMenu)}
                         onMouseEnter={e => { e.currentTarget.style.background="rgba(232,148,10,0.08)"; e.currentTarget.style.transform="translateY(-1px)"; }}
                         onMouseLeave={e => { e.currentTarget.style.background="none"; e.currentTarget.style.transform="none"; }}
-                        style={{...popupBtnStyle, color:"#e8940a", justifyContent:"space-between", border:"1px solid rgba(232,148,10,0.18)", background:"rgba(255,255,255,0.02)"}}>
+                        style={{...popupBtnStyle, color:"#e8940a", justifyContent:"space-between", border:"1px solid rgba(232,148,10,0.18)", background:bg02}}>
                         <span style={{ display:"flex", alignItems:"center", gap:8 }}><AlertTriangle size={14}/> <span style={{ fontSize:12, fontWeight:600 }}>Conditions</span></span>
                         <ChevronRight size={11} style={{ transform: showConditionMenu ? "rotate(90deg)" : "none", transition:"transform 0.15s" }}/>
                       </button>
@@ -11014,7 +11037,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
                     {viewRole === "dm" && (
                       <React.Fragment>
-                        <div style={{ border:"1px solid rgba(255,255,255,0.08)", borderRadius:"14px", background:"rgba(255,255,255,0.02)", padding:8 }}>
+                        <div style={{ border:"1px solid "+bd08, borderRadius:"14px", background:bg02, padding:8 }}>
                         <button onClick={() => { updateToken(tk.id, { hidden: !tk.hidden }); dismissTurnPopup(); }}
                           onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.05)"} onMouseLeave={e => e.currentTarget.style.background="none"}
                           style={{...popupBtnStyle, color:T.textMuted}}>
@@ -11323,11 +11346,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
               {mode === "draw" && drawTool === "terrain" && (
                 <React.Fragment>
-                  <div style={{ width:32, height:1, background:"rgba(255,255,255,0.06)", margin:"4px 0" }} />
+                  <div style={{ width:32, height:1, background:bg06, margin:"4px 0" }} />
                   <div style={{ maxHeight:200, overflowY:"auto", display:"flex", flexDirection:"column", gap:2, scrollbarWidth:"thin", scrollbarColor:"rgba(255,255,255,0.08) transparent" }}>
                     {Object.entries(TERRAIN_TYPES).map(([key, terrain]) => (
                       <button key={key} onClick={() => setSelectedTerrain(key)} title={terrain.label + " (cost: " + terrain.cost + ")"}
-                        onMouseEnter={e => { if (selectedTerrain !== key) e.currentTarget.style.background="rgba(255,255,255,0.06)"; }}
+                        onMouseEnter={e => { if (selectedTerrain !== key) e.currentTarget.style.background=bg06; }}
                         onMouseLeave={e => { if (selectedTerrain !== key) e.currentTarget.style.background="transparent"; }}
                         style={{
                           width:tbBtnW, height:28, display:"flex", alignItems:"center", justifyContent:"center",
@@ -11344,10 +11367,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
               {mode === "draw" && drawTool === "wall" && (
                 <React.Fragment>
-                  <div style={{ width:32, height:1, background:"rgba(255,255,255,0.06)", margin:"4px 0" }} />
+                  <div style={{ width:32, height:1, background:bg06, margin:"4px 0" }} />
                   {Object.entries(WALL_TYPES).map(([key, wt]) => (
                     <button key={key} onClick={() => setSelectedWallType(key)} title={wt.label}
-                      onMouseEnter={e => { if (selectedWallType !== key) e.currentTarget.style.background="rgba(255,255,255,0.04)"; }}
+                      onMouseEnter={e => { if (selectedWallType !== key) e.currentTarget.style.background=bg04; }}
                       onMouseLeave={e => { if (selectedWallType !== key) e.currentTarget.style.background="transparent"; }}
                       style={{
                         width:tbBtnW, height:28, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2,
@@ -11363,18 +11386,18 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
               {mode === "draw" && drawTool === "draw" && (
                 <React.Fragment>
-                  <div style={{ width:32, height:1, background:"rgba(255,255,255,0.06)", margin:"4px 0" }} />
+                  <div style={{ width:32, height:1, background:bg06, margin:"4px 0" }} />
                   <input type="color" value={drawColor} onChange={e=>setDrawColor(e.target.value)}
-                    style={{ width:28, height:28, border:"1px solid rgba(255,255,255,0.08)", background:"none", padding:0, cursor:"pointer", borderRadius:6 }} />
+                    style={{ width:28, height:28, border:"1px solid "+bd08, background:"none", padding:0, cursor:"pointer", borderRadius:6 }} />
                   <select value={drawWidth} onChange={e=>setDrawWidth(parseInt(e.target.value))} title="Brush width"
-                    style={{ width:tbBtnW, padding:"3px 2px", fontSize:9, fontFamily:T.ui, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", color:"rgba(242,232,214,0.5)", borderRadius:6, textAlign:"center", marginTop:2 }}>
+                    style={{ width:tbBtnW, padding:"3px 2px", fontSize:9, fontFamily:T.ui, background:bg04, border:"1px solid "+bd08, color:tx50, borderRadius:6, textAlign:"center", marginTop:2 }}>
                     <option value="2">S</option><option value="3">M</option><option value="6">L</option><option value="10">XL</option>
                   </select>
                 </React.Fragment>
               )}
 
               {/* ── Spacer ── */}
-              {mode === "draw" && <div style={{ width:32, height:1, background:"rgba(255,255,255,0.06)", margin:"5px 0" }} />}
+              {mode === "draw" && <div style={{ width:32, height:1, background:bg06, margin:"5px 0" }} />}
 
               {/* ── Quick Utilities ── */}
               <button onClick={() => setPingMode(!pingMode)} title="Ping (P)"
@@ -11404,7 +11427,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               </button>
 
               {/* ── Spacer ── */}
-              <div style={{ width:32, height:1, background:"rgba(255,255,255,0.06)", margin:"5px 0" }} />
+              <div style={{ width:32, height:1, background:bg06, margin:"5px 0" }} />
 
               {/* ── Mode Switching ── */}
               {bmModes.map(m => {
@@ -11417,7 +11440,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   onMouseEnter={e => tbHover(e, isActive)}
                   onMouseLeave={e => tbLeave(e, isActive)}
                   style={tbBtnStyle(isActive, isGreen ? "green" : "gold")}>
-                  <m.icon size={tbIconSize} color={isActive ? activeColor : "rgba(242,232,214,0.35)"} strokeWidth={isActive ? 2.2 : 1.6} />
+                  <m.icon size={tbIconSize} color={isActive ? activeColor : tx35} strokeWidth={isActive ? 2.2 : 1.6} />
                   {tbLabel(m.label, isActive, isGreen ? "green" : "gold")}
                 </button>
                 );
@@ -11426,10 +11449,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               {/* ── Combat Round Indicator (bottom) ── */}
               {combatLive && (
                 <React.Fragment>
-                  <div style={{ width:32, height:1, background:"rgba(255,255,255,0.06)", margin:"4px 0" }} />
+                  <div style={{ width:32, height:1, background:bg06, margin:"4px 0" }} />
                   <div style={{ width:tbBtnW, padding:"5px 0", background:"rgba(94,224,154,0.06)", borderRadius:8, textAlign:"center" }}>
                     <span style={{ fontSize:8, fontFamily:T.ui, letterSpacing:"1px", color:tbGreenActive, display:"block", fontWeight:700 }}>R{round}</span>
-                    <span style={{ fontSize:7, fontFamily:T.ui, color:"rgba(242,232,214,0.4)" }}>{turn+1}/{Math.max(1, combatants.filter(c => !shouldSkipCombatantRow(c)).length)}</span>
+                    <span style={{ fontSize:7, fontFamily:T.ui, color:tx40 }}>{turn+1}/{Math.max(1, combatants.filter(c => !shouldSkipCombatantRow(c)).length)}</span>
                   </div>
                 </React.Fragment>
               )}
@@ -11591,10 +11614,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           {rightPanelTab === "combat" && (
   <div style={{ padding:0, display:"flex", flexDirection:"column", height:"100%" }}>
     {/* ── Combat Header ── */}
-    <div style={{ padding:"16px 20px 14px", borderBottom:"1px solid rgba(255,255,255,0.04)", background:"linear-gradient(180deg, rgba(94,224,154,0.03) 0%, transparent 100%)" }}>
+    <div style={{ padding:"16px 20px 14px", borderBottom:"1px solid "+bd04, background:"linear-gradient(180deg, rgba(94,224,154,0.03) 0%, transparent 100%)" }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
         <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-          <span style={{ fontFamily:T.ui, fontSize:12, letterSpacing:"2px", color: combatLive ? "#5ee09a" : "rgba(242,232,214,0.5)", textTransform:"uppercase", fontWeight:700 }}>
+          <span style={{ fontFamily:T.ui, fontSize:12, letterSpacing:"2px", color: combatLive ? "#5ee09a" : tx50, textTransform:"uppercase", fontWeight:700 }}>
             {combatLive ? "Round " + round : "Encounter"}
           </span>
           {combatLive && (
@@ -11604,80 +11627,80 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         {combatLive && (
           <div style={{ display:"flex", gap:4 }}>
             <button onClick={prevTurn} title="Previous Turn"
-              onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.06)"}
-              onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.02)"}
-              style={{ padding:"5px 8px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:6, cursor:"pointer", color:"rgba(242,232,214,0.4)", display:"flex", alignItems:"center", transition:"background 0.12s" }}><ChevronUp size={11}/></button>
+              onMouseEnter={e => e.currentTarget.style.background=bg06}
+              onMouseLeave={e => e.currentTarget.style.background=bg02}
+              style={{ padding:"5px 8px", background:bg02, border:"1px solid "+bd06, borderRadius:6, cursor:"pointer", color:tx40, display:"flex", alignItems:"center", transition:"background 0.12s" }}><ChevronUp size={11}/></button>
             <button onClick={nextTurn} title="Next Turn"
               onMouseEnter={e => e.currentTarget.style.background="rgba(94,224,154,0.15)"}
               onMouseLeave={e => e.currentTarget.style.background="rgba(94,224,154,0.08)"}
               style={{ padding:"5px 12px", background:"rgba(94,224,154,0.08)", border:"1px solid rgba(94,224,154,0.2)", borderRadius:6, cursor:"pointer", color:"#5ee09a", fontFamily:T.ui, fontSize:9, letterSpacing:"0.8px", fontWeight:600, display:"flex", alignItems:"center", gap:4, transition:"background 0.12s" }}><SkipForward size={10}/> Next</button>
             <button onClick={endCombat} title="End Combat"
               onMouseEnter={e => e.currentTarget.style.background="rgba(239,68,68,0.12)"}
-              onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.02)"}
-              style={{ padding:"5px 7px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:6, cursor:"pointer", color:"rgba(239,68,68,0.6)", display:"flex", alignItems:"center", transition:"background 0.12s" }}><X size={11}/></button>
+              onMouseLeave={e => e.currentTarget.style.background=bg02}
+              style={{ padding:"5px 7px", background:bg02, border:"1px solid "+bd06, borderRadius:6, cursor:"pointer", color:"rgba(239,68,68,0.6)", display:"flex", alignItems:"center", transition:"background 0.12s" }}><X size={11}/></button>
           </div>
         )}
       </div>
       {encounterDifficulty && (
         <div style={{ marginTop:10, padding:"7px 12px", borderRadius:8, background: encounterDifficulty.difficulty === "deadly" ? "rgba(239,68,68,0.06)" : encounterDifficulty.difficulty === "hard" ? "rgba(245,158,11,0.06)" : encounterDifficulty.difficulty === "medium" ? "rgba(88,170,255,0.06)" : "rgba(94,224,154,0.06)", border: "1px solid " + (encounterDifficulty.difficulty === "deadly" ? "rgba(239,68,68,0.15)" : encounterDifficulty.difficulty === "hard" ? "rgba(245,158,11,0.15)" : encounterDifficulty.difficulty === "medium" ? "rgba(88,170,255,0.15)" : "rgba(94,224,154,0.15)"), display:"flex", justifyContent:"space-between", alignItems:"center" }}>
           <span style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1px", textTransform:"uppercase", fontWeight:600, color: encounterDifficulty.difficulty === "deadly" ? "#ef4444" : encounterDifficulty.difficulty === "hard" ? "#f59e0b" : encounterDifficulty.difficulty === "medium" ? "#58aaff" : "#5ee09a" }}>{encounterDifficulty.difficulty}</span>
-          <span style={{ fontFamily:T.ui, fontSize:8, color:"rgba(242,232,214,0.35)" }}>{encounterDifficulty.adjustedXP} XP</span>
+          <span style={{ fontFamily:T.ui, fontSize:8, color:tx35 }}>{encounterDifficulty.adjustedXP} XP</span>
         </div>
       )}
     </div>
 
     {/* ── Combat Tabs ── */}
     {!combatLive && (
-      <div style={{ display:"flex", borderBottom:"1px solid rgba(255,255,255,0.04)", padding:"0 8px" }}>
+      <div style={{ display:"flex", borderBottom:"1px solid "+bd04, padding:"0 8px" }}>
         {[{id:"monsters",label:"Roster"},{id:"tracker",label:"Initiative"},{id:"log",label:"Results"}].map(tab => (
           <button key={tab.id} onClick={() => setCombatTab(tab.id)}
-            onMouseEnter={e => { if (combatTab !== tab.id) e.currentTarget.style.color="rgba(242,232,214,0.6)"; }}
-            onMouseLeave={e => { if (combatTab !== tab.id) e.currentTarget.style.color="rgba(242,232,214,0.3)"; }}
-            style={{ flex:1, padding:"10px 4px", background:"transparent", border:"none", borderBottom: combatTab === tab.id ? "2px solid #c9a84c" : "2px solid transparent", cursor:"pointer", fontFamily:T.ui, fontSize:9, letterSpacing:"1.2px", textTransform:"uppercase", color: combatTab === tab.id ? "#c9a84c" : "rgba(242,232,214,0.3)", transition:"all 0.12s", fontWeight: combatTab === tab.id ? 600 : 400 }}>{tab.label}
+            onMouseEnter={e => { if (combatTab !== tab.id) e.currentTarget.style.color=tx60; }}
+            onMouseLeave={e => { if (combatTab !== tab.id) e.currentTarget.style.color=tx30; }}
+            style={{ flex:1, padding:"10px 4px", background:"transparent", border:"none", borderBottom: combatTab === tab.id ? "2px solid #c9a84c" : "2px solid transparent", cursor:"pointer", fontFamily:T.ui, fontSize:9, letterSpacing:"1.2px", textTransform:"uppercase", color: combatTab === tab.id ? "#c9a84c" : tx30, transition:"all 0.12s", fontWeight: combatTab === tab.id ? 600 : 400 }}>{tab.label}
             {tab.id === "log" && combatLog.length > 0 && <span style={{ marginLeft:4, padding:"1px 5px", borderRadius:999, background:"rgba(201,168,76,0.1)", fontSize:7, color:"#c9a84c" }}>{combatLog.length}</span>}
           </button>
         ))}
       </div>
     )}
 
-    <div style={{ flex:1, overflowY:"auto", padding:"12px 16px", scrollbarWidth:"thin", scrollbarColor:"rgba(255,255,255,0.06) transparent" }}>
+    <div style={{ flex:1, overflowY:"auto", padding:"12px 16px", scrollbarWidth:"thin", scrollbarColor:lm("rgba(255,255,255,0.06) transparent","rgba(0,0,0,0.08) transparent") }}>
       {/* MONSTERS TAB */}
       {visibleCombatTab === "monsters" && (
         <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
           <input value={monsterSearch} onChange={e => setMonsterSearch(e.target.value)} placeholder="Search monsters..."
-            style={{ padding:"8px 12px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:8, color:"rgba(242,232,214,0.85)", fontFamily:T.body, fontSize:11, outline:"none", transition:"border-color 0.12s" }}
+            style={{ padding:"8px 12px", background:bg02, border:"1px solid "+bd06, borderRadius:8, color:tx85, fontFamily:T.body, fontSize:11, outline:"none", transition:"border-color 0.12s" }}
             onFocus={e => e.currentTarget.style.borderColor="rgba(201,168,76,0.3)"}
-            onBlur={e => e.currentTarget.style.borderColor="rgba(255,255,255,0.06)"} />
+            onBlur={e => e.currentTarget.style.borderColor=bg06} />
           <div style={{ display:"flex", gap:4 }}>
             <select value={monsterCRFilter} onChange={e => setMonsterCRFilter(e.target.value)}
-              style={{ flex:1, padding:"5px 8px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:6, color:"rgba(242,232,214,0.7)", fontFamily:T.ui, fontSize:9 }}>
+              style={{ flex:1, padding:"5px 8px", background:bg02, border:"1px solid "+bd06, borderRadius:6, color:tx70, fontFamily:T.ui, fontSize:9 }}>
               <option value="all">All CRs</option>
               {monsterCRs.map(cr => <option key={cr} value={cr}>CR {cr}</option>)}
             </select>
             <select value={monsterTypeFilter} onChange={e => setMonsterTypeFilter(e.target.value)}
-              style={{ flex:1, padding:"5px 8px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:6, color:"rgba(242,232,214,0.7)", fontFamily:T.ui, fontSize:9 }}>
+              style={{ flex:1, padding:"5px 8px", background:bg02, border:"1px solid "+bd06, borderRadius:6, color:tx70, fontFamily:T.ui, fontSize:9 }}>
               <option value="all">All Types</option>
               {monsterTypes.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
-          <div style={{ fontSize:8, fontFamily:T.ui, color:"rgba(242,232,214,0.25)", letterSpacing:"0.5px" }}>{filteredMonsters.length} monsters found</div>
-          <div style={{ display:"flex", flexDirection:"column", gap:2, maxHeight:500, overflowY:"auto", scrollbarWidth:"thin", scrollbarColor:"rgba(255,255,255,0.06) transparent" }}>
+          <div style={{ fontSize:8, fontFamily:T.ui, color:tx25, letterSpacing:"0.5px" }}>{filteredMonsters.length} monsters found</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:2, maxHeight:500, overflowY:"auto", scrollbarWidth:"thin", scrollbarColor:lm("rgba(255,255,255,0.06) transparent","rgba(0,0,0,0.08) transparent") }}>
             {filteredMonsters.slice(0, 30).map(m => (
               <div key={m.name} onClick={() => setSelectedMonster(selectedMonster?.name === m.name ? null : m)}
-                style={{ padding:"8px 10px", background: selectedMonster?.name === m.name ? "rgba(201,168,76,0.06)" : "transparent", border: "1px solid " + (selectedMonster?.name === m.name ? "rgba(201,168,76,0.15)" : "rgba(255,255,255,0.02)"), borderRadius:6, cursor:"pointer", transition:"all 0.12s" }}
-                onMouseEnter={e => { if (selectedMonster?.name !== m.name) e.currentTarget.style.background="rgba(255,255,255,0.025)"; }}
+                style={{ padding:"8px 10px", background: selectedMonster?.name === m.name ? "rgba(201,168,76,0.06)" : "transparent", border: "1px solid " + (selectedMonster?.name === m.name ? "rgba(201,168,76,0.15)" : bg02), borderRadius:6, cursor:"pointer", transition:"all 0.12s" }}
+                onMouseEnter={e => { if (selectedMonster?.name !== m.name) e.currentTarget.style.background=bg03; }}
                 onMouseLeave={e => { if (selectedMonster?.name !== m.name) e.currentTarget.style.background="transparent"; }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                  <span style={{ fontFamily:T.body, fontSize:11, color:"rgba(242,232,214,0.8)", fontWeight:400 }}>{m.name}</span>
+                  <span style={{ fontFamily:T.body, fontSize:11, color:tx80, fontWeight:400 }}>{m.name}</span>
                   <div style={{ display:"flex", gap:4, alignItems:"center" }}>
-                    <span style={{ fontFamily:T.ui, fontSize:7, padding:"2px 6px", borderRadius:4, background:"rgba(255,255,255,0.03)", color:"rgba(242,232,214,0.35)", letterSpacing:"0.3px" }}>CR {m.cr}</span>
+                    <span style={{ fontFamily:T.ui, fontSize:7, padding:"2px 6px", borderRadius:4, background:bg03, color:tx35, letterSpacing:"0.3px" }}>CR {m.cr}</span>
                     <button onClick={e => { e.stopPropagation(); addMonsterToMap(m); }}
                       onMouseEnter={e => e.currentTarget.style.background="rgba(94,224,154,0.12)"}
                       onMouseLeave={e => e.currentTarget.style.background="rgba(94,224,154,0.06)"}
                       style={{ padding:"3px 8px", background:"rgba(94,224,154,0.06)", border:"1px solid rgba(94,224,154,0.15)", borderRadius:4, cursor:"pointer", color:"#5ee09a", fontFamily:T.ui, fontSize:7, letterSpacing:"0.5px", transition:"background 0.12s" }}>+ Add</button>
                   </div>
                 </div>
-                <div style={{ fontSize:9, fontFamily:T.ui, color:"rgba(242,232,214,0.25)", marginTop:3, display:"flex", gap:6 }}>
+                <div style={{ fontSize:9, fontFamily:T.ui, color:tx25, marginTop:3, display:"flex", gap:6 }}>
                   <span style={{ textTransform:"capitalize" }}>{m.size} {m.type}</span>
                   <span>AC {m.ac}</span>
                   <span>HP {m.hp}</span>
@@ -11700,19 +11723,19 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     {m.damageImmunities && <div style={{ marginBottom:3 }}><strong>Immunities:</strong> {m.damageImmunities}</div>}
                     {m.conditionImmunities && <div style={{ marginBottom:3 }}><strong>Cond. Immun.:</strong> {m.conditionImmunities}</div>}
                     {m.traits && m.traits.length > 0 && (
-                      <div style={{ marginTop:4, borderTop:"1px solid rgba(255,255,255,0.06)", paddingTop:4 }}>
+                      <div style={{ marginTop:4, borderTop:"1px solid "+bd06, paddingTop:4 }}>
                         <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"1px", color:T.textFaint, textTransform:"uppercase", marginBottom:3 }}>Traits</div>
                         {m.traits.map((tr,i) => <div key={i} style={{ marginBottom:2 }}><strong>{tr.name}:</strong> {tr.desc.slice(0, 120)}{tr.desc.length > 120 ? "..." : ""}</div>)}
                       </div>
                     )}
                     {m.actions && m.actions.length > 0 && (
-                      <div style={{ marginTop:4, borderTop:"1px solid rgba(255,255,255,0.06)", paddingTop:4 }}>
+                      <div style={{ marginTop:4, borderTop:"1px solid "+bd06, paddingTop:4 }}>
                         <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"1px", color:T.textFaint, textTransform:"uppercase", marginBottom:3 }}>Actions</div>
                         {m.actions.map((a,i) => <div key={i} style={{ marginBottom:2 }}><strong>{a.name}:</strong> {a.desc.slice(0, 100)}{a.desc.length > 100 ? "..." : ""}</div>)}
                       </div>
                     )}
                     {m.legendaryActions && m.legendaryActions.length > 0 && (
-                      <div style={{ marginTop:4, borderTop:"1px solid rgba(255,255,255,0.06)", paddingTop:4 }}>
+                      <div style={{ marginTop:4, borderTop:"1px solid "+bd06, paddingTop:4 }}>
                         <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"1px", color:"#ffd54f", textTransform:"uppercase", marginBottom:3 }}>Legendary Actions</div>
                         {m.legendaryActions.map((a,i) => <div key={i} style={{ marginBottom:2 }}><strong>{a.name}:</strong> {a.desc.slice(0, 100)}{a.desc.length > 100 ? "..." : ""}</div>)}
                       </div>
@@ -11744,7 +11767,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           ) : (
             <React.Fragment>
               {(combatLog[0] || playModeResolution) && (
-                <div style={{ border:"1px solid rgba(255,255,255,0.08)", borderRadius:12, background:"linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015))", padding:"10px 11px", marginBottom:4 }}>
+                <div style={{ border:"1px solid "+bd08, borderRadius:12, background:"linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015))", padding:"10px 11px", marginBottom:4 }}>
                   <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
                     <span style={{ fontFamily:T.ui, fontSize:8, color:"#58aaff", letterSpacing:"1px", textTransform:"uppercase" }}>Latest Event</span>
                     <span style={{ fontFamily:T.ui, fontSize:7, color:T.textFaint, letterSpacing:"0.8px", textTransform:"uppercase" }}>
@@ -11950,7 +11973,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                         const profileWeapons = getWeaponOptionsForProfile(profile);
                         const selectedWeapon = profileWeapons.includes(pcWeaponPick) ? pcWeaponPick : (profileWeapons[0] || pcWeaponPick);
                         return (
-                          <div style={{ marginTop:8, paddingLeft:24, borderTop:"1px solid rgba(255,255,255,0.06)", paddingTop:8 }}>
+                          <div style={{ marginTop:8, paddingLeft:24, borderTop:"1px solid "+bd06, paddingTop:8 }}>
                             <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:"#5ee09a", textTransform:"uppercase", marginBottom:6 }}>Your Turn</div>
                             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:4, marginBottom:8 }}>
                               <div style={{ fontSize:9, color:T.textMuted }}>Movement: <span style={{ color:T.text }}>{ts.movementRemaining} ft remaining</span></div>
@@ -12088,9 +12111,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   const targetTk = entry.target ? tokens.find(t => t.name === entry.target) : null;
                   if (targetTk) { setSelectedTokenId(targetTk.id); setHoveredTokenId(targetTk.id); setTimeout(() => setHoveredTokenId(null), 1500); }
                   else if (attackerTk) { setSelectedTokenId(attackerTk.id); }
-                }} style={{ padding:"6px 8px", borderRadius:"4px", background: entry.type === "attack" ? "rgba(212,67,58,0.04)" : entry.type === "miss" ? "rgba(136,136,136,0.04)" : entry.type === "save" ? "rgba(88,170,255,0.04)" : "rgba(255,255,255,0.02)", borderLeft: "2px solid " + (entry.type === "attack" ? (entry.isCrit ? "#ffd700" : "var(--crimson)") : entry.type === "miss" ? "#666" : entry.type === "save" ? (entry.success ? "#5ee09a" : "#58aaff") : T.textFaint), fontSize:9, fontFamily:T.body, color:T.textMuted, cursor: (entry.attacker || entry.target) ? "pointer" : "default", transition: "all 0.15s ease" }}
-                  onMouseEnter={e => { if (entry.attacker || entry.target) e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
-                  onMouseLeave={e => { e.currentTarget.style.background = entry.type === "attack" ? "rgba(212,67,58,0.04)" : entry.type === "miss" ? "rgba(136,136,136,0.04)" : entry.type === "save" ? "rgba(88,170,255,0.04)" : "rgba(255,255,255,0.02)"; }}>
+                }} style={{ padding:"6px 8px", borderRadius:"4px", background: entry.type === "attack" ? "rgba(212,67,58,0.04)" : entry.type === "miss" ? "rgba(136,136,136,0.04)" : entry.type === "save" ? "rgba(88,170,255,0.04)" : bg02, borderLeft: "2px solid " + (entry.type === "attack" ? (entry.isCrit ? "#ffd700" : "var(--crimson)") : entry.type === "miss" ? "#666" : entry.type === "save" ? (entry.success ? "#5ee09a" : "#58aaff") : T.textFaint), fontSize:9, fontFamily:T.body, color:T.textMuted, cursor: (entry.attacker || entry.target) ? "pointer" : "default", transition: "all 0.15s ease" }}
+                  onMouseEnter={e => { if (entry.attacker || entry.target) e.currentTarget.style.background = bg08; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = entry.type === "attack" ? "rgba(212,67,58,0.04)" : entry.type === "miss" ? "rgba(136,136,136,0.04)" : entry.type === "save" ? "rgba(88,170,255,0.04)" : bg02; }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                     <span style={{ fontWeight:500, color:T.text, whiteSpace: entry.type === "system" ? "pre-line" : "normal" }}>
                       {entry.type === "attack" && (entry.isCrit ? "💥 CRITICAL! " : "⚔️ ")}
@@ -12141,7 +12164,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     </div>
                   </div>
                   <button onClick={() => setSelectedTokenId(null)}
-                    onMouseEnter={e => { e.currentTarget.style.background="rgba(255,255,255,0.05)"; }}
+                    onMouseEnter={e => { e.currentTarget.style.background=bg06; }}
                     onMouseLeave={e => { e.currentTarget.style.background="transparent"; }}
                     style={{ background:"transparent", border:"none", cursor:"pointer", color:T.textFaint, padding:6, borderRadius:"6px", transition:"all 0.15s", marginTop:2 }}><X size={16}/></button>
                 </div>
@@ -12187,7 +12210,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     const Icon = act.icon;
                     return (
                       <button key={i} onClick={act.onClick}
-                        onMouseEnter={e => { e.currentTarget.style.background = act.danger ? "rgba(212,67,58,0.12)" : act.active ? "rgba(212,67,58,0.18)" : "rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor = act.danger ? "rgba(212,67,58,0.35)" : "rgba(255,255,255,0.12)"; }}
+                        onMouseEnter={e => { e.currentTarget.style.background = act.danger ? "rgba(212,67,58,0.12)" : act.active ? "rgba(212,67,58,0.18)" : bg06; e.currentTarget.style.borderColor = act.danger ? "rgba(212,67,58,0.35)" : "rgba(255,255,255,0.12)"; }}
                         onMouseLeave={e => { e.currentTarget.style.background = act.active ? "rgba(212,67,58,0.1)" : "rgba(0,0,0,0.1)"; e.currentTarget.style.borderColor = act.active ? "rgba(212,67,58,0.3)" : T.border; }}
                         style={{ flex: act.label ? 1 : "0 0 36px", padding:"7px 4px", background: act.active ? "rgba(212,67,58,0.1)" : "rgba(0,0,0,0.1)", border:"1px solid " + (act.active ? "rgba(212,67,58,0.3)" : T.border), borderRadius:"6px", color: act.danger ? "rgba(212,67,58,0.7)" : act.active ? "var(--crimson)" : T.textMuted, fontFamily:T.ui, fontSize:10, fontWeight:500, cursor:"pointer", transition:"all 0.15s ease", display:"flex", alignItems:"center", justifyContent:"center", gap:4, letterSpacing:"0.3px" }}>
                         <Icon size={12} /> {act.label}
@@ -12208,7 +12231,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   const Icon = tab.icon;
                   return (
                     <button key={tab.id} onClick={() => setTokenPanelTab(tab.id)}
-                      onMouseEnter={e => { if (!isActive) e.currentTarget.style.background="rgba(255,255,255,0.03)"; }}
+                      onMouseEnter={e => { if (!isActive) e.currentTarget.style.background=bg03; }}
                       onMouseLeave={e => { if (!isActive) e.currentTarget.style.background="transparent"; }}
                       style={{
                         flex:1, padding:"11px 0 9px", display:"flex", alignItems:"center", justifyContent:"center", gap:5,
@@ -12563,7 +12586,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                                   background: "rgba(0,0,0,0.08)", border:"1px solid " + T.border,
                                   borderRadius:"6px", cursor:"pointer", transition:"all 0.12s", opacity: !slotOk && s.level > 0 ? 0.4 : 1,
                                 }}
-                                onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.04)"}
+                                onMouseEnter={e => e.currentTarget.style.background = bg04}
                                 onMouseLeave={e => e.currentTarget.style.background = "rgba(0,0,0,0.08)"}>
                                 <div style={{ width:8, height:8, borderRadius:"50%", background:s.color, boxShadow:"0 0 6px " + s.color, flexShrink:0 }} />
                                 <div style={{ flex:1, minWidth:0 }}>
@@ -12601,7 +12624,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
           {/* ══ INSPECT TAB (non-combat) ══ */}
           {rightPanelTab === "inspect" && !(combatLive || mode === "combat") && (
-            <div style={{ padding: 0, display: "flex", flexDirection: "column", height: "100%", overflowY: "auto", scrollbarWidth:"thin", scrollbarColor:"rgba(255,255,255,0.06) transparent" }}>
+            <div style={{ padding: 0, display: "flex", flexDirection: "column", height: "100%", overflowY: "auto", scrollbarWidth:"thin", scrollbarColor:lm("rgba(255,255,255,0.06) transparent","rgba(0,0,0,0.08) transparent") }}>
               {(() => {
                 const _pm = selectedToken ? getPartyProfile(selectedToken) : null;
                 const _cp = selectedToken ? getCombatProfile(selectedToken) : null;
@@ -12626,45 +12649,45 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   <React.Fragment>
                     {/* ── Character Section ── */}
                     {selectedToken ? (
-                      <div style={{ padding: "18px 20px", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                      <div style={{ padding: "18px 20px", borderBottom: "1px solid "+bd04 }}>
                         {/* Portrait */}
                         <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
-                          <div style={{ width: 52, height: 52, borderRadius: 12, background: selectedToken.color || "#555", border: "2px solid " + (selectedToken.tokenType === "pc" ? "rgba(201,168,76,0.4)" : "rgba(255,255,255,0.08)"), overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontFamily: T.ui, fontSize: 15, fontWeight: 700, flexShrink: 0, boxShadow: selectedToken.tokenType === "pc" ? "0 0 12px rgba(201,168,76,0.1)" : "none" }}>
+                          <div style={{ width: 52, height: 52, borderRadius: 12, background: selectedToken.color || "#555", border: "2px solid " + (selectedToken.tokenType === "pc" ? "rgba(201,168,76,0.4)" : bg08), overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontFamily: T.ui, fontSize: 15, fontWeight: 700, flexShrink: 0, boxShadow: selectedToken.tokenType === "pc" ? "0 0 12px rgba(201,168,76,0.1)" : "none" }}>
                             {selectedToken.imageSrc ? <img src={selectedToken.imageSrc} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (selectedToken.label || selectedToken.name?.substring(0,2) || "??").toUpperCase()}
                           </div>
                           <div style={{ minWidth: 0, flex: 1 }}>
-                            <div style={{ fontFamily: T.ui, fontSize: 15, fontWeight: 700, color: "rgba(242,232,214,0.9)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing:"0.3px" }}>{selectedToken.name}</div>
-                            <div style={{ fontFamily: T.body, fontSize: 11, color: "rgba(242,232,214,0.4)", marginTop: 3, lineHeight:1.3 }}>
+                            <div style={{ fontFamily: T.ui, fontSize: 15, fontWeight: 700, color: tx90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing:"0.3px" }}>{selectedToken.name}</div>
+                            <div style={{ fontFamily: T.body, fontSize: 11, color: tx40, marginTop: 3, lineHeight:1.3 }}>
                               {[_pm?.race || _cp?.species, _pm?.cls || _cp?.className, _cp?.level ? "Lv " + _cp.level : null, _pm?.subclass || _cp?.subclass].filter(Boolean).join(" · ") || selectedToken.tokenType || "Creature"}
                             </div>
-                            {_pm?.player && <div style={{ fontFamily: T.body, fontSize: 10, color: "rgba(242,232,214,0.3)", marginTop: 2 }}>Player: {_pm.player}</div>}
-                            {_pm?.background && <div style={{ fontFamily: T.body, fontSize: 10, color: "rgba(242,232,214,0.3)" }}>Background: {_pm.background}</div>}
+                            {_pm?.player && <div style={{ fontFamily: T.body, fontSize: 10, color: tx30, marginTop: 2 }}>Player: {_pm.player}</div>}
+                            {_pm?.background && <div style={{ fontFamily: T.body, fontSize: 10, color: tx30 }}>Background: {_pm.background}</div>}
                           </div>
                           <button onClick={() => setSelectedTokenId(null)}
-                            onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.06)"}
-                            onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.02)"}
-                            style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8, color: "rgba(242,232,214,0.3)", cursor: "pointer", padding: "4px 7px", fontSize: 11, flexShrink: 0, transition:"background 0.12s" }}>✕</button>
+                            onMouseEnter={e => e.currentTarget.style.background=bg06}
+                            onMouseLeave={e => e.currentTarget.style.background=bg02}
+                            style={{ background: bg02, border: "1px solid "+bd06, borderRadius: 8, color: tx30, cursor: "pointer", padding: "4px 7px", fontSize: 11, flexShrink: 0, transition:"background 0.12s" }}>✕</button>
                         </div>
 
                         {/* HP / AC / Speed */}
                         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 10 }}>
-                          <div style={{ padding: "10px 6px", borderRadius: 10, textAlign: "center", background: "rgba(255,255,255,0.015)", border: "1px solid " + hpCol + "22" }}>
+                          <div style={{ padding: "10px 6px", borderRadius: 10, textAlign: "center", background: lm("rgba(255,255,255,0.015)","rgba(0,0,0,0.025)"), border: "1px solid " + hpCol + "22" }}>
                             <div style={{ fontFamily: T.ui, fontSize: 7, letterSpacing: "1.2px", textTransform: "uppercase", color: hpCol, fontWeight:600 }}>HP</div>
                             <div style={{ fontFamily: T.body, fontSize: 22, fontWeight: 700, color: hpCol, lineHeight: 1.1 }}>{selectedToken.hp != null ? selectedToken.hp : "?"}</div>
-                            <div style={{ fontFamily: T.body, fontSize: 10, color: "rgba(242,232,214,0.25)" }}>/ {selectedToken.maxHp || "?"}</div>
+                            <div style={{ fontFamily: T.body, fontSize: 10, color: tx25 }}>/ {selectedToken.maxHp || "?"}</div>
                           </div>
-                          <div style={{ padding: "10px 6px", borderRadius: 10, textAlign: "center", background: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.04)" }}>
+                          <div style={{ padding: "10px 6px", borderRadius: 10, textAlign: "center", background: lm("rgba(255,255,255,0.015)","rgba(0,0,0,0.025)"), border: "1px solid "+bd04 }}>
                             <div style={{ fontFamily: T.ui, fontSize: 7, letterSpacing: "1.2px", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", fontWeight:600 }}>AC</div>
-                            <div style={{ fontFamily: T.body, fontSize: 22, fontWeight: 700, color: "rgba(242,232,214,0.85)", lineHeight: 1.1 }}>{selectedToken.ac || _cp?.ac || "?"}</div>
-                            <div style={{ fontFamily: T.body, fontSize: 10, color: "rgba(242,232,214,0.25)" }}>armor</div>
+                            <div style={{ fontFamily: T.body, fontSize: 22, fontWeight: 700, color: tx85, lineHeight: 1.1 }}>{selectedToken.ac || _cp?.ac || "?"}</div>
+                            <div style={{ fontFamily: T.body, fontSize: 10, color: tx25 }}>armor</div>
                           </div>
-                          <div style={{ padding: "10px 6px", borderRadius: 10, textAlign: "center", background: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.04)" }}>
+                          <div style={{ padding: "10px 6px", borderRadius: 10, textAlign: "center", background: lm("rgba(255,255,255,0.015)","rgba(0,0,0,0.025)"), border: "1px solid "+bd04 }}>
                             <div style={{ fontFamily: T.ui, fontSize: 7, letterSpacing: "1.2px", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", fontWeight:600 }}>Speed</div>
-                            <div style={{ fontFamily: T.body, fontSize: 22, fontWeight: 700, color: "rgba(242,232,214,0.85)", lineHeight: 1.1 }}>{selectedToken.speed || _cp?.speed || 30}</div>
-                            <div style={{ fontFamily: T.body, fontSize: 10, color: "rgba(242,232,214,0.25)" }}>ft</div>
+                            <div style={{ fontFamily: T.body, fontSize: 22, fontWeight: 700, color: tx85, lineHeight: 1.1 }}>{selectedToken.speed || _cp?.speed || 30}</div>
+                            <div style={{ fontFamily: T.body, fontSize: 10, color: tx25 }}>ft</div>
                           </div>
                         </div>
-                        <div style={{ height: 6, background: "rgba(255,255,255,0.03)", borderRadius: 999, overflow: "hidden", marginBottom: 10 }}>
+                        <div style={{ height: 6, background: bg03, borderRadius: 999, overflow: "hidden", marginBottom: 10 }}>
                           <div style={{ width: hpPct + "%", height: "100%", background: "linear-gradient(90deg," + hpCol + "," + hpCol + "aa)", borderRadius: 999, boxShadow: "0 0 8px " + hpCol + "33", transition: "width 0.3s ease" }} />
                         </div>
 
@@ -12692,10 +12715,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                         <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1.2px", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: 8, fontWeight:600 }}>Ability Scores</div>
                         <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 4, marginBottom: 16 }}>
                           {savingThrows.map(st => (
-                            <div key={st.ab} style={{ padding: "7px 2px", borderRadius: 8, textAlign: "center", background: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.04)" }}>
-                              <div style={{ fontFamily: T.ui, fontSize: 7, letterSpacing: "0.8px", textTransform: "uppercase", color: "rgba(242,232,214,0.3)" }}>{st.ab}</div>
-                              <div style={{ fontFamily: T.body, fontSize: 18, fontWeight: 700, color: "rgba(242,232,214,0.85)", lineHeight: 1.2 }}>{st.val}</div>
-                              <div style={{ fontFamily: T.body, fontSize: 10, color: "rgba(242,232,214,0.4)" }}>{_toMod(st.val)}</div>
+                            <div key={st.ab} style={{ padding: "7px 2px", borderRadius: 8, textAlign: "center", background: lm("rgba(255,255,255,0.015)","rgba(0,0,0,0.025)"), border: "1px solid "+bd04 }}>
+                              <div style={{ fontFamily: T.ui, fontSize: 7, letterSpacing: "0.8px", textTransform: "uppercase", color: tx30 }}>{st.ab}</div>
+                              <div style={{ fontFamily: T.body, fontSize: 18, fontWeight: 700, color: tx85, lineHeight: 1.2 }}>{st.val}</div>
+                              <div style={{ fontFamily: T.body, fontSize: 10, color: tx40 }}>{_toMod(st.val)}</div>
                             </div>
                           ))}
                         </div>
@@ -12703,9 +12726,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                         {/* Quick chips */}
                         <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 12 }}>
                           {profBonus > 0 && <span style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(41,182,246,0.08)", border: "1px solid rgba(41,182,246,0.2)", color: "#29b6f6" }}>Prof +{profBonus}</span>}
-                          {_cp?.initiativeBonus != null && <span style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(255,255,255,0.03)", border: "1px solid " + T.border, color: T.textMuted }}>Init {_cp.initiativeBonus >= 0 ? "+" : ""}{_cp.initiativeBonus}</span>}
+                          {_cp?.initiativeBonus != null && <span style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: bg03, border: "1px solid " + T.border, color: T.textMuted }}>Init {_cp.initiativeBonus >= 0 ? "+" : ""}{_cp.initiativeBonus}</span>}
                           {_cp?.spellcastingMod != null && _cp.spellcastingMod !== 0 && <span style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.2)", color: "#a78bfa" }}>DC {8 + profBonus + _cp.spellcastingMod}</span>}
-                          <span style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(255,255,255,0.03)", border: "1px solid " + T.border, color: T.textMuted }}>PP {10 + Math.floor(((abilities.wis || 10) - 10) / 2)}</span>
+                          <span style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: bg03, border: "1px solid " + T.border, color: T.textMuted }}>PP {10 + Math.floor(((abilities.wis || 10) - 10) / 2)}</span>
                         </div>
 
                         {/* Saving Throws */}
@@ -12727,7 +12750,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                                   if (has) { removeTokenCondition(selectedTokenId, c); }
                                   else { setTokens(p => p.map(t => t.id === selectedTokenId ? {...t, conditions: [...(t.conditions || []), c]} : t)); }
                                 }}
-                                  style={{ padding:"3px 7px", borderRadius:999, fontSize:9, fontFamily:T.ui, cursor:"pointer", transition:"all 0.12s", background: has ? "rgba(239,68,68,0.1)" : "rgba(255,255,255,0.015)", border:"1px solid " + (has ? "rgba(239,68,68,0.25)" : "rgba(255,255,255,0.04)"), color: has ? "#ef4444" : "rgba(242,232,214,0.25)" }}>{c}</button>
+                                  style={{ padding:"3px 7px", borderRadius:999, fontSize:9, fontFamily:T.ui, cursor:"pointer", transition:"all 0.12s", background: has ? "rgba(239,68,68,0.1)" : lm("rgba(255,255,255,0.015)","rgba(0,0,0,0.025)"), border:"1px solid " + (has ? "rgba(239,68,68,0.25)" : bg04), color: has ? "#ef4444" : tx25 }}>{c}</button>
                               );
                             })}
                           </div>
@@ -12791,8 +12814,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                             <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1.2px", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: 8, fontWeight:600 }}>Features & Feats</div>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                               {feats.map((f, i) => <span key={"ft-"+i} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)", color: "#f59e0b" }}>{typeof f === "string" ? f : (f.name || "Feat")}</span>)}
-                              {customFeatures.map((f, i) => <span key={"cf-"+i} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(255,255,255,0.03)", border: "1px solid " + T.border, color: T.textMuted }}>{typeof f === "string" ? f : (f.name || "Feature")}</span>)}
-                              {passives.map((p, i) => <span key={"ps-"+i} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(255,255,255,0.03)", border: "1px solid " + T.border, color: T.textMuted }}>{typeof p === "string" ? p : (p.name || "Passive")}</span>)}
+                              {customFeatures.map((f, i) => <span key={"cf-"+i} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: bg03, border: "1px solid " + T.border, color: T.textMuted }}>{typeof f === "string" ? f : (f.name || "Feature")}</span>)}
+                              {passives.map((p, i) => <span key={"ps-"+i} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: bg03, border: "1px solid " + T.border, color: T.textMuted }}>{typeof p === "string" ? p : (p.name || "Passive")}</span>)}
                             </div>
                           </div>
                         )}
@@ -12815,10 +12838,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                       </div>
                     ) : (
                       <div style={{ padding: "24px 20px", textAlign:"center" }}>
-                        <div style={{ width:48, height:48, borderRadius:12, background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.04)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 12px" }}>
-                          <Target size={20} color="rgba(242,232,214,0.15)" />
+                        <div style={{ width:48, height:48, borderRadius:12, background:bg02, border:"1px solid "+bd04, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 12px" }}>
+                          <Target size={20} color=tx15 />
                         </div>
-                        <div style={{ fontFamily: T.ui, fontSize: 10, letterSpacing: "1px", color: "rgba(242,232,214,0.25)", textTransform: "uppercase" }}>Select a token to inspect</div>
+                        <div style={{ fontFamily: T.ui, fontSize: 10, letterSpacing: "1px", color: tx25, textTransform: "uppercase" }}>Select a token to inspect</div>
                       </div>
                     )}
                   </React.Fragment>
@@ -12834,7 +12857,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                 <div style={{ width:48, height:48, borderRadius:12, background:"rgba(94,224,154,0.04)", border:"1px solid rgba(94,224,154,0.1)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 12px" }}>
                   <Swords size={20} color="rgba(94,224,154,0.4)" />
                 </div>
-                <div style={{ fontFamily: T.ui, fontSize: 10, letterSpacing: "1px", color: "rgba(242,232,214,0.25)", textTransform: "uppercase", marginBottom: 16 }}>No active encounter</div>
+                <div style={{ fontFamily: T.ui, fontSize: 10, letterSpacing: "1px", color: tx25, textTransform: "uppercase", marginBottom: 16 }}>No active encounter</div>
               </div>
               <button onClick={() => { setMode("combat"); setSidebarOpen(true); }}
                 onMouseEnter={e => { e.currentTarget.style.background="rgba(94,224,154,0.12)"; e.currentTarget.style.boxShadow="0 0 16px rgba(94,224,154,0.1)"; }}
@@ -12845,8 +12868,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
               {/* Party readiness summary */}
               {tokens.filter(t => t.tokenType === "pc").length > 0 && (
-                <div style={{ marginTop: 16, padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
-                  <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Party on Map</div>
+                <div style={{ marginTop: 16, padding:"12px", background:lm("rgba(255,255,255,0.015)","rgba(0,0,0,0.025)"), borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+                  <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: tx35, marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Party on Map</div>
                   <div style={{ display: "flex", flexDirection:"column", gap:4 }}>
                     {tokens.filter(t => t.tokenType === "pc").map(tok => {
                       const hp = tok.hp || 0;
@@ -12855,8 +12878,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                       const col = pct > 60 ? "#5ee09a" : pct > 30 ? "#f59e0b" : "#ef4444";
                       return (
                         <div key={tok.id} style={{ display:"flex", alignItems:"center", gap:8 }}>
-                          <span style={{ fontFamily:T.ui, fontSize:9, color:"rgba(242,232,214,0.5)", flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{tok.name}</span>
-                          <div style={{ width:60, height:4, borderRadius:999, background:"rgba(255,255,255,0.03)", overflow:"hidden", flexShrink:0 }}>
+                          <span style={{ fontFamily:T.ui, fontSize:9, color:tx50, flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{tok.name}</span>
+                          <div style={{ width:60, height:4, borderRadius:999, background:bg03, overflow:"hidden", flexShrink:0 }}>
                             <div style={{ width:pct+"%", height:"100%", background:col, borderRadius:999, transition:"width 0.3s" }}/>
                           </div>
                           <span style={{ fontFamily:T.body, fontSize:8, color:col, minWidth:28, textAlign:"right", flexShrink:0 }}>{hp}/{mhp}</span>
@@ -12870,7 +12893,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               {/* Enemy count */}
               {tokens.filter(t => t.tokenType !== "pc").length > 0 && (
                 <div style={{ marginTop: 8, padding:"10px 12px", background:"rgba(239,68,68,0.03)", borderRadius:10, border:"1px solid rgba(239,68,68,0.06)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                  <span style={{ fontFamily:T.ui, fontSize:9, color:"rgba(242,232,214,0.4)" }}>Enemies on map</span>
+                  <span style={{ fontFamily:T.ui, fontSize:9, color:tx40 }}>Enemies on map</span>
                   <span style={{ fontFamily:T.body, fontSize:14, fontWeight:700, color:"#ef4444" }}>{tokens.filter(t => t.tokenType !== "pc").length}</span>
                 </div>
               )}
@@ -12883,15 +12906,15 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1.5px", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", marginBottom: 14, fontWeight:600 }}>Map</div>
 
               {/* Subsection: Background */}
-              <div style={{ marginBottom: 16, padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
-                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Background</div>
+              <div style={{ marginBottom: 16, padding:"12px", background:lm("rgba(255,255,255,0.015)","rgba(0,0,0,0.025)"), borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: tx35, marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Background</div>
                 <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 8 }}>
                   {bgPresets.map(p => (
                     <button key={p.c} onClick={() => setBgColor(p.c)} title={p.l}
-                      style={{ width: 24, height: 24, borderRadius: 6, background: p.c, border: bgColor === p.c ? "2px solid #c9a84c" : "1px solid rgba(255,255,255,0.08)", cursor: "pointer", transition:"border-color 0.12s", boxShadow: bgColor === p.c ? "0 0 8px rgba(201,168,76,0.2)" : "none" }} />
+                      style={{ width: 24, height: 24, borderRadius: 6, background: p.c, border: bgColor === p.c ? "2px solid #c9a84c" : "1px solid "+bd08, cursor: "pointer", transition:"border-color 0.12s", boxShadow: bgColor === p.c ? "0 0 8px rgba(201,168,76,0.2)" : "none" }} />
                   ))}
                   <input type="color" value={bgColor} onChange={e => setBgColor(e.target.value)}
-                    style={{ width: 24, height: 24, border: "1px solid rgba(255,255,255,0.08)", background: "none", padding: 0, cursor: "pointer", borderRadius: 6 }} />
+                    style={{ width: 24, height: 24, border: "1px solid "+bd08, background: "none", padding: 0, cursor: "pointer", borderRadius: 6 }} />
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
                   <button onClick={() => { if (mapImgInputRef.current) { mapImgInputRef.current.dataset.mapId = activeMapId || ""; mapImgInputRef.current.click(); } }}
@@ -12906,49 +12929,49 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               </div>
 
               {/* Subsection: Scene Management */}
-              <div style={{ marginBottom: 16, padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
-                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Scene Management</div>
+              <div style={{ marginBottom: 16, padding:"12px", background:lm("rgba(255,255,255,0.015)","rgba(0,0,0,0.025)"), borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: tx35, marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Scene Management</div>
                 <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 6 }}>
                   <button onClick={() => setShowScenePanel(true)}
                     onMouseEnter={e => e.currentTarget.style.background="rgba(94,224,154,0.1)"}
                     onMouseLeave={e => e.currentTarget.style.background="rgba(94,224,154,0.05)"}
                     style={{ padding: "5px 10px", background: "rgba(94,224,154,0.05)", border: "1px solid rgba(94,224,154,0.12)", borderRadius: 6, color: "#5ee09a", fontFamily: T.ui, fontSize: 9, cursor: "pointer", transition:"background 0.12s" }}>Scene Manager</button>
-                  <span style={{ fontFamily: T.body, fontSize: 10, color: "rgba(242,232,214,0.3)" }}>{battleMaps.length} map{battleMaps.length !== 1 ? "s" : ""}</span>
+                  <span style={{ fontFamily: T.body, fontSize: 10, color: tx30 }}>{battleMaps.length} map{battleMaps.length !== 1 ? "s" : ""}</span>
                 </div>
                 {battleMaps.length > 0 && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                     {battleMaps.map(map => (
                       <button key={map.id} onClick={() => switchToMapOverview(map.id)}
-                        onMouseEnter={e => { if (activeMapId !== map.id) e.currentTarget.style.background="rgba(255,255,255,0.04)"; }}
-                        onMouseLeave={e => { if (activeMapId !== map.id) e.currentTarget.style.background="rgba(255,255,255,0.01)"; }}
-                        style={{ padding: "6px 10px", background: activeMapId === map.id ? "rgba(94,224,154,0.08)" : "rgba(255,255,255,0.01)", border: "1px solid " + (activeMapId === map.id ? "rgba(94,224,154,0.2)" : "rgba(255,255,255,0.04)"), borderRadius: 6, color: activeMapId === map.id ? "#5ee09a" : "rgba(242,232,214,0.4)", fontFamily: T.ui, fontSize: 9, cursor: "pointer", textAlign: "left", transition:"all 0.12s" }}>{map.name} ({(map.scenes || []).length})</button>
+                        onMouseEnter={e => { if (activeMapId !== map.id) e.currentTarget.style.background=bg04; }}
+                        onMouseLeave={e => { if (activeMapId !== map.id) e.currentTarget.style.background=lm("rgba(255,255,255,0.01)","rgba(0,0,0,0.015)"); }}
+                        style={{ padding: "6px 10px", background: activeMapId === map.id ? "rgba(94,224,154,0.08)" : lm("rgba(255,255,255,0.01)","rgba(0,0,0,0.015)"), border: "1px solid " + (activeMapId === map.id ? "rgba(94,224,154,0.2)" : bg04), borderRadius: 6, color: activeMapId === map.id ? "#5ee09a" : tx40, fontFamily: T.ui, fontSize: 9, cursor: "pointer", textAlign: "left", transition:"all 0.12s" }}>{map.name} ({(map.scenes || []).length})</button>
                     ))}
                   </div>
                 )}
               </div>
 
               {/* Map Stats */}
-              <div style={{ marginBottom: 16, padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
-                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 10, textTransform: "uppercase", fontWeight:500 }}>Map Stats</div>
+              <div style={{ marginBottom: 16, padding:"12px", background:lm("rgba(255,255,255,0.015)","rgba(0,0,0,0.025)"), borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: tx35, marginBottom: 10, textTransform: "uppercase", fontWeight:500 }}>Map Stats</div>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6 }}>
-                  <div style={{ padding:"8px 6px", borderRadius:8, textAlign:"center", background:"rgba(255,255,255,0.015)", border:"1px solid rgba(255,255,255,0.04)" }}>
-                    <div style={{ fontFamily:T.body, fontSize:16, fontWeight:700, color:"rgba(242,232,214,0.85)" }}>{tokens.length}</div>
-                    <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"0.8px", color:"rgba(242,232,214,0.3)", textTransform:"uppercase" }}>tokens</div>
+                  <div style={{ padding:"8px 6px", borderRadius:8, textAlign:"center", background:lm("rgba(255,255,255,0.015)","rgba(0,0,0,0.025)"), border:"1px solid "+bd04 }}>
+                    <div style={{ fontFamily:T.body, fontSize:16, fontWeight:700, color:tx85 }}>{tokens.length}</div>
+                    <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"0.8px", color:tx30, textTransform:"uppercase" }}>tokens</div>
                   </div>
-                  <div style={{ padding:"8px 6px", borderRadius:8, textAlign:"center", background:"rgba(255,255,255,0.015)", border:"1px solid rgba(255,255,255,0.04)" }}>
-                    <div style={{ fontFamily:T.body, fontSize:16, fontWeight:700, color:"rgba(242,232,214,0.85)" }}>{drawings.length}</div>
-                    <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"0.8px", color:"rgba(242,232,214,0.3)", textTransform:"uppercase" }}>drawings</div>
+                  <div style={{ padding:"8px 6px", borderRadius:8, textAlign:"center", background:lm("rgba(255,255,255,0.015)","rgba(0,0,0,0.025)"), border:"1px solid "+bd04 }}>
+                    <div style={{ fontFamily:T.body, fontSize:16, fontWeight:700, color:tx85 }}>{drawings.length}</div>
+                    <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"0.8px", color:tx30, textTransform:"uppercase" }}>drawings</div>
                   </div>
-                  <div style={{ padding:"8px 6px", borderRadius:8, textAlign:"center", background:"rgba(255,255,255,0.015)", border:"1px solid rgba(255,255,255,0.04)" }}>
-                    <div style={{ fontFamily:T.body, fontSize:16, fontWeight:700, color:"rgba(242,232,214,0.85)" }}>{Object.keys(fogCells).length}</div>
-                    <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"0.8px", color:"rgba(242,232,214,0.3)", textTransform:"uppercase" }}>fog cells</div>
+                  <div style={{ padding:"8px 6px", borderRadius:8, textAlign:"center", background:lm("rgba(255,255,255,0.015)","rgba(0,0,0,0.025)"), border:"1px solid "+bd04 }}>
+                    <div style={{ fontFamily:T.body, fontSize:16, fontWeight:700, color:tx85 }}>{Object.keys(fogCells).length}</div>
+                    <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"0.8px", color:tx30, textTransform:"uppercase" }}>fog cells</div>
                   </div>
                 </div>
               </div>
 
               {/* Props & Images */}
-              <div style={{ marginBottom: 16, padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
-                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Props & Images</div>
+              <div style={{ marginBottom: 16, padding:"12px", background:lm("rgba(255,255,255,0.015)","rgba(0,0,0,0.025)"), borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: tx35, marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Props & Images</div>
                 <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:8 }}>
                   <button onClick={() => propImgInputRef.current?.click()}
                     onMouseEnter={e => e.currentTarget.style.background="rgba(88,170,255,0.1)"}
@@ -12964,22 +12987,22 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   </button>
                 </div>
                 {props.length > 0 && (
-                  <div style={{ display:"flex", flexDirection:"column", gap:2, maxHeight:150, overflowY:"auto", scrollbarWidth:"thin", scrollbarColor:"rgba(255,255,255,0.06) transparent" }}>
+                  <div style={{ display:"flex", flexDirection:"column", gap:2, maxHeight:150, overflowY:"auto", scrollbarWidth:"thin", scrollbarColor:lm("rgba(255,255,255,0.06) transparent","rgba(0,0,0,0.08) transparent") }}>
                     {props.map(p => (
                       <div key={p.id} style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 6px", borderRadius:4, background: selectedPropId === p.id ? "rgba(88,170,255,0.08)" : "transparent" }}>
-                        <span onClick={() => setSelectedPropId(p.id === selectedPropId ? null : p.id)} style={{ flex:1, fontFamily:T.body, fontSize:10, color: selectedPropId === p.id ? "#58aaff" : "rgba(242,232,214,0.4)", cursor:"pointer", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</span>
-                        <span style={{ fontFamily:T.ui, fontSize:7, color:"rgba(242,232,214,0.2)", textTransform:"uppercase" }}>{p.layer}</span>
+                        <span onClick={() => setSelectedPropId(p.id === selectedPropId ? null : p.id)} style={{ flex:1, fontFamily:T.body, fontSize:10, color: selectedPropId === p.id ? "#58aaff" : tx40, cursor:"pointer", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</span>
+                        <span style={{ fontFamily:T.ui, fontSize:7, color:tx20, textTransform:"uppercase" }}>{p.layer}</span>
                         <button onClick={() => removeProp(p.id)} style={{ background:"none", border:"none", cursor:"pointer", padding:1, display:"flex" }}><X size={9} color="rgba(239,68,68,0.4)"/></button>
                       </div>
                     ))}
                   </div>
                 )}
-                {props.length === 0 && <div style={{ fontFamily:T.body, fontSize:10, color:"rgba(242,232,214,0.2)", padding:"2px 0" }}>No props placed</div>}
+                {props.length === 0 && <div style={{ fontFamily:T.body, fontSize:10, color:tx20, padding:"2px 0" }}>No props placed</div>}
               </div>
 
               {/* Quick View Controls */}
-              <div style={{ padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
-                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Quick View</div>
+              <div style={{ padding:"12px", background:lm("rgba(255,255,255,0.015)","rgba(0,0,0,0.025)"), borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: tx35, marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Quick View</div>
                 <div style={{ display:"flex", gap:4 }}>
                   <button onClick={() => { setZoom(1); setPan({x:0,y:0}); }}
                     onMouseEnter={e => e.currentTarget.style.background="rgba(201,168,76,0.1)"}
@@ -12988,16 +13011,16 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     <Compass size={10}/> Reset
                   </button>
                   <button onClick={() => setZoom(z => Math.min(5, z + 0.25))}
-                    onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.06)"}
-                    onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.02)"}
-                    style={{ padding:"6px 10px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:6, color:"rgba(242,232,214,0.5)", fontFamily:T.ui, fontSize:11, cursor:"pointer", transition:"background 0.12s" }}>+</button>
+                    onMouseEnter={e => e.currentTarget.style.background=bg06}
+                    onMouseLeave={e => e.currentTarget.style.background=bg02}
+                    style={{ padding:"6px 10px", background:bg02, border:"1px solid "+bd06, borderRadius:6, color:tx50, fontFamily:T.ui, fontSize:11, cursor:"pointer", transition:"background 0.12s" }}>+</button>
                   <div style={{ padding:"6px 8px", textAlign:"center", minWidth:48 }}>
-                    <span style={{ fontFamily:T.body, fontSize:12, fontWeight:600, color:"rgba(242,232,214,0.7)" }}>{Math.round(zoom * 100)}%</span>
+                    <span style={{ fontFamily:T.body, fontSize:12, fontWeight:600, color:tx70 }}>{Math.round(zoom * 100)}%</span>
                   </div>
                   <button onClick={() => setZoom(z => Math.max(0.1, z - 0.25))}
-                    onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.06)"}
-                    onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.02)"}
-                    style={{ padding:"6px 10px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:6, color:"rgba(242,232,214,0.5)", fontFamily:T.ui, fontSize:11, cursor:"pointer", transition:"background 0.12s" }}>-</button>
+                    onMouseEnter={e => e.currentTarget.style.background=bg06}
+                    onMouseLeave={e => e.currentTarget.style.background=bg02}
+                    style={{ padding:"6px 10px", background:bg02, border:"1px solid "+bd06, borderRadius:6, color:tx50, fontFamily:T.ui, fontSize:11, cursor:"pointer", transition:"background 0.12s" }}>-</button>
                 </div>
               </div>
             </div>
@@ -13009,8 +13032,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1.5px", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", marginBottom: 14, fontWeight:600 }}>Tokens & Monsters</div>
 
               {/* Party members to place */}
-              <div style={{ marginBottom: 16, padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
-                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Place Party Members</div>
+              <div style={{ marginBottom: 16, padding:"12px", background:lm("rgba(255,255,255,0.015)","rgba(0,0,0,0.025)"), borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: tx35, marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Place Party Members</div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 8 }}>
                   {(party || []).filter(p => !tokens.some(t => t.partyId === p.id)).map(p => (
                     <button key={p.id} onClick={() => {
@@ -13022,7 +13045,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     style={{ padding: "6px 10px", background: "rgba(201,168,76,0.03)", border: "1px solid rgba(201,168,76,0.1)", borderRadius: 6, color: "#c9a84c", fontFamily: T.ui, fontSize: 9, cursor: "pointer", textAlign: "left", transition:"background 0.12s" }}>+ {p.name || "PC"}</button>
                   ))}
                   {(party || []).filter(p => !tokens.some(t => t.partyId === p.id)).length === 0 && (
-                    <div style={{ fontFamily: T.body, fontSize: 10, color: "rgba(242,232,214,0.25)", padding: "4px 0" }}>All party members placed</div>
+                    <div style={{ fontFamily: T.body, fontSize: 10, color: tx25, padding: "4px 0" }}>All party members placed</div>
                   )}
                 </div>
                 <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
@@ -13038,31 +13061,31 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               </div>
 
               {/* Currently placed tokens */}
-              <div style={{ marginBottom: 16, padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
-                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>On Map ({tokens.length})</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 3, maxHeight: 300, overflowY: "auto", scrollbarWidth:"thin", scrollbarColor:"rgba(255,255,255,0.06) transparent" }}>
+              <div style={{ marginBottom: 16, padding:"12px", background:lm("rgba(255,255,255,0.015)","rgba(0,0,0,0.025)"), borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: tx35, marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>On Map ({tokens.length})</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 3, maxHeight: 300, overflowY: "auto", scrollbarWidth:"thin", scrollbarColor:lm("rgba(255,255,255,0.06) transparent","rgba(0,0,0,0.08) transparent") }}>
                   {tokens.map(tok => {
                     const isSel = selectedTokenId === tok.id;
                     const hpP = tok.maxHp ? Math.round((tok.hp || 0) / tok.maxHp * 100) : null;
                     const hpC = hpP != null ? (hpP > 60 ? "#5ee09a" : hpP > 30 ? "#f59e0b" : "#ef4444") : null;
                     return (
-                    <div key={tok.id} style={{ padding:"5px 8px", background: isSel ? "rgba(201,168,76,0.08)" : "rgba(255,255,255,0.01)", border:"1px solid " + (isSel ? "rgba(201,168,76,0.2)" : "rgba(255,255,255,0.04)"), borderRadius:6, transition:"all 0.12s" }}>
+                    <div key={tok.id} style={{ padding:"5px 8px", background: isSel ? "rgba(201,168,76,0.08)" : lm("rgba(255,255,255,0.01)","rgba(0,0,0,0.015)"), border:"1px solid " + (isSel ? "rgba(201,168,76,0.2)" : bg04), borderRadius:6, transition:"all 0.12s" }}>
                       <div style={{ display:"flex", alignItems:"center", gap:6 }}>
                         <div onClick={() => { setSelectedTokenId(tok.id); setRightPanelTab("inspect"); }} style={{ flex:1, cursor:"pointer", display:"flex", alignItems:"center", gap:6, minWidth:0 }}>
                           {tok.imageSrc ? (
-                            <div style={{ width:18, height:18, borderRadius:"50%", overflow:"hidden", flexShrink:0, border:"1px solid " + (isSel ? "rgba(201,168,76,0.4)" : "rgba(255,255,255,0.08)") }}>
+                            <div style={{ width:18, height:18, borderRadius:"50%", overflow:"hidden", flexShrink:0, border:"1px solid " + (isSel ? "rgba(201,168,76,0.4)" : bg08) }}>
                               <img src={tok.imageSrc} style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
                             </div>
                           ) : (
                             <div style={{ width:6, height:6, borderRadius:"50%", background: tok.color || "#888", flexShrink:0 }}/>
                           )}
-                          <span style={{ fontFamily:T.ui, fontSize:9, color: isSel ? "#c9a84c" : "rgba(242,232,214,0.5)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{tok.name}</span>
+                          <span style={{ fontFamily:T.ui, fontSize:9, color: isSel ? "#c9a84c" : tx50, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{tok.name}</span>
                           {hpC && <span style={{ fontFamily:T.body, fontSize:8, color:hpC, flexShrink:0 }}>{tok.hp}/{tok.maxHp}</span>}
                         </div>
-                        <span style={{ fontFamily:T.body, fontSize:7, color:"rgba(242,232,214,0.15)", textTransform:"uppercase", flexShrink:0 }}>{tok.tokenType === "pc" ? "PC" : tok.size || "med"}</span>
+                        <span style={{ fontFamily:T.body, fontSize:7, color:tx15, textTransform:"uppercase", flexShrink:0 }}>{tok.tokenType === "pc" ? "PC" : tok.size || "med"}</span>
                         <button onClick={(e) => { e.stopPropagation(); setTokens(p => p.map(t => t.id === tok.id ? {...t, hidden: !t.hidden} : t)); }} title={tok.hidden ? "Show" : "Hide"}
                           style={{ background:"none", border:"none", cursor:"pointer", padding:2, display:"flex" }}>
-                          {tok.hidden ? <EyeOff size={10} color="rgba(242,232,214,0.2)"/> : <Eye size={10} color="rgba(242,232,214,0.25)"/>}
+                          {tok.hidden ? <EyeOff size={10} color=tx20/> : <Eye size={10} color=tx25/>}
                         </button>
                         <button onClick={(e) => { e.stopPropagation(); removeToken(tok.id); }} title="Remove"
                           style={{ background:"none", border:"none", cursor:"pointer", padding:2, display:"flex" }}>
@@ -13073,7 +13096,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     );
                   })}
                   {tokens.length === 0 && (
-                    <div style={{ fontFamily: T.body, fontSize: 10, color: "rgba(242,232,214,0.2)", padding: "4px 0" }}>No tokens on map</div>
+                    <div style={{ fontFamily: T.body, fontSize: 10, color: tx20, padding: "4px 0" }}>No tokens on map</div>
                   )}
                 </div>
                 {tokens.length > 1 && (
@@ -13102,41 +13125,41 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1.5px", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", marginBottom: 14, fontWeight:600 }}>Settings</div>
 
               {/* Grid & Snap */}
-              <div style={{ marginBottom: 16, padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
-                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Grid & Snap <span style={{ textTransform: "none", opacity: 0.6, fontWeight:400 }}>(1 sq = 5 ft)</span></div>
+              <div style={{ marginBottom: 16, padding:"12px", background:lm("rgba(255,255,255,0.015)","rgba(0,0,0,0.025)"), borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: tx35, marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Grid & Snap <span style={{ textTransform: "none", opacity: 0.6, fontWeight:400 }}>(1 sq = 5 ft)</span></div>
                 <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
                   {[20, 30, 40, 50, 60, 80].map(s => (
                     <button key={s} onClick={() => setGridSize(s)}
-                      style={{ padding: "4px 8px", background: gridSize === s ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.02)", border: "1px solid " + (gridSize === s ? "rgba(201,168,76,0.25)" : "rgba(255,255,255,0.06)"), borderRadius: 6, color: gridSize === s ? "#c9a84c" : "rgba(242,232,214,0.4)", fontFamily: T.ui, fontSize: 9, cursor: "pointer", transition:"all 0.12s" }}>{s}px</button>
+                      style={{ padding: "4px 8px", background: gridSize === s ? "rgba(201,168,76,0.1)" : bg02, border: "1px solid " + (gridSize === s ? "rgba(201,168,76,0.25)" : bg06), borderRadius: 6, color: gridSize === s ? "#c9a84c" : tx40, fontFamily: T.ui, fontSize: 9, cursor: "pointer", transition:"all 0.12s" }}>{s}px</button>
                   ))}
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
-                  <button onClick={() => setShowGrid(!showGrid)} style={{ padding: "5px 10px", background: showGrid ? "rgba(94,224,154,0.08)" : "rgba(255,255,255,0.02)", border: "1px solid " + (showGrid ? "rgba(94,224,154,0.2)" : "rgba(255,255,255,0.06)"), borderRadius: 6, color: showGrid ? "#5ee09a" : "rgba(242,232,214,0.4)", fontFamily: T.ui, fontSize: 9, cursor: "pointer", transition:"all 0.12s" }}>{showGrid ? "Grid On" : "Grid Off"}</button>
-                  <button onClick={() => setSnapToGrid(!snapToGrid)} style={{ padding: "5px 10px", background: snapToGrid ? "rgba(94,224,154,0.08)" : "rgba(255,255,255,0.02)", border: "1px solid " + (snapToGrid ? "rgba(94,224,154,0.2)" : "rgba(255,255,255,0.06)"), borderRadius: 6, color: snapToGrid ? "#5ee09a" : "rgba(242,232,214,0.4)", fontFamily: T.ui, fontSize: 9, cursor: "pointer", transition:"all 0.12s" }}>{snapToGrid ? "Snap On" : "Snap Off"}</button>
+                  <button onClick={() => setShowGrid(!showGrid)} style={{ padding: "5px 10px", background: showGrid ? "rgba(94,224,154,0.08)" : bg02, border: "1px solid " + (showGrid ? "rgba(94,224,154,0.2)" : bg06), borderRadius: 6, color: showGrid ? "#5ee09a" : tx40, fontFamily: T.ui, fontSize: 9, cursor: "pointer", transition:"all 0.12s" }}>{showGrid ? "Grid On" : "Grid Off"}</button>
+                  <button onClick={() => setSnapToGrid(!snapToGrid)} style={{ padding: "5px 10px", background: snapToGrid ? "rgba(94,224,154,0.08)" : bg02, border: "1px solid " + (snapToGrid ? "rgba(94,224,154,0.2)" : bg06), borderRadius: 6, color: snapToGrid ? "#5ee09a" : tx40, fontFamily: T.ui, fontSize: 9, cursor: "pointer", transition:"all 0.12s" }}>{snapToGrid ? "Snap On" : "Snap Off"}</button>
                 </div>
               </div>
 
               {/* View & Zoom */}
-              <div style={{ marginBottom: 16, padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
-                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>View & Zoom</div>
+              <div style={{ marginBottom: 16, padding:"12px", background:lm("rgba(255,255,255,0.015)","rgba(0,0,0,0.025)"), borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: tx35, marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>View & Zoom</div>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                   <button onClick={() => setZoom(Math.max(0.1, zoom - 0.1))}
-                    onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.06)"}
-                    onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.02)"}
-                    style={{ padding:"4px 8px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:6, color:"rgba(242,232,214,0.5)", fontFamily:T.ui, fontSize:11, cursor:"pointer", transition:"background 0.12s", lineHeight:1 }}>-</button>
+                    onMouseEnter={e => e.currentTarget.style.background=bg06}
+                    onMouseLeave={e => e.currentTarget.style.background=bg02}
+                    style={{ padding:"4px 8px", background:bg02, border:"1px solid "+bd06, borderRadius:6, color:tx50, fontFamily:T.ui, fontSize:11, cursor:"pointer", transition:"background 0.12s", lineHeight:1 }}>-</button>
                   <div style={{ flex:1, textAlign:"center" }}>
-                    <div style={{ fontFamily:T.body, fontSize:16, fontWeight:700, color:"rgba(242,232,214,0.85)" }}>{Math.round(zoom * 100)}%</div>
-                    <div style={{ fontFamily:T.body, fontSize:9, color:"rgba(242,232,214,0.25)", marginTop:1 }}>zoom</div>
+                    <div style={{ fontFamily:T.body, fontSize:16, fontWeight:700, color:tx85 }}>{Math.round(zoom * 100)}%</div>
+                    <div style={{ fontFamily:T.body, fontSize:9, color:tx25, marginTop:1 }}>zoom</div>
                   </div>
                   <button onClick={() => setZoom(Math.min(5, zoom + 0.1))}
-                    onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.06)"}
-                    onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.02)"}
-                    style={{ padding:"4px 8px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:6, color:"rgba(242,232,214,0.5)", fontFamily:T.ui, fontSize:11, cursor:"pointer", transition:"background 0.12s", lineHeight:1 }}>+</button>
+                    onMouseEnter={e => e.currentTarget.style.background=bg06}
+                    onMouseLeave={e => e.currentTarget.style.background=bg02}
+                    style={{ padding:"4px 8px", background:bg02, border:"1px solid "+bd06, borderRadius:6, color:tx50, fontFamily:T.ui, fontSize:11, cursor:"pointer", transition:"background 0.12s", lineHeight:1 }}>+</button>
                 </div>
                 <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
                   {[0.25, 0.5, 0.75, 1, 1.5, 2].map(z => (
                     <button key={z} onClick={() => setZoom(z)}
-                      style={{ padding:"4px 8px", background: Math.abs(zoom - z) < 0.01 ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.02)", border:"1px solid " + (Math.abs(zoom - z) < 0.01 ? "rgba(201,168,76,0.25)" : "rgba(255,255,255,0.06)"), borderRadius:6, color: Math.abs(zoom - z) < 0.01 ? "#c9a84c" : "rgba(242,232,214,0.4)", fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"all 0.12s" }}>{z * 100}%</button>
+                      style={{ padding:"4px 8px", background: Math.abs(zoom - z) < 0.01 ? "rgba(201,168,76,0.1)" : bg02, border:"1px solid " + (Math.abs(zoom - z) < 0.01 ? "rgba(201,168,76,0.25)" : bg06), borderRadius:6, color: Math.abs(zoom - z) < 0.01 ? "#c9a84c" : tx40, fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"all 0.12s" }}>{z * 100}%</button>
                   ))}
                 </div>
                 <button onClick={() => { setZoom(1); setPan({x:0,y:0}); }}
@@ -13148,18 +13171,18 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               </div>
 
               {/* Fog of War */}
-              <div style={{ marginBottom: 16, padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
-                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Fog of War</div>
+              <div style={{ marginBottom: 16, padding:"12px", background:lm("rgba(255,255,255,0.015)","rgba(0,0,0,0.025)"), borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: tx35, marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Fog of War</div>
                 <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
                   <button onClick={() => setFogEnabled(!fogEnabled)}
-                    style={{ flex:1, padding:"6px 10px", background: fogEnabled ? "rgba(94,224,154,0.08)" : "rgba(255,255,255,0.02)", border:"1px solid " + (fogEnabled ? "rgba(94,224,154,0.2)" : "rgba(255,255,255,0.06)"), borderRadius:6, color: fogEnabled ? "#5ee09a" : "rgba(242,232,214,0.4)", fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"all 0.12s", display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
+                    style={{ flex:1, padding:"6px 10px", background: fogEnabled ? "rgba(94,224,154,0.08)" : bg02, border:"1px solid " + (fogEnabled ? "rgba(94,224,154,0.2)" : bg06), borderRadius:6, color: fogEnabled ? "#5ee09a" : tx40, fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"all 0.12s", display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
                     {fogEnabled ? <Eye size={11}/> : <EyeOff size={11}/>} {fogEnabled ? "Fog On" : "Fog Off"}
                   </button>
                 </div>
                 <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
                   {["manual", "vision"].map(fm => (
                     <button key={fm} onClick={() => setFogMode(fm)}
-                      style={{ flex:1, padding:"5px 8px", background: fogMode === fm ? "rgba(201,168,76,0.08)" : "rgba(255,255,255,0.02)", border:"1px solid " + (fogMode === fm ? "rgba(201,168,76,0.2)" : "rgba(255,255,255,0.06)"), borderRadius:6, color: fogMode === fm ? "#c9a84c" : "rgba(242,232,214,0.4)", fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"all 0.12s", textTransform:"capitalize" }}>{fm}</button>
+                      style={{ flex:1, padding:"5px 8px", background: fogMode === fm ? "rgba(201,168,76,0.08)" : bg02, border:"1px solid " + (fogMode === fm ? "rgba(201,168,76,0.2)" : bg06), borderRadius:6, color: fogMode === fm ? "#c9a84c" : tx40, fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"all 0.12s", textTransform:"capitalize" }}>{fm}</button>
                   ))}
                 </div>
                 <button onClick={() => { if (confirm("Clear all fog cells?")) setFogCells({}); }}
@@ -13171,19 +13194,19 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               </div>
 
               {/* Display Options */}
-              <div style={{ padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
-                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Quick Actions</div>
+              <div style={{ padding:"12px", background:lm("rgba(255,255,255,0.015)","rgba(0,0,0,0.025)"), borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: tx35, marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Quick Actions</div>
                 <div style={{ display: "flex", flexDirection:"column", gap: 4 }}>
                   <button onClick={() => { setDrawings([]); setWalls([]); setTerrainCells({}); }}
                     onMouseEnter={e => e.currentTarget.style.background="rgba(239,68,68,0.08)"}
-                    onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.02)"}
-                    style={{ padding:"6px 10px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:6, color:"rgba(242,232,214,0.4)", fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"background 0.12s", textAlign:"left", display:"flex", alignItems:"center", gap:6 }}>
+                    onMouseLeave={e => e.currentTarget.style.background=bg02}
+                    style={{ padding:"6px 10px", background:bg02, border:"1px solid "+bd06, borderRadius:6, color:tx40, fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"background 0.12s", textAlign:"left", display:"flex", alignItems:"center", gap:6 }}>
                     <Trash2 size={10} color="rgba(239,68,68,0.5)"/> Clear All Drawings
                   </button>
                   <button onClick={() => { if (confirm("Remove all tokens from the map?")) setTokens([]); }}
                     onMouseEnter={e => e.currentTarget.style.background="rgba(239,68,68,0.08)"}
-                    onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.02)"}
-                    style={{ padding:"6px 10px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:6, color:"rgba(242,232,214,0.4)", fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"background 0.12s", textAlign:"left", display:"flex", alignItems:"center", gap:6 }}>
+                    onMouseLeave={e => e.currentTarget.style.background=bg02}
+                    style={{ padding:"6px 10px", background:bg02, border:"1px solid "+bd06, borderRadius:6, color:tx40, fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"background 0.12s", textAlign:"left", display:"flex", alignItems:"center", gap:6 }}>
                     <Trash2 size={10} color="rgba(239,68,68,0.5)"/> Clear All Tokens
                   </button>
                 </div>
