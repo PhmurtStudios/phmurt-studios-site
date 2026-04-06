@@ -10215,21 +10215,15 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           icon: getActionPanelMeta(card.panel).icon,
           onClick: () => {
             if (card.resolver === "weapon") {
-              // BG3-style: if we already have a focused target, resolve immediately
-              const focusedTarget = getFocusedCombatTarget(actorToken);
-              if (focusedTarget && focusedTarget.id !== actorToken.id) {
-                // Check range before auto-resolving
-                const rangePx = ((card.data?.range || 5) / 5) * gridSize + gridSize * 0.5;
-                const distToTarget = Math.hypot((focusedTarget.x || 0) - (actorToken.x || 0), (focusedTarget.y || 0) - (actorToken.y || 0));
-                if (distToTarget <= rangePx) {
-                  resolvePlayModeCard(card, actorToken, focusedTarget);
-                  openCombatSidebar("tracker");
-                  if (!combatLive) dismissTurnPopup();
-                  else setShowConditionMenu(false);
-                  return;
-                }
-              }
-              // No focused target or out of range — enter targeting mode
+              // Always enter targeting mode — user clicks a target to resolve
+              setActiveWeapon({ card, actorToken });
+              weaponTargetRef.current = null;
+              if (!combatLive) dismissTurnPopup();
+              else setShowConditionMenu(false);
+              return;
+            }
+            if (card.resolver === "spell" && card.data?.spell && !card.data.spell.healing && card.data.spell.shape !== "self") {
+              // Offensive/targeted spells also enter targeting mode
               setActiveWeapon({ card, actorToken });
               weaponTargetRef.current = null;
               if (!combatLive) dismissTurnPopup();
@@ -10360,20 +10354,28 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             setShowConditionMenu(false);
             return;
           }
-          const targetToken = getFocusedCombatTarget(actorToken);
-          if (needsTarget && !targetToken) {
-            addCombatLogEntry({ type: "system", text: "No valid focus target found for " + action.name + "." });
-            openCombatSidebar("tracker");
+          if (needsTarget) {
+            // Enter targeting mode — DM clicks a target token to resolve
+            const monsterCard = {
+              id: "monster-" + action.name + "-" + Date.now(),
+              name: action.name,
+              label: action.name,
+              resolver: "monster-action",
+              data: { action, isLegendary: item.isLegendary, legendaryCost, summaryText },
+            };
+            setActiveWeapon({ card: monsterCard, actorToken });
+            weaponTargetRef.current = null;
+            setShowConditionMenu(false);
             return;
           }
-          const didResolve = executeCombatAction(actorToken.id, needsTarget ? targetToken?.id : actorToken.id, action);
+          // Self-target actions (utility, lair actions without target) resolve immediately
+          const didResolve = executeCombatAction(actorToken.id, actorToken.id, action);
           if (!didResolve) {
             openCombatSidebar("tracker");
             setShowConditionMenu(false);
             return;
           }
-          // Trigger monster-specific action animation
-          triggerMonsterActionAnim(action.name, actorToken, targetToken || actorToken);
+          triggerMonsterActionAnim(action.name, actorToken, actorToken);
           if (item.isLegendary) {
             updateToken(actorToken.id, {
               legendaryActionMax: getLegendaryActionMax(actorToken),
@@ -10384,7 +10386,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           setPlayModeResolution({
             title: action.name,
             lines: [
-              actorToken.name + " uses " + action.name + (targetToken ? (" on " + targetToken.name) : "") + ".",
+              actorToken.name + " uses " + action.name + ".",
               summaryText ? summaryText.slice(0, 220) + (summaryText.length > 220 ? "..." : "") : "Resolved from the monster's stat block.",
               "Result added to the combat feed.",
             ],
@@ -14353,35 +14355,76 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       return;
     }
 
-    // ── Weapon targeting — LEFT CLICK on token to attack ──
+    // ── Ability targeting — LEFT CLICK on token to attack/cast ──
     if (activeWeapon) {
       const { card, actorToken: attacker } = activeWeapon;
-      // Find closest token to click within 1 grid cell (tight targeting)
+      const isSpellCard = card.resolver === "spell";
+      const isMonsterCard = card.resolver === "monster-action";
+      let cardRange;
+      if (isSpellCard) {
+        cardRange = card.data?.spell?.range || card.data?.range || 60;
+      } else if (isMonsterCard) {
+        // Parse range from monster action desc (e.g. "reach 10 ft." or "range 30/120 ft.")
+        const desc = card.data?.action?.desc || "";
+        const rangeMatch = desc.match(/(?:reach|range)\s+(\d+)/i);
+        cardRange = rangeMatch ? parseInt(rangeMatch[1]) : 10;
+      } else {
+        cardRange = card.data?.range || 5;
+      }
+      const cardName = isSpellCard ? (card.data?.spell?.name || card.label || "Spell") : (card.label || card.name || "Attack");
+      // Find closest token to click within 1.5 grid cells (generous for usability)
       const clickedToken = tokens.reduce((c, t) => {
         if (t.id === attacker.id) return c; // Can't target self
         if (t.hidden && viewRole === "player") return c;
         const d = Math.hypot(t.x - w.x, t.y - w.y);
-        return (!c || d < c.dist) && d < gridSize * 1.0 ? { token: t, dist: d } : c;
+        return (!c || d < c.dist) && d < gridSize * 1.5 ? { token: t, dist: d } : c;
       }, null);
       if (clickedToken) {
-        // Check range: weapon range in feet, grid = 5ft per cell (+ 2.5ft diagonal tolerance = half a cell)
-        const rangePx = ((card.data?.range || 5) / 5) * gridSize + gridSize * 0.5;
+        // Check range: range in feet, grid = 5ft per cell (+ half-cell tolerance)
+        const rangePx = (cardRange / 5) * gridSize + gridSize * 0.5;
         const distToTarget = Math.hypot(clickedToken.token.x - attacker.x, clickedToken.token.y - attacker.y);
         if (distToTarget > rangePx) {
-          setSpellLog(prev => [...prev, { id: "log-" + Date.now(), msg: clickedToken.token.name + " is out of range (" + Math.round(distToTarget / gridSize * 5) + "ft / " + (card.data?.range || 5) + "ft)", time: Date.now() }]);
+          setSpellLog(prev => [...prev, { id: "log-" + Date.now(), msg: clickedToken.token.name + " is out of range (" + Math.round(distToTarget / gridSize * 5) + "ft / " + cardRange + "ft)", time: Date.now() }]);
           setTimeout(() => setSpellLog(prev => prev.slice(1)), 3000);
           return;
         }
-        // Set focus to the clicked target and resolve the attack
+        // Set focus to the clicked target and resolve
         setFocusedCombatTarget(attacker.id, clickedToken.token.id);
         setSelectedTokenId(attacker.id);
         setActiveWeapon(null);
         weaponTargetRef.current = null;
         setHoveredTokenId(null);
-        resolvePlayModeCard(card, attacker, clickedToken.token);
-        openCombatSidebar("tracker");
+
+        if (card.resolver === "monster-action") {
+          // Monster actions use executeCombatAction (resolvePlayModeCard is PC-only)
+          const mAction = card.data?.action;
+          if (!mAction) { openCombatSidebar("tracker"); return; }
+          const didResolve = executeCombatAction(attacker.id, clickedToken.token.id, mAction);
+          if (didResolve) {
+            triggerMonsterActionAnim(mAction.name, attacker, clickedToken.token);
+            if (card.data?.isLegendary) {
+              updateToken(attacker.id, {
+                legendaryActionMax: getLegendaryActionMax(attacker),
+                legendaryActionChargesRemaining: Math.max(0, getLegendaryActionRemaining(attacker) - (card.data.legendaryCost || 1)),
+              });
+            }
+            if (!card.data?.isLegendary) spendEconomy(attacker.id, "action");
+            setPlayModeResolution({
+              title: mAction.name,
+              lines: [
+                attacker.name + " uses " + mAction.name + " on " + clickedToken.token.name + ".",
+                card.data.summaryText ? card.data.summaryText.slice(0, 220) + (card.data.summaryText.length > 220 ? "..." : "") : "Resolved from the monster's stat block.",
+                "Result added to the combat feed.",
+              ],
+            });
+          }
+          openCombatSidebar("tracker");
+        } else {
+          resolvePlayModeCard(card, attacker, clickedToken.token);
+          openCombatSidebar("tracker");
+        }
       } else {
-        setSpellLog(prev => [...prev, { id: "log-" + Date.now(), msg: "Click on a target token to attack with " + card.name, time: Date.now() }]);
+        setSpellLog(prev => [...prev, { id: "log-" + Date.now(), msg: "Click on a target to use " + cardName, time: Date.now() }]);
         setTimeout(() => setSpellLog(prev => prev.slice(1)), 2000);
       }
       return;
@@ -16919,13 +16962,22 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                 MOVEMENT MODE (M to toggle, Esc to cancel)
               </div>
             )}
-            {!cockpitModeActive && activeWeapon && (
-              <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%, -50%)", background: (activeWeapon.card?.data?.range || 5) <= 10 ? "rgba(240,104,88,0.92)" : "rgba(88,170,255,0.92)", backdropFilter:"blur(8px)", padding:"14px 32px", borderRadius:"12px", fontFamily:T.ui, fontSize:14, fontWeight:700, color:"#fff", letterSpacing:"2px", pointerEvents:"none", zIndex:55, border:"2px solid " + ((activeWeapon.card?.data?.range || 5) <= 10 ? "rgba(240,104,88,0.7)" : "rgba(88,170,255,0.7)"), boxShadow:"0 8px 40px " + ((activeWeapon.card?.data?.range || 5) <= 10 ? "rgba(240,104,88,0.5)" : "rgba(88,170,255,0.5)") + ", 0 0 80px " + ((activeWeapon.card?.data?.range || 5) <= 10 ? "rgba(240,104,88,0.15)" : "rgba(88,170,255,0.15)"), display:"flex", alignItems:"center", gap:12, textTransform:"uppercase", textShadow:"0 2px 8px rgba(0,0,0,0.5)" }}>
-                <span style={{ width:10, height:10, borderRadius:"50%", background:"#fff", boxShadow:"0 0 12px " + ((activeWeapon.card?.data?.range || 5) <= 10 ? "#f06858" : "#58aaff"), animation:"cm-spin 1.5s linear infinite" }} />
-                {((activeWeapon.card?.data?.range || 5) <= 10 ? "\u2694 " : "\uD83C\uDFF9 ") + (activeWeapon.card?.name || "Attack")} — Click Target
-                <span style={{ fontSize:10, fontWeight:400, opacity:0.7, letterSpacing:"1px" }}>Esc to cancel</span>
-              </div>
-            )}
+            {!cockpitModeActive && activeWeapon && (() => {
+              const isSpell = activeWeapon.card?.resolver === "spell";
+              const isMelee = !isSpell && (activeWeapon.card?.data?.range || 5) <= 10;
+              const bannerColor = isSpell ? "rgba(167,139,250,0.92)" : isMelee ? "rgba(240,104,88,0.92)" : "rgba(88,170,255,0.92)";
+              const borderColor = isSpell ? "rgba(167,139,250,0.7)" : isMelee ? "rgba(240,104,88,0.7)" : "rgba(88,170,255,0.7)";
+              const glowColor = isSpell ? "rgba(167,139,250,0.5)" : isMelee ? "rgba(240,104,88,0.5)" : "rgba(88,170,255,0.5)";
+              const icon = isSpell ? "\u2728 " : isMelee ? "\u2694 " : "\uD83C\uDFF9 ";
+              const label = activeWeapon.card?.label || activeWeapon.card?.name || "Ability";
+              return (
+                <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%, -50%)", background:bannerColor, backdropFilter:"blur(8px)", padding:"14px 32px", borderRadius:"12px", fontFamily:T.ui, fontSize:14, fontWeight:700, color:"#fff", letterSpacing:"2px", pointerEvents:"none", zIndex:55, border:"2px solid " + borderColor, boxShadow:"0 8px 40px " + glowColor + ", 0 0 80px " + glowColor.replace("0.5","0.15"), display:"flex", alignItems:"center", gap:12, textTransform:"uppercase", textShadow:"0 2px 8px rgba(0,0,0,0.5)" }}>
+                  <span style={{ width:10, height:10, borderRadius:"50%", background:"#fff", boxShadow:"0 0 12px " + glowColor }} />
+                  {icon + label} — Click Target
+                  <span style={{ fontSize:10, fontWeight:400, opacity:0.7, letterSpacing:"1px" }}>Esc to cancel</span>
+                </div>
+              );
+            })()}
             {!cockpitModeActive && activeSpell && (
               <div style={{ position:"absolute", top:14, left:80, background:"rgba(181,116,255,0.88)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"#fff", letterSpacing:"1.5px", pointerEvents:"none", zIndex:10, border:"1px solid rgba(181,116,255,0.5)", boxShadow:"0 2px 10px rgba(181,116,255,0.3)", display:"flex", alignItems:"center", gap:8 }}>
                 <span style={{ width:7, height:7, borderRadius:"50%", background:activeSpell.color, boxShadow:"0 0 6px " + activeSpell.color }} />
