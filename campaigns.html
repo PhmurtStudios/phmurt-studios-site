@@ -8726,7 +8726,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     };
 
     // ── BG3: Flanking check ──
-    if (typeof window.CombatEngine !== "undefined" && combatLive) {
+    if (typeof window.CombatEngine !== "undefined" && combatLive && typeof window.CombatEngine.checkFlanking === "function") {
       const allies = tokens.filter(t =>
         t.id !== attackerToken.id && t.id !== targetToken.id &&
         t.tokenType === attackerToken.tokenType && (t.hp || 0) > 0
@@ -8735,7 +8735,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     }
 
     // ── BG3: Height advantage ──
-    if (typeof window.CombatEngine !== "undefined") {
+    if (typeof window.CombatEngine !== "undefined" && typeof window.CombatEngine.getHeightAdvantage === "function") {
       opts.heightAdvantage = window.CombatEngine.getHeightAdvantage(attackerToken, targetToken);
     }
 
@@ -8802,7 +8802,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     // ── Temp HP absorption (BG3) ──
     const tempHp = resolvedTarget.tempHp || 0;
     let actualDamage = finalDamage;
-    if (tempHp > 0 && typeof window.CombatEngine !== "undefined") {
+    if (tempHp > 0 && typeof window.CombatEngine !== "undefined" && typeof window.CombatEngine.applyDamageWithTempHp === "function") {
       const result = window.CombatEngine.applyDamageWithTempHp(resolvedTarget.hp || 0, tempHp, finalDamage);
       updateToken(resolvedTarget.id, { tempHp: result.newTempHp });
       if (result.tempHpAbsorbed > 0) {
@@ -8816,7 +8816,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     }
 
     // ── Concentration save (BG3 / 5e) ──
-    if (totalDamage > 0 && typeof window.CombatEngine !== "undefined") {
+    if (totalDamage > 0 && typeof window.CombatEngine !== "undefined" && typeof window.CombatEngine.rollConcentrationSave === "function") {
       const conds = getMergedConditionsForToken(resolvedTarget);
       const isConcentrating = conds.includes("Concentrating") || resolvedTarget.activeConcentrationSpell;
       if (isConcentrating) {
