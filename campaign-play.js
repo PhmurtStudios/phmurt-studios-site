@@ -4831,17 +4831,22 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     const mapW = bgImage ? bgImage.width : w / zoom;
     const mapH = bgImage ? bgImage.height : h / zoom;
 
-    // Grid — extends across the entire visible area
+    // Subtle depth gradient on background (very low contrast vignette)
+    if (!bgImage) {
+      const depthGrad = ctx.createRadialGradient(mapW/2, mapH/2, 0, mapW/2, mapH/2, Math.max(mapW, mapH) * 0.7);
+      depthGrad.addColorStop(0, "rgba(30,28,40,0.08)");
+      depthGrad.addColorStop(0.6, "rgba(10,10,18,0.0)");
+      depthGrad.addColorStop(1, "rgba(4,4,10,0.12)");
+      ctx.fillStyle = depthGrad;
+      ctx.fillRect(0, 0, mapW, mapH);
+    }
+
+    // Grid — recessed, minimal, doesn't compete with gameplay elements
     if (showGrid) {
-      const crimsonColor = cssVar("--crimson").match(/\d+/g);
       const isLight = document.documentElement.classList.contains("light-mode");
-      const gridOpacity = isLight ? 0.12 : 0.22;
-      if (crimsonColor) {
-        ctx.strokeStyle = "rgba(" + crimsonColor.join(",") + "," + gridOpacity + ")";
-      } else {
-        ctx.strokeStyle = "rgba(212,67,58," + gridOpacity + ")";
-      }
-      ctx.lineWidth = 0.5;
+      const gridOpacity = isLight ? 0.06 : 0.09;
+      ctx.strokeStyle = "rgba(140,130,150," + gridOpacity + ")";
+      ctx.lineWidth = 0.4;
       // Calculate visible area in world coordinates
       const visLeft = -pan.x / zoom;
       const visTop = -pan.y / zoom;
@@ -5239,16 +5244,22 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         const strokeAlpha = canReact ? 0.25 : 0.08;
         const sizeMult = ({ tiny:0.5, small:1, medium:1, large:2, huge:3, gargantuan:4 })[t.size || "medium"] || 1;
         const tokenR = gridSize * 0.44 * sizeMult;
-        // Filled threat area
+        // Feathered threat area (danger = muted red)
         ctx.save();
+        const zoneR = reachPx + tokenR;
         ctx.beginPath();
-        ctx.arc(t.x, t.y, reachPx + tokenR, 0, Math.PI * 2);
-        ctx.fillStyle = canReact ? "rgba(220,60,50," + alpha + ")" : "rgba(180,100,60," + alpha + ")";
+        ctx.arc(t.x, t.y, zoneR, 0, Math.PI * 2);
+        const tzGrad = ctx.createRadialGradient(t.x, t.y, tokenR, t.x, t.y, zoneR);
+        const tzCol = canReact ? "180,55,45" : "160,90,55";
+        tzGrad.addColorStop(0, "rgba(" + tzCol + "," + (alpha * 1.5) + ")");
+        tzGrad.addColorStop(0.7, "rgba(" + tzCol + "," + alpha + ")");
+        tzGrad.addColorStop(1, "rgba(" + tzCol + ",0.0)");
+        ctx.fillStyle = tzGrad;
         ctx.fill();
         // Dashed border
         ctx.setLineDash([6, 4]);
-        ctx.strokeStyle = canReact ? "rgba(220,60,50," + strokeAlpha + ")" : "rgba(180,100,60," + strokeAlpha + ")";
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = "rgba(" + tzCol + "," + strokeAlpha + ")";
+        ctx.lineWidth = 0.8;
         ctx.stroke();
         ctx.setLineDash([]);
         ctx.restore();
@@ -5264,7 +5275,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       const originGX = Math.floor(origin.x / gridSize);
       const originGY = Math.floor(origin.y / gridSize);
 
-      // Show reachable range
+      // Show reachable range (softer fill, consistent green for safe movement)
       for (let dx = -speedCells; dx <= speedCells; dx++) {
         for (let dy = -speedCells; dy <= speedCells; dy++) {
           const dist = Math.max(Math.abs(dx), Math.abs(dy));
@@ -5272,16 +5283,15 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           const gx = originGX + dx;
           const gy = originGY + dy;
           if (gx < 0 || gy < 0) continue;
-          ctx.fillStyle = dist <= remaining
-            ? "rgba(46,139,87,0.15)"
-            : "rgba(232,148,10,0.10)";
+          const distFade = 1 - (dist / Math.max(1, remaining)) * 0.4;
+          ctx.fillStyle = "rgba(70,180,110," + (0.10 * distFade) + ")";
           ctx.fillRect(gx * gridSize, gy * gridSize, gridSize, gridSize);
         }
       }
 
       // Draw movement path
       if (movementPath.length > 0) {
-        ctx.strokeStyle = "rgba(46,139,87,0.6)";
+        ctx.strokeStyle = "rgba(70,200,120,0.55)";
         ctx.lineWidth = 2;
         ctx.setLineDash([4, 3]);
         ctx.beginPath();
@@ -5304,20 +5314,31 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           const currentDist = Math.hypot(selectedToken.x - hostile.x, selectedToken.y - hostile.y);
           const inReach = currentDist <= reachPx + hostR + gridSize * 0.5;
           if (inReach) {
-            // Draw danger zone boundary
+            // Draw danger zone with feathered edge
             ctx.save();
+            const oaR = reachPx + hostR;
+            // Feathered fill
             ctx.beginPath();
-            ctx.arc(hostile.x, hostile.y, reachPx + hostR, 0, Math.PI * 2);
+            ctx.arc(hostile.x, hostile.y, oaR, 0, Math.PI * 2);
+            const oaGrad = ctx.createRadialGradient(hostile.x, hostile.y, oaR * 0.5, hostile.x, hostile.y, oaR);
+            oaGrad.addColorStop(0, "rgba(180,50,40,0.04)");
+            oaGrad.addColorStop(0.8, "rgba(180,50,40,0.06)");
+            oaGrad.addColorStop(1, "rgba(180,50,40,0.0)");
+            ctx.fillStyle = oaGrad;
+            ctx.fill();
+            // Dashed boundary
+            ctx.beginPath();
+            ctx.arc(hostile.x, hostile.y, oaR, 0, Math.PI * 2);
             ctx.setLineDash([8, 4]);
-            ctx.strokeStyle = "rgba(255,60,40,0.4)";
-            ctx.lineWidth = 2;
+            ctx.strokeStyle = "rgba(180,50,40,0.35)";
+            ctx.lineWidth = 1.5;
             ctx.stroke();
             ctx.setLineDash([]);
             // Small label
             ctx.font = "bold 9px 'Cinzel', serif";
-            ctx.fillStyle = "rgba(255,60,40,0.8)";
+            ctx.fillStyle = "rgba(200,70,60,0.7)";
             ctx.textAlign = "center";
-            ctx.fillText("OA ZONE", hostile.x, hostile.y - reachPx - hostR - 4);
+            ctx.fillText("OA ZONE", hostile.x, hostile.y - oaR - 4);
             ctx.restore();
           }
         });
@@ -5432,37 +5453,52 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         }
       }
 
-      // Drop shadow under token (deeper for visual weight)
+      // Role-based ambient glow (layered under token for elevation effect)
+      const roleGlowColor = isPC ? "rgba(70,200,120," : "rgba(200,60,50,";
+      if (!isDead) {
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, r + 8, 0, Math.PI * 2);
+        const roleGrad = ctx.createRadialGradient(t.x, t.y, r * 0.8, t.x, t.y, r + 8);
+        roleGrad.addColorStop(0, roleGlowColor + "0.12)");
+        roleGrad.addColorStop(0.6, roleGlowColor + "0.05)");
+        roleGrad.addColorStop(1, roleGlowColor + "0.0)");
+        ctx.fillStyle = roleGrad;
+        ctx.fill();
+      }
+
+      // Drop shadow under token (deeper for elevated feel)
       ctx.beginPath();
-      ctx.arc(t.x + 1, t.y + 3, r + 2, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(0,0,6,0.5)";
+      ctx.arc(t.x + 1, t.y + 4, r + 3, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(0,0,6,0.55)";
       ctx.fill();
       ctx.beginPath();
-      ctx.arc(t.x, t.y + 1, r + 1, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(0,0,6,0.25)";
+      ctx.arc(t.x, t.y + 2, r + 1.5, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(0,0,6,0.3)";
       ctx.fill();
 
-      // Active combatant glow (pulsing double ring)
+      // Active combatant glow (pulsing gold/amber — "it's your turn" indicator)
       if (isActiveCombatant && combatLive) {
         const pulse = 0.5 + 0.5 * Math.sin(now / 400);
-        const crimsonColor = cssVar("--crimson").match(/\d+/g) || [220, 20, 60];
-        // Outer glow ring
+        // Outer soft glow
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, r + 12, 0, Math.PI * 2);
+        const activeGrad = ctx.createRadialGradient(t.x, t.y, r, t.x, t.y, r + 12);
+        activeGrad.addColorStop(0, "rgba(255,200,50," + (0.10 + 0.08 * pulse) + ")");
+        activeGrad.addColorStop(1, "rgba(255,180,30,0.0)");
+        ctx.fillStyle = activeGrad;
+        ctx.fill();
+        // Outer ring
         ctx.beginPath();
         ctx.arc(t.x, t.y, r + 10, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(" + crimsonColor.join(",") + "," + (0.15 + 0.2 * pulse) + ")";
+        ctx.strokeStyle = "rgba(255,200,50," + (0.2 + 0.25 * pulse) + ")";
         ctx.lineWidth = 2;
         ctx.stroke();
-        // Inner glow ring
+        // Inner ring
         ctx.beginPath();
         ctx.arc(t.x, t.y, r + 5, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(" + crimsonColor.join(",") + "," + (0.4 + 0.4 * pulse) + ")";
+        ctx.strokeStyle = "rgba(255,215,0," + (0.45 + 0.4 * pulse) + ")";
         ctx.lineWidth = 3;
         ctx.stroke();
-        // Fill glow
-        ctx.beginPath();
-        ctx.arc(t.x, t.y, r + 5, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(" + crimsonColor.join(",") + "," + (0.06 + 0.06 * pulse) + ")";
-        ctx.fill();
       }
 
       // Focus target ring so the current actor's chosen target is obvious on the map
@@ -5479,21 +5515,41 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
       if (combatLive && (isActiveCombatant || isSelected) && !isDead) {
         const threatRadius = r + gridSize * 0.95;
+        const threatCol = isPC ? "rgba(70,180,110," : "rgba(180,60,50,";
+        // Soft filled threat zone
         ctx.beginPath();
         ctx.arc(t.x, t.y, threatRadius, 0, Math.PI * 2);
-        ctx.strokeStyle = t.tokenType === "pc" ? "rgba(94,224,154,0.18)" : "rgba(212,67,58,0.18)";
-        ctx.lineWidth = 1.2;
+        const tGrad = ctx.createRadialGradient(t.x, t.y, r, t.x, t.y, threatRadius);
+        tGrad.addColorStop(0, threatCol + "0.06)");
+        tGrad.addColorStop(0.8, threatCol + "0.03)");
+        tGrad.addColorStop(1, threatCol + "0.0)");
+        ctx.fillStyle = tGrad;
+        ctx.fill();
+        // Dashed border
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, threatRadius, 0, Math.PI * 2);
+        ctx.strokeStyle = threatCol + "0.20)";
+        ctx.lineWidth = 1;
         ctx.setLineDash([6, 6]);
         ctx.stroke();
         ctx.setLineDash([]);
       }
 
-      // Valid target highlight during ability targeting
+      // Valid target highlight during ability targeting (green = targetable)
       if (isValidTarget && !isSelected && !isHovered) {
         ctx.save();
-        const pulseVal = 0.4 + 0.3 * Math.sin(Date.now() / 400);
+        const pulseVal = 0.35 + 0.3 * Math.sin(Date.now() / 400);
+        // Soft outer glow
         ctx.beginPath();
-        ctx.arc(t.x, t.y, r + 6, 0, Math.PI * 2);
+        ctx.arc(t.x, t.y, r + 9, 0, Math.PI * 2);
+        const vtGrad = ctx.createRadialGradient(t.x, t.y, r, t.x, t.y, r + 9);
+        vtGrad.addColorStop(0, "rgba(94,224,154," + (pulseVal * 0.15) + ")");
+        vtGrad.addColorStop(1, "rgba(94,224,154,0.0)");
+        ctx.fillStyle = vtGrad;
+        ctx.fill();
+        // Ring
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, r + 5, 0, Math.PI * 2);
         ctx.strokeStyle = "rgba(94,224,154," + pulseVal + ")";
         ctx.lineWidth = 2;
         ctx.stroke();
@@ -5510,18 +5566,21 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         ctx.stroke();
       }
 
-      // Selection ring (solid gold with glow)
+      // Selection ring (gold with soft radial glow — consistent "active focus" semantic)
       if (isSelected) {
+        // Soft radial glow behind ring
+        ctx.beginPath();
+        ctx.arc(t.x, t.y, r + 10, 0, Math.PI * 2);
+        const selGrad = ctx.createRadialGradient(t.x, t.y, r, t.x, t.y, r + 10);
+        selGrad.addColorStop(0, "rgba(255,215,0,0.10)");
+        selGrad.addColorStop(1, "rgba(255,200,30,0.0)");
+        ctx.fillStyle = selGrad;
+        ctx.fill();
+        // Crisp gold ring
         ctx.beginPath();
         ctx.arc(t.x, t.y, r + 4, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(255, 215, 0, 0.9)";
+        ctx.strokeStyle = "rgba(255,215,0,0.85)";
         ctx.lineWidth = 2.5;
-        ctx.stroke();
-        // Gold glow
-        ctx.beginPath();
-        ctx.arc(t.x, t.y, r + 7, 0, Math.PI * 2);
-        ctx.strokeStyle = "rgba(255, 215, 0, 0.15)";
-        ctx.lineWidth = 3;
         ctx.stroke();
       }
 
@@ -5590,8 +5649,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       }
       ctx.beginPath();
       ctx.arc(t.x, t.y, r, 0, Math.PI * 2);
-      ctx.strokeStyle = isSelected ? "rgba(255,220,30,0.9)" : isHovered ? "rgba(255,255,255,0.5)" : "rgba(0,0,6,0.60)";
-      ctx.lineWidth = isSelected ? 3 : isHovered ? 2.5 : 2;
+      const defaultBorder = isDead ? "rgba(60,60,60,0.6)" : isPC ? "rgba(70,180,110,0.45)" : "rgba(180,60,50,0.45)";
+      ctx.strokeStyle = isSelected ? "rgba(255,220,30,0.9)" : isHovered ? "rgba(255,255,255,0.55)" : defaultBorder;
+      ctx.lineWidth = isSelected ? 3 : isHovered ? 2.5 : 1.8;
       ctx.stroke();
 
       if (combatLive && (isSelected || isActiveCombatant) && !isDead) {
@@ -5654,43 +5714,53 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
       ctx.globalAlpha = 1;
 
-      // HP bar (always visible during combat, prominent with rounded corners)
+      // HP bar (always visible during combat — thicker, brighter, clear at a glance)
       const hpFrac = t.maxHp ? Math.max(0, (t.hp || 0) / t.maxHp) : 0;
       const showHpBar = t.hp != null && t.maxHp && (combatLive || isSelected || isHovered || isActiveCombatant || isDead || hpFrac < 1);
       if (showHpBar) {
-        const barW = gridSize * 0.92 * sizeMult, barH = 5;
+        const barW = gridSize * 0.95 * sizeMult, barH = 7;
         const barR = barH / 2;
         const barX = t.x - barW/2, barY = t.y + r + 5;
-        // Backdrop shadow
-        ctx.fillStyle = "rgba(0,0,0,0.5)";
+        // Backdrop shadow (deeper for separation)
+        ctx.fillStyle = "rgba(0,0,0,0.6)";
         ctx.beginPath();
         drawRoundedRectPath(ctx, barX - 1, barY - 1, barW + 2, barH + 2, barR + 1);
         ctx.fill();
-        // Bar background
-        ctx.fillStyle = "rgba(0,0,0,0.75)";
+        // Background track (visible dark track so empty HP is clear)
+        ctx.fillStyle = "rgba(40,35,45,0.85)";
         ctx.beginPath();
         drawRoundedRectPath(ctx, barX, barY, barW, barH, barR);
         ctx.fill();
+        // Subtle track border for definition
+        ctx.strokeStyle = "rgba(255,255,255,0.06)";
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        drawRoundedRectPath(ctx, barX, barY, barW, barH, barR);
+        ctx.stroke();
         // HP fill
         if (hpFrac > 0) {
           ctx.save();
           ctx.beginPath();
           drawRoundedRectPath(ctx, barX, barY, barW, barH, barR);
           ctx.clip();
-          ctx.fillStyle = getHpColor(t.hp, t.maxHp);
+          const hpCol = getHpColor(t.hp, t.maxHp);
+          ctx.fillStyle = hpCol;
           ctx.fillRect(barX, barY, barW * hpFrac, barH);
-          // Shine
-          ctx.fillStyle = "rgba(255,255,255,0.18)";
-          ctx.fillRect(barX, barY, barW * hpFrac, barH * 0.4);
+          // Top shine for gloss effect
+          ctx.fillStyle = "rgba(255,255,255,0.22)";
+          ctx.fillRect(barX, barY, barW * hpFrac, barH * 0.35);
+          // Bottom subtle shadow
+          ctx.fillStyle = "rgba(0,0,0,0.15)";
+          ctx.fillRect(barX, barY + barH * 0.7, barW * hpFrac, barH * 0.3);
           ctx.restore();
         }
         // HP text (show on hover/selected/active)
         if (isSelected || isHovered || isActiveCombatant) {
           const hpText = (t.hp || 0) + "/" + t.maxHp;
-          ctx.font = "bold " + Math.max(7, gridSize * 0.14) + "px Cinzel";
+          ctx.font = "bold " + Math.max(8, gridSize * 0.15) + "px Cinzel";
           ctx.textAlign = "center";
           ctx.textBaseline = "top";
-          ctx.fillStyle = "rgba(0,0,0,0.6)";
+          ctx.fillStyle = "rgba(0,0,0,0.65)";
           ctx.fillText(hpText, t.x + 0.5, barY + barH + 1.5);
           ctx.fillStyle = "#fff";
           ctx.fillText(hpText, t.x, barY + barH + 1);
@@ -5801,24 +5871,36 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       const isMelee = rangeFt <= 10;
       const wColor = isMelee ? (cssVar("--crimson") || "#f06858") : "#58aaff";
       const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 300); // smooth pulse 0-1
-      // Range circle from attacker
+      // Range circle from attacker (feathered edges, softer gradient)
       if (attacker && rangePx > 0) {
-        ctx.beginPath();
-        ctx.arc(attacker.x, attacker.y, rangePx, 0, Math.PI * 2);
-        ctx.strokeStyle = wColor + "44";
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([8, 6]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-        // Subtle filled range
+        // Feathered fill — gradient fades out at edges
         const rGrad = ctx.createRadialGradient(attacker.x, attacker.y, 0, attacker.x, attacker.y, rangePx);
-        rGrad.addColorStop(0, wColor + "06");
-        rGrad.addColorStop(0.85, wColor + "03");
+        rGrad.addColorStop(0, wColor + "08");
+        rGrad.addColorStop(0.7, wColor + "05");
+        rGrad.addColorStop(0.9, wColor + "03");
         rGrad.addColorStop(1, wColor + "00");
         ctx.fillStyle = rGrad;
         ctx.beginPath();
         ctx.arc(attacker.x, attacker.y, rangePx, 0, Math.PI * 2);
         ctx.fill();
+        // Soft dashed border
+        ctx.beginPath();
+        ctx.arc(attacker.x, attacker.y, rangePx, 0, Math.PI * 2);
+        ctx.strokeStyle = wColor + "33";
+        ctx.lineWidth = 1.2;
+        ctx.setLineDash([8, 6]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Feathered edge ring (thin gradient ring at boundary)
+        ctx.beginPath();
+        ctx.arc(attacker.x, attacker.y, rangePx, 0, Math.PI * 2);
+        const edgeGrad = ctx.createRadialGradient(attacker.x, attacker.y, rangePx - 6, attacker.x, attacker.y, rangePx + 2);
+        edgeGrad.addColorStop(0, wColor + "00");
+        edgeGrad.addColorStop(0.5, wColor + "0a");
+        edgeGrad.addColorStop(1, wColor + "00");
+        ctx.strokeStyle = edgeGrad;
+        ctx.lineWidth = 8;
+        ctx.stroke();
       }
       const wt = weaponTargetRef.current;
       if (wt && attacker) {
@@ -5863,17 +5945,24 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         if (hovTk && hovTk.id !== attacker.id) {
           const distToHov = Math.hypot(hovTk.x - attacker.x, hovTk.y - attacker.y);
           const inRange = distToHov <= rangePx + gridSize * 0.5;
-          const glowColor = inRange ? "#5ee09a" : "#ff4444";
+          const glowColor = inRange ? "rgba(94,224,154," : "rgba(180,60,50,";
           const tr = gridSize * 0.48;
-          // Subtle highlight ring on target (no pulsing — clean)
+          // Target highlight ring with soft glow
           ctx.save();
+          // Outer glow
+          ctx.beginPath();
+          ctx.arc(hovTk.x, hovTk.y, tr + 7, 0, Math.PI * 2);
+          const tGlowGrad = ctx.createRadialGradient(hovTk.x, hovTk.y, tr, hovTk.x, hovTk.y, tr + 10);
+          tGlowGrad.addColorStop(0, glowColor + "0.15)");
+          tGlowGrad.addColorStop(1, glowColor + "0.0)");
+          ctx.fillStyle = tGlowGrad;
+          ctx.fill();
+          // Crisp ring
           ctx.beginPath();
           ctx.arc(hovTk.x, hovTk.y, tr + 4, 0, Math.PI * 2);
-          ctx.strokeStyle = glowColor;
-          ctx.globalAlpha = 0.7;
-          ctx.lineWidth = 3;
+          ctx.strokeStyle = glowColor + "0.75)";
+          ctx.lineWidth = 2.5;
           ctx.stroke();
-          ctx.globalAlpha = 1;
           ctx.restore();
 
           // ── Grouped tooltip panel with dark backdrop ──
