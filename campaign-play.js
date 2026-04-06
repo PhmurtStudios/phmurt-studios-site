@@ -2490,7 +2490,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   const [tokenPanelTab, setTokenPanelTab] = useState("stats"); // "stats" | "spells" | "config"
   const [sidePanelTab, setSidePanelTab] = useState("scenes"); // "scenes" | "tokens" | "settings"
   const [showConditionMenu, setShowConditionMenu] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // ── Multi-target spell system ──
   const [multiTargetSelections, setMultiTargetSelections] = useState([]); // [{tokenId, x, y}, ...]
@@ -3036,7 +3036,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       .map((n) => n.trim());
     const matched = Array.from(new Set(fromEquipment.filter((n) => knownNames.has(n))));
     if (matched.length) return matched;
-    return weaponNamesList;
+    return [];
   };
 
   const getLegalActionCards = (actorToken) => {
@@ -11202,168 +11202,175 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               </div>
             )}
 
-            {/* ── LEFT: Floating Toolbar ── */}
-            <div style={{
-              position:"absolute", left:12, top:12, zIndex:20,
-              display: cockpitModeActive ? "none" : "flex", flexDirection:"column", alignItems:"center", gap:2,
-              background:"rgba(8,8,12,0.85)", backdropFilter:"blur(12px)",
-              borderRadius:"12px", border:"1px solid var(--crimson-border)",
-              boxShadow:"0 4px 24px rgba(0,0,6,0.5), 0 1px 0 rgba(255,255,255,0.03) inset",
-              padding:"10px 6px",
-            }}>
-          <span style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"2.5px", color:T.textMuted, textTransform:"uppercase", marginBottom:6, fontWeight:600 }}>MODE</span>
-          {bmModes.map((m, idx) => (
-            <div key={m.id} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:1 }}>
-              <button onClick={() => { if (m.id === "draw" && viewRole === "player") return; setMode(m.id); if (m.id === "combat") { setSidebarOpen(true); setCombatTab(combatLive ? "tracker" : combatTab); } }} title={m.label + " (" + (idx+1) + ")"}
-                onMouseEnter={e => { if (mode !== m.id) { e.currentTarget.style.background="rgba(212,67,58,0.08)"; e.currentTarget.style.border="1px solid rgba(212,67,58,0.15)"; }}}
-                onMouseLeave={e => { if (mode !== m.id) { e.currentTarget.style.background="transparent"; e.currentTarget.style.border="1px solid transparent"; }}}
-                style={{
-                  width:46, height:46, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2,
-                  background: mode === m.id ? "rgba(212,67,58,0.18)" : "transparent",
-                  border: mode === m.id ? "1px solid rgba(212,67,58,0.4)" : "1px solid transparent",
-                  borderRadius:"8px", cursor:"pointer", transition:"all 0.2s ease",
-                  boxShadow: mode === m.id ? "0 0 12px rgba(212,67,58,0.25), inset 0 1px 0 rgba(255,255,255,0.04)" : "none",
-                }}>
-                <m.icon size={18} color={mode === m.id ? cssVar("--crimson") : cssVar("--text-muted")} />
-                <span style={{ fontSize:7, fontFamily:T.ui, letterSpacing:"1px", color: mode === m.id ? cssVar("--crimson") : T.textFaint, textTransform:"uppercase", fontWeight: mode === m.id ? 600 : 400 }}>{m.label}</span>
-              </button>
-              <span style={{ fontSize:7, fontFamily:T.ui, color:T.textFaint, opacity:0.5 }}>{idx+1}</span>
-            </div>
-          ))}
-
-          <div style={{ width:32, height:1, background:T.border, margin:"6px 0" }} />
-
-          {mode === "draw" && drawToolDefs.map(dt => (
-            <button key={dt.id} onClick={() => { setDrawTool(dt.id); setWallStart(null); setWallPreview(null); }} title={dt.label}
-              onMouseEnter={e => { if (drawTool !== dt.id) { e.currentTarget.style.background="rgba(212,67,58,0.08)"; e.currentTarget.style.border="1px solid rgba(212,67,58,0.15)"; }}}
-              onMouseLeave={e => { if (drawTool !== dt.id) { e.currentTarget.style.background="transparent"; e.currentTarget.style.border="1px solid transparent"; }}}
-              style={{
-                width:42, height:42, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2,
-                background: drawTool === dt.id ? "rgba(212,67,58,0.18)" : "transparent",
-                border: drawTool === dt.id ? "1px solid rgba(212,67,58,0.4)" : "1px solid transparent",
-                borderRadius:"8px", cursor:"pointer", transition:"all 0.2s",
-                boxShadow: drawTool === dt.id ? "0 0 12px rgba(212,67,58,0.25), inset 0 1px 0 rgba(255,255,255,0.04)" : "none",
+            {/* ── LEFT: Floating Toolbar (Interaction-Focused) ── */}
+            {(() => {
+              const tbActive = "#c9a84c";
+              const tbActiveGlow = "rgba(201,168,76,0.2)";
+              const tbActiveBorder = "rgba(201,168,76,0.35)";
+              const tbActiveBg = "rgba(201,168,76,0.1)";
+              const tbGreenActive = "#5ee09a";
+              const tbGreenGlow = "rgba(94,224,154,0.2)";
+              const tbGreenBorder = "rgba(94,224,154,0.35)";
+              const tbGreenBg = "rgba(94,224,154,0.1)";
+              const tbBtnSize = 40;
+              const tbIconSize = 18;
+              const tbHover = (e, active) => { if (!active) { e.currentTarget.style.background="rgba(255,255,255,0.04)"; e.currentTarget.style.boxShadow="0 0 8px rgba(201,168,76,0.08)"; }};
+              const tbLeave = (e, active) => { if (!active) { e.currentTarget.style.background="transparent"; e.currentTarget.style.boxShadow="none"; }};
+              const tbBtnStyle = (active, color) => ({
+                width:tbBtnSize, height:tbBtnSize, display:"flex", alignItems:"center", justifyContent:"center",
+                background: active ? (color === "green" ? tbGreenBg : tbActiveBg) : "transparent",
+                border:"none", borderRadius:10, cursor:"pointer", transition:"all 0.18s ease", position:"relative",
+                boxShadow: active ? ("0 0 12px " + (color === "green" ? tbGreenGlow : tbActiveGlow)) : "none",
+              });
+              const tbIconColor = (active, color) => active ? (color === "green" ? tbGreenActive : tbActive) : "rgba(242,232,214,0.4)";
+              return (
+              <div style={{
+                position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", zIndex:20,
+                display: cockpitModeActive ? "none" : "flex", flexDirection:"column", alignItems:"center", gap:0,
+                background:"rgba(10,10,16,0.72)", backdropFilter:"blur(20px) saturate(1.2)",
+                borderRadius:14, border:"1px solid rgba(255,255,255,0.06)",
+                boxShadow:"0 8px 32px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.02) inset",
+                padding:"8px 5px",
               }}>
-              <dt.icon size={15} color={drawTool === dt.id ? cssVar("--crimson") : cssVar("--text-faint")} />
-              <span style={{ fontSize:6, fontFamily:T.ui, letterSpacing:"0.5px", color: drawTool === dt.id ? cssVar("--crimson") : T.textFaint, textTransform:"uppercase", fontWeight:500 }}>{dt.label}</span>
-            </button>
-          ))}
 
-          {mode === "draw" && drawTool === "terrain" && (
-            <React.Fragment>
-              <div style={{ width:32, height:1, background:T.border, margin:"4px 0" }} />
-              <div style={{ maxHeight:280, overflowY:"auto", display:"flex", flexDirection:"column", gap:1 }}>
-                {Object.entries(TERRAIN_TYPES).map(([key, terrain]) => (
-                  <button key={key} onClick={() => setSelectedTerrain(key)} title={terrain.label + " (cost: " + terrain.cost + ")"}
-                    onMouseEnter={e => { if (selectedTerrain !== key) { e.currentTarget.style.background="var(--bg-hover)"; e.currentTarget.style.border="1px solid var(--border)"; }}}
-                    onMouseLeave={e => { if (selectedTerrain !== key) { e.currentTarget.style.background="transparent"; e.currentTarget.style.border="1px solid transparent"; }}}
-                    style={{
-                      width:42, height:34, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:1,
-                      background: selectedTerrain === key ? terrain.color : "transparent",
-                      border: selectedTerrain === key ? "1px solid var(--border)" : "1px solid transparent",
-                      borderRadius:"6px", cursor:"pointer", transition:"all 0.2s", fontSize:10, fontFamily:T.ui, color:T.text, fontWeight:600
-                    }}>
-                    <span>{terrain.icon || terrain.label.substring(0,1)}</span>
-                    <span style={{ fontSize:5, letterSpacing:"0.3px", color:T.textFaint, fontWeight:400 }}>{terrain.label.length > 5 ? terrain.label.substring(0,5) : terrain.label}</span>
-                  </button>
-                ))}
-              </div>
-            </React.Fragment>
-          )}
-
-          {mode === "draw" && drawTool === "wall" && (
-            <React.Fragment>
-              <div style={{ width:32, height:1, background:T.border, margin:"4px 0" }} />
-              {Object.entries(WALL_TYPES).map(([key, wt]) => (
-                <button key={key} onClick={() => setSelectedWallType(key)} title={wt.label}
-                  onMouseEnter={e => { if (selectedWallType !== key) { e.currentTarget.style.background="var(--bg-hover)"; }}}
-                  onMouseLeave={e => { if (selectedWallType !== key) { e.currentTarget.style.background="transparent"; }}}
-                  style={{
-                    width:42, height:34, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2,
-                    background: selectedWallType === key ? "rgba(181,116,255,0.12)" : "transparent",
-                    border: selectedWallType === key ? "1px solid rgba(181,116,255,0.3)" : "1px solid transparent",
-                    borderRadius:"6px", cursor:"pointer", transition:"all 0.2s",
-                  }}>
-                  <div style={{ width:24, height:3, background:wt.color, borderRadius:2, borderTop: wt.dash.length > 0 ? "none" : undefined, borderBottom: wt.dash.length > 0 ? "1px dashed " + wt.color : "none" }} />
-                  <span style={{ fontSize:5, fontFamily:T.ui, letterSpacing:"0.3px", color:selectedWallType === key ? wt.color : T.textFaint, fontWeight:500 }}>{wt.label.length > 6 ? wt.label.substring(0,6) : wt.label}</span>
+              {/* ── Group 1: Map Interaction Modes ── */}
+              {bmModes.map((m, idx) => (
+                <button key={m.id} onClick={() => { if (m.id === "draw" && viewRole === "player") return; setMode(m.id); if (m.id === "combat") { setSidebarOpen(true); setCombatTab(combatLive ? "tracker" : combatTab); } }}
+                  title={m.label + " (" + (idx+1) + ")"}
+                  onMouseEnter={e => tbHover(e, mode === m.id)}
+                  onMouseLeave={e => tbLeave(e, mode === m.id)}
+                  style={tbBtnStyle(mode === m.id, m.id === "combat" ? "green" : "gold")}>
+                  <m.icon size={tbIconSize} color={tbIconColor(mode === m.id, m.id === "combat" ? "green" : "gold")} strokeWidth={mode === m.id ? 2.2 : 1.6} />
                 </button>
               ))}
-            </React.Fragment>
-          )}
 
-          {mode === "draw" && drawTool === "draw" && (
-            <React.Fragment>
-              <div style={{ width:32, height:1, background:T.border, margin:"4px 0" }} />
-              <input type="color" value={drawColor} onChange={e=>setDrawColor(e.target.value)}
-                style={{ width:30, height:30, border:"1px solid " + T.border, background:"none", padding:0, cursor:"pointer", borderRadius:"4px" }} />
-              <select value={drawWidth} onChange={e=>setDrawWidth(parseInt(e.target.value))} title="Brush width"
-                style={{ width:40, padding:"2px", fontSize:8, fontFamily:T.ui, background:T.bgCard, border:"1px solid " + T.border, color:T.textMuted, borderRadius:"3px", textAlign:"center" }}>
-                <option value="2">S</option><option value="3">M</option><option value="6">L</option><option value="10">XL</option>
-              </select>
-            </React.Fragment>
-          )}
+              {/* ── Spacer ── */}
+              <div style={{ width:24, height:1, background:"rgba(255,255,255,0.06)", margin:"6px 0" }} />
 
-          <div style={{ flex:1 }} />
+              {/* ── Group 2: Draw Sub-tools (contextual) ── */}
+              {mode === "draw" && drawToolDefs.map(dt => (
+                <button key={dt.id} onClick={() => { setDrawTool(dt.id); setWallStart(null); setWallPreview(null); }} title={dt.label}
+                  onMouseEnter={e => tbHover(e, drawTool === dt.id)}
+                  onMouseLeave={e => tbLeave(e, drawTool === dt.id)}
+                  style={tbBtnStyle(drawTool === dt.id, "gold")}>
+                  <dt.icon size={16} color={tbIconColor(drawTool === dt.id, "gold")} strokeWidth={drawTool === dt.id ? 2.2 : 1.6} />
+                </button>
+              ))}
 
-          {combatLive && (
-            <div style={{ width:46, padding:"6px 2px", background:"rgba(212,67,58,0.1)", border:"1px solid rgba(212,67,58,0.25)", borderRadius:"8px", textAlign:"center", marginBottom:4, boxShadow:"0 0 10px rgba(212,67,58,0.15), inset 0 1px 0 rgba(255,255,255,0.03)" }}>
-              <span style={{ fontSize:7, fontFamily:T.ui, letterSpacing:"1.5px", color:cssVar("--crimson"), textTransform:"uppercase", display:"block", fontWeight:600 }}>R{round}</span>
-              <span style={{ fontSize:8, fontFamily:T.ui, color:T.textMuted }}>{turn+1}/{Math.max(1, combatants.filter(c => !shouldSkipCombatantRow(c)).length)}</span>
-            </div>
-          )}
+              {mode === "draw" && drawTool === "terrain" && (
+                <React.Fragment>
+                  <div style={{ width:24, height:1, background:"rgba(255,255,255,0.06)", margin:"4px 0" }} />
+                  <div style={{ maxHeight:240, overflowY:"auto", display:"flex", flexDirection:"column", gap:2, scrollbarWidth:"thin", scrollbarColor:"rgba(255,255,255,0.08) transparent" }}>
+                    {Object.entries(TERRAIN_TYPES).map(([key, terrain]) => (
+                      <button key={key} onClick={() => setSelectedTerrain(key)} title={terrain.label + " (cost: " + terrain.cost + ")"}
+                        onMouseEnter={e => { if (selectedTerrain !== key) e.currentTarget.style.background="rgba(255,255,255,0.06)"; }}
+                        onMouseLeave={e => { if (selectedTerrain !== key) e.currentTarget.style.background="transparent"; }}
+                        style={{
+                          width:tbBtnSize, height:32, display:"flex", alignItems:"center", justifyContent:"center",
+                          background: selectedTerrain === key ? terrain.color : "transparent",
+                          border:"none", borderRadius:8, cursor:"pointer", transition:"all 0.15s",
+                          fontSize:13, fontFamily:T.ui, color:T.text, fontWeight:600,
+                        }}>
+                        <span>{terrain.icon || terrain.label.substring(0,1)}</span>
+                      </button>
+                    ))}
+                  </div>
+                </React.Fragment>
+              )}
 
-          <button onClick={() => setShowGrid(!showGrid)} title="Toggle Grid"
-            onMouseEnter={e => { if (!showGrid) { e.currentTarget.style.background="var(--crimson-soft)"; e.currentTarget.style.border="1px solid var(--crimson-border)"; }}}
-            onMouseLeave={e => { if (!showGrid) { e.currentTarget.style.background="transparent"; e.currentTarget.style.border="1px solid transparent"; }}}
-            style={{ width:46, height:46, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2, background:showGrid?"var(--crimson-soft)":"transparent", border:"1px solid " + (showGrid?"var(--crimson-border)":"transparent"), borderRadius:"8px", cursor:"pointer", transition:"all 0.2s", boxShadow:showGrid?"0 0 12px rgba(212,67,58,0.25)":"none" }}>
-            <Layers size={15} color={showGrid ? cssVar("--crimson") : cssVar("--text-faint")} />
-            <span style={{ fontSize:6, fontFamily:T.ui, letterSpacing:"0.5px", color:showGrid?cssVar("--crimson"):T.textFaint, textTransform:"uppercase", fontWeight:500 }}>Grid</span>
-          </button>
+              {mode === "draw" && drawTool === "wall" && (
+                <React.Fragment>
+                  <div style={{ width:24, height:1, background:"rgba(255,255,255,0.06)", margin:"4px 0" }} />
+                  {Object.entries(WALL_TYPES).map(([key, wt]) => (
+                    <button key={key} onClick={() => setSelectedWallType(key)} title={wt.label}
+                      onMouseEnter={e => { if (selectedWallType !== key) e.currentTarget.style.background="rgba(255,255,255,0.04)"; }}
+                      onMouseLeave={e => { if (selectedWallType !== key) e.currentTarget.style.background="transparent"; }}
+                      style={{
+                        width:tbBtnSize, height:32, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2,
+                        background: selectedWallType === key ? "rgba(181,116,255,0.1)" : "transparent",
+                        border:"none", borderRadius:8, cursor:"pointer", transition:"all 0.15s",
+                        boxShadow: selectedWallType === key ? "0 0 10px rgba(181,116,255,0.15)" : "none",
+                      }}>
+                      <div style={{ width:22, height:3, background:wt.color, borderRadius:2, borderBottom: wt.dash.length > 0 ? "1px dashed " + wt.color : "none" }} />
+                    </button>
+                  ))}
+                </React.Fragment>
+              )}
 
-          <button onClick={() => setPingMode(!pingMode)} title="Ping (P)"
-            onMouseEnter={e => { if (!pingMode) { e.currentTarget.style.background="rgba(88,170,255,0.08)"; e.currentTarget.style.border="1px solid rgba(88,170,255,0.15)"; }}}
-            onMouseLeave={e => { if (!pingMode) { e.currentTarget.style.background="transparent"; e.currentTarget.style.border="1px solid transparent"; }}}
-            style={{ width:46, height:46, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2, background:pingMode?"rgba(88,170,255,0.18)":"transparent", border:"1px solid " + (pingMode?"rgba(88,170,255,0.4)":"transparent"), borderRadius:"8px", cursor:"pointer", transition:"all 0.2s", boxShadow:pingMode?"0 0 12px rgba(88,170,255,0.25)":"none" }}>
-            <MapPin size={15} color={pingMode ? "#58aaff" : cssVar("--text-faint")} />
-            <span style={{ fontSize:6, fontFamily:T.ui, letterSpacing:"0.5px", color:pingMode?"#58aaff":T.textFaint, textTransform:"uppercase", fontWeight:500 }}>Ping</span>
-          </button>
+              {mode === "draw" && drawTool === "draw" && (
+                <React.Fragment>
+                  <div style={{ width:24, height:1, background:"rgba(255,255,255,0.06)", margin:"4px 0" }} />
+                  <input type="color" value={drawColor} onChange={e=>setDrawColor(e.target.value)}
+                    style={{ width:28, height:28, border:"1px solid rgba(255,255,255,0.08)", background:"none", padding:0, cursor:"pointer", borderRadius:6 }} />
+                  <select value={drawWidth} onChange={e=>setDrawWidth(parseInt(e.target.value))} title="Brush width"
+                    style={{ width:tbBtnSize, padding:"3px 2px", fontSize:9, fontFamily:T.ui, background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.08)", color:"rgba(242,232,214,0.5)", borderRadius:6, textAlign:"center", marginTop:2 }}>
+                    <option value="2">S</option><option value="3">M</option><option value="6">L</option><option value="10">XL</option>
+                  </select>
+                </React.Fragment>
+              )}
 
-          {viewRole === "dm" && (
-            <button onClick={() => setLaserMode(!laserMode)} title="Laser Pointer (L)"
-              onMouseEnter={e => { if (!laserMode) { e.currentTarget.style.background="rgba(255,60,60,0.08)"; e.currentTarget.style.border="1px solid rgba(255,60,60,0.15)"; }}}
-              onMouseLeave={e => { if (!laserMode) { e.currentTarget.style.background="transparent"; e.currentTarget.style.border="1px solid transparent"; }}}
-              style={{ width:46, height:46, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2, background:laserMode?"rgba(255,60,60,0.18)":"transparent", border:"1px solid " + (laserMode?"rgba(255,60,60,0.4)":"transparent"), borderRadius:"8px", cursor:"pointer", transition:"all 0.2s", boxShadow:laserMode?"0 0 12px rgba(255,60,60,0.25)":"none" }}>
-              <Target size={15} color={laserMode ? "#ff4040" : cssVar("--text-faint")} />
-              <span style={{ fontSize:6, fontFamily:T.ui, letterSpacing:"0.5px", color:laserMode?"#ff4040":T.textFaint, textTransform:"uppercase", fontWeight:500 }}>Laser</span>
-            </button>
-          )}
+              {/* ── Draw mode spacer before utilities ── */}
+              {mode === "draw" && <div style={{ width:24, height:1, background:"rgba(255,255,255,0.06)", margin:"6px 0" }} />}
 
-          {viewRole === "dm" && (
-            <button onClick={() => setShowScenePanel(!showScenePanel)} title="Maps & Scenes"
-              onMouseEnter={e => { if (!showScenePanel) { e.currentTarget.style.background="rgba(46,139,87,0.08)"; e.currentTarget.style.border="1px solid rgba(46,139,87,0.15)"; }}}
-              onMouseLeave={e => { if (!showScenePanel) { e.currentTarget.style.background="transparent"; e.currentTarget.style.border="1px solid transparent"; }}}
-              style={{ width:46, height:46, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2, background:showScenePanel?"rgba(46,139,87,0.18)":"transparent", border:"1px solid " + (showScenePanel?"rgba(46,139,87,0.4)":"transparent"), borderRadius:"8px", cursor:"pointer", transition:"all 0.2s", boxShadow:showScenePanel?"0 0 12px rgba(46,139,87,0.25)":"none" }}>
-              <Globe size={15} color={showScenePanel ? "#5ee09a" : cssVar("--text-faint")} />
-              <span style={{ fontSize:6, fontFamily:T.ui, letterSpacing:"0.5px", color:showScenePanel?"#5ee09a":T.textFaint, textTransform:"uppercase", fontWeight:500 }}>Scenes</span>
-            </button>
-          )}
+              {/* ── Spacer (non-draw) ── */}
+              {mode !== "draw" && <div style={{ width:24, height:1, background:"rgba(255,255,255,0.06)", margin:"6px 0" }} />}
 
-          <button onClick={() => setShowDicePanel(!showDicePanel)} title="Dice Roller"
-            onMouseEnter={e => { if (!showDicePanel) { e.currentTarget.style.background="var(--crimson-soft)"; e.currentTarget.style.border="1px solid var(--crimson-border)"; }}}
-            onMouseLeave={e => { if (!showDicePanel) { e.currentTarget.style.background="transparent"; e.currentTarget.style.border="1px solid transparent"; }}}
-            style={{ width:46, height:46, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2, background:showDicePanel?"var(--crimson-soft)":"transparent", border:"1px solid " + (showDicePanel?"var(--crimson-border)":"transparent"), borderRadius:"8px", cursor:"pointer", transition:"all 0.2s", boxShadow:showDicePanel?"0 0 12px rgba(212,67,58,0.25)":"none" }}>
-            <Dice6 size={15} color={showDicePanel ? cssVar("--crimson") : cssVar("--text-faint")} />
-            <span style={{ fontSize:6, fontFamily:T.ui, letterSpacing:"0.5px", color:showDicePanel?cssVar("--crimson"):T.textFaint, textTransform:"uppercase", fontWeight:500 }}>Dice</span>
-          </button>
+              {/* ── Group 3: Quick Utilities ── */}
+              <button onClick={() => setPingMode(!pingMode)} title="Ping (P)"
+                onMouseEnter={e => tbHover(e, pingMode)}
+                onMouseLeave={e => tbLeave(e, pingMode)}
+                style={tbBtnStyle(pingMode, "gold")}>
+                <MapPin size={tbIconSize} color={tbIconColor(pingMode, "gold")} strokeWidth={pingMode ? 2.2 : 1.6} />
+              </button>
 
-          <button onClick={() => { setZoom(1); setPan({x:0,y:0}); }} title="Reset View"
-            onMouseEnter={e => { e.currentTarget.style.background="var(--bg-hover)"; e.currentTarget.style.border="1px solid var(--border)"; }}
-            onMouseLeave={e => { e.currentTarget.style.background="transparent"; e.currentTarget.style.border="1px solid transparent"; }}
-            style={{ width:46, height:46, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:2, background:"transparent", border:"1px solid transparent", borderRadius:"8px", cursor:"pointer", transition:"all 0.2s" }}>
-            <RefreshCw size={15} color={cssVar("--text-faint")} />
-            <span style={{ fontSize:6, fontFamily:T.ui, letterSpacing:"0.5px", color:T.textFaint, textTransform:"uppercase", fontWeight:500 }}>Reset</span>
-          </button>
-            </div>
+              {viewRole === "dm" && (
+                <button onClick={() => setLaserMode(!laserMode)} title="Laser Pointer (L)"
+                  onMouseEnter={e => tbHover(e, laserMode)}
+                  onMouseLeave={e => tbLeave(e, laserMode)}
+                  style={tbBtnStyle(laserMode, "gold")}>
+                  <Target size={tbIconSize} color={tbIconColor(laserMode, "gold")} strokeWidth={laserMode ? 2.2 : 1.6} />
+                </button>
+              )}
+
+              <button onClick={() => setShowDicePanel(!showDicePanel)} title="Dice Roller"
+                onMouseEnter={e => tbHover(e, showDicePanel)}
+                onMouseLeave={e => tbLeave(e, showDicePanel)}
+                style={tbBtnStyle(showDicePanel, "gold")}>
+                <Dice6 size={tbIconSize} color={tbIconColor(showDicePanel, "gold")} strokeWidth={showDicePanel ? 2.2 : 1.6} />
+              </button>
+
+              {/* ── Spacer ── */}
+              <div style={{ width:24, height:1, background:"rgba(255,255,255,0.06)", margin:"6px 0" }} />
+
+              {/* ── Group 4: View Controls ── */}
+              <button onClick={() => setShowGrid(!showGrid)} title="Toggle Grid (G)"
+                onMouseEnter={e => tbHover(e, showGrid)}
+                onMouseLeave={e => tbLeave(e, showGrid)}
+                style={tbBtnStyle(showGrid, "gold")}>
+                <Layers size={tbIconSize} color={tbIconColor(showGrid, "gold")} strokeWidth={showGrid ? 2.2 : 1.6} />
+              </button>
+
+              <button onClick={() => { setZoom(1); setPan({x:0,y:0}); }} title="Reset View"
+                onMouseEnter={e => { e.currentTarget.style.background="rgba(255,255,255,0.04)"; }}
+                onMouseLeave={e => { e.currentTarget.style.background="transparent"; }}
+                style={{ width:tbBtnSize, height:tbBtnSize, display:"flex", alignItems:"center", justifyContent:"center", background:"transparent", border:"none", borderRadius:10, cursor:"pointer", transition:"all 0.18s ease" }}>
+                <RefreshCw size={16} color="rgba(242,232,214,0.35)" strokeWidth={1.6} />
+              </button>
+
+              {/* ── Combat Round Indicator (bottom) ── */}
+              {combatLive && (
+                <React.Fragment>
+                  <div style={{ width:24, height:1, background:"rgba(255,255,255,0.06)", margin:"4px 0" }} />
+                  <div style={{ width:tbBtnSize, padding:"5px 0", background:"rgba(94,224,154,0.06)", borderRadius:8, textAlign:"center" }}>
+                    <span style={{ fontSize:8, fontFamily:T.ui, letterSpacing:"1px", color:tbGreenActive, display:"block", fontWeight:700 }}>R{round}</span>
+                    <span style={{ fontSize:7, fontFamily:T.ui, color:"rgba(242,232,214,0.4)" }}>{turn+1}/{Math.max(1, combatants.filter(c => !shouldSkipCombatantRow(c)).length)}</span>
+                  </div>
+                </React.Fragment>
+              )}
+
+              </div>
+              );
+            })()}
           </div>
 
           {/* ── BOTTOM: Combat Bar ── */}
@@ -11427,112 +11434,125 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
         {/* ── RIGHT: Sidebar Toggle Tab ── */}
         <button onClick={() => setSidebarOpen(!sidebarOpen)} title={(sidebarOpen ? "Hide" : "Show") + " Sidebar (Tab)"}
+          onMouseEnter={e => { e.currentTarget.style.background="rgba(14,14,22,0.98)"; e.currentTarget.style.borderColor="rgba(201,168,76,0.3)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background="rgba(10,10,16,0.92)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.06)"; }}
           style={{
             display: cockpitModeActive ? "none" : "flex",
             position:"absolute", right: sidebarOpen ? 380 : 0, top:"50%", transform:"translateY(-50%)",
-            zIndex:50, width:24, height:64, alignItems:"center", justifyContent:"center",
-            background:panelBgSolid, backdropFilter:"blur(12px)",
-            border:"1px solid var(--crimson-border)",
+            zIndex:50, width:20, height:56, alignItems:"center", justifyContent:"center",
+            background:"rgba(10,10,16,0.92)", backdropFilter:"blur(16px)",
+            border:"1px solid rgba(255,255,255,0.06)",
             borderRight: sidebarOpen ? "none" : undefined,
-            borderRadius:"6px 0 0 6px",
-            cursor:"pointer", transition:"right 0.25s ease",
-            boxShadow:"-2px 0 12px rgba(0,0,6,0.4)",
+            borderRadius:"8px 0 0 8px",
+            cursor:"pointer", transition:"right 0.25s ease, background 0.15s ease, border-color 0.15s ease",
+            boxShadow:"-4px 0 16px rgba(0,0,0,0.3)",
           }}>
-          {sidebarOpen ? <ChevronRight size={14} color={T.textMuted} /> : <ChevronLeft size={14} color={T.textMuted} />}
+          {sidebarOpen ? <ChevronRight size={12} color="rgba(242,232,214,0.4)" /> : <ChevronLeft size={12} color="rgba(242,232,214,0.4)" />}
         </button>
 
-        {/* ── RIGHT: Context Panel ── */}
+        {/* ── RIGHT: Context Panel (Information Hub) ── */}
         <div style={{
           width: (!cockpitModeActive && sidebarOpen) ? 380 : 0, minWidth: (!cockpitModeActive && sidebarOpen) ? 380 : 0,
-          background:"linear-gradient(180deg, var(--bg-nav) 0%, var(--bg) 100%)", overflowY: sidebarOpen ? "auto" : "hidden", overflowX:"hidden",
+          background:"rgba(10,10,16,0.94)", backdropFilter:"blur(20px) saturate(1.1)",
+          overflowY: sidebarOpen ? "auto" : "hidden", overflowX:"hidden",
           display: cockpitModeActive ? "none" : "flex", flexDirection:"column",
-          borderLeft: (!cockpitModeActive && sidebarOpen) ? "1px solid var(--crimson-border)" : "none",
-          boxShadow: (!cockpitModeActive && sidebarOpen) ? "-4px 0 20px rgba(0,0,6,0.4), -1px 0 0 rgba(212,67,58,0.06)" : "none",
+          borderLeft: (!cockpitModeActive && sidebarOpen) ? "1px solid rgba(255,255,255,0.06)" : "none",
+          boxShadow: (!cockpitModeActive && sidebarOpen) ? "-8px 0 32px rgba(0,0,0,0.4)" : "none",
           transition:"width 0.25s ease, min-width 0.25s ease, opacity 0.2s ease",
           opacity: (!cockpitModeActive && sidebarOpen) ? 1 : 0,
+          scrollbarWidth:"thin", scrollbarColor:"rgba(255,255,255,0.06) transparent",
         }}>
 
           {(combatLive || mode === "combat") ? (
   <div style={{ padding:0, display:"flex", flexDirection:"column", height:"100%" }}>
-    {/* Combat Header */}
-    <div style={{ padding:"14px 18px", borderBottom:"1px solid rgba(212,67,58,0.2)", background:"linear-gradient(180deg, rgba(212,67,58,0.04) 0%, transparent 100%)" }}>
+    {/* ── Combat Header ── */}
+    <div style={{ padding:"16px 20px 14px", borderBottom:"1px solid rgba(255,255,255,0.04)", background:"linear-gradient(180deg, rgba(94,224,154,0.03) 0%, transparent 100%)" }}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-        <span style={{ fontFamily:T.ui, fontSize:13, letterSpacing:"2.5px", color:T.crimson, textTransform:"uppercase", fontWeight:600 }}>
-          {combatLive ? "Round " + round : "Encounter Builder"}
-        </span>
+        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
+          <span style={{ fontFamily:T.ui, fontSize:12, letterSpacing:"2px", color: combatLive ? "#5ee09a" : "rgba(242,232,214,0.5)", textTransform:"uppercase", fontWeight:700 }}>
+            {combatLive ? "Round " + round : "Encounter"}
+          </span>
+          {combatLive && (
+            <span style={{ padding:"2px 8px", borderRadius:999, fontSize:9, fontFamily:T.ui, background:"rgba(94,224,154,0.08)", border:"1px solid rgba(94,224,154,0.2)", color:"#5ee09a", fontWeight:500 }}>Turn {turn+1}/{Math.max(1, combatants.filter(c => !shouldSkipCombatantRow(c)).length)}</span>
+          )}
+        </div>
         {combatLive && (
           <div style={{ display:"flex", gap:4 }}>
             <button onClick={prevTurn} title="Previous Turn"
-              onMouseEnter={e => e.currentTarget.style.background="var(--bg-hover)"}
-              onMouseLeave={e => e.currentTarget.style.background="var(--bg-input)"}
-              style={{ padding:"4px 8px", background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:"4px", cursor:"pointer", color:T.textMuted, display:"flex", alignItems:"center" }}><ChevronUp size={10}/></button>
+              onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.06)"}
+              onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.02)"}
+              style={{ padding:"5px 8px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:6, cursor:"pointer", color:"rgba(242,232,214,0.4)", display:"flex", alignItems:"center", transition:"background 0.12s" }}><ChevronUp size={11}/></button>
             <button onClick={nextTurn} title="Next Turn"
-              onMouseEnter={e => e.currentTarget.style.background="rgba(212,67,58,0.15)"}
-              onMouseLeave={e => e.currentTarget.style.background="rgba(212,67,58,0.08)"}
-              style={{ padding:"4px 10px", background:"rgba(212,67,58,0.08)", border:"1px solid rgba(212,67,58,0.25)", borderRadius:"4px", cursor:"pointer", color:cssVar("--crimson"), fontFamily:T.ui, fontSize:8, letterSpacing:"1px", display:"flex", alignItems:"center", gap:4 }}><SkipForward size={10}/> Next</button>
+              onMouseEnter={e => e.currentTarget.style.background="rgba(94,224,154,0.15)"}
+              onMouseLeave={e => e.currentTarget.style.background="rgba(94,224,154,0.08)"}
+              style={{ padding:"5px 12px", background:"rgba(94,224,154,0.08)", border:"1px solid rgba(94,224,154,0.2)", borderRadius:6, cursor:"pointer", color:"#5ee09a", fontFamily:T.ui, fontSize:9, letterSpacing:"0.8px", fontWeight:600, display:"flex", alignItems:"center", gap:4, transition:"background 0.12s" }}><SkipForward size={10}/> Next</button>
             <button onClick={endCombat} title="End Combat"
-              onMouseEnter={e => e.currentTarget.style.background="var(--bg-hover)"}
-              onMouseLeave={e => e.currentTarget.style.background="var(--bg-input)"}
-              style={{ padding:"4px 6px", background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:"4px", cursor:"pointer", color:T.textFaint, display:"flex", alignItems:"center" }}><X size={10}/></button>
+              onMouseEnter={e => e.currentTarget.style.background="rgba(239,68,68,0.12)"}
+              onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.02)"}
+              style={{ padding:"5px 7px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:6, cursor:"pointer", color:"rgba(239,68,68,0.6)", display:"flex", alignItems:"center", transition:"background 0.12s" }}><X size={11}/></button>
           </div>
         )}
       </div>
-      {/* Encounter difficulty badge */}
       {encounterDifficulty && (
-        <div style={{ marginTop:8, padding:"6px 10px", borderRadius:"4px", background: encounterDifficulty.difficulty === "deadly" ? "rgba(212,67,58,0.12)" : encounterDifficulty.difficulty === "hard" ? "rgba(232,148,10,0.12)" : encounterDifficulty.difficulty === "medium" ? "rgba(88,170,255,0.12)" : "rgba(94,224,154,0.12)", border: "1px solid " + (encounterDifficulty.difficulty === "deadly" ? "rgba(212,67,58,0.3)" : encounterDifficulty.difficulty === "hard" ? "rgba(232,148,10,0.3)" : encounterDifficulty.difficulty === "medium" ? "rgba(88,170,255,0.3)" : "rgba(94,224,154,0.3)"), display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-          <span style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1px", textTransform:"uppercase", fontWeight:600, color: encounterDifficulty.difficulty === "deadly" ? "#dc143c" : encounterDifficulty.difficulty === "hard" ? "#e8940a" : encounterDifficulty.difficulty === "medium" ? "#58aaff" : "#5ee09a" }}>{encounterDifficulty.difficulty}</span>
-          <span style={{ fontFamily:T.ui, fontSize:8, color:T.textFaint }}>{encounterDifficulty.adjustedXP} XP (adj)</span>
+        <div style={{ marginTop:10, padding:"7px 12px", borderRadius:8, background: encounterDifficulty.difficulty === "deadly" ? "rgba(239,68,68,0.06)" : encounterDifficulty.difficulty === "hard" ? "rgba(245,158,11,0.06)" : encounterDifficulty.difficulty === "medium" ? "rgba(88,170,255,0.06)" : "rgba(94,224,154,0.06)", border: "1px solid " + (encounterDifficulty.difficulty === "deadly" ? "rgba(239,68,68,0.15)" : encounterDifficulty.difficulty === "hard" ? "rgba(245,158,11,0.15)" : encounterDifficulty.difficulty === "medium" ? "rgba(88,170,255,0.15)" : "rgba(94,224,154,0.15)"), display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <span style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1px", textTransform:"uppercase", fontWeight:600, color: encounterDifficulty.difficulty === "deadly" ? "#ef4444" : encounterDifficulty.difficulty === "hard" ? "#f59e0b" : encounterDifficulty.difficulty === "medium" ? "#58aaff" : "#5ee09a" }}>{encounterDifficulty.difficulty}</span>
+          <span style={{ fontFamily:T.ui, fontSize:8, color:"rgba(242,232,214,0.35)" }}>{encounterDifficulty.adjustedXP} XP</span>
         </div>
       )}
     </div>
 
+    {/* ── Combat Tabs ── */}
     {!combatLive && (
-      <div style={{ display:"flex", borderBottom:"1px solid " + T.border }}>
+      <div style={{ display:"flex", borderBottom:"1px solid rgba(255,255,255,0.04)", padding:"0 8px" }}>
         {[{id:"monsters",label:"Roster"},{id:"tracker",label:"Initiative"},{id:"log",label:"Results"}].map(tab => (
           <button key={tab.id} onClick={() => setCombatTab(tab.id)}
-            style={{ flex:1, padding:"8px 4px", background: combatTab === tab.id ? "rgba(212,67,58,0.08)" : "transparent", border:"none", borderBottom: combatTab === tab.id ? "2px solid var(--crimson)" : "2px solid transparent", cursor:"pointer", fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", color: combatTab === tab.id ? "var(--crimson)" : T.textFaint, transition:"all 0.15s" }}>{tab.label}
-            {tab.id === "log" && combatLog.length > 0 && <span style={{ marginLeft:4, padding:"1px 4px", borderRadius:"8px", background:"rgba(212,67,58,0.15)", fontSize:7, color:"var(--crimson)" }}>{combatLog.length}</span>}
+            onMouseEnter={e => { if (combatTab !== tab.id) e.currentTarget.style.color="rgba(242,232,214,0.6)"; }}
+            onMouseLeave={e => { if (combatTab !== tab.id) e.currentTarget.style.color="rgba(242,232,214,0.3)"; }}
+            style={{ flex:1, padding:"10px 4px", background:"transparent", border:"none", borderBottom: combatTab === tab.id ? "2px solid #c9a84c" : "2px solid transparent", cursor:"pointer", fontFamily:T.ui, fontSize:9, letterSpacing:"1.2px", textTransform:"uppercase", color: combatTab === tab.id ? "#c9a84c" : "rgba(242,232,214,0.3)", transition:"all 0.12s", fontWeight: combatTab === tab.id ? 600 : 400 }}>{tab.label}
+            {tab.id === "log" && combatLog.length > 0 && <span style={{ marginLeft:4, padding:"1px 5px", borderRadius:999, background:"rgba(201,168,76,0.1)", fontSize:7, color:"#c9a84c" }}>{combatLog.length}</span>}
           </button>
         ))}
       </div>
     )}
 
-    <div style={{ flex:1, overflowY:"auto", padding:"10px 14px" }}>
+    <div style={{ flex:1, overflowY:"auto", padding:"12px 16px", scrollbarWidth:"thin", scrollbarColor:"rgba(255,255,255,0.06) transparent" }}>
       {/* MONSTERS TAB */}
       {visibleCombatTab === "monsters" && (
         <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
           <input value={monsterSearch} onChange={e => setMonsterSearch(e.target.value)} placeholder="Search monsters..."
-            style={{ padding:"7px 10px", background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:"4px", color:T.text, fontFamily:T.body, fontSize:11, outline:"none" }} />
+            style={{ padding:"8px 12px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:8, color:"rgba(242,232,214,0.85)", fontFamily:T.body, fontSize:11, outline:"none", transition:"border-color 0.12s" }}
+            onFocus={e => e.currentTarget.style.borderColor="rgba(201,168,76,0.3)"}
+            onBlur={e => e.currentTarget.style.borderColor="rgba(255,255,255,0.06)"} />
           <div style={{ display:"flex", gap:4 }}>
             <select value={monsterCRFilter} onChange={e => setMonsterCRFilter(e.target.value)}
-              style={{ flex:1, padding:"4px 6px", background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:"3px", color:T.text, fontFamily:T.ui, fontSize:9 }}>
+              style={{ flex:1, padding:"5px 8px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:6, color:"rgba(242,232,214,0.7)", fontFamily:T.ui, fontSize:9 }}>
               <option value="all">All CRs</option>
               {monsterCRs.map(cr => <option key={cr} value={cr}>CR {cr}</option>)}
             </select>
             <select value={monsterTypeFilter} onChange={e => setMonsterTypeFilter(e.target.value)}
-              style={{ flex:1, padding:"4px 6px", background:"var(--bg-input)", border:"1px solid var(--border-mid)", borderRadius:"3px", color:T.text, fontFamily:T.ui, fontSize:9 }}>
+              style={{ flex:1, padding:"5px 8px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:6, color:"rgba(242,232,214,0.7)", fontFamily:T.ui, fontSize:9 }}>
               <option value="all">All Types</option>
               {monsterTypes.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
-          <div style={{ fontSize:8, fontFamily:T.ui, color:T.textFaint, letterSpacing:"0.5px" }}>{filteredMonsters.length} monsters found</div>
-          <div style={{ display:"flex", flexDirection:"column", gap:2, maxHeight:500, overflowY:"auto" }}>
+          <div style={{ fontSize:8, fontFamily:T.ui, color:"rgba(242,232,214,0.25)", letterSpacing:"0.5px" }}>{filteredMonsters.length} monsters found</div>
+          <div style={{ display:"flex", flexDirection:"column", gap:2, maxHeight:500, overflowY:"auto", scrollbarWidth:"thin", scrollbarColor:"rgba(255,255,255,0.06) transparent" }}>
             {filteredMonsters.slice(0, 30).map(m => (
               <div key={m.name} onClick={() => setSelectedMonster(selectedMonster?.name === m.name ? null : m)}
-                style={{ padding:"8px 10px", background: selectedMonster?.name === m.name ? "rgba(212,67,58,0.08)" : "transparent", border: "1px solid " + (selectedMonster?.name === m.name ? "rgba(212,67,58,0.25)" : "transparent"), borderRadius:"5px", cursor:"pointer", transition:"all 0.12s" }}
-                onMouseEnter={e => { if (selectedMonster?.name !== m.name) e.currentTarget.style.background="rgba(255,255,255,0.03)"; }}
+                style={{ padding:"8px 10px", background: selectedMonster?.name === m.name ? "rgba(201,168,76,0.06)" : "transparent", border: "1px solid " + (selectedMonster?.name === m.name ? "rgba(201,168,76,0.15)" : "rgba(255,255,255,0.02)"), borderRadius:6, cursor:"pointer", transition:"all 0.12s" }}
+                onMouseEnter={e => { if (selectedMonster?.name !== m.name) e.currentTarget.style.background="rgba(255,255,255,0.025)"; }}
                 onMouseLeave={e => { if (selectedMonster?.name !== m.name) e.currentTarget.style.background="transparent"; }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                  <span style={{ fontFamily:T.body, fontSize:11, color:T.text, fontWeight:400 }}>{m.name}</span>
+                  <span style={{ fontFamily:T.body, fontSize:11, color:"rgba(242,232,214,0.8)", fontWeight:400 }}>{m.name}</span>
                   <div style={{ display:"flex", gap:4, alignItems:"center" }}>
-                    <span style={{ fontFamily:T.ui, fontSize:7, padding:"1px 5px", borderRadius:"2px", background:"var(--bg-input)", color:T.textFaint, letterSpacing:"0.3px" }}>CR {m.cr}</span>
+                    <span style={{ fontFamily:T.ui, fontSize:7, padding:"2px 6px", borderRadius:4, background:"rgba(255,255,255,0.03)", color:"rgba(242,232,214,0.35)", letterSpacing:"0.3px" }}>CR {m.cr}</span>
                     <button onClick={e => { e.stopPropagation(); addMonsterToMap(m); }}
-                      onMouseEnter={e => e.currentTarget.style.background="rgba(212,67,58,0.2)"}
-                      onMouseLeave={e => e.currentTarget.style.background="rgba(212,67,58,0.08)"}
-                      style={{ padding:"3px 7px", background:"rgba(212,67,58,0.08)", border:"1px solid rgba(212,67,58,0.25)", borderRadius:"3px", cursor:"pointer", color:"var(--crimson)", fontFamily:T.ui, fontSize:7, letterSpacing:"0.5px" }}>+ Add</button>
+                      onMouseEnter={e => e.currentTarget.style.background="rgba(94,224,154,0.12)"}
+                      onMouseLeave={e => e.currentTarget.style.background="rgba(94,224,154,0.06)"}
+                      style={{ padding:"3px 8px", background:"rgba(94,224,154,0.06)", border:"1px solid rgba(94,224,154,0.15)", borderRadius:4, cursor:"pointer", color:"#5ee09a", fontFamily:T.ui, fontSize:7, letterSpacing:"0.5px", transition:"background 0.12s" }}>+ Add</button>
                   </div>
                 </div>
-                <div style={{ fontSize:9, fontFamily:T.ui, color:T.textFaint, marginTop:2, display:"flex", gap:6 }}>
+                <div style={{ fontSize:9, fontFamily:T.ui, color:"rgba(242,232,214,0.25)", marginTop:3, display:"flex", gap:6 }}>
                   <span style={{ textTransform:"capitalize" }}>{m.size} {m.type}</span>
                   <span>AC {m.ac}</span>
                   <span>HP {m.hp}</span>
@@ -12451,7 +12471,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             </div>
           ) : (
             /* Non-combat sidebar — character sheet + map setup */
-            <div style={{ padding: 0, display: "flex", flexDirection: "column", height: "100%", overflowY: "auto" }}>
+            <div style={{ padding: 0, display: "flex", flexDirection: "column", height: "100%", overflowY: "auto", scrollbarWidth:"thin", scrollbarColor:"rgba(255,255,255,0.06) transparent" }}>
               {(() => {
                 const _pm = selectedToken ? getPartyProfile(selectedToken) : null;
                 const _cp = selectedToken ? getCombatProfile(selectedToken) : null;
@@ -12476,53 +12496,56 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   <React.Fragment>
                     {/* ── Character Section ── */}
                     {selectedToken ? (
-                      <div style={{ padding: "16px 18px", borderBottom: "1px solid " + T.border }}>
+                      <div style={{ padding: "18px 20px", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                         {/* Portrait */}
-                        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
-                          <div style={{ width: 56, height: 56, borderRadius: "50%", background: selectedToken.color || "#555", border: "2px solid " + (selectedToken.tokenType === "pc" ? "#29b6f6" : T.border), overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontFamily: T.ui, fontSize: 16, fontWeight: 700, flexShrink: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 16 }}>
+                          <div style={{ width: 52, height: 52, borderRadius: 12, background: selectedToken.color || "#555", border: "2px solid " + (selectedToken.tokenType === "pc" ? "rgba(201,168,76,0.4)" : "rgba(255,255,255,0.08)"), overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontFamily: T.ui, fontSize: 15, fontWeight: 700, flexShrink: 0, boxShadow: selectedToken.tokenType === "pc" ? "0 0 12px rgba(201,168,76,0.1)" : "none" }}>
                             {selectedToken.imageSrc ? <img src={selectedToken.imageSrc} style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : (selectedToken.label || selectedToken.name?.substring(0,2) || "??").toUpperCase()}
                           </div>
                           <div style={{ minWidth: 0, flex: 1 }}>
-                            <div style={{ fontFamily: T.ui, fontSize: 16, fontWeight: 700, color: T.text, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{selectedToken.name}</div>
-                            <div style={{ fontFamily: T.body, fontSize: 11, color: T.textMuted, marginTop: 2 }}>
+                            <div style={{ fontFamily: T.ui, fontSize: 15, fontWeight: 700, color: "rgba(242,232,214,0.9)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing:"0.3px" }}>{selectedToken.name}</div>
+                            <div style={{ fontFamily: T.body, fontSize: 11, color: "rgba(242,232,214,0.4)", marginTop: 3, lineHeight:1.3 }}>
                               {[_pm?.race || _cp?.species, _pm?.cls || _cp?.className, _cp?.level ? "Lv " + _cp.level : null, _pm?.subclass || _cp?.subclass].filter(Boolean).join(" · ") || selectedToken.tokenType || "Creature"}
                             </div>
-                            {_pm?.player && <div style={{ fontFamily: T.body, fontSize: 10, color: T.textFaint, marginTop: 2 }}>Player: {_pm.player}</div>}
-                            {_pm?.background && <div style={{ fontFamily: T.body, fontSize: 10, color: T.textFaint }}>Background: {_pm.background}</div>}
+                            {_pm?.player && <div style={{ fontFamily: T.body, fontSize: 10, color: "rgba(242,232,214,0.3)", marginTop: 2 }}>Player: {_pm.player}</div>}
+                            {_pm?.background && <div style={{ fontFamily: T.body, fontSize: 10, color: "rgba(242,232,214,0.3)" }}>Background: {_pm.background}</div>}
                           </div>
-                          <button onClick={() => setSelectedTokenId(null)} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid " + T.border, borderRadius: 8, color: T.textFaint, cursor: "pointer", padding: "4px 7px", fontSize: 12, flexShrink: 0 }}>✕</button>
+                          <button onClick={() => setSelectedTokenId(null)}
+                            onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.06)"}
+                            onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.02)"}
+                            style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8, color: "rgba(242,232,214,0.3)", cursor: "pointer", padding: "4px 7px", fontSize: 11, flexShrink: 0, transition:"background 0.12s" }}>✕</button>
                         </div>
 
                         {/* HP / AC / Speed */}
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 10 }}>
-                          <div style={{ padding: "8px 6px", borderRadius: 10, textAlign: "center", background: subtleBg2, border: "1px solid " + hpCol + "33" }}>
-                            <div style={{ fontFamily: T.ui, fontSize: 7, letterSpacing: "1px", textTransform: "uppercase", color: hpCol }}>HP</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 6, marginBottom: 10 }}>
+                          <div style={{ padding: "10px 6px", borderRadius: 10, textAlign: "center", background: "rgba(255,255,255,0.015)", border: "1px solid " + hpCol + "22" }}>
+                            <div style={{ fontFamily: T.ui, fontSize: 7, letterSpacing: "1.2px", textTransform: "uppercase", color: hpCol, fontWeight:600 }}>HP</div>
                             <div style={{ fontFamily: T.body, fontSize: 22, fontWeight: 700, color: hpCol, lineHeight: 1.1 }}>{selectedToken.hp != null ? selectedToken.hp : "?"}</div>
-                            <div style={{ fontFamily: T.body, fontSize: 10, color: T.textFaint }}>/ {selectedToken.maxHp || "?"}</div>
+                            <div style={{ fontFamily: T.body, fontSize: 10, color: "rgba(242,232,214,0.25)" }}>/ {selectedToken.maxHp || "?"}</div>
                           </div>
-                          <div style={{ padding: "8px 6px", borderRadius: 10, textAlign: "center", background: subtleBg2, border: "1px solid " + T.border }}>
-                            <div style={{ fontFamily: T.ui, fontSize: 7, letterSpacing: "1px", textTransform: "uppercase", color: T.textFaint }}>AC</div>
-                            <div style={{ fontFamily: T.body, fontSize: 22, fontWeight: 700, color: T.text, lineHeight: 1.1 }}>{selectedToken.ac || _cp?.ac || "?"}</div>
-                            <div style={{ fontFamily: T.body, fontSize: 10, color: T.textFaint }}>armor</div>
+                          <div style={{ padding: "10px 6px", borderRadius: 10, textAlign: "center", background: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.04)" }}>
+                            <div style={{ fontFamily: T.ui, fontSize: 7, letterSpacing: "1.2px", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", fontWeight:600 }}>AC</div>
+                            <div style={{ fontFamily: T.body, fontSize: 22, fontWeight: 700, color: "rgba(242,232,214,0.85)", lineHeight: 1.1 }}>{selectedToken.ac || _cp?.ac || "?"}</div>
+                            <div style={{ fontFamily: T.body, fontSize: 10, color: "rgba(242,232,214,0.25)" }}>armor</div>
                           </div>
-                          <div style={{ padding: "8px 6px", borderRadius: 10, textAlign: "center", background: subtleBg2, border: "1px solid " + T.border }}>
-                            <div style={{ fontFamily: T.ui, fontSize: 7, letterSpacing: "1px", textTransform: "uppercase", color: T.textFaint }}>Speed</div>
-                            <div style={{ fontFamily: T.body, fontSize: 22, fontWeight: 700, color: T.text, lineHeight: 1.1 }}>{selectedToken.speed || _cp?.speed || 30}</div>
-                            <div style={{ fontFamily: T.body, fontSize: 10, color: T.textFaint }}>ft</div>
+                          <div style={{ padding: "10px 6px", borderRadius: 10, textAlign: "center", background: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.04)" }}>
+                            <div style={{ fontFamily: T.ui, fontSize: 7, letterSpacing: "1.2px", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", fontWeight:600 }}>Speed</div>
+                            <div style={{ fontFamily: T.body, fontSize: 22, fontWeight: 700, color: "rgba(242,232,214,0.85)", lineHeight: 1.1 }}>{selectedToken.speed || _cp?.speed || 30}</div>
+                            <div style={{ fontFamily: T.body, fontSize: 10, color: "rgba(242,232,214,0.25)" }}>ft</div>
                           </div>
                         </div>
-                        <div style={{ height: 8, background: lm("rgba(255,255,255,0.05)", "rgba(0,0,0,0.04)"), borderRadius: 999, overflow: "hidden", marginBottom: 14 }}>
-                          <div style={{ width: hpPct + "%", height: "100%", background: "linear-gradient(90deg," + hpCol + "," + hpCol + "cc)", borderRadius: 999, boxShadow: "0 0 10px " + hpCol + "55", transition: "width 0.3s ease" }} />
+                        <div style={{ height: 6, background: "rgba(255,255,255,0.03)", borderRadius: 999, overflow: "hidden", marginBottom: 16 }}>
+                          <div style={{ width: hpPct + "%", height: "100%", background: "linear-gradient(90deg," + hpCol + "," + hpCol + "aa)", borderRadius: 999, boxShadow: "0 0 8px " + hpCol + "33", transition: "width 0.3s ease" }} />
                         </div>
 
                         {/* Ability Scores */}
-                        <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1px", textTransform: "uppercase", color: T.textFaint, marginBottom: 6 }}>Ability Scores</div>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 4, marginBottom: 14 }}>
+                        <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1.2px", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: 8, fontWeight:600 }}>Ability Scores</div>
+                        <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 4, marginBottom: 16 }}>
                           {savingThrows.map(st => (
-                            <div key={st.ab} style={{ padding: "6px 2px", borderRadius: 8, textAlign: "center", background: subtleBg, border: "1px solid " + T.border }}>
-                              <div style={{ fontFamily: T.ui, fontSize: 7, letterSpacing: "0.8px", textTransform: "uppercase", color: T.textFaint }}>{st.ab}</div>
-                              <div style={{ fontFamily: T.body, fontSize: 18, fontWeight: 700, color: T.text, lineHeight: 1.2 }}>{st.val}</div>
-                              <div style={{ fontFamily: T.body, fontSize: 10, color: T.textMuted }}>{_toMod(st.val)}</div>
+                            <div key={st.ab} style={{ padding: "7px 2px", borderRadius: 8, textAlign: "center", background: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.04)" }}>
+                              <div style={{ fontFamily: T.ui, fontSize: 7, letterSpacing: "0.8px", textTransform: "uppercase", color: "rgba(242,232,214,0.3)" }}>{st.ab}</div>
+                              <div style={{ fontFamily: T.body, fontSize: 18, fontWeight: 700, color: "rgba(242,232,214,0.85)", lineHeight: 1.2 }}>{st.val}</div>
+                              <div style={{ fontFamily: T.body, fontSize: 10, color: "rgba(242,232,214,0.4)" }}>{_toMod(st.val)}</div>
                             </div>
                           ))}
                         </div>
@@ -12536,7 +12559,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                         </div>
 
                         {/* Saving Throws */}
-                        <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1px", textTransform: "uppercase", color: T.textFaint, marginBottom: 6 }}>Saving Throws</div>
+                        <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1.2px", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: 8, fontWeight:600 }}>Saving Throws</div>
                         <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 12 }}>
                           {savingThrows.map(st => (
                             <span key={"sv-"+st.ab} style={{ padding: "3px 7px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(0,0,0,0.1)", border: "1px solid " + T.border, color: T.textMuted }}>{st.ab.toUpperCase()} {st.mod >= 0 ? "+" : ""}{st.mod}</span>
@@ -12546,7 +12569,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                         {/* Conditions */}
                         {conditions.length > 0 && (
                           <div style={{ marginBottom: 12 }}>
-                            <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1px", textTransform: "uppercase", color: T.textFaint, marginBottom: 6 }}>Conditions</div>
+                            <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1.2px", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: 8, fontWeight:600 }}>Conditions</div>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                               {conditions.map(c => <span key={c} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444" }}>{c}</span>)}
                             </div>
@@ -12556,7 +12579,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                         {/* Resistances */}
                         {resistances.length > 0 && (
                           <div style={{ marginBottom: 12 }}>
-                            <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1px", textTransform: "uppercase", color: T.textFaint, marginBottom: 6 }}>Resistances</div>
+                            <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1.2px", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: 8, fontWeight:600 }}>Resistances</div>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                               {resistances.map((r, i) => <span key={i} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", color: "#f59e0b" }}>{typeof r === "string" ? r : (r.name || r.type || "Resist")}</span>)}
                             </div>
@@ -12566,7 +12589,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                         {/* Equipment */}
                         {equipment.length > 0 && (
                           <div style={{ marginBottom: 12 }}>
-                            <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1px", textTransform: "uppercase", color: T.textFaint, marginBottom: 6 }}>Weapons & Equipment</div>
+                            <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1.2px", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: 8, fontWeight:600 }}>Weapons & Equipment</div>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                               {equipment.map((w, i) => <span key={i} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", color: "#ef4444" }}>{typeof w === "string" ? w : (w.name || "Item")}</span>)}
                             </div>
@@ -12576,7 +12599,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                         {/* Spell Slots */}
                         {_cp?.spellSlots && Object.keys(_cp.spellSlots).some(k => _cp.spellSlots[k] > 0) && (
                           <div style={{ marginBottom: 12 }}>
-                            <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1px", textTransform: "uppercase", color: T.textFaint, marginBottom: 6 }}>Spell Slots</div>
+                            <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1.2px", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: 8, fontWeight:600 }}>Spell Slots</div>
                             <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                               {Object.keys(_cp.spellSlots).sort((a, b) => a - b).filter(k => _cp.spellSlots[k] > 0).map(lv => {
                                 const used = (_cp.usedSlots || {})[lv] || 0;
@@ -12597,7 +12620,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                         {/* Known Spells */}
                         {knownSpells.length > 0 && (
                           <div style={{ marginBottom: 12 }}>
-                            <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1px", textTransform: "uppercase", color: T.textFaint, marginBottom: 6 }}>Spells ({knownSpells.length})</div>
+                            <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1.2px", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: 8, fontWeight:600 }}>Spells ({knownSpells.length})</div>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                               {knownSpells.slice(0, 30).map((sp, i) => <span key={i} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.15)", color: "#a78bfa" }}>{typeof sp === "string" ? sp : (sp.name || "Spell")}</span>)}
                               {knownSpells.length > 30 && <span style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, color: T.textFaint, fontStyle: "italic" }}>+{knownSpells.length - 30} more</span>}
@@ -12608,7 +12631,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                         {/* Feats & Features */}
                         {(feats.length > 0 || customFeatures.length > 0 || passives.length > 0) && (
                           <div style={{ marginBottom: 12 }}>
-                            <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1px", textTransform: "uppercase", color: T.textFaint, marginBottom: 6 }}>Features & Feats</div>
+                            <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1.2px", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: 8, fontWeight:600 }}>Features & Feats</div>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                               {feats.map((f, i) => <span key={"ft-"+i} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(245,158,11,0.06)", border: "1px solid rgba(245,158,11,0.15)", color: "#f59e0b" }}>{typeof f === "string" ? f : (f.name || "Feat")}</span>)}
                               {customFeatures.map((f, i) => <span key={"cf-"+i} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(255,255,255,0.03)", border: "1px solid " + T.border, color: T.textMuted }}>{typeof f === "string" ? f : (f.name || "Feature")}</span>)}
@@ -12620,7 +12643,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                         {/* Bio */}
                         {(_pm?.bio || selectedToken.notes) && (
                           <div style={{ marginBottom: 12 }}>
-                            <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1px", textTransform: "uppercase", color: T.textFaint, marginBottom: 6 }}>Notes</div>
+                            <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1.2px", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: 8, fontWeight:600 }}>Notes</div>
                             <div style={{ fontSize: 11, fontFamily: T.body, color: T.textMuted, lineHeight: 1.5, whiteSpace: "pre-wrap", maxHeight: 120, overflowY: "auto" }}>{_pm?.bio || selectedToken.notes}</div>
                           </div>
                         )}
@@ -12634,84 +12657,114 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                         )}
                       </div>
                     ) : (
-                      <div style={{ padding: "16px 18px" }}>
-                        <div style={{ fontFamily: T.ui, fontSize: 10, letterSpacing: "1.5px", color: T.textFaint, textTransform: "uppercase", marginBottom: 10 }}>Click a token to view its character sheet</div>
+                      <div style={{ padding: "24px 20px", textAlign:"center" }}>
+                        <div style={{ width:48, height:48, borderRadius:12, background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.04)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 12px" }}>
+                          <Target size={20} color="rgba(242,232,214,0.15)" />
+                        </div>
+                        <div style={{ fontFamily: T.ui, fontSize: 10, letterSpacing: "1px", color: "rgba(242,232,214,0.25)", textTransform: "uppercase" }}>Select a token to inspect</div>
                       </div>
                     )}
 
                     {/* ── Map Setup Section (always visible for DM) ── */}
                     {viewRole === "dm" && (
-                      <div style={{ padding: "14px 18px", borderTop: "1px solid " + T.border }}>
-                        <div style={{ fontFamily: T.ui, fontSize: 9, letterSpacing: "1.2px", textTransform: "uppercase", color: T.textFaint, marginBottom: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                          <span>Map Settings</span>
-                          {!combatLive && (
-                            <button onClick={() => { setMode("combat"); setSidebarOpen(true); }}
-                              style={{ padding: "4px 10px", background: "rgba(94,224,154,0.08)", border: "1px solid rgba(94,224,154,0.25)", borderRadius: 6, color: "#5ee09a", fontFamily: T.ui, fontSize: 9, fontWeight: 600, cursor: "pointer", letterSpacing: "0.5px" }}>
-                              Start Encounter
-                            </button>
-                          )}
-                        </div>
+                      <div style={{ padding: "0 20px 18px", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
 
-                        {/* Background */}
-                        <div style={{ marginBottom: 12 }}>
-                          <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: T.textFaint, marginBottom: 6, textTransform: "uppercase" }}>Background</div>
-                          <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 6 }}>
+                        {/* Section: Encounter Controls */}
+                        {!combatLive && (
+                          <div style={{ padding:"16px 0 12px" }}>
+                            <button onClick={() => { setMode("combat"); setSidebarOpen(true); }}
+                              onMouseEnter={e => { e.currentTarget.style.background="rgba(94,224,154,0.12)"; e.currentTarget.style.boxShadow="0 0 16px rgba(94,224,154,0.1)"; }}
+                              onMouseLeave={e => { e.currentTarget.style.background="rgba(94,224,154,0.06)"; e.currentTarget.style.boxShadow="none"; }}
+                              style={{ width:"100%", padding: "10px 14px", background: "rgba(94,224,154,0.06)", border: "1px solid rgba(94,224,154,0.2)", borderRadius: 10, color: "#5ee09a", fontFamily: T.ui, fontSize: 10, fontWeight: 600, cursor: "pointer", letterSpacing: "1px", textTransform:"uppercase", transition:"all 0.15s", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
+                              <Swords size={13} /> Start Encounter
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Section Header: Map Settings */}
+                        <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1.5px", textTransform: "uppercase", color: "rgba(201,168,76,0.6)", marginBottom: 14, marginTop: combatLive ? 16 : 4, fontWeight:600 }}>Map Settings</div>
+
+                        {/* Subsection: Background */}
+                        <div style={{ marginBottom: 16, padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+                          <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Background</div>
+                          <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 8 }}>
                             {bgPresets.map(p => (
                               <button key={p.c} onClick={() => setBgColor(p.c)} title={p.l}
-                                style={{ width: 26, height: 26, borderRadius: 6, background: p.c, border: bgColor === p.c ? "2px solid " + T.crimson : "1px solid " + T.border, cursor: "pointer" }} />
+                                style={{ width: 24, height: 24, borderRadius: 6, background: p.c, border: bgColor === p.c ? "2px solid #c9a84c" : "1px solid rgba(255,255,255,0.08)", cursor: "pointer", transition:"border-color 0.12s", boxShadow: bgColor === p.c ? "0 0 8px rgba(201,168,76,0.2)" : "none" }} />
                             ))}
                             <input type="color" value={bgColor} onChange={e => setBgColor(e.target.value)}
-                              style={{ width: 26, height: 26, border: "1px solid " + T.border, background: "none", padding: 0, cursor: "pointer", borderRadius: 6 }} />
+                              style={{ width: 24, height: 24, border: "1px solid rgba(255,255,255,0.08)", background: "none", padding: 0, cursor: "pointer", borderRadius: 6 }} />
                           </div>
                           <div style={{ display: "flex", gap: 6 }}>
-                            <button onClick={() => mapImgInputRef.current?.click()} style={{ padding: "5px 10px", background: "rgba(41,182,246,0.08)", border: "1px solid rgba(41,182,246,0.2)", borderRadius: 6, color: "#29b6f6", fontFamily: T.ui, fontSize: 9, cursor: "pointer" }}>{bgImage ? "Replace Map" : "Upload Map"}</button>
-                            {bgImage && <button onClick={() => setBgImage(null)} style={{ padding: "5px 10px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 6, color: "#ef4444", fontFamily: T.ui, fontSize: 9, cursor: "pointer" }}>Clear</button>}
+                            <button onClick={() => mapImgInputRef.current?.click()}
+                              onMouseEnter={e => e.currentTarget.style.background="rgba(201,168,76,0.12)"}
+                              onMouseLeave={e => e.currentTarget.style.background="rgba(201,168,76,0.06)"}
+                              style={{ padding: "5px 10px", background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 6, color: "#c9a84c", fontFamily: T.ui, fontSize: 9, cursor: "pointer", transition:"background 0.12s" }}>{bgImage ? "Replace Map" : "Upload Map"}</button>
+                            {bgImage && <button onClick={() => setBgImage(null)}
+                              onMouseEnter={e => e.currentTarget.style.background="rgba(239,68,68,0.12)"}
+                              onMouseLeave={e => e.currentTarget.style.background="rgba(239,68,68,0.05)"}
+                              style={{ padding: "5px 10px", background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.12)", borderRadius: 6, color: "#ef4444", fontFamily: T.ui, fontSize: 9, cursor: "pointer", transition:"background 0.12s" }}>Clear</button>}
                           </div>
                         </div>
 
-                        {/* Grid */}
-                        <div style={{ marginBottom: 12 }}>
-                          <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: T.textFaint, marginBottom: 6, textTransform: "uppercase" }}>Grid <span style={{ textTransform: "none", opacity: 0.7 }}>(1 sq = 5 ft)</span></div>
-                          <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 6 }}>
+                        {/* Subsection: Grid & Snap */}
+                        <div style={{ marginBottom: 16, padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+                          <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Grid & Snap <span style={{ textTransform: "none", opacity: 0.6, fontWeight:400 }}>(1 sq = 5 ft)</span></div>
+                          <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
                             {[20, 30, 40, 50, 60, 80].map(s => (
                               <button key={s} onClick={() => setGridSize(s)}
-                                style={{ padding: "4px 8px", background: gridSize === s ? "rgba(245,158,11,0.12)" : "rgba(0,0,0,0.1)", border: "1px solid " + (gridSize === s ? "rgba(245,158,11,0.3)" : T.border), borderRadius: 5, color: gridSize === s ? "#f59e0b" : T.textMuted, fontFamily: T.ui, fontSize: 9, cursor: "pointer" }}>{s}px</button>
+                                style={{ padding: "4px 8px", background: gridSize === s ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.02)", border: "1px solid " + (gridSize === s ? "rgba(201,168,76,0.25)" : "rgba(255,255,255,0.06)"), borderRadius: 6, color: gridSize === s ? "#c9a84c" : "rgba(242,232,214,0.4)", fontFamily: T.ui, fontSize: 9, cursor: "pointer", transition:"all 0.12s" }}>{s}px</button>
                             ))}
                           </div>
                           <div style={{ display: "flex", gap: 6 }}>
-                            <button onClick={() => setShowGrid(!showGrid)} style={{ padding: "4px 10px", background: showGrid ? "rgba(245,158,11,0.12)" : "rgba(0,0,0,0.1)", border: "1px solid " + (showGrid ? "rgba(245,158,11,0.3)" : T.border), borderRadius: 5, color: showGrid ? "#f59e0b" : T.textMuted, fontFamily: T.ui, fontSize: 9, cursor: "pointer" }}>{showGrid ? "Grid On" : "Grid Off"}</button>
-                            <button onClick={() => setSnapToGrid(!snapToGrid)} style={{ padding: "4px 10px", background: snapToGrid ? "rgba(245,158,11,0.12)" : "rgba(0,0,0,0.1)", border: "1px solid " + (snapToGrid ? "rgba(245,158,11,0.3)" : T.border), borderRadius: 5, color: snapToGrid ? "#f59e0b" : T.textMuted, fontFamily: T.ui, fontSize: 9, cursor: "pointer" }}>{snapToGrid ? "Snap On" : "Snap Off"}</button>
+                            <button onClick={() => setShowGrid(!showGrid)} style={{ padding: "5px 10px", background: showGrid ? "rgba(94,224,154,0.08)" : "rgba(255,255,255,0.02)", border: "1px solid " + (showGrid ? "rgba(94,224,154,0.2)" : "rgba(255,255,255,0.06)"), borderRadius: 6, color: showGrid ? "#5ee09a" : "rgba(242,232,214,0.4)", fontFamily: T.ui, fontSize: 9, cursor: "pointer", transition:"all 0.12s" }}>{showGrid ? "Grid On" : "Grid Off"}</button>
+                            <button onClick={() => setSnapToGrid(!snapToGrid)} style={{ padding: "5px 10px", background: snapToGrid ? "rgba(94,224,154,0.08)" : "rgba(255,255,255,0.02)", border: "1px solid " + (snapToGrid ? "rgba(94,224,154,0.2)" : "rgba(255,255,255,0.06)"), borderRadius: 6, color: snapToGrid ? "#5ee09a" : "rgba(242,232,214,0.4)", fontFamily: T.ui, fontSize: 9, cursor: "pointer", transition:"all 0.12s" }}>{snapToGrid ? "Snap On" : "Snap Off"}</button>
                           </div>
                         </div>
 
-                        {/* Tokens */}
-                        <div style={{ marginBottom: 12 }}>
-                          <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: T.textFaint, marginBottom: 6, textTransform: "uppercase" }}>Tokens</div>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 6 }}>
+                        {/* Subsection: Tokens & Monsters */}
+                        <div style={{ marginBottom: 16, padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+                          <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Tokens & Monsters</div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 8 }}>
                             {(party || []).filter(p => !tokens.some(t => t.partyId === p.id)).map(p => (
                               <button key={p.id} onClick={() => {
                                 const t = { id: "tok-" + Date.now() + "-" + Math.random().toString(36).slice(2,6), name: p.name || "PC", label: (p.name || "PC").substring(0,3), x: 200 + Math.random()*300, y: 200 + Math.random()*300, hp: p.hp || 20, maxHp: p.maxHp || 20, ac: p.ac || 10, tokenType: "pc", partyId: p.id, player: p.player || "", str: p.str, dex: p.dex, con: p.con, int: p.int, wis: p.wis, cha: p.cha, speed: p.speed || 30, cls: p.cls || "", level: p.lv || 1 };
                                 setTokens(prev => [...prev, t]);
-                              }} style={{ padding: "5px 10px", background: "rgba(220,20,60,0.06)", border: "1px solid rgba(220,20,60,0.15)", borderRadius: 6, color: T.crimson, fontFamily: T.ui, fontSize: 9, cursor: "pointer", textAlign: "left" }}>+ {p.name || "PC"}</button>
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.background="rgba(201,168,76,0.08)"}
+                              onMouseLeave={e => e.currentTarget.style.background="rgba(201,168,76,0.03)"}
+                              style={{ padding: "6px 10px", background: "rgba(201,168,76,0.03)", border: "1px solid rgba(201,168,76,0.1)", borderRadius: 6, color: "#c9a84c", fontFamily: T.ui, fontSize: 9, cursor: "pointer", textAlign: "left", transition:"background 0.12s" }}>+ {p.name || "PC"}</button>
                             ))}
                           </div>
                           <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-                            <button onClick={() => tokenImgRef.current?.click()} style={{ padding: "5px 10px", background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.2)", borderRadius: 6, color: "#a78bfa", fontFamily: T.ui, fontSize: 9, cursor: "pointer" }}>Upload Token</button>
-                            <button onClick={() => { setMode("combat"); setSidebarOpen(true); setCombatTab("monsters"); }} style={{ padding: "5px 10px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", borderRadius: 6, color: "#ef4444", fontFamily: T.ui, fontSize: 9, cursor: "pointer" }}>Monsters</button>
+                            <button onClick={() => tokenImgRef.current?.click()}
+                              onMouseEnter={e => e.currentTarget.style.background="rgba(167,139,250,0.1)"}
+                              onMouseLeave={e => e.currentTarget.style.background="rgba(167,139,250,0.05)"}
+                              style={{ padding: "5px 10px", background: "rgba(167,139,250,0.05)", border: "1px solid rgba(167,139,250,0.12)", borderRadius: 6, color: "#a78bfa", fontFamily: T.ui, fontSize: 9, cursor: "pointer", transition:"background 0.12s" }}>Upload Token</button>
+                            <button onClick={() => { setMode("combat"); setSidebarOpen(true); setCombatTab("monsters"); }}
+                              onMouseEnter={e => e.currentTarget.style.background="rgba(239,68,68,0.1)"}
+                              onMouseLeave={e => e.currentTarget.style.background="rgba(239,68,68,0.05)"}
+                              style={{ padding: "5px 10px", background: "rgba(239,68,68,0.05)", border: "1px solid rgba(239,68,68,0.12)", borderRadius: 6, color: "#ef4444", fontFamily: T.ui, fontSize: 9, cursor: "pointer", transition:"background 0.12s" }}>Monsters</button>
                           </div>
                         </div>
 
-                        {/* Scenes */}
-                        <div style={{ marginBottom: 12 }}>
-                          <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: T.textFaint, marginBottom: 6, textTransform: "uppercase" }}>Scenes</div>
-                          <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 4 }}>
-                            <button onClick={() => setShowScenePanel(true)} style={{ padding: "5px 10px", background: "rgba(94,224,154,0.08)", border: "1px solid rgba(94,224,154,0.2)", borderRadius: 6, color: "#5ee09a", fontFamily: T.ui, fontSize: 9, cursor: "pointer" }}>Scene Manager</button>
-                            <span style={{ fontFamily: T.body, fontSize: 10, color: T.textFaint, alignSelf: "center" }}>{battleMaps.length} map{battleMaps.length !== 1 ? "s" : ""}</span>
+                        {/* Subsection: Scene Management */}
+                        <div style={{ marginBottom: 12, padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+                          <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Scene Management</div>
+                          <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 6 }}>
+                            <button onClick={() => setShowScenePanel(true)}
+                              onMouseEnter={e => e.currentTarget.style.background="rgba(94,224,154,0.1)"}
+                              onMouseLeave={e => e.currentTarget.style.background="rgba(94,224,154,0.05)"}
+                              style={{ padding: "5px 10px", background: "rgba(94,224,154,0.05)", border: "1px solid rgba(94,224,154,0.12)", borderRadius: 6, color: "#5ee09a", fontFamily: T.ui, fontSize: 9, cursor: "pointer", transition:"background 0.12s" }}>Scene Manager</button>
+                            <span style={{ fontFamily: T.body, fontSize: 10, color: "rgba(242,232,214,0.3)" }}>{battleMaps.length} map{battleMaps.length !== 1 ? "s" : ""}</span>
                           </div>
                           {battleMaps.length > 0 && (
-                            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
                               {battleMaps.map(map => (
-                                <button key={map.id} onClick={() => switchToMapOverview(map.id)} style={{ padding: "5px 10px", background: activeMapId === map.id ? "rgba(94,224,154,0.12)" : "rgba(0,0,0,0.08)", border: "1px solid " + (activeMapId === map.id ? "rgba(94,224,154,0.3)" : T.border), borderRadius: 6, color: activeMapId === map.id ? "#5ee09a" : T.textMuted, fontFamily: T.ui, fontSize: 9, cursor: "pointer", textAlign: "left" }}>{map.name} ({(map.scenes || []).length})</button>
+                                <button key={map.id} onClick={() => switchToMapOverview(map.id)}
+                                  onMouseEnter={e => { if (activeMapId !== map.id) e.currentTarget.style.background="rgba(255,255,255,0.04)"; }}
+                                  onMouseLeave={e => { if (activeMapId !== map.id) e.currentTarget.style.background="rgba(255,255,255,0.01)"; }}
+                                  style={{ padding: "6px 10px", background: activeMapId === map.id ? "rgba(94,224,154,0.08)" : "rgba(255,255,255,0.01)", border: "1px solid " + (activeMapId === map.id ? "rgba(94,224,154,0.2)" : "rgba(255,255,255,0.04)"), borderRadius: 6, color: activeMapId === map.id ? "#5ee09a" : "rgba(242,232,214,0.4)", fontFamily: T.ui, fontSize: 9, cursor: "pointer", textAlign: "left", transition:"all 0.12s" }}>{map.name} ({(map.scenes || []).length})</button>
                               ))}
                             </div>
                           )}
