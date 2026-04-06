@@ -54,9 +54,11 @@ function timelineEventHeadline(ev) {
   return (sp > 24 ? slice.slice(0, sp) : slice) + "…";
 }
 
-function TimelineView({ data, setData, onNav }) {
+function TimelineView({ data, setData, onNav, viewRole }) {
+  const isPlayerView = viewRole === "player";
   const [open,setOpen] = useState(new Set([data.timeline[0]?.id]));
-  const [dmView,setDmView] = useState(true);
+  const [_dmViewInternal,setDmView] = useState(!isPlayerView);
+  const dmView = isPlayerView ? false : _dmViewInternal; // Players can NEVER see DM-only content
   const [addingSession, setAddingSession] = useState(false);
   const [addingEvent, setAddingEvent] = useState(null);
   const [newSession, setNewSession] = useState({ title:"", date:new Date().toISOString().split('T')[0], summary:"", dmOnly:false });
@@ -199,12 +201,12 @@ function TimelineView({ data, setData, onNav }) {
               <ChevronDown size={14} color={T.textMuted} style={{ transform: filtersExpanded ? "rotate(180deg)" : "none", transition:"transform 0.2s ease" }}/>
             </button>
           )}
-          <ToggleSwitch on={dmView} onToggle={()=>setDmView(!dmView)} label="DM" />
+          {!isPlayerView && <ToggleSwitch on={dmView} onToggle={()=>setDmView(!dmView)} label="DM" />}
           <button type="button" title="Comfort vs compact density" onClick={()=>setCompactLayout(c=>!c)} style={{
             display:"inline-flex", alignItems:"center", gap:4, padding:"6px 8px", cursor:"pointer",
             background:"transparent", border:`1px solid ${T.border}`, borderRadius:"3px", color:T.textFaint,
           }}><Layers size={13}/></button>
-          <CrimsonBtn onClick={()=>setAddingSession(true)}><Plus size={12}/> Session</CrimsonBtn>
+          {!isPlayerView && <CrimsonBtn onClick={()=>setAddingSession(true)}><Plus size={12}/> Session</CrimsonBtn>}
         </div>
       </div>
 
@@ -512,8 +514,8 @@ function TimelineView({ data, setData, onNav }) {
                     </div>
                   )}
 
-                  {/* DM Notes */}
-                  {dmView && (
+                  {/* DM Notes — DM only */}
+                  {dmView && !isPlayerView && (
                     <div style={{ marginTop:12 }}>
                       <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.textMuted, textTransform:"uppercase" }}>DM Notes</span>
                       <Textarea value={editNotes[s.id]!=null?editNotes[s.id]:(s.notes||"")} onChange={v=>setEditNotes(p=>({...p,[s.id]:v}))} rows={2} style={{ marginTop:6 }} placeholder="Private notes..." />
@@ -523,8 +525,8 @@ function TimelineView({ data, setData, onNav }) {
                     </div>
                   )}
 
-                  {/* Add event */}
-                  <div style={{ marginTop:12, paddingTop:12, borderTop:`1px solid ${T.border}` }}>
+                  {/* Add event — DM only */}
+                  {!isPlayerView && <div style={{ marginTop:12, paddingTop:12, borderTop:`1px solid ${T.border}` }}>
                     {addingEvent===s.id ? (
                       <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                         <Select value={newEvent.type} onChange={v=>setNewEvent(p=>({...p,type:v}))} style={{width:"100%"}}>
@@ -560,7 +562,7 @@ function TimelineView({ data, setData, onNav }) {
                     ) : (
                       <LinkBtn onClick={()=>setAddingEvent(s.id)}><Plus size={10}/> Add Event</LinkBtn>
                     )}
-                  </div>
+                  </div>}
                 </div>}
               </Section>
           );

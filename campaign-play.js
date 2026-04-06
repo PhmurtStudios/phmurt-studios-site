@@ -650,10 +650,10 @@ function parseDiceExpression(expr) {
     const diceMatch = p.match(/^([+-])?(\d+)?d(\d+)(kh|kl)?(\d+)?$/);
     if (diceMatch) {
       const sign = diceMatch[1] === '-' ? -1 : 1;
-      const count = parseInt(diceMatch[2] || 1);
-      const sides = parseInt(diceMatch[3]);
+      const count = Math.min(Math.max(1, parseInt(diceMatch[2] || 1)), 100); // Cap at 100 dice
+      const sides = Math.min(Math.max(1, parseInt(diceMatch[3])), 1000); // Cap at d1000
       const keepOp = diceMatch[4];
-      const keepNum = diceMatch[5] ? parseInt(diceMatch[5]) : count;
+      const keepNum = Math.min(diceMatch[5] ? parseInt(diceMatch[5]) : count, count);
 
       const diceRolls = [];
       for (let i = 0; i < count; i++) {
@@ -3862,6 +3862,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   const handlePropUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file || !file.type.startsWith("image/")) return;
+    if (file.size > 10 * 1024 * 1024) { alert("Prop image too large (max 10 MB)."); e.target.value = ""; return; }
     const reader = new FileReader();
     reader.onload = () => addProp(reader.result, file.name.replace(/\.[^.]+$/, ""));
     reader.readAsDataURL(file);
@@ -8631,10 +8632,12 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   };
   wheelHandlerRef.current = handleWheel;
 
+  const MAX_IMG_SIZE = 20 * 1024 * 1024; // 20 MB max for images
   const handleMapUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) return;
+    if (file.size > MAX_IMG_SIZE) { alert("Image too large (max 20 MB). Please use a smaller file."); e.target.value = ""; return; }
     const reader = new FileReader();
     reader.onload = () => {
       const img = new Image();
@@ -8664,6 +8667,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     const file = e.target.files?.[0];
     if (!file || !selectedTokenId) return;
     if (!file.type.startsWith("image/")) return;
+    if (file.size > 5 * 1024 * 1024) { alert("Token image too large (max 5 MB)."); e.target.value = ""; return; }
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = reader.result;
@@ -10051,6 +10055,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     <div style={{ display:"flex", flexDirection:"column", flex:1, minHeight:0 }}>
       {/* Top-level hidden file inputs for reliable label association */}
       <input type="file" ref={fileRef} id="battlemap-file-upload" style={{display:"none"}} accept="image/*" onChange={handleMapUpload} />
+      <input type="file" ref={tokenImgRef} style={{display:"none"}} accept="image/*" onChange={handleTokenImageUpload} />
 
 
       <div style={{ display:"flex", flex:1, minHeight:0, position:"relative" }}>
@@ -11211,12 +11216,15 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             {/* Hidden file inputs for maps/scenes/props */}
             <input type="file" ref={mapImgInputRef} style={{display:"none"}} accept="image/*" onChange={e => {
               const file = e.target.files?.[0];
+              if (!file) return;
+              if (file.size > MAX_IMG_SIZE) { alert("Image too large (max 20 MB)."); e.target.value = ""; return; }
               const mid = e.target.dataset.mapId;
-              if (!file || !mid) return;
               const reader = new FileReader();
               reader.onload = () => {
-                setBattleMaps(prev => prev.map(m => m.id === mid ? {...m, bgSrc: reader.result} : m));
-                if (activeMapId === mid && !activeSceneId) {
+                if (mid) {
+                  setBattleMaps(prev => prev.map(m => m.id === mid ? {...m, bgSrc: reader.result} : m));
+                }
+                if (!mid || (activeMapId === mid && !activeSceneId)) {
                   const img = new Image();
                   img.onload = () => setBgImage(img);
                   img.src = reader.result;
@@ -11230,6 +11238,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               const mid = e.target.dataset.mapId;
               const sid = e.target.dataset.sceneId;
               if (!file || !mid || !sid) return;
+              if (file.size > MAX_IMG_SIZE) { alert("Image too large (max 20 MB)."); e.target.value = ""; return; }
               const reader = new FileReader();
               reader.onload = () => {
                 setBattleMaps(prev => prev.map(m => {
@@ -12840,7 +12849,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     style={{ width: 24, height: 24, border: "1px solid rgba(255,255,255,0.08)", background: "none", padding: 0, cursor: "pointer", borderRadius: 6 }} />
                 </div>
                 <div style={{ display: "flex", gap: 6 }}>
-                  <button onClick={() => mapImgInputRef.current?.click()}
+                  <button onClick={() => { if (mapImgInputRef.current) { mapImgInputRef.current.dataset.mapId = activeMapId || ""; mapImgInputRef.current.click(); } }}
                     onMouseEnter={e => e.currentTarget.style.background="rgba(201,168,76,0.12)"}
                     onMouseLeave={e => e.currentTarget.style.background="rgba(201,168,76,0.06)"}
                     style={{ padding: "5px 10px", background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 6, color: "#c9a84c", fontFamily: T.ui, fontSize: 9, cursor: "pointer", transition:"background 0.12s" }}>{bgImage ? "Replace Map" : "Upload Map"}</button>
@@ -12902,7 +12911,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     style={{ flex:1, padding:"6px 8px", background:"rgba(88,170,255,0.05)", border:"1px solid rgba(88,170,255,0.12)", borderRadius:6, color:"#58aaff", fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"background 0.12s", display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
                     <Upload size={10}/> Add Prop
                   </button>
-                  <button onClick={() => mapImgInputRef.current?.click()}
+                  <button onClick={() => { if (mapImgInputRef.current) { mapImgInputRef.current.dataset.mapId = activeMapId || ""; mapImgInputRef.current.click(); } }}
                     onMouseEnter={e => e.currentTarget.style.background="rgba(201,168,76,0.1)"}
                     onMouseLeave={e => e.currentTarget.style.background="rgba(201,168,76,0.05)"}
                     style={{ flex:1, padding:"6px 8px", background:"rgba(201,168,76,0.05)", border:"1px solid rgba(201,168,76,0.12)", borderRadius:6, color:"#c9a84c", fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"background 0.12s", display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>

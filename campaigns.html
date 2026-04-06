@@ -4321,7 +4321,8 @@ function CampaignSelector({ campaigns, activeCampaignId, onSelect, onCreate, onD
 // DASHBOARD
 // ═══════════════════════════════════════════════════════════════════════════
 
-function DashboardView({ data, setData, onNav, activeCampaignId }) {
+function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
+  const isDm = viewRole !== "player";
   const countdown = useCountdown(data.nextSession);
   const active = data.quests.filter(q=>q.status==="active");
   const urgVar = { critical:"critical", high:"danger", medium:"warning", low:"muted" };
@@ -4540,13 +4541,13 @@ function DashboardView({ data, setData, onNav, activeCampaignId }) {
                 <div style={{ fontFamily:T.ui, fontSize:11, letterSpacing:"1px", color:T.crimson }}>{countdown} remaining</div>
               )}
             </div>
-            <div style={{ textAlign:"right" }}>
+            {isDm && <div style={{ textAlign:"right" }}>
               {!schedOpen ? (
                 <LinkBtn onClick={()=>setSchedOpen(true)}><Settings size={10}/> Configure</LinkBtn>
               ) : (
                 <LinkBtn onClick={()=>setSchedOpen(false)}><X size={10}/> Close</LinkBtn>
               )}
-            </div>
+            </div>}
           </div>
           {schedOpen && (
             <div style={{ marginTop:20, paddingTop:20, borderTop:`1px solid ${T.border}` }}>
@@ -4557,32 +4558,32 @@ function DashboardView({ data, setData, onNav, activeCampaignId }) {
 
         {/* Party */}
         <div>
-          <SectionTitle icon={Users} count={data.party.length} action={
+          <SectionTitle icon={Users} count={data.party.length} action={isDm ? (
             <div style={{ display:"flex", gap:8, flexWrap:"wrap", justifyContent:"flex-end" }}>
               <LinkBtn onClick={()=>setLibraryOpen(true)}><BookOpen size={10}/> Import from Character Builder</LinkBtn>
             </div>
-          }>The Party</SectionTitle>
+          ) : null}>The Party</SectionTitle>
 
           {data.party.length === 0 && (
             <Section style={{ textAlign:"center", padding:40 }}>
               <Users size={32} color={T.textFaint} style={{ marginBottom:16 }}/>
-              <p style={{ fontSize:14, color:T.textMuted, fontWeight:300, margin:"0 0 16px" }}>No adventurers yet. Import characters from the Character Builder.</p>
-              <CrimsonBtn onClick={()=>setLibraryOpen(true)}><BookOpen size={12}/> Import from Character Builder</CrimsonBtn>
+              <p style={{ fontSize:14, color:T.textMuted, fontWeight:300, margin:"0 0 16px" }}>{isDm ? "No adventurers yet. Import characters from the Character Builder." : "No adventurers in this campaign yet."}</p>
+              {isDm && <CrimsonBtn onClick={()=>setLibraryOpen(true)}><BookOpen size={12}/> Import from Character Builder</CrimsonBtn>}
             </Section>
           )}
 
           <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
             {data.party.map(p => (
-              <PlayerCard key={p.id} member={p} onEdit={handleEdit} onUploadSheet={handleSheetUpload} isDm={true} />
+              <PlayerCard key={p.id} member={p} onEdit={isDm ? handleEdit : undefined} onUploadSheet={isDm ? handleSheetUpload : undefined} isDm={isDm} />
             ))}
           </div>
         </div>
 
         {/* Encounters — deploy from Play → Scenes */}
         <div>
-          <SectionTitle icon={Swords} count={(data.encounters || []).length} action={
+          <SectionTitle icon={Swords} count={(data.encounters || []).length} action={isDm ? (
             <LinkBtn onClick={() => { setEncForm({ name:"", location:"", notes:"", monsterNames:"", includePartyAll:true, selectedMonsters:[], monsterSearch:"" }); setEncBuilderOpen(true); }}><Plus size={10}/> New Encounter</LinkBtn>
-          }>Encounters</SectionTitle>
+          ) : null}>Encounters</SectionTitle>
           <p style={{ fontSize:12, color:T.textMuted, margin:"0 0 12px", fontWeight:300, lineHeight:1.45 }}>Blueprints link the party and SRD monsters to the battlemap. Monster names must match the compendium exactly (e.g. Dire Wolf).</p>
           <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
             {(data.encounters || []).map(enc => (
@@ -4600,8 +4601,8 @@ function DashboardView({ data, setData, onNav, activeCampaignId }) {
           </div>
         </div>
 
-        {/* Quick Tools — Links to generators and other tools */}
-        <div>
+        {/* Quick Tools — Links to generators and other tools (DM only) */}
+        {isDm && <div>
           <SectionTitle icon={Wand2}>Quick Tools</SectionTitle>
           <p style={{ fontSize:12, color:T.textMuted, margin:"0 0 12px", fontWeight:300, lineHeight:1.45 }}>Open related tools and import content into your campaign.</p>
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap:8 }}>
@@ -4630,7 +4631,7 @@ function DashboardView({ data, setData, onNav, activeCampaignId }) {
               <span style={{ fontSize:12 }}>Character</span>
             </LinkBtn>
           </div>
-        </div>
+        </div>}
 
         <Modal open={encBuilderOpen} onClose={() => setEncBuilderOpen(false)} title="Save encounter blueprint">
           <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
@@ -4763,7 +4764,7 @@ function DashboardView({ data, setData, onNav, activeCampaignId }) {
         {/* Quests */}
         {data.modules.questTracker && (
           <div>
-            <SectionTitle icon={Scroll} action={<LinkBtn onClick={()=>setAddingQuest(true)}><Plus size={10}/> Add Quest</LinkBtn>}>Active Quests</SectionTitle>
+            <SectionTitle icon={Scroll} action={isDm ? <LinkBtn onClick={()=>setAddingQuest(true)}><Plus size={10}/> Add Quest</LinkBtn> : null}>Active Quests</SectionTitle>
             <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
               {active.map(q => (
                 <div key={q.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 20px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", borderLeft:`3px solid ${q.type==="main"?T.crimson:T.textFaint}` }}>
@@ -4775,9 +4776,13 @@ function DashboardView({ data, setData, onNav, activeCampaignId }) {
                       {q.region && <Tag variant="info">{q.region}</Tag>}
                     </div>
                   </div>
-                  <Select value={q.status} onChange={v=>setData(d=>({...d,quests:d.quests.map(qq=>qq.id===q.id?{...qq,status:v}:qq)}))} style={{width:120}}>
-                    {["active","completed","upcoming","failed"].map(s=><option key={s} value={s}>{s}</option>)}
-                  </Select>
+                  {isDm ? (
+                    <Select value={q.status} onChange={v=>setData(d=>({...d,quests:d.quests.map(qq=>qq.id===q.id?{...qq,status:v}:qq)}))} style={{width:120}}>
+                      {["active","completed","upcoming","failed"].map(s=><option key={s} value={s}>{s}</option>)}
+                    </Select>
+                  ) : (
+                    <Tag variant={q.status==="completed"?"success":q.status==="failed"?"danger":"muted"}>{q.status}</Tag>
+                  )}
                 </div>
               ))}
               {active.length===0 && <p style={{ fontSize:13, color:T.textFaint, fontStyle:"italic", padding:16, fontWeight:300 }}>No active quests.</p>}
@@ -4832,7 +4837,7 @@ function DashboardView({ data, setData, onNav, activeCampaignId }) {
 
       {/* RIGHT SIDEBAR */}
       <div style={{ display:"flex", flexDirection:"column", gap:24 }}>
-        <Section>
+        {isDm && <Section>
           <SectionTitle icon={Compass}>What's Next</SectionTitle>
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
             {steps.map((s,i) => (
@@ -4842,7 +4847,7 @@ function DashboardView({ data, setData, onNav, activeCampaignId }) {
               </div>
             ))}
           </div>
-        </Section>
+        </Section>}
 
         {data.modules.timeline && (
           <Section>
@@ -5190,7 +5195,7 @@ function App() {
 
   // ── Auto-redirect players away from DM-only tabs ──
   useEffect(() => {
-    if (viewRole === "player" && !["play","timeline"].includes(activeTab)) setActiveTab("play");
+    if (viewRole === "player" && !["play","timeline","dashboard"].includes(activeTab)) setActiveTab("play");
   }, [viewRole]);
 
   // ── Load invite codes + members when opening invite panel ──
@@ -5271,7 +5276,7 @@ function App() {
   }, []);
 
   const allNavItems = [
-    { id:"dashboard", label:"Dashboard", icon: DashboardNavIcon, roles:["dm"] },
+    { id:"dashboard", label:"Dashboard", icon: DashboardNavIcon, roles:["dm","player"] },
     { id:"timeline", label:"Timeline", icon: Clock, roles:["dm","player"] },
     { id:"world", label:"World", icon: Globe, roles:["dm"] },
     { id:"play", label:"Play", icon: PlayNavIcon, roles:["dm","player"] },
@@ -5386,10 +5391,10 @@ function App() {
 
       {/* Main Content Area — gradient extends full page */}
       <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0, overflow:"hidden", position:"relative", background:"radial-gradient(ellipse at 20% 0%, var(--crimson-soft) 0%, transparent 55%), var(--bg)" }}>
-        {activeTab === "dashboard" && <DashboardView data={data} setData={setData} onNav={setActiveTab} activeCampaignId={activeCampaignId} />}
+        {activeTab === "dashboard" && <DashboardView data={data} setData={setData} onNav={setActiveTab} activeCampaignId={activeCampaignId} viewRole={viewRole} />}
         {activeTab === "timeline" && (
           tabsReady.timeline && window.CampaignTimelineView
-            ? React.createElement(window.CampaignTimelineView, { data: data, setData: setData, onNav: setActiveTab })
+            ? React.createElement(window.CampaignTimelineView, { data: data, setData: setData, onNav: setActiveTab, viewRole: viewRole })
             : <TabLoadingSpinner label="Timeline" />
         )}
         {activeTab === "world" && (

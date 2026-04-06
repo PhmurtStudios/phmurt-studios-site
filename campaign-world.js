@@ -521,6 +521,51 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  // ── Terrain rendering handler ──
+  const renderTerrainPreview = useCallback((canvas, width, height, mapSize, climate, seed) => {
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    canvas.width = width;
+    canvas.height = height;
+
+    const { terrain, moisture, waterLevel, mountainLevel, climateBoost } = generateTerrainMap(width, height, seed, mapSize, climate);
+
+    const imageData = ctx.createImageData(width, height);
+    const imgData = imageData.data;
+
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const idx = (y * width + x) * 4;
+        const elevation = terrain[y][x];
+        let moistureVal = moisture[y][x] + climateBoost;
+        moistureVal = Math.max(0, Math.min(1, moistureVal));
+
+        let terrainType = getTerrainType(elevation, moistureVal, waterLevel, mountainLevel);
+
+        // Snow at high elevations in certain climates
+        if (climate === "arctic" && elevation > mountainLevel - 0.15) {
+          terrainType = "snow";
+        }
+
+        const color = getTerrainColor(terrainType);
+        const shading = 0.8 + (elevation - waterLevel) * 0.3;
+        imgData[idx] = Math.round(color.r * shading);
+        imgData[idx + 1] = Math.round(color.g * shading);
+        imgData[idx + 2] = Math.round(color.b * shading);
+        imgData[idx + 3] = 255;
+      }
+    }
+
+    ctx.putImageData(imageData, 0, 0);
+
+    // Draw a border
+    ctx.strokeStyle = "rgba(180,170,150,0.4)";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(0, 0, width, height);
+  }, []);
+
   // ── Render terrain preview when modal is shown ──
   useEffect(() => {
     if (showMapGenModal && canvasRef.current) {
@@ -559,6 +604,11 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
   const [showAtlasImport, setShowAtlasImport] = useState(false);
   const importAtlasData = useCallback((jsText) => {
     try {
+      // SECURITY: Limit input size to prevent ReDoS and memory exhaustion
+      if (!jsText || jsText.length > 2 * 1024 * 1024) {
+        console.warn("[WorldView] Atlas import rejected: input too large (max 2 MB)");
+        return false;
+      }
       // SECURITY FIX: Use JSON parsing instead of new Function() to prevent code injection
       // Parse the JS text as structured data (JSON format or similar)
       // This approach validates that the import is data-only, not executable code
@@ -615,51 +665,6 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
     }
     return false;
   }, [setData]);
-
-  // ── Terrain rendering handler ──
-  const renderTerrainPreview = useCallback((canvas, width, height, mapSize, climate, seed) => {
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    canvas.width = width;
-    canvas.height = height;
-
-    const { terrain, moisture, waterLevel, mountainLevel, climateBoost } = generateTerrainMap(width, height, seed, mapSize, climate);
-
-    const imageData = ctx.createImageData(width, height);
-    const data = imageData.data;
-
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const idx = (y * width + x) * 4;
-        const elevation = terrain[y][x];
-        let moistureVal = moisture[y][x] + climateBoost;
-        moistureVal = Math.max(0, Math.min(1, moistureVal));
-
-        let terrainType = getTerrainType(elevation, moistureVal, waterLevel, mountainLevel);
-
-        // Snow at high elevations in certain climates
-        if (climate === "arctic" && elevation > mountainLevel - 0.15) {
-          terrainType = "snow";
-        }
-
-        const color = getTerrainColor(terrainType);
-        const shading = 0.8 + (elevation - waterLevel) * 0.3; // Elevation-based shading
-        data[idx] = Math.round(color.r * shading);
-        data[idx + 1] = Math.round(color.g * shading);
-        data[idx + 2] = Math.round(color.b * shading);
-        data[idx + 3] = 255;
-      }
-    }
-
-    ctx.putImageData(imageData, 0, 0);
-
-    // Draw a border
-    ctx.strokeStyle = "rgba(180,170,150,0.4)";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(0, 0, width, height);
-  }, []);
 
   // Deterministic hash seed
   const seed = useCallback((s) => { let h=0; for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;} return h; }, []);
