@@ -4781,7 +4781,7 @@ function loadTabModule(name, url) {
   if (_tabModuleState[name]) return Promise.resolve();
   if (_tabModulePromises[name]) return _tabModulePromises[name];
 
-  _tabModulePromises[name] = fetch(url)
+  _tabModulePromises[name] = fetch(url, { cache: "no-cache" })
     .then(function(r) { return r.text(); })
     .then(function(jsx) {
       var js = Babel.transform(jsx, { presets: ["react"] }).code;
