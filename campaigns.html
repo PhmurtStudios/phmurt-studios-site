@@ -32,18 +32,53 @@
   <script src="phmurt-realtime.js"></script>
   <script src="phmurt-shell.js"></script>
   <script src="campaign-combat-integration.js"></script>
-  <!-- Play-tab assets: combat engine, VFX, SRD monsters -->
-  <script src="combat-engine.js"></script>
-  <script src="visual-effects.js"></script>
-  <script src="monster-data.js"></script>
-  <!-- Optional deferred loader (kept for backwards compat) -->
-  <script src="campaign-play-loader.js"></script>
-  <script src="combat-flow-ui.js"></script>
+  <!-- Play-tab assets: combat engine, VFX, SRD monsters — deferred for fast initial load -->
+  <script src="combat-engine.js" defer></script>
+  <script src="visual-effects.js" defer></script>
+  <script src="monster-data.js" defer></script>
+  <script src="campaign-play-loader.js" defer></script>
+  <script src="combat-flow-ui.js" defer></script>
   <style>
     #campaign-root {
       width: 100%;
       min-height: 100vh;
     }
+    /* Instant loading shell — shown before React mounts, hidden by React */
+    .cm-loading-shell {
+      display: flex; height: 100vh; background: var(--bg, #0c0804);
+      font-family: 'Spectral', serif; color: rgba(255,255,255,0.35);
+    }
+    .cm-loading-shell .cm-ls-nav {
+      width: 200px; min-width: 200px; background: var(--bg-nav, #100c08);
+      border-right: 1px solid rgba(212,67,58,0.12); padding: 16px 18px;
+    }
+    .cm-loading-shell .cm-ls-title {
+      font-family: 'Cinzel', serif; font-size: 16px; color: rgba(255,255,255,0.6);
+      letter-spacing: 1.5px;
+    }
+    .cm-loading-shell .cm-ls-sub {
+      font-size: 8px; color: rgba(212,67,58,0.7); letter-spacing: 2px;
+      text-transform: uppercase; margin-top: 2px;
+    }
+    .cm-loading-shell .cm-ls-items { margin-top: 24px; display: flex; flex-direction: column; gap: 4px; }
+    .cm-loading-shell .cm-ls-item {
+      padding: 10px 12px; border-radius: 0 6px 6px 0;
+      font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
+      color: rgba(255,255,255,0.25);
+    }
+    .cm-loading-shell .cm-ls-item.active {
+      background: rgba(212,67,58,0.08); border-left: 3px solid var(--crimson, #d4433a);
+      color: rgba(212,67,58,0.9);
+    }
+    .cm-loading-shell .cm-ls-main {
+      flex: 1; display: flex; align-items: center; justify-content: center;
+    }
+    .cm-loading-shell .cm-ls-spinner {
+      width: 28px; height: 28px; border: 2px solid rgba(255,255,255,0.08);
+      border-top: 2px solid rgba(212,67,58,0.5); border-radius: 50%;
+      animation: cm-spin 0.8s linear infinite;
+    }
+    @keyframes cm-spin { to { transform: rotate(360deg); } }
     /* Hide the default page hero when React loads */
     .ps-page-hero.cm-hero { display: none; }
 
@@ -1519,7 +1554,7 @@
 </head>
 <body>
   <div id="ps-site-shell"></div>
-  <div id="campaign-root"><div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#10101e;color:#888;font-family:Georgia,serif;font-size:18px;letter-spacing:2px">Loading Campaign Manager...</div></div>
+  <div id="campaign-root"><div class="cm-loading-shell"><div class="cm-ls-nav"><div class="cm-ls-title">Campaign</div><div class="cm-ls-sub">Manager</div><div class="cm-ls-items"><div class="cm-ls-item active">Dashboard</div><div class="cm-ls-item">Timeline</div><div class="cm-ls-item">World</div><div class="cm-ls-item">Play</div></div></div><div class="cm-ls-main"><div class="cm-ls-spinner"></div></div></div></div>
 
   <!-- React 18 via CDN -->
   <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
@@ -2814,6 +2849,61 @@ const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, sel
    COMBAT ROLL DISPLAY — Separate floating panel so it doesn't push init bar
    Centered horizontally, positioned below initiative portraits
    ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── BG3-style Turn Announcement Banner ──
+   Shows "[Name]'s Turn" / "Round X" at center of screen with cinematic animation */
+const TurnBanner = ({ announcement }) => {
+  const [visible, setVisible] = React.useState(false);
+  const [fading, setFading] = React.useState(false);
+  const timeoutRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (!announcement) { setVisible(false); setFading(false); return; }
+    setVisible(true);
+    setFading(false);
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => setFading(true), 1200);
+    const hideTimer = setTimeout(() => setVisible(false), 2000);
+    return () => { clearTimeout(timeoutRef.current); clearTimeout(hideTimer); };
+  }, [announcement?.key]);
+
+  if (!visible || !announcement) return null;
+
+  const isPC = announcement.isPC;
+  const accentColor = isPC ? "#5ee09a" : "#f06858";
+  const glowColor = isPC ? "rgba(94,224,154,0.4)" : "rgba(240,104,88,0.4)";
+
+  return (
+    <div style={{
+      position: "absolute", top: "30%", left: "50%", transform: "translate(-50%, -50%)",
+      zIndex: 60, pointerEvents: "none", textAlign: "center",
+      opacity: fading ? 0 : 1,
+      transition: "opacity 0.6s ease-out",
+    }}>
+      {announcement.roundStart && (
+        <div style={{
+          fontSize: 13, fontWeight: 600, letterSpacing: 4, textTransform: "uppercase",
+          color: "rgba(255,255,255,0.5)", marginBottom: 6,
+        }}>Round {announcement.round}</div>
+      )}
+      <div style={{
+        fontSize: 28, fontWeight: 800, letterSpacing: 2,
+        color: "#fff", textShadow: "0 0 40px " + glowColor + ", 0 2px 8px rgba(0,0,0,0.8)",
+        padding: "12px 48px",
+        background: "linear-gradient(90deg, transparent, rgba(12,8,4,0.85) 20%, rgba(12,8,4,0.85) 80%, transparent)",
+        borderTop: "2px solid " + accentColor + "66",
+        borderBottom: "2px solid " + accentColor + "66",
+      }}>
+        {announcement.name + "'s Turn"}
+      </div>
+      <div style={{
+        width: 60, height: 3, margin: "10px auto 0",
+        background: accentColor, borderRadius: 2, opacity: 0.7,
+      }} />
+    </div>
+  );
+};
+
 const CombatRollDisplay = ({ combatRollLog }) => {
   if (!combatRollLog || combatRollLog.length === 0) return null;
   const now = Date.now();
@@ -4319,7 +4409,7 @@ function DashboardView({ data, setData, onNav }) {
   ];
 
   return (
-    <div style={{ display:"grid", gridTemplateColumns:"1fr 340px", gap:24, padding:"32px 56px" }}>
+    <div style={{ display:"grid", gridTemplateColumns:"1fr 360px", gap:28, padding:"32px 40px", width:"100%" }}>
       <div style={{ display:"flex", flexDirection:"column", gap:24 }}>
         {/* Stats Row */}
         <div style={{ display:"flex", gap:20 }}>
@@ -4751,7 +4841,7 @@ function TimelineView({ data, setData, onNav }) {
   const visibleCount = data.timeline.filter(sessionMatchesFilters).length;
 
   return (
-    <div style={{ padding: compactLayout ? "16px 28px 28px" : "20px 40px 36px", maxWidth:1040, margin:"0 auto", transition:"padding 0.25s ease" }}>
+    <div style={{ padding: compactLayout ? "16px 28px 28px" : "20px 40px 36px", width:"100%", transition:"padding 0.25s ease" }}>
       <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:12, rowGap:10, marginBottom: filtersExpanded ? 12 : 6 }}>
         <div style={{ flex:"1 1 160px", minWidth:0 }}>
           <div style={{ fontSize: compactLayout ? 20 : 22, color:T.text, fontWeight:400, fontFamily:T.body, letterSpacing:"0.02em", lineHeight:1.2 }}>Timeline</div>
@@ -5235,7 +5325,32 @@ const MONSTER_ACTION_VFX = {
   "Disintegration Ray": { effect: "force", color: "#00FF00", radius: 20, shape: "single", duration: 0.8, particles: 30, label: "Disintegration Ray" },
   "Death Ray": { effect: "necrotic", color: "#000000", radius: 20, shape: "single", duration: 0.8, particles: 30, label: "Death Ray" },
   "Charm Ray": { effect: "enchantment", color: "#FF69B4", radius: 20, shape: "single", duration: 0.8, particles: 25, label: "Charm Ray" },
-  "Fear Ray": { effect: "psychic", color: "#4B0082", radius: 20, shape: "single", duration: 0.8, particles: 25, label: "Fear Ray" }
+  "Fear Ray": { effect: "psychic", color: "#4B0082", radius: 20, shape: "single", duration: 0.8, particles: 25, label: "Fear Ray" },
+  // ── New monster actions (Goblin, Skeleton, Zombie, Ghoul, Troll, etc.) ──
+  "Scimitar": { effect: "bolt", color: "#C0C0C0", radius: 20, shape: "single", duration: 0.4, particles: 12, label: "Scimitar" },
+  "Shortbow": { effect: "bolt", color: "#8B7355", radius: 15, shape: "single", duration: 0.4, particles: 10, label: "Shortbow" },
+  "Shortsword": { effect: "bolt", color: "#B8B8B8", radius: 18, shape: "single", duration: 0.4, particles: 12, label: "Shortsword" },
+  "Dagger": { effect: "bolt", color: "#A0A0A0", radius: 15, shape: "single", duration: 0.3, particles: 10, label: "Dagger" },
+  "Greataxe": { effect: "shockwave", color: "#8B0000", radius: 30, shape: "arc", duration: 0.6, particles: 25, label: "Greataxe" },
+  "Greatclub": { effect: "shockwave", color: "#8B7355", radius: 35, shape: "single", duration: 0.5, particles: 20, label: "Greatclub" },
+  "Javelin": { effect: "bolt", color: "#8B7355", radius: 15, shape: "single", duration: 0.4, particles: 12, label: "Javelin" },
+  "Longsword": { effect: "bolt", color: "#C0C0C0", radius: 25, shape: "arc", duration: 0.5, particles: 15, label: "Longsword" },
+  "Longbow": { effect: "bolt", color: "#8B7355", radius: 18, shape: "single", duration: 0.5, particles: 12, label: "Longbow" },
+  "Morningstar": { effect: "shockwave", color: "#696969", radius: 25, shape: "single", duration: 0.5, particles: 18, label: "Morningstar" },
+  "Spear": { effect: "bolt", color: "#8B7355", radius: 20, shape: "single", duration: 0.4, particles: 12, label: "Spear" },
+  "Sling": { effect: "bolt", color: "#8B7355", radius: 12, shape: "single", duration: 0.4, particles: 8, label: "Sling" },
+  "Claws": { effect: "bolt", color: "#8B0000", radius: 25, shape: "arc", duration: 0.5, particles: 18, label: "Claws" },
+  "Beak": { effect: "bolt", color: "#FF8C00", radius: 20, shape: "single", duration: 0.4, particles: 12, label: "Beak" },
+  "Mind Blast": { effect: "psychic", color: "#9370DB", radius: 60, shape: "cone", duration: 1.3, particles: 65, label: "Mind Blast" },
+  "Create Specter": { effect: "necrotic", color: "#2F0040", radius: 40, shape: "sphere", duration: 1.5, particles: 40, label: "Create Specter" },
+  "Repulsion Breath": { effect: "force", color: "#4169E1", radius: 30, shape: "cone", duration: 1.2, particles: 50, label: "Repulsion Breath" },
+  // Beholder individual rays
+  "Paralyzing Ray": { effect: "freeze", color: "#00CED1", radius: 20, shape: "single", duration: 0.8, particles: 25, label: "Paralyzing Ray" },
+  "Slowing Ray": { effect: "freeze", color: "#87CEEB", radius: 20, shape: "single", duration: 0.8, particles: 25, label: "Slowing Ray" },
+  "Enervation Ray": { effect: "necrotic", color: "#2F0040", radius: 20, shape: "single", duration: 0.8, particles: 30, label: "Enervation Ray" },
+  "Telekinetic Ray": { effect: "force", color: "#4169E1", radius: 20, shape: "single", duration: 0.8, particles: 25, label: "Telekinetic Ray" },
+  "Sleep Ray": { effect: "enchantment", color: "#DDA0DD", radius: 20, shape: "single", duration: 0.8, particles: 20, label: "Sleep Ray" },
+  "Petrification Ray": { effect: "shield", color: "#808080", radius: 20, shape: "single", duration: 1.0, particles: 30, label: "Petrification Ray" }
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -8258,6 +8373,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   const [turnStateByToken, setTurnStateByToken] = useState({});
   const [playModePresentation, setPlayModePresentation] = useState("simple");
   const [playModeResolution, setPlayModeResolution] = useState(null);
+  const [turnAnnouncement, setTurnAnnouncement] = useState(null); // { name, isPC, round, key }
   const [conditions, setConditions] = useState({});
   const [addName, setAddName] = useState("");
   const [addInit, setAddInit] = useState("");
@@ -8758,26 +8874,16 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       const dtype = r0.damage?.[0]?.type || "slashing";
       addCombatLogEntry({ type: "attack", attacker: attacker.name, target: target.name, action: weaponName + logLabel, hit: true, damage: totalDmg, isCrit: r0.isCrit, roll: r0.attackRoll });
       applyAttackResultToTarget(targetId, target, totalDmg, dtype);
-      if (typeof window.VFX !== "undefined") {
-        window.VFX.addEffect(window.VFX.createAttackEffect(attacker.x + gridSize / 2, attacker.y + gridSize / 2, target.x + gridSize / 2, target.y + gridSize / 2, weaponName, dtype));
-        window.VFX.addEffect(window.VFX.createDamageNumber(target.x + gridSize / 2, target.y + gridSize / 2 - 10, totalDmg, dtype, r0.isCrit));
-        if (bonusDamage > 0) {
-          window.VFX.addEffect(window.VFX.createDamageNumber(target.x + gridSize / 2 + 15, target.y + gridSize / 2 - 25, bonusDamage, "radiant", false));
-        }
-      }
-      // Floating combat text
+      // Floating combat text + weapon-specific animation
       spawnFloatingTextForToken(targetId, "damage", { total: totalDmg, damageType: dtype, isCrit: r0.isCrit });
-      // Action animation
-      const isRanged = CE.isRangedWeapon ? CE.isRangedWeapon(weaponName) : (weaponName||"").toLowerCase().match(/bow|crossbow|dart|sling|javelin|thrown/);
-      triggerActionAnim(r0.isCrit ? "critical_hit" : (isRanged ? "ranged_attack" : "melee_attack"), attacker, target, r0.isCrit ? "#ffd700" : (isRanged ? "#c8b464" : "#e0d0b0"));
+      emitPlayModeVfx(attacker, target, { mode: "attack", actionName: weaponName, weaponName: weaponName, damageType: dtype, amount: totalDmg, isCrit: r0.isCrit, isRanged: !!(CE.isRangedWeapon ? CE.isRangedWeapon(weaponName) : (weaponName||"").toLowerCase().match(/bow|crossbow|dart|sling|javelin|thrown/)) });
       // Special class animations
       const cls = (attacker.class || attacker.cls || "").toLowerCase();
       if (bonusLabels.some(l => l.includes("Sneak"))) triggerActionAnim("sneak_attack", attacker, target, "#6b2fa0");
     } else if (r0) {
       addCombatLogEntry({ type: "miss", attacker: attacker.name, target: target.name, action: weaponName, roll: r0.attackRoll });
-      if (typeof window.VFX !== "undefined") window.VFX.addEffect(window.VFX.createMissEffect(target.x + gridSize / 2, target.y + gridSize / 2));
       spawnFloatingTextForToken(targetId, "miss", {});
-      triggerActionAnim("miss", target, null, "#888888");
+      emitPlayModeVfx(attacker, target, { mode: "miss" });
     }
     if (result.results[1]?.type === "onHitSave" && !result.results[1].save?.success && result.results[1].condition) {
       addTokenCondition(targetId, result.results[1].condition.charAt(0).toUpperCase() + result.results[1].condition.slice(1));
@@ -8806,18 +8912,12 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           const extraDtype = extraAttack.damage?.[0]?.type || "slashing";
           addCombatLogEntry({ type: "attack", attacker: attacker.name, target: target.name, action: weaponName + " (Extra Attack " + (i + 1) + ")" + extraLogLabel, hit: true, damage: extraTotalDmg, isCrit: extraAttack.isCrit, roll: extraAttack.attackRoll });
           applyAttackResultToTarget(targetId, target, extraTotalDmg, extraDtype);
-          if (typeof window.VFX !== "undefined") {
-            window.VFX.addEffect(window.VFX.createAttackEffect(attacker.x + gridSize / 2, attacker.y + gridSize / 2, target.x + gridSize / 2, target.y + gridSize / 2, weaponName, extraDtype));
-            window.VFX.addEffect(window.VFX.createDamageNumber(target.x + gridSize / 2, target.y + gridSize / 2 - 10, extraTotalDmg, extraDtype, extraAttack.isCrit));
-            if (extraBonusDamage > 0) {
-              window.VFX.addEffect(window.VFX.createDamageNumber(target.x + gridSize / 2 + 15, target.y + gridSize / 2 - 25, extraBonusDamage, "radiant", false));
-            }
-          }
           spawnFloatingTextForToken(targetId, "damage", { total: extraTotalDmg, damageType: extraDtype, isCrit: extraAttack.isCrit });
+          emitPlayModeVfx(attacker, target, { mode: "attack", actionName: weaponName + " (Extra Attack)", weaponName: weaponName, damageType: extraDtype, amount: extraTotalDmg, isCrit: extraAttack.isCrit, isRanged: !!(CE.isRangedWeapon ? CE.isRangedWeapon(weaponName) : (weaponName||"").toLowerCase().match(/bow|crossbow|dart|sling|javelin|thrown/)) });
         } else if (extraAttack) {
           addCombatLogEntry({ type: "miss", attacker: attacker.name, target: target.name, action: weaponName + " (Extra Attack " + (i + 1) + ")", roll: extraAttack.attackRoll });
-          if (typeof window.VFX !== "undefined") window.VFX.addEffect(window.VFX.createMissEffect(target.x + gridSize / 2, target.y + gridSize / 2));
           spawnFloatingTextForToken(targetId, "miss", {});
+          emitPlayModeVfx(attacker, target, { mode: "miss" });
         }
       }
     }
@@ -8971,15 +9071,19 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               "Attack: " + (seq.result.attackRoll?.details || "d20") + " + " + (seq.result.attackRoll?.modifier ?? "?") + " = " + (seq.result.attackRoll?.total ?? "?") + " vs AC " + (seq.result.attackRoll?.targetAC ?? target.ac ?? 10) + "  |  Damage: " + (seq.result.totalDamage || 0),
               seq.result.isCrit ? "crit" : "hit"
             );
-            // Trigger VFX
+            // Trigger VFX via action animation system
             const dtype = seq.result.damage?.[0]?.type || "slashing";
-            if (typeof window.VFX !== 'undefined') {
-              window.VFX.addEffect(window.VFX.createAttackEffect(attacker.x + gridSize/2, attacker.y + gridSize/2, target.x + gridSize/2, target.y + gridSize/2, seq.action.name, dtype));
-              window.VFX.addEffect(window.VFX.createDamageNumber(target.x + gridSize/2, target.y + gridSize/2 - 10, seq.result.totalDamage, dtype, seq.result.isCrit));
-              window.VFX.addEffect(window.VFX.createDiceAnimation(attacker.x + gridSize/2, attacker.y + gridSize/2, 20, seq.result.attackRoll?.chosen || 0));
-            }
-            // Floating combat text
             spawnFloatingTextForToken(targetId, "damage", { total: seq.result.totalDamage, damageType: dtype, isCrit: seq.result.isCrit });
+            { // Monster action VFX lookup
+              const monsterAnimKey = (seq.action.name || "").trim();
+              const mavfx = typeof MONSTER_ACTION_VFX !== "undefined" && MONSTER_ACTION_VFX[monsterAnimKey];
+              if (mavfx) {
+                triggerActionAnim(mavfx.type || "melee_attack", attacker, target, mavfx.color || "#e0d0b0");
+              } else {
+                const animType = getWeaponAnimType(seq.action.name);
+                triggerActionAnim(seq.result.isCrit ? "critical_hit" : animType, attacker, target, seq.result.isCrit ? "#ffd700" : "#e0d0b0");
+              }
+            }
           } else {
             addCombatLogEntry({ type: "miss", attacker: attacker.name, target: target.name, action: seq.action.name, roll: seq.result.attackRoll });
             pushCombatRoll(
@@ -8987,17 +9091,14 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               "Attack: " + (seq.result.attackRoll?.details || "d20") + " + " + (seq.result.attackRoll?.modifier ?? "?") + " = " + (seq.result.attackRoll?.total ?? "?") + " vs AC " + (seq.result.attackRoll?.targetAC ?? target.ac ?? 10),
               "miss"
             );
-            if (typeof window.VFX !== 'undefined') {
-              window.VFX.addEffect(window.VFX.createMissEffect(target.x + gridSize/2, target.y + gridSize/2));
-            }
             spawnFloatingTextForToken(targetId, "miss", {});
+            triggerActionAnim("miss", target, null, "#888");
           }
         } else if (seq.type === "save" && seq.result) {
           addCombatLogEntry({ type: "save", attacker: attacker.name, target: target.name, action: seq.action.name, success: seq.result.save?.success, damage: seq.result.damage, conditions: seq.result.conditions });
           if (seq.result.damage) totalDmg += seq.result.damage;
-          if (typeof window.VFX !== 'undefined' && seq.parsed) {
-            window.VFX.addEffect(window.VFX.createSaveEffect(attacker.x + gridSize/2, attacker.y + gridSize/2, target.x + gridSize/2, target.y + gridSize/2, seq.action.name, seq.parsed));
-          }
+          // Save VFX
+          emitPlayModeVfx(attacker, target, { mode: "save", actionName: seq.action.name, saveSuccess: seq.result.save?.success, amount: seq.result.damage || 0, damageType: seq.parsed?.failDamage?.type || "force" });
           if (seq.result.conditions?.length) {
             seq.result.conditions.forEach(c => addTokenCondition(targetId, c.charAt(0).toUpperCase() + c.slice(1)));
           }
@@ -9026,12 +9127,17 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           result.results[0].isCrit ? "crit" : "hit"
         );
         applyAttackResultToTarget(targetId, target, result.totalDamage, dtype);
-        if (typeof window.VFX !== 'undefined') {
-          window.VFX.addEffect(window.VFX.createAttackEffect(attacker.x + gridSize/2, attacker.y + gridSize/2, target.x + gridSize/2, target.y + gridSize/2, action.name, dtype));
-          window.VFX.addEffect(window.VFX.createDamageNumber(target.x + gridSize/2, target.y + gridSize/2 - 10, result.totalDamage, dtype, result.results[0].isCrit));
-          window.VFX.addEffect(window.VFX.createDiceAnimation(attacker.x + gridSize/2, attacker.y + gridSize/2, 20, result.results[0].attackRoll?.chosen || 0));
-        }
         spawnFloatingTextForToken(targetId, "damage", { total: result.totalDamage, damageType: dtype, isCrit: result.results[0].isCrit });
+        { // Monster action VFX
+          const monsterAnimKey = (action.name || "").trim();
+          const mavfx = typeof MONSTER_ACTION_VFX !== "undefined" && MONSTER_ACTION_VFX[monsterAnimKey];
+          if (mavfx) {
+            triggerActionAnim(mavfx.type || "melee_attack", attacker, target, mavfx.color || "#e0d0b0");
+          } else {
+            const animType = getWeaponAnimType(action.name);
+            triggerActionAnim(result.results[0].isCrit ? "critical_hit" : animType, attacker, target, result.results[0].isCrit ? "#ffd700" : "#e0d0b0");
+          }
+        }
       } else {
         addCombatLogEntry({ type: "miss", attacker: attacker.name, target: target.name, action: action.name, roll: result.results[0]?.attackRoll });
         pushCombatRoll(
@@ -9039,8 +9145,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           "Attack: " + (result.results[0]?.attackRoll?.details || "d20") + " + " + (result.results[0]?.attackRoll?.modifier ?? "?") + " = " + (result.results[0]?.attackRoll?.total ?? "?") + " vs AC " + (result.results[0]?.attackRoll?.targetAC ?? target.ac ?? 10),
           "miss"
         );
-        if (typeof window.VFX !== 'undefined') window.VFX.addEffect(window.VFX.createMissEffect(target.x + gridSize/2, target.y + gridSize/2));
         spawnFloatingTextForToken(targetId, "miss", {});
+        triggerActionAnim("miss", target, null, "#888");
       }
       if (result.results[1]?.type === "onHitSave" && !result.results[1].save?.success && result.results[1].condition) {
         addTokenCondition(targetId, result.results[1].condition.charAt(0).toUpperCase() + result.results[1].condition.slice(1));
@@ -9090,9 +9196,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         if (r.conditions?.length) {
           r.conditions.forEach(c => addTokenCondition(targetId, c.charAt(0).toUpperCase() + c.slice(1)));
         }
-        if (typeof window.VFX !== 'undefined' && saveResult.parsed) {
-          window.VFX.addEffect(window.VFX.createSaveEffect(attacker.x + gridSize/2, attacker.y + gridSize/2, target.x + gridSize/2, target.y + gridSize/2, action.name, saveResult.parsed));
-          if (r.damage > 0) window.VFX.addEffect(window.VFX.createDamageNumber(target.x + gridSize/2, target.y + gridSize/2, r.damage, saveResult.parsed.failDamage?.type || "force"));
+        // Save action VFX
+        emitPlayModeVfx(attacker, target, { mode: "save", actionName: action.name, saveSuccess: r.save?.success, amount: r.damage || 0, damageType: saveResult.parsed?.failDamage?.type || "force" });
+        { // Monster-specific VFX for save actions
+          const mavfx = typeof MONSTER_ACTION_VFX !== "undefined" && MONSTER_ACTION_VFX[(action.name || "").trim()];
+          if (mavfx) triggerActionAnim(mavfx.type || "breath_weapon", attacker, target, mavfx.color || "#f06858");
         }
       }
     }
@@ -13857,10 +13965,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       });
     }
 
-    // ── VFX rendering ──
-    if (typeof window.VFX !== 'undefined' && window.VFX.getActiveEffectCount() > 0) {
-      window.VFX.updateAndDrawEffects(ctx);
-    }
+    // ── VFX rendering (legacy system removed — using triggerActionAnim canvas overlay) ──
   }, [bgColor, bgImage, showGrid, gridSize, zoom, pan, drawings, drawPoints, drawColor, drawWidth, fogCells, fogEnabled, tokens, walls, wallStart, wallPreview, selectedWallType, activeTool, rulerStart, rulerEnd, selectedTokenId, hoveredTokenId, activeCombatantId, activeCombatTargetId, combatLive, combatants, conditions, tokenConditions, activeSpell, spellEffects, spellLog, combatRollLog, spellDC, fogMode, movementMode, movementPath, movementOrigin, turnStateByToken, terrainCells, pings, viewRole, props, selectedPropId, battleMaps, activeMapId, activeSceneId, multiTargetSelections, castLevel]);
 
   // Keep a ref to the latest render function so the animation loop doesn't restart on every dep change
@@ -15775,7 +15880,17 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     if (combs.length > 0) {
       const firstToken = preparedTokens.find(t => t.id === combs[0].mapTokenId);
       setSelectedTokenId(combs[0].mapTokenId);
-      if (firstToken) primeTokenForTurnStart(firstToken);
+      if (firstToken) {
+        primeTokenForTurnStart(firstToken);
+        // BG3-style first turn announcement
+        setTurnAnnouncement({
+          name: firstToken.name || "Unknown",
+          isPC: !firstToken.monsterData,
+          round: 1,
+          roundStart: true,
+          key: Date.now() + "-combat-start",
+        });
+      }
     }
   };
 
@@ -15853,9 +15968,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       if (effect && effect.damageTotal > 0) {
         addCombatLogEntry({ type: "system", text: token.name + " takes " + effect.damageTotal + " " + (effect.type || "") + " damage from " + terrainCell + " terrain" });
         applyAttackResultToTarget(token.id, token, effect.damageTotal, effect.type || "fire");
-        if (typeof window.VFX !== "undefined") {
-          window.VFX.addEffect(window.VFX.createDamageNumber(token.x + gridSize / 2, token.y + gridSize / 2 - 10, effect.damageTotal, effect.type || "fire", false));
-        }
+        // Terrain damage VFX
+        spawnFloatingTextForToken(token.id, "damage", { total: effect.damageTotal, damageType: effect.type || "fire", isCrit: false });
+        triggerActionAnim("fire_bolt", null, token, effect.type === "cold" ? "#58aaff" : "#f06858");
       }
       if (effect && effect.conditionApplied) {
         addTokenCondition(token.id, effect.conditionApplied.charAt(0).toUpperCase() + effect.conditionApplied.slice(1));
@@ -16005,11 +16120,12 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     }
 
     let nextIdx = turn + 1;
+    let first = -1; // hoisted so turn announcement can access it
     while (nextIdx < combatants.length && shouldSkipCombatantRow(combatants[nextIdx])) nextIdx++;
     if (nextIdx >= combatants.length) {
       const lairReady = tokens.filter((t) => t.monsterData?.legendaryActions?.length && !getActionLockReasonForToken(t) && Number(t.lairActionRoundUsed || 0) !== (round + 1));
       setRound(r => r + 1);
-      let first = 0;
+      first = 0;
       while (first < combatants.length && shouldSkipCombatantRow(combatants[first])) first++;
       if (first >= combatants.length) {
         setTurn(0);
@@ -16040,6 +16156,22 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     }
     setPlayModeResolution(null);
     setDismissedTurnPopupKey("");
+
+    // BG3-style turn announcement
+    const announceFinalIdx = (nextIdx < combatants.length) ? nextIdx : (first >= 0 ? first : 0);
+    const announceCombatant = combatants[announceFinalIdx] || null;
+    if (announceCombatant) {
+      const announceToken = tokens.find(t => t.id === announceCombatant.mapTokenId);
+      if (announceToken) {
+        setTurnAnnouncement({
+          name: announceToken.name || "Unknown",
+          isPC: !announceToken.monsterData,
+          round: (nextIdx >= combatants.length) ? round + 1 : round,
+          roundStart: nextIdx >= combatants.length,
+          key: Date.now() + "-" + announceCombatant.mapTokenId,
+        });
+      }
+    }
   };
 
   const prevTurn = () => {
@@ -16381,6 +16513,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                 logOpen={combatLogSidebarOpen || combatLogOpen}
                 combatRollLog={combatRollLog}
               />
+            )}
+
+            {/* ── BG3-style Turn Announcement Banner ── */}
+            {combatLive && turnAnnouncement && (
+              <TurnBanner announcement={turnAnnouncement} />
             )}
 
             {/* ── Floating Roll Display (separate from init bar so it doesn't cover content) ── */}
@@ -18923,6 +19060,19 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [viewRole, setViewRole] = useState(route.role || "dm");
+  const [combatAssetsReady, setCombatAssetsReady] = useState(typeof window.CombatEngine !== "undefined");
+
+  // ── Check for deferred combat script availability ──
+  useEffect(() => {
+    if (combatAssetsReady) return;
+    const check = () => {
+      if (typeof window.CombatEngine !== "undefined") { setCombatAssetsReady(true); return true; }
+      return false;
+    };
+    if (check()) return;
+    const interval = setInterval(() => { if (check()) clearInterval(interval); }, 150);
+    return () => clearInterval(interval);
+  }, [combatAssetsReady]);
 
   // ── Load campaigns from cache on mount ──
   useEffect(() => {
@@ -19160,18 +19310,25 @@ function App() {
         {activeTab === "timeline" && <TimelineView data={data} setData={setData} onNav={setActiveTab} />}
         {activeTab === "world" && <WorldView data={data} setData={setData} onNav={setActiveTab} viewRole={viewRole} />}
         {activeTab === "play" && (
-          <BattlemapErrorBoundary>
-            <Battlemap
-              party={data.party || []}
-              npcs={data.npcs || []}
-              viewRole={viewRole}
-              setViewRole={setViewRole}
-              activeCampaignId={activeCampaignId}
-              onPartyUpdate={handlePartyUpdate}
-              setData={setData}
-              campaignEncounters={data.encounters || []}
-            />
-          </BattlemapErrorBoundary>
+          combatAssetsReady ? (
+            <BattlemapErrorBoundary>
+              <Battlemap
+                party={data.party || []}
+                npcs={data.npcs || []}
+                viewRole={viewRole}
+                setViewRole={setViewRole}
+                activeCampaignId={activeCampaignId}
+                onPartyUpdate={handlePartyUpdate}
+                setData={setData}
+                campaignEncounters={data.encounters || []}
+              />
+            </BattlemapErrorBoundary>
+          ) : (
+            <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:16, color:T.textFaint }}>
+              <div style={{ width:32, height:32, border:"2px solid " + T.border, borderTop:"2px solid var(--crimson)", borderRadius:"50%", animation:"cm-spin 0.8s linear infinite" }} />
+              <div style={{ fontFamily:T.ui, fontSize:11, letterSpacing:"2px", textTransform:"uppercase" }}>Loading Combat Engine...</div>
+            </div>
+          )
         )}
       </div>
     </div>
