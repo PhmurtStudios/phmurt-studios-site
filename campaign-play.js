@@ -12862,6 +12862,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         </div>
       </div>
     </div>
+    </div>
   );
 }
 
