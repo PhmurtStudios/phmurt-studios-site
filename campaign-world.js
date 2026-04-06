@@ -175,115 +175,171 @@ function getTerrainColor(terrainType) {
 
 /* Generate a blob path for a continent — parameterized noise-like displacement */
 function generateContinent(rng, centerX = 3000, centerY = 2250, baseRadius = 1200) {
-  const segments = 64;
+  // Multi-octave noise for natural coastline
+  const segments = 128;
+  const noise = new SimplexNoise2D(Math.floor(rng() * 99999));
   const path = [];
+  // Generate raw points
+  const pts = [];
   for (let i = 0; i < segments; i++) {
     const angle = (i / segments) * Math.PI * 2;
-    const baseR = baseRadius + (Math.sin(angle * 3) * 200 + Math.cos(angle * 2) * 180);
-    const noiseDisp = (rng() - 0.5) * 400;
-    const r = baseR + noiseDisp;
-    const x = Math.round(centerX + Math.cos(angle) * r);
-    const y = Math.round(centerY + Math.sin(angle) * r);
-    path.push(i === 0 ? `M${x},${y}` : `L${x},${y}`);
+    // Harmonic base shape — not a perfect circle
+    const baseR = baseRadius
+      + Math.sin(angle * 2.3 + rng() * 6) * 280
+      + Math.cos(angle * 1.7 + rng() * 6) * 220
+      + Math.sin(angle * 3.8) * 120;
+    // Noise-based coastline detail at multiple scales
+    const n1 = noise.noise(Math.cos(angle) * 2.5, Math.sin(angle) * 2.5) * 300;
+    const n2 = noise.noise(Math.cos(angle) * 5, Math.sin(angle) * 5) * 120;
+    const n3 = noise.noise(Math.cos(angle) * 10, Math.sin(angle) * 10) * 50;
+    const r = Math.max(500, baseR + n1 + n2 + n3);
+    pts.push({ x: centerX + Math.cos(angle) * r, y: centerY + Math.sin(angle) * r });
   }
+  // Smooth pass
+  for (let pass = 0; pass < 2; pass++) {
+    for (let i = 0; i < pts.length; i++) {
+      const prev = pts[(i - 1 + pts.length) % pts.length];
+      const next = pts[(i + 1) % pts.length];
+      pts[i] = { x: pts[i].x * 0.6 + (prev.x + next.x) * 0.2, y: pts[i].y * 0.6 + (prev.y + next.y) * 0.2 };
+    }
+  }
+  pts.forEach((p, i) => path.push((i === 0 ? "M" : "L") + Math.round(p.x) + "," + Math.round(p.y)));
   path.push("Z");
   return path.join(" ");
 }
 
-/* Generate 5-7 provinces by subdividing the continent */
+/* Generate 5-7 provinces using Voronoi-style subdivision */
 function generateProvinces(rng) {
   const provinceCount = 5 + Math.floor(rng() * 3);
   const provinces = [];
   const provinceNames = [
-    "Essear", "Beltros", "Theanas", "Fara", "Elonia",
-    "Cyrin", "Dravina", "Valorian", "Northmarch", "Silvering"
+    "Valdheim", "Korfath", "Cyrin", "Selvane", "Tethys",
+    "Dremora", "Kelvor", "Caeloth", "Wyndell", "Essear",
+    "Fara", "Mistvale", "Oyrin", "Endara", "Korath"
   ];
+  const provinceColors = [
+    "#ccc088", "#a8b8a0", "#c8b490", "#a0b0b8", "#b8c098",
+    "#c4b0a8", "#a8c0b0", "#c8c0a0", "#b0a8b0", "#b8c4a0"
+  ];
+  // Shuffle names
+  const shuffled = [...provinceNames].sort(() => rng() - 0.5);
 
+  // Place seed points for each province, well-spaced
+  const seeds = [];
   for (let i = 0; i < provinceCount; i++) {
-    const angle = (i / provinceCount) * Math.PI * 2;
-    const dist = 900 + rng() * 400;
-    const cx = 3000 + Math.cos(angle) * dist;
-    const cy = 2250 + Math.sin(angle) * dist;
-    const segCount = 16;
-    const path = [];
+    let bestX, bestY, bestDist = 0;
+    for (let attempt = 0; attempt < 30; attempt++) {
+      const angle = (i / provinceCount) * Math.PI * 2 + (rng() - 0.5) * 0.8;
+      const dist = 600 + rng() * 700;
+      const cx = 3000 + Math.cos(angle) * dist;
+      const cy = 2250 + Math.sin(angle) * dist;
+      // Check distance from existing seeds
+      let minD = Infinity;
+      for (const s of seeds) minD = Math.min(minD, Math.hypot(cx - s.x, cy - s.y));
+      if (minD > bestDist || seeds.length === 0) { bestDist = minD; bestX = cx; bestY = cy; }
+    }
+    seeds.push({ x: bestX, y: bestY });
+  }
+
+  // Build province shapes as Voronoi cells clipped to a circle
+  const noise = new SimplexNoise2D(Math.floor(rng() * 99999));
+  for (let i = 0; i < provinceCount; i++) {
+    const cx = seeds[i].x, cy = seeds[i].y;
+    const segCount = 32;
+    const pathPts = [];
     for (let s = 0; s < segCount; s++) {
       const a = (s / segCount) * Math.PI * 2;
-      const r = 600 + rng() * 200;
-      const x = Math.round(cx + Math.cos(a) * r);
-      const y = Math.round(cy + Math.sin(a) * r);
-      path.push(s === 0 ? `M${x},${y}` : `L${x},${y}`);
+      // Expand outward from seed until hitting another province's territory
+      let maxR = 1800;
+      for (let j = 0; j < provinceCount; j++) {
+        if (j === i) continue;
+        const dx = seeds[j].x - cx, dy = seeds[j].y - cy;
+        const d = Math.hypot(dx, dy);
+        const toJ = Math.atan2(dy, dx);
+        const angleDiff = Math.abs(((a - toJ + Math.PI * 3) % (Math.PI * 2)) - Math.PI);
+        if (angleDiff < Math.PI * 0.55) maxR = Math.min(maxR, d * 0.52);
+      }
+      const n = noise.noise(Math.cos(a) * 3 + i, Math.sin(a) * 3 + i) * 80;
+      const r = maxR + n;
+      pathPts.push({ x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r });
     }
-    path.push("Z");
+    // Smooth
+    for (let pass = 0; pass < 3; pass++) {
+      for (let s = 0; s < pathPts.length; s++) {
+        const prev = pathPts[(s - 1 + pathPts.length) % pathPts.length];
+        const next = pathPts[(s + 1) % pathPts.length];
+        pathPts[s] = { x: pathPts[s].x * 0.5 + (prev.x + next.x) * 0.25, y: pathPts[s].y * 0.5 + (prev.y + next.y) * 0.25 };
+      }
+    }
+    const path = pathPts.map((p, s) => (s === 0 ? "M" : "L") + Math.round(p.x) + "," + Math.round(p.y)).join(" ") + " Z";
     provinces.push({
       id: "prov-" + i,
-      name: provinceNames[i % provinceNames.length],
-      path: path.join(" "),
+      name: shuffled[i % shuffled.length],
+      path,
       labelX: Math.round(cx),
       labelY: Math.round(cy),
-      cityX: Math.round(cx - 100 + rng() * 200),
-      cityY: Math.round(cy - 100 + rng() * 200),
+      cityX: Math.round(cx - 80 + rng() * 160),
+      cityY: Math.round(cy - 80 + rng() * 160),
       spreadX: 350 + Math.floor(rng() * 100),
       spreadY: 250 + Math.floor(rng() * 100),
-      fill: "#d4c590"
+      fill: provinceColors[i % provinceColors.length]
     });
   }
   return provinces;
 }
 
-/* Generate 2-4 mountain ranges */
+/* Generate 2-4 mountain ranges with smooth curves */
 function generateMountainRanges(rng) {
   const rangeCount = 2 + Math.floor(rng() * 3);
   const ranges = [];
-  const rangeNames = [
-    "Ironspine Range", "Stormcrown Range", "Sundered Ridge",
-    "Moonvale Wilds", "Dragonspire Peak", "Frostfang Peaks"
-  ];
 
   for (let i = 0; i < rangeCount; i++) {
     const startAngle = rng() * Math.PI * 2;
-    const startDist = 600 + rng() * 600;
+    const startDist = 500 + rng() * 700;
     const startX = 3000 + Math.cos(startAngle) * startDist;
     const startY = 2250 + Math.sin(startAngle) * startDist;
 
-    const endAngle = startAngle + (rng() - 0.5) * Math.PI;
-    const endDist = 400 + rng() * 700;
+    const endAngle = startAngle + (rng() - 0.5) * 1.2;
+    const endDist = 400 + rng() * 800;
     const endX = 3000 + Math.cos(endAngle) * endDist;
     const endY = 2250 + Math.sin(endAngle) * endDist;
 
-    const cp1x = startX + (rng() - 0.5) * 600;
-    const cp1y = startY + (rng() - 0.5) * 600;
-    const cp2x = endX + (rng() - 0.5) * 600;
-    const cp2y = endY + (rng() - 0.5) * 600;
+    // Generate multiple control points for a more natural ridge
+    const cp1x = startX + (endX - startX) * 0.33 + (rng() - 0.5) * 500;
+    const cp1y = startY + (endY - startY) * 0.33 + (rng() - 0.5) * 500;
+    const cp2x = startX + (endX - startX) * 0.66 + (rng() - 0.5) * 500;
+    const cp2y = startY + (endY - startY) * 0.66 + (rng() - 0.5) * 500;
 
     const ridge = `M${Math.round(startX)},${Math.round(startY)} C${Math.round(cp1x)},${Math.round(cp1y)} ${Math.round(cp2x)},${Math.round(cp2y)} ${Math.round(endX)},${Math.round(endY)}`;
 
-    ranges.push({
-      id: "range-" + i,
-      ridge: ridge,
-      peaks: []
-    });
+    ranges.push({ id: "range-" + i, ridge, peaks: [] });
   }
   return ranges;
 }
 
-/* Generate 3-5 rivers flowing from mountains to coast */
+/* Generate 3-5 rivers flowing from highlands toward coast */
 function generateRivers(rng, mountainRanges) {
   const rivers = [];
   const riverCount = 3 + Math.floor(rng() * 3);
 
   for (let i = 0; i < riverCount; i++) {
-    const sourceX = 2400 + rng() * 1200;
-    const sourceY = 1400 + rng() * 1700;
-    const endX = 1200 + rng() * 3600;
-    const endY = 1200 + rng() * 2600;
+    // Start near center, flow outward
+    const sourceAngle = rng() * Math.PI * 2;
+    const sourceDist = 300 + rng() * 600;
+    const sourceX = 3000 + Math.cos(sourceAngle) * sourceDist;
+    const sourceY = 2250 + Math.sin(sourceAngle) * sourceDist;
+    const endDist = 1200 + rng() * 600;
+    const endAngle = sourceAngle + (rng() - 0.5) * 0.8;
+    const endX = 3000 + Math.cos(endAngle) * endDist;
+    const endY = 2250 + Math.sin(endAngle) * endDist;
 
-    const segCount = 4 + Math.floor(rng() * 3);
+    const segCount = 5 + Math.floor(rng() * 4);
     let riverPath = `M${Math.round(sourceX)},${Math.round(sourceY)}`;
 
-    for (let s = 0; s < segCount; s++) {
-      const t = (s + 1) / segCount;
-      const x = sourceX + (endX - sourceX) * t + (rng() - 0.5) * 400;
-      const y = sourceY + (endY - sourceY) * t + (rng() - 0.5) * 400;
+    for (let s = 1; s <= segCount; s++) {
+      const t = s / segCount;
+      const x = sourceX + (endX - sourceX) * t + (rng() - 0.5) * 250 * (1 - t * 0.5);
+      const y = sourceY + (endY - sourceY) * t + (rng() - 0.5) * 250 * (1 - t * 0.5);
       riverPath += ` L${Math.round(x)},${Math.round(y)}`;
     }
 
@@ -298,28 +354,37 @@ function generateAtlasData(seed) {
 
   const landPath = generateContinent(rng);
 
-  // Generate islands
+  // Generate islands with noise-based coastlines
   const islands = [];
-  const islandCount = 4 + Math.floor(rng() * 3);
+  const islandCount = 4 + Math.floor(rng() * 4);
+  const isleNoise = new SimplexNoise2D(Math.floor(rng() * 99999));
+  const islandCenters = [];
   for (let i = 0; i < islandCount; i++) {
-    const isleX = 800 + rng() * 4400;
-    const isleY = 600 + rng() * 3300;
-    const isleSize = 80 + rng() * 150;
-    const segs = 8;
+    // Place islands in sea areas, avoid overlapping each other
+    let isleX, isleY, ok = false;
+    for (let attempt = 0; attempt < 20; attempt++) {
+      isleX = 500 + rng() * 5000;
+      isleY = 400 + rng() * 3600;
+      // Check distance from continent center and other islands
+      const distFromCenter = Math.hypot(isleX - 3000, isleY - 2250);
+      if (distFromCenter < 1600) continue; // too close to mainland
+      let tooClose = false;
+      for (const ic of islandCenters) { if (Math.hypot(isleX - ic.x, isleY - ic.y) < 350) { tooClose = true; break; } }
+      if (!tooClose) { ok = true; break; }
+    }
+    if (!ok) continue;
+    islandCenters.push({ x: isleX, y: isleY });
+    const isleSize = 60 + rng() * 130;
+    const segs = 24;
     const isleP = [];
     for (let s = 0; s < segs; s++) {
       const a = (s / segs) * Math.PI * 2;
-      const r = isleSize * (0.6 + rng() * 0.4);
-      const x = isleX + Math.cos(a) * r;
-      const y = isleY + Math.sin(a) * r;
-      isleP.push((s === 0 ? "M" : "L") + Math.round(x) + "," + Math.round(y));
+      const n = isleNoise.noise(Math.cos(a) * 3 + i * 7, Math.sin(a) * 3 + i * 7) * isleSize * 0.35;
+      const r = isleSize * (0.7 + rng() * 0.3) + n;
+      isleP.push((s === 0 ? "M" : "L") + Math.round(isleX + Math.cos(a) * r) + "," + Math.round(isleY + Math.sin(a) * r));
     }
     isleP.push("Z");
-    islands.push({
-      path: isleP.join(" "),
-      fill: "#c8bc8e",
-      opacity: 0.92 + rng() * 0.05
-    });
+    islands.push({ path: isleP.join(" "), fill: "#c8bc8e", opacity: 0.92 + rng() * 0.05 });
   }
 
   // Water bodies (lakes)
@@ -352,18 +417,22 @@ function generateAtlasData(seed) {
   // Rivers
   const rivers = generateRivers(rng, mountainRanges);
 
-  // Sea labels
+  // Sea labels — randomized names and positions
+  const seaNamePool = ["Sea of Frost", "Sea of Storms", "Sea of Silence", "Pale Sea", "Ashen Sea", "Sea of Winds", "Ember Sea", "Sea of Thorns", "Moonlit Sea"];
+  const seaShuffled = [...seaNamePool].sort(() => rng() - 0.5);
   const seaLabels = [
-    { x: 600, y: 2000, label: "Sea of Frost", rotate: -18, size: 34, spacing: 8, opacity: 0.34 },
-    { x: 5400, y: 1600, label: "Sea of Winds", rotate: 8, size: 34, spacing: 8, opacity: 0.34 },
-    { x: 3000, y: 400, label: "Crownwater Expanse", rotate: 0, size: 30, spacing: 10, opacity: 0.22 },
+    { x: 400 + Math.round(rng() * 400), y: 1600 + Math.round(rng() * 800), label: seaShuffled[0], rotate: -12 + Math.round((rng() - 0.5) * 20), size: 34, spacing: 8, opacity: 0.34 },
+    { x: 5000 + Math.round(rng() * 600), y: 1200 + Math.round(rng() * 800), label: seaShuffled[1], rotate: Math.round((rng() - 0.5) * 20), size: 34, spacing: 8, opacity: 0.34 },
+    { x: 2200 + Math.round(rng() * 1600), y: 200 + Math.round(rng() * 400), label: seaShuffled[2] || "Crownwater Expanse", rotate: Math.round((rng() - 0.5) * 10), size: 30, spacing: 10, opacity: 0.22 },
   ];
 
   // Range labels
+  const rangeNamePool = ["Ironspine", "Stormcrown", "Sundered", "Dragonspire", "Frostfang", "Ashenveil", "Thunderpeak", "Wyrmridge"];
+  const rangeShuffled = [...rangeNamePool].sort(() => rng() - 0.5);
   const rangeLabels = mountainRanges.map((r, i) => ({
-    x: Math.round(parseInt(r.ridge.match(/M(\d+)/)[1])),
-    y: Math.round(parseInt(r.ridge.match(/M\d+,(\d+)/)[1])),
-    label: ["Ironspine", "Stormcrown", "Sundered", "Dragonspire", "Frostfang"][i % 5] + " Range",
+    x: Math.round(parseInt(r.ridge.match(/M(\d+)/)?.[1] || "3000")),
+    y: Math.round(parseInt(r.ridge.match(/M\d+,(\d+)/)?.[1] || "2250")),
+    label: (rangeShuffled[i % rangeShuffled.length] || "Unknown") + " Range",
     rotate: (rng() - 0.5) * 30
   }));
 
@@ -491,13 +560,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
   const [isMapCompact,setIsMapCompact] = useState(() => typeof window !== "undefined" ? window.innerWidth < 860 : false);
   const worldMapState = normalizeWorldMapState(data.worldMap);
 
-  // ── Map generation modal state ──
-  const [showMapGenModal, setShowMapGenModal] = useState(false);
-  const [genSeed, setGenSeed] = useState(Math.floor(Math.random() * 1000000).toString());
-  const [genMapSize, setGenMapSize] = useState("medium");
-  const [genClimate, setGenClimate] = useState("temperate");
-  const [genContinents, setGenContinents] = useState(1);
-  const canvasRef = useRef(null);
+  // ── (Old map generation modal state removed — now using pre-generated atlas SVGs) ──
 
   // ── Map state — starts zoomed out to see the whole continent ──
   const [mapZoom, setMapZoom] = useState(0.25);
@@ -521,58 +584,6 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // ── Terrain rendering handler ──
-  const renderTerrainPreview = useCallback((canvas, width, height, mapSize, climate, seed) => {
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    canvas.width = width;
-    canvas.height = height;
-
-    const { terrain, moisture, waterLevel, mountainLevel, climateBoost } = generateTerrainMap(width, height, seed, mapSize, climate);
-
-    const imageData = ctx.createImageData(width, height);
-    const imgData = imageData.data;
-
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        const idx = (y * width + x) * 4;
-        const elevation = terrain[y][x];
-        let moistureVal = moisture[y][x] + climateBoost;
-        moistureVal = Math.max(0, Math.min(1, moistureVal));
-
-        let terrainType = getTerrainType(elevation, moistureVal, waterLevel, mountainLevel);
-
-        // Snow at high elevations in certain climates
-        if (climate === "arctic" && elevation > mountainLevel - 0.15) {
-          terrainType = "snow";
-        }
-
-        const color = getTerrainColor(terrainType);
-        const shading = 0.8 + (elevation - waterLevel) * 0.3;
-        imgData[idx] = Math.round(color.r * shading);
-        imgData[idx + 1] = Math.round(color.g * shading);
-        imgData[idx + 2] = Math.round(color.b * shading);
-        imgData[idx + 3] = 255;
-      }
-    }
-
-    ctx.putImageData(imageData, 0, 0);
-
-    // Draw a border
-    ctx.strokeStyle = "rgba(180,170,150,0.4)";
-    ctx.lineWidth = 2;
-    ctx.strokeRect(0, 0, width, height);
-  }, []);
-
-  // ── Render terrain preview when modal is shown ──
-  useEffect(() => {
-    if (showMapGenModal && canvasRef.current) {
-      const seedNum = parseInt(genSeed) || Date.now();
-      renderTerrainPreview(canvasRef.current, 600, 450, genMapSize, genClimate, seedNum);
-    }
-  }, [showMapGenModal, genMapSize, genClimate, genSeed, renderTerrainPreview]);
 
 
   const conns = (type,ent) => {
@@ -600,71 +611,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
   const atlasFactionSeats = customAtlas?.factionSeats || ATLAS_FACTION_SEATS;
   const atlasFreeSeats = customAtlas?.freeSeats || ATLAS_FREE_SEATS;
 
-  /* ── Atlas import handler: paste JS constants from atlas-to-campaign.py output ── */
-  const [showAtlasImport, setShowAtlasImport] = useState(false);
-  const importAtlasData = useCallback((jsText) => {
-    try {
-      // SECURITY: Limit input size to prevent ReDoS and memory exhaustion
-      if (!jsText || jsText.length > 2 * 1024 * 1024) {
-        console.warn("[WorldView] Atlas import rejected: input too large (max 2 MB)");
-        return false;
-      }
-      // SECURITY FIX: Use JSON parsing instead of new Function() to prevent code injection
-      // Parse the JS text as structured data (JSON format or similar)
-      // This approach validates that the import is data-only, not executable code
-
-      // Try to extract JSON from the JS text (look for common patterns)
-      let atlas = null;
-
-      // Attempt 1: Direct JSON parse if it's already JSON
-      try {
-        atlas = JSON.parse(jsText);
-      } catch (jsonErr) {
-        // Attempt 2: Extract constants from JS using regex (safer than new Function)
-        atlas = {};
-
-        // Safe regex extraction of array/object constants
-        const patterns = {
-          landPath: /ATLAS_LAND_PATH\s*=\s*['"]([^'"]+)['"]/,
-          islands: /ATLAS_ISLANDS\s*=\s*(\[[\s\S]*?\](?=\s*(?:const|let|var|\n)))/,
-          waterBodies: /ATLAS_WATER_BODIES\s*=\s*(\[[\s\S]*?\](?=\s*(?:const|let|var|\n)))/,
-          rivers: /ATLAS_RIVERS\s*=\s*(\[[\s\S]*?\](?=\s*(?:const|let|var|\n)))/,
-          seaLabels: /ATLAS_SEA_LABELS\s*=\s*(\[[\s\S]*?\](?=\s*(?:const|let|var|\n)))/,
-          rangeLabels: /ATLAS_RANGE_LABELS\s*=\s*(\[[\s\S]*?\](?=\s*(?:const|let|var|\n)))/,
-          mountainRanges: /ATLAS_MOUNTAIN_RANGES\s*=\s*(\[[\s\S]*?\](?=\s*(?:const|let|var|\n)))/,
-          provinces: /ATLAS_PROVINCES\s*=\s*(\[[\s\S]*?\](?=\s*(?:const|let|var|\n)))/,
-          factionSeats: /ATLAS_FACTION_SEATS\s*=\s*(\[[\s\S]*?\](?=\s*(?:const|let|var|\n)))/,
-          freeSeats: /ATLAS_FREE_SEATS\s*=\s*(\[[\s\S]*?\](?=\s*(?:const|let|var|\n)))/
-        };
-
-        for (const [key, pattern] of Object.entries(patterns)) {
-          const match = jsText.match(pattern);
-          if (match) {
-            try {
-              atlas[key] = JSON.parse(match[1]);
-            } catch (parseErr) {
-              atlas[key] = key.includes('Path') ? null : [];
-            }
-          } else {
-            atlas[key] = key.includes('Path') ? null : [];
-          }
-        }
-      }
-
-      if (atlas && atlas.landPath) {
-        setData(d => ({
-          ...d,
-          generatedAtlas: atlas,
-          activity: [{ time: "Just now", text: "Imported custom atlas map" }, ...(d.activity || [])].slice(0, 40),
-        }));
-        setShowAtlasImport(false);
-        return true;
-      }
-    } catch (e) {
-      console.warn("[WorldView] Atlas import failed:", e);
-    }
-    return false;
-  }, [setData]);
+  /* ── (Old atlas import handler removed — now using pre-generated SVG files) ── */
 
   // Deterministic hash seed
   const seed = useCallback((s) => { let h=0; for(let i=0;i<s.length;i++){h=((h<<5)-h)+s.charCodeAt(i);h|=0;} return h; }, []);
@@ -1215,59 +1162,32 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
               </defs>
 
               <g transform={`translate(${mapPan.x},${mapPan.y}) scale(${mapZoom})`}>
-                {/* ═══ LAYER 0: Base map — always visible ═══ */}
-                <rect x="0" y="0" width={MAP_W} height={MAP_H} rx="10" fill="url(#atlasSeaFill)" filter="url(#parchment)"/>
-                <rect x="0" y="0" width={MAP_W} height={MAP_H} fill="url(#waterPat)" opacity="0.22"/>
-                <path d={atlasLandPath} fill="rgba(218,204,168,0.22)" stroke="#6a9088" strokeWidth="14" opacity="0.55" strokeLinejoin="round"/>
-                <path d={atlasLandPath} fill="url(#atlasLandFill)" stroke="#5a7a73" strokeWidth="3.2" strokeLinejoin="round"/>
-                <path d={atlasLandPath} fill="url(#atlasContourPat)" opacity="0.2" stroke="none"/>
-                {atlasIslands.map((isle, idx) => (
-                  <g key={`atlas-isle-${idx}`}>
-                    <path d={isle.path} fill={isle.fill || "#d4c9a2"} opacity={isle.opacity || 0.96} stroke="#5a7a73" strokeWidth="2.4" strokeLinejoin="round"/>
-                    <path d={isle.path} fill="url(#atlasContourPat)" opacity="0.2" stroke="none"/>
-                  </g>
-                ))}
-                {atlasSeaLabels.map((sLabel, idx) => (
-                  <text key={`sea-label-${idx}`} x={sLabel.x} y={sLabel.y} textAnchor="middle" fill="#4a6b64" fontFamily="'Spectral', serif" fontSize={sLabel.size} letterSpacing={sLabel.spacing * 0.35} opacity={sLabel.opacity || 0.38} fontStyle="italic" transform={`rotate(${sLabel.rotate} ${sLabel.x} ${sLabel.y})`} style={{ pointerEvents:"none" }}>
-                    {sLabel.label}
-                  </text>
-                ))}
+                {/* ═══ LAYER 0: Base map — Python atlas image or JS fallback ═══ */}
+                {data.atlasMapSeed ? (
+                  <image href={`atlas-maps/atlas-${data.atlasMapSeed}.svg`} x="0" y="0" width={MAP_W} height={MAP_H} preserveAspectRatio="none" style={{ pointerEvents:"none" }} />
+                ) : (
+                  <>
+                    <rect x="0" y="0" width={MAP_W} height={MAP_H} rx="10" fill="url(#atlasSeaFill)" filter="url(#parchment)"/>
+                    <rect x="0" y="0" width={MAP_W} height={MAP_H} fill="url(#waterPat)" opacity="0.22"/>
+                    <path d={atlasLandPath} fill="rgba(218,204,168,0.22)" stroke="#6a9088" strokeWidth="14" opacity="0.55" strokeLinejoin="round"/>
+                    <path d={atlasLandPath} fill="url(#atlasLandFill)" stroke="#5a7a73" strokeWidth="3.2" strokeLinejoin="round"/>
+                    <path d={atlasLandPath} fill="url(#atlasContourPat)" opacity="0.2" stroke="none"/>
+                    {atlasIslands.map((isle, idx) => (
+                      <g key={`atlas-isle-${idx}`}>
+                        <path d={isle.path} fill={isle.fill || "#d4c9a2"} opacity={isle.opacity || 0.96} stroke="#5a7a73" strokeWidth="2.4" strokeLinejoin="round"/>
+                        <path d={isle.path} fill="url(#atlasContourPat)" opacity="0.2" stroke="none"/>
+                      </g>
+                    ))}
+                    {atlasSeaLabels.map((sLabel, idx) => (
+                      <text key={`sea-label-${idx}`} x={sLabel.x} y={sLabel.y} textAnchor="middle" fill="#4a6b64" fontFamily="'Spectral', serif" fontSize={sLabel.size} letterSpacing={sLabel.spacing * 0.35} opacity={sLabel.opacity || 0.38} fontStyle="italic" transform={`rotate(${sLabel.rotate} ${sLabel.x} ${sLabel.y})`} style={{ pointerEvents:"none" }}>
+                        {sLabel.label}
+                      </text>
+                    ))}
+                  </>
+                )}
 
-                {/* ═══ LAYER 1: Continental geography — ocean, coastlines, major water ═══ */}
-                {false && <>{/* Western ocean */}
-                <path d="M0,0 L0,4500 Q300,4200 250,3600 Q180,3000 320,2400 Q250,1800 200,1200 Q300,600 180,0 Z" fill="var(--crimson-soft)" opacity="0.25"/>
-                <path d="M0,0 L0,4500 Q300,4200 250,3600 Q180,3000 320,2400 Q250,1800 200,1200 Q300,600 180,0 Z" fill="url(#waterPat)"/>
-                {/* Eastern ocean */}
-                <path d="M6000,0 L6000,4500 Q5700,4100 5750,3400 Q5800,2700 5680,2000 Q5750,1300 5800,600 Q5700,200 5750,0 Z" fill="var(--crimson-soft)" opacity="0.2"/>
-                <path d="M6000,0 L6000,4500 Q5700,4100 5750,3400 Q5800,2700 5680,2000 Q5750,1300 5800,600 Q5700,200 5750,0 Z" fill="url(#waterPat)"/>
-                {/* Northern sea */}
-                <path d="M0,0 L6000,0 L6000,200 Q5000,350 4000,250 Q3000,400 2000,300 Q1000,380 0,250 Z" fill="var(--crimson-soft)" opacity="0.2"/>
-                <path d="M0,0 L6000,0 L6000,200 Q5000,350 4000,250 Q3000,400 2000,300 Q1000,380 0,250 Z" fill="url(#waterPat)"/>
-                {/* Southern sea */}
-                <path d="M0,4500 L6000,4500 L6000,4250 Q5000,4100 4000,4200 Q3000,4080 2000,4180 Q1000,4100 0,4220 Z" fill="var(--crimson-soft)" opacity="0.2"/>
-                <path d="M0,4500 L6000,4500 L6000,4250 Q5000,4100 4000,4200 Q3000,4080 2000,4180 Q1000,4100 0,4220 Z" fill="url(#waterPat)"/>
-                {/* Inland sea */}
-                <ellipse cx="3000" cy="2000" rx="400" ry="250" fill="var(--crimson-soft)" opacity="0.18"/>
-                <ellipse cx="3000" cy="2000" rx="400" ry="250" fill="url(#waterPat)"/>
-                {/* Large lake */}
-                <ellipse cx="1600" cy="3200" rx="200" ry="140" fill="var(--crimson-soft)" opacity="0.15"/>
-                <ellipse cx="1600" cy="3200" rx="200" ry="140" fill="url(#waterPat)"/>
-                {/* Bay */}
-                <path d="M4800,4500 Q4600,4000 4900,3800 Q5200,3700 5400,4000 Q5600,4300 5500,4500 Z" fill="var(--crimson-soft)" opacity="0.15"/>
-                <path d="M4800,4500 Q4600,4000 4900,3800 Q5200,3700 5400,4000 Q5600,4300 5500,4500 Z" fill="url(#waterPat)"/>
-
-                {/* Major rivers */}
-                <path d="M1800,300 Q1850,600 1700,1000 Q1600,1400 1650,1800 Q1700,2200 1600,2600 Q1550,3000 1600,3200" stroke="var(--crimson-border)" strokeWidth="3" fill="none" opacity="0.3" strokeLinecap="round"/>
-                <path d="M3200,400 Q3100,800 3150,1200 Q3050,1600 3000,2000" stroke="var(--crimson-border)" strokeWidth="2.5" fill="none" opacity="0.25" strokeLinecap="round"/>
-                <path d="M4500,600 Q4400,1000 4500,1400 Q4550,1800 4400,2200 Q4350,2600 4500,3000 Q4600,3400 4500,3800" stroke="var(--crimson-border)" strokeWidth="2.5" fill="none" opacity="0.25" strokeLinecap="round"/>
-                {/* Tributary rivers — visible at kingdom zoom */}
-                {mapZoom > 0.5 && <>
-                  <path d="M1200,1200 Q1400,1300 1650,1400" stroke="var(--crimson-border)" strokeWidth="1.5" fill="none" opacity="0.2" strokeLinecap="round"/>
-                  <path d="M2200,1800 Q2500,1900 3000,2000" stroke="var(--crimson-border)" strokeWidth="1.5" fill="none" opacity="0.18" strokeLinecap="round"/>
-                  <path d="M3800,1200 Q3600,1400 3150,1600" stroke="var(--crimson-border)" strokeWidth="1.2" fill="none" opacity="0.15" strokeLinecap="round"/>
-                  <path d="M5200,2000 Q4900,2100 4500,2200" stroke="var(--crimson-border)" strokeWidth="1.2" fill="none" opacity="0.15" strokeLinecap="round"/>
-                </>}
-                </>}
+                {/* ═══ LAYERS 1-3: JS-rendered geography — hidden when Python atlas is active ═══ */}
+                {!data.atlasMapSeed && <>
                 <g clipPath="url(#atlasLandClip)">
                   {atlasWaterBodies.map((body, idx) => (
                     body.shape === "ellipse"
@@ -1287,7 +1207,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                   </text>
                 ))}
 
-                {/* ═══ LAYER 2: Kingdom territories — visible at continent/kingdom zoom ═══ */}
+                {/* Kingdom territories — visible at continent/kingdom zoom */}
                 {mapZoom < 2.5 && atlasTerritories.map((t,i) => {
                   const activeProvince = atlasProvinceId === t.id || selectedWorldNode?.atlasProvinceId === t.id;
                   return (
@@ -1302,8 +1222,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                   );
                 })}
 
-                {/* ═══ LAYER 3: Terrain features — scale-dependent ═══ */}
-                {/* Mountains — always visible (they define the landscape) */}
+                {/* Mountains */}
                 <g clipPath="url(#atlasLandClip)">
                   {atlasMountainRanges.map((range) => (
                     <g key={`ridge-${range.id}`}>
@@ -1312,20 +1231,21 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                     </g>
                   ))}
                 </g>
+                </>}
 
                 {/* ═══ LAYER 4: Roads — major roads at kingdom zoom, minor at local ═══ */}
-                {<g clipPath="url(#atlasLandClip)" opacity={mapZoom > 0.5 ? Math.min(1, (mapZoom-0.5)*1.5) : 0} style={{ transition:"opacity 0.3s" }}>
+                {<g clipPath={!data.atlasMapSeed ? "url(#atlasLandClip)" : undefined} opacity={mapZoom > 0.5 ? Math.min(1, (mapZoom-0.5)*1.5) : 0} style={{ transition:"opacity 0.3s" }}>
                   {roadList.filter(rd=>rd.major).map((rd,i) => (
                     <path key={`mroad-${i}`} d={rd.path} stroke="#b8a67a" strokeWidth={mapZoom > 1.5 ? 1 : 1.8} fill="none" strokeDasharray={mapZoom > 2 ? "12,14" : "22,20"} opacity="0.32" strokeLinecap="round"/>
                   ))}
                 </g>}
-                {mapZoom > 0.8 && <g clipPath="url(#atlasLandClip)" opacity={Math.min(1, (mapZoom-0.8)*2)} style={{ transition:"opacity 0.3s" }}>
+                {mapZoom > 0.8 && <g clipPath={!data.atlasMapSeed ? "url(#atlasLandClip)" : undefined} opacity={Math.min(1, (mapZoom-0.8)*2)} style={{ transition:"opacity 0.3s" }}>
                   {roadList.filter(rd=>!rd.major).map((rd,i) => (
                     <path key={`road-${i}`} d={rd.path} stroke="#c4b48c" strokeWidth={mapZoom > 2 ? 0.65 : 1} fill="none" strokeDasharray="10,12" opacity="0.18" strokeLinecap="round"/>
                   ))}
                 </g>}
                 {activeRoute && !activeRoute.blocked && (
-                  <g clipPath="url(#atlasLandClip)">
+                  <g clipPath={!data.atlasMapSeed ? "url(#atlasLandClip)" : undefined}>
                     {activeRoute.segments.map((rd, i) => (
                       <path key={`active-route-${i}`} d={rd.path} stroke="#556e52" strokeWidth={mapZoom > 1.8 ? 2.5 : 4.5} fill="none" opacity="0.62" strokeLinecap="round" strokeDasharray="22,16">
                         {false && <animate attributeName="stroke-dashoffset" from="0" to="-68" dur="2.4s" repeatCount="indefinite" />}
@@ -1474,38 +1394,55 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
               </div>
               {isDM && (
                 <>
-                  <button onClick={() => setShowMapGenModal(true)} style={{ padding:"5px 12px", background:"rgba(30,26,22,0.85)", backdropFilter:"blur(8px)", border:"1px solid rgba(232,186,64,0.35)", borderRadius:"4px", fontFamily:"'Cinzel', serif", fontSize:9, color:"#e8ba40", letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", boxShadow:"0 2px 10px rgba(0,0,0,0.3)", transition:"all 0.2s" }}
-                    onMouseEnter={e => { e.target.style.borderColor = "rgba(232,186,64,0.7)"; e.target.style.color = "#f5d66a"; }}
-                    onMouseLeave={e => { e.target.style.borderColor = "rgba(232,186,64,0.35)"; e.target.style.color = "#e8ba40"; }}
-                    title="Generate a new procedural world map"
-                  >Generate Map</button>
-                  {data.generatedAtlas && (
+                  <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+                    <select
+                      value={data.atlasMapSeed || ""}
+                      onChange={e => {
+                        const seedVal = e.target.value;
+                        if (seedVal) {
+                          const atlas = generateAtlasData(parseInt(seedVal));
+                          const { regions, factions } = generateRegionsAndFactions(atlas);
+                          setData(d => ({
+                            ...d,
+                            atlasMapSeed: seedVal,
+                            generatedAtlas: atlas,
+                            regions: regions,
+                            factions: factions,
+                            activity: [{ time: "Just now", text: `Generated world map (seed ${seedVal})` }, ...(d.activity || [])].slice(0, 40),
+                          }));
+                        } else {
+                          setData(d => { const { atlasMapSeed, generatedAtlas, ...rest } = d; return { ...rest, activity: [{ time: "Just now", text: "Reverted to default map" }, ...(d.activity || [])].slice(0, 40) }; });
+                        }
+                      }}
+                      style={{ padding:"4px 8px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(232,186,64,0.25)", borderRadius:"4px", fontFamily:"'Cinzel', serif", fontSize:9, color:"#c9a85c", outline:"none", cursor:"pointer", letterSpacing:"1px" }}
+                    >
+                      <option value="">Default Map</option>
+                      {[1,2,3,4,5,6,7,8,9,10].map(s => <option key={s} value={s}>World Seed {s}</option>)}
+                    </select>
                     <button onClick={() => {
-                      const atlas = generateAtlasData(Date.now());
+                      const current = parseInt(data.atlasMapSeed || "0");
+                      const next = (current % 10) + 1;
+                      const atlas = generateAtlasData(next);
                       const { regions, factions } = generateRegionsAndFactions(atlas);
                       setData(d => ({
                         ...d,
+                        atlasMapSeed: String(next),
                         generatedAtlas: atlas,
                         regions: regions,
                         factions: factions,
-                        activity: [{ time: "Just now", text: `Regenerated atlas with ${regions.length} regions and ${factions.length} factions` }, ...(d.activity || [])].slice(0, 40),
+                        activity: [{ time: "Just now", text: `Regenerated world map (seed ${next})` }, ...(d.activity || [])].slice(0, 40),
                       }));
-                    }} style={{ padding:"5px 12px", background:"rgba(30,26,22,0.85)", backdropFilter:"blur(8px)", border:"1px solid rgba(232,186,64,0.35)", borderRadius:"4px", fontFamily:"'Cinzel', serif", fontSize:9, color:"#c9a85c", letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", boxShadow:"0 2px 10px rgba(0,0,0,0.3)", transition:"all 0.2s" }}
-                      onMouseEnter={e => { e.target.style.borderColor = "rgba(232,186,64,0.7)"; e.target.style.color = "#e8ba40"; }}
-                      onMouseLeave={e => { e.target.style.borderColor = "rgba(232,186,64,0.35)"; e.target.style.color = "#c9a85c"; }}
-                      title="Generate a new map with a different random seed"
+                    }} style={{ padding:"5px 12px", background:"rgba(30,26,22,0.85)", backdropFilter:"blur(8px)", border:"1px solid rgba(232,186,64,0.35)", borderRadius:"4px", fontFamily:"'Cinzel', serif", fontSize:9, color:"#e8ba40", letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", boxShadow:"0 2px 10px rgba(0,0,0,0.3)", transition:"all 0.2s", whiteSpace:"nowrap" }}
+                      onMouseEnter={e => { e.target.style.borderColor = "rgba(232,186,64,0.7)"; e.target.style.color = "#f5d66a"; }}
+                      onMouseLeave={e => { e.target.style.borderColor = "rgba(232,186,64,0.35)"; e.target.style.color = "#e8ba40"; }}
+                      title="Generate a new world with the next seed"
                     >Regenerate</button>
-                  )}
-                  <button onClick={() => setShowAtlasImport(true)} style={{ padding:"5px 12px", background:"rgba(30,26,22,0.85)", backdropFilter:"blur(8px)", border:"1px solid rgba(232,186,64,0.35)", borderRadius:"4px", fontFamily:"'Cinzel', serif", fontSize:9, color:"#e8ba40", letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", boxShadow:"0 2px 10px rgba(0,0,0,0.3)", transition:"all 0.2s" }}
-                    onMouseEnter={e => { e.target.style.borderColor = "rgba(232,186,64,0.7)"; e.target.style.color = "#f5d66a"; }}
-                    onMouseLeave={e => { e.target.style.borderColor = "rgba(232,186,64,0.35)"; e.target.style.color = "#e8ba40"; }}
-                    title="Import a custom atlas generated by atlas-to-campaign.py"
-                  >Import Atlas</button>
+                  </div>
                 </>
               )}
-              {data.generatedAtlas && (
+              {data.atlasMapSeed && (
                 <div style={{ padding:"3px 10px", background:"rgba(46,120,76,0.18)", border:"1px solid rgba(46,120,76,0.35)", borderRadius:"3px", fontFamily:T.ui, fontSize:8, color:"#5ec48a", letterSpacing:"1.2px", textTransform:"uppercase", pointerEvents:"none" }}>
-                  Custom Atlas
+                  Seed: {data.atlasMapSeed}
                 </div>
               )}
               {false && mapZoom > 2.0 && <div style={{ padding:"4px 10px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"2px", fontFamily:T.body, fontSize:9, color:T.textMuted, fontStyle:"italic", opacity:0.7, pointerEvents:"none" }}>
@@ -1513,208 +1450,9 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
               </div>}
             </div>
 
-            {/* Atlas Import Modal */}
-            {showAtlasImport && (
-              <div style={{ position:"absolute", inset:0, zIndex:100, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.6)", backdropFilter:"blur(4px)" }}
-                onClick={e => { if (e.target === e.currentTarget) setShowAtlasImport(false); }}>
-                <div style={{ width:560, maxHeight:"80vh", background:"#1e1a16", border:"1px solid rgba(232,186,64,0.3)", borderRadius:8, padding:24, boxShadow:"0 24px 64px rgba(0,0,0,0.7)", display:"flex", flexDirection:"column", gap:14 }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                    <h3 style={{ margin:0, fontFamily:"'Cinzel', serif", fontSize:16, color:"#e8ba40", letterSpacing:"1.5px" }}>Import Generated Atlas</h3>
-                    <button onClick={() => setShowAtlasImport(false)} style={{ background:"none", border:"none", color:"#888", fontSize:18, cursor:"pointer", padding:"4px 8px" }}>&times;</button>
-                  </div>
-                  <p style={{ margin:0, fontFamily:T.body, fontSize:12, color:"#a09080", lineHeight:1.6 }}>
-                    Paste the JavaScript output from <code style={{ background:"rgba(255,255,255,0.06)", padding:"2px 6px", borderRadius:3, fontSize:11, color:"#d4c4a0" }}>atlas-to-campaign.py</code> below.
-                    This replaces the default map with your custom generated world.
-                  </p>
-                  <textarea
-                    id="atlasImportTextarea"
-                    placeholder="const ATLAS_LAND_PATH = &quot;M ...&quot;;\nconst ATLAS_ISLANDS = [ ... ];\n..."
-                    style={{ width:"100%", height:220, background:"#0e0c0a", border:"1px solid rgba(255,255,255,0.1)", borderRadius:4, padding:12, fontFamily:"'Courier New', monospace", fontSize:11, color:"#c8b890", resize:"vertical", outline:"none" }}
-                  />
-                  <div style={{ display:"flex", gap:10, justifyContent:"flex-end" }}>
-                    {data.generatedAtlas && (
-                      <button onClick={() => {
-                        setData(d => {
-                          const { generatedAtlas, ...rest } = d;
-                          return { ...rest, activity: [{ time: "Just now", text: "Reverted to default atlas map" }, ...(d.activity || [])].slice(0, 40) };
-                        });
-                        setShowAtlasImport(false);
-                      }} style={{ padding:"8px 18px", background:"rgba(180,60,60,0.15)", border:"1px solid rgba(180,60,60,0.4)", borderRadius:4, fontFamily:T.ui, fontSize:11, color:"#d46a6a", cursor:"pointer", letterSpacing:"0.5px" }}>
-                        Revert to Default
-                      </button>
-                    )}
-                    <button onClick={() => setShowAtlasImport(false)} style={{ padding:"8px 18px", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:4, fontFamily:T.ui, fontSize:11, color:"#a09080", cursor:"pointer" }}>
-                      Cancel
-                    </button>
-                    <button onClick={() => {
-                      const ta = document.getElementById("atlasImportTextarea");
-                      if (ta && ta.value.trim()) {
-                        const ok = importAtlasData(ta.value.trim());
-                        if (!ok) alert("Import failed — check the console for details. Make sure you pasted the full JS output.");
-                      }
-                    }} style={{ padding:"8px 22px", background:"linear-gradient(135deg, rgba(232,186,64,0.2), rgba(200,160,40,0.1))", border:"1px solid rgba(232,186,64,0.5)", borderRadius:4, fontFamily:"'Cinzel', serif", fontSize:11, color:"#e8ba40", cursor:"pointer", letterSpacing:"1px" }}>
-                      Import
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Old Atlas Import Modal — removed (now using pre-generated SVGs) */}
 
-            {/* Map Generation Modal */}
-            {showMapGenModal && (
-              <div style={{ position:"absolute", inset:0, zIndex:100, display:"flex", alignItems:"center", justifyContent:"center", background:"rgba(0,0,0,0.6)", backdropFilter:"blur(4px)" }}
-                onClick={e => { if (e.target === e.currentTarget) setShowMapGenModal(false); }}>
-                <div style={{ width:700, maxHeight:"90vh", background:"#1e1a16", border:"1px solid rgba(232,186,64,0.3)", borderRadius:8, padding:28, boxShadow:"0 24px 64px rgba(0,0,0,0.7)", display:"flex", flexDirection:"column", gap:18, overflow:"auto" }}>
-                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                    <h3 style={{ margin:0, fontFamily:"'Cinzel', serif", fontSize:18, color:"#e8ba40", letterSpacing:"2px" }}>Procedural Map Generator</h3>
-                    <button onClick={() => setShowMapGenModal(false)} style={{ background:"none", border:"none", color:"#888", fontSize:20, cursor:"pointer", padding:"4px 8px" }}>&times;</button>
-                  </div>
-
-                  <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:18 }}>
-                    {/* Left column: Controls */}
-                    <div style={{ display:"flex", flexDirection:"column", gap:14 }}>
-                      {/* Seed */}
-                      <div>
-                        <label style={{ display:"block", fontFamily:T.ui, fontSize:11, color:"#a09080", letterSpacing:"1px", textTransform:"uppercase", marginBottom:6 }}>Seed (for reproducible maps)</label>
-                        <div style={{ display:"flex", gap:6 }}>
-                          <input
-                            type="text"
-                            value={genSeed}
-                            onChange={e => setGenSeed(e.target.value)}
-                            placeholder="e.g., 12345"
-                            style={{ flex:1, background:"#0e0c0a", border:"1px solid rgba(255,255,255,0.1)", borderRadius:4, padding:"8px 12px", fontFamily:"'Courier New', monospace", fontSize:12, color:"#c8b890", outline:"none" }}
-                          />
-                          <button onClick={() => setGenSeed(Math.floor(Math.random() * 1000000).toString())} style={{ padding:"8px 12px", background:"rgba(232,186,64,0.15)", border:"1px solid rgba(232,186,64,0.3)", borderRadius:4, fontFamily:T.ui, fontSize:11, color:"#e8ba40", cursor:"pointer", letterSpacing:"0.5px" }}>
-                            Random
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Map Size */}
-                      <div>
-                        <label style={{ display:"block", fontFamily:T.ui, fontSize:11, color:"#a09080", letterSpacing:"1px", textTransform:"uppercase", marginBottom:6 }}>Map Size</label>
-                        <div style={{ display:"flex", gap:6 }}>
-                          {["small", "medium", "large"].map(size => (
-                            <button
-                              key={size}
-                              onClick={() => setGenMapSize(size)}
-                              style={{
-                                flex:1,
-                                padding:"8px 12px",
-                                background: genMapSize === size ? "rgba(232,186,64,0.25)" : "rgba(232,186,64,0.08)",
-                                border: genMapSize === size ? "1px solid rgba(232,186,64,0.6)" : "1px solid rgba(232,186,64,0.2)",
-                                borderRadius:4,
-                                fontFamily:T.ui,
-                                fontSize:11,
-                                color: genMapSize === size ? "#f5d66a" : "#c9a85c",
-                                cursor:"pointer",
-                                letterSpacing:"0.5px",
-                                textTransform:"capitalize",
-                                transition:"all 0.2s"
-                              }}
-                            >
-                              {size}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Climate Type */}
-                      <div>
-                        <label style={{ display:"block", fontFamily:T.ui, fontSize:11, color:"#a09080", letterSpacing:"1px", textTransform:"uppercase", marginBottom:6 }}>Climate</label>
-                        <select
-                          value={genClimate}
-                          onChange={e => setGenClimate(e.target.value)}
-                          style={{
-                            width:"100%",
-                            background:"#0e0c0a",
-                            border:"1px solid rgba(255,255,255,0.1)",
-                            borderRadius:4,
-                            padding:"8px 12px",
-                            fontFamily:T.ui,
-                            fontSize:11,
-                            color:"#c8b890",
-                            cursor:"pointer",
-                            outline:"none"
-                          }}
-                        >
-                          <option value="temperate">Temperate</option>
-                          <option value="tropical">Tropical</option>
-                          <option value="arctic">Arctic</option>
-                          <option value="desert">Desert</option>
-                          <option value="mixed">Mixed</option>
-                        </select>
-                      </div>
-
-                      {/* Continents (placeholder for future enhancement) */}
-                      <div>
-                        <label style={{ display:"block", fontFamily:T.ui, fontSize:11, color:"#a09080", letterSpacing:"1px", textTransform:"uppercase", marginBottom:6 }}>Continents</label>
-                        <div style={{ display:"flex", alignItems:"center", gap:10 }}>
-                          <input
-                            type="range"
-                            min="1"
-                            max="4"
-                            value={genContinents}
-                            onChange={e => setGenContinents(parseInt(e.target.value))}
-                            style={{ flex:1, cursor:"pointer" }}
-                          />
-                          <span style={{ fontFamily:T.ui, fontSize:12, color:"#c8b890", minWidth:20, textAlign:"center" }}>{genContinents}</span>
-                        </div>
-                      </div>
-
-                      <div style={{ borderTop:"1px solid rgba(255,255,255,0.1)", paddingTop:12, marginTop:6 }}>
-                        <p style={{ margin:"0 0 10px 0", fontFamily:T.body, fontSize:11, color:"#a09080", lineHeight:1.5 }}>
-                          Preview shows terrain types: water, beaches, plains, forests, hills, mountains, and climate-specific features.
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Right column: Preview */}
-                    <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
-                      <label style={{ display:"block", fontFamily:T.ui, fontSize:11, color:"#a09080", letterSpacing:"1px", textTransform:"uppercase" }}>Terrain Preview</label>
-                      <canvas
-                        ref={canvasRef}
-                        style={{
-                          width:"100%",
-                          height:"auto",
-                          aspectRatio:"4/3",
-                          background:"#0e0c0a",
-                          border:"1px solid rgba(255,255,255,0.1)",
-                          borderRadius:4,
-                          display:"block",
-                          imageRendering:"pixelated"
-                        }}
-                      />
-                      <div style={{ fontFamily:T.body, fontSize:10, color:"#a09080", fontStyle:"italic", lineHeight:1.4 }}>
-                        This preview generates terrain based on the seed and climate. The actual campaign map will be created with procedurally-generated provinces, factions, and regions.
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Action buttons */}
-                  <div style={{ display:"flex", gap:10, justifyContent:"flex-end", borderTop:"1px solid rgba(255,255,255,0.1)", paddingTop:14 }}>
-                    <button onClick={() => setShowMapGenModal(false)} style={{ padding:"10px 20px", background:"rgba(255,255,255,0.04)", border:"1px solid rgba(255,255,255,0.12)", borderRadius:4, fontFamily:T.ui, fontSize:12, color:"#a09080", cursor:"pointer" }}>
-                      Cancel
-                    </button>
-                    <button onClick={() => {
-                      const seedNum = parseInt(genSeed) || Date.now();
-                      const atlas = generateAtlasData(seedNum);
-                      const { regions, factions } = generateRegionsAndFactions(atlas);
-                      setData(d => ({
-                        ...d,
-                        generatedAtlas: atlas,
-                        regions: regions,
-                        factions: factions,
-                        activity: [{ time: "Just now", text: `Generated new atlas (${genMapSize} map, ${genClimate} climate, seed: ${seedNum}) with ${regions.length} regions and ${factions.length} factions` }, ...(d.activity || [])].slice(0, 40),
-                      }));
-                      setShowMapGenModal(false);
-                    }} style={{ padding:"10px 24px", background:"linear-gradient(135deg, rgba(232,186,64,0.25), rgba(200,160,40,0.12))", border:"1px solid rgba(232,186,64,0.6)", borderRadius:4, fontFamily:"'Cinzel', serif", fontSize:12, color:"#f5d66a", cursor:"pointer", letterSpacing:"1px", fontWeight:"600" }}>
-                      Generate Map
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
+            {/* Old Map Generation Modal — removed (now using seed selector + pre-generated atlas SVGs) */}
 
             {/* Minimap overlay — always visible when zoomed past continent */}
             {false && mapZoom > 0.5 && (

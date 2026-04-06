@@ -725,14 +725,18 @@ def point_and_tangent_at_ratio(points: Sequence[Point], ratio: float) -> tuple[P
 
 def text_box(text: str, x: float, y: float, size: int, anchor: str = "middle",
              letter_spacing: float = 0.0) -> Rect:
-    char_width = len(text) * size * 0.60
+    # Use 0.72 factor — serif fonts with letter-spacing render wider than monospace estimates
+    char_width = len(text) * size * 0.72
     spacing_extra = max(0, len(text) - 1) * letter_spacing
-    width = max(28.0, char_width + spacing_extra)
+    width = max(32.0, char_width + spacing_extra)
+    # Increase vertical extent to account for ascenders/descenders and halo strokes
+    top = y - size * 0.90
+    bottom = y + size * 0.38
     if anchor == "start":
-        return x, y - size * 0.82, x + width, y + size * 0.28
+        return x, top, x + width, bottom
     if anchor == "end":
-        return x - width, y - size * 0.82, x, y + size * 0.28
-    return x - width / 2.0, y - size * 0.82, x + width / 2.0, y + size * 0.28
+        return x - width, top, x, bottom
+    return x - width / 2.0, top, x + width / 2.0, bottom
 
 
 def overlaps(box: Rect, others: Iterable[Rect], padding: float = 8.0) -> bool:
@@ -1468,6 +1472,43 @@ def _min_distance_to_polygon(island_pts: Sequence[Point], mainland_pts: Sequence
     return best
 
 
+def _islands_overlap(island_a: Sequence[Point], island_b: Sequence[Point], margin: float = 20.0) -> bool:
+    """Check if two islands overlap or are closer than *margin* pixels."""
+    # Quick bounding-box pre-check
+    ax = [p[0] for p in island_a]
+    ay = [p[1] for p in island_a]
+    bx = [p[0] for p in island_b]
+    by = [p[1] for p in island_b]
+    if max(ax) + margin < min(bx) or max(bx) + margin < min(ax):
+        return False
+    if max(ay) + margin < min(by) or max(by) + margin < min(ay):
+        return False
+    # Sample vertex containment
+    for pt in island_a[::max(1, len(island_a) // 10)]:
+        if point_in_polygon(pt, island_b):
+            return True
+    for pt in island_b[::max(1, len(island_b) // 10)]:
+        if point_in_polygon(pt, island_a):
+            return True
+    # Minimum distance check
+    best = float("inf")
+    sa = island_a[::max(1, len(island_a) // 12)]
+    sb = island_b[::max(1, len(island_b) // 12)]
+    for pa in sa:
+        for pb in sb:
+            d = math.hypot(pa[0] - pb[0], pa[1] - pb[1])
+            if d < best:
+                best = d
+    return best < margin
+
+
+def island_bbox(island_pts: Sequence[Point], padding: float = 12.0) -> Rect:
+    """Return axis-aligned bounding box for an island with padding."""
+    xs = [p[0] for p in island_pts]
+    ys = [p[1] for p in island_pts]
+    return (min(xs) - padding, min(ys) - padding, max(xs) + padding, max(ys) + padding)
+
+
 def generate_islands(cfg: AtlasConfig, rng: random.Random, mainland: Sequence[Point]) -> list[list[Point]]:
     """Generate procedural islands placed relative to the actual mainland.
 
@@ -1500,7 +1541,15 @@ def generate_islands(cfg: AtlasConfig, rng: random.Random, mainland: Sequence[Po
         # Skip islands that overlap with mainland or are too close
         if _island_overlaps_mainland(island_pts, mainland):
             continue
-        if _min_distance_to_polygon(island_pts, mainland) < 40:
+        if _min_distance_to_polygon(island_pts, mainland) < 55:
+            continue
+        # Skip islands that overlap with previously accepted islands
+        dominated = False
+        for existing in islands:
+            if _islands_overlap(island_pts, existing, margin=45.0):
+                dominated = True
+                break
+        if dominated:
             continue
         islands.append(island_pts)
     return islands
@@ -1648,9 +1697,16 @@ def generate_region_templates(grid: TerrainGrid, cfg: AtlasConfig, rng: random.R
 
     # Distinct parchment colors for regions
     region_colors = [
-        "#c4b880", "#d8c898", "#a8c0a0", "#d4bc88",
-        "#b8c4a0", "#dcc8a0", "#b4b088", "#c8c098",
-        "#c0a878", "#b0c4b0",
+        "#ccc088",  # warm wheat
+        "#a8b8a0",  # sage green
+        "#c8b490",  # tan
+        "#a0b0b8",  # cool grey-blue
+        "#b8c098",  # muted olive
+        "#c4b0a8",  # dusty clay
+        "#a8c0b0",  # pale moss
+        "#c8c0a0",  # dry straw
+        "#b0a8b0",  # warm grey
+        "#b8c4a0",  # faded green
     ]
 
     templates: list[RegionTemplate] = []
@@ -1975,7 +2031,7 @@ def generate_island_templates(mainland: Sequence[Point], cfg: AtlasConfig, rng: 
             ix = clamp(ix, 0.03 * cfg.width, 0.97 * cfg.width)
             iy = clamp(iy, 0.03 * cfg.height, 0.97 * cfg.height)
 
-            if _too_close_to_placed(ix, iy, 50):
+            if _too_close_to_placed(ix, iy, 80):
                 continue
 
             radius = rng.uniform(0.022, 0.05) * cfg.width * (1.0 - 0.08 * j)
@@ -2007,7 +2063,7 @@ def generate_island_templates(mainland: Sequence[Point], cfg: AtlasConfig, rng: 
             sx = clamp(sx, 0.03 * cfg.width, 0.97 * cfg.width)
             sy = clamp(sy, 0.03 * cfg.height, 0.97 * cfg.height)
 
-            if _too_close_to_placed(sx, sy, 40):
+            if _too_close_to_placed(sx, sy, 65):
                 continue
 
             radius = rng.uniform(0.014, 0.032) * cfg.width
@@ -2029,7 +2085,7 @@ def generate_island_templates(mainland: Sequence[Point], cfg: AtlasConfig, rng: 
         ox = clamp(coast_pt[0] + dist * math.cos(angle), 0.03 * cfg.width, 0.97 * cfg.width)
         oy = clamp(coast_pt[1] + dist * math.sin(angle), 0.03 * cfg.height, 0.97 * cfg.height)
 
-        if _too_close_to_placed(ox, oy, 35):
+        if _too_close_to_placed(ox, oy, 55):
             continue
 
         radius = rng.uniform(0.007, 0.018) * cfg.width
@@ -4258,7 +4314,7 @@ def render_regions(svg: SvgCanvas, grid: TerrainGrid, regions: Sequence[RegionMo
     for region in regions:
         if not region.cells:
             continue
-        svg.element("path", d=region_rows_to_path(grid, region.cells), fill=region.template.fill, opacity=0.42, stroke="none")
+        svg.element("path", d=region_rows_to_path(grid, region.cells), fill=region.template.fill, opacity=0.48, stroke="none")
 
     # Trace and smooth border chains for natural flowing boundaries
     border_chains = _trace_border_chains(grid)
@@ -4271,20 +4327,20 @@ def render_regions(svg: SvgCanvas, grid: TerrainGrid, regions: Sequence[RegionMo
             "path", d=bd,
             fill="none",
             stroke=palette.border,
-            stroke_width=7.0,
+            stroke_width=8.0,
             stroke_linecap="round",
             stroke_linejoin="round",
-            opacity=0.10,
+            opacity=0.15,
         )
         # Solid kingdom border line
         svg.element(
             "path", d=bd,
             fill="none",
             stroke=palette.border,
-            stroke_width=1.8,
+            stroke_width=2.2,
             stroke_linecap="round",
             stroke_linejoin="round",
-            opacity=0.45,
+            opacity=0.55,
         )
     svg.group_close()
 
@@ -4421,6 +4477,13 @@ def _trace_contour_chains(grid: TerrainGrid, threshold: float) -> list[list[Poin
                 changed = True
 
         if len(chain) >= 3:
+            # Compute chain length to filter out tiny circular artifacts
+            chain_len = sum(distance(chain[k], chain[k + 1]) for k in range(len(chain) - 1))
+            if chain_len < step * 8:
+                continue  # skip very short contour loops
+            # Also skip chains that form tight closed loops (circle artifacts)
+            if distance(chain[0], chain[-1]) < step * 3 and chain_len < step * 25:
+                continue
             chains.append(chain)
 
     return chains
@@ -4692,21 +4755,39 @@ def render_mountains(svg: SvgCanvas, mountain_ranges: Sequence[MountainRange], p
     svg.group_close()
 
 
-def render_labels(svg: SvgCanvas, cfg: AtlasConfig, regions: Sequence[RegionModel], lakes: Sequence[LakeBody], mountain_ranges: Sequence[MountainRange], palette: Palette, sea_names: Sequence[str] | None = None) -> list[Rect]:
+def render_labels(svg: SvgCanvas, cfg: AtlasConfig, regions: Sequence[RegionModel], lakes: Sequence[LakeBody], mountain_ranges: Sequence[MountainRange], palette: Palette, sea_names: Sequence[str] | None = None, islands: Sequence[Sequence[Point]] | None = None) -> list[Rect]:
     reserved: list[Rect] = []
+
+    # Pre-seed reserved with fixed UI elements so all labels avoid them:
+    # Title (bottom-right)
+    title_x = cfg.width * 0.828
+    title_y = cfg.height * 0.932
+    title_size = int(cfg.width * 0.038)
+    reserved.append(text_box("PLACEHOLDER_TITLE", title_x, title_y, title_size, letter_spacing=10))
+    # Scale bar area (bottom-left)
+    reserved.append((50.0, cfg.height - 70.0, 170.0, cfg.height - 25.0))
+    # Compass rose area — generous box around each candidate corner
+    for cx_c, cy_c in [(120, cfg.height - 120), (cfg.width - 120, cfg.height - 120),
+                        (120, 120), (cfg.width - 120, 120)]:
+        reserved.append((cx_c - 60, cy_c - 70, cx_c + 60, cy_c + 60))
+
+    # Seed island bounding boxes into reserved so labels avoid them
+    if islands:
+        for isle in islands:
+            reserved.append(island_bbox(isle, padding=28.0))
 
     # ── Region names: medium serif with letter-spacing, collision-aware ──
     for region in regions:
         x, y = region.label_xy
         name = region.template.name
         rbox = text_box(name, x, y, 32, letter_spacing=5)
-        # Nudge if overlapping existing labels — generous padding and wide search
-        if overlaps(rbox, reserved, padding=24.0):
+        # Always search for the best non-overlapping position
+        if overlaps(rbox, reserved, padding=30.0):
             found = False
-            for dy_off in [0, -35, 35, -70, 70, -105, 105]:
-                for dx_off in [0, -60, 60, -120, 120, -180, 180]:
+            for dy_off in [0, -40, 40, -80, 80, -120, 120, -160, 160]:
+                for dx_off in [0, -70, 70, -140, 140, -210, 210, -280, 280]:
                     rbox2 = text_box(name, x + dx_off, y + dy_off, 32, letter_spacing=5)
-                    if not overlaps(rbox2, reserved, padding=24.0):
+                    if not overlaps(rbox2, reserved, padding=30.0):
                         x = x + dx_off
                         y = y + dy_off
                         rbox = rbox2
@@ -4746,7 +4827,10 @@ def render_labels(svg: SvgCanvas, cfg: AtlasConfig, regions: Sequence[RegionMode
         )
         # Subtitle (e.g., "(Dotharlum)") rendered below in italic
         if region.template.subtitle:
-            reserved.append(text_box(region.template.subtitle, x, y + 22, 14))
+            sub_box = text_box(region.template.subtitle, x, y + 22, 14)
+            if overlaps(sub_box, reserved, padding=8.0):
+                continue  # skip subtitle if it would overlap
+            reserved.append(sub_box)
             svg.text(
                 region.template.subtitle,
                 x=f"{x:.1f}",
@@ -4768,12 +4852,12 @@ def render_labels(svg: SvgCanvas, cfg: AtlasConfig, regions: Sequence[RegionMode
         x, y = ridge.label_xy
         mbox = text_box(ridge.name, x, y, 20, letter_spacing=3.5)
         # Aggressively nudge to avoid overlapping region names and other labels
-        if overlaps(mbox, reserved, padding=16.0):
+        if overlaps(mbox, reserved, padding=24.0):
             found = False
-            for dy_off in [-30, 30, -55, 55, -80, 80, -110, 110]:
-                for dx_off in [0, -50, 50, -100, 100]:
+            for dy_off in [-30, 30, -55, 55, -80, 80, -110, 110, -140, 140]:
+                for dx_off in [0, -60, 60, -120, 120, -180, 180]:
                     mbox2 = text_box(ridge.name, x + dx_off, y + dy_off, 20, letter_spacing=3.5)
-                    if not overlaps(mbox2, reserved, padding=14.0):
+                    if not overlaps(mbox2, reserved, padding=24.0):
                         x = x + dx_off
                         y = y + dy_off
                         mbox = mbox2
@@ -4821,12 +4905,12 @@ def render_labels(svg: SvgCanvas, cfg: AtlasConfig, regions: Sequence[RegionMode
     for lake in lakes:
         x, y = lake.label_xy
         lbox = text_box(lake.name, x, y, 15)
-        if overlaps(lbox, reserved, padding=6.0):
+        if overlaps(lbox, reserved, padding=14.0):
             found = False
-            for dy_off in [-18, 18, -30, 30, -45, 45]:
-                for dx_off in [0, -30, 30]:
+            for dy_off in [-18, 18, -35, 35, -55, 55, -75, 75]:
+                for dx_off in [0, -35, 35, -70, 70]:
                     lbox2 = text_box(lake.name, x + dx_off, y + dy_off, 15)
-                    if not overlaps(lbox2, reserved, padding=6.0):
+                    if not overlaps(lbox2, reserved, padding=14.0):
                         x = x + dx_off
                         y = y + dy_off
                         lbox = lbox2
@@ -4865,11 +4949,27 @@ def render_labels(svg: SvgCanvas, cfg: AtlasConfig, regions: Sequence[RegionMode
             opacity=0.78,
         )
 
-    # ── Sea labels: muted green italic ──
+    # ── Sea labels: muted green italic, collision-aware ──
     for i, sea in enumerate(SEA_LABELS):
         x, y = px(sea.xy, cfg)
         name = sea_names[i] if sea_names and i < len(sea_names) else sea.name
-        reserved.append(text_box(name, x, y, sea.size))
+        sbox = text_box(name, x, y, sea.size)
+        if overlaps(sbox, reserved, padding=12.0):
+            found = False
+            for dy_off in [0, -40, 40, -80, 80]:
+                for dx_off in [0, -60, 60, -120, 120]:
+                    sbox2 = text_box(name, x + dx_off, y + dy_off, sea.size)
+                    if not overlaps(sbox2, reserved, padding=12.0):
+                        x = x + dx_off
+                        y = y + dy_off
+                        sbox = sbox2
+                        found = True
+                        break
+                if found:
+                    break
+            if not found:
+                continue  # skip rather than overlap
+        reserved.append(sbox)
         svg.text(
             name,
             x=f"{x:.1f}",
@@ -4921,7 +5021,7 @@ def render_river_labels(svg: SvgCanvas, rivers: Sequence[RiverPath], palette: Pa
                 elif angle < -90:
                     angle += 180
                 rbox = text_box(spec.name, x, y - 6, spec.size)
-                if overlaps(rbox, reserved, padding=6.0):
+                if overlaps(rbox, reserved, padding=14.0):
                     continue  # skip this river label rather than overlap
                 reserved.append(rbox)
                 svg.text(
@@ -4942,16 +5042,20 @@ def render_river_labels(svg: SvgCanvas, rivers: Sequence[RiverPath], palette: Pa
 
 def render_cities(svg: SvgCanvas, cfg: AtlasConfig, regions: Sequence[RegionModel], palette: Palette, reserved: list[Rect]) -> None:
     fallback_offsets = [
-        (0.0, -22.0, "middle"),
-        (22.0, -4.0, "start"),
-        (-22.0, -4.0, "end"),
-        (0.0, 28.0, "middle"),
-        (26.0, 20.0, "start"),
-        (-26.0, 20.0, "end"),
-        (0.0, -40.0, "middle"),
-        (36.0, -16.0, "start"),
-        (-36.0, -16.0, "end"),
-        (0.0, 44.0, "middle"),
+        (0.0, -24.0, "middle"),
+        (24.0, -6.0, "start"),
+        (-24.0, -6.0, "end"),
+        (0.0, 30.0, "middle"),
+        (28.0, 22.0, "start"),
+        (-28.0, 22.0, "end"),
+        (0.0, -44.0, "middle"),
+        (40.0, -18.0, "start"),
+        (-40.0, -18.0, "end"),
+        (0.0, 48.0, "middle"),
+        (48.0, 0.0, "start"),
+        (-48.0, 0.0, "end"),
+        (0.0, -62.0, "middle"),
+        (0.0, 62.0, "middle"),
     ]
     for region in regions:
         for city in region.cities:
@@ -4987,7 +5091,7 @@ def render_cities(svg: SvgCanvas, cfg: AtlasConfig, regions: Sequence[RegionMode
                 lx = x + dx
                 ly = y + dy
                 candidate_box = text_box(city.name, lx, ly, 14, anchor)
-                if overlaps(candidate_box, reserved):
+                if overlaps(candidate_box, reserved, padding=14.0):
                     continue
                 chosen = (lx, ly, anchor, candidate_box)
                 break
@@ -5360,10 +5464,33 @@ def render_pois(svg: SvgCanvas, cfg: AtlasConfig, pois: list[tuple[Point, str, s
         # If all positions overlap, skip the label entirely
 
 
-def render_compass_rose(svg: SvgCanvas, cfg: AtlasConfig, palette: Palette) -> None:
-    """Render a simple 4-point compass rose in the bottom-left corner."""
-    cx = 120
-    cy = cfg.height - 120
+def render_compass_rose(svg: SvgCanvas, cfg: AtlasConfig, palette: Palette, islands: Sequence[Sequence[Point]] | None = None, mainland: Sequence[Point] | None = None) -> None:
+    """Render a simple 4-point compass rose, repositioned to avoid islands/mainland."""
+    # Try candidate positions: corners and edges, pick first clear spot
+    candidates = [
+        (120, cfg.height - 120),              # bottom-left (default)
+        (cfg.width - 120, cfg.height - 120),  # bottom-right
+        (120, 120),                           # top-left
+        (cfg.width - 120, 120),               # top-right
+        (cfg.width // 2, cfg.height - 100),   # bottom-center
+    ]
+    polys = list(islands or [])
+    if mainland:
+        polys.append(mainland)
+
+    cx, cy = candidates[0]
+    for cand_x, cand_y in candidates:
+        clear = True
+        for poly in polys:
+            for pt in poly[::max(1, len(poly) // 20)]:
+                if math.hypot(pt[0] - cand_x, pt[1] - cand_y) < 100:
+                    clear = False
+                    break
+            if not clear:
+                break
+        if clear:
+            cx, cy = cand_x, cand_y
+            break
     radius = 40
 
     # North point (larger, filled)
@@ -5458,11 +5585,11 @@ def render_svg(cfg: AtlasConfig) -> str:
     render_lakes_and_rivers(svg, scene.lakes, scene.rivers, PALETTE)
     render_roads(svg, cfg, scene.regions, PALETTE, scene.grid)
     render_mountains(svg, scene.mountain_ranges, PALETTE, cfg)
-    reserved = render_labels(svg, cfg, scene.regions, scene.lakes, scene.mountain_ranges, PALETTE, sea_names)
+    reserved = render_labels(svg, cfg, scene.regions, scene.lakes, scene.mountain_ranges, PALETTE, sea_names, islands=scene.islands)
     render_river_labels(svg, scene.rivers, PALETTE, cfg, reserved)
     render_cities(svg, cfg, scene.regions, PALETTE, reserved)
     render_pois(svg, cfg, scene.pois, PALETTE, reserved)
-    render_compass_rose(svg, cfg, PALETTE)
+    render_compass_rose(svg, cfg, PALETTE, islands=scene.islands, mainland=scene.mainland)
     render_scale_bar(svg, cfg, PALETTE)
     render_title(svg, cfg, PALETTE, map_name)
     return svg.render()
