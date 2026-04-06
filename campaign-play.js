@@ -12839,7 +12839,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     ) : (
                       <div style={{ padding: "24px 20px", textAlign:"center" }}>
                         <div style={{ width:48, height:48, borderRadius:12, background:bg02, border:"1px solid "+bd04, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 12px" }}>
-                          <Target size={20} color=tx15 />
+                          <Target size={20} color={tx15} />
                         </div>
                         <div style={{ fontFamily: T.ui, fontSize: 10, letterSpacing: "1px", color: tx25, textTransform: "uppercase" }}>Select a token to inspect</div>
                       </div>
@@ -13085,7 +13085,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                         <span style={{ fontFamily:T.body, fontSize:7, color:tx15, textTransform:"uppercase", flexShrink:0 }}>{tok.tokenType === "pc" ? "PC" : tok.size || "med"}</span>
                         <button onClick={(e) => { e.stopPropagation(); setTokens(p => p.map(t => t.id === tok.id ? {...t, hidden: !t.hidden} : t)); }} title={tok.hidden ? "Show" : "Hide"}
                           style={{ background:"none", border:"none", cursor:"pointer", padding:2, display:"flex" }}>
-                          {tok.hidden ? <EyeOff size={10} color=tx20/> : <Eye size={10} color=tx25/>}
+                          {tok.hidden ? <EyeOff size={10} color={tx20}/> : <Eye size={10} color={tx25}/>}
                         </button>
                         <button onClick={(e) => { e.stopPropagation(); removeToken(tok.id); }} title="Remove"
                           style={{ background:"none", border:"none", cursor:"pointer", padding:2, display:"flex" }}>
