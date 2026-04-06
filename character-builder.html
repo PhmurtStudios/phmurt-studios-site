@@ -3326,13 +3326,20 @@ function buildNotesTab(){
   document.getElementById('cs-trait-bonds').innerHTML=makeBlock('Bonds',d?.bonds);
   document.getElementById('cs-trait-flaws').innerHTML=makeBlock('Flaws',d?.flaws);
   document.getElementById('cs-backstory-block').innerHTML=d?.backstory?`<div class="cs-action-title">Backstory</div><div style="font-size:14px;color:var(--text-dim);line-height:1.8;font-style:italic;">${escapeHtml(d.backstory)}</div>`:'';
-  const saved=localStorage.getItem('phmurt_notes_'+C.cls);
-  if(saved) document.getElementById('cs-notes').value=saved;
+  // SECURITY: Safely read localStorage with try/catch
+  var saved;
+  try {
+    saved=localStorage.getItem('phmurt_notes_'+C.cls);
+  } catch(e) { saved=null; }
+  if(saved && typeof saved==='string') document.getElementById('cs-notes').value=escapeHtml(saved);
 }
 
 function saveNotes(){
   const val=document.getElementById('cs-notes')?.value;
-  localStorage.setItem('phmurt_notes_'+C.cls, val);
+  // SECURITY: Safely write to localStorage with try/catch
+  try {
+    localStorage.setItem('phmurt_notes_'+C.cls, val||'');
+  } catch(e) { console.warn('Failed to save notes:', e); }
   scheduleSave();
   const btn=event.target; btn.textContent='Saved ✓';
   setTimeout(()=>btn.textContent='Save Notes',1500);
@@ -5587,11 +5594,13 @@ async function saveCharacterToDB(){
     subclasses:       JSON.parse(JSON.stringify(C.subclasses||{})),
   };
 
-  const existingId = localStorage.getItem('phmurt_current_char_id')||undefined;
+  // SECURITY: Safely read localStorage
+  var existingId;
+  try { existingId = localStorage.getItem('phmurt_current_char_id')||undefined; } catch(e) { existingId = undefined; }
   const r = await PhmurtDB.saveCharacter(snapshot, existingId);
 
   if(r && r.success){
-    localStorage.setItem('phmurt_current_char_id', r.id);
+    try { localStorage.setItem('phmurt_current_char_id', r.id); } catch(e) { /* ignore */ }
     if(status){
       status.textContent = 'Saved ' + new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
       setTimeout(()=>{ if(status) status.textContent=''; }, 3000);
@@ -5618,7 +5627,9 @@ async function saveCharacterToDB(){
 function updateCampaignStateWidget(){
   const container = document.getElementById('campaignStateWidget');
   if(!container) return;
-  const charId = localStorage.getItem('phmurt_current_char_id');
+  // SECURITY: Safely read localStorage
+  var charId;
+  try { charId = localStorage.getItem('phmurt_current_char_id'); } catch(e) { charId = null; }
   if(!charId || typeof PhmurtCharSync === 'undefined'){
     container.style.display = 'none';
     return;
@@ -5698,10 +5709,13 @@ function init(){
   async function checkLoadCharacter(){
     const params = new URLSearchParams(window.location.search);
     const queryLoadId = params.get('load');
-    const id = queryLoadId || localStorage.getItem('phmurt_load_char_id');
+    // SECURITY: Safely read localStorage
+    var storedId;
+    try { storedId = localStorage.getItem('phmurt_load_char_id'); } catch(e) { storedId = null; }
+    const id = queryLoadId || storedId;
     if(!id||typeof PhmurtDB==='undefined') return;
     if (!PhmurtDB.getSession()) {
-      localStorage.setItem('phmurt_load_char_id', id);
+      try { localStorage.setItem('phmurt_load_char_id', id); } catch(e) { /* ignore */ }
       PhmurtDB.openAuth();
       return;
     }
@@ -5730,7 +5744,7 @@ function init(){
     }
     C.weaponChoices = C.weaponChoices || {};
     C.rollLog = [];
-    localStorage.setItem('phmurt_current_char_id', id);
+    try { localStorage.setItem('phmurt_current_char_id', id); } catch(e) { /* ignore */ }
     // Re-init scored method display
     renderAbilityGrid();
     renderArrayPool();
@@ -8177,8 +8191,9 @@ window.addEventListener('DOMContentLoaded', function(){
   setTimeout(checkLoadCharacter, 200);
   window.addEventListener('phmurt-auth-change', function(){
     syncHomebrewWithCloud();
-    if (localStorage.getItem('phmurt_load_char_id')) checkLoadCharacter();
-    if (localStorage.getItem('cb35_load_char_id')) init35();
+    // SECURITY: Safely read localStorage
+    try { if (localStorage.getItem('phmurt_load_char_id')) checkLoadCharacter(); } catch(e) { /* ignore */ }
+    try { if (localStorage.getItem('cb35_load_char_id')) init35(); } catch(e) { /* ignore */ }
   });
   syncHomebrewWithCloud();
 });
@@ -9478,10 +9493,25 @@ function buildNotesTab35() {
   (d.backstory?'<div class="cs-action-title">Backstory</div><div style="font-size:14px;color:var(--text-dim);line-height:1.8;font-style:italic;margin-bottom:24px;">'+d.backstory+'</div>':'')+
   '<div class="cs-action-title" style="margin-bottom:12px;">Notes &amp; Journal</div>'+
   '<textarea class="cs-notes-field" id="notes35Field" placeholder="Session notes, reminders, character development..."></textarea>'+
-  '<div style="margin-top:8px;text-align:right;"><button onclick="localStorage.setItem(\'phmurt_notes35_\'+(C35.cls||\'\'),document.getElementById(\'notes35Field\').value);this.textContent=\'Saved ✓\';setTimeout(()=>this.textContent=\'Save Notes\',1500);" style="font-family:\'Cinzel\',serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;padding:6px 14px;background:transparent;border:1px solid var(--border);color:var(--text-muted);cursor:pointer;">Save Notes</button></div>';
+  '<div style="margin-top:8px;text-align:right;"><button id="notes35SaveBtn" style="font-family:\'Cinzel\',serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;padding:6px 14px;background:transparent;border:1px solid var(--border);color:var(--text-muted);cursor:pointer;">Save Notes</button></div>';
   document.getElementById('tab35-notes').innerHTML = html;
-  var saved = localStorage.getItem('phmurt_notes35_'+(C35.cls||''));
-  if (saved) { var f=document.getElementById('notes35Field'); if(f) f.value=saved; }
+  // SECURITY: Safely read and setup localStorage for 3.5e notes
+  var saved;
+  try { saved = localStorage.getItem('phmurt_notes35_'+(C35.cls||'')); } catch(e) { saved = null; }
+  if (saved && typeof saved === 'string') {
+    var f=document.getElementById('notes35Field');
+    if(f) f.value=escapeHtml(saved);
+  }
+  // Setup save button handler
+  var saveBtn = document.getElementById('notes35SaveBtn');
+  if (saveBtn) {
+    saveBtn.addEventListener('click', function() {
+      var noteVal = document.getElementById('notes35Field')?.value || '';
+      try { localStorage.setItem('phmurt_notes35_'+(C35.cls||''), noteVal); } catch(e) { /* ignore */ }
+      this.textContent='Saved ✓';
+      setTimeout(()=>this.textContent='Save Notes',1500);
+    });
+  }
 }
 
 // ── HP ──
@@ -9548,10 +9578,12 @@ async function saveChar35() {
     levelUpAbilityBoosts: C35.levelUpAbilityBoosts ? JSON.parse(JSON.stringify(C35.levelUpAbilityBoosts)) : {},
     savedAt:Date.now()
   };
-  var existingId = localStorage.getItem('phmurt_current_char35_id')||undefined;
+  // SECURITY: Safely read localStorage
+  var existingId;
+  try { existingId = localStorage.getItem('phmurt_current_char35_id')||undefined; } catch(e) { existingId = undefined; }
   var r = await PhmurtDB.saveCharacter(snapshot, existingId);
   if (r&&r.success) {
-    localStorage.setItem('phmurt_current_char35_id',r.id);
+    try { localStorage.setItem('phmurt_current_char35_id',r.id); } catch(e) { /* ignore */ }
     if (btn) { btn.textContent='Saved ✓'; btn.disabled=false; }
     if (status) status.textContent='Saved '+(new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}));
     setTimeout(function(){if(btn)btn.textContent='Save Character ↑';},2000);
@@ -9587,14 +9619,17 @@ function init35() {
   // Load saved char
   var params35 = new URLSearchParams(window.location.search);
   var queryLoadId35 = params35.get('load');
-  var loadId = queryLoadId35 || localStorage.getItem('cb35_load_char_id');
+  // SECURITY: Safely read localStorage
+  var storedLoad35;
+  try { storedLoad35 = localStorage.getItem('cb35_load_char_id'); } catch(e) { storedLoad35 = null; }
+  var loadId = queryLoadId35 || storedLoad35;
   if (loadId && typeof PhmurtDB!=='undefined') {
     if (!PhmurtDB.getSession()) {
-      localStorage.setItem('cb35_load_char_id', loadId);
+      try { localStorage.setItem('cb35_load_char_id', loadId); } catch(e) { /* ignore */ }
       PhmurtDB.openAuth();
       return;
     }
-    localStorage.removeItem('cb35_load_char_id');
+    try { localStorage.removeItem('cb35_load_char_id'); } catch(e) { /* ignore */ }
     if (queryLoadId35) {
       params35.delete('load');
       var clean35 = params35.toString();

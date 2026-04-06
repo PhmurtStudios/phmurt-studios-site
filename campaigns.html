@@ -4321,7 +4321,7 @@ function CampaignSelector({ campaigns, activeCampaignId, onSelect, onCreate, onD
 // DASHBOARD
 // ═══════════════════════════════════════════════════════════════════════════
 
-function DashboardView({ data, setData, onNav }) {
+function DashboardView({ data, setData, onNav, activeCampaignId }) {
   const countdown = useCountdown(data.nextSession);
   const active = data.quests.filter(q=>q.status==="active");
   const urgVar = { critical:"critical", high:"danger", medium:"warning", low:"muted" };
@@ -4335,7 +4335,7 @@ function DashboardView({ data, setData, onNav }) {
   const [schedOpen, setSchedOpen] = useState(false);
   const [newQuest, setNewQuest] = useState({ title:"", type:"side", status:"active", urgency:"medium", faction:"", region:"" });
   const [encBuilderOpen, setEncBuilderOpen] = useState(false);
-  const [encForm, setEncForm] = useState({ name:"", location:"", notes:"", monsterNames:"", includePartyAll:true });
+  const [encForm, setEncForm] = useState({ name:"", location:"", notes:"", monsterNames:"", includePartyAll:true, selectedMonsters:[], monsterSearch:"" });
 
   useEffect(() => {
     if (!libraryOpen) return;
@@ -4378,6 +4378,51 @@ function DashboardView({ data, setData, onNav }) {
       window.removeEventListener("phmurt-auth-change", refreshLibrary);
     };
   }, [libraryOpen]);
+
+  // Import listener from generators and other tools
+  useEffect(() => {
+    const checkImports = () => {
+      const key = `phmurt_gen_export_${activeCampaignId}`;
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+      try {
+        const imports = JSON.parse(raw);
+        localStorage.removeItem(key);
+        if (Array.isArray(imports)) {
+          imports.forEach(item => {
+            if (item.type === 'npc') {
+              setData(d => ({
+                ...d,
+                npcs: [...(d.npcs || []), {
+                  id: uid(),
+                  name: item.data.name || "Unnamed NPC",
+                  race: item.data.race || "",
+                  occupation: item.data.occupation || "",
+                  alignment: item.data.alignment || "",
+                  personality: item.data.personality || "",
+                  backstory: item.data.backstory || "",
+                  appearance: item.data.appearance || "",
+                  voice: item.data.voice || "",
+                  quirk: item.data.quirk || "",
+                  _source: 'generator'
+                }],
+                activity: [{time:"Just now", text:`Imported NPC: ${item.data.name || 'Unnamed'} from Generator`}, ...(d.activity||[])].slice(0,20)
+              }));
+            }
+          });
+        }
+      } catch(e) {
+        console.warn('[Import] Parse error:', e);
+      }
+    };
+    checkImports();
+    window.addEventListener('storage', checkImports);
+    window.addEventListener('focus', checkImports);
+    return () => {
+      window.removeEventListener('storage', checkImports);
+      window.removeEventListener('focus', checkImports);
+    };
+  }, [activeCampaignId]);
 
   const handlePlayerSubmit = (formData) => {
     if (editingMember) {
@@ -4440,8 +4485,8 @@ function DashboardView({ data, setData, onNav }) {
     if (!encForm.name.trim()) return;
     const participants = [];
     if (encForm.includePartyAll) participants.push({ type:"partyAll" });
-    encForm.monsterNames.split(",").map(s => s.trim()).filter(Boolean).forEach(name => {
-      participants.push({ type:"monster", monsterName: name, count:1 });
+    encForm.selectedMonsters.forEach(m => {
+      participants.push({ type:"monster", monsterName: m.name, count: m.count || 1 });
     });
     if (participants.length === 0) return;
     setData(d => ({
@@ -4449,7 +4494,7 @@ function DashboardView({ data, setData, onNav }) {
       encounters: [...(d.encounters || []), { id: "enc-" + Date.now(), name: encForm.name.trim(), location: encForm.location.trim(), notes: encForm.notes.trim(), participants }],
       activity: [{ time: "Just now", text: `Encounter saved: ${encForm.name.trim()}` }, ...d.activity].slice(0, 20),
     }));
-    setEncForm({ name:"", location:"", notes:"", monsterNames:"", includePartyAll:true });
+    setEncForm({ name:"", location:"", notes:"", monsterNames:"", includePartyAll:true, selectedMonsters:[], monsterSearch:"" });
     setEncBuilderOpen(false);
   };
   const nextN = data.sessionsPlayed + 1;
@@ -4514,16 +4559,15 @@ function DashboardView({ data, setData, onNav }) {
         <div>
           <SectionTitle icon={Users} count={data.party.length} action={
             <div style={{ display:"flex", gap:8, flexWrap:"wrap", justifyContent:"flex-end" }}>
-              <LinkBtn onClick={()=>setLibraryOpen(true)}><BookOpen size={10}/> Import Saved</LinkBtn>
-              <LinkBtn onClick={()=>setJoiningParty(true)}><Plus size={10}/> Join Party</LinkBtn>
+              <LinkBtn onClick={()=>setLibraryOpen(true)}><BookOpen size={10}/> Import from Character Builder</LinkBtn>
             </div>
           }>The Party</SectionTitle>
 
           {data.party.length === 0 && (
             <Section style={{ textAlign:"center", padding:40 }}>
               <Users size={32} color={T.textFaint} style={{ marginBottom:16 }}/>
-              <p style={{ fontSize:14, color:T.textMuted, fontWeight:300, margin:"0 0 16px" }}>No adventurers yet.</p>
-              <CrimsonBtn onClick={()=>setJoiningParty(true)}><Plus size={12}/> Add First Character</CrimsonBtn>
+              <p style={{ fontSize:14, color:T.textMuted, fontWeight:300, margin:"0 0 16px" }}>No adventurers yet. Import characters from the Character Builder.</p>
+              <CrimsonBtn onClick={()=>setLibraryOpen(true)}><BookOpen size={12}/> Import from Character Builder</CrimsonBtn>
             </Section>
           )}
 
@@ -4537,7 +4581,7 @@ function DashboardView({ data, setData, onNav }) {
         {/* Encounters — deploy from Play → Scenes */}
         <div>
           <SectionTitle icon={Swords} count={(data.encounters || []).length} action={
-            <LinkBtn onClick={() => { setEncForm({ name:"", location:"", notes:"", monsterNames:"", includePartyAll:true }); setEncBuilderOpen(true); }}><Plus size={10}/> New Encounter</LinkBtn>
+            <LinkBtn onClick={() => { setEncForm({ name:"", location:"", notes:"", monsterNames:"", includePartyAll:true, selectedMonsters:[], monsterSearch:"" }); setEncBuilderOpen(true); }}><Plus size={10}/> New Encounter</LinkBtn>
           }>Encounters</SectionTitle>
           <p style={{ fontSize:12, color:T.textMuted, margin:"0 0 12px", fontWeight:300, lineHeight:1.45 }}>Blueprints link the party and SRD monsters to the battlemap. Monster names must match the compendium exactly (e.g. Dire Wolf).</p>
           <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
@@ -4556,6 +4600,38 @@ function DashboardView({ data, setData, onNav }) {
           </div>
         </div>
 
+        {/* Quick Tools — Links to generators and other tools */}
+        <div>
+          <SectionTitle icon={Wand2}>Quick Tools</SectionTitle>
+          <p style={{ fontSize:12, color:T.textMuted, margin:"0 0 12px", fontWeight:300, lineHeight:1.45 }}>Open related tools and import content into your campaign.</p>
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap:8 }}>
+            <LinkBtn onClick={() => window.open(`generators.html?export=campaign&campaignId=${activeCampaignId}`, "_blank", "noopener,noreferrer")} style={{ padding:"12px 16px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
+              <Users size={16} />
+              <span style={{ fontSize:12 }}>NPC Generator</span>
+            </LinkBtn>
+            <LinkBtn onClick={() => window.open(`generators.html?export=campaign&campaignId=${activeCampaignId}&type=encounter`, "_blank", "noopener,noreferrer")} style={{ padding:"12px 16px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
+              <Swords size={16} />
+              <span style={{ fontSize:12 }}>Encounter Gen</span>
+            </LinkBtn>
+            <LinkBtn onClick={() => window.open(`generators.html?export=campaign&campaignId=${activeCampaignId}&type=treasure`, "_blank", "noopener,noreferrer")} style={{ padding:"12px 16px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
+              <Package size={16} />
+              <span style={{ fontSize:12 }}>Treasure Gen</span>
+            </LinkBtn>
+            <LinkBtn onClick={() => window.open("compendium.html", "_blank", "noopener,noreferrer")} style={{ padding:"12px 16px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
+              <BookOpen size={16} />
+              <span style={{ fontSize:12 }}>Compendium</span>
+            </LinkBtn>
+            <LinkBtn onClick={() => window.open("grimoire.html", "_blank", "noopener,noreferrer")} style={{ padding:"12px 16px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
+              <Wand2 size={16} />
+              <span style={{ fontSize:12 }}>Grimoire</span>
+            </LinkBtn>
+            <LinkBtn onClick={() => window.open("character-builder.html", "_blank", "noopener,noreferrer")} style={{ padding:"12px 16px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
+              <FileText size={16} />
+              <span style={{ fontSize:12 }}>Character</span>
+            </LinkBtn>
+          </div>
+        </div>
+
         <Modal open={encBuilderOpen} onClose={() => setEncBuilderOpen(false)} title="Save encounter blueprint">
           <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
             <Input value={encForm.name} onChange={v => setEncForm(p => ({ ...p, name:v }))} placeholder="Encounter name" />
@@ -4566,8 +4642,72 @@ function DashboardView({ data, setData, onNav }) {
               Include full party on map
             </label>
             <div>
-              <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.textMuted, textTransform:"uppercase", display:"block", marginBottom:6 }}>Monsters (SRD names, comma-separated)</span>
-              <Input value={encForm.monsterNames} onChange={v => setEncForm(p => ({ ...p, monsterNames:v }))} placeholder="e.g. Dire Wolf, Dire Wolf" />
+              <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.textMuted, textTransform:"uppercase", display:"block", marginBottom:6 }}>Monsters (SRD & Homebrew)</span>
+              <div style={{ position:"relative", marginBottom:8 }}>
+                <Input
+                  value={encForm.monsterSearch}
+                  onChange={v => setEncForm(p => ({ ...p, monsterSearch:v }))}
+                  placeholder="Search monsters by name..."
+                  style={{ paddingRight:"32px" }}
+                />
+                <Search size={14} style={{ position:"absolute", right:12, top:"50%", transform:"translateY(-50%)", color:T.textFaint, pointerEvents:"none" }} />
+              </div>
+              {encForm.monsterSearch && (
+                (() => {
+                  const srdMonsters = window.SRD_MONSTERS || [];
+                  const homebrewRaw = localStorage.getItem("phmurt_homebrew_monsters");
+                  const homebrewMonsters = homebrewRaw ? JSON.parse(homebrewRaw).map(m => ({...m, _homebrew: true})) : [];
+                  const allMonsters = [...srdMonsters, ...homebrewMonsters];
+                  const filtered = allMonsters.filter(m => m.name.toLowerCase().includes(encForm.monsterSearch.toLowerCase())).slice(0, 12);
+                  const alreadySelected = encForm.selectedMonsters.map(m => m.name);
+                  return (
+                    <div style={{ position:"absolute", top:"100%", left:0, right:0, background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:4, maxHeight:"200px", overflowY:"auto", zIndex:10, marginTop:4 }}>
+                      {filtered.length === 0 ? (
+                        <div style={{ padding:"8px 12px", fontSize:11, color:T.textFaint, fontStyle:"italic" }}>No monsters found</div>
+                      ) : (
+                        filtered.map((m, i) => (
+                          <div key={i} onClick={() => {
+                            if (!alreadySelected.includes(m.name)) {
+                              setEncForm(p => ({
+                                ...p,
+                                selectedMonsters: [...p.selectedMonsters, { name: m.name, count: 1 }],
+                                monsterSearch: ""
+                              }));
+                            }
+                          }} style={{ padding:"10px 12px", cursor:"pointer", borderBottom:`1px solid ${T.border}`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                            <div>
+                              <div style={{ fontSize:12, color:T.text }}>{m.name}{m._homebrew ? " " : ""}{m._homebrew && <Tag variant="info" style={{display:"inline-block"}}>Homebrew</Tag>}</div>
+                              <div style={{ fontSize:10, color:T.textFaint, marginTop:2 }}>CR {m.cr || "—"}</div>
+                            </div>
+                            <Plus size={12} color={T.crimson} />
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  );
+                })()
+              )}
+              <div style={{ marginTop:12 }}>
+                {encForm.selectedMonsters.length === 0 ? (
+                  <p style={{ fontSize:11, color:T.textFaint, fontStyle:"italic", margin:0 }}>No monsters selected. Search to add some.</p>
+                ) : (
+                  <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                    {encForm.selectedMonsters.map((m, i) => (
+                      <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", background:"rgba(212,67,58,0.08)", border:`1px solid ${T.border}`, borderRadius:4 }}>
+                        <div style={{ flex:1 }}>
+                          <div style={{ fontSize:12, color:T.text }}>{m.name}</div>
+                        </div>
+                        <div style={{ display:"flex", alignItems:"center", gap:4 }}>
+                          <button onClick={() => setEncForm(p => ({...p, selectedMonsters: p.selectedMonsters.map((mm, ii) => ii === i ? {...mm, count: Math.max(1, mm.count - 1)} : mm)}))} style={{ background:"none", border:"none", padding:4, cursor:"pointer", color:T.textMuted }}>−</button>
+                          <span style={{ fontSize:11, fontWeight:600, minWidth:"20px", textAlign:"center", color:T.text }}>{m.count}</span>
+                          <button onClick={() => setEncForm(p => ({...p, selectedMonsters: p.selectedMonsters.map((mm, ii) => ii === i ? {...mm, count: mm.count + 1} : mm)}))} style={{ background:"none", border:"none", padding:4, cursor:"pointer", color:T.textMuted }}>+</button>
+                          <button onClick={() => setEncForm(p => ({...p, selectedMonsters: p.selectedMonsters.filter((_, ii) => ii !== i)}))} style={{ background:"none", border:"none", padding:4, cursor:"pointer", color:T.crimson }}><X size={12} /></button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <CrimsonBtn onClick={saveEncounterBlueprint}><Swords size={12}/> Save to campaign</CrimsonBtn>
           </div>
@@ -4826,6 +4966,15 @@ function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [viewRole, setViewRole] = useState(route.role || "dm");
   const [combatAssetsReady, setCombatAssetsReady] = useState(typeof window.CombatEngine !== "undefined");
+  // ── Multiplayer: invite codes, campaign members, join flow ──
+  const [inviteCodes, setInviteCodes] = useState([]);
+  const [campaignMembers, setCampaignMembers] = useState([]);
+  const [showInvitePanel, setShowInvitePanel] = useState(false);
+  const [joinCode, setJoinCode] = useState("");
+  const [joinError, setJoinError] = useState("");
+  const [joinSuccess, setJoinSuccess] = useState("");
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [campaignRoles, setCampaignRoles] = useState({}); // { campaignId: "dm"|"player" }
 
   // ── Lazy tab module readiness ──
   const [tabsReady, setTabsReady] = useState({
@@ -5011,12 +5160,123 @@ function App() {
     });
   };
 
-  const navItems = [
-    { id:"dashboard", label:"Dashboard", icon: DashboardNavIcon },
-    { id:"timeline", label:"Timeline", icon: Clock },
-    { id:"world", label:"World", icon: Globe },
-    { id:"play", label:"Play", icon: PlayNavIcon },
+  // ── Multiplayer: load roles from getMyCampaigns and determine viewRole per campaign ──
+  useEffect(() => {
+    if (loading || typeof PhmurtDB === "undefined" || typeof PhmurtDB.getMyCampaigns !== "function") return;
+    PhmurtDB.getMyCampaigns().then(function(cloudCampaigns) {
+      if (!cloudCampaigns || cloudCampaigns.length === 0) return;
+      var roles = {};
+      cloudCampaigns.forEach(function(c) { if (c.id && c._role) roles[c.id] = c._role; });
+      setCampaignRoles(roles);
+      // Merge cloud campaigns into local cache
+      setCampaigns(function(prev) {
+        var seen = {};
+        prev.forEach(function(c) { seen[c.id] = true; });
+        var newOnes = cloudCampaigns.filter(function(c) { return !seen[c.id]; }).map(function(c) {
+          return { id: c.id, data: c.data || NEW_CAMPAIGN(), _role: c._role };
+        });
+        return newOnes.length > 0 ? prev.concat(newOnes) : prev;
+      });
+    });
+  }, [loading]);
+
+  // ── Set viewRole based on campaign membership when switching campaigns ──
+  useEffect(() => {
+    if (!activeCampaignId || route.role) return; // URL override takes precedence
+    var role = campaignRoles[activeCampaignId];
+    if (role === "player") setViewRole("player");
+    else if (role === "dm") setViewRole("dm");
+  }, [activeCampaignId, campaignRoles]);
+
+  // ── Auto-redirect players away from DM-only tabs ──
+  useEffect(() => {
+    if (viewRole === "player" && !["play","timeline"].includes(activeTab)) setActiveTab("play");
+  }, [viewRole]);
+
+  // ── Load invite codes + members when opening invite panel ──
+  useEffect(() => {
+    if (!showInvitePanel || !activeCampaignId) return;
+    if (typeof PhmurtDB === "undefined") return;
+    PhmurtDB.getInviteCodes(activeCampaignId).then(setInviteCodes);
+    PhmurtDB.getCampaignMembers(activeCampaignId).then(setCampaignMembers);
+  }, [showInvitePanel, activeCampaignId]);
+
+  const handleCreateInvite = () => {
+    if (typeof PhmurtDB === "undefined" || typeof PhmurtDB.createInviteCode !== "function" || !activeCampaignId) return;
+    PhmurtDB.createInviteCode(activeCampaignId).then(function(code) {
+      if (code) {
+        setInviteCodes(function(prev) { return [{ code: code, use_count: 0, created_at: new Date().toISOString() }].concat(prev); });
+      }
+    });
+  };
+
+  const handleDeleteInvite = (inviteId) => {
+    if (typeof PhmurtDB === "undefined" || typeof PhmurtDB.deleteInviteCode !== "function") return;
+    PhmurtDB.deleteInviteCode(inviteId).then(function(ok) {
+      if (ok) setInviteCodes(function(prev) { return prev.filter(function(c) { return c.id !== inviteId; }); });
+    });
+  };
+
+  const handleJoinByCode = () => {
+    if (!joinCode.trim()) return;
+    setJoinError(""); setJoinSuccess("");
+    if (typeof PhmurtDB === "undefined") { setJoinError("Not signed in."); return; }
+    PhmurtDB.joinCampaignByCode(joinCode.trim()).then(function(result) {
+      if (result && result.success !== false && result.campaign_id) {
+        setJoinSuccess("Joined! Loading campaign...");
+        setCampaignRoles(function(prev) { var n = Object.assign({}, prev); n[result.campaign_id] = "player"; return n; });
+        // Reload to get the full campaign
+        PhmurtDB.getMyCampaigns().then(function(all) {
+          var camp = all.find(function(c) { return c.id === result.campaign_id; });
+          if (camp) {
+            setCampaigns(function(prev) {
+              if (prev.find(function(c) { return c.id === camp.id; })) return prev;
+              return prev.concat([{ id: camp.id, data: camp.data || NEW_CAMPAIGN(), _role: "player" }]);
+            });
+            setActiveCampaignId(camp.id);
+            setViewRole("player");
+            setActiveTab("play");
+            setShowJoinModal(false);
+            setJoinCode("");
+          }
+        });
+      } else {
+        setJoinError((result && result.error) || "Invalid or expired code.");
+      }
+    });
+  };
+
+  const getInviteLink = (code) => {
+    var base = window.location.origin + window.location.pathname;
+    return base + "?campaign=" + activeCampaignId + "&role=player&invite=" + code;
+  };
+
+  // ── Check URL for invite code on mount ──
+  useEffect(() => {
+    var params = new URLSearchParams(window.location.search);
+    var inviteParam = params.get("invite");
+    if (inviteParam && typeof PhmurtDB !== "undefined") {
+      PhmurtDB.joinCampaignByCode(inviteParam).then(function(result) {
+        if (result && result.success !== false && result.campaign_id) {
+          setCampaignRoles(function(prev) { var n = Object.assign({}, prev); n[result.campaign_id] = "player"; return n; });
+          setActiveCampaignId(result.campaign_id);
+          setViewRole("player");
+          setActiveTab("play");
+          // Clean the URL
+          params.delete("invite");
+          window.history.replaceState(null, "", window.location.pathname + "?" + params.toString());
+        }
+      });
+    }
+  }, []);
+
+  const allNavItems = [
+    { id:"dashboard", label:"Dashboard", icon: DashboardNavIcon, roles:["dm"] },
+    { id:"timeline", label:"Timeline", icon: Clock, roles:["dm","player"] },
+    { id:"world", label:"World", icon: Globe, roles:["dm"] },
+    { id:"play", label:"Play", icon: PlayNavIcon, roles:["dm","player"] },
   ];
+  const navItems = allNavItems.filter(function(item) { return item.roles.includes(viewRole); });
 
   if (loading) {
     return (
@@ -5106,11 +5366,27 @@ function App() {
             </div>
           </div>
         )}
+
+        {/* ── Multiplayer: Invite Players / Join Campaign ── */}
+        {!sidebarCollapsed && (
+          <div style={{ padding:"8px 14px 12px", borderTop:"1px solid " + T.border }}>
+            {viewRole === "dm" && (
+              <button onClick={() => setShowInvitePanel(!showInvitePanel)}
+                style={{ width:"100%", padding:"7px 8px", background:"rgba(94,224,154,0.06)", border:"1px solid rgba(94,224,154,0.15)", borderRadius:"4px", cursor:"pointer", color:"#5ee09a", fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+                <Link size={10}/> Invite Players
+              </button>
+            )}
+            <button onClick={() => setShowJoinModal(true)}
+              style={{ width:"100%", padding:"7px 8px", marginTop:4, background:"rgba(201,168,76,0.06)", border:"1px solid rgba(201,168,76,0.15)", borderRadius:"4px", cursor:"pointer", color:"#c9a84c", fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+              <Plus size={10}/> Join Campaign
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Main Content Area — gradient extends full page */}
       <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0, overflow:"hidden", position:"relative", background:"radial-gradient(ellipse at 20% 0%, var(--crimson-soft) 0%, transparent 55%), var(--bg)" }}>
-        {activeTab === "dashboard" && <DashboardView data={data} setData={setData} onNav={setActiveTab} />}
+        {activeTab === "dashboard" && <DashboardView data={data} setData={setData} onNav={setActiveTab} activeCampaignId={activeCampaignId} />}
         {activeTab === "timeline" && (
           tabsReady.timeline && window.CampaignTimelineView
             ? React.createElement(window.CampaignTimelineView, { data: data, setData: setData, onNav: setActiveTab })
@@ -5140,6 +5416,68 @@ function App() {
           )
         )}
       </div>
+
+      {/* ══ Invite Players Modal ══ */}
+      {showInvitePanel && (
+        <Modal open={true} onClose={() => setShowInvitePanel(false)} title="Invite Players" wide>
+          <div style={{ padding:"20px" }}>
+            <div style={{ marginBottom:20 }}>
+              <p style={{ fontFamily:T.body, fontSize:13, color:T.textMuted, marginBottom:12 }}>
+                Generate an invite code or shareable link. Players who join will see only what you choose to reveal.
+              </p>
+              <CrimsonBtn onClick={handleCreateInvite}><Plus size={12}/> Generate Invite Code</CrimsonBtn>
+            </div>
+
+            {inviteCodes.length > 0 && (
+              <div style={{ marginBottom:20 }}>
+                <div style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", textTransform:"uppercase", color:T.textFaint, marginBottom:10 }}>Active Codes</div>
+                {inviteCodes.map((inv, i) => (
+                  <div key={inv.id || i} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:"rgba(255,255,255,0.02)", border:"1px solid " + T.border, borderRadius:8, marginBottom:6 }}>
+                    <code style={{ fontFamily:"monospace", fontSize:15, fontWeight:700, color:"#5ee09a", flex:1, letterSpacing:"1px" }}>{inv.code}</code>
+                    <button onClick={() => { navigator.clipboard.writeText(inv.code); }} title="Copy code"
+                      style={{ background:"rgba(94,224,154,0.08)", border:"1px solid rgba(94,224,154,0.2)", borderRadius:6, padding:"5px 10px", cursor:"pointer", color:"#5ee09a", fontFamily:T.ui, fontSize:8, letterSpacing:"0.5px" }}>Copy Code</button>
+                    <button onClick={() => { navigator.clipboard.writeText(getInviteLink(inv.code)); }} title="Copy link"
+                      style={{ background:"rgba(201,168,76,0.08)", border:"1px solid rgba(201,168,76,0.2)", borderRadius:6, padding:"5px 10px", cursor:"pointer", color:"#c9a84c", fontFamily:T.ui, fontSize:8, letterSpacing:"0.5px" }}>Copy Link</button>
+                    {inv.id && <button onClick={() => handleDeleteInvite(inv.id)} title="Delete"
+                      style={{ background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.15)", borderRadius:6, padding:"5px 8px", cursor:"pointer", color:"#ef4444", fontSize:10 }}><X size={10}/></button>}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {campaignMembers.length > 0 && (
+              <div>
+                <div style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", textTransform:"uppercase", color:T.textFaint, marginBottom:10 }}>Members</div>
+                {campaignMembers.map((m, i) => (
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", background:"rgba(255,255,255,0.015)", border:"1px solid " + T.border, borderRadius:6, marginBottom:4 }}>
+                    <span style={{ fontFamily:T.ui, fontSize:11, color:T.text, flex:1 }}>{m.profiles?.name || m.profiles?.email || m.user_id?.substring(0,8)}</span>
+                    <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", color: m.role === "dm" ? "#c9a84c" : "#5ee09a", background: m.role === "dm" ? "rgba(201,168,76,0.08)" : "rgba(94,224,154,0.08)", padding:"2px 8px", borderRadius:999 }}>{m.role}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Modal>
+      )}
+
+      {/* ══ Join Campaign Modal ══ */}
+      {showJoinModal && (
+        <Modal open={true} onClose={() => { setShowJoinModal(false); setJoinError(""); setJoinSuccess(""); setJoinCode(""); }} title="Join a Campaign">
+          <div style={{ padding:"20px" }}>
+            <p style={{ fontFamily:T.body, fontSize:13, color:T.textMuted, marginBottom:16 }}>
+              Enter the invite code your DM shared with you.
+            </p>
+            <div style={{ display:"flex", gap:8, marginBottom:12 }}>
+              <input type="text" value={joinCode} onChange={e => setJoinCode(e.target.value)} placeholder="Enter invite code..."
+                onKeyDown={e => { if (e.key === "Enter") handleJoinByCode(); }}
+                style={{ flex:1, padding:"10px 14px", fontFamily:"monospace", fontSize:15, background:"rgba(255,255,255,0.02)", border:"1px solid " + T.border, borderRadius:8, color:T.text, letterSpacing:"1px", outline:"none" }} />
+              <CrimsonBtn onClick={handleJoinByCode}>Join</CrimsonBtn>
+            </div>
+            {joinError && <div style={{ padding:"8px 12px", background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.2)", borderRadius:6, color:"#ef4444", fontFamily:T.body, fontSize:12, marginBottom:8 }}>{joinError}</div>}
+            {joinSuccess && <div style={{ padding:"8px 12px", background:"rgba(94,224,154,0.06)", border:"1px solid rgba(94,224,154,0.2)", borderRadius:6, color:"#5ee09a", fontFamily:T.body, fontSize:12, marginBottom:8 }}>{joinSuccess}</div>}
+          </div>
+        </Modal>
+      )}
     </div>
   );
 }

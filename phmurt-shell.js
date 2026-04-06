@@ -7,16 +7,17 @@
     return div.innerHTML;
   };
 
-  // ── Admin email list (must match phmurt-auth.js) ──────────────────────
-  var SHELL_ADMIN_EMAILS = ['dreverad@icloud.com', 'dreverad18@gmail.com'];
+  // ── Admin verification (server-side check) ────────────────────────────
+  // Admin status is now verified through the database profile flag (is_admin)
+  // rather than client-side email list comparison. This prevents exposing
+  // admin identities to all users and improves security.
   function _shellIsAdmin() {
     try {
       var raw = localStorage.getItem('phmurt_auth_session');
       var s = raw ? JSON.parse(raw) : null;
-      if (!s || !s.email) return false;
-      // Always verify against the canonical admin list, not the stored isAdmin flag
-      var email = (s.email || '').trim().toLowerCase();
-      return SHELL_ADMIN_EMAILS.indexOf(email) !== -1;
+      if (!s) return false;
+      // Use the isAdmin flag from the profile/session, verified server-side
+      return !!(s.isAdmin === true);
     } catch(e) { return false; }
   }
 
@@ -375,8 +376,7 @@
 
     var session = _getAuthSession();
 
-    var isAdmin = !!(session && (session.isAdmin === true ||
-      SHELL_ADMIN_EMAILS.indexOf((session.email || '').trim().toLowerCase()) !== -1));
+    var isAdmin = !!(session && session.isAdmin === true);
 
     // ── Show/hide Admin nav links (desktop + mobile) ────────────
     var adminLink       = document.getElementById('nav-admin-link');

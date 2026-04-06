@@ -2228,16 +2228,17 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     const engineTarget = buildEngineCombatTarget(target, targetId);
     const combatOpts = buildCombatEngineOptions(target, attacker);
     const parsedCheck = CE.parseAttackAction(action) || CE.parseSaveAction(action);
-    const isMultiattackLine = String(action?.name || "").toLowerCase() === "multiattack";
+    const actionName = action?.name || "Action";
+    const isMultiattackLine = String(actionName).toLowerCase() === "multiattack";
     if ((parsedCheck || isMultiattackLine) && targetId !== attackerId && !combatOpts.hasLineOfSight) {
-      const msg = "No clear line of sight from " + attacker.name + " to " + target.name + " for " + action.name + ".";
+      const msg = "No clear line of sight from " + attacker.name + " to " + target.name + " for " + actionName + ".";
       addCombatLogEntry({ type: "system", text: msg });
-      setPlayModeResolution({ title: action.name, lines: [msg, "Use movement, a door interaction, or a different focus target."] });
+      setPlayModeResolution({ title: actionName, lines: [msg, "Use movement, a door interaction, or a different focus target."] });
       return false;
     }
 
     // Check if it's multiattack
-    if (action.name.toLowerCase() === "multiattack") {
+    if (actionName.toLowerCase() === "multiattack") {
       const result = CE.executeMultiattack(
         { ...monster, conditions: (tokenConditions[attackerId] || []).map(c => c.toLowerCase()) },
         engineTarget,
@@ -2351,22 +2352,24 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             : Math.max(0, parseInt(healMatch[1], 10) || 0);
           const nextHp = Math.min(attacker.maxHp || attacker.hp || healAmount, (attacker.hp || 0) + healAmount);
           applyTokenVitalsUpdate(attacker, nextHp);
-          emitPlayModeVfx(attacker, attacker, { mode: "heal", actionName: action.name, amount: healAmount });
+          const healActionName = action?.name || "Action";
+          emitPlayModeVfx(attacker, attacker, { mode: "heal", actionName: healActionName, amount: healAmount });
           addCombatLogEntry({
             type: "system",
-            text: attacker.name + " uses " + action.name + " and regains " + healAmount + " HP.",
+            text: attacker.name + " uses " + healActionName + " and regains " + healAmount + " HP.",
           });
           return true;
         }
+        const utilityActionName = action?.name || "Action";
         addCombatLogEntry({
           type: "system",
-          text: attacker.name + " uses " + action.name + ".\n" + String(action.desc || "Resolve this utility action from the stat block.").slice(0, 280),
+          text: attacker.name + " uses " + utilityActionName + ".\n" + String(action.desc || "Resolve this utility action from the stat block.").slice(0, 280),
         });
-        const utilityName = String(action.name || "").toLowerCase();
+        const utilityName = String(utilityActionName).toLowerCase();
         if (/heal|regeneration|renew|restore/i.test(utilityName + " " + utilityText)) {
           emitPlayModeVfx(attacker, attacker, { mode: "heal", amount: 0 });
         } else if (/roar|frightful|presence|command|charm|teleport|summon|call/i.test(utilityName + " " + utilityText)) {
-          emitPlayModeVfx(attacker, target, { mode: "shockwave", actionName: action.name, damageType: "psychic", radius: 50 });
+          emitPlayModeVfx(attacker, target, { mode: "shockwave", actionName: utilityActionName, damageType: "psychic", radius: 50 });
         } else {
           emitPlayModeVfx(attacker, target, { mode: "buff", actionName: action.name, color: "#ffd54f" });
         }
@@ -2496,6 +2499,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   // Auto-switch tabs based on context
   useEffect(() => { if (combatLive || mode === "combat") setRightPanelTab("combat"); }, [combatLive]);
   useEffect(() => { if (selectedTokenId && rightPanelTab !== "combat") setRightPanelTab("inspect"); }, [selectedTokenId]);
+  // Players can only see inspect & combat tabs — redirect if on a DM-only tab
+  useEffect(() => { if (viewRole === "player" && !["inspect","combat"].includes(rightPanelTab)) setRightPanelTab("inspect"); }, [viewRole]);
 
   // ── Multi-target spell system ──
   const [multiTargetSelections, setMultiTargetSelections] = useState([]); // [{tokenId, x, y}, ...]
@@ -3577,11 +3582,12 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             : rangeLabel
       );
       const summaryText = actionText.trim();
+      const monsterActionName = action?.name || "Action";
       return {
         key: (item.isLegendary ? "legendary-" : "monster-") + ai,
         panel,
         actionType: item.isLegendary ? "legendary" : item.isLair ? "special" : "action",
-        label: item.isLegendary ? (action.name + " (Legendary)") : action.name,
+        label: item.isLegendary ? (monsterActionName + " (Legendary)") : monsterActionName,
         helper: helperText,
         effect: summaryText || "Resolve from monster stat block.",
         cost: item.isLegendary ? ("Legendary " + legendaryCost + "/" + getLegendaryActionMax(actorToken)) : item.isLair ? "1 / round" : "Action",
@@ -3599,9 +3605,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           if (needsTarget) {
             // Enter targeting mode — DM clicks a target token to resolve
             const monsterCard = {
-              id: "monster-" + action.name + "-" + Date.now(),
-              name: action.name,
-              label: action.name,
+              id: "monster-" + monsterActionName + "-" + Date.now(),
+              name: monsterActionName,
+              label: monsterActionName,
               resolver: "monster-action",
               data: { action, isLegendary: item.isLegendary, legendaryCost, summaryText },
             };
@@ -7595,7 +7601,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       const state = {
         tokens, drawings, fogCells, walls, terrainCells, bgColor, gridSize, showGrid,
         combatLive, combatants, turn, round, conditions, tokenConditions, turnStateByToken, combatTargetByActor,
-        playModeResolution, combatLog, fogMode, pings, props,
+        playModeResolution, combatLog, fogMode, fogEnabled, pings, props,
+        // Scene info so players know which scene is active
+        _activeMapId: activeMapId, _activeSceneId: activeSceneId,
+        // Background image source for players to load
+        _bgSrc: (() => { if (!activeMapId) return null; const m = battleMaps.find(b => b.id === activeMapId); if (!m) return null; if (activeSceneId) { const s = (m.scenes || []).find(sc => sc.id === activeSceneId); return s?.bgSrc || null; } return m.bgSrc || null; })(),
       };
       // Broadcast via PhmurtRealtime (Supabase channel or localStorage fallback)
       if (typeof PhmurtRealtime !== 'undefined' && activeCampaignId && activeCampaignId !== 'example') {
@@ -7606,7 +7616,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       }
     }, 150);
     return () => clearTimeout(syncTimerRef.current);
-  }, [tokens, drawings, fogCells, walls, terrainCells, bgColor, gridSize, showGrid, combatLive, combatants, turn, round, conditions, tokenConditions, turnStateByToken, combatTargetByActor, playModeResolution, combatLog, fogMode, pings, props, viewRole, activeCampaignId]);
+  }, [tokens, drawings, fogCells, walls, terrainCells, bgColor, gridSize, showGrid, combatLive, combatants, turn, round, conditions, tokenConditions, turnStateByToken, combatTargetByActor, playModeResolution, combatLog, fogMode, fogEnabled, pings, props, viewRole, activeCampaignId, activeMapId, activeSceneId]);
 
   // ── Player: Subscribe to DM state via PhmurtRealtime ──
   const realtimeHandleRef = useRef(null);
@@ -7635,8 +7645,17 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       setPlayModeResolution(state.playModeResolution || null);
       setCombatLog(state.combatLog || []);
       if (state.fogMode)   setFogMode(state.fogMode);
+      if (state.fogEnabled !== undefined) setFogEnabled(state.fogEnabled);
       if (state.pings)     setPings(state.pings.filter(p => Date.now() - p.time < 3000));
       if (state.props)     setProps(state.props);
+      // Load bg image from DM's scene (data URL)
+      if (state._bgSrc) {
+        const img = new window.Image();
+        img.onload = () => setBgImage(img);
+        img.src = state._bgSrc;
+      } else if (state._bgSrc === null) {
+        setBgImage(null);
+      }
     };
 
     if (typeof PhmurtRealtime !== 'undefined' && activeCampaignId && activeCampaignId !== 'example') {
@@ -10057,8 +10076,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             <div style={{ position:"absolute", bottom:0, left:0, width:16, height:16, borderBottom:"2px solid var(--crimson-border)", borderLeft:"2px solid var(--crimson-border)", pointerEvents:"none", zIndex:6, opacity:cockpitModeActive ? 0 : 0.6 }} />
             <div style={{ position:"absolute", bottom:0, right:0, width:16, height:16, borderBottom:"2px solid var(--crimson-border)", borderRight:"2px solid var(--crimson-border)", pointerEvents:"none", zIndex:6, opacity:cockpitModeActive ? 0 : (sidebarOpen?0.6:0.3) }} />
 
-            {/* ── DM/Player View Indicator ── */}
-            {combatLive && setViewRole && (
+            {/* ── DM/Player View Toggle (always visible for DM) ── */}
+            {setViewRole && (
               <ViewModeIndicator
                 viewRole={viewRole}
                 onToggle={() => setViewRole(prev => prev === "dm" ? "player" : "dm")}
@@ -11087,11 +11106,39 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                             </div>
                           </div>
                         ))}
-                        <button onClick={e => { e.stopPropagation(); const name = prompt("Scene name (e.g., Waterdeep, Dragon's Lair):"); if (name) createScene(map.id, name); }}
-                          onMouseEnter={e => e.currentTarget.style.color="#5ee09a"} onMouseLeave={e => e.currentTarget.style.color=T.textFaint}
-                          style={{ width:"100%", padding:"6px 0", background:"none", border:"none", cursor:"pointer", fontFamily:T.ui, fontSize:10, letterSpacing:"0.5px", color:T.textFaint, display:"flex", alignItems:"center", justifyContent:"center", gap:4, transition:"color 0.12s" }}>
-                          <Plus size={10}/> Add Scene
-                        </button>
+                        <div style={{ display:"flex", gap:4, marginTop:4 }}>
+                          <button onClick={e => { e.stopPropagation(); const name = prompt("Scene name (e.g., Waterdeep, Dragon's Lair):"); if (name) createScene(map.id, name); }}
+                            onMouseEnter={e => e.currentTarget.style.color="#5ee09a"} onMouseLeave={e => e.currentTarget.style.color=T.textFaint}
+                            style={{ flex:1, padding:"6px 0", background:"none", border:"none", cursor:"pointer", fontFamily:T.ui, fontSize:10, letterSpacing:"0.5px", color:T.textFaint, display:"flex", alignItems:"center", justifyContent:"center", gap:4, transition:"color 0.12s" }}>
+                            <Plus size={10}/> Add Scene
+                          </button>
+                          {activeSceneId && activeMapId === map.id && (
+                            <button onClick={e => { e.stopPropagation();
+                              const srcScene = (map.scenes || []).find(s => s.id === activeSceneId);
+                              if (!srcScene) return;
+                              const dupName = (srcScene.name || "Scene") + " (copy)";
+                              const dupId = "scene-" + Date.now();
+                              const dupState = captureSceneState();
+                              setBattleMaps(prev => prev.map(m => m.id !== map.id ? m : {...m, scenes: [...(m.scenes || []), { id: dupId, name: dupName, bgSrc: srcScene.bgSrc || null, state: dupState }]}));
+                            }}
+                              onMouseEnter={e => e.currentTarget.style.color="#c9a84c"} onMouseLeave={e => e.currentTarget.style.color=T.textFaint}
+                              style={{ padding:"6px 8px", background:"none", border:"none", cursor:"pointer", fontFamily:T.ui, fontSize:10, color:T.textFaint, display:"flex", alignItems:"center", gap:3, transition:"color 0.12s" }} title="Duplicate current scene">
+                              <Copy size={10}/> Duplicate
+                            </button>
+                          )}
+                        </div>
+                        {activeSceneId && activeMapId === map.id && (
+                          <button onClick={e => { e.stopPropagation();
+                            setBattleMaps(prev => prev.map(m => {
+                              if (m.id !== activeMapId) return m;
+                              return {...m, scenes: (m.scenes || []).map(s => s.id !== activeSceneId ? s : {...s, state: captureSceneState()})};
+                            }));
+                          }}
+                            onMouseEnter={e => e.currentTarget.style.background="rgba(94,224,154,0.1)"} onMouseLeave={e => e.currentTarget.style.background="rgba(94,224,154,0.04)"}
+                            style={{ width:"100%", padding:"6px 0", marginTop:4, background:"rgba(94,224,154,0.04)", border:"1px solid rgba(94,224,154,0.1)", borderRadius:6, cursor:"pointer", fontFamily:T.ui, fontSize:9, letterSpacing:"0.5px", color:"#5ee09a", display:"flex", alignItems:"center", justifyContent:"center", gap:4, transition:"all 0.12s" }}>
+                            <Save size={10}/> Save Current Scene
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -11126,6 +11173,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                               <span style={{ fontSize:11, fontFamily:T.body, color: selectedPropId === p.id ? "#58aaff" : T.textDim }}>{p.name}</span>
                             </div>
                             <div style={{ display:"flex", gap:3 }}>
+                              <button onClick={e => { e.stopPropagation(); updateProp(p.id, { layer: p.layer === "above" ? "below" : "above" }); }}
+                                style={{ background:"none", border:"none", cursor:"pointer", color: p.layer === "below" ? "#58aaff" : T.textFaint, padding:2 }} title={p.layer === "above" ? "Move below tokens" : "Move above tokens"}>{p.layer === "below" ? <ChevronDown size={10}/> : <ChevronUp size={10}/>}</button>
                               <button onClick={e => { e.stopPropagation(); updateProp(p.id, { locked: !p.locked }); }}
                                 style={{ background:"none", border:"none", cursor:"pointer", color: p.locked ? "#ffd54f" : T.textFaint, padding:2 }}>{p.locked ? <Lock size={10}/> : <Unlock size={10}/>}</button>
                               <button onClick={e => { e.stopPropagation(); removeProp(p.id); }}
@@ -11334,22 +11383,22 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               {/* ── Spacer ── */}
               <div style={{ width:32, height:1, background:"rgba(255,255,255,0.06)", margin:"5px 0" }} />
 
-              {/* ── View Controls ── */}
-              <button onClick={() => setShowGrid(!showGrid)} title="Toggle Grid (G)"
-                onMouseEnter={e => tbHover(e, showGrid)}
-                onMouseLeave={e => tbLeave(e, showGrid)}
-                style={tbBtnStyle(showGrid, "gold")}>
-                <Layers size={tbIconSize} color={tbIconColor(showGrid, "gold")} strokeWidth={showGrid ? 2.2 : 1.6} />
-                {tbLabel("Grid", showGrid, "gold")}
-              </button>
-
-              <button onClick={() => { setZoom(1); setPan({x:0,y:0}); }} title="Reset View"
-                onMouseEnter={e => { e.currentTarget.style.background="rgba(255,255,255,0.04)"; }}
-                onMouseLeave={e => { e.currentTarget.style.background="transparent"; }}
-                style={{ width:tbBtnW, height:tbBtnH, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:3, background:"transparent", border:"none", borderRadius:10, cursor:"pointer", transition:"all 0.18s ease" }}>
-                <RefreshCw size={14} color="rgba(242,232,214,0.35)" strokeWidth={1.6} />
-                {tbLabel("Reset", false, "gold")}
-              </button>
+              {/* ── Mode Switching ── */}
+              {bmModes.map(m => {
+                const isActive = mode === m.id;
+                const isGreen = m.id === "combat";
+                const activeColor = isGreen ? tbGreenActive : tbActive;
+                const activeBg = isGreen ? tbGreenBg : tbActiveBg;
+                return (
+                <button key={m.id} onClick={() => { if (m.id === "draw" && viewRole === "player") return; setMode(m.id); if (m.id === "combat") { setRightPanelTab("combat"); setCombatTab(combatLive ? "tracker" : combatTab); } }} title={m.label}
+                  onMouseEnter={e => tbHover(e, isActive)}
+                  onMouseLeave={e => tbLeave(e, isActive)}
+                  style={tbBtnStyle(isActive, isGreen ? "green" : "gold")}>
+                  <m.icon size={tbIconSize} color={isActive ? activeColor : "rgba(242,232,214,0.35)"} strokeWidth={isActive ? 2.2 : 1.6} />
+                  {tbLabel(m.label, isActive, isGreen ? "green" : "gold")}
+                </button>
+                );
+              })}
 
               {/* ── Combat Round Indicator (bottom) ── */}
               {combatLive && (
@@ -11457,33 +11506,15 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           scrollbarWidth:"thin", scrollbarColor:"rgba(255,255,255,0.06) transparent",
         }}>
 
-          {/* ── Mode Switcher (persistent header) ── */}
-          <div style={{ padding:"10px 14px 8px", borderBottom:"1px solid rgba(255,255,255,0.04)", flexShrink:0 }}>
-            <div style={{ display:"flex", gap:3 }}>
-              {bmModes.map((m, idx) => {
-                const isActive = mode === m.id;
-                const isGreen = m.id === "combat";
-                return (
-                  <button key={m.id} onClick={() => { if (m.id === "draw" && viewRole === "player") return; setMode(m.id); if (m.id === "combat") { setRightPanelTab("combat"); setCombatTab(combatLive ? "tracker" : combatTab); } }}
-                    onMouseEnter={e => { if (!isActive) e.currentTarget.style.background="rgba(255,255,255,0.04)"; }}
-                    onMouseLeave={e => { if (!isActive) e.currentTarget.style.background=isActive?(isGreen?"rgba(94,224,154,0.08)":"rgba(201,168,76,0.08)"):"transparent"; }}
-                    style={{ flex:1, padding:"7px 8px", display:"flex", alignItems:"center", justifyContent:"center", gap:5, background: isActive ? (isGreen ? "rgba(94,224,154,0.08)" : "rgba(201,168,76,0.08)") : "transparent", border: "1px solid " + (isActive ? (isGreen ? "rgba(94,224,154,0.2)" : "rgba(201,168,76,0.2)") : "rgba(255,255,255,0.04)"), borderRadius:8, cursor:"pointer", transition:"all 0.15s", fontFamily:T.ui, fontSize:9, letterSpacing:"0.8px", textTransform:"uppercase", fontWeight: isActive ? 600 : 400, color: isActive ? (isGreen ? "#5ee09a" : "#c9a84c") : "rgba(242,232,214,0.35)" }}>
-                    <m.icon size={12} strokeWidth={isActive ? 2.2 : 1.5} /> {m.label}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* ── Tab Bar ── */}
+          {/* ── Tab Bar (single compact row, filtered by role) ── */}
           <div style={{ display:"flex", borderBottom:"1px solid rgba(255,255,255,0.04)", flexShrink:0, padding:"0 4px" }}>
             {[
-              {id:"inspect",label:"Inspect",icon:Eye},
-              {id:"combat",label:"Combat",icon:Swords},
-              {id:"tokens",label:"Tokens",icon:Users},
-              {id:"map",label:"Map",icon:Globe},
-              {id:"settings",label:"Settings",icon:Settings},
-            ].map(tab => {
+              {id:"inspect",label:"Inspect",icon:Eye, roles:["dm","player"]},
+              {id:"combat",label:"Combat",icon:Swords, roles:["dm","player"]},
+              {id:"tokens",label:"Tokens",icon:Users, roles:["dm"]},
+              {id:"map",label:"Map",icon:Globe, roles:["dm"]},
+              {id:"settings",label:"Settings",icon:Settings, roles:["dm"]},
+            ].filter(tab => tab.roles.includes(viewRole)).map(tab => {
               const isActive = rightPanelTab === tab.id;
               const Icon = tab.icon;
               const hasBadge = tab.id === "combat" && combatLive;
@@ -12579,8 +12610,28 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                             <div style={{ fontFamily: T.body, fontSize: 10, color: "rgba(242,232,214,0.25)" }}>ft</div>
                           </div>
                         </div>
-                        <div style={{ height: 6, background: "rgba(255,255,255,0.03)", borderRadius: 999, overflow: "hidden", marginBottom: 16 }}>
+                        <div style={{ height: 6, background: "rgba(255,255,255,0.03)", borderRadius: 999, overflow: "hidden", marginBottom: 10 }}>
                           <div style={{ width: hpPct + "%", height: "100%", background: "linear-gradient(90deg," + hpCol + "," + hpCol + "aa)", borderRadius: 999, boxShadow: "0 0 8px " + hpCol + "33", transition: "width 0.3s ease" }} />
+                        </div>
+
+                        {/* Quick HP Adjust */}
+                        <div style={{ display: "flex", gap: 4, marginBottom: 16 }}>
+                          {[-10, -5, -1].map(d => (
+                            <button key={d} onClick={() => setTokens(p => p.map(t => t.id === selectedTokenId ? {...t, hp: Math.max(0, (t.hp || 0) + d)} : t))}
+                              onMouseEnter={e => e.currentTarget.style.background="rgba(239,68,68,0.12)"}
+                              onMouseLeave={e => e.currentTarget.style.background="rgba(239,68,68,0.05)"}
+                              style={{ flex:1, padding:"5px 0", background:"rgba(239,68,68,0.05)", border:"1px solid rgba(239,68,68,0.12)", borderRadius:6, color:"#ef4444", fontFamily:T.ui, fontSize:10, fontWeight:600, cursor:"pointer", transition:"background 0.12s" }}>{d}</button>
+                          ))}
+                          <button onClick={() => setTokens(p => p.map(t => t.id === selectedTokenId ? {...t, hp: t.maxHp || t.hp} : t))}
+                            onMouseEnter={e => e.currentTarget.style.background="rgba(94,224,154,0.12)"}
+                            onMouseLeave={e => e.currentTarget.style.background="rgba(94,224,154,0.05)"}
+                            style={{ padding:"5px 8px", background:"rgba(94,224,154,0.05)", border:"1px solid rgba(94,224,154,0.12)", borderRadius:6, color:"#5ee09a", fontFamily:T.ui, fontSize:8, fontWeight:600, cursor:"pointer", transition:"background 0.12s", letterSpacing:"0.5px" }}>FULL</button>
+                          {[1, 5, 10].map(d => (
+                            <button key={d} onClick={() => setTokens(p => p.map(t => t.id === selectedTokenId ? {...t, hp: Math.min(t.maxHp || 999, (t.hp || 0) + d)} : t))}
+                              onMouseEnter={e => e.currentTarget.style.background="rgba(94,224,154,0.12)"}
+                              onMouseLeave={e => e.currentTarget.style.background="rgba(94,224,154,0.05)"}
+                              style={{ flex:1, padding:"5px 0", background:"rgba(94,224,154,0.05)", border:"1px solid rgba(94,224,154,0.12)", borderRadius:6, color:"#5ee09a", fontFamily:T.ui, fontSize:10, fontWeight:600, cursor:"pointer", transition:"background 0.12s" }}>+{d}</button>
+                          ))}
                         </div>
 
                         {/* Ability Scores */}
@@ -12611,15 +12662,22 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                           ))}
                         </div>
 
-                        {/* Conditions */}
-                        {conditions.length > 0 && (
-                          <div style={{ marginBottom: 12 }}>
-                            <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1.2px", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: 8, fontWeight:600 }}>Conditions</div>
-                            <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                              {conditions.map(c => <span key={c} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.2)", color: "#ef4444" }}>{c}</span>)}
-                            </div>
+                        {/* Conditions — always show toggleable grid */}
+                        <div style={{ marginBottom: 12 }}>
+                          <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1.2px", textTransform: "uppercase", color: "rgba(201,168,76,0.5)", marginBottom: 8, fontWeight:600 }}>Conditions</div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+                            {["Blinded","Charmed","Deafened","Frightened","Grappled","Incapacitated","Invisible","Paralyzed","Petrified","Poisoned","Prone","Restrained","Stunned","Unconscious","Concentrating"].map(c => {
+                              const has = conditions.includes(c);
+                              return (
+                                <button key={c} onClick={() => {
+                                  if (has) { removeTokenCondition(selectedTokenId, c); }
+                                  else { setTokens(p => p.map(t => t.id === selectedTokenId ? {...t, conditions: [...(t.conditions || []), c]} : t)); }
+                                }}
+                                  style={{ padding:"3px 7px", borderRadius:999, fontSize:9, fontFamily:T.ui, cursor:"pointer", transition:"all 0.12s", background: has ? "rgba(239,68,68,0.1)" : "rgba(255,255,255,0.015)", border:"1px solid " + (has ? "rgba(239,68,68,0.25)" : "rgba(255,255,255,0.04)"), color: has ? "#ef4444" : "rgba(242,232,214,0.25)" }}>{c}</button>
+                              );
+                            })}
                           </div>
-                        )}
+                        </div>
 
                         {/* Resistances */}
                         {resistances.length > 0 && (
@@ -12730,6 +12788,38 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                 style={{ width:"100%", padding: "10px 14px", background: "rgba(94,224,154,0.06)", border: "1px solid rgba(94,224,154,0.2)", borderRadius: 10, color: "#5ee09a", fontFamily: T.ui, fontSize: 10, fontWeight: 600, cursor: "pointer", letterSpacing: "1px", textTransform:"uppercase", transition:"all 0.15s", display:"flex", alignItems:"center", justifyContent:"center", gap:6 }}>
                 <Swords size={13} /> Start Encounter
               </button>
+
+              {/* Party readiness summary */}
+              {tokens.filter(t => t.tokenType === "pc").length > 0 && (
+                <div style={{ marginTop: 16, padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+                  <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Party on Map</div>
+                  <div style={{ display: "flex", flexDirection:"column", gap:4 }}>
+                    {tokens.filter(t => t.tokenType === "pc").map(tok => {
+                      const hp = tok.hp || 0;
+                      const mhp = tok.maxHp || 1;
+                      const pct = Math.round(hp / mhp * 100);
+                      const col = pct > 60 ? "#5ee09a" : pct > 30 ? "#f59e0b" : "#ef4444";
+                      return (
+                        <div key={tok.id} style={{ display:"flex", alignItems:"center", gap:8 }}>
+                          <span style={{ fontFamily:T.ui, fontSize:9, color:"rgba(242,232,214,0.5)", flex:1, minWidth:0, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{tok.name}</span>
+                          <div style={{ width:60, height:4, borderRadius:999, background:"rgba(255,255,255,0.03)", overflow:"hidden", flexShrink:0 }}>
+                            <div style={{ width:pct+"%", height:"100%", background:col, borderRadius:999, transition:"width 0.3s" }}/>
+                          </div>
+                          <span style={{ fontFamily:T.body, fontSize:8, color:col, minWidth:28, textAlign:"right", flexShrink:0 }}>{hp}/{mhp}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Enemy count */}
+              {tokens.filter(t => t.tokenType !== "pc").length > 0 && (
+                <div style={{ marginTop: 8, padding:"10px 12px", background:"rgba(239,68,68,0.03)", borderRadius:10, border:"1px solid rgba(239,68,68,0.06)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                  <span style={{ fontFamily:T.ui, fontSize:9, color:"rgba(242,232,214,0.4)" }}>Enemies on map</span>
+                  <span style={{ fontFamily:T.body, fontSize:14, fontWeight:700, color:"#ef4444" }}>{tokens.filter(t => t.tokenType !== "pc").length}</span>
+                </div>
+              )}
             </div>
           )}
 
@@ -12762,7 +12852,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               </div>
 
               {/* Subsection: Scene Management */}
-              <div style={{ marginBottom: 12, padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+              <div style={{ marginBottom: 16, padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
                 <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Scene Management</div>
                 <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 6 }}>
                   <button onClick={() => setShowScenePanel(true)}
@@ -12781,6 +12871,80 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* Map Stats */}
+              <div style={{ marginBottom: 16, padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 10, textTransform: "uppercase", fontWeight:500 }}>Map Stats</div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6 }}>
+                  <div style={{ padding:"8px 6px", borderRadius:8, textAlign:"center", background:"rgba(255,255,255,0.015)", border:"1px solid rgba(255,255,255,0.04)" }}>
+                    <div style={{ fontFamily:T.body, fontSize:16, fontWeight:700, color:"rgba(242,232,214,0.85)" }}>{tokens.length}</div>
+                    <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"0.8px", color:"rgba(242,232,214,0.3)", textTransform:"uppercase" }}>tokens</div>
+                  </div>
+                  <div style={{ padding:"8px 6px", borderRadius:8, textAlign:"center", background:"rgba(255,255,255,0.015)", border:"1px solid rgba(255,255,255,0.04)" }}>
+                    <div style={{ fontFamily:T.body, fontSize:16, fontWeight:700, color:"rgba(242,232,214,0.85)" }}>{drawings.length}</div>
+                    <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"0.8px", color:"rgba(242,232,214,0.3)", textTransform:"uppercase" }}>drawings</div>
+                  </div>
+                  <div style={{ padding:"8px 6px", borderRadius:8, textAlign:"center", background:"rgba(255,255,255,0.015)", border:"1px solid rgba(255,255,255,0.04)" }}>
+                    <div style={{ fontFamily:T.body, fontSize:16, fontWeight:700, color:"rgba(242,232,214,0.85)" }}>{Object.keys(fogCells).length}</div>
+                    <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"0.8px", color:"rgba(242,232,214,0.3)", textTransform:"uppercase" }}>fog cells</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Props & Images */}
+              <div style={{ marginBottom: 16, padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Props & Images</div>
+                <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:8 }}>
+                  <button onClick={() => propImgInputRef.current?.click()}
+                    onMouseEnter={e => e.currentTarget.style.background="rgba(88,170,255,0.1)"}
+                    onMouseLeave={e => e.currentTarget.style.background="rgba(88,170,255,0.05)"}
+                    style={{ flex:1, padding:"6px 8px", background:"rgba(88,170,255,0.05)", border:"1px solid rgba(88,170,255,0.12)", borderRadius:6, color:"#58aaff", fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"background 0.12s", display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
+                    <Upload size={10}/> Add Prop
+                  </button>
+                  <button onClick={() => mapImgInputRef.current?.click()}
+                    onMouseEnter={e => e.currentTarget.style.background="rgba(201,168,76,0.1)"}
+                    onMouseLeave={e => e.currentTarget.style.background="rgba(201,168,76,0.05)"}
+                    style={{ flex:1, padding:"6px 8px", background:"rgba(201,168,76,0.05)", border:"1px solid rgba(201,168,76,0.12)", borderRadius:6, color:"#c9a84c", fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"background 0.12s", display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
+                    <Image size={10}/> Map Image
+                  </button>
+                </div>
+                {props.length > 0 && (
+                  <div style={{ display:"flex", flexDirection:"column", gap:2, maxHeight:150, overflowY:"auto", scrollbarWidth:"thin", scrollbarColor:"rgba(255,255,255,0.06) transparent" }}>
+                    {props.map(p => (
+                      <div key={p.id} style={{ display:"flex", alignItems:"center", gap:6, padding:"4px 6px", borderRadius:4, background: selectedPropId === p.id ? "rgba(88,170,255,0.08)" : "transparent" }}>
+                        <span onClick={() => setSelectedPropId(p.id === selectedPropId ? null : p.id)} style={{ flex:1, fontFamily:T.body, fontSize:10, color: selectedPropId === p.id ? "#58aaff" : "rgba(242,232,214,0.4)", cursor:"pointer", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{p.name}</span>
+                        <span style={{ fontFamily:T.ui, fontSize:7, color:"rgba(242,232,214,0.2)", textTransform:"uppercase" }}>{p.layer}</span>
+                        <button onClick={() => removeProp(p.id)} style={{ background:"none", border:"none", cursor:"pointer", padding:1, display:"flex" }}><X size={9} color="rgba(239,68,68,0.4)"/></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {props.length === 0 && <div style={{ fontFamily:T.body, fontSize:10, color:"rgba(242,232,214,0.2)", padding:"2px 0" }}>No props placed</div>}
+              </div>
+
+              {/* Quick View Controls */}
+              <div style={{ padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Quick View</div>
+                <div style={{ display:"flex", gap:4 }}>
+                  <button onClick={() => { setZoom(1); setPan({x:0,y:0}); }}
+                    onMouseEnter={e => e.currentTarget.style.background="rgba(201,168,76,0.1)"}
+                    onMouseLeave={e => e.currentTarget.style.background="rgba(201,168,76,0.04)"}
+                    style={{ flex:1, padding:"6px 8px", background:"rgba(201,168,76,0.04)", border:"1px solid rgba(201,168,76,0.1)", borderRadius:6, color:"#c9a84c", fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"background 0.12s", display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
+                    <Compass size={10}/> Reset
+                  </button>
+                  <button onClick={() => setZoom(z => Math.min(5, z + 0.25))}
+                    onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.06)"}
+                    onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.02)"}
+                    style={{ padding:"6px 10px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:6, color:"rgba(242,232,214,0.5)", fontFamily:T.ui, fontSize:11, cursor:"pointer", transition:"background 0.12s" }}>+</button>
+                  <div style={{ padding:"6px 8px", textAlign:"center", minWidth:48 }}>
+                    <span style={{ fontFamily:T.body, fontSize:12, fontWeight:600, color:"rgba(242,232,214,0.7)" }}>{Math.round(zoom * 100)}%</span>
+                  </div>
+                  <button onClick={() => setZoom(z => Math.max(0.1, z - 0.25))}
+                    onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.06)"}
+                    onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.02)"}
+                    style={{ padding:"6px 10px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:6, color:"rgba(242,232,214,0.5)", fontFamily:T.ui, fontSize:11, cursor:"pointer", transition:"background 0.12s" }}>-</button>
+                </div>
               </div>
             </div>
           )}
@@ -12820,20 +12984,60 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               </div>
 
               {/* Currently placed tokens */}
-              <div style={{ padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+              <div style={{ marginBottom: 16, padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
                 <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>On Map ({tokens.length})</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 3, maxHeight: 200, overflowY: "auto", scrollbarWidth:"thin", scrollbarColor:"rgba(255,255,255,0.06) transparent" }}>
-                  {tokens.map(tok => (
-                    <div key={tok.id} onClick={() => { setSelectedTokenId(tok.id); setRightPanelTab("inspect"); }}
-                      style={{ padding: "5px 8px", background: selectedTokenId === tok.id ? "rgba(201,168,76,0.08)" : "rgba(255,255,255,0.01)", border: "1px solid " + (selectedTokenId === tok.id ? "rgba(201,168,76,0.2)" : "rgba(255,255,255,0.04)"), borderRadius: 6, cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", transition:"all 0.12s" }}>
-                      <span style={{ fontFamily: T.ui, fontSize: 9, color: selectedTokenId === tok.id ? "#c9a84c" : "rgba(242,232,214,0.5)" }}>{tok.name}</span>
-                      <span style={{ fontFamily: T.body, fontSize: 8, color: "rgba(242,232,214,0.2)" }}>{tok.tokenType}</span>
+                <div style={{ display: "flex", flexDirection: "column", gap: 3, maxHeight: 300, overflowY: "auto", scrollbarWidth:"thin", scrollbarColor:"rgba(255,255,255,0.06) transparent" }}>
+                  {tokens.map(tok => {
+                    const isSel = selectedTokenId === tok.id;
+                    const hpP = tok.maxHp ? Math.round((tok.hp || 0) / tok.maxHp * 100) : null;
+                    const hpC = hpP != null ? (hpP > 60 ? "#5ee09a" : hpP > 30 ? "#f59e0b" : "#ef4444") : null;
+                    return (
+                    <div key={tok.id} style={{ padding:"5px 8px", background: isSel ? "rgba(201,168,76,0.08)" : "rgba(255,255,255,0.01)", border:"1px solid " + (isSel ? "rgba(201,168,76,0.2)" : "rgba(255,255,255,0.04)"), borderRadius:6, transition:"all 0.12s" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                        <div onClick={() => { setSelectedTokenId(tok.id); setRightPanelTab("inspect"); }} style={{ flex:1, cursor:"pointer", display:"flex", alignItems:"center", gap:6, minWidth:0 }}>
+                          {tok.imageSrc ? (
+                            <div style={{ width:18, height:18, borderRadius:"50%", overflow:"hidden", flexShrink:0, border:"1px solid " + (isSel ? "rgba(201,168,76,0.4)" : "rgba(255,255,255,0.08)") }}>
+                              <img src={tok.imageSrc} style={{ width:"100%", height:"100%", objectFit:"cover" }}/>
+                            </div>
+                          ) : (
+                            <div style={{ width:6, height:6, borderRadius:"50%", background: tok.color || "#888", flexShrink:0 }}/>
+                          )}
+                          <span style={{ fontFamily:T.ui, fontSize:9, color: isSel ? "#c9a84c" : "rgba(242,232,214,0.5)", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{tok.name}</span>
+                          {hpC && <span style={{ fontFamily:T.body, fontSize:8, color:hpC, flexShrink:0 }}>{tok.hp}/{tok.maxHp}</span>}
+                        </div>
+                        <span style={{ fontFamily:T.body, fontSize:7, color:"rgba(242,232,214,0.15)", textTransform:"uppercase", flexShrink:0 }}>{tok.tokenType === "pc" ? "PC" : tok.size || "med"}</span>
+                        <button onClick={(e) => { e.stopPropagation(); setTokens(p => p.map(t => t.id === tok.id ? {...t, hidden: !t.hidden} : t)); }} title={tok.hidden ? "Show" : "Hide"}
+                          style={{ background:"none", border:"none", cursor:"pointer", padding:2, display:"flex" }}>
+                          {tok.hidden ? <EyeOff size={10} color="rgba(242,232,214,0.2)"/> : <Eye size={10} color="rgba(242,232,214,0.25)"/>}
+                        </button>
+                        <button onClick={(e) => { e.stopPropagation(); removeToken(tok.id); }} title="Remove"
+                          style={{ background:"none", border:"none", cursor:"pointer", padding:2, display:"flex" }}>
+                          <X size={10} color="rgba(239,68,68,0.35)"/>
+                        </button>
+                      </div>
                     </div>
-                  ))}
+                    );
+                  })}
                   {tokens.length === 0 && (
                     <div style={{ fontFamily: T.body, fontSize: 10, color: "rgba(242,232,214,0.2)", padding: "4px 0" }}>No tokens on map</div>
                   )}
                 </div>
+                {tokens.length > 1 && (
+                  <div style={{ display:"flex", gap:4, marginTop:8 }}>
+                    <button onClick={() => { if (confirm("Remove all enemy tokens?")) setTokens(p => p.filter(t => t.tokenType === "pc")); }}
+                      onMouseEnter={e => e.currentTarget.style.background="rgba(239,68,68,0.1)"}
+                      onMouseLeave={e => e.currentTarget.style.background="rgba(239,68,68,0.04)"}
+                      style={{ flex:1, padding:"5px 8px", background:"rgba(239,68,68,0.04)", border:"1px solid rgba(239,68,68,0.1)", borderRadius:6, color:"#ef4444", fontFamily:T.ui, fontSize:8, cursor:"pointer", transition:"background 0.12s", display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
+                      <Skull size={9}/> Clear Enemies
+                    </button>
+                    <button onClick={() => setTokens(p => p.map(t => ({...t, hidden: false})))}
+                      onMouseEnter={e => e.currentTarget.style.background="rgba(94,224,154,0.1)"}
+                      onMouseLeave={e => e.currentTarget.style.background="rgba(94,224,154,0.04)"}
+                      style={{ flex:1, padding:"5px 8px", background:"rgba(94,224,154,0.04)", border:"1px solid rgba(94,224,154,0.1)", borderRadius:6, color:"#5ee09a", fontFamily:T.ui, fontSize:8, cursor:"pointer", transition:"background 0.12s", display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
+                      <Eye size={9}/> Show All
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -12855,6 +13059,79 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                 <div style={{ display: "flex", gap: 6 }}>
                   <button onClick={() => setShowGrid(!showGrid)} style={{ padding: "5px 10px", background: showGrid ? "rgba(94,224,154,0.08)" : "rgba(255,255,255,0.02)", border: "1px solid " + (showGrid ? "rgba(94,224,154,0.2)" : "rgba(255,255,255,0.06)"), borderRadius: 6, color: showGrid ? "#5ee09a" : "rgba(242,232,214,0.4)", fontFamily: T.ui, fontSize: 9, cursor: "pointer", transition:"all 0.12s" }}>{showGrid ? "Grid On" : "Grid Off"}</button>
                   <button onClick={() => setSnapToGrid(!snapToGrid)} style={{ padding: "5px 10px", background: snapToGrid ? "rgba(94,224,154,0.08)" : "rgba(255,255,255,0.02)", border: "1px solid " + (snapToGrid ? "rgba(94,224,154,0.2)" : "rgba(255,255,255,0.06)"), borderRadius: 6, color: snapToGrid ? "#5ee09a" : "rgba(242,232,214,0.4)", fontFamily: T.ui, fontSize: 9, cursor: "pointer", transition:"all 0.12s" }}>{snapToGrid ? "Snap On" : "Snap Off"}</button>
+                </div>
+              </div>
+
+              {/* View & Zoom */}
+              <div style={{ marginBottom: 16, padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>View & Zoom</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                  <button onClick={() => setZoom(Math.max(0.1, zoom - 0.1))}
+                    onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.06)"}
+                    onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.02)"}
+                    style={{ padding:"4px 8px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:6, color:"rgba(242,232,214,0.5)", fontFamily:T.ui, fontSize:11, cursor:"pointer", transition:"background 0.12s", lineHeight:1 }}>-</button>
+                  <div style={{ flex:1, textAlign:"center" }}>
+                    <div style={{ fontFamily:T.body, fontSize:16, fontWeight:700, color:"rgba(242,232,214,0.85)" }}>{Math.round(zoom * 100)}%</div>
+                    <div style={{ fontFamily:T.body, fontSize:9, color:"rgba(242,232,214,0.25)", marginTop:1 }}>zoom</div>
+                  </div>
+                  <button onClick={() => setZoom(Math.min(5, zoom + 0.1))}
+                    onMouseEnter={e => e.currentTarget.style.background="rgba(255,255,255,0.06)"}
+                    onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.02)"}
+                    style={{ padding:"4px 8px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:6, color:"rgba(242,232,214,0.5)", fontFamily:T.ui, fontSize:11, cursor:"pointer", transition:"background 0.12s", lineHeight:1 }}>+</button>
+                </div>
+                <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
+                  {[0.25, 0.5, 0.75, 1, 1.5, 2].map(z => (
+                    <button key={z} onClick={() => setZoom(z)}
+                      style={{ padding:"4px 8px", background: Math.abs(zoom - z) < 0.01 ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.02)", border:"1px solid " + (Math.abs(zoom - z) < 0.01 ? "rgba(201,168,76,0.25)" : "rgba(255,255,255,0.06)"), borderRadius:6, color: Math.abs(zoom - z) < 0.01 ? "#c9a84c" : "rgba(242,232,214,0.4)", fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"all 0.12s" }}>{z * 100}%</button>
+                  ))}
+                </div>
+                <button onClick={() => { setZoom(1); setPan({x:0,y:0}); }}
+                  onMouseEnter={e => e.currentTarget.style.background="rgba(201,168,76,0.1)"}
+                  onMouseLeave={e => e.currentTarget.style.background="rgba(201,168,76,0.04)"}
+                  style={{ width:"100%", padding:"7px 10px", background:"rgba(201,168,76,0.04)", border:"1px solid rgba(201,168,76,0.12)", borderRadius:6, color:"#c9a84c", fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"background 0.12s", letterSpacing:"0.5px", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+                  <Compass size={11}/> Reset View
+                </button>
+              </div>
+
+              {/* Fog of War */}
+              <div style={{ marginBottom: 16, padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Fog of War</div>
+                <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                  <button onClick={() => setFogEnabled(!fogEnabled)}
+                    style={{ flex:1, padding:"6px 10px", background: fogEnabled ? "rgba(94,224,154,0.08)" : "rgba(255,255,255,0.02)", border:"1px solid " + (fogEnabled ? "rgba(94,224,154,0.2)" : "rgba(255,255,255,0.06)"), borderRadius:6, color: fogEnabled ? "#5ee09a" : "rgba(242,232,214,0.4)", fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"all 0.12s", display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
+                    {fogEnabled ? <Eye size={11}/> : <EyeOff size={11}/>} {fogEnabled ? "Fog On" : "Fog Off"}
+                  </button>
+                </div>
+                <div style={{ display: "flex", gap: 4, marginBottom: 8 }}>
+                  {["manual", "vision"].map(fm => (
+                    <button key={fm} onClick={() => setFogMode(fm)}
+                      style={{ flex:1, padding:"5px 8px", background: fogMode === fm ? "rgba(201,168,76,0.08)" : "rgba(255,255,255,0.02)", border:"1px solid " + (fogMode === fm ? "rgba(201,168,76,0.2)" : "rgba(255,255,255,0.06)"), borderRadius:6, color: fogMode === fm ? "#c9a84c" : "rgba(242,232,214,0.4)", fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"all 0.12s", textTransform:"capitalize" }}>{fm}</button>
+                  ))}
+                </div>
+                <button onClick={() => { if (confirm("Clear all fog cells?")) setFogCells({}); }}
+                  onMouseEnter={e => e.currentTarget.style.background="rgba(239,68,68,0.1)"}
+                  onMouseLeave={e => e.currentTarget.style.background="rgba(239,68,68,0.04)"}
+                  style={{ width:"100%", padding:"6px 10px", background:"rgba(239,68,68,0.04)", border:"1px solid rgba(239,68,68,0.1)", borderRadius:6, color:"#ef4444", fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"background 0.12s", display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
+                  <Trash2 size={10}/> Clear All Fog
+                </button>
+              </div>
+
+              {/* Display Options */}
+              <div style={{ padding:"12px", background:"rgba(255,255,255,0.015)", borderRadius:10, border:"1px solid rgba(255,255,255,0.03)" }}>
+                <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "0.8px", color: "rgba(242,232,214,0.35)", marginBottom: 8, textTransform: "uppercase", fontWeight:500 }}>Quick Actions</div>
+                <div style={{ display: "flex", flexDirection:"column", gap: 4 }}>
+                  <button onClick={() => { setDrawings([]); setWalls([]); setTerrainCells({}); }}
+                    onMouseEnter={e => e.currentTarget.style.background="rgba(239,68,68,0.08)"}
+                    onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.02)"}
+                    style={{ padding:"6px 10px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:6, color:"rgba(242,232,214,0.4)", fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"background 0.12s", textAlign:"left", display:"flex", alignItems:"center", gap:6 }}>
+                    <Trash2 size={10} color="rgba(239,68,68,0.5)"/> Clear All Drawings
+                  </button>
+                  <button onClick={() => { if (confirm("Remove all tokens from the map?")) setTokens([]); }}
+                    onMouseEnter={e => e.currentTarget.style.background="rgba(239,68,68,0.08)"}
+                    onMouseLeave={e => e.currentTarget.style.background="rgba(255,255,255,0.02)"}
+                    style={{ padding:"6px 10px", background:"rgba(255,255,255,0.02)", border:"1px solid rgba(255,255,255,0.06)", borderRadius:6, color:"rgba(242,232,214,0.4)", fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"background 0.12s", textAlign:"left", display:"flex", alignItems:"center", gap:6 }}>
+                    <Trash2 size={10} color="rgba(239,68,68,0.5)"/> Clear All Tokens
+                  </button>
                 </div>
               </div>
             </div>

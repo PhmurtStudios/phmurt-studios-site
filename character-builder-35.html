@@ -228,6 +228,15 @@
     /* Roll Initiative button */
     .cs-init-btn { font-family:'Cinzel',serif; font-size:11px; letter-spacing:2px; text-transform:uppercase; padding:12px 24px; background:var(--crimson); border:none; color:white; cursor:pointer; margin-bottom:16px; width:100%; }
     .cs-init-btn:hover { background:var(--crimson-dim); }
+    /* Level-Up Button Pulse */
+    @keyframes lvlPulse { 0%,100%{box-shadow:0 0 12px rgba(139,26,16,0.45);} 50%{box-shadow:0 0 24px rgba(212,67,58,0.7),0 0 48px rgba(212,67,58,0.25);} }
+    #levelUpBtn35 { animation: lvlPulse 2s ease-in-out infinite; }
+    /* Roll Damage button in dice popup */
+    #dp35-dmg-btn { display:none; margin-top:18px; font-family:'Cinzel',serif; font-size:9px; letter-spacing:3px; text-transform:uppercase; padding:9px 22px; background:var(--crimson); color:#f5f0e8; border:none; cursor:pointer; width:100%; transition:background 0.15s; }
+    #dp35-dmg-btn:hover { background:var(--crimson-dim); }
+    /* XP Progress Bar */
+    .cs-xp-bar { height:6px; background:var(--border-mid); border-radius:3px; margin-top:6px; overflow:hidden; }
+    .cs-xp-fill { height:100%; background:linear-gradient(90deg,var(--crimson),#e89040); border-radius:3px; transition:width 0.4s ease; }
     /* Level-Up Modal */
     .lu-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9997; opacity:0; pointer-events:none; transition:opacity 0.2s; }
     .lu-overlay.show { opacity:1; pointer-events:all; }
@@ -480,6 +489,7 @@
               <div class="cs-char-name" id="cs35-name">—</div>
               <div class="cs-char-class" id="cs35-class">—</div>
               <div class="cs-tags" id="cs35-tags"></div>
+              <div id="cs35-xp-display" style="display:none;margin-top:8px;"></div>
             </div>
             <div class="cs-header-actions">
               <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
@@ -545,6 +555,7 @@
     <div class="dp-total" id="dp35-total"></div>
     <div class="dp-breakdown" id="dp35-break"></div>
     <div class="dp-crit-label" id="dp35-crit"></div>
+    <button id="dp35-dmg-btn" onclick="dpRollDamage35()">Roll Damage ▸</button>
   </div>
 
   <script>
@@ -563,7 +574,7 @@ var C35 = {
   equipChoices: {}, weaponChoices: {},
   selectedCantrips: [], selectedSpells: [],
   details: {},
-  level: 1, rollLog: [],
+  level: 1, xp: 0, rollLog: [],
   hpRolls: [12], levelUpSkills: {}, levelUpFeats: [], levelUpAbilityBoosts: [],
   classes: [],
   levelHistory: []
@@ -575,6 +586,12 @@ var sheet35State = {};
 var abilUsed35 = {};
 var inv35Items = [];
 var slots35Used = {};
+var _saveTimer35 = null;
+var levelUpState35 = null;
+var _pendingDmg35 = null; // Pending damage roll for two-stage attack flow
+
+// 3.5e XP thresholds per level (core rules)
+var XP_TABLE_35 = [0,0,1000,3000,6000,10000,15000,21000,28000,36000,45000,55000,66000,78000,91000,105000,120000,136000,153000,171000,190000];
 
 // ── UTILS ──
 function mod35(s) { return Math.floor(((parseInt(s)||8)-10)/2); }
@@ -774,6 +791,53 @@ function showError35(msg) {
   setTimeout(function() { if (el.parentNode) el.parentNode.removeChild(el); }, 4000);
 }
 
+// ── AUTO-SAVE ──
+function scheduleSave35(){
+  if (_saveTimer35) clearTimeout(_saveTimer35);
+  _saveTimer35 = setTimeout(function() { saveCharacterToDB35(); }, 1500);
+}
+
+async function saveCharacterToDB35(){
+  var status = document.getElementById('cs35-save-status');
+  if (typeof PhmurtDB === 'undefined') return;
+  var session = PhmurtDB.getSession();
+  if (!session) return;
+
+  var snapshot = {
+    edition: '3.5',
+    race: C35.race,
+    cls: C35.cls,
+    alignment: C35.alignment,
+    abilities: C35.abilities,
+    scoreMethod: C35.scoreMethod,
+    arrayAssigned: C35.arrayAssigned,
+    skillRanks: C35.skillRanks,
+    selectedFeats: C35.selectedFeats,
+    equipChoices: C35.equipChoices,
+    weaponChoices: C35.weaponChoices,
+    selectedCantrips: C35.selectedCantrips,
+    selectedSpells: C35.selectedSpells,
+    spellsByLevel: C35.spellsByLevel || {},
+    details: C35.details,
+    level: C35.level,
+    hpRolls: C35.hpRolls,
+    levelUpSkills: C35.levelUpSkills,
+    levelUpFeats: C35.levelUpFeats,
+    levelUpAbilityBoosts: C35.levelUpAbilityBoosts,
+    classes: C35.classes,
+    levelHistory: C35.levelHistory
+  };
+
+  try {
+    if (status) { status.innerHTML = '<span style="color:#666;font-size:11px;">Saving...</span>'; }
+    var result = await PhmurtDB.saveCharacter(snapshot);
+    if (status) { status.innerHTML = '<span style="color:#4eda80;font-size:11px;">✓ Saved</span>'; }
+    setTimeout(function(){ if (status) status.innerHTML = ''; }, 2000);
+  } catch(e) {
+    if (status) { status.innerHTML = '<span style="color:var(--crimson);font-size:11px;">Failed to save</span>'; }
+  }
+}
+
 // ── NAVIGATION ──
 function goToStep35(n, skipVal) {
   if (!skipVal && n > C35.step) {
@@ -866,6 +930,7 @@ function selectRace35(id) {
   });
   document.getElementById('sl35-race').textContent = DND35_DATA.races[id].name;
   renderRaceDetail35(id); updateMini35(); updateAsiNote35();
+  scheduleSave35();
 }
 function renderRaceDetail35(id) {
   if (!id) {
@@ -908,6 +973,7 @@ function selectClass35(id) {
   C35.classes = [{ cls: id, level: 1 }];
   C35.levelHistory = [id];
   C35.level = 1;
+  scheduleSave35();
   var firstLevelHP = (DND35_DATA.classes[id] ? DND35_DATA.classes[id].hitDie : 8) + mod35(ts35('con'));
   if (firstLevelHP < 1) firstLevelHP = 1;
   C35.hpRolls = [firstLevelHP];
@@ -976,6 +1042,7 @@ function selectAlign35(a) {
   });
   document.getElementById('sl35-align').textContent = a;
   updateMini35();
+  scheduleSave35();
 }
 
 // ── STEP 4: ABILITY SCORES ──
@@ -995,6 +1062,7 @@ function setMethod35(m) {
   document.getElementById('arrayPool35').style.display = m==='standard'?'flex':'none';
   document.getElementById('rollPanel35').style.display = m==='roll'?'block':'none';
   renderPool35(); renderAbilGrid35(); updateAsiNote35();
+  scheduleSave35();
 }
 function renderPool35() {
   var pool = document.getElementById('arrayPool35');
@@ -1055,7 +1123,7 @@ function pbAdj35(a, d) {
   if (nxt<8||nxt>15) return;
   var spent = Object.values(C35.abilities).reduce(function(s,v){return s+(PB_COST35[v]||0);},0);
   if ((PB_COST35[nxt]||0)-(PB_COST35[cur]||0) > 28-spent) return;
-  C35.abilities[a] = nxt; renderAbilGrid35(); updateAsiNote35();
+  C35.abilities[a] = nxt; renderAbilGrid35(); updateAsiNote35(); scheduleSave35();
 }
 function renderAbilGrid35() {
   var grid = document.getElementById('abilityGrid35');
@@ -1082,7 +1150,7 @@ function renderAbilGrid35() {
     } else if (C35.scoreMethod==='pointbuy') {
       inner = '<div class="cb-score-btns"><button class="cb-score-btn" onclick="event.stopPropagation();pbAdj35(\''+a+'\',-1)">−</button><span style="font-size:26px;font-weight:300;color:var(--text);min-width:38px;text-align:center;">'+base+'</span><button class="cb-score-btn" onclick="event.stopPropagation();pbAdj35(\''+a+'\',1)">+</button></div>';
     } else {
-      inner = '<input class="cb-ability-input" type="number" min="3" max="18" value="'+base+'" onclick="event.stopPropagation()" oninput="C35.abilities[\''+a+'\']=Math.max(3,Math.min(18,parseInt(this.value)||3));renderAbilGrid35();updateAsiNote35();">';
+      inner = '<input class="cb-ability-input" type="number" min="3" max="18" value="'+base+'" onclick="event.stopPropagation()" oninput="C35.abilities[\''+a+'\']=Math.max(3,Math.min(18,parseInt(this.value)||3));renderAbilGrid35();updateAsiNote35();scheduleSave35();">';
     }
     return '<div class="cb-ability-box'+(isSel?' selecting':'')+'" onclick="assignAbil35(\''+a+'\')">'+
       '<div class="cb-ability-name">'+DND35_DATA.abilityShort[a]+'</div>'+inner+
@@ -1143,6 +1211,7 @@ function setRank35(id, val) {
   var spent = spSpent35(); var rem = spTotal35()-spent;
   document.getElementById('sp35Remaining').textContent = rem;
   document.getElementById('sp35Remaining').style.color = rem<0?'var(--crimson)':rem===0?'#4eda80':'';
+  scheduleSave35();
 }
 
 // ── STEP 6: FEATS ──
@@ -1169,6 +1238,7 @@ function toggleFeat35(name, max) {
   if (idx>=0) C35.selectedFeats.splice(idx,1);
   else if (C35.selectedFeats.length<max) C35.selectedFeats.push(name);
   renderFeats35();
+  scheduleSave35();
 }
 
 // ── STEP 7: EQUIPMENT ──
@@ -1198,7 +1268,7 @@ function renderEquipment35() {
           var wKey = idx+'_'+C35.equipChoices[idx];
           var curW = (C35.weaponChoices&&C35.weaponChoices[wKey])||'';
           weapDrop = '<div style="margin-top:12px;"><div style="font-family:\'Cinzel\',serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);margin-bottom:8px;">Choose Specific Weapon</div>'+
-            '<select style="background:var(--bg-input);border:1px solid rgba(212,67,58,0.3);color:var(--white);font-family:\'Spectral\',serif;font-size:14px;padding:7px 10px;width:100%;" onchange="if(!C35.weaponChoices)C35.weaponChoices={};C35.weaponChoices[\''+wKey+'\']=this.value;renderEquipment35();">'+
+            '<select style="background:var(--bg-input);border:1px solid rgba(212,67,58,0.3);color:var(--white);font-family:\'Spectral\',serif;font-size:14px;padding:7px 10px;width:100%;" onchange="if(!C35.weaponChoices)C35.weaponChoices={};C35.weaponChoices[\''+wKey+'\']=this.value;renderEquipment35();scheduleSave35();">'+
             '<option value="">Select a weapon...</option>'+
             allW.map(function(w){return '<option value="'+esc35(w.name)+'" '+(curW===w.name?'selected':'')+'>'+esc35(w.name)+' — '+esc35(w.damage)+' '+esc35(w.type)+'</option>';}).join('')+
             '</select>'+(curW?'<div style="font-size:12px;color:var(--text-muted);margin-top:5px;">✓ '+esc35(curW)+'</div>':'')+
@@ -1208,7 +1278,7 @@ function renderEquipment35() {
       d2.innerHTML = '<div class="cb-equip-label" style="'+(req?'color:var(--crimson);':'')+'">'+
         (req?'⚠ ':'')+'Choice '+(idx+1)+'. Pick One'+(req?' (Required)':'')+'</div>'+
         '<div class="cb-equip-options">'+choice.map(function(opt,j){
-          return '<div class="cb-equip-option'+(C35.equipChoices[idx]===j?' selected':'')+'" onclick="C35.equipChoices['+idx+']='+j+';C35.weaponChoices={};renderEquipment35();">'+(C35.equipChoices[idx]===j?'✓ ':'')+esc35(opt)+'</div>';
+          return '<div class="cb-equip-option'+(C35.equipChoices[idx]===j?' selected':'')+'" onclick="C35.equipChoices['+idx+']='+j+';C35.weaponChoices={};renderEquipment35();scheduleSave35();">'+(C35.equipChoices[idx]===j?'✓ ':'')+esc35(opt)+'</div>';
         }).join('')+'</div>'+weapDrop;
       cont.appendChild(d2);
       ci++;
@@ -1375,6 +1445,7 @@ function toggleSpell35(name, type, max) {
     else if (C35.selectedSpells.length<max) C35.selectedSpells.push(name);
   }
   renderSpells35();
+  scheduleSave35();
 }
 function resolveSpellDescription35(spName) {
   var aliases = DND35_DATA.spellDescriptionAliases;
@@ -1430,6 +1501,7 @@ function updateDetails35() {
     backstory: document.getElementById('charBackstory35').value
   };
   updateMini35();
+  scheduleSave35();
 }
 function showFinalSheet35() {
   updateDetails35();
@@ -1473,8 +1545,12 @@ function showDice35(opts) {
   critEl.textContent = opts.isCrit?'Critical Hit!':opts.isFail?'Critical Fail':'';
   critEl.className = 'dp-crit-label'+(opts.isCrit?' hit':opts.isFail?' fail':'');
   critEl.style.opacity = (opts.isCrit||opts.isFail)?'':'0';
+  // Show/hide Roll Damage button for two-stage attack flow
+  var dmgBtn = document.getElementById('dp35-dmg-btn');
+  if (dmgBtn) dmgBtn.style.display = opts.showDmgBtn ? 'block' : 'none';
   requestAnimationFrame(function() { popup.classList.add('show'); overlay.classList.add('show'); });
-  _diceTimer35 = setTimeout(closeDice35, 3500);
+  // Auto-close after 3.5s only if no damage button shown (otherwise wait for user)
+  _diceTimer35 = setTimeout(closeDice35, opts.showDmgBtn ? 12000 : 3500);
 }
 function closeDice35() {
   var popup = document.getElementById('dice-popup35');
@@ -1510,17 +1586,26 @@ function rollWeapon35(name, atkBonus, dmgBonus, damageDice) {
   var atkTotal = atkRoll+atkBonus;
   var isCrit=atkRoll===20; var isFail=atkRoll===1;
   C35.rollLog.unshift({ts:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),type:'Attack',label:name,roll:atkRoll,bonus:atkBonus,total:atkTotal,crit:isCrit,fail:isFail});
-  var dm=damageDice.match(/(\d+)d(\d+)/);
-  var dmgDice=[]; var dmgTotal=dmgBonus;
-  if (dm) {
-    var dnum=parseInt(dm[1]),dsides=parseInt(dm[2]);
-    for(var i=0;i<dnum;i++){var r=Math.ceil(Math.random()*dsides);dmgDice.push({val:r,sides:dsides});dmgTotal+=r;}
-  }
   renderRollLog35();
-  showDice35({type:'Attack',label:name,dice:[{val:atkRoll,sides:20,isCrit:isCrit,isFail:isFail}],bonus:atkBonus,total:atkTotal,isCrit:isCrit,isFail:isFail});
-  if (dmgDice.length) {
-    C35.rollLog.unshift({ts:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),type:'Damage',label:name+' Dmg',roll:dmgDice.map(function(d){return d.val;}).join('+'),bonus:dmgBonus,total:dmgTotal});
-  }
+  // Parse damage dice for the pending Roll Damage button
+  var dm = damageDice.match(/(\d+)d(\d+)/);
+  _pendingDmg35 = dm ? {num:parseInt(dm[1]),sides:parseInt(dm[2]),bonus:dmgBonus,label:name} : null;
+  showDice35({
+    type: isFail ? 'Miss' : isCrit ? 'Critical Hit!' : 'Attack Roll',
+    label: name,
+    dice:[{val:atkRoll,sides:20,isCrit:isCrit,isFail:isFail}],
+    bonus:atkBonus, total:atkTotal, isCrit:isCrit, isFail:isFail,
+    showDmgBtn: !!_pendingDmg35
+  });
+}
+function dpRollDamage35() {
+  if (!_pendingDmg35) return;
+  var p = _pendingDmg35; _pendingDmg35 = null;
+  var rolls = []; for(var i=0;i<p.num;i++) rolls.push(Math.ceil(Math.random()*p.sides));
+  var total = rolls.reduce(function(s,v){return s+v;},0)+p.bonus;
+  C35.rollLog.unshift({ts:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),type:'Damage',label:p.label+' Dmg',roll:rolls.join('+'),bonus:p.bonus,total:total});
+  renderRollLog35();
+  showDice35({type:'Damage',label:p.label,dice:rolls.map(function(v){return{val:v,sides:p.sides};}),bonus:p.bonus,total:total,isCrit:false,isFail:false,showDmgBtn:false});
 }
 function renderRollLog35() {
   var el = document.getElementById('rollLog35'); if (!el) return;
@@ -1596,6 +1681,19 @@ function buildFinalSheet35() {
     '<span class="cs-tag">Will '+(save35('will')>=0?'+':'')+save35('will')+'</span>',
     xpPenalty.applies ? '<span class="cs-tag" style="border-color:var(--crimson);color:var(--crimson);">XP Penalty -20%</span>' : ''
   ].join('');
+
+  // XP display
+  var xpDisplay = document.getElementById('cs35-xp-display');
+  if (xpDisplay) {
+    var lv = totalLevel35();
+    var curXP = parseInt(C35.xp) || XP_TABLE_35[lv] || 0;
+    var nextXP = XP_TABLE_35[lv+1] || curXP;
+    var prevXP = XP_TABLE_35[lv] || 0;
+    var pct = nextXP > prevXP ? Math.min(100, Math.round((curXP - prevXP) / (nextXP - prevXP) * 100)) : 100;
+    xpDisplay.style.display = '';
+    xpDisplay.innerHTML = '<div style="font-family:\'Cinzel\',serif;font-size:10px;letter-spacing:2px;color:var(--text-muted);text-transform:uppercase;">XP: '+curXP.toLocaleString()+' / '+nextXP.toLocaleString()+' <span style="color:var(--text-faint);font-size:9px;">('+(nextXP-curXP).toLocaleString()+' to next level)</span></div>'+
+      '<div class="cs-xp-bar"><div class="cs-xp-fill" style="width:'+pct+'%;"></div></div>';
+  }
 
   // Spell tab visibility
   var spellCls = activeSpellClass35();

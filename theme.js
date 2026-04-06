@@ -1,13 +1,23 @@
 /* ═══════════════════════════════
    THEME TOGGLE – Phmurt Studios
    Phmurt Studios Theme Toggle
+
+   SECURITY: Validates all localStorage reads to prevent injection
    ═══════════════════════════════ */
 (function() {
   var THEME_KEY = 'phmurt_theme';
   var VISITED_KEY = 'phmurt_visited';
 
-  // Apply saved theme
-  var saved = localStorage.getItem(THEME_KEY) || 'dark';
+  // Apply saved theme - with validation
+  var saved = 'dark';
+  try {
+    var storedTheme = localStorage.getItem(THEME_KEY);
+    // Only accept 'light' or 'dark' values
+    if (storedTheme === 'light' || storedTheme === 'dark') {
+      saved = storedTheme;
+    }
+  } catch(e) { /* use default */ }
+
   if (saved === 'light') {
     document.documentElement.classList.add('light-mode');
   }
@@ -35,7 +45,12 @@
 
   // First-visit pulse
   document.addEventListener('DOMContentLoaded', function() {
-    if (!localStorage.getItem(VISITED_KEY)) {
+    var visitedFlag = false;
+    try {
+      visitedFlag = localStorage.getItem(VISITED_KEY) === 'true';
+    } catch(e) { /* use default */ }
+
+    if (!visitedFlag) {
       var toggle = document.querySelector('.ps-theme-toggle');
       if (toggle) {
         toggle.classList.add('first-visit');
