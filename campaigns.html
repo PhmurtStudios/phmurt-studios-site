@@ -2912,7 +2912,7 @@ const CombatRollDisplay = ({ combatRollLog }) => {
 
   return (
     <div style={{
-      position:"absolute", top: 90, left:"50%", transform:"translateX(-50%)",
+      position:"absolute", top: 160, left:"50%", transform:"translateX(-50%)",
       zIndex:51, pointerEvents:"none",
       display:"flex", flexDirection:"column", gap:4, width: "min(480px, 80%)",
     }}>
@@ -4409,7 +4409,7 @@ function DashboardView({ data, setData, onNav }) {
   ];
 
   return (
-    <div style={{ display:"grid", gridTemplateColumns:"1fr 360px", gap:28, padding:"32px 40px", width:"100%" }}>
+    <div style={{ display:"grid", gridTemplateColumns:"1fr 340px", gap:24, padding:"32px 56px" }}>
       <div style={{ display:"flex", flexDirection:"column", gap:24 }}>
         {/* Stats Row */}
         <div style={{ display:"flex", gap:20 }}>
@@ -4841,7 +4841,7 @@ function TimelineView({ data, setData, onNav }) {
   const visibleCount = data.timeline.filter(sessionMatchesFilters).length;
 
   return (
-    <div style={{ padding: compactLayout ? "16px 28px 28px" : "20px 40px 36px", width:"100%", transition:"padding 0.25s ease" }}>
+    <div style={{ padding: compactLayout ? "16px 28px 28px" : "20px 40px 36px", maxWidth:1040, margin:"0 auto", width:"100%", transition:"padding 0.25s ease" }}>
       <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:12, rowGap:10, marginBottom: filtersExpanded ? 12 : 6 }}>
         <div style={{ flex:"1 1 160px", minWidth:0 }}>
           <div style={{ fontSize: compactLayout ? 20 : 22, color:T.text, fontWeight:400, fontFamily:T.body, letterSpacing:"0.02em", lineHeight:1.2 }}>Timeline</div>
@@ -10215,7 +10215,21 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           icon: getActionPanelMeta(card.panel).icon,
           onClick: () => {
             if (card.resolver === "weapon") {
-              // Enter targeting mode — click on a token on the map to attack
+              // BG3-style: if we already have a focused target, resolve immediately
+              const focusedTarget = getFocusedCombatTarget(actorToken);
+              if (focusedTarget && focusedTarget.id !== actorToken.id) {
+                // Check range before auto-resolving
+                const rangePx = ((card.data?.range || 5) / 5) * gridSize + gridSize * 0.5;
+                const distToTarget = Math.hypot((focusedTarget.x || 0) - (actorToken.x || 0), (focusedTarget.y || 0) - (actorToken.y || 0));
+                if (distToTarget <= rangePx) {
+                  resolvePlayModeCard(card, actorToken, focusedTarget);
+                  openCombatSidebar("tracker");
+                  if (!combatLive) dismissTurnPopup();
+                  else setShowConditionMenu(false);
+                  return;
+                }
+              }
+              // No focused target or out of range — enter targeting mode
               setActiveWeapon({ card, actorToken });
               weaponTargetRef.current = null;
               if (!combatLive) dismissTurnPopup();
@@ -16906,9 +16920,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               </div>
             )}
             {!cockpitModeActive && activeWeapon && (
-              <div style={{ position:"absolute", top:14, left:80, background: (activeWeapon.card?.data?.range || 5) <= 10 ? "rgba(240,104,88,0.88)" : "rgba(88,170,255,0.88)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"#fff", letterSpacing:"1.5px", pointerEvents:"none", zIndex:10, border:"1px solid " + ((activeWeapon.card?.data?.range || 5) <= 10 ? "rgba(240,104,88,0.5)" : "rgba(88,170,255,0.5)"), boxShadow:"0 2px 10px " + ((activeWeapon.card?.data?.range || 5) <= 10 ? "rgba(240,104,88,0.3)" : "rgba(88,170,255,0.3)"), display:"flex", alignItems:"center", gap:8 }}>
-                <span style={{ width:7, height:7, borderRadius:"50%", background: (activeWeapon.card?.data?.range || 5) <= 10 ? "#f06858" : "#58aaff" }} />
-                {((activeWeapon.card?.data?.range || 5) <= 10 ? "\u2694 " : "\uD83C\uDFF9 ") + (activeWeapon.card?.name || "ATTACK").toUpperCase()} — click target token · right-click/Esc to cancel
+              <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%, -50%)", background: (activeWeapon.card?.data?.range || 5) <= 10 ? "rgba(240,104,88,0.92)" : "rgba(88,170,255,0.92)", backdropFilter:"blur(8px)", padding:"14px 32px", borderRadius:"12px", fontFamily:T.ui, fontSize:14, fontWeight:700, color:"#fff", letterSpacing:"2px", pointerEvents:"none", zIndex:55, border:"2px solid " + ((activeWeapon.card?.data?.range || 5) <= 10 ? "rgba(240,104,88,0.7)" : "rgba(88,170,255,0.7)"), boxShadow:"0 8px 40px " + ((activeWeapon.card?.data?.range || 5) <= 10 ? "rgba(240,104,88,0.5)" : "rgba(88,170,255,0.5)") + ", 0 0 80px " + ((activeWeapon.card?.data?.range || 5) <= 10 ? "rgba(240,104,88,0.15)" : "rgba(88,170,255,0.15)"), display:"flex", alignItems:"center", gap:12, textTransform:"uppercase", textShadow:"0 2px 8px rgba(0,0,0,0.5)" }}>
+                <span style={{ width:10, height:10, borderRadius:"50%", background:"#fff", boxShadow:"0 0 12px " + ((activeWeapon.card?.data?.range || 5) <= 10 ? "#f06858" : "#58aaff"), animation:"cm-spin 1.5s linear infinite" }} />
+                {((activeWeapon.card?.data?.range || 5) <= 10 ? "\u2694 " : "\uD83C\uDFF9 ") + (activeWeapon.card?.name || "Attack")} — Click Target
+                <span style={{ fontSize:10, fontWeight:400, opacity:0.7, letterSpacing:"1px" }}>Esc to cancel</span>
               </div>
             )}
             {!cockpitModeActive && activeSpell && (
@@ -19304,8 +19319,8 @@ function App() {
         )}
       </div>
 
-      {/* Main Content Area */}
-      <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0, overflow:"hidden" }}>
+      {/* Main Content Area — gradient extends full page */}
+      <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0, overflow:"hidden", position:"relative", background:"radial-gradient(ellipse at 20% 0%, var(--crimson-soft) 0%, transparent 55%), var(--bg)" }}>
         {activeTab === "dashboard" && <DashboardView data={data} setData={setData} onNav={setActiveTab} />}
         {activeTab === "timeline" && <TimelineView data={data} setData={setData} onNav={setActiveTab} />}
         {activeTab === "world" && <WorldView data={data} setData={setData} onNav={setActiveTab} viewRole={viewRole} />}
