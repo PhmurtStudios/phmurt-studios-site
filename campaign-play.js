@@ -1431,7 +1431,7 @@ const DND_SPELLS = [
 ];
 
 
-function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null, activeCampaignId = null, onPartyUpdate = null, setData = null, campaignEncounters = [], worldMapCommand = null, isTraditional = false }) {
+function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null, activeCampaignId = null, onPartyUpdate = null, setData = null, campaignEncounters = [], worldMapCommand = null }) {
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
   const fileRef = useRef(null);
@@ -1482,8 +1482,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   const [combatants, setCombatants] = useState([]);
   const [turn, setTurn] = useState(0);
   const [round, setRound] = useState(1);
-  const [combatLive, _setCombatLive] = useState(false);
-  const setCombatLive = isTraditional ? () => {} : _setCombatLive; // gate combat in traditional mode
+  const [combatLive, setCombatLive] = useState(false);
   const [combatTargetByActor, setCombatTargetByActor] = useState({});
   const [turnStateByToken, setTurnStateByToken] = useState({});
   const [playModePresentation, setPlayModePresentation] = useState("simple");
@@ -10021,13 +10020,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     { c:"#143040", l:"Water" }, { c:"#4a3e30", l:"Sand" },
   ];
 
-  const bmModes = isTraditional
-    ? (viewRole === "player"
-      ? [{ id:"select", icon:Target, label:"Select" }]
-      : [{ id:"select", icon:Target, label:"Select" }, { id:"draw", icon:Edit3, label:"Draw" }])
-    : (viewRole === "player"
-      ? [{ id:"select", icon:Target, label:"Select" }, { id:"combat", icon:Swords, label:"Combat" }]
-      : [{ id:"select", icon:Target, label:"Select" }, { id:"draw", icon:Edit3, label:"Draw" }, { id:"combat", icon:Swords, label:"Combat" }]);
+  const bmModes = viewRole === "player"
+    ? [{ id:"select", icon:Target, label:"Select" }, { id:"combat", icon:Swords, label:"Combat" }]
+    : [{ id:"select", icon:Target, label:"Select" }, { id:"draw", icon:Edit3, label:"Draw" }, { id:"combat", icon:Swords, label:"Combat" }];
 
   const drawToolDefs = [
     { id:"draw", label:"Draw", icon:Edit3 },
@@ -11520,29 +11515,56 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           scrollbarWidth:"thin", scrollbarColor:"rgba(255,255,255,0.06) transparent",
         }}>
 
-          {/* ── Tab Bar (single compact row, filtered by role) ── */}
-          <div style={{ display:"flex", borderBottom:"1px solid rgba(255,255,255,0.04)", flexShrink:0, padding:"0 4px" }}>
-            {[
-              {id:"inspect",label:"Inspect",icon:Eye, roles:["dm","player"]},
-              ...(isTraditional ? [] : [{id:"combat",label:"Combat",icon:Swords, roles:["dm","player"]}]),
-              {id:"tokens",label:"Tokens",icon:Users, roles:["dm"]},
-              {id:"map",label:"Map",icon:Globe, roles:["dm"]},
-              {id:"settings",label:"Settings",icon:Settings, roles:["dm"]},
-            ].filter(tab => tab.roles.includes(viewRole)).map(tab => {
-              const isActive = rightPanelTab === tab.id;
-              const Icon = tab.icon;
-              const hasBadge = tab.id === "combat" && combatLive;
-              return (
-                <button key={tab.id} onClick={() => setRightPanelTab(tab.id)}
-                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.color="rgba(242,232,214,0.6)"; }}
-                  onMouseLeave={e => { if (!isActive) e.currentTarget.style.color="rgba(242,232,214,0.3)"; }}
-                  style={{ flex:1, padding:"9px 2px", display:"flex", alignItems:"center", justifyContent:"center", gap:4, background:"transparent", border:"none", borderBottom: isActive ? "2px solid #c9a84c" : "2px solid transparent", cursor:"pointer", fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", color: isActive ? "#c9a84c" : "rgba(242,232,214,0.3)", transition:"all 0.12s", fontWeight: isActive ? 600 : 400 }}>
-                  <Icon size={11} strokeWidth={isActive ? 2.2 : 1.5} /> {tab.label}
-                  {hasBadge && <span style={{ width:5, height:5, borderRadius:"50%", background:"#5ee09a", marginLeft:1 }} />}
-                </button>
-              );
-            })}
-          </div>
+          {/* ── Tab Bar (stylized RPG tabs with per-tab color identity) ── */}
+          {(() => {
+            const TAB_COLORS = {
+              inspect: { accent:"#58aaff", glow:"rgba(88,170,255,0.25)", soft:"rgba(88,170,255,0.06)", border:"rgba(88,170,255,0.35)" },
+              combat:  { accent:"#5ee09a", glow:"rgba(94,224,154,0.25)", soft:"rgba(94,224,154,0.06)", border:"rgba(94,224,154,0.35)" },
+              tokens:  { accent:"#ffd54f", glow:"rgba(255,213,79,0.25)", soft:"rgba(255,213,79,0.06)", border:"rgba(255,213,79,0.35)" },
+              map:     { accent:"#c792ea", glow:"rgba(199,146,234,0.25)", soft:"rgba(199,146,234,0.06)", border:"rgba(199,146,234,0.35)" },
+              settings:{ accent:"#f2917c", glow:"rgba(242,145,124,0.25)", soft:"rgba(242,145,124,0.06)", border:"rgba(242,145,124,0.35)" },
+            };
+            return (
+            <div style={{ display:"flex", gap:3, flexShrink:0, padding:"6px 6px 0", background:"linear-gradient(180deg, rgba(255,255,255,0.015) 0%, transparent 100%)" }}>
+              {[
+                {id:"inspect",label:"Inspect",icon:Eye, roles:["dm","player"]},
+                {id:"combat",label:"Combat",icon:Swords, roles:["dm","player"]},
+                {id:"tokens",label:"Tokens",icon:Users, roles:["dm"]},
+                {id:"map",label:"Map",icon:Globe, roles:["dm"]},
+                {id:"settings",label:"Settings",icon:Settings, roles:["dm"]},
+              ].filter(tab => tab.roles.includes(viewRole)).map(tab => {
+                const isActive = rightPanelTab === tab.id;
+                const Icon = tab.icon;
+                const hasBadge = tab.id === "combat" && combatLive;
+                const c = TAB_COLORS[tab.id];
+                return (
+                  <button key={tab.id} onClick={() => setRightPanelTab(tab.id)}
+                    onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = c.soft; e.currentTarget.style.borderColor = c.border; e.currentTarget.style.color = c.accent; }}}
+                    onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.04)"; e.currentTarget.style.color = "rgba(242,232,214,0.3)"; }}}
+                    style={{
+                      flex:1, padding:"7px 4px 8px", display:"flex", alignItems:"center", justifyContent:"center", gap:4,
+                      background: isActive ? `linear-gradient(180deg, ${c.soft} 0%, transparent 100%)` : "transparent",
+                      border: "1px solid " + (isActive ? c.border : "rgba(255,255,255,0.04)"),
+                      borderBottom: isActive ? "1px solid transparent" : "1px solid rgba(255,255,255,0.04)",
+                      borderRadius: "6px 6px 0 0",
+                      cursor:"pointer", fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase",
+                      color: isActive ? c.accent : "rgba(242,232,214,0.3)",
+                      transition:"all 0.15s ease",
+                      fontWeight: isActive ? 700 : 400,
+                      boxShadow: isActive ? `0 -1px 8px ${c.glow}, inset 0 1px 6px ${c.soft}` : "none",
+                      position:"relative",
+                    }}>
+                    <Icon size={12} strokeWidth={isActive ? 2.4 : 1.5} style={{ filter: isActive ? `drop-shadow(0 0 3px ${c.accent})` : "none" }} />
+                    {tab.label}
+                    {hasBadge && <span style={{ width:6, height:6, borderRadius:"50%", background:"#5ee09a", boxShadow:"0 0 6px rgba(94,224,154,0.6)", marginLeft:1, animation:"pulse 2s infinite" }} />}
+                  </button>
+                );
+              })}
+            </div>
+            );
+          })()}
+          {/* ── Tab accent line ── */}
+          <div style={{ height:1, background:"linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.06), rgba(255,255,255,0.02))", flexShrink:0 }} />
 
           {/* ── Tab Content ── */}
           <div style={{ flex:1, overflowY:"auto", display:"flex", flexDirection:"column", scrollbarWidth:"thin", scrollbarColor:"rgba(255,255,255,0.06) transparent" }}>
