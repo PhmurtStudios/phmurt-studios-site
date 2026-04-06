@@ -1550,6 +1550,11 @@
     html.light-mode .cm-log-sidebar {
       background: rgba(247,240,222,0.97);
     }
+    /* ── Enchanted Forest fey sparkle animation ── */
+    @keyframes feyPulse {
+      0% { opacity: 0.03; transform: scale(0.8); }
+      100% { opacity: 0.18; transform: scale(1.2); }
+    }
   </style>
 </head>
 <body>
@@ -1625,107 +1630,206 @@ const CAMPAIGN_THEMES = {
     icon: "Shield",
     preview: { accent: "#d4433a", bg: "#0e0c0b", card: "#181412" },
     vars: {},  // no overrides — uses site defaults
+    // No decorations — classic look
+    navGradient: null,
+    contentGradient: null,
+    decorCSS: "",
   },
   tavern: {
     label: "Tavern",
-    desc: "Warm hearth-fire amber & aged wood",
+    desc: "Warm hearth-fire amber, aged wood & tankards",
     icon: "Flame",
-    preview: { accent: "#c8913a", bg: "#120e08", card: "#1a1409" },
+    preview: { accent: "#d4a24e", bg: "#1a1208", card: "#261c0e" },
     vars: {
-      "--crimson": "#c8913a",
-      "--crimson-dim": "rgba(200,145,58,0.15)",
-      "--crimson-soft": "rgba(200,145,58,0.06)",
-      "--crimson-border": "rgba(200,145,58,0.18)",
-      "--bg": "#120e08",
-      "--bg-nav": "#0f0b06",
-      "--bg-card": "#1a1409",
-      "--bg-hover": "#22190d",
-      "--bg-mid": "#1e1610",
-      "--bg-input": "#161008",
-      "--bg-subtle": "#1a1409",
-      "--border": "rgba(200,145,58,0.10)",
-      "--border-mid": "rgba(200,145,58,0.06)",
+      "--crimson": "#d4a24e",
+      "--crimson-dim": "rgba(212,162,78,0.18)",
+      "--crimson-soft": "rgba(212,162,78,0.08)",
+      "--crimson-border": "rgba(212,162,78,0.25)",
+      "--bg": "#1a1208",
+      "--bg-nav": "#14100a",
+      "--bg-card": "#261c0e",
+      "--bg-hover": "#302414",
+      "--bg-mid": "#2a1e10",
+      "--bg-input": "#1e160c",
+      "--bg-subtle": "#221a0c",
+      "--border": "rgba(212,162,78,0.15)",
+      "--border-mid": "rgba(212,162,78,0.08)",
+      "--text": "#f2e4c8",
+      "--text-dim": "#d4c4a0",
+      "--text-muted": "#a89470",
+      "--text-faint": "#8a7656",
     },
+    // Warm lantern glow gradient + wood grain noise
+    navGradient: "linear-gradient(180deg, #1e1408 0%, #14100a 40%, #0e0a06 100%)",
+    contentGradient: "radial-gradient(ellipse at 30% 15%, rgba(212,162,78,0.12) 0%, transparent 50%), radial-gradient(ellipse at 80% 85%, rgba(180,100,30,0.06) 0%, transparent 40%), var(--bg)",
+    decorCSS: `
+      .theme-tavern-decor::before {
+        content: '';
+        position: absolute; inset: 0; pointer-events: none; z-index: 0;
+        background:
+          repeating-linear-gradient(90deg, transparent, transparent 120px, rgba(212,162,78,0.02) 120px, rgba(212,162,78,0.02) 121px),
+          repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(140,90,30,0.015) 80px, rgba(140,90,30,0.015) 81px);
+      }
+      .theme-tavern-decor::after {
+        content: '';
+        position: absolute; bottom: 0; left: 0; right: 0; height: 200px; pointer-events: none; z-index: 0;
+        background: linear-gradient(to top, rgba(180,100,20,0.08), transparent);
+      }
+    `,
   },
   fortress: {
     label: "Dark Fortress",
     desc: "Cold stone walls & steel-blue torchlight",
     icon: "Castle",
-    preview: { accent: "#5b8fb9", bg: "#0a0c10", card: "#10141a" },
+    preview: { accent: "#7baed4", bg: "#0e1118", card: "#161c28" },
     vars: {
-      "--crimson": "#5b8fb9",
-      "--crimson-dim": "rgba(91,143,185,0.15)",
-      "--crimson-soft": "rgba(91,143,185,0.06)",
-      "--crimson-border": "rgba(91,143,185,0.18)",
-      "--bg": "#0a0c10",
-      "--bg-nav": "#080a0e",
-      "--bg-card": "#10141a",
-      "--bg-hover": "#161c26",
-      "--bg-mid": "#121620",
-      "--bg-input": "#0c1018",
-      "--bg-subtle": "#10141a",
-      "--border": "rgba(91,143,185,0.10)",
-      "--border-mid": "rgba(91,143,185,0.06)",
+      "--crimson": "#7baed4",
+      "--crimson-dim": "rgba(123,174,212,0.18)",
+      "--crimson-soft": "rgba(123,174,212,0.08)",
+      "--crimson-border": "rgba(123,174,212,0.22)",
+      "--bg": "#0e1118",
+      "--bg-nav": "#0a0e16",
+      "--bg-card": "#161c28",
+      "--bg-hover": "#1e2636",
+      "--bg-mid": "#1a2030",
+      "--bg-input": "#121824",
+      "--bg-subtle": "#141a26",
+      "--border": "rgba(123,174,212,0.14)",
+      "--border-mid": "rgba(123,174,212,0.07)",
+      "--text": "#d8e4f0",
+      "--text-dim": "#b0c4d8",
+      "--text-muted": "#7a94ae",
+      "--text-faint": "#566e86",
     },
+    navGradient: "linear-gradient(180deg, #10141e 0%, #0a0e16 50%, #080c14 100%)",
+    contentGradient: "radial-gradient(ellipse at 50% 0%, rgba(123,174,212,0.08) 0%, transparent 50%), radial-gradient(ellipse at 80% 100%, rgba(70,100,140,0.05) 0%, transparent 45%), var(--bg)",
+    decorCSS: `
+      .theme-fortress-decor::before {
+        content: '';
+        position: absolute; inset: 0; pointer-events: none; z-index: 0;
+        background:
+          repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(123,174,212,0.018) 60px, rgba(123,174,212,0.018) 61px),
+          repeating-linear-gradient(90deg, transparent, transparent 90px, rgba(123,174,212,0.012) 90px, rgba(123,174,212,0.012) 91px);
+      }
+      .theme-fortress-decor::after {
+        content: '';
+        position: absolute; top: 0; left: 0; right: 0; height: 3px; pointer-events: none; z-index: 0;
+        background: linear-gradient(90deg, transparent 10%, rgba(123,174,212,0.3) 50%, transparent 90%);
+      }
+    `,
   },
   forest: {
     label: "Enchanted Forest",
-    desc: "Mossy greens & fey-touched emerald glow",
+    desc: "Mossy greens, fey glow & ancient canopy",
     icon: "TreePine",
-    preview: { accent: "#3da66e", bg: "#080e09", card: "#0e1810" },
+    preview: { accent: "#4dbd7a", bg: "#0c130e", card: "#142218" },
     vars: {
-      "--crimson": "#3da66e",
-      "--crimson-dim": "rgba(61,166,110,0.15)",
-      "--crimson-soft": "rgba(61,166,110,0.06)",
-      "--crimson-border": "rgba(61,166,110,0.18)",
-      "--bg": "#080e09",
-      "--bg-nav": "#060c07",
-      "--bg-card": "#0e1810",
-      "--bg-hover": "#142018",
-      "--bg-mid": "#101a12",
-      "--bg-input": "#0a140c",
-      "--bg-subtle": "#0e1810",
-      "--border": "rgba(61,166,110,0.10)",
-      "--border-mid": "rgba(61,166,110,0.06)",
+      "--crimson": "#4dbd7a",
+      "--crimson-dim": "rgba(77,189,122,0.18)",
+      "--crimson-soft": "rgba(77,189,122,0.08)",
+      "--crimson-border": "rgba(77,189,122,0.22)",
+      "--bg": "#0c130e",
+      "--bg-nav": "#0a110c",
+      "--bg-card": "#142218",
+      "--bg-hover": "#1c2e22",
+      "--bg-mid": "#18281c",
+      "--bg-input": "#101e14",
+      "--bg-subtle": "#122016",
+      "--border": "rgba(77,189,122,0.14)",
+      "--border-mid": "rgba(77,189,122,0.07)",
+      "--text": "#d4f0dc",
+      "--text-dim": "#a8d4b4",
+      "--text-muted": "#6ea880",
+      "--text-faint": "#4e8860",
     },
+    navGradient: "linear-gradient(180deg, #0e1810 0%, #0a110c 40%, #08100a 100%)",
+    contentGradient: "radial-gradient(ellipse at 20% 10%, rgba(77,189,122,0.10) 0%, transparent 45%), radial-gradient(ellipse at 70% 80%, rgba(40,140,80,0.06) 0%, transparent 40%), var(--bg)",
+    decorCSS: `
+      .theme-forest-decor::before {
+        content: '';
+        position: absolute; inset: 0; pointer-events: none; z-index: 0;
+        background:
+          radial-gradient(circle at 15% 25%, rgba(77,189,122,0.04) 0%, transparent 30%),
+          radial-gradient(circle at 85% 60%, rgba(60,160,100,0.03) 0%, transparent 25%),
+          radial-gradient(circle at 50% 90%, rgba(77,189,122,0.025) 0%, transparent 20%);
+      }
+      .theme-forest-decor::after {
+        content: '';
+        position: absolute; top: 0; left: 0; right: 0; height: 120px; pointer-events: none; z-index: 0;
+        background: linear-gradient(to bottom, rgba(77,189,122,0.04), transparent);
+      }
+    `,
   },
   seafarer: {
     label: "Seafarer",
-    desc: "Deep navy waters & gold compass-light",
+    desc: "Deep navy waters, gold compass & sea-spray",
     icon: "Anchor",
-    preview: { accent: "#c9a84c", bg: "#08090e", card: "#0e1018" },
+    preview: { accent: "#d4b85c", bg: "#0c0e18", card: "#141824" },
     vars: {
-      "--crimson": "#c9a84c",
-      "--crimson-dim": "rgba(201,168,76,0.15)",
-      "--crimson-soft": "rgba(201,168,76,0.06)",
-      "--crimson-border": "rgba(201,168,76,0.18)",
-      "--bg": "#08090e",
-      "--bg-nav": "#060810",
-      "--bg-card": "#0e1018",
-      "--bg-hover": "#161a28",
-      "--bg-mid": "#111420",
-      "--bg-input": "#0a0e18",
-      "--bg-subtle": "#0e1018",
-      "--border": "rgba(201,168,76,0.10)",
-      "--border-mid": "rgba(201,168,76,0.06)",
+      "--crimson": "#d4b85c",
+      "--crimson-dim": "rgba(212,184,92,0.18)",
+      "--crimson-soft": "rgba(212,184,92,0.08)",
+      "--crimson-border": "rgba(212,184,92,0.22)",
+      "--bg": "#0c0e18",
+      "--bg-nav": "#0a0c16",
+      "--bg-card": "#141824",
+      "--bg-hover": "#1c2234",
+      "--bg-mid": "#181e2e",
+      "--bg-input": "#101420",
+      "--bg-subtle": "#121822",
+      "--border": "rgba(212,184,92,0.14)",
+      "--border-mid": "rgba(212,184,92,0.07)",
+      "--text": "#e8e0c8",
+      "--text-dim": "#c8bea0",
+      "--text-muted": "#8e8670",
+      "--text-faint": "#686250",
     },
+    navGradient: "linear-gradient(180deg, #0e1020 0%, #0a0c16 50%, #080a12 100%)",
+    contentGradient: "radial-gradient(ellipse at 60% 20%, rgba(212,184,92,0.08) 0%, transparent 45%), radial-gradient(ellipse at 20% 90%, rgba(40,70,120,0.06) 0%, transparent 35%), var(--bg)",
+    decorCSS: `
+      .theme-seafarer-decor::before {
+        content: '';
+        position: absolute; inset: 0; pointer-events: none; z-index: 0;
+        background:
+          repeating-linear-gradient(170deg, transparent, transparent 200px, rgba(40,70,140,0.015) 200px, rgba(40,70,140,0.015) 204px),
+          repeating-linear-gradient(170deg, transparent 100px, rgba(40,70,140,0.01) 100px, rgba(40,70,140,0.01) 103px, transparent 103px);
+      }
+      .theme-seafarer-decor::after {
+        content: '';
+        position: absolute; bottom: 0; left: 0; right: 0; height: 150px; pointer-events: none; z-index: 0;
+        background: linear-gradient(to top, rgba(40,70,120,0.06), transparent);
+      }
+    `,
   },
 };
 
-// Apply a campaign theme by setting CSS custom properties on <html>.
+// Inject theme decoration CSS into <head> and apply CSS vars to <html>.
 // Pass null or "classic" to restore defaults.
 function applyCampaignTheme(themeKey) {
   const root = document.documentElement;
-  // First clear any previously applied campaign theme vars
+  // 1. Clear previously applied CSS vars
   const allVarNames = new Set();
   Object.values(CAMPAIGN_THEMES).forEach(t => Object.keys(t.vars).forEach(v => allVarNames.add(v)));
   allVarNames.forEach(v => root.style.removeProperty(v));
-  // Now apply the new theme
+  // 2. Remove old decoration stylesheet
+  const oldStyle = document.getElementById("campaign-theme-decor-css");
+  if (oldStyle) oldStyle.remove();
+  // 3. Remove theme-* classes from body
+  document.body.className = document.body.className.replace(/\btheme-\S+-decor\b/g, "").trim();
+  // 4. Apply new theme
   const theme = CAMPAIGN_THEMES[themeKey];
-  if (theme && theme.vars) {
-    Object.entries(theme.vars).forEach(([prop, val]) => {
-      root.style.setProperty(prop, val);
-    });
+  if (theme) {
+    // CSS vars
+    if (theme.vars) {
+      Object.entries(theme.vars).forEach(([prop, val]) => root.style.setProperty(prop, val));
+    }
+    // Decoration CSS
+    if (theme.decorCSS) {
+      const style = document.createElement("style");
+      style.id = "campaign-theme-decor-css";
+      style.textContent = theme.decorCSS;
+      document.head.appendChild(style);
+    }
   }
 }
 
@@ -4396,6 +4500,162 @@ function PlayerCard({ member, onEdit, onUploadSheet, isDm }) {
 // NEW CAMPAIGN MODAL
 // ═══════════════════════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════════════════════
+// THEME DECORATIONS — inline SVG art elements per theme
+// ═══════════════════════════════════════════════════════════════════════════
+
+function ThemeDecorations({ themeKey }) {
+  if (!themeKey || themeKey === "classic") return null;
+
+  const wrapStyle = { position:"absolute", inset:0, pointerEvents:"none", zIndex:0, overflow:"hidden" };
+
+  if (themeKey === "tavern") {
+    return (
+      <div style={wrapStyle}>
+        {/* Lantern glow — top left */}
+        <svg style={{ position:"absolute", top:20, left:40, opacity:0.12 }} width="60" height="90" viewBox="0 0 60 90">
+          <defs>
+            <radialGradient id="lanternGlow" cx="50%" cy="40%" r="60%">
+              <stop offset="0%" stopColor="#d4a24e" stopOpacity="0.8"/>
+              <stop offset="100%" stopColor="#d4a24e" stopOpacity="0"/>
+            </radialGradient>
+          </defs>
+          <circle cx="30" cy="36" r="28" fill="url(#lanternGlow)"/>
+          <rect x="24" y="8" width="12" height="4" rx="1" fill="#d4a24e" opacity="0.6"/>
+          <line x1="30" y1="0" x2="30" y2="8" stroke="#d4a24e" strokeWidth="1.5" opacity="0.4"/>
+          <path d="M20 12 Q20 18 22 28 L30 50 L38 28 Q40 18 40 12 Z" fill="none" stroke="#d4a24e" strokeWidth="1" opacity="0.5"/>
+          <ellipse cx="30" cy="32" rx="6" ry="10" fill="#d4a24e" opacity="0.15"/>
+        </svg>
+        {/* Tankard — bottom right */}
+        <svg style={{ position:"absolute", bottom:30, right:60, opacity:0.08 }} width="70" height="80" viewBox="0 0 70 80">
+          <rect x="10" y="10" width="36" height="55" rx="4" fill="none" stroke="#d4a24e" strokeWidth="1.5"/>
+          <path d="M46 22 Q58 22 58 36 Q58 50 46 50" fill="none" stroke="#d4a24e" strokeWidth="1.5"/>
+          <ellipse cx="28" cy="10" rx="18" ry="4" fill="none" stroke="#d4a24e" strokeWidth="1"/>
+          <path d="M16 28 Q22 24 34 28" fill="none" stroke="#d4a24e" strokeWidth="0.8" opacity="0.5"/>
+          <path d="M14 20 Q28 16 40 20" fill="none" stroke="#d4a24e" strokeWidth="0.6" opacity="0.3"/>
+        </svg>
+        {/* Second tankard — bottom left */}
+        <svg style={{ position:"absolute", bottom:80, left:80, opacity:0.05, transform:"rotate(-15deg)" }} width="55" height="65" viewBox="0 0 70 80">
+          <rect x="10" y="10" width="36" height="55" rx="4" fill="none" stroke="#d4a24e" strokeWidth="1.5"/>
+          <path d="M46 22 Q58 22 58 36 Q58 50 46 50" fill="none" stroke="#d4a24e" strokeWidth="1.5"/>
+          <ellipse cx="28" cy="10" rx="18" ry="4" fill="none" stroke="#d4a24e" strokeWidth="1"/>
+        </svg>
+        {/* Lantern glow — top right */}
+        <svg style={{ position:"absolute", top:60, right:120, opacity:0.07 }} width="40" height="60" viewBox="0 0 60 90">
+          <circle cx="30" cy="36" r="28" fill="url(#lanternGlow)"/>
+          <path d="M20 12 Q20 18 22 28 L30 50 L38 28 Q40 18 40 12 Z" fill="none" stroke="#d4a24e" strokeWidth="1" opacity="0.5"/>
+        </svg>
+        {/* Wood grain horizontal lines — very subtle */}
+        <div style={{ position:"absolute", bottom:0, left:0, right:0, height:"100%", opacity:0.02,
+          background:"repeating-linear-gradient(2deg, transparent, transparent 18px, rgba(180,120,40,0.4) 18px, rgba(180,120,40,0.4) 19px, transparent 19px, transparent 22px)" }} />
+      </div>
+    );
+  }
+
+  if (themeKey === "fortress") {
+    return (
+      <div style={wrapStyle}>
+        {/* Castle battlements — top edge */}
+        <svg style={{ position:"absolute", top:0, left:0, width:"100%", height:30, opacity:0.06 }} viewBox="0 0 1200 30" preserveAspectRatio="none">
+          <path d="M0 30 V15 H30 V0 H50 V15 H80 V0 H100 V15 H130 V0 H150 V15 H180 V0 H200 V15 H230 V0 H250 V15 H280 V0 H300 V15 H330 V0 H350 V15 H380 V0 H400 V15 H430 V0 H450 V15 H480 V0 H500 V15 H530 V0 H550 V15 H580 V0 H600 V15 H630 V0 H650 V15 H680 V0 H700 V15 H730 V0 H750 V15 H780 V0 H800 V15 H830 V0 H850 V15 H880 V0 H900 V15 H930 V0 H950 V15 H980 V0 H1000 V15 H1030 V0 H1050 V15 H1080 V0 H1100 V15 H1130 V0 H1150 V15 H1200 V30 Z" fill="#7baed4"/>
+        </svg>
+        {/* Shield emblem — center right */}
+        <svg style={{ position:"absolute", top:"50%", right:40, transform:"translateY(-50%)", opacity:0.04 }} width="100" height="120" viewBox="0 0 100 120">
+          <path d="M50 5 L90 20 L90 60 Q90 95 50 115 Q10 95 10 60 L10 20 Z" fill="none" stroke="#7baed4" strokeWidth="2"/>
+          <path d="M50 25 L70 34 L70 55 Q70 78 50 92 Q30 78 30 55 L30 34 Z" fill="none" stroke="#7baed4" strokeWidth="1" opacity="0.5"/>
+          <line x1="50" y1="34" x2="50" y2="85" stroke="#7baed4" strokeWidth="1" opacity="0.3"/>
+          <line x1="32" y1="55" x2="68" y2="55" stroke="#7baed4" strokeWidth="1" opacity="0.3"/>
+        </svg>
+        {/* Crossed swords — bottom left */}
+        <svg style={{ position:"absolute", bottom:40, left:50, opacity:0.04 }} width="80" height="80" viewBox="0 0 80 80">
+          <line x1="10" y1="70" x2="70" y2="10" stroke="#7baed4" strokeWidth="1.5"/>
+          <line x1="70" y1="70" x2="10" y2="10" stroke="#7baed4" strokeWidth="1.5"/>
+          <circle cx="40" cy="40" r="6" fill="none" stroke="#7baed4" strokeWidth="1"/>
+          <line x1="65" y1="10" x2="75" y2="5" stroke="#7baed4" strokeWidth="1"/>
+          <line x1="70" y1="10" x2="70" y2="3" stroke="#7baed4" strokeWidth="1"/>
+        </svg>
+        {/* Stone texture grid overlay */}
+        <div style={{ position:"absolute", inset:0, opacity:0.015,
+          background:"repeating-conic-gradient(rgba(123,174,212,0.3) 0% 25%, transparent 0% 50%) 0 0 / 40px 40px" }} />
+      </div>
+    );
+  }
+
+  if (themeKey === "forest") {
+    return (
+      <div style={wrapStyle}>
+        {/* Fey sparkles — scattered dots */}
+        {[
+          { x:"12%", y:"18%", size:3, op:0.15, delay:0 },
+          { x:"78%", y:"25%", size:2, op:0.10, delay:1.5 },
+          { x:"45%", y:"70%", size:2.5, op:0.08, delay:3 },
+          { x:"88%", y:"55%", size:2, op:0.12, delay:0.8 },
+          { x:"25%", y:"82%", size:3, op:0.06, delay:2.2 },
+          { x:"60%", y:"12%", size:2, op:0.09, delay:4 },
+          { x:"35%", y:"45%", size:1.5, op:0.07, delay:1 },
+        ].map((dot, i) => (
+          <div key={i} style={{
+            position:"absolute", left:dot.x, top:dot.y,
+            width:dot.size*2, height:dot.size*2, borderRadius:"50%",
+            background:"#4dbd7a", opacity:dot.op,
+            boxShadow:`0 0 ${dot.size*4}px ${dot.size}px rgba(77,189,122,0.3)`,
+            animation:`feyPulse 4s ease-in-out ${dot.delay}s infinite alternate`,
+          }} />
+        ))}
+        {/* Vine — left edge */}
+        <svg style={{ position:"absolute", top:0, left:0, height:"100%", width:30, opacity:0.06 }} viewBox="0 0 30 600" preserveAspectRatio="none">
+          <path d="M15 0 Q5 50 15 100 Q25 150 15 200 Q5 250 15 300 Q25 350 15 400 Q5 450 15 500 Q25 550 15 600" fill="none" stroke="#4dbd7a" strokeWidth="2"/>
+          <circle cx="8" cy="80" r="4" fill="none" stroke="#4dbd7a" strokeWidth="0.8"/>
+          <circle cx="22" cy="180" r="3" fill="none" stroke="#4dbd7a" strokeWidth="0.8"/>
+          <circle cx="10" cy="320" r="5" fill="none" stroke="#4dbd7a" strokeWidth="0.8"/>
+          <circle cx="20" cy="460" r="3" fill="none" stroke="#4dbd7a" strokeWidth="0.8"/>
+        </svg>
+        {/* Leaf cluster — top right */}
+        <svg style={{ position:"absolute", top:20, right:30, opacity:0.05 }} width="80" height="70" viewBox="0 0 80 70">
+          <path d="M40 5 Q55 15 50 35 Q45 50 30 45 Q15 40 20 20 Q25 5 40 5Z" fill="none" stroke="#4dbd7a" strokeWidth="1.2"/>
+          <path d="M50 20 Q65 30 60 50 Q55 65 40 60 Q25 55 30 35 Q35 20 50 20Z" fill="none" stroke="#4dbd7a" strokeWidth="1"/>
+          <line x1="40" y1="5" x2="35" y2="40" stroke="#4dbd7a" strokeWidth="0.6" opacity="0.5"/>
+        </svg>
+      </div>
+    );
+  }
+
+  if (themeKey === "seafarer") {
+    return (
+      <div style={wrapStyle}>
+        {/* Compass rose — top right */}
+        <svg style={{ position:"absolute", top:30, right:50, opacity:0.06 }} width="100" height="100" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="45" fill="none" stroke="#d4b85c" strokeWidth="1"/>
+          <circle cx="50" cy="50" r="35" fill="none" stroke="#d4b85c" strokeWidth="0.5"/>
+          <line x1="50" y1="5" x2="50" y2="95" stroke="#d4b85c" strokeWidth="0.8"/>
+          <line x1="5" y1="50" x2="95" y2="50" stroke="#d4b85c" strokeWidth="0.8"/>
+          <line x1="16" y1="16" x2="84" y2="84" stroke="#d4b85c" strokeWidth="0.5" opacity="0.5"/>
+          <line x1="84" y1="16" x2="16" y2="84" stroke="#d4b85c" strokeWidth="0.5" opacity="0.5"/>
+          <polygon points="50,8 46,20 54,20" fill="#d4b85c" opacity="0.6"/>
+          <text x="50" y="18" textAnchor="middle" fill="#d4b85c" fontSize="7" fontFamily="Cinzel, serif" opacity="0.6">N</text>
+        </svg>
+        {/* Anchor — bottom left */}
+        <svg style={{ position:"absolute", bottom:30, left:50, opacity:0.05 }} width="70" height="90" viewBox="0 0 70 90">
+          <circle cx="35" cy="12" r="8" fill="none" stroke="#d4b85c" strokeWidth="1.5"/>
+          <line x1="35" y1="20" x2="35" y2="70" stroke="#d4b85c" strokeWidth="1.5"/>
+          <path d="M15 60 Q15 80 35 80 Q55 80 55 60" fill="none" stroke="#d4b85c" strokeWidth="1.5"/>
+          <line x1="20" y1="45" x2="50" y2="45" stroke="#d4b85c" strokeWidth="1.5"/>
+        </svg>
+        {/* Wave lines — bottom edge */}
+        <svg style={{ position:"absolute", bottom:0, left:0, width:"100%", height:40, opacity:0.04 }} viewBox="0 0 1200 40" preserveAspectRatio="none">
+          <path d="M0 20 Q50 5 100 20 Q150 35 200 20 Q250 5 300 20 Q350 35 400 20 Q450 5 500 20 Q550 35 600 20 Q650 5 700 20 Q750 35 800 20 Q850 5 900 20 Q950 35 1000 20 Q1050 5 1100 20 Q1150 35 1200 20" fill="none" stroke="#d4b85c" strokeWidth="2"/>
+          <path d="M0 30 Q50 18 100 30 Q150 42 200 30 Q250 18 300 30 Q350 42 400 30 Q450 18 500 30 Q550 42 600 30 Q650 18 700 30 Q750 42 800 30 Q850 18 900 30 Q950 42 1000 30 Q1050 18 1100 30 Q1150 42 1200 30" fill="none" stroke="#3a5a8a" strokeWidth="1.5"/>
+        </svg>
+        {/* Rope knot pattern — right edge */}
+        <div style={{ position:"absolute", top:0, right:0, width:3, height:"100%", opacity:0.05,
+          background:"repeating-linear-gradient(0deg, transparent 0px, transparent 15px, #d4b85c 15px, #d4b85c 17px, transparent 17px, transparent 20px)" }} />
+      </div>
+    );
+  }
+
+  return null;
+}
+
 const SparklesIcon = Sparkles || Star;
 const THEME_ICON_MAP = { Shield, Flame: Flame || Star, Castle, TreePine: TreePine || Mountain, Anchor: Anchor || Compass };
 const TYPE_ICON_MAP = { BookOpen, Swords };
@@ -5755,6 +6015,13 @@ function App() {
   ];
   const navItems = allNavItems.filter(function(item) { return item.roles.includes(viewRole); });
 
+  // ── Resolve current theme decorations for JSX ──
+  const activeThemeKey = activeCampaign?.data?.theme || "classic";
+  const activeThemeDef = CAMPAIGN_THEMES[activeThemeKey] || CAMPAIGN_THEMES.classic;
+  const themeDecorClass = activeThemeKey !== "classic" ? `theme-${activeThemeKey}-decor` : "";
+  const navBg = activeThemeDef.navGradient || "var(--bg-nav)";
+  const contentBg = activeThemeDef.contentGradient || "radial-gradient(ellipse at 20% 0%, var(--crimson-soft) 0%, transparent 55%), var(--bg)";
+
   if (loading) {
     return (
       <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100vh", background:"var(--bg)", color:T.textFaint, fontFamily:T.ui, fontSize:14, letterSpacing:"2px" }}>
@@ -5769,7 +6036,7 @@ function App() {
       <div style={{
         width: sidebarCollapsed ? 52 : 200,
         minWidth: sidebarCollapsed ? 52 : 200,
-        background:"var(--bg-nav)",
+        background: navBg,
         borderRight:"1px solid var(--crimson-border)",
         display:"flex", flexDirection:"column",
         transition:"width 0.25s ease, min-width 0.25s ease",
@@ -5780,7 +6047,9 @@ function App() {
           {!sidebarCollapsed && (
             <div>
               <div style={{ fontFamily:T.heading, fontSize:16, color:T.text, letterSpacing:"1.5px" }}>Campaign</div>
-              <div style={{ fontFamily:T.ui, fontSize:8, color:T.crimson, letterSpacing:"2px", textTransform:"uppercase", marginTop:2 }}>Manager</div>
+              <div style={{ fontFamily:T.ui, fontSize:8, color:T.crimson, letterSpacing:"2px", textTransform:"uppercase", marginTop:2 }}>
+                Manager{activeThemeKey !== "classic" && <span style={{ marginLeft:6, opacity:0.7 }}>{"\u00b7"} {activeThemeDef.label}</span>}
+              </div>
             </div>
           )}
           <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
@@ -5862,7 +6131,9 @@ function App() {
       </div>
 
       {/* Main Content Area — gradient extends full page */}
-      <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0, overflow:"hidden", position:"relative", background:"radial-gradient(ellipse at 20% 0%, var(--crimson-soft) 0%, transparent 55%), var(--bg)" }}>
+      <div className={themeDecorClass} style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0, overflow:"hidden", position:"relative", background: contentBg }}>
+        {/* ── Theme Decorations (inline SVG art) ── */}
+        <ThemeDecorations themeKey={activeThemeKey} />
         {activeTab === "dashboard" && <DashboardView data={data} setData={setData} onNav={setActiveTab} activeCampaignId={activeCampaignId} viewRole={viewRole} />}
         {activeTab === "timeline" && (
           tabsReady.timeline && window.CampaignTimelineView
