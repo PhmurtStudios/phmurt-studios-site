@@ -11480,7 +11480,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             {[
               {id:"inspect",label:"Inspect",icon:Eye},
               {id:"combat",label:"Combat",icon:Swords},
-              {id:"tokens",label:"Tokens",icon:Users2},
+              {id:"tokens",label:"Tokens",icon:Users},
               {id:"map",label:"Map",icon:Globe},
               {id:"settings",label:"Settings",icon:Settings},
             ].map(tab => {
