@@ -1440,6 +1440,16 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   const wheelHandlerRef = useRef(null);
   const touchGestureRef = useRef({ active: false, pointer: null });
 
+  // ── Theme tracking (re-render on dark/light toggle) ──
+  const [_themeLight, _setThemeLight] = useState(() => document.documentElement.classList.contains("light-mode"));
+  useEffect(() => {
+    const obs = new MutationObserver(() => {
+      _setThemeLight(document.documentElement.classList.contains("light-mode"));
+    });
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+    return () => obs.disconnect();
+  }, []);
+
   // ── Core map state ──
   const [gridSize, setGridSize] = useState(40);
   const [showGrid, setShowGrid] = useState(true);
@@ -10368,7 +10378,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                 { label:"Reaction", value:activeEconomy.reactionSpent ? "Spent" : "Ready", color:"#b574ff", active:!activeEconomy.reactionSpent, icon:RefreshCw },
               ] : [];
               return (
-                <div style={{ position:"absolute", top:12, left:72, right: sidebarOpen ? 392 : 16, zIndex:26, background:"linear-gradient(135deg, rgba(10,10,16,0.92), rgba(10,10,18,0.78))", backdropFilter:"blur(16px)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:16, padding:"10px 12px", boxShadow:"0 18px 48px rgba(0,0,8,0.55)" }}>
+                <div style={{ position:"absolute", top:12, left:72, right: sidebarOpen ? 392 : 16, zIndex:26, background: lm("linear-gradient(135deg, rgba(10,10,16,0.92), rgba(10,10,18,0.78))", "linear-gradient(135deg, rgba(247,240,222,0.94), rgba(240,232,214,0.88))"), backdropFilter:"blur(16px)", border: lm("1px solid rgba(255,255,255,0.08)", "1px solid rgba(0,0,0,0.1)"), borderRadius:16, padding:"10px 12px", boxShadow: lm("0 18px 48px rgba(0,0,8,0.55)", "0 18px 48px rgba(0,0,0,0.12)") }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12 }}>
                     <div style={{ minWidth:0 }}>
                       <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
@@ -10437,7 +10447,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               const leftPanelMoveFt = getEffectiveMovementRemaining(battleFocusToken);
               const controllerLabel = getPartyProfile(battleFocusToken)?.player || battleFocusToken.player || (battleFocusToken.tokenType === "pc" ? "Player" : "DM");
               return (
-                <div style={{ position:"absolute", left:80, top:108, width:320, maxHeight:"calc(100% - 224px)", zIndex:24, background:"rgba(10,10,16,0.92)", backdropFilter:"blur(16px)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:16, boxShadow:"0 18px 44px rgba(0,0,8,0.55)", overflow:"hidden", display:"flex", flexDirection:"column" }}>
+                <div style={{ position:"absolute", left:80, top:108, width:320, maxHeight:"calc(100% - 224px)", zIndex:24, background: lm("rgba(10,10,16,0.92)", "rgba(247,240,222,0.95)"), backdropFilter:"blur(16px)", border: lm("1px solid rgba(255,255,255,0.08)", "1px solid rgba(0,0,0,0.1)"), borderRadius:16, boxShadow: lm("0 18px 44px rgba(0,0,8,0.55)", "0 18px 44px rgba(0,0,0,0.12)"), overflow:"hidden", display:"flex", flexDirection:"column" }}>
                   <div style={{ padding:"12px 14px", borderBottom:"1px solid rgba(255,255,255,0.08)", background:"linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))" }}>
                     <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                       <div style={{ width:48, height:48, borderRadius:"50%", background:battleFocusToken.color, border:"2px solid " + (battleFocusToken.id === activeCombatantId ? "#ffd54f" : "rgba(255,255,255,0.12)"), overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontFamily:T.ui, fontSize:14, fontWeight:700, boxShadow:battleFocusToken.id === activeCombatantId ? "0 0 18px rgba(255,213,79,0.3)" : "none", flexShrink:0 }}>
@@ -10527,7 +10537,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               const trayMoveFt = trayToken ? getEffectiveMovementRemaining(trayToken) : 0;
               const trayTarget = trayToken ? getFocusedCombatTarget(trayToken) : null;
               return (
-                <div style={{ position:"absolute", left:72, right: sidebarOpen ? 392 : 16, bottom:16, zIndex:24, background:"rgba(10,10,16,0.92)", backdropFilter:"blur(16px)", border:"1px solid rgba(255,255,255,0.08)", borderRadius:16, boxShadow:"0 18px 44px rgba(0,0,8,0.55)", padding:"10px 12px" }}>
+                <div style={{ position:"absolute", left:72, right: sidebarOpen ? 392 : 16, bottom:16, zIndex:24, background: lm("rgba(10,10,16,0.92)", "rgba(247,240,222,0.95)"), backdropFilter:"blur(16px)", border: lm("1px solid rgba(255,255,255,0.08)", "1px solid rgba(0,0,0,0.1)"), borderRadius:16, boxShadow: lm("0 18px 44px rgba(0,0,8,0.55)", "0 18px 44px rgba(0,0,0,0.12)"), padding:"10px 12px" }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:10, marginBottom:8 }}>
                     <div style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1px", color:T.textFaint, textTransform:"uppercase" }}>
                       {trayToken ? (trayToken.name + " · " + (trayCanAct ? "Actions Ready" : "Waiting For Turn")) : "Select a combatant"}
@@ -11276,7 +11286,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               const tbBtnW = 52;
               const tbBtnH = 46;
               const tbIconSize = 16;
-              const tbHover = (e, active) => { if (!active) { e.currentTarget.style.background="rgba(255,255,255,0.04)"; e.currentTarget.style.boxShadow="0 0 8px rgba(201,168,76,0.08)"; }};
+              const tbHoverBg = lm("rgba(255,255,255,0.04)", "rgba(0,0,0,0.05)");
+              const tbHover = (e, active) => { if (!active) { e.currentTarget.style.background=tbHoverBg; e.currentTarget.style.boxShadow="0 0 8px rgba(201,168,76,0.08)"; }};
               const tbLeave = (e, active) => { if (!active) { e.currentTarget.style.background="transparent"; e.currentTarget.style.boxShadow="none"; }};
               const tbBtnStyle = (active, color) => ({
                 width:tbBtnW, height:tbBtnH, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:3,
@@ -11284,15 +11295,18 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                 border:"none", borderRadius:10, cursor:"pointer", transition:"all 0.18s ease", position:"relative",
                 boxShadow: active ? ("0 0 12px " + (color === "green" ? tbGreenGlow : tbActiveGlow)) : "none",
               });
-              const tbIconColor = (active, color) => active ? (color === "green" ? tbGreenActive : tbActive) : "rgba(242,232,214,0.4)";
-              const tbLabel = (text, active, color) => React.createElement("span", { style: { fontSize:7, fontFamily:T.ui, letterSpacing:"0.5px", color: active ? (color === "green" ? tbGreenActive : tbActive) : "rgba(242,232,214,0.3)", textTransform:"uppercase", fontWeight: active ? 600 : 400, lineHeight:1 } }, text);
+              const tbInactiveIcon = lm("rgba(242,232,214,0.4)", "rgba(60,40,20,0.5)");
+              const tbInactiveLabel = lm("rgba(242,232,214,0.3)", "rgba(60,40,20,0.4)");
+              const tbIconColor = (active, color) => active ? (color === "green" ? tbGreenActive : tbActive) : tbInactiveIcon;
+              const tbLabel = (text, active, color) => React.createElement("span", { style: { fontSize:7, fontFamily:T.ui, letterSpacing:"0.5px", color: active ? (color === "green" ? tbGreenActive : tbActive) : tbInactiveLabel, textTransform:"uppercase", fontWeight: active ? 600 : 400, lineHeight:1 } }, text);
               return (
               <div style={{
                 position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", zIndex:20,
                 display: cockpitModeActive ? "none" : "flex", flexDirection:"column", alignItems:"center", gap:0,
-                background:"rgba(10,10,16,0.72)", backdropFilter:"blur(20px) saturate(1.2)",
-                borderRadius:14, border:"1px solid rgba(255,255,255,0.06)",
-                boxShadow:"0 8px 32px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.02) inset",
+                background: lm("rgba(10,10,16,0.72)", "rgba(247,240,222,0.88)"),
+                backdropFilter:"blur(20px) saturate(1.2)",
+                borderRadius:14, border: lm("1px solid rgba(255,255,255,0.06)", "1px solid rgba(0,0,0,0.1)"),
+                boxShadow: lm("0 8px 32px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.02) inset", "0 8px 32px rgba(0,0,0,0.1), 0 1px 0 rgba(255,255,255,0.5) inset"),
                 padding:"8px 4px",
               }}>
 
@@ -11486,33 +11500,34 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
         {/* ── RIGHT: Sidebar Toggle Tab ── */}
         <button onClick={() => setSidebarOpen(!sidebarOpen)} title={(sidebarOpen ? "Hide" : "Show") + " Sidebar (Tab)"}
-          onMouseEnter={e => { e.currentTarget.style.background="rgba(14,14,22,0.98)"; e.currentTarget.style.borderColor="rgba(201,168,76,0.3)"; }}
-          onMouseLeave={e => { e.currentTarget.style.background="rgba(10,10,16,0.92)"; e.currentTarget.style.borderColor="rgba(255,255,255,0.06)"; }}
+          onMouseEnter={e => { e.currentTarget.style.background=lm("rgba(14,14,22,0.98)","rgba(240,232,214,0.98)"); e.currentTarget.style.borderColor="rgba(201,168,76,0.3)"; }}
+          onMouseLeave={e => { e.currentTarget.style.background=lm("rgba(10,10,16,0.92)","rgba(247,240,222,0.95)"); e.currentTarget.style.borderColor=lm("rgba(255,255,255,0.06)","rgba(0,0,0,0.08)"); }}
           style={{
             display: cockpitModeActive ? "none" : "flex",
             position:"absolute", right: sidebarOpen ? 380 : 0, top:"50%", transform:"translateY(-50%)",
             zIndex:50, width:20, height:56, alignItems:"center", justifyContent:"center",
-            background:"rgba(10,10,16,0.92)", backdropFilter:"blur(16px)",
-            border:"1px solid rgba(255,255,255,0.06)",
+            background: lm("rgba(10,10,16,0.92)", "rgba(247,240,222,0.95)"), backdropFilter:"blur(16px)",
+            border: lm("1px solid rgba(255,255,255,0.06)", "1px solid rgba(0,0,0,0.08)"),
             borderRight: sidebarOpen ? "none" : undefined,
             borderRadius:"8px 0 0 8px",
             cursor:"pointer", transition:"right 0.25s ease, background 0.15s ease, border-color 0.15s ease",
-            boxShadow:"-4px 0 16px rgba(0,0,0,0.3)",
+            boxShadow: lm("-4px 0 16px rgba(0,0,0,0.3)", "-4px 0 16px rgba(0,0,0,0.08)"),
           }}>
-          {sidebarOpen ? <ChevronRight size={12} color="rgba(242,232,214,0.4)" /> : <ChevronLeft size={12} color="rgba(242,232,214,0.4)" />}
+          {sidebarOpen ? <ChevronRight size={12} color={lm("rgba(242,232,214,0.4)","rgba(60,40,20,0.5)")} /> : <ChevronLeft size={12} color={lm("rgba(242,232,214,0.4)","rgba(60,40,20,0.5)")} />}
         </button>
 
         {/* ── RIGHT: Context Panel (Information Hub) ── */}
         <div style={{
           width: (!cockpitModeActive && sidebarOpen) ? 380 : 0, minWidth: (!cockpitModeActive && sidebarOpen) ? 380 : 0,
-          background:"rgba(10,10,16,0.94)", backdropFilter:"blur(20px) saturate(1.1)",
+          background: lm("rgba(10,10,16,0.94)", "rgba(247,240,222,0.97)"),
+          backdropFilter:"blur(20px) saturate(1.1)",
           overflowY: sidebarOpen ? "auto" : "hidden", overflowX:"hidden",
           display: cockpitModeActive ? "none" : "flex", flexDirection:"column",
-          borderLeft: (!cockpitModeActive && sidebarOpen) ? "1px solid rgba(255,255,255,0.06)" : "none",
-          boxShadow: (!cockpitModeActive && sidebarOpen) ? "-8px 0 32px rgba(0,0,0,0.4)" : "none",
+          borderLeft: (!cockpitModeActive && sidebarOpen) ? `1px solid ${lm("rgba(255,255,255,0.06)","rgba(0,0,0,0.08)")}` : "none",
+          boxShadow: (!cockpitModeActive && sidebarOpen) ? lm("-8px 0 32px rgba(0,0,0,0.4)", "-8px 0 32px rgba(0,0,0,0.1)") : "none",
           transition:"width 0.25s ease, min-width 0.25s ease, opacity 0.2s ease",
           opacity: (!cockpitModeActive && sidebarOpen) ? 1 : 0,
-          scrollbarWidth:"thin", scrollbarColor:"rgba(255,255,255,0.06) transparent",
+          scrollbarWidth:"thin", scrollbarColor: lm("rgba(255,255,255,0.06) transparent", "rgba(0,0,0,0.08) transparent"),
         }}>
 
           {/* ── Tab Bar (stylized RPG tabs with per-tab color identity) ── */}
@@ -11524,8 +11539,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               map:     { accent:"#c792ea", glow:"rgba(199,146,234,0.25)", soft:"rgba(199,146,234,0.06)", border:"rgba(199,146,234,0.35)" },
               settings:{ accent:"#f2917c", glow:"rgba(242,145,124,0.25)", soft:"rgba(242,145,124,0.06)", border:"rgba(242,145,124,0.35)" },
             };
+            const tabInactive = lm("rgba(242,232,214,0.3)", "rgba(60,40,20,0.35)");
+            const tabBorderInactive = lm("rgba(255,255,255,0.04)", "rgba(0,0,0,0.06)");
+            const tabBarBg = lm("linear-gradient(180deg, rgba(255,255,255,0.015) 0%, transparent 100%)", "linear-gradient(180deg, rgba(0,0,0,0.02) 0%, transparent 100%)");
             return (
-            <div style={{ display:"flex", gap:3, flexShrink:0, padding:"6px 6px 0", background:"linear-gradient(180deg, rgba(255,255,255,0.015) 0%, transparent 100%)" }}>
+            <div style={{ display:"flex", gap:3, flexShrink:0, padding:"6px 6px 0", background:tabBarBg }}>
               {[
                 {id:"inspect",label:"Inspect",icon:Eye, roles:["dm","player"]},
                 {id:"combat",label:"Combat",icon:Swords, roles:["dm","player"]},
@@ -11540,15 +11558,15 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                 return (
                   <button key={tab.id} onClick={() => setRightPanelTab(tab.id)}
                     onMouseEnter={e => { if (!isActive) { e.currentTarget.style.background = c.soft; e.currentTarget.style.borderColor = c.border; e.currentTarget.style.color = c.accent; }}}
-                    onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.04)"; e.currentTarget.style.color = "rgba(242,232,214,0.3)"; }}}
+                    onMouseLeave={e => { if (!isActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.borderColor = tabBorderInactive; e.currentTarget.style.color = tabInactive; }}}
                     style={{
                       flex:1, padding:"7px 4px 8px", display:"flex", alignItems:"center", justifyContent:"center", gap:4,
                       background: isActive ? `linear-gradient(180deg, ${c.soft} 0%, transparent 100%)` : "transparent",
-                      border: "1px solid " + (isActive ? c.border : "rgba(255,255,255,0.04)"),
-                      borderBottom: isActive ? "1px solid transparent" : "1px solid rgba(255,255,255,0.04)",
+                      border: "1px solid " + (isActive ? c.border : tabBorderInactive),
+                      borderBottom: isActive ? "1px solid transparent" : "1px solid " + tabBorderInactive,
                       borderRadius: "6px 6px 0 0",
                       cursor:"pointer", fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase",
-                      color: isActive ? c.accent : "rgba(242,232,214,0.3)",
+                      color: isActive ? c.accent : tabInactive,
                       transition:"all 0.15s ease",
                       fontWeight: isActive ? 700 : 400,
                       boxShadow: isActive ? `0 -1px 8px ${c.glow}, inset 0 1px 6px ${c.soft}` : "none",
@@ -11564,10 +11582,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             );
           })()}
           {/* ── Tab accent line ── */}
-          <div style={{ height:1, background:"linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.06), rgba(255,255,255,0.02))", flexShrink:0 }} />
+          <div style={{ height:1, background: lm("linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.06), rgba(255,255,255,0.02))", "linear-gradient(90deg, rgba(0,0,0,0.03), rgba(0,0,0,0.08), rgba(0,0,0,0.03))"), flexShrink:0 }} />
 
           {/* ── Tab Content ── */}
-          <div style={{ flex:1, overflowY:"auto", display:"flex", flexDirection:"column", scrollbarWidth:"thin", scrollbarColor:"rgba(255,255,255,0.06) transparent" }}>
+          <div style={{ flex:1, overflowY:"auto", display:"flex", flexDirection:"column", scrollbarWidth:"thin", scrollbarColor: lm("rgba(255,255,255,0.06) transparent", "rgba(0,0,0,0.08) transparent") }}>
 
           {/* ══ COMBAT TAB ══ */}
           {rightPanelTab === "combat" && (
