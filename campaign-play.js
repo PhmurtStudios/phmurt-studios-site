@@ -2504,7 +2504,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   const [sidePanelTab, setSidePanelTab] = useState("scenes"); // "scenes" | "tokens" | "settings"
   const [showConditionMenu, setShowConditionMenu] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [rightPanelTab, setRightPanelTab] = useState("inspect"); // "inspect" | "map" | "tokens" | "combat" | "settings"
+  const [rightPanelTab, setRightPanelTab] = useState("map"); // "map" | "inspect" | "combat" | "tokens" | "settings"
 
   // Auto-switch tabs based on context
   useEffect(() => { if (combatLive || mode === "combat") setRightPanelTab("combat"); }, [combatLive]);
@@ -5051,11 +5051,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       ctx.fillRect(0, 0, mapW, mapH);
     }
 
-    // Grid — visible but doesn't overpower map elements
+    // Grid — clearly visible, clean lines
     if (showGrid) {
       const isLight = document.documentElement.classList.contains("light-mode");
-      ctx.strokeStyle = isLight ? "rgba(80,60,40,0.18)" : "rgba(180,170,200,0.16)";
-      ctx.lineWidth = 0.7;
+      ctx.strokeStyle = isLight ? "rgba(60,40,20,0.22)" : "rgba(200,190,220,0.22)";
+      ctx.lineWidth = 1;
       // Calculate visible area in world coordinates
       const visLeft = -pan.x / zoom;
       const visTop = -pan.y / zoom;
@@ -7467,7 +7467,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     if (combatRollLog.length > 0 && !combatLive) {
       const now = Date.now();
       const isLight = cssVar("--bg").trim() === "#f4f0e6" || cssVar("--bg").includes("244");
-      const rollBg = isLight ? "rgba(255,255,255,0.92)" : "rgba(0,0,6,0.88)";
+      const rollBg = isLight ? "rgba(255,255,255,0.97)" : "rgba(0,0,6,0.94)";
       const rollBorder = isLight ? "rgba(0,0,0,0.15)" : "rgba(255,255,255,0.12)";
       const rollTextColor = isLight ? "#1a1a2e" : "#f2e8d6";
       let rollY = 46;
@@ -10014,7 +10014,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   const lm = (dark, light) => isLightMode ? light : dark;
   /* Common theme-aware inline colors */
   const panelBg = lm("rgba(10,10,16,0.95)", "rgba(255,255,255,0.97)");
-  const panelBgSolid = lm("rgba(8,8,12,0.92)", "rgba(248,244,232,0.96)");
+  const panelBgSolid = lm("rgba(8,8,12,0.96)", "rgba(248,244,232,0.98)");
   const subtleBg = lm("rgba(0,0,0,0.12)", "rgba(0,0,0,0.04)");
   const subtleBg2 = lm("rgba(0,0,0,0.15)", "rgba(0,0,0,0.06)");
   const subtleBorder = lm("rgba(255,255,255,0.08)", "rgba(0,0,0,0.1)");
@@ -10400,7 +10400,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                 { label:"Reaction", value:activeEconomy.reactionSpent ? "Spent" : "Ready", color:"#b574ff", active:!activeEconomy.reactionSpent, icon:RefreshCw },
               ] : [];
               return (
-                <div style={{ position:"absolute", top:12, left:72, right: sidebarOpen ? 392 : 16, zIndex:26, background: lm("linear-gradient(135deg, rgba(10,10,16,0.92), rgba(10,10,18,0.78))", "linear-gradient(135deg, rgba(247,240,222,0.94), rgba(240,232,214,0.88))"), backdropFilter:"blur(16px)", border: lm("1px solid rgba(255,255,255,0.08)", "1px solid rgba(0,0,0,0.1)"), borderRadius:16, padding:"10px 12px", boxShadow: lm("0 18px 48px rgba(0,0,8,0.55)", "0 18px 48px rgba(0,0,0,0.12)") }}>
+                <div style={{ position:"absolute", top:12, left:72, right: sidebarOpen ? 392 : 16, zIndex:26, background: lm("linear-gradient(135deg, rgba(10,10,16,0.96), rgba(10,10,18,0.88))", "linear-gradient(135deg, rgba(247,240,222,0.97), rgba(240,232,214,0.94))"), backdropFilter:"blur(16px)", border: lm("1px solid rgba(255,255,255,0.08)", "1px solid rgba(0,0,0,0.1)"), borderRadius:16, padding:"10px 12px", boxShadow: lm("0 18px 48px rgba(0,0,8,0.55)", "0 18px 48px rgba(0,0,0,0.12)") }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:12 }}>
                     <div style={{ minWidth:0 }}>
                       <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
@@ -10469,7 +10469,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               const leftPanelMoveFt = getEffectiveMovementRemaining(battleFocusToken);
               const controllerLabel = getPartyProfile(battleFocusToken)?.player || battleFocusToken.player || (battleFocusToken.tokenType === "pc" ? "Player" : "DM");
               return (
-                <div style={{ position:"absolute", left:80, top:108, width:320, maxHeight:"calc(100% - 224px)", zIndex:24, background: lm("rgba(10,10,16,0.92)", "rgba(247,240,222,0.95)"), backdropFilter:"blur(16px)", border: lm("1px solid rgba(255,255,255,0.08)", "1px solid rgba(0,0,0,0.1)"), borderRadius:16, boxShadow: lm("0 18px 44px rgba(0,0,8,0.55)", "0 18px 44px rgba(0,0,0,0.12)"), overflow:"hidden", display:"flex", flexDirection:"column" }}>
+                <div style={{ position:"absolute", left:80, top:108, width:320, maxHeight:"calc(100% - 224px)", zIndex:24, background: lm("rgba(10,10,16,0.96)", "rgba(247,240,222,0.97)"), backdropFilter:"blur(16px)", border: lm("1px solid rgba(255,255,255,0.08)", "1px solid rgba(0,0,0,0.1)"), borderRadius:16, boxShadow: lm("0 18px 44px rgba(0,0,8,0.55)", "0 18px 44px rgba(0,0,0,0.12)"), overflow:"hidden", display:"flex", flexDirection:"column" }}>
                   <div style={{ padding:"12px 14px", borderBottom:"1px solid "+bd08, background:"linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))" }}>
                     <div style={{ display:"flex", alignItems:"center", gap:12 }}>
                       <div style={{ width:48, height:48, borderRadius:"50%", background:battleFocusToken.color, border:"2px solid " + (battleFocusToken.id === activeCombatantId ? "#ffd54f" : "rgba(255,255,255,0.12)"), overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontFamily:T.ui, fontSize:14, fontWeight:700, boxShadow:battleFocusToken.id === activeCombatantId ? "0 0 18px rgba(255,213,79,0.3)" : "none", flexShrink:0 }}>
@@ -10559,7 +10559,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               const trayMoveFt = trayToken ? getEffectiveMovementRemaining(trayToken) : 0;
               const trayTarget = trayToken ? getFocusedCombatTarget(trayToken) : null;
               return (
-                <div style={{ position:"absolute", left:72, right: sidebarOpen ? 392 : 16, bottom:16, zIndex:24, background: lm("rgba(10,10,16,0.92)", "rgba(247,240,222,0.95)"), backdropFilter:"blur(16px)", border: lm("1px solid rgba(255,255,255,0.08)", "1px solid rgba(0,0,0,0.1)"), borderRadius:16, boxShadow: lm("0 18px 44px rgba(0,0,8,0.55)", "0 18px 44px rgba(0,0,0,0.12)"), padding:"10px 12px" }}>
+                <div style={{ position:"absolute", left:72, right: sidebarOpen ? 392 : 16, bottom:16, zIndex:24, background: lm("rgba(10,10,16,0.96)", "rgba(247,240,222,0.97)"), backdropFilter:"blur(16px)", border: lm("1px solid rgba(255,255,255,0.08)", "1px solid rgba(0,0,0,0.1)"), borderRadius:16, boxShadow: lm("0 18px 44px rgba(0,0,8,0.55)", "0 18px 44px rgba(0,0,0,0.12)"), padding:"10px 12px" }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:10, marginBottom:8 }}>
                     <div style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1px", color:T.textFaint, textTransform:"uppercase" }}>
                       {trayToken ? (trayToken.name + " · " + (trayCanAct ? "Actions Ready" : "Waiting For Turn")) : "Select a combatant"}
@@ -11112,7 +11112,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                           <span style={{ fontFamily:T.ui, fontSize:12, color: activeMapId === map.id ? "#5ee09a" : T.text, fontWeight:500, letterSpacing:"0.3px" }}>{map.name}</span>
                         </div>
                         <div style={{ display:"flex", gap:4 }}>
-                          <button onClick={e => { e.stopPropagation(); mapImgInputRef.current?.click(); mapImgInputRef.current.dataset.mapId = map.id; }}
+                          <button onClick={e => { e.stopPropagation(); if (mapImgInputRef.current) { mapImgInputRef.current.dataset.mapId = map.id; mapImgInputRef.current.click(); } }}
                             style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:2 }} title="Upload map image"><Image size={12}/></button>
                           <button onClick={e => { e.stopPropagation(); if (confirm("Delete map '" + map.name + "'?")) deleteMap(map.id); }}
                             style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:2 }} title="Delete map"><Trash2 size={12}/></button>
@@ -11325,7 +11325,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               <div style={{
                 position:"absolute", left:14, top:"50%", transform:"translateY(-50%)", zIndex:20,
                 display: cockpitModeActive ? "none" : "flex", flexDirection:"column", alignItems:"center", gap:0,
-                background: lm("rgba(10,10,16,0.72)", "rgba(247,240,222,0.88)"),
+                background: lm("rgba(10,10,16,0.88)", "rgba(247,240,222,0.95)"),
                 backdropFilter:"blur(20px) saturate(1.2)",
                 borderRadius:14, border: lm("1px solid rgba(255,255,255,0.06)", "1px solid rgba(0,0,0,0.1)"),
                 boxShadow: lm("0 8px 32px rgba(0,0,0,0.35), 0 1px 0 rgba(255,255,255,0.02) inset", "0 8px 32px rgba(0,0,0,0.1), 0 1px 0 rgba(255,255,255,0.5) inset"),
@@ -11528,7 +11528,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             display: cockpitModeActive ? "none" : "flex",
             position:"absolute", right: sidebarOpen ? 380 : 0, top:"50%", transform:"translateY(-50%)",
             zIndex:50, width:20, height:56, alignItems:"center", justifyContent:"center",
-            background: lm("rgba(10,10,16,0.92)", "rgba(247,240,222,0.95)"), backdropFilter:"blur(16px)",
+            background: lm("rgba(10,10,16,0.96)", "rgba(247,240,222,0.97)"), backdropFilter:"blur(16px)",
             border: lm("1px solid rgba(255,255,255,0.06)", "1px solid rgba(0,0,0,0.08)"),
             borderRight: sidebarOpen ? "none" : undefined,
             borderRadius:"8px 0 0 8px",
@@ -11541,7 +11541,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         {/* ── RIGHT: Context Panel (Information Hub) ── */}
         <div style={{
           width: (!cockpitModeActive && sidebarOpen) ? 380 : 0, minWidth: (!cockpitModeActive && sidebarOpen) ? 380 : 0,
-          background: lm("rgba(10,10,16,0.94)", "rgba(247,240,222,0.97)"),
+          background: lm("rgba(10,10,16,0.97)", "rgba(244,237,218,0.98)"),
           backdropFilter:"blur(20px) saturate(1.1)",
           overflowY: sidebarOpen ? "auto" : "hidden", overflowX:"hidden",
           display: cockpitModeActive ? "none" : "flex", flexDirection:"column",
@@ -11567,10 +11567,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             return (
             <div style={{ display:"flex", gap:3, flexShrink:0, padding:"6px 6px 0", background:tabBarBg }}>
               {[
+                {id:"map",label:"Map",icon:Globe, roles:["dm"]},
                 {id:"inspect",label:"Inspect",icon:Eye, roles:["dm","player"]},
                 {id:"combat",label:"Combat",icon:Swords, roles:["dm","player"]},
                 {id:"tokens",label:"Tokens",icon:Users, roles:["dm"]},
-                {id:"map",label:"Map",icon:Globe, roles:["dm"]},
                 {id:"settings",label:"Settings",icon:Settings, roles:["dm"]},
               ].filter(tab => tab.roles.includes(viewRole)).map(tab => {
                 const isActive = rightPanelTab === tab.id;
