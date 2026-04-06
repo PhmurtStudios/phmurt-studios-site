@@ -4284,7 +4284,7 @@ function CampaignSelector({ campaigns, activeCampaignId, onSelect, onCreate, onD
       </button>
       {showList && (
         <div style={{
-          position:"absolute", top:"100%", right:0, marginTop:4, width:280,
+          position:"absolute", top:"100%", left:0, marginTop:4, width:280,
           background:T.bgCard, border:`1px solid ${T.crimsonBorder}`, borderRadius:"4px",
           boxShadow:"0 8px 24px rgba(0,0,6,0.45)", zIndex:300, overflow:"hidden",
         }}>
@@ -4519,19 +4519,28 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
     <div style={{ display:"grid", gridTemplateColumns:"1fr 340px", gap:24, padding:"32px 56px" }}>
       <div style={{ display:"flex", flexDirection:"column", gap:24 }}>
         {/* Stats Row */}
-        <div style={{ display:"flex", gap:20 }}>
+        <div style={{ display:"flex", gap:12 }}>
           {[
-            { label:"Sessions", val:data.sessionsPlayed, icon:BookOpen },
-            { label:"Quests", val:data.quests.length, icon:Scroll },
-            { label:"Party", val:data.party.length, icon:Users },
-            { label:"Regions", val:data.regions.length, icon:MapPin },
+            { label:"Sessions", val:data.sessionsPlayed, icon:BookOpen, accent:"#c9a84c" },
+            { label:"Quests", val:data.quests.length, icon:Scroll, accent:T.crimson },
+            { label:"Party", val:data.party.length, icon:Users, accent:"#58aaff" },
+            { label:"Regions", val:data.regions.length, icon:MapPin, accent:"#5ee09a" },
           ].map((s,i) => (
-            <div key={i} style={{ flex:1, padding:"20px 24px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
-                <s.icon size={14} color={T.crimson}/>
+            <div key={i} style={{
+              flex:1, padding:"18px 20px", background:`linear-gradient(135deg, ${T.bgCard} 0%, rgba(255,255,255,0.01) 100%)`,
+              border:`1px solid ${T.border}`, borderRadius:"6px", borderTop:`2px solid ${s.accent}`,
+              transition:"border-color 0.2s, box-shadow 0.2s",
+            }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor=s.accent; e.currentTarget.style.boxShadow=`0 4px 12px rgba(0,0,0,0.15), inset 0 1px 0 ${s.accent}22`; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor=T.border; e.currentTarget.style.borderTopColor=s.accent; e.currentTarget.style.boxShadow="none"; }}
+            >
+              <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
+                <div style={{ width:28, height:28, borderRadius:6, background:`${s.accent}12`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  <s.icon size={14} color={s.accent}/>
+                </div>
                 <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1.5px", color:T.textMuted, textTransform:"uppercase" }}>{s.label}</span>
               </div>
-              <span style={{ fontSize:28, color:T.text, fontWeight:300 }}>{s.val}</span>
+              <span style={{ fontSize:30, color:T.text, fontWeight:300, letterSpacing:"-0.5px" }}>{s.val}</span>
             </div>
           ))}
         </div>
@@ -4608,37 +4617,6 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
           </div>
         </div>
 
-        {/* Quick Tools — Links to generators and other tools (DM only) */}
-        {isDm && <div>
-          <SectionTitle icon={Wand2}>Quick Tools</SectionTitle>
-          <p style={{ fontSize:12, color:T.textMuted, margin:"0 0 12px", fontWeight:300, lineHeight:1.45 }}>Open related tools and import content into your campaign.</p>
-          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap:8 }}>
-            <LinkBtn onClick={() => window.open(`generators.html?export=campaign&campaignId=${activeCampaignId}`, "_blank", "noopener,noreferrer")} style={{ padding:"12px 16px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
-              <Users size={16} />
-              <span style={{ fontSize:12 }}>NPC Generator</span>
-            </LinkBtn>
-            <LinkBtn onClick={() => window.open(`generators.html?export=campaign&campaignId=${activeCampaignId}&type=encounter`, "_blank", "noopener,noreferrer")} style={{ padding:"12px 16px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
-              <Swords size={16} />
-              <span style={{ fontSize:12 }}>Encounter Gen</span>
-            </LinkBtn>
-            <LinkBtn onClick={() => window.open(`generators.html?export=campaign&campaignId=${activeCampaignId}&type=treasure`, "_blank", "noopener,noreferrer")} style={{ padding:"12px 16px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
-              <Package size={16} />
-              <span style={{ fontSize:12 }}>Treasure Gen</span>
-            </LinkBtn>
-            <LinkBtn onClick={() => window.open("compendium.html", "_blank", "noopener,noreferrer")} style={{ padding:"12px 16px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
-              <BookOpen size={16} />
-              <span style={{ fontSize:12 }}>Compendium</span>
-            </LinkBtn>
-            <LinkBtn onClick={() => window.open("grimoire.html", "_blank", "noopener,noreferrer")} style={{ padding:"12px 16px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
-              <Wand2 size={16} />
-              <span style={{ fontSize:12 }}>Grimoire</span>
-            </LinkBtn>
-            <LinkBtn onClick={() => window.open("character-builder.html", "_blank", "noopener,noreferrer")} style={{ padding:"12px 16px", textAlign:"center", display:"flex", flexDirection:"column", alignItems:"center", gap:6 }}>
-              <FileText size={16} />
-              <span style={{ fontSize:12 }}>Character</span>
-            </LinkBtn>
-          </div>
-        </div>}
 
         <Modal open={encBuilderOpen} onClose={() => setEncBuilderOpen(false)} title="Save encounter blueprint">
           <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
@@ -4875,13 +4853,50 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
 
         <Section>
           <SectionTitle icon={Activity}>Recent Activity</SectionTitle>
+          {data.activity.length === 0 && <p style={{ fontSize:12, color:T.textFaint, fontStyle:"italic", margin:0 }}>No activity yet.</p>}
           {data.activity.slice(0,6).map((a,i) => (
-            <div key={i} style={{ padding:"10px 0", borderBottom:i<5?`1px solid ${T.borderMid}`:"none" }}>
-              <span style={{ fontSize:12, fontFamily:T.body, color:T.textDim, lineHeight:1.5, fontWeight:300 }}>{a.text}</span>
-              <span style={{ fontFamily:T.ui, fontSize:8, color:T.textFaint, marginTop:2, display:"block" }}>{a.time}</span>
+            <div key={i} style={{ padding:"10px 0", borderBottom:i<5?`1px solid ${T.borderMid}`:"none", display:"flex", alignItems:"flex-start", gap:8 }}>
+              <div style={{ width:4, height:4, borderRadius:"50%", background:T.crimson, flexShrink:0, marginTop:7, opacity:i===0?1:0.4 }}/>
+              <div>
+                <span style={{ fontSize:12, fontFamily:T.body, color:T.textDim, lineHeight:1.5, fontWeight:300 }}>{a.text}</span>
+                <span style={{ fontFamily:T.ui, fontSize:8, color:T.textFaint, marginTop:2, display:"block" }}>{a.time}</span>
+              </div>
             </div>
           ))}
         </Section>
+
+        {/* Quick Tools */}
+        {isDm && <Section>
+          <SectionTitle icon={Wand2}>Quick Tools</SectionTitle>
+          <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
+            {[
+              { label:"NPC Gen", icon:Users, accent:"#58aaff", url:`generators.html?export=campaign&campaignId=${activeCampaignId}` },
+              { label:"Encounter", icon:Swords, accent:"#5ee09a", url:`generators.html?export=campaign&campaignId=${activeCampaignId}&type=encounter` },
+              { label:"Treasure", icon:Package, accent:"#c9a84c", url:`generators.html?export=campaign&campaignId=${activeCampaignId}&type=treasure` },
+              { label:"Compendium", icon:BookOpen, accent:"#c792ea", url:"compendium.html" },
+              { label:"Grimoire", icon:Wand2, accent:"#f2917c", url:"grimoire.html" },
+              { label:"Character", icon:FileText, accent:"#ffd54f", url:"character-builder.html" },
+            ].map((tool, i) => {
+              const ToolIcon = tool.icon;
+              return (
+                <button key={i}
+                  onClick={() => window.open(tool.url, "_blank", "noopener,noreferrer")}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor=tool.accent; e.currentTarget.style.background=`${tool.accent}08`; }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor=T.border; e.currentTarget.style.background=T.bgCard; }}
+                  style={{
+                    padding:"10px 8px", display:"flex", alignItems:"center", gap:8,
+                    background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:5,
+                    cursor:"pointer", transition:"all 0.15s",
+                  }}>
+                  <div style={{ width:24, height:24, borderRadius:5, background:`${tool.accent}15`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                    <ToolIcon size={12} color={tool.accent}/>
+                  </div>
+                  <span style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"0.8px", color:T.textDim, textTransform:"uppercase" }}>{tool.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </Section>}
       </div>
     </div>
   );

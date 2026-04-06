@@ -285,21 +285,21 @@ function TimelineView({ data, setData, onNav, viewRole }) {
       )}
 
       {visibleCount > 0 && (
-      <div style={{ position:"relative", width:"100%", paddingTop: narrow ? 2 : 12, paddingBottom: narrow ? 8 : 20, paddingLeft: narrow ? (compactLayout ? 24 : 30) : 0 }}>
+      <div style={{ position:"relative", width:"100%", paddingTop: narrow ? 2 : 16, paddingBottom: narrow ? 8 : 24, paddingLeft: narrow ? (compactLayout ? 24 : 30) : 0 }}>
+        {/* ── Central timeline spine ── */}
         {!narrow && (
           <div aria-hidden style={{
             position:"absolute", left:"50%", top:8, bottom:12, width:2, marginLeft:-1,
             borderRadius:2,
-            background:`linear-gradient(180deg, ${T.crimsonBorder} 0%, ${T.crimsonDim} 45%, ${T.crimsonBorder} 100%)`,
-            opacity:0.85,
+            background:`linear-gradient(180deg, ${T.crimson}55 0%, ${T.crimson}20 50%, ${T.crimson}55 100%)`,
             zIndex:0, pointerEvents:"none",
           }}/>
         )}
         {narrow && (
           <div style={{
             position:"absolute", left: compactLayout ? 5 : 7, top:2, bottom:8, width:2, borderRadius:"2px",
-            background:`linear-gradient(180deg, ${T.crimsonBorder} 0%, ${T.crimsonDim} 50%, ${T.crimsonBorder} 100%)`,
-            opacity:0.9, zIndex:0,
+            background:`linear-gradient(180deg, ${T.crimson}55 0%, ${T.crimson}20 50%, ${T.crimson}55 100%)`,
+            zIndex:0,
           }}/>
         )}
 
@@ -310,29 +310,36 @@ function TimelineView({ data, setData, onNav, viewRole }) {
           const sessionPad = compactLayout ? 14 : 18;
           const onLeft = timelineIdx % 2 === 0;
           const dotMm = compactLayout ? 14 : 18;
+          const dotAccent = isLatest ? T.crimson : "#c9a84c";
           const timelineDot = (
             <div style={{ display:"flex", flexDirection:"column", alignItems:"center", paddingTop: compactLayout ? 14 : 18 }}>
-              <div style={{ width:2, height: compactLayout ? 8 : 10, background:T.crimsonBorder, borderRadius:1, marginBottom:3, opacity:0.7 }} />
               <div style={{
                 width: dotMm, height: dotMm, borderRadius:"50%",
                 background: isLatest ? T.crimson : T.bgCard,
                 border:`2px solid ${isLatest ? T.crimson : T.crimsonBorder}`,
-                boxShadow: isLatest ? `0 0 0 3px ${T.crimsonSoft}` : "none",
+                boxShadow: isLatest
+                  ? `0 0 0 4px ${T.crimsonSoft}, 0 0 12px ${T.crimson}44`
+                  : `0 0 0 2px ${T.crimsonSoft}`,
                 zIndex:2, flexShrink:0,
+                transition:"box-shadow 0.25s ease, transform 0.25s ease",
               }}/>
             </div>
           );
 
           const sessionCard = (
               <Section style={{
-                cursor:"default", transition:"box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease",
+                cursor:"default", transition:"box-shadow 0.3s ease, border-color 0.3s ease, background 0.3s ease, transform 0.3s ease",
                 padding: sessionPad,
                 border:`1px solid ${isLatest ? T.crimsonBorder : T.borderMid}`,
-                background: timelineIdx % 2 === 0 ? T.bgCard : T.bgMid,
+                borderLeft: isLatest ? `3px solid ${T.crimson}` : `1px solid ${T.borderMid}`,
+                background: isLatest
+                  ? `linear-gradient(135deg, ${T.bgCard} 0%, rgba(212,67,58,0.03) 100%)`
+                  : (timelineIdx % 2 === 0 ? T.bgCard : T.bgMid),
                 boxShadow: hoverSession===s.id
-                  ? `0 4px 16px rgba(0,0,0,0.12)`
-                  : "0 1px 0 rgba(0,0,0,0.06)",
-                transform: "none",
+                  ? `0 6px 20px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.1)`
+                  : "0 1px 3px rgba(0,0,0,0.06)",
+                transform: hoverSession===s.id ? "translateY(-1px)" : "none",
+                borderRadius: 6,
               }}
                 onMouseEnter={()=>setHoverSession(s.id)}
                 onMouseLeave={()=>setHoverSession(null)}
@@ -378,7 +385,7 @@ function TimelineView({ data, setData, onNav, viewRole }) {
 
                   {/* Events */}
                   {s.events?.length > 0 && (
-                    <div style={{ display:"flex", flexDirection:"column", gap: compactLayout ? 6 : 8, marginBottom:12, paddingLeft: compactLayout ? 6 : 10, borderLeft:`1px solid ${T.borderMid}`, marginTop:2 }}>
+                    <div style={{ display:"flex", flexDirection:"column", gap: compactLayout ? 6 : 8, marginBottom:12, paddingLeft: compactLayout ? 8 : 12, borderLeft:`2px solid ${T.crimson}22`, marginTop:4, position:"relative" }}>
                       {s.events.map(ev => {
                         if(ev.dmOnly && !dmView) return null;
                         if (!eventPassesFilters(ev)) return null;
@@ -423,21 +430,22 @@ function TimelineView({ data, setData, onNav, viewRole }) {
                                 display:"flex", gap: 10,
                                 alignItems:"flex-start",
                                 padding:`${padY}px ${padX}px`,
-                                background: evHover ? T.bgHover : (minor ? T.bgInput : T.bgCard),
-                                borderRadius: 3,
-                                border:`1px solid ${T.borderMid}`,
+                                background: evHover ? `linear-gradient(135deg, ${col}06, transparent)` : (minor ? T.bgInput : T.bgCard),
+                                borderRadius: 5,
+                                border:`1px solid ${evHover ? `${col}30` : T.borderMid}`,
                                 borderLeft:`3px solid ${col}`,
-                                boxShadow: evHover ? "0 2px 8px rgba(0,0,0,0.08)" : "0 1px 0 rgba(0,0,0,0.04)",
+                                boxShadow: evHover ? `0 3px 10px rgba(0,0,0,0.1), inset 0 0 0 1px ${col}10` : "0 1px 2px rgba(0,0,0,0.04)",
                                 opacity: minor ? 0.92 : (ev.dmOnly ? 0.75 : 1),
                                 cursor:"pointer",
-                                transition:"background 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease",
+                                transition:"all 0.2s ease",
+                                transform: evHover ? "translateX(2px)" : "none",
                               }}
                             >
                               <div style={{
                                 width: iconBox, height: iconBox, borderRadius: 6, flexShrink:0,
                                 display:"flex", alignItems:"center", justifyContent:"center",
-                                background: T.bgMid,
-                                border:`1px solid ${T.borderMid}`,
+                                background: `${col}10`,
+                                border:`1px solid ${col}25`,
                               }}>
                                 <EvIcon size={major ? 15 : minor ? 11 : 13} color={col}/>
                               </div>
@@ -568,27 +576,34 @@ function TimelineView({ data, setData, onNav, viewRole }) {
           );
           if (narrow) {
             return (
-              <div key={s.id} style={{ marginBottom: compactLayout ? 14 : 18, position:"relative" }}>
+              <div key={s.id} style={{ marginBottom: compactLayout ? 14 : 20, position:"relative" }}>
+                {/* connector arm */}
                 <div style={{
                   position:"absolute", left: compactLayout ? -22 : -28, top: compactLayout ? 22 : 26,
-                  width: compactLayout ? 20 : 24, height:2, background:T.crimsonBorder, borderRadius:1, opacity:0.85,
+                  width: compactLayout ? 20 : 24, height:2,
+                  background: isLatest ? `linear-gradient(90deg, ${T.crimson}, ${T.crimsonBorder})` : T.crimsonBorder,
+                  borderRadius:1,
                 }}/>
+                {/* dot */}
                 <div style={{ position:"absolute", left: compactLayout ? -34 : -40, top: compactLayout ? 14 : 18,
                   width: compactLayout ? 14 : 18, height: compactLayout ? 14 : 18, borderRadius:"50%",
                   background: isLatest ? T.crimson : T.bgCard,
                   border:`2px solid ${isLatest ? T.crimson : T.crimsonBorder}`,
-                  boxShadow: isLatest ? `0 0 0 4px ${T.crimsonSoft}, 0 2px 8px rgba(0,0,0,0.25)` : "0 2px 6px rgba(0,0,0,0.15)",
+                  boxShadow: isLatest
+                    ? `0 0 0 4px ${T.crimsonSoft}, 0 0 12px ${T.crimson}44`
+                    : `0 0 0 2px ${T.crimsonSoft}`,
                   zIndex:2,
+                  transition:"box-shadow 0.25s ease",
                 }}/>
                 {sessionCard}
               </div>
             );
           }
           return (
-            <div key={s.id} style={{ display:"grid", gridTemplateColumns:"minmax(0,1fr) 48px minmax(0,1fr)", alignItems:"start", marginBottom: compactLayout ? 16 : 22, position:"relative", zIndex:1 }}>
+            <div key={s.id} style={{ display:"grid", gridTemplateColumns:"minmax(0,1fr) 48px minmax(0,1fr)", alignItems:"start", marginBottom: compactLayout ? 18 : 26, position:"relative", zIndex:1 }}>
               {onLeft ? (
                 <>
-                  <div style={{ display:"flex", justifyContent:"flex-end", paddingRight:8, paddingTop:4 }}>
+                  <div style={{ display:"flex", justifyContent:"flex-end", paddingRight:12, paddingTop:4 }}>
                     <div style={{ width:"100%", maxWidth:488 }}>{sessionCard}</div>
                   </div>
                   {timelineDot}
@@ -598,7 +613,7 @@ function TimelineView({ data, setData, onNav, viewRole }) {
                 <>
                   <div />
                   {timelineDot}
-                  <div style={{ display:"flex", justifyContent:"flex-start", paddingLeft:8, paddingTop:4 }}>
+                  <div style={{ display:"flex", justifyContent:"flex-start", paddingLeft:12, paddingTop:4 }}>
                     <div style={{ width:"100%", maxWidth:488 }}>{sessionCard}</div>
                   </div>
                 </>
