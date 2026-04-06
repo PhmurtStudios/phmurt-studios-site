@@ -1,0 +1,6 @@
+# Heightmap-first procedural fantasy atlas (NumPy gradient noise + flow + SVG; no C compiler needed)
+numpy>=1.24
+scipy>=1.10
+scikit-image>=0.21
+svgwrite>=1.4
+shapely>=2.0

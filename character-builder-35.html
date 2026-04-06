@@ -1376,26 +1376,38 @@ function toggleSpell35(name, type, max) {
   }
   renderSpells35();
 }
+function resolveSpellDescription35(spName) {
+  var aliases = DND35_DATA.spellDescriptionAliases;
+  var resolved = (aliases && aliases[spName]) || spName;
+  var d = DND35_DATA.spellDescriptions && DND35_DATA.spellDescriptions[resolved];
+  if (!d && resolved !== spName) d = DND35_DATA.spellDescriptions && DND35_DATA.spellDescriptions[spName];
+  if (d) return { title: spName, data: d };
+  return {
+    title: spName,
+    data: {
+      school: 'SRD / Player\'s Handbook',
+      castTime: 'See source',
+      range: 'See source',
+      duration: 'See source',
+      desc: 'Full rules for this spell are in the D&D 3.5 System Reference Document (d20srd.org) or the Player\'s Handbook: components (V, S, M/DF), saving throws, spell resistance, area, targets, and material or XP costs.'
+    }
+  };
+}
 function showSpellInfo35(spName) {
   var old = document.getElementById('si35-popup'); if (old) old.remove();
-  var data = DND35_DATA.spellDescriptions && DND35_DATA.spellDescriptions[spName];
+  var r = resolveSpellDescription35(spName);
+  var data = r.data;
   var overlay = document.createElement('div');
   overlay.className = 'spell-info-overlay'; overlay.id = 'si35-popup';
   overlay.onclick = function(e) { if (e.target===overlay) overlay.remove(); };
-  if (data) {
-    overlay.innerHTML = '<div class="spell-info-box"><button class="spell-info-close" onclick="document.getElementById(\'si35-popup\').remove()">✕</button>'+
-      '<div style="font-family:\'Cinzel\',serif;font-size:14px;letter-spacing:2px;text-transform:uppercase;color:var(--text);margin-bottom:4px;">'+spName+'</div>'+
-      '<div style="font-family:\'Cinzel\',serif;font-size:9px;letter-spacing:3px;color:var(--crimson);text-transform:uppercase;margin-bottom:16px;">'+data.school+'</div>'+
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">'+
-        '<div style="background:var(--bg);padding:8px 10px;"><div style="font-family:\'Cinzel\',serif;font-size:7px;letter-spacing:2px;color:var(--text-faint);text-transform:uppercase;margin-bottom:3px;">Casting Time</div><div style="font-size:13px;color:var(--text-dim);">'+data.castTime+'</div></div>'+
-        '<div style="background:var(--bg);padding:8px 10px;"><div style="font-family:\'Cinzel\',serif;font-size:7px;letter-spacing:2px;color:var(--text-faint);text-transform:uppercase;margin-bottom:3px;">Range</div><div style="font-size:13px;color:var(--text-dim);">'+data.range+'</div></div>'+
-        '<div style="background:var(--bg);padding:8px 10px;grid-column:1/-1;"><div style="font-family:\'Cinzel\',serif;font-size:7px;letter-spacing:2px;color:var(--text-faint);text-transform:uppercase;margin-bottom:3px;">Duration</div><div style="font-size:13px;color:var(--text-dim);">'+data.duration+'</div></div>'+
-      '</div><div style="font-size:14px;color:var(--text-dim);line-height:1.75;font-style:italic;">'+data.desc+'</div></div>';
-  } else {
-    overlay.innerHTML = '<div class="spell-info-box"><button class="spell-info-close" onclick="document.getElementById(\'si35-popup\').remove()">✕</button>'+
-      '<div style="font-family:\'Cinzel\',serif;font-size:14px;letter-spacing:2px;color:var(--text);margin-bottom:12px;">'+spName+'</div>'+
-      '<div style="font-size:13px;color:var(--text-dim);font-style:italic;">No description available.</div></div>';
-  }
+  overlay.innerHTML = '<div class="spell-info-box"><button class="spell-info-close" onclick="document.getElementById(\'si35-popup\').remove()">✕</button>'+
+    '<div style="font-family:\'Cinzel\',serif;font-size:14px;letter-spacing:2px;text-transform:uppercase;color:var(--text);margin-bottom:4px;">'+esc35(r.title)+'</div>'+
+    '<div style="font-family:\'Cinzel\',serif;font-size:9px;letter-spacing:3px;color:var(--crimson);text-transform:uppercase;margin-bottom:16px;">'+esc35(data.school)+'</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;">'+
+      '<div style="background:var(--bg);padding:8px 10px;"><div style="font-family:\'Cinzel\',serif;font-size:7px;letter-spacing:2px;color:var(--text-faint);text-transform:uppercase;margin-bottom:3px;">Casting Time</div><div style="font-size:13px;color:var(--text-dim);">'+esc35(data.castTime)+'</div></div>'+
+      '<div style="background:var(--bg);padding:8px 10px;"><div style="font-family:\'Cinzel\',serif;font-size:7px;letter-spacing:2px;color:var(--text-faint);text-transform:uppercase;margin-bottom:3px;">Range</div><div style="font-size:13px;color:var(--text-dim);">'+esc35(data.range)+'</div></div>'+
+      '<div style="background:var(--bg);padding:8px 10px;grid-column:1/-1;"><div style="font-family:\'Cinzel\',serif;font-size:7px;letter-spacing:2px;color:var(--text-faint);text-transform:uppercase;margin-bottom:3px;">Duration</div><div style="font-size:13px;color:var(--text-dim);">'+esc35(data.duration)+'</div></div>'+
+    '</div><div style="font-size:14px;color:var(--text-dim);line-height:1.75;font-style:italic;">'+esc35(data.desc)+'</div></div>';
   document.body.appendChild(overlay);
   document.addEventListener('keydown', function esc(e){ if(e.key==='Escape'){overlay.remove();document.removeEventListener('keydown',esc);}});
 }
@@ -2167,6 +2179,112 @@ function updateMini35() {
   }).join('');
 }
 
+// ── LEVEL UP SPELL HELPERS (3.5e) ──
+function maxCastableSpellLevel35(clsKey, classLevel) {
+  var spd = DND35_DATA.spellsPerDay[clsKey];
+  if (!spd || classLevel < 1) return 0;
+  var max = -1;
+  for (var s = 9; s >= 0; s--) {
+    if (!spd[s]) continue;
+    var slots = spd[s][classLevel - 1];
+    if (slots != null && slots > 0) max = s;
+  }
+  return Math.max(0, max);
+}
+function getSpellListForLevel35(clsKey, spellLevel) {
+  var sp = DND35_DATA.spells[clsKey];
+  if (!sp) return [];
+  if (spellLevel === 0) return sp.cantrips ? sp.cantrips.slice() : [];
+  var k = 'level' + spellLevel;
+  return sp[k] ? sp[k].slice() : [];
+}
+function spellKnownGainsOnLevelUp35(clsKey, fromLv, toLv) {
+  var table = DND35_DATA.spellsKnown[clsKey];
+  if (!table || fromLv >= toLv) return [];
+  var gains = [];
+  for (var sl = 0; sl <= 9; sl++) {
+    var row = table[sl];
+    if (!row) continue;
+    var prevVal = fromLv <= 0 ? 0 : (row[fromLv - 1] == null ? 0 : row[fromLv - 1]);
+    var nextVal = row[toLv - 1];
+    if (nextVal == null) continue;
+    var delta = nextVal - prevVal;
+    if (delta > 0) gains.push({ spellLevel: sl, count: delta });
+  }
+  return gains;
+}
+function computeLevelUpSpellSlots35(clsKey, prevClassLevel, nextClassLevel, isNewClass) {
+  var cls = DND35_DATA.classes[clsKey];
+  if (!cls || !cls.spellcastingAbility) return [];
+  var isHalf = (clsKey === 'paladin' || clsKey === 'ranger');
+  if (isHalf && nextClassLevel < 4) return [];
+  var slots = [];
+  if (clsKey === 'wizard') {
+    var maxSL = maxCastableSpellLevel35('wizard', nextClassLevel);
+    var n = isNewClass ? (3 + Math.max(0, mod35(ts35('int')))) : 2;
+    for (var i = 0; i < n; i++) slots.push({ kind: 'wizard', maxSpellLevel: maxSL, classKey: 'wizard' });
+  } else if (DND35_DATA.spellsKnown[clsKey]) {
+    spellKnownGainsOnLevelUp35(clsKey, prevClassLevel, nextClassLevel).forEach(function (g) {
+      for (var c = 0; c < g.count; c++) slots.push({ kind: 'known', spellLevel: g.spellLevel, classKey: clsKey });
+    });
+  }
+  return slots;
+}
+function isSpellInSpellbook35(name, spellLevel) {
+  if (spellLevel === 0) return (C35.selectedCantrips || []).indexOf(name) >= 0;
+  if (spellLevel === 1) return (C35.selectedSpells || []).indexOf(name) >= 0;
+  var a = (C35.spellsByLevel && C35.spellsByLevel[spellLevel]) || [];
+  return a.indexOf(name) >= 0;
+}
+function buildLevelUpSpellSelectOptions35(slot, slotIndex) {
+  var clsKey = slot.classKey;
+  var html = '<option value="">— Choose spell —</option>';
+  var pick = C35.levelUpState.spellPicks[slotIndex];
+  function addOptsForLevel(sl) {
+    var names = getSpellListForLevel35(clsKey, sl);
+    names.sort();
+    var label = sl === 0 ? '0' : String(sl);
+    names.forEach(function (nm) {
+      if (isSpellInSpellbook35(nm, sl)) return;
+      var sel = pick && pick.name === nm && pick.spellLevel === sl;
+      var enc = encodeURIComponent(nm);
+      html += '<option data-spell="' + enc + '" data-sl="' + sl + '"' + (sel ? ' selected' : '') + '>' + esc35(label + ': ' + nm) + '</option>';
+    });
+  }
+  if (slot.kind === 'wizard') {
+    for (var sl = 0; sl <= slot.maxSpellLevel; sl++) addOptsForLevel(sl);
+  } else {
+    addOptsForLevel(slot.spellLevel);
+  }
+  return html;
+}
+function luSpellPickChange35(slotIdx, sel) {
+  if (!C35.levelUpState) return;
+  var opt = sel.options[sel.selectedIndex];
+  var enc = opt.getAttribute('data-spell');
+  if (!enc) {
+    delete C35.levelUpState.spellPicks[slotIdx];
+    return;
+  }
+  var name = decodeURIComponent(enc);
+  var sl = parseInt(opt.getAttribute('data-sl'), 10);
+  if (isNaN(sl)) sl = 0;
+  C35.levelUpState.spellPicks[slotIdx] = { name: name, spellLevel: sl };
+}
+function appendSpellToCharacter35(name, spellLevel) {
+  if (!C35.selectedCantrips) C35.selectedCantrips = [];
+  if (!C35.selectedSpells) C35.selectedSpells = [];
+  if (!C35.spellsByLevel) C35.spellsByLevel = {};
+  if (spellLevel === 0) {
+    if (C35.selectedCantrips.indexOf(name) < 0) C35.selectedCantrips.push(name);
+  } else if (spellLevel === 1) {
+    if (C35.selectedSpells.indexOf(name) < 0) C35.selectedSpells.push(name);
+  } else {
+    if (!C35.spellsByLevel[spellLevel]) C35.spellsByLevel[spellLevel] = [];
+    if (C35.spellsByLevel[spellLevel].indexOf(name) < 0) C35.spellsByLevel[spellLevel].push(name);
+  }
+}
+
 // ── LEVEL UP SYSTEM ──
 function openLevelUpModal35() {
   ensureClasses35();
@@ -2184,7 +2302,9 @@ function openLevelUpModal35() {
     selectedSkills: {},
     selectedFeats: [],
     selectedAbilityBoosts: [],
-    hpRoll: null
+    hpRoll: null,
+    spellSlots: [],
+    spellPicks: {}
   };
 
   renderLevelUpModal35();
@@ -2204,7 +2324,6 @@ function closeLevelUpModal35() {
     overlay.classList.remove('show');
   }
   C35.levelUpState = null;
-  setTimeout(function() { modal.innerHTML = ''; }, 300);
 }
 
 function luSelectLevelClass35(clsKey) {
@@ -2213,6 +2332,8 @@ function luSelectLevelClass35(clsKey) {
   C35.levelUpState.selectedSkills = {};
   C35.levelUpState.selectedFeats = [];
   C35.levelUpState.hpRoll = null;
+  C35.levelUpState.spellPicks = {};
+  C35.levelUpState._spellSlotSig = null;
   renderLevelUpModal35();
 }
 
@@ -2353,6 +2474,48 @@ function renderLevelUpModal35() {
       }
       content += '</div>';
       content += '</div>';
+    }
+  }
+
+  var spellSlots = computeLevelUpSpellSlots35(selectedClassKey, currentClassLevel, nextClassLevel, isNewClass);
+  var slotSig = selectedClassKey + '|' + currentClassLevel + '->' + nextClassLevel + '|' + spellSlots.length + '|' + spellSlots.map(function (s) {
+    return s.kind + ':' + (s.maxSpellLevel != null ? s.maxSpellLevel : s.spellLevel);
+  }).join(',');
+  if (C35.levelUpState._spellSlotSig !== slotSig) {
+    C35.levelUpState.spellPicks = {};
+    C35.levelUpState._spellSlotSig = slotSig;
+  }
+  C35.levelUpState.spellSlots = spellSlots;
+
+  if (spellSlots.length > 0) {
+    content += '<div class="lu-section">';
+    content += '<div class="lu-section-title">New Spells (Spellbook / Spells Known)</div>';
+    content += '<div class="lu-section-body" style="margin-bottom:10px;">';
+    if (selectedClassKey === 'wizard') {
+      content += isNewClass
+        ? 'First wizard level: add 3 + INT modifier spells to your spellbook (any level you can cast).'
+        : 'Add 2 new spells to your spellbook (any spell level you can cast).';
+    } else {
+      content += 'Pick your new spells known for this level (per the class table). Duplicates are not allowed.';
+    }
+    content += '</div>';
+    spellSlots.forEach(function (slot, idx) {
+      var subtitle = slot.kind === 'wizard'
+        ? ('Spellbook pick ' + (idx + 1) + ' (spell levels 0–' + slot.maxSpellLevel + ')')
+        : ('Spells known — spell level ' + slot.spellLevel + (slot.spellLevel === 0 ? ' (cantrip)' : ''));
+      content += '<div style="margin-bottom:12px;"><div style="font-size:11px;color:var(--text-muted);margin-bottom:6px;">' + esc35(subtitle) + '</div>';
+      content += '<select class="lu-spell-select" style="width:100%;background:var(--bg-input);border:1px solid rgba(212,67,58,0.3);color:var(--white);font-family:\'Spectral\',serif;font-size:14px;padding:8px 10px;" onchange="luSpellPickChange35(' + idx + ', this)">';
+      content += buildLevelUpSpellSelectOptions35(slot, idx);
+      content += '</select></div>';
+    });
+    content += '</div>';
+  } else if (cls.spellcastingAbility && DND35_DATA.spellsPerDay[selectedClassKey]) {
+    var isPreparedLU = (selectedClassKey === 'cleric' || selectedClassKey === 'druid');
+    var halfNoSpellsLU = ((selectedClassKey === 'paladin' || selectedClassKey === 'ranger') && nextClassLevel < 4);
+    if (isPreparedLU && !halfNoSpellsLU) {
+      content += '<div class="lu-section"><div class="lu-section-title">Preparing Spells</div><div class="lu-section-body">Prepared casters do not gain a fixed spells-known list at level-up. When you prepare spells, choose from your full ' + esc35(cls.name) + ' spell list.</div></div>';
+    } else if (!halfNoSpellsLU && (selectedClassKey === 'paladin' || selectedClassKey === 'ranger')) {
+      content += '<div class="lu-section"><div class="lu-section-title">Preparing Spells</div><div class="lu-section-body">Your ' + esc35(cls.name) + ' prepares spells like a cleric—pick from your full class list when you prepare, not during this step.</div></div>';
     }
   }
 
@@ -2498,6 +2661,24 @@ function confirmLevelUp35() {
     return;
   }
 
+  var spellSlotsLU = C35.levelUpState.spellSlots || [];
+  for (var six = 0; six < spellSlotsLU.length; six++) {
+    var spPick = C35.levelUpState.spellPicks[six];
+    if (!spPick || !spPick.name) {
+      alert('Choose all required new spells (spellbook or spells known) before confirming this level.');
+      return;
+    }
+  }
+  var spellNamesThisLevel = [];
+  for (var siy = 0; siy < spellSlotsLU.length; siy++) {
+    var spPick2 = C35.levelUpState.spellPicks[siy];
+    if (spPick2 && spPick2.name && spellNamesThisLevel.indexOf(spPick2.name) >= 0) {
+      alert('You cannot choose the same spell twice for this level.');
+      return;
+    }
+    if (spPick2 && spPick2.name) spellNamesThisLevel.push(spPick2.name);
+  }
+
   var classEntry = C35.classes.find(function(c){ return c.cls === selectedClassKey; });
   if (!classEntry) {
     classEntry = { cls: selectedClassKey, level: 0 };
@@ -2533,6 +2714,11 @@ function confirmLevelUp35() {
   if (C35.levelUpState.selectedAbilityBoosts.length > 0) {
     var ability = C35.levelUpState.selectedAbilityBoosts[0];
     C35.abilities[ability] = (C35.abilities[ability] || 10) + 1;
+  }
+
+  for (var siz = 0; siz < spellSlotsLU.length; siz++) {
+    var spPick3 = C35.levelUpState.spellPicks[siz];
+    if (spPick3 && spPick3.name) appendSpellToCharacter35(spPick3.name, spPick3.spellLevel);
   }
 
   closeLevelUpModal35();

@@ -606,6 +606,11 @@ window.CombatEngine = (() => {
     if (attackerConds.includes("prone")) advMode = combineAdvDis(advMode, "disadvantage");
     if (targetConds.includes("prone") && parsed.attackType === "ranged") advMode = combineAdvDis(advMode, "disadvantage");
 
+    // Flanking and height advantage from spatial positioning
+    if (opts.flanking && parsed.attackType === "melee") advMode = combineAdvDis(advMode, "advantage");
+    if (opts.heightAdvantage === "advantage") advMode = combineAdvDis(advMode, "advantage");
+    else if (opts.heightAdvantage === "disadvantage") advMode = combineAdvDis(advMode, "disadvantage");
+
     const combatRollOpts = {
       targetDodging: opts.targetDodging,
       coverACBonus: opts.coverACBonus,
@@ -1145,6 +1150,454 @@ window.CombatEngine = (() => {
   };
 
 
+  // ─── CONCENTRATION SAVES (BG3) ─────────────────────────────────────────────
+  // When a concentrating creature takes damage, it must make a CON save.
+  // DC = max(10, floor(damage / 2)).  On failure, concentration breaks.
+
+  const rollConcentrationSave = (caster, damageTaken) => {
+    const dc = Math.max(10, Math.floor(damageTaken / 2));
+    const conScore = caster.con || caster.stats?.con || 10;
+    const conMod = abilityMod(conScore);
+    // Proficient saves from War Caster–like bonuses can be passed via caster.concentrationBonus
+    const bonus = (caster.concentrationBonus || 0);
+    const saveMod = conMod + bonus;
+
+    // War Caster gives advantage
+    const adv = caster.warCaster ? "advantage" : "normal";
+    const result = makeSavingThrow(dc, saveMod, adv);
+    return { ...result, dc, damageTaken, concentrationBroken: !result.success };
+  };
+
+
+  // ─── OPPORTUNITY ATTACKS (BG3) ────────────────────────────────────────────
+  // Triggered when a creature leaves an enemy's threat reach without Disengaging.
+
+  /** Determine the threat reach (in feet) of a creature */
+  const getThreatReach = (creature) => {
+    // Check for reach weapons or special reach
+    if (creature.monsterData) {
+      const actions = creature.monsterData.actions || [];
+      let maxReach = 5;
+      for (const a of actions) {
+        const m = (a.desc || "").match(/reach\s+(\d+)\s*ft/i);
+        if (m) maxReach = Math.max(maxReach, parseInt(m[1]));
+      }
+      return maxReach;
+    }
+    return creature.reach || 5;
+  };
+
+  /** Check if moving from (x1,y1) to (x2,y2) leaves a threatener's reach */
+  const checkOpportunityAttack = (mover, threatener, fromX, fromY, toX, toY, gridSize = 40) => {
+    const reach = getThreatReach(threatener);
+    const distBefore = calculateDistance(fromX, fromY, threatener.x, threatener.y, gridSize);
+    const distAfter = calculateDistance(toX, toY, threatener.x, threatener.y, gridSize);
+    // OA triggers when moving OUT of reach (was in, now out)
+    return distBefore <= reach && distAfter > reach;
+  };
+
+  /** Execute an opportunity attack (single melee attack at advantage: none) */
+  const executeOpportunityAttack = (attacker, target, options) => {
+    const monster = attacker.monsterData;
+    if (monster) {
+      // Use the first melee attack action
+      const meleeAction = (monster.actions || []).find(a => /Melee.*Attack/i.test(a.desc));
+      if (meleeAction) {
+        return executeAttack(attacker, target, meleeAction, options || {});
+      }
+    }
+    // PC: use their equipped weapon or default unarmed
+    const weapon = attacker.equippedWeapon || "Longsword";
+    return executePcWeaponAttack(attacker, target, weapon, options || {});
+  };
+
+
+  // ─── FLANKING (BG3 / OPTIONAL RULE) ──────────────────────────────────────
+  // Two allies on opposite sides of an enemy grant advantage.
+
+  /** Check if a target is flanked by attacker + allies.
+   *  allies: array of {x, y} positions of friendly creatures
+   *  Returns true if flanking advantage applies.
+   */
+  const checkFlanking = (attacker, target, allies, gridSize = 40) => {
+    if (!target || !attacker || !allies || allies.length === 0) return false;
+    const tx = target.x, ty = target.y;
+    const ax = attacker.x, ay = attacker.y;
+    // Attacker must be in melee range (5ft)
+    if (calculateDistance(ax, ay, tx, ty, gridSize) > 5) return false;
+
+    for (const ally of allies) {
+      if (calculateDistance(ally.x, ally.y, tx, ty, gridSize) > 5) continue;
+      // Check if attacker and ally are on roughly opposite sides
+      const dx1 = ax - tx, dy1 = ay - ty;
+      const dx2 = ally.x - tx, dy2 = ally.y - ty;
+      // Dot product negative = opposite sides
+      const dot = dx1 * dx2 + dy1 * dy2;
+      if (dot < 0) return true;
+    }
+    return false;
+  };
+
+
+  // ─── HEIGHT ADVANTAGE (BG3 SIGNATURE) ────────────────────────────────────
+  // Higher ground grants advantage on ranged attacks.
+  // Lower ground imposes disadvantage on ranged attacks.
+
+  const getHeightAdvantage = (attacker, target) => {
+    const aHeight = attacker.elevation || 0;
+    const tHeight = target.elevation || 0;
+    const diff = aHeight - tHeight;
+    // Significant height difference: 10+ ft
+    if (diff >= 10) return "advantage";     // High ground
+    if (diff <= -10) return "disadvantage";  // Low ground
+    return "normal";
+  };
+
+
+  // ─── SNEAK ATTACK (ROGUE) ────────────────────────────────────────────────
+  // Once per turn, extra damage when attacking with advantage or when
+  // an ally is within 5ft of the target (and attacker uses finesse/ranged).
+
+  const SNEAK_ATTACK_DICE = {
+    1: "1d6", 2: "1d6", 3: "2d6", 4: "2d6", 5: "3d6", 6: "3d6",
+    7: "4d6", 8: "4d6", 9: "5d6", 10: "5d6", 11: "6d6", 12: "6d6",
+    13: "7d6", 14: "7d6", 15: "8d6", 16: "8d6", 17: "9d6", 18: "9d6",
+    19: "10d6", 20: "10d6",
+  };
+
+  /** Check if sneak attack conditions are met */
+  const checkSneakAttack = (attacker, target, hasAdvantage, nearbyAllies, weaponName) => {
+    if (!attacker.class && !attacker.cls) return { eligible: false };
+    const cls = (attacker.class || attacker.cls || "").toLowerCase();
+    if (!cls.includes("rogue")) return { eligible: false };
+
+    // Must use finesse or ranged weapon
+    const w = WEAPONS[weaponName];
+    if (w && !w.properties.includes("finesse") && w.melee) return { eligible: false, reason: "Needs finesse or ranged weapon" };
+
+    // Advantage OR ally within 5ft of target
+    const allyNearTarget = (nearbyAllies || []).some(a =>
+      calculateDistance(a.x, a.y, target.x, target.y) <= 5
+    );
+
+    if (!hasAdvantage && !allyNearTarget) return { eligible: false, reason: "Need advantage or ally near target" };
+
+    const level = attacker.level || attacker.lv || 1;
+    const dice = SNEAK_ATTACK_DICE[Math.min(20, Math.max(1, level))] || "1d6";
+    return { eligible: true, dice, level };
+  };
+
+  /** Roll sneak attack damage */
+  const rollSneakAttack = (level) => {
+    const dice = SNEAK_ATTACK_DICE[Math.min(20, Math.max(1, level))] || "1d6";
+    return rollDice(dice);
+  };
+
+
+  // ─── DIVINE SMITE (PALADIN) ──────────────────────────────────────────────
+  // Expend spell slot on hit to deal extra radiant damage.
+  // 2d8 + 1d8 per slot above 1st (max 5d8). +1d8 vs undead/fiend.
+
+  const calculateSmiteDamage = (slotLevel, targetIsUndeadOrFiend = false) => {
+    const baseDice = Math.min(5, 1 + slotLevel); // 2d8 at 1st, up to 5d8 at 4th+
+    const bonusDice = targetIsUndeadOrFiend ? 1 : 0;
+    const totalDice = baseDice + bonusDice;
+    const expr = totalDice + "d8";
+    return { expr, totalDice, slotLevel };
+  };
+
+  const rollSmiteDamage = (slotLevel, targetIsUndeadOrFiend = false) => {
+    const { expr } = calculateSmiteDamage(slotLevel, targetIsUndeadOrFiend);
+    const roll = rollDice(expr);
+    return { ...roll, type: "radiant", slotLevel };
+  };
+
+
+  // ─── ACTION SURGE (FIGHTER) ──────────────────────────────────────────────
+  // Gain one additional action on your turn (once per short rest, twice at lv17+).
+
+  const getActionSurgeCharges = (level) => {
+    if (!level || level < 2) return 0;
+    return level >= 17 ? 2 : 1;
+  };
+
+
+  // ─── RAGE (BARBARIAN) ────────────────────────────────────────────────────
+  // Bonus melee damage, resistance to B/P/S, advantage on STR checks/saves.
+
+  const RAGE_DAMAGE = {
+    1: 2, 2: 2, 3: 2, 4: 2, 5: 2, 6: 2, 7: 2, 8: 2, 9: 3, 10: 3,
+    11: 3, 12: 3, 13: 3, 14: 3, 15: 3, 16: 4, 17: 4, 18: 4, 19: 4, 20: 4,
+  };
+
+  const getRageDamage = (level) => RAGE_DAMAGE[Math.min(20, Math.max(1, level || 1))] || 2;
+
+  const getRageCharges = (level) => {
+    if (level >= 20) return Infinity; // Unlimited
+    if (level >= 17) return 6;
+    if (level >= 12) return 5;
+    if (level >= 6) return 4;
+    if (level >= 3) return 3;
+    return 2;
+  };
+
+
+  // ─── TEMPORARY HIT POINTS ────────────────────────────────────────────────
+  // Don't stack — use the higher value. Applied before regular HP damage.
+
+  const applyDamageWithTempHp = (currentHp, tempHp, damage) => {
+    let remainingDamage = damage;
+    let newTempHp = tempHp || 0;
+
+    if (newTempHp > 0) {
+      if (remainingDamage >= newTempHp) {
+        remainingDamage -= newTempHp;
+        newTempHp = 0;
+      } else {
+        newTempHp -= remainingDamage;
+        remainingDamage = 0;
+      }
+    }
+
+    const newHp = Math.max(0, currentHp - remainingDamage);
+    return { newHp, newTempHp, tempHpAbsorbed: (tempHp || 0) - newTempHp, hpLost: currentHp - newHp };
+  };
+
+
+  // ─── TERRAIN EFFECTS (BG3) ───────────────────────────────────────────────
+  // Damage or effects when entering/starting turn in hazardous terrain.
+
+  const TERRAIN_COMBAT_EFFECTS = {
+    lava:   { damage: "6d10", type: "fire", save: null, description: "Searing lava deals massive fire damage" },
+    fire:   { damage: "1d8", type: "fire", save: null, description: "Flames deal fire damage" },
+    acid:   { damage: "2d6", type: "acid", save: null, description: "Corrosive acid eats through armor and flesh" },
+    ice:    { damage: null, type: null, save: "DEX", dc: 10, condition: "prone", description: "Slippery ice — DEX save or fall prone" },
+    water:  { damage: null, type: null, save: null, speed: 0.5, description: "Difficult terrain — half movement" },
+    pit:    { damage: "2d6", type: "bludgeoning", save: "DEX", dc: 12, description: "Fall into a pit" },
+    mud:    { damage: null, type: null, save: "STR", dc: 10, condition: "restrained", description: "Sticky mud — STR save or restrained" },
+    magic:  { damage: "2d8", type: "force", save: "WIS", dc: 13, description: "Arcane energy crackles" },
+  };
+
+  /** Roll terrain effect for a creature entering or starting turn in hazardous terrain */
+  const resolveTerrainEffect = (creature, terrainType) => {
+    const effect = TERRAIN_COMBAT_EFFECTS[terrainType];
+    if (!effect) return null;
+
+    const result = { terrain: terrainType, ...effect, creature: creature.name || "Creature" };
+
+    if (effect.save) {
+      const ability = effect.save;
+      const shortAbil = abilityShort[ability] || ability.toLowerCase().slice(0, 3);
+      const score = creature[shortAbil] || creature.stats?.[shortAbil] || 10;
+      const saveMod = abilityMod(score);
+      const save = makeSavingThrow(effect.dc || 10, saveMod);
+      result.save = save;
+      if (save.success) {
+        result.damage = 0;
+        result.conditionApplied = null;
+        return result;
+      }
+    }
+
+    if (effect.damage) {
+      const dmg = rollDice(effect.damage);
+      result.damageRoll = dmg;
+      result.damageTotal = dmg.total;
+    }
+
+    if (effect.condition) {
+      result.conditionApplied = effect.condition;
+    }
+
+    return result;
+  };
+
+
+  // ─── COVER SYSTEM (5e PHB) ───────────────────────────────────────────────
+  // Half cover: +2 AC, +2 DEX saves
+  // Three-quarters: +5 AC, +5 DEX saves
+  // Full: can't be targeted directly
+
+  const COVER_BONUSES = {
+    none: { ac: 0, dexSave: 0 },
+    half: { ac: 2, dexSave: 2 },
+    "three-quarters": { ac: 5, dexSave: 5 },
+    full: { ac: Infinity, dexSave: Infinity },
+  };
+
+  const getCoverBonus = (coverType) => COVER_BONUSES[coverType] || COVER_BONUSES.none;
+
+
+  // ─── DASH / DIFFICULT TERRAIN / MOVEMENT COST ────────────────────────────
+
+  /** Calculate movement cost through terrain types */
+  const getMovementCost = (terrainType, isDashing = false) => {
+    const difficult = ["water", "mud", "ice", "vegetation", "rubble", "difficult"];
+    if (difficult.includes(terrainType)) return 2; // 2x cost
+    if (terrainType === "lava") return 3; // Very costly
+    return 1;
+  };
+
+
+  // ─── COMMON SPELL RESOLUTION ─────────────────────────────────────────────
+  // Quick-resolve for the most common combat spells (BG3 style)
+
+  const COMMON_SPELLS = {
+    // Cantrips
+    "Fire Bolt":        { level: 0, attack: true, damage: "1d10", type: "fire", range: 120, scaling: { 5: "2d10", 11: "3d10", 17: "4d10" } },
+    "Eldritch Blast":   { level: 0, attack: true, damage: "1d10", type: "force", range: 120, scaling: { 5: "2x1d10", 11: "3x1d10", 17: "4x1d10" }, beams: true },
+    "Sacred Flame":     { level: 0, save: "DEX", damage: "1d8", type: "radiant", range: 60, scaling: { 5: "2d8", 11: "3d8", 17: "4d8" } },
+    "Toll the Dead":    { level: 0, save: "WIS", damage: "1d8", damageFull: "1d12", type: "necrotic", range: 60, scaling: { 5: "2d8", 11: "3d8", 17: "4d8" } },
+    "Chill Touch":      { level: 0, attack: true, damage: "1d8", type: "necrotic", range: 120, scaling: { 5: "2d8", 11: "3d8", 17: "4d8" }, effect: "noHealing" },
+    "Ray of Frost":     { level: 0, attack: true, damage: "1d8", type: "cold", range: 60, scaling: { 5: "2d8", 11: "3d8", 17: "4d8" }, effect: "slow10" },
+
+    // Level 1
+    "Magic Missile":    { level: 1, autoHit: true, damage: "3x1d4+1", type: "force", range: 120, upcast: "+1d4+1 per slot" },
+    "Guiding Bolt":     { level: 1, attack: true, damage: "4d6", type: "radiant", range: 120, effect: "nextAttackAdvantage" },
+    "Healing Word":     { level: 1, healing: "1d4", range: 60, bonus: true, upcast: "+1d4 per slot" },
+    "Cure Wounds":      { level: 1, healing: "1d8", range: "touch", upcast: "+1d8 per slot" },
+    "Shield":           { level: 1, reaction: true, effect: "+5 AC until next turn", duration: "1 round" },
+    "Thunderwave":      { level: 1, save: "CON", damage: "2d8", type: "thunder", range: 15, shape: "cube", upcast: "+1d8 per slot", effect: "push10" },
+    "Burning Hands":    { level: 1, save: "DEX", damage: "3d6", type: "fire", range: 15, shape: "cone", halfOnSave: true, upcast: "+1d6 per slot" },
+
+    // Level 2
+    "Scorching Ray":    { level: 2, attack: true, damage: "3x2d6", type: "fire", range: 120, beams: true, upcast: "+1 ray per slot" },
+    "Misty Step":       { level: 2, bonus: true, effect: "teleport 30ft", range: 30 },
+    "Hold Person":      { level: 2, save: "WIS", range: 60, condition: "paralyzed", concentration: true, upcast: "+1 target per slot" },
+    "Spiritual Weapon":  { level: 2, bonus: true, damage: "1d8", type: "force", range: 60, duration: "1 minute" },
+
+    // Level 3
+    "Fireball":         { level: 3, save: "DEX", damage: "8d6", type: "fire", range: 150, shape: "sphere", radius: 20, halfOnSave: true, upcast: "+1d6 per slot" },
+    "Lightning Bolt":   { level: 3, save: "DEX", damage: "8d6", type: "lightning", range: 100, shape: "line", halfOnSave: true, upcast: "+1d6 per slot" },
+    "Counterspell":     { level: 3, reaction: true, effect: "negate spell", range: 60 },
+    "Haste":            { level: 3, concentration: true, effect: "+2 AC, double speed, extra action", range: "touch", duration: "1 minute" },
+    "Revivify":         { level: 3, range: "touch", effect: "restore to 1 HP (within 1 minute of death)", cost: "300gp diamond" },
+
+    // Level 4+
+    "Polymorph":        { level: 4, save: "WIS", concentration: true, range: 60, effect: "transform into beast" },
+    "Banishment":       { level: 4, save: "CHA", concentration: true, range: 60, condition: "banished" },
+    "Wall of Fire":     { level: 4, save: "DEX", damage: "5d8", type: "fire", range: 120, shape: "wall", concentration: true, halfOnSave: true },
+    "Cone of Cold":     { level: 5, save: "CON", damage: "8d8", type: "cold", range: 60, shape: "cone", radius: 60, halfOnSave: true },
+  };
+
+  /** Resolve a common spell cast */
+  const resolveSpellCast = (caster, spell, targets, slotLevel) => {
+    const spellData = typeof spell === "string" ? COMMON_SPELLS[spell] : spell;
+    if (!spellData) return { error: "Unknown spell" };
+
+    const casterLevel = caster.level || caster.lv || 1;
+    const castSlot = slotLevel || spellData.level;
+    const results = [];
+
+    // Get scaling damage for cantrips
+    let baseDamage = spellData.damage;
+    if (spellData.level === 0 && spellData.scaling) {
+      for (const [lvl, dmg] of Object.entries(spellData.scaling).sort((a, b) => Number(b[0]) - Number(a[0]))) {
+        if (casterLevel >= Number(lvl)) { baseDamage = dmg; break; }
+      }
+    }
+
+    // Upcast bonus
+    let upcastBonus = 0;
+    if (castSlot > spellData.level && spellData.upcast) {
+      const upMatch = spellData.upcast.match(/\+(\d+d\d+)/);
+      if (upMatch) {
+        const slotsAbove = castSlot - spellData.level;
+        for (let i = 0; i < slotsAbove; i++) {
+          upcastBonus += rollDice(upMatch[1]).total;
+        }
+      }
+    }
+
+    // Healing spells
+    if (spellData.healing) {
+      for (const target of (targets || [])) {
+        const heal = rollDice(spellData.healing);
+        const spellMod = abilityMod(caster.wis || caster.cha || caster.int || 10);
+        results.push({
+          target: target.name,
+          targetId: target.id,
+          healing: heal.total + spellMod + upcastBonus,
+          roll: heal,
+        });
+      }
+      return { type: "healing", results, spell: spellData };
+    }
+
+    // Attack spells
+    if (spellData.attack) {
+      const spellMod = Math.max(abilityMod(caster.int || 10), abilityMod(caster.wis || 10), abilityMod(caster.cha || 10));
+      const prof = profBonusFromLevel(casterLevel);
+      const toHit = spellMod + prof;
+
+      for (const target of (targets || [])) {
+        const atkRoll = makeAttackRoll(toHit, target.ac || 10);
+        if (atkRoll.hit) {
+          const dmg = rollDice(baseDamage);
+          const totalDmg = dmg.total + upcastBonus + (atkRoll.isCrit ? rollDice(baseDamage.replace(/\d+x/, "")).total : 0);
+          results.push({
+            target: target.name, targetId: target.id,
+            hit: true, isCrit: atkRoll.isCrit, attackRoll: atkRoll,
+            damage: totalDmg, damageType: spellData.type, roll: dmg,
+          });
+        } else {
+          results.push({ target: target.name, targetId: target.id, hit: false, attackRoll: atkRoll, damage: 0 });
+        }
+      }
+      return { type: "attack", results, spell: spellData };
+    }
+
+    // Save spells
+    if (spellData.save) {
+      const spellMod = Math.max(abilityMod(caster.int || 10), abilityMod(caster.wis || 10), abilityMod(caster.cha || 10));
+      const prof = profBonusFromLevel(casterLevel);
+      const dc = 8 + spellMod + prof;
+
+      for (const target of (targets || [])) {
+        const saveMod = getSaveModifier(target, spellData.save);
+        const save = makeSavingThrow(dc, saveMod);
+        let damage = 0;
+        if (baseDamage) {
+          const dmg = rollDice(baseDamage);
+          damage = save.success && spellData.halfOnSave ? Math.floor((dmg.total + upcastBonus) / 2) : (!save.success ? dmg.total + upcastBonus : 0);
+        }
+        results.push({
+          target: target.name, targetId: target.id,
+          save, damage, damageType: spellData.type || "",
+          condition: !save.success ? (spellData.condition || null) : null,
+        });
+      }
+      return { type: "save", results, spell: spellData, dc };
+    }
+
+    // Effect-only spells (Shield, Misty Step, etc.)
+    return { type: "effect", spell: spellData, results: [{ effect: spellData.effect }] };
+  };
+
+
+  // ─── END-OF-TURN CONDITION SAVES ─────────────────────────────────────────
+  // Many conditions allow a save at end of turn to shake them off.
+
+  const CONDITIONS_WITH_REPEAT_SAVE = {
+    frightened:   { ability: "Wisdom", dc: null },   // DC from original source
+    charmed:      { ability: "Wisdom", dc: null },
+    paralyzed:    { ability: "Constitution", dc: null },
+    stunned:      { ability: "Constitution", dc: null },
+    restrained:   { ability: "Strength", dc: null },  // if from a spell
+  };
+
+  /** Roll an end-of-turn save to shake off a condition */
+  const rollEndOfTurnSave = (creature, condition, dc) => {
+    const meta = CONDITIONS_WITH_REPEAT_SAVE[condition];
+    if (!meta) return null;
+    const ability = meta.ability;
+    const saveDC = dc || 13; // fallback if DC unknown
+    const saveMod = getSaveModifier(creature, ability);
+    const result = makeSavingThrow(saveDC, saveMod);
+    return { condition, ability, dc: saveDC, ...result, removed: result.success };
+  };
+
+
   // ─── PUBLIC API ────────────────────────────────────────────────────────────
 
   return {
@@ -1193,6 +1646,33 @@ window.CombatEngine = (() => {
     parseConditionImmunities,
     resolveLegendaryAction,
     executePcWeaponAttack,
+
+    // BG3-level features
+    rollConcentrationSave,
+    getThreatReach,
+    checkOpportunityAttack,
+    executeOpportunityAttack,
+    checkFlanking,
+    getHeightAdvantage,
+    checkSneakAttack,
+    rollSneakAttack,
+    SNEAK_ATTACK_DICE,
+    calculateSmiteDamage,
+    rollSmiteDamage,
+    getActionSurgeCharges,
+    getRageDamage,
+    getRageCharges,
+    RAGE_DAMAGE,
+    applyDamageWithTempHp,
+    resolveTerrainEffect,
+    TERRAIN_COMBAT_EFFECTS,
+    getCoverBonus,
+    COVER_BONUSES,
+    getMovementCost,
+    resolveSpellCast,
+    COMMON_SPELLS,
+    rollEndOfTurnSave,
+    CONDITIONS_WITH_REPEAT_SAVE,
 
     // Data
     CONDITION_EFFECTS,

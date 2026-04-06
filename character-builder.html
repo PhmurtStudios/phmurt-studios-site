@@ -21,6 +21,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb" crossorigin="anonymous"></script>
   <script src="supabase-config.js"></script>
   <script src="phmurt-auth.js"></script>
+  <script src="phmurt-char-sync.js"></script>
   <style>
     /* ── BUILDER LAYOUT ── */
     .cb-wrap { display: grid; grid-template-columns: 280px 1fr; min-height: calc(100vh - 60px); max-width: 1200px; margin: 0 auto; }
@@ -608,6 +609,7 @@
         <div class="cb-summary-mini-title">Character</div>
         <div id="miniSummary"></div>
       </div>
+      <div class="cb-summary-mini" id="campaignStateWidget" style="display:none; border-top-color:#10b98133"></div>
     </aside>
 
     <!-- MAIN CONTENT -->
@@ -5594,10 +5596,67 @@ async function saveCharacterToDB(){
       status.textContent = 'Saved ' + new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
       setTimeout(()=>{ if(status) status.textContent=''; }, 3000);
     }
+    /* ── Live sync: push updated character to all campaigns ── */
+    if(typeof PhmurtCharSync !== 'undefined' && PhmurtCharSync.pushCharacterUpdate){
+      PhmurtCharSync.pushCharacterUpdate(r.id, snapshot, {
+        id: r.id,
+        name: snapshot.details?.name || 'Unnamed',
+        class: snapshot.cls || '',
+        race: snapshot.race || '',
+        level: snapshot.level || 1,
+      }).catch(function(e){ console.warn('[CharBuilder] sync push failed', e); });
+    }
   } else {
     if(status) status.textContent = 'Save failed';
     setTimeout(()=>{ if(status) status.textContent=''; }, 3000);
   }
+}
+
+// ══════════════════════════════════════════
+// CAMPAIGN STATE WIDGET (shows live HP/conditions from active campaigns)
+// ══════════════════════════════════════════
+function updateCampaignStateWidget(){
+  const container = document.getElementById('campaignStateWidget');
+  if(!container) return;
+  const charId = localStorage.getItem('phmurt_current_char_id');
+  if(!charId || typeof PhmurtCharSync === 'undefined'){
+    container.style.display = 'none';
+    return;
+  }
+  const states = PhmurtCharSync.getCampaignStates(charId);
+  const entries = Object.entries(states).filter(([,v]) => v && v.state);
+  if(entries.length === 0){
+    container.style.display = 'none';
+    return;
+  }
+  container.style.display = 'block';
+  container.innerHTML = `
+    <div class="cb-summary-mini-title" style="color:#10b981">&#9679; ACTIVE IN CAMPAIGNS</div>
+    ${entries.map(([campId, data]) => {
+      const s = data.state;
+      const hpPct = s.maxHp ? Math.round((s.hp / s.maxHp) * 100) : 100;
+      const hpColor = hpPct > 60 ? '#10b981' : hpPct > 30 ? '#e8940a' : '#d4433a';
+      const conds = (s.conditions || []).join(', ') || 'None';
+      const age = Date.now() - (data.at || 0);
+      const timeLabel = age < 60000 ? 'Just now' : age < 3600000 ? Math.round(age/60000) + 'm ago' : Math.round(age/3600000) + 'h ago';
+      return `
+        <div style="margin-bottom:8px; padding:6px 0; border-bottom:1px solid var(--border-mid)">
+          <div class="cb-mini-stat"><span class="cb-mini-stat-label">HP</span><span class="cb-mini-stat-val" style="color:${hpColor}">${s.hp || '?'}/${s.maxHp || '?'}</span></div>
+          ${s.tempHp ? `<div class="cb-mini-stat"><span class="cb-mini-stat-label">Temp HP</span><span class="cb-mini-stat-val">+${s.tempHp}</span></div>` : ''}
+          <div class="cb-mini-stat"><span class="cb-mini-stat-label">Conditions</span><span class="cb-mini-stat-val" style="font-size:10px">${conds}</span></div>
+          <div class="cb-mini-stat"><span class="cb-mini-stat-label">Updated</span><span class="cb-mini-stat-val" style="font-size:10px; opacity:0.6">${timeLabel}</span></div>
+        </div>`;
+    }).join('')}`;
+}
+
+/* Listen for campaign state pushes (cross-tab or same-tab) */
+if(typeof PhmurtCharSync !== 'undefined'){
+  window.addEventListener(PhmurtCharSync.EVENT_CAMPAIGN_STATE, function(){
+    updateCampaignStateWidget();
+  });
+  window.addEventListener('storage', function(e){
+    if(e.key && e.key.indexOf('phmurt_campstate_') === 0) updateCampaignStateWidget();
+  });
 }
 
 // ══════════════════════════════════════════
@@ -5618,7 +5677,7 @@ function updateMiniSummary(){
 // ══════════════════════════════════════════
 function init(){
   renderRaces(); renderClasses(); renderBackgrounds(); initLevelingMethod();
-  renderAbilityGrid(); renderArrayPool(); initDetails(); updateMiniSummary();
+  renderAbilityGrid(); renderArrayPool(); initDetails(); updateMiniSummary(); updateCampaignStateWidget();
   document.getElementById('rollPanel').style.display='none';
   document.getElementById('arrayPool').style.display='flex';
   const ham=document.getElementById('hamburger'),menu=document.getElementById('mobileMenu'),close=document.getElementById('mobileClose');

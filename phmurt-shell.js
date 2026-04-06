@@ -709,7 +709,15 @@
     }
   };
 
+  // Outgoing link transitions add body.page-out (opacity:0). If the document is cached in
+  // the back/forward cache (bfcache), restoring it brings back that class — the page stays
+  // visually blank until a full reload. Clear it whenever the page is shown again.
+  window.addEventListener('pageshow', function () {
+    if (document.body) document.body.classList.remove('page-out');
+  });
+
   document.addEventListener('DOMContentLoaded', function () {
+    if (document.body) document.body.classList.remove('page-out');
     ensureShell();
     updateAuthNav();
     wireAuthButton();
