@@ -12,10 +12,9 @@ const {
   ATLAS_LAND_PATH, ATLAS_ISLANDS, ATLAS_WATER_BODIES, ATLAS_RIVERS, ATLAS_SEA_LABELS,
   ATLAS_RANGE_LABELS, ATLAS_MOUNTAIN_RANGES, ATLAS_PROVINCES, ATLAS_FACTION_SEATS,
   ATLAS_FREE_SEATS, ATLAS_REGION_LAYOUTS,
-  MapIconMountain, MapIconCity, MapIconDungeon, MapIconForest, MapIconTemple, MapIconRuins,
-  MapIconCastle, MapIconVillage, MapIconCave, MapIconPort, MapIconBridge, MapIconTower,
-  MapIconSwamp, MapIconDesert, MapIconVolcano, MapIconIsland, MapIconLake, MapIconRiver,
-  MapIconDefault,
+  MapIconMountain, MapIconMountainSmall, MapIconCity, MapIconDungeon,
+  MapIconForest, MapIconTree, MapIconRuins,
+  MapIconCastle, MapIconTown, MapIconHamlet, MapIconKingdom, MapIconRoute,
 } = window.__CM;
 const { ChevronDown, ChevronRight, ChevronLeft, Swords, Users, MapPin, Crown, Scroll, Clock, Star, BookOpen, Dice6, Target, Heart, CheckCircle, Circle, ArrowRight, Plus, Compass, Mountain, Castle, Skull, Flag, TrendingUp, TrendingDown, Minus, SkipForward, Search, Bell, Settings, X, Edit3, Trash2, Eye, EyeOff, Globe, Layers, Activity, Upload, Download, FileText, Save, Copy, Calendar, Lock, Unlock, ToggleLeft, ToggleRight, AlertTriangle, Package, Shield, Wand2, Map: MapIcon, LayoutDashboard, Link, RefreshCw, ChevronUp, MoreVertical, Check, Image, Bold, Italic, List, Type, Heading, Filter } = window.LucideReact || {};
 const FilterIcon = Filter || Layers;
