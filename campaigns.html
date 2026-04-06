@@ -1629,22 +1629,23 @@ const CAMPAIGN_THEMES = {
     desc: "The original dark crimson aesthetic",
     icon: "Shield",
     preview: { accent: "#d4433a", bg: "#0e0c0b", card: "#181412" },
-    vars: {},  // no overrides — uses site defaults
-    // No decorations — classic look
+    vars: {},
     navGradient: null,
     contentGradient: null,
     decorCSS: "",
   },
+
+  /* ─────────────────────── TAVERN ─────────────────────── */
   tavern: {
     label: "Tavern",
-    desc: "Warm hearth-fire amber, aged wood & tankards",
+    desc: "Warm hearth-fire, aged wood planks & tankards of ale",
     icon: "Flame",
     preview: { accent: "#d4a24e", bg: "#1a1208", card: "#261c0e" },
     vars: {
       "--crimson": "#d4a24e",
-      "--crimson-dim": "rgba(212,162,78,0.18)",
-      "--crimson-soft": "rgba(212,162,78,0.08)",
-      "--crimson-border": "rgba(212,162,78,0.25)",
+      "--crimson-dim": "rgba(212,162,78,0.20)",
+      "--crimson-soft": "rgba(212,162,78,0.10)",
+      "--crimson-border": "rgba(212,162,78,0.28)",
       "--bg": "#1a1208",
       "--bg-nav": "#14100a",
       "--bg-card": "#261c0e",
@@ -1652,41 +1653,76 @@ const CAMPAIGN_THEMES = {
       "--bg-mid": "#2a1e10",
       "--bg-input": "#1e160c",
       "--bg-subtle": "#221a0c",
-      "--border": "rgba(212,162,78,0.15)",
-      "--border-mid": "rgba(212,162,78,0.08)",
+      "--border": "rgba(212,162,78,0.18)",
+      "--border-mid": "rgba(212,162,78,0.10)",
       "--text": "#f2e4c8",
       "--text-dim": "#d4c4a0",
       "--text-muted": "#a89470",
       "--text-faint": "#8a7656",
     },
-    // Warm lantern glow gradient + wood grain noise
-    navGradient: "linear-gradient(180deg, #1e1408 0%, #14100a 40%, #0e0a06 100%)",
-    contentGradient: "radial-gradient(ellipse at 30% 15%, rgba(212,162,78,0.12) 0%, transparent 50%), radial-gradient(ellipse at 80% 85%, rgba(180,100,30,0.06) 0%, transparent 40%), var(--bg)",
+    navGradient: "linear-gradient(180deg, #201408 0%, #14100a 40%, #0e0a06 100%)",
+    contentGradient: [
+      /* Fireplace hearth-glow — bottom right, warm orange bloom */
+      "radial-gradient(ellipse at 90% 85%, rgba(200,100,20,0.18) 0%, rgba(180,80,10,0.08) 25%, transparent 55%)",
+      /* Lantern overhead glow — top center */
+      "radial-gradient(ellipse at 40% 5%, rgba(212,162,78,0.14) 0%, transparent 40%)",
+      /* Second warm fill from the left */
+      "radial-gradient(ellipse at 5% 50%, rgba(160,90,30,0.06) 0%, transparent 40%)",
+      "var(--bg)",
+    ].join(", "),
     decorCSS: `
+      /* === TAVERN : wood-plank floor + ceiling beams + stone hearth edge === */
       .theme-tavern-decor::before {
         content: '';
         position: absolute; inset: 0; pointer-events: none; z-index: 0;
         background:
-          repeating-linear-gradient(90deg, transparent, transparent 120px, rgba(212,162,78,0.02) 120px, rgba(212,162,78,0.02) 121px),
-          repeating-linear-gradient(0deg, transparent, transparent 80px, rgba(140,90,30,0.015) 80px, rgba(140,90,30,0.015) 81px);
+          /* Horizontal wood-plank lines — varied spacing mimics real planks */
+          repeating-linear-gradient(
+            180deg,
+            transparent 0px, transparent 38px,
+            rgba(140,90,30,0.07) 38px, rgba(140,90,30,0.07) 40px,
+            transparent 40px, transparent 82px,
+            rgba(120,75,25,0.05) 82px, rgba(120,75,25,0.05) 83px,
+            transparent 83px, transparent 130px,
+            rgba(160,100,35,0.06) 130px, rgba(160,100,35,0.06) 132px,
+            transparent 132px, transparent 178px
+          ),
+          /* Vertical beam posts — thick dark columns */
+          repeating-linear-gradient(
+            90deg,
+            transparent 0px, transparent 280px,
+            rgba(80,50,15,0.10) 280px, rgba(80,50,15,0.10) 286px,
+            transparent 286px, transparent 600px,
+            rgba(70,45,12,0.08) 600px, rgba(70,45,12,0.08) 605px,
+            transparent 605px, transparent 900px
+          ),
+          /* Wood-grain micro-texture — thin angled lines */
+          repeating-linear-gradient(
+            3deg,
+            transparent 0px, transparent 12px,
+            rgba(140,90,30,0.025) 12px, rgba(140,90,30,0.025) 13px,
+            transparent 13px, transparent 28px
+          );
       }
       .theme-tavern-decor::after {
         content: '';
-        position: absolute; bottom: 0; left: 0; right: 0; height: 200px; pointer-events: none; z-index: 0;
-        background: linear-gradient(to top, rgba(180,100,20,0.08), transparent);
+        position: absolute; bottom: 0; left: 0; right: 0; height: 45%; pointer-events: none; z-index: 0;
+        background: linear-gradient(to top, rgba(140,70,10,0.12) 0%, rgba(140,70,10,0.04) 30%, transparent 100%);
       }
     `,
   },
+
+  /* ─────────────────────── DARK FORTRESS ─────────────────────── */
   fortress: {
     label: "Dark Fortress",
-    desc: "Cold stone walls & steel-blue torchlight",
+    desc: "Cold stone walls, iron gates & blue torchlight",
     icon: "Castle",
     preview: { accent: "#7baed4", bg: "#0e1118", card: "#161c28" },
     vars: {
       "--crimson": "#7baed4",
-      "--crimson-dim": "rgba(123,174,212,0.18)",
-      "--crimson-soft": "rgba(123,174,212,0.08)",
-      "--crimson-border": "rgba(123,174,212,0.22)",
+      "--crimson-dim": "rgba(123,174,212,0.20)",
+      "--crimson-soft": "rgba(123,174,212,0.10)",
+      "--crimson-border": "rgba(123,174,212,0.25)",
       "--bg": "#0e1118",
       "--bg-nav": "#0a0e16",
       "--bg-card": "#161c28",
@@ -1694,40 +1730,69 @@ const CAMPAIGN_THEMES = {
       "--bg-mid": "#1a2030",
       "--bg-input": "#121824",
       "--bg-subtle": "#141a26",
-      "--border": "rgba(123,174,212,0.14)",
-      "--border-mid": "rgba(123,174,212,0.07)",
+      "--border": "rgba(123,174,212,0.16)",
+      "--border-mid": "rgba(123,174,212,0.08)",
       "--text": "#d8e4f0",
       "--text-dim": "#b0c4d8",
       "--text-muted": "#7a94ae",
       "--text-faint": "#566e86",
     },
     navGradient: "linear-gradient(180deg, #10141e 0%, #0a0e16 50%, #080c14 100%)",
-    contentGradient: "radial-gradient(ellipse at 50% 0%, rgba(123,174,212,0.08) 0%, transparent 50%), radial-gradient(ellipse at 80% 100%, rgba(70,100,140,0.05) 0%, transparent 45%), var(--bg)",
+    contentGradient: [
+      /* Blue torch sconce glow — top left */
+      "radial-gradient(ellipse at 8% 12%, rgba(100,160,220,0.12) 0%, transparent 30%)",
+      /* Second sconce — right side */
+      "radial-gradient(ellipse at 92% 40%, rgba(90,140,200,0.08) 0%, transparent 25%)",
+      /* Cold ambient from above */
+      "radial-gradient(ellipse at 50% 0%, rgba(70,110,170,0.06) 0%, transparent 50%)",
+      "var(--bg)",
+    ].join(", "),
     decorCSS: `
+      /* === FORTRESS : stone block wall + mortar lines + arrow slit light === */
       .theme-fortress-decor::before {
         content: '';
         position: absolute; inset: 0; pointer-events: none; z-index: 0;
         background:
-          repeating-linear-gradient(0deg, transparent, transparent 60px, rgba(123,174,212,0.018) 60px, rgba(123,174,212,0.018) 61px),
-          repeating-linear-gradient(90deg, transparent, transparent 90px, rgba(123,174,212,0.012) 90px, rgba(123,174,212,0.012) 91px);
+          /* Stone block mortar — horizontal courses */
+          repeating-linear-gradient(
+            180deg,
+            transparent 0px, transparent 48px,
+            rgba(90,130,170,0.06) 48px, rgba(90,130,170,0.06) 50px,
+            transparent 50px, transparent 98px,
+            rgba(80,120,160,0.05) 98px, rgba(80,120,160,0.05) 100px,
+            transparent 100px, transparent 152px
+          ),
+          /* Vertical mortar — staggered per course (offset brickwork look) */
+          repeating-linear-gradient(
+            90deg,
+            transparent 0px, transparent 120px,
+            rgba(90,130,170,0.04) 120px, rgba(90,130,170,0.04) 122px,
+            transparent 122px, transparent 240px
+          ),
+          /* Iron rivets / nail pattern — sparse dots */
+          radial-gradient(circle at 120px 50px, rgba(123,174,212,0.06) 1.5px, transparent 2px),
+          radial-gradient(circle at 360px 100px, rgba(123,174,212,0.05) 1.5px, transparent 2px),
+          radial-gradient(circle at 240px 150px, rgba(123,174,212,0.04) 1.5px, transparent 2px);
       }
       .theme-fortress-decor::after {
         content: '';
-        position: absolute; top: 0; left: 0; right: 0; height: 3px; pointer-events: none; z-index: 0;
-        background: linear-gradient(90deg, transparent 10%, rgba(123,174,212,0.3) 50%, transparent 90%);
+        position: absolute; top: 0; left: 0; right: 0; height: 4px; pointer-events: none; z-index: 0;
+        background: linear-gradient(90deg, transparent 5%, rgba(123,174,212,0.40) 50%, transparent 95%);
       }
     `,
   },
+
+  /* ─────────────────────── ENCHANTED FOREST ─────────────────────── */
   forest: {
     label: "Enchanted Forest",
-    desc: "Mossy greens, fey glow & ancient canopy",
+    desc: "Ancient canopy, glowing mushrooms & fey light",
     icon: "TreePine",
     preview: { accent: "#4dbd7a", bg: "#0c130e", card: "#142218" },
     vars: {
       "--crimson": "#4dbd7a",
-      "--crimson-dim": "rgba(77,189,122,0.18)",
-      "--crimson-soft": "rgba(77,189,122,0.08)",
-      "--crimson-border": "rgba(77,189,122,0.22)",
+      "--crimson-dim": "rgba(77,189,122,0.20)",
+      "--crimson-soft": "rgba(77,189,122,0.10)",
+      "--crimson-border": "rgba(77,189,122,0.25)",
       "--bg": "#0c130e",
       "--bg-nav": "#0a110c",
       "--bg-card": "#142218",
@@ -1735,41 +1800,69 @@ const CAMPAIGN_THEMES = {
       "--bg-mid": "#18281c",
       "--bg-input": "#101e14",
       "--bg-subtle": "#122016",
-      "--border": "rgba(77,189,122,0.14)",
-      "--border-mid": "rgba(77,189,122,0.07)",
+      "--border": "rgba(77,189,122,0.16)",
+      "--border-mid": "rgba(77,189,122,0.08)",
       "--text": "#d4f0dc",
       "--text-dim": "#a8d4b4",
       "--text-muted": "#6ea880",
       "--text-faint": "#4e8860",
     },
     navGradient: "linear-gradient(180deg, #0e1810 0%, #0a110c 40%, #08100a 100%)",
-    contentGradient: "radial-gradient(ellipse at 20% 10%, rgba(77,189,122,0.10) 0%, transparent 45%), radial-gradient(ellipse at 70% 80%, rgba(40,140,80,0.06) 0%, transparent 40%), var(--bg)",
+    contentGradient: [
+      /* Canopy light shafts — dappled from above */
+      "radial-gradient(ellipse at 25% 8%, rgba(120,220,150,0.12) 0%, transparent 30%)",
+      "radial-gradient(ellipse at 65% 3%, rgba(77,189,122,0.08) 0%, transparent 25%)",
+      /* Mushroom glow from below */
+      "radial-gradient(ellipse at 15% 90%, rgba(77,220,140,0.10) 0%, transparent 25%)",
+      "radial-gradient(ellipse at 80% 85%, rgba(60,180,120,0.06) 0%, transparent 20%)",
+      "var(--bg)",
+    ].join(", "),
     decorCSS: `
+      /* === FOREST : tangled roots, canopy shadow, moss patches === */
       .theme-forest-decor::before {
         content: '';
         position: absolute; inset: 0; pointer-events: none; z-index: 0;
         background:
-          radial-gradient(circle at 15% 25%, rgba(77,189,122,0.04) 0%, transparent 30%),
-          radial-gradient(circle at 85% 60%, rgba(60,160,100,0.03) 0%, transparent 25%),
-          radial-gradient(circle at 50% 90%, rgba(77,189,122,0.025) 0%, transparent 20%);
+          /* Canopy shadow pattern — dark patches from leaf cover */
+          radial-gradient(ellipse at 20% 15%, rgba(0,20,5,0.15) 0%, transparent 20%),
+          radial-gradient(ellipse at 70% 10%, rgba(0,20,5,0.10) 0%, transparent 18%),
+          radial-gradient(ellipse at 45% 5%, rgba(0,20,5,0.08) 0%, transparent 22%),
+          /* Moss texture — soft green patches along edges */
+          radial-gradient(ellipse at 0% 70%, rgba(50,140,70,0.08) 0%, transparent 15%),
+          radial-gradient(ellipse at 100% 50%, rgba(40,120,60,0.06) 0%, transparent 12%),
+          /* Root-like organic curves — diagonal streaks */
+          repeating-linear-gradient(
+            135deg,
+            transparent 0px, transparent 80px,
+            rgba(40,100,50,0.03) 80px, rgba(40,100,50,0.03) 83px,
+            transparent 83px, transparent 200px
+          ),
+          repeating-linear-gradient(
+            155deg,
+            transparent 0px, transparent 120px,
+            rgba(50,110,60,0.025) 120px, rgba(50,110,60,0.025) 122px,
+            transparent 122px, transparent 300px
+          );
       }
       .theme-forest-decor::after {
         content: '';
-        position: absolute; top: 0; left: 0; right: 0; height: 120px; pointer-events: none; z-index: 0;
-        background: linear-gradient(to bottom, rgba(77,189,122,0.04), transparent);
+        position: absolute; top: 0; left: 0; right: 0; height: 30%; pointer-events: none; z-index: 0;
+        background: linear-gradient(to bottom, rgba(0,15,5,0.20) 0%, rgba(0,10,3,0.08) 40%, transparent 100%);
       }
     `,
   },
+
+  /* ─────────────────────── SEAFARER ─────────────────────── */
   seafarer: {
     label: "Seafarer",
-    desc: "Deep navy waters, gold compass & sea-spray",
+    desc: "Ship deck planks, ocean depths & gold compass",
     icon: "Anchor",
     preview: { accent: "#d4b85c", bg: "#0c0e18", card: "#141824" },
     vars: {
       "--crimson": "#d4b85c",
-      "--crimson-dim": "rgba(212,184,92,0.18)",
-      "--crimson-soft": "rgba(212,184,92,0.08)",
-      "--crimson-border": "rgba(212,184,92,0.22)",
+      "--crimson-dim": "rgba(212,184,92,0.20)",
+      "--crimson-soft": "rgba(212,184,92,0.10)",
+      "--crimson-border": "rgba(212,184,92,0.25)",
       "--bg": "#0c0e18",
       "--bg-nav": "#0a0c16",
       "--bg-card": "#141824",
@@ -1777,27 +1870,61 @@ const CAMPAIGN_THEMES = {
       "--bg-mid": "#181e2e",
       "--bg-input": "#101420",
       "--bg-subtle": "#121822",
-      "--border": "rgba(212,184,92,0.14)",
-      "--border-mid": "rgba(212,184,92,0.07)",
+      "--border": "rgba(212,184,92,0.16)",
+      "--border-mid": "rgba(212,184,92,0.08)",
       "--text": "#e8e0c8",
       "--text-dim": "#c8bea0",
       "--text-muted": "#8e8670",
       "--text-faint": "#686250",
     },
     navGradient: "linear-gradient(180deg, #0e1020 0%, #0a0c16 50%, #080a12 100%)",
-    contentGradient: "radial-gradient(ellipse at 60% 20%, rgba(212,184,92,0.08) 0%, transparent 45%), radial-gradient(ellipse at 20% 90%, rgba(40,70,120,0.06) 0%, transparent 35%), var(--bg)",
+    contentGradient: [
+      /* Lantern cabin glow — warm gold from top */
+      "radial-gradient(ellipse at 50% 5%, rgba(212,184,92,0.10) 0%, transparent 35%)",
+      /* Moonlight on water — cool shimmer from right */
+      "radial-gradient(ellipse at 95% 60%, rgba(60,90,140,0.10) 0%, transparent 30%)",
+      /* Deep ocean swell from below */
+      "radial-gradient(ellipse at 40% 95%, rgba(20,40,80,0.15) 0%, transparent 35%)",
+      "var(--bg)",
+    ].join(", "),
     decorCSS: `
+      /* === SEAFARER : deck planks, ocean swell, rope textures === */
       .theme-seafarer-decor::before {
         content: '';
         position: absolute; inset: 0; pointer-events: none; z-index: 0;
         background:
-          repeating-linear-gradient(170deg, transparent, transparent 200px, rgba(40,70,140,0.015) 200px, rgba(40,70,140,0.015) 204px),
-          repeating-linear-gradient(170deg, transparent 100px, rgba(40,70,140,0.01) 100px, rgba(40,70,140,0.01) 103px, transparent 103px);
+          /* Ship deck plank lines — horizontal */
+          repeating-linear-gradient(
+            180deg,
+            transparent 0px, transparent 52px,
+            rgba(140,120,70,0.05) 52px, rgba(140,120,70,0.05) 54px,
+            transparent 54px, transparent 110px,
+            rgba(120,100,60,0.04) 110px, rgba(120,100,60,0.04) 111px,
+            transparent 111px, transparent 170px
+          ),
+          /* Ocean swell pattern — undulating horizontal waves */
+          repeating-linear-gradient(
+            175deg,
+            transparent 0px, transparent 100px,
+            rgba(30,60,120,0.04) 100px, rgba(30,60,120,0.04) 106px,
+            transparent 106px, transparent 220px,
+            rgba(25,50,100,0.03) 220px, rgba(25,50,100,0.03) 224px,
+            transparent 224px, transparent 350px
+          ),
+          /* Rope texture — right border */
+          repeating-linear-gradient(
+            0deg,
+            transparent 0px, transparent 10px,
+            rgba(160,130,60,0.05) 10px, rgba(160,130,60,0.05) 13px,
+            transparent 13px, transparent 18px
+          );
+        mask-image: linear-gradient(90deg, transparent 0%, black 3%, black 97%, transparent 100%);
+        -webkit-mask-image: linear-gradient(90deg, transparent 0%, black 3%, black 97%, transparent 100%);
       }
       .theme-seafarer-decor::after {
         content: '';
-        position: absolute; bottom: 0; left: 0; right: 0; height: 150px; pointer-events: none; z-index: 0;
-        background: linear-gradient(to top, rgba(40,70,120,0.06), transparent);
+        position: absolute; bottom: 0; left: 0; right: 0; height: 40%; pointer-events: none; z-index: 0;
+        background: linear-gradient(to top, rgba(15,25,50,0.18) 0%, rgba(15,25,50,0.06) 40%, transparent 100%);
       }
     `,
   },
@@ -4509,146 +4636,323 @@ function ThemeDecorations({ themeKey }) {
 
   const wrapStyle = { position:"absolute", inset:0, pointerEvents:"none", zIndex:0, overflow:"hidden" };
 
+  /* ─────────────────── TAVERN ─────────────────── */
   if (themeKey === "tavern") {
     return (
       <div style={wrapStyle}>
-        {/* Lantern glow — top left */}
-        <svg style={{ position:"absolute", top:20, left:40, opacity:0.12 }} width="60" height="90" viewBox="0 0 60 90">
+        {/* ── Hanging lantern with large warm glow — top-left ── */}
+        <svg style={{ position:"absolute", top:0, left:60, opacity:0.30 }} width="120" height="180" viewBox="0 0 120 180">
           <defs>
-            <radialGradient id="lanternGlow" cx="50%" cy="40%" r="60%">
-              <stop offset="0%" stopColor="#d4a24e" stopOpacity="0.8"/>
+            <radialGradient id="tLantern1" cx="50%" cy="55%" r="50%">
+              <stop offset="0%" stopColor="#ffb840" stopOpacity="0.6"/>
+              <stop offset="50%" stopColor="#d4a24e" stopOpacity="0.15"/>
               <stop offset="100%" stopColor="#d4a24e" stopOpacity="0"/>
             </radialGradient>
           </defs>
-          <circle cx="30" cy="36" r="28" fill="url(#lanternGlow)"/>
-          <rect x="24" y="8" width="12" height="4" rx="1" fill="#d4a24e" opacity="0.6"/>
-          <line x1="30" y1="0" x2="30" y2="8" stroke="#d4a24e" strokeWidth="1.5" opacity="0.4"/>
-          <path d="M20 12 Q20 18 22 28 L30 50 L38 28 Q40 18 40 12 Z" fill="none" stroke="#d4a24e" strokeWidth="1" opacity="0.5"/>
-          <ellipse cx="30" cy="32" rx="6" ry="10" fill="#d4a24e" opacity="0.15"/>
+          <circle cx="60" cy="95" r="55" fill="url(#tLantern1)"/>
+          {/* Chain */}
+          <line x1="60" y1="0" x2="60" y2="48" stroke="#8a6a30" strokeWidth="1.5" strokeDasharray="3 3"/>
+          {/* Lantern body */}
+          <rect x="44" y="48" width="32" height="40" rx="3" fill="none" stroke="#c49035" strokeWidth="1.5"/>
+          <rect x="42" y="46" width="36" height="4" rx="1" fill="#a07828" opacity="0.5"/>
+          <rect x="42" y="88" width="36" height="3" rx="1" fill="#a07828" opacity="0.4"/>
+          {/* Flame inside */}
+          <ellipse cx="60" cy="68" rx="6" ry="12" fill="#ffb840" opacity="0.25"/>
+          <ellipse cx="60" cy="65" rx="3" ry="7" fill="#ffe080" opacity="0.3"/>
         </svg>
-        {/* Tankard — bottom right */}
-        <svg style={{ position:"absolute", bottom:30, right:60, opacity:0.08 }} width="70" height="80" viewBox="0 0 70 80">
-          <rect x="10" y="10" width="36" height="55" rx="4" fill="none" stroke="#d4a24e" strokeWidth="1.5"/>
-          <path d="M46 22 Q58 22 58 36 Q58 50 46 50" fill="none" stroke="#d4a24e" strokeWidth="1.5"/>
-          <ellipse cx="28" cy="10" rx="18" ry="4" fill="none" stroke="#d4a24e" strokeWidth="1"/>
-          <path d="M16 28 Q22 24 34 28" fill="none" stroke="#d4a24e" strokeWidth="0.8" opacity="0.5"/>
-          <path d="M14 20 Q28 16 40 20" fill="none" stroke="#d4a24e" strokeWidth="0.6" opacity="0.3"/>
+
+        {/* ── Second lantern glow — right side ── */}
+        <svg style={{ position:"absolute", top:40, right:80, opacity:0.18 }} width="90" height="140" viewBox="0 0 120 180">
+          <circle cx="60" cy="95" r="55" fill="url(#tLantern1)"/>
+          <line x1="60" y1="0" x2="60" y2="48" stroke="#8a6a30" strokeWidth="1.5" strokeDasharray="3 3"/>
+          <rect x="44" y="48" width="32" height="40" rx="3" fill="none" stroke="#c49035" strokeWidth="1.2"/>
+          <ellipse cx="60" cy="68" rx="5" ry="10" fill="#ffb840" opacity="0.20"/>
         </svg>
-        {/* Second tankard — bottom left */}
-        <svg style={{ position:"absolute", bottom:80, left:80, opacity:0.05, transform:"rotate(-15deg)" }} width="55" height="65" viewBox="0 0 70 80">
-          <rect x="10" y="10" width="36" height="55" rx="4" fill="none" stroke="#d4a24e" strokeWidth="1.5"/>
-          <path d="M46 22 Q58 22 58 36 Q58 50 46 50" fill="none" stroke="#d4a24e" strokeWidth="1.5"/>
-          <ellipse cx="28" cy="10" rx="18" ry="4" fill="none" stroke="#d4a24e" strokeWidth="1"/>
+
+        {/* ── Tankard with foam — bottom right ── */}
+        <svg style={{ position:"absolute", bottom:20, right:40, opacity:0.14 }} width="90" height="100" viewBox="0 0 90 100">
+          {/* Mug body */}
+          <rect x="12" y="22" width="44" height="65" rx="5" fill="rgba(120,80,25,0.15)" stroke="#c49035" strokeWidth="1.8"/>
+          {/* Handle */}
+          <path d="M56 34 Q72 34 72 50 Q72 66 56 66" fill="none" stroke="#c49035" strokeWidth="1.8"/>
+          {/* Foam top — bubbly scalloped edge */}
+          <path d="M12 25 Q18 15 26 20 Q34 12 42 18 Q50 13 56 22" fill="rgba(220,200,160,0.08)" stroke="#d4c090" strokeWidth="1" opacity="0.5"/>
+          {/* Band detail */}
+          <line x1="14" y1="42" x2="54" y2="42" stroke="#a07828" strokeWidth="0.8" opacity="0.4"/>
+          <line x1="14" y1="68" x2="54" y2="68" stroke="#a07828" strokeWidth="0.8" opacity="0.3"/>
         </svg>
-        {/* Lantern glow — top right */}
-        <svg style={{ position:"absolute", top:60, right:120, opacity:0.07 }} width="40" height="60" viewBox="0 0 60 90">
-          <circle cx="30" cy="36" r="28" fill="url(#lanternGlow)"/>
-          <path d="M20 12 Q20 18 22 28 L30 50 L38 28 Q40 18 40 12 Z" fill="none" stroke="#d4a24e" strokeWidth="1" opacity="0.5"/>
+
+        {/* ── Second tankard — bottom left, tilted ── */}
+        <svg style={{ position:"absolute", bottom:60, left:50, opacity:0.09, transform:"rotate(-12deg)" }} width="70" height="85" viewBox="0 0 90 100">
+          <rect x="12" y="22" width="44" height="65" rx="5" fill="rgba(120,80,25,0.10)" stroke="#c49035" strokeWidth="1.5"/>
+          <path d="M56 34 Q72 34 72 50 Q72 66 56 66" fill="none" stroke="#c49035" strokeWidth="1.5"/>
+          <path d="M12 25 Q20 16 30 21 Q40 14 50 20 Q55 16 56 22" fill="rgba(220,200,160,0.06)" stroke="#d4c090" strokeWidth="0.8" opacity="0.4"/>
         </svg>
-        {/* Wood grain horizontal lines — very subtle */}
-        <div style={{ position:"absolute", bottom:0, left:0, right:0, height:"100%", opacity:0.02,
-          background:"repeating-linear-gradient(2deg, transparent, transparent 18px, rgba(180,120,40,0.4) 18px, rgba(180,120,40,0.4) 19px, transparent 19px, transparent 22px)" }} />
+
+        {/* ── Barrel — lower left ── */}
+        <svg style={{ position:"absolute", bottom:10, left:160, opacity:0.07 }} width="70" height="80" viewBox="0 0 70 80">
+          <ellipse cx="35" cy="10" rx="28" ry="8" fill="none" stroke="#a07828" strokeWidth="1.2"/>
+          <ellipse cx="35" cy="70" rx="28" ry="8" fill="none" stroke="#a07828" strokeWidth="1.2"/>
+          <path d="M7 10 Q3 40 7 70" fill="none" stroke="#a07828" strokeWidth="1.2"/>
+          <path d="M63 10 Q67 40 63 70" fill="none" stroke="#a07828" strokeWidth="1.2"/>
+          {/* Metal bands */}
+          <ellipse cx="35" cy="26" rx="30" ry="6" fill="none" stroke="#8a6a30" strokeWidth="0.8" opacity="0.5"/>
+          <ellipse cx="35" cy="54" rx="30" ry="6" fill="none" stroke="#8a6a30" strokeWidth="0.8" opacity="0.5"/>
+        </svg>
+
+        {/* ── Fireplace hearth glow — bottom right corner warm bloom ── */}
+        <div style={{ position:"absolute", bottom:0, right:0, width:"40%", height:"50%",
+          background:"radial-gradient(ellipse at 100% 100%, rgba(200,100,20,0.14) 0%, rgba(180,80,10,0.05) 40%, transparent 70%)",
+        }} />
+
+        {/* ── Candle flicker spots — small warm dots ── */}
+        {[
+          { x:"82%", y:"8%", s:40 },
+          { x:"20%", y:"65%", s:30 },
+          { x:"55%", y:"15%", s:25 },
+        ].map((c, i) => (
+          <div key={i} style={{
+            position:"absolute", left:c.x, top:c.y, width:c.s, height:c.s, borderRadius:"50%",
+            background:"radial-gradient(circle, rgba(255,184,64,0.15) 0%, transparent 70%)",
+          }} />
+        ))}
       </div>
     );
   }
 
+  /* ─────────────────── DARK FORTRESS ─────────────────── */
   if (themeKey === "fortress") {
     return (
       <div style={wrapStyle}>
-        {/* Castle battlements — top edge */}
-        <svg style={{ position:"absolute", top:0, left:0, width:"100%", height:30, opacity:0.06 }} viewBox="0 0 1200 30" preserveAspectRatio="none">
-          <path d="M0 30 V15 H30 V0 H50 V15 H80 V0 H100 V15 H130 V0 H150 V15 H180 V0 H200 V15 H230 V0 H250 V15 H280 V0 H300 V15 H330 V0 H350 V15 H380 V0 H400 V15 H430 V0 H450 V15 H480 V0 H500 V15 H530 V0 H550 V15 H580 V0 H600 V15 H630 V0 H650 V15 H680 V0 H700 V15 H730 V0 H750 V15 H780 V0 H800 V15 H830 V0 H850 V15 H880 V0 H900 V15 H930 V0 H950 V15 H980 V0 H1000 V15 H1030 V0 H1050 V15 H1080 V0 H1100 V15 H1130 V0 H1150 V15 H1200 V30 Z" fill="#7baed4"/>
+        {/* ── Castle battlements — top edge ── */}
+        <svg style={{ position:"absolute", top:0, left:0, width:"100%", height:24, opacity:0.10 }} viewBox="0 0 960 24" preserveAspectRatio="none">
+          <path d={"M0 24 " + Array.from({length:48}, (_, i) => {
+            const x1 = i*20, x2 = x1+8, x3 = x1+12, x4 = x1+20;
+            return `L${x1} 24 L${x1} 10 L${x2} 10 L${x2} 0 L${x3} 0 L${x3} 10 L${x4} 10 L${x4} 24`;
+          }).join(" ") + " Z"} fill="#5a8ab0" />
         </svg>
-        {/* Shield emblem — center right */}
-        <svg style={{ position:"absolute", top:"50%", right:40, transform:"translateY(-50%)", opacity:0.04 }} width="100" height="120" viewBox="0 0 100 120">
-          <path d="M50 5 L90 20 L90 60 Q90 95 50 115 Q10 95 10 60 L10 20 Z" fill="none" stroke="#7baed4" strokeWidth="2"/>
-          <path d="M50 25 L70 34 L70 55 Q70 78 50 92 Q30 78 30 55 L30 34 Z" fill="none" stroke="#7baed4" strokeWidth="1" opacity="0.5"/>
-          <line x1="50" y1="34" x2="50" y2="85" stroke="#7baed4" strokeWidth="1" opacity="0.3"/>
-          <line x1="32" y1="55" x2="68" y2="55" stroke="#7baed4" strokeWidth="1" opacity="0.3"/>
+
+        {/* ── Torch sconce — left side ── */}
+        <svg style={{ position:"absolute", top:80, left:20, opacity:0.22 }} width="50" height="120" viewBox="0 0 50 120">
+          <defs>
+            <radialGradient id="fTorch" cx="50%" cy="30%" r="60%">
+              <stop offset="0%" stopColor="#7baed4" stopOpacity="0.5"/>
+              <stop offset="100%" stopColor="#7baed4" stopOpacity="0"/>
+            </radialGradient>
+          </defs>
+          <circle cx="25" cy="35" r="30" fill="url(#fTorch)"/>
+          {/* Bracket */}
+          <path d="M25 110 L25 55" stroke="#5a7a96" strokeWidth="2"/>
+          <path d="M15 110 L35 110" stroke="#5a7a96" strokeWidth="2"/>
+          {/* Flame */}
+          <path d="M25 55 Q18 40 25 25 Q32 40 25 55Z" fill="#7baed4" opacity="0.25"/>
+          <path d="M25 50 Q21 42 25 32 Q29 42 25 50Z" fill="#a0d0f0" opacity="0.20"/>
         </svg>
-        {/* Crossed swords — bottom left */}
-        <svg style={{ position:"absolute", bottom:40, left:50, opacity:0.04 }} width="80" height="80" viewBox="0 0 80 80">
-          <line x1="10" y1="70" x2="70" y2="10" stroke="#7baed4" strokeWidth="1.5"/>
-          <line x1="70" y1="70" x2="10" y2="10" stroke="#7baed4" strokeWidth="1.5"/>
-          <circle cx="40" cy="40" r="6" fill="none" stroke="#7baed4" strokeWidth="1"/>
-          <line x1="65" y1="10" x2="75" y2="5" stroke="#7baed4" strokeWidth="1"/>
-          <line x1="70" y1="10" x2="70" y2="3" stroke="#7baed4" strokeWidth="1"/>
+
+        {/* ── Torch sconce — right side ── */}
+        <svg style={{ position:"absolute", top:200, right:30, opacity:0.15 }} width="40" height="100" viewBox="0 0 50 120">
+          <circle cx="25" cy="35" r="30" fill="url(#fTorch)"/>
+          <path d="M25 110 L25 55" stroke="#5a7a96" strokeWidth="2"/>
+          <path d="M15 110 L35 110" stroke="#5a7a96" strokeWidth="2"/>
+          <path d="M25 55 Q18 40 25 25 Q32 40 25 55Z" fill="#7baed4" opacity="0.20"/>
         </svg>
-        {/* Stone texture grid overlay */}
-        <div style={{ position:"absolute", inset:0, opacity:0.015,
-          background:"repeating-conic-gradient(rgba(123,174,212,0.3) 0% 25%, transparent 0% 50%) 0 0 / 40px 40px" }} />
+
+        {/* ── Large shield emblem — center right watermark ── */}
+        <svg style={{ position:"absolute", top:"40%", right:50, transform:"translateY(-50%)", opacity:0.06 }} width="140" height="170" viewBox="0 0 100 120">
+          <path d="M50 5 L92 22 L92 60 Q92 98 50 116 Q8 98 8 60 L8 22 Z" fill="none" stroke="#7baed4" strokeWidth="1.5"/>
+          <path d="M50 20 L74 32 L74 56 Q74 80 50 96 Q26 80 26 56 L26 32 Z" fill="none" stroke="#7baed4" strokeWidth="0.8"/>
+          <line x1="50" y1="30" x2="50" y2="90" stroke="#7baed4" strokeWidth="0.8" opacity="0.4"/>
+          <line x1="28" y1="54" x2="72" y2="54" stroke="#7baed4" strokeWidth="0.8" opacity="0.4"/>
+          {/* Crown on shield */}
+          <path d="M38 42 L42 36 L46 40 L50 34 L54 40 L58 36 L62 42 Z" fill="none" stroke="#7baed4" strokeWidth="0.8" opacity="0.5"/>
+        </svg>
+
+        {/* ── Iron chain — left edge ── */}
+        <svg style={{ position:"absolute", top:0, left:8, height:"100%", width:16, opacity:0.06 }} viewBox="0 0 16 600" preserveAspectRatio="none">
+          {Array.from({length:30}, (_, i) => (
+            <React.Fragment key={i}>
+              <ellipse cx="8" cy={i*20+5} rx="4" ry="7" fill="none" stroke="#7baed4" strokeWidth="1.2"/>
+            </React.Fragment>
+          ))}
+        </svg>
+
+        {/* ── Arrow-slit light shafts ── */}
+        {[
+          { x:"30%", y:"20%", r:15 },
+          { x:"70%", y:"60%", r:10 },
+        ].map((s, i) => (
+          <div key={i} style={{
+            position:"absolute", left:s.x, top:s.y, width:4, height:50+s.r*2,
+            background:"linear-gradient(180deg, transparent, rgba(123,174,212,0.08), transparent)",
+            borderRadius:2, transform:"rotate(5deg)",
+          }} />
+        ))}
       </div>
     );
   }
 
+  /* ─────────────────── ENCHANTED FOREST ─────────────────── */
   if (themeKey === "forest") {
     return (
       <div style={wrapStyle}>
-        {/* Fey sparkles — scattered dots */}
+        {/* ── Tree trunk silhouettes — left edge ── */}
+        <svg style={{ position:"absolute", top:0, left:0, height:"100%", width:80, opacity:0.10 }} viewBox="0 0 80 800" preserveAspectRatio="none">
+          {/* Main trunk */}
+          <path d="M20 800 Q15 600 22 400 Q28 200 18 0" fill="none" stroke="#2a5a38" strokeWidth="8"/>
+          {/* Secondary trunk */}
+          <path d="M55 800 Q50 650 58 500 Q48 300 52 100 Q55 50 50 0" fill="none" stroke="#1e4a2c" strokeWidth="5"/>
+          {/* Branches */}
+          <path d="M22 300 Q35 280 60 260" fill="none" stroke="#2a5a38" strokeWidth="2.5"/>
+          <path d="M18 500 Q30 480 50 470" fill="none" stroke="#2a5a38" strokeWidth="2"/>
+          <path d="M55 200 Q70 185 80 170" fill="none" stroke="#1e4a2c" strokeWidth="2"/>
+          {/* Roots at bottom */}
+          <path d="M20 800 Q0 780 -10 760" fill="none" stroke="#2a5a38" strokeWidth="4"/>
+          <path d="M20 800 Q35 790 50 785" fill="none" stroke="#2a5a38" strokeWidth="3"/>
+        </svg>
+
+        {/* ── Tree trunk — right edge ── */}
+        <svg style={{ position:"absolute", top:0, right:0, height:"100%", width:50, opacity:0.06 }} viewBox="0 0 50 800" preserveAspectRatio="none">
+          <path d="M40 800 Q45 600 38 400 Q42 200 40 0" fill="none" stroke="#1e4a2c" strokeWidth="6"/>
+          <path d="M38 350 Q20 330 10 310" fill="none" stroke="#1e4a2c" strokeWidth="2"/>
+        </svg>
+
+        {/* ── Glowing mushroom cluster — bottom left ── */}
+        <svg style={{ position:"absolute", bottom:20, left:40, opacity:0.20 }} width="100" height="80" viewBox="0 0 100 80">
+          <defs>
+            <radialGradient id="mushGlow" cx="50%" cy="30%" r="70%">
+              <stop offset="0%" stopColor="#4dbd7a" stopOpacity="0.5"/>
+              <stop offset="100%" stopColor="#4dbd7a" stopOpacity="0"/>
+            </radialGradient>
+          </defs>
+          {/* Large mushroom */}
+          <circle cx="40" cy="30" r="25" fill="url(#mushGlow)"/>
+          <ellipse cx="40" cy="40" rx="18" ry="10" fill="none" stroke="#4dbd7a" strokeWidth="1.2"/>
+          <line x1="40" y1="50" x2="40" y2="75" stroke="#3a8a58" strokeWidth="2"/>
+          {/* Small mushroom */}
+          <circle cx="70" cy="42" r="15" fill="url(#mushGlow)" opacity="0.6"/>
+          <ellipse cx="70" cy="48" rx="10" ry="6" fill="none" stroke="#4dbd7a" strokeWidth="0.8"/>
+          <line x1="70" y1="54" x2="70" y2="72" stroke="#3a8a58" strokeWidth="1.5"/>
+          {/* Tiny mushroom */}
+          <ellipse cx="20" cy="58" rx="6" ry="3" fill="none" stroke="#4dbd7a" strokeWidth="0.6" opacity="0.5"/>
+          <line x1="20" y1="61" x2="20" y2="72" stroke="#3a8a58" strokeWidth="1" opacity="0.5"/>
+        </svg>
+
+        {/* ── Fey fireflies — animated glowing particles ── */}
         {[
-          { x:"12%", y:"18%", size:3, op:0.15, delay:0 },
-          { x:"78%", y:"25%", size:2, op:0.10, delay:1.5 },
-          { x:"45%", y:"70%", size:2.5, op:0.08, delay:3 },
-          { x:"88%", y:"55%", size:2, op:0.12, delay:0.8 },
-          { x:"25%", y:"82%", size:3, op:0.06, delay:2.2 },
-          { x:"60%", y:"12%", size:2, op:0.09, delay:4 },
-          { x:"35%", y:"45%", size:1.5, op:0.07, delay:1 },
+          { x:"15%", y:"20%", size:4, op:0.25, delay:0 },
+          { x:"75%", y:"18%", size:3, op:0.18, delay:1.5 },
+          { x:"45%", y:"65%", size:3.5, op:0.15, delay:3 },
+          { x:"88%", y:"45%", size:2.5, op:0.20, delay:0.8 },
+          { x:"25%", y:"78%", size:4, op:0.12, delay:2.2 },
+          { x:"62%", y:"10%", size:3, op:0.16, delay:4 },
+          { x:"35%", y:"42%", size:2, op:0.14, delay:1 },
+          { x:"8%", y:"55%", size:3, op:0.10, delay:2.8 },
+          { x:"50%", y:"88%", size:2.5, op:0.18, delay:3.5 },
+          { x:"80%", y:"72%", size:3, op:0.12, delay:0.5 },
         ].map((dot, i) => (
           <div key={i} style={{
             position:"absolute", left:dot.x, top:dot.y,
             width:dot.size*2, height:dot.size*2, borderRadius:"50%",
             background:"#4dbd7a", opacity:dot.op,
-            boxShadow:`0 0 ${dot.size*4}px ${dot.size}px rgba(77,189,122,0.3)`,
-            animation:`feyPulse 4s ease-in-out ${dot.delay}s infinite alternate`,
+            boxShadow:`0 0 ${dot.size*6}px ${dot.size*2}px rgba(77,189,122,0.25)`,
+            animation:`feyPulse ${3+i%3}s ease-in-out ${dot.delay}s infinite alternate`,
           }} />
         ))}
-        {/* Vine — left edge */}
-        <svg style={{ position:"absolute", top:0, left:0, height:"100%", width:30, opacity:0.06 }} viewBox="0 0 30 600" preserveAspectRatio="none">
-          <path d="M15 0 Q5 50 15 100 Q25 150 15 200 Q5 250 15 300 Q25 350 15 400 Q5 450 15 500 Q25 550 15 600" fill="none" stroke="#4dbd7a" strokeWidth="2"/>
-          <circle cx="8" cy="80" r="4" fill="none" stroke="#4dbd7a" strokeWidth="0.8"/>
-          <circle cx="22" cy="180" r="3" fill="none" stroke="#4dbd7a" strokeWidth="0.8"/>
-          <circle cx="10" cy="320" r="5" fill="none" stroke="#4dbd7a" strokeWidth="0.8"/>
-          <circle cx="20" cy="460" r="3" fill="none" stroke="#4dbd7a" strokeWidth="0.8"/>
+
+        {/* ── Vine with leaves — right edge ── */}
+        <svg style={{ position:"absolute", top:0, right:30, height:"50%", width:40, opacity:0.09 }} viewBox="0 0 40 400" preserveAspectRatio="none">
+          <path d="M20 0 Q30 40 15 80 Q5 120 25 160 Q35 200 18 240 Q8 280 22 320 Q32 360 15 400" fill="none" stroke="#3a8a58" strokeWidth="1.5"/>
+          {/* Leaves */}
+          {[60,140,220,300,380].map((y, i) => (
+            <path key={i} d={`M${i%2===0?15:25} ${y} Q${i%2===0?0:40} ${y-15} ${i%2===0?10:30} ${y-25}`} fill="rgba(77,189,122,0.15)" stroke="#4dbd7a" strokeWidth="0.6"/>
+          ))}
         </svg>
-        {/* Leaf cluster — top right */}
-        <svg style={{ position:"absolute", top:20, right:30, opacity:0.05 }} width="80" height="70" viewBox="0 0 80 70">
-          <path d="M40 5 Q55 15 50 35 Q45 50 30 45 Q15 40 20 20 Q25 5 40 5Z" fill="none" stroke="#4dbd7a" strokeWidth="1.2"/>
-          <path d="M50 20 Q65 30 60 50 Q55 65 40 60 Q25 55 30 35 Q35 20 50 20Z" fill="none" stroke="#4dbd7a" strokeWidth="1"/>
-          <line x1="40" y1="5" x2="35" y2="40" stroke="#4dbd7a" strokeWidth="0.6" opacity="0.5"/>
-        </svg>
+
+        {/* ── Canopy shadow overlay — dark patches from above ── */}
+        <div style={{ position:"absolute", top:0, left:0, right:0, height:"25%",
+          background:"linear-gradient(to bottom, rgba(0,15,5,0.25) 0%, rgba(0,10,3,0.10) 50%, transparent 100%)",
+        }} />
       </div>
     );
   }
 
+  /* ─────────────────── SEAFARER ─────────────────── */
   if (themeKey === "seafarer") {
     return (
       <div style={wrapStyle}>
-        {/* Compass rose — top right */}
-        <svg style={{ position:"absolute", top:30, right:50, opacity:0.06 }} width="100" height="100" viewBox="0 0 100 100">
-          <circle cx="50" cy="50" r="45" fill="none" stroke="#d4b85c" strokeWidth="1"/>
-          <circle cx="50" cy="50" r="35" fill="none" stroke="#d4b85c" strokeWidth="0.5"/>
-          <line x1="50" y1="5" x2="50" y2="95" stroke="#d4b85c" strokeWidth="0.8"/>
-          <line x1="5" y1="50" x2="95" y2="50" stroke="#d4b85c" strokeWidth="0.8"/>
-          <line x1="16" y1="16" x2="84" y2="84" stroke="#d4b85c" strokeWidth="0.5" opacity="0.5"/>
-          <line x1="84" y1="16" x2="16" y2="84" stroke="#d4b85c" strokeWidth="0.5" opacity="0.5"/>
-          <polygon points="50,8 46,20 54,20" fill="#d4b85c" opacity="0.6"/>
-          <text x="50" y="18" textAnchor="middle" fill="#d4b85c" fontSize="7" fontFamily="Cinzel, serif" opacity="0.6">N</text>
+        {/* ── Compass rose — top right, larger and bolder ── */}
+        <svg style={{ position:"absolute", top:20, right:40, opacity:0.10 }} width="150" height="150" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="46" fill="none" stroke="#d4b85c" strokeWidth="0.8"/>
+          <circle cx="50" cy="50" r="40" fill="none" stroke="#d4b85c" strokeWidth="0.5"/>
+          <circle cx="50" cy="50" r="30" fill="none" stroke="#d4b85c" strokeWidth="0.3"/>
+          {/* Cardinal lines */}
+          <line x1="50" y1="4" x2="50" y2="96" stroke="#d4b85c" strokeWidth="0.8"/>
+          <line x1="4" y1="50" x2="96" y2="50" stroke="#d4b85c" strokeWidth="0.8"/>
+          {/* Diagonal lines */}
+          <line x1="14" y1="14" x2="86" y2="86" stroke="#d4b85c" strokeWidth="0.4"/>
+          <line x1="86" y1="14" x2="14" y2="86" stroke="#d4b85c" strokeWidth="0.4"/>
+          {/* North pointer */}
+          <polygon points="50,6 46,22 50,18 54,22" fill="#d4b85c" opacity="0.5"/>
+          <polygon points="50,94 46,78 50,82 54,78" fill="#d4b85c" opacity="0.3"/>
+          {/* Degree marks */}
+          {Array.from({length:36}, (_, i) => {
+            const angle = i * 10 * Math.PI / 180;
+            const r1 = 44, r2 = i%9===0 ? 38 : 42;
+            return <line key={i} x1={50+r1*Math.sin(angle)} y1={50-r1*Math.cos(angle)} x2={50+r2*Math.sin(angle)} y2={50-r2*Math.cos(angle)} stroke="#d4b85c" strokeWidth={i%9===0?"0.8":"0.3"}/>;
+          })}
         </svg>
-        {/* Anchor — bottom left */}
-        <svg style={{ position:"absolute", bottom:30, left:50, opacity:0.05 }} width="70" height="90" viewBox="0 0 70 90">
-          <circle cx="35" cy="12" r="8" fill="none" stroke="#d4b85c" strokeWidth="1.5"/>
-          <line x1="35" y1="20" x2="35" y2="70" stroke="#d4b85c" strokeWidth="1.5"/>
-          <path d="M15 60 Q15 80 35 80 Q55 80 55 60" fill="none" stroke="#d4b85c" strokeWidth="1.5"/>
-          <line x1="20" y1="45" x2="50" y2="45" stroke="#d4b85c" strokeWidth="1.5"/>
+
+        {/* ── Anchor — bottom left, detailed ── */}
+        <svg style={{ position:"absolute", bottom:25, left:40, opacity:0.09 }} width="100" height="130" viewBox="0 0 80 100">
+          {/* Ring at top */}
+          <circle cx="40" cy="14" r="10" fill="none" stroke="#d4b85c" strokeWidth="1.8"/>
+          {/* Shaft */}
+          <line x1="40" y1="24" x2="40" y2="80" stroke="#d4b85c" strokeWidth="2"/>
+          {/* Cross bar */}
+          <line x1="22" y1="42" x2="58" y2="42" stroke="#d4b85c" strokeWidth="2"/>
+          {/* Flukes — curved arms */}
+          <path d="M12 68 Q12 86 40 90" fill="none" stroke="#d4b85c" strokeWidth="2"/>
+          <path d="M68 68 Q68 86 40 90" fill="none" stroke="#d4b85c" strokeWidth="2"/>
+          {/* Fluke tips */}
+          <path d="M12 68 L6 62 L18 66 Z" fill="#d4b85c" opacity="0.4"/>
+          <path d="M68 68 L74 62 L62 66 Z" fill="#d4b85c" opacity="0.4"/>
         </svg>
-        {/* Wave lines — bottom edge */}
-        <svg style={{ position:"absolute", bottom:0, left:0, width:"100%", height:40, opacity:0.04 }} viewBox="0 0 1200 40" preserveAspectRatio="none">
-          <path d="M0 20 Q50 5 100 20 Q150 35 200 20 Q250 5 300 20 Q350 35 400 20 Q450 5 500 20 Q550 35 600 20 Q650 5 700 20 Q750 35 800 20 Q850 5 900 20 Q950 35 1000 20 Q1050 5 1100 20 Q1150 35 1200 20" fill="none" stroke="#d4b85c" strokeWidth="2"/>
-          <path d="M0 30 Q50 18 100 30 Q150 42 200 30 Q250 18 300 30 Q350 42 400 30 Q450 18 500 30 Q550 42 600 30 Q650 18 700 30 Q750 42 800 30 Q850 18 900 30 Q950 42 1000 30 Q1050 18 1100 30 Q1150 42 1200 30" fill="none" stroke="#3a5a8a" strokeWidth="1.5"/>
+
+        {/* ── Ocean waves — bottom, multi-layer animated feel ── */}
+        <svg style={{ position:"absolute", bottom:0, left:0, width:"100%", height:70, opacity:0.08 }} viewBox="0 0 1200 70" preserveAspectRatio="none">
+          {/* Deep swell */}
+          <path d="M0 35 Q60 10 120 35 Q180 60 240 35 Q300 10 360 35 Q420 60 480 35 Q540 10 600 35 Q660 60 720 35 Q780 10 840 35 Q900 60 960 35 Q1020 10 1080 35 Q1140 60 1200 35 V70 H0Z" fill="rgba(20,40,80,0.4)"/>
+          {/* Middle wave */}
+          <path d="M0 45 Q50 28 100 45 Q150 62 200 45 Q250 28 300 45 Q350 62 400 45 Q450 28 500 45 Q550 62 600 45 Q650 28 700 45 Q750 62 800 45 Q850 28 900 45 Q950 62 1000 45 Q1050 28 1100 45 Q1150 62 1200 45 V70 H0Z" fill="rgba(25,50,100,0.3)"/>
+          {/* Foam line */}
+          <path d="M0 42 Q40 34 80 42 Q120 50 160 42 Q200 34 240 42 Q280 50 320 42 Q360 34 400 42 Q440 50 480 42 Q520 34 560 42 Q600 50 640 42 Q680 34 720 42 Q760 50 800 42 Q840 34 880 42 Q920 50 960 42 Q1000 34 1040 42 Q1080 50 1120 42 Q1160 34 1200 42" fill="none" stroke="rgba(180,200,220,0.12)" strokeWidth="1"/>
         </svg>
-        {/* Rope knot pattern — right edge */}
-        <div style={{ position:"absolute", top:0, right:0, width:3, height:"100%", opacity:0.05,
-          background:"repeating-linear-gradient(0deg, transparent 0px, transparent 15px, #d4b85c 15px, #d4b85c 17px, transparent 17px, transparent 20px)" }} />
+
+        {/* ── Ship wheel — top left watermark ── */}
+        <svg style={{ position:"absolute", top:50, left:30, opacity:0.05 }} width="120" height="120" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r="35" fill="none" stroke="#d4b85c" strokeWidth="2"/>
+          <circle cx="50" cy="50" r="8" fill="none" stroke="#d4b85c" strokeWidth="1.5"/>
+          {/* Spokes */}
+          {Array.from({length:8}, (_, i) => {
+            const angle = i * 45 * Math.PI / 180;
+            return <line key={i} x1={50+8*Math.sin(angle)} y1={50-8*Math.cos(angle)} x2={50+35*Math.sin(angle)} y2={50-35*Math.cos(angle)} stroke="#d4b85c" strokeWidth="1.5"/>;
+          })}
+          {/* Handle pegs */}
+          {Array.from({length:8}, (_, i) => {
+            const angle = i * 45 * Math.PI / 180;
+            return <circle key={i} cx={50+38*Math.sin(angle)} cy={50-38*Math.cos(angle)} r="3" fill="none" stroke="#d4b85c" strokeWidth="1"/>;
+          })}
+        </svg>
+
+        {/* ── Rope border — left edge ── */}
+        <svg style={{ position:"absolute", top:0, left:4, height:"100%", width:10, opacity:0.07 }} viewBox="0 0 10 800" preserveAspectRatio="none">
+          <path d={"M5 0 " + Array.from({length:80}, (_, i) => `Q${i%2===0?9:1} ${i*10+5} 5 ${(i+1)*10}`).join(" ")} fill="none" stroke="#d4b85c" strokeWidth="1.5"/>
+        </svg>
+
+        {/* ── Ocean depth glow from below ── */}
+        <div style={{ position:"absolute", bottom:0, left:0, right:0, height:"35%",
+          background:"linear-gradient(to top, rgba(15,25,55,0.20) 0%, rgba(15,25,55,0.06) 40%, transparent 100%)",
+        }} />
       </div>
     );
   }
