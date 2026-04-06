@@ -4786,7 +4786,8 @@ function loadTabModule(name, url) {
     .then(function(jsx) {
       var js = Babel.transform(jsx, { presets: ["react"] }).code;
       var script = document.createElement("script");
-      script.textContent = js;
+      // Wrap in IIFE to avoid const/let redeclaration conflicts with main scope
+      script.textContent = "(function(){" + js + "\n})();";
       document.head.appendChild(script);
       _tabModuleState[name] = true;
       delete _tabModulePromises[name];
