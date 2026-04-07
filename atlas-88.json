@@ -1,0 +1,298 @@
+{
+  "seed": 88,
+  "mapName": "WYVERNHOLDE",
+  "regions": [
+    {
+      "name": "Korrath",
+      "subtitle": "The Wilds of Korrath",
+      "color": "#ccc088",
+      "labelX": 2635.0,
+      "labelY": 535.0,
+      "cities": [
+        {
+          "name": "Knolltown",
+          "x": 0.9,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Yewborough",
+          "x": 0.9,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Nighthollow",
+          "x": 1.0,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Blackrock",
+          "x": 1.0,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Dawnwatch",
+          "x": 0.9,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Pinecrest",
+      "subtitle": "Kingdom of Pinecrest",
+      "color": "#a8b8a0",
+      "labelX": 1115.0,
+      "labelY": 1195.0,
+      "cities": [
+        {
+          "name": "Maplecross",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Eagleford",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Dremoor",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Urswick",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ironglenn",
+      "subtitle": "Realm of Ironglenn",
+      "color": "#c8b490",
+      "labelX": 1495.0,
+      "labelY": 855.0,
+      "cities": [
+        {
+          "name": "Gerenwalde",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Eagleford",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Moonshadow",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Kronham",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Underbridge",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Fogmere",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Essear",
+      "subtitle": "Kingdom of Essear",
+      "color": "#a0b0b8",
+      "labelX": 1215.0,
+      "labelY": 635.0,
+      "cities": [
+        {
+          "name": "Gildafell",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Dunmore",
+          "x": 0.4,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Thebury",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Yellowfen",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Kettlebrook",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ashenveil",
+      "subtitle": "Realm of Ashenveil",
+      "color": "#b8c098",
+      "labelX": 2115.0,
+      "labelY": 795.0,
+      "cities": [
+        {
+          "name": "Borist",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Dremoor",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Northgate",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Ashbourne",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Tidefall",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Tidefall",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Frosthold",
+      "subtitle": "Principality of Frosthold",
+      "color": "#c4b0a8",
+      "labelX": 2025.0,
+      "labelY": 325.0,
+      "cities": [
+        {
+          "name": "Beowick",
+          "x": 0.7,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.6,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.7,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Valdheim",
+      "subtitle": "Principality of Valdheim",
+      "color": "#a8c0b0",
+      "labelX": 2215.0,
+      "labelY": 1275.0,
+      "cities": [
+        {
+          "name": "Highwall",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Oakmere",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Eagleford",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ebonwall Mountains",
+      "labelX": 2365.0,
+      "labelY": 1275.0
+    },
+    {
+      "name": "Thundercrest Range",
+      "labelX": 2295.0,
+      "labelY": 1065.0
+    }
+  ],
+  "lakes": [
+    {
+      "name": "Lake Ironfrost",
+      "labelX": 2275.0,
+      "labelY": 783.0
+    },
+    {
+      "name": "Crystal Lake",
+      "labelX": 1305.0,
+      "labelY": 853.0
+    }
+  ],
+  "seaNames": [
+    "Sea of Twilight",
+    "Sea of Frost",
+    "Sea of Storms",
+    "Sea of Dreams",
+    "Crimson Gulf"
+  ]
+}

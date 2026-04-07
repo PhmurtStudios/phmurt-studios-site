@@ -1,0 +1,330 @@
+{
+  "seed": 97,
+  "mapName": "BLEAKWIND",
+  "regions": [
+    {
+      "name": "Aethermoor",
+      "subtitle": "The Free Marches of Aethermoor",
+      "color": "#ccc088",
+      "labelX": 1745.0,
+      "labelY": 1165.0,
+      "cities": [
+        {
+          "name": "Feradell",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Oldbridge",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Zenithburg",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Freehold",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Dawnwatch",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Thornemark",
+      "subtitle": "Duchy of Thornemark",
+      "color": "#a8b8a0",
+      "labelX": 1645.0,
+      "labelY": 555.0,
+      "cities": [
+        {
+          "name": "Gildafell",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Longmere",
+          "x": 0.7,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Greenhollow",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Selvane",
+      "subtitle": "The Free Marches of Selvane",
+      "color": "#c8b490",
+      "labelX": 325.0,
+      "labelY": 505.0,
+      "cities": [
+        {
+          "name": "Jadeston",
+          "x": 0.1,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Harrowfield",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Oldbridge",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Wydale",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Solwynd",
+      "subtitle": "The Wilds of Solwynd",
+      "color": "#a0b0b8",
+      "labelX": 2205.0,
+      "labelY": 885.0,
+      "cities": [
+        {
+          "name": "Longmere",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Windcrest",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Rynwood",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Moonshadow",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Thornwall",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Lakecrest",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Shadowfen",
+      "subtitle": "Kingdom of Shadowfen",
+      "color": "#b8c098",
+      "labelX": 1165.0,
+      "labelY": 1245.0,
+      "cities": [
+        {
+          "name": "Jadeston",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Underbridge",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Ironholt",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Underbridge",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Urswick",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Ravenmere",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Duskveil",
+      "subtitle": "The Dominion of Duskveil",
+      "color": "#c4b0a8",
+      "labelX": 695.0,
+      "labelY": 705.0,
+      "cities": [
+        {
+          "name": "Thebury",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Borist",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Ilaes",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Longmere",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Wydale",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Pebblecreek",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Pyremarch",
+      "subtitle": "The Free Marches of Pyremarch",
+      "color": "#a8c0b0",
+      "labelX": 585.0,
+      "labelY": 1165.0,
+      "cities": [
+        {
+          "name": "Alderhaven",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Eagleford",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Loyarn",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 1645.0,
+      "labelY": 815.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 985.0,
+      "labelY": 665.0
+    },
+    {
+      "name": "Greymist Heights",
+      "labelX": 455.0,
+      "labelY": 925.0
+    },
+    {
+      "name": "Frostpeak Mountains",
+      "labelX": 2195.0,
+      "labelY": 1035.0
+    }
+  ],
+  "lakes": [
+    {
+      "name": "Mirrordeep",
+      "labelX": 995.0,
+      "labelY": 1153.0
+    },
+    {
+      "name": "Lake Orvane",
+      "labelX": 1285.0,
+      "labelY": 603.0
+    },
+    {
+      "name": "Lake Thornwell",
+      "labelX": 645.0,
+      "labelY": 813.0
+    },
+    {
+      "name": "Lake Aegir",
+      "labelX": 1775.0,
+      "labelY": 573.0
+    }
+  ],
+  "seaNames": [
+    "Jade Sea",
+    "Sea of Dreams",
+    "Sea of Winds",
+    "Crimson Gulf",
+    "Sea of Embers"
+  ]
+}

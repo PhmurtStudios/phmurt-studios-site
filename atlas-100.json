@@ -1,0 +1,355 @@
+{
+  "seed": 100,
+  "mapName": "CRYSTALVEIL",
+  "regions": [
+    {
+      "name": "Nightward",
+      "subtitle": "The Free Marches of Nightward",
+      "color": "#ccc088",
+      "labelX": 1915.0,
+      "labelY": 1035.0,
+      "cities": [
+        {
+          "name": "Fernhollow",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Pebblecreek",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Thistledown",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Loyarn",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Maplecross",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Thornemark",
+      "subtitle": "The Dominion of Thornemark",
+      "color": "#a8b8a0",
+      "labelX": 1215.0,
+      "labelY": 1365.0,
+      "cities": [
+        {
+          "name": "Westmarch",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Rynwood",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Gerenwalde",
+          "x": 0.5,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Ironholt",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Odrin",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ironglenn",
+      "subtitle": "Duchy of Ironglenn",
+      "color": "#c8b490",
+      "labelX": 1175.0,
+      "labelY": 475.0,
+      "cities": [
+        {
+          "name": "Copperside",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Ilaes",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Thistledown",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Gildafell",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Duskhold",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Palanor",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Windmere",
+      "subtitle": "Duchy of Windmere",
+      "color": "#a0b0b8",
+      "labelX": 2275.0,
+      "labelY": 895.0,
+      "cities": [
+        {
+          "name": "Northgate",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Millcross",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Palanor",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Eagleford",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Brynmar",
+      "subtitle": "The Dominion of Brynmar",
+      "color": "#b8c098",
+      "labelX": 675.0,
+      "labelY": 785.0,
+      "cities": [
+        {
+          "name": "Duskhold",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Eagleford",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Elmsworth",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Gildafell",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Northmere",
+      "subtitle": "The Dominion of Northmere",
+      "color": "#c4b0a8",
+      "labelX": 585.0,
+      "labelY": 1215.0,
+      "cities": [
+        {
+          "name": "Alderhaven",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Ashbourne",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Jadeston",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Silverton",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Ilaes",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Yewborough",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Caltheon",
+      "subtitle": "Realm of Caltheon",
+      "color": "#a8c0b0",
+      "labelX": 1645.0,
+      "labelY": 525.0,
+      "cities": [
+        {
+          "name": "Stonemere",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Loyarn",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Urswick",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Junipervale",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Cliffhaven",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Shadowfen",
+      "subtitle": "Kingdom of Shadowfen",
+      "color": "#c8c0a0",
+      "labelX": 165.0,
+      "labelY": 665.0,
+      "cities": [
+        {
+          "name": "Maplecross",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Dunmore",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Windcrest",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Ivyreach",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Underbridge",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Greymist Heights",
+      "labelX": 535.0,
+      "labelY": 1075.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1155.0,
+      "labelY": 775.0
+    },
+    {
+      "name": "Ebonwall Mountains",
+      "labelX": 1925.0,
+      "labelY": 1265.0
+    }
+  ],
+  "lakes": [
+    {
+      "name": "Dimwater",
+      "labelX": 615.0,
+      "labelY": 913.0
+    }
+  ],
+  "seaNames": [
+    "Sea of Dreams",
+    "Sea of Twilight",
+    "Jade Sea",
+    "Sea of Silver",
+    "Sea of Embers"
+  ]
+}

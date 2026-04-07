@@ -1,0 +1,289 @@
+{
+  "seed": 86,
+  "mapName": "DREADMIRE",
+  "regions": [
+    {
+      "name": "Shadowfen",
+      "subtitle": "Principality of Shadowfen",
+      "color": "#ccc088",
+      "labelX": 1515.0,
+      "labelY": 795.0,
+      "cities": [
+        {
+          "name": "Copperside",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Greenhollow",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Valewick",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Ashwick",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Valdheim",
+      "subtitle": "Kingdom of Valdheim",
+      "color": "#a8b8a0",
+      "labelX": 2555.0,
+      "labelY": 575.0,
+      "cities": [
+        {
+          "name": "Millcross",
+          "x": 0.9,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Brinewood",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Quartzridge",
+          "x": 1.0,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Thebury",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Whitevale",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Iskarion",
+      "subtitle": "The Wilds of Iskarion",
+      "color": "#c8b490",
+      "labelX": 885.0,
+      "labelY": 805.0,
+      "cities": [
+        {
+          "name": "Ashwick",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Knolltown",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Feradell",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Belros",
+      "subtitle": "The Wilds of Belros",
+      "color": "#a0b0b8",
+      "labelX": 495.0,
+      "labelY": 1065.0,
+      "cities": [
+        {
+          "name": "Ashwick",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Northgate",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Rynwood",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Galanthia",
+      "subtitle": "The Wilds of Galanthia",
+      "color": "#b8c098",
+      "labelX": 2045.0,
+      "labelY": 1005.0,
+      "cities": [
+        {
+          "name": "Feradell",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Wydale",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Foxbury",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Wyndell",
+      "subtitle": "Borderlands of Wyndell",
+      "color": "#c4b0a8",
+      "labelX": 2025.0,
+      "labelY": 435.0,
+      "cities": [
+        {
+          "name": "Ravenmere",
+          "x": 0.7,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Jadeston",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Gildafell",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Aethermoor",
+      "subtitle": "The Dominion of Aethermoor",
+      "color": "#a8c0b0",
+      "labelX": 925.0,
+      "labelY": 1305.0,
+      "cities": [
+        {
+          "name": "Cliffhaven",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Jadeston",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Ashbourne",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Ravenmere",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Dremora",
+      "subtitle": "The Free Marches of Dremora",
+      "color": "#c8c0a0",
+      "labelX": 1555.0,
+      "labelY": 405.0,
+      "cities": [
+        {
+          "name": "Highwall",
+          "x": 0.6,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Silverton",
+          "x": 0.7,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Zarakyr",
+          "x": 0.6,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Odrin",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Jade Sea",
+    "Crimson Gulf",
+    "Iron Sea",
+    "Pale Sea",
+    "Sea of Storms"
+  ]
+}

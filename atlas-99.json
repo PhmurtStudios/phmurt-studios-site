@@ -1,0 +1,229 @@
+{
+  "seed": 99,
+  "mapName": "DAWNHAMMER",
+  "regions": [
+    {
+      "name": "Rosedale",
+      "subtitle": "The Dominion of Rosedale",
+      "color": "#ccc088",
+      "labelX": 1955.0,
+      "labelY": 1135.0,
+      "cities": [
+        {
+          "name": "Rynwood",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Tidefall",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Duskhold",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Dremoor",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Pinecrest",
+      "subtitle": "Kingdom of Pinecrest",
+      "color": "#a8b8a0",
+      "labelX": 915.0,
+      "labelY": 695.0,
+      "cities": [
+        {
+          "name": "Lawklif",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Gildafell",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Millcross",
+          "x": 0.3,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Vornhelm",
+      "subtitle": "Duchy of Vornhelm",
+      "color": "#c8b490",
+      "labelX": 1765.0,
+      "labelY": 705.0,
+      "cities": [
+        {
+          "name": "Stormgate",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Stonemere",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Goldug",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Aelindor",
+      "subtitle": "Realm of Aelindor",
+      "color": "#a0b0b8",
+      "labelX": 505.0,
+      "labelY": 865.0,
+      "cities": [
+        {
+          "name": "Highwall",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Odrin",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Greenhollow",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Aethermoor",
+      "subtitle": "Realm of Aethermoor",
+      "color": "#b8c098",
+      "labelX": 215.0,
+      "labelY": 525.0,
+      "cities": [
+        {
+          "name": "Yewborough",
+          "x": 0.1,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Windcrest",
+          "x": 0.1,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Harrowfield",
+          "x": 0.0,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Zarakyr",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Redthorn",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ashenveil",
+      "subtitle": "Principality of Ashenveil",
+      "color": "#c4b0a8",
+      "labelX": 1385.0,
+      "labelY": 425.0,
+      "cities": [
+        {
+          "name": "Kettlebrook",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Copperside",
+          "x": 0.4,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Millcross",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Deepwatch",
+          "x": 0.4,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Silver",
+    "Sea of Storms",
+    "Pale Sea",
+    "Jade Sea",
+    "Sea of Dreams"
+  ]
+}

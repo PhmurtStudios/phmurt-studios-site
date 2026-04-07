@@ -1,0 +1,311 @@
+{
+  "seed": 96,
+  "mapName": "DRAGONSPIRE",
+  "regions": [
+    {
+      "name": "Essear",
+      "subtitle": "The Dominion of Essear",
+      "color": "#ccc088",
+      "labelX": 1935.0,
+      "labelY": 865.0,
+      "cities": [
+        {
+          "name": "Kettlebrook",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Gildafell",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Zarakyr",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Cliffhaven",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Valdheim",
+      "subtitle": "Duchy of Valdheim",
+      "color": "#a8b8a0",
+      "labelX": 2495.0,
+      "labelY": 875.0,
+      "cities": [
+        {
+          "name": "Pebblecreek",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Knolltown",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Ilaes",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Ironholt",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Borist",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Knolltown",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Pinecrest",
+      "subtitle": "Realm of Pinecrest",
+      "color": "#c8b490",
+      "labelX": 625.0,
+      "labelY": 975.0,
+      "cities": [
+        {
+          "name": "Thistledown",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Yewborough",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Wydale",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Freehold",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Windmere",
+      "subtitle": "The Free Marches of Windmere",
+      "color": "#a0b0b8",
+      "labelX": 1455.0,
+      "labelY": 1155.0,
+      "cities": [
+        {
+          "name": "Inkwell",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Deepwatch",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Fogmere",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Thornwall",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Copperside",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Blackrock",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Kharadan",
+      "subtitle": "The Wilds of Kharadan",
+      "color": "#b8c098",
+      "labelX": 1875.0,
+      "labelY": 1395.0,
+      "cities": [
+        {
+          "name": "Underbridge",
+          "x": 0.7,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Foxbury",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Lakecrest",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Quartzridge",
+          "x": 0.8,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Deepwatch",
+          "x": 0.8,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Zarakyr",
+          "x": 0.7,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ondara",
+      "subtitle": "The Wilds of Ondara",
+      "color": "#c4b0a8",
+      "labelX": 1135.0,
+      "labelY": 905.0,
+      "cities": [
+        {
+          "name": "Fernhollow",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Harrowfield",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Greywater",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Yewborough",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Odrin",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Nightward",
+      "subtitle": "Kingdom of Nightward",
+      "color": "#a8c0b0",
+      "labelX": 2615.0,
+      "labelY": 1355.0,
+      "cities": [
+        {
+          "name": "Cliffhaven",
+          "x": 0.9,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Lindel",
+          "x": 0.9,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Underbridge",
+          "x": 1.0,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Thundercrest Range",
+      "labelX": 1145.0,
+      "labelY": 805.0
+    },
+    {
+      "name": "Frostpeak Mountains",
+      "labelX": 1405.0,
+      "labelY": 1235.0
+    }
+  ],
+  "lakes": [
+    {
+      "name": "Lake Varos",
+      "labelX": 2275.0,
+      "labelY": 1043.0
+    }
+  ],
+  "seaNames": [
+    "Sea of Twilight",
+    "Crimson Gulf",
+    "Sea of Winds",
+    "Jade Sea",
+    "Sea of Dreams"
+  ]
+}

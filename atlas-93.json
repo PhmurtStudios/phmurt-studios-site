@@ -1,0 +1,241 @@
+{
+  "seed": 93,
+  "mapName": "BRIMSTONE",
+  "regions": [
+    {
+      "name": "Fara",
+      "subtitle": "The Free Marches of Fara",
+      "color": "#ccc088",
+      "labelX": 1605.0,
+      "labelY": 1275.0,
+      "cities": [
+        {
+          "name": "Goldug",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Longmere",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Zarakyr",
+          "x": 0.5,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Thornwall",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Ashwick",
+          "x": 0.6,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Cliffhaven",
+          "x": 0.5,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Dravina",
+      "subtitle": "The Free Marches of Dravina",
+      "color": "#a8b8a0",
+      "labelX": 985.0,
+      "labelY": 1015.0,
+      "cities": [
+        {
+          "name": "Jadeston",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Ashwick",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Regnwald",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Zarakyr",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Loyarn",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Aelindor",
+      "subtitle": "Kingdom of Aelindor",
+      "color": "#c8b490",
+      "labelX": 2265.0,
+      "labelY": 635.0,
+      "cities": [
+        {
+          "name": "Windcrest",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Stonemere",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Thornemark",
+      "subtitle": "The Dominion of Thornemark",
+      "color": "#a0b0b8",
+      "labelX": 535.0,
+      "labelY": 755.0,
+      "cities": [
+        {
+          "name": "Thornwall",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Ironholt",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Valewick",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Westmarch",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Maplecross",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Mistvale",
+      "subtitle": "Principality of Mistvale",
+      "color": "#b8c098",
+      "labelX": 1435.0,
+      "labelY": 785.0,
+      "cities": [
+        {
+          "name": "Redthorn",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Lawklif",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Verdantia",
+      "subtitle": "Kingdom of Verdantia",
+      "color": "#c4b0a8",
+      "labelX": 2165.0,
+      "labelY": 1225.0,
+      "cities": [
+        {
+          "name": "Ashbourne",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Greenhollow",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Yellowfen",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Iron Sea",
+    "Pale Sea",
+    "Sea of Embers",
+    "Sea of Storms",
+    "Sea of Twilight"
+  ]
+}

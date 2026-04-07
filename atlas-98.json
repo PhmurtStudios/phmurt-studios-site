@@ -1,0 +1,240 @@
+{
+  "seed": 98,
+  "mapName": "SABLEWOOD",
+  "regions": [
+    {
+      "name": "Felmoor",
+      "subtitle": "The Free Marches of Felmoor",
+      "color": "#ccc088",
+      "labelX": 2195.0,
+      "labelY": 715.0,
+      "cities": [
+        {
+          "name": "Whitevale",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Millcross",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Ivyreach",
+          "x": 0.8,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Stonemere",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Lakeshore",
+      "subtitle": "The Dominion of Lakeshore",
+      "color": "#a8b8a0",
+      "labelX": 485.0,
+      "labelY": 1235.0,
+      "cities": [
+        {
+          "name": "Gildafell",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Freehold",
+          "x": 0.1,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.1,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Kettlebrook",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Ashwick",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Morvaine",
+      "subtitle": "The Dominion of Morvaine",
+      "color": "#c8b490",
+      "labelX": 1615.0,
+      "labelY": 565.0,
+      "cities": [
+        {
+          "name": "Yellowfen",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Lawklif",
+          "x": 0.6,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Goldenleaf",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Duskveil",
+      "subtitle": "Borderlands of Duskveil",
+      "color": "#a0b0b8",
+      "labelX": 905.0,
+      "labelY": 805.0,
+      "cities": [
+        {
+          "name": "Oldbridge",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Valewick",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Copperside",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ironglenn",
+      "subtitle": "Realm of Ironglenn",
+      "color": "#b8c098",
+      "labelX": 165.0,
+      "labelY": 715.0,
+      "cities": [
+        {
+          "name": "Underbridge",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Blackrock",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Stonemere",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Greenhollow",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Lawklif",
+          "x": 0.0,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Windcrest",
+          "x": 0.0,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Goleli",
+      "subtitle": "Duchy of Goleli",
+      "color": "#c4b0a8",
+      "labelX": 1425.0,
+      "labelY": 1275.0,
+      "cities": [
+        {
+          "name": "Goldenleaf",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Zarakyr",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Dunmore",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Dremoor",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ebonwall Mountains",
+      "labelX": 1935.0,
+      "labelY": 975.0
+    },
+    {
+      "name": "Frostpeak Mountains",
+      "labelX": 1995.0,
+      "labelY": 935.0
+    },
+    {
+      "name": "Thundercrest Range",
+      "labelX": 1145.0,
+      "labelY": 645.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 1015.0,
+      "labelY": 545.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Pale Sea",
+    "Sea of Winds",
+    "Sea of Frost",
+    "Sea of Dreams",
+    "Sea of Embers"
+  ]
+}

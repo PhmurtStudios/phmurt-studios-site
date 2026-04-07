@@ -1,0 +1,253 @@
+{
+  "seed": 92,
+  "mapName": "SHADOWMERE",
+  "regions": [
+    {
+      "name": "Drakkos",
+      "subtitle": "Realm of Drakkos",
+      "color": "#ccc088",
+      "labelX": 385.0,
+      "labelY": 1215.0,
+      "cities": [
+        {
+          "name": "Gildafell",
+          "x": 0.1,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Gerenwalde",
+          "x": 0.0,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Wydale",
+          "x": 0.1,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Anora",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Brinewood",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Highwall",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Pyremarch",
+      "subtitle": "Realm of Pyremarch",
+      "color": "#a8b8a0",
+      "labelX": 1795.0,
+      "labelY": 845.0,
+      "cities": [
+        {
+          "name": "Brinewood",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Oldbridge",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Harrowfield",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Silverfen",
+      "subtitle": "Duchy of Silverfen",
+      "color": "#c8b490",
+      "labelX": 2155.0,
+      "labelY": 655.0,
+      "cities": [
+        {
+          "name": "Lawklif",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Ivyreach",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Greywater",
+          "x": 0.9,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Fernhollow",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Pebblecreek",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Oakmere",
+          "x": 0.8,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Rosedale",
+      "subtitle": "The Free Marches of Rosedale",
+      "color": "#a0b0b8",
+      "labelX": 1135.0,
+      "labelY": 1595.0,
+      "cities": [
+        {
+          "name": "Beowick",
+          "x": 0.4,
+          "y": 0.9,
+          "capital": true
+        },
+        {
+          "name": "Ashwick",
+          "x": 0.4,
+          "y": 0.9,
+          "capital": false
+        },
+        {
+          "name": "Runeford",
+          "x": 0.5,
+          "y": 0.9,
+          "capital": false
+        },
+        {
+          "name": "Junipervale",
+          "x": 0.5,
+          "y": 0.9,
+          "capital": false
+        },
+        {
+          "name": "Longmere",
+          "x": 0.5,
+          "y": 0.9,
+          "capital": false
+        },
+        {
+          "name": "Junipervale",
+          "x": 0.4,
+          "y": 0.9,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Korrath",
+      "subtitle": "Kingdom of Korrath",
+      "color": "#b8c098",
+      "labelX": 1495.0,
+      "labelY": 565.0,
+      "cities": [
+        {
+          "name": "Stonemere",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Millcross",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Solwynd",
+      "subtitle": "Duchy of Solwynd",
+      "color": "#c4b0a8",
+      "labelX": 1495.0,
+      "labelY": 1195.0,
+      "cities": [
+        {
+          "name": "Regnwald",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Foxbury",
+          "x": 0.6,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Ashbourne",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Ash",
+    "Sea of Frost",
+    "Sea of Storms",
+    "Jade Sea",
+    "Crimson Gulf"
+  ]
+}

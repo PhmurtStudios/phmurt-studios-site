@@ -1,0 +1,253 @@
+{
+  "seed": 87,
+  "mapName": "GOLDENCREST",
+  "regions": [
+    {
+      "name": "Evershade",
+      "subtitle": "Kingdom of Evershade",
+      "color": "#ccc088",
+      "labelX": 1415.0,
+      "labelY": 1295.0,
+      "cities": [
+        {
+          "name": "Foxbury",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Freehold",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Deepwatch",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.6,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ondara",
+      "subtitle": "Kingdom of Ondara",
+      "color": "#a8b8a0",
+      "labelX": 2285.0,
+      "labelY": 1405.0,
+      "cities": [
+        {
+          "name": "Zarakyr",
+          "x": 0.8,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Underbridge",
+          "x": 0.9,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.8,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Northgate",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Lakecrest",
+          "x": 0.9,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Wydale",
+          "x": 0.7,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Vornhelm",
+      "subtitle": "Principality of Vornhelm",
+      "color": "#c8b490",
+      "labelX": 1105.0,
+      "labelY": 905.0,
+      "cities": [
+        {
+          "name": "Harrowfield",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Pinewood",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Anora",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Brinewood",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Theanas",
+      "subtitle": "Kingdom of Theanas",
+      "color": "#a0b0b8",
+      "labelX": 1885.0,
+      "labelY": 1385.0,
+      "cities": [
+        {
+          "name": "Freehold",
+          "x": 0.7,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Stormgate",
+          "x": 0.7,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.7,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Thistledown",
+          "x": 0.7,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Ilaes",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Brynmar",
+      "subtitle": "Borderlands of Brynmar",
+      "color": "#b8c098",
+      "labelX": 1795.0,
+      "labelY": 885.0,
+      "cities": [
+        {
+          "name": "Vineyard",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Jadeston",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Quartzridge",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Silverton",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Windmere",
+      "subtitle": "Principality of Windmere",
+      "color": "#c4b0a8",
+      "labelX": 2655.0,
+      "labelY": 1115.0,
+      "cities": [
+        {
+          "name": "Deepwatch",
+          "x": 0.9,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Dremoor",
+          "x": 1.0,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Westmarch",
+          "x": 0.9,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Silvervein Ridge",
+      "labelX": 1765.0,
+      "labelY": 655.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 1525.0,
+      "labelY": 1005.0
+    },
+    {
+      "name": "Ironspine Range",
+      "labelX": 1885.0,
+      "labelY": 1125.0
+    }
+  ],
+  "lakes": [
+    {
+      "name": "Lake Varos",
+      "labelX": 1655.0,
+      "labelY": 863.0
+    }
+  ],
+  "seaNames": [
+    "Iron Sea",
+    "Jade Sea",
+    "Sea of Dreams",
+    "Sea of Ash",
+    "Sea of Embers"
+  ]
+}

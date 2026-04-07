@@ -1,0 +1,229 @@
+{
+  "seed": 91,
+  "mapName": "AEGISHOLM",
+  "regions": [
+    {
+      "name": "Aethermoor",
+      "subtitle": "Realm of Aethermoor",
+      "color": "#ccc088",
+      "labelX": 1335.0,
+      "labelY": 525.0,
+      "cities": [
+        {
+          "name": "Junipervale",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Knolltown",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Sunmere",
+      "subtitle": "Principality of Sunmere",
+      "color": "#a8b8a0",
+      "labelX": 945.0,
+      "labelY": 485.0,
+      "cities": [
+        {
+          "name": "Lawklif",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Quartzridge",
+          "x": 0.3,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Pebblecreek",
+          "x": 0.3,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Stormvale",
+      "subtitle": "Borderlands of Stormvale",
+      "color": "#c8b490",
+      "labelX": 405.0,
+      "labelY": 665.0,
+      "cities": [
+        {
+          "name": "Zenithburg",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Underbridge",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Fernhollow",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Kronham",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Freehold",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Whitevale",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Dravina",
+      "subtitle": "Duchy of Dravina",
+      "color": "#a0b0b8",
+      "labelX": 2115.0,
+      "labelY": 745.0,
+      "cities": [
+        {
+          "name": "Westmarch",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Urswick",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Greywater",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Cyrin",
+      "subtitle": "Duchy of Cyrin",
+      "color": "#b8c098",
+      "labelX": 1405.0,
+      "labelY": 985.0,
+      "cities": [
+        {
+          "name": "Cinderfell",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Northgate",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Valewick",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Pinewood",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ashmark",
+      "subtitle": "Kingdom of Ashmark",
+      "color": "#c4b0a8",
+      "labelX": 1015.0,
+      "labelY": 955.0,
+      "cities": [
+        {
+          "name": "Goldenleaf",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Nighthollow",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Windcrest",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Duskhold",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Embers",
+    "Sea of Silver",
+    "Sea of Dreams",
+    "Sea of Ash",
+    "Sea of Twilight"
+  ]
+}

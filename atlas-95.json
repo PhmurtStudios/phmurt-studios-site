@@ -1,0 +1,319 @@
+{
+  "seed": 95,
+  "mapName": "OAKHAVEN",
+  "regions": [
+    {
+      "name": "Silverfen",
+      "subtitle": "Borderlands of Silverfen",
+      "color": "#ccc088",
+      "labelX": 1095.0,
+      "labelY": 1045.0,
+      "cities": [
+        {
+          "name": "Thornwall",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Rynwood",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Thistledown",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Zenithburg",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Duskhold",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ondara",
+      "subtitle": "The Wilds of Ondara",
+      "color": "#a8b8a0",
+      "labelX": 2355.0,
+      "labelY": 1345.0,
+      "cities": [
+        {
+          "name": "Pinewood",
+          "x": 0.8,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Junipervale",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Cliffhaven",
+          "x": 0.8,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Windcrest",
+          "x": 0.8,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Kronham",
+          "x": 0.9,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Stormvale",
+      "subtitle": "The Dominion of Stormvale",
+      "color": "#c8b490",
+      "labelX": 1675.0,
+      "labelY": 1065.0,
+      "cities": [
+        {
+          "name": "Pebblecreek",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Eagleford",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Oldbridge",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Regnwald",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Maplecross",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Mistvale",
+      "subtitle": "Principality of Mistvale",
+      "color": "#a0b0b8",
+      "labelX": 655.0,
+      "labelY": 815.0,
+      "cities": [
+        {
+          "name": "Whitevale",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Highwall",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Loyarn",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Harrowfield",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Belros",
+      "subtitle": "Duchy of Belros",
+      "color": "#b8c098",
+      "labelX": 225.0,
+      "labelY": 955.0,
+      "cities": [
+        {
+          "name": "Thebury",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Moonshadow",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.0,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Junipervale",
+          "x": 0.0,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Thornwick",
+      "subtitle": "The Free Marches of Thornwick",
+      "color": "#c4b0a8",
+      "labelX": 2635.0,
+      "labelY": 1045.0,
+      "cities": [
+        {
+          "name": "Anora",
+          "x": 0.9,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Thistledown",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Ilaes",
+          "x": 1.0,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Lakecrest",
+          "x": 0.9,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Duskwater",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Highkeep",
+      "subtitle": "Kingdom of Highkeep",
+      "color": "#a8c0b0",
+      "labelX": 2005.0,
+      "labelY": 935.0,
+      "cities": [
+        {
+          "name": "Dunmore",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Thornwall",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Foxbury",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Stonemere",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Brynmar",
+      "subtitle": "Principality of Brynmar",
+      "color": "#c8c0a0",
+      "labelX": 525.0,
+      "labelY": 1265.0,
+      "cities": [
+        {
+          "name": "Pebblecreek",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Westmarch",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Quartzridge",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Pale Sea",
+    "Jade Sea",
+    "Crimson Gulf",
+    "Sea of Ash",
+    "Sea of Embers"
+  ]
+}
