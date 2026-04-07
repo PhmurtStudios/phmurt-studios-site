@@ -1246,21 +1246,32 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // Auto-fit atlas map to fill viewport when seed changes
-  useEffect(() => {
+  // Auto-fit atlas map to show the entire map within the viewport
+  const fitAtlasToView = React.useCallback(() => {
     if (!data.atlasMapSeed || !mapRef.current) return;
     const rect = mapRef.current.getBoundingClientRect();
     const vw = rect.width || 1200;
     const vh = rect.height || 800;
-    // Calculate zoom to cover the viewport (use Math.max to ensure no gaps)
-    const coverZoom = Math.max(vw / MAP_W, vh / MAP_H) * 1.02;
-    setMapZoom(coverZoom);
+    // Calculate zoom to fit the entire map within the viewport (Math.min = no cropping)
+    const fitZoom = Math.min(vw / MAP_W, vh / MAP_H);
+    setMapZoom(fitZoom);
     // Center the map
     setMapPan({
-      x: (vw - MAP_W * coverZoom) / 2,
-      y: (vh - MAP_H * coverZoom) / 2,
+      x: (vw - MAP_W * fitZoom) / 2,
+      y: (vh - MAP_H * fitZoom) / 2,
     });
   }, [data.atlasMapSeed]);
+
+  // Re-fit when seed changes
+  useEffect(() => { fitAtlasToView(); }, [data.atlasMapSeed]);
+
+  // Re-fit on window resize
+  useEffect(() => {
+    if (!data.atlasMapSeed) return;
+    const handle = () => fitAtlasToView();
+    window.addEventListener("resize", handle);
+    return () => window.removeEventListener("resize", handle);
+  }, [fitAtlasToView]);
 
   // Auto-generate world data if seed is set but regions/factions/npcs are empty
   // (handles new campaigns that default to seed 1)
