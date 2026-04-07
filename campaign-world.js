@@ -1461,8 +1461,10 @@ function regionsAndFactionsFromMetadata(seedNum) {
         isCapital: isCapital,
         population: pop.toLocaleString(),
         popNum: pop,
-        mapX: c.x, // normalized 0-1
+        mapX: c.x, // normalized 0-1 (may be adjusted by post-processing)
         mapY: c.y,
+        origX: c.x, // original atlas metadata coords (matches .webp image dots)
+        origY: c.y,
         labelX: r.labelX || 0,
         labelY: r.labelY || 0,
         terrain: (townMeta && townMeta[c.name] && townMeta[c.name].terrain) || regionObj.terrain,
@@ -3019,72 +3021,24 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                   );
                 })}
 
-                {/* ═══ LAYER 6: City map dots (visual only, no interaction) ═══ */}
+                {/* ═══ LAYER 6: Invisible clickable hit areas over atlas map's built-in city dots ═══ */}
+                {/* The atlas .webp image already renders city dots + labels.                      */}
+                {/* This layer adds ONLY transparent click targets on top — nothing visible.       */}
+                {/* Uses origX/origY (original atlas metadata coords) to match the .webp dots.     */}
                 {data.atlasMapSeed && (data.cities || []).map(city => {
-                  const cx = city.mapX * MAP_W;
-                  const cy = city.mapY * MAP_H;
-                  const cityRegion = (data.regions || []).find(r => r.name === city.region);
-                  const isCityDestroyed = isLive && cityRegion && (cityRegion.state === "destroyed" || cityRegion.state === "conquered");
-                  const meta = window.TOWN_METADATA?.[city.name];
-                  const tier = isCityDestroyed ? "ruins" : city.isCapital ? "capital" : (meta ? (meta.population >= 4000 ? "city" : meta.population >= 1500 ? "town" : "village") : "settlement");
-                  // Small, map-appropriate dot sizes
-                  const dotR = tier === "capital" ? Math.max(4, 6 / Math.max(mapZoom * 0.7, 0.3))
-                    : tier === "city" ? Math.max(3, 4.5 / Math.max(mapZoom * 0.7, 0.3))
-                    : Math.max(2, 3 / Math.max(mapZoom * 0.75, 0.35));
-                  const sw = Math.max(0.6, 1.2 / Math.max(mapZoom * 0.5, 0.3));
-                  const fc = isCityDestroyed ? "#6a2020" : "#2a2218";
-                  const strokeC = isCityDestroyed ? "#6a2020" : "#4a3f2e";
-                  const labelSize = tier === "capital"
-                    ? Math.max(14, 26 / Math.max(mapZoom * 0.65, 0.3))
-                    : tier === "city" ? Math.max(11, 20 / Math.max(mapZoom * 0.7, 0.3))
-                    : Math.max(8, 14 / Math.max(mapZoom * 0.75, 0.35));
-                  const labelOffset = dotR + Math.max(8, 12 / Math.max(mapZoom * 0.7, 0.4));
-                  return (
-                    <g key={`citydot-${city.id}`} style={{ pointerEvents: "none" }}>
-                      {/* Map dot — capital = diamond, city = circle, town = small circle */}
-                      {tier === "capital" ? (
-                        <path d={`M${cx},${cy-dotR} L${cx+dotR},${cy} L${cx},${cy+dotR} L${cx-dotR},${cy} Z`}
-                          fill={fc} stroke={strokeC} strokeWidth={sw * 1.2} strokeLinejoin="round" />
-                      ) : (
-                        <circle cx={cx} cy={cy} r={dotR} fill={fc} stroke={strokeC} strokeWidth={sw} />
-                      )}
-                      {/* Destroyed X */}
-                      {isCityDestroyed && <>
-                        <line x1={cx-dotR*0.5} y1={cy-dotR*0.5} x2={cx+dotR*0.5} y2={cy+dotR*0.5} stroke="#ff3030" strokeWidth={sw*1.3} opacity="0.85" />
-                        <line x1={cx+dotR*0.5} y1={cy-dotR*0.5} x2={cx-dotR*0.5} y2={cy+dotR*0.5} stroke="#ff3030" strokeWidth={sw*1.3} opacity="0.85" />
-                      </>}
-                      {/* City name label */}
-                      <text x={cx} y={cy + labelOffset} textAnchor="middle"
-                        fill={tier === "capital" ? "#3d3422" : "#4a3f2e"} stroke="rgba(252,248,236,0.45)" strokeWidth={Math.max(1.2, 2.5/Math.max(mapZoom*0.6,0.3))} paintOrder="stroke"
-                        fontFamily={tier === "capital" ? "'Cinzel', serif" : "'Spectral', serif"} fontSize={labelSize}
-                        fontWeight={tier === "capital" ? "700" : tier === "city" ? "500" : "400"}
-                        fontStyle={tier === "village" || tier === "settlement" ? "italic" : "normal"}
-                        letterSpacing={tier === "capital" ? "1.5px" : "0.4px"}>
-                        {city.name}
-                      </text>
-                    </g>
-                  );
-                })}
-
-                {/* ═══ LAYER 6a: Invisible clickable hit areas over city dots ═══ */}
-                {data.atlasMapSeed && (data.cities || []).map(city => {
-                  const cx = city.mapX * MAP_W;
-                  const cy = city.mapY * MAP_H;
-                  const isActive = sel?.id === city.id && selType === "city";
-                  const meta = window.TOWN_METADATA?.[city.name];
-                  const tier = city.isCapital ? "capital" : (meta ? (meta.population >= 4000 ? "city" : meta.population >= 1500 ? "town" : "village") : "settlement");
-                  // Hit area: slightly larger than the dot for easy clicking
-                  const hitR = Math.max(tier === "capital" ? 12 : tier === "city" ? 10 : 8, 18 / Math.max(mapZoom * 0.6, 0.3));
+                  // Use original atlas coords so hit areas align with dots baked into the .webp
+                  const cx = (city.origX != null ? city.origX : city.mapX) * MAP_W;
+                  const cy = (city.origY != null ? city.origY : city.mapY) * MAP_H;
+                  // Generous hit area — extends well beyond the map dot for easy clicking
+                  const hitR = Math.max(20, 30 / Math.max(mapZoom * 0.5, 0.25));
                   return (
                     <g key={`cityhit-${city.id}`} style={{ cursor: "pointer" }}
                       onClick={(e) => {
                         e.stopPropagation();
                         setCityPopup(cityPopup?.city?.id === city.id ? null : { city });
                       }}>
-                      {/* Invisible hit target — covers the dot and extends beyond */}
-                      <circle cx={cx} cy={cy} r={hitR} fill="transparent" />
-                      {/* Active selection ring — only visible when clicked */}
-                      {isActive && <circle cx={cx} cy={cy} r={hitR * 0.7} fill="none" stroke="#c9a85c" strokeWidth={Math.max(1, 1.5 / Math.max(mapZoom*0.5,0.3))} opacity="0.6" strokeDasharray="4 3" />}
+                      {/* Completely invisible hit target */}
+                      <circle cx={cx} cy={cy} r={hitR} fill="transparent" stroke="none" />
                     </g>
                   );
                 })}
@@ -3115,28 +3069,12 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                     px = 3000 + (px - 3000) * pullRatio;
                     py = 2250 + (py - 2250) * pullRatio;
                   }
-                  const isActive = sel?.id === poi.id && selType === "poi";
-                  const dotSz = Math.max(3, 5 / Math.max(mapZoom * 0.7, 0.3));
-                  const hitR = Math.max(10, 18 / Math.max(mapZoom * 0.6, 0.3));
-                  const labelSz = Math.max(7, 12 / Math.max(mapZoom * 0.7, 0.35));
-                  const sw = Math.max(0.5, 1 / Math.max(mapZoom * 0.5, 0.3));
+                  const hitR = Math.max(20, 30 / Math.max(mapZoom * 0.5, 0.25));
                   return (
                     <g key={poi.id} style={{ cursor: "pointer" }}
                       onClick={(e) => { e.stopPropagation(); setSel(poi); setSelType("poi"); }}>
-                      {/* Small map-style diamond dot */}
-                      <path d={`M${px},${py-dotSz} L${px+dotSz*0.7},${py} L${px},${py+dotSz} L${px-dotSz*0.7},${py} Z`}
-                        fill="#3d3422" stroke="#5a4a2e" strokeWidth={sw} style={{ pointerEvents:"none" }} />
-                      {/* POI name label */}
-                      <text x={px} y={py + dotSz + labelSz * 1.1} textAnchor="middle"
-                        fill="#5a4a2e" stroke="rgba(252,248,236,0.35)" strokeWidth={Math.max(1, 2 / Math.max(mapZoom*0.6,0.3))} paintOrder="stroke"
-                        fontFamily="'Spectral', serif" fontSize={labelSz} fontStyle="italic" fontWeight="400" letterSpacing="0.3"
-                        opacity="0.7" style={{ pointerEvents:"none" }}>
-                        {poi.name}
-                      </text>
-                      {/* Invisible hit area */}
-                      <circle cx={px} cy={py} r={hitR} fill="transparent" />
-                      {/* Active selection ring */}
-                      {isActive && <circle cx={px} cy={py} r={hitR * 0.6} fill="none" stroke="#c9a85c" strokeWidth={sw} opacity="0.5" strokeDasharray="3 2" />}
+                      {/* Completely invisible hit target */}
+                      <circle cx={px} cy={py} r={hitR} fill="transparent" stroke="none" />
                     </g>
                   );
                 })}
@@ -3206,8 +3144,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
             {cityPopup && (() => {
               const c = cityPopup.city;
               const rect = mapRef.current?.getBoundingClientRect();
-              const popX = (c.mapX * MAP_W * mapZoom + mapPan.x);
-              const popY = (c.mapY * MAP_H * mapZoom + mapPan.y);
+              const popX = ((c.origX != null ? c.origX : c.mapX) * MAP_W * mapZoom + mapPan.x);
+              const popY = ((c.origY != null ? c.origY : c.mapY) * MAP_H * mapZoom + mapPan.y);
               const fc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || "#c9a85c"; })();
               const cityNpcs = (data.npcs || []).filter(n => c.npcs.includes(n.id));
               return (
