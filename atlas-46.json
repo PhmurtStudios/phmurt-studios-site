@@ -1,0 +1,268 @@
+{
+  "seed": 46,
+  "mapName": "DRAGONTIDE",
+  "regions": [
+    {
+      "name": "Aelindor",
+      "subtitle": "Realm of Aelindor",
+      "color": "#ccc088",
+      "labelX": 2035.0,
+      "labelY": 655.0,
+      "cities": [
+        {
+          "name": "Gerenwalde",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Yellowfen",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Wydale",
+          "x": 0.7,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Urswick",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Theanas",
+      "subtitle": "Borderlands of Theanas",
+      "color": "#a8b8a0",
+      "labelX": 1125.0,
+      "labelY": 1255.0,
+      "cities": [
+        {
+          "name": "Zenithburg",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Stonemere",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Yellowfen",
+          "x": 0.3,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Moonridge",
+      "subtitle": "Principality of Moonridge",
+      "color": "#c8b490",
+      "labelX": 1305.0,
+      "labelY": 635.0,
+      "cities": [
+        {
+          "name": "Beowick",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Windcrest",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Quartzridge",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Stonemere",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Silverton",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Vornhelm",
+      "subtitle": "Duchy of Vornhelm",
+      "color": "#a0b0b8",
+      "labelX": 2045.0,
+      "labelY": 1175.0,
+      "cities": [
+        {
+          "name": "Valewick",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Redthorn",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Oakmere",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Freehold",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Pinewood",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Kelvor",
+      "subtitle": "Borderlands of Kelvor",
+      "color": "#b8c098",
+      "labelX": 1515.0,
+      "labelY": 1565.0,
+      "cities": [
+        {
+          "name": "Millcross",
+          "x": 0.6,
+          "y": 0.9,
+          "capital": true
+        },
+        {
+          "name": "Ashbourne",
+          "x": 0.6,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Runeford",
+          "x": 0.6,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ashenveil",
+      "subtitle": "The Free Marches of Ashenveil",
+      "color": "#c4b0a8",
+      "labelX": 1525.0,
+      "labelY": 1085.0,
+      "cities": [
+        {
+          "name": "Deepwatch",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Borist",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Borist",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Tethys",
+      "subtitle": "Realm of Tethys",
+      "color": "#a8c0b0",
+      "labelX": 545.0,
+      "labelY": 1385.0,
+      "cities": [
+        {
+          "name": "Gildafell",
+          "x": 0.2,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Fernhollow",
+          "x": 0.1,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Dunmore",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Elmsworth",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Goldug",
+          "x": 0.3,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Jade Sea",
+    "Sea of Frost",
+    "Sea of Dreams",
+    "Sea of Embers",
+    "Pale Sea"
+  ]
+}

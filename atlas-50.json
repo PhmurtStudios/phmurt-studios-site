@@ -1,0 +1,247 @@
+{
+  "seed": 50,
+  "mapName": "MISTRALUNE",
+  "regions": [
+    {
+      "name": "Ironreach",
+      "subtitle": "Duchy of Ironreach",
+      "color": "#ccc088",
+      "labelX": 1395.0,
+      "labelY": 535.0,
+      "cities": [
+        {
+          "name": "Vineyard",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Pebblecreek",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Dawnwatch",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Greenhollow",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ashmark",
+      "subtitle": "The Free Marches of Ashmark",
+      "color": "#a8b8a0",
+      "labelX": 755.0,
+      "labelY": 1405.0,
+      "cities": [
+        {
+          "name": "Foxbury",
+          "x": 0.3,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Ironholt",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Fernhollow",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Nighthollow",
+          "x": 0.3,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.2,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Mistvale",
+      "subtitle": "Kingdom of Mistvale",
+      "color": "#c8b490",
+      "labelX": 2225.0,
+      "labelY": 385.0,
+      "cities": [
+        {
+          "name": "Thistledown",
+          "x": 0.8,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Junipervale",
+          "x": 0.8,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.7,
+          "y": 0.1,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Shadowfen",
+      "subtitle": "The Free Marches of Shadowfen",
+      "color": "#a0b0b8",
+      "labelX": 665.0,
+      "labelY": 975.0,
+      "cities": [
+        {
+          "name": "Rynwood",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Runeford",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Ravenmere",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Windcrest",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Greywater",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Blackmoor",
+      "subtitle": "Realm of Blackmoor",
+      "color": "#b8c098",
+      "labelX": 2125.0,
+      "labelY": 1005.0,
+      "cities": [
+        {
+          "name": "Junipervale",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Oldbridge",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Duskwater",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Whitevale",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Morvaine",
+      "subtitle": "The Free Marches of Morvaine",
+      "color": "#c4b0a8",
+      "labelX": 1605.0,
+      "labelY": 1125.0,
+      "cities": [
+        {
+          "name": "Brinewood",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Duskwater",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Loyarn",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Lakecrest",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Jade Sea",
+    "Crimson Gulf",
+    "Iron Sea",
+    "Sea of Embers",
+    "Sea of Frost"
+  ]
+}

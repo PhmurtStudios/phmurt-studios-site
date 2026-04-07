@@ -1,0 +1,247 @@
+{
+  "seed": 37,
+  "mapName": "ASHENMOOR",
+  "regions": [
+    {
+      "name": "Verdantia",
+      "subtitle": "Duchy of Verdantia",
+      "color": "#ccc088",
+      "labelX": 875.0,
+      "labelY": 595.0,
+      "cities": [
+        {
+          "name": "Freehold",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Hollowburg",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Cliffhaven",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Kettlebrook",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Windmere",
+      "subtitle": "Borderlands of Windmere",
+      "color": "#a8b8a0",
+      "labelX": 2015.0,
+      "labelY": 1255.0,
+      "cities": [
+        {
+          "name": "Westmarch",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Longmere",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Greywater",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Thebury",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ondara",
+      "subtitle": "Principality of Ondara",
+      "color": "#c8b490",
+      "labelX": 645.0,
+      "labelY": 1085.0,
+      "cities": [
+        {
+          "name": "Windcrest",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Lawklif",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Urswick",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Goldug",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Moonridge",
+      "subtitle": "The Dominion of Moonridge",
+      "color": "#a0b0b8",
+      "labelX": 2585.0,
+      "labelY": 855.0,
+      "cities": [
+        {
+          "name": "Harrowfield",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Jadeston",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Kronham",
+          "x": 0.9,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Korrath",
+      "subtitle": "Principality of Korrath",
+      "color": "#b8c098",
+      "labelX": 1545.0,
+      "labelY": 1105.0,
+      "cities": [
+        {
+          "name": "Greywater",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Pebblecreek",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Valewick",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Ashbourne",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Ashwick",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ashmark",
+      "subtitle": "The Dominion of Ashmark",
+      "color": "#c4b0a8",
+      "labelX": 1905.0,
+      "labelY": 635.0,
+      "cities": [
+        {
+          "name": "Elmsworth",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Lakecrest",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Duskhold",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Dremoor",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Ironholt",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Millcross",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Dreams",
+    "Jade Sea",
+    "Sea of Winds",
+    "Iron Sea",
+    "Sea of Frost"
+  ]
+}

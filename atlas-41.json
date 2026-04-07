@@ -1,0 +1,256 @@
+{
+  "seed": 41,
+  "mapName": "NETHERVEIL",
+  "regions": [
+    {
+      "name": "Grimvale",
+      "subtitle": "The Free Marches of Grimvale",
+      "color": "#ccc088",
+      "labelX": 2165.0,
+      "labelY": 1365.0,
+      "cities": [
+        {
+          "name": "Rynwood",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Quartzridge",
+          "x": 0.9,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.7,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Selvane",
+      "subtitle": "Principality of Selvane",
+      "color": "#a8b8a0",
+      "labelX": 975.0,
+      "labelY": 975.0,
+      "cities": [
+        {
+          "name": "Oldbridge",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Odrin",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Eagleford",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Pinecrest",
+      "subtitle": "Principality of Pinecrest",
+      "color": "#c8b490",
+      "labelX": 2665.0,
+      "labelY": 1265.0,
+      "cities": [
+        {
+          "name": "Ashbourne",
+          "x": 1.0,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Jadeston",
+          "x": 0.9,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Ironholt",
+          "x": 1.0,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Stonemere",
+          "x": 1.0,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Moonshadow",
+          "x": 0.9,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Cyrin",
+      "subtitle": "Kingdom of Cyrin",
+      "color": "#a0b0b8",
+      "labelX": 2425.0,
+      "labelY": 845.0,
+      "cities": [
+        {
+          "name": "Harrowfield",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Palanor",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Dremoor",
+          "x": 1.0,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ondara",
+      "subtitle": "Realm of Ondara",
+      "color": "#b8c098",
+      "labelX": 1405.0,
+      "labelY": 1265.0,
+      "cities": [
+        {
+          "name": "Tidefall",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.6,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Ironholt",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Lawklif",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Pyremarch",
+      "subtitle": "The Free Marches of Pyremarch",
+      "color": "#c4b0a8",
+      "labelX": 1865.0,
+      "labelY": 685.0,
+      "cities": [
+        {
+          "name": "Alderhaven",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Duskhold",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Longmere",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Kettlebrook",
+          "x": 0.7,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Valdheim",
+      "subtitle": "The Dominion of Valdheim",
+      "color": "#a8c0b0",
+      "labelX": 1385.0,
+      "labelY": 755.0,
+      "cities": [
+        {
+          "name": "Ilaes",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Underbridge",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Ravenmere",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Zarakyr",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Silvervein Ridge",
+      "labelX": 1625.0,
+      "labelY": 1485.0
+    },
+    {
+      "name": "Thundercrest Range",
+      "labelX": 2095.0,
+      "labelY": 1055.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 1895.0,
+      "labelY": 1485.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Storms",
+    "Sea of Silver",
+    "Iron Sea",
+    "Sea of Twilight",
+    "Sea of Ash"
+  ]
+}

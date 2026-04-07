@@ -1,0 +1,244 @@
+{
+  "seed": 42,
+  "mapName": "GALENDRIS",
+  "regions": [
+    {
+      "name": "Obsidara",
+      "subtitle": "The Dominion of Obsidara",
+      "color": "#ccc088",
+      "labelX": 2195.0,
+      "labelY": 955.0,
+      "cities": [
+        {
+          "name": "Lakecrest",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Dunmore",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Stonemere",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Fogmere",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Morvaine",
+      "subtitle": "Principality of Morvaine",
+      "color": "#a8b8a0",
+      "labelX": 1185.0,
+      "labelY": 825.0,
+      "cities": [
+        {
+          "name": "Cinderfell",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Thebury",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Greenhollow",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Foxbury",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Goldug",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Ashbourne",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Theanas",
+      "subtitle": "Principality of Theanas",
+      "color": "#c8b490",
+      "labelX": 1765.0,
+      "labelY": 1155.0,
+      "cities": [
+        {
+          "name": "Kronham",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Ironholt",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Yewborough",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Freehold",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Dawnwatch",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Aelindor",
+      "subtitle": "Kingdom of Aelindor",
+      "color": "#a0b0b8",
+      "labelX": 325.0,
+      "labelY": 875.0,
+      "cities": [
+        {
+          "name": "Copperside",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Wydale",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Fernhollow",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Deepwatch",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Nighthollow",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Grimvale",
+      "subtitle": "Kingdom of Grimvale",
+      "color": "#b8c098",
+      "labelX": 1025.0,
+      "labelY": 385.0,
+      "cities": [
+        {
+          "name": "Brightmoor",
+          "x": 0.4,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Windcrest",
+          "x": 0.3,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Ashbourne",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Zarakyr",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Duskwater",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Knolltown",
+          "x": 0.4,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Embers",
+    "Sea of Silver",
+    "Crimson Gulf",
+    "Sea of Dreams",
+    "Sea of Frost"
+  ]
+}

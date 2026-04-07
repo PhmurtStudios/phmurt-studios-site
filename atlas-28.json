@@ -1,0 +1,271 @@
+{
+  "seed": 28,
+  "mapName": "RAVENMARK",
+  "regions": [
+    {
+      "name": "Wyndell",
+      "subtitle": "The Dominion of Wyndell",
+      "color": "#ccc088",
+      "labelX": 825.0,
+      "labelY": 695.0,
+      "cities": [
+        {
+          "name": "Northgate",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Anora",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Palanor",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Zarakyr",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Pinewood",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Goleli",
+      "subtitle": "Borderlands of Goleli",
+      "color": "#a8b8a0",
+      "labelX": 955.0,
+      "labelY": 1395.0,
+      "cities": [
+        {
+          "name": "Cliffhaven",
+          "x": 0.3,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Moonshadow",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Harrowfield",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Redthorn",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Belros",
+      "subtitle": "The Free Marches of Belros",
+      "color": "#c8b490",
+      "labelX": 1335.0,
+      "labelY": 1115.0,
+      "cities": [
+        {
+          "name": "Deepwatch",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Ivyreach",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Foxbury",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Loyarn",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Ivyreach",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Eagleford",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Galanthia",
+      "subtitle": "Realm of Galanthia",
+      "color": "#a0b0b8",
+      "labelX": 1645.0,
+      "labelY": 825.0,
+      "cities": [
+        {
+          "name": "Pinewood",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Highwall",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Westmarch",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Eagleford",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Aethermoor",
+      "subtitle": "Duchy of Aethermoor",
+      "color": "#b8c098",
+      "labelX": 1535.0,
+      "labelY": 345.0,
+      "cities": [
+        {
+          "name": "Nighthollow",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Thornwall",
+          "x": 0.4,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Maplecross",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Brinewood",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Valewick",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Greyhollow",
+      "subtitle": "The Wilds of Greyhollow",
+      "color": "#c4b0a8",
+      "labelX": 1945.0,
+      "labelY": 1285.0,
+      "cities": [
+        {
+          "name": "Whitevale",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Ilaes",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Ivyreach",
+          "x": 0.6,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Longmere",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Wydale",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Silverton",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Stormcrown Range",
+      "labelX": 905.0,
+      "labelY": 935.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1435.0,
+      "labelY": 1485.0
+    }
+  ],
+  "lakes": [
+    {
+      "name": "Lake Silvane",
+      "labelX": 1065.0,
+      "labelY": 1143.0
+    },
+    {
+      "name": "Lake Orvane",
+      "labelX": 1165.0,
+      "labelY": 613.0
+    }
+  ],
+  "seaNames": [
+    "Sea of Frost",
+    "Sea of Winds",
+    "Jade Sea",
+    "Pale Sea",
+    "Sea of Embers"
+  ]
+}

@@ -1,0 +1,347 @@
+{
+  "seed": 31,
+  "mapName": "VERDANTIS",
+  "regions": [
+    {
+      "name": "Dawnhollow",
+      "subtitle": "The Wilds of Dawnhollow",
+      "color": "#ccc088",
+      "labelX": 2165.0,
+      "labelY": 675.0,
+      "cities": [
+        {
+          "name": "Jadeston",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Quartzridge",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Brinewood",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Foxbury",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Nighthollow",
+          "x": 0.7,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ravenmarch",
+      "subtitle": "The Dominion of Ravenmarch",
+      "color": "#a8b8a0",
+      "labelX": 1405.0,
+      "labelY": 1235.0,
+      "cities": [
+        {
+          "name": "Brinewood",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Deepwatch",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Millcross",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Stonemere",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Iskarion",
+      "subtitle": "The Wilds of Iskarion",
+      "color": "#c8b490",
+      "labelX": 435.0,
+      "labelY": 1245.0,
+      "cities": [
+        {
+          "name": "Hollowburg",
+          "x": 0.1,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Freehold",
+          "x": 0.2,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Ashbourne",
+          "x": 0.2,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Nighthollow",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Obsidara",
+      "subtitle": "Realm of Obsidara",
+      "color": "#a0b0b8",
+      "labelX": 1815.0,
+      "labelY": 1035.0,
+      "cities": [
+        {
+          "name": "Pebblecreek",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Kronham",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Kettlebrook",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Knolltown",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Fogmere",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Highwall",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ironreach",
+      "subtitle": "The Free Marches of Ironreach",
+      "color": "#b8c098",
+      "labelX": 1125.0,
+      "labelY": 575.0,
+      "cities": [
+        {
+          "name": "Thornwall",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Elmsworth",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Dunmore",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Nighthollow",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Westmarch",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Oakmere",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Theanas",
+      "subtitle": "Kingdom of Theanas",
+      "color": "#c4b0a8",
+      "labelX": 2295.0,
+      "labelY": 1285.0,
+      "cities": [
+        {
+          "name": "Eagleford",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Longmere",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Urswick",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Greyhollow",
+      "subtitle": "Borderlands of Greyhollow",
+      "color": "#a8c0b0",
+      "labelX": 985.0,
+      "labelY": 1095.0,
+      "cities": [
+        {
+          "name": "Lindel",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Lakecrest",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Underbridge",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Wydale",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Elonia",
+      "subtitle": "Kingdom of Elonia",
+      "color": "#c8c0a0",
+      "labelX": 2645.0,
+      "labelY": 765.0,
+      "cities": [
+        {
+          "name": "Deepwatch",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Kronham",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Runeford",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Stormgate",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Goldenleaf",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ebonwall Mountains",
+      "labelX": 1365.0,
+      "labelY": 645.0
+    },
+    {
+      "name": "Dragon's Spine",
+      "labelX": 1995.0,
+      "labelY": 945.0
+    },
+    {
+      "name": "Silvervein Ridge",
+      "labelX": 1695.0,
+      "labelY": 535.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1412.2,
+      "labelY": 337.0
+    }
+  ],
+  "lakes": [
+    {
+      "name": "Lunmere",
+      "labelX": 735.0,
+      "labelY": 1013.0
+    },
+    {
+      "name": "Lake Varos",
+      "labelX": 1245.0,
+      "labelY": 1073.0
+    }
+  ],
+  "seaNames": [
+    "Sea of Frost",
+    "Sea of Dreams",
+    "Iron Sea",
+    "Sea of Silver",
+    "Sea of Twilight"
+  ]
+}

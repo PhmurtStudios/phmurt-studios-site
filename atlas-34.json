@@ -1,0 +1,234 @@
+{
+  "seed": 34,
+  "mapName": "STARFORGE",
+  "regions": [
+    {
+      "name": "Silverfen",
+      "subtitle": "Kingdom of Silverfen",
+      "color": "#ccc088",
+      "labelX": 1155.0,
+      "labelY": 245.0,
+      "cities": [
+        {
+          "name": "Ivyreach",
+          "x": 0.4,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Foxbury",
+          "x": 0.3,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Elmsworth",
+          "x": 0.5,
+          "y": 0.1,
+          "capital": false
+        },
+        {
+          "name": "Lindel",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Northmere",
+      "subtitle": "Realm of Northmere",
+      "color": "#a8b8a0",
+      "labelX": 1935.0,
+      "labelY": 515.0,
+      "cities": [
+        {
+          "name": "Lawklif",
+          "x": 0.7,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Dunmore",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Knolltown",
+          "x": 0.7,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Kharadan",
+      "subtitle": "Realm of Kharadan",
+      "color": "#c8b490",
+      "labelX": 645.0,
+      "labelY": 385.0,
+      "cities": [
+        {
+          "name": "Dremoor",
+          "x": 0.2,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.3,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Pinewood",
+          "x": 0.3,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Lakeshore",
+      "subtitle": "Borderlands of Lakeshore",
+      "color": "#a0b0b8",
+      "labelX": 1455.0,
+      "labelY": 705.0,
+      "cities": [
+        {
+          "name": "Freehold",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Silverton",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Dawnwatch",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Pinecrest",
+      "subtitle": "Duchy of Pinecrest",
+      "color": "#b8c098",
+      "labelX": 1145.0,
+      "labelY": 985.0,
+      "cities": [
+        {
+          "name": "Eagleford",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Valewick",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Tidefall",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Duskhold",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Thornemark",
+      "subtitle": "Borderlands of Thornemark",
+      "color": "#c4b0a8",
+      "labelX": 1785.0,
+      "labelY": 1055.0,
+      "cities": [
+        {
+          "name": "Silverton",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Ilaes",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Eagleford",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Eagleford",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Thundercrest Range",
+      "labelX": 1534.2,
+      "labelY": 64.5
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 835.0,
+      "labelY": 1135.0
+    },
+    {
+      "name": "Ironspine Range",
+      "labelX": 1525.0,
+      "labelY": 335.0
+    }
+  ],
+  "lakes": [
+    {
+      "name": "Dimwater",
+      "labelX": 525.0,
+      "labelY": 773.0
+    },
+    {
+      "name": "Lunmere",
+      "labelX": 1095.0,
+      "labelY": 743.0
+    }
+  ],
+  "seaNames": [
+    "Jade Sea",
+    "Sea of Twilight",
+    "Sea of Storms",
+    "Sea of Embers",
+    "Sea of Winds"
+  ]
+}

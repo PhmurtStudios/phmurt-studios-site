@@ -1,0 +1,285 @@
+{
+  "seed": 49,
+  "mapName": "EVERPEAK",
+  "regions": [
+    {
+      "name": "Drakkos",
+      "subtitle": "The Free Marches of Drakkos",
+      "color": "#ccc088",
+      "labelX": 1955.0,
+      "labelY": 955.0,
+      "cities": [
+        {
+          "name": "Silverton",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Deepwatch",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Urswick",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Gerenwalde",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Tethys",
+      "subtitle": "Kingdom of Tethys",
+      "color": "#a8b8a0",
+      "labelX": 1025.0,
+      "labelY": 735.0,
+      "cities": [
+        {
+          "name": "Windcrest",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Foxbury",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Rynwood",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Lakeshore",
+      "subtitle": "Borderlands of Lakeshore",
+      "color": "#c8b490",
+      "labelX": 1605.0,
+      "labelY": 1345.0,
+      "cities": [
+        {
+          "name": "Palanor",
+          "x": 0.6,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Tidefall",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Pinewood",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Eagleford",
+          "x": 0.7,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Ironholt",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Theanas",
+      "subtitle": "Duchy of Theanas",
+      "color": "#a0b0b8",
+      "labelX": 435.0,
+      "labelY": 1085.0,
+      "cities": [
+        {
+          "name": "Zarakyr",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Kronham",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Cliffhaven",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Hollowburg",
+          "x": 0.1,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Thornwall",
+          "x": 0.1,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Kharadan",
+      "subtitle": "The Free Marches of Kharadan",
+      "color": "#b8c098",
+      "labelX": 2645.0,
+      "labelY": 975.0,
+      "cities": [
+        {
+          "name": "Duskwater",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Quartzridge",
+          "x": 0.9,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Stonemere",
+          "x": 0.9,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Crystalis",
+      "subtitle": "Principality of Crystalis",
+      "color": "#c4b0a8",
+      "labelX": 2255.0,
+      "labelY": 1275.0,
+      "cities": [
+        {
+          "name": "Westmarch",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Cliffhaven",
+          "x": 0.9,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Duskhold",
+          "x": 0.9,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Thistledown",
+          "x": 0.7,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Anora",
+          "x": 0.9,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Nightward",
+      "subtitle": "Realm of Nightward",
+      "color": "#a8c0b0",
+      "labelX": 1105.0,
+      "labelY": 1135.0,
+      "cities": [
+        {
+          "name": "Ashbourne",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Greenhollow",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Ravenmere",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Rynwood",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Ilaes",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Stormcrown Range",
+      "labelX": 685.0,
+      "labelY": 835.0
+    },
+    {
+      "name": "Ebonwall Mountains",
+      "labelX": 1725.0,
+      "labelY": 725.0
+    },
+    {
+      "name": "Thundercrest Range",
+      "labelX": 685.0,
+      "labelY": 1315.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1035.0,
+      "labelY": 705.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Storms",
+    "Crimson Gulf",
+    "Sea of Silver",
+    "Sea of Twilight",
+    "Sea of Frost"
+  ]
+}

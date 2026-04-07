@@ -1,0 +1,259 @@
+{
+  "seed": 44,
+  "mapName": "RUNEHEIM",
+  "regions": [
+    {
+      "name": "Evershade",
+      "subtitle": "The Wilds of Evershade",
+      "color": "#ccc088",
+      "labelX": 1295.0,
+      "labelY": 535.0,
+      "cities": [
+        {
+          "name": "Millcross",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Runeford",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Thebury",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Valewick",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Windcrest",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Runeford",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Grimvale",
+      "subtitle": "The Dominion of Grimvale",
+      "color": "#a8b8a0",
+      "labelX": 1675.0,
+      "labelY": 735.0,
+      "cities": [
+        {
+          "name": "Goldenleaf",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Feradell",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Thornwall",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Aelindor",
+      "subtitle": "Duchy of Aelindor",
+      "color": "#c8b490",
+      "labelX": 895.0,
+      "labelY": 995.0,
+      "cities": [
+        {
+          "name": "Urswick",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Ivyreach",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Ashwick",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Westmarch",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Caeloth",
+      "subtitle": "Realm of Caeloth",
+      "color": "#a0b0b8",
+      "labelX": 175.0,
+      "labelY": 515.0,
+      "cities": [
+        {
+          "name": "Feradell",
+          "x": 0.1,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Kettlebrook",
+          "x": 0.0,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Lawklif",
+          "x": 0.0,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Thebury",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Essear",
+      "subtitle": "The Free Marches of Essear",
+      "color": "#b8c098",
+      "labelX": 2215.0,
+      "labelY": 725.0,
+      "cities": [
+        {
+          "name": "Greywater",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Longmere",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Millcross",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Oakmere",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Jadeston",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Wyndell",
+      "subtitle": "Principality of Wyndell",
+      "color": "#c4b0a8",
+      "labelX": 765.0,
+      "labelY": 425.0,
+      "cities": [
+        {
+          "name": "Ilaes",
+          "x": 0.3,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Eagleford",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Greenhollow",
+          "x": 0.4,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Zarakyr",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Gerenwalde",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Iron Sea",
+    "Sea of Ash",
+    "Jade Sea",
+    "Sea of Embers",
+    "Sea of Twilight"
+  ]
+}

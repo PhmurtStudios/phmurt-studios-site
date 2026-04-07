@@ -1,0 +1,240 @@
+{
+  "seed": 43,
+  "mapName": "STORMVALE",
+  "regions": [
+    {
+      "name": "Brynmar",
+      "subtitle": "The Free Marches of Brynmar",
+      "color": "#ccc088",
+      "labelX": 1165.0,
+      "labelY": 535.0,
+      "cities": [
+        {
+          "name": "Ilaes",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Duskhold",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Rynwood",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Duskhold",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Ivyreach",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Essear",
+      "subtitle": "Kingdom of Essear",
+      "color": "#a8b8a0",
+      "labelX": 1485.0,
+      "labelY": 1115.0,
+      "cities": [
+        {
+          "name": "Goldug",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Whitevale",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Urswick",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Brinewood",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Urswick",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Solwynd",
+      "subtitle": "Kingdom of Solwynd",
+      "color": "#c8b490",
+      "labelX": 1695.0,
+      "labelY": 545.0,
+      "cities": [
+        {
+          "name": "Tidefall",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Redthorn",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Duskhold",
+          "x": 0.5,
+          "y": 0.1,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ondara",
+      "subtitle": "Duchy of Ondara",
+      "color": "#a0b0b8",
+      "labelX": 2205.0,
+      "labelY": 1055.0,
+      "cities": [
+        {
+          "name": "Duskwater",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Thistledown",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Rynwood",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Yewborough",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Caltheon",
+      "subtitle": "The Free Marches of Caltheon",
+      "color": "#b8c098",
+      "labelX": 1405.0,
+      "labelY": 1545.0,
+      "cities": [
+        {
+          "name": "Maplecross",
+          "x": 0.5,
+          "y": 0.9,
+          "capital": true
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Copperside",
+          "x": 0.5,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Vornhelm",
+      "subtitle": "Realm of Vornhelm",
+      "color": "#c4b0a8",
+      "labelX": 865.0,
+      "labelY": 945.0,
+      "cities": [
+        {
+          "name": "Fernhollow",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Beowick",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Eagleford",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ashen Divide",
+      "labelX": 1525.0,
+      "labelY": 335.0
+    },
+    {
+      "name": "Thundercrest Range",
+      "labelX": 1165.0,
+      "labelY": 1165.0
+    },
+    {
+      "name": "Ebonwall Mountains",
+      "labelX": 2445.0,
+      "labelY": 785.0
+    }
+  ],
+  "lakes": [
+    {
+      "name": "Lunmere",
+      "labelX": 1615.0,
+      "labelY": 1133.0
+    },
+    {
+      "name": "Dimwater",
+      "labelX": 1375.0,
+      "labelY": 683.0
+    }
+  ],
+  "seaNames": [
+    "Sea of Twilight",
+    "Sea of Silver",
+    "Sea of Ash",
+    "Sea of Frost",
+    "Iron Sea"
+  ]
+}

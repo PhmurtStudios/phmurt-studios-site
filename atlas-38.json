@@ -1,0 +1,256 @@
+{
+  "seed": 38,
+  "mapName": "WINDHOLLOW",
+  "regions": [
+    {
+      "name": "Ravenmarch",
+      "subtitle": "Duchy of Ravenmarch",
+      "color": "#ccc088",
+      "labelX": 495.0,
+      "labelY": 1365.0,
+      "cities": [
+        {
+          "name": "Valewick",
+          "x": 0.2,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Wydale",
+          "x": 0.2,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Wydale",
+          "x": 0.1,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Morvaine",
+      "subtitle": "Realm of Morvaine",
+      "color": "#a8b8a0",
+      "labelX": 225.0,
+      "labelY": 615.0,
+      "cities": [
+        {
+          "name": "Runeford",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Valewick",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Nighthollow",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Ravenmere",
+          "x": 0.1,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Longmere",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Dremora",
+      "subtitle": "Borderlands of Dremora",
+      "color": "#c8b490",
+      "labelX": 815.0,
+      "labelY": 845.0,
+      "cities": [
+        {
+          "name": "Westmarch",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Yewborough",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Loyarn",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ondara",
+      "subtitle": "Borderlands of Ondara",
+      "color": "#a0b0b8",
+      "labelX": 1315.0,
+      "labelY": 355.0,
+      "cities": [
+        {
+          "name": "Loyarn",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Lawklif",
+          "x": 0.6,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Valewick",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Nightward",
+      "subtitle": "Duchy of Nightward",
+      "color": "#b8c098",
+      "labelX": 1295.0,
+      "labelY": 895.0,
+      "cities": [
+        {
+          "name": "Thebury",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Dawnwatch",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Ashbourne",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Highwall",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Stonemere",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Kelvor",
+      "subtitle": "Realm of Kelvor",
+      "color": "#c4b0a8",
+      "labelX": 1095.0,
+      "labelY": 1315.0,
+      "cities": [
+        {
+          "name": "Thistledown",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Westmarch",
+          "x": 0.3,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Oldbridge",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Vornhelm",
+      "subtitle": "The Wilds of Vornhelm",
+      "color": "#a8c0b0",
+      "labelX": 1715.0,
+      "labelY": 665.0,
+      "cities": [
+        {
+          "name": "Foxbury",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Winds",
+    "Sea of Embers",
+    "Jade Sea",
+    "Crimson Gulf",
+    "Sea of Frost"
+  ]
+}

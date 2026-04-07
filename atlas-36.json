@@ -1,0 +1,235 @@
+{
+  "seed": 36,
+  "mapName": "BLOODMIRE",
+  "regions": [
+    {
+      "name": "Crystalis",
+      "subtitle": "Realm of Crystalis",
+      "color": "#ccc088",
+      "labelX": 715.0,
+      "labelY": 1415.0,
+      "cities": [
+        {
+          "name": "Stonemere",
+          "x": 0.2,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Yellowfen",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Eagleford",
+          "x": 0.3,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Windcrest",
+          "x": 0.3,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Eagleford",
+          "x": 0.1,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Valdheim",
+      "subtitle": "Duchy of Valdheim",
+      "color": "#a8b8a0",
+      "labelX": 1835.0,
+      "labelY": 1175.0,
+      "cities": [
+        {
+          "name": "Kronham",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Thebury",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Knolltown",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Fogmere",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Nightward",
+      "subtitle": "Kingdom of Nightward",
+      "color": "#c8b490",
+      "labelX": 1485.0,
+      "labelY": 1335.0,
+      "cities": [
+        {
+          "name": "Harrowfield",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Valewick",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Dunmore",
+          "x": 0.5,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Kelvor",
+      "subtitle": "Realm of Kelvor",
+      "color": "#a0b0b8",
+      "labelX": 1725.0,
+      "labelY": 685.0,
+      "cities": [
+        {
+          "name": "Thistledown",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Eagleford",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Beowick",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Ironholt",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Greenhollow",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Pinecrest",
+      "subtitle": "Borderlands of Pinecrest",
+      "color": "#b8c098",
+      "labelX": 995.0,
+      "labelY": 735.0,
+      "cities": [
+        {
+          "name": "Kingsbridge",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Brinewood",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Dawnwatch",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Aelindor",
+      "subtitle": "The Wilds of Aelindor",
+      "color": "#c4b0a8",
+      "labelX": 595.0,
+      "labelY": 945.0,
+      "cities": [
+        {
+          "name": "Blackrock",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Palanor",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Goldenleaf",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Jade Sea",
+    "Sea of Embers",
+    "Sea of Silver",
+    "Sea of Storms",
+    "Iron Sea"
+  ]
+}

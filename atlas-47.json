@@ -1,0 +1,262 @@
+{
+  "seed": 47,
+  "mapName": "HALLOWED",
+  "regions": [
+    {
+      "name": "Duskveil",
+      "subtitle": "The Dominion of Duskveil",
+      "color": "#ccc088",
+      "labelX": 445.0,
+      "labelY": 1215.0,
+      "cities": [
+        {
+          "name": "Cinderfell",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Anora",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Elmsworth",
+          "x": 0.1,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Tethys",
+      "subtitle": "The Dominion of Tethys",
+      "color": "#a8b8a0",
+      "labelX": 1405.0,
+      "labelY": 985.0,
+      "cities": [
+        {
+          "name": "Goldenleaf",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Junipervale",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Oakmere",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Rynwood",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Morvaine",
+      "subtitle": "The Free Marches of Morvaine",
+      "color": "#c8b490",
+      "labelX": 1525.0,
+      "labelY": 1455.0,
+      "cities": [
+        {
+          "name": "Foxbury",
+          "x": 0.6,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Gerenwalde",
+          "x": 0.5,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.5,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Millcross",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Thornwick",
+      "subtitle": "Duchy of Thornwick",
+      "color": "#a0b0b8",
+      "labelX": 925.0,
+      "labelY": 955.0,
+      "cities": [
+        {
+          "name": "Highwall",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Palanor",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Deepwatch",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Solwynd",
+      "subtitle": "The Wilds of Solwynd",
+      "color": "#b8c098",
+      "labelX": 1885.0,
+      "labelY": 855.0,
+      "cities": [
+        {
+          "name": "Goldenleaf",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Dawnwatch",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Whitevale",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Lakeshore",
+      "subtitle": "Kingdom of Lakeshore",
+      "color": "#c4b0a8",
+      "labelX": 2595.0,
+      "labelY": 1105.0,
+      "cities": [
+        {
+          "name": "Fogmere",
+          "x": 0.9,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.9,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Lakecrest",
+          "x": 1.0,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Stormgate",
+          "x": 0.9,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Harrowfield",
+          "x": 0.9,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Pinecrest",
+      "subtitle": "The Wilds of Pinecrest",
+      "color": "#a8c0b0",
+      "labelX": 1015.0,
+      "labelY": 1475.0,
+      "cities": [
+        {
+          "name": "Lindel",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Gildafell",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Embers",
+    "Iron Sea",
+    "Crimson Gulf",
+    "Sea of Winds",
+    "Sea of Ash"
+  ]
+}

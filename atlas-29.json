@@ -1,0 +1,279 @@
+{
+  "seed": 29,
+  "mapName": "CRYSTHAVEN",
+  "regions": [
+    {
+      "name": "Jadecross",
+      "subtitle": "Duchy of Jadecross",
+      "color": "#ccc088",
+      "labelX": 1015.0,
+      "labelY": 795.0,
+      "cities": [
+        {
+          "name": "Cinderfell",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Kettlebrook",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Ivyreach",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ashmark",
+      "subtitle": "The Wilds of Ashmark",
+      "color": "#a8b8a0",
+      "labelX": 525.0,
+      "labelY": 1455.0,
+      "cities": [
+        {
+          "name": "Westmarch",
+          "x": 0.2,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Odrin",
+          "x": 0.1,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Pebblecreek",
+          "x": 0.2,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Junipervale",
+          "x": 0.1,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Jadeston",
+          "x": 0.2,
+          "y": 0.9,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Caltheon",
+      "subtitle": "Kingdom of Caltheon",
+      "color": "#c8b490",
+      "labelX": 1975.0,
+      "labelY": 1025.0,
+      "cities": [
+        {
+          "name": "Urswick",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Gildafell",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Knolltown",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Thornemark",
+      "subtitle": "The Dominion of Thornemark",
+      "color": "#a0b0b8",
+      "labelX": 1565.0,
+      "labelY": 1045.0,
+      "cities": [
+        {
+          "name": "Cliffhaven",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Brinewood",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Valewick",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Lakeshore",
+      "subtitle": "Duchy of Lakeshore",
+      "color": "#b8c098",
+      "labelX": 405.0,
+      "labelY": 975.0,
+      "cities": [
+        {
+          "name": "Vineyard",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Pinewood",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Ivyreach",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Oakmere",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Windcrest",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Mistvale",
+      "subtitle": "The Free Marches of Mistvale",
+      "color": "#c4b0a8",
+      "labelX": 1135.0,
+      "labelY": 1385.0,
+      "cities": [
+        {
+          "name": "Thornwall",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Moonshadow",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Ashbourne",
+          "x": 0.3,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Borist",
+          "x": 0.3,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Regnwald",
+          "x": 0.3,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Grimvale",
+      "subtitle": "Principality of Grimvale",
+      "color": "#a8c0b0",
+      "labelX": 1655.0,
+      "labelY": 1505.0,
+      "cities": [
+        {
+          "name": "Goldug",
+          "x": 0.6,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Thebury",
+          "x": 0.5,
+          "y": 0.9,
+          "capital": false
+        },
+        {
+          "name": "Ravenmere",
+          "x": 0.5,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Borist",
+          "x": 0.7,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Stormcrown Range",
+      "labelX": 1135.0,
+      "labelY": 1615.0
+    },
+    {
+      "name": "Ebonwall Mountains",
+      "labelX": 915.0,
+      "labelY": 755.0
+    },
+    {
+      "name": "Thundercrest Range",
+      "labelX": 635.0,
+      "labelY": 995.0
+    },
+    {
+      "name": "Dragon's Spine",
+      "labelX": 1245.0,
+      "labelY": 1365.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Embers",
+    "Iron Sea",
+    "Sea of Dreams",
+    "Sea of Storms",
+    "Sea of Twilight"
+  ]
+}

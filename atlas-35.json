@@ -1,0 +1,292 @@
+{
+  "seed": 35,
+  "mapName": "THUNDERHOLM",
+  "regions": [
+    {
+      "name": "Wyndell",
+      "subtitle": "The Wilds of Wyndell",
+      "color": "#ccc088",
+      "labelX": 635.0,
+      "labelY": 1005.0,
+      "cities": [
+        {
+          "name": "Moonshadow",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Redthorn",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Selvane",
+      "subtitle": "The Wilds of Selvane",
+      "color": "#a8b8a0",
+      "labelX": 895.0,
+      "labelY": 545.0,
+      "cities": [
+        {
+          "name": "Dawnwatch",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Greywater",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Moonshadow",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Thornwall",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Tarnis",
+      "subtitle": "Kingdom of Tarnis",
+      "color": "#c8b490",
+      "labelX": 1525.0,
+      "labelY": 805.0,
+      "cities": [
+        {
+          "name": "Longmere",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Gildafell",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Gerenwalde",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Vornhelm",
+      "subtitle": "Borderlands of Vornhelm",
+      "color": "#a0b0b8",
+      "labelX": 2605.0,
+      "labelY": 835.0,
+      "cities": [
+        {
+          "name": "Greywater",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Valewick",
+          "x": 1.0,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Ilaes",
+          "x": 1.0,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Freehold",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Anora",
+          "x": 1.0,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Gildafell",
+          "x": 1.0,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Dawnhollow",
+      "subtitle": "Duchy of Dawnhollow",
+      "color": "#b8c098",
+      "labelX": 1805.0,
+      "labelY": 445.0,
+      "cities": [
+        {
+          "name": "Quartzridge",
+          "x": 0.7,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Brinewood",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Freehold",
+          "x": 0.7,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Harrowfield",
+          "x": 0.7,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Fogmere",
+          "x": 0.7,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Kronham",
+          "x": 0.7,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Caltheon",
+      "subtitle": "The Free Marches of Caltheon",
+      "color": "#c4b0a8",
+      "labelX": 2165.0,
+      "labelY": 865.0,
+      "cities": [
+        {
+          "name": "Rynwood",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Oldbridge",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Yellowfen",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Gerenwalde",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Borist",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Shadowfen",
+      "subtitle": "Principality of Shadowfen",
+      "color": "#a8c0b0",
+      "labelX": 145.0,
+      "labelY": 985.0,
+      "cities": [
+        {
+          "name": "Inkwell",
+          "x": 0.0,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Millcross",
+          "x": 0.0,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Yellowfen",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Loyarn",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Ashbourne",
+          "x": 0.0,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Frost",
+    "Jade Sea",
+    "Sea of Winds",
+    "Iron Sea",
+    "Pale Sea"
+  ]
+}

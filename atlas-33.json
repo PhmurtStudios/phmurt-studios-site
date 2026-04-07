@@ -1,0 +1,235 @@
+{
+  "seed": 33,
+  "mapName": "SHADOWDEEP",
+  "regions": [
+    {
+      "name": "Tarnis",
+      "subtitle": "Borderlands of Tarnis",
+      "color": "#ccc088",
+      "labelX": 2235.0,
+      "labelY": 575.0,
+      "cities": [
+        {
+          "name": "Gerenwalde",
+          "x": 0.8,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Wydale",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Harrowfield",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Urswick",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Kronham",
+          "x": 0.8,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Goldenleaf",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Korrath",
+      "subtitle": "Principality of Korrath",
+      "color": "#a8b8a0",
+      "labelX": 995.0,
+      "labelY": 775.0,
+      "cities": [
+        {
+          "name": "Jadeston",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Zarakyr",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Pebblecreek",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ironreach",
+      "subtitle": "Kingdom of Ironreach",
+      "color": "#c8b490",
+      "labelX": 1775.0,
+      "labelY": 715.0,
+      "cities": [
+        {
+          "name": "Freehold",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Yellowfen",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Kronham",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Caeloth",
+      "subtitle": "The Free Marches of Caeloth",
+      "color": "#a0b0b8",
+      "labelX": 325.0,
+      "labelY": 1105.0,
+      "cities": [
+        {
+          "name": "Kettlebrook",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Duskwater",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Mistvale",
+      "subtitle": "Kingdom of Mistvale",
+      "color": "#b8c098",
+      "labelX": 2565.0,
+      "labelY": 1065.0,
+      "cities": [
+        {
+          "name": "Foxbury",
+          "x": 0.9,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Yewborough",
+          "x": 0.9,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Harrowfield",
+          "x": 0.9,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Verdantia",
+      "subtitle": "Realm of Verdantia",
+      "color": "#c4b0a8",
+      "labelX": 2025.0,
+      "labelY": 1085.0,
+      "cities": [
+        {
+          "name": "Runeford",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Knolltown",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Silverton",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Zenithburg",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Lindel",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Dreams",
+    "Jade Sea",
+    "Pale Sea",
+    "Crimson Gulf",
+    "Sea of Silver"
+  ]
+}

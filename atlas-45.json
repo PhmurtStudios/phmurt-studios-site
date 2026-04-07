@@ -1,0 +1,240 @@
+{
+  "seed": 45,
+  "mapName": "THORNGROVE",
+  "regions": [
+    {
+      "name": "Elonia",
+      "subtitle": "The Wilds of Elonia",
+      "color": "#ccc088",
+      "labelX": 1715.0,
+      "labelY": 1515.0,
+      "cities": [
+        {
+          "name": "Feradell",
+          "x": 0.6,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Moonshadow",
+          "x": 0.7,
+          "y": 0.9,
+          "capital": false
+        },
+        {
+          "name": "Whitevale",
+          "x": 0.7,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Dunmore",
+          "x": 0.5,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Solwynd",
+      "subtitle": "Realm of Solwynd",
+      "color": "#a8b8a0",
+      "labelX": 925.0,
+      "labelY": 1335.0,
+      "cities": [
+        {
+          "name": "Odrin",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Lindel",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Pebblecreek",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Quartzridge",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Thistledown",
+          "x": 0.3,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Nighthollow",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Dremora",
+      "subtitle": "The Dominion of Dremora",
+      "color": "#c8b490",
+      "labelX": 1875.0,
+      "labelY": 865.0,
+      "cities": [
+        {
+          "name": "Anora",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Millcross",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Thornwall",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Regnwald",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Fara",
+      "subtitle": "Realm of Fara",
+      "color": "#a0b0b8",
+      "labelX": 795.0,
+      "labelY": 885.0,
+      "cities": [
+        {
+          "name": "Foxbury",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Northgate",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Feradell",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Aelindor",
+      "subtitle": "The Dominion of Aelindor",
+      "color": "#b8c098",
+      "labelX": 1365.0,
+      "labelY": 1025.0,
+      "cities": [
+        {
+          "name": "Fogmere",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Stormgate",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Goldenleaf",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Vornhelm",
+      "subtitle": "Realm of Vornhelm",
+      "color": "#c4b0a8",
+      "labelX": 1255.0,
+      "labelY": 1575.0,
+      "cities": [
+        {
+          "name": "Kettlebrook",
+          "x": 0.5,
+          "y": 0.9,
+          "capital": true
+        },
+        {
+          "name": "Redthorn",
+          "x": 0.5,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Dremoor",
+          "x": 0.5,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Redthorn",
+          "x": 0.4,
+          "y": 0.9,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 1635.0,
+      "labelY": 1615.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 1225.0,
+      "labelY": 1455.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1555.0,
+      "labelY": 1585.0
+    },
+    {
+      "name": "Silvervein Ridge",
+      "labelX": 1315.0,
+      "labelY": 785.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Twilight",
+    "Sea of Ash",
+    "Sea of Embers",
+    "Iron Sea",
+    "Sea of Frost"
+  ]
+}

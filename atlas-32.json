@@ -1,0 +1,275 @@
+{
+  "seed": 32,
+  "mapName": "PYRECLIFF",
+  "regions": [
+    {
+      "name": "Belros",
+      "subtitle": "Principality of Belros",
+      "color": "#ccc088",
+      "labelX": 1345.0,
+      "labelY": 355.0,
+      "cities": [
+        {
+          "name": "Inkwell",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Jadeston",
+          "x": 0.6,
+          "y": 0.1,
+          "capital": false
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.4,
+          "y": 0.1,
+          "capital": false
+        },
+        {
+          "name": "Foxbury",
+          "x": 0.4,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Longmere",
+          "x": 0.3,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Aelindor",
+      "subtitle": "Principality of Aelindor",
+      "color": "#a8b8a0",
+      "labelX": 1315.0,
+      "labelY": 825.0,
+      "cities": [
+        {
+          "name": "Valewick",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Cliffhaven",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Duskveil",
+      "subtitle": "The Dominion of Duskveil",
+      "color": "#c8b490",
+      "labelX": 1745.0,
+      "labelY": 545.0,
+      "cities": [
+        {
+          "name": "Whitevale",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Anora",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Gerenwalde",
+          "x": 0.6,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Underbridge",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Dunmore",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Zenithburg",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Cyrin",
+      "subtitle": "Realm of Cyrin",
+      "color": "#a0b0b8",
+      "labelX": 755.0,
+      "labelY": 465.0,
+      "cities": [
+        {
+          "name": "Beowick",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Lawklif",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Ravenmere",
+          "x": 0.3,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Kelvor",
+      "subtitle": "The Wilds of Kelvor",
+      "color": "#b8c098",
+      "labelX": 1745.0,
+      "labelY": 1235.0,
+      "cities": [
+        {
+          "name": "Alderhaven",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Dawnwatch",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Feradell",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ironreach",
+      "subtitle": "Borderlands of Ironreach",
+      "color": "#c4b0a8",
+      "labelX": 875.0,
+      "labelY": 935.0,
+      "cities": [
+        {
+          "name": "Valewick",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Cliffhaven",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Lawklif",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Runeford",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Goldenleaf",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ravenmarch",
+      "subtitle": "Borderlands of Ravenmarch",
+      "color": "#a8c0b0",
+      "labelX": 1145.0,
+      "labelY": 1285.0,
+      "cities": [
+        {
+          "name": "Moonshadow",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Zarakyr",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Goldug",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Frostpeak Mountains",
+      "labelX": 1145.0,
+      "labelY": 1135.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1325.0,
+      "labelY": 1545.0
+    }
+  ],
+  "lakes": [
+    {
+      "name": "Lake Thornwell",
+      "labelX": 1105.0,
+      "labelY": 683.0
+    }
+  ],
+  "seaNames": [
+    "Crimson Gulf",
+    "Iron Sea",
+    "Pale Sea",
+    "Sea of Frost",
+    "Jade Sea"
+  ]
+}

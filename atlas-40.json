@@ -1,0 +1,304 @@
+{
+  "seed": 40,
+  "mapName": "CINDERFALL",
+  "regions": [
+    {
+      "name": "Oakhaven",
+      "subtitle": "Kingdom of Oakhaven",
+      "color": "#ccc088",
+      "labelX": 885.0,
+      "labelY": 965.0,
+      "cities": [
+        {
+          "name": "Gerenwalde",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Oakmere",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Ashbourne",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Palanor",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Northgate",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Vornhelm",
+      "subtitle": "The Wilds of Vornhelm",
+      "color": "#a8b8a0",
+      "labelX": 2315.0,
+      "labelY": 775.0,
+      "cities": [
+        {
+          "name": "Dawnwatch",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Odrin",
+          "x": 0.9,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Cliffhaven",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Oldbridge",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Gildafell",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Thornwick",
+      "subtitle": "Duchy of Thornwick",
+      "color": "#c8b490",
+      "labelX": 1535.0,
+      "labelY": 875.0,
+      "cities": [
+        {
+          "name": "Fogmere",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Urswick",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Northgate",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Highwall",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Felmoor",
+      "subtitle": "The Free Marches of Felmoor",
+      "color": "#a0b0b8",
+      "labelX": 1775.0,
+      "labelY": 445.0,
+      "cities": [
+        {
+          "name": "Foxbury",
+          "x": 0.6,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Dremoor",
+          "x": 0.7,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Valewick",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Runeford",
+          "x": 0.6,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Knolltown",
+          "x": 0.6,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Grimvale",
+      "subtitle": "The Dominion of Grimvale",
+      "color": "#b8c098",
+      "labelX": 265.0,
+      "labelY": 1215.0,
+      "cities": [
+        {
+          "name": "Oldbridge",
+          "x": 0.1,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.1,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Westmarch",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Gerenwalde",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Obsidara",
+      "subtitle": "The Dominion of Obsidara",
+      "color": "#c4b0a8",
+      "labelX": 1265.0,
+      "labelY": 1315.0,
+      "cities": [
+        {
+          "name": "Greenhollow",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Yewborough",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Maplecross",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Lawklif",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Highwall",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Wyndell",
+      "subtitle": "Kingdom of Wyndell",
+      "color": "#a8c0b0",
+      "labelX": 1945.0,
+      "labelY": 1075.0,
+      "cities": [
+        {
+          "name": "Harrowfield",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Fernhollow",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Lindel",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Longmere",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Eagleford",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Gildafell",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Jade Sea",
+    "Crimson Gulf",
+    "Sea of Silver",
+    "Sea of Twilight",
+    "Sea of Winds"
+  ]
+}
