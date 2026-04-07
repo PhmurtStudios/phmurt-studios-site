@@ -1,0 +1,265 @@
+{
+  "seed": 51,
+  "mapName": "IRONHOLD",
+  "regions": [
+    {
+      "name": "Ravenmarch",
+      "subtitle": "Borderlands of Ravenmarch",
+      "color": "#ccc088",
+      "labelX": 1155.0,
+      "labelY": 1065.0,
+      "cities": [
+        {
+          "name": "Goldenleaf",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Odrin",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Duskhold",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Harrowfield",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Frosthold",
+      "subtitle": "Principality of Frosthold",
+      "color": "#a8b8a0",
+      "labelX": 2285.0,
+      "labelY": 1045.0,
+      "cities": [
+        {
+          "name": "Yewborough",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Ashwick",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Eagleford",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Lakecrest",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Aethermoor",
+      "subtitle": "Borderlands of Aethermoor",
+      "color": "#c8b490",
+      "labelX": 625.0,
+      "labelY": 1285.0,
+      "cities": [
+        {
+          "name": "Moonshadow",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Hollowburg",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Longmere",
+          "x": 0.3,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Lakecrest",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Valewick",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Fara",
+      "subtitle": "Realm of Fara",
+      "color": "#a0b0b8",
+      "labelX": 1215.0,
+      "labelY": 1515.0,
+      "cities": [
+        {
+          "name": "Zarakyr",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Stormgate",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Oakmere",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Gildafell",
+          "x": 0.5,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ironglenn",
+      "subtitle": "Duchy of Ironglenn",
+      "color": "#b8c098",
+      "labelX": 1705.0,
+      "labelY": 905.0,
+      "cities": [
+        {
+          "name": "Blackrock",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Millcross",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Thebury",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Palanor",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Nighthollow",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Ironholt",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ashmark",
+      "subtitle": "The Free Marches of Ashmark",
+      "color": "#c4b0a8",
+      "labelX": 265.0,
+      "labelY": 985.0,
+      "cities": [
+        {
+          "name": "Greywater",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Beowick",
+          "x": 0.1,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Zenithburg",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Lawklif",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Dremoor",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Ash",
+    "Iron Sea",
+    "Sea of Dreams",
+    "Sea of Embers",
+    "Crimson Gulf"
+  ]
+}

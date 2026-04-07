@@ -1,0 +1,277 @@
+{
+  "seed": 70,
+  "mapName": "AURELIAN",
+  "regions": [
+    {
+      "name": "Jadecross",
+      "subtitle": "Kingdom of Jadecross",
+      "color": "#ccc088",
+      "labelX": 2155.0,
+      "labelY": 1085.0,
+      "cities": [
+        {
+          "name": "Silverton",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Westmarch",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Wydale",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Fogmere",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Jadeston",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Greenhollow",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Dawnhollow",
+      "subtitle": "The Free Marches of Dawnhollow",
+      "color": "#a8b8a0",
+      "labelX": 2455.0,
+      "labelY": 615.0,
+      "cities": [
+        {
+          "name": "Beowick",
+          "x": 0.9,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Alderhaven",
+          "x": 1.0,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Duskveil",
+      "subtitle": "The Dominion of Duskveil",
+      "color": "#c8b490",
+      "labelX": 785.0,
+      "labelY": 655.0,
+      "cities": [
+        {
+          "name": "Knolltown",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Fernhollow",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Blackrock",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Kettlebrook",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Fogmere",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Aelindor",
+      "subtitle": "Kingdom of Aelindor",
+      "color": "#a0b0b8",
+      "labelX": 1695.0,
+      "labelY": 825.0,
+      "cities": [
+        {
+          "name": "Knolltown",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Junipervale",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Silverton",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Borist",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Gildafell",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Redthorn",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ironglenn",
+      "subtitle": "The Dominion of Ironglenn",
+      "color": "#b8c098",
+      "labelX": 525.0,
+      "labelY": 975.0,
+      "cities": [
+        {
+          "name": "Urswick",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Greywater",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Pebblecreek",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Ironholt",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Zarakyr",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Dremora",
+      "subtitle": "The Dominion of Dremora",
+      "color": "#c4b0a8",
+      "labelX": 1305.0,
+      "labelY": 915.0,
+      "cities": [
+        {
+          "name": "Tidefall",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Freehold",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Ashbourne",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Dremoor",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Ash",
+    "Sea of Silver",
+    "Iron Sea",
+    "Pale Sea",
+    "Sea of Embers"
+  ]
+}

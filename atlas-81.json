@@ -1,0 +1,347 @@
+{
+  "seed": 81,
+  "mapName": "IRONMARCH",
+  "regions": [
+    {
+      "name": "Pinecrest",
+      "subtitle": "The Dominion of Pinecrest",
+      "color": "#ccc088",
+      "labelX": 865.0,
+      "labelY": 1035.0,
+      "cities": [
+        {
+          "name": "Thistledown",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Odrin",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Oldbridge",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Quartzridge",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Millcross",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Tethys",
+      "subtitle": "Realm of Tethys",
+      "color": "#a8b8a0",
+      "labelX": 2165.0,
+      "labelY": 745.0,
+      "cities": [
+        {
+          "name": "Redthorn",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Ravenmere",
+          "x": 0.8,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Lindel",
+          "x": 0.8,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Longmere",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ironglenn",
+      "subtitle": "The Dominion of Ironglenn",
+      "color": "#c8b490",
+      "labelX": 1025.0,
+      "labelY": 235.0,
+      "cities": [
+        {
+          "name": "Foxbury",
+          "x": 0.4,
+          "y": 0.1,
+          "capital": true
+        },
+        {
+          "name": "Hollowburg",
+          "x": 0.3,
+          "y": 0.1,
+          "capital": false
+        },
+        {
+          "name": "Pinewood",
+          "x": 0.4,
+          "y": 0.1,
+          "capital": false
+        },
+        {
+          "name": "Stormgate",
+          "x": 0.3,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Stonemere",
+          "x": 0.4,
+          "y": 0.1,
+          "capital": false
+        },
+        {
+          "name": "Westmarch",
+          "x": 0.3,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Aethermoor",
+      "subtitle": "Duchy of Aethermoor",
+      "color": "#a0b0b8",
+      "labelX": 375.0,
+      "labelY": 665.0,
+      "cities": [
+        {
+          "name": "Fogmere",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Lakecrest",
+          "x": 0.1,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Tidefall",
+          "x": 0.0,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Yellowfen",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Elonia",
+      "subtitle": "The Free Marches of Elonia",
+      "color": "#b8c098",
+      "labelX": 535.0,
+      "labelY": 1255.0,
+      "cities": [
+        {
+          "name": "Windcrest",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Borist",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Fogmere",
+          "x": 0.1,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Dawnhollow",
+      "subtitle": "The Wilds of Dawnhollow",
+      "color": "#c4b0a8",
+      "labelX": 2035.0,
+      "labelY": 1135.0,
+      "cities": [
+        {
+          "name": "Windcrest",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Knolltown",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Ashwick",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Stormvale",
+      "subtitle": "Borderlands of Stormvale",
+      "color": "#a8c0b0",
+      "labelX": 1545.0,
+      "labelY": 335.0,
+      "cities": [
+        {
+          "name": "Whitevale",
+          "x": 0.6,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Thistledown",
+          "x": 0.5,
+          "y": 0.1,
+          "capital": false
+        },
+        {
+          "name": "Regnwald",
+          "x": 0.7,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Nighthollow",
+          "x": 0.6,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Knolltown",
+          "x": 0.6,
+          "y": 0.1,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Frosthold",
+      "subtitle": "Kingdom of Frosthold",
+      "color": "#c8c0a0",
+      "labelX": 1565.0,
+      "labelY": 1225.0,
+      "cities": [
+        {
+          "name": "Deepwatch",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Greywater",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Redthorn",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Tidefall",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Whitevale",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Whitevale",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Stormcrown Range",
+      "labelX": 1255.0,
+      "labelY": 285.0
+    },
+    {
+      "name": "Thundercrest Range",
+      "labelX": 1735.0,
+      "labelY": 525.0
+    },
+    {
+      "name": "Silvervein Ridge",
+      "labelX": 2155.0,
+      "labelY": 715.0
+    },
+    {
+      "name": "Ebonwall Mountains",
+      "labelX": 1945.0,
+      "labelY": 275.0
+    }
+  ],
+  "lakes": [
+    {
+      "name": "Shadowmere",
+      "labelX": 755.0,
+      "labelY": 643.0
+    },
+    {
+      "name": "Lake Aegir",
+      "labelX": 1145.0,
+      "labelY": 883.0
+    }
+  ],
+  "seaNames": [
+    "Sea of Embers",
+    "Pale Sea",
+    "Sea of Storms",
+    "Sea of Winds",
+    "Sea of Silver"
+  ]
+}

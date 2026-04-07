@@ -1,0 +1,304 @@
+{
+  "seed": 64,
+  "mapName": "DEEPHOLM",
+  "regions": [
+    {
+      "name": "Sunmere",
+      "subtitle": "Principality of Sunmere",
+      "color": "#ccc088",
+      "labelX": 1445.0,
+      "labelY": 295.0,
+      "cities": [
+        {
+          "name": "Freehold",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Knolltown",
+          "x": 0.5,
+          "y": 0.1,
+          "capital": false
+        },
+        {
+          "name": "Cliffhaven",
+          "x": 0.4,
+          "y": 0.1,
+          "capital": false
+        },
+        {
+          "name": "Duskhold",
+          "x": 0.6,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ironglenn",
+      "subtitle": "The Dominion of Ironglenn",
+      "color": "#a8b8a0",
+      "labelX": 895.0,
+      "labelY": 495.0,
+      "cities": [
+        {
+          "name": "Moonshadow",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Runeford",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.3,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Maplecross",
+          "x": 0.3,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Ironholt",
+          "x": 0.3,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Quartzridge",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Silverfen",
+      "subtitle": "Borderlands of Silverfen",
+      "color": "#c8b490",
+      "labelX": 1195.0,
+      "labelY": 1375.0,
+      "cities": [
+        {
+          "name": "Runeford",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Ilaes",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Mistvale",
+      "subtitle": "Realm of Mistvale",
+      "color": "#a0b0b8",
+      "labelX": 1505.0,
+      "labelY": 785.0,
+      "cities": [
+        {
+          "name": "Ashwick",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Fernhollow",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Ironholt",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Redthorn",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Odrin",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Caeloth",
+      "subtitle": "Principality of Caeloth",
+      "color": "#b8c098",
+      "labelX": 2015.0,
+      "labelY": 685.0,
+      "cities": [
+        {
+          "name": "Goldenleaf",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Lakecrest",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Thornemark",
+      "subtitle": "Duchy of Thornemark",
+      "color": "#c4b0a8",
+      "labelX": 695.0,
+      "labelY": 895.0,
+      "cities": [
+        {
+          "name": "Palanor",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Regnwald",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ironreach",
+      "subtitle": "Principality of Ironreach",
+      "color": "#a8c0b0",
+      "labelX": 445.0,
+      "labelY": 445.0,
+      "cities": [
+        {
+          "name": "Lakecrest",
+          "x": 0.1,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Ashbourne",
+          "x": 0.2,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Goldenleaf",
+          "x": 0.1,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Dawnwatch",
+          "x": 0.2,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Lawklif",
+          "x": 0.2,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Hollowburg",
+          "x": 0.2,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Stormcrown Range",
+      "labelX": 875.0,
+      "labelY": 155.0
+    },
+    {
+      "name": "Ebonwall Mountains",
+      "labelX": 945.0,
+      "labelY": 735.0
+    },
+    {
+      "name": "Thundercrest Range",
+      "labelX": 1215.0,
+      "labelY": 1005.0
+    }
+  ],
+  "lakes": [
+    {
+      "name": "Lunmere",
+      "labelX": 825.0,
+      "labelY": 503.0
+    }
+  ],
+  "seaNames": [
+    "Sea of Twilight",
+    "Sea of Silver",
+    "Pale Sea",
+    "Sea of Dreams",
+    "Crimson Gulf"
+  ]
+}

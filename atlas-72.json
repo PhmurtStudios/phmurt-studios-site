@@ -1,0 +1,280 @@
+{
+  "seed": 72,
+  "mapName": "HAVENREACH",
+  "regions": [
+    {
+      "name": "Shadowfen",
+      "subtitle": "The Free Marches of Shadowfen",
+      "color": "#ccc088",
+      "labelX": 475.0,
+      "labelY": 875.0,
+      "cities": [
+        {
+          "name": "Northgate",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Lindel",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Elmsworth",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Millcross",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Runeford",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ironglenn",
+      "subtitle": "Borderlands of Ironglenn",
+      "color": "#a8b8a0",
+      "labelX": 1485.0,
+      "labelY": 1125.0,
+      "cities": [
+        {
+          "name": "Alderhaven",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Dremoor",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Pebblecreek",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Quartzridge",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Tethys",
+      "subtitle": "The Wilds of Tethys",
+      "color": "#c8b490",
+      "labelX": 2545.0,
+      "labelY": 675.0,
+      "cities": [
+        {
+          "name": "Redthorn",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Highwall",
+          "x": 0.9,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Dunmore",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Pebblecreek",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ravenmarch",
+      "subtitle": "Borderlands of Ravenmarch",
+      "color": "#a0b0b8",
+      "labelX": 1315.0,
+      "labelY": 685.0,
+      "cities": [
+        {
+          "name": "Foxbury",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Millcross",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Anora",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ashenveil",
+      "subtitle": "Realm of Ashenveil",
+      "color": "#b8c098",
+      "labelX": 805.0,
+      "labelY": 1325.0,
+      "cities": [
+        {
+          "name": "Stormgate",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Greenhollow",
+          "x": 0.3,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Pinewood",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Foxbury",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Greyhollow",
+      "subtitle": "Realm of Greyhollow",
+      "color": "#c4b0a8",
+      "labelX": 2005.0,
+      "labelY": 1065.0,
+      "cities": [
+        {
+          "name": "Whitevale",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Stormgate",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Yewborough",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Freehold",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Rosedale",
+      "subtitle": "Realm of Rosedale",
+      "color": "#a8c0b0",
+      "labelX": 1795.0,
+      "labelY": 715.0,
+      "cities": [
+        {
+          "name": "Silverton",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Lindel",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Dunmore",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Winds",
+    "Sea of Embers",
+    "Jade Sea",
+    "Pale Sea",
+    "Sea of Frost"
+  ]
+}

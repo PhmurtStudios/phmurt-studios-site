@@ -1,0 +1,297 @@
+{
+  "seed": 80,
+  "mapName": "CRIMSONVALE",
+  "regions": [
+    {
+      "name": "Dawnhollow",
+      "subtitle": "The Dominion of Dawnhollow",
+      "color": "#ccc088",
+      "labelX": 1035.0,
+      "labelY": 775.0,
+      "cities": [
+        {
+          "name": "Eagleford",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Rynwood",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Westmarch",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Copperside",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Copperside",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Valdheim",
+      "subtitle": "Duchy of Valdheim",
+      "color": "#a8b8a0",
+      "labelX": 1305.0,
+      "labelY": 1245.0,
+      "cities": [
+        {
+          "name": "Feradell",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Gerenwalde",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Moonshadow",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Ashbourne",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Goleli",
+      "subtitle": "Realm of Goleli",
+      "color": "#c8b490",
+      "labelX": 2075.0,
+      "labelY": 1015.0,
+      "cities": [
+        {
+          "name": "Moonshadow",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Runeford",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Brinewood",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Pinecrest",
+      "subtitle": "Realm of Pinecrest",
+      "color": "#a0b0b8",
+      "labelX": 815.0,
+      "labelY": 1375.0,
+      "cities": [
+        {
+          "name": "Oakmere",
+          "x": 0.3,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.3,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Harrowfield",
+          "x": 0.3,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ondara",
+      "subtitle": "Duchy of Ondara",
+      "color": "#b8c098",
+      "labelX": 605.0,
+      "labelY": 935.0,
+      "cities": [
+        {
+          "name": "Greywater",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Regnwald",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Brinewood",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Junipervale",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Gerenwalde",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Thornemark",
+      "subtitle": "Duchy of Thornemark",
+      "color": "#c4b0a8",
+      "labelX": 1815.0,
+      "labelY": 1415.0,
+      "cities": [
+        {
+          "name": "Rynwood",
+          "x": 0.7,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Gildafell",
+          "x": 0.8,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Odrin",
+          "x": 0.6,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Beowick",
+          "x": 0.7,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Northgate",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Caeloth",
+      "subtitle": "The Dominion of Caeloth",
+      "color": "#a8c0b0",
+      "labelX": 1495.0,
+      "labelY": 825.0,
+      "cities": [
+        {
+          "name": "Lawklif",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Duskhold",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Thistledown",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Duskhold",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Whitevale",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Cliffhaven",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Dragon's Spine",
+      "labelX": 1771.5,
+      "labelY": 507.1
+    },
+    {
+      "name": "Ebonwall Mountains",
+      "labelX": 1095.0,
+      "labelY": 775.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 545.0,
+      "labelY": 1175.0
+    },
+    {
+      "name": "Ironspine Range",
+      "labelX": 1595.0,
+      "labelY": 1165.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Pale Sea",
+    "Sea of Embers",
+    "Sea of Frost",
+    "Sea of Silver",
+    "Crimson Gulf"
+  ]
+}

@@ -1,0 +1,291 @@
+{
+  "seed": 79,
+  "mapName": "ASHENSPIRE",
+  "regions": [
+    {
+      "name": "Korrath",
+      "subtitle": "Principality of Korrath",
+      "color": "#ccc088",
+      "labelX": 2385.0,
+      "labelY": 895.0,
+      "cities": [
+        {
+          "name": "Dawnwatch",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Regnwald",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Odrin",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Cliffhaven",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Pinecrest",
+      "subtitle": "Principality of Pinecrest",
+      "color": "#a8b8a0",
+      "labelX": 1265.0,
+      "labelY": 995.0,
+      "cities": [
+        {
+          "name": "Redthorn",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Underbridge",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Windcrest",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Ashbourne",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Thebury",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ironglenn",
+      "subtitle": "Realm of Ironglenn",
+      "color": "#c8b490",
+      "labelX": 1645.0,
+      "labelY": 1435.0,
+      "cities": [
+        {
+          "name": "Goldenleaf",
+          "x": 0.6,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Greywater",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Rynwood",
+          "x": 0.5,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Thornemark",
+      "subtitle": "The Wilds of Thornemark",
+      "color": "#a0b0b8",
+      "labelX": 495.0,
+      "labelY": 975.0,
+      "cities": [
+        {
+          "name": "Inkwell",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Fogmere",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Loyarn",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Sunmere",
+      "subtitle": "The Dominion of Sunmere",
+      "color": "#b8c098",
+      "labelX": 1755.0,
+      "labelY": 425.0,
+      "cities": [
+        {
+          "name": "Loyarn",
+          "x": 0.6,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.6,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Gildafell",
+          "x": 0.7,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Longmere",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Gildafell",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Thornwick",
+      "subtitle": "The Wilds of Thornwick",
+      "color": "#c4b0a8",
+      "labelX": 625.0,
+      "labelY": 1375.0,
+      "cities": [
+        {
+          "name": "Fernhollow",
+          "x": 0.2,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Highwall",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Pebblecreek",
+          "x": 0.3,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ashenveil",
+      "subtitle": "The Free Marches of Ashenveil",
+      "color": "#a8c0b0",
+      "labelX": 1755.0,
+      "labelY": 915.0,
+      "cities": [
+        {
+          "name": "Loyarn",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Thebury",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Ivyreach",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Runeford",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Silvervein Ridge",
+      "labelX": 1235.0,
+      "labelY": 1295.0
+    },
+    {
+      "name": "Ebonwall Mountains",
+      "labelX": 2565.0,
+      "labelY": 555.0
+    },
+    {
+      "name": "Thundercrest Range",
+      "labelX": 1545.0,
+      "labelY": 955.0
+    },
+    {
+      "name": "Dragon's Spine",
+      "labelX": 1245.0,
+      "labelY": 1035.0
+    }
+  ],
+  "lakes": [
+    {
+      "name": "Lunmere",
+      "labelX": 625.0,
+      "labelY": 1103.0
+    }
+  ],
+  "seaNames": [
+    "Sea of Winds",
+    "Sea of Silver",
+    "Sea of Embers",
+    "Sea of Dreams",
+    "Sea of Storms"
+  ]
+}

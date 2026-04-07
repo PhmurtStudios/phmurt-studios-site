@@ -1,0 +1,235 @@
+{
+  "seed": 65,
+  "mapName": "WYVERMERE",
+  "regions": [
+    {
+      "name": "Tarnis",
+      "subtitle": "Borderlands of Tarnis",
+      "color": "#ccc088",
+      "labelX": 1265.0,
+      "labelY": 1175.0,
+      "cities": [
+        {
+          "name": "Oldbridge",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Freehold",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Cliffhaven",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Deepwatch",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Moonridge",
+      "subtitle": "Realm of Moonridge",
+      "color": "#a8b8a0",
+      "labelX": 555.0,
+      "labelY": 695.0,
+      "cities": [
+        {
+          "name": "Jadeston",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Goldug",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Fernhollow",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Fernhollow",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Loyarn",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Shadowfen",
+      "subtitle": "Duchy of Shadowfen",
+      "color": "#c8b490",
+      "labelX": 2235.0,
+      "labelY": 1345.0,
+      "cities": [
+        {
+          "name": "Duskwater",
+          "x": 0.8,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Pebblecreek",
+          "x": 0.7,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Junipervale",
+          "x": 0.8,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Caeloth",
+      "subtitle": "Realm of Caeloth",
+      "color": "#a0b0b8",
+      "labelX": 1205.0,
+      "labelY": 325.0,
+      "cities": [
+        {
+          "name": "Kronham",
+          "x": 0.4,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.4,
+          "y": 0.1,
+          "capital": false
+        },
+        {
+          "name": "Yewborough",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Ironholt",
+          "x": 0.4,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Valdheim",
+      "subtitle": "Duchy of Valdheim",
+      "color": "#b8c098",
+      "labelX": 1655.0,
+      "labelY": 555.0,
+      "cities": [
+        {
+          "name": "Alderhaven",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Lakecrest",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Quartzridge",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Brinewood",
+          "x": 0.6,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Kettlebrook",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Anora",
+          "x": 0.7,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Essear",
+      "subtitle": "The Dominion of Essear",
+      "color": "#c4b0a8",
+      "labelX": 1885.0,
+      "labelY": 985.0,
+      "cities": [
+        {
+          "name": "Copperside",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Ashbourne",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Feradell",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Twilight",
+    "Iron Sea",
+    "Sea of Frost",
+    "Sea of Ash",
+    "Crimson Gulf"
+  ]
+}

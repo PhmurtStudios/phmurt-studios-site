@@ -1,0 +1,304 @@
+{
+  "seed": 66,
+  "mapName": "GLOOMHAVEN",
+  "regions": [
+    {
+      "name": "Ravenmarch",
+      "subtitle": "Borderlands of Ravenmarch",
+      "color": "#ccc088",
+      "labelX": 1355.0,
+      "labelY": 895.0,
+      "cities": [
+        {
+          "name": "Jadeston",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Lawklif",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Kettlebrook",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Ivyreach",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Fernhollow",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Millcross",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Iskarion",
+      "subtitle": "Principality of Iskarion",
+      "color": "#a8b8a0",
+      "labelX": 465.0,
+      "labelY": 1305.0,
+      "cities": [
+        {
+          "name": "Inkwell",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Nighthollow",
+          "x": 0.1,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Greywater",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.1,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Feradell",
+          "x": 0.1,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Galanthia",
+      "subtitle": "The Free Marches of Galanthia",
+      "color": "#c8b490",
+      "labelX": 1745.0,
+      "labelY": 1035.0,
+      "cities": [
+        {
+          "name": "Fernhollow",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Elmsworth",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Millcross",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Oldbridge",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Elonia",
+      "subtitle": "The Free Marches of Elonia",
+      "color": "#a0b0b8",
+      "labelX": 515.0,
+      "labelY": 635.0,
+      "cities": [
+        {
+          "name": "Gildafell",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Millcross",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Duskwater",
+          "x": 0.1,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Fogmere",
+          "x": 0.1,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Kettlebrook",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Silverton",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Korrath",
+      "subtitle": "Principality of Korrath",
+      "color": "#b8c098",
+      "labelX": 2065.0,
+      "labelY": 825.0,
+      "cities": [
+        {
+          "name": "Maplecross",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Duskwater",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Borist",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Ashbourne",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Urswick",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Dremora",
+      "subtitle": "The Dominion of Dremora",
+      "color": "#c4b0a8",
+      "labelX": 2515.0,
+      "labelY": 645.0,
+      "cities": [
+        {
+          "name": "Stonemere",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Yellowfen",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Maplecross",
+          "x": 0.8,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ashmark",
+      "subtitle": "Kingdom of Ashmark",
+      "color": "#a8c0b0",
+      "labelX": 1015.0,
+      "labelY": 1225.0,
+      "cities": [
+        {
+          "name": "Oakmere",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Odrin",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Underbridge",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Yellowfen",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Underbridge",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Greymist Heights",
+      "labelX": 285.0,
+      "labelY": 1155.0
+    },
+    {
+      "name": "Dragon's Spine",
+      "labelX": 935.0,
+      "labelY": 695.0
+    },
+    {
+      "name": "Silvervein Ridge",
+      "labelX": 1345.0,
+      "labelY": 965.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Crimson Gulf",
+    "Sea of Winds",
+    "Sea of Ash",
+    "Sea of Twilight",
+    "Jade Sea"
+  ]
+}

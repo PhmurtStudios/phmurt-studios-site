@@ -1,0 +1,258 @@
+{
+  "seed": 82,
+  "mapName": "ELDERGROVE",
+  "regions": [
+    {
+      "name": "Lakeshore",
+      "subtitle": "Principality of Lakeshore",
+      "color": "#ccc088",
+      "labelX": 185.0,
+      "labelY": 825.0,
+      "cities": [
+        {
+          "name": "Yellowfen",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Millcross",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Stormgate",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Duskveil",
+      "subtitle": "The Dominion of Duskveil",
+      "color": "#a8b8a0",
+      "labelX": 1975.0,
+      "labelY": 755.0,
+      "cities": [
+        {
+          "name": "Dunmore",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Kronham",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Loyarn",
+          "x": 0.7,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Redthorn",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Whitevale",
+          "x": 0.8,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Verdantia",
+      "subtitle": "Realm of Verdantia",
+      "color": "#c8b490",
+      "labelX": 1345.0,
+      "labelY": 515.0,
+      "cities": [
+        {
+          "name": "Greywater",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Stonemere",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Blackrock",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Quartzridge",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Feradell",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Stormvale",
+      "subtitle": "The Dominion of Stormvale",
+      "color": "#a0b0b8",
+      "labelX": 1535.0,
+      "labelY": 1105.0,
+      "cities": [
+        {
+          "name": "Thistledown",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Quartzridge",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Stormgate",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Anora",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Goldug",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Thornwall",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Silverfen",
+      "subtitle": "Realm of Silverfen",
+      "color": "#b8c098",
+      "labelX": 2425.0,
+      "labelY": 615.0,
+      "cities": [
+        {
+          "name": "Ravenmere",
+          "x": 0.9,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Oakmere",
+          "x": 0.9,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Highwall",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Gildafell",
+          "x": 0.9,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Kharadan",
+      "subtitle": "Realm of Kharadan",
+      "color": "#c4b0a8",
+      "labelX": 755.0,
+      "labelY": 985.0,
+      "cities": [
+        {
+          "name": "Kettlebrook",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Ashwick",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Oakmere",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Jadeston",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ebonwall Mountains",
+      "labelX": 1705.0,
+      "labelY": 1315.0
+    },
+    {
+      "name": "Greymist Heights",
+      "labelX": 1355.0,
+      "labelY": 435.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 2215.0,
+      "labelY": 965.0
+    },
+    {
+      "name": "Thundercrest Range",
+      "labelX": 1145.0,
+      "labelY": 505.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Embers",
+    "Sea of Storms",
+    "Pale Sea",
+    "Sea of Winds",
+    "Sea of Twilight"
+  ]
+}

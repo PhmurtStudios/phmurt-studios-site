@@ -1,0 +1,118 @@
+{
+  "seed": 78,
+  "mapName": "THUNDERCRAG",
+  "regions": [
+    {
+      "name": "Windmere",
+      "subtitle": "Kingdom of Windmere",
+      "color": "#ccc088",
+      "labelX": 1625.0,
+      "labelY": 755.0,
+      "cities": [
+        {
+          "name": "Blackrock",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Freehold",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Valewick",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Goleli",
+      "subtitle": "The Free Marches of Goleli",
+      "color": "#a8b8a0",
+      "labelX": 1165.0,
+      "labelY": 1225.0,
+      "cities": [
+        {
+          "name": "Dremoor",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Urswick",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Northgate",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Shadowfen",
+      "subtitle": "Duchy of Shadowfen",
+      "color": "#c8b490",
+      "labelX": 2035.0,
+      "labelY": 475.0,
+      "cities": [
+        {
+          "name": "Stormgate",
+          "x": 0.7,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.7,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Lindel",
+          "x": 0.7,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Duskhold",
+          "x": 0.7,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Jade Sea",
+    "Sea of Frost",
+    "Sea of Twilight",
+    "Sea of Ash",
+    "Pale Sea"
+  ]
+}

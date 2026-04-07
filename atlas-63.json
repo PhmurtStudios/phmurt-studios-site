@@ -1,0 +1,247 @@
+{
+  "seed": 63,
+  "mapName": "SUNFORGE",
+  "regions": [
+    {
+      "name": "Evershade",
+      "subtitle": "The Wilds of Evershade",
+      "color": "#ccc088",
+      "labelX": 1495.0,
+      "labelY": 1255.0,
+      "cities": [
+        {
+          "name": "Lindel",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Feradell",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Dawnhollow",
+      "subtitle": "Realm of Dawnhollow",
+      "color": "#a8b8a0",
+      "labelX": 325.0,
+      "labelY": 815.0,
+      "cities": [
+        {
+          "name": "Windcrest",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Deepwatch",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Ashbourne",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Loyarn",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Knolltown",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Northmere",
+      "subtitle": "The Dominion of Northmere",
+      "color": "#c8b490",
+      "labelX": 945.0,
+      "labelY": 975.0,
+      "cities": [
+        {
+          "name": "Yewborough",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Westmarch",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Brinewood",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Goleli",
+      "subtitle": "The Wilds of Goleli",
+      "color": "#a0b0b8",
+      "labelX": 1015.0,
+      "labelY": 505.0,
+      "cities": [
+        {
+          "name": "Fernhollow",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Runeford",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Goldug",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Longmere",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Dremoor",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Belros",
+      "subtitle": "The Wilds of Belros",
+      "color": "#b8c098",
+      "labelX": 1915.0,
+      "labelY": 1015.0,
+      "cities": [
+        {
+          "name": "Kronham",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Dawnwatch",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Blackrock",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Rynwood",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Gerenwalde",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Ilaes",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Kelvor",
+      "subtitle": "Kingdom of Kelvor",
+      "color": "#c4b0a8",
+      "labelX": 1395.0,
+      "labelY": 695.0,
+      "cities": [
+        {
+          "name": "Goldug",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Greenhollow",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Yewborough",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Anora",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Winds",
+    "Sea of Twilight",
+    "Sea of Ash",
+    "Pale Sea",
+    "Crimson Gulf"
+  ]
+}

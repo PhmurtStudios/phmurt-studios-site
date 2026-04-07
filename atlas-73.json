@@ -1,0 +1,273 @@
+{
+  "seed": 73,
+  "mapName": "EMBERGLOW",
+  "regions": [
+    {
+      "name": "Ashmark",
+      "subtitle": "Principality of Ashmark",
+      "color": "#ccc088",
+      "labelX": 995.0,
+      "labelY": 1645.0,
+      "cities": [
+        {
+          "name": "Pinewood",
+          "x": 0.4,
+          "y": 0.9,
+          "capital": true
+        },
+        {
+          "name": "Oakmere",
+          "x": 0.5,
+          "y": 0.9,
+          "capital": false
+        },
+        {
+          "name": "Yewborough",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Urswick",
+          "x": 0.3,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Blackrock",
+          "x": 0.3,
+          "y": 0.9,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Duskveil",
+      "subtitle": "Duchy of Duskveil",
+      "color": "#a8b8a0",
+      "labelX": 1645.0,
+      "labelY": 775.0,
+      "cities": [
+        {
+          "name": "Fogmere",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Lindel",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Pinecrest",
+      "subtitle": "The Dominion of Pinecrest",
+      "color": "#c8b490",
+      "labelX": 2475.0,
+      "labelY": 1045.0,
+      "cities": [
+        {
+          "name": "Brinewood",
+          "x": 0.9,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Ironholt",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Lindel",
+          "x": 0.9,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Zenithburg",
+          "x": 0.9,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Cyrin",
+      "subtitle": "The Free Marches of Cyrin",
+      "color": "#a0b0b8",
+      "labelX": 1315.0,
+      "labelY": 1405.0,
+      "cities": [
+        {
+          "name": "Duskhold",
+          "x": 0.5,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Odrin",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Stormgate",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Dawnhollow",
+      "subtitle": "Duchy of Dawnhollow",
+      "color": "#b8c098",
+      "labelX": 685.0,
+      "labelY": 865.0,
+      "cities": [
+        {
+          "name": "Runeford",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Redthorn",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Dremoor",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Zarakyr",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Sunmere",
+      "subtitle": "Kingdom of Sunmere",
+      "color": "#c4b0a8",
+      "labelX": 1975.0,
+      "labelY": 1235.0,
+      "cities": [
+        {
+          "name": "Odrin",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Ravenmere",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Stormgate",
+          "x": 0.8,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Gildafell",
+          "x": 0.7,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Stonemere",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Goleli",
+      "subtitle": "Kingdom of Goleli",
+      "color": "#a8c0b0",
+      "labelX": 685.0,
+      "labelY": 1275.0,
+      "cities": [
+        {
+          "name": "Highwall",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Oldbridge",
+          "x": 0.3,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Runeford",
+          "x": 0.3,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Jadeston",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Silvervein Ridge",
+      "labelX": 435.0,
+      "labelY": 735.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1565.0,
+      "labelY": 665.0
+    },
+    {
+      "name": "Ebonwall Mountains",
+      "labelX": 1705.0,
+      "labelY": 775.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 355.0,
+      "labelY": 935.0
+    }
+  ],
+  "lakes": [
+    {
+      "name": "Dimwater",
+      "labelX": 1255.0,
+      "labelY": 1043.0
+    }
+  ],
+  "seaNames": [
+    "Sea of Embers",
+    "Sea of Dreams",
+    "Sea of Frost",
+    "Jade Sea",
+    "Sea of Storms"
+  ]
+}

@@ -1,0 +1,235 @@
+{
+  "seed": 52,
+  "mapName": "VALKENMOOR",
+  "regions": [
+    {
+      "name": "Ironglenn",
+      "subtitle": "The Dominion of Ironglenn",
+      "color": "#ccc088",
+      "labelX": 235.0,
+      "labelY": 565.0,
+      "cities": [
+        {
+          "name": "Oldbridge",
+          "x": 0.1,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Zarakyr",
+          "x": 0.1,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Beowick",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Zenithburg",
+          "x": 0.1,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ashenveil",
+      "subtitle": "Principality of Ashenveil",
+      "color": "#a8b8a0",
+      "labelX": 1295.0,
+      "labelY": 955.0,
+      "cities": [
+        {
+          "name": "Hollowburg",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Dremoor",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Thistledown",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Pinewood",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Copperside",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Rynwood",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Grimvale",
+      "subtitle": "The Wilds of Grimvale",
+      "color": "#c8b490",
+      "labelX": 935.0,
+      "labelY": 625.0,
+      "cities": [
+        {
+          "name": "Oldbridge",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Pebblecreek",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Harrowfield",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Evershade",
+      "subtitle": "The Free Marches of Evershade",
+      "color": "#a0b0b8",
+      "labelX": 1805.0,
+      "labelY": 1315.0,
+      "cities": [
+        {
+          "name": "Zenithburg",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Beowick",
+          "x": 0.7,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.6,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Greenhollow",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Underbridge",
+          "x": 0.6,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Kharadan",
+      "subtitle": "Kingdom of Kharadan",
+      "color": "#b8c098",
+      "labelX": 2035.0,
+      "labelY": 715.0,
+      "cities": [
+        {
+          "name": "Alderhaven",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Duskwater",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Blackrock",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Solwynd",
+      "subtitle": "The Dominion of Solwynd",
+      "color": "#c4b0a8",
+      "labelX": 2375.0,
+      "labelY": 1465.0,
+      "cities": [
+        {
+          "name": "Odrin",
+          "x": 0.8,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Ravenmere",
+          "x": 0.9,
+          "y": 0.9,
+          "capital": false
+        },
+        {
+          "name": "Feradell",
+          "x": 0.8,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Goldug",
+          "x": 0.9,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Frost",
+    "Jade Sea",
+    "Sea of Winds",
+    "Sea of Storms",
+    "Sea of Embers"
+  ]
+}

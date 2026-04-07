@@ -1,0 +1,359 @@
+{
+  "seed": 67,
+  "mapName": "SILVERPINE",
+  "regions": [
+    {
+      "name": "Kelvor",
+      "subtitle": "The Dominion of Kelvor",
+      "color": "#ccc088",
+      "labelX": 1735.0,
+      "labelY": 825.0,
+      "cities": [
+        {
+          "name": "Lindel",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Anora",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Blackrock",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Thornwall",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Iskarion",
+      "subtitle": "Borderlands of Iskarion",
+      "color": "#a8b8a0",
+      "labelX": 2295.0,
+      "labelY": 195.0,
+      "cities": [
+        {
+          "name": "Odrin",
+          "x": 0.8,
+          "y": 0.1,
+          "capital": true
+        },
+        {
+          "name": "Underbridge",
+          "x": 0.7,
+          "y": 0.1,
+          "capital": false
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.7,
+          "y": 0.1,
+          "capital": false
+        },
+        {
+          "name": "Thistledown",
+          "x": 0.9,
+          "y": 0.1,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Selvane",
+      "subtitle": "Borderlands of Selvane",
+      "color": "#c8b490",
+      "labelX": 505.0,
+      "labelY": 1015.0,
+      "cities": [
+        {
+          "name": "Kronham",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Ilaes",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Blackrock",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Maplecross",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Regnwald",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Goleli",
+      "subtitle": "Borderlands of Goleli",
+      "color": "#a0b0b8",
+      "labelX": 2095.0,
+      "labelY": 625.0,
+      "cities": [
+        {
+          "name": "Greywater",
+          "x": 0.7,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Valewick",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Runeford",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Hollowburg",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Stonemere",
+          "x": 0.7,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Northgate",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ironglenn",
+      "subtitle": "The Dominion of Ironglenn",
+      "color": "#b8c098",
+      "labelX": 1295.0,
+      "labelY": 1275.0,
+      "cities": [
+        {
+          "name": "Ilaes",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Gerenwalde",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Runeford",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Fernhollow",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Nightward",
+      "subtitle": "The Free Marches of Nightward",
+      "color": "#c4b0a8",
+      "labelX": 1325.0,
+      "labelY": 545.0,
+      "cities": [
+        {
+          "name": "Copperside",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Thebury",
+          "x": 0.4,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Highwall",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Tidefall",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Whitevale",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Freehold",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Drakkos",
+      "subtitle": "Duchy of Drakkos",
+      "color": "#a8c0b0",
+      "labelX": 1885.0,
+      "labelY": 1225.0,
+      "cities": [
+        {
+          "name": "Hollowburg",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Duskwater",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Obsidara",
+      "subtitle": "Kingdom of Obsidara",
+      "color": "#c8c0a0",
+      "labelX": 1755.0,
+      "labelY": 335.0,
+      "cities": [
+        {
+          "name": "Dawnwatch",
+          "x": 0.6,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Foxbury",
+          "x": 0.6,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Yellowfen",
+          "x": 0.6,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Runeford",
+          "x": 0.7,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Loyarn",
+          "x": 0.7,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Thundercrest Range",
+      "labelX": 1575.0,
+      "labelY": 335.0
+    },
+    {
+      "name": "Ironspine Range",
+      "labelX": 1245.0,
+      "labelY": 1145.0
+    },
+    {
+      "name": "Ebonwall Mountains",
+      "labelX": 1865.0,
+      "labelY": 1245.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1495.0,
+      "labelY": 1075.0
+    }
+  ],
+  "lakes": [
+    {
+      "name": "Crystal Lake",
+      "labelX": 1345.0,
+      "labelY": 843.0
+    },
+    {
+      "name": "Mirrordeep",
+      "labelX": 2055.0,
+      "labelY": 693.0
+    }
+  ],
+  "seaNames": [
+    "Sea of Embers",
+    "Pale Sea",
+    "Crimson Gulf",
+    "Sea of Dreams",
+    "Sea of Storms"
+  ]
+}

@@ -1,0 +1,241 @@
+{
+  "seed": 54,
+  "mapName": "DUSKREACH",
+  "regions": [
+    {
+      "name": "Theanas",
+      "subtitle": "Borderlands of Theanas",
+      "color": "#ccc088",
+      "labelX": 1375.0,
+      "labelY": 465.0,
+      "cities": [
+        {
+          "name": "Highwall",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Westmarch",
+          "x": 0.4,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Zenithburg",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Dawnhollow",
+      "subtitle": "Realm of Dawnhollow",
+      "color": "#a8b8a0",
+      "labelX": 1145.0,
+      "labelY": 995.0,
+      "cities": [
+        {
+          "name": "Longmere",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Anora",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Greenhollow",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Selvane",
+      "subtitle": "Kingdom of Selvane",
+      "color": "#c8b490",
+      "labelX": 2135.0,
+      "labelY": 205.0,
+      "cities": [
+        {
+          "name": "Redthorn",
+          "x": 0.8,
+          "y": 0.1,
+          "capital": true
+        },
+        {
+          "name": "Brinewood",
+          "x": 0.7,
+          "y": 0.1,
+          "capital": false
+        },
+        {
+          "name": "Ivyreach",
+          "x": 0.7,
+          "y": 0.1,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Nightward",
+      "subtitle": "Borderlands of Nightward",
+      "color": "#a0b0b8",
+      "labelX": 485.0,
+      "labelY": 605.0,
+      "cities": [
+        {
+          "name": "Moonshadow",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Runeford",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Yellowfen",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Drakkos",
+      "subtitle": "Borderlands of Drakkos",
+      "color": "#b8c098",
+      "labelX": 1695.0,
+      "labelY": 1055.0,
+      "cities": [
+        {
+          "name": "Runeford",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Yewborough",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Thebury",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Nighthollow",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Goldenleaf",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Kharadan",
+      "subtitle": "The Wilds of Kharadan",
+      "color": "#c4b0a8",
+      "labelX": 975.0,
+      "labelY": 545.0,
+      "cities": [
+        {
+          "name": "Palanor",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Junipervale",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Zarakyr",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Westmarch",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Quartzridge",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Anora",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Ash",
+    "Crimson Gulf",
+    "Jade Sea",
+    "Sea of Twilight",
+    "Iron Sea"
+  ]
+}

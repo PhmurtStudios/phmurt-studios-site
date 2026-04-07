@@ -1,0 +1,235 @@
+{
+  "seed": 61,
+  "mapName": "BLACKTHORN",
+  "regions": [
+    {
+      "name": "Valdheim",
+      "subtitle": "Principality of Valdheim",
+      "color": "#ccc088",
+      "labelX": 2335.0,
+      "labelY": 675.0,
+      "cities": [
+        {
+          "name": "Oldbridge",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Yellowfen",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Evershade",
+      "subtitle": "The Free Marches of Evershade",
+      "color": "#a8b8a0",
+      "labelX": 685.0,
+      "labelY": 1145.0,
+      "cities": [
+        {
+          "name": "Wydale",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Pinewood",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Goldug",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Nighthollow",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Whitevale",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Goleli",
+      "subtitle": "Borderlands of Goleli",
+      "color": "#c8b490",
+      "labelX": 365.0,
+      "labelY": 865.0,
+      "cities": [
+        {
+          "name": "Freehold",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Windcrest",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Jadeston",
+          "x": 0.0,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Dawnwatch",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Verdantia",
+      "subtitle": "The Dominion of Verdantia",
+      "color": "#a0b0b8",
+      "labelX": 1615.0,
+      "labelY": 1055.0,
+      "cities": [
+        {
+          "name": "Zenithburg",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Palanor",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Moonshadow",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Wydale",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Nightward",
+      "subtitle": "The Dominion of Nightward",
+      "color": "#b8c098",
+      "labelX": 1575.0,
+      "labelY": 685.0,
+      "cities": [
+        {
+          "name": "Lindel",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Dunmore",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Greywater",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Lawklif",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Cliffhaven",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Silverfen",
+      "subtitle": "Kingdom of Silverfen",
+      "color": "#c4b0a8",
+      "labelX": 1075.0,
+      "labelY": 815.0,
+      "cities": [
+        {
+          "name": "Ravenmere",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Junipervale",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Duskwater",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Twilight",
+    "Crimson Gulf",
+    "Sea of Frost",
+    "Iron Sea",
+    "Sea of Silver"
+  ]
+}

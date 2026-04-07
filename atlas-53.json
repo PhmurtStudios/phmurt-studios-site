@@ -1,0 +1,235 @@
+{
+  "seed": 53,
+  "mapName": "SERPENTIS",
+  "regions": [
+    {
+      "name": "Aelindor",
+      "subtitle": "Principality of Aelindor",
+      "color": "#ccc088",
+      "labelX": 1085.0,
+      "labelY": 775.0,
+      "cities": [
+        {
+          "name": "Dremoor",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Kronham",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Zenithburg",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ravenmarch",
+      "subtitle": "Borderlands of Ravenmarch",
+      "color": "#a8b8a0",
+      "labelX": 1945.0,
+      "labelY": 605.0,
+      "cities": [
+        {
+          "name": "Northgate",
+          "x": 0.7,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Lawklif",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Duskwater",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Kronham",
+          "x": 0.8,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Runeford",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Goleli",
+      "subtitle": "The Dominion of Goleli",
+      "color": "#c8b490",
+      "labelX": 565.0,
+      "labelY": 875.0,
+      "cities": [
+        {
+          "name": "Yellowfen",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Anora",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Lakecrest",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Ashwick",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Deepwatch",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Pebblecreek",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Sunmere",
+      "subtitle": "The Free Marches of Sunmere",
+      "color": "#a0b0b8",
+      "labelX": 2205.0,
+      "labelY": 905.0,
+      "cities": [
+        {
+          "name": "Oldbridge",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Goldenleaf",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Kronham",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Galanthia",
+      "subtitle": "The Dominion of Galanthia",
+      "color": "#b8c098",
+      "labelX": 945.0,
+      "labelY": 1225.0,
+      "cities": [
+        {
+          "name": "Cliffhaven",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Zenithburg",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Highwall",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Redthorn",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Essear",
+      "subtitle": "Realm of Essear",
+      "color": "#c4b0a8",
+      "labelX": 2315.0,
+      "labelY": 475.0,
+      "cities": [
+        {
+          "name": "Goldug",
+          "x": 0.8,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Elmsworth",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Odrin",
+          "x": 0.8,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Silver",
+    "Jade Sea",
+    "Sea of Winds",
+    "Sea of Ash",
+    "Crimson Gulf"
+  ]
+}

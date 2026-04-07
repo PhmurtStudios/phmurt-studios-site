@@ -1,0 +1,269 @@
+{
+  "seed": 55,
+  "mapName": "WOLFSBANE",
+  "regions": [
+    {
+      "name": "Caltheon",
+      "subtitle": "Duchy of Caltheon",
+      "color": "#ccc088",
+      "labelX": 1265.0,
+      "labelY": 775.0,
+      "cities": [
+        {
+          "name": "Maplecross",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Thebury",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Cliffhaven",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Palanor",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Fara",
+      "subtitle": "Realm of Fara",
+      "color": "#a8b8a0",
+      "labelX": 1685.0,
+      "labelY": 235.0,
+      "cities": [
+        {
+          "name": "Rynwood",
+          "x": 0.6,
+          "y": 0.1,
+          "capital": true
+        },
+        {
+          "name": "Duskhold",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Gerenwalde",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Wydale",
+          "x": 0.7,
+          "y": 0.1,
+          "capital": false
+        },
+        {
+          "name": "Goldug",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Windcrest",
+          "x": 0.6,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Valdheim",
+      "subtitle": "The Free Marches of Valdheim",
+      "color": "#c8b490",
+      "labelX": 1665.0,
+      "labelY": 1295.0,
+      "cities": [
+        {
+          "name": "Tidefall",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Goldenleaf",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Ilaes",
+          "x": 0.6,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Oldbridge",
+          "x": 0.7,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Duskhold",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Dravina",
+      "subtitle": "The Dominion of Dravina",
+      "color": "#a0b0b8",
+      "labelX": 1885.0,
+      "labelY": 575.0,
+      "cities": [
+        {
+          "name": "Fernhollow",
+          "x": 0.7,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Deepwatch",
+          "x": 0.8,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Highkeep",
+      "subtitle": "Kingdom of Highkeep",
+      "color": "#b8c098",
+      "labelX": 2355.0,
+      "labelY": 805.0,
+      "cities": [
+        {
+          "name": "Nighthollow",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Brinewood",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Tidefall",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Wydale",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Blackmoor",
+      "subtitle": "Kingdom of Blackmoor",
+      "color": "#c4b0a8",
+      "labelX": 2055.0,
+      "labelY": 1015.0,
+      "cities": [
+        {
+          "name": "Gerenwalde",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Longmere",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Kettlebrook",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Cliffhaven",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Beowick",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Silvervein Ridge",
+      "labelX": 2475.0,
+      "labelY": 855.0
+    },
+    {
+      "name": "Greymist Heights",
+      "labelX": 1405.0,
+      "labelY": 885.0
+    },
+    {
+      "name": "Dragon's Spine",
+      "labelX": 1125.0,
+      "labelY": 525.0
+    },
+    {
+      "name": "Ironspine Range",
+      "labelX": 1965.0,
+      "labelY": 1005.0
+    }
+  ],
+  "lakes": [
+    {
+      "name": "Lake Varos",
+      "labelX": 1805.0,
+      "labelY": 1103.0
+    },
+    {
+      "name": "Shadowmere",
+      "labelX": 1705.0,
+      "labelY": 673.0
+    }
+  ],
+  "seaNames": [
+    "Sea of Winds",
+    "Pale Sea",
+    "Sea of Frost",
+    "Jade Sea",
+    "Sea of Twilight"
+  ]
+}

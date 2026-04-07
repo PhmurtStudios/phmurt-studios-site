@@ -1,0 +1,303 @@
+{
+  "seed": 59,
+  "mapName": "CROWNSGATE",
+  "regions": [
+    {
+      "name": "Caltheon",
+      "subtitle": "Kingdom of Caltheon",
+      "color": "#ccc088",
+      "labelX": 745.0,
+      "labelY": 1225.0,
+      "cities": [
+        {
+          "name": "Dremoor",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Ironholt",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Northgate",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Oakmere",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Dawnwatch",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Ashwick",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Pinecrest",
+      "subtitle": "Duchy of Pinecrest",
+      "color": "#a8b8a0",
+      "labelX": 2215.0,
+      "labelY": 725.0,
+      "cities": [
+        {
+          "name": "Ilaes",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Thebury",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Dremoor",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Greenhollow",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Zenithburg",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Goldenleaf",
+          "x": 0.9,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Galanthia",
+      "subtitle": "Realm of Galanthia",
+      "color": "#c8b490",
+      "labelX": 545.0,
+      "labelY": 845.0,
+      "cities": [
+        {
+          "name": "Brinewood",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Ivyreach",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Gerenwalde",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Goldug",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Vornhelm",
+      "subtitle": "The Free Marches of Vornhelm",
+      "color": "#a0b0b8",
+      "labelX": 1375.0,
+      "labelY": 1295.0,
+      "cities": [
+        {
+          "name": "Borist",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Tidefall",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Zarakyr",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Stormvale",
+      "subtitle": "The Free Marches of Stormvale",
+      "color": "#b8c098",
+      "labelX": 1475.0,
+      "labelY": 625.0,
+      "cities": [
+        {
+          "name": "Knolltown",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Stonemere",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Runeford",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Greywater",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Fara",
+      "subtitle": "Kingdom of Fara",
+      "color": "#c4b0a8",
+      "labelX": 2375.0,
+      "labelY": 1105.0,
+      "cities": [
+        {
+          "name": "Odrin",
+          "x": 0.9,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Zarakyr",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Moonshadow",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Kettlebrook",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Thistledown",
+          "x": 0.9,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ashmark",
+      "subtitle": "Principality of Ashmark",
+      "color": "#a8c0b0",
+      "labelX": 355.0,
+      "labelY": 1215.0,
+      "cities": [
+        {
+          "name": "Dremoor",
+          "x": 0.1,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Odrin",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Zarakyr",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Greymist Heights",
+      "labelX": 2085.0,
+      "labelY": 685.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1095.0,
+      "labelY": 1165.0
+    }
+  ],
+  "lakes": [
+    {
+      "name": "Lake Thornwell",
+      "labelX": 1615.0,
+      "labelY": 893.0
+    },
+    {
+      "name": "Lunmere",
+      "labelX": 1195.0,
+      "labelY": 893.0
+    },
+    {
+      "name": "Lake Ashveil",
+      "labelX": 735.0,
+      "labelY": 943.0
+    }
+  ],
+  "seaNames": [
+    "Sea of Storms",
+    "Iron Sea",
+    "Sea of Silver",
+    "Sea of Twilight",
+    "Sea of Winds"
+  ]
+}

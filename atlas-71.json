@@ -1,0 +1,199 @@
+{
+  "seed": 71,
+  "mapName": "GRIMSPIRE",
+  "regions": [
+    {
+      "name": "Solwynd",
+      "subtitle": "Realm of Solwynd",
+      "color": "#ccc088",
+      "labelX": 1115.0,
+      "labelY": 265.0,
+      "cities": [
+        {
+          "name": "Tidefall",
+          "x": 0.4,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Maplecross",
+          "x": 0.4,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.3,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Yewborough",
+          "x": 0.4,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ravenmarch",
+      "subtitle": "Duchy of Ravenmarch",
+      "color": "#a8b8a0",
+      "labelX": 1305.0,
+      "labelY": 725.0,
+      "cities": [
+        {
+          "name": "Longmere",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Gildafell",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Junipervale",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Lindel",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Hollowburg",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Iskarion",
+      "subtitle": "Realm of Iskarion",
+      "color": "#c8b490",
+      "labelX": 505.0,
+      "labelY": 585.0,
+      "cities": [
+        {
+          "name": "Stormgate",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Ashwick",
+          "x": 0.1,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Deepwatch",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Freehold",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Tidefall",
+          "x": 0.1,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Kronham",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Caltheon",
+      "subtitle": "Borderlands of Caltheon",
+      "color": "#a0b0b8",
+      "labelX": 715.0,
+      "labelY": 1205.0,
+      "cities": [
+        {
+          "name": "Thornwall",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Runeford",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Ravenmere",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Urswick",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Deepwatch",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ebonwall Mountains",
+      "labelX": 565.0,
+      "labelY": 595.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1255.0,
+      "labelY": 1125.0
+    },
+    {
+      "name": "Greymist Heights",
+      "labelX": 1225.0,
+      "labelY": 385.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Ash",
+    "Sea of Winds",
+    "Sea of Embers",
+    "Sea of Frost",
+    "Crimson Gulf"
+  ]
+}
