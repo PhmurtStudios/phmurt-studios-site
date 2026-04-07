@@ -79,6 +79,8 @@
       animation: cm-spin 0.8s linear infinite;
     }
     @keyframes cm-spin { to { transform: rotate(360deg); } }
+    @keyframes lwSlideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes lwPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
     /* Hide the default page hero when React loads */
     .ps-page-hero.cm-hero { display: none; }
 
@@ -1658,8 +1660,8 @@ const CONDITION_HELP = {
 
 // ─── BLANK CAMPAIGN TEMPLATE ────────────────────────────────────────────────
 
-const NEW_CAMPAIGN = () => ({
-  name: "Untitled Campaign", status: "active", startDate: new Date().toISOString().slice(0,10),
+const NEW_CAMPAIGN = (type = "traditional") => ({
+  name: "Untitled Campaign", campaignType: type, status: "active", startDate: new Date().toISOString().slice(0,10),
   nextSession: "", sessionsPlayed: 0,
   sessionSchedule: { dayOfWeek: 6, hour: 19, minute: 0, frequency: "weekly", timezone: "EST" },
   modules: {
@@ -3492,13 +3494,93 @@ const cmCompactForCloud = (data) => {
     }
   }
 
-  // 4. Strip empty arrays to save a few more bytes
+  // 4. Strip POI descriptions (regenerable from seed, only keep custom quest hooks)
+  if (d.pointsOfInterest && Array.isArray(d.pointsOfInterest)) {
+    d.pointsOfInterest = d.pointsOfInterest.map(poi => {
+      if (!poi.description || !poi._edited) {
+        // Remove description if not manually edited
+        const { description, ...rest } = poi;
+        return rest;
+      }
+      return poi;
+    });
+  }
+
+  // 5. Compact Living World event log aggressively
+  if (d._lwEventLog && Array.isArray(d._lwEventLog)) {
+    // Keep only 50 most recent events, strip detail field (just keep headline)
+    d._lwEventLog = d._lwEventLog.slice(0, 50).map(evt => {
+      const { detail, ...rest } = evt;
+      return rest;
+    });
+  }
+
+  // 6. Strip worldMap SVG path data (regenerated from seed)
+  // Keep only the navigation state, not any generated SVG
+  if (d.worldMap && typeof d.worldMap === 'object') {
+    const { pendingLaunch, lastRoute, lastFocusedRegionId } = d.worldMap;
+    d.worldMap = { pendingLaunch, lastRoute, lastFocusedRegionId };
+  }
+
+  // 7. Compact party member data — strip full character sheets, keep only summary
+  if (d.party && Array.isArray(d.party)) {
+    d.party = d.party.map(member => {
+      const summary = {
+        id: member.id,
+        name: member.name,
+        cls: member.cls,
+        lv: member.lv,
+        race: member.race,
+        hp: member.hp,
+        maxHp: member.maxHp,
+        ac: member.ac,
+        faction: member.faction,
+      };
+      // Preserve only essential fields; full character sheets can be rebuilt from external sheets or simplistic defaults
+      // Keep optional fields that aren't bulky
+      if (member.player) summary.player = member.player;
+      if (member.status) summary.status = member.status;
+      if (member.sheetUrl) summary.sheetUrl = member.sheetUrl;
+      if (member.sheetName) summary.sheetName = member.sheetName;
+      return summary;
+    });
+  }
+
+  // 8. Strip empty arrays to save a few more bytes
   for (const key of ["timeline", "campaignNotes", "combatLedger", "encounters"]) {
     if (Array.isArray(d[key]) && d[key].length === 0) delete d[key];
   }
 
-  d._compactVersion = 1; // Mark so we know to expand on load
+  d._compactVersion = 2; // Increment to track enhanced compaction version
+
+  // 9. Log compaction size for monitoring
+  if (typeof console !== 'undefined') {
+    const payloadSize = JSON.stringify(d).length;
+    console.log('[CloudCompact] Payload size: ' + (payloadSize / 1024).toFixed(1) + 'KB');
+  }
+
   return d;
+};
+
+// Deep clean: recursively remove undefined, null, and empty string values from compacted data
+const cmDeepClean = (obj) => {
+  if (Array.isArray(obj)) {
+    return obj
+      .map(item => cmDeepClean(item))
+      .filter(v => v !== undefined && v !== null && v !== "");
+  }
+  if (obj && typeof obj === 'object') {
+    const cleaned = {};
+    for (const [key, value] of Object.entries(obj)) {
+      const cleanedValue = cmDeepClean(value);
+      // Only include non-empty values
+      if (cleanedValue !== undefined && cleanedValue !== null && cleanedValue !== "") {
+        cleaned[key] = cleanedValue;
+      }
+    }
+    return Object.keys(cleaned).length > 0 ? cleaned : undefined;
+  }
+  return obj;
 };
 
 const cmExpandFromCloud = (data) => {
@@ -3564,6 +3646,20 @@ const cmExpandFromCloud = (data) => {
         if (!d.cities) {
           d.cities = baseline.cities || [];
         }
+
+        // Regenerate POI descriptions from baseline if stripped during compact (v2+)
+        if (d.pointsOfInterest && baseline.pointsOfInterest) {
+          d.pointsOfInterest = d.pointsOfInterest.map(poi => {
+            if (!poi.description) {
+              // Find matching POI in baseline and restore description
+              const basePoi = baseline.pointsOfInterest.find(p => p.id === poi.id);
+              if (basePoi && basePoi.description) {
+                poi.description = basePoi.description;
+              }
+            }
+            return poi;
+          });
+        }
       }
     } catch (e) {
       console.warn("[CampaignManager] Expand from cloud failed:", e);
@@ -3575,11 +3671,14 @@ const cmExpandFromCloud = (data) => {
     }
   }
 
-  // Final safety: ensure all arrays exist
+  // Final safety: ensure all arrays and objects exist
   if (!d.regions) d.regions = [];
   if (!d.factions) d.factions = [];
   if (!d.npcs) d.npcs = [];
   if (!d.cities) d.cities = [];
+  if (!d.worldMap) d.worldMap = { pendingLaunch: null, lastRoute: null, lastFocusedRegionId: null };
+  if (!d.party) d.party = [];
+  if (!d._lwEventLog) d._lwEventLog = [];
 
   return d;
 };
@@ -4486,7 +4585,12 @@ function CampaignSelector({ campaigns, activeCampaignId, onSelect, onCreate, onD
                 borderBottom:`1px solid ${T.borderMid}`, transition:"background 0.15s",
               }}>
                 <div>
-                  <div style={{ fontSize:13, color:T.text, fontWeight:300 }}>{c.data.name}</div>
+                  <div style={{ fontSize:13, color:T.text, fontWeight:300, display:"flex", alignItems:"center", gap:8 }}>
+                    {c.data.name}
+                    <span style={{ fontSize:8, fontWeight:500, letterSpacing:"0.5px", padding:"2px 6px", borderRadius:"2px", background: c.data.campaignType === "live" ? "rgba(94,224,154,0.15)" : "rgba(201,168,92,0.15)", color: c.data.campaignType === "live" ? "#5ee09a" : "rgba(201,168,92,0.8)" }}>
+                      {c.data.campaignType === "live" ? "⚡ LIVE" : "📜 TRAD"}
+                    </span>
+                  </div>
                   <div style={{ fontSize:10, color:T.textFaint, fontStyle:"italic" }}>
                     {c.data.party.length} players · {c.data.sessionsPlayed} sessions
                     {c.isExample && " · Example"}
@@ -4705,6 +4809,23 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
   return (
     <div style={{ display:"grid", gridTemplateColumns:"1fr 340px", gap:24, padding:"32px 56px" }}>
       <div style={{ display:"flex", flexDirection:"column", gap:24 }}>
+        {/* Campaign Name and Type */}
+        <div>
+          <h1 style={{ fontFamily:T.heading, fontSize:32, color:T.text, margin:"0 0 12px 0", letterSpacing:"1px" }}>
+            {data.name}
+          </h1>
+          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+            <span style={{
+              fontSize:10, fontWeight:500, letterSpacing:"0.5px", textTransform:"uppercase",
+              padding:"4px 10px", borderRadius:"3px",
+              background: data.campaignType === "live" ? "rgba(94,224,154,0.15)" : "rgba(201,168,92,0.15)",
+              color: data.campaignType === "live" ? "#5ee09a" : "rgba(201,168,92,0.9)"
+            }}>
+              {data.campaignType === "live" ? "⚡ Live Campaign" : "📜 Traditional Campaign"}
+            </span>
+          </div>
+        </div>
+
         {/* Stats Row */}
         <div style={{ display:"flex", gap:12 }}>
           {[
@@ -5163,6 +5284,35 @@ function loadTabModule(name, url) {
   return _tabModulePromises[name];
 }
 
+/**
+ * Lazy-load a data module (pure JS with no JSX): fetch & execute without Babel transform.
+ * Skips Babel transpilation for better performance on data-only files.
+ * The module registers its data on window (e.g. window.TOWN_IMAGES, window.ATLAS_IMAGES).
+ */
+function loadDataModule(name, url) {
+  if (_tabModuleState[name]) return Promise.resolve();
+  if (_tabModulePromises[name]) return _tabModulePromises[name];
+
+  _tabModulePromises[name] = fetch(url, { cache: "no-cache" })
+    .then(function(r) { return r.text(); })
+    .then(function(code) {
+      var script = document.createElement("script");
+      // Wrap in IIFE to avoid const/let redeclaration conflicts with main scope
+      script.textContent = "(function(){" + code + "\n})();";
+      document.head.appendChild(script);
+      _tabModuleState[name] = true;
+      delete _tabModulePromises[name];
+    })
+    .catch(function(err) {
+      console.error("[LazyLoader] Failed to load data module " + name + ":", err);
+      delete _tabModulePromises[name];
+    });
+
+  return _tabModulePromises[name];
+}
+// Expose globally so campaign-world.js can lazy-load town-images on demand
+window.loadDataModule = loadDataModule;
+
 
 // ═══════════════════════════════════════════════════════════════════════════
 // APP — Main application with lazy-loaded tab modules
@@ -5199,6 +5349,9 @@ function App() {
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [campaignRoles, setCampaignRoles] = useState({}); // { campaignId: "dm"|"player" }
   const [saveStatus, setSaveStatus] = useState(""); // "", "saving", "saved", "error"
+  const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [createName, setCreateName] = useState("");
+  const [createType, setCreateType] = useState("traditional");
 
   // ── Lazy tab module readiness ──
   const [tabsReady, setTabsReady] = useState({
@@ -5216,8 +5369,9 @@ function App() {
         await loadTabModule("timeline", "campaign-timeline.js");
         setTabsReady(function(prev) { return Object.assign({}, prev, { timeline: true }); });
 
-        await loadTabModule("atlas-images", "atlas-images.js");
-        await loadTabModule("town-images", "town-images.js");
+        // Load atlas-images immediately (needed for world map), but defer town-images until user clicks a town
+        await loadDataModule("atlas-images", "atlas-images.js");
+        await loadTabModule("living-world", "living-world.js");
         await loadTabModule("world", "campaign-world.js");
         setTabsReady(function(prev) { return Object.assign({}, prev, { world: true }); });
 
@@ -5236,7 +5390,7 @@ function App() {
   useEffect(() => {
     if (activeTab === "dashboard" || tabsReady[activeTab]) return;
     var urls = { timeline: "campaign-timeline.js", world: "campaign-world.js", play: "campaign-play.js" };
-    var preload = activeTab === "world" ? loadTabModule("atlas-images", "atlas-images.js").then(function() { return loadTabModule("town-images", "town-images.js"); }) : Promise.resolve();
+    var preload = activeTab === "world" ? loadDataModule("atlas-images", "atlas-images.js").then(function() { return loadTabModule("living-world", "living-world.js"); }) : Promise.resolve();
     preload.then(function() { return loadTabModule(activeTab, urls[activeTab]); }).then(function() {
       setTabsReady(function(prev) { var n = Object.assign({}, prev); n[activeTab] = true; return n; });
     });
@@ -5304,7 +5458,9 @@ function App() {
         if (!payload.name && !payload.id) return;
         // Compact data before cloud save to minimize storage
         const compacted = cmCompactForCloud(payload);
-        const saveObj = { ...compacted, id: camp.id };
+        // Deep clean to remove all undefined/null/empty values
+        const cleaned = cmDeepClean(compacted);
+        const saveObj = { ...cleaned, id: camp.id };
         saves.push(PhmurtDB.saveCampaign(saveObj));
       });
       Promise.all(saves).then(() => {
@@ -5385,12 +5541,18 @@ function App() {
   };
 
   const handleCreateCampaign = () => {
-    const name = prompt("Campaign name:");
-    if (!name) return;
-    const newCamp = { id: "camp-" + Date.now(), data: { ...NEW_CAMPAIGN(), name }, isExample: false };
+    setCreateName("");
+    setCreateType("traditional");
+    setCreateModalOpen(true);
+  };
+
+  const handleConfirmCreate = () => {
+    if (!createName.trim()) return;
+    const newCamp = { id: "camp-" + Date.now(), data: { ...NEW_CAMPAIGN(createType), name: createName.trim() }, isExample: false };
     setCampaigns(prev => [...prev, newCamp]);
     setActiveCampaignId(newCamp.id);
     setActiveTab("dashboard");
+    setCreateModalOpen(false);
   };
 
   const handleDeleteCampaign = (id) => {
@@ -5753,6 +5915,154 @@ function App() {
             {joinSuccess && <div style={{ padding:"8px 12px", background:"rgba(94,224,154,0.06)", border:"1px solid rgba(94,224,154,0.2)", borderRadius:6, color:"#5ee09a", fontFamily:T.body, fontSize:12, marginBottom:8 }}>{joinSuccess}</div>}
           </div>
         </Modal>
+      )}
+
+      {/* ══ Create Campaign Modal ══ */}
+      {createModalOpen && (
+        <div style={{
+          position:"fixed", top:0, left:0, right:0, bottom:0,
+          background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"center", justifyContent:"center",
+          zIndex:1000, backdropFilter:"blur(2px)"
+        }}>
+          <div style={{
+            background:"rgba(20,18,14,0.98)", border:"1px solid rgba(201,168,92,0.25)",
+            borderRadius:"8px", boxShadow:"0 20px 60px rgba(0,0,0,0.6)",
+            width:"90%", maxWidth:600, padding:0, overflow:"hidden"
+          }}>
+            {/* Header */}
+            <div style={{
+              padding:"24px", borderBottom:"1px solid rgba(201,168,92,0.15)",
+              background:"rgba(201,168,92,0.05)"
+            }}>
+              <h2 style={{ fontFamily:T.heading, fontSize:22, color:"#f0e8d0", margin:0, letterSpacing:"1px" }}>
+                Create New Campaign
+              </h2>
+              <p style={{ fontFamily:T.body, fontSize:13, color:"#b8ae94", margin:"8px 0 0 0" }}>
+                Choose a campaign type to get started
+              </p>
+            </div>
+
+            {/* Content */}
+            <div style={{ padding:"24px" }}>
+              {/* Name Input */}
+              <div style={{ marginBottom:24 }}>
+                <label style={{ display:"block", fontFamily:T.heading, fontSize:12, color:"#c9a85c", letterSpacing:"1px", textTransform:"uppercase", marginBottom:8 }}>
+                  Campaign Name
+                </label>
+                <input
+                  type="text"
+                  value={createName}
+                  onChange={e => setCreateName(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") handleConfirmCreate(); }}
+                  placeholder="Enter campaign name..."
+                  style={{
+                    width:"100%", padding:"12px 14px", fontFamily:T.body, fontSize:14,
+                    background:"rgba(255,255,255,0.03)", border:"1px solid rgba(201,168,92,0.2)",
+                    borderRadius:"6px", color:"#f0e8d0", outline:"none",
+                    boxSizing:"border-box"
+                  }}
+                  autoFocus
+                />
+              </div>
+
+              {/* Type Selection */}
+              <div style={{ marginBottom:24 }}>
+                <label style={{ display:"block", fontFamily:T.heading, fontSize:12, color:"#c9a85c", letterSpacing:"1px", textTransform:"uppercase", marginBottom:12 }}>
+                  Campaign Type
+                </label>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                  {/* Traditional Campaign Card */}
+                  <div
+                    onClick={() => setCreateType("traditional")}
+                    style={{
+                      padding:16, borderRadius:6, cursor:"pointer", transition:"all 0.2s",
+                      border: createType === "traditional" ? "2px solid rgba(201,168,92,0.6)" : "1px solid rgba(201,168,92,0.2)",
+                      background: createType === "traditional" ? "rgba(201,168,92,0.08)" : "rgba(255,255,255,0.02)",
+                      opacity: 1, transform: "scale(1)"
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(201,168,92,0.12)"; e.currentTarget.style.transform = "scale(1.02)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = createType === "traditional" ? "rgba(201,168,92,0.08)" : "rgba(255,255,255,0.02)"; e.currentTarget.style.transform = "scale(1)"; }}
+                  >
+                    <div style={{ fontSize:28, marginBottom:8 }}>📜</div>
+                    <h3 style={{ fontFamily:T.heading, fontSize:13, color:"#f0e8d0", margin:"0 0 8px 0", letterSpacing:"0.5px" }}>
+                      Traditional Campaign
+                    </h3>
+                    <p style={{ fontFamily:T.body, fontSize:11, color:"#b8ae94", margin:"0 0 12px 0", lineHeight:"1.5" }}>
+                      A classic tabletop companion. Build your world, track your party, manage quests and factions.
+                    </p>
+                    <div style={{ fontSize:10, color:"#8a8070", lineHeight:"1.6" }}>
+                      <div>• Atlas & Maps</div>
+                      <div>• Factions & Regions</div>
+                      <div>• NPCs & Cities</div>
+                      <div>• Party Tracker</div>
+                      <div>• Quest Log</div>
+                      <div>• Session Timeline</div>
+                    </div>
+                  </div>
+
+                  {/* Live Campaign Card */}
+                  <div
+                    onClick={() => setCreateType("live")}
+                    style={{
+                      padding:16, borderRadius:6, cursor:"pointer", transition:"all 0.2s",
+                      border: createType === "live" ? "2px solid rgba(94,224,154,0.5)" : "1px solid rgba(201,168,92,0.2)",
+                      background: createType === "live" ? "rgba(94,224,154,0.08)" : "rgba(255,255,255,0.02)",
+                      opacity: 1, transform: "scale(1)"
+                    }}
+                    onMouseEnter={e => { e.currentTarget.style.background = "rgba(94,224,154,0.12)"; e.currentTarget.style.transform = "scale(1.02)"; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = createType === "live" ? "rgba(94,224,154,0.08)" : "rgba(255,255,255,0.02)"; e.currentTarget.style.transform = "scale(1)"; }}
+                  >
+                    <div style={{ fontSize:28, marginBottom:8 }}>⚡</div>
+                    <h3 style={{ fontFamily:T.heading, fontSize:13, color:"#f0e8d0", margin:"0 0 8px 0", letterSpacing:"0.5px" }}>
+                      Live Campaign
+                    </h3>
+                    <p style={{ fontFamily:T.body, fontSize:11, color:"#b8ae94", margin:"0 0 12px 0", lineHeight:"1.5" }}>
+                      A living, breathing world. Kingdoms wage wars, forge alliances, and collapse in real-time.
+                    </p>
+                    <div style={{ fontSize:10, color:"#8a8070", lineHeight:"1.6" }}>
+                      <div>• Everything in Traditional</div>
+                      <div>• Living World Engine</div>
+                      <div>• Real-Time Kingdom Diplomacy</div>
+                      <div>• Multiplayer Sync</div>
+                      <div>• Time Skip</div>
+                      <div>• Dynamic Map Changes</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div style={{
+              padding:"16px 24px", borderTop:"1px solid rgba(201,168,92,0.15)",
+              display:"flex", gap:10, justifyContent:"flex-end"
+            }}>
+              <button
+                onClick={() => setCreateModalOpen(false)}
+                style={{
+                  padding:"10px 18px", fontFamily:T.ui, fontSize:11, letterSpacing:"1px",
+                  background:"transparent", border:`1px solid ${T.border}`, borderRadius:"4px",
+                  color:T.textFaint, cursor:"pointer", transition:"all 0.2s", textTransform:"uppercase"
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmCreate}
+                disabled={!createName.trim()}
+                style={{
+                  padding:"10px 24px", fontFamily:T.ui, fontSize:11, letterSpacing:"1px",
+                  background:"rgba(212,67,58,0.15)", border:"1px solid rgba(212,67,58,0.4)", borderRadius:"4px",
+                  color:"#d4433a", cursor: createName.trim() ? "pointer" : "not-allowed", transition:"all 0.2s",
+                  textTransform:"uppercase", fontWeight:500,
+                  opacity: createName.trim() ? 1 : 0.5
+                }}
+              >
+                Create Campaign
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -1774,8 +1774,9 @@ MARKET_SHOP_TYPES = [
 ]
 
 STALL_COLORS = [
-    "#9a6848", "#a88850", "#687868", "#6a7888", "#886868",
-    "#8a7048", "#6a8080", "#8a5858", "#708860", "#786878",
+    "#c45040", "#d09030", "#4878a8", "#488858", "#a85890",
+    "#c87030", "#3888a0", "#b84848", "#58a048", "#8860a8",
+    "#d06830", "#3878b0", "#c04870", "#48a078", "#b88030",
 ]
 
 
@@ -2598,7 +2599,7 @@ def generate_water(cfg: TownConfig, wall_poly: list[Point], spatial: SpatialHash
     cx, cy = W / 2, H / 2
     base_r = min(W, H) * TIER_PARAMS[tier]["radius_frac"]
 
-    if tier in ("capital", "large_town") and rng.random() < 0.40:
+    if tier in ("large_town",) and rng.random() < 0.40:
         side = rng.choice(["horizontal", "vertical"])
         river_pts = []
         rw = rng.uniform(32, 52)
@@ -2623,7 +2624,7 @@ def generate_water(cfg: TownConfig, wall_poly: list[Point], spatial: SpatialHash
 
     num_ponds = rng.randint(0, 1)
     if tier == "capital":
-        num_ponds = rng.randint(1, 3)
+        num_ponds = 0  # No ponds in capitals — keep dense urban layout
     elif tier == "large_town":
         num_ponds = rng.randint(0, 2)
     for _ in range(num_ponds):
@@ -3987,122 +3988,120 @@ def _render_market_square(svg: SvgCanvas, ms: MarketSquare, rng: random.Random, 
             svg.el("rect", x=f"{lx - 0.4:.1f}", y=f"{ly - 0.4:.1f}",
                    width="0.8", height="0.8", fill="#6a5030", opacity="0.40")
         # Stall table
-        svg.el("rect", x=f"{sx - 5:.1f}", y=f"{sy - 3:.1f}",
-               width="10", height="6",
-               fill="#c8b890", stroke=P.wall_dark, stroke_width="0.8",
-               rx="0.5", opacity="0.78")
-        # Striped awning/canopy
-        svg.el("rect", x=f"{sx - 6:.1f}", y=f"{sy - 5:.1f}",
-               width="12", height="3.5",
-               fill=color, stroke=P.wall_dark, stroke_width="0.5",
-               rx="1", opacity="0.72")
+        svg.el("rect", x=f"{sx - 6:.1f}", y=f"{sy - 3.5:.1f}",
+               width="12", height="7",
+               fill="#c8b890", stroke=P.wall_dark, stroke_width="1",
+               rx="0.5", opacity="0.88")
+        # Striped awning/canopy — larger and brighter
+        svg.el("rect", x=f"{sx - 7:.1f}", y=f"{sy - 6:.1f}",
+               width="14", height="4",
+               fill=color, stroke=P.wall_dark, stroke_width="0.8",
+               rx="1", opacity="0.88")
         # Awning stripes
-        for si in range(4):
-            stripe_x = sx - 6 + si * 3
-            svg.el("rect", x=f"{stripe_x:.1f}", y=f"{sy - 5:.1f}",
-                   width="1.5", height="3.5",
-                   fill="white", opacity="0.10", rx="0.3")
+        for si in range(5):
+            stripe_x = sx - 7 + si * 3
+            svg.el("rect", x=f"{stripe_x:.1f}", y=f"{sy - 6:.1f}",
+                   width="1.5", height="4",
+                   fill="white", opacity="0.18", rx="0.3")
         # Awning fringe
-        svg.el("line", x1=f"{sx - 6:.1f}", y1=f"{sy - 1.5:.1f}",
-               x2=f"{sx + 6:.1f}", y2=f"{sy - 1.5:.1f}",
-               stroke=color, stroke_width="0.8", opacity="0.45",
+        svg.el("line", x1=f"{sx - 7:.1f}", y1=f"{sy - 2:.1f}",
+               x2=f"{sx + 7:.1f}", y2=f"{sy - 2:.1f}",
+               stroke=color, stroke_width="1", opacity="0.55",
                stroke_dasharray="1.5,1")
         # Support poles
-        svg.el("line", x1=f"{sx - 5.5:.1f}", y1=f"{sy - 5:.1f}",
-               x2=f"{sx - 5.5:.1f}", y2=f"{sy + 3:.1f}",
-               stroke="#5a4028", stroke_width="0.8", opacity="0.45")
-        svg.el("line", x1=f"{sx + 5.5:.1f}", y1=f"{sy - 5:.1f}",
-               x2=f"{sx + 5.5:.1f}", y2=f"{sy + 3:.1f}",
-               stroke="#5a4028", stroke_width="0.8", opacity="0.45")
+        svg.el("line", x1=f"{sx - 6.5:.1f}", y1=f"{sy - 6:.1f}",
+               x2=f"{sx - 6.5:.1f}", y2=f"{sy + 3.5:.1f}",
+               stroke="#5a4028", stroke_width="1", opacity="0.55")
+        svg.el("line", x1=f"{sx + 6.5:.1f}", y1=f"{sy - 6:.1f}",
+               x2=f"{sx + 6.5:.1f}", y2=f"{sy + 3.5:.1f}",
+               stroke="#5a4028", stroke_width="1", opacity="0.55")
 
-        # ── Stall-type-specific goods ──
+        # ── Stall-type-specific goods (high visibility) ──
         if stall_type == "produce":
-            for _ in range(rng.randint(4, 7)):
-                gx = rng.uniform(sx - 3.5, sx + 3.5)
-                gy = rng.uniform(sy - 1.5, sy + 1.5)
+            for _ in range(rng.randint(5, 8)):
+                gx = rng.uniform(sx - 4, sx + 4)
+                gy = rng.uniform(sy - 2, sy + 2)
                 svg.el("circle", cx=f"{gx:.1f}", cy=f"{gy:.1f}",
-                       r=f"{rng.uniform(0.8, 1.4):.1f}",
+                       r=f"{rng.uniform(1.0, 1.8):.1f}",
                        fill=rng.choice(["#70aa30", "#d05020", "#e8c020", "#d08838", "#90c040"]),
-                       opacity="0.55")
+                       opacity="0.75")
         elif stall_type == "fabric":
-            # Rolled fabric bolts
-            for i in range(rng.randint(3, 5)):
-                fx = sx - 3 + i * 1.8
-                svg.el("rect", x=f"{fx:.1f}", y=f"{sy - 1.5:.1f}",
-                       width="1.2", height="3",
+            for i in range(rng.randint(3, 6)):
+                fx = sx - 4 + i * 1.8
+                svg.el("rect", x=f"{fx:.1f}", y=f"{sy - 2:.1f}",
+                       width="1.5", height="4",
                        fill=rng.choice(["#8050a0", "#c05060", "#4080b0", "#c09030", "#50a068"]),
-                       rx="0.3", opacity="0.50")
+                       rx="0.3", opacity="0.70")
         elif stall_type == "pottery":
-            for i in range(rng.randint(3, 5)):
-                px = sx - 3 + i * 1.6
+            for i in range(rng.randint(3, 6)):
+                px = sx - 4 + i * 1.8
                 svg.el("circle", cx=f"{px:.1f}", cy=f"{sy:.1f}",
-                       r=f"{rng.uniform(0.8, 1.3):.1f}",
+                       r=f"{rng.uniform(1.0, 1.6):.1f}",
                        fill=rng.choice(["#c0a080", "#b08860", "#a07848"]),
-                       stroke="#7a5838", stroke_width="0.3", opacity="0.50")
+                       stroke="#7a5838", stroke_width="0.4", opacity="0.70")
         elif stall_type == "bread":
-            for i in range(rng.randint(3, 5)):
-                bx = sx - 3.5 + i * 1.8
+            for i in range(rng.randint(4, 6)):
+                bx = sx - 4 + i * 1.8
                 svg.el("ellipse", cx=f"{bx:.1f}", cy=f"{sy:.1f}",
-                       rx="1.2", ry="0.7",
+                       rx="1.4", ry="0.9",
                        fill=rng.choice(["#d4a050", "#c89038", "#dab868"]),
-                       opacity="0.55")
+                       opacity="0.75")
         elif stall_type == "meat":
-            # Hanging sausages
-            for i in range(rng.randint(2, 4)):
-                mx2 = sx - 3 + i * 2.2
-                svg.el("line", x1=f"{mx2:.1f}", y1=f"{sy - 3:.1f}",
+            for i in range(rng.randint(3, 5)):
+                mx2 = sx - 3.5 + i * 2.2
+                svg.el("line", x1=f"{mx2:.1f}", y1=f"{sy - 4:.1f}",
                        x2=f"{mx2:.1f}", y2=f"{sy - 0.5:.1f}",
-                       stroke="#5a2818", stroke_width="0.5", opacity="0.40")
+                       stroke="#5a2818", stroke_width="0.7", opacity="0.55")
                 svg.el("ellipse", cx=f"{mx2:.1f}", cy=f"{sy:.1f}",
-                       rx="0.8", ry="1.5", fill="#983828", opacity="0.50")
+                       rx="1.0", ry="1.8", fill="#983828", opacity="0.70")
         elif stall_type == "flowers":
             colors = ["#e05060", "#e8c040", "#d070a0", "#8060c0", "#f09030", "#50b070"]
-            for _ in range(rng.randint(5, 9)):
-                fx = rng.uniform(sx - 3.5, sx + 3.5)
-                fy = rng.uniform(sy - 1.5, sy + 1.5)
+            for _ in range(rng.randint(6, 10)):
+                fx = rng.uniform(sx - 4, sx + 4)
+                fy = rng.uniform(sy - 2, sy + 2)
                 svg.el("circle", cx=f"{fx:.1f}", cy=f"{fy:.1f}",
-                       r=f"{rng.uniform(0.6, 1.2):.1f}",
-                       fill=rng.choice(colors), opacity="0.50")
+                       r=f"{rng.uniform(0.8, 1.5):.1f}",
+                       fill=rng.choice(colors), opacity="0.70")
         elif stall_type == "trinkets":
-            for _ in range(rng.randint(5, 8)):
-                tx = rng.uniform(sx - 3, sx + 3)
-                ty = rng.uniform(sy - 1, sy + 1)
+            for _ in range(rng.randint(6, 10)):
+                tx = rng.uniform(sx - 4, sx + 4)
+                ty = rng.uniform(sy - 1.5, sy + 1.5)
                 svg.el("circle", cx=f"{tx:.1f}", cy=f"{ty:.1f}",
-                       r="0.6", fill=rng.choice(["#f0e8b0", "#c8c8d8", "#d0a840"]),
-                       opacity="0.50")
+                       r="0.8", fill=rng.choice(["#f0e8b0", "#c8c8d8", "#d0a840"]),
+                       opacity="0.70")
         elif stall_type == "spices":
             spice_colors = ["#d8b030", "#c05020", "#80a028", "#a06020", "#d08850"]
-            for i in range(rng.randint(4, 6)):
-                scx = sx - 3 + i * 1.5
+            for i in range(rng.randint(4, 7)):
+                scx = sx - 4 + i * 1.5
                 svg.el("circle", cx=f"{scx:.1f}", cy=f"{sy:.1f}",
-                       r="1.0", fill=rng.choice(spice_colors),
-                       stroke="#5a4030", stroke_width="0.3", opacity="0.50")
+                       r="1.2", fill=rng.choice(spice_colors),
+                       stroke="#5a4030", stroke_width="0.4", opacity="0.70")
         elif stall_type == "cheese":
-            for i in range(rng.randint(2, 4)):
-                cx2 = sx - 2.5 + i * 2
+            for i in range(rng.randint(3, 5)):
+                cx2 = sx - 3 + i * 2
                 svg.el("circle", cx=f"{cx2:.1f}", cy=f"{sy:.1f}",
-                       r="1.3", fill="#e0c868", stroke="#a89040",
-                       stroke_width="0.3", opacity="0.45")
+                       r="1.5", fill="#e0c868", stroke="#a89040",
+                       stroke_width="0.4", opacity="0.65")
         elif stall_type == "tools":
             for i in range(rng.randint(3, 5)):
-                tx = sx - 3 + i * 1.8
-                svg.el("rect", x=f"{tx:.1f}", y=f"{sy - 1:.1f}",
-                       width="0.6", height="3", fill="#888",
-                       opacity="0.40")
-                svg.el("rect", x=f"{tx - 0.3:.1f}", y=f"{sy + 1.5:.1f}",
-                       width="1.2", height="1.5", fill="#6a5030",
-                       opacity="0.40")
+                tx = sx - 3.5 + i * 1.8
+                svg.el("rect", x=f"{tx:.1f}", y=f"{sy - 1.5:.1f}",
+                       width="0.8", height="3.5", fill="#888",
+                       opacity="0.60")
+                svg.el("rect", x=f"{tx - 0.4:.1f}", y=f"{sy + 1.5:.1f}",
+                       width="1.5", height="1.8", fill="#6a5030",
+                       opacity="0.60")
         elif stall_type == "fish":
-            for i in range(rng.randint(3, 5)):
-                fx = sx - 3 + i * 1.8
+            for i in range(rng.randint(3, 6)):
+                fx = sx - 4 + i * 1.8
                 svg.el("ellipse", cx=f"{fx:.1f}", cy=f"{sy:.1f}",
-                       rx="1.5", ry="0.6", fill="#8090a0", opacity="0.45")
+                       rx="1.8", ry="0.8", fill="#8090a0", opacity="0.65")
         elif stall_type == "leather":
-            for i in range(rng.randint(2, 4)):
-                lx = sx - 3 + i * 2
-                svg.el("rect", x=f"{lx:.1f}", y=f"{sy - 1:.1f}",
-                       width="1.5", height="2.5", fill="#a88058",
-                       rx="0.3", opacity="0.42")
+            for i in range(rng.randint(3, 5)):
+                lx = sx - 3.5 + i * 2
+                svg.el("rect", x=f"{lx:.1f}", y=f"{sy - 1.5:.1f}",
+                       width="1.8", height="3", fill="#a88058",
+                       rx="0.3", opacity="0.62")
 
         svg.raw('</g>')
 
@@ -4951,6 +4950,787 @@ def _render_chrome(svg: SvgCanvas, cfg: TownConfig, tier: str,
     svg.txt("100 ft", x=f"{sb_x+32}", y=f"{sb_y+13}", text_anchor="middle",
             fill=P.text_faint, font_family="'Spectral', Georgia, serif",
             font_size="8", opacity="0.42")
+
+
+# ════════════════════════════════════════════════════════════════════════
+# §11b  DESTROYED VARIANT RENDERER
+# ════════════════════════════════════════════════════════════════════════
+
+class PalDestroyed:
+    """Scorched, ashen palette for destroyed/conquered towns."""
+    bg = "#3a3228"
+    bg_outer = "#2e2820"
+    bg_inner = "#484038"
+    road = "#5a5048"
+    road_main = "#6a6058"
+    road_edge = "#3a3228"
+    road_dark = "#2a2420"
+    road_cobble = "#504840"
+    wall_stone = "#484040"
+    wall_light = "#585050"
+    wall_dark = "#282420"
+    wall_fill = "#504848"
+    tower_fill = "#444040"
+    tower_top = "#383430"
+    gate_fill = "#5a5450"
+    water = "#4a5858"
+    water_dark = "#3a4848"
+    water_shore = "#5a6a68"
+    water_light = "#607070"
+    green = "#4a5038"
+    green_light = "#586048"
+    green_dark = "#384028"
+    garden = "#4a5038"
+    garden_dark = "#384028"
+    fence = "#5a4830"
+    text = "#c8b898"
+    text_soft = "#a89878"
+    text_faint = "#887868"
+    parchment = "#4a4238"
+    shadow = "#1a1008"
+    wood = "#3a2818"
+    wood_light = "#5a4830"
+    barrel = "#4a3820"
+    door = "#2a1c10"
+    window = "#5a4838"
+    window_frame = "#3a3028"
+    bridge_stone = "#585048"
+    bridge_dark = "#3a3428"
+    # Destruction-specific
+    fire_orange = "#d86020"
+    fire_yellow = "#e8a030"
+    ember = "#c04818"
+    smoke = "#2a2828"
+    ash = "#6a6460"
+    scorch = "#1a1410"
+    rubble = "#5a5248"
+    blood = "#6a2020"
+
+
+def render_town_svg_destroyed(town: dict) -> str:
+    """Render a destroyed variant of a town — scorched palette, ruined buildings,
+    broken walls, fire/smoke overlays, rubble scattered about."""
+    cfg: TownConfig = town["cfg"]
+    W, H = cfg.width, cfg.height
+    cx, cy = W / 2, H / 2
+    tier = town["tier"]
+    wall: WallData = town["wall"]
+    roads: list[Road] = town["roads"]
+    plazas: list[Plaza] = town["plazas"]
+    buildings: list[Building] = town["buildings"]
+    trees: list[TreeCluster] = town["trees"]
+    water: list[WaterFeature] = town["water"]
+    details: list[Detail] = town["details"]
+
+    svg = SvgCanvas(W, H)
+    rng = random.Random(town["seed"] + 9999)  # different seed offset for destruction variation
+    P = PalDestroyed
+
+    # ── Defs ──
+    svg.add_def(f'''<radialGradient id="bgGrad" cx="50%" cy="50%" r="58%">
+        <stop offset="0%" stop-color="{P.bg}"/>
+        <stop offset="100%" stop-color="{P.bg_outer}"/>
+    </radialGradient>''')
+    svg.add_def('''<filter id="bSh"><feDropShadow dx="1.8" dy="1.8" stdDeviation="1.4"
+        flood-color="#1a1008" flood-opacity="0.25"/></filter>''')
+    svg.add_def('''<filter id="wSh"><feDropShadow dx="3" dy="3" stdDeviation="2.5"
+        flood-color="#1a1008" flood-opacity="0.28"/></filter>''')
+    # Subtle haze filter for atmosphere
+    svg.add_def('''<filter id="haze"><feGaussianBlur in="SourceGraphic" stdDeviation="6"/></filter>''')
+    # Cobblestone — darkened
+    svg.add_def(f'''<pattern id="cobble" x="0" y="0" width="10" height="10" patternUnits="userSpaceOnUse">
+        <rect width="10" height="10" fill="{P.road_main}"/>
+        <circle cx="2" cy="2" r="1.2" fill="{P.road_cobble}" opacity="0.18"/>
+        <circle cx="7" cy="6" r="1.0" fill="{P.road_edge}" opacity="0.12"/>
+        <circle cx="4" cy="8" r="0.9" fill="{P.road_cobble}" opacity="0.14"/>
+    </pattern>''')
+    # Dead grass pattern
+    svg.add_def(f'''<pattern id="grass" x="0" y="0" width="8" height="8" patternUnits="userSpaceOnUse">
+        <rect width="8" height="8" fill="{P.garden}"/>
+        <circle cx="2" cy="3" r="0.8" fill="{P.garden_dark}" opacity="0.35"/>
+        <circle cx="6" cy="6" r="0.6" fill="{P.green_dark}" opacity="0.30"/>
+    </pattern>''')
+
+    # ════════ LAYER 0: Background (scorched earth) ════════
+    svg.el("rect", x="0", y="0", width=str(W), height=str(H), fill="url(#bgGrad)")
+
+    # Ashen texture noise — soot and dirt patches
+    for _ in range(160):
+        tx = rng.uniform(0, W); ty = rng.uniform(0, H)
+        tr = rng.uniform(12, 90)
+        svg.el("circle", cx=f"{tx:.0f}", cy=f"{ty:.0f}", r=f"{tr:.0f}",
+               fill=rng.choice(["#2a2420","#3a3028","#1a1810","#4a4238","#322a22","#201a14","#3a3430"]),
+               opacity=f"{rng.uniform(0.02, 0.07):.3f}")
+
+    # Scorch marks — dark radial burns where catapult strikes / dragon fire landed
+    for _ in range(rng.randint(8, 22)):
+        sx = rng.uniform(W * 0.1, W * 0.9)
+        sy = rng.uniform(H * 0.1, H * 0.9)
+        sr = rng.uniform(25, 90)
+        svg.el("circle", cx=f"{sx:.0f}", cy=f"{sy:.0f}", r=f"{sr:.0f}",
+               fill=P.scorch, opacity=f"{rng.uniform(0.03, 0.09):.3f}")
+
+    # Overgrown weed patches — nature reclaiming the ruins
+    for _ in range(rng.randint(20, 55)):
+        wx = rng.uniform(W * 0.05, W * 0.95)
+        wy = rng.uniform(H * 0.05, H * 0.95)
+        wr = rng.uniform(6, 30)
+        svg.el("circle", cx=f"{wx:.0f}", cy=f"{wy:.0f}", r=f"{wr:.0f}",
+               fill=rng.choice(["#3a4828", "#2e3c22", "#44523a", "#354528"]),
+               opacity=f"{rng.uniform(0.06, 0.16):.3f}")
+
+    # ════════ LAYER 0b: Outer terrain (abandoned farmland) ════════
+    base_r = min(W, H) * TIER_PARAMS[tier]["radius_frac"]
+    for _ in range(20):
+        fa = rng.uniform(0, TAU)
+        fd = base_r * rng.uniform(1.0, 1.5)
+        fx, fy = cx + fd * cos(fa), cy + fd * sin(fa)
+        fw, fh = rng.uniform(25, 90), rng.uniform(20, 65)
+        if 0 < fx < W and 0 < fy < H:
+            svg.el("rect", x=f"{fx:.0f}", y=f"{fy:.0f}",
+                   width=f"{fw:.0f}", height=f"{fh:.0f}",
+                   fill=rng.choice(["#3a3228", "#3a4030", "#2e3828", "#4a4838", "#3a3420"]),
+                   opacity=f"{rng.uniform(0.05, 0.12):.2f}", rx="2",
+                   transform=f"rotate({rng.uniform(-25,25):.0f} {fx+fw/2:.0f} {fy+fh/2:.0f})")
+
+    # ════════ LAYER 1: Ground fill inside walls (ashen) ════════
+    if wall.vertices and tier != "village":
+        wd = _poly_d(wall.vertices)
+        svg.el("path", d=wd, fill=P.bg_inner, stroke="none", opacity="0.65")
+
+    # ════════ LAYER 2: Water features (murky/stagnant) ════════
+    for wf in water:
+        if wf.is_river:
+            rd = _catmull_rom_path(wf.river_pts)
+            rw = wf.river_width
+            svg.el("path", d=rd, fill="none", stroke=P.water_shore,
+                   stroke_width=f"{rw + 14:.0f}", stroke_linecap="round",
+                   stroke_linejoin="round", opacity="0.25")
+            svg.el("path", d=rd, fill="none", stroke=P.water,
+                   stroke_width=f"{rw:.0f}", stroke_linecap="round",
+                   stroke_linejoin="round", opacity="0.60")
+        else:
+            _render_pond(svg, wf, rng, Pal)
+            svg.el("ellipse", cx=f"{wf.cx:.0f}", cy=f"{wf.cy:.0f}",
+                   rx=f"{wf.rx * 1.1:.0f}", ry=f"{wf.ry * 1.1:.0f}",
+                   fill="#2a3030", opacity="0.35")
+
+    # ════════ LAYER 3: Roads (cracked, partially destroyed, debris-covered) ════════
+    # Outer paths — faint, overgrown
+    outer_d = ""
+    outer_w = 0
+    for road in roads:
+        if road.road_type != "outer":
+            continue
+        rd = _catmull_rom_path(road.points)
+        if rd:
+            outer_d += " " + rd
+            outer_w = max(outer_w, road.width)
+    if outer_d:
+        svg.el("path", d=outer_d.strip(), fill="none", stroke=P.road,
+               stroke_width=f"{outer_w:.0f}", stroke_linecap="butt",
+               stroke_linejoin="round", opacity="0.18")
+
+    # Interior roads: render each road INDIVIDUALLY so we can damage them
+    for road in roads:
+        if road.road_type == "outer":
+            continue
+        pts = road.points
+        if len(pts) < 2:
+            continue
+        w = road.width
+        color = P.road_main if road.road_type == "main" else P.road
+
+        # Decide road damage: 0=intact-ish, 1=cracked, 2=partially destroyed, 3=obliterated
+        rd_damage = rng.choices([0, 1, 2, 3],
+                                weights=[0.10, 0.30, 0.40, 0.20])[0]
+
+        if rd_damage == 3:
+            # Obliterated — faint ghost outline + rubble
+            rd = _catmull_rom_path(pts)
+            if rd:
+                svg.el("path", d=rd, fill="none", stroke=P.road,
+                       stroke_width=f"{w:.0f}", stroke_linecap="butt",
+                       stroke_linejoin="round", opacity="0.20",
+                       stroke_dasharray=f"{rng.uniform(8,20):.0f} {rng.uniform(10,25):.0f}")
+            # Rubble on the road
+            for pt in pts[::max(1, len(pts)//4)]:
+                for _ in range(rng.randint(2, 5)):
+                    rx = pt[0] + rng.uniform(-w*0.6, w*0.6)
+                    ry = pt[1] + rng.uniform(-w*0.6, w*0.6)
+                    rs = rng.uniform(2, 6)
+                    svg.el("rect", x=f"{rx:.0f}", y=f"{ry:.0f}",
+                           width=f"{rs:.0f}", height=f"{rs*0.7:.0f}",
+                           fill=rng.choice([P.rubble, P.ash, "#504840"]),
+                           opacity=f"{rng.uniform(0.20, 0.45):.2f}", rx="0.5",
+                           transform=f"rotate({rng.uniform(0,360):.0f} {rx+rs/2:.0f} {ry+rs*0.35:.0f})")
+            continue
+
+        if rd_damage == 2:
+            # Partially destroyed — draw segments with gaps
+            seg_count = len(pts) - 1
+            for si in range(seg_count):
+                if rng.random() < 0.35:
+                    # Gap — skip this segment, place rubble
+                    mid_x = (pts[si][0] + pts[si+1][0]) / 2
+                    mid_y = (pts[si][1] + pts[si+1][1]) / 2
+                    for _ in range(rng.randint(2, 4)):
+                        rx = mid_x + rng.uniform(-w*0.5, w*0.5)
+                        ry = mid_y + rng.uniform(-w*0.5, w*0.5)
+                        rs = rng.uniform(1.5, 5)
+                        svg.el("rect", x=f"{rx:.0f}", y=f"{ry:.0f}",
+                               width=f"{rs:.0f}", height=f"{rs*0.7:.0f}",
+                               fill=rng.choice([P.rubble, P.ash]),
+                               opacity=f"{rng.uniform(0.20, 0.40):.2f}", rx="0.5",
+                               transform=f"rotate({rng.uniform(0,360):.0f} {rx:.0f} {ry:.0f})")
+                    continue
+                # Draw this segment
+                svg.el("line", x1=f"{pts[si][0]:.0f}", y1=f"{pts[si][1]:.0f}",
+                       x2=f"{pts[si+1][0]:.0f}", y2=f"{pts[si+1][1]:.0f}",
+                       stroke=color, stroke_width=f"{w:.0f}",
+                       stroke_linecap="butt", opacity="0.65")
+            continue
+
+        # damage 0 or 1 — draw the full road
+        rd = _catmull_rom_path(pts)
+        if not rd:
+            continue
+        opacity = "0.70" if rd_damage == 1 else "0.80"
+        svg.el("path", d=rd, fill="none", stroke=color,
+               stroke_width=f"{w:.0f}", stroke_linecap="butt",
+               stroke_linejoin="round", opacity=opacity)
+
+        if rd_damage == 1:
+            # Crack lines along the road
+            for pt in pts[::max(1, len(pts)//3)]:
+                for _ in range(rng.randint(1, 3)):
+                    cx1 = pt[0] + rng.uniform(-w*0.4, w*0.4)
+                    cy1 = pt[1] + rng.uniform(-w*0.4, w*0.4)
+                    cx2 = cx1 + rng.uniform(-w*0.8, w*0.8)
+                    cy2 = cy1 + rng.uniform(-w*0.5, w*0.5)
+                    svg.el("line", x1=f"{cx1:.0f}", y1=f"{cy1:.0f}",
+                           x2=f"{cx2:.0f}", y2=f"{cy2:.0f}",
+                           stroke="#1a1410", stroke_width=f"{rng.uniform(0.8, 2.0):.1f}",
+                           opacity=f"{rng.uniform(0.15, 0.30):.2f}",
+                           stroke_linecap="round")
+
+    # ════════ LAYER 4: Plazas (cracked, overgrown) ════════
+    for plaza in plazas:
+        r = plaza.radius
+        svg.el("rect", x=f"{plaza.x - r:.0f}", y=f"{plaza.y - r:.0f}",
+               width=f"{r * 2:.0f}", height=f"{r * 2:.0f}",
+               fill="url(#cobble)", stroke=P.road_edge, stroke_width="1.5",
+               rx="5", opacity="0.45")
+        # Deep cracks across plazas
+        for _ in range(rng.randint(3, 8)):
+            crack_x = plaza.x + rng.uniform(-r * 0.8, r * 0.8)
+            crack_y = plaza.y + rng.uniform(-r * 0.8, r * 0.8)
+            # Branching crack
+            cx1, cy1 = crack_x, crack_y
+            for _ in range(rng.randint(2, 5)):
+                cx2 = cx1 + rng.uniform(-r * 0.3, r * 0.3)
+                cy2 = cy1 + rng.uniform(-r * 0.2, r * 0.2)
+                svg.el("line", x1=f"{cx1:.0f}", y1=f"{cy1:.0f}",
+                       x2=f"{cx2:.0f}", y2=f"{cy2:.0f}",
+                       stroke="#1a1410", stroke_width=f"{rng.uniform(0.8, 2.5):.1f}",
+                       opacity=f"{rng.uniform(0.15, 0.30):.2f}",
+                       stroke_linecap="round")
+                cx1, cy1 = cx2, cy2
+        # Weeds growing through cracks
+        for _ in range(rng.randint(2, 6)):
+            wx = plaza.x + rng.uniform(-r * 0.7, r * 0.7)
+            wy = plaza.y + rng.uniform(-r * 0.7, r * 0.7)
+            svg.el("circle", cx=f"{wx:.0f}", cy=f"{wy:.0f}",
+                   r=f"{rng.uniform(3, 8):.0f}",
+                   fill=rng.choice(["#3a4828", "#2e3c22", "#44523a"]),
+                   opacity=f"{rng.uniform(0.12, 0.28):.2f}")
+
+    # ════════ LAYER 4b: Market Square (collapsed stalls) ════════
+    # Don't render market stalls — they're destroyed. Just place rubble where they were.
+    market_sq = town.get("market_square")
+    if market_sq and hasattr(market_sq, 'shops'):
+        for shop in market_sq.shops:
+            # Collapsed stall footprint
+            svg.el("rect", x=f"{shop.x:.1f}", y=f"{shop.y:.1f}",
+                   width=f"{shop.w:.1f}", height=f"{shop.h:.1f}",
+                   fill=rng.choice([P.rubble, P.ash, "#4a3a28", "#3a3028"]),
+                   opacity=f"{rng.uniform(0.15, 0.35):.2f}", rx="1")
+            # Scattered debris from the stall
+            for _ in range(rng.randint(1, 3)):
+                dx = shop.x + rng.uniform(-3, shop.w + 3)
+                dy = shop.y + rng.uniform(-3, shop.h + 3)
+                svg.el("rect", x=f"{dx:.0f}", y=f"{dy:.0f}",
+                       width=f"{rng.uniform(2, 5):.0f}", height=f"{rng.uniform(1, 3):.0f}",
+                       fill=rng.choice([P.wood, "#5a4830", P.rubble]),
+                       opacity=f"{rng.uniform(0.18, 0.35):.2f}", rx="0.5",
+                       transform=f"rotate({rng.uniform(0,360):.0f} {dx+2:.0f} {dy+1:.0f})")
+
+    # ════════ LAYER 5: Trees (dead stumps, bare trunks, some overgrown) ════════
+    outside_trees = [t for t in trees if not (wall.vertices and point_in_polygon(t.x, t.y, wall.vertices))]
+    inside_trees = [t for t in trees if wall.vertices and point_in_polygon(t.x, t.y, wall.vertices)]
+
+    for tc in outside_trees:
+        _render_dead_tree(svg, tc, rng, P)
+    for tc in inside_trees:
+        _render_dead_tree(svg, tc, rng, P)
+
+    # ════════ LAYER 6: Skip most details (destroyed) — only render a few fences/wells ════════
+    for det in details:
+        if rng.random() < 0.25:  # only 25% of details survive
+            _render_detail(svg, det, rng, Pal)
+
+    # ════════ LAYER 7: Buildings (ruined) ════════
+    sorted_bldgs = sorted(buildings, key=lambda b: b.y)
+    castle_bldg_ref = None
+    svg.raw('<g filter="url(#bSh)">')
+    for b in sorted_bldgs:
+        if b.icon == "castle":
+            castle_bldg_ref = b
+            continue
+        _render_ruined_building(svg, b, rng, tier, P)
+    svg.raw('</g>')
+
+    # ════════ LAYER 7b: Castle (ruined) ════════
+    if castle_bldg_ref:
+        svg.raw('<g filter="url(#bSh)">')
+        _render_ruined_building(svg, castle_bldg_ref, rng, tier, P)
+        svg.raw('</g>')
+
+    # ════════ LAYER 8: Walls (breached, broken) ════════
+    if wall.vertices and TIER_PARAMS[tier]["wall_verts"] > 0:
+        _render_broken_walls(svg, wall, tier, rng, P)
+
+    # ════════ LAYER 9: Rubble & debris piles (larger, more varied) ════════
+    num_rubble = rng.randint(40, 100) if tier in ("capital", "large_town") else rng.randint(15, 40)
+    for _ in range(num_rubble):
+        rx = rng.uniform(W * 0.06, W * 0.94)
+        ry = rng.uniform(H * 0.06, H * 0.94)
+        inside = wall.vertices and point_in_polygon(rx, ry, wall.vertices)
+        if not inside and rng.random() < 0.65:
+            continue
+        rr = rng.uniform(5, 22) if inside else rng.uniform(3, 10)
+        # Rubble base (irregular dark patch)
+        svg.el("ellipse", cx=f"{rx:.0f}", cy=f"{ry:.0f}",
+               rx=f"{rr * 1.2:.0f}", ry=f"{rr * 0.8:.0f}",
+               fill=rng.choice([P.rubble, "#3a3228", "#4a4238"]),
+               opacity=f"{rng.uniform(0.10, 0.22):.3f}",
+               transform=f"rotate({rng.uniform(0,360):.0f} {rx:.0f} {ry:.0f})")
+        # Individual stone/wood chunks
+        for _ in range(rng.randint(3, 10)):
+            ox = rx + rng.uniform(-rr, rr)
+            oy = ry + rng.uniform(-rr * 0.7, rr * 0.7)
+            rs = rng.uniform(1.5, rr * 0.4)
+            shape_type = rng.choice(["rect", "rect", "circle"])  # mostly rectangular rubble
+            if shape_type == "circle":
+                svg.el("circle", cx=f"{ox:.0f}", cy=f"{oy:.0f}",
+                       r=f"{rs:.0f}",
+                       fill=rng.choice([P.rubble, P.ash, P.wall_stone, "#5a5040", P.wood]),
+                       opacity=f"{rng.uniform(0.20, 0.50):.2f}")
+            else:
+                rw = rs * rng.uniform(1.2, 2.5)
+                rh = rs * rng.uniform(0.6, 1.5)
+                svg.el("rect", x=f"{ox:.0f}", y=f"{oy:.0f}",
+                       width=f"{rw:.0f}", height=f"{rh:.0f}",
+                       fill=rng.choice([P.rubble, P.ash, P.wall_stone, "#5a5040", P.wood]),
+                       opacity=f"{rng.uniform(0.20, 0.50):.2f}", rx="0.5",
+                       transform=f"rotate({rng.uniform(0,360):.0f} {ox+rw/2:.0f} {oy+rh/2:.0f})")
+
+    # ════════ LAYER 10: Overgrowth on ruins (vines, moss patches) ════════
+    overgrowth_count = rng.randint(15, 45) if tier in ("capital", "large_town") else rng.randint(5, 20)
+    for _ in range(overgrowth_count):
+        ox = rng.uniform(W * 0.08, W * 0.92)
+        oy = rng.uniform(H * 0.08, H * 0.92)
+        # Moss/vine patch
+        svg.el("ellipse", cx=f"{ox:.0f}", cy=f"{oy:.0f}",
+               rx=f"{rng.uniform(4, 18):.0f}", ry=f"{rng.uniform(3, 12):.0f}",
+               fill=rng.choice(["#3a5028", "#2e4422", "#4a5838", "#354028", "#3a4430"]),
+               opacity=f"{rng.uniform(0.08, 0.22):.3f}",
+               transform=f"rotate({rng.uniform(0,360):.0f} {ox:.0f} {oy:.0f})")
+
+    # ════════ LAYER 11: Labels (faded, partially illegible) ════════
+    base_scale = W / 2200
+    for b in sorted_bldgs:
+        if b.btype == "special" and b.name:
+            fs = max(11, int(14 * base_scale))
+            sw = max(3, fs * 0.3)
+            svg.txt(b.name, x=f"{b.cx:.1f}", y=f"{b.y - 5:.1f}",
+                    text_anchor="middle", fill=P.text,
+                    font_family="'Spectral', Georgia, serif", font_size=str(fs),
+                    font_weight="600",
+                    opacity="0.35", paint_order="stroke",
+                    stroke=P.parchment, stroke_width=f"{sw:.1f}")
+
+    # ════════ LAYER 12: Chrome (frame, title with "RUINS OF") ════════
+    _render_chrome_destroyed(svg, cfg, tier, W, H, P, rng)
+
+    return svg.render()
+
+
+def _render_dead_tree(svg: SvgCanvas, tc, rng: random.Random, P):
+    """Render a dead/burned tree — just dark bare trunk and branches."""
+    for _ in range(tc.trees):
+        tx = tc.x + rng.uniform(-tc.r, tc.r)
+        ty = tc.y + rng.uniform(-tc.r, tc.r)
+        trunk_h = rng.uniform(4, 10)
+        # Dark bare trunk
+        svg.el("line", x1=f"{tx:.0f}", y1=f"{ty:.0f}",
+               x2=f"{tx:.0f}", y2=f"{ty - trunk_h:.0f}",
+               stroke="#2a2018", stroke_width=f"{rng.uniform(1.5, 3):.1f}",
+               opacity="0.50", stroke_linecap="round")
+        # Two bare branches
+        for bdir in [-1, 1]:
+            bx = tx + bdir * rng.uniform(3, 7)
+            by = ty - trunk_h * rng.uniform(0.4, 0.8)
+            svg.el("line", x1=f"{tx:.0f}", y1=f"{by:.0f}",
+                   x2=f"{bx:.0f}", y2=f"{by - rng.uniform(2, 5):.0f}",
+                   stroke="#2a2018", stroke_width="1",
+                   opacity="0.35", stroke_linecap="round")
+        # Occasional charred stump (wider, shorter)
+        if rng.random() < 0.3:
+            svg.el("circle", cx=f"{tx:.0f}", cy=f"{ty:.0f}",
+                   r=f"{rng.uniform(2, 5):.1f}",
+                   fill="#1a1410", opacity="0.25")
+
+
+def _darken_hex(color: str, amount: float = 0.45) -> str:
+    """Darken a hex color by mixing it toward black. amount=0 is original, 1 is black."""
+    try:
+        c = color.lstrip("#")
+        if len(c) < 6:
+            return "#3a3228"
+        r, g, b = int(c[0:2], 16), int(c[2:4], 16), int(c[4:6], 16)
+        r = int(r * (1 - amount))
+        g = int(g * (1 - amount))
+        b = int(b * (1 - amount))
+        return f"#{r:02x}{g:02x}{b:02x}"
+    except (ValueError, TypeError):
+        return "#3a3228"
+
+
+def _render_ruined_building(svg: SvgCanvas, b: Building, rng: random.Random,
+                            tier: str, P):
+    """Render a building as partially destroyed — uses ACTUAL building shape/position
+    with destruction effects overlaid to match the original city layout."""
+    x, y, w, h = b.x, b.y, b.w, b.h
+
+    # POIs — dim marker
+    if b.btype == "poi":
+        svg.el("circle", cx=f"{b.cx:.1f}", cy=f"{b.cy:.1f}", r="5",
+               fill="#4a4040", stroke="#2a2020", stroke_width="1", opacity="0.40")
+        return
+
+    # Special buildings (castle, temple, etc.) — render the REAL building, then damage it
+    if b.btype == "special":
+        # Determine destruction level for specials
+        spec_destruction = rng.choices([1, 2, 3], weights=[0.25, 0.50, 0.25])[0]
+
+        if spec_destruction == 3 and b.icon != "castle":
+            # Completely collapsed — rubble footprint matching building dimensions
+            svg.el("rect", x=f"{x:.1f}", y=f"{y:.1f}",
+                   width=f"{w:.1f}", height=f"{h:.1f}",
+                   fill=rng.choice([P.rubble, P.ash, "#3a3028"]),
+                   opacity=f"{rng.uniform(0.25, 0.40):.2f}", rx="1")
+            # Outline of former walls
+            svg.el("rect", x=f"{x:.1f}", y=f"{y:.1f}",
+                   width=f"{w:.1f}", height=f"{h:.1f}",
+                   fill="none", stroke="#3a3028", stroke_width="1.5",
+                   stroke_dasharray="6 4", rx="2", opacity="0.30")
+            # Rubble chunks
+            for _ in range(rng.randint(4, 10)):
+                rx2 = x + rng.uniform(-3, w + 3)
+                ry2 = y + rng.uniform(-3, h + 3)
+                svg.el("rect", x=f"{rx2:.0f}", y=f"{ry2:.0f}",
+                       width=f"{rng.uniform(2, 7):.0f}", height=f"{rng.uniform(1.5, 5):.0f}",
+                       fill=rng.choice([P.rubble, P.wall_stone, "#5a5048"]),
+                       opacity=f"{rng.uniform(0.20, 0.45):.2f}", rx="0.5",
+                       transform=f"rotate({rng.uniform(0,360):.0f} {rx2+3:.0f} {ry2+2:.0f})")
+            return
+
+        # Render the actual building first (including castle)
+        _render_special_building(svg, b, rng)
+
+        # Then overlay destruction damage
+        # Scorch/soot layer
+        svg.el("rect", x=f"{x:.1f}", y=f"{y:.1f}",
+               width=f"{w:.1f}", height=f"{h:.1f}",
+               fill="#1a1410", opacity=f"{rng.uniform(0.30, 0.55):.2f}", rx="1")
+
+        # Collapsed sections — punch holes through the building
+        num_holes = rng.randint(1, 3) if spec_destruction == 1 else rng.randint(2, 5)
+        for _ in range(num_holes):
+            hx = x + rng.uniform(w * 0.1, w * 0.8)
+            hy = y + rng.uniform(h * 0.1, h * 0.8)
+            hw = rng.uniform(w * 0.08, w * 0.25)
+            hh = rng.uniform(h * 0.08, h * 0.25)
+            svg.el("rect", x=f"{hx:.1f}", y=f"{hy:.1f}",
+                   width=f"{hw:.1f}", height=f"{hh:.1f}",
+                   fill=P.bg_inner, opacity=f"{rng.uniform(0.5, 0.8):.2f}", rx="0.5")
+            # Rubble spilling from hole
+            for _ in range(rng.randint(1, 3)):
+                rx2 = hx + rng.uniform(-2, hw + 2)
+                ry2 = hy + hh + rng.uniform(0, 4)
+                svg.el("rect", x=f"{rx2:.0f}", y=f"{ry2:.0f}",
+                       width=f"{rng.uniform(2, 5):.0f}", height=f"{rng.uniform(1, 3):.0f}",
+                       fill=rng.choice([P.rubble, P.wall_stone]),
+                       opacity=f"{rng.uniform(0.20, 0.40):.2f}", rx="0.5",
+                       transform=f"rotate({rng.uniform(0,360):.0f} {rx2:.0f} {ry2:.0f})")
+
+        # Cracks radiating from damage
+        for _ in range(rng.randint(2, 6)):
+            cx1 = x + rng.uniform(0, w)
+            cy1 = y + rng.uniform(0, h)
+            for _ in range(rng.randint(2, 4)):
+                cx2 = cx1 + rng.uniform(-w*0.15, w*0.15)
+                cy2 = cy1 + rng.uniform(-h*0.15, h*0.15)
+                svg.el("line", x1=f"{cx1:.0f}", y1=f"{cy1:.0f}",
+                       x2=f"{cx2:.0f}", y2=f"{cy2:.0f}",
+                       stroke="#1a1410", stroke_width=f"{rng.uniform(0.8, 2.0):.1f}",
+                       opacity=f"{rng.uniform(0.15, 0.30):.2f}", stroke_linecap="round")
+                cx1, cy1 = cx2, cy2
+        return
+
+    # Market shops — mostly destroyed
+    if b.btype == "shop" and b.district == "market":
+        if rng.random() < 0.7:
+            svg.el("rect", x=f"{x:.1f}", y=f"{y:.1f}",
+                   width=f"{w:.1f}", height=f"{h:.1f}",
+                   fill=rng.choice([P.rubble, P.ash, "#4a3a28"]),
+                   opacity=f"{rng.uniform(0.25, 0.45):.2f}", rx="1")
+            return
+        _render_market_shop(svg, b, rng, tier)
+        svg.el("rect", x=f"{x:.1f}", y=f"{y:.1f}",
+               width=f"{w:.1f}", height=f"{h:.1f}",
+               fill="#1a1410", opacity="0.35", rx="1")
+        return
+
+    rot = b.rotation
+    transform = f"rotate({rot:.1f} {b.cx:.1f} {b.cy:.1f})" if abs(rot) > 0.5 else None
+
+    # Determine destruction level (0=scorched, 1=damaged, 2=heavily ruined, 3=rubble)
+    destruction = rng.choices([0, 1, 2, 3], weights=[0.08, 0.30, 0.40, 0.22])[0]
+
+    # Darken the ACTUAL building colors for scorched look
+    orig_wall_c = b.wall_color or "#d4c8a4"
+    orig_roof_c = b.roof_color or "#9a5a3a"
+    dark_wall = _darken_hex(orig_wall_c, rng.uniform(0.35, 0.55))
+    dark_roof = _darken_hex(orig_roof_c, rng.uniform(0.40, 0.60))
+
+    if destruction == 3:
+        # Total rubble — footprint with debris in building's original colors (darkened)
+        svg.el("rect", x=f"{x:.1f}", y=f"{y:.1f}",
+               width=f"{w:.1f}", height=f"{h:.1f}",
+               fill=dark_wall, opacity=f"{rng.uniform(0.18, 0.35):.2f}", rx="1",
+               transform=transform)
+        # Foundation outline still visible
+        svg.el("rect", x=f"{x:.1f}", y=f"{y:.1f}",
+               width=f"{w:.1f}", height=f"{h:.1f}",
+               fill="none", stroke=_darken_hex(orig_wall_c, 0.6),
+               stroke_width="0.8", stroke_dasharray="4 3", rx="0.5",
+               opacity="0.25", transform=transform)
+        # Scattered chunks
+        for _ in range(rng.randint(2, 6)):
+            cx2 = x + rng.uniform(0, w)
+            cy2 = y + rng.uniform(0, h)
+            svg.el("rect", x=f"{cx2:.0f}", y=f"{cy2:.0f}",
+                   width=f"{rng.uniform(2, 6):.0f}", height=f"{rng.uniform(1.5, 4):.0f}",
+                   fill=rng.choice([dark_wall, dark_roof, P.rubble, "#5a5048"]),
+                   opacity=f"{rng.uniform(0.25, 0.50):.2f}", rx="0.5",
+                   transform=f"rotate({rng.uniform(0,360):.0f} {cx2+2:.0f} {cy2+1.5:.0f})")
+        return
+
+    if destruction == 0:
+        # Scorched but mostly intact — render actual building shape with darkened colors
+        _render_rect_building(svg, x, y, w, h, dark_roof, dark_wall, transform, rng, b.btype)
+        # Light soot overlay
+        svg.el("rect", x=f"{x:.1f}", y=f"{y:.1f}",
+               width=f"{w:.1f}", height=f"{h:.1f}",
+               fill="#1a1410", opacity="0.12", rx="0.5", transform=transform)
+        return
+
+    # destruction 1 or 2: Partially destroyed — use actual building colors darkened
+    # Base walls (scorched version of original color)
+    svg.el("rect", x=f"{x:.1f}", y=f"{y:.1f}", width=f"{w:.1f}", height=f"{h:.1f}",
+           fill=dark_wall, stroke=_darken_hex(orig_wall_c, 0.6), stroke_width="0.7", rx="0.5",
+           opacity="0.82", transform=transform)
+
+    # Partial roof in darkened original roof color
+    inset = min(1.5, w * 0.06, h * 0.06)
+    roof_w_frac = rng.uniform(0.3, 0.65) if destruction == 2 else rng.uniform(0.6, 0.9)
+    svg.el("rect", x=f"{x+inset:.1f}", y=f"{y+inset:.1f}",
+           width=f"{(w-2*inset) * roof_w_frac:.1f}", height=f"{h-2*inset:.1f}",
+           fill=dark_roof, opacity="0.72", rx="0.3", transform=transform)
+
+    # Collapsed section
+    chunk_x = x + w * rng.uniform(0.4, 0.8)
+    chunk_y = y + h * rng.uniform(0.0, 0.4)
+    chunk_w = w * rng.uniform(0.15, 0.4)
+    chunk_h = h * rng.uniform(0.25, 0.55)
+    svg.el("rect", x=f"{chunk_x:.1f}", y=f"{chunk_y:.1f}",
+           width=f"{chunk_w:.1f}", height=f"{chunk_h:.1f}",
+           fill=P.bg_inner, opacity=f"{rng.uniform(0.45, 0.75):.2f}", rx="0.5",
+           transform=transform)
+
+    # Rubble spill around collapsed section
+    for _ in range(rng.randint(1, 4)):
+        rx2 = chunk_x + rng.uniform(-3, chunk_w + 3)
+        ry2 = chunk_y + chunk_h + rng.uniform(-1, 5)
+        svg.el("rect", x=f"{rx2:.0f}", y=f"{ry2:.0f}",
+               width=f"{rng.uniform(2, 5):.0f}", height=f"{rng.uniform(1, 3):.0f}",
+               fill=rng.choice([dark_wall, dark_roof, P.rubble]),
+               opacity=f"{rng.uniform(0.20, 0.40):.2f}", rx="0.5")
+
+
+def _render_broken_walls(svg: SvgCanvas, wall: WallData, tier: str,
+                         rng: random.Random, P):
+    """Render city walls with breaches and collapsed sections."""
+    verts = wall.vertices
+    if not verts:
+        return
+
+    is_stone = tier in ("capital", "large_town")
+    n = len(verts)
+
+    # Choose which wall segments are breached (30-60% of segments)
+    breach_rate = rng.uniform(0.30, 0.60)
+
+    for i in range(n):
+        v0 = verts[i]
+        v1 = verts[(i + 1) % n]
+
+        is_breached = rng.random() < breach_rate
+
+        if is_breached:
+            # Draw only partial segment with rubble at breach point
+            mid = lerp_pt(v0, v1, rng.uniform(0.3, 0.7))
+            # First half of wall segment
+            svg.el("line", x1=f"{v0[0]:.0f}", y1=f"{v0[1]:.0f}",
+                   x2=f"{mid[0]:.0f}", y2=f"{mid[1]:.0f}",
+                   stroke=P.wall_stone, stroke_width="10" if is_stone else "5",
+                   stroke_linecap="round", opacity="0.55")
+            # Rubble at breach point
+            for _ in range(rng.randint(3, 8)):
+                rx = mid[0] + rng.uniform(-12, 12)
+                ry = mid[1] + rng.uniform(-12, 12)
+                svg.el("rect", x=f"{rx:.0f}", y=f"{ry:.0f}",
+                       width=f"{rng.uniform(3, 8):.0f}",
+                       height=f"{rng.uniform(2, 6):.0f}",
+                       fill=rng.choice([P.wall_stone, P.rubble, P.ash]),
+                       opacity=f"{rng.uniform(0.25, 0.50):.2f}", rx="0.5",
+                       transform=f"rotate({rng.uniform(0,360):.0f} {rx+3:.0f} {ry+2:.0f})")
+        else:
+            # Intact but scorched wall segment
+            svg.el("line", x1=f"{v0[0]:.0f}", y1=f"{v0[1]:.0f}",
+                   x2=f"{v1[0]:.0f}", y2=f"{v1[1]:.0f}",
+                   stroke=P.wall_dark, stroke_width="10" if is_stone else "5",
+                   stroke_linecap="round", opacity="0.65")
+            # Damaged crenellations on surviving walls
+            if is_stone and rng.random() < 0.5:
+                seg_len = math.hypot(v1[0] - v0[0], v1[1] - v0[1])
+                for t in range(0, int(seg_len), 12):
+                    if rng.random() < 0.5:
+                        continue
+                    frac = t / seg_len
+                    cx = v0[0] + (v1[0] - v0[0]) * frac
+                    cy = v0[1] + (v1[1] - v0[1]) * frac
+                    svg.el("rect", x=f"{cx - 2:.0f}", y=f"{cy - 2:.0f}",
+                           width="4", height="4",
+                           fill=P.wall_stone, opacity="0.35")
+
+    # Towers — some collapsed, some standing but damaged
+    for tower in wall.towers:
+        if rng.random() < 0.4:
+            # Collapsed tower — rubble pile
+            svg.el("circle", cx=f"{tower[0]:.0f}", cy=f"{tower[1]:.0f}",
+                   r="14", fill=P.rubble, opacity="0.35")
+            for _ in range(rng.randint(3, 6)):
+                tx = tower[0] + rng.uniform(-10, 10)
+                ty = tower[1] + rng.uniform(-10, 10)
+                svg.el("rect", x=f"{tx:.0f}", y=f"{ty:.0f}",
+                       width=f"{rng.uniform(3, 7):.0f}",
+                       height=f"{rng.uniform(2, 5):.0f}",
+                       fill=P.wall_stone, opacity="0.30", rx="0.5",
+                       transform=f"rotate({rng.uniform(0,360):.0f} {tx+3:.0f} {ty+2:.0f})")
+        else:
+            # Damaged but standing tower
+            r = 11 if is_stone else 7
+            svg.el("circle", cx=f"{tower[0]:.0f}", cy=f"{tower[1]:.0f}",
+                   r=f"{r}", fill=P.tower_fill, stroke=P.wall_dark,
+                   stroke_width="2", opacity="0.55")
+            svg.el("circle", cx=f"{tower[0]:.0f}", cy=f"{tower[1]:.0f}",
+                   r=f"{r - 3}", fill=P.tower_top, opacity="0.40")
+
+
+def _render_chrome_destroyed(svg: SvgCanvas, cfg: TownConfig, tier: str,
+                              W: int, H: int, P, rng: random.Random):
+    """Render frame, compass, and 'RUINS OF' title for destroyed variant."""
+    # Dark frame
+    svg.el("rect", x="8", y="8", width=f"{W-16}", height=f"{H-16}",
+           fill="none", stroke=P.text_soft, stroke_width="1.5", rx="3", opacity="0.22")
+    svg.el("rect", x="12", y="12", width=f"{W-24}", height=f"{H-24}",
+           fill="none", stroke=P.text_soft, stroke_width="0.5", rx="2", opacity="0.14")
+
+    # Corner ornaments (darkened)
+    orn_sz = 22
+    for (ox, oy, sx, sy) in [(16, 16, 1, 1), (W-16, 16, -1, 1), (16, H-16, 1, -1), (W-16, H-16, -1, -1)]:
+        svg.raw(f'<g transform="translate({ox},{oy}) scale({sx},{sy})" opacity="0.20">'
+                f'<line x1="0" y1="0" x2="{orn_sz}" y2="0" stroke="{P.text_soft}" stroke-width="1"/>'
+                f'<line x1="0" y1="0" x2="0" y2="{orn_sz}" stroke="{P.text_soft}" stroke-width="1"/>'
+                f'<line x1="3" y1="3" x2="14" y2="3" stroke="{P.text_soft}" stroke-width="0.5"/>'
+                f'<line x1="3" y1="3" x2="3" y2="14" stroke="{P.text_soft}" stroke-width="0.5"/>'
+                f'<circle cx="5" cy="5" r="1.5" fill="{P.text_soft}" opacity="0.40"/>'
+                f'</g>')
+
+    # Compass rose (faded)
+    comp_x, comp_y = W - 60, H - 60
+    svg.el("circle", cx=f"{comp_x}", cy=f"{comp_y}", r="24",
+           fill="none", stroke=P.text_soft, stroke_width="0.8", opacity="0.20")
+    svg.el("line", x1=f"{comp_x}", y1=f"{comp_y+10}", x2=f"{comp_x}", y2=f"{comp_y-14}",
+           stroke=P.text_soft, stroke_width="1.4", opacity="0.25")
+    svg.raw(f'<polygon points="{comp_x},{comp_y-16} {comp_x-4},{comp_y-9} {comp_x+4},{comp_y-9}"'
+            f' fill="{P.text_soft}" opacity="0.25"/>')
+    for a, label, dx, dy in [(0, "E", 22, 3), (PI, "W", -22, 3), (PI/2, "S", 0, 24), (-PI/2, "N", 0, -20)]:
+        svg.txt(label, x=f"{comp_x+dx}", y=f"{comp_y+dy}",
+                text_anchor="middle", fill=P.text_soft,
+                font_family="'Cinzel', serif", font_size="8", font_weight="600", opacity="0.25")
+
+    # Title cartouche — "RUINS OF [CITY NAME]"
+    title = f"RUINS OF {cfg.name.upper()}"
+    title_fs = max(24, int(W * 0.010))
+    sub_fs = max(10, int(title_fs * 0.42))
+    char_w = title_fs * 0.65
+    title_w = max(len(title) * char_w + 80, 280)
+    title_h = title_fs * 2.8
+    title_x = W / 2 - title_w / 2
+    title_y = 14
+    # Dark cartouche background
+    svg.el("rect", x=f"{title_x:.0f}", y=f"{title_y:.0f}",
+           width=f"{title_w:.0f}", height=f"{title_h:.0f}",
+           rx="8", fill="#2a2420", stroke=P.text_soft, stroke_width="1.5", opacity="0.92")
+    svg.el("rect", x=f"{title_x + 5:.0f}", y=f"{title_y + 5:.0f}",
+           width=f"{title_w - 10:.0f}", height=f"{title_h - 10:.0f}",
+           rx="5", fill="none", stroke=P.text_soft, stroke_width="0.6", opacity="0.25")
+    # Title text — blood red
+    svg.txt(title, x=f"{W/2:.0f}", y=f"{title_y + title_h * 0.52:.0f}",
+            text_anchor="middle", fill="#a04030",
+            font_family="'Cinzel', serif", font_size=f"{title_fs}",
+            font_weight="700", letter_spacing=f"{max(2, title_fs // 8)}",
+            opacity="0.90")
+    # Subtitle — "Destroyed"
+    svg.txt("— Destroyed —", x=f"{W/2:.0f}", y=f"{title_y + title_h * 0.80:.0f}",
+            text_anchor="middle", fill=P.text_soft,
+            font_family="'Spectral', Georgia, serif", font_size=f"{sub_fs}",
+            font_style="italic", opacity="0.55")
+
+    # Scale bar
+    sb_x, sb_y = W - 110, 40
+    svg.el("line", x1=f"{sb_x}", y1=f"{sb_y}", x2=f"{sb_x+65}", y2=f"{sb_y}",
+           stroke=P.text, stroke_width="1.5", opacity="0.22")
+    for tick in [sb_x, sb_x + 32, sb_x + 65]:
+        svg.el("line", x1=f"{tick}", y1=f"{sb_y-3}", x2=f"{tick}", y2=f"{sb_y+3}",
+               stroke=P.text, stroke_width="1", opacity="0.22")
+    svg.txt("100 ft", x=f"{sb_x+32}", y=f"{sb_y+13}", text_anchor="middle",
+            fill=P.text_faint, font_family="'Spectral', Georgia, serif",
+            font_size="8", opacity="0.32")
 
 
 # ════════════════════════════════════════════════════════════════════════

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 88;
+const CACHE_VERSION = 98;
 const CACHE_NAME = 'phmurt-v' + CACHE_VERSION;
 const PRECACHE_URLS = [
   '/',
@@ -14,7 +14,7 @@ const PRECACHE_URLS = [
   'combat-engine.js',
   'visual-effects.js',
   'campaign-world.js',
-  'town-images.js',
+  'living-world.js',
   'logo.png'
 ];
 

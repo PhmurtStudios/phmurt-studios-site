@@ -656,21 +656,24 @@ const FIRST_NAMES_M = [
   "Thaddeus","Ragnar","Osric","Leander","Corwin","Dorian","Emeric","Balthazar","Ambrose","Caspian","Desmond","Evander","Florian","Griffith","Hadrian","Ignatius","Julius","Kellan","Lothar","Magnus","Nikolai","Oberon","Peregrine","Quentin","Reinhardt","Silas","Tobias","Ulysses","Viktor","Wolfgang",
   "Aeron","Bastian","Callum","Dante","Erasmus","Fabian","Gunnar","Henrik","Idris","Joachim","Kaspar","Lysander","Matthias","Nigel","Orion","Phelan","Raimund","Stellan","Tristan","Ulfric","Valerian","Wulfric","Yves","Zenon","Alistair","Benedict","Cassius","Dmitri","Ezekiel","Felix",
   "Godric","Hamish","Ingmar","Jorah","Koenraad","Lorcan","Merrick","Navarre","Oswin","Priam","Roland","Severin","Tybalt","Vaughan","Werner","Adhemar","Benoit","Cormac","Duncan","Eamon","Faramond","Gwydion","Hugo","Ivan","Jerrik","Kiran","Luther","Marcellus","Nils","Osbert",
-  "Piers","Raghnall","Sigmund","Tormund","Viggo","Aldhelm","Byrne","Colm","Drystan","Edric","Finnbar","Gawain","Hector","Ilmar","Justinian","Konstantin","Lachlan","Malakai","Niall","Osmund"
+  "Piers","Raghnall","Sigmund","Tormund","Viggo","Aldhelm","Byrne","Colm","Drystan","Edric","Finnbar","Gawain","Hector","Ilmar","Justinian","Konstantin","Lachlan","Malakai","Niall","Osmund",
+  "Arwel","Blayke","Craven","Dillon","Evin","Falk","Garrett","Hayward","Ivor","Jeremiah","Keegan","Lysias","Marlowe","Nathaniel","Orson","Piran","Quade","Rainer","Severus","Thaddeus","Uther","Varmion","Wade","Ximenes","Yoren","Zachariah","Arvid","Brennus","Caelix","Dashir","Euric","Feliks","Gideon","Hadrien","Irwin","Jurgen","Kaveh","Leofric","Marvin","Nathaniel","Oswin","Paxon"
 ];
 const FIRST_NAMES_F = [
   "Alara","Brielle","Celia","Daphne","Elara","Freya","Gwendolyn","Helena","Isolde","Jaina","Kaida","Lyra","Miriel","Nessa","Ophira","Petra","Rhiannon","Sera","Thalia","Ursa","Vespera","Wren","Xylia","Yara","Zara","Astrid","Brigid","Cassara","Dahlia","Elowen","Faye","Giselle","Hestia","Iris","Juno",
   "Aveline","Branwen","Calista","Delphine","Eira","Fiora","Galatea","Honoria","Ianthe","Jessamine","Kerensa","Liora","Morrigan","Nerissa","Octavia","Primrose","Rowena","Saoirse","Tamsin","Undine","Vivianne","Wynne","Xanthe","Ysabel","Zelda",
   "Amaranth","Beatrix","Cordelia","Dorothea","Evangeline","Fenella","Guinevere","Hildegard","Imogen","Juliana","Katarina","Lorelei","Marguerite","Nimue","Oleander","Penelope","Rosalind","Seraphina","Thessaly","Ulyana","Valentina","Winifred","Xiomara","Yvaine","Zinnia",
   "Adeline","Briar","Cressida","Desdemona","Elspeth","Felicity","Gretchen","Hermione","Ingrid","Johanna","Kestrel","Lenore","Marigold","Niamh","Oriana","Persephone","Ravenna","Sylvana","Tatiana","Una","Viveka","Willow","Ygritte","Adelaide","Bronwyn",
-  "Camellia","Diantha","Eowyn","Ffion","Ginevra","Helewise","Idalia","Jovana","Kenna","Lavinia","Melusine","Nadira","Olwen","Philippa","Ragnhild","Sigrid","Theodora","Urielle","Venetia","Wisteria"
+  "Camellia","Diantha","Eowyn","Ffion","Ginevra","Helewise","Idalia","Jovana","Kenna","Lavinia","Melusine","Nadira","Olwen","Philippa","Ragnhild","Sigrid","Theodora","Urielle","Venetia","Wisteria",
+  "Amalia","Beatrice","Celeste","Danielle","Emilia","Fiona","Giselle","Hazel","Iris","Josephine","Kiara","Lydia","Magnolia","Nadia","Opal","Piper","Quinley","Rosalie","Sabina","Tatanya","Ulvida","Valeria","Winifred","Xiola","Yvonne","Zelinda","Anastasia","Bella","Celestine","Darla","Esme","Felicity","Gaia","Henrietta","Ivette","Josephina","Kassandra"
 ];
 const LAST_NAMES = [
   "Blackwood","Ironforge","Stormwind","Ashworth","Greymane","Thornwall","Darkholme","Brightblade","Ravencrest","Nightshade","Goldmantle","Silverthorn","Wyrmwood","Frostborn","Emberheart","Oakenshield","Duskwalker","Stoneheart","Hawkridge","Moonvale","Dawnbringer","Whitecrest","Shadowmere","Firebrand","Steelhand","Wolfsbane","Coldstream","Starfall","Highcastle","Deepwater",
   "Ashford","Blackthorn","Cravenholm","Dunsworth","Eldergrove","Foxglove","Greymark","Halloway","Irontree","Kettleburn","Lockwood","Mossgrove","Northwind","Oakhart","Pinehurst","Queensbury","Redmane","Silverlock","Thistledown","Underhill","Vornheim","Winterbourne","Yarrow","Ashenmoor","Bloodworth",
   "Crowshield","Driftwood","Everstone","Farrow","Grimshaw","Hollowbone","Inkwell","Jarnskald","Keelhaul","Longspear","Mirewood","Nighthollow","Oxbridge","Proudfoot","Quicksilver","Rowntree","Sandstone","Thornberry","Urswick","Vexmoor","Wychwood","Yellandor","Zephyrstone","Ashencroft","Barrowmere",
   "Cindervale","Deepholm","Eaglecrest","Flintshire","Goldwater","Heathcliff","Icemantle","Jadecrest","Kingsley","Lionsgate","Marshwood","Nethervane","Oathkeeper","Pendrake","Rosethorne","Sunforge","Tidewater","Umberstone","Valecross","Windhollow","Yewthorn","Aldervale","Brokenshire","Copperhelm",
-  "Darkmoor","Edgewood","Fennwick","Greenbough","Hartwell","Ivywood","Jadewind","Kestrelmark","Lakewood","Moorehead","Northcott","Oldcastle","Pyreforge","Ravenshaw","Sablewood","Trueblood","Ulverstone","Voidhart","Woodhaven"
+  "Darkmoor","Edgewood","Fennwick","Greenbough","Hartwell","Ivywood","Jadewind","Kestrelmark","Lakewood","Moorehead","Northcott","Oldcastle","Pyreforge","Ravenshaw","Sablewood","Trueblood","Ulverstone","Voidhart","Woodhaven",
+  "Aythmoor","Balefrost","Cavernspire","Drakethorne","Everthorn","Foreveil","Graveston","Hearthfire","Icehold","Jewelstone","Kindleworth","Longwick","Mourngate","Nethercross","Oathstone","Peaksworth","Questor","Ravenstein","Stormforge","Timewick","Valisworth","Westmarch","Yawnhollow","Zenithrest","Ashenbrand"
 ];
 const NPC_ROLES = {
   ruler: ["King","Queen","High King","High Queen","Sovereign","Archduke","Archduchess","Warlord","Grand Sultan","Sultana","Pharaoh","Shogun","Chieftain","Grand Matriarch","Grand Patriarch"],
@@ -732,6 +735,70 @@ const NPC_SECRETS = [
   "Is slowly going blind but hides it from everyone",
   "Made a blood pact with another NPC — if one dies, the other follows",
   "Discovered a rift to another plane hidden in a local cave",
+  "Runs an underground crime operation from the city basement",
+  "Is actually underage but magically aged to appear older",
+  "Stole the identity of their spouse and the real one is plotting revenge",
+  "Is secretly in love with someone from a rival faction",
+  "Was involved in an assassination that changed the course of history",
+  "Possesses a grimoire containing forbidden summonings",
+  "Is a werewolf whose transformation is becoming harder to control",
+  "Has a secret illegitimate child with a noble from a warring house",
+  "Receives orders from a mysterious masked figure who appears in dreams",
+  "Accidentally unleashed a plague that killed thousands",
+  "Is being blackmailed by their own child",
+  "Witnessed the true death of a supposedly immortal being",
+  "Has been slowly poisoning their rival for three years",
+  "Possesses a contract signed in blood that will activate upon their death",
+  "Is slowly being replaced piece by piece with clockwork",
+  "Discovered their entire childhood was an elaborate fabrication",
+  "Maintains a hidden sanctuary for persecuted refugees",
+  "Has a standing kill order from a mercenary guild they once wronged",
+  "Is the illegitimate half-sibling of the current ruler",
+  "Stole a sacred relic and buried it to prevent its misuse",
+  "Can perfectly mimic anyone's handwriting and uses it to forge documents",
+  "Is an escaped experiment from a mad wizard's tower",
+  "Secretly funds the very rebellion they are sworn to crush",
+  "Has a parasitic entity living inside them that grants power but feeds on their life force",
+  "Witnessed the true nature of a god and it broke their faith",
+  "Is being hunted by a dragon they once wronged",
+  "Discovered a lost language written in the stars that only they can read",
+  "Has a hidden wardrobe of costumes and assumes different identities at night",
+  "Is slowly becoming more fey and less human",
+  "Owes their life to a demonic patron they meet with in secret",
+  "Has been cursed to only speak in riddles after sunset",
+  "Discovered their reflection has been replaced by something else",
+  "Is secretly pregnant and hiding it from everyone",
+  "Has a collection of cursed objects they compulsively steal",
+  "Was once a famous adventurer thought to be dead",
+  "Is being impersonated by a doppelganger who is a better person",
+  "Receives visions from a god who should be dead",
+  "Is slowly consuming the memories of everyone they touch",
+  "Has a hidden vault containing artifacts from a fallen civilization",
+  "Was involved in a coup that no one suspects them of",
+  "Is being hunted by a religious order for forbidden knowledge they possess",
+  "Discovered they are a thrall to an ancient vampire",
+  "Has a secret identity as a legendary monster that only surfaces at night",
+  "Is slowly turning to stone from a curse that began years ago",
+  "Was their parents' second choice and their sibling knows the truth",
+  "Has been feeding information to an organization bent on destabilizing the realm",
+  "Possesses the ability to kill with a single touch and hides it",
+  "Is slowly losing their mind to an enchantment placed on them in childhood",
+  "Has a secret lover in each of the major cities they frequently visit",
+  "Is actually centuries old despite appearing youthful",
+  "Discovered evidence of their spouse's infidelity and is seeking vengeance",
+  "Has a hidden cult of personality worshipping them in the lower city",
+  "Is slowly fading from existence due to a magic accident",
+  "Was offered a deal by death itself and accepted",
+  "Has a prophecy tattooed on their body that is starting to come true",
+  "Is being controlled by magical puppet strings they cannot detect",
+  "Discovered they are the child of a god and a mortal",
+  "Has been slowly collecting the pieces of a ritual that will change everything",
+  "Is haunted by a ghost that only they can see and is becoming unstable",
+  "Was once part of an elite assassination order and still receives their missions",
+  "Has successfully hidden a major city from the maps",
+  "Is slowly becoming a lich through an accidental ritual",
+  "Discovered that their trusted advisor is actually an ancient extraplanar being",
+  "Has a secret treaty with a kingdom that would cause war if revealed",
 ];
 
 /* ── City generation pools ── */
@@ -759,6 +826,11 @@ const ITEM_POOLS = {
     { name:"Flaming Blade", price:"350 gp", rarity:"rare" },{ name:"Frost Brand Spear", price:"400 gp", rarity:"rare" },
     { name:"Poisoned Stiletto", price:"75 gp", rarity:"uncommon" },{ name:"Mithril Scimitar", price:"500 gp", rarity:"rare" },
     { name:"Quarterstaff of the Owl", price:"120 gp", rarity:"uncommon" },{ name:"Javelin of Lightning", price:"250 gp", rarity:"rare" },
+    { name:"Halberd", price:"20 gp", rarity:"common" },{ name:"Pike", price:"5 gp", rarity:"common" },
+    { name:"Elf Blade", price:"35 gp", rarity:"uncommon" },{ name:"Greatsword", price:"50 gp", rarity:"common" },
+    { name:"Sabre", price:"25 gp", rarity:"common" },{ name:"Whip", price:"2 gp", rarity:"common" },
+    { name:"Sword of Undead Slaying", price:"300 gp", rarity:"uncommon" },{ name:"Adamantine Greataxe", price:"650 gp", rarity:"rare" },
+    { name:"Bow of the Wind", price:"275 gp", rarity:"uncommon" },{ name:"Wand of Scorching", price:"180 gp", rarity:"uncommon" },
   ],
   armor: [
     { name:"Leather Armor", price:"10 gp", rarity:"common" },{ name:"Chain Shirt", price:"50 gp", rarity:"common" },
@@ -766,6 +838,10 @@ const ITEM_POOLS = {
     { name:"Half Plate", price:"750 gp", rarity:"uncommon" },{ name:"Shield, Wooden", price:"7 gp", rarity:"common" },
     { name:"Cloak of Protection", price:"300 gp", rarity:"uncommon" },{ name:"Mithril Breastplate", price:"800 gp", rarity:"rare" },
     { name:"Shield of Arrow Catching", price:"600 gp", rarity:"rare" },{ name:"Boots of Elvenkind", price:"250 gp", rarity:"uncommon" },
+    { name:"Full Plate", price:"1500 gp", rarity:"uncommon" },{ name:"Plate Armor", price:"1500 gp", rarity:"uncommon" },
+    { name:"Ring of Protection", price:"200 gp", rarity:"uncommon" },{ name:"Elven Chain", price:"550 gp", rarity:"rare" },
+    { name:"Adamantine Plate", price:"2000 gp", rarity:"rare" },{ name:"Leather of Animal Friendship", price:"175 gp", rarity:"uncommon" },
+    { name:"Helm of Comprehending Languages", price:"500 gp", rarity:"uncommon" },{ name:"Cloak of Arachnida", price:"600 gp", rarity:"rare" },
   ],
   potion: [
     { name:"Healing Potion", price:"50 gp", rarity:"common" },{ name:"Greater Healing Potion", price:"150 gp", rarity:"uncommon" },
@@ -773,12 +849,18 @@ const ITEM_POOLS = {
     { name:"Potion of Invisibility", price:"300 gp", rarity:"rare" },{ name:"Elixir of Health", price:"120 gp", rarity:"uncommon" },
     { name:"Potion of Speed", price:"350 gp", rarity:"rare" },{ name:"Potion of Giant Strength", price:"450 gp", rarity:"rare" },
     { name:"Oil of Slipperiness", price:"100 gp", rarity:"uncommon" },{ name:"Philter of Love", price:"90 gp", rarity:"uncommon" },
+    { name:"Potion of Cold Resistance", price:"200 gp", rarity:"uncommon" },{ name:"Potion of Courage", price:"120 gp", rarity:"uncommon" },
+    { name:"Potion of Growth", price:"180 gp", rarity:"uncommon" },{ name:"Potion of Shrinking", price:"170 gp", rarity:"uncommon" },
+    { name:"Potion of Water Breathing", price:"200 gp", rarity:"uncommon" },{ name:"Superior Healing Potion", price:"300 gp", rarity:"uncommon" },
   ],
   scroll: [
     { name:"Scroll of Identify", price:"25 gp", rarity:"common" },{ name:"Scroll of Detect Magic", price:"25 gp", rarity:"common" },
     { name:"Scroll of Fireball", price:"200 gp", rarity:"uncommon" },{ name:"Scroll of Cure Wounds", price:"25 gp", rarity:"common" },
     { name:"Scroll of Shield", price:"50 gp", rarity:"common" },{ name:"Scroll of Dispel Magic", price:"150 gp", rarity:"uncommon" },
     { name:"Scroll of Raise Dead", price:"500 gp", rarity:"rare" },{ name:"Scroll of Teleport", price:"600 gp", rarity:"rare" },
+    { name:"Scroll of Magic Missile", price:"35 gp", rarity:"common" },{ name:"Scroll of Mage Armor", price:"40 gp", rarity:"common" },
+    { name:"Scroll of Invisibility", price:"250 gp", rarity:"uncommon" },{ name:"Scroll of Charm Person", price:"60 gp", rarity:"common" },
+    { name:"Scroll of Polymorph", price:"350 gp", rarity:"rare" },{ name:"Scroll of Meteor Swarm", price:"750 gp", rarity:"very rare" },
   ],
   general: [
     { name:"Rope, 50 ft", price:"1 gp", rarity:"common" },{ name:"Torch (10)", price:"1 gp", rarity:"common" },
@@ -787,12 +869,17 @@ const ITEM_POOLS = {
     { name:"Backpack", price:"2 gp", rarity:"common" },{ name:"Lantern, Hooded", price:"5 gp", rarity:"common" },
     { name:"Grappling Hook", price:"2 gp", rarity:"common" },{ name:"Healer's Kit", price:"5 gp", rarity:"common" },
     { name:"Spyglass", price:"1000 gp", rarity:"uncommon" },{ name:"Component Pouch", price:"25 gp", rarity:"common" },
+    { name:"Lockpicks", price:"25 gp", rarity:"common" },{ name:"Crowbar", price:"2 gp", rarity:"common" },
+    { name:"Caltrops", price:"1 gp", rarity:"common" },{ name:"Manacles", price:"5 gp", rarity:"common" },
   ],
   exotic: [
     { name:"Bag of Holding", price:"500 gp", rarity:"rare" },{ name:"Immovable Rod", price:"300 gp", rarity:"uncommon" },
     { name:"Sending Stones (pair)", price:"350 gp", rarity:"uncommon" },{ name:"Decanter of Endless Water", price:"400 gp", rarity:"uncommon" },
     { name:"Goggles of Night", price:"200 gp", rarity:"uncommon" },{ name:"Rope of Climbing", price:"250 gp", rarity:"uncommon" },
     { name:"Drift Globe", price:"180 gp", rarity:"uncommon" },{ name:"Amulet of Proof against Detection", price:"500 gp", rarity:"rare" },
+    { name:"Portable Hole", price:"600 gp", rarity:"rare" },{ name:"Wand of Fireballs", price:"700 gp", rarity:"rare" },
+    { name:"Cloak of Invisibility", price:"1500 gp", rarity:"very rare" },{ name:"Eyes of Minute Seeing", price:"250 gp", rarity:"uncommon" },
+    { name:"Eversmoking Bottle", price:"150 gp", rarity:"uncommon" },{ name:"Feather Token", price:"350 gp", rarity:"uncommon" },
   ],
 };
 const TAVERN_NAMES_PRE = [
@@ -840,6 +927,61 @@ const QUEST_HOOKS = [
   "Fishermen report a sea creature destroying boats in the bay",
   "The annual tournament needs champions — the prize is a noble title",
   "A forbidden book has surfaced in the black market with dangerous knowledge",
+  "A cult is recruiting in the lower city and must be stopped before an event occurs",
+  "A noble has been kidnapped and a ransom is being demanded in stolen goods",
+  "Monsters are migrating through the region — travelers must be warned",
+  "A famous artifact has been authenticated in a private collection — the owner will trade for favors",
+  "Strange monsters are being sighted in the city sewers",
+  "The local lord's favorite hound has vanished and they offer a substantial reward",
+  "A political scandal is brewing that could topple the current government",
+  "Slave traders are operating in secret — someone must gather evidence",
+  "A shipment of valuable cargo went missing — tracking it down could be profitable",
+  "The mayor's embezzlement scheme is about to be discovered by enemies",
+  "A secret passage under the city is being used by smugglers",
+  "Someone is impersonating a noble and committing crimes in their name",
+  "A prophecy about the town's destruction is creating mass hysteria",
+  "Mercenaries from out of region have arrived for unknown purposes",
+  "A library contains forbidden knowledge that several factions want",
+  "Monsters are being herded deliberately toward populated areas",
+  "A locksmith's secret stash of master keys has been stolen",
+  "The city guard captain is secretly working for a criminal syndicate",
+  "A merchant princess's fleet is being attacked by coordinated pirates",
+  "Alchemical explosions are destroying warehouses in the docks",
+  "A haunted mansion holds the key to an unsolved murder from decades ago",
+  "Rival merchants are poisoning each other's goods in a trade war",
+  "A former adventurer is building an army in the wilderness",
+  "The city's water supply is being contaminated deliberately",
+  "A powerful mage's tower is sinking into the ground for unexplained reasons",
+  "Exotic animals are escaping from a merchant's menagerie",
+  "A noble family's dirty secrets could reshape the political landscape",
+  "Monster parts are appearing on the black market from an unknown source",
+  "A missing expedition needs to be found before it's too late",
+  "Someone is systematically eliminating a noble's heirs",
+  "A thief's guild is planning a massive coordinated robbery",
+  "A dragon's egg has been discovered in the mountains",
+  "Cultists are performing rituals that are weakening a protective ward",
+  "A merchant caravan is assembling for a desperate journey to reclaim a debt",
+  "Someone is creating undead servants in the city crypts",
+  "A war is brewing over territorial boundaries between factions",
+  "A circus is cover for a spy operation gathering intelligence",
+  "Bandits are attacking only merchant caravans carrying specific goods",
+  "A paladin has gone rogue and is hunting former allies",
+  "Strange plague is turning people into mindless thralls",
+  "A clockwork construct is malfunctioning and causing destruction",
+  "Demon summoners are performing rituals beneath the cathedral",
+  "A noble is secretly funding an expedition to find mythical ruins",
+  "Someone is using blood magic to control influential people",
+  "Werewolves are terrorizing the outlying villages",
+  "A rival mage academy is sabotaging the city's academic institutions",
+  "Treasure hunters are converging on a location indicated by ancient maps",
+  "A political assassination is being planned and must be prevented",
+  "An exiled noble seeks to reclaim their throne through force",
+  "Someone is systematically poisoning the city's crops",
+  "A group of escaped prisoners is taking hostages and making demands",
+  "A bounty has been placed on a mysterious figure affecting city politics",
+  "Strange disappearances are linked to a forgotten underground temple",
+  "A wealthy collector seeks components for a forbidden artifact",
+  "Someone is blackmailing influential people with compromising information",
 ];
 const CITY_FEATURES = [
   "Grand Cathedral","Bustling Market Square","Ancient Library","Mage's College","Gladiatorial Arena",
@@ -848,7 +990,18 @@ const CITY_FEATURES = [
   "Merchant's Exchange","Artisan Row","Foreign Quarter","Military Barracks","Astronomical Observatory",
   "Underground Fighting Pit","Hanging Gardens","Sewer Network","Dragon Skull Monument","Sacred Grove",
   "Clockwork District","Refugee Camp","Haunted Ruins","Festival Grounds","Bridge Market",
+  "Grand Theatre","University District","Copper Mines","Shipyard Quarter","Temples of Seven Gods",
+  "Black Market Alley","Wizard's Tower","Knight's Academy","Tavern Row","Fishermen's Wharf",
+  "Grand Fountain Square","Slave Block","Beast Pens","Alchemy District","Archive Vault",
+  "Prison Tower","Sacred Catacombs","Brothel District","Weaponsmith's Guild","Healer's Circle",
+  "Grand Bazaar","Executioner's Square","Coliseum","Crown Jewels Museum","Plague Pits",
+  "Grand Canal","Witch's Wood","Necropolis Gate","Coin Mint","Cartographer's Hall",
+  "Alchemist's Guild","Brewers' Cooperative","Stone Quarries","Gem District","Silk Street",
+  "War Memorial","Courthouse","Asylum Tower","Beast Market","Rune Circles",
+  "Old Town Wall","Thieves' Landing","Dungeon Depths","Crown Gardens","Temple of War",
+  "River Port","Shadow District","Archives Hall","Magistrate's Palace","Craftsmen Square",
 ];
+
 
 // ── POI Lore & Quest Data ──
 const POI_LORE = {
@@ -931,9 +1084,34 @@ const POI_QUESTS = [
   { title: "Cartographer's Commission", desc: "The interior of this place has never been properly mapped. A cartographer's guild offers standing payment for detailed surveys." },
   { title: "The Ritual Components", desc: "A druid circle requires rare herbs that grow only in this location, but something dangerous now lairs within." },
   { title: "Bounty: Clear the Threat", desc: "A bounty has been posted for eliminating the dangerous creatures that have claimed this area as territory." },
+  { title: "Sanctuary Sought", desc: "Refugees need a safe haven from persecution. This place could be fortified and defended against those hunting them." },
+  { title: "The Archaeologist's Dream", desc: "An elderly scholar believes this location holds proof of a lost civilization. They offer their life savings for verification." },
+  { title: "Stolen Legacy", desc: "A family's ancestral artifact was hidden here during war. They will pay dearly to recover it before enemies find it." },
+  { title: "The Curse Breaker", desc: "A powerful curse emanates from within, affecting the surrounding lands. A sage offers a fortune to whoever breaks it." },
+  { title: "Creature Capture", desc: "A wealthy collector wants a living specimen from this location. The challenge is capturing it alive." },
+  { title: "Hidden Knowledge", desc: "Ancient texts hidden here hold secrets coveted by multiple factions. Retrieving them intact could shift political power." },
+  { title: "The Slayer's Return", desc: "A legendary monster is said to return to its lair periodically. Hunters offer substantial payment for proof of its death." },
+  { title: "Portal Investigation", desc: "Scholars want to understand the nature of portals found here. Your observations could fund expeditions for years." },
+  { title: "Monster Breeding Ground", desc: "Creatures here are unnaturally coordinated. Someone is controlling them — find out who and why." },
+  { title: "The Sealed Secret", desc: "Something precious was locked away deliberately and sealed with magic. A nobleman will pay to retrieve it." },
+  { title: "Rescue the Captives", desc: "Prisoners are being held here by a warlord. A powerful faction offers rewards for freeing them." },
+  { title: "The Forgotten War", desc: "This location was a key battleground in an ancient conflict. Detailed documentation could rewrite history and rebalance power." },
+  { title: "Divine Intervention", desc: "A priest claims the gods demand a relic retrieved from this place. Failure brings divine wrath, so the payment is substantial." },
+  { title: "The Alchemist's Cache", desc: "An alchemist hid their life's work here before disappearing. The collection is worth a fortune to the right buyer." },
+  { title: "Dungeon Delving", desc: "Standard dungeon crawl for treasure and glory. Many have gone in, few return, and those who do are wealthier." },
+  { title: "Territorial Dispute", desc: "Two factions claim this location. Whoever clears it can claim it for their patron." },
+  { title: "The Spell's Source", desc: "Strange magical effects originate here. A mage council needs the source identified or neutralized." },
+  { title: "Artifact Appraisal", desc: "Someone found something valuable here but needs experts to extract and evaluate it safely." },
+  { title: "The Bloodline Test", desc: "A noble heir must complete a task here to prove worthiness to inherit. Protection and guidance offered to helpers." },
 ];
+
 const POI_THREAT_LEVELS = ["safe","low","medium","high","extreme"];
-const POI_REWARDS = ["Ancient relic","Enchanted weapon","Spell scroll","Potion cache","Gold hoard","Rare crafting materials","Magical artifact","Lost knowledge"];
+const POI_REWARDS = [
+  "Ancient relic","Enchanted weapon","Spell scroll","Potion cache","Gold hoard","Rare crafting materials","Magical artifact","Lost knowledge",
+  "Legendary sword","Dragon scales","Philosopher's stone","Crown of lost kings","Sacred texts","Artifact of power","Treasure map","Rare gems",
+  "Enchanted armor","Healing elixir","Magical tome","Cursed amulet","Ancestral blade","Divine blessing","Ancient coins","Precious metals",
+  "Forbidden grimoire","Staff of arcane power","Holy relics","Undead slayer weapon","Cloak of invisibility","Ring of wishes","Artifact of resurrection",
+];
 
 /* Generate campaign regions and factions from ATLAS_METADATA (Python-generated data) */
 function regionsAndFactionsFromMetadata(seedNum) {
@@ -1101,7 +1279,15 @@ function regionsAndFactionsFromMetadata(seedNum) {
     const type = i === 0 ? "capital" : pick(regionTypes);
     const threat = pick(threatLevels);
     const state = pick(stateDescriptions);
-    const terrain = pick(terrainTypes);
+
+    // Use terrain from the first city in this region (from town metadata) if available
+    const townMeta = window.TOWN_METADATA;
+    const firstCity = (r.cities || [])[0];
+    const metaTerrain = firstCity && townMeta && townMeta[firstCity.name] ?
+      (townMeta[firstCity.name].terrain || null) : null;
+    // Map town terrains to region terrains
+    const terrainMap = { "plains": "plains", "forest": "forest", "hills": "hills", "marsh": "swamp", "coast": "coast" };
+    const terrain = metaTerrain ? (terrainMap[metaTerrain] || metaTerrain) : pick(terrainTypes);
 
     // Region-specific NPCs: governor, notable citizens
     const govGender = rng() > 0.5 ? "f" : "m";
@@ -1198,11 +1384,18 @@ function regionsAndFactionsFromMetadata(seedNum) {
         else if (lc.includes("enchant") || lc.includes("scroll") || lc.includes("rune") || lc.includes("book")) pool = ITEM_POOLS.scroll;
         else if (lc.includes("exotic") || lc.includes("curiosit") || lc.includes("relic")) pool = ITEM_POOLS.exotic;
         else if (lc.includes("jewel")) pool = [...ITEM_POOLS.exotic, ...ITEM_POOLS.armor];
-        const numItems = 3 + Math.floor(cRng() * 4);
+        const numItems = isCapital ? (5 + Math.floor(cRng() * 4)) : (pop > 4000 ? (4 + Math.floor(cRng() * 3)) : (3 + Math.floor(cRng() * 3)));
         const items = cPickN(pool, Math.min(numItems, pool.length)).map(item => ({
           ...item,
+          price: (() => {
+            // Vary prices by local supply/demand (0.7x to 1.5x)
+            const mult = 0.7 + cRng() * 0.8;
+            const base = parseInt(item.price) || 0;
+            const unit = item.price.replace(/[0-9.,\s]/g, '').trim();
+            return Math.round(base * mult) + ' ' + unit;
+          })(),
           inStock: cRng() > 0.15,
-          qty: item.rarity === "rare" ? 1 : (1 + Math.floor(cRng() * 5)),
+          qty: item.rarity === "rare" ? 1 : item.rarity === "very rare" ? 1 : (1 + Math.floor(cRng() * 5)),
         }));
         const ownerGender = cRng() > 0.5 ? "f" : "m";
         return {
@@ -1270,14 +1463,36 @@ function regionsAndFactionsFromMetadata(seedNum) {
         mapY: c.y,
         labelX: r.labelX || 0,
         labelY: r.labelY || 0,
-        terrain: regionObj.terrain,
+        terrain: (townMeta && townMeta[c.name] && townMeta[c.name].terrain) || regionObj.terrain,
         threat: regionObj.threat,
         features: features,
         shops: shops,
         tavern: tavern,
         npcs: cityNpcs.map(n => n.id),
         questHooks: questHooks,
-        description: `${isCapital ? "The capital city" : "A " + (pop > 5000 ? "bustling city" : "modest settlement")} of ${r.name}, governed under the banner of the ${controllingFaction}.`,
+        description: (() => {
+          const sizeDesc = isCapital ? "The grand capital" : pop > 8000 ? "A bustling metropolis" : pop > 4000 ? "A thriving city" : pop > 1500 ? "A modest town" : "A small village";
+          const terrainDesc = {
+            "plains": "surrounded by golden farmlands",
+            "forest": "nestled among ancient woodlands",
+            "hills": "perched in the rolling highlands",
+            "marsh": "built upon the murky wetlands",
+            "coast": "overlooking the restless sea",
+            "mountains": "carved into the mountain slopes",
+            "swamp": "rising from the misty bogs",
+            "desert": "standing amid the endless sands",
+            "tundra": "braving the frozen wastes",
+          }[(townMeta && townMeta[c.name] && townMeta[c.name].terrain) || regionObj.terrain] || "in the heart of the realm";
+          const factionDesc = cPick([
+            `governed under the banner of the ${controllingFaction}`,
+            `loyal to the ${controllingFaction}`,
+            `a stronghold of the ${controllingFaction}`,
+            `under the watchful eye of the ${controllingFaction}`,
+            `pledged to the ${controllingFaction}`,
+          ]);
+          const flavorDesc = features.length > 0 ? `, known for its ${features[0]}` : "";
+          return `${sizeDesc} ${terrainDesc}, ${factionDesc}${flavorDesc}.`;
+        })(),
       });
     });
   });
@@ -1329,8 +1544,99 @@ function regionsAndFactionsFromMetadata(seedNum) {
   return { regions, factions, npcs: allNpcs, cities: allCities, pois: allPois };
 }
 
+/**
+ * Ensures data consistency after any mutation (DM edits, Living World events, etc.)
+ * Call this after any setData that modifies factions, regions, or cities.
+ */
+function ensureDataConsistency(data) {
+  const d = { ...data };
+
+  // 1. Sync faction colors/names into cities that reference them
+  if (d.cities && d.factions) {
+    d.cities = d.cities.map(city => {
+      const region = (d.regions || []).find(r => r.name === city.region);
+      if (region) {
+        return { ...city, faction: region.ctrl, threat: region.threat };
+      }
+      return city;
+    });
+  }
+
+  // 2. Sync region state into cities (destroyed regions = destroyed cities)
+  if (d.regions && d.cities) {
+    d.cities = d.cities.map(city => {
+      const region = (d.regions || []).find(r => r.name === city.region);
+      if (region && (region.state === "destroyed" || region.state === "conquered")) {
+        return { ...city, destroyed: true };
+      }
+      if (region && region.state !== "destroyed" && region.state !== "conquered" && city.destroyed) {
+        return { ...city, destroyed: false }; // recovered
+      }
+      return city;
+    });
+  }
+
+  // 3. Kill NPCs in destroyed regions
+  if (d.regions && d.npcs) {
+    const destroyedRegions = new Set((d.regions || []).filter(r => r.state === "destroyed").map(r => r.name));
+    const destroyedCities = new Set((d.cities || []).filter(c => c.destroyed).map(c => c.name));
+    d.npcs = d.npcs.map(npc => {
+      if (npc.alive && (destroyedRegions.has(npc.loc) || destroyedCities.has(npc.loc))) {
+        // 60% chance of death when region destroyed, leaders more likely to survive
+        if (Math.random() < (npc.isLeader ? 0.3 : 0.6)) {
+          return { ...npc, alive: false };
+        }
+        // Survivors flee to a random non-destroyed region
+        const safeRegions = (d.regions || []).filter(r => r.state !== "destroyed" && r.state !== "conquered");
+        if (safeRegions.length > 0) {
+          const safeRegion = safeRegions[Math.floor(Math.random() * safeRegions.length)];
+          return { ...npc, loc: safeRegion.name };
+        }
+      }
+      return npc;
+    });
+  }
+
+  // 4. Update faction power based on controlled regions
+  if (d.factions && d.regions) {
+    d.factions = d.factions.map(f => {
+      const controlledRegions = (d.regions || []).filter(r => r.ctrl === f.name);
+      const destroyedCount = controlledRegions.filter(r => r.state === "destroyed" || r.state === "conquered").length;
+      const stableCount = controlledRegions.length - destroyedCount;
+      // Faction with no stable regions loses power rapidly
+      if (controlledRegions.length > 0 && stableCount === 0) {
+        return { ...f, power: Math.max(5, f.power - 5), trend: "declining" };
+      }
+      return f;
+    });
+  }
+
+  // 5. Ensure region.cities list matches actual cities in that region
+  if (d.regions && d.cities) {
+    d.regions = d.regions.map(r => ({
+      ...r,
+      cities: (d.cities || []).filter(c => c.region === r.name).map(c => c.name)
+    }));
+  }
+
+  return d;
+}
+
+window.__ensureDataConsistency = ensureDataConsistency;
+
 // Expose generator for cloud save compaction (campaigns.html uses this to diff)
 window.__cmRegensAndFactions = regionsAndFactionsFromMetadata;
+
+/**
+ * Delegated proxy for cmCompactForCloud (real function in campaigns.html).
+ * This prevents code from breaking if it calls this directly.
+ * The campaigns.html version has the sophisticated diff-based compaction.
+ */
+window.__cmCompactForCloud = function(data) {
+  // If campaigns.html hasn't loaded yet, return as-is
+  if (typeof cmCompactForCloud !== 'function') return data;
+  return cmCompactForCloud(data);
+};
 
 // ═══════════════════════════════════════════════════════════════════════════
 // WORLD STATE
@@ -1338,6 +1644,7 @@ window.__cmRegensAndFactions = regionsAndFactionsFromMetadata;
 
 function WorldView({ data, setData, onNav, viewRole = "dm" }) {
   const isDM = viewRole === "dm";
+  const isLive = data.campaignType === "live";
   const [sel,setSel] = useState(null);
   const [selType,setSelType] = useState(null);
   const [tab,setTab] = useState("map");
@@ -1358,6 +1665,179 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
   const [isMapCompact,setIsMapCompact] = useState(() => typeof window !== "undefined" ? window.innerWidth < 860 : false);
   const worldMapState = normalizeWorldMapState(data.worldMap);
 
+  // ── Living World Engine state ──
+  const [lwActive, setLwActive] = useState(false);
+  const [lwEvents, setLwEvents] = useState(() => (data._lwEventLog || []).slice(0, 30)); // visible event ticker items
+  const [lwLog, setLwLog] = useState(() => data._lwEventLog || []); // full event history
+  const [lwShowLog, setLwShowLog] = useState(false);
+  const [lwSpeed, setLwSpeed] = useState(90); // seconds between events
+  const [lwTimeSkipOpen, setLwTimeSkipOpen] = useState(false);
+  const [lwTimeSkipSummary, setLwTimeSkipSummary] = useState(null); // array of events or null
+  const [lwTimeSkipProgress, setLwTimeSkipProgress] = useState(null); // null or { current, total }
+  const lwTimerRef = useRef(null);
+  const broadcastRef = useRef(null);
+  const realtimeRef = useRef(null);
+
+  // Start/stop the Living World engine
+  useEffect(() => {
+    if (!isLive) return;
+    if (!window.livingWorld) return;
+    const engine = window.livingWorld;
+    if (lwActive && data.factions?.length > 0) {
+      engine.setData(data);
+      engine.onEvent = (event) => {
+        setLwEvents(prev => [event, ...prev].slice(0, 30));
+        setLwLog(prev => [event, ...prev]);
+        // Persist to campaign data for save/load
+        setData(d => ({
+          ...d,
+          _lwEventLog: [
+            { ...event, timestamp: Date.now(), mutations: undefined }, // Strip mutation functions (not serializable)
+            ...(d._lwEventLog || [])
+          ].slice(0, 200) // Keep last 200 events
+        }));
+      };
+      engine.onStateUpdate = (mutator) => {
+        setData(d => {
+          const mutated = mutator(d);
+          const updated = ensureDataConsistency(mutated);
+          engine.setData(updated);
+          return updated;
+        });
+      };
+      engine.start(data, { intervalMs: lwSpeed * 1000 });
+    } else {
+      engine.stop();
+    }
+    return () => { engine.stop(); };
+  }, [lwActive, lwSpeed, isLive]);
+
+  // Keep engine's data reference current
+  useEffect(() => {
+    if (!isLive) return;
+    if (window.livingWorld && lwActive) window.livingWorld.setData(data);
+  }, [data, lwActive, isLive]);
+
+  // ── Real-time player sync via BroadcastChannel ──
+  useEffect(() => {
+    if (!isLive) return;
+    if (typeof BroadcastChannel === 'undefined') return;
+    const channel = new BroadcastChannel('campaign-sync-' + (data.id || 'default'));
+    broadcastRef.current = channel;
+
+    // Listen for updates from other tabs (DM → Player sync)
+    channel.onmessage = (event) => {
+      if (event.data.type === 'state-update' && viewRole === 'player') {
+        // Player receives DM's state updates
+        setData(d => ({ ...d, ...event.data.payload }));
+      }
+    };
+
+    return () => { channel.close(); broadcastRef.current = null; };
+  }, [data.id, viewRole, isLive]);
+
+  // Broadcast state changes when DM modifies data
+  useEffect(() => {
+    if (!isLive) return;
+    if (viewRole !== 'dm' || !broadcastRef.current) return;
+    // Debounce broadcasts to avoid flooding
+    const timer = setTimeout(() => {
+      try {
+        // Only broadcast the fields players need (not full data)
+        broadcastRef.current.postMessage({
+          type: 'state-update',
+          payload: {
+            regions: data.regions,
+            factions: data.factions,
+            cities: data.cities?.map(c => ({ ...c, shops: undefined, tavern: undefined })), // strip shop details for perf
+            npcs: data.npcs?.filter(n => !n.secret), // strip secrets from player view
+            pois: data.pois,
+          }
+        });
+      } catch(e) { /* BroadcastChannel may fail silently */ }
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [data.regions, data.factions, data.cities, data.npcs, data.pois, viewRole, isLive]);
+
+  // ── Cross-device multiplayer sync via Supabase Realtime ──
+  useEffect(() => {
+    if (!isLive) return;
+    if (typeof PhmurtRealtime === 'undefined' || !PhmurtRealtime) return;
+    if (!data.id) return; // Need campaign ID for channel name
+
+    const role = viewRole || 'dm';
+
+    PhmurtRealtime.joinBattleMap(data.id, role, (incomingState) => {
+      // Player receives DM state updates via Supabase Realtime
+      if (role === 'player' && incomingState) {
+        setData(d => {
+          const merged = { ...d };
+          // Merge incoming fields (DM pushes world state to players)
+          if (incomingState.regions) merged.regions = incomingState.regions;
+          if (incomingState.factions) merged.factions = incomingState.factions;
+          if (incomingState.cities) {
+            // Preserve local shop/tavern data, merge rest
+            merged.cities = incomingState.cities.map(ic => {
+              const local = (d.cities || []).find(c => c.id === ic.id);
+              return local ? { ...local, ...ic, shops: local.shops, tavern: local.tavern } : ic;
+            });
+          }
+          if (incomingState.npcs) {
+            // Strip secrets for player view
+            merged.npcs = incomingState.npcs.map(n => ({ ...n, secret: undefined }));
+          }
+          if (incomingState.pois) merged.pois = incomingState.pois;
+          if (incomingState._lwEvents) {
+            // Merge Living World events
+            setLwEvents(prev => [...(incomingState._lwEvents || []), ...prev].slice(0, 30));
+            setLwLog(prev => [...(incomingState._lwEvents || []), ...prev]);
+          }
+          // Persist DM's full event history locally
+          if (incomingState._lwEventLog && incomingState._lwEventLog.length) {
+            merged._lwEventLog = incomingState._lwEventLog;
+          }
+          return merged;
+        });
+      }
+    });
+    realtimeRef.current = PhmurtRealtime;
+
+    return () => {
+      if (PhmurtRealtime.leave) PhmurtRealtime.leave();
+      realtimeRef.current = null;
+    };
+  }, [data.id, viewRole, isLive]);
+
+  // DM broadcasts world state changes to players via Supabase Realtime
+  useEffect(() => {
+    if (!isLive) return;
+    if (viewRole !== 'dm' || !realtimeRef.current) return;
+    if (!data.id || !data.regions) return;
+
+    const timer = setTimeout(() => {
+      try {
+        const payload = {
+          regions: data.regions,
+          factions: data.factions,
+          cities: (data.cities || []).map(c => {
+            const { shops, tavern, ...rest } = c;
+            return rest;
+          }),
+          npcs: (data.npcs || []).map(n => ({ ...n, secret: undefined })),
+          pois: data.pois,
+          _lwEvents: lwEvents.slice(0, 5), // Last 5 events for quick display
+          _lwEventLog: (data._lwEventLog || []).slice(0, 50), // Full history for player persistence
+        };
+        PhmurtRealtime.broadcastState(data.id, payload);
+
+        // Also save snapshot periodically for late-joining players
+        PhmurtRealtime.saveSnapshot(data.id, payload);
+      } catch(e) { console.warn('Realtime broadcast failed:', e); }
+    }, 3000); // 3s debounce for cross-device (longer than BroadcastChannel)
+
+    return () => clearTimeout(timer);
+  }, [data.regions, data.factions, data.cities, data.npcs, data.pois, lwEvents, viewRole, data.id, isLive]);
+
   // ── (Old map generation modal state removed — now using pre-generated atlas SVGs) ──
 
   // ── Map state — starts zoomed out to see the whole continent ──
@@ -1367,6 +1847,17 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
   const mapRef = useRef(null);
   const mapTouchRef = useRef({ active: false });
   const [zoomLevel, setZoomLevel] = useState("continent"); // continent | kingdom | local | detail
+
+  // ── Lazy-load town-images when user opens town view ──
+  useEffect(() => {
+    if (!townView || window.TOWN_IMAGES) return; // Already loaded or no town view
+    // Trigger lazy load from campaigns.html's loadDataModule function
+    if (typeof window.loadDataModule === "function") {
+      window.loadDataModule("town-images", "town-images.js").catch(function(err) {
+        console.error("[CampaignWorld] Failed to load town-images:", err);
+      });
+    }
+  }, [townView]);
 
   // Update zoom level label
   useEffect(() => {
@@ -1926,6 +2417,52 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
     }
   }, [activeRoute?.from?.id, activeRoute?.to?.id, activeRoute?.miles, activeRoute?.etaDays, activeRoute?.threat]);
 
+  // Handle time skip (fast-forward multiple events at once)
+  const handleTimeSkip = async (numEvents) => {
+    if (!window.livingWorld) return;
+
+    setLwTimeSkipOpen(false);
+    setLwTimeSkipProgress({ current: 0, total: numEvents });
+
+    // Simulate progress updates for UI feedback
+    const progressInterval = setInterval(() => {
+      setLwTimeSkipProgress(p => {
+        if (!p) return null;
+        const next = Math.min(p.current + 1, p.total);
+        if (next >= p.total) clearInterval(progressInterval);
+        return { ...p, current: next };
+      });
+    }, 50);
+
+    // Ensure Living World engine has current data before advancing time
+    // This will trigger relation initialization in advanceTime if needed
+    window.livingWorld.setData(data);
+
+    // Call advanceTime to generate events
+    const result = window.livingWorld.advanceTime(data, numEvents);
+    clearInterval(progressInterval);
+    setLwTimeSkipProgress(null);
+
+    // Apply final data state with event log (combined to avoid React batching issues)
+    const consistentData = ensureDataConsistency(result.finalData);
+    setData(d => ({
+      ...consistentData,
+      _lwEventLog: [
+        ...result.events.map(e => ({ ...e, mutations: undefined })),
+        ...(d._lwEventLog || [])
+      ].slice(0, 200)
+    }));
+
+    // Add all generated events to logs
+    setLwLog(prev => [...result.events, ...prev]);
+
+    // Add first 5 events to visible ticker
+    setLwEvents(prev => [...result.events.slice(0, 5), ...prev].slice(0, 30));
+
+    // Show summary modal
+    setLwTimeSkipSummary(result.events);
+  };
+
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"calc(100dvh - 56px)", overflow:"hidden" }}>
       {/* Top bar */}
@@ -2071,9 +2608,16 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                 {/* Kingdom territories — visible at continent/kingdom zoom */}
                 {mapZoom < 2.5 && atlasTerritories.map((t,i) => {
                   const activeProvince = atlasProvinceId === t.id || selectedWorldNode?.atlasProvinceId === t.id;
+                  // Dynamic faction color — updates when Living World changes territory control
+                  const factionForTerritory = data.factions?.find(f => f.name === t.faction);
+                  const terrFill = factionForTerritory?.color || t.fill || "#d6c999";
+                  // Check if region is destroyed/conquered (state === "conquered" or "destroyed")
+                  const regionData = (data.regions || []).find(r => r.name === t.name);
+                  const isContested = regionData?.state === "contested";
+                  const isDestroyed = regionData?.state === "destroyed" || regionData?.state === "conquered";
                   return (
                   <g key={`terr-${i}`} clipPath="url(#atlasLandClip)" style={{ cursor:"pointer" }} onClick={(e)=>{ e.stopPropagation(); setAtlasProvinceId(t.id); if (t.capitalNode) selectRegion(t.capitalNode); setTab("cities"); setCityRegionFocus(t.name); setSel(null); setSelType(null); }}>
-                    <path d={t.path} fill={t.fill || "#d6c999"} opacity={activeProvince ? 0.18 : 0.07} stroke={activeProvince ? "#7a6b4a" : "#a89872"} strokeWidth={activeProvince ? 2.4 : 1.2} strokeOpacity={activeProvince ? 0.55 : 0.28} strokeLinejoin="round"/>
+                    <path d={t.path} fill={terrFill} opacity={isDestroyed ? 0.25 : isContested ? 0.22 : activeProvince ? 0.18 : 0.10} stroke={isDestroyed ? "#8b0000" : isContested ? "#c94040" : activeProvince ? "#7a6b4a" : terrFill} strokeWidth={isDestroyed ? 3 : isContested ? 2.5 : activeProvince ? 2.4 : 1.2} strokeOpacity={isDestroyed ? 0.7 : isContested ? 0.5 : activeProvince ? 0.55 : 0.35} strokeLinejoin="round" strokeDasharray={isContested ? "12,6" : "none"}/>
                     {mapZoom < 1.3 && t.labelX != null && (
                       <text x={t.labelX} y={t.labelY} textAnchor="middle" fill={activeProvince ? "#3d3220" : "#4a3f28"} stroke="rgba(252,248,236,0.5)" strokeWidth={Math.max(1, 2.2 / Math.max(mapZoom, 0.5))} paintOrder="stroke" fontFamily="'Cinzel', serif" fontSize={Math.max(28, 64 / Math.max(mapZoom, 0.36))} fontWeight="600" letterSpacing="3.5" opacity={activeProvince ? 0.92 : 0.76} style={{ pointerEvents:"none", textTransform:"uppercase" }}>
                         {t.name}
@@ -2189,6 +2733,9 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                   const cx = city.mapX * MAP_W;
                   const cy = city.mapY * MAP_H;
                   const isActive = sel?.id === city.id && selType === "city";
+                  // Check if city's region is destroyed (only show destroyed markers in live campaigns)
+                  const cityRegion = (data.regions || []).find(r => r.name === city.region);
+                  const isCityDestroyed = isLive && cityRegion && (cityRegion.state === "destroyed" || cityRegion.state === "conquered");
                   // Scale marker size so it stays legible at any zoom level
                   const baseR = city.isCapital ? 14 : 9;
                   const markerR = Math.max(city.isCapital ? 6 : 4, baseR / Math.max(mapZoom * 0.7, 0.3));
@@ -2196,7 +2743,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                     ? Math.max(14, 26 / Math.max(mapZoom * 0.65, 0.3))
                     : Math.max(10, 18 / Math.max(mapZoom * 0.75, 0.35));
                   const labelOffset = markerR + Math.max(10, 16 / Math.max(mapZoom * 0.7, 0.4));
-                  const fc = (() => { const f = (data.factions || []).find(f => f.name === city.faction); return f?.color || "#c9a85c"; })();
+                  const fc = isCityDestroyed ? "#6a2020" : (() => { const f = (data.factions || []).find(f => f.name === city.faction); return f?.color || "#c9a85c"; })();
                   return (
                     <g key={`city-${city.id}`} style={{ cursor: "pointer" }}
                       onClick={(e) => {
@@ -2213,7 +2760,12 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                       {/* Main marker dot */}
                       <circle cx={cx} cy={cy} r={markerR} fill={isActive ? fc : "#231e15"} stroke={fc} strokeWidth={city.isCapital ? Math.max(1.2, 2.5/Math.max(mapZoom*0.5,0.3)) : Math.max(0.8, 1.8/Math.max(mapZoom*0.5,0.3))} opacity={0.96} />
                       {/* Inner dot for capitals */}
-                      {city.isCapital && <circle cx={cx} cy={cy} r={Math.max(1.5, markerR * 0.32)} fill={fc} opacity={isActive ? 1 : 0.75} />}
+                      {city.isCapital && !isCityDestroyed && <circle cx={cx} cy={cy} r={Math.max(1.5, markerR * 0.32)} fill={fc} opacity={isActive ? 1 : 0.75} />}
+                      {/* Destroyed X mark */}
+                      {isCityDestroyed && <>
+                        <line x1={cx - markerR * 0.5} y1={cy - markerR * 0.5} x2={cx + markerR * 0.5} y2={cy + markerR * 0.5} stroke="#ff3030" strokeWidth={Math.max(1.2, 2/Math.max(mapZoom*0.5,0.3))} opacity="0.8" />
+                        <line x1={cx + markerR * 0.5} y1={cy - markerR * 0.5} x2={cx - markerR * 0.5} y2={cy + markerR * 0.5} stroke="#ff3030" strokeWidth={Math.max(1.2, 2/Math.max(mapZoom*0.5,0.3))} opacity="0.8" />
+                      </>}
                       {/* City name label */}
                       <text x={cx} y={cy + labelOffset} textAnchor="middle"
                         fill="#f0e8d0" stroke="rgba(20,16,10,0.75)" strokeWidth={Math.max(1.5, 3/Math.max(mapZoom*0.6,0.3))} paintOrder="stroke"
@@ -2225,11 +2777,11 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                       {/* Type sub-label at close zoom (Capital / City / Town / Village) */}
                       {mapZoom > 0.6 && (() => {
                         const meta = window.TOWN_METADATA?.[city.name];
-                        const tierLabel = meta ? (
+                        const tierLabel = isCityDestroyed ? "RUINS" : (meta ? (
                           meta.isCapital ? "CAPITAL" :
                           (meta.population >= 4000) ? "CITY" :
                           (meta.population >= 1500) ? "TOWN" : "VILLAGE"
-                        ) : (city.isCapital ? "CAPITAL" : "SETTLEMENT");
+                        ) : (city.isCapital ? "CAPITAL" : "SETTLEMENT"));
                         return (
                           <text x={cx} y={cy + labelOffset + labelSize * 1.15} textAnchor="middle"
                             fill={city.isCapital ? fc : "#b8ae94"} stroke="rgba(20,16,10,0.6)" strokeWidth={1} paintOrder="stroke"
@@ -2471,6 +3023,284 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                 {pois.length} points of interest
               </div>}
             </div>
+
+            {/* ── Living World Controls (DM only) ── */}
+            {isLive && isDM && data.factions?.length > 0 && (
+              <div style={{ position:"absolute", top:12, left:12, display:"flex", flexDirection:"column", gap:6, zIndex:10 }}>
+                <button
+                  onClick={() => setLwActive(a => !a)}
+                  style={{
+                    display:"flex", alignItems:"center", gap:8, padding:"8px 16px",
+                    background: lwActive ? "rgba(46,180,92,0.2)" : "rgba(30,26,22,0.9)",
+                    border: lwActive ? "1px solid rgba(46,180,92,0.5)" : "1px solid rgba(201,168,92,0.25)",
+                    borderRadius:"4px", cursor:"pointer", transition:"all 0.3s",
+                  }}
+                >
+                  <span style={{ width:8, height:8, borderRadius:"50%", background: lwActive ? "#4ade80" : "#666", boxShadow: lwActive ? "0 0 8px rgba(74,222,128,0.6)" : "none", transition:"all 0.3s" }} />
+                  <span style={{ fontFamily:"'Cinzel', serif", fontSize:10, color: lwActive ? "#4ade80" : "#c9a85c", letterSpacing:"1.5px", textTransform:"uppercase" }}>
+                    {lwActive ? "World Live" : "Living World"}
+                  </span>
+                </button>
+                {lwActive && (
+                  <div style={{ display:"flex", gap:4 }}>
+                    <select value={lwSpeed} onChange={e => { setLwSpeed(Number(e.target.value)); if (lwActive) { setLwActive(false); setTimeout(() => setLwActive(true), 100); } }}
+                      style={{ padding:"3px 6px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:"'Cinzel', serif", fontSize:8, color:"#c9a85c", outline:"none", cursor:"pointer" }}>
+                      <option value={30}>Fast (30s)</option>
+                      <option value={60}>Normal (60s)</option>
+                      <option value={90}>Slow (90s)</option>
+                      <option value={180}>Very Slow (3m)</option>
+                    </select>
+                    <button onClick={() => setLwShowLog(v => !v)}
+                      style={{ padding:"3px 10px", background: lwShowLog ? "rgba(201,168,92,0.2)" : "rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:"'Cinzel', serif", fontSize:8, color:"#c9a85c", cursor:"pointer", letterSpacing:"1px" }}>
+                      {lwShowLog ? "Hide Log" : "Event Log"} ({lwLog.length})
+                    </button>
+                    <button onClick={() => setLwTimeSkipOpen(v => !v)}
+                      style={{ padding:"3px 10px", background: lwTimeSkipOpen ? "rgba(201,168,92,0.2)" : "rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:"'Cinzel', serif", fontSize:8, color:"#c9a85c", cursor:"pointer", letterSpacing:"1px" }}>
+                      ⏭ Skip Forward
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ── Time Skip Dropdown Menu ── */}
+            {isLive && isDM && data.factions?.length > 0 && lwTimeSkipOpen && (
+              <div style={{
+                position:"absolute", top:140, left:12, background:"rgba(20,18,14,0.98)", border:"1px solid rgba(201,168,92,0.25)",
+                borderRadius:"6px", zIndex:30, minWidth:140, boxShadow:"0 8px 24px rgba(0,0,0,0.6)"
+              }}>
+                <div style={{ padding:"8px 0", fontSize:9, fontFamily:"'Cinzel', serif", color:"#c9a85c", letterSpacing:"1px" }}>
+                  {[
+                    { label: "1 Week", events: 3 },
+                    { label: "1 Month", events: 12 },
+                    { label: "3 Months", events: 36 },
+                    { label: "1 Year", events: 144 },
+                  ].map(opt => (
+                    <button key={opt.label}
+                      onClick={() => {
+                        setLwTimeSkipOpen(false);
+                        handleTimeSkip(opt.events);
+                      }}
+                      style={{
+                        display:"block", width:"100%", padding:"8px 12px", textAlign:"left",
+                        background:"transparent", border:"none", color:"#c9a85c", cursor:"pointer",
+                        fontFamily:"'Cinzel', serif", fontSize:9, letterSpacing:"0.5px",
+                        borderBottom:"1px solid rgba(201,168,92,0.1)", transition:"all 0.2s"
+                      }}
+                      onMouseEnter={e => e.target.style.background = "rgba(201,168,92,0.15)"}
+                      onMouseLeave={e => e.target.style.background = "transparent"}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                  <div style={{ padding:"6px 12px", borderTop:"1px solid rgba(201,168,92,0.1)", display:"flex", gap:6, alignItems:"center" }}>
+                    <input type="number" min="1" max="365" defaultValue="7" id="customSkipEvents"
+                      style={{
+                        flex:1, padding:"3px 6px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.2)",
+                        borderRadius:"3px", color:"#c9a85c", fontFamily:"'Cinzel', serif", fontSize:8, outline:"none"
+                      }} />
+                    <button onClick={() => {
+                      const num = parseInt(document.getElementById("customSkipEvents")?.value || "7");
+                      if (num > 0) {
+                        setLwTimeSkipOpen(false);
+                        handleTimeSkip(num);
+                      }
+                    }}
+                      style={{
+                        padding:"3px 8px", background:"rgba(201,168,92,0.2)", border:"1px solid rgba(201,168,92,0.4)",
+                        borderRadius:"3px", color:"#c9a85c", cursor:"pointer", fontFamily:"'Cinzel', serif", fontSize:7,
+                        letterSpacing:"0.5px", textTransform:"uppercase"
+                      }}
+                    >
+                      Go
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Time Skip Progress Overlay ── */}
+            {isLive && lwTimeSkipProgress && (
+              <div style={{
+                position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"center", justifyContent:"center",
+                zIndex:40, fontFamily:"'Cinzel', serif"
+              }}>
+                <div style={{
+                  background:"rgba(20,18,14,0.98)", border:"2px solid rgba(201,168,92,0.5)", borderRadius:"8px",
+                  padding:"32px", textAlign:"center", minWidth:300
+                }}>
+                  <div style={{ fontSize:14, color:"#f0e8d0", marginBottom:20, letterSpacing:"1px" }}>
+                    Traversing the timeline...
+                  </div>
+                  <div style={{
+                    width:"100%", height:24, background:"rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.3)",
+                    borderRadius:"4px", overflow:"hidden", position:"relative"
+                  }}>
+                    <div style={{
+                      height:"100%", background:"linear-gradient(90deg, rgba(201,168,92,0.4), rgba(201,168,92,0.8))",
+                      width:`${(lwTimeSkipProgress.current / lwTimeSkipProgress.total) * 100}%`,
+                      transition:"width 0.1s linear"
+                    }} />
+                  </div>
+                  <div style={{ fontSize:10, color:"#c9a85c", marginTop:12, letterSpacing:"0.5px" }}>
+                    {lwTimeSkipProgress.current} / {lwTimeSkipProgress.total} events
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Time Skip Summary Modal ── */}
+            {isLive && lwTimeSkipSummary && (
+              <div style={{
+                position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"center", justifyContent:"center",
+                zIndex:40, fontFamily:"'Cinzel', serif", padding:20
+              }}>
+                <div style={{
+                  background:"rgba(20,18,14,0.98)", border:"2px solid rgba(201,168,92,0.4)", borderRadius:"8px",
+                  padding:"24px", maxWidth:500, maxHeight:"70vh", overflow:"hidden", display:"flex", flexDirection:"column"
+                }}>
+                  <div style={{ fontSize:14, color:"#f0e8d0", marginBottom:16, letterSpacing:"1px", textAlign:"center" }}>
+                    Time has passed... {lwTimeSkipSummary.length} events transpired
+                  </div>
+                  <div style={{
+                    flex:1, overflowY:"auto", marginBottom:16, paddingRight:12,
+                    borderTop:"1px solid rgba(201,168,92,0.2)", borderBottom:"1px solid rgba(201,168,92,0.2)",
+                    paddingTop:12, paddingBottom:12
+                  }}>
+                    {lwTimeSkipSummary.filter(e => e.importance === "major").map((evt, i) => (
+                      <div key={i} style={{
+                        display:"flex", gap:10, marginBottom:12, alignItems:"flex-start",
+                        paddingBottom:12, borderBottom:"1px solid rgba(201,168,92,0.1)"
+                      }}>
+                        <span style={{ fontSize:18, flexShrink:0, lineHeight:1 }}>{evt.icon}</span>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:11, color:"#f0e8d0", fontWeight:500, marginBottom:4 }}>{evt.headline}</div>
+                          <div style={{ fontSize:9, color:"#8a8070", lineHeight:1.4 }}>{evt.detail}</div>
+                        </div>
+                      </div>
+                    ))}
+                    {lwTimeSkipSummary.length > 0 && lwTimeSkipSummary.filter(e => e.importance === "major").length === 0 && (
+                      <div style={{ fontSize:10, color:"#8a8070", fontStyle:"italic", textAlign:"center", padding:"20px 0" }}>
+                        No major events. The world remained quiet.
+                      </div>
+                    )}
+                  </div>
+                  <div style={{ display:"flex", gap:8, justifyContent:"center" }}>
+                    <button onClick={() => {
+                      setLwTimeSkipSummary(null);
+                      setLwShowLog(true);
+                    }}
+                      style={{
+                        padding:"8px 16px", background:"rgba(201,168,92,0.2)", border:"1px solid rgba(201,168,92,0.4)",
+                        borderRadius:"4px", color:"#c9a85c", cursor:"pointer", fontFamily:"'Cinzel', serif", fontSize:9,
+                        letterSpacing:"1px", textTransform:"uppercase", transition:"all 0.2s"
+                      }}
+                      onMouseEnter={e => e.target.style.background = "rgba(201,168,92,0.35)"}
+                      onMouseLeave={e => e.target.style.background = "rgba(201,168,92,0.2)"}
+                    >
+                      View Full Log
+                    </button>
+                    <button onClick={() => setLwTimeSkipSummary(null)}
+                      style={{
+                        padding:"8px 16px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.25)",
+                        borderRadius:"4px", color:"#c9a85c", cursor:"pointer", fontFamily:"'Cinzel', serif", fontSize:9,
+                        letterSpacing:"1px", textTransform:"uppercase", transition:"all 0.2s"
+                      }}
+                      onMouseEnter={e => e.target.style.background = "rgba(201,168,92,0.1)"}
+                      onMouseLeave={e => e.target.style.background = "rgba(30,26,22,0.9)"}
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Living World Event Ticker (bottom of map) ── */}
+            {isLive && lwActive && lwEvents.length > 0 && (
+              <div style={{
+                position:"absolute", bottom:0, left:0, right:0, zIndex:20,
+                background:"linear-gradient(transparent, rgba(15,12,8,0.95) 30%)",
+                padding:"40px 20px 16px", pointerEvents:"none",
+              }}>
+                <div style={{ display:"flex", flexDirection:"column", gap:8, pointerEvents:"auto" }}>
+                  {lwEvents.slice(0, 3).map((evt, i) => (
+                    <div key={evt.timestamp + "-" + i} style={{
+                      display:"flex", alignItems:"flex-start", gap:12, padding:"10px 16px",
+                      background: i === 0 ? "rgba(201,168,92,0.12)" : "rgba(32,28,22,0.8)",
+                      border: `1px solid ${i === 0 ? "rgba(201,168,92,0.35)" : "rgba(80,70,55,0.3)"}`,
+                      borderRadius:"6px", transition:"all 0.5s ease",
+                      opacity: i === 0 ? 1 : 0.7,
+                      animation: i === 0 ? "lwSlideIn 0.5s ease" : "none",
+                    }}>
+                      <span style={{ fontSize:20, lineHeight:1, flexShrink:0 }}>{evt.icon}</span>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:12, fontWeight:500, color: i === 0 ? "#f0e8d0" : "#b8ae94", fontFamily:"'Cinzel', serif", letterSpacing:"0.3px" }}>{evt.headline}</div>
+                        <div style={{ fontSize:10, color:"#8a8070", lineHeight:1.5, marginTop:3, overflow:"hidden", textOverflow:"ellipsis", display:"-webkit-box", WebkitLineClamp: i === 0 ? 3 : 1, WebkitBoxOrient:"vertical" }}>{evt.detail}</div>
+                      </div>
+                      <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:2, flexShrink:0 }}>
+                        <span style={{
+                          fontSize:8, padding:"2px 6px", borderRadius:"2px", letterSpacing:"0.8px", textTransform:"uppercase",
+                          color: evt.importance === "major" ? "#e8ba40" : evt.importance === "minor" ? "#6a8070" : "#9a9080",
+                          border: `1px solid ${evt.importance === "major" ? "rgba(232,186,64,0.3)" : "rgba(120,110,88,0.3)"}`,
+                        }}>{evt.importance}</span>
+                        <span style={{ fontSize:8, color:"#5a5040", letterSpacing:"0.5px", textTransform:"uppercase" }}>{evt.category}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── Living World Event Log Panel ── */}
+            {isLive && lwShowLog && (
+              <div style={{
+                position:"absolute", top:0, left:0, bottom:0, width:380, zIndex:30,
+                background:"rgba(20,18,14,0.98)", borderRight:"1px solid rgba(201,168,92,0.2)",
+                display:"flex", flexDirection:"column", overflow:"hidden",
+                boxShadow:"4px 0 24px rgba(0,0,0,0.4)",
+              }}>
+                <div style={{ padding:"16px 20px", borderBottom:"1px solid rgba(201,168,92,0.15)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                  <div>
+                    <div style={{ fontSize:14, color:"#f0e8d0", fontFamily:"'Cinzel', serif", letterSpacing:"1px" }}>World Events</div>
+                    <div style={{ fontSize:9, color:"#8a8070", marginTop:2 }}>{lwLog.length} events this session</div>
+                  </div>
+                  <button onClick={() => setLwShowLog(false)} style={{ background:"none", border:"none", color:"#8a8070", cursor:"pointer", fontSize:18, padding:"2px 6px" }}>×</button>
+                </div>
+                <div style={{ flex:1, overflowY:"auto", padding:"12px 16px" }}>
+                  {lwLog.length === 0 && (
+                    <div style={{ padding:20, textAlign:"center", color:"#5a5040", fontStyle:"italic", fontSize:11 }}>
+                      No events yet. The world is quiet... for now.
+                    </div>
+                  )}
+                  {lwLog.map((evt, i) => (
+                    <div key={evt.timestamp + "-" + i} style={{
+                      padding:"12px 14px", marginBottom:8,
+                      background: "rgba(32,28,22,0.6)", border:"1px solid rgba(80,70,55,0.3)",
+                      borderRadius:"4px", borderLeft: `3px solid ${
+                        evt.category === "military" ? "#c94040" :
+                        evt.category === "political" ? "#4a90d9" :
+                        evt.category === "economic" ? "#d4a017" :
+                        evt.category === "social" ? "#8b50f0" :
+                        evt.category === "arcane" ? "#a569bd" :
+                        "#2e8b57"
+                      }`,
+                    }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                        <span style={{ fontSize:16 }}>{evt.icon}</span>
+                        <span style={{ fontSize:11, fontWeight:500, color:"#f0e8d0", fontFamily:"'Cinzel', serif", flex:1 }}>{evt.headline}</span>
+                        <span style={{ fontSize:8, color:"#5a5040" }}>#{evt.tickNumber}</span>
+                      </div>
+                      <div style={{ fontSize:10, color:"#8a8070", lineHeight:1.5 }}>{evt.detail}</div>
+                      <div style={{ display:"flex", gap:6, marginTop:6 }}>
+                        <span style={{ fontSize:8, color:"#6a6050", letterSpacing:"0.5px", textTransform:"uppercase" }}>{evt.category}</span>
+                        <span style={{ fontSize:8, color: evt.importance === "major" ? "#e8ba40" : "#6a6050", letterSpacing:"0.5px", textTransform:"uppercase" }}>{evt.importance}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Old Atlas Import Modal — removed (now using pre-generated SVGs) */}
 
@@ -3690,9 +4520,13 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
 
       {/* ══════════ TOWN MAP OVERLAY ══════════ */}
       {townView && (() => {
-        const townImg = window.TOWN_IMAGES?.[townView];
-        const townMeta = window.TOWN_METADATA?.[townView];
         const cityObj = (data.cities || []).find(c => c.name === townView);
+        // Check if this city's region is destroyed/conquered — use destroyed map variant (only for live campaigns)
+        const cityRegion = (data.regions || []).find(r => r.name === cityObj?.region);
+        const isDestroyed = isLive && cityRegion && (cityRegion.state === "destroyed" || cityRegion.state === "conquered");
+        const townImgKey = isDestroyed && window.TOWN_IMAGES?.[townView + "_destroyed"] ? townView + "_destroyed" : townView;
+        const townImg = window.TOWN_IMAGES?.[townImgKey];
+        const townMeta = window.TOWN_METADATA?.[townView];
         if (!townImg) return null;
 
         const buildings = townMeta?.buildings || [];
@@ -3773,28 +4607,16 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
             <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
               {/* Map area */}
               <div style={{
-                flex: 1, position: "relative", overflow: "hidden", cursor: "grab",
+                flex: 1, position: "relative", overflow: "hidden", cursor: "default",
               }}
-                onMouseDown={e => {
-                  if (e.button === 0) {
-                    townDragRef.current = { startX: e.clientX - townPan.x, startY: e.clientY - townPan.y };
-                  }
-                }}
-                onMouseMove={e => {
-                  if (townDragRef.current) {
-                    setTownPan({ x: e.clientX - townDragRef.current.startX, y: e.clientY - townDragRef.current.startY });
-                  }
-                }}
-                onMouseUp={() => { townDragRef.current = null; }}
-                onMouseLeave={() => { townDragRef.current = null; }}
                 onWheel={e => {
                   e.preventDefault();
                   setTownZoom(z => Math.min(3, Math.max(0.15, (z > 0 ? z : effectiveZoom) + (e.deltaY > 0 ? -0.08 : 0.08))));
                 }}
               >
                 <div style={{
-                  transform: `translate(${townPan.x}px, ${townPan.y}px) scale(${effectiveZoom})`,
-                  transformOrigin: "center center", transition: townDragRef.current ? "none" : "transform 0.15s ease",
+                  transform: `scale(${effectiveZoom})`,
+                  transformOrigin: "center center", transition: "transform 0.15s ease",
                   width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center",
                   position: "relative",
                 }}>
