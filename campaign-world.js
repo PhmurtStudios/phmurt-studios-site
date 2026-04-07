@@ -1219,6 +1219,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
   const [worldSearch,setWorldSearch] = useState("");
   const [routeDraft,setRouteDraft] = useState({ fromId: null, toId: null });
   const [cityPopup,setCityPopup] = useState(null); // { city, screenX, screenY } for map tooltip
+  const [cityRegionFocus,setCityRegionFocus] = useState(null); // region name to highlight in Cities tab
   const [isMapCompact,setIsMapCompact] = useState(() => typeof window !== "undefined" ? window.innerWidth < 860 : false);
   const worldMapState = normalizeWorldMapState(data.worldMap);
 
@@ -1888,7 +1889,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
               <g transform={`translate(${mapPan.x},${mapPan.y}) scale(${mapZoom})`}>
                 {/* ═══ LAYER 0: Base map — Python atlas image or JS fallback ═══ */}
                 {data.atlasMapSeed ? (
-                  <image href={atlasImageSrc} x="0" y="0" width={MAP_W} height={MAP_H} preserveAspectRatio="none" style={{ pointerEvents:"none" }} />
+                  <image href={atlasImageSrc} x="0" y="0" width={MAP_W} height={MAP_H} preserveAspectRatio="none" style={{ pointerEvents:"none", imageRendering:"auto" }} />
                 ) : (
                   <>
                     <rect x="0" y="0" width={MAP_W} height={MAP_H} rx="10" fill="url(#atlasSeaFill)" filter="url(#parchment)"/>
@@ -1935,7 +1936,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                 {mapZoom < 2.5 && atlasTerritories.map((t,i) => {
                   const activeProvince = atlasProvinceId === t.id || selectedWorldNode?.atlasProvinceId === t.id;
                   return (
-                  <g key={`terr-${i}`} clipPath="url(#atlasLandClip)" style={{ cursor:"pointer" }} onClick={(e)=>{ e.stopPropagation(); setAtlasProvinceId(t.id); if (t.capitalNode) selectRegion(t.capitalNode); }}>
+                  <g key={`terr-${i}`} clipPath="url(#atlasLandClip)" style={{ cursor:"pointer" }} onClick={(e)=>{ e.stopPropagation(); setAtlasProvinceId(t.id); if (t.capitalNode) selectRegion(t.capitalNode); setTab("cities"); setCityRegionFocus(t.name); setSel(null); setSelType(null); }}>
                     <path d={t.path} fill={t.fill || "#d6c999"} opacity={activeProvince ? 0.18 : 0.07} stroke={activeProvince ? "#7a6b4a" : "#a89872"} strokeWidth={activeProvince ? 2.4 : 1.2} strokeOpacity={activeProvince ? 0.55 : 0.28} strokeLinejoin="round"/>
                     {mapZoom < 1.3 && t.labelX != null && (
                       <text x={t.labelX} y={t.labelY} textAnchor="middle" fill={activeProvince ? "#3d3220" : "#4a3f28"} stroke="rgba(252,248,236,0.5)" strokeWidth={Math.max(1, 2.2 / Math.max(mapZoom, 0.5))} paintOrder="stroke" fontFamily="'Cinzel', serif" fontSize={Math.max(28, 64 / Math.max(mapZoom, 0.36))} fontWeight="600" letterSpacing="3.5" opacity={activeProvince ? 0.92 : 0.76} style={{ pointerEvents:"none", textTransform:"uppercase" }}>
@@ -1978,8 +1979,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                   </g>
                 )}
 
-                {/* ═══ LAYER 5: Region markers — scale-dependent icon/label sizing ═══ */}
-                {worldNodes.filter(node => node.searched).map(node => {
+                {/* ═══ LAYER 5: Region markers — hidden when atlas map is active (Layer 6 handles atlas cities) ═══ */}
+                {(!data.atlasMapSeed || (data.cities || []).length === 0) && worldNodes.filter(node => node.searched).map(node => {
                   const r = node;
                   const active = sel?.id===r.id && selType==="region";
                   const threatCol = tCols[r.threat] || "var(--text-muted)";
@@ -2046,34 +2047,58 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                   );
                 })}
 
-                {/* ═══ LAYER 6: Clickable city markers (atlas mode) ═══ */}
+                {/* ═══ LAYER 6: Clickable city markers (atlas mode) — click → Cities tab ═══ */}
                 {data.atlasMapSeed && (data.cities || []).map(city => {
-                  // Convert normalized city coords to absolute SVG coordinates
-                  // Cities x,y are 0-1 within the full map, so multiply by MAP_W/MAP_H
+                  // Normalized city coords → absolute SVG coordinates
                   const cx = city.mapX * MAP_W;
                   const cy = city.mapY * MAP_H;
-                  const isActive = cityPopup?.city?.id === city.id;
-                  const markerR = city.isCapital ? 12 : 8;
+                  const isActive = sel?.id === city.id && selType === "city";
+                  // Scale marker size so it stays legible at any zoom level
+                  const baseR = city.isCapital ? 14 : 9;
+                  const markerR = Math.max(city.isCapital ? 6 : 4, baseR / Math.max(mapZoom * 0.7, 0.3));
+                  const labelSize = city.isCapital
+                    ? Math.max(14, 26 / Math.max(mapZoom * 0.65, 0.3))
+                    : Math.max(10, 18 / Math.max(mapZoom * 0.75, 0.35));
+                  const labelOffset = markerR + Math.max(10, 16 / Math.max(mapZoom * 0.7, 0.4));
                   const fc = (() => { const f = (data.factions || []).find(f => f.name === city.faction); return f?.color || "#c9a85c"; })();
                   return (
                     <g key={`city-${city.id}`} style={{ cursor: "pointer" }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        const rect = mapRef.current?.getBoundingClientRect();
-                        const sx = (cx * mapZoom + mapPan.x) + (rect?.left || 0);
-                        const sy = (cy * mapZoom + mapPan.y) + (rect?.top || 0);
-                        setCityPopup(prev => prev?.city?.id === city.id ? null : { city, screenX: sx, screenY: sy });
+                        // Direct navigation to Cities tab — no intermediate popup
+                        setTab("cities");
+                        setSel(city);
+                        setSelType("city");
+                        setCityRegionFocus(city.region);
+                        setCityPopup(null);
                       }}>
-                      {/* Outer glow */}
-                      <circle cx={cx} cy={cy} r={markerR + 6} fill={fc} opacity={isActive ? 0.25 : 0.08} />
-                      {/* Marker */}
-                      <circle cx={cx} cy={cy} r={markerR} fill={isActive ? fc : "#2a2218"} stroke={fc} strokeWidth={city.isCapital ? 2.5 : 1.5} opacity={0.95} />
-                      {city.isCapital && <circle cx={cx} cy={cy} r={markerR - 4} fill="none" stroke={fc} strokeWidth={1} opacity={0.6} />}
-                      {/* Label */}
-                      <text x={cx} y={cy + markerR + 18} textAnchor="middle" fill="#f0e8d0" stroke="rgba(30,26,20,0.7)" strokeWidth={3} paintOrder="stroke"
-                        fontFamily="'Spectral', serif" fontSize={city.isCapital ? 22 : 16} fontWeight={city.isCapital ? "600" : "400"} letterSpacing="0.5" style={{ pointerEvents: "none" }}>
+                      {/* Hover target area (larger than visible marker for easy clicking) */}
+                      <circle cx={cx} cy={cy} r={markerR + 8} fill="transparent" />
+                      {/* Outer glow — stronger when active */}
+                      <circle cx={cx} cy={cy} r={markerR + 5} fill={fc} opacity={isActive ? 0.3 : 0.1} style={{ transition:"opacity 0.2s" }} />
+                      {/* Capital ring decoration */}
+                      {city.isCapital && <circle cx={cx} cy={cy} r={markerR + 2} fill="none" stroke={fc} strokeWidth={Math.max(0.8, 1.5/Math.max(mapZoom*0.5,0.3))} opacity={isActive ? 0.9 : 0.55} strokeDasharray="6 3" />}
+                      {/* Main marker dot */}
+                      <circle cx={cx} cy={cy} r={markerR} fill={isActive ? fc : "#231e15"} stroke={fc} strokeWidth={city.isCapital ? Math.max(1.2, 2.5/Math.max(mapZoom*0.5,0.3)) : Math.max(0.8, 1.8/Math.max(mapZoom*0.5,0.3))} opacity={0.96} />
+                      {/* Inner dot for capitals */}
+                      {city.isCapital && <circle cx={cx} cy={cy} r={Math.max(1.5, markerR * 0.32)} fill={fc} opacity={isActive ? 1 : 0.75} />}
+                      {/* City name label */}
+                      <text x={cx} y={cy + labelOffset} textAnchor="middle"
+                        fill="#f0e8d0" stroke="rgba(20,16,10,0.75)" strokeWidth={Math.max(1.5, 3/Math.max(mapZoom*0.6,0.3))} paintOrder="stroke"
+                        fontFamily="'Spectral', serif" fontSize={labelSize}
+                        fontWeight={city.isCapital ? "600" : "400"} letterSpacing="0.4"
+                        style={{ pointerEvents: "none", textShadow: "none" }}>
                         {city.name}
                       </text>
+                      {/* "CAPITAL" sub-label at close zoom */}
+                      {city.isCapital && mapZoom > 0.6 && (
+                        <text x={cx} y={cy + labelOffset + labelSize * 1.15} textAnchor="middle"
+                          fill={fc} stroke="rgba(20,16,10,0.6)" strokeWidth={1} paintOrder="stroke"
+                          fontFamily="'Cinzel', serif" fontSize={Math.max(6, 9/Math.max(mapZoom*0.5,0.3))}
+                          letterSpacing="1.5" opacity="0.8" style={{ pointerEvents:"none" }}>
+                          CAPITAL
+                        </text>
+                      )}
                     </g>
                   );
                 })}
@@ -2641,12 +2666,19 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                 const cityNpcs = (data.npcs || []).filter(n => (c.npcs || []).includes(n.id));
                 return (
                   <div style={{ display: "flex", flexDirection: "column", gap: 0, maxWidth: 900 }}>
-                    {/* Back button */}
-                    <button onClick={() => { setSel(null); setSelType(null); }} style={{
-                      alignSelf: "flex-start", display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", marginBottom: 16,
-                      background: "transparent", border: `1px solid ${T.border}`, borderRadius: "3px", color: T.textMuted,
-                      fontFamily: T.ui, fontSize: 10, letterSpacing: "1.5px", textTransform: "uppercase", cursor: "pointer",
-                    }}><ArrowLeft size={12} /> All Cities</button>
+                    {/* Back button row */}
+                    <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                      <button onClick={() => { setSel(null); setSelType(null); }} style={{
+                        display: "flex", alignItems: "center", gap: 6, padding: "8px 14px",
+                        background: "transparent", border: `1px solid ${T.border}`, borderRadius: "3px", color: T.textMuted,
+                        fontFamily: T.ui, fontSize: 10, letterSpacing: "1.5px", textTransform: "uppercase", cursor: "pointer",
+                      }}><ArrowLeft size={12} /> All Cities</button>
+                      <button onClick={() => { setTab("map"); }} style={{
+                        display: "flex", alignItems: "center", gap: 6, padding: "8px 14px",
+                        background: "transparent", border: `1px solid ${T.border}`, borderRadius: "3px", color: T.textMuted,
+                        fontFamily: T.ui, fontSize: 10, letterSpacing: "1.5px", textTransform: "uppercase", cursor: "pointer",
+                      }}>◎ View on Map</button>
+                    </div>
 
                     {/* City header */}
                     <div style={{
@@ -2783,7 +2815,14 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                 );
               }
 
-              // ── CITY LIST VIEW (grouped by region) ──
+              // ── CITY LIST VIEW (grouped by kingdom/region) ──
+              // Sort region groups: focused region first, then alphabetical
+              const sortedRegionEntries = Object.entries(regionGroups).sort(([a],[b]) => {
+                if (a === cityRegionFocus) return -1;
+                if (b === cityRegionFocus) return 1;
+                return a.localeCompare(b);
+              });
+
               return (
                 <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                   {cities.length === 0 && (
@@ -2791,52 +2830,115 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                       No cities generated yet. Select an atlas seed on the Map tab to generate world data.
                     </div>
                   )}
-                  {Object.entries(regionGroups).map(([regionName, regionCities]) => {
+                  {sortedRegionEntries.map(([regionName, regionCities]) => {
                     const region = (data.regions || []).find(r => r.name === regionName);
                     const fc = (() => { const f = (data.factions || []).find(f => f.name === region?.ctrl); return f?.color || "#c9a85c"; })();
+                    const isFocused = cityRegionFocus === regionName;
+                    const capital = regionCities.find(c => c.isCapital);
+                    // Faction object for extra info
+                    const factionObj = (data.factions || []).find(f => f.name === region?.ctrl);
                     return (
-                      <div key={regionName} style={{ marginBottom: 24 }}>
-                        {/* Region header */}
+                      <div key={regionName} id={`region-${regionName.replace(/\s+/g,'-')}`} style={{
+                        marginBottom: 28,
+                        borderRadius: "6px",
+                        border: isFocused ? `1px solid ${fc}55` : "1px solid transparent",
+                        boxShadow: isFocused ? `0 0 0 2px ${fc}22, 0 4px 24px rgba(0,0,0,0.18)` : "none",
+                        transition: "all 0.3s",
+                        overflow: "hidden",
+                      }}>
+                        {/* ── Kingdom header card ── */}
                         <div style={{
-                          display: "flex", alignItems: "center", gap: 12, marginBottom: 12, padding: "10px 16px",
-                          background: `linear-gradient(90deg, ${fc}15 0%, transparent 100%)`,
-                          borderLeft: `3px solid ${fc}`, borderRadius: "2px",
+                          padding: "16px 20px",
+                          background: `linear-gradient(135deg, ${fc}18 0%, ${fc}08 50%, transparent 100%)`,
+                          borderLeft: `4px solid ${fc}`,
+                          borderBottom: `1px solid ${fc}22`,
                         }}>
-                          <MapPin size={16} color={fc} />
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 14, fontWeight: 400, color: T.text, letterSpacing: "0.3px" }}>{regionName}</div>
-                            {region && <div style={{ fontSize: 10, color: T.textFaint, marginTop: 1 }}>{region.ctrl} · {region.terrain}</div>}
-                          </div>
-                          <span style={{ fontSize: 11, color: T.textFaint, fontFamily: T.ui }}>{regionCities.length} {regionCities.length === 1 ? "settlement" : "settlements"}</span>
-                        </div>
-                        {/* City cards */}
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, paddingLeft: 4 }}>
-                          {regionCities.map(c => {
-                            const cityFc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || "#c9a85c"; })();
-                            return (
-                              <div key={c.id} onClick={() => { setSel(c); setSelType("city"); }} style={{
-                                padding: "16px 20px", background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: "4px",
-                                cursor: "pointer", transition: "all 0.2s", borderLeft: c.isCapital ? `3px solid ${cityFc}` : `1px solid ${T.border}`,
-                              }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                                  <span style={{ fontSize: 15, fontWeight: 300, color: T.text }}>{c.name}</span>
-                                  {c.isCapital && <span style={{ fontSize: 8, color: "#c9a85c", border: "1px solid rgba(201,168,92,0.3)", padding: "1px 5px", borderRadius: "2px", letterSpacing: "0.5px" }}>CAPITAL</span>}
-                                </div>
-                                <div style={{ fontSize: 11, color: T.textFaint, marginBottom: 8 }}>Pop. {c.population} · {c.faction}</div>
-                                <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 6 }}>
-                                  {(c.features || []).slice(0, 2).map((f, fi) => (
-                                    <span key={fi} style={{ fontSize: 9, color: T.textDim, background: "rgba(0,0,0,0.15)", padding: "2px 6px", borderRadius: "2px" }}>{f}</span>
-                                  ))}
-                                </div>
-                                <div style={{ display: "flex", gap: 12, fontSize: 10, color: T.textFaint }}>
-                                  <span>{c.shops.length} shops</span>
-                                  <span>1 tavern</span>
-                                  <span>{(c.npcs || []).length} NPCs</span>
-                                  <span>{(c.questHooks || []).length} quests</span>
-                                </div>
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+                            <div style={{ flex: 1 }}>
+                              {/* Kingdom name + type badge */}
+                              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                                <span style={{ fontSize: 18, fontWeight: 400, color: T.text, fontFamily: "'Cinzel', serif", letterSpacing: "0.5px" }}>{regionName}</span>
+                                {region && <span style={{ fontSize: 9, color: fc, border: `1px solid ${fc}44`, padding: "2px 8px", borderRadius: "2px", letterSpacing: "1.2px", textTransform: "uppercase" }}>{region.type || "Region"}</span>}
+                                {isFocused && <span style={{ fontSize: 9, color: T.textFaint, fontStyle: "italic" }}>← selected from map</span>}
                               </div>
-                            );
-                          })}
+                              {/* Faction + terrain + threat */}
+                              <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 11, color: T.textMuted, marginBottom: 6 }}>
+                                {region?.ctrl && <span style={{ color: fc }}>⚑ {region.ctrl}</span>}
+                                {region?.terrain && <span>◈ {region.terrain}</span>}
+                                {region?.threat && <span>⚔ Threat: {region.threat}</span>}
+                                {capital && <span>★ Capital: {capital.name}</span>}
+                              </div>
+                              {/* Governor */}
+                              {region?.governor && (
+                                <div style={{ fontSize: 11, color: T.textDim, fontStyle: "italic", marginBottom: 4 }}>
+                                  {region.governorTitle || "Governor"}: {region.governor}
+                                </div>
+                              )}
+                              {/* Faction description snippet */}
+                              {factionObj?.description && (
+                                <div style={{ fontSize: 11, color: T.textDim, lineHeight: 1.5, marginTop: 6, maxWidth: 600 }}>
+                                  {factionObj.description.slice(0, 140)}{factionObj.description.length > 140 ? "…" : ""}
+                                </div>
+                              )}
+                            </div>
+                            {/* Right side: stats + locate button */}
+                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8, flexShrink: 0 }}>
+                              <div style={{ fontSize: 11, color: T.textFaint, fontFamily: T.ui }}>
+                                {regionCities.length} {regionCities.length === 1 ? "settlement" : "settlements"}
+                              </div>
+                              {region?.population && (
+                                <div style={{ fontSize: 10, color: T.textFaint }}>Pop. {region.population}</div>
+                              )}
+                              {/* Locate on Map button */}
+                              <button onClick={() => { setTab("map"); setCityRegionFocus(regionName); }} style={{
+                                padding: "5px 12px", background: `${fc}18`, border: `1px solid ${fc}44`, borderRadius: "3px",
+                                color: fc, fontFamily: "'Cinzel', serif", fontSize: 9, letterSpacing: "1px",
+                                textTransform: "uppercase", cursor: "pointer",
+                              }}>
+                                ◎ Locate on Map
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* ── City cards grid ── */}
+                        <div style={{ padding: "12px 16px", background: "rgba(0,0,0,0.04)" }}>
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                            {regionCities.map(c => {
+                              const cityFc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || "#c9a85c"; })();
+                              return (
+                                <div key={c.id} onClick={() => { setSel(c); setSelType("city"); setCityRegionFocus(c.region); }} style={{
+                                  padding: "14px 18px", background: T.bgCard,
+                                  border: c.isCapital ? `1px solid ${cityFc}55` : `1px solid ${T.border}`,
+                                  borderLeft: c.isCapital ? `3px solid ${cityFc}` : `2px solid ${T.border}22`,
+                                  borderRadius: "4px", cursor: "pointer", transition: "border-color 0.2s, box-shadow 0.2s",
+                                }}
+                                  onMouseEnter={e => e.currentTarget.style.boxShadow = `0 2px 12px rgba(0,0,0,0.2)`}
+                                  onMouseLeave={e => e.currentTarget.style.boxShadow = "none"}
+                                >
+                                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+                                    {c.isCapital
+                                      ? <span style={{ fontSize: 16, color: cityFc }}>★</span>
+                                      : <span style={{ fontSize: 14, color: T.textFaint }}>◆</span>}
+                                    <span style={{ fontSize: 14, fontWeight: c.isCapital ? 500 : 300, color: T.text }}>{c.name}</span>
+                                    {c.isCapital && <span style={{ fontSize: 8, color: cityFc, border: `1px solid ${cityFc}44`, padding: "1px 5px", borderRadius: "2px", letterSpacing: "0.5px" }}>CAPITAL</span>}
+                                  </div>
+                                  <div style={{ fontSize: 10, color: T.textFaint, marginBottom: 7 }}>Pop. {c.population}</div>
+                                  <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 7 }}>
+                                    {(c.features || []).slice(0, 2).map((f, fi) => (
+                                      <span key={fi} style={{ fontSize: 9, color: T.textDim, background: "rgba(0,0,0,0.15)", padding: "2px 6px", borderRadius: "2px" }}>{f}</span>
+                                    ))}
+                                  </div>
+                                  <div style={{ display: "flex", gap: 10, fontSize: 10, color: T.textFaint }}>
+                                    <span>{c.shops.length} shops</span>
+                                    <span>1 tavern</span>
+                                    <span>{(c.npcs || []).length} NPCs</span>
+                                    <span>{(c.questHooks || []).length} quests</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       </div>
                     );
