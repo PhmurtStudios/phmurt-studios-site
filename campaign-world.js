@@ -1499,13 +1499,125 @@ function regionsAndFactionsFromMetadata(seedNum) {
     });
   });
 
-  // ── Generate POI data from atlas metadata ──
+  // ── Post-process city coordinates: spread overlaps, clamp edges ──
+  (function fixCityCoords() {
+    // 1. Pull cities inside the continent ellipse
+    //    Continent center at (0.5, 0.5) in normalized coords
+    //    Ellipse semi-axes: ~0.37 on X (2200/6000), ~0.36 on Y (1600/4500)
+    const EDGE_MIN = 0.06, EDGE_MAX = 0.94;
+    const CX = 0.5, CY = 0.5, RX = 0.35, RY = 0.33;
+    allCities.forEach(c => {
+      // First clamp extreme edges
+      if (c.mapX < EDGE_MIN) c.mapX = EDGE_MIN + (mulberry32(seedNum * 997 + c.id * 31)()) * 0.04;
+      if (c.mapX > EDGE_MAX) c.mapX = EDGE_MAX - (mulberry32(seedNum * 1013 + c.id * 37)()) * 0.04;
+      if (c.mapY < EDGE_MIN) c.mapY = EDGE_MIN + (mulberry32(seedNum * 1019 + c.id * 41)()) * 0.04;
+      if (c.mapY > EDGE_MAX) c.mapY = EDGE_MAX - (mulberry32(seedNum * 1021 + c.id * 43)()) * 0.04;
+      // Then check ellipse boundary — if outside, pull toward center
+      const dx = (c.mapX - CX) / RX, dy = (c.mapY - CY) / RY;
+      const eDist = Math.sqrt(dx * dx + dy * dy);
+      if (eDist > 1.0) {
+        // Pull to 0.92 of ellipse boundary (slight inset for safety)
+        const scale = 0.92 / eDist;
+        c.mapX = CX + (c.mapX - CX) * scale;
+        c.mapY = CY + (c.mapY - CY) * scale;
+      }
+    });
+
+    // 2. Deterministic jitter for overlapping cities
+    //    Group by rounded coord key; any group with >1 city gets spread apart
+    const coordGroups = {};
+    allCities.forEach(c => {
+      // Key at 2-decimal precision to catch 0.3/0.3 overlaps
+      const key = (Math.round(c.mapX * 100) / 100) + ',' + (Math.round(c.mapY * 100) / 100);
+      if (!coordGroups[key]) coordGroups[key] = [];
+      coordGroups[key].push(c);
+    });
+    Object.values(coordGroups).forEach(group => {
+      if (group.length < 2) return;
+      const n = group.length;
+      group.forEach((c, i) => {
+        // Spread cities in a circle around the original point
+        // Use deterministic RNG seeded from city name + seed
+        const jRng = mulberry32(seedNum * 7919 + c.name.split('').reduce((a, ch) => a + ch.charCodeAt(0), 0) * 131);
+        const angle = (i / n) * Math.PI * 2 + jRng() * 0.5;
+        // Spread radius: ~0.03 in normalized coords = ~180px at 6000px map width
+        const radius = 0.02 + jRng() * 0.02;
+        c.mapX = c.mapX + Math.cos(angle) * radius;
+        c.mapY = c.mapY + Math.sin(angle) * radius;
+        // Re-clamp after jitter (ellipse + rect)
+        c.mapX = Math.max(EDGE_MIN, Math.min(EDGE_MAX, c.mapX));
+        c.mapY = Math.max(EDGE_MIN, Math.min(EDGE_MAX, c.mapY));
+        const jdx = (c.mapX - CX) / RX, jdy = (c.mapY - CY) / RY;
+        const jeDist = Math.sqrt(jdx * jdx + jdy * jdy);
+        if (jeDist > 1.0) { const s = 0.92 / jeDist; c.mapX = CX + (c.mapX - CX) * s; c.mapY = CY + (c.mapY - CY) * s; }
+      });
+    });
+
+    // 3. Secondary pass: resolve any remaining collisions using city id
+    const finalGroups = {};
+    allCities.forEach(c => {
+      const key = Math.round(c.mapX * 100) + ',' + Math.round(c.mapY * 100);
+      if (!finalGroups[key]) finalGroups[key] = [];
+      finalGroups[key].push(c);
+    });
+    Object.values(finalGroups).forEach(group => {
+      if (group.length < 2) return;
+      group.forEach((c, i) => {
+        if (i === 0) return; // leave first city in place
+        const nudge = 0.015 + 0.005 * i;
+        const nudgeAngle = (c.id * 2.399) % (Math.PI * 2); // golden angle spread
+        c.mapX = c.mapX + Math.cos(nudgeAngle) * nudge;
+        c.mapY = c.mapY + Math.sin(nudgeAngle) * nudge;
+        c.mapX = Math.max(EDGE_MIN, Math.min(EDGE_MAX, c.mapX));
+        c.mapY = Math.max(EDGE_MIN, Math.min(EDGE_MAX, c.mapY));
+        const ndx = (c.mapX - CX) / RX, ndy = (c.mapY - CY) / RY;
+        const neDist = Math.sqrt(ndx * ndx + ndy * ndy);
+        if (neDist > 1.0) { const ns = 0.92 / neDist; c.mapX = CX + (c.mapX - CX) * ns; c.mapY = CY + (c.mapY - CY) * ns; }
+      });
+    });
+  })();
+
+  // ── Generate POI data (from atlas metadata OR procedurally for seeds without POIs) ──
+  const POI_TYPES_GEN = ["Ruins","Fortress","Temple","Tower","Mine","Shrine","Tomb","Cavern","Obelisk","Standing Stones","Dragon Lair","Portal"];
+  const POI_NAME_PRE = ["Tower of","Crypt of","Temple of","Shrine of","Keep of","Barrow of","Fortress of","The Lost","The Sunken","Tomb of","Halls of","The Shattered","Ruins of","Cave of","The Ancient"];
+  const POI_NAME_SUF = ["Ashenveil","Ironwatch","Moonfire","Frostpeak","Silentwood","Dreadhollow","Oakenshield","Brightveil","Mistpeak","Ebonreach","Starfall","Thornkeep","Shadowmere","Duskfall","Stormbreak","Wraithwood","Crystalvein","Windscour","Blackwater","Blightmoor"];
+  const rawPois = meta.pois || [];
+  const generatedPois = rawPois.length > 0 ? rawPois : (() => {
+    // Generate 8-14 POIs from city/region positions for seeds without POI data
+    const gRng = mulberry32(seedNum * 8191);
+    const gPick = (arr) => arr[Math.floor(gRng() * arr.length)];
+    const numPois = 8 + Math.floor(gRng() * 7);
+    const pois = [];
+    // Collect all city coords as anchors
+    const cityAnchors = allCities.map(c => ({ x: c.mapX, y: c.mapY, region: c.region }));
+    const usedNames = new Set();
+    for (let i = 0; i < numPois && cityAnchors.length > 0; i++) {
+      const anchor = cityAnchors[i % cityAnchors.length];
+      const angle = gRng() * Math.PI * 2;
+      const dist = 0.04 + gRng() * 0.08;
+      let px = anchor.x + Math.cos(angle) * dist;
+      let py = anchor.y + Math.sin(angle) * dist * 0.75;
+      px = Math.max(0.06, Math.min(0.94, px));
+      py = Math.max(0.06, Math.min(0.94, py));
+      // Ellipse clamp for POIs too
+      const pdx = (px - 0.5) / 0.35, pdy = (py - 0.5) / 0.33;
+      const peDist = Math.sqrt(pdx * pdx + pdy * pdy);
+      if (peDist > 1.0) { const ps = 0.90 / peDist; px = 0.5 + (px - 0.5) * ps; py = 0.5 + (py - 0.5) * ps; }
+      let name;
+      for (let attempt = 0; attempt < 10; attempt++) {
+        name = gPick(POI_NAME_PRE) + " " + gPick(POI_NAME_SUF);
+        if (!usedNames.has(name)) { usedNames.add(name); break; }
+      }
+      pois.push({ name, type: gPick(POI_TYPES_GEN), x: px, y: py });
+    }
+    return pois;
+  })();
   const allPois = [];
   let poiId = 1;
   const poiRng = mulberry32(seedNum * 4217);
   const poiPick = (arr) => arr[Math.floor(poiRng() * arr.length)];
   const poiPickN = (arr, n) => { const s = [...arr].sort(() => poiRng() - 0.5); return s.slice(0, Math.min(n, s.length)); };
-  (meta.pois || []).forEach((p, pi) => {
+  generatedPois.forEach((p, pi) => {
     const pRng = mulberry32(seedNum * 1031 + pi * 73);
     const pPick = (arr) => arr[Math.floor(pRng() * arr.length)];
     const pPickN = (arr, n) => { const s = [...arr].sort(() => pRng() - 0.5); return s.slice(0, Math.min(n, s.length)); };
@@ -2638,11 +2750,15 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
         ))}
         <div style={{ marginLeft:"auto", display:"flex", gap:8, alignItems:"center", justifyContent:"flex-end", flexWrap:"wrap" }}>
           {tab==="map" && <>
-            <span style={{ fontFamily:T.ui, fontSize:8, color:T.crimson, letterSpacing:"1px", fontWeight:500 }}>{zoomLevel.toUpperCase()}</span>
-            <span style={{ fontFamily:T.ui, fontSize:8, color:T.textMuted, letterSpacing:"1px" }}>{Math.round(mapZoom*100)}%</span>
-            <button onClick={()=>setMapZoom(z=>Math.min(8,z*1.3))} style={{ padding:"4px 8px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontSize:13, cursor:"pointer", borderRadius:"2px" }}>+</button>
-            <button onClick={()=>setMapZoom(z=>Math.max(0.12,z*0.77))} style={{ padding:"4px 8px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontSize:13, cursor:"pointer", borderRadius:"2px" }}>−</button>
-            <button onClick={()=>{setMapZoom(0.25);setMapPan({x:0,y:0});}} style={{ padding:"4px 10px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Reset</button>
+            <div style={{ display:"flex", alignItems:"center", gap:2, padding:"2px 4px", background:"rgba(0,0,0,0.2)", border:`1px solid ${T.border}`, borderRadius:"4px" }}>
+              <span style={{ fontFamily:T.ui, fontSize:7, color:T.crimson, letterSpacing:"1px", fontWeight:600, padding:"0 6px" }}>{zoomLevel.toUpperCase()}</span>
+              <span style={{ fontFamily:T.body, fontSize:9, color:T.textMuted, padding:"0 4px", borderLeft:`1px solid ${T.border}` }}>{Math.round(mapZoom*100)}%</span>
+            </div>
+            <div style={{ display:"flex", alignItems:"center", gap:0, border:`1px solid ${T.border}`, borderRadius:"4px", overflow:"hidden" }}>
+              <button onClick={()=>setMapZoom(z=>Math.min(8,z*1.3))} style={{ padding:"5px 10px", background:T.bgInput, border:"none", borderRight:`1px solid ${T.border}`, color:T.textDim, fontSize:14, fontWeight:300, cursor:"pointer", lineHeight:1, transition:"all 0.15s" }} onMouseEnter={e=>{e.target.style.background="var(--bg-hover)";e.target.style.color="var(--crimson)";}} onMouseLeave={e=>{e.target.style.background="var(--bg-input)";e.target.style.color="var(--text-dim)";}}>+</button>
+              <button onClick={()=>setMapZoom(z=>Math.max(0.12,z*0.77))} style={{ padding:"5px 10px", background:T.bgInput, border:"none", borderRight:`1px solid ${T.border}`, color:T.textDim, fontSize:14, fontWeight:300, cursor:"pointer", lineHeight:1, transition:"all 0.15s" }} onMouseEnter={e=>{e.target.style.background="var(--bg-hover)";e.target.style.color="var(--crimson)";}} onMouseLeave={e=>{e.target.style.background="var(--bg-input)";e.target.style.color="var(--text-dim)";}}>−</button>
+              <button onClick={()=>{setMapZoom(0.25);setMapPan({x:0,y:0});}} style={{ padding:"5px 10px", background:T.bgInput, border:"none", color:T.textMuted, fontFamily:T.ui, fontSize:7, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", transition:"all 0.15s" }} onMouseEnter={e=>{e.target.style.background="var(--bg-hover)";e.target.style.color="var(--crimson)";}} onMouseLeave={e=>{e.target.style.background="var(--bg-input)";e.target.style.color="var(--text-muted)";}}>Reset</button>
+            </div>
             {false && <button onClick={()=>focusWorldNode(selectedWorldNode?.mx != null ? selectedWorldNode : (worldNodes.find((n)=>n.id===worldMapState.lastFocusedRegionId) || worldNodes[0]), "region")} style={{ padding:"4px 10px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Region</button>}
             {false && <button onClick={()=>focusWorldNode(selectedWorldNode?.mx != null ? selectedWorldNode : (worldNodes.find((n)=>n.id===worldMapState.lastFocusedRegionId) || worldNodes[0]), "local")} style={{ padding:"4px 10px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Local</button>}
             {false && selectedWorldNode?.mx != null && selectedWorldNode?.type === "dungeon" && <button onClick={()=>focusWorldNode(selectedWorldNode, "site")} style={{ padding:"4px 10px", background:"rgba(212,67,58,0.08)", border:`1px solid ${T.crimsonBorder}`, color:T.crimson, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Site</button>}
@@ -2778,7 +2894,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                   const isDestroyed = regionData?.state === "destroyed" || regionData?.state === "conquered";
                   return (
                   <g key={`terr-${i}`} clipPath="url(#atlasLandClip)" style={{ cursor:"pointer" }} onClick={(e)=>{ e.stopPropagation(); setAtlasProvinceId(t.id); if (t.capitalNode) selectRegion(t.capitalNode); setTab("cities"); setCityRegionFocus(t.name); setSel(null); setSelType(null); }}>
-                    <path d={t.path} fill={terrFill} opacity={isDestroyed ? 0.25 : isContested ? 0.22 : activeProvince ? 0.18 : 0.10} stroke={isDestroyed ? "#8b0000" : isContested ? "#c94040" : activeProvince ? "#7a6b4a" : terrFill} strokeWidth={isDestroyed ? 3 : isContested ? 2.5 : activeProvince ? 2.4 : 1.2} strokeOpacity={isDestroyed ? 0.7 : isContested ? 0.5 : activeProvince ? 0.55 : 0.35} strokeLinejoin="round" strokeDasharray={isContested ? "12,6" : "none"}/>
+                    <path d={t.path} fill={terrFill} opacity={isDestroyed ? 0.28 : isContested ? 0.24 : activeProvince ? 0.20 : 0.13} stroke={isDestroyed ? "#8b0000" : isContested ? "#c94040" : activeProvince ? "#a89870" : "rgba(180,165,130,0.5)"} strokeWidth={isDestroyed ? 3.5 : isContested ? 2.8 : activeProvince ? 2.8 : 1.8} strokeOpacity={isDestroyed ? 0.75 : isContested ? 0.55 : activeProvince ? 0.6 : 0.4} strokeLinejoin="round" strokeDasharray={isContested ? "12,6" : "none"}/>
                     {mapZoom < 1.3 && t.labelX != null && (() => {
                       const regionForLabel = (data.regions || []).find(r => r.name === t.name);
                       const ctrlFaction = regionForLabel?.ctrl ? (data.factions || []).find(f => f.name === regionForLabel.ctrl) : null;
@@ -2787,7 +2903,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                       const fontSize = Math.max(28, 64 / Math.max(mapZoom, 0.36));
                       return (
                         <>
-                          <text x={t.labelX} y={t.labelY} textAnchor="middle" fill={isDestroyed ? "#6a2020" : isContested ? "#c94040" : activeProvince ? "#3d3220" : "#4a3f28"} stroke="rgba(252,248,236,0.5)" strokeWidth={Math.max(1, 2.2 / Math.max(mapZoom, 0.5))} paintOrder="stroke" fontFamily="'Cinzel', serif" fontSize={fontSize} fontWeight="600" letterSpacing="3.5" opacity={activeProvince ? 0.92 : 0.76} style={{ pointerEvents:"none", textTransform:"uppercase" }}>
+                          <text x={t.labelX} y={t.labelY} textAnchor="middle" fill={isDestroyed ? "#8a3030" : isContested ? "#c94040" : activeProvince ? "#4a3d28" : "#5a4f38"} stroke="rgba(252,248,236,0.55)" strokeWidth={Math.max(1.5, 3 / Math.max(mapZoom, 0.5))} paintOrder="stroke" fontFamily="'Cinzel', serif" fontSize={fontSize} fontWeight="700" letterSpacing="4" opacity={activeProvince ? 0.95 : 0.82} style={{ pointerEvents:"none", textTransform:"uppercase" }}>
                             {displayName}
                           </text>
                           {/* Show government type or state under name when zoomed in */}
@@ -2913,41 +3029,61 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                   const cityRegion = (data.regions || []).find(r => r.name === city.region);
                   const isCityDestroyed = isLive && cityRegion && (cityRegion.state === "destroyed" || cityRegion.state === "conquered");
                   // Scale marker size so it stays legible at any zoom level
-                  const baseR = city.isCapital ? 14 : 9;
-                  const markerR = Math.max(city.isCapital ? 6 : 4, baseR / Math.max(mapZoom * 0.7, 0.3));
-                  const labelSize = city.isCapital
-                    ? Math.max(14, 26 / Math.max(mapZoom * 0.65, 0.3))
-                    : Math.max(10, 18 / Math.max(mapZoom * 0.75, 0.35));
+                  const meta = window.TOWN_METADATA?.[city.name];
+                  const tier = isCityDestroyed ? "ruins" : city.isCapital ? "capital" : (meta ? (meta.population >= 4000 ? "city" : meta.population >= 1500 ? "town" : "village") : "settlement");
+                  const baseR = tier === "capital" ? 16 : tier === "city" ? 12 : 8;
+                  const markerR = Math.max(tier === "capital" ? 7 : tier === "city" ? 5 : 3.5, baseR / Math.max(mapZoom * 0.7, 0.3));
+                  const labelSize = tier === "capital"
+                    ? Math.max(16, 30 / Math.max(mapZoom * 0.65, 0.3))
+                    : tier === "city" ? Math.max(12, 22 / Math.max(mapZoom * 0.7, 0.3))
+                    : Math.max(9, 16 / Math.max(mapZoom * 0.75, 0.35));
                   const labelOffset = markerR + Math.max(10, 16 / Math.max(mapZoom * 0.7, 0.4));
                   const fc = isCityDestroyed ? "#6a2020" : (() => { const f = (data.factions || []).find(f => f.name === city.faction); return f?.color || "#c9a85c"; })();
+                  const sw = Math.max(1, 2 / Math.max(mapZoom * 0.5, 0.3));
                   return (
                     <g key={`city-${city.id}`} style={{ cursor: "pointer" }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        // Show popup on the map with city info & navigation buttons
                         setCityPopup(cityPopup?.city?.id === city.id ? null : { city });
                       }}>
-                      {/* Hover target area (larger than visible marker for easy clicking) */}
-                      <circle cx={cx} cy={cy} r={markerR + 8} fill="transparent" />
-                      {/* Outer glow — stronger when active */}
-                      <circle cx={cx} cy={cy} r={markerR + 5} fill={fc} opacity={isActive ? 0.3 : 0.1} style={{ transition:"opacity 0.2s" }} />
-                      {/* Capital ring decoration */}
-                      {city.isCapital && <circle cx={cx} cy={cy} r={markerR + 2} fill="none" stroke={fc} strokeWidth={Math.max(0.8, 1.5/Math.max(mapZoom*0.5,0.3))} opacity={isActive ? 0.9 : 0.55} strokeDasharray="6 3" />}
-                      {/* Main marker dot */}
-                      <circle cx={cx} cy={cy} r={markerR} fill={isActive ? fc : "#231e15"} stroke={fc} strokeWidth={city.isCapital ? Math.max(1.2, 2.5/Math.max(mapZoom*0.5,0.3)) : Math.max(0.8, 1.8/Math.max(mapZoom*0.5,0.3))} opacity={0.96} />
+                      {/* Hover target area */}
+                      <circle cx={cx} cy={cy} r={markerR + 12} fill="transparent" />
+                      {/* Outer glow — stronger for capitals and active state */}
+                      <circle cx={cx} cy={cy} r={markerR + 6} fill={fc} opacity={isActive ? 0.35 : tier === "capital" ? 0.18 : 0.08} style={{ transition:"opacity 0.2s" }} />
+                      {/* Capital: double ring + star shape */}
+                      {tier === "capital" && <>
+                        <circle cx={cx} cy={cy} r={markerR + 3.5} fill="none" stroke={fc} strokeWidth={sw * 0.6} opacity={isActive ? 0.9 : 0.5} />
+                        <circle cx={cx} cy={cy} r={markerR + 1.5} fill="none" stroke={fc} strokeWidth={sw * 0.8} opacity={isActive ? 0.95 : 0.65} />
+                      </>}
+                      {/* City: single ring */}
+                      {tier === "city" && <circle cx={cx} cy={cy} r={markerR + 2} fill="none" stroke={fc} strokeWidth={sw * 0.6} opacity={isActive ? 0.8 : 0.4} strokeDasharray="5 3" />}
+                      {/* Main marker */}
+                      {tier === "capital" ? (
+                        /* Capital — filled square rotated 45deg (diamond) */
+                        <path d={`M${cx},${cy-markerR} L${cx+markerR},${cy} L${cx},${cy+markerR} L${cx-markerR},${cy} Z`}
+                          fill={isActive ? fc : "#1a1612"} stroke={fc} strokeWidth={sw * 1.2} opacity={0.96} strokeLinejoin="round" />
+                      ) : tier === "city" ? (
+                        /* City — filled circle, larger */
+                        <circle cx={cx} cy={cy} r={markerR} fill={isActive ? fc : "#1a1612"} stroke={fc} strokeWidth={sw} opacity={0.96} />
+                      ) : (
+                        /* Town/Village — smaller circle */
+                        <circle cx={cx} cy={cy} r={markerR} fill={isActive ? fc : "#1a1612"} stroke={fc} strokeWidth={sw * 0.8} opacity={0.9} />
+                      )}
                       {/* Inner dot for capitals */}
-                      {city.isCapital && !isCityDestroyed && <circle cx={cx} cy={cy} r={Math.max(1.5, markerR * 0.32)} fill={fc} opacity={isActive ? 1 : 0.75} />}
+                      {tier === "capital" && !isCityDestroyed && <circle cx={cx} cy={cy} r={Math.max(1.8, markerR * 0.28)} fill="#f0e8d0" opacity={isActive ? 1 : 0.8} />}
                       {/* Destroyed X mark */}
                       {isCityDestroyed && <>
-                        <line x1={cx - markerR * 0.5} y1={cy - markerR * 0.5} x2={cx + markerR * 0.5} y2={cy + markerR * 0.5} stroke="#ff3030" strokeWidth={Math.max(1.2, 2/Math.max(mapZoom*0.5,0.3))} opacity="0.8" />
-                        <line x1={cx + markerR * 0.5} y1={cy - markerR * 0.5} x2={cx - markerR * 0.5} y2={cy + markerR * 0.5} stroke="#ff3030" strokeWidth={Math.max(1.2, 2/Math.max(mapZoom*0.5,0.3))} opacity="0.8" />
+                        <line x1={cx - markerR * 0.5} y1={cy - markerR * 0.5} x2={cx + markerR * 0.5} y2={cy + markerR * 0.5} stroke="#ff3030" strokeWidth={sw * 1.3} opacity="0.85" />
+                        <line x1={cx + markerR * 0.5} y1={cy - markerR * 0.5} x2={cx - markerR * 0.5} y2={cy + markerR * 0.5} stroke="#ff3030" strokeWidth={sw * 1.3} opacity="0.85" />
                       </>}
-                      {/* City name label */}
+                      {/* City name label — bold for capitals, italic for towns */}
                       <text x={cx} y={cy + labelOffset} textAnchor="middle"
-                        fill="#f0e8d0" stroke="rgba(20,16,10,0.75)" strokeWidth={Math.max(1.5, 3/Math.max(mapZoom*0.6,0.3))} paintOrder="stroke"
-                        fontFamily="'Spectral', serif" fontSize={labelSize}
-                        fontWeight={city.isCapital ? "600" : "400"} letterSpacing="0.4"
-                        style={{ pointerEvents: "none", textShadow: "none" }}>
+                        fill={tier === "capital" ? "#f5edd4" : "#e8dcc0"} stroke="rgba(14,12,8,0.82)" strokeWidth={Math.max(1.8, 3.5/Math.max(mapZoom*0.6,0.3))} paintOrder="stroke"
+                        fontFamily={tier === "capital" ? "'Cinzel', serif" : "'Spectral', serif"} fontSize={labelSize}
+                        fontWeight={tier === "capital" ? "700" : tier === "city" ? "500" : "400"}
+                        fontStyle={tier === "village" || tier === "settlement" ? "italic" : "normal"}
+                        letterSpacing={tier === "capital" ? "1.5px" : "0.4px"}
+                        style={{ pointerEvents: "none" }}>
                         {city.name}
                       </text>
                       {/* Type sub-label at close zoom (Capital / City / Town / Village) */}
@@ -3071,16 +3207,15 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                   </text>
                 </g>}
 
-                {/* Scale bar — visible at kingdom zoom+ */}
-                {mapZoom > 0.5 && (
-                  <g transform={`translate(${MAP_W-500},${MAP_H-80})`} opacity="0.38" style={{ pointerEvents:"none" }}>
-                    <line x1="0" y1="0" x2="200" y2="0" stroke="#7a6e58" strokeWidth="1.4"/>
-                    <line x1="0" y1="-5" x2="0" y2="5" stroke="#7a6e58" strokeWidth="1.2"/>
-                    <line x1="200" y1="-5" x2="200" y2="5" stroke="#7a6e58" strokeWidth="1.2"/>
-                    <line x1="100" y1="-3" x2="100" y2="3" stroke="#9a8e78" strokeWidth="0.9"/>
-                    <text x="100" y="17" textAnchor="middle" fill="#6b5f4c" fontFamily="'Spectral', serif" fontSize="11" fontStyle="italic">100 leagues</text>
-                  </g>
-                )}
+                {/* Scale bar — bottom-right, always visible */}
+                <g transform={`translate(${MAP_W-500},${MAP_H-80})`} opacity="0.45" style={{ pointerEvents:"none" }}>
+                  <rect x="-10" y="-16" width="224" height="42" rx="4" fill="rgba(14,12,8,0.3)" stroke="none" />
+                  <line x1="0" y1="0" x2="200" y2="0" stroke="#b0a488" strokeWidth="1.8"/>
+                  <line x1="0" y1="-6" x2="0" y2="6" stroke="#b0a488" strokeWidth="1.4"/>
+                  <line x1="100" y1="-4" x2="100" y2="4" stroke="#9a9078" strokeWidth="1"/>
+                  <line x1="200" y1="-6" x2="200" y2="6" stroke="#b0a488" strokeWidth="1.4"/>
+                  <text x="100" y="18" textAnchor="middle" fill="#b0a488" fontFamily="'Spectral', serif" fontSize="12" fontStyle="italic" stroke="rgba(14,12,8,0.5)" strokeWidth="2" paintOrder="stroke">100 leagues</text>
+                </g>
               </g>
             </svg>
 
@@ -3095,61 +3230,74 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
               return (
                 <div style={{
                   position: "absolute", left: popX + 20, top: popY - 20, zIndex: 50,
-                  background: "rgba(32,28,22,0.96)", border: `1px solid ${fc}55`, borderRadius: "6px",
-                  padding: "16px 20px", minWidth: 260, maxWidth: 340,
-                  boxShadow: `0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px ${fc}22`,
-                  backdropFilter: "blur(12px)",
+                  background: "var(--bg-card)", border: `1px solid var(--crimson-border)`, borderRadius: "4px",
+                  padding: 0, minWidth: 280, maxWidth: 360,
+                  boxShadow: `0 12px 40px rgba(0,0,6,0.50), 0 0 0 1px rgba(0,0,0,0.2)`,
+                  backdropFilter: "blur(16px)", overflow: "hidden",
                 }} onClick={e => e.stopPropagation()}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                    <div>
-                      <div style={{ fontSize: 16, fontWeight: 400, color: "#f0e8d0", fontFamily: "'Cinzel', serif", letterSpacing: "0.5px" }}>{c.name}</div>
-                      <div style={{ fontSize: 10, color: T.textFaint, marginTop: 2 }}>{(() => { const m = window.TOWN_METADATA?.[c.name]; return m ? (m.isCapital ? "Capital" : m.population >= 4000 ? "City" : m.population >= 1500 ? "Town" : "Village") : (c.isCapital ? "Capital" : "Settlement"); })()} of {c.region} · Pop. {c.population}</div>
+                  {/* Header band */}
+                  <div style={{ padding: "14px 18px 12px", borderBottom: `1px solid var(--border)`, background: `linear-gradient(135deg, ${fc}12, transparent)` }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+                      <div>
+                        <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text)", fontFamily: "'Cinzel', serif", letterSpacing: "0.8px" }}>{c.name}</div>
+                        <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 3, fontFamily: "'Cinzel', serif", letterSpacing: "1.2px", textTransform: "uppercase" }}>
+                          {(() => { const m = window.TOWN_METADATA?.[c.name]; return m ? (m.isCapital ? "Capital" : m.population >= 4000 ? "City" : m.population >= 1500 ? "Town" : "Village") : (c.isCapital ? "Capital" : "Settlement"); })()} of {c.region} · Pop. {c.population?.toLocaleString?.() || c.population}
+                        </div>
+                      </div>
+                      <button onClick={() => setCityPopup(null)} style={{ background: "var(--bg-input)", border: `1px solid var(--border)`, borderRadius: "3px", color: "var(--text-faint)", cursor: "pointer", fontSize: 13, padding: "2px 8px", lineHeight: 1.2, transition: "all 0.15s" }} onMouseEnter={e=>{e.target.style.borderColor="var(--crimson-border)";e.target.style.color="var(--crimson)";}} onMouseLeave={e=>{e.target.style.borderColor="var(--border)";e.target.style.color="var(--text-faint)";}}>×</button>
                     </div>
-                    <button onClick={() => setCityPopup(null)} style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 16, padding: "2px 6px" }}>×</button>
                   </div>
-                  <div style={{ borderLeft: `2px solid ${fc}44`, paddingLeft: 10, marginBottom: 10 }}>
-                    <div style={{ fontSize: 11, color: fc, marginBottom: 4 }}>{c.faction}</div>
-                    <div style={{ fontSize: 11, color: T.textMuted, lineHeight: 1.5 }}>{c.description}</div>
-                  </div>
-                  {c.features && c.features.length > 0 && (
-                    <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 10 }}>
-                      {c.features.map((f, fi) => <span key={fi} style={{ fontSize: 9, color: "#c9a85c", border: "1px solid rgba(201,168,92,0.25)", padding: "2px 7px", borderRadius: "2px", letterSpacing: "0.3px" }}>{f}</span>)}
+                  {/* Body */}
+                  <div style={{ padding: "12px 18px 16px" }}>
+                    <div style={{ borderLeft: `2px solid ${fc}66`, paddingLeft: 10, marginBottom: 12 }}>
+                      <div style={{ fontSize: 10, color: fc, marginBottom: 3, fontFamily: "'Cinzel', serif", letterSpacing: "0.8px", fontWeight: 500 }}>{c.faction}</div>
+                      <div style={{ fontSize: 11, color: "var(--text-dim)", lineHeight: 1.55, fontFamily: "'Spectral', serif" }}>{c.description}</div>
                     </div>
-                  )}
-                  <div style={{ fontSize: 10, color: T.textFaint, marginBottom: 4 }}>Notable Residents: {cityNpcs.length}</div>
-                  <div style={{ fontSize: 10, color: T.textFaint, marginBottom: 4 }}>Shops: {c.shops.length} · Tavern: {c.tavern.name}</div>
-                  {c.questHooks && c.questHooks.length > 0 && (
-                    <div style={{ fontSize: 10, color: "#e8ba40", fontStyle: "italic", marginBottom: 8, lineHeight: 1.4 }}>Quest: {c.questHooks[0]}</div>
-                  )}
-                  <button
-                    onClick={() => { setTab("cities"); setSel(c); setSelType("city"); setCityPopup(null); }}
-                    style={{
-                      width: "100%", padding: "8px 0", background: `${fc}18`, border: `1px solid ${fc}44`, borderRadius: "3px",
-                      color: fc, fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: "1.5px", textTransform: "uppercase", cursor: "pointer",
-                      transition: "all 0.2s",
-                    }}
-                    onMouseEnter={e => { e.target.style.background = `${fc}30`; }}
-                    onMouseLeave={e => { e.target.style.background = `${fc}18`; }}
-                  >View Full Details</button>
-                  {townImagesReady && window.TOWN_IMAGES && window.TOWN_IMAGES[c.name] && (
-                    <button
-                      onClick={() => { setTownView(c.name); setCityPopup(null); setTownSelBldg(null); setTownHovBldg(null); setTownZoom(0); setTownPan({x:0,y:0}); }}
-                      style={{
-                        width: "100%", padding: "8px 0", marginTop: 6, background: "rgba(201,168,92,0.12)", border: "1px solid rgba(201,168,92,0.35)", borderRadius: "3px",
-                        color: "#c9a85c", fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: "1.5px", textTransform: "uppercase", cursor: "pointer",
-                        transition: "all 0.2s",
-                      }}
-                      onMouseEnter={e => { e.target.style.background = "rgba(201,168,92,0.25)"; }}
-                      onMouseLeave={e => { e.target.style.background = "rgba(201,168,92,0.12)"; }}
-                    >🗺 Explore Town Map</button>
-                  )}
+                    {c.features && c.features.length > 0 && (
+                      <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 12 }}>
+                        {c.features.map((f, fi) => <span key={fi} style={{ fontSize: 8, color: "#c9a85c", background: "rgba(201,168,92,0.08)", border: "1px solid rgba(201,168,92,0.22)", padding: "3px 8px", borderRadius: "3px", letterSpacing: "0.5px", fontFamily: "'Cinzel', serif", textTransform: "uppercase" }}>{f}</span>)}
+                      </div>
+                    )}
+                    <div style={{ display: "flex", gap: 12, marginBottom: 6, fontSize: 10, color: "var(--text-muted)", fontFamily: "'Spectral', serif" }}>
+                      <span>Residents: {cityNpcs.length}</span>
+                      <span>Shops: {c.shops.length}</span>
+                      <span>Tavern: {c.tavern.name}</span>
+                    </div>
+                    {c.questHooks && c.questHooks.length > 0 && (
+                      <div style={{ fontSize: 10, color: "#e8ba40", fontStyle: "italic", marginBottom: 12, lineHeight: 1.5, fontFamily: "'Spectral', serif", padding: "6px 10px", background: "rgba(232,186,64,0.06)", borderRadius: "3px", border: "1px solid rgba(232,186,64,0.12)" }}>Quest: {c.questHooks[0]}</div>
+                    )}
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <button
+                        onClick={() => { setTab("cities"); setSel(c); setSelType("city"); setCityPopup(null); }}
+                        style={{
+                          flex: 1, padding: "9px 0", background: "var(--bg-input)", border: `1px solid var(--border)`, borderRadius: "4px",
+                          color: "var(--text-muted)", fontFamily: "'Cinzel', serif", fontSize: 9, letterSpacing: "1.5px", textTransform: "uppercase", cursor: "pointer",
+                          transition: "all 0.2s",
+                        }}
+                        onMouseEnter={e => { e.target.style.borderColor = "var(--crimson-border)"; e.target.style.color = "var(--crimson)"; e.target.style.background = "var(--crimson-soft)"; }}
+                        onMouseLeave={e => { e.target.style.borderColor = "var(--border)"; e.target.style.color = "var(--text-muted)"; e.target.style.background = "var(--bg-input)"; }}
+                      >View Details</button>
+                      {townImagesReady && window.TOWN_IMAGES && window.TOWN_IMAGES[c.name] && (
+                        <button
+                          onClick={() => { setTownView(c.name); setCityPopup(null); setTownSelBldg(null); setTownHovBldg(null); setTownZoom(0); setTownPan({x:0,y:0}); }}
+                          style={{
+                            flex: 1, padding: "9px 0", background: "linear-gradient(180deg, var(--crimson), var(--crimson-dim))", border: `1px solid var(--crimson-border)`, borderRadius: "4px",
+                            color: "var(--text)", fontFamily: "'Cinzel', serif", fontSize: 9, letterSpacing: "1.5px", textTransform: "uppercase", cursor: "pointer",
+                            transition: "all 0.2s", boxShadow: "0 2px 8px rgba(212,67,58,0.2)",
+                          }}
+                          onMouseEnter={e => { e.target.style.boxShadow = "0 4px 16px rgba(212,67,58,0.35)"; e.target.style.transform = "translateY(-1px)"; }}
+                          onMouseLeave={e => { e.target.style.boxShadow = "0 2px 8px rgba(212,67,58,0.2)"; e.target.style.transform = "translateY(0)"; }}
+                        >Explore Map</button>
+                      )}
+                    </div>
+                  </div>
                 </div>
               );
             })()}
 
             {/* Zoom level indicator + Atlas import button */}
             <div style={{ position:"absolute", top:12, right:12, display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6, zIndex:10 }}>
-              <div style={{ padding:"6px 14px", background:"rgba(252,248,238,0.88)", border:"1px solid rgba(122,110,88,0.35)", borderRadius:"4px", fontFamily:"'Cinzel', serif", fontSize:9, color:"#5c5344", letterSpacing:"2.5px", textTransform:"uppercase", opacity:0.92, boxShadow:"0 2px 12px rgba(60,48,32,0.06)", pointerEvents:"none" }}>
+              <div style={{ padding:"6px 14px", background:"rgba(8,8,10,0.82)", border:"1px solid var(--border)", borderRadius:"4px", fontFamily:"'Cinzel', serif", fontSize:8, color:"var(--text-muted)", letterSpacing:"2.5px", textTransform:"uppercase", boxShadow:"0 4px 20px rgba(0,0,0,0.4)", backdropFilter:"blur(8px)", pointerEvents:"none" }}>
                 {zoomLevel} view
               </div>
               {isDM && (
@@ -3213,7 +3361,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                 </>
               )}
               {data.atlasMapSeed && (
-                <div style={{ padding:"3px 10px", background:"rgba(46,120,76,0.18)", border:"1px solid rgba(46,120,76,0.35)", borderRadius:"3px", fontFamily:T.ui, fontSize:8, color:"#5ec48a", letterSpacing:"1.2px", textTransform:"uppercase", pointerEvents:"none" }}>
+                <div style={{ padding:"3px 10px", background:"rgba(8,8,10,0.7)", border:"1px solid var(--border)", borderRadius:"3px", fontFamily:T.ui, fontSize:7, color:"var(--text-faint)", letterSpacing:"1.2px", textTransform:"uppercase", pointerEvents:"none", backdropFilter:"blur(6px)" }}>
                   Seed: {data.atlasMapSeed}
                 </div>
               )}
