@@ -5465,14 +5465,17 @@ def render_pois(svg: SvgCanvas, cfg: AtlasConfig, pois: list[tuple[Point, str, s
 
 
 def render_compass_rose(svg: SvgCanvas, cfg: AtlasConfig, palette: Palette, islands: Sequence[Sequence[Point]] | None = None, mainland: Sequence[Point] | None = None) -> None:
-    """Render a simple 4-point compass rose, repositioned to avoid islands/mainland."""
+    """Render an ornate 8-point compass rose, repositioned to avoid islands/mainland."""
+    radius = 70  # bigger overall size
+    clearance = radius + 40
+
     # Try candidate positions: corners and edges, pick first clear spot
     candidates = [
-        (120, cfg.height - 120),              # bottom-left (default)
-        (cfg.width - 120, cfg.height - 120),  # bottom-right
-        (120, 120),                           # top-left
-        (cfg.width - 120, 120),               # top-right
-        (cfg.width // 2, cfg.height - 100),   # bottom-center
+        (clearance, cfg.height - clearance),              # bottom-left (default)
+        (cfg.width - clearance, cfg.height - clearance),  # bottom-right
+        (clearance, clearance),                           # top-left
+        (cfg.width - clearance, clearance),               # top-right
+        (cfg.width // 2, cfg.height - clearance),         # bottom-center
     ]
     polys = list(islands or [])
     if mainland:
@@ -5483,7 +5486,7 @@ def render_compass_rose(svg: SvgCanvas, cfg: AtlasConfig, palette: Palette, isla
         clear = True
         for poly in polys:
             for pt in poly[::max(1, len(poly) // 20)]:
-                if math.hypot(pt[0] - cand_x, pt[1] - cand_y) < 100:
+                if math.hypot(pt[0] - cand_x, pt[1] - cand_y) < clearance:
                     clear = False
                     break
             if not clear:
@@ -5491,39 +5494,109 @@ def render_compass_rose(svg: SvgCanvas, cfg: AtlasConfig, palette: Palette, isla
         if clear:
             cx, cy = cand_x, cand_y
             break
-    radius = 40
 
-    # North point (larger, filled)
-    north_path = f"M{cx:.1f},{cy - radius:.1f} L{cx - 8:.1f},{cy - radius + 20:.1f} L{cx:.1f},{cy - radius + 12:.1f} L{cx + 8:.1f},{cy - radius + 20:.1f} Z"
-    svg.element("path", d=north_path, fill=palette.text, stroke="none", opacity=0.85)
+    # Outer decorative circle
+    svg.element("circle", cx=f"{cx:.1f}", cy=f"{cy:.1f}", r=f"{radius + 8:.1f}",
+                fill="none", stroke=palette.text, stroke_width=1.0, opacity=0.30)
+    svg.element("circle", cx=f"{cx:.1f}", cy=f"{cy:.1f}", r=f"{radius + 4:.1f}",
+                fill="none", stroke=palette.text, stroke_width=0.5, opacity=0.22)
 
-    # South point (smaller)
-    south_path = f"M{cx:.1f},{cy + radius:.1f} L{cx - 6:.1f},{cy + radius - 15:.1f} L{cx:.1f},{cy + radius - 10:.1f} L{cx + 6:.1f},{cy + radius - 15:.1f} Z"
-    svg.element("path", d=south_path, fill=palette.text_soft, stroke="none", opacity=0.60)
+    # Inner decorative circle
+    svg.element("circle", cx=f"{cx:.1f}", cy=f"{cy:.1f}", r=f"{radius * 0.28:.1f}",
+                fill="none", stroke=palette.text, stroke_width=0.8, opacity=0.35)
+
+    # 8 tick marks around the outer ring for sub-directions
+    for angle_deg in range(0, 360, 45):
+        a = math.radians(angle_deg)
+        inner_r = radius + 4
+        outer_r = radius + 8
+        x1 = cx + math.sin(a) * inner_r
+        y1 = cy - math.cos(a) * inner_r
+        x2 = cx + math.sin(a) * outer_r
+        y2 = cy - math.cos(a) * outer_r
+        svg.element("line", x1=f"{x1:.1f}", y1=f"{y1:.1f}", x2=f"{x2:.1f}", y2=f"{y2:.1f}",
+                    stroke=palette.text, stroke_width=0.8, opacity=0.35)
+
+    # Cardinal points (N, S, E, W) — large ornate diamond shapes
+    cardinal_len = radius * 1.0  # length of cardinal points
+    cardinal_width = 12  # half-width at base
+
+    # North point — dark filled (two-tone: left dark, right lighter)
+    svg.element("path",
+        d=f"M{cx:.1f},{cy - cardinal_len:.1f} L{cx - cardinal_width:.1f},{cy:.1f} L{cx:.1f},{cy - cardinal_len * 0.3:.1f} Z",
+        fill=palette.text, stroke="none", opacity=0.80)
+    svg.element("path",
+        d=f"M{cx:.1f},{cy - cardinal_len:.1f} L{cx + cardinal_width:.1f},{cy:.1f} L{cx:.1f},{cy - cardinal_len * 0.3:.1f} Z",
+        fill=palette.text_soft, stroke="none", opacity=0.55)
+
+    # South point
+    svg.element("path",
+        d=f"M{cx:.1f},{cy + cardinal_len:.1f} L{cx - cardinal_width:.1f},{cy:.1f} L{cx:.1f},{cy + cardinal_len * 0.3:.1f} Z",
+        fill=palette.text_soft, stroke="none", opacity=0.45)
+    svg.element("path",
+        d=f"M{cx:.1f},{cy + cardinal_len:.1f} L{cx + cardinal_width:.1f},{cy:.1f} L{cx:.1f},{cy + cardinal_len * 0.3:.1f} Z",
+        fill=palette.text, stroke="none", opacity=0.30)
 
     # East point
-    east_path = f"M{cx + radius:.1f},{cy:.1f} L{cx + radius - 15:.1f},{cy - 6:.1f} L{cx + radius - 10:.1f},{cy:.1f} L{cx + radius - 15:.1f},{cy + 6:.1f} Z"
-    svg.element("path", d=east_path, fill=palette.text_soft, stroke="none", opacity=0.60)
+    svg.element("path",
+        d=f"M{cx + cardinal_len:.1f},{cy:.1f} L{cx:.1f},{cy - cardinal_width:.1f} L{cx + cardinal_len * 0.3:.1f},{cy:.1f} Z",
+        fill=palette.text, stroke="none", opacity=0.55)
+    svg.element("path",
+        d=f"M{cx + cardinal_len:.1f},{cy:.1f} L{cx:.1f},{cy + cardinal_width:.1f} L{cx + cardinal_len * 0.3:.1f},{cy:.1f} Z",
+        fill=palette.text_soft, stroke="none", opacity=0.35)
 
     # West point
-    west_path = f"M{cx - radius:.1f},{cy:.1f} L{cx - radius + 15:.1f},{cy - 6:.1f} L{cx - radius + 10:.1f},{cy:.1f} L{cx - radius + 15:.1f},{cy + 6:.1f} Z"
-    svg.element("path", d=west_path, fill=palette.text_soft, stroke="none", opacity=0.60)
+    svg.element("path",
+        d=f"M{cx - cardinal_len:.1f},{cy:.1f} L{cx:.1f},{cy - cardinal_width:.1f} L{cx - cardinal_len * 0.3:.1f},{cy:.1f} Z",
+        fill=palette.text_soft, stroke="none", opacity=0.35)
+    svg.element("path",
+        d=f"M{cx - cardinal_len:.1f},{cy:.1f} L{cx:.1f},{cy + cardinal_width:.1f} L{cx - cardinal_len * 0.3:.1f},{cy:.1f} Z",
+        fill=palette.text, stroke="none", opacity=0.55)
 
-    # Center circle
-    svg.element("circle", cx=f"{cx:.1f}", cy=f"{cy:.1f}", r=4, fill=palette.text, opacity=0.70)
+    # Intercardinal points (NE, SE, SW, NW) — smaller, thinner
+    inter_len = radius * 0.62
+    inter_width = 5
+    for angle_deg in [45, 135, 225, 315]:
+        a = math.radians(angle_deg)
+        tip_x = cx + math.sin(a) * inter_len
+        tip_y = cy - math.cos(a) * inter_len
+        # Perpendicular for width
+        perp_x = math.cos(a) * inter_width
+        perp_y = math.sin(a) * inter_width
+        # Dark half
+        svg.element("path",
+            d=f"M{tip_x:.1f},{tip_y:.1f} L{cx - perp_x:.1f},{cy + perp_y:.1f} L{cx:.1f},{cy:.1f} Z",
+            fill=palette.text, stroke="none", opacity=0.40)
+        # Light half
+        svg.element("path",
+            d=f"M{tip_x:.1f},{tip_y:.1f} L{cx + perp_x:.1f},{cy - perp_y:.1f} L{cx:.1f},{cy:.1f} Z",
+            fill=palette.text_soft, stroke="none", opacity=0.25)
 
-    # North label
-    svg.text(
-        "N",
-        x=f"{cx:.1f}",
-        y=f"{cy - radius - 15:.1f}",
-        text_anchor="middle",
-        fill=palette.text,
-        font_family="Spectral, Georgia, serif",
-        font_size=14,
-        font_weight="bold",
-        opacity=0.75,
-    )
+    # Center ornament — concentric circles
+    svg.element("circle", cx=f"{cx:.1f}", cy=f"{cy:.1f}", r=6,
+                fill=palette.text, stroke="none", opacity=0.65)
+    svg.element("circle", cx=f"{cx:.1f}", cy=f"{cy:.1f}", r=3.5,
+                fill=palette.land, stroke="none", opacity=0.80)
+    svg.element("circle", cx=f"{cx:.1f}", cy=f"{cy:.1f}", r=1.8,
+                fill=palette.text, stroke="none", opacity=0.70)
+
+    # Cardinal direction labels
+    label_offset = radius + 22
+    for label, angle_deg, sz, weight in [("N", 0, 18, "bold"), ("S", 180, 14, "normal"), ("E", 90, 14, "normal"), ("W", 270, 14, "normal")]:
+        a = math.radians(angle_deg)
+        lx = cx + math.sin(a) * label_offset
+        ly = cy - math.cos(a) * label_offset + (sz * 0.35 if angle_deg != 0 else sz * 0.35)
+        svg.text(
+            label,
+            x=f"{lx:.1f}",
+            y=f"{ly:.1f}",
+            text_anchor="middle",
+            fill=palette.text,
+            font_family="Cinzel, Georgia, serif",
+            font_size=sz,
+            font_weight=weight,
+            opacity=0.72,
+        )
 
 
 def render_scale_bar(svg: SvgCanvas, cfg: AtlasConfig, palette: Palette) -> None:
@@ -5562,6 +5635,53 @@ def render_scale_bar(svg: SvgCanvas, cfg: AtlasConfig, palette: Palette) -> None
     )
 
 
+def extract_metadata(cfg: AtlasConfig, scene, map_name: str, sea_names: list[str]) -> dict:
+    """Extract region, faction, city, and geographic metadata from the scene for JS embedding."""
+    regions = []
+    for r in scene.regions:
+        cities = []
+        for c in r.cities:
+            cities.append({
+                "name": c.name,
+                "x": round(c.target[0], 1),
+                "y": round(c.target[1], 1),
+                "capital": c.capital,
+            })
+        regions.append({
+            "name": r.template.name,
+            "subtitle": r.template.subtitle or "",
+            "color": r.template.fill,
+            "labelX": round(r.label_xy[0], 1),
+            "labelY": round(r.label_xy[1], 1),
+            "cities": cities,
+        })
+
+    mountains = []
+    for m in scene.mountain_ranges:
+        mountains.append({
+            "name": m.name,
+            "labelX": round(m.label_xy[0], 1),
+            "labelY": round(m.label_xy[1], 1),
+        })
+
+    lakes = []
+    for lk in scene.lakes:
+        lakes.append({
+            "name": lk.name,
+            "labelX": round(lk.label_xy[0], 1),
+            "labelY": round(lk.label_xy[1], 1),
+        })
+
+    return {
+        "seed": cfg.seed,
+        "mapName": map_name,
+        "regions": regions,
+        "mountains": mountains,
+        "lakes": lakes,
+        "seaNames": sea_names,
+    }
+
+
 def render_svg(cfg: AtlasConfig) -> str:
     scene = build_scene(cfg)
     name_rng = random.Random(cfg.seed + 999)
@@ -5592,6 +5712,10 @@ def render_svg(cfg: AtlasConfig) -> str:
     render_compass_rose(svg, cfg, PALETTE, islands=scene.islands, mainland=scene.mainland)
     render_scale_bar(svg, cfg, PALETTE)
     render_title(svg, cfg, PALETTE, map_name)
+
+    # Store metadata on the function for extraction
+    render_svg._last_metadata = extract_metadata(cfg, scene, map_name, sea_names)
+
     return svg.render()
 
 
@@ -5658,6 +5782,14 @@ def main() -> int:
     svg_markup = render_svg(cfg)
     save_svg(svg_markup, cfg.output_svg)
     print(f"Saved SVG atlas: {cfg.output_svg}")
+
+    # Export metadata JSON alongside the SVG
+    if hasattr(render_svg, '_last_metadata'):
+        import json as _json
+        meta_path = cfg.output_svg.with_suffix('.json')
+        meta_path.write_text(_json.dumps(render_svg._last_metadata, indent=2), encoding='utf-8')
+        print(f"Saved metadata: {meta_path}")
+
     if cfg.output_png:
         if export_png(cfg.output_svg, cfg.output_png):
             print(f"Saved PNG preview: {cfg.output_png}")
