@@ -5658,7 +5658,7 @@ function App() {
       </div>
 
       {/* Main Content Area — gradient extends full page */}
-      <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0, overflow:"hidden", position:"relative", background:"radial-gradient(ellipse at 20% 0%, var(--crimson-soft) 0%, transparent 55%), var(--bg)" }}>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0, overflowX:"hidden", overflowY:"auto", position:"relative", background:"radial-gradient(ellipse at 20% 0%, var(--crimson-soft) 0%, transparent 55%), var(--bg)" }}>
         {activeTab === "dashboard" && <DashboardView data={data} setData={setData} onNav={setActiveTab} activeCampaignId={activeCampaignId} viewRole={viewRole} />}
         {activeTab === "timeline" && (
           tabsReady.timeline && window.CampaignTimelineView
