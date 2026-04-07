@@ -1,0 +1,82 @@
+{
+  "name": "Millford",
+  "seed": 1,
+  "isCapital": false,
+  "population": 500,
+  "canvasWidth": 1000,
+  "canvasHeight": 750,
+  "buildings": [
+    {
+      "name": "Elder's Hall",
+      "type": "special",
+      "icon": "hall",
+      "x": 0.5515,
+      "y": 0.3391,
+      "w": 0.038,
+      "h": 0.04
+    },
+    {
+      "name": "Tanner",
+      "type": "shop",
+      "icon": "",
+      "x": 0.5602,
+      "y": 0.5132,
+      "w": 0.0321,
+      "h": 0.0472
+    },
+    {
+      "name": "Cartographer",
+      "type": "shop",
+      "icon": "",
+      "x": 0.4128,
+      "y": 0.5543,
+      "w": 0.0281,
+      "h": 0.0553
+    },
+    {
+      "name": "Furrier",
+      "type": "shop",
+      "icon": "",
+      "x": 0.4779,
+      "y": 0.5873,
+      "w": 0.0365,
+      "h": 0.0435
+    },
+    {
+      "name": "The Dancing Bear",
+      "type": "tavern",
+      "icon": "",
+      "x": 0.4114,
+      "y": 0.381,
+      "w": 0.0286,
+      "h": 0.0556
+    },
+    {
+      "name": "Town Well",
+      "type": "poi",
+      "icon": "",
+      "x": 0.5202,
+      "y": 0.745,
+      "w": 0.016,
+      "h": 0.0213
+    },
+    {
+      "name": "Library",
+      "type": "poi",
+      "icon": "",
+      "x": 0.2496,
+      "y": 0.4998,
+      "w": 0.016,
+      "h": 0.0213
+    },
+    {
+      "name": "Shrine",
+      "type": "poi",
+      "icon": "",
+      "x": 0.3889,
+      "y": 0.2891,
+      "w": 0.016,
+      "h": 0.0213
+    }
+  ]
+}

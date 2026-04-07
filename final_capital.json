@@ -1,0 +1,190 @@
+{
+  "name": "Goldenleaf",
+  "seed": 1,
+  "isCapital": true,
+  "population": 9000,
+  "canvasWidth": 3200,
+  "canvasHeight": 2400,
+  "buildings": [
+    {
+      "name": "Cathedral",
+      "type": "special",
+      "icon": "cathedral",
+      "x": 0.47,
+      "y": 0.5495,
+      "w": 0.0219,
+      "h": 0.0229
+    },
+    {
+      "name": "Mage Tower",
+      "type": "special",
+      "icon": "mage_tower",
+      "x": 0.6072,
+      "y": 0.6502,
+      "w": 0.0131,
+      "h": 0.0175
+    },
+    {
+      "name": "Grand Market Hall",
+      "type": "special",
+      "icon": "market_hall",
+      "x": 0.5185,
+      "y": 0.63,
+      "w": 0.0203,
+      "h": 0.0208
+    },
+    {
+      "name": "Herbalist",
+      "type": "shop",
+      "icon": "",
+      "x": 0.4339,
+      "y": 0.4853,
+      "w": 0.0097,
+      "h": 0.0105
+    },
+    {
+      "name": "Tinker",
+      "type": "shop",
+      "icon": "",
+      "x": 0.4961,
+      "y": 0.4244,
+      "w": 0.0145,
+      "h": 0.0095
+    },
+    {
+      "name": "Fletcher",
+      "type": "shop",
+      "icon": "",
+      "x": 0.5082,
+      "y": 0.5641,
+      "w": 0.0095,
+      "h": 0.0135
+    },
+    {
+      "name": "Leatherworker",
+      "type": "shop",
+      "icon": "",
+      "x": 0.4586,
+      "y": 0.4831,
+      "w": 0.0129,
+      "h": 0.01
+    },
+    {
+      "name": "Blacksmith",
+      "type": "shop",
+      "icon": "",
+      "x": 0.4788,
+      "y": 0.4314,
+      "w": 0.0103,
+      "h": 0.01
+    },
+    {
+      "name": "Furrier",
+      "type": "shop",
+      "icon": "",
+      "x": 0.448,
+      "y": 0.5124,
+      "w": 0.0139,
+      "h": 0.01
+    },
+    {
+      "name": "Cartographer",
+      "type": "shop",
+      "icon": "",
+      "x": 0.5216,
+      "y": 0.5488,
+      "w": 0.0103,
+      "h": 0.0161
+    },
+    {
+      "name": "Armorer",
+      "type": "shop",
+      "icon": "",
+      "x": 0.5297,
+      "y": 0.4734,
+      "w": 0.0141,
+      "h": 0.0099
+    },
+    {
+      "name": "Carpenter",
+      "type": "shop",
+      "icon": "",
+      "x": 0.4402,
+      "y": 0.5246,
+      "w": 0.0091,
+      "h": 0.0138
+    },
+    {
+      "name": "The Prancing Pony",
+      "type": "tavern",
+      "icon": "",
+      "x": 0.4457,
+      "y": 0.4822,
+      "w": 0.0099,
+      "h": 0.0112
+    },
+    {
+      "name": "The Sleeping Dragon",
+      "type": "tavern",
+      "icon": "",
+      "x": 0.456,
+      "y": 0.5563,
+      "w": 0.012,
+      "h": 0.012
+    },
+    {
+      "name": "Garden",
+      "type": "poi",
+      "icon": "",
+      "x": 0.4697,
+      "y": 0.4027,
+      "w": 0.005,
+      "h": 0.0067
+    },
+    {
+      "name": "Warehouse",
+      "type": "poi",
+      "icon": "",
+      "x": 0.5083,
+      "y": 0.4083,
+      "w": 0.005,
+      "h": 0.0067
+    },
+    {
+      "name": "Training Ground",
+      "type": "poi",
+      "icon": "",
+      "x": 0.4799,
+      "y": 0.4115,
+      "w": 0.005,
+      "h": 0.0067
+    },
+    {
+      "name": "Library",
+      "type": "poi",
+      "icon": "",
+      "x": 0.4314,
+      "y": 0.5316,
+      "w": 0.005,
+      "h": 0.0067
+    },
+    {
+      "name": "Graveyard",
+      "type": "poi",
+      "icon": "",
+      "x": 0.4861,
+      "y": 0.5372,
+      "w": 0.005,
+      "h": 0.0067
+    },
+    {
+      "name": "Fountain",
+      "type": "poi",
+      "icon": "",
+      "x": 0.5191,
+      "y": 0.4079,
+      "w": 0.005,
+      "h": 0.0067
+    }
+  ]
+}

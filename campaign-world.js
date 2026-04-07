@@ -10,7 +10,7 @@ const ATLAS_MAP_DATA = {}; // Images load from atlas-maps/atlas-{seed}.webp file
 
 // Atlas metadata for all 100 seeds (regions, cities, mountains, lakes)
 const ATLAS_METADATA = {};
-ATLAS_METADATA[1] = {"seed":1,"mapName":"CARDONIA","regions":[{"name":"Northmere","subtitle":"Principality of Northmere","color":"#ccc088","labelX":1705.0,"labelY":1095.0,"cities":[{"name":"Regnwald","x":0.6,"y":0.6,"capital":true},{"name":"Underbridge","x":0.7,"y":0.5,"capital":false},{"name":"Valewick","x":0.7,"y":0.6,"capital":false}]},{"name":"Valdheim","subtitle":"The Wilds of Valdheim","color":"#a8b8a0","labelX":2375.0,"labelY":1265.0,"cities":[{"name":"Gerenwalde","x":0.9,"y":0.7,"capital":true},{"name":"Urswick","x":0.9,"y":0.6,"capital":false},{"name":"Ilaes","x":0.9,"y":0.6,"capital":false},{"name":"Lakecrest","x":0.8,"y":0.6,"capital":false}]},{"name":"Ironglenn","subtitle":"Principality of Ironglenn","color":"#c8b490","labelX":1025.0,"labelY":425.0,"cities":[{"name":"Whitevale","x":0.4,"y":0.2,"capital":true},{"name":"Loyarn","x":0.4,"y":0.2,"capital":false},{"name":"Goldenleaf","x":0.3,"y":0.2,"capital":false}]},{"name":"Wyndell","subtitle":"Kingdom of Wyndell","color":"#a0b0b8","labelX":1005.0,"labelY":1315.0,"cities":[{"name":"Millcross","x":0.4,"y":0.7,"capital":true},{"name":"Pinewood","x":0.3,"y":0.7,"capital":false},{"name":"Kingsbridge","x":0.3,"y":0.7,"capital":false},{"name":"Moonshadow","x":0.4,"y":0.7,"capital":false},{"name":"Ironholt","x":0.4,"y":0.7,"capital":false}]},{"name":"Verdantia","subtitle":"The Dominion of Verdantia","color":"#b8c098","labelX":1585.0,"labelY":595.0,"cities":[{"name":"Dawnwatch","x":0.6,"y":0.3,"capital":true},{"name":"Pebblecreek","x":0.6,"y":0.3,"capital":false},{"name":"Anora","x":0.5,"y":0.4,"capital":false},{"name":"Lakecrest","x":0.7,"y":0.4,"capital":false}]},{"name":"Felmoor","subtitle":"Principality of Felmoor","color":"#c4b0a8","labelX":355.0,"labelY":725.0,"cities":[{"name":"Greenhollow","x":0.1,"y":0.4,"capital":true},{"name":"Cinderfell","x":0.1,"y":0.3,"capital":false},{"name":"Moonshadow","x":0.3,"y":0.4,"capital":false}]},{"name":"Caeloth","subtitle":"The Dominion of Caeloth","color":"#a8c0b0","labelX":175.0,"labelY":1215.0,"cities":[{"name":"Deepwatch","x":0.1,"y":0.7,"capital":true},{"name":"Palanor","x":0.1,"y":0.7,"capital":false},{"name":"Alderhaven","x":0.1,"y":0.7,"capital":false},{"name":"Feradell","x":0.1,"y":0.6,"capital":false}]},{"name":"Windmere","subtitle":"Borderlands of Windmere","color":"#c8c0a0","labelX":915.0,"labelY":875.0,"cities":[{"name":"Lakecrest","x":0.3,"y":0.5,"capital":true},{"name":"Zarakyr","x":0.3,"y":0.4,"capital":false},{"name":"Whitevale","x":0.3,"y":0.3,"capital":false},{"name":"Yellowfen","x":0.3,"y":0.5,"capital":false}]}],"mountains":[{"name":"Silvervein Ridge","labelX":1955.0,"labelY":965.0},{"name":"Ebonwall Mountains","labelX":1525.0,"labelY":645.0},{"name":"Greymist Heights","labelX":1235.0,"labelY":955.0}],"lakes":[{"name":"Lake Thornwell","labelX":625.0,"labelY":933.0}],"seaNames":["Sea of Dreams","Jade Sea","Sea of Winds","Crimson Gulf","Sea of Ash"]};
+ATLAS_METADATA[1] = {"seed":1,"mapName":"CARDONIA","regions":[{"name":"Kharadan","subtitle":"Principality of Kharadan","color":"#ccc088","labelX":4005.0,"labelY":2835.0,"cities":[{"name":"Thebury","x":0.4661,"y":0.5417,"capital":true},{"name":"Freehold","x":0.4018,"y":0.6139,"capital":false},{"name":"Longmere","x":0.4875,"y":0.6361,"capital":false},{"name":"Copperside","x":0.3982,"y":0.7028,"capital":false},{"name":"Foxbury","x":0.5518,"y":0.6583,"capital":false}]},{"name":"Pinecrest","subtitle":"Realm of Pinecrest","color":"#a8b8a0","labelX":2505.0,"labelY":3195.0,"cities":[{"name":"Kettlebrook","x":0.2982,"y":0.5806,"capital":true},{"name":"Alderhaven","x":0.2446,"y":0.4194,"capital":false},{"name":"Ashbourne","x":0.3161,"y":0.7306,"capital":false}]},{"name":"Blackmoor","subtitle":"The Dominion of Blackmoor","color":"#c8b490","labelX":6735.0,"labelY":3255.0,"cities":[{"name":"Lawklif","x":0.7839,"y":0.5917,"capital":true},{"name":"Oakmere","x":0.9411,"y":0.5194,"capital":false},{"name":"Brinewood","x":0.7411,"y":0.4861,"capital":false},{"name":"Blackrock","x":0.6875,"y":0.5417,"capital":false}]},{"name":"Evershade","subtitle":"Kingdom of Evershade","color":"#a0b0b8","labelX":1185.0,"labelY":1905.0,"cities":[{"name":"Goldenleaf","x":0.1375,"y":0.3417,"capital":true},{"name":"Redthorn","x":0.0661,"y":0.3972,"capital":false},{"name":"Rynwood","x":0.1446,"y":0.2472,"capital":false}]},{"name":"Ashmark","subtitle":"Principality of Ashmark","color":"#b8c098","labelX":1275.0,"labelY":3555.0,"cities":[{"name":"Ivyreach","x":0.1482,"y":0.6694,"capital":true},{"name":"Anora","x":0.0696,"y":0.5806,"capital":false},{"name":"Harrowfield","x":0.1339,"y":0.5472,"capital":false},{"name":"Hollowburg","x":0.0554,"y":0.6861,"capital":false},{"name":"Brightmoor","x":0.0589,"y":0.525,"capital":false},{"name":"Ilaes","x":0.2518,"y":0.6694,"capital":false}]},{"name":"Mistvale","subtitle":"Realm of Mistvale","color":"#c4b0a8","labelX":2655.0,"labelY":1035.0,"cities":[{"name":"Vineyard","x":0.3089,"y":0.1972,"capital":true},{"name":"Ironholt","x":0.2661,"y":0.275,"capital":false},{"name":"Jadeston","x":0.4018,"y":0.225,"capital":false},{"name":"Highwall","x":0.2089,"y":0.225,"capital":false},{"name":"Thornwall","x":0.3661,"y":0.2917,"capital":false}]},{"name":"Tethys","subtitle":"Realm of Tethys","color":"#a8c0b0","labelX":5835.0,"labelY":2055.0,"cities":[{"name":"Elmsworth","x":0.7054,"y":0.3639,"capital":true},{"name":"Zarakyr","x":0.5268,"y":0.3694,"capital":false},{"name":"Nighthollow","x":0.8732,"y":0.4139,"capital":false},{"name":"Duskhold","x":0.6125,"y":0.4194,"capital":false},{"name":"Dunmore","x":0.5554,"y":0.2472,"capital":false},{"name":"Ravenmere","x":0.7911,"y":0.3694,"capital":false}]}],"mountains":[{"name":"Dragon's Spine","labelX":3645.0,"labelY":2685.0},{"name":"Silvervein Ridge","labelX":3045.0,"labelY":2955.0},{"name":"Ironspine Range","labelX":4215.0,"labelY":2895.0},{"name":"Greymist Heights","labelX":3975.0,"labelY":2475.0}],"lakes":[{"name":"Crystal Lake","labelX":4875.0,"labelY":2643.0},{"name":"Lake Varos","labelX":2325.0,"labelY":2763.0},{"name":"Lunmere","labelX":6135.0,"labelY":2733.0}],"seaNames":["Sea of Dreams","Jade Sea","Sea of Winds","Crimson Gulf","Sea of Ash"],"pois":[{"name":"Tower of Ashenveil","type":"Ruins","x":0.3089,"y":0.3417},{"name":"The Lost Windscour","type":"Obelisk","x":0.6375,"y":0.2972},{"name":"Tower of Ironwatch","type":"Wayshrine","x":0.4375,"y":0.3917},{"name":"Temple of Moonfire","type":"Standing Stones","x":0.7125,"y":0.7694},{"name":"Shrine of Frostpeak","type":"Well","x":0.3732,"y":0.4528},{"name":"Keep of Silentwood","type":"Tower","x":0.6232,"y":0.7139},{"name":"Crypt of Oakenshield","type":"Portal","x":0.8589,"y":0.7028},{"name":"Keep of Ebonreach","type":"Well","x":0.5446,"y":0.7639},{"name":"Tomb of Mistpeak","type":"Standing Stones","x":0.7732,"y":0.6861},{"name":"Barrow of Oakenshield","type":"Cavern","x":0.5018,"y":0.2194},{"name":"Fortress of Moonfire","type":"Fortress","x":0.2018,"y":0.5417},{"name":"Keep of Brightveil","type":"Hermit Cave","x":0.8696,"y":0.5028},{"name":"Tower of Dreadhollow","type":"Well","x":0.7554,"y":0.2806},{"name":"The Sunken Ironwatch","type":"Mine","x":0.1875,"y":0.4194}]};
 ATLAS_METADATA[2] = {"seed":2,"mapName":"VAELTHYR","regions":[{"name":"Ashenveil","subtitle":"The Free Marches of Ashenveil","color":"#ccc088","labelX":755.0,"labelY":1015.0,"cities":[{"name":"Regnwald","x":0.3,"y":0.6,"capital":true},{"name":"Feradell","x":0.4,"y":0.6,"capital":false},{"name":"Dremoor","x":0.2,"y":0.6,"capital":false}]},{"name":"Shadowfen","subtitle":"Principality of Shadowfen","color":"#a8b8a0","labelX":1785.0,"labelY":425.0,"cities":[{"name":"Windcrest","x":0.6,"y":0.2,"capital":true},{"name":"Ashbourne","x":0.7,"y":0.3,"capital":false},{"name":"Goldenleaf","x":0.7,"y":0.3,"capital":false},{"name":"Gerenwalde","x":0.6,"y":0.4,"capital":false},{"name":"Kronham","x":0.6,"y":0.3,"capital":false},{"name":"Oldbridge","x":0.7,"y":0.3,"capital":false}]},{"name":"Duskveil","subtitle":"Realm of Duskveil","color":"#c8b490","labelX":2045.0,"labelY":975.0,"cities":[{"name":"Valewick","x":0.7,"y":0.5,"capital":true},{"name":"Deepwatch","x":0.8,"y":0.6,"capital":false},{"name":"Cinderfell","x":0.7,"y":0.6,"capital":false},{"name":"Ravenmere","x":0.6,"y":0.4,"capital":false},{"name":"Gerenwalde","x":0.8,"y":0.5,"capital":false}]},{"name":"Valdheim","subtitle":"The Wilds of Valdheim","color":"#a0b0b8","labelX":1245.0,"labelY":815.0,"cities":[{"name":"Duskwater","x":0.5,"y":0.5,"capital":true},{"name":"Thistledown","x":0.5,"y":0.4,"capital":false},{"name":"Redthorn","x":0.5,"y":0.5,"capital":false}]},{"name":"Drakkos","subtitle":"The Dominion of Drakkos","color":"#b8c098","labelX":2585.0,"labelY":1095.0,"cities":[{"name":"Greywater","x":0.9,"y":0.6,"capital":true},{"name":"Junipervale","x":0.9,"y":0.5,"capital":false},{"name":"Duskwater","x":0.9,"y":0.6,"capital":false}]},{"name":"Thornwick","subtitle":"Duchy of Thornwick","color":"#c4b0a8","labelX":2455.0,"labelY":655.0,"cities":[{"name":"Anora","x":0.9,"y":0.4,"capital":true},{"name":"Rynwood","x":1.0,"y":0.4,"capital":false},{"name":"Freehold","x":0.9,"y":0.4,"capital":false},{"name":"Borist","x":0.9,"y":0.3,"capital":false},{"name":"Inkwell","x":0.9,"y":0.3,"capital":false}]}],"mountains":[{"name":"Ironspine Range","labelX":504.0,"labelY":828.0},{"name":"Stormcrown Range","labelX":2016.0,"labelY":252.0},{"name":"Ashen Divide","labelX":1680.0,"labelY":1188.0}],"lakes":[],"seaNames":["Sea of Frost","Sea of Twilight","Sea of Winds","Pale Sea","Sea of Dreams"]};
 ATLAS_METADATA[3] = {"seed":3,"mapName":"ALDENMOOR","regions":[{"name":"Elonia","subtitle":"Borderlands of Elonia","color":"#ccc088","labelX":2255.0,"labelY":1305.0,"cities":[{"name":"Maplecross","x":0.8,"y":0.7,"capital":true},{"name":"Whitevale","x":0.8,"y":0.7,"capital":false},{"name":"Jadeston","x":0.8,"y":0.7,"capital":false}]},{"name":"Sunmere","subtitle":"The Wilds of Sunmere","color":"#a8b8a0","labelX":1085.0,"labelY":615.0,"cities":[{"name":"Elmsworth","x":0.4,"y":0.3,"capital":true},{"name":"Pinewood","x":0.3,"y":0.4,"capital":false},{"name":"Valewick","x":0.5,"y":0.4,"capital":false},{"name":"Lakecrest","x":0.5,"y":0.4,"capital":false},{"name":"Copperside","x":0.5,"y":0.4,"capital":false}]},{"name":"Dremora","subtitle":"Duchy of Dremora","color":"#c8b490","labelX":2545.0,"labelY":865.0,"cities":[{"name":"Ashbourne","x":0.9,"y":0.5,"capital":true},{"name":"Vineyard","x":0.9,"y":0.5,"capital":false},{"name":"Zenithburg","x":0.9,"y":0.5,"capital":false},{"name":"Kingsbridge","x":0.9,"y":0.4,"capital":false}]},{"name":"Lakeshore","subtitle":"The Free Marches of Lakeshore","color":"#a0b0b8","labelX":795.0,"labelY":925.0,"cities":[{"name":"Inkwell","x":0.3,"y":0.5,"capital":true},{"name":"Yellowfen","x":0.2,"y":0.5,"capital":false},{"name":"Kronham","x":0.3,"y":0.6,"capital":false},{"name":"Greywater","x":0.2,"y":0.6,"capital":false},{"name":"Greenhollow","x":0.4,"y":0.5,"capital":false},{"name":"Deepwatch","x":0.4,"y":0.6,"capital":false}]},{"name":"Dawnhollow","subtitle":"Realm of Dawnhollow","color":"#b8c098","labelX":1545.0,"labelY":1145.0,"cities":[{"name":"Thebury","x":0.6,"y":0.7,"capital":true},{"name":"Urswick","x":0.6,"y":0.7,"capital":false},{"name":"Moonshadow","x":0.6,"y":0.7,"capital":false},{"name":"Alderhaven","x":0.6,"y":0.7,"capital":false},{"name":"Longmere","x":0.6,"y":0.7,"capital":false},{"name":"Stormgate","x":0.7,"y":0.7,"capital":false}]},{"name":"Ravenmarch","subtitle":"The Free Marches of Ravenmarch","color":"#c4b0a8","labelX":1765.0,"labelY":675.0,"cities":[{"name":"Longmere","x":0.6,"y":0.4,"capital":true},{"name":"Gerenwalde","x":0.5,"y":0.3,"capital":false},{"name":"Pinewood","x":0.7,"y":0.4,"capital":false},{"name":"Odrin","x":0.7,"y":0.4,"capital":false},{"name":"Copperside","x":0.7,"y":0.5,"capital":false}]},{"name":"Nightward","subtitle":"Kingdom of Nightward","color":"#a8c0b0","labelX":415.0,"labelY":815.0,"cities":[{"name":"Oldbridge","x":0.1,"y":0.5,"capital":true},{"name":"Feradell","x":0.2,"y":0.4,"capital":false},{"name":"Tidefall","x":0.1,"y":0.4,"capital":false},{"name":"Lakecrest","x":0.1,"y":0.4,"capital":false}]},{"name":"Evershade","subtitle":"The Wilds of Evershade","color":"#c8c0a0","labelX":1125.0,"labelY":1145.0,"cities":[{"name":"Westmarch","x":0.4,"y":0.6,"capital":true},{"name":"Knolltown","x":0.5,"y":0.7,"capital":false},{"name":"Oakmere","x":0.4,"y":0.7,"capital":false},{"name":"Lawklif","x":0.4,"y":0.6,"capital":false},{"name":"Cinderfell","x":0.3,"y":0.6,"capital":false},{"name":"Whitevale","x":0.5,"y":0.6,"capital":false}]}],"mountains":[{"name":"Ironspine Range","labelX":504.0,"labelY":828.0},{"name":"Stormcrown Range","labelX":2016.0,"labelY":252.0},{"name":"Ashen Divide","labelX":1680.0,"labelY":1188.0}],"lakes":[],"seaNames":["Pale Sea","Iron Sea","Sea of Dreams","Sea of Twilight","Sea of Silver"]};
 ATLAS_METADATA[4] = {"seed":4,"mapName":"DRAKHEIM","regions":[{"name":"Solwynd","subtitle":"Borderlands of Solwynd","color":"#ccc088","labelX":1165.0,"labelY":845.0,"cities":[{"name":"Beowick","x":0.4,"y":0.5,"capital":true},{"name":"Fogmere","x":0.5,"y":0.6,"capital":false},{"name":"Goldug","x":0.4,"y":0.4,"capital":false},{"name":"Pebblecreek","x":0.5,"y":0.5,"capital":false},{"name":"Borist","x":0.5,"y":0.4,"capital":false},{"name":"Oakmere","x":0.3,"y":0.5,"capital":false}]},{"name":"Tarnis","subtitle":"Duchy of Tarnis","color":"#a8b8a0","labelX":1005.0,"labelY":345.0,"cities":[{"name":"Valewick","x":0.4,"y":0.2,"capital":true},{"name":"Oldbridge","x":0.3,"y":0.1,"capital":false},{"name":"Quartzridge","x":0.5,"y":0.2,"capital":false},{"name":"Eagleford","x":0.3,"y":0.2,"capital":false},{"name":"Dawnwatch","x":0.3,"y":0.2,"capital":false},{"name":"Loyarn","x":0.4,"y":0.3,"capital":false}]},{"name":"Rosedale","subtitle":"Borderlands of Rosedale","color":"#c8b490","labelX":1745.0,"labelY":865.0,"cities":[{"name":"Ashbourne","x":0.6,"y":0.5,"capital":true},{"name":"Whitevale","x":0.5,"y":0.4,"capital":false},{"name":"Goldug","x":0.7,"y":0.5,"capital":false},{"name":"Ilaes","x":0.7,"y":0.5,"capital":false},{"name":"Inkwell","x":0.5,"y":0.4,"capital":false}]},{"name":"Moonridge","subtitle":"The Free Marches of Moonridge","color":"#a0b0b8","labelX":675.0,"labelY":625.0,"cities":[{"name":"Gildafell","x":0.2,"y":0.3,"capital":true},{"name":"Stormgate","x":0.2,"y":0.4,"capital":false},{"name":"Eagleford","x":0.2,"y":0.3,"capital":false}]},{"name":"Wyndell","subtitle":"The Wilds of Wyndell","color":"#b8c098","labelX":2485.0,"labelY":685.0,"cities":[{"name":"Vineyard","x":0.9,"y":0.4,"capital":true},{"name":"Foxbury","x":0.9,"y":0.4,"capital":false},{"name":"Cliffhaven","x":0.9,"y":0.5,"capital":false},{"name":"Millcross","x":0.9,"y":0.3,"capital":false},{"name":"Anora","x":0.9,"y":0.3,"capital":false},{"name":"Oldbridge","x":0.9,"y":0.3,"capital":false}]},{"name":"Kelvor","subtitle":"Borderlands of Kelvor","color":"#c4b0a8","labelX":495.0,"labelY":1055.0,"cities":[{"name":"Rynwood","x":0.2,"y":0.6,"capital":true},{"name":"Goldug","x":0.3,"y":0.5,"capital":false},{"name":"Zenithburg","x":0.1,"y":0.5,"capital":false},{"name":"Fernhollow","x":0.2,"y":0.7,"capital":false},{"name":"Jadeston","x":0.1,"y":0.7,"capital":false},{"name":"Copperside","x":0.1,"y":0.6,"capital":false}]}],"mountains":[{"name":"Ironspine Range","labelX":1155.0,"labelY":585.0},{"name":"Greymist Heights","labelX":1105.0,"labelY":965.0},{"name":"Ashen Divide","labelX":425.0,"labelY":775.0}],"lakes":[{"name":"Mirrordeep","labelX":1645.0,"labelY":903.0},{"name":"Stillmere","labelX":2145.0,"labelY":873.0}],"seaNames":["Sea of Embers","Pale Sea","Sea of Ash","Sea of Twilight","Crimson Gulf"]};
@@ -850,6 +850,91 @@ const CITY_FEATURES = [
   "Clockwork District","Refugee Camp","Haunted Ruins","Festival Grounds","Bridge Market",
 ];
 
+// ── POI Lore & Quest Data ──
+const POI_LORE = {
+  Ruins: [
+    "Once a thriving settlement, now reduced to crumbling walls and overgrown courtyards. The stone bears scorch marks from an ancient siege.",
+    "Explorers report strange carvings on the walls that glow faintly at dusk. The architecture predates any known civilization.",
+    "Scattered bones and rusted armor suggest a final desperate battle was fought here centuries ago.",
+  ],
+  Fortress: [
+    "An imposing stronghold built into the cliff face, its gates sealed by mechanisms long forgotten. Arrow slits still watch the approach.",
+    "This abandoned fortress was once the seat of a warlord whose name has been deliberately erased from all records.",
+    "The walls still hold despite centuries of neglect. Locals whisper that something within keeps the stones from crumbling.",
+  ],
+  Temple: [
+    "A solemn place of worship to a forgotten deity. The altar still radiates a faint warmth despite no flame having burned here in ages.",
+    "Pilgrims once traveled great distances to receive blessings here. The stained glass windows depict prophecies yet to be fulfilled.",
+    "The temple's inner sanctum is sealed behind a door of solid adamantine. No force or magic has been able to open it.",
+  ],
+  Tower: [
+    "A solitary spire rising above the landscape, built by a mage whose experiments could still be heard echoing from within on windless nights.",
+    "The tower's upper floors have collapsed, but the underground levels extend far deeper than expected.",
+    "Star charts and arcane instruments fill the abandoned observatory. Some claim the lenses still show impossible constellations.",
+  ],
+  Mine: [
+    "Deep tunnels once rich with precious ore. The miners abandoned it after breaking into an older, unknown tunnel system below.",
+    "The mine entrance is partially collapsed but passable. Strange mineral growths within glow with an otherworldly luminescence.",
+    "Tools and carts remain exactly where they were dropped, as if the miners fled in an instant. No one knows why.",
+  ],
+  Shrine: [
+    "A humble roadside shrine where travelers leave offerings. The carved figure has been worn smooth by countless reverent hands.",
+    "This sacred grove shrine marks a convergence of ley lines. Magic is subtly amplified in its vicinity.",
+    "Built at the site of a legendary hero's last stand, this shrine is said to grant courage to those who kneel before it.",
+  ],
+  Tomb: [
+    "A sealed burial vault of an ancient king. The wards carved into the entrance suggest what lies within should remain undisturbed.",
+    "A vast necropolis stretches beneath the surface. The dead here were buried with their weapons, ready for a war in the afterlife.",
+    "The tomb was opened once before. Only one expedition member returned, and they never spoke of what they found.",
+  ],
+  Cavern: [
+    "A vast natural cave system with chambers large enough to hold a cathedral. Underground rivers echo in the darkness.",
+    "The cavern walls are covered in ancient paintings depicting creatures never seen on the surface.",
+    "Deep within, a warm draft carries the scent of sulfur. Scratching sounds echo from passages too narrow for humans.",
+  ],
+  Obelisk: [
+    "A towering black stone monolith inscribed with a spiral script that no scholar has deciphered. It hums faintly during storms.",
+    "The obelisk casts no shadow regardless of the sun's position. Animals refuse to approach within fifty paces.",
+    "Erected by an unknown civilization, the stone's surface is impossibly smooth and resists all attempts at sampling.",
+  ],
+  "Standing Stones": [
+    "A circle of weathered menhirs arranged in precise astronomical alignment. During equinoxes, the stones sing in the wind.",
+    "The stones mark the boundary of an ancient pact. Stepping within the circle at midnight reveals glimpses of another era.",
+    "Local druids still perform rituals here, though even they admit the stones predate their oldest traditions.",
+  ],
+  "Dragon Lair": [
+    "Massive claw marks score the cave entrance. The air inside is unnaturally warm and carries a faint metallic tang.",
+    "Whether a dragon still dwells here is debated — but the surrounding landscape bears unmistakable signs of dragonfire.",
+    "Adventurers occasionally emerge with scales and teeth from this lair, but none have claimed to slay the beast within.",
+  ],
+  Portal: [
+    "A shimmering archway that occasionally flickers with otherworldly light. Objects thrown through sometimes return... changed.",
+    "Ancient runework frames a doorway to somewhere else. The destination seems to shift with the phases of the moon.",
+    "The portal has been dormant for decades, but recently began pulsing with energy. Scholars race to determine its destination.",
+  ],
+  default: [
+    "A mysterious location of unknown origin. Locals avoid it after dark and speak of it only in whispers.",
+    "Something about this place feels ancient and significant, though its true purpose has been lost to time.",
+    "Adventurers have explored this site and returned with more questions than answers.",
+  ],
+};
+const POI_QUESTS = [
+  { title: "The Lost Expedition", desc: "A party of scholars vanished here weeks ago. Their patron offers a generous reward for their rescue — or at least their research notes." },
+  { title: "Echoes of the Past", desc: "Strange visions plague anyone who sleeps nearby. A mage believes an artifact within is the source and will pay handsomely for its retrieval." },
+  { title: "The Guardian's Challenge", desc: "An ancient protector bars entry and will only allow passage to those who prove their worth through a series of trials." },
+  { title: "Treasure of the Forgotten King", desc: "A cryptic map points to a cache of royal treasure hidden here. But the map's previous owner died under suspicious circumstances." },
+  { title: "The Corruption Spreads", desc: "Dark energy seeps from this place, blighting nearby farmland. The source must be found and destroyed before the corruption reaches the nearest settlement." },
+  { title: "Seal the Breach", desc: "Something has broken through from another plane. The rift must be closed before more creatures pour through." },
+  { title: "The Collector's Request", desc: "A wealthy patron seeks a specific relic known to reside here. They will pay well and ask no questions about methods." },
+  { title: "Reclaim the Stronghold", desc: "A local lord wishes to restore this site as a strategic outpost, but it must first be cleared of its current... residents." },
+  { title: "The Whispering Curse", desc: "Anyone who takes anything from this place falls under a wasting curse. A healer needs components from within to develop a cure." },
+  { title: "Cartographer's Commission", desc: "The interior of this place has never been properly mapped. A cartographer's guild offers standing payment for detailed surveys." },
+  { title: "The Ritual Components", desc: "A druid circle requires rare herbs that grow only in this location, but something dangerous now lairs within." },
+  { title: "Bounty: Clear the Threat", desc: "A bounty has been posted for eliminating the dangerous creatures that have claimed this area as territory." },
+];
+const POI_THREAT_LEVELS = ["safe","low","medium","high","extreme"];
+const POI_REWARDS = ["Ancient relic","Enchanted weapon","Spell scroll","Potion cache","Gold hoard","Rare crafting materials","Magical artifact","Lost knowledge"];
+
 /* Generate campaign regions and factions from ATLAS_METADATA (Python-generated data) */
 function regionsAndFactionsFromMetadata(seedNum) {
   const meta = (typeof ATLAS_METADATA !== 'undefined') && ATLAS_METADATA[seedNum];
@@ -1197,7 +1282,51 @@ function regionsAndFactionsFromMetadata(seedNum) {
     });
   });
 
-  return { regions, factions, npcs: allNpcs, cities: allCities };
+  // ── Generate POI data from atlas metadata ──
+  const allPois = [];
+  let poiId = 1;
+  const poiRng = mulberry32(seedNum * 4217);
+  const poiPick = (arr) => arr[Math.floor(poiRng() * arr.length)];
+  const poiPickN = (arr, n) => { const s = [...arr].sort(() => poiRng() - 0.5); return s.slice(0, Math.min(n, s.length)); };
+  (meta.pois || []).forEach((p, pi) => {
+    const pRng = mulberry32(seedNum * 1031 + pi * 73);
+    const pPick = (arr) => arr[Math.floor(pRng() * arr.length)];
+    const pPickN = (arr, n) => { const s = [...arr].sort(() => pRng() - 0.5); return s.slice(0, Math.min(n, s.length)); };
+    const lorePool = POI_LORE[p.type] || POI_LORE.default;
+    const threat = pPick(POI_THREAT_LEVELS);
+    const numQuests = 1 + Math.floor(pRng() * 2);
+    const quests = pPickN(POI_QUESTS, numQuests).map(q => ({
+      ...q,
+      reward: pPick(POI_REWARDS),
+      difficulty: threat === "extreme" ? "Deadly" : threat === "high" ? "Hard" : threat === "medium" ? "Moderate" : "Easy",
+    }));
+    // Find nearest region
+    let nearestRegion = regions[0]?.name || "Unknown";
+    let minDist = Infinity;
+    meta.regions.forEach((r) => {
+      (r.cities || []).forEach(c => {
+        const dx = p.x - c.x, dy = p.y - c.y;
+        const d = Math.sqrt(dx * dx + dy * dy);
+        if (d < minDist) { minDist = d; nearestRegion = r.name; }
+      });
+    });
+    allPois.push({
+      id: `poi-${poiId++}`,
+      name: p.name,
+      type: p.type,
+      mapX: p.x,
+      mapY: p.y,
+      region: nearestRegion,
+      threat: threat,
+      lore: pPick(lorePool),
+      quests: quests,
+      explored: false,
+      reward: pPick(POI_REWARDS),
+      description: `A ${p.type.toLowerCase()} located in the ${nearestRegion} region.`,
+    });
+  });
+
+  return { regions, factions, npcs: allNpcs, cities: allCities, pois: allPois };
 }
 
 // Expose generator for cloud save compaction (campaigns.html uses this to diff)
@@ -1220,6 +1349,12 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
   const [routeDraft,setRouteDraft] = useState({ fromId: null, toId: null });
   const [cityPopup,setCityPopup] = useState(null); // { city, screenX, screenY } for map tooltip
   const [cityRegionFocus,setCityRegionFocus] = useState(null); // region name to highlight in Cities tab
+  const [townView,setTownView] = useState(null); // city name string when viewing a town map
+  const [townSelBldg,setTownSelBldg] = useState(null); // selected building index in town view
+  const [townHovBldg,setTownHovBldg] = useState(null); // hovered building index in town view
+  const [townZoom,setTownZoom] = useState(1);
+  const [townPan,setTownPan] = useState({ x: 0, y: 0 });
+  const townDragRef = useRef(null);
   const [isMapCompact,setIsMapCompact] = useState(() => typeof window !== "undefined" ? window.innerWidth < 860 : false);
   const worldMapState = normalizeWorldMapState(data.worldMap);
 
@@ -1291,6 +1426,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
         factions: result.factions,
         npcs: result.npcs || [],
         cities: result.cities || [],
+        pois: result.pois || [],
         name: (meta && meta.mapName) || d.name,
       }));
     }
@@ -2065,12 +2201,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                     <g key={`city-${city.id}`} style={{ cursor: "pointer" }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        // Direct navigation to Cities tab — no intermediate popup
-                        setTab("cities");
-                        setSel(city);
-                        setSelType("city");
-                        setCityRegionFocus(city.region);
-                        setCityPopup(null);
+                        // Show popup on the map with city info & navigation buttons
+                        setCityPopup(cityPopup?.city?.id === city.id ? null : { city });
                       }}>
                       {/* Hover target area (larger than visible marker for easy clicking) */}
                       <circle cx={cx} cy={cy} r={markerR + 8} fill="transparent" />
@@ -2090,21 +2222,55 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                         style={{ pointerEvents: "none", textShadow: "none" }}>
                         {city.name}
                       </text>
-                      {/* "CAPITAL" sub-label at close zoom */}
-                      {city.isCapital && mapZoom > 0.6 && (
-                        <text x={cx} y={cy + labelOffset + labelSize * 1.15} textAnchor="middle"
-                          fill={fc} stroke="rgba(20,16,10,0.6)" strokeWidth={1} paintOrder="stroke"
-                          fontFamily="'Cinzel', serif" fontSize={Math.max(6, 9/Math.max(mapZoom*0.5,0.3))}
-                          letterSpacing="1.5" opacity="0.8" style={{ pointerEvents:"none" }}>
-                          CAPITAL
-                        </text>
-                      )}
+                      {/* Type sub-label at close zoom (Capital / City / Town / Village) */}
+                      {mapZoom > 0.6 && (() => {
+                        const meta = window.TOWN_METADATA?.[city.name];
+                        const tierLabel = meta ? (
+                          meta.isCapital ? "CAPITAL" :
+                          (meta.population >= 4000) ? "CITY" :
+                          (meta.population >= 1500) ? "TOWN" : "VILLAGE"
+                        ) : (city.isCapital ? "CAPITAL" : "SETTLEMENT");
+                        return (
+                          <text x={cx} y={cy + labelOffset + labelSize * 1.15} textAnchor="middle"
+                            fill={city.isCapital ? fc : "#b8ae94"} stroke="rgba(20,16,10,0.6)" strokeWidth={1} paintOrder="stroke"
+                            fontFamily="'Cinzel', serif" fontSize={Math.max(6, 9/Math.max(mapZoom*0.5,0.3))}
+                            letterSpacing="1.5" opacity="0.8" style={{ pointerEvents:"none" }}>
+                            {tierLabel}
+                          </text>
+                        );
+                      })()}
                     </g>
                   );
                 })}
 
-                {/* ═══ LAYER 6b: World POIs — visible at local zoom+ ═══ */}
-                {false && mapZoom > 2.0 && pois.map(p => <POISvg key={p.id} poi={p} zoom={mapZoom}/>)}
+                {/* ═══ LAYER 6b: Atlas POI markers — clickable ═══ */}
+                {data.atlasMapSeed && (data.pois || []).map(poi => {
+                  const px = poi.mapX * MAP_W;
+                  const py = poi.mapY * MAP_H;
+                  const isActive = sel?.id === poi.id && selType === "poi";
+                  const iconSz = Math.max(8, 16 / Math.max(mapZoom * 0.7, 0.3));
+                  const labelSz = Math.max(8, 14 / Math.max(mapZoom * 0.7, 0.35));
+                  const tCol = poi.threat === "extreme" ? "#d04040" : poi.threat === "high" ? "#e89430" : poi.threat === "medium" ? "#c9a85c" : "#6a8a60";
+                  return (
+                    <g key={poi.id} style={{ cursor: "pointer" }}
+                      onClick={(e) => { e.stopPropagation(); setSel(poi); setSelType("poi"); }}>
+                      <circle cx={px} cy={py} r={iconSz + 10} fill="transparent" />
+                      <circle cx={px} cy={py} r={iconSz * 1.4} fill="rgba(232,218,186,0.25)" stroke="none" />
+                      {/* Diamond marker */}
+                      <path d={`M${px},${py - iconSz} L${px + iconSz * 0.7},${py} L${px},${py + iconSz} L${px - iconSz * 0.7},${py} Z`}
+                        fill={isActive ? tCol : "#5a4a28"} stroke={tCol} strokeWidth={Math.max(1, 1.5 / Math.max(mapZoom * 0.5, 0.3))}
+                        opacity={isActive ? 0.95 : 0.8} />
+                      <circle cx={px} cy={py} r={iconSz * 0.22} fill="#f0e8d0" opacity="0.8" />
+                      {/* Label */}
+                      <text x={px} y={py + iconSz + labelSz * 1.1} textAnchor="middle"
+                        fill="#e8dcc0" stroke="rgba(20,16,10,0.7)" strokeWidth={Math.max(1.2, 2.5 / Math.max(mapZoom * 0.6, 0.3))} paintOrder="stroke"
+                        fontFamily="'Spectral', serif" fontSize={labelSz} fontStyle="italic" fontWeight="400" letterSpacing="0.3"
+                        opacity="0.85" style={{ pointerEvents: "none" }}>
+                        {poi.name}
+                      </text>
+                    </g>
+                  );
+                })}
 
                 {/* ═══ LAYER 7: Weather overlay ═══ */}
                 {false && mapZoom > 0.4 && data.factions.map(wz => (
@@ -2187,7 +2353,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                     <div>
                       <div style={{ fontSize: 16, fontWeight: 400, color: "#f0e8d0", fontFamily: "'Cinzel', serif", letterSpacing: "0.5px" }}>{c.name}</div>
-                      <div style={{ fontSize: 10, color: T.textFaint, marginTop: 2 }}>{c.isCapital ? "Capital" : "Settlement"} of {c.region} · Pop. {c.population}</div>
+                      <div style={{ fontSize: 10, color: T.textFaint, marginTop: 2 }}>{(() => { const m = window.TOWN_METADATA?.[c.name]; return m ? (m.isCapital ? "Capital" : m.population >= 4000 ? "City" : m.population >= 1500 ? "Town" : "Village") : (c.isCapital ? "Capital" : "Settlement"); })()} of {c.region} · Pop. {c.population}</div>
                     </div>
                     <button onClick={() => setCityPopup(null)} style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 16, padding: "2px 6px" }}>×</button>
                   </div>
@@ -2215,6 +2381,18 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                     onMouseEnter={e => { e.target.style.background = `${fc}30`; }}
                     onMouseLeave={e => { e.target.style.background = `${fc}18`; }}
                   >View Full Details</button>
+                  {window.TOWN_IMAGES && window.TOWN_IMAGES[c.name] && (
+                    <button
+                      onClick={() => { setTownView(c.name); setCityPopup(null); setTownSelBldg(null); setTownHovBldg(null); setTownZoom(0); setTownPan({x:0,y:0}); }}
+                      style={{
+                        width: "100%", padding: "8px 0", marginTop: 6, background: "rgba(201,168,92,0.12)", border: "1px solid rgba(201,168,92,0.35)", borderRadius: "3px",
+                        color: "#c9a85c", fontFamily: "'Cinzel', serif", fontSize: 10, letterSpacing: "1.5px", textTransform: "uppercase", cursor: "pointer",
+                        transition: "all 0.2s",
+                      }}
+                      onMouseEnter={e => { e.target.style.background = "rgba(201,168,92,0.25)"; }}
+                      onMouseLeave={e => { e.target.style.background = "rgba(201,168,92,0.12)"; }}
+                    >🗺 Explore Town Map</button>
+                  )}
                 </div>
               );
             })()}
@@ -2244,6 +2422,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                             factions: result.factions,
                             npcs: result.npcs || d.npcs,
                             cities: result.cities || [],
+                            pois: result.pois || [],
                             name: (meta && meta.mapName) || d.name,
                             activity: [{ time: "Just now", text: `Generated world map (seed ${seedVal})` }, ...(d.activity || [])].slice(0, 40),
                           }));
@@ -2678,6 +2857,13 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                         background: "transparent", border: `1px solid ${T.border}`, borderRadius: "3px", color: T.textMuted,
                         fontFamily: T.ui, fontSize: 10, letterSpacing: "1.5px", textTransform: "uppercase", cursor: "pointer",
                       }}>◎ View on Map</button>
+                      {window.TOWN_IMAGES && window.TOWN_IMAGES[c.name] && (
+                        <button onClick={() => { setTownView(c.name); setTownSelBldg(null); setTownHovBldg(null); setTownZoom(0); setTownPan({x:0,y:0}); }} style={{
+                          display: "flex", alignItems: "center", gap: 6, padding: "8px 14px",
+                          background: "linear-gradient(135deg, rgba(201,168,92,0.15), transparent)", border: `1px solid rgba(201,168,92,0.4)`, borderRadius: "3px", color: "#c9a85c",
+                          fontFamily: T.ui, fontSize: 10, letterSpacing: "1.5px", textTransform: "uppercase", cursor: "pointer",
+                        }}>🗺 Explore Town</button>
+                      )}
                     </div>
 
                     {/* City header */}
@@ -2688,7 +2874,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                     }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
                         <span style={{ fontSize: 22, fontWeight: 400, color: T.text, fontFamily: "'Cinzel', serif", letterSpacing: "0.5px" }}>{c.name}</span>
-                        {c.isCapital && <span style={{ fontSize: 9, color: "#c9a85c", border: "1px solid rgba(201,168,92,0.3)", padding: "2px 8px", borderRadius: "2px", letterSpacing: "1px" }}>CAPITAL</span>}
+                        <span style={{ fontSize: 9, color: c.isCapital ? "#c9a85c" : "#9a9080", border: `1px solid ${c.isCapital ? "rgba(201,168,92,0.3)" : "rgba(154,144,128,0.3)"}`, padding: "2px 8px", borderRadius: "2px", letterSpacing: "1px" }}>{(() => { const m = window.TOWN_METADATA?.[c.name]; return m ? (m.isCapital ? "CAPITAL" : m.population >= 4000 ? "CITY" : m.population >= 1500 ? "TOWN" : "VILLAGE") : (c.isCapital ? "CAPITAL" : "SETTLEMENT"); })()}</span>
                       </div>
                       <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 8 }}>{c.region} · {c.faction} · Pop. {c.population}</div>
                       <div style={{ fontSize: 12, color: T.textDim, lineHeight: 1.6 }}>{c.description}</div>
@@ -2921,7 +3107,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                                       ? <span style={{ fontSize: 16, color: cityFc }}>★</span>
                                       : <span style={{ fontSize: 14, color: T.textFaint }}>◆</span>}
                                     <span style={{ fontSize: 14, fontWeight: c.isCapital ? 500 : 300, color: T.text }}>{c.name}</span>
-                                    {c.isCapital && <span style={{ fontSize: 8, color: cityFc, border: `1px solid ${cityFc}44`, padding: "1px 5px", borderRadius: "2px", letterSpacing: "0.5px" }}>CAPITAL</span>}
+                                    <span style={{ fontSize: 8, color: c.isCapital ? cityFc : "#9a9080", border: `1px solid ${c.isCapital ? cityFc + "44" : "rgba(154,144,128,0.3)"}`, padding: "1px 5px", borderRadius: "2px", letterSpacing: "0.5px" }}>{(() => { const m = window.TOWN_METADATA?.[c.name]; return m ? (m.isCapital ? "CAPITAL" : m.population >= 4000 ? "CITY" : m.population >= 1500 ? "TOWN" : "VILLAGE") : (c.isCapital ? "CAPITAL" : "SETTLEMENT"); })()}</span>
                                   </div>
                                   <div style={{ fontSize: 10, color: T.textFaint, marginBottom: 7 }}>Pop. {c.population}</div>
                                   <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 7 }}>
@@ -2929,11 +3115,14 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                                       <span key={fi} style={{ fontSize: 9, color: T.textDim, background: "rgba(0,0,0,0.15)", padding: "2px 6px", borderRadius: "2px" }}>{f}</span>
                                     ))}
                                   </div>
-                                  <div style={{ display: "flex", gap: 10, fontSize: 10, color: T.textFaint }}>
+                                  <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 10, color: T.textFaint }}>
                                     <span>{c.shops.length} shops</span>
                                     <span>1 tavern</span>
                                     <span>{(c.npcs || []).length} NPCs</span>
                                     <span>{(c.questHooks || []).length} quests</span>
+                                    {window.TOWN_IMAGES && window.TOWN_IMAGES[c.name] && (
+                                      <span onClick={(e) => { e.stopPropagation(); setTownView(c.name); setTownSelBldg(null); setTownHovBldg(null); setTownZoom(0); setTownPan({x:0,y:0}); }} style={{ marginLeft: "auto", color: "#c9a85c", cursor: "pointer", letterSpacing: "0.5px", fontWeight: 500 }}>🗺 Map</span>
+                                    )}
                                   </div>
                                 </div>
                               );
@@ -3412,14 +3601,78 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                   </div>
                 </>}
 
-                {/* POI details */}
-                {selType==="poi" && !editing && (
-                  <div style={{ padding:14, background:T.bg, border:`1px solid ${T.crimsonBorder}`, borderRadius:"2px", marginBottom:20 }}>
-                    <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Type: <span style={{color:T.textDim}}>{sel.type}</span></div>
-                    <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Threat: <Tag variant={sel.threat==="extreme"?"critical":sel.threat==="high"?"danger":sel.threat==="medium"?"warning":"success"}>{sel.threat}</Tag></div>
-                    <div style={{ fontSize:12, color:T.textMuted, marginTop:10, fontStyle:"italic", fontWeight:300 }}>A mysterious point of interest awaiting exploration.</div>
+                {/* POI details — full panel with lore, quests, rewards */}
+                {selType==="poi" && !editing && (() => {
+                  const p = sel;
+                  const tCol = p.threat === "extreme" ? "#d04040" : p.threat === "high" ? "#e89430" : p.threat === "medium" ? "#c9a85c" : "#6a8a60";
+                  return (
+                  <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
+                    {/* Back + View on Map */}
+                    <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+                      <button onClick={() => { setSel(null); setSelType(null); }} style={{
+                        display:"flex", alignItems:"center", gap:6, padding:"8px 14px",
+                        background:"transparent", border:`1px solid ${T.border}`, borderRadius:"3px", color:T.textMuted,
+                        fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer",
+                      }}>{ArrowLeft && <ArrowLeft size={12}/>} Back</button>
+                      <button onClick={() => { setTab("map"); }} style={{
+                        display:"flex", alignItems:"center", gap:6, padding:"8px 14px",
+                        background:"transparent", border:`1px solid ${T.border}`, borderRadius:"3px", color:T.textMuted,
+                        fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer",
+                      }}>◎ View on Map</button>
+                    </div>
+                    {/* Header */}
+                    <div style={{
+                      padding:"24px 28px", marginBottom:20,
+                      background:`linear-gradient(135deg, ${tCol}18 0%, transparent 60%)`,
+                      borderLeft:`4px solid ${tCol}`, borderRadius:"4px", border:`1px solid ${T.border}`,
+                    }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
+                        <span style={{ fontSize:22, fontWeight:400, color:T.text, fontFamily:"'Cinzel', serif", letterSpacing:"0.5px" }}>{p.name}</span>
+                      </div>
+                      <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:10 }}>
+                        <span style={{ fontSize:10, color:tCol, border:`1px solid ${tCol}44`, padding:"2px 8px", borderRadius:"2px", letterSpacing:"1px", textTransform:"uppercase" }}>{p.type}</span>
+                        <span style={{ fontSize:10, color:T.textMuted }}>·</span>
+                        <span style={{ fontSize:10, color:T.textMuted }}>{p.region}</span>
+                        <span style={{ fontSize:10, color:T.textMuted }}>·</span>
+                        <Tag variant={p.threat==="extreme"?"critical":p.threat==="high"?"danger":p.threat==="medium"?"warning":"success"}>{p.threat} threat</Tag>
+                      </div>
+                      <div style={{ fontSize:12, color:T.textDim, lineHeight:1.7, fontStyle:"italic" }}>{p.description}</div>
+                    </div>
+                    {/* Lore */}
+                    {p.lore && (
+                      <div style={{ padding:"20px 24px", marginBottom:16, background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px" }}>
+                        <div style={{ fontSize:10, color:T.textFaint, letterSpacing:"2px", textTransform:"uppercase", marginBottom:12 }}>Lore & History</div>
+                        <div style={{ fontSize:12, color:T.textDim, lineHeight:1.8, fontWeight:300 }}>{p.lore}</div>
+                      </div>
+                    )}
+                    {/* Quests */}
+                    {p.quests && p.quests.length > 0 && (
+                      <div style={{ marginBottom:16 }}>
+                        <div style={{ fontSize:10, color:T.textFaint, letterSpacing:"2px", textTransform:"uppercase", marginBottom:12, paddingLeft:4 }}>Available Quests ({p.quests.length})</div>
+                        <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                          {p.quests.map((q, qi) => (
+                            <div key={qi} style={{ padding:"16px 20px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px" }}>
+                              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+                                <span style={{ fontSize:14, fontWeight:400, color:T.text, fontFamily:"'Spectral', serif" }}>{q.title}</span>
+                                <span style={{ fontSize:9, color:tCol, border:`1px solid ${tCol}33`, padding:"2px 8px", borderRadius:"2px", letterSpacing:"0.5px" }}>{q.difficulty}</span>
+                              </div>
+                              <div style={{ fontSize:11, color:T.textDim, lineHeight:1.7, marginBottom:10 }}>{q.desc}</div>
+                              <div style={{ fontSize:10, color:"#c9a85c", fontStyle:"italic" }}>Reward: {q.reward}</div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {/* Reward */}
+                    {p.reward && (
+                      <div style={{ padding:"14px 20px", background:"rgba(201,168,92,0.06)", border:"1px solid rgba(201,168,92,0.18)", borderRadius:"4px", marginBottom:16 }}>
+                        <div style={{ fontSize:10, color:"#c9a85c", letterSpacing:"1px", marginBottom:4 }}>POTENTIAL REWARD</div>
+                        <div style={{ fontSize:13, color:T.text, fontFamily:"'Spectral', serif" }}>{p.reward}</div>
+                      </div>
+                    )}
                   </div>
-                )}
+                  );
+                })()}
                 {/* Encounter zone details */}
                 {selType==="encounter" && !editing && (
                   <div style={{ padding:14, background:T.bg, border:`1px solid ${T.crimsonBorder}`, borderRadius:"2px", marginBottom:20 }}>
@@ -3434,6 +3687,268 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
           )}
         </div>
       </div>
+
+      {/* ══════════ TOWN MAP OVERLAY ══════════ */}
+      {townView && (() => {
+        const townImg = window.TOWN_IMAGES?.[townView];
+        const townMeta = window.TOWN_METADATA?.[townView];
+        const cityObj = (data.cities || []).find(c => c.name === townView);
+        if (!townImg) return null;
+
+        const buildings = townMeta?.buildings || [];
+        const townCW = townMeta?.canvasWidth || 1600;
+        const townCH = townMeta?.canvasHeight || 1200;
+        // Auto-fit: if zoom is 0, calculate zoom to fit viewport (~80% of window)
+        const effectiveZoom = townZoom > 0 ? townZoom : Math.min(
+          (typeof window !== "undefined" ? window.innerWidth * 0.75 : 1200) / townCW,
+          (typeof window !== "undefined" ? window.innerHeight * 0.80 : 900) / townCH
+        );
+        const hovBldg = townHovBldg;
+        const setHovBldg = setTownHovBldg;
+        const selBldg = townSelBldg;
+        const setSelBldg = setTownSelBldg;
+
+        // Map building metadata types to matching city data
+        const shopData = cityObj?.shops || [];
+        const tavernData = cityObj?.tavern || null;
+
+        const getBuildingDetail = (bldg) => {
+          if (bldg.type === "shop") {
+            const match = shopData.find(s => s.type?.toLowerCase().includes(bldg.name?.toLowerCase()?.split(" ")[0]) || s.name?.toLowerCase().includes(bldg.name?.toLowerCase()?.split(" ")[0]));
+            if (match) return { ...bldg, detail: match, detailType: "shop" };
+          }
+          if (bldg.type === "tavern" && tavernData) {
+            return { ...bldg, detail: tavernData, detailType: "tavern" };
+          }
+          return { ...bldg, detail: null, detailType: bldg.type };
+        };
+
+        return (
+          <div style={{
+            position: "fixed", top: 0, left: 0, right: 0, bottom: 0, zIndex: 1000,
+            background: "rgba(15,12,8,0.95)", display: "flex", flexDirection: "column",
+          }}>
+            {/* Header bar */}
+            <div style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "12px 24px", background: "rgba(32,28,22,0.95)",
+              borderBottom: "1px solid rgba(201,168,92,0.2)", flexShrink: 0,
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <button onClick={() => { setTownView(null); }} style={{
+                  display: "flex", alignItems: "center", gap: 6, padding: "6px 14px",
+                  background: "transparent", border: `1px solid ${T.border}`, borderRadius: "3px",
+                  color: T.textMuted, fontFamily: T.ui, fontSize: 10, letterSpacing: "1.5px",
+                  textTransform: "uppercase", cursor: "pointer",
+                }}><ArrowLeft size={12} /> Back to Atlas</button>
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 400, color: "#f0e8d0", fontFamily: "'Cinzel', serif", letterSpacing: "1px" }}>{townView}</div>
+                  <div style={{ fontSize: 10, color: T.textFaint, marginTop: 2 }}>
+                    {townMeta ? (townMeta.isCapital ? "Capital" : townMeta.population >= 4000 ? "City" : townMeta.population >= 1500 ? "Town" : "Village") : "Settlement"} · Pop. ~{(townMeta?.population || 0).toLocaleString()}
+                    {cityObj ? ` · ${cityObj.region}` : ""}
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <button onClick={() => setTownZoom(z => Math.max(0.15, (z > 0 ? z : effectiveZoom) - 0.15))} style={{
+                  padding: "4px 10px", background: "rgba(255,255,255,0.05)", border: `1px solid ${T.border}`,
+                  borderRadius: "3px", color: T.textMuted, cursor: "pointer", fontSize: 14,
+                }}>−</button>
+                <span style={{ fontSize: 10, color: T.textFaint, fontFamily: T.ui, minWidth: 40, textAlign: "center" }}>{Math.round(effectiveZoom * 100)}%</span>
+                <button onClick={() => setTownZoom(z => Math.min(3, (z > 0 ? z : effectiveZoom) + 0.15))} style={{
+                  padding: "4px 10px", background: "rgba(255,255,255,0.05)", border: `1px solid ${T.border}`,
+                  borderRadius: "3px", color: T.textMuted, cursor: "pointer", fontSize: 14,
+                }}>+</button>
+                {cityObj && (
+                  <button onClick={() => { setTownView(null); setTab("cities"); setSel(cityObj); setSelType("city"); }} style={{
+                    padding: "6px 14px", background: "rgba(201,168,92,0.12)", border: "1px solid rgba(201,168,92,0.35)",
+                    borderRadius: "3px", color: "#c9a85c", fontFamily: T.ui, fontSize: 10,
+                    letterSpacing: "1.5px", textTransform: "uppercase", cursor: "pointer",
+                  }}>City Details</button>
+                )}
+              </div>
+            </div>
+
+            {/* Main content: map + optional detail panel */}
+            <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+              {/* Map area */}
+              <div style={{
+                flex: 1, position: "relative", overflow: "hidden", cursor: "grab",
+              }}
+                onMouseDown={e => {
+                  if (e.button === 0) {
+                    townDragRef.current = { startX: e.clientX - townPan.x, startY: e.clientY - townPan.y };
+                  }
+                }}
+                onMouseMove={e => {
+                  if (townDragRef.current) {
+                    setTownPan({ x: e.clientX - townDragRef.current.startX, y: e.clientY - townDragRef.current.startY });
+                  }
+                }}
+                onMouseUp={() => { townDragRef.current = null; }}
+                onMouseLeave={() => { townDragRef.current = null; }}
+                onWheel={e => {
+                  e.preventDefault();
+                  setTownZoom(z => Math.min(3, Math.max(0.15, (z > 0 ? z : effectiveZoom) + (e.deltaY > 0 ? -0.08 : 0.08))));
+                }}
+              >
+                <div style={{
+                  transform: `translate(${townPan.x}px, ${townPan.y}px) scale(${effectiveZoom})`,
+                  transformOrigin: "center center", transition: townDragRef.current ? "none" : "transform 0.15s ease",
+                  width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center",
+                  position: "relative",
+                }}>
+                  <div style={{ position: "relative", width: townCW, height: townCH }}>
+                    <img src={townImg} style={{ width: townCW, height: townCH, display: "block", imageRendering: "auto" }} draggable={false} />
+
+                    {/* Interactive building markers */}
+                    {buildings.filter(b => b.type !== "house").map((bldg, bi) => {
+                      const bx = bldg.x * townCW;
+                      const by = bldg.y * townCH;
+                      const bw = bldg.w * townCW;
+                      const bh = bldg.h * townCH;
+                      const isHov = hovBldg === bi;
+                      const isSel = selBldg === bi;
+                      const typeColor = bldg.type === "shop" ? "#c9a85c" : bldg.type === "tavern" ? "#c88040" : bldg.type === "special" ? "#a06848" : bldg.type === "poi" ? "#4a7a90" : "#888";
+                      return (
+                        <div key={bi}
+                          style={{
+                            position: "absolute", left: bx - 4, top: by - 4,
+                            width: bw + 8, height: bh + 8,
+                            border: `2px solid ${isSel ? typeColor : isHov ? typeColor + "88" : "transparent"}`,
+                            borderRadius: "4px", cursor: "pointer",
+                            background: isSel ? typeColor + "18" : isHov ? typeColor + "0c" : "transparent",
+                            transition: "all 0.15s ease",
+                          }}
+                          onMouseEnter={() => setHovBldg(bi)}
+                          onMouseLeave={() => setHovBldg(null)}
+                          onClick={(e) => { e.stopPropagation(); setSelBldg(isSel ? null : bi); }}
+                        >
+                          {/* Tooltip on hover */}
+                          {isHov && !isSel && (
+                            <div style={{
+                              position: "absolute", left: "50%", transform: "translateX(-50%)", bottom: "calc(100% + 8px)",
+                              background: "rgba(32,28,22,0.95)", border: `1px solid ${typeColor}44`, borderRadius: "4px",
+                              padding: "6px 12px", whiteSpace: "nowrap", pointerEvents: "none", zIndex: 20,
+                            }}>
+                              <div style={{ fontSize: 11, color: "#f0e8d0", fontFamily: "'Cinzel', serif" }}>{bldg.name}</div>
+                              <div style={{ fontSize: 9, color: typeColor, textTransform: "uppercase", letterSpacing: "1px" }}>{bldg.type}</div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* Detail side panel when a building is selected */}
+              {selBldg !== null && (() => {
+                const bldg = buildings[selBldg];
+                if (!bldg) return null;
+                const bd = getBuildingDetail(bldg);
+                const typeColor = bldg.type === "shop" ? "#c9a85c" : bldg.type === "tavern" ? "#c88040" : bldg.type === "special" ? "#a06848" : bldg.type === "poi" ? "#4a7a90" : "#888";
+                return (
+                  <div style={{
+                    width: 320, flexShrink: 0, background: "rgba(32,28,22,0.98)",
+                    borderLeft: `1px solid ${typeColor}33`, padding: "20px",
+                    overflowY: "auto", display: "flex", flexDirection: "column", gap: 12,
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 9, color: typeColor, textTransform: "uppercase", letterSpacing: "2px", border: `1px solid ${typeColor}33`, padding: "3px 8px", borderRadius: "2px" }}>{bldg.type}</span>
+                      <button onClick={() => setSelBldg(null)} style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 16 }}>×</button>
+                    </div>
+                    <div style={{ fontSize: 18, fontWeight: 400, color: "#f0e8d0", fontFamily: "'Cinzel', serif", letterSpacing: "0.5px" }}>{bldg.name}</div>
+
+                    {bd.detailType === "shop" && bd.detail && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        <div style={{ fontSize: 11, color: T.textMuted }}>Owner: <span style={{ color: T.text }}>{bd.detail.owner}</span></div>
+                        {bd.detail.ownerPersonality && <div style={{ fontSize: 11, color: T.textFaint, fontStyle: "italic" }}>{bd.detail.ownerPersonality}</div>}
+                        {bd.detail.items && bd.detail.items.length > 0 && (
+                          <div>
+                            <div style={{ fontSize: 9, color: T.textFaint, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 8 }}>Inventory</div>
+                            {bd.detail.items.slice(0, 8).map((item, ii) => (
+                              <div key={ii} style={{
+                                display: "flex", justifyContent: "space-between", padding: "6px 10px",
+                                background: "rgba(0,0,0,0.15)", borderRadius: "3px", marginBottom: 4, fontSize: 11,
+                              }}>
+                                <span style={{ color: T.textMuted }}>{item.name}</span>
+                                <span style={{ color: "#c9a85c", fontFamily: T.ui }}>{item.price}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {bd.detailType === "tavern" && bd.detail && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        <div style={{ fontSize: 14, color: "#f0e8d0", fontFamily: "'Spectral', serif" }}>{bd.detail.name}</div>
+                        <div style={{ fontSize: 11, color: T.textMuted }}>Innkeeper: <span style={{ color: T.text }}>{bd.detail.innkeeper}</span></div>
+                        {bd.detail.innkeeperPersonality && <div style={{ fontSize: 11, color: T.textFaint, fontStyle: "italic" }}>{bd.detail.innkeeperPersonality}</div>}
+                        {bd.detail.services && bd.detail.services.length > 0 && (
+                          <div>
+                            <div style={{ fontSize: 9, color: T.textFaint, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 8 }}>Services</div>
+                            {bd.detail.services.map((s, si) => (
+                              <div key={si} style={{
+                                display: "flex", justifyContent: "space-between", padding: "6px 10px",
+                                background: "rgba(0,0,0,0.15)", borderRadius: "3px", marginBottom: 4, fontSize: 11,
+                              }}>
+                                <span style={{ color: T.textMuted }}>{s.name}</span>
+                                <span style={{ color: "#c9a85c", fontFamily: T.ui }}>{s.price}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {bd.detail.rumor && (
+                          <div style={{ fontSize: 11, color: "#e8ba40", fontStyle: "italic", padding: "8px 12px", background: "rgba(232,186,64,0.06)", border: "1px solid rgba(232,186,64,0.15)", borderRadius: "3px", lineHeight: 1.5 }}>
+                            Rumor: "{bd.detail.rumor}"
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {bd.detailType === "special" && (
+                      <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.6 }}>
+                        {bldg.name === "Castle" && "The seat of power in this region. Heavily fortified with stone walls and guard towers."}
+                        {bldg.name === "Cathedral" && "A grand place of worship, its spires rising above the town skyline. Clerics can be found here offering healing and guidance."}
+                        {bldg.name === "Mage Tower" && "A mysterious tower crackling with arcane energy. Local mages study and practice their arts within."}
+                        {bldg.name === "Barracks" && "The town garrison, home to soldiers and guards who protect the settlement."}
+                        {bldg.name === "Town Hall" && "The center of local governance where the town council meets and records are kept."}
+                        {bldg.name === "Temple" && "A sacred site dedicated to the local deity, offering spiritual guidance and divine healing."}
+                        {!["Castle", "Cathedral", "Mage Tower", "Barracks", "Town Hall", "Temple"].includes(bldg.name) && "A notable structure in the town."}
+                      </div>
+                    )}
+
+                    {bd.detailType === "poi" && (
+                      <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.6 }}>
+                        {bldg.name === "Town Well" && "The communal well, a gathering point for locals. Fresh water and fresh gossip are drawn here daily."}
+                        {bldg.name === "Fountain" && "An ornamental fountain in the town square, its waters said to bring good luck."}
+                        {bldg.name === "Statue" && "A weathered statue of a local hero, commemorating a great deed from long ago."}
+                        {bldg.name === "Notice Board" && "A board posted with job requests, wanted posters, and local announcements."}
+                        {bldg.name === "Shrine" && "A small roadside shrine where travelers leave offerings for safe passage."}
+                        {bldg.name === "Guard Post" && "A manned checkpoint where town guards keep watch for trouble."}
+                        {bldg.name === "Market Stall" && "A busy market stall selling local goods and seasonal produce."}
+                        {bldg.name === "Horse Stable" && "Stables where mounts can be housed, fed, and purchased."}
+                        {bldg.name === "Library" && "A repository of knowledge, containing rare books and ancient scrolls."}
+                        {bldg.name === "Graveyard" && "The town cemetery, where the dead rest... hopefully in peace."}
+                        {bldg.name === "Training Ground" && "An open area where warriors and guards hone their combat skills."}
+                        {bldg.name === "Watchtower" && "A tall tower providing a vantage point over the surrounding area."}
+                        {bldg.name === "Garden" && "A peaceful garden tended by locals, fragrant with herbs and flowers."}
+                        {!["Town Well", "Fountain", "Statue", "Notice Board", "Shrine", "Guard Post", "Market Stall", "Horse Stable", "Library", "Graveyard", "Training Ground", "Watchtower", "Garden"].includes(bldg.name) && "A point of interest in the town."}
+                      </div>
+                    )}
+
+                    {!bd.detail && !["special", "poi"].includes(bd.detailType) && (
+                      <div style={{ fontSize: 12, color: T.textDim, fontStyle: "italic" }}>A {bldg.type} in {townView}.</div>
+                    )}
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Add Entity Modal */}
       <AddEntityModal open={addingEntity} onClose={()=>setAddingEntity(false)} tab={tab==="map"?"regions":tab} onAdd={addEntity} data={data} />

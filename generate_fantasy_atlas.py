@@ -18,17 +18,17 @@ Rect = tuple[float, float, float, float]
 
 @dataclass(frozen=True)
 class AtlasConfig:
-    width: int = 2800
-    height: int = 1800
+    width: int = 8400   # 3× original 2800 — much larger continent canvas
+    height: int = 5400  # 3× original 1800
     seed: int = 23
-    grid_step: int = 10
-    coastline_step: float = 28.0
-    coastline_roughness: float = 24.0
-    island_roughness: float = 14.0
-    ridge_jitter: float = 10.0
+    grid_step: int = 30          # 3× so grid cell count stays constant (~280×180 cells)
+    coastline_step: float = 84.0  # 3× for proportional coastline detail
+    coastline_roughness: float = 72.0  # 3×
+    island_roughness: float = 42.0     # 3×
+    ridge_jitter: float = 30.0         # 3×
     max_lakes: int = 3
     max_attempts: int = 56
-    contour_opacity: float = 0.40
+    contour_opacity: float = 0.55
     show_city_labels: bool = True
     show_river_labels: bool = True
     # Painterly peak glyphs on ridges; False = ridge lines only (calmer, reference-style).
@@ -424,16 +424,25 @@ DESCRIPTOR_POOL = [
 
 POI_PREFIX_POOL = [
     "Ruins of", "Tower of", "Shrine of", "Temple of", "Fortress of",
-    "The Lost", "Ancient",
+    "The Lost", "Ancient", "Tomb of", "Barrow of", "Caverns of",
+    "The Sunken", "The Fallen", "Crypt of", "Keep of", "Sanctum of",
+    "The Forgotten", "Hall of", "Pillars of", "Bridge of", "Pit of",
 ]
 
 POI_SUFFIX_POOL = [
     "Thornfall", "Ironwatch", "Stormhold", "Whispergate", "Duskmourn",
     "Frostpeak", "Shadowmere", "Goldenveil", "Embercrest", "Silentwood",
+    "Ashenveil", "Dreadhollow", "Moonfire", "Starfang", "Bloodthorn",
+    "Grimhaven", "Oakenshield", "Ravenscar", "Sunbreak", "Nighthollow",
+    "Wyrmrest", "Mistpeak", "Stonefell", "Brightveil", "Ebonreach",
+    "Gloomfen", "Ironbark", "Flamecrest", "Windscour", "Dewglass",
 ]
 
 POI_TYPE_POOL = [
     "Ruins", "Fortress", "Temple", "Tower", "Mine", "Shrine",
+    "Tomb", "Cavern", "Obelisk", "Standing Stones", "Shipwreck",
+    "Dragon Lair", "Witch Hut", "Hermit Cave", "Ancient Library",
+    "Wayshrine", "Abandoned Camp", "Battlefield", "Portal", "Well",
 ]
 
 
@@ -1690,8 +1699,11 @@ def _poisson_disk_sample(domain: Rect, min_distance: float, rng: random.Random,
     return samples
 
 
-def generate_region_templates(grid: TerrainGrid, cfg: AtlasConfig, rng: random.Random) -> list[RegionTemplate]:
-    """Generate procedural region templates with scattered seed points on land."""
+def generate_region_templates(grid: TerrainGrid, cfg: AtlasConfig, rng: random.Random, lakes: Sequence[LakeBody] | None = None) -> list[RegionTemplate]:
+    """Generate procedural region templates with scattered seed points on land.
+
+    If *lakes* is provided, cities will not be placed inside any lake polygon.
+    """
     # Target 6-8 regions
     num_regions = rng.randint(6, 8)
 
@@ -1757,6 +1769,43 @@ def generate_region_templates(grid: TerrainGrid, cfg: AtlasConfig, rng: random.R
 
     templates: list[RegionTemplate] = []
     used_names = set()
+    used_city_names: set[str] = set()
+    # Track ALL placed city positions (normalized) for global minimum-spacing enforcement
+    all_placed_city_positions: list[tuple[float, float]] = []
+    # Minimum normalized distance between any two city dots (~180px at 2800, scales with canvas)
+    MIN_CITY_DIST_NORM = 0.055
+
+    # Build lake polygon list in pixel coords for collision testing
+    lake_polys_px: list[list[Point]] = []
+    lake_buffer = 0.012  # normalized buffer around lakes
+    if lakes:
+        for lk in lakes:
+            lake_polys_px.append(lk.polygon)
+
+    def city_in_lake(candidate: tuple[float, float]) -> bool:
+        """Check if a normalized city position falls inside (or very near) any lake."""
+        cpx = (candidate[0] * cfg.width, candidate[1] * cfg.height)
+        for poly in lake_polys_px:
+            if point_in_polygon(cpx, poly):
+                return True
+            # Also check distance to lake center (buffer zone)
+        if lakes:
+            for lk in lakes:
+                dx = candidate[0] - lk.center[0] / cfg.width
+                dy = candidate[1] - lk.center[1] / cfg.height
+                if math.sqrt(dx * dx + dy * dy) < lake_buffer:
+                    return True
+        return False
+
+    def city_too_close(candidate: tuple[float, float]) -> bool:
+        if city_in_lake(candidate):
+            return True
+        for existing in all_placed_city_positions:
+            dx = candidate[0] - existing[0]
+            dy = candidate[1] - existing[1]
+            if math.sqrt(dx * dx + dy * dy) < MIN_CITY_DIST_NORM:
+                return True
+        return False
 
     for i, seed_pt in enumerate(region_seeds):
         # seed_pt is in pixel coordinates; convert to normalized
@@ -1781,21 +1830,43 @@ def generate_region_templates(grid: TerrainGrid, cfg: AtlasConfig, rng: random.R
         num_cities = rng.randint(3, 6)
         cities: list[CityTemplate] = []
 
-        # Capital city at region seed (in normalized coords)
-        capital_name = rng.choice(CITY_NAME_POOL)
-        cities.append(CityTemplate(capital_name, seed_norm, capital=True, label_offset=(0.0, -24.0)))
+        # Capital city at region seed (in normalized coords) — push it if too close
+        cap_pos = seed_norm
+        if city_too_close(cap_pos):
+            # Try small offsets to find a free spot
+            for attempt in range(20):
+                angle = rng.uniform(0, 2.0 * math.pi)
+                dist = MIN_CITY_DIST_NORM * rng.uniform(1.1, 1.8)
+                candidate = (clamp(seed_norm[0] + dist * math.cos(angle), 0.02, 0.98),
+                             clamp(seed_norm[1] + dist * math.sin(angle), 0.02, 0.98))
+                if not city_too_close(candidate):
+                    cap_pos = candidate
+                    break
+        all_placed_city_positions.append(cap_pos)
 
-        # Other cities scattered around the seed
+        # Pick a unique capital name
+        capital_name = rng.choice([n for n in CITY_NAME_POOL if n not in used_city_names] or CITY_NAME_POOL)
+        used_city_names.add(capital_name)
+        cities.append(CityTemplate(capital_name, cap_pos, capital=True, label_offset=(0.0, -24.0)))
+
+        # Other cities scattered around the seed with guaranteed minimum spacing
         for j in range(num_cities - 1):
-            # Place near the region seed but not too close (in normalized coords)
-            offset_dist = rng.uniform(0.05, 0.15)  # normalized distance
-            offset_angle = rng.uniform(0, 2.0 * math.pi)
-            city_x = clamp(seed_norm[0] + offset_dist * math.cos(offset_angle), 0.01, 0.99)
-            city_y = clamp(seed_norm[1] + offset_dist * math.sin(offset_angle), 0.01, 0.99)
-            city_pt = (city_x, city_y)
-
-            city_name = rng.choice([n for n in CITY_NAME_POOL if n != capital_name])
-            cities.append(CityTemplate(city_name, city_pt, capital=False, label_offset=(0.0, -24.0)))
+            placed = False
+            for attempt in range(40):
+                # Spread cities further from seed so they don't cluster (0.07–0.20 normalized)
+                offset_dist = rng.uniform(0.07, 0.20)
+                offset_angle = rng.uniform(0, 2.0 * math.pi)
+                city_x = clamp(seed_norm[0] + offset_dist * math.cos(offset_angle), 0.01, 0.99)
+                city_y = clamp(seed_norm[1] + offset_dist * math.sin(offset_angle), 0.01, 0.99)
+                city_pt = (city_x, city_y)
+                if not city_too_close(city_pt):
+                    all_placed_city_positions.append(city_pt)
+                    city_name = rng.choice([n for n in CITY_NAME_POOL if n not in used_city_names] or CITY_NAME_POOL)
+                    used_city_names.add(city_name)
+                    cities.append(CityTemplate(city_name, city_pt, capital=False, label_offset=(0.0, -24.0)))
+                    placed = True
+                    break
+            # If no non-overlapping position found after 40 tries, skip this city
 
         subtitle = rng.choice(DESCRIPTOR_POOL) + " " + region_name
         templates.append(
@@ -3219,7 +3290,7 @@ def prebuild_lakes(grid: TerrainGrid, cfg: AtlasConfig, rng: random.Random) -> t
 
     for i, center in enumerate(chosen_centers):
         name = lake_names[i] if i < len(lake_names) else f"Lake {i+1}"
-        radius = rng.uniform(0.030, 0.060) * min(cfg.width, cfg.height)
+        radius = rng.uniform(0.038, 0.072) * min(cfg.width, cfg.height)
         polygon = create_lake_polygon(center, radius, grid, rng)
         center_idx = nearest_land_idx(grid, center)
         outlet_idx = basin_outlet_idx(grid, polygon, center_idx)
@@ -3846,51 +3917,107 @@ def generate_procedural_rivers(
 
 
 def generate_pois(grid: TerrainGrid, cfg: AtlasConfig, rng: random.Random, regions: list[RegionModel], lakes: list[LakeBody]) -> list[tuple[Point, str, str]]:
-    """Generate 4-8 points of interest placed on land with Poisson-disk spacing."""
-    pois = []
-    num_pois = rng.randint(4, 8)
+    """Generate many points of interest placed on land with Poisson-disk spacing.
 
-    # Collect city positions and lake centers for avoidance
-    blocked_points = []
+    Aims for 12-20 POIs to fill empty space across the map.  Uses a density-aware
+    approach: the map is divided into a coarse grid and we try harder to place
+    POIs in cells that have no cities or other POIs.
+    """
+    s = cfg.width / 2800.0
+    pois: list[tuple[Point, str, str]] = []
+    num_pois = rng.randint(12, 20)
+
+    # Collect city positions (pixel) and lake polygons for avoidance
+    blocked_px: list[Point] = []
     for region in regions:
         for city in region.cities:
-            blocked_points.append(city.target)
-    for lake in lakes:
-        blocked_points.append(lake.center)
+            blocked_px.append(px(city.target, cfg))
+    lake_polys = [lk.polygon for lk in lakes]
+    for lk in lakes:
+        blocked_px.append(lk.center)
 
-    # Collect land points
+    # Collect all land points
     land_points = [grid.point(idx) for idx in range(grid.size) if grid.land[idx]]
+    if not land_points:
+        return pois
 
-    # Poisson-disk sampling: place POIs with minimum separation
-    min_poi_distance = 0.10 * cfg.width  # normalized distance
+    # Minimum distance between POIs and from POIs to cities/lakes
+    min_poi_dist = 0.065 * cfg.width
+    min_city_dist = 0.055 * cfg.width
 
-    for attempt in range(num_pois * 10):
+    # Build a coarse density grid to find empty areas
+    density_cols, density_rows = 8, 6
+    cell_w = cfg.width / density_cols
+    cell_h = cfg.height / density_rows
+    # Count features per density cell
+    cell_counts: dict[tuple[int, int], int] = {}
+    for bx, by in blocked_px:
+        dc, dr = int(bx / cell_w), int(by / cell_h)
+        dc, dr = min(dc, density_cols - 1), min(dr, density_rows - 1)
+        cell_counts[(dc, dr)] = cell_counts.get((dc, dr), 0) + 1
+
+    # Sort land points by density cell (empty cells first) to prefer sparse areas
+    def cell_key(pt: Point) -> int:
+        dc = min(int(pt[0] / cell_w), density_cols - 1)
+        dr = min(int(pt[1] / cell_h), density_rows - 1)
+        return cell_counts.get((dc, dr), 0)
+
+    sparse_land = sorted(land_points, key=cell_key)
+
+    used_names: set[str] = set()
+
+    for attempt in range(num_pois * 20):
         if len(pois) >= num_pois:
             break
 
-        # Pick a random land point
-        if not land_points:
-            break
-        candidate = rng.choice(land_points)
+        # Alternate: 70% from sparse areas, 30% fully random
+        if rng.random() < 0.70 and sparse_land:
+            # Pick from the sparsest third
+            pool_size = max(1, len(sparse_land) // 3)
+            candidate = rng.choice(sparse_land[:pool_size])
+        else:
+            candidate = rng.choice(land_points)
 
-        # Check distance to existing POIs and blocked points
+        # Must not be inside a lake
+        in_lake = False
+        for poly in lake_polys:
+            if point_in_polygon(candidate, poly):
+                in_lake = True
+                break
+        if in_lake:
+            continue
+
+        # Check distance to existing POIs
         ok = True
         for existing_poi, _, _ in pois:
-            if distance(candidate, existing_poi) < min_poi_distance:
+            if distance(candidate, existing_poi) < min_poi_dist:
                 ok = False
                 break
-        if ok:
-            for blocked_pt in blocked_points:
-                blocked_px = px(blocked_pt, cfg)
-                if distance(candidate, blocked_px) < min_poi_distance * 0.8:
-                    ok = False
-                    break
+        if not ok:
+            continue
 
-        if ok:
-            # Generate POI name and type
+        # Check distance to cities and lake centers
+        for bpt in blocked_px:
+            if distance(candidate, bpt) < min_city_dist:
+                ok = False
+                break
+        if not ok:
+            continue
+
+        # Generate unique POI name
+        for _ in range(10):
             poi_name = rng.choice(POI_PREFIX_POOL) + " " + rng.choice(POI_SUFFIX_POOL)
-            poi_type = rng.choice(POI_TYPE_POOL)
-            pois.append((candidate, poi_name, poi_type))
+            if poi_name not in used_names:
+                break
+        used_names.add(poi_name)
+        poi_type = rng.choice(POI_TYPE_POOL)
+        pois.append((candidate, poi_name, poi_type))
+
+        # Update density grid so next picks prefer elsewhere
+        dc = min(int(candidate[0] / cell_w), density_cols - 1)
+        dr = min(int(candidate[1] / cell_h), density_rows - 1)
+        cell_counts[(dc, dr)] = cell_counts.get((dc, dr), 0) + 1
+        # Re-sort is expensive; just bump counter — sparse_land order is approximate
 
     return pois
 
@@ -3967,7 +4094,8 @@ def build_scene(cfg: AtlasConfig) -> AtlasScene:
         river_barrier: set[int] = set()
 
         # Generate regions procedurally (scattered seeds on land)
-        region_templates = generate_region_templates(grid, cfg, rng)
+        # Pass lakes so cities are never placed inside lake polygons
+        region_templates = generate_region_templates(grid, cfg, rng, lakes=lakes)
 
         # Assign regions using Voronoi-like growth
         regions = assign_regions(grid, cfg, region_templates, river_barrier)
@@ -4185,58 +4313,60 @@ def render_land(
                     clip_path="url(#landOnlyClip)",
                 )
 
-    # ── Lakes: render ON TOP of land with clear water styling ──
+    # ── Lakes: render ON TOP of land with strong, deliberate water styling ──
+    s_lake = cfg.width / 2800.0
     if lakes:
         svg.group_open(clip_path="url(#landOnlyClip)")
         for lake in lakes:
             if lake.polygon and len(lake.polygon) >= 3:
                 lp = polygon_path(lake.polygon)
-                # Outer glow — soft halo around the lake
+                # Wide outer glow — soft halo so lake feels like a real body of water
                 svg.element(
                     "path", d=lp,
                     fill="none",
                     stroke=palette.coast_glow,
-                    stroke_width=8.0,
+                    stroke_width=f"{14.0 * s_lake:.1f}",
                     stroke_linejoin="round",
-                    opacity="0.20",
+                    opacity="0.28",
                     filter="url(#coastBlur)",
                 )
-                # Water fill — matches the sea tone
+                # Solid water fill — fully opaque, matches sea colour
                 svg.element(
                     "path", d=lp,
                     fill=palette.lake,
                     stroke="none",
-                    opacity="0.85",
+                    opacity="0.95",
                 )
-                # Inner water highlight — lighter center
+                # Inner water highlight — brighter center for depth illusion
                 svg.element(
                     "path", d=lp,
                     fill=palette.sea_light,
                     stroke="none",
-                    opacity="0.15",
+                    opacity="0.22",
                 )
-                # Shore outline — clear dark border defining water edge
+                # Strong dark shoreline — the main defining edge
                 svg.element(
                     "path", d=lp,
                     fill="none",
                     stroke=palette.coast_inner,
-                    stroke_width=2.2,
+                    stroke_width=f"{3.5 * s_lake:.1f}",
                     stroke_linejoin="round",
-                    opacity="0.55",
+                    opacity="0.72",
                 )
-                # Second softer outline for depth
+                # Second softer outer shore stroke for depth
                 svg.element(
                     "path", d=lp,
                     fill="none",
                     stroke=palette.coast_outer,
-                    stroke_width=4.0,
+                    stroke_width=f"{6.0 * s_lake:.1f}",
                     stroke_linejoin="round",
-                    opacity="0.18",
+                    opacity="0.25",
                 )
         svg.group_close()
 
 
 def region_rows_to_path(grid: TerrainGrid, cells: Sequence[int]) -> str:
+    """Fallback rectangle-based fill (kept for compatibility)."""
     owned = set(cells)
     commands: list[str] = []
     step = grid.step
@@ -4256,6 +4386,96 @@ def region_rows_to_path(grid: TerrainGrid, cells: Sequence[int]) -> str:
             w = (col - start_col) * step
             commands.append(f"M{x:.1f},{y:.1f} h{w:.1f} v{step:.1f} h{-w:.1f} Z")
     return " ".join(commands)
+
+
+def _region_boundary_polygon(grid: TerrainGrid, cells: Sequence[int]) -> list[Point]:
+    """Extract and smooth the outer boundary polygon of a set of grid cells.
+
+    Uses marching-squares-style edge tracing: walk the outside perimeter of the
+    owned cell set, collect edge midpoints, then smooth into a flowing polygon.
+    """
+    owned = set(cells)
+    step = grid.step
+
+    # Collect all boundary edge segments (pairs of corner points) where one side
+    # is owned and the other is not (or is off-grid).
+    edge_segments: list[tuple[Point, Point]] = []
+    for idx in owned:
+        col, row = grid.cr(idx)
+        x0, y0 = col * step, row * step
+        x1, y1 = x0 + step, y0 + step
+        # top
+        if row == 0 or grid.idx(col, row - 1) not in owned:
+            edge_segments.append(((x0, y0), (x1, y0)))
+        # bottom
+        if row + 1 >= grid.rows or grid.idx(col, row + 1) not in owned:
+            edge_segments.append(((x1, y1), (x0, y1)))
+        # left
+        if col == 0 or grid.idx(col - 1, row) not in owned:
+            edge_segments.append(((x0, y1), (x0, y0)))
+        # right
+        if col + 1 >= grid.cols or grid.idx(col + 1, row) not in owned:
+            edge_segments.append(((x1, y0), (x1, y1)))
+
+    if not edge_segments:
+        return []
+
+    # Build adjacency: endpoint → list of segments starting/ending there
+    from collections import defaultdict
+    adj: dict[tuple[float, float], list[tuple[float, float]]] = defaultdict(list)
+    for (ax, ay), (bx, by) in edge_segments:
+        ka = (round(ax, 1), round(ay, 1))
+        kb = (round(bx, 1), round(by, 1))
+        adj[ka].append(kb)
+
+    # Walk the longest connected ring
+    best_ring: list[Point] = []
+    visited_starts: set[tuple[float, float]] = set()
+    for start_key in adj:
+        if start_key in visited_starts:
+            continue
+        ring: list[tuple[float, float]] = [start_key]
+        used_edges: set[tuple[tuple[float, float], tuple[float, float]]] = set()
+        current = start_key
+        while True:
+            nbs = adj.get(current, [])
+            found = False
+            for nb in nbs:
+                edge_key = (current, nb)
+                if edge_key not in used_edges:
+                    used_edges.add(edge_key)
+                    ring.append(nb)
+                    visited_starts.add(nb)
+                    current = nb
+                    found = True
+                    break
+            if not found or current == start_key:
+                break
+        if len(ring) > len(best_ring):
+            best_ring = ring
+
+    if len(best_ring) < 4:
+        return []
+
+    # Subsample if very long (performance)
+    poly = [(float(p[0]), float(p[1])) for p in best_ring]
+    if len(poly) > 400:
+        step_s = max(1, len(poly) // 300)
+        poly = poly[::step_s]
+        poly.append(poly[0])  # close
+
+    # Heavy smoothing to turn grid staircase into organic curves
+    poly = mild_smooth_polyline(poly, passes=25, blend=0.50)
+    if len(poly) >= 4:
+        # Subsample for Catmull-Rom
+        if len(poly) > 100:
+            step_s = max(1, len(poly) // 80)
+            poly = poly[::step_s]
+            poly.append(poly[0])
+        poly = catmull_rom_chain(poly, subdivisions=4, alpha=0.5)
+    poly = mild_smooth_polyline(poly, passes=4, blend=0.30)
+
+    return poly
 
 
 def _trace_border_chains(grid: TerrainGrid) -> list[list[Point]]:
@@ -4339,8 +4559,8 @@ def _trace_border_chains(grid: TerrainGrid) -> list[list[Point]]:
         if len(chain) < 3:
             smoothed_chains.append(chain)
             continue
-        # Heavy Laplacian smoothing to remove grid staircase
-        smoothed = mild_smooth_polyline(chain, passes=20, blend=0.50)
+        # Very heavy Laplacian smoothing to fully remove grid staircase
+        smoothed = mild_smooth_polyline(chain, passes=30, blend=0.55)
         # Subsample for Catmull-Rom input (too many points = slow)
         if len(smoothed) > 80:
             step_s = max(1, len(smoothed) // 60)
@@ -4348,19 +4568,42 @@ def _trace_border_chains(grid: TerrainGrid) -> list[list[Point]]:
         # Catmull-Rom interpolation for silky flowing curves
         if len(smoothed) >= 4:
             smoothed = catmull_rom_chain(smoothed, subdivisions=6, alpha=0.5)
-        # Final light smoothing pass
-        smoothed = mild_smooth_polyline(smoothed, passes=4, blend=0.30)
+        # Final smoothing pass for extra polish
+        smoothed = mild_smooth_polyline(smoothed, passes=6, blend=0.35)
         smoothed_chains.append(smoothed)
     return smoothed_chains
 
 
-def render_regions(svg: SvgCanvas, grid: TerrainGrid, regions: Sequence[RegionModel], palette: Palette) -> None:
+def render_regions(svg: SvgCanvas, grid: TerrainGrid, regions: Sequence[RegionModel], palette: Palette, cfg: AtlasConfig) -> None:
+    s = cfg.width / 2800.0
     svg.group_open(clip_path="url(#mainlandClip)")
-    # Region fills — visible tinting so kingdoms are distinct
+
+    # Region fills — smooth boundary polygons instead of grid rectangles.
+    # Each kingdom is traced as a single organic polygon that follows the
+    # border curves, eliminating the blocky square-grid appearance.
     for region in regions:
         if not region.cells:
             continue
-        svg.element("path", d=region_rows_to_path(grid, region.cells), fill=region.template.fill, opacity=0.48, stroke="none")
+        boundary = _region_boundary_polygon(grid, region.cells)
+        if len(boundary) >= 3:
+            svg.element(
+                "path",
+                d=polygon_path(boundary),
+                fill=region.template.fill,
+                stroke="none",
+                opacity="0.48",
+            )
+        else:
+            # Fallback for very small / fragmented regions
+            svg.element(
+                "path",
+                d=region_rows_to_path(grid, region.cells),
+                fill=region.template.fill,
+                stroke=region.template.fill,
+                stroke_width="1.0",
+                stroke_linejoin="round",
+                opacity="0.48",
+            )
 
     # Trace and smooth border chains for natural flowing boundaries
     border_chains = _trace_border_chains(grid)
@@ -4373,20 +4616,20 @@ def render_regions(svg: SvgCanvas, grid: TerrainGrid, regions: Sequence[RegionMo
             "path", d=bd,
             fill="none",
             stroke=palette.border,
-            stroke_width=8.0,
+            stroke_width=f"{10.0 * s:.1f}",
             stroke_linecap="round",
             stroke_linejoin="round",
-            opacity=0.15,
+            opacity="0.14",
         )
-        # Solid kingdom border line
+        # Solid kingdom border line — scaled with canvas
         svg.element(
             "path", d=bd,
             fill="none",
             stroke=palette.border,
-            stroke_width=2.2,
+            stroke_width=f"{3.0 * s:.1f}",
             stroke_linecap="round",
             stroke_linejoin="round",
-            opacity=0.55,
+            opacity="0.60",
         )
     svg.group_close()
 
@@ -4554,7 +4797,9 @@ def render_contour_lines(svg: SvgCanvas, grid: TerrainGrid, palette: Palette, cf
         svg.group_close()
         return
 
-    num_contours = 18
+    # Scale line widths with canvas so contours stay visually consistent
+    s = cfg.width / 2800.0
+    num_contours = 24  # more contour levels for richer topography
     step = grid.step
 
     for ci in range(1, num_contours + 1):
@@ -4624,18 +4869,19 @@ def render_contour_lines(svg: SvgCanvas, grid: TerrainGrid, palette: Palette, cf
                             )
 
         is_index = (ci % 5 == 0)
-        opacity_fade = 0.40 + 0.35 * (ci / (num_contours + 1))
+        # Gradual opacity: lower contours subtler, higher contours bolder
+        opacity_fade = 0.45 + 0.40 * (ci / (num_contours + 1))
 
-        # Render smooth chains
+        # Render smooth chains — scaled line widths
         if path_parts:
-            sw = 2.0 if is_index else 0.9
-            op = opacity_fade * (1.2 if is_index else 0.90)
+            sw = (2.8 if is_index else 1.2) * s
+            op = opacity_fade * (1.15 if is_index else 0.85)
             svg.element(
                 "path",
                 d=" ".join(path_parts),
                 fill="none",
                 stroke=palette.contour,
-                stroke_width=f"{sw:.1f}",
+                stroke_width=f"{sw:.2f}",
                 opacity=f"{min(op, 1.0):.2f}",
                 stroke_linecap="round",
                 stroke_linejoin="round",
@@ -4643,14 +4889,14 @@ def render_contour_lines(svg: SvgCanvas, grid: TerrainGrid, palette: Palette, cf
 
         # Render raw gap-fill segments (slightly thinner)
         if raw_segments:
-            sw_raw = 1.5 if is_index else 0.6
-            op_raw = opacity_fade * (1.0 if is_index else 0.75)
+            sw_raw = (2.0 if is_index else 0.8) * s
+            op_raw = opacity_fade * (0.95 if is_index else 0.70)
             svg.element(
                 "path",
                 d=" ".join(raw_segments),
                 fill="none",
                 stroke=palette.contour,
-                stroke_width=f"{sw_raw:.1f}",
+                stroke_width=f"{sw_raw:.2f}",
                 opacity=f"{min(op_raw, 1.0):.2f}",
                 stroke_linecap="round",
             )
@@ -4802,6 +5048,10 @@ def render_mountains(svg: SvgCanvas, mountain_ranges: Sequence[MountainRange], p
 
 
 def render_labels(svg: SvgCanvas, cfg: AtlasConfig, regions: Sequence[RegionModel], lakes: Sequence[LakeBody], mountain_ranges: Sequence[MountainRange], palette: Palette, sea_names: Sequence[str] | None = None, islands: Sequence[Sequence[Point]] | None = None) -> list[Rect]:
+    # Scale factor — all pixel measurements proportional to canvas width so
+    # fonts and offsets stay visually consistent regardless of canvas size.
+    s = cfg.width / 2800.0
+
     reserved: list[Rect] = []
 
     # Pre-seed reserved with fixed UI elements so all labels avoid them:
@@ -4809,31 +5059,39 @@ def render_labels(svg: SvgCanvas, cfg: AtlasConfig, regions: Sequence[RegionMode
     title_x = cfg.width * 0.828
     title_y = cfg.height * 0.932
     title_size = int(cfg.width * 0.038)
-    reserved.append(text_box("PLACEHOLDER_TITLE", title_x, title_y, title_size, letter_spacing=10))
+    reserved.append(text_box("PLACEHOLDER_TITLE", title_x, title_y, title_size, letter_spacing=int(10 * s)))
     # Scale bar area (bottom-left)
-    reserved.append((50.0, cfg.height - 70.0, 170.0, cfg.height - 25.0))
-    # Compass rose area — generous box around each candidate corner
-    for cx_c, cy_c in [(120, cfg.height - 120), (cfg.width - 120, cfg.height - 120),
-                        (120, 120), (cfg.width - 120, 120)]:
-        reserved.append((cx_c - 60, cy_c - 70, cx_c + 60, cy_c + 60))
+    sb_pad = 50 * s
+    reserved.append((sb_pad, cfg.height - 70.0 * s, sb_pad + 120 * s, cfg.height - 25.0 * s))
+    # Compass rose corners
+    cr = 120 * s
+    cr_half = 60 * s
+    for cx_c, cy_c in [(cr, cfg.height - cr), (cfg.width - cr, cfg.height - cr),
+                        (cr, cr), (cfg.width - cr, cr)]:
+        reserved.append((cx_c - cr_half, cy_c - cr_half * 1.2, cx_c + cr_half, cy_c + cr_half))
 
     # Seed island bounding boxes into reserved so labels avoid them
     if islands:
         for isle in islands:
-            reserved.append(island_bbox(isle, padding=28.0))
+            reserved.append(island_bbox(isle, padding=28.0 * s))
 
     # ── Region names: medium serif with letter-spacing, collision-aware ──
+    rgn_fs = int(32 * s)
+    rgn_ls = int(5 * s)
+    rgn_pad = 30.0 * s
+    rgn_dy_steps = [int(v * s) for v in [0, -40, 40, -80, 80, -120, 120, -160, 160, -200, 200, -260, 260]]
+    rgn_dx_steps = [int(v * s) for v in [0, -70, 70, -140, 140, -210, 210, -280, 280, -350, 350, -420, 420]]
     for region in regions:
         x, y = region.label_xy
         name = region.template.name
-        rbox = text_box(name, x, y, 32, letter_spacing=5)
+        rbox = text_box(name, x, y, rgn_fs, letter_spacing=rgn_ls)
         # Always search for the best non-overlapping position
-        if overlaps(rbox, reserved, padding=30.0):
+        if overlaps(rbox, reserved, padding=rgn_pad):
             found = False
-            for dy_off in [0, -40, 40, -80, 80, -120, 120, -160, 160]:
-                for dx_off in [0, -70, 70, -140, 140, -210, 210, -280, 280]:
-                    rbox2 = text_box(name, x + dx_off, y + dy_off, 32, letter_spacing=5)
-                    if not overlaps(rbox2, reserved, padding=30.0):
+            for dy_off in rgn_dy_steps:
+                for dx_off in rgn_dx_steps:
+                    rbox2 = text_box(name, x + dx_off, y + dy_off, rgn_fs, letter_spacing=rgn_ls)
+                    if not overlaps(rbox2, reserved, padding=rgn_pad):
                         x = x + dx_off
                         y = y + dy_off
                         rbox = rbox2
@@ -4850,12 +5108,12 @@ def render_labels(svg: SvgCanvas, cfg: AtlasConfig, regions: Sequence[RegionMode
             text_anchor="middle",
             fill="none",
             stroke="#f0ecd8",
-            stroke_width=4.5,
+            stroke_width=round(4.5 * s, 1),
             paint_order="stroke",
             font_family="Cinzel, Georgia, serif",
-            font_size=32,
+            font_size=rgn_fs,
             font_weight=700,
-            letter_spacing=5,
+            letter_spacing=rgn_ls,
             opacity=0.75,
         )
         # Main text
@@ -4866,44 +5124,50 @@ def render_labels(svg: SvgCanvas, cfg: AtlasConfig, regions: Sequence[RegionMode
             text_anchor="middle",
             fill=palette.text,
             font_family="Cinzel, Georgia, serif",
-            font_size=32,
+            font_size=rgn_fs,
             font_weight=700,
-            letter_spacing=5,
+            letter_spacing=rgn_ls,
             opacity=0.92,
         )
-        # Subtitle (e.g., "(Dotharlum)") rendered below in italic
+        # Subtitle rendered below in italic
         if region.template.subtitle:
-            sub_box = text_box(region.template.subtitle, x, y + 22, 14)
-            if overlaps(sub_box, reserved, padding=8.0):
+            sub_fs = int(14 * s)
+            sub_off = 22 * s
+            sub_box = text_box(region.template.subtitle, x, y + sub_off, sub_fs)
+            if overlaps(sub_box, reserved, padding=8.0 * s):
                 continue  # skip subtitle if it would overlap
             reserved.append(sub_box)
             svg.text(
                 region.template.subtitle,
                 x=f"{x:.1f}",
-                y=f"{y + 22:.1f}",
+                y=f"{y + sub_off:.1f}",
                 text_anchor="middle",
                 fill=palette.text_soft,
                 stroke=palette.land,
-                stroke_width=1.5,
+                stroke_width=round(1.5 * s, 1),
                 paint_order="stroke",
                 font_family="Spectral, Georgia, serif",
-                font_size=14,
+                font_size=sub_fs,
                 font_style="italic",
-                letter_spacing=2,
+                letter_spacing=int(2 * s),
                 opacity=0.55,
             )
 
     # ── Mountain range names: italic, slightly rotated, with legible halo ──
+    mtn_fs = int(20 * s)
+    mtn_ls = round(3.5 * s, 1)
+    mtn_pad = 24.0 * s
+    mtn_dy_steps = [int(v * s) for v in [-30, 30, -55, 55, -80, 80, -110, 110, -140, 140, -180, 180, -220, 220]]
+    mtn_dx_steps = [int(v * s) for v in [0, -60, 60, -120, 120, -180, 180, -240, 240]]
     for ridge in mountain_ranges:
         x, y = ridge.label_xy
-        mbox = text_box(ridge.name, x, y, 20, letter_spacing=3.5)
-        # Aggressively nudge to avoid overlapping region names and other labels
-        if overlaps(mbox, reserved, padding=24.0):
+        mbox = text_box(ridge.name, x, y, mtn_fs, letter_spacing=mtn_ls)
+        if overlaps(mbox, reserved, padding=mtn_pad):
             found = False
-            for dy_off in [-30, 30, -55, 55, -80, 80, -110, 110, -140, 140]:
-                for dx_off in [0, -60, 60, -120, 120, -180, 180]:
-                    mbox2 = text_box(ridge.name, x + dx_off, y + dy_off, 20, letter_spacing=3.5)
-                    if not overlaps(mbox2, reserved, padding=24.0):
+            for dy_off in mtn_dy_steps:
+                for dx_off in mtn_dx_steps:
+                    mbox2 = text_box(ridge.name, x + dx_off, y + dy_off, mtn_fs, letter_spacing=mtn_ls)
+                    if not overlaps(mbox2, reserved, padding=mtn_pad):
                         x = x + dx_off
                         y = y + dy_off
                         mbox = mbox2
@@ -4912,10 +5176,8 @@ def render_labels(svg: SvgCanvas, cfg: AtlasConfig, regions: Sequence[RegionMode
                 if found:
                     break
             if not found:
-                # Last resort: skip this label entirely rather than overlap
-                continue
+                continue  # skip rather than overlap
         reserved.append(mbox)
-        # Halo
         svg.text(
             ridge.name,
             x=f"{x:.1f}",
@@ -4923,16 +5185,15 @@ def render_labels(svg: SvgCanvas, cfg: AtlasConfig, regions: Sequence[RegionMode
             text_anchor="middle",
             fill="none",
             stroke="#ece6d0",
-            stroke_width=4.0,
+            stroke_width=round(4.0 * s, 1),
             paint_order="stroke",
             font_family="Spectral, Georgia, serif",
-            font_size=20,
+            font_size=mtn_fs,
             font_style="italic",
-            letter_spacing=3.5,
+            letter_spacing=mtn_ls,
             opacity=0.75,
             transform=f"rotate({ridge.label_rotation:.1f} {x:.1f} {y:.1f})",
         )
-        # Text
         svg.text(
             ridge.name,
             x=f"{x:.1f}",
@@ -4940,23 +5201,27 @@ def render_labels(svg: SvgCanvas, cfg: AtlasConfig, regions: Sequence[RegionMode
             text_anchor="middle",
             fill=palette.mountain,
             font_family="Spectral, Georgia, serif",
-            font_size=20,
+            font_size=mtn_fs,
             font_style="italic",
-            letter_spacing=3.5,
+            letter_spacing=mtn_ls,
             opacity=0.72,
             transform=f"rotate({ridge.label_rotation:.1f} {x:.1f} {y:.1f})",
         )
 
     # ── Lake names: italic with halo for legibility over water ──
+    lk_fs = int(15 * s)
+    lk_pad = 14.0 * s
+    lk_dy_steps = [int(v * s) for v in [-18, 18, -35, 35, -55, 55, -75, 75, -100, 100]]
+    lk_dx_steps = [int(v * s) for v in [0, -35, 35, -70, 70, -110, 110]]
     for lake in lakes:
         x, y = lake.label_xy
-        lbox = text_box(lake.name, x, y, 15)
-        if overlaps(lbox, reserved, padding=14.0):
+        lbox = text_box(lake.name, x, y, lk_fs)
+        if overlaps(lbox, reserved, padding=lk_pad):
             found = False
-            for dy_off in [-18, 18, -35, 35, -55, 55, -75, 75]:
-                for dx_off in [0, -35, 35, -70, 70]:
-                    lbox2 = text_box(lake.name, x + dx_off, y + dy_off, 15)
-                    if not overlaps(lbox2, reserved, padding=14.0):
+            for dy_off in lk_dy_steps:
+                for dx_off in lk_dx_steps:
+                    lbox2 = text_box(lake.name, x + dx_off, y + dy_off, lk_fs)
+                    if not overlaps(lbox2, reserved, padding=lk_pad):
                         x = x + dx_off
                         y = y + dy_off
                         lbox = lbox2
@@ -4965,7 +5230,6 @@ def render_labels(svg: SvgCanvas, cfg: AtlasConfig, regions: Sequence[RegionMode
                 if found:
                     break
         reserved.append(lbox)
-        # Halo
         svg.text(
             lake.name,
             x=f"{x:.1f}",
@@ -4973,15 +5237,14 @@ def render_labels(svg: SvgCanvas, cfg: AtlasConfig, regions: Sequence[RegionMode
             text_anchor="middle",
             fill="none",
             stroke="#a0c4b8",
-            stroke_width=3.5,
+            stroke_width=round(3.5 * s, 1),
             paint_order="stroke",
             font_family="Spectral, Georgia, serif",
-            font_size=15,
+            font_size=lk_fs,
             font_style="italic",
-            letter_spacing=1.5,
+            letter_spacing=round(1.5 * s, 1),
             opacity=0.70,
         )
-        # Text
         svg.text(
             lake.name,
             x=f"{x:.1f}",
@@ -4989,23 +5252,27 @@ def render_labels(svg: SvgCanvas, cfg: AtlasConfig, regions: Sequence[RegionMode
             text_anchor="middle",
             fill="#3a5a4a",
             font_family="Spectral, Georgia, serif",
-            font_size=15,
+            font_size=lk_fs,
             font_style="italic",
-            letter_spacing=1.5,
+            letter_spacing=round(1.5 * s, 1),
             opacity=0.78,
         )
 
     # ── Sea labels: muted green italic, collision-aware ──
+    sea_pad = 12.0 * s
+    sea_dy_steps = [int(v * s) for v in [0, -40, 40, -80, 80, -120, 120]]
+    sea_dx_steps = [int(v * s) for v in [0, -60, 60, -120, 120, -180, 180]]
     for i, sea in enumerate(SEA_LABELS):
         x, y = px(sea.xy, cfg)
         name = sea_names[i] if sea_names and i < len(sea_names) else sea.name
-        sbox = text_box(name, x, y, sea.size)
-        if overlaps(sbox, reserved, padding=12.0):
+        sea_fs = int(sea.size * s)
+        sbox = text_box(name, x, y, sea_fs)
+        if overlaps(sbox, reserved, padding=sea_pad):
             found = False
-            for dy_off in [0, -40, 40, -80, 80]:
-                for dx_off in [0, -60, 60, -120, 120]:
-                    sbox2 = text_box(name, x + dx_off, y + dy_off, sea.size)
-                    if not overlaps(sbox2, reserved, padding=12.0):
+            for dy_off in sea_dy_steps:
+                for dx_off in sea_dx_steps:
+                    sbox2 = text_box(name, x + dx_off, y + dy_off, sea_fs)
+                    if not overlaps(sbox2, reserved, padding=sea_pad):
                         x = x + dx_off
                         y = y + dy_off
                         sbox = sbox2
@@ -5023,12 +5290,12 @@ def render_labels(svg: SvgCanvas, cfg: AtlasConfig, regions: Sequence[RegionMode
             text_anchor="middle",
             fill=palette.text_sea,
             stroke=palette.sea,
-            stroke_width=2.0,
+            stroke_width=round(2.0 * s, 1),
             paint_order="stroke",
             font_family="Spectral, Georgia, serif",
-            font_size=sea.size,
+            font_size=sea_fs,
             font_style="italic",
-            letter_spacing=4.0,
+            letter_spacing=round(4.0 * s, 1),
             opacity=min(sea.opacity + 0.12, 0.65),
             transform=f"rotate({sea.rotation:.1f} {x:.1f} {y:.1f})",
         )
@@ -5039,6 +5306,7 @@ def render_river_labels(svg: SvgCanvas, rivers: Sequence[RiverPath], palette: Pa
     """Render italic river name labels along the river paths, collision-aware."""
     if not cfg.show_river_labels:
         return
+    s = cfg.width / 2800.0
     for spec in RIVER_LABELS:
         if spec.river_index >= len(rivers):
             continue
@@ -5066,28 +5334,48 @@ def render_river_labels(svg: SvgCanvas, rivers: Sequence[RiverPath], palette: Pa
                     angle -= 180
                 elif angle < -90:
                     angle += 180
-                rbox = text_box(spec.name, x, y - 6, spec.size)
-                if overlaps(rbox, reserved, padding=14.0):
+                ry_off = 6 * s
+                rv_fs = int(spec.size * s)
+                rbox = text_box(spec.name, x, y - ry_off, rv_fs)
+                if overlaps(rbox, reserved, padding=14.0 * s):
                     continue  # skip this river label rather than overlap
                 reserved.append(rbox)
                 svg.text(
                     spec.name,
                     x=f"{x:.1f}",
-                    y=f"{y - 6:.1f}",
+                    y=f"{y - ry_off:.1f}",
                     text_anchor="middle",
                     fill=palette.river_label,
                     font_family="Spectral, Georgia, serif",
-                    font_size=spec.size,
+                    font_size=rv_fs,
                     font_style="italic",
-                    letter_spacing=1.5,
+                    letter_spacing=round(1.5 * s, 1),
                     opacity=spec.opacity,
-                    transform=f"rotate({angle:.1f} {x:.1f} {y - 6:.1f})",
+                    transform=f"rotate({angle:.1f} {x:.1f} {y - ry_off:.1f})",
                 )
                 break
 
 
 def render_cities(svg: SvgCanvas, cfg: AtlasConfig, regions: Sequence[RegionModel], palette: Palette, reserved: list[Rect]) -> None:
-    fallback_offsets = [
+    # Scale all pixel measurements proportionally to canvas width
+    s = cfg.width / 2800.0
+
+    # Capital marker geometry (scaled)
+    cap_outer_r = round(13.5 * s, 1)
+    cap_ring_r  = round(9.0 * s, 1)
+    cap_dot_r   = round(5.5 * s, 1)
+    cap_high_r  = round(1.8 * s, 1)
+    cap_cross   = round(4.0 * s, 1)
+    city_outer_r = round(7.3 * s, 1)   # halo
+    city_dot_r   = round(4.5 * s, 1)   # fill dot
+
+    # Label font size and padding
+    city_fs = int(15 * s)
+    city_ls = round(0.8 * s, 2)
+    city_lbl_pad = 14.0 * s
+
+    # Fallback label offsets — 16 directions, scaled
+    raw_offsets: list[tuple[float, float, str]] = [
         (0.0, -24.0, "middle"),
         (24.0, -6.0, "start"),
         (-24.0, -6.0, "end"),
@@ -5102,52 +5390,78 @@ def render_cities(svg: SvgCanvas, cfg: AtlasConfig, regions: Sequence[RegionMode
         (-48.0, 0.0, "end"),
         (0.0, -62.0, "middle"),
         (0.0, 62.0, "middle"),
+        (56.0, -32.0, "start"),
+        (-56.0, -32.0, "end"),
+        (56.0, 38.0, "start"),
+        (-56.0, 38.0, "end"),
+        (0.0, -80.0, "middle"),
+        (0.0, 80.0, "middle"),
+        (70.0, 0.0, "start"),
+        (-70.0, 0.0, "end"),
+        (0.0, -100.0, "middle"),
+        (0.0, 100.0, "middle"),
     ]
+    fallback_offsets = [(dx * s, dy * s, anchor) for dx, dy, anchor in raw_offsets]
+
+    # ── First pass: add all city dot bounding boxes to reserved so
+    #    labels from ANY city never overlap a marker from ANY other city ──
+    for region in regions:
+        for city in region.cities:
+            cx, cy = px(city.target, cfg)
+            dot_r = cap_outer_r if city.capital else city_outer_r
+            reserved.append((cx - dot_r, cy - dot_r, cx + dot_r, cy + dot_r))
+
+    # ── Second pass: draw markers then place labels ──
     for region in regions:
         for city in region.cities:
             x, y = px(city.target, cfg)
             if city.capital:
-                # Capital: prominent marker with increased ring and inner cross/star shape
-                svg.element("circle", cx=f"{x:.1f}", cy=f"{y:.1f}", r=13.5, fill=palette.city_ring, opacity=0.65)
-                svg.element("circle", cx=f"{x:.1f}", cy=f"{y:.1f}", r=9.0, fill="none", stroke=palette.city, stroke_width=1.8, opacity=0.80)
-                svg.element("circle", cx=f"{x:.1f}", cy=f"{y:.1f}", r=5.5, fill=palette.city, opacity=0.95)
-                # Small inner highlight
-                svg.element("circle", cx=f"{x:.1f}", cy=f"{y - 1:.1f}", r=1.8, fill=palette.city_ring, opacity=0.55)
-                # Inner cross/star shape (4 small lines crossing at center)
-                cross_size = 4.0
-                svg.element("line", x1=f"{x - cross_size:.1f}", y1=f"{y:.1f}", x2=f"{x + cross_size:.1f}", y2=f"{y:.1f}", stroke=palette.city_ring, stroke_width=1.0, opacity=0.75)
-                svg.element("line", x1=f"{x:.1f}", y1=f"{y - cross_size:.1f}", x2=f"{x:.1f}", y2=f"{y + cross_size:.1f}", stroke=palette.city_ring, stroke_width=1.0, opacity=0.75)
+                svg.element("circle", cx=f"{x:.1f}", cy=f"{y:.1f}", r=cap_outer_r, fill=palette.city_ring, opacity=0.65)
+                svg.element("circle", cx=f"{x:.1f}", cy=f"{y:.1f}", r=cap_ring_r, fill="none", stroke=palette.city, stroke_width=round(1.8 * s, 1), opacity=0.80)
+                svg.element("circle", cx=f"{x:.1f}", cy=f"{y:.1f}", r=cap_dot_r, fill=palette.city, opacity=0.95)
+                svg.element("circle", cx=f"{x:.1f}", cy=f"{y - cap_high_r:.1f}", r=cap_high_r, fill=palette.city_ring, opacity=0.55)
+                svg.element("line", x1=f"{x - cap_cross:.1f}", y1=f"{y:.1f}", x2=f"{x + cap_cross:.1f}", y2=f"{y:.1f}", stroke=palette.city_ring, stroke_width=round(s, 1), opacity=0.75)
+                svg.element("line", x1=f"{x:.1f}", y1=f"{y - cap_cross:.1f}", x2=f"{x:.1f}", y2=f"{y + cap_cross:.1f}", stroke=palette.city_ring, stroke_width=round(s, 1), opacity=0.75)
             else:
-                radius = 4.5
-                # Regular city: simple dot with halo (slightly larger)
-                svg.element("circle", cx=f"{x:.1f}", cy=f"{y:.1f}", r=radius + 2.8, fill=palette.city_ring, opacity=0.55)
-                svg.element("circle", cx=f"{x:.1f}", cy=f"{y:.1f}", r=radius, fill=palette.city, opacity=0.90)
+                svg.element("circle", cx=f"{x:.1f}", cy=f"{y:.1f}", r=city_outer_r, fill=palette.city_ring, opacity=0.55)
+                svg.element("circle", cx=f"{x:.1f}", cy=f"{y:.1f}", r=city_dot_r, fill=palette.city, opacity=0.90)
+
             if not cfg.show_city_labels:
                 continue
 
+            # Build candidate positions for the label
             candidates: list[tuple[float, float, str]] = []
             if city.label_offset != (0.0, 0.0):
-                dx, dy = city.label_offset
-                anchor = "start" if dx > 10 else "end" if dx < -10 else "middle"
-                candidates.append((dx, dy, anchor))
+                dx_raw, dy_raw = city.label_offset
+                anchor = "start" if dx_raw > 10 else "end" if dx_raw < -10 else "middle"
+                candidates.append((dx_raw * s, dy_raw * s, anchor))
             candidates.extend(fallback_offsets)
 
             chosen: tuple[float, float, str, Rect] | None = None
             for dx, dy, anchor in candidates:
                 lx = x + dx
                 ly = y + dy
-                candidate_box = text_box(city.name, lx, ly, 14, anchor)
-                if overlaps(candidate_box, reserved, padding=14.0):
+                # Clamp to canvas
+                lx = clamp(lx, 10.0, cfg.width - 10.0)
+                ly = clamp(ly, 10.0, cfg.height - 10.0)
+                candidate_box = text_box(city.name, lx, ly, city_fs, anchor)
+                if overlaps(candidate_box, reserved, padding=city_lbl_pad):
                     continue
                 chosen = (lx, ly, anchor, candidate_box)
                 break
+
             if chosen is None:
-                lx, ly, anchor = x, y - 20.0, "middle"
-                candidate_box = text_box(city.name, lx, ly, 14, anchor)
+                # Last resort: place above the dot, accept the overlap rather than omit
+                lx = x
+                ly = max(10.0, y - cap_outer_r - city_fs * 1.2)
+                anchor = "middle"
+                candidate_box = text_box(city.name, lx, ly, city_fs, anchor)
             else:
                 lx, ly, anchor, candidate_box = chosen
+
             reserved.append(candidate_box)
-            # City label halo
+
+            # Halo for legibility
             svg.text(
                 city.name,
                 x=f"{lx:.1f}",
@@ -5155,16 +5469,16 @@ def render_cities(svg: SvgCanvas, cfg: AtlasConfig, regions: Sequence[RegionMode
                 text_anchor=anchor,
                 fill="none",
                 stroke="#ece6d0",
-                stroke_width=4.0,
+                stroke_width=round(4.0 * s, 1),
                 paint_order="stroke",
                 font_family="Spectral, Georgia, serif",
-                font_size=15,
+                font_size=city_fs,
                 font_style="italic",
                 font_weight=500,
-                letter_spacing=0.8,
+                letter_spacing=city_ls,
                 opacity=0.80,
             )
-            # City label text
+            # Label text
             svg.text(
                 city.name,
                 x=f"{lx:.1f}",
@@ -5172,10 +5486,10 @@ def render_cities(svg: SvgCanvas, cfg: AtlasConfig, regions: Sequence[RegionMode
                 text_anchor=anchor,
                 fill=palette.text,
                 font_family="Spectral, Georgia, serif",
-                font_size=15,
+                font_size=city_fs,
                 font_style="italic",
                 font_weight=500,
-                letter_spacing=0.8,
+                letter_spacing=city_ls,
                 opacity=0.85,
             )
 
@@ -5346,36 +5660,45 @@ def render_roads(svg: SvgCanvas, cfg: AtlasConfig, regions: Sequence[RegionModel
 
         road_d = polyline_path(smooth_pts)
 
-        # Trunk roads are slightly thicker/bolder than branch roads
-        if is_trunk:
-            sw_glow, sw_main = 4.5, 2.0
-            op_main = 0.65
-            dash = "2,7"
-        else:
-            sw_glow, sw_main = 3.0, 1.4
-            op_main = 0.50
-            dash = "1,8"
+        # Scale road sizes with canvas
+        s = cfg.width / 2800.0
 
-        # Road shadow/glow
+        # Trunk roads are bolder than branch roads
+        if is_trunk:
+            sw_glow = 8.0 * s
+            sw_main = 3.2 * s
+            op_glow = 0.18
+            op_main = 0.78
+            dash_main = f"{int(6*s)},{int(10*s)}"
+            dash_glow = "none"
+        else:
+            sw_glow = 5.0 * s
+            sw_main = 2.0 * s
+            op_glow = 0.12
+            op_main = 0.62
+            dash_main = f"{int(4*s)},{int(10*s)}"
+            dash_glow = "none"
+
+        # Road outer glow — soft continuous halo so the road stands out from terrain
         svg.element(
             "path", d=road_d,
             fill="none",
-            stroke="#b0a878",
+            stroke="#c4b888",
             stroke_width=sw_glow,
             stroke_linecap="round",
             stroke_linejoin="round",
-            stroke_dasharray=dash,
-            opacity=0.12,
+            stroke_dasharray=dash_glow,
+            opacity=op_glow,
         )
-        # Main road — dotted brown line
+        # Main road — dashed brown line
         svg.element(
             "path", d=road_d,
             fill="none",
-            stroke="#6a5a3a",
+            stroke="#5a4a2a",
             stroke_width=sw_main,
             stroke_linecap="round",
             stroke_linejoin="round",
-            stroke_dasharray=dash,
+            stroke_dasharray=dash_main,
             opacity=op_main,
         )
     svg.group_close()
@@ -5467,43 +5790,192 @@ def render_forests(svg: SvgCanvas, cfg: AtlasConfig, grid: TerrainGrid, forest_c
     svg.group_close()
 
 
+def _poi_icon_ruins(svg: SvgCanvas, x: float, y: float, sz: float, sw: float) -> None:
+    """Crumbling pillars — two columns with broken tops and rubble dots."""
+    col_w = sz * 0.22
+    col_h = sz * 1.1
+    gap = sz * 0.5
+    # Left pillar
+    svg.element("rect", x=f"{x - gap - col_w:.1f}", y=f"{y - col_h * 0.4:.1f}",
+                width=f"{col_w:.1f}", height=f"{col_h:.1f}",
+                fill="#6a5a3a", stroke="#3e3018", stroke_width=f"{sw * 0.6:.1f}",
+                opacity="0.88")
+    # Right pillar (shorter = broken)
+    svg.element("rect", x=f"{x + gap:.1f}", y=f"{y - col_h * 0.1:.1f}",
+                width=f"{col_w:.1f}", height=f"{col_h * 0.75:.1f}",
+                fill="#6a5a3a", stroke="#3e3018", stroke_width=f"{sw * 0.6:.1f}",
+                opacity="0.88")
+    # Jagged broken top on right pillar
+    jag_y = y - col_h * 0.1
+    jag_d = (f"M{x + gap - sw * 0.2:.1f},{jag_y:.1f} "
+             f"L{x + gap + col_w * 0.3:.1f},{jag_y - sz * 0.25:.1f} "
+             f"L{x + gap + col_w * 0.7:.1f},{jag_y - sz * 0.12:.1f} "
+             f"L{x + gap + col_w + sw * 0.2:.1f},{jag_y:.1f}")
+    svg.element("path", d=jag_d, fill="none", stroke="#3e3018",
+                stroke_width=f"{sw * 0.5:.1f}", stroke_linecap="round", opacity="0.75")
+    # Rubble dots at base
+    for dx, dy in [(-gap * 0.3, col_h * 0.7), (gap * 0.4, col_h * 0.65), (0, col_h * 0.75)]:
+        svg.element("circle", cx=f"{x + dx:.1f}", cy=f"{y + dy:.1f}",
+                    r=f"{sz * 0.1:.1f}", fill="#5a4a2a", stroke="none", opacity="0.60")
+
+
+def _poi_icon_magic(svg: SvgCanvas, x: float, y: float, sz: float, sw: float) -> None:
+    """Radiating starburst — a filled centre with emanating rays."""
+    # Centre dot
+    svg.element("circle", cx=f"{x:.1f}", cy=f"{y:.1f}",
+                r=f"{sz * 0.28:.1f}", fill="#6a5820", stroke="#3a2e10",
+                stroke_width=f"{sw * 0.5:.1f}", opacity="0.90")
+    # Eight rays of alternating length
+    for k in range(8):
+        a = math.pi / 4 * k - math.pi / 2
+        r_inner = sz * 0.35
+        r_outer = sz * (1.15 if k % 2 == 0 else 0.78)
+        x1 = x + r_inner * math.cos(a)
+        y1 = y + r_inner * math.sin(a)
+        x2 = x + r_outer * math.cos(a)
+        y2 = y + r_outer * math.sin(a)
+        svg.element("line", x1=f"{x1:.1f}", y1=f"{y1:.1f}",
+                    x2=f"{x2:.1f}", y2=f"{y2:.1f}",
+                    stroke="#5a4820", stroke_width=f"{sw * (0.7 if k % 2 == 0 else 0.45):.1f}",
+                    stroke_linecap="round", opacity="0.82")
+    # Outer ring (thin)
+    svg.element("circle", cx=f"{x:.1f}", cy=f"{y:.1f}",
+                r=f"{sz * 1.0:.1f}", fill="none", stroke="#5a4820",
+                stroke_width=f"{sw * 0.35:.1f}", opacity="0.45")
+
+
+def _poi_icon_structure(svg: SvgCanvas, x: float, y: float, sz: float, sw: float) -> None:
+    """Tower with crenellations and door."""
+    tw = sz * 0.7
+    th = sz * 1.6
+    base_y = y + sz * 0.5
+    top_y = base_y - th
+    # Main tower body
+    svg.element("rect", x=f"{x - tw * 0.5:.1f}", y=f"{top_y:.1f}",
+                width=f"{tw:.1f}", height=f"{th:.1f}",
+                fill="#7a6a48", stroke="#3a2e18", stroke_width=f"{sw * 0.6:.1f}",
+                opacity="0.88")
+    # Crenellations (3 merlons)
+    cren_h = sz * 0.28
+    cren_w = tw / 5
+    for i in range(3):
+        cx_off = -tw * 0.5 + cren_w * (i * 2)
+        svg.element("rect", x=f"{x + cx_off:.1f}", y=f"{top_y - cren_h:.1f}",
+                    width=f"{cren_w:.1f}", height=f"{cren_h:.1f}",
+                    fill="#7a6a48", stroke="#3a2e18", stroke_width=f"{sw * 0.4:.1f}",
+                    opacity="0.85")
+    # Door (dark arch)
+    door_w = tw * 0.3
+    door_h = th * 0.28
+    door_d = (f"M{x - door_w * 0.5:.1f},{base_y:.1f} "
+              f"L{x - door_w * 0.5:.1f},{base_y - door_h * 0.6:.1f} "
+              f"A{door_w * 0.5:.1f},{door_h * 0.5:.1f} 0 0 1 {x + door_w * 0.5:.1f},{base_y - door_h * 0.6:.1f} "
+              f"L{x + door_w * 0.5:.1f},{base_y:.1f} Z")
+    svg.element("path", d=door_d, fill="#2a1e0a", stroke="none", opacity="0.80")
+
+
+def _poi_icon_nature(svg: SvgCanvas, x: float, y: float, sz: float, sw: float) -> None:
+    """Cave entrance — dark opening in a hillside with rocky outline."""
+    # Hillside mound
+    mound_d = (f"M{x - sz * 1.3:.1f},{y + sz * 0.5:.1f} "
+               f"Q{x - sz * 0.6:.1f},{y - sz * 0.9:.1f} {x:.1f},{y - sz * 0.7:.1f} "
+               f"Q{x + sz * 0.6:.1f},{y - sz * 0.9:.1f} {x + sz * 1.3:.1f},{y + sz * 0.5:.1f} Z")
+    svg.element("path", d=mound_d, fill="#8a8060", stroke="#4a4228",
+                stroke_width=f"{sw * 0.5:.1f}", stroke_linejoin="round", opacity="0.72")
+    # Dark cave opening (arch)
+    cave_d = (f"M{x - sz * 0.5:.1f},{y + sz * 0.5:.1f} "
+              f"Q{x - sz * 0.45:.1f},{y - sz * 0.3:.1f} {x:.1f},{y - sz * 0.35:.1f} "
+              f"Q{x + sz * 0.45:.1f},{y - sz * 0.3:.1f} {x + sz * 0.5:.1f},{y + sz * 0.5:.1f} Z")
+    svg.element("path", d=cave_d, fill="#1a1208", stroke="none", opacity="0.85")
+
+
+def _poi_icon_default(svg: SvgCanvas, x: float, y: float, sz: float, sw: float) -> None:
+    """Map pin / lozenge marker — a circle atop a downward spike."""
+    r = sz * 0.45
+    spike_y = y + sz * 0.9
+    # Spike
+    spike_d = (f"M{x - r * 0.65:.1f},{y + r * 0.3:.1f} "
+               f"L{x:.1f},{spike_y:.1f} "
+               f"L{x + r * 0.65:.1f},{y + r * 0.3:.1f} Z")
+    svg.element("path", d=spike_d, fill="#6a4a28", stroke="#3a2a12",
+                stroke_width=f"{sw * 0.4:.1f}", opacity="0.85")
+    # Circle head
+    svg.element("circle", cx=f"{x:.1f}", cy=f"{y:.1f}",
+                r=f"{r:.1f}", fill="#8a6a38", stroke="#3a2a12",
+                stroke_width=f"{sw * 0.55:.1f}", opacity="0.88")
+    # Inner dot highlight
+    svg.element("circle", cx=f"{x:.1f}", cy=f"{y:.1f}",
+                r=f"{r * 0.3:.1f}", fill="#c4a868", stroke="none", opacity="0.65")
+
+
 def render_pois(svg: SvgCanvas, cfg: AtlasConfig, pois: list[tuple[Point, str, str]], palette: Palette, reserved: list[Rect]) -> None:
-    """Render points of interest as diamond icons with labels, collision-aware."""
+    """Render points of interest with detailed cartographic icons and labels."""
     if not pois:
         return
 
-    icon_size = 5
-    icon_color = "#8a7050"
+    s = cfg.width / 2800.0
+    icon_sz = round(14 * s, 1)   # base icon "unit" size
+    label_fs = int(14 * s)
+    label_pad = 10.0 * s
+    stroke_w = max(2.2, 3.0 * s)
+
+    _ruin_types = {"Ruins", "Tomb", "Battlefield", "Abandoned Camp", "Shipwreck"}
+    _magic_types = {"Shrine", "Temple", "Wayshrine", "Obelisk", "Standing Stones", "Portal", "Well"}
+    _structure_types = {"Fortress", "Tower", "Ancient Library"}
+    _nature_types = {"Cavern", "Dragon Lair", "Witch Hut", "Hermit Cave", "Mine"}
 
     for poi_pt, poi_name, poi_type in pois:
         x, y = poi_pt
 
-        # Draw small diamond icon
-        diamond_path = f"M{x:.1f},{y - icon_size:.1f} L{x + icon_size:.1f},{y:.1f} L{x:.1f},{y + icon_size:.1f} L{x - icon_size:.1f},{y:.1f} Z"
-        svg.element("path", d=diamond_path, fill=icon_color, stroke="none", opacity=0.65)
+        # Parchment halo behind icon for contrast
+        svg.element("circle", cx=f"{x:.1f}", cy=f"{y:.1f}", r=f"{icon_sz * 2.0:.1f}",
+                     fill=palette.land, stroke="none", opacity="0.30")
 
-        # Try label positions: right, left, above, below
+        # Draw the appropriate icon
+        if poi_type in _ruin_types:
+            _poi_icon_ruins(svg, x, y, icon_sz, stroke_w)
+        elif poi_type in _magic_types:
+            _poi_icon_magic(svg, x, y, icon_sz, stroke_w)
+        elif poi_type in _structure_types:
+            _poi_icon_structure(svg, x, y, icon_sz, stroke_w)
+        elif poi_type in _nature_types:
+            _poi_icon_nature(svg, x, y, icon_sz, stroke_w)
+        else:
+            _poi_icon_default(svg, x, y, icon_sz, stroke_w)
+
+        # Reserve the icon bbox
+        icon_bbox = (x - icon_sz * 1.8, y - icon_sz * 1.8, x + icon_sz * 1.8, y + icon_sz * 1.8)
+        reserved.append(icon_bbox)
+
+        # Try label positions
+        offset = icon_sz * 1.5 + label_pad
         poi_candidates = [
-            (x + icon_size + 8, y + 3, "start"),
-            (x - icon_size - 8, y + 3, "end"),
-            (x, y - icon_size - 6, "middle"),
-            (x, y + icon_size + 12, "middle"),
+            (x + offset, y + label_fs * 0.35, "start"),
+            (x - offset, y + label_fs * 0.35, "end"),
+            (x, y - offset, "middle"),
+            (x, y + offset + label_fs * 0.5, "middle"),
+            (x + offset * 0.85, y - offset * 0.5, "start"),
+            (x - offset * 0.85, y - offset * 0.5, "end"),
         ]
         placed = False
         for lx, ly, anchor in poi_candidates:
-            rbox = text_box(poi_name, lx, ly, 9, anchor)
-            if not overlaps(rbox, reserved, padding=4.0):
+            rbox = text_box(poi_name, lx, ly, label_fs, anchor)
+            if not overlaps(rbox, reserved, padding=5.0 * s):
                 reserved.append(rbox)
                 svg.text(
                     poi_name,
                     x=f"{lx:.1f}",
                     y=f"{ly:.1f}",
                     text_anchor=anchor,
-                    fill=palette.text_soft,
+                    fill=palette.text,
+                    stroke=palette.land,
+                    stroke_width=f"{max(2.5, 3.5 * s):.1f}",
+                    paint_order="stroke",
                     font_family="Spectral, Georgia, serif",
-                    font_size=9,
+                    font_size=label_fs,
                     font_style="italic",
-                    opacity=0.70,
+                    font_weight="600",
+                    opacity="0.85",
                 )
                 placed = True
                 break
@@ -5689,16 +6161,16 @@ def extract_metadata(cfg: AtlasConfig, scene, map_name: str, sea_names: list[str
         for c in r.cities:
             cities.append({
                 "name": c.name,
-                "x": round(c.target[0], 1),
-                "y": round(c.target[1], 1),
+                "x": round(c.target[0], 4),
+                "y": round(c.target[1], 4),
                 "capital": c.capital,
             })
         regions.append({
             "name": r.template.name,
             "subtitle": r.template.subtitle or "",
             "color": r.template.fill,
-            "labelX": round(r.label_xy[0], 1),
-            "labelY": round(r.label_xy[1], 1),
+            "labelX": round(r.label_xy[0], 4),
+            "labelY": round(r.label_xy[1], 4),
             "cities": cities,
         })
 
@@ -5706,16 +6178,25 @@ def extract_metadata(cfg: AtlasConfig, scene, map_name: str, sea_names: list[str
     for m in scene.mountain_ranges:
         mountains.append({
             "name": m.name,
-            "labelX": round(m.label_xy[0], 1),
-            "labelY": round(m.label_xy[1], 1),
+            "labelX": round(m.label_xy[0], 4),
+            "labelY": round(m.label_xy[1], 4),
         })
 
     lakes = []
     for lk in scene.lakes:
         lakes.append({
             "name": lk.name,
-            "labelX": round(lk.label_xy[0], 1),
-            "labelY": round(lk.label_xy[1], 1),
+            "labelX": round(lk.label_xy[0], 4),
+            "labelY": round(lk.label_xy[1], 4),
+        })
+
+    pois = []
+    for poi_pt, poi_name, poi_type in (scene.pois or []):
+        pois.append({
+            "name": poi_name,
+            "type": poi_type,
+            "x": round(poi_pt[0] / cfg.width, 4),
+            "y": round(poi_pt[1] / cfg.height, 4),
         })
 
     return {
@@ -5725,6 +6206,7 @@ def extract_metadata(cfg: AtlasConfig, scene, map_name: str, sea_names: list[str
         "mountains": mountains,
         "lakes": lakes,
         "seaNames": sea_names,
+        "pois": pois,
     }
 
 
@@ -5745,7 +6227,7 @@ def render_svg(cfg: AtlasConfig) -> str:
     render_background(svg, PALETTE, cfg)
     render_land(svg, scene.mainland, scene.islands, PALETTE, cfg,
                 rivers=scene.rivers, lakes=scene.lakes)
-    render_regions(svg, scene.grid, scene.regions, PALETTE)
+    render_regions(svg, scene.grid, scene.regions, PALETTE, cfg)
     render_land_texture(svg, scene.grid, PALETTE, cfg)
     # Forests disabled — focus on topographic lines, towns, roads
     # render_forests(svg, cfg, scene.grid, scene.forest_cells, PALETTE, seed=scene.seed)
@@ -5807,14 +6289,14 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate a rule-based stylized fantasy atlas SVG.")
     parser.add_argument("--output-svg", default=str(default_svg), help="Path to the SVG file to write.")
     parser.add_argument("--output-png", default="", help="Optional PNG preview path. Requires cairosvg.")
-    parser.add_argument("--width", type=int, default=2800)
-    parser.add_argument("--height", type=int, default=1800)
+    parser.add_argument("--width", type=int, default=8400)
+    parser.add_argument("--height", type=int, default=5400)
     parser.add_argument("--seed", type=int, default=23)
-    parser.add_argument("--grid-step", type=int, default=10)
-    parser.add_argument("--coastline-step", type=float, default=28.0)
-    parser.add_argument("--coastline-roughness", type=float, default=24.0)
-    parser.add_argument("--island-roughness", type=float, default=14.0)
-    parser.add_argument("--ridge-jitter", type=float, default=10.0)
+    parser.add_argument("--grid-step", type=int, default=30)
+    parser.add_argument("--coastline-step", type=float, default=84.0)
+    parser.add_argument("--coastline-roughness", type=float, default=72.0)
+    parser.add_argument("--island-roughness", type=float, default=42.0)
+    parser.add_argument("--ridge-jitter", type=float, default=30.0)
     parser.add_argument("--max-lakes", type=int, default=3)
     parser.add_argument("--max-attempts", type=int, default=56)
     parser.add_argument("--contour-opacity", type=float, default=0.40)

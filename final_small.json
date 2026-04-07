@@ -1,0 +1,109 @@
+{
+  "name": "Redthorn",
+  "seed": 1,
+  "isCapital": false,
+  "population": 1800,
+  "canvasWidth": 1400,
+  "canvasHeight": 1050,
+  "buildings": [
+    {
+      "name": "Town Hall",
+      "type": "special",
+      "icon": "hall",
+      "x": 0.4929,
+      "y": 0.4088,
+      "w": 0.0321,
+      "h": 0.0362
+    },
+    {
+      "name": "Chapel",
+      "type": "special",
+      "icon": "chapel",
+      "x": 0.4909,
+      "y": 0.5526,
+      "w": 0.025,
+      "h": 0.0286
+    },
+    {
+      "name": "Fletcher",
+      "type": "shop",
+      "icon": "",
+      "x": 0.4434,
+      "y": 0.5021,
+      "w": 0.0223,
+      "h": 0.0241
+    },
+    {
+      "name": "Furrier",
+      "type": "shop",
+      "icon": "",
+      "x": 0.4248,
+      "y": 0.4307,
+      "w": 0.0208,
+      "h": 0.0312
+    },
+    {
+      "name": "Scribe",
+      "type": "shop",
+      "icon": "",
+      "x": 0.5366,
+      "y": 0.4478,
+      "w": 0.0243,
+      "h": 0.038
+    },
+    {
+      "name": "Blacksmith",
+      "type": "shop",
+      "icon": "",
+      "x": 0.4847,
+      "y": 0.3747,
+      "w": 0.0296,
+      "h": 0.0242
+    },
+    {
+      "name": "Cartographer",
+      "type": "shop",
+      "icon": "",
+      "x": 0.4833,
+      "y": 0.5884,
+      "w": 0.0238,
+      "h": 0.0294
+    },
+    {
+      "name": "Notice Board",
+      "type": "poi",
+      "icon": "",
+      "x": 0.3212,
+      "y": 0.5294,
+      "w": 0.0114,
+      "h": 0.0152
+    },
+    {
+      "name": "Guard Post",
+      "type": "poi",
+      "icon": "",
+      "x": 0.4512,
+      "y": 0.6768,
+      "w": 0.0114,
+      "h": 0.0152
+    },
+    {
+      "name": "Statue",
+      "type": "poi",
+      "icon": "",
+      "x": 0.4183,
+      "y": 0.3481,
+      "w": 0.0114,
+      "h": 0.0152
+    },
+    {
+      "name": "Town Well",
+      "type": "poi",
+      "icon": "",
+      "x": 0.3902,
+      "y": 0.3761,
+      "w": 0.0114,
+      "h": 0.0152
+    }
+  ]
+}
