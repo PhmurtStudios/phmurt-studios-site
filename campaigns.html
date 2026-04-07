@@ -5297,8 +5297,10 @@ function loadDataModule(name, url) {
     .then(function(r) { return r.text(); })
     .then(function(code) {
       var script = document.createElement("script");
-      // Wrap in IIFE to avoid const/let redeclaration conflicts with main scope
-      script.textContent = "(function(){" + code + "\n})();";
+      // Data modules are pure JS (no JSX), so no Babel wrapping needed
+      // Also: do NOT wrap in IIFE since these are data-only files (e.g., window.ATLAS_IMAGES = {...})
+      // IIFE wrapping was causing issues with large data files
+      script.textContent = code;
       document.head.appendChild(script);
       _tabModuleState[name] = true;
       delete _tabModulePromises[name];

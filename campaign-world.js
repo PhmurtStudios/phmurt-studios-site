@@ -1639,6 +1639,101 @@ window.__cmCompactForCloud = function(data) {
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
+// LIVING WORLD → TIMELINE AUTO-INTEGRATION
+// ═══════════════════════════════════════════════════════════════════════════
+
+/**
+ * Append a Living World event to the campaign timeline.
+ * Groups events into the most recent "Living World" session entry, or creates one.
+ * Only major events should be passed here.
+ */
+function _lwAppendToTimeline(timeline, lwEvent) {
+  const tl = [...(timeline || [])];
+  const today = new Date().toISOString().slice(0, 10);
+  const evObj = {
+    id: "lw-" + (lwEvent.id || "") + "-" + Date.now(),
+    type: "world_change",
+    headline: lwEvent.headline || "World Event",
+    text: lwEvent.detail || lwEvent.headline || "",
+    outcome: lwEvent.category ? (lwEvent.category.charAt(0).toUpperCase() + lwEvent.category.slice(1) + " event") : "World change",
+    dmOnly: false,
+    importance: lwEvent.importance || "major",
+    scope: "world",
+    icon: lwEvent.icon,
+  };
+
+  // Find or create today's auto-generated Living World session
+  const autoSessionIdx = tl.findIndex(s => s._lwAutoSession && s.date === today);
+  if (autoSessionIdx >= 0) {
+    // Append event to existing auto-session
+    const session = { ...tl[autoSessionIdx] };
+    session.events = [...(session.events || []), evObj];
+    session.summary = _lwBuildAutoSummary(session.events);
+    tl[autoSessionIdx] = session;
+  } else {
+    // Create a new auto-session for today
+    const maxN = tl.reduce((m, s) => Math.max(m, s.n || 0), 0);
+    tl.unshift({
+      id: Date.now(),
+      n: maxN + 1,
+      title: "World Events",
+      date: today,
+      summary: evObj.headline,
+      events: [evObj],
+      changes: [],
+      notes: "",
+      dmOnly: false,
+      _lwAutoSession: true, // Marker so we can find it later
+    });
+  }
+  return tl;
+}
+
+/**
+ * Batch-append multiple Living World events to the timeline (used by time-skip).
+ * Creates a single "Time Skip" session entry with all major events.
+ */
+function _lwBatchToTimeline(timeline, lwEvents, skipLabel) {
+  const tl = [...(timeline || [])];
+  const today = new Date().toISOString().slice(0, 10);
+  const majorEvents = lwEvents.filter(e => e.importance === "major");
+  if (majorEvents.length === 0) return tl;
+
+  const evObjs = majorEvents.map(e => ({
+    id: "lw-" + (e.id || "") + "-" + (e.timestamp || Date.now()),
+    type: "world_change",
+    headline: e.headline || "World Event",
+    text: e.detail || e.headline || "",
+    outcome: e.category ? (e.category.charAt(0).toUpperCase() + e.category.slice(1) + " event") : "World change",
+    dmOnly: false,
+    importance: e.importance || "major",
+    scope: "world",
+    icon: e.icon,
+  }));
+
+  const maxN = tl.reduce((m, s) => Math.max(m, s.n || 0), 0);
+  tl.unshift({
+    id: Date.now(),
+    n: maxN + 1,
+    title: skipLabel || "Time Passes",
+    date: today,
+    summary: majorEvents.length + " major events shaped the world: " + majorEvents.slice(0, 3).map(e => e.headline).join(", ") + (majorEvents.length > 3 ? "..." : ""),
+    events: evObjs,
+    changes: majorEvents.map(e => e.headline),
+    notes: "Auto-generated from Living World time skip (" + lwEvents.length + " total events, " + majorEvents.length + " major).",
+    dmOnly: false,
+    _lwAutoSession: true,
+  });
+  return tl;
+}
+
+function _lwBuildAutoSummary(events) {
+  const majors = events.filter(e => e.importance === "major");
+  if (majors.length === 0) return events.length + " world events occurred.";
+  return majors.slice(0, 3).map(e => e.headline).join(". ") + (majors.length > 3 ? " and more..." : ".");
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // WORLD STATE
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -1688,14 +1783,21 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
       engine.onEvent = (event) => {
         setLwEvents(prev => [event, ...prev].slice(0, 30));
         setLwLog(prev => [event, ...prev]);
-        // Persist to campaign data for save/load
-        setData(d => ({
-          ...d,
-          _lwEventLog: [
-            { ...event, timestamp: Date.now(), mutations: undefined }, // Strip mutation functions (not serializable)
-            ...(d._lwEventLog || [])
-          ].slice(0, 200) // Keep last 200 events
-        }));
+        // Persist to campaign data for save/load + auto-add major events to timeline
+        setData(d => {
+          const updated = {
+            ...d,
+            _lwEventLog: [
+              { ...event, timestamp: Date.now(), mutations: undefined },
+              ...(d._lwEventLog || [])
+            ].slice(0, 200)
+          };
+          // Auto-add major events to the timeline for live campaigns
+          if (event.importance === "major") {
+            updated.timeline = _lwAppendToTimeline(d.timeline || [], event);
+          }
+          return updated;
+        });
       };
       engine.onStateUpdate = (mutator) => {
         setData(d => {
@@ -1848,15 +1950,26 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
   const mapTouchRef = useRef({ active: false });
   const [zoomLevel, setZoomLevel] = useState("continent"); // continent | kingdom | local | detail
 
+  // Track when town images become available (loaded on demand)
+  const [townImagesReady, setTownImagesReady] = useState(() => !!window.TOWN_IMAGES);
+
   // ── Lazy-load town-images when user opens town view ──
   useEffect(() => {
-    if (!townView || window.TOWN_IMAGES) return; // Already loaded or no town view
+    if (!townView) return;
+    if (window.TOWN_IMAGES) { setTownImagesReady(true); return; }
     // Trigger lazy load from campaigns.html's loadDataModule function
     if (typeof window.loadDataModule === "function") {
-      window.loadDataModule("town-images", "town-images.js").catch(function(err) {
-        console.error("[CampaignWorld] Failed to load town-images:", err);
-      });
+      window.loadDataModule("town-images", "town-images.js")
+        .then(() => setTownImagesReady(true))
+        .catch(function(err) {
+          console.error("[CampaignWorld] Failed to load town-images:", err);
+        });
     }
+    // Also poll in case it was loaded by something else
+    const check = setInterval(() => {
+      if (window.TOWN_IMAGES) { setTownImagesReady(true); clearInterval(check); }
+    }, 300);
+    return () => clearInterval(check);
   }, [townView]);
 
   // Update zoom level label
@@ -1935,6 +2048,16 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
   // ── Continental map — 6000×4500 world ──
   const MAP_W = 6000, MAP_H = 4500;
 
+  // Track when atlas images become available (they load async via loadDataModule)
+  const [atlasImagesReady, setAtlasImagesReady] = useState(() => !!window.ATLAS_IMAGES);
+  useEffect(() => {
+    if (atlasImagesReady) return;
+    const check = setInterval(() => {
+      if (window.ATLAS_IMAGES) { setAtlasImagesReady(true); clearInterval(check); }
+    }, 200);
+    return () => clearInterval(check);
+  }, [atlasImagesReady]);
+
   // Resolve atlas image source: prefer embedded base64 from atlas-images.js, fall back to file URL
   const atlasImageSrc = React.useMemo(() => {
     const seedNum = parseInt(data.atlasMapSeed);
@@ -1942,7 +2065,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
       return window.ATLAS_IMAGES[seedNum];
     }
     return data.atlasMapSeed ? ("atlas-maps/atlas-" + data.atlasMapSeed + ".webp") : null;
-  }, [data.atlasMapSeed]);
+  }, [data.atlasMapSeed, atlasImagesReady]);
 
   /* ── Custom atlas: if campaign has generated atlas data, use it instead of defaults ── */
   const customAtlas = data.generatedAtlas || null;
@@ -2443,15 +2566,23 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
     clearInterval(progressInterval);
     setLwTimeSkipProgress(null);
 
-    // Apply final data state with event log (combined to avoid React batching issues)
+    // Determine skip label for timeline
+    const skipLabel = numEvents <= 5 ? "A Week Passes" : numEvents <= 15 ? "A Month Passes" : numEvents <= 50 ? "Months Pass" : "A Year Passes";
+
+    // Apply final data state with event log + auto-update timeline (combined to avoid React batching issues)
     const consistentData = ensureDataConsistency(result.finalData);
-    setData(d => ({
-      ...consistentData,
-      _lwEventLog: [
-        ...result.events.map(e => ({ ...e, mutations: undefined })),
-        ...(d._lwEventLog || [])
-      ].slice(0, 200)
-    }));
+    setData(d => {
+      const withLog = {
+        ...consistentData,
+        _lwEventLog: [
+          ...result.events.map(e => ({ ...e, mutations: undefined })),
+          ...(d._lwEventLog || [])
+        ].slice(0, 200),
+      };
+      // Batch major events into the timeline
+      withLog.timeline = _lwBatchToTimeline(d.timeline || [], result.events, skipLabel);
+      return withLog;
+    });
 
     // Add all generated events to logs
     setLwLog(prev => [...result.events, ...prev]);
