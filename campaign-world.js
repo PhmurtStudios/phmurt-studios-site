@@ -1307,6 +1307,15 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
   // ── Continental map — 6000×4500 world ──
   const MAP_W = 6000, MAP_H = 4500;
 
+  // Resolve atlas image source: prefer embedded base64 from atlas-images.js, fall back to file URL
+  const atlasImageSrc = React.useMemo(() => {
+    const seedNum = parseInt(data.atlasMapSeed);
+    if (window.ATLAS_IMAGES && window.ATLAS_IMAGES[seedNum]) {
+      return window.ATLAS_IMAGES[seedNum];
+    }
+    return data.atlasMapSeed ? ("atlas-maps/atlas-" + data.atlasMapSeed + ".webp") : null;
+  }, [data.atlasMapSeed]);
+
   /* ── Custom atlas: if campaign has generated atlas data, use it instead of defaults ── */
   const customAtlas = data.generatedAtlas || null;
   const atlasLandPath = customAtlas?.landPath || ATLAS_LAND_PATH;
@@ -1879,7 +1888,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
               <g transform={`translate(${mapPan.x},${mapPan.y}) scale(${mapZoom})`}>
                 {/* ═══ LAYER 0: Base map — Python atlas image or JS fallback ═══ */}
                 {data.atlasMapSeed ? (
-                  <image href={window.ATLAS_IMAGES && window.ATLAS_IMAGES[parseInt(data.atlasMapSeed)] ? window.ATLAS_IMAGES[parseInt(data.atlasMapSeed)] : `atlas-maps/atlas-${data.atlasMapSeed}.webp`} x="0" y="0" width={MAP_W} height={MAP_H} preserveAspectRatio="none" style={{ pointerEvents:"none" }} />
+                  <image href={atlasImageSrc} x="0" y="0" width={MAP_W} height={MAP_H} preserveAspectRatio="none" style={{ pointerEvents:"none" }} />
                 ) : (
                   <>
                     <rect x="0" y="0" width={MAP_W} height={MAP_H} rx="10" fill="url(#atlasSeaFill)" filter="url(#parchment)"/>
