@@ -3019,90 +3019,72 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                   );
                 })}
 
-                {/* ═══ LAYER 6: Clickable city markers (atlas mode) — click → Cities tab ═══ */}
+                {/* ═══ LAYER 6: City map dots (visual only, no interaction) ═══ */}
                 {data.atlasMapSeed && (data.cities || []).map(city => {
-                  // Normalized city coords → absolute SVG coordinates
+                  const cx = city.mapX * MAP_W;
+                  const cy = city.mapY * MAP_H;
+                  const cityRegion = (data.regions || []).find(r => r.name === city.region);
+                  const isCityDestroyed = isLive && cityRegion && (cityRegion.state === "destroyed" || cityRegion.state === "conquered");
+                  const meta = window.TOWN_METADATA?.[city.name];
+                  const tier = isCityDestroyed ? "ruins" : city.isCapital ? "capital" : (meta ? (meta.population >= 4000 ? "city" : meta.population >= 1500 ? "town" : "village") : "settlement");
+                  // Small, map-appropriate dot sizes
+                  const dotR = tier === "capital" ? Math.max(4, 6 / Math.max(mapZoom * 0.7, 0.3))
+                    : tier === "city" ? Math.max(3, 4.5 / Math.max(mapZoom * 0.7, 0.3))
+                    : Math.max(2, 3 / Math.max(mapZoom * 0.75, 0.35));
+                  const sw = Math.max(0.6, 1.2 / Math.max(mapZoom * 0.5, 0.3));
+                  const fc = isCityDestroyed ? "#6a2020" : "#2a2218";
+                  const strokeC = isCityDestroyed ? "#6a2020" : "#4a3f2e";
+                  const labelSize = tier === "capital"
+                    ? Math.max(14, 26 / Math.max(mapZoom * 0.65, 0.3))
+                    : tier === "city" ? Math.max(11, 20 / Math.max(mapZoom * 0.7, 0.3))
+                    : Math.max(8, 14 / Math.max(mapZoom * 0.75, 0.35));
+                  const labelOffset = dotR + Math.max(8, 12 / Math.max(mapZoom * 0.7, 0.4));
+                  return (
+                    <g key={`citydot-${city.id}`} style={{ pointerEvents: "none" }}>
+                      {/* Map dot — capital = diamond, city = circle, town = small circle */}
+                      {tier === "capital" ? (
+                        <path d={`M${cx},${cy-dotR} L${cx+dotR},${cy} L${cx},${cy+dotR} L${cx-dotR},${cy} Z`}
+                          fill={fc} stroke={strokeC} strokeWidth={sw * 1.2} strokeLinejoin="round" />
+                      ) : (
+                        <circle cx={cx} cy={cy} r={dotR} fill={fc} stroke={strokeC} strokeWidth={sw} />
+                      )}
+                      {/* Destroyed X */}
+                      {isCityDestroyed && <>
+                        <line x1={cx-dotR*0.5} y1={cy-dotR*0.5} x2={cx+dotR*0.5} y2={cy+dotR*0.5} stroke="#ff3030" strokeWidth={sw*1.3} opacity="0.85" />
+                        <line x1={cx+dotR*0.5} y1={cy-dotR*0.5} x2={cx-dotR*0.5} y2={cy+dotR*0.5} stroke="#ff3030" strokeWidth={sw*1.3} opacity="0.85" />
+                      </>}
+                      {/* City name label */}
+                      <text x={cx} y={cy + labelOffset} textAnchor="middle"
+                        fill={tier === "capital" ? "#3d3422" : "#4a3f2e"} stroke="rgba(252,248,236,0.45)" strokeWidth={Math.max(1.2, 2.5/Math.max(mapZoom*0.6,0.3))} paintOrder="stroke"
+                        fontFamily={tier === "capital" ? "'Cinzel', serif" : "'Spectral', serif"} fontSize={labelSize}
+                        fontWeight={tier === "capital" ? "700" : tier === "city" ? "500" : "400"}
+                        fontStyle={tier === "village" || tier === "settlement" ? "italic" : "normal"}
+                        letterSpacing={tier === "capital" ? "1.5px" : "0.4px"}>
+                        {city.name}
+                      </text>
+                    </g>
+                  );
+                })}
+
+                {/* ═══ LAYER 6a: Invisible clickable hit areas over city dots ═══ */}
+                {data.atlasMapSeed && (data.cities || []).map(city => {
                   const cx = city.mapX * MAP_W;
                   const cy = city.mapY * MAP_H;
                   const isActive = sel?.id === city.id && selType === "city";
-                  // Check if city's region is destroyed (only show destroyed markers in live campaigns)
-                  const cityRegion = (data.regions || []).find(r => r.name === city.region);
-                  const isCityDestroyed = isLive && cityRegion && (cityRegion.state === "destroyed" || cityRegion.state === "conquered");
-                  // Scale marker size so it stays legible at any zoom level
                   const meta = window.TOWN_METADATA?.[city.name];
-                  const tier = isCityDestroyed ? "ruins" : city.isCapital ? "capital" : (meta ? (meta.population >= 4000 ? "city" : meta.population >= 1500 ? "town" : "village") : "settlement");
-                  const baseR = tier === "capital" ? 16 : tier === "city" ? 12 : 8;
-                  const markerR = Math.max(tier === "capital" ? 7 : tier === "city" ? 5 : 3.5, baseR / Math.max(mapZoom * 0.7, 0.3));
-                  const labelSize = tier === "capital"
-                    ? Math.max(16, 30 / Math.max(mapZoom * 0.65, 0.3))
-                    : tier === "city" ? Math.max(12, 22 / Math.max(mapZoom * 0.7, 0.3))
-                    : Math.max(9, 16 / Math.max(mapZoom * 0.75, 0.35));
-                  const labelOffset = markerR + Math.max(10, 16 / Math.max(mapZoom * 0.7, 0.4));
-                  const fc = isCityDestroyed ? "#6a2020" : (() => { const f = (data.factions || []).find(f => f.name === city.faction); return f?.color || "#c9a85c"; })();
-                  const sw = Math.max(1, 2 / Math.max(mapZoom * 0.5, 0.3));
+                  const tier = city.isCapital ? "capital" : (meta ? (meta.population >= 4000 ? "city" : meta.population >= 1500 ? "town" : "village") : "settlement");
+                  // Hit area: slightly larger than the dot for easy clicking
+                  const hitR = Math.max(tier === "capital" ? 12 : tier === "city" ? 10 : 8, 18 / Math.max(mapZoom * 0.6, 0.3));
                   return (
-                    <g key={`city-${city.id}`} style={{ cursor: "pointer" }}
+                    <g key={`cityhit-${city.id}`} style={{ cursor: "pointer" }}
                       onClick={(e) => {
                         e.stopPropagation();
                         setCityPopup(cityPopup?.city?.id === city.id ? null : { city });
                       }}>
-                      {/* Hover target area */}
-                      <circle cx={cx} cy={cy} r={markerR + 12} fill="transparent" />
-                      {/* Outer glow — stronger for capitals and active state */}
-                      <circle cx={cx} cy={cy} r={markerR + 6} fill={fc} opacity={isActive ? 0.35 : tier === "capital" ? 0.18 : 0.08} style={{ transition:"opacity 0.2s" }} />
-                      {/* Capital: double ring + star shape */}
-                      {tier === "capital" && <>
-                        <circle cx={cx} cy={cy} r={markerR + 3.5} fill="none" stroke={fc} strokeWidth={sw * 0.6} opacity={isActive ? 0.9 : 0.5} />
-                        <circle cx={cx} cy={cy} r={markerR + 1.5} fill="none" stroke={fc} strokeWidth={sw * 0.8} opacity={isActive ? 0.95 : 0.65} />
-                      </>}
-                      {/* City: single ring */}
-                      {tier === "city" && <circle cx={cx} cy={cy} r={markerR + 2} fill="none" stroke={fc} strokeWidth={sw * 0.6} opacity={isActive ? 0.8 : 0.4} strokeDasharray="5 3" />}
-                      {/* Main marker */}
-                      {tier === "capital" ? (
-                        /* Capital — filled square rotated 45deg (diamond) */
-                        <path d={`M${cx},${cy-markerR} L${cx+markerR},${cy} L${cx},${cy+markerR} L${cx-markerR},${cy} Z`}
-                          fill={isActive ? fc : "#1a1612"} stroke={fc} strokeWidth={sw * 1.2} opacity={0.96} strokeLinejoin="round" />
-                      ) : tier === "city" ? (
-                        /* City — filled circle, larger */
-                        <circle cx={cx} cy={cy} r={markerR} fill={isActive ? fc : "#1a1612"} stroke={fc} strokeWidth={sw} opacity={0.96} />
-                      ) : (
-                        /* Town/Village — smaller circle */
-                        <circle cx={cx} cy={cy} r={markerR} fill={isActive ? fc : "#1a1612"} stroke={fc} strokeWidth={sw * 0.8} opacity={0.9} />
-                      )}
-                      {/* Inner dot for capitals */}
-                      {tier === "capital" && !isCityDestroyed && <circle cx={cx} cy={cy} r={Math.max(1.8, markerR * 0.28)} fill="#f0e8d0" opacity={isActive ? 1 : 0.8} />}
-                      {/* Destroyed X mark */}
-                      {isCityDestroyed && <>
-                        <line x1={cx - markerR * 0.5} y1={cy - markerR * 0.5} x2={cx + markerR * 0.5} y2={cy + markerR * 0.5} stroke="#ff3030" strokeWidth={sw * 1.3} opacity="0.85" />
-                        <line x1={cx + markerR * 0.5} y1={cy - markerR * 0.5} x2={cx - markerR * 0.5} y2={cy + markerR * 0.5} stroke="#ff3030" strokeWidth={sw * 1.3} opacity="0.85" />
-                      </>}
-                      {/* City name label — bold for capitals, italic for towns */}
-                      <text x={cx} y={cy + labelOffset} textAnchor="middle"
-                        fill={tier === "capital" ? "#f5edd4" : "#e8dcc0"} stroke="rgba(14,12,8,0.82)" strokeWidth={Math.max(1.8, 3.5/Math.max(mapZoom*0.6,0.3))} paintOrder="stroke"
-                        fontFamily={tier === "capital" ? "'Cinzel', serif" : "'Spectral', serif"} fontSize={labelSize}
-                        fontWeight={tier === "capital" ? "700" : tier === "city" ? "500" : "400"}
-                        fontStyle={tier === "village" || tier === "settlement" ? "italic" : "normal"}
-                        letterSpacing={tier === "capital" ? "1.5px" : "0.4px"}
-                        style={{ pointerEvents: "none" }}>
-                        {city.name}
-                      </text>
-                      {/* Type sub-label at close zoom (Capital / City / Town / Village) */}
-                      {mapZoom > 0.6 && (() => {
-                        const meta = window.TOWN_METADATA?.[city.name];
-                        const tierLabel = isCityDestroyed ? "RUINS" : (meta ? (
-                          meta.isCapital ? "CAPITAL" :
-                          (meta.population >= 4000) ? "CITY" :
-                          (meta.population >= 1500) ? "TOWN" : "VILLAGE"
-                        ) : (city.isCapital ? "CAPITAL" : "SETTLEMENT"));
-                        return (
-                          <text x={cx} y={cy + labelOffset + labelSize * 1.15} textAnchor="middle"
-                            fill={city.isCapital ? fc : "#b8ae94"} stroke="rgba(20,16,10,0.6)" strokeWidth={1} paintOrder="stroke"
-                            fontFamily="'Cinzel', serif" fontSize={Math.max(6, 9/Math.max(mapZoom*0.5,0.3))}
-                            letterSpacing="1.5" opacity="0.8" style={{ pointerEvents:"none" }}>
-                            {tierLabel}
-                          </text>
-                        );
-                      })()}
+                      {/* Invisible hit target — covers the dot and extends beyond */}
+                      <circle cx={cx} cy={cy} r={hitR} fill="transparent" />
+                      {/* Active selection ring — only visible when clicked */}
+                      {isActive && <circle cx={cx} cy={cy} r={hitR * 0.7} fill="none" stroke="#c9a85c" strokeWidth={Math.max(1, 1.5 / Math.max(mapZoom*0.5,0.3))} opacity="0.6" strokeDasharray="4 3" />}
                     </g>
                   );
                 })}
@@ -3134,26 +3116,27 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                     py = 2250 + (py - 2250) * pullRatio;
                   }
                   const isActive = sel?.id === poi.id && selType === "poi";
-                  const iconSz = Math.max(8, 16 / Math.max(mapZoom * 0.7, 0.3));
-                  const labelSz = Math.max(8, 14 / Math.max(mapZoom * 0.7, 0.35));
-                  const tCol = poi.threat === "extreme" ? "#d04040" : poi.threat === "high" ? "#e89430" : poi.threat === "medium" ? "#c9a85c" : "#6a8a60";
+                  const dotSz = Math.max(3, 5 / Math.max(mapZoom * 0.7, 0.3));
+                  const hitR = Math.max(10, 18 / Math.max(mapZoom * 0.6, 0.3));
+                  const labelSz = Math.max(7, 12 / Math.max(mapZoom * 0.7, 0.35));
+                  const sw = Math.max(0.5, 1 / Math.max(mapZoom * 0.5, 0.3));
                   return (
                     <g key={poi.id} style={{ cursor: "pointer" }}
                       onClick={(e) => { e.stopPropagation(); setSel(poi); setSelType("poi"); }}>
-                      <circle cx={px} cy={py} r={iconSz + 10} fill="transparent" />
-                      <circle cx={px} cy={py} r={iconSz * 1.4} fill="rgba(232,218,186,0.25)" stroke="none" />
-                      {/* Diamond marker */}
-                      <path d={`M${px},${py - iconSz} L${px + iconSz * 0.7},${py} L${px},${py + iconSz} L${px - iconSz * 0.7},${py} Z`}
-                        fill={isActive ? tCol : "#5a4a28"} stroke={tCol} strokeWidth={Math.max(1, 1.5 / Math.max(mapZoom * 0.5, 0.3))}
-                        opacity={isActive ? 0.95 : 0.8} />
-                      <circle cx={px} cy={py} r={iconSz * 0.22} fill="#f0e8d0" opacity="0.8" />
-                      {/* Label */}
-                      <text x={px} y={py + iconSz + labelSz * 1.1} textAnchor="middle"
-                        fill="#e8dcc0" stroke="rgba(20,16,10,0.7)" strokeWidth={Math.max(1.2, 2.5 / Math.max(mapZoom * 0.6, 0.3))} paintOrder="stroke"
+                      {/* Small map-style diamond dot */}
+                      <path d={`M${px},${py-dotSz} L${px+dotSz*0.7},${py} L${px},${py+dotSz} L${px-dotSz*0.7},${py} Z`}
+                        fill="#3d3422" stroke="#5a4a2e" strokeWidth={sw} style={{ pointerEvents:"none" }} />
+                      {/* POI name label */}
+                      <text x={px} y={py + dotSz + labelSz * 1.1} textAnchor="middle"
+                        fill="#5a4a2e" stroke="rgba(252,248,236,0.35)" strokeWidth={Math.max(1, 2 / Math.max(mapZoom*0.6,0.3))} paintOrder="stroke"
                         fontFamily="'Spectral', serif" fontSize={labelSz} fontStyle="italic" fontWeight="400" letterSpacing="0.3"
-                        opacity="0.85" style={{ pointerEvents: "none" }}>
+                        opacity="0.7" style={{ pointerEvents:"none" }}>
                         {poi.name}
                       </text>
+                      {/* Invisible hit area */}
+                      <circle cx={px} cy={py} r={hitR} fill="transparent" />
+                      {/* Active selection ring */}
+                      {isActive && <circle cx={px} cy={py} r={hitR * 0.6} fill="none" stroke="#c9a85c" strokeWidth={sw} opacity="0.5" strokeDasharray="3 2" />}
                     </g>
                   );
                 })}
