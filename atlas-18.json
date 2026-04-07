@@ -1,0 +1,286 @@
+{
+  "seed": 18,
+  "mapName": "WYRMREST",
+  "regions": [
+    {
+      "name": "Morvaine",
+      "subtitle": "Kingdom of Morvaine",
+      "color": "#ccc088",
+      "labelX": 2135.0,
+      "labelY": 965.0,
+      "cities": [
+        {
+          "name": "Borist",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Dunmore",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Silverton",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Caeloth",
+      "subtitle": "Borderlands of Caeloth",
+      "color": "#a8b8a0",
+      "labelX": 1495.0,
+      "labelY": 485.0,
+      "cities": [
+        {
+          "name": "Duskhold",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Anora",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Millcross",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Windcrest",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Vornhelm",
+      "subtitle": "The Dominion of Vornhelm",
+      "color": "#c8b490",
+      "labelX": 725.0,
+      "labelY": 995.0,
+      "cities": [
+        {
+          "name": "Ironholt",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Regnwald",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Pebblecreek",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Gildafell",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Pinecrest",
+      "subtitle": "Borderlands of Pinecrest",
+      "color": "#a0b0b8",
+      "labelX": 1745.0,
+      "labelY": 1015.0,
+      "cities": [
+        {
+          "name": "Windcrest",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Cliffhaven",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Northgate",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Urswick",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Stormgate",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Solwynd",
+      "subtitle": "Borderlands of Solwynd",
+      "color": "#b8c098",
+      "labelX": 665.0,
+      "labelY": 585.0,
+      "cities": [
+        {
+          "name": "Ashbourne",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Runeford",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Feradell",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Harrowfield",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Lakecrest",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Whitevale",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Tarnis",
+      "subtitle": "The Free Marches of Tarnis",
+      "color": "#c4b0a8",
+      "labelX": 155.0,
+      "labelY": 935.0,
+      "cities": [
+        {
+          "name": "Palanor",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Lawklif",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Elmsworth",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Longmere",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Iskarion",
+      "subtitle": "Kingdom of Iskarion",
+      "color": "#a8c0b0",
+      "labelX": 1125.0,
+      "labelY": 1065.0,
+      "cities": [
+        {
+          "name": "Greywater",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Anora",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Embers",
+    "Jade Sea",
+    "Sea of Dreams",
+    "Sea of Twilight",
+    "Sea of Winds"
+  ]
+}

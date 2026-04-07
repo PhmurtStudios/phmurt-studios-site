@@ -1,0 +1,280 @@
+{
+  "seed": 17,
+  "mapName": "SILVANDOR",
+  "regions": [
+    {
+      "name": "Northmere",
+      "subtitle": "Principality of Northmere",
+      "color": "#ccc088",
+      "labelX": 1115.0,
+      "labelY": 735.0,
+      "cities": [
+        {
+          "name": "Oldbridge",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Whitevale",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Blackrock",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Nighthollow",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Lakecrest",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Anora",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Brynmar",
+      "subtitle": "Kingdom of Brynmar",
+      "color": "#a8b8a0",
+      "labelX": 1335.0,
+      "labelY": 325.0,
+      "cities": [
+        {
+          "name": "Goldenleaf",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Oldbridge",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Underbridge",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Mistvale",
+      "subtitle": "Principality of Mistvale",
+      "color": "#c8b490",
+      "labelX": 485.0,
+      "labelY": 825.0,
+      "cities": [
+        {
+          "name": "Gerenwalde",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Brinewood",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Northgate",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Odrin",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Drakkos",
+      "subtitle": "The Dominion of Drakkos",
+      "color": "#a0b0b8",
+      "labelX": 1575.0,
+      "labelY": 775.0,
+      "cities": [
+        {
+          "name": "Anora",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Valewick",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Maplecross",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Feradell",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Shadowfen",
+      "subtitle": "The Dominion of Shadowfen",
+      "color": "#b8c098",
+      "labelX": 2025.0,
+      "labelY": 865.0,
+      "cities": [
+        {
+          "name": "Junipervale",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Yellowfen",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Pinecrest",
+      "subtitle": "Kingdom of Pinecrest",
+      "color": "#c4b0a8",
+      "labelX": 175.0,
+      "labelY": 625.0,
+      "cities": [
+        {
+          "name": "Northgate",
+          "x": 0.0,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Loyarn",
+          "x": 0.1,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Thebury",
+          "x": 0.0,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Blackmoor",
+      "subtitle": "The Wilds of Blackmoor",
+      "color": "#a8c0b0",
+      "labelX": 1615.0,
+      "labelY": 1285.0,
+      "cities": [
+        {
+          "name": "Kronham",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Yellowfen",
+          "x": 0.5,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Rynwood",
+          "x": 0.6,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Moonshadow",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Lawklif",
+          "x": 0.5,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Yellowfen",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Ash",
+    "Sea of Dreams",
+    "Pale Sea",
+    "Crimson Gulf",
+    "Sea of Silver"
+  ]
+}

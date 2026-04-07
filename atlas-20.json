@@ -1,0 +1,208 @@
+{
+  "seed": 20,
+  "mapName": "GOLELI",
+  "regions": [
+    {
+      "name": "Tethys",
+      "subtitle": "Principality of Tethys",
+      "color": "#ccc088",
+      "labelX": 555.0,
+      "labelY": 715.0,
+      "cities": [
+        {
+          "name": "Urswick",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Gerenwalde",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Northgate",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Fogmere",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Caeloth",
+      "subtitle": "Realm of Caeloth",
+      "color": "#a8b8a0",
+      "labelX": 875.0,
+      "labelY": 1255.0,
+      "cities": [
+        {
+          "name": "Thebury",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Ivyreach",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Redthorn",
+          "x": 0.3,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Kettlebrook",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Greywater",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Thistledown",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Dremora",
+      "subtitle": "Duchy of Dremora",
+      "color": "#c8b490",
+      "labelX": 1575.0,
+      "labelY": 1065.0,
+      "cities": [
+        {
+          "name": "Redthorn",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Yellowfen",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Duskhold",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Duskhold",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Duskhold",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Northmere",
+      "subtitle": "Borderlands of Northmere",
+      "color": "#a0b0b8",
+      "labelX": 1205.0,
+      "labelY": 585.0,
+      "cities": [
+        {
+          "name": "Gildafell",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Dremoor",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Nighthollow",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Copperside",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Mistvale",
+      "subtitle": "Realm of Mistvale",
+      "color": "#b8c098",
+      "labelX": 1255.0,
+      "labelY": 1415.0,
+      "cities": [
+        {
+          "name": "Westmarch",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Kettlebrook",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Jadeston",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Frost",
+    "Sea of Ash",
+    "Sea of Twilight",
+    "Sea of Winds",
+    "Iron Sea"
+  ]
+}

@@ -1,0 +1,288 @@
+{
+  "seed": 4,
+  "mapName": "DRAKHEIM",
+  "regions": [
+    {
+      "name": "Solwynd",
+      "subtitle": "Borderlands of Solwynd",
+      "color": "#ccc088",
+      "labelX": 1165.0,
+      "labelY": 845.0,
+      "cities": [
+        {
+          "name": "Beowick",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Fogmere",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Goldug",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Pebblecreek",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Borist",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Oakmere",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Tarnis",
+      "subtitle": "Duchy of Tarnis",
+      "color": "#a8b8a0",
+      "labelX": 1005.0,
+      "labelY": 345.0,
+      "cities": [
+        {
+          "name": "Valewick",
+          "x": 0.4,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Oldbridge",
+          "x": 0.3,
+          "y": 0.1,
+          "capital": false
+        },
+        {
+          "name": "Quartzridge",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Eagleford",
+          "x": 0.3,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Dawnwatch",
+          "x": 0.3,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Loyarn",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Rosedale",
+      "subtitle": "Borderlands of Rosedale",
+      "color": "#c8b490",
+      "labelX": 1745.0,
+      "labelY": 865.0,
+      "cities": [
+        {
+          "name": "Ashbourne",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Whitevale",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Goldug",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Ilaes",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Moonridge",
+      "subtitle": "The Free Marches of Moonridge",
+      "color": "#a0b0b8",
+      "labelX": 675.0,
+      "labelY": 625.0,
+      "cities": [
+        {
+          "name": "Gildafell",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Stormgate",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Eagleford",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Wyndell",
+      "subtitle": "The Wilds of Wyndell",
+      "color": "#b8c098",
+      "labelX": 2485.0,
+      "labelY": 685.0,
+      "cities": [
+        {
+          "name": "Vineyard",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Foxbury",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Cliffhaven",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Millcross",
+          "x": 0.9,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Anora",
+          "x": 0.9,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Oldbridge",
+          "x": 0.9,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Kelvor",
+      "subtitle": "Borderlands of Kelvor",
+      "color": "#c4b0a8",
+      "labelX": 495.0,
+      "labelY": 1055.0,
+      "cities": [
+        {
+          "name": "Rynwood",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Goldug",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Zenithburg",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Fernhollow",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Jadeston",
+          "x": 0.1,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Copperside",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 1155.0,
+      "labelY": 585.0
+    },
+    {
+      "name": "Greymist Heights",
+      "labelX": 1105.0,
+      "labelY": 965.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 425.0,
+      "labelY": 775.0
+    }
+  ],
+  "lakes": [
+    {
+      "name": "Mirrordeep",
+      "labelX": 1645.0,
+      "labelY": 903.0
+    },
+    {
+      "name": "Stillmere",
+      "labelX": 2145.0,
+      "labelY": 873.0
+    }
+  ],
+  "seaNames": [
+    "Sea of Embers",
+    "Pale Sea",
+    "Sea of Ash",
+    "Sea of Twilight",
+    "Crimson Gulf"
+  ]
+}

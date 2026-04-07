@@ -1,0 +1,349 @@
+{
+  "seed": 9,
+  "mapName": "SOLMERE",
+  "regions": [
+    {
+      "name": "Highkeep",
+      "subtitle": "Principality of Highkeep",
+      "color": "#ccc088",
+      "labelX": 1085.0,
+      "labelY": 715.0,
+      "cities": [
+        {
+          "name": "Borist",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Freehold",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Quartzridge",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Nighthollow",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Underbridge",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Moonshadow",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Crystalis",
+      "subtitle": "The Free Marches of Crystalis",
+      "color": "#a8b8a0",
+      "labelX": 1945.0,
+      "labelY": 1245.0,
+      "cities": [
+        {
+          "name": "Elmsworth",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Kettlebrook",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Dawnwatch",
+          "x": 0.7,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Ashbourne",
+          "x": 0.6,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Obsidara",
+      "subtitle": "Borderlands of Obsidara",
+      "color": "#c8b490",
+      "labelX": 1495.0,
+      "labelY": 705.0,
+      "cities": [
+        {
+          "name": "Yellowfen",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Underbridge",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Fogmere",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Rynwood",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Palanor",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ashenveil",
+      "subtitle": "Principality of Ashenveil",
+      "color": "#a0b0b8",
+      "labelX": 985.0,
+      "labelY": 345.0,
+      "cities": [
+        {
+          "name": "Thebury",
+          "x": 0.4,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Odrin",
+          "x": 0.4,
+          "y": 0.1,
+          "capital": false
+        },
+        {
+          "name": "Deepwatch",
+          "x": 0.3,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Ironholt",
+          "x": 0.3,
+          "y": 0.1,
+          "capital": false
+        },
+        {
+          "name": "Quartzridge",
+          "x": 0.3,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Duskveil",
+      "subtitle": "Realm of Duskveil",
+      "color": "#b8c098",
+      "labelX": 595.0,
+      "labelY": 715.0,
+      "cities": [
+        {
+          "name": "Copperside",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Ashwick",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Maplecross",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Runeford",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Oakmere",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Korrath",
+      "subtitle": "Kingdom of Korrath",
+      "color": "#c4b0a8",
+      "labelX": 2425.0,
+      "labelY": 1335.0,
+      "cities": [
+        {
+          "name": "Ivyreach",
+          "x": 0.9,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Zarakyr",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Yellowfen",
+          "x": 0.8,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Valewick",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Goleli",
+      "subtitle": "The Dominion of Goleli",
+      "color": "#a8c0b0",
+      "labelX": 165.0,
+      "labelY": 375.0,
+      "cities": [
+        {
+          "name": "Borist",
+          "x": 0.1,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Greenhollow",
+          "x": 0.0,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Rynwood",
+          "x": 0.1,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Beowick",
+          "x": 0.0,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Kronham",
+          "x": 0.1,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Tethys",
+      "subtitle": "Principality of Tethys",
+      "color": "#c8c0a0",
+      "labelX": 1295.0,
+      "labelY": 1295.0,
+      "cities": [
+        {
+          "name": "Oldbridge",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Freehold",
+          "x": 0.6,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Freehold",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Goldug",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Lakecrest",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Pale Sea",
+    "Sea of Embers",
+    "Sea of Ash",
+    "Sea of Winds",
+    "Crimson Gulf"
+  ]
+}

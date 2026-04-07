@@ -1,0 +1,247 @@
+{
+  "seed": 12,
+  "mapName": "GRIMHOLDE",
+  "regions": [
+    {
+      "name": "Iskarion",
+      "subtitle": "Realm of Iskarion",
+      "color": "#ccc088",
+      "labelX": 1205.0,
+      "labelY": 365.0,
+      "cities": [
+        {
+          "name": "Ravenmere",
+          "x": 0.4,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Hollowburg",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Hollowburg",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Frosthold",
+      "subtitle": "Kingdom of Frosthold",
+      "color": "#a8b8a0",
+      "labelX": 2355.0,
+      "labelY": 1395.0,
+      "cities": [
+        {
+          "name": "Foxbury",
+          "x": 0.9,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Underbridge",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Ashwick",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Morvaine",
+      "subtitle": "Realm of Morvaine",
+      "color": "#c8b490",
+      "labelX": 1695.0,
+      "labelY": 615.0,
+      "cities": [
+        {
+          "name": "Ivyreach",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Junipervale",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Lakecrest",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Knolltown",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Elmsworth",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Gerenwalde",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Highkeep",
+      "subtitle": "The Free Marches of Highkeep",
+      "color": "#a0b0b8",
+      "labelX": 1625.0,
+      "labelY": 1255.0,
+      "cities": [
+        {
+          "name": "Cinderfell",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Fogmere",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Feradell",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Kettlebrook",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Zenithburg",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Lakeshore",
+      "subtitle": "Kingdom of Lakeshore",
+      "color": "#b8c098",
+      "labelX": 855.0,
+      "labelY": 795.0,
+      "cities": [
+        {
+          "name": "Anora",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Elmsworth",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Jadeston",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Pinewood",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Sunmere",
+      "subtitle": "Kingdom of Sunmere",
+      "color": "#c4b0a8",
+      "labelX": 2095.0,
+      "labelY": 965.0,
+      "cities": [
+        {
+          "name": "Eagleford",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Regnwald",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Tidefall",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Urswick",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Thistledown",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Fernhollow",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ashen Divide",
+      "labelX": 1115.0,
+      "labelY": 1065.0
+    },
+    {
+      "name": "Silvervein Ridge",
+      "labelX": 1525.0,
+      "labelY": 305.0
+    },
+    {
+      "name": "Dragon's Spine",
+      "labelX": 885.0,
+      "labelY": 995.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Ash",
+    "Sea of Storms",
+    "Sea of Frost",
+    "Sea of Dreams",
+    "Sea of Silver"
+  ]
+}

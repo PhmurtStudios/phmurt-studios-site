@@ -1,0 +1,236 @@
+{
+  "seed": 5,
+  "mapName": "ESTEROS",
+  "regions": [
+    {
+      "name": "Moonridge",
+      "subtitle": "The Free Marches of Moonridge",
+      "color": "#ccc088",
+      "labelX": 985.0,
+      "labelY": 435.0,
+      "cities": [
+        {
+          "name": "Loyarn",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Copperside",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Dremoor",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Aelindor",
+      "subtitle": "Duchy of Aelindor",
+      "color": "#a8b8a0",
+      "labelX": 965.0,
+      "labelY": 885.0,
+      "cities": [
+        {
+          "name": "Moonshadow",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Cliffhaven",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Stormgate",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Thebury",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Longmere",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Felmoor",
+      "subtitle": "Duchy of Felmoor",
+      "color": "#c8b490",
+      "labelX": 1535.0,
+      "labelY": 1245.0,
+      "cities": [
+        {
+          "name": "Palanor",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Maplecross",
+          "x": 0.5,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Dawnwatch",
+          "x": 0.5,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Korrath",
+      "subtitle": "The Dominion of Korrath",
+      "color": "#a0b0b8",
+      "labelX": 1595.0,
+      "labelY": 555.0,
+      "cities": [
+        {
+          "name": "Ilaes",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Lakecrest",
+          "x": 0.6,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Loyarn",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Copperside",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Foxbury",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Tethys",
+      "subtitle": "Duchy of Tethys",
+      "color": "#b8c098",
+      "labelX": 725.0,
+      "labelY": 1345.0,
+      "cities": [
+        {
+          "name": "Borist",
+          "x": 0.3,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Thebury",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.2,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Greyhollow",
+      "subtitle": "Kingdom of Greyhollow",
+      "color": "#c4b0a8",
+      "labelX": 2435.0,
+      "labelY": 475.0,
+      "cities": [
+        {
+          "name": "Rynwood",
+          "x": 0.9,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Foxbury",
+          "x": 0.8,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Underbridge",
+          "x": 0.8,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Odrin",
+          "x": 0.8,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Runeford",
+          "x": 1.0,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Redthorn",
+          "x": 0.9,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Dragon's Spine",
+      "labelX": 735.0,
+      "labelY": 1375.0
+    },
+    {
+      "name": "Greymist Heights",
+      "labelX": 1115.0,
+      "labelY": 1405.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Dreams",
+    "Sea of Winds",
+    "Iron Sea",
+    "Pale Sea",
+    "Sea of Twilight"
+  ]
+}

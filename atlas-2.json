@@ -1,0 +1,235 @@
+{
+  "seed": 2,
+  "mapName": "VAELTHYR",
+  "regions": [
+    {
+      "name": "Ashenveil",
+      "subtitle": "The Free Marches of Ashenveil",
+      "color": "#ccc088",
+      "labelX": 755.0,
+      "labelY": 1015.0,
+      "cities": [
+        {
+          "name": "Regnwald",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Feradell",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Dremoor",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Shadowfen",
+      "subtitle": "Principality of Shadowfen",
+      "color": "#a8b8a0",
+      "labelX": 1785.0,
+      "labelY": 425.0,
+      "cities": [
+        {
+          "name": "Windcrest",
+          "x": 0.6,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Ashbourne",
+          "x": 0.7,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Goldenleaf",
+          "x": 0.7,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Gerenwalde",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Kronham",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Oldbridge",
+          "x": 0.7,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Duskveil",
+      "subtitle": "Realm of Duskveil",
+      "color": "#c8b490",
+      "labelX": 2045.0,
+      "labelY": 975.0,
+      "cities": [
+        {
+          "name": "Valewick",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Deepwatch",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Ravenmere",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Gerenwalde",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Valdheim",
+      "subtitle": "The Wilds of Valdheim",
+      "color": "#a0b0b8",
+      "labelX": 1245.0,
+      "labelY": 815.0,
+      "cities": [
+        {
+          "name": "Duskwater",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Thistledown",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Redthorn",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Drakkos",
+      "subtitle": "The Dominion of Drakkos",
+      "color": "#b8c098",
+      "labelX": 2585.0,
+      "labelY": 1095.0,
+      "cities": [
+        {
+          "name": "Greywater",
+          "x": 0.9,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Junipervale",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Duskwater",
+          "x": 0.9,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Thornwick",
+      "subtitle": "Duchy of Thornwick",
+      "color": "#c4b0a8",
+      "labelX": 2455.0,
+      "labelY": 655.0,
+      "cities": [
+        {
+          "name": "Anora",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Rynwood",
+          "x": 1.0,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Freehold",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Borist",
+          "x": 0.9,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.9,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Frost",
+    "Sea of Twilight",
+    "Sea of Winds",
+    "Pale Sea",
+    "Sea of Dreams"
+  ]
+}

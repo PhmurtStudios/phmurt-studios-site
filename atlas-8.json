@@ -1,0 +1,344 @@
+{
+  "seed": 8,
+  "mapName": "MYRANDEL",
+  "regions": [
+    {
+      "name": "Mistvale",
+      "subtitle": "Kingdom of Mistvale",
+      "color": "#ccc088",
+      "labelX": 1965.0,
+      "labelY": 1215.0,
+      "cities": [
+        {
+          "name": "Yewborough",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Goldenleaf",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Caeloth",
+      "subtitle": "Duchy of Caeloth",
+      "color": "#a8b8a0",
+      "labelX": 1085.0,
+      "labelY": 1265.0,
+      "cities": [
+        {
+          "name": "Valewick",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Pinewood",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Ilaes",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.4,
+          "y": 0.8,
+          "capital": false
+        },
+        {
+          "name": "Feradell",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Northmere",
+      "subtitle": "Realm of Northmere",
+      "color": "#c8b490",
+      "labelX": 2035.0,
+      "labelY": 735.0,
+      "cities": [
+        {
+          "name": "Silverton",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Foxbury",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Fogmere",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Feradell",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Zenithburg",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Felmoor",
+      "subtitle": "Kingdom of Felmoor",
+      "color": "#a0b0b8",
+      "labelX": 1535.0,
+      "labelY": 1015.0,
+      "cities": [
+        {
+          "name": "Beowick",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Stonemere",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Odrin",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Ashwick",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Cliffhaven",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Nighthollow",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Duskveil",
+      "subtitle": "The Free Marches of Duskveil",
+      "color": "#b8c098",
+      "labelX": 695.0,
+      "labelY": 625.0,
+      "cities": [
+        {
+          "name": "Thornwall",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Tidefall",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Junipervale",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Cliffhaven",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Belros",
+      "subtitle": "The Wilds of Belros",
+      "color": "#c4b0a8",
+      "labelX": 2575.0,
+      "labelY": 845.0,
+      "cities": [
+        {
+          "name": "Jadeston",
+          "x": 0.9,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Fernhollow",
+          "x": 1.0,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Pebblecreek",
+          "x": 1.0,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Greenhollow",
+          "x": 1.0,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Brinewood",
+          "x": 1.0,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Elmsworth",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Morvaine",
+      "subtitle": "The Free Marches of Morvaine",
+      "color": "#a8c0b0",
+      "labelX": 365.0,
+      "labelY": 1015.0,
+      "cities": [
+        {
+          "name": "Cliffhaven",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Dremoor",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Lawklif",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Yellowfen",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Dunmore",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Copperside",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ashenveil",
+      "subtitle": "Borderlands of Ashenveil",
+      "color": "#c8c0a0",
+      "labelX": 1105.0,
+      "labelY": 755.0,
+      "cities": [
+        {
+          "name": "Goldug",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Wydale",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Copperside",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Pebblecreek",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Greymist Heights",
+      "labelX": 1785.0,
+      "labelY": 965.0
+    },
+    {
+      "name": "Frostpeak Mountains",
+      "labelX": 1715.0,
+      "labelY": 1365.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Frost",
+    "Iron Sea",
+    "Sea of Silver",
+    "Sea of Storms",
+    "Jade Sea"
+  ]
+}

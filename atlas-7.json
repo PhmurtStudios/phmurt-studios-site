@@ -1,0 +1,201 @@
+{
+  "seed": 7,
+  "mapName": "KORATHIS",
+  "regions": [
+    {
+      "name": "Ondara",
+      "subtitle": "Realm of Ondara",
+      "color": "#ccc088",
+      "labelX": 2085.0,
+      "labelY": 715.0,
+      "cities": [
+        {
+          "name": "Cliffhaven",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Gerenwalde",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Underbridge",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Quartzridge",
+          "x": 0.7,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Thornemark",
+      "subtitle": "Principality of Thornemark",
+      "color": "#a8b8a0",
+      "labelX": 1775.0,
+      "labelY": 255.0,
+      "cities": [
+        {
+          "name": "Eagleford",
+          "x": 0.6,
+          "y": 0.1,
+          "capital": true
+        },
+        {
+          "name": "Rynwood",
+          "x": 0.7,
+          "y": 0.1,
+          "capital": false
+        },
+        {
+          "name": "Regnwald",
+          "x": 0.7,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Tarnis",
+      "subtitle": "Duchy of Tarnis",
+      "color": "#c8b490",
+      "labelX": 1615.0,
+      "labelY": 1065.0,
+      "cities": [
+        {
+          "name": "Jadeston",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Palanor",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Brynmar",
+      "subtitle": "The Dominion of Brynmar",
+      "color": "#a0b0b8",
+      "labelX": 2225.0,
+      "labelY": 1125.0,
+      "cities": [
+        {
+          "name": "Ravenmere",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Silverton",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Knolltown",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Palanor",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Pyremarch",
+      "subtitle": "Borderlands of Pyremarch",
+      "color": "#b8c098",
+      "labelX": 1265.0,
+      "labelY": 665.0,
+      "cities": [
+        {
+          "name": "Brinewood",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Dremoor",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Zenithburg",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Blackrock",
+          "x": 0.4,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Dragon's Spine",
+      "labelX": 1855.0,
+      "labelY": 1045.0
+    },
+    {
+      "name": "Frostpeak Mountains",
+      "labelX": 1255.0,
+      "labelY": 595.0
+    },
+    {
+      "name": "Ironspine Range",
+      "labelX": 1795.0,
+      "labelY": 1055.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1825.0,
+      "labelY": 355.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Ash",
+    "Sea of Frost",
+    "Sea of Twilight",
+    "Sea of Embers",
+    "Jade Sea"
+  ]
+}

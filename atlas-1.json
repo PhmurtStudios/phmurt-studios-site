@@ -1,0 +1,289 @@
+{
+  "seed": 1,
+  "mapName": "CARDONIA",
+  "regions": [
+    {
+      "name": "Northmere",
+      "subtitle": "Principality of Northmere",
+      "color": "#ccc088",
+      "labelX": 1705.0,
+      "labelY": 1095.0,
+      "cities": [
+        {
+          "name": "Regnwald",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Underbridge",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Valewick",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Valdheim",
+      "subtitle": "The Wilds of Valdheim",
+      "color": "#a8b8a0",
+      "labelX": 2375.0,
+      "labelY": 1265.0,
+      "cities": [
+        {
+          "name": "Gerenwalde",
+          "x": 0.9,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Urswick",
+          "x": 0.9,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Ilaes",
+          "x": 0.9,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Lakecrest",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ironglenn",
+      "subtitle": "Principality of Ironglenn",
+      "color": "#c8b490",
+      "labelX": 1025.0,
+      "labelY": 425.0,
+      "cities": [
+        {
+          "name": "Whitevale",
+          "x": 0.4,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Loyarn",
+          "x": 0.4,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Goldenleaf",
+          "x": 0.3,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Wyndell",
+      "subtitle": "Kingdom of Wyndell",
+      "color": "#a0b0b8",
+      "labelX": 1005.0,
+      "labelY": 1315.0,
+      "cities": [
+        {
+          "name": "Millcross",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Pinewood",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Moonshadow",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Ironholt",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Verdantia",
+      "subtitle": "The Dominion of Verdantia",
+      "color": "#b8c098",
+      "labelX": 1585.0,
+      "labelY": 595.0,
+      "cities": [
+        {
+          "name": "Dawnwatch",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Pebblecreek",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Anora",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Lakecrest",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Felmoor",
+      "subtitle": "Principality of Felmoor",
+      "color": "#c4b0a8",
+      "labelX": 355.0,
+      "labelY": 725.0,
+      "cities": [
+        {
+          "name": "Greenhollow",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.1,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Moonshadow",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Caeloth",
+      "subtitle": "The Dominion of Caeloth",
+      "color": "#a8c0b0",
+      "labelX": 175.0,
+      "labelY": 1215.0,
+      "cities": [
+        {
+          "name": "Deepwatch",
+          "x": 0.1,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Palanor",
+          "x": 0.1,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Alderhaven",
+          "x": 0.1,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Feradell",
+          "x": 0.1,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Windmere",
+      "subtitle": "Borderlands of Windmere",
+      "color": "#c8c0a0",
+      "labelX": 915.0,
+      "labelY": 875.0,
+      "cities": [
+        {
+          "name": "Lakecrest",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Zarakyr",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Whitevale",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Yellowfen",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Silvervein Ridge",
+      "labelX": 1955.0,
+      "labelY": 965.0
+    },
+    {
+      "name": "Ebonwall Mountains",
+      "labelX": 1525.0,
+      "labelY": 645.0
+    },
+    {
+      "name": "Greymist Heights",
+      "labelX": 1235.0,
+      "labelY": 955.0
+    }
+  ],
+  "lakes": [
+    {
+      "name": "Lake Thornwell",
+      "labelX": 625.0,
+      "labelY": 933.0
+    }
+  ],
+  "seaNames": [
+    "Sea of Dreams",
+    "Jade Sea",
+    "Sea of Winds",
+    "Crimson Gulf",
+    "Sea of Ash"
+  ]
+}

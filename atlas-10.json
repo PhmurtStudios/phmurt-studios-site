@@ -1,0 +1,279 @@
+{
+  "seed": 10,
+  "mapName": "ASHENDAL",
+  "regions": [
+    {
+      "name": "Morvaine",
+      "subtitle": "Kingdom of Morvaine",
+      "color": "#ccc088",
+      "labelX": 595.0,
+      "labelY": 605.0,
+      "cities": [
+        {
+          "name": "Jadeston",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Highwall",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Pebblecreek",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.3,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Verdantia",
+      "subtitle": "Duchy of Verdantia",
+      "color": "#a8b8a0",
+      "labelX": 1215.0,
+      "labelY": 655.0,
+      "cities": [
+        {
+          "name": "Gerenwalde",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Cinderfell",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Stonemere",
+          "x": 0.5,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Copperside",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Loyarn",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Beowick",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ondara",
+      "subtitle": "Principality of Ondara",
+      "color": "#c8b490",
+      "labelX": 825.0,
+      "labelY": 1095.0,
+      "cities": [
+        {
+          "name": "Lindel",
+          "x": 0.3,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Lawklif",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Thistledown",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Beowick",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Mistvale",
+      "subtitle": "The Free Marches of Mistvale",
+      "color": "#a0b0b8",
+      "labelX": 1955.0,
+      "labelY": 735.0,
+      "cities": [
+        {
+          "name": "Alderhaven",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Knolltown",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Lakecrest",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Northgate",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Elonia",
+      "subtitle": "Realm of Elonia",
+      "color": "#b8c098",
+      "labelX": 2555.0,
+      "labelY": 1195.0,
+      "cities": [
+        {
+          "name": "Ivyreach",
+          "x": 0.9,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Ilaes",
+          "x": 0.9,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Highwall",
+          "x": 0.9,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Thornwall",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Dravina",
+      "subtitle": "Kingdom of Dravina",
+      "color": "#c4b0a8",
+      "labelX": 1875.0,
+      "labelY": 1375.0,
+      "cities": [
+        {
+          "name": "Duskwater",
+          "x": 0.7,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Nighthollow",
+          "x": 0.7,
+          "y": 0.9,
+          "capital": false
+        },
+        {
+          "name": "Kingsbridge",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Urswick",
+          "x": 0.6,
+          "y": 0.8,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Nightward",
+      "subtitle": "Duchy of Nightward",
+      "color": "#a8c0b0",
+      "labelX": 1275.0,
+      "labelY": 1205.0,
+      "cities": [
+        {
+          "name": "Odrin",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Cliffhaven",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Ravenmere",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Silvervein Ridge",
+      "labelX": 1405.0,
+      "labelY": 525.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2235.0,
+      "labelY": 1315.0
+    },
+    {
+      "name": "Ironspine Range",
+      "labelX": 1515.0,
+      "labelY": 1395.0
+    },
+    {
+      "name": "Frostpeak Mountains",
+      "labelX": 1125.0,
+      "labelY": 1165.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Silver",
+    "Sea of Frost",
+    "Sea of Embers",
+    "Sea of Winds",
+    "Iron Sea"
+  ]
+}

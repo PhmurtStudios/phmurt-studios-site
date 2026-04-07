@@ -1,0 +1,209 @@
+{
+  "seed": 13,
+  "mapName": "CELESTARA",
+  "regions": [
+    {
+      "name": "Duskveil",
+      "subtitle": "Principality of Duskveil",
+      "color": "#ccc088",
+      "labelX": 2305.0,
+      "labelY": 1125.0,
+      "cities": [
+        {
+          "name": "Zarakyr",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Wydale",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Pinewood",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Blackrock",
+          "x": 0.9,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Dawnwatch",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Wyndell",
+      "subtitle": "Principality of Wyndell",
+      "color": "#a8b8a0",
+      "labelX": 1895.0,
+      "labelY": 1505.0,
+      "cities": [
+        {
+          "name": "Westmarch",
+          "x": 0.7,
+          "y": 0.8,
+          "capital": true
+        },
+        {
+          "name": "Windcrest",
+          "x": 0.6,
+          "y": 0.9,
+          "capital": false
+        },
+        {
+          "name": "Stormgate",
+          "x": 0.6,
+          "y": 0.9,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Moonridge",
+      "subtitle": "Realm of Moonridge",
+      "color": "#c8b490",
+      "labelX": 1645.0,
+      "labelY": 735.0,
+      "cities": [
+        {
+          "name": "Copperside",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Ironholt",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Inkwell",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Blackrock",
+          "x": 0.6,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Morvaine",
+      "subtitle": "Principality of Morvaine",
+      "color": "#a0b0b8",
+      "labelX": 2285.0,
+      "labelY": 1545.0,
+      "cities": [
+        {
+          "name": "Ashbourne",
+          "x": 0.8,
+          "y": 0.9,
+          "capital": true
+        },
+        {
+          "name": "Moonshadow",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Fernhollow",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Oakhaven",
+      "subtitle": "Duchy of Oakhaven",
+      "color": "#b8c098",
+      "labelX": 1625.0,
+      "labelY": 1165.0,
+      "cities": [
+        {
+          "name": "Wydale",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Dunmore",
+          "x": 0.5,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Kronham",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Yellowfen",
+          "x": 0.7,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Regnwald",
+          "x": 0.6,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Ilaes",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Thundercrest Range",
+      "labelX": 2045.0,
+      "labelY": 1445.0
+    },
+    {
+      "name": "Ebonwall Mountains",
+      "labelX": 2295.0,
+      "labelY": 895.0
+    }
+  ],
+  "lakes": [
+    {
+      "name": "Lake Ponter",
+      "labelX": 1625.0,
+      "labelY": 983.0
+    }
+  ],
+  "seaNames": [
+    "Sea of Ash",
+    "Sea of Silver",
+    "Jade Sea",
+    "Sea of Dreams",
+    "Sea of Twilight"
+  ]
+}

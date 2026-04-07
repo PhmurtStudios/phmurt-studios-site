@@ -1,0 +1,274 @@
+{
+  "seed": 24,
+  "mapName": "DUSKWALD",
+  "regions": [
+    {
+      "name": "Obsidara",
+      "subtitle": "Borderlands of Obsidara",
+      "color": "#ccc088",
+      "labelX": 1215.0,
+      "labelY": 375.0,
+      "cities": [
+        {
+          "name": "Fogmere",
+          "x": 0.4,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Yellowfen",
+          "x": 0.4,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Highwall",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Korrath",
+      "subtitle": "The Free Marches of Korrath",
+      "color": "#a8b8a0",
+      "labelX": 425.0,
+      "labelY": 925.0,
+      "cities": [
+        {
+          "name": "Copperside",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Elmsworth",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Redthorn",
+          "x": 0.2,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Dremoor",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Pinewood",
+          "x": 0.1,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Kelvor",
+      "subtitle": "Principality of Kelvor",
+      "color": "#c8b490",
+      "labelX": 1345.0,
+      "labelY": 795.0,
+      "cities": [
+        {
+          "name": "Elmsworth",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Loyarn",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Underbridge",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Dremoor",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Thornwick",
+      "subtitle": "The Wilds of Thornwick",
+      "color": "#a0b0b8",
+      "labelX": 1845.0,
+      "labelY": 1105.0,
+      "cities": [
+        {
+          "name": "Freehold",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Greywater",
+          "x": 0.8,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Underbridge",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Moonridge",
+      "subtitle": "The Dominion of Moonridge",
+      "color": "#b8c098",
+      "labelX": 1685.0,
+      "labelY": 325.0,
+      "cities": [
+        {
+          "name": "Lindel",
+          "x": 0.6,
+          "y": 0.2,
+          "capital": true
+        },
+        {
+          "name": "Underbridge",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Ivyreach",
+          "x": 0.7,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Hollowburg",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        },
+        {
+          "name": "Runeford",
+          "x": 0.5,
+          "y": 0.2,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Wyndell",
+      "subtitle": "Realm of Wyndell",
+      "color": "#c4b0a8",
+      "labelX": 825.0,
+      "labelY": 605.0,
+      "cities": [
+        {
+          "name": "Redthorn",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": true
+        },
+        {
+          "name": "Brightmoor",
+          "x": 0.3,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Rynwood",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Hollowburg",
+          "x": 0.2,
+          "y": 0.3,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Frosthold",
+      "subtitle": "Kingdom of Frosthold",
+      "color": "#a8c0b0",
+      "labelX": 2405.0,
+      "labelY": 665.0,
+      "cities": [
+        {
+          "name": "Brinewood",
+          "x": 0.9,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Whitevale",
+          "x": 0.8,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Duskhold",
+          "x": 0.9,
+          "y": 0.3,
+          "capital": false
+        },
+        {
+          "name": "Longmere",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Pebblecreek",
+          "x": 0.8,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Embers",
+    "Crimson Gulf",
+    "Jade Sea",
+    "Sea of Silver",
+    "Sea of Dreams"
+  ]
+}

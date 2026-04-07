@@ -1,0 +1,286 @@
+{
+  "seed": 14,
+  "mapName": "NORDENVAAL",
+  "regions": [
+    {
+      "name": "Lakeshore",
+      "subtitle": "Duchy of Lakeshore",
+      "color": "#ccc088",
+      "labelX": 2345.0,
+      "labelY": 1195.0,
+      "cities": [
+        {
+          "name": "Underbridge",
+          "x": 0.9,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Freehold",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Kronham",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Vineyard",
+          "x": 0.9,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Tidefall",
+          "x": 0.8,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Oakhaven",
+      "subtitle": "The Dominion of Oakhaven",
+      "color": "#a8b8a0",
+      "labelX": 1745.0,
+      "labelY": 1165.0,
+      "cities": [
+        {
+          "name": "Beowick",
+          "x": 0.6,
+          "y": 0.6,
+          "capital": true
+        },
+        {
+          "name": "Yewborough",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Zarakyr",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Lawklif",
+          "x": 0.7,
+          "y": 0.6,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Verdantia",
+      "subtitle": "Realm of Verdantia",
+      "color": "#c8b490",
+      "labelX": 1505.0,
+      "labelY": 715.0,
+      "cities": [
+        {
+          "name": "Deepwatch",
+          "x": 0.5,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Millcross",
+          "x": 0.5,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Loyarn",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Fernhollow",
+          "x": 0.4,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Duskhold",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Longmere",
+          "x": 0.6,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Ironglenn",
+      "subtitle": "The Free Marches of Ironglenn",
+      "color": "#a0b0b8",
+      "labelX": 985.0,
+      "labelY": 715.0,
+      "cities": [
+        {
+          "name": "Gerenwalde",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Dunmore",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Yewborough",
+          "x": 0.3,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Redthorn",
+          "x": 0.3,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Gildafell",
+          "x": 0.4,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Wyndell",
+      "subtitle": "The Wilds of Wyndell",
+      "color": "#b8c098",
+      "labelX": 1215.0,
+      "labelY": 1255.0,
+      "cities": [
+        {
+          "name": "Thebury",
+          "x": 0.4,
+          "y": 0.7,
+          "capital": true
+        },
+        {
+          "name": "Feradell",
+          "x": 0.4,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Thistledown",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        },
+        {
+          "name": "Gerenwalde",
+          "x": 0.5,
+          "y": 0.6,
+          "capital": false
+        },
+        {
+          "name": "Zenithburg",
+          "x": 0.3,
+          "y": 0.7,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Evershade",
+      "subtitle": "The Dominion of Evershade",
+      "color": "#c4b0a8",
+      "labelX": 425.0,
+      "labelY": 915.0,
+      "cities": [
+        {
+          "name": "Anora",
+          "x": 0.2,
+          "y": 0.5,
+          "capital": true
+        },
+        {
+          "name": "Harrowfield",
+          "x": 0.2,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Fogmere",
+          "x": 0.1,
+          "y": 0.4,
+          "capital": false
+        }
+      ]
+    },
+    {
+      "name": "Iskarion",
+      "subtitle": "Principality of Iskarion",
+      "color": "#a8c0b0",
+      "labelX": 1975.0,
+      "labelY": 765.0,
+      "cities": [
+        {
+          "name": "Ironholt",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": true
+        },
+        {
+          "name": "Urswick",
+          "x": 0.7,
+          "y": 0.4,
+          "capital": false
+        },
+        {
+          "name": "Rynwood",
+          "x": 0.7,
+          "y": 0.5,
+          "capital": false
+        },
+        {
+          "name": "Jadeston",
+          "x": 0.6,
+          "y": 0.5,
+          "capital": false
+        }
+      ]
+    }
+  ],
+  "mountains": [
+    {
+      "name": "Ironspine Range",
+      "labelX": 504.0,
+      "labelY": 828.0
+    },
+    {
+      "name": "Stormcrown Range",
+      "labelX": 2016.0,
+      "labelY": 252.0
+    },
+    {
+      "name": "Ashen Divide",
+      "labelX": 1680.0,
+      "labelY": 1188.0
+    }
+  ],
+  "lakes": [],
+  "seaNames": [
+    "Sea of Embers",
+    "Sea of Storms",
+    "Sea of Silver",
+    "Sea of Frost",
+    "Sea of Dreams"
+  ]
+}
