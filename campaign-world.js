@@ -1274,6 +1274,9 @@ function regionsAndFactionsFromMetadata(seedNum) {
   const stateDescriptions = ["stable","tense","rebuilding","corrupted","prosperous","dangerous","contested"];
   const terrainTypes = ["plains","forest","mountains","swamp","desert","coast","tundra","hills"];
 
+  // Town metadata (from town-images.js) — used for terrain sync across regions & cities
+  const townMeta = (typeof window !== 'undefined' && window.TOWN_METADATA) || null;
+
   const regions = meta.regions.map((r, i) => {
     const controllingFaction = i < factions.length ? factions[i].name : (factions.length > 0 ? factions[Math.floor(rng() * factions.length)].name : "Unaligned");
     const type = i === 0 ? "capital" : pick(regionTypes);
@@ -1281,7 +1284,6 @@ function regionsAndFactionsFromMetadata(seedNum) {
     const state = pick(stateDescriptions);
 
     // Use terrain from the first city in this region (from town metadata) if available
-    const townMeta = window.TOWN_METADATA;
     const firstCity = (r.cities || [])[0];
     const metaTerrain = firstCity && townMeta && townMeta[firstCity.name] ?
       (townMeta[firstCity.name].terrain || null) : null;
