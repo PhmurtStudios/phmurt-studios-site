@@ -1879,7 +1879,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
               <g transform={`translate(${mapPan.x},${mapPan.y}) scale(${mapZoom})`}>
                 {/* ═══ LAYER 0: Base map — Python atlas image or JS fallback ═══ */}
                 {data.atlasMapSeed ? (
-                  <image href={`atlas-maps/atlas-${data.atlasMapSeed}.webp`} x="0" y="0" width={MAP_W} height={MAP_H} preserveAspectRatio="none" style={{ pointerEvents:"none" }} />
+                  <image href={window.ATLAS_IMAGES && window.ATLAS_IMAGES[parseInt(data.atlasMapSeed)] ? window.ATLAS_IMAGES[parseInt(data.atlasMapSeed)] : `atlas-maps/atlas-${data.atlasMapSeed}.webp`} x="0" y="0" width={MAP_W} height={MAP_H} preserveAspectRatio="none" style={{ pointerEvents:"none" }} />
                 ) : (
                   <>
                     <rect x="0" y="0" width={MAP_W} height={MAP_H} rx="10" fill="url(#atlasSeaFill)" filter="url(#parchment)"/>

@@ -5216,6 +5216,7 @@ function App() {
         await loadTabModule("timeline", "campaign-timeline.js");
         setTabsReady(function(prev) { return Object.assign({}, prev, { timeline: true }); });
 
+        await loadTabModule("atlas-images", "atlas-images.js");
         await loadTabModule("world", "campaign-world.js");
         setTabsReady(function(prev) { return Object.assign({}, prev, { world: true }); });
 
@@ -5234,7 +5235,8 @@ function App() {
   useEffect(() => {
     if (activeTab === "dashboard" || tabsReady[activeTab]) return;
     var urls = { timeline: "campaign-timeline.js", world: "campaign-world.js", play: "campaign-play.js" };
-    loadTabModule(activeTab, urls[activeTab]).then(function() {
+    var preload = activeTab === "world" ? loadTabModule("atlas-images", "atlas-images.js") : Promise.resolve();
+    preload.then(function() { return loadTabModule(activeTab, urls[activeTab]); }).then(function() {
       setTabsReady(function(prev) { var n = Object.assign({}, prev); n[activeTab] = true; return n; });
     });
   }, [activeTab, tabsReady]);
