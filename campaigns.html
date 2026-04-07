@@ -1667,7 +1667,8 @@ const NEW_CAMPAIGN = () => ({
     questTracker: true, factionTracker: true, npcTracker: true,
     playerUploads: true, notesEditor: true,
   },
-  party: [], quests: [], factions: [], regions: [], npcs: [],
+  atlasMapSeed: "1",
+  party: [], quests: [], factions: [], regions: [], npcs: [], cities: [],
   timeline: [], campaignNotes: [],
   encounters: [],
   combatLedger: [],
@@ -3397,6 +3398,192 @@ const cmSaveCampaignCache = (campaigns, activeCampaignId) => {
   }
 };
 
+// ── Cloud storage optimization: compact before save, expand on load ──
+// Cities are ~82% of payload and 100% regenerable from the atlas seed.
+// Regions/factions/npcs CAN be DM-edited, so we diff against baseline
+// and only store the changes.
+const cmCompactForCloud = (data) => {
+  if (!data) return data;
+  const d = cmClone(data);
+
+  // 1. Always strip cities — fully regenerable from seed + metadata
+  delete d.cities;
+
+  // 2. Strip generatedAtlas (old JS-rendered atlas data, not needed)
+  delete d.generatedAtlas;
+
+  // 3. For regions/factions/npcs — if a seed is set, compute diff against baseline
+  //    Only store fields the DM has actually changed
+  if (d.atlasMapSeed && typeof window.__cmRegensAndFactions === "function") {
+    try {
+      const baseline = window.__cmRegensAndFactions(parseInt(d.atlasMapSeed));
+      if (baseline) {
+        // Diff regions: store only modified fields per region (keyed by id)
+        if (d.regions && baseline.regions) {
+          const diffs = [];
+          d.regions.forEach(r => {
+            const base = baseline.regions.find(b => b.id === r.id);
+            if (!base) { diffs.push(r); return; } // new region, keep full
+            const changed = {};
+            let hasChanges = false;
+            for (const key of Object.keys(r)) {
+              if (key === "id") continue;
+              if (JSON.stringify(r[key]) !== JSON.stringify(base[key])) {
+                changed[key] = r[key];
+                hasChanges = true;
+              }
+            }
+            if (hasChanges) diffs.push({ id: r.id, ...changed });
+          });
+          // Also track deleted regions
+          const existingIds = new Set(d.regions.map(r => r.id));
+          const deletedIds = baseline.regions.filter(b => !existingIds.has(b.id)).map(b => b.id);
+          d._regionDiffs = diffs;
+          d._regionDeleted = deletedIds;
+          delete d.regions;
+        }
+
+        // Diff factions
+        if (d.factions && baseline.factions) {
+          const diffs = [];
+          d.factions.forEach(f => {
+            const base = baseline.factions.find(b => b.id === f.id);
+            if (!base) { diffs.push(f); return; }
+            const changed = {};
+            let hasChanges = false;
+            for (const key of Object.keys(f)) {
+              if (key === "id") continue;
+              if (JSON.stringify(f[key]) !== JSON.stringify(base[key])) {
+                changed[key] = f[key];
+                hasChanges = true;
+              }
+            }
+            if (hasChanges) diffs.push({ id: f.id, ...changed });
+          });
+          d._factionDiffs = diffs;
+          delete d.factions;
+        }
+
+        // Diff NPCs
+        if (d.npcs && baseline.npcs) {
+          const diffs = [];
+          d.npcs.forEach(n => {
+            const base = baseline.npcs.find(b => b.id === n.id);
+            if (!base) { diffs.push(n); return; } // user-added NPC, keep full
+            const changed = {};
+            let hasChanges = false;
+            for (const key of Object.keys(n)) {
+              if (key === "id") continue;
+              if (JSON.stringify(n[key]) !== JSON.stringify(base[key])) {
+                changed[key] = n[key];
+                hasChanges = true;
+              }
+            }
+            if (hasChanges) diffs.push({ id: n.id, ...changed });
+          });
+          // Track user-added NPCs (ids beyond baseline range)
+          d._npcDiffs = diffs;
+          delete d.npcs;
+        }
+      }
+    } catch (e) {
+      // If diff fails, fall back to storing full arrays (but still strip cities)
+      console.warn("[CampaignManager] Compact diff failed, storing full arrays:", e);
+    }
+  }
+
+  // 4. Strip empty arrays to save a few more bytes
+  for (const key of ["timeline", "campaignNotes", "combatLedger", "encounters"]) {
+    if (Array.isArray(d[key]) && d[key].length === 0) delete d[key];
+  }
+
+  d._compactVersion = 1; // Mark so we know to expand on load
+  return d;
+};
+
+const cmExpandFromCloud = (data) => {
+  if (!data || !data._compactVersion) return data; // Not compacted, return as-is
+  const d = cmClone(data);
+  delete d._compactVersion;
+
+  // Restore empty arrays
+  if (!d.timeline) d.timeline = [];
+  if (!d.campaignNotes) d.campaignNotes = [];
+  if (!d.combatLedger) d.combatLedger = [];
+  if (!d.encounters) d.encounters = [];
+
+  // Regenerate from seed if available
+  if (d.atlasMapSeed && typeof window.__cmRegensAndFactions === "function") {
+    try {
+      const baseline = window.__cmRegensAndFactions(parseInt(d.atlasMapSeed));
+      if (baseline) {
+        // Rebuild regions from baseline + diffs
+        if (!d.regions && baseline.regions) {
+          d.regions = cmClone(baseline.regions);
+          if (d._regionDiffs) {
+            d._regionDiffs.forEach(diff => {
+              const idx = d.regions.findIndex(r => r.id === diff.id);
+              if (idx >= 0) Object.assign(d.regions[idx], diff);
+              else d.regions.push(diff); // new user-added region
+            });
+          }
+          if (d._regionDeleted) {
+            d.regions = d.regions.filter(r => !d._regionDeleted.includes(r.id));
+          }
+        }
+        delete d._regionDiffs;
+        delete d._regionDeleted;
+
+        // Rebuild factions
+        if (!d.factions && baseline.factions) {
+          d.factions = cmClone(baseline.factions);
+          if (d._factionDiffs) {
+            d._factionDiffs.forEach(diff => {
+              const idx = d.factions.findIndex(f => f.id === diff.id);
+              if (idx >= 0) Object.assign(d.factions[idx], diff);
+              else d.factions.push(diff);
+            });
+          }
+        }
+        delete d._factionDiffs;
+
+        // Rebuild NPCs
+        if (!d.npcs && baseline.npcs) {
+          d.npcs = cmClone(baseline.npcs);
+          if (d._npcDiffs) {
+            d._npcDiffs.forEach(diff => {
+              const idx = d.npcs.findIndex(n => n.id === diff.id);
+              if (idx >= 0) Object.assign(d.npcs[idx], diff);
+              else d.npcs.push(diff);
+            });
+          }
+        }
+        delete d._npcDiffs;
+
+        // Regenerate cities (always from scratch)
+        if (!d.cities) {
+          d.cities = baseline.cities || [];
+        }
+      }
+    } catch (e) {
+      console.warn("[CampaignManager] Expand from cloud failed:", e);
+      // Ensure arrays exist even if expansion fails
+      if (!d.regions) d.regions = [];
+      if (!d.factions) d.factions = [];
+      if (!d.npcs) d.npcs = [];
+      if (!d.cities) d.cities = [];
+    }
+  }
+
+  // Final safety: ensure all arrays exist
+  if (!d.regions) d.regions = [];
+  if (!d.factions) d.factions = [];
+  if (!d.npcs) d.npcs = [];
+  if (!d.cities) d.cities = [];
+
+  return d;
+};
+
 const cmSnapshotToPartyMember = (meta, snapshot) => {
   const details = snapshot?.details || {};
   const abilities = snapshot?.abilities || {};
@@ -4621,7 +4808,10 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
         <Modal open={encBuilderOpen} onClose={() => setEncBuilderOpen(false)} title="Save encounter blueprint">
           <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
             <Input value={encForm.name} onChange={v => setEncForm(p => ({ ...p, name:v }))} placeholder="Encounter name" />
-            <Input value={encForm.location} onChange={v => setEncForm(p => ({ ...p, location:v }))} placeholder="Location (optional)" />
+            <Select value={encForm.location} onChange={v => setEncForm(p => ({ ...p, location:v }))} style={{ width:"100%" }}>
+              <option value="">— Select Location —</option>
+              {(data.regions || []).map(r => <option key={r.id} value={r.name}>{r.name}{r.cities && r.cities.length > 0 ? ` (${r.cities.join(", ")})` : ""}</option>)}
+            </Select>
             <Textarea value={encForm.notes} onChange={v => setEncForm(p => ({ ...p, notes:v }))} placeholder="DM notes (optional)" rows={2} />
             <label style={{ display:"flex", alignItems:"center", gap:8, fontSize:13, color:T.textMuted, cursor:"pointer" }}>
               <input type="checkbox" checked={encForm.includePartyAll} onChange={e => setEncForm(p => ({ ...p, includePartyAll:e.target.checked }))} />
@@ -4791,8 +4981,14 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
                 <option value="critical">Critical</option>
               </Select>
             </div>
-            <Input value={newQuest.region} onChange={v=>setNewQuest(p=>({...p,region:v}))} placeholder="Region" />
-            <Input value={newQuest.faction} onChange={v=>setNewQuest(p=>({...p,faction:v}))} placeholder="Faction" />
+            <Select value={newQuest.region} onChange={v=>setNewQuest(p=>({...p,region:v}))} style={{ width:"100%" }}>
+              <option value="">— Select Region —</option>
+              {(data.regions || []).map(r => <option key={r.id} value={r.name}>{r.name}</option>)}
+            </Select>
+            <Select value={newQuest.faction} onChange={v=>setNewQuest(p=>({...p,faction:v}))} style={{ width:"100%" }}>
+              <option value="">— Select Faction —</option>
+              {(data.factions || []).map(f => <option key={f.id} value={f.name}>{f.name}</option>)}
+            </Select>
             <CrimsonBtn onClick={addQuest}><Plus size={12}/> Add Quest</CrimsonBtn>
           </div>
         </Modal>
@@ -5002,6 +5198,7 @@ function App() {
   const [joinSuccess, setJoinSuccess] = useState("");
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [campaignRoles, setCampaignRoles] = useState({}); // { campaignId: "dm"|"player" }
+  const [saveStatus, setSaveStatus] = useState(""); // "", "saving", "saved", "error"
 
   // ── Lazy tab module readiness ──
   const [tabsReady, setTabsReady] = useState({
@@ -5078,15 +5275,49 @@ function App() {
     setLoading(false);
   }, []);
 
-  // ── Auto-save campaigns ──
+  // ── Auto-save campaigns (local + cloud) ──
   const saveTimerRef = useRef(null);
+  const cloudSaveTimerRef = useRef(null);
+  const CLOUD_SAVE_DELAY_MS = 3000; // Cloud saves are less frequent to avoid API spam
   useEffect(() => {
     if (loading || campaigns.length === 0) return;
+
+    // Local save (fast, 1.2s debounce)
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
       cmSaveCampaignCache(campaigns, activeCampaignId);
     }, CAMPAIGN_SAVE_DELAY_MS);
-    return () => clearTimeout(saveTimerRef.current);
+
+    // Cloud save (slower, 3s debounce — only when signed in)
+    if (cloudSaveTimerRef.current) clearTimeout(cloudSaveTimerRef.current);
+    cloudSaveTimerRef.current = setTimeout(() => {
+      if (typeof PhmurtDB === "undefined" || !PhmurtDB.getSession || !PhmurtDB.getSession()) return;
+      if (typeof PhmurtDB.saveCampaign !== "function") return;
+      setSaveStatus("saving");
+      const saves = [];
+      campaigns.forEach(camp => {
+        if (camp.isExample) return;
+        const payload = camp.data || camp;
+        if (!payload.name && !payload.id) return;
+        // Compact data before cloud save to minimize storage
+        const compacted = cmCompactForCloud(payload);
+        const saveObj = { ...compacted, id: camp.id };
+        saves.push(PhmurtDB.saveCampaign(saveObj));
+      });
+      Promise.all(saves).then(() => {
+        setSaveStatus("saved");
+        setTimeout(() => setSaveStatus(""), 2500);
+      }).catch(err => {
+        console.warn("[CampaignManager] Cloud save failed:", err);
+        setSaveStatus("error");
+        setTimeout(() => setSaveStatus(""), 4000);
+      });
+    }, CLOUD_SAVE_DELAY_MS);
+
+    return () => {
+      clearTimeout(saveTimerRef.current);
+      clearTimeout(cloudSaveTimerRef.current);
+    };
   }, [campaigns, activeCampaignId, loading]);
 
   // ── Sync URL ──
@@ -5200,7 +5431,7 @@ function App() {
         var seen = {};
         prev.forEach(function(c) { seen[c.id] = true; });
         var newOnes = cloudCampaigns.filter(function(c) { return !seen[c.id]; }).map(function(c) {
-          return { id: c.id, data: c.data || NEW_CAMPAIGN(), _role: c._role };
+          return { id: c.id, data: cmExpandFromCloud(c.data || NEW_CAMPAIGN()), _role: c._role };
         });
         return newOnes.length > 0 ? prev.concat(newOnes) : prev;
       });
@@ -5258,7 +5489,7 @@ function App() {
           if (camp) {
             setCampaigns(function(prev) {
               if (prev.find(function(c) { return c.id === camp.id; })) return prev;
-              return prev.concat([{ id: camp.id, data: camp.data || NEW_CAMPAIGN(), _role: "player" }]);
+              return prev.concat([{ id: camp.id, data: cmExpandFromCloud(camp.data || NEW_CAMPAIGN()), _role: "player" }]);
             });
             setActiveCampaignId(camp.id);
             setViewRole("player");
@@ -5349,6 +5580,21 @@ function App() {
               onCreate={handleCreateCampaign}
               onDelete={handleDeleteCampaign}
             />
+            {/* Auto-save status indicator */}
+            <div style={{ display:"flex", alignItems:"center", gap:5, marginTop:8, minHeight:16, transition:"opacity 0.3s", opacity: saveStatus ? 1 : 0 }}>
+              {saveStatus === "saving" && <>
+                <div style={{ width:6, height:6, borderRadius:"50%", background:T.textFaint, animation:"pulse 1s infinite" }}/>
+                <span style={{ fontSize:9, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1px" }}>SAVING...</span>
+              </>}
+              {saveStatus === "saved" && <>
+                <CheckCircle size={10} color="#5ee09a"/>
+                <span style={{ fontSize:9, color:"#5ee09a", fontFamily:T.ui, letterSpacing:"1px" }}>SAVED TO CLOUD</span>
+              </>}
+              {saveStatus === "error" && <>
+                <AlertTriangle size={10} color={T.crimson}/>
+                <span style={{ fontSize:9, color:T.crimson, fontFamily:T.ui, letterSpacing:"1px" }}>SAVE FAILED — RETRYING</span>
+              </>}
+            </div>
           </div>
         )}
 

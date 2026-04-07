@@ -8,7 +8,10 @@
 <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), usb=(), payment=(), serial=(), bluetooth=()">
 <title>Admin Dashboard – Phmurt Studios</title>
 <!-- NOTE: unsafe-eval is required by @babel/standalone to compile JSX at runtime.
-     This is acceptable for an admin-only page, but should be reviewed if Babel usage changes. -->
+     unsafe-inline is used for inline event handlers in this admin-only page.
+     This is acceptable for admin-only pages but represents a security tradeoff.
+     RECOMMENDATION: Migrate to nonce-based CSP and extract event handlers to script blocks
+     for better XSS protection in future releases. -->
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-ancestors 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'; object-src 'none';">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -812,22 +815,23 @@ function Modal({ title, children, onClose, footer }) {
 function DashboardPage({ onNavigate }) {
   const { data: stats, loading, error } = useAdminQuery(async (db) => {
     const today = new Date(); today.setHours(0,0,0,0);
+    // Use regular GET with count instead of HEAD requests (HEAD returns 503 on some Supabase tiers)
     const [users, chars, camps, visits, recent] = await Promise.all([
-      db.from('profiles').select('id', { count: 'exact', head: true }),
-      db.from('characters').select('id', { count: 'exact', head: true }),
-      db.from('campaigns').select('id', { count: 'exact', head: true }),
-      db.from('site_visits').select('id', { count: 'exact', head: true }).gte('visited_at', today.toISOString()),
+      db.from('profiles').select('id', { count: 'exact' }).limit(0),
+      db.from('characters').select('id', { count: 'exact' }).limit(0),
+      db.from('campaigns').select('id', { count: 'exact' }).limit(0).catch(() => ({ count: null, error: null })),
+      db.from('site_visits').select('id', { count: 'exact' }).limit(0).gte('visited_at', today.toISOString()),
       db.from('profiles').select('id, name, email, created_at, is_admin, is_banned').order('created_at', { ascending: false }).limit(5),
     ]);
     if (users.error) throw users.error;
     if (chars.error) throw chars.error;
-    if (camps.error) throw camps.error;
+    // campaigns may fail due to RLS policy — show partial results instead of crashing
     if (visits.error) throw visits.error;
     if (recent.error) throw recent.error;
     return {
       users:   users.count  || 0,
       chars:   chars.count  || 0,
-      camps:   camps.count  || 0,
+      camps:   (camps && camps.count) || '—',
       visits:  visits.count || 0,
       recent:  recent.data  || [],
     };
@@ -978,7 +982,46 @@ function CampaignsPage({ addToast, canDeleteContent }) {
       </div>
 
       {loading && <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)',fontFamily:'Spectral,serif'}}>Loading…</div>}
-      {error   && <div style={{padding:'20px',color:'var(--danger)',fontFamily:'Spectral,serif'}}>{error}</div>}
+      {error && error.includes('infinite recursion') ? (
+        <div style={{padding:'20px'}}>
+          <div style={{color:'var(--danger)',fontFamily:'Spectral,serif',marginBottom:'12px'}}>{error}</div>
+          <div className="card" style={{marginTop:'12px'}}>
+            <div className="card-header"><h2>Fix Required: Campaigns RLS Policy</h2></div>
+            <div className="card-body">
+              <p style={{fontFamily:'Spectral,serif',fontSize:'13px',color:'var(--text-muted)',marginBottom:'12px'}}>
+                The campaigns table has a Row Level Security policy that references itself, causing infinite recursion.
+                Run this SQL in the Supabase SQL Editor to fix it:
+              </p>
+              <pre style={{background:'rgba(0,0,0,0.3)',padding:'12px',borderRadius:'6px',fontSize:'11px',color:'#c9a84c',overflow:'auto',whiteSpace:'pre-wrap'}}>{`-- Drop the recursive policy
+DROP POLICY IF EXISTS "Users can view campaigns they participate in" ON campaigns;
+DROP POLICY IF EXISTS "campaigns_select" ON campaigns;
+
+-- Recreate with a non-recursive policy
+CREATE POLICY "campaigns_select" ON campaigns FOR SELECT
+  USING (
+    owner_id = auth.uid()
+    OR id::text IN (
+      SELECT jsonb_array_elements_text(data->'players')
+      FROM campaigns c2
+      WHERE c2.owner_id = auth.uid()
+    )
+    OR auth.uid() IN (
+      SELECT (jsonb_array_elements(data->'players')->>'userId')::uuid
+      FROM campaigns c3
+      WHERE c3.id = campaigns.id
+    )
+  );
+
+-- Simpler alternative: just allow owners + admins
+-- DROP POLICY IF EXISTS "campaigns_select" ON campaigns;
+-- CREATE POLICY "campaigns_select" ON campaigns FOR SELECT
+--   USING (owner_id = auth.uid());
+-- CREATE POLICY "campaigns_admin_select" ON campaigns FOR SELECT
+--   USING (EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND (is_admin = true OR is_superuser = true)));`}</pre>
+            </div>
+          </div>
+        </div>
+      ) : error && <div style={{padding:'20px',color:'var(--danger)',fontFamily:'Spectral,serif'}}>{error}</div>}
 
       {!loading && !error && (
         <div className="card">
@@ -1159,7 +1202,7 @@ function CharactersPage({ addToast, canDeleteContent }) {
   const { data: characters, loading, error, refetch } = useAdminQuery(async (db) => {
     const { data, error } = await db
       .from('characters')
-      .select('id, owner_id, data, builder_type, created_at, updated_at')
+      .select('id, owner_id, data, created_at, updated_at')
       .order('updated_at', { ascending: false })
       .limit(500);
     if (error) throw error;
@@ -1219,7 +1262,7 @@ function CharactersPage({ addToast, canDeleteContent }) {
                     <td style={{fontWeight:600,color:'var(--text)'}}>{d.name || 'Unnamed'}</td>
                     <td>{sub}</td>
                     <td>{d.level || '—'}</td>
-                    <td><span className="badge badge-info">{c.builder_type || '5e'}</span></td>
+                    <td><span className="badge badge-info">{(d.system === '3.5e' || d.bab !== undefined || d.class_) ? '3.5e' : '5e'}</span></td>
                     <td>{timeAgo(c.updated_at)}</td>
                     <td>
                       <button className="btn btn-sm btn-danger" onClick={() => deleteCharacter(c.id)} disabled={!canDeleteContent}>Delete</button>
@@ -1947,6 +1990,26 @@ function AdminApp() {
           });
       })
       .catch(() => {});
+  }, []);
+
+  // ── Admin session timeout (30 min inactivity) ──
+  useEffect(() => {
+    const TIMEOUT_MS = 30 * 60 * 1000;
+    let timer = null;
+    const resetTimer = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => {
+        sessionStorage.removeItem('phmurt_admin_img_ok');
+        window.location.reload();
+      }, TIMEOUT_MS);
+    };
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
+    events.forEach(ev => document.addEventListener(ev, resetTimer, { passive: true }));
+    resetTimer();
+    return () => {
+      if (timer) clearTimeout(timer);
+      events.forEach(ev => document.removeEventListener(ev, resetTimer));
+    };
   }, []);
 
   const canManageAdmins = !!(viewer && viewer.isSuperuser);

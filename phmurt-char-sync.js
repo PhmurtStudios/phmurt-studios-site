@@ -214,7 +214,7 @@
           camp.data.activity = [
             { time: "Just now", text: fields.name + " synced from Character Builder" },
           ].concat((camp.data.activity || []).slice(0, 39));
-          saves.push(PhmurtDB.saveCampaign(camp.data || camp));
+          saves.push(PhmurtDB.saveCampaign(typeof cmCompactForCloud === "function" ? cmCompactForCloud(camp.data || camp) : (camp.data || camp)));
         }
       });
       return Promise.all(saves);
