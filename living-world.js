@@ -699,6 +699,269 @@
           };
         }
       },
+      {
+        id: "revolution",
+        weight: 2,
+        apply: (data, rng) => {
+          const eligible = data.factions.filter(f => f.power < 50 || f.trend === "declining");
+          if (!eligible.length) return null;
+          const faction = pick(eligible, rng);
+          const govTypes = ["republic", "council", "commune", "theocracy", "military junta", "tribal confederacy", "oligarchy", "democracy"];
+          const newGovType = pick(govTypes.filter(g => g !== faction.govType), rng);
+          const shouldRename = rng() < 0.3;
+          let newName = faction.name;
+          if (shouldRename) {
+            const templates = [
+              `Free ${faction.name}`,
+              `People's Council of ${faction.name}`,
+              `United ${faction.name}`,
+              `${faction.name} Republic`,
+              `Democratic ${faction.name}`
+            ];
+            newName = pick(templates, rng);
+          }
+          const ruler = faction.hierarchy?.find(h => h.role === "ruler");
+          const rulerTitle = newGovType === "republic" ? "President" : newGovType === "council" ? "Chancellor" : newGovType === "commune" ? "Coordinator" : newGovType === "theocracy" ? "High Priest" : newGovType === "military junta" ? "General" : newGovType === "tribal confederacy" ? "Chieftain" : newGovType === "oligarchy" ? "Elder" : "Prime Minister";
+          return {
+            headline: `${faction.name} Undergoes Revolution!`,
+            detail: `The ${faction.name} has undergone a dramatic upheaval. The old order has been cast down and a new ${newGovType} has risen in its place. ${newName !== faction.name ? `The faction has also renamed itself to the ${newName}.` : ""}`,
+            category: "political",
+            icon: "🔴",
+            importance: "major",
+            mutations: (d) => ({
+              ...d,
+              factions: d.factions.map(f => {
+                if (f.name !== faction.name) return f;
+                const newHierarchy = f.hierarchy.map(h => {
+                  if (h.role === "ruler") return { ...h, name: generateReplacementName(rng), title: rulerTitle };
+                  return h;
+                });
+                // Update allies/rivals references in other factions
+                return { ...f, name: newName, govType: newGovType, hierarchy: newHierarchy, power: Math.max(0, f.power - (10 + Math.floor(rng() * 10))), trend: "declining" };
+              }).map(f => ({
+                ...f,
+                allies: (f.allies || []).map(a => a === faction.name ? newName : a),
+                rivals: (f.rivals || []).map(r => r === faction.name ? newName : r),
+              })),
+              regions: d.regions.map(r => ({
+                ...r,
+                ctrl: r.ctrl === faction.name ? newName : r.ctrl,
+                state: r.ctrl === faction.name ? "tense" : r.state,
+              })),
+              cities: (d.cities || []).map(c => ({ ...c, faction: c.faction === faction.name ? newName : c.faction })),
+              npcs: (d.npcs || []).map(n => ({ ...n, faction: n.faction === faction.name ? newName : n.faction })),
+            })
+          };
+        }
+      },
+      {
+        id: "kingdom_renamed",
+        weight: 1,
+        apply: (data, rng) => {
+          const conquerors = [];
+          for (const f of data.factions) {
+            const hasConquered = data.regions.some(r => r.ctrl === f.name && r.state === "conquered");
+            if (hasConquered) conquerors.push(f);
+          }
+          if (!conquerors.length) return null;
+          const faction = pick(conquerors, rng);
+          const templates = [
+            `Greater ${faction.name}`,
+            `${faction.name} Empire`,
+            `United ${faction.name}`,
+            `Restored ${faction.name}`,
+            `Triumphant ${faction.name}`
+          ];
+          const newName = pick(templates, rng);
+          const ruler = faction.hierarchy?.find(h => h.role === "ruler");
+          const newTitle = faction.govType === "monarchy" ? "Emperor" : faction.govType === "republic" ? "Consul" : "Overlord";
+          return {
+            headline: `${faction.name} Renamed to ${newName}`,
+            detail: `Following its recent military conquests, the ${faction.name} has declared a new name to reflect its expanded dominion: the ${newName}. Official proclamations herald a new era of glory and strength.`,
+            category: "political",
+            icon: "🏰",
+            importance: "major",
+            mutations: (d) => ({
+              ...d,
+              factions: d.factions.map(f => {
+                if (f.name !== faction.name) return f;
+                const newHierarchy = f.hierarchy.map(h => {
+                  if (h.role === "ruler") return { ...h, title: newTitle };
+                  return h;
+                });
+                return { ...f, name: newName, hierarchy: newHierarchy };
+              }).map(f => ({
+                ...f,
+                allies: (f.allies || []).map(a => a === faction.name ? newName : a),
+                rivals: (f.rivals || []).map(r => r === faction.name ? newName : r),
+              })),
+              regions: d.regions.map(r => ({ ...r, ctrl: r.ctrl === faction.name ? newName : r.ctrl })),
+              cities: (d.cities || []).map(c => ({ ...c, faction: c.faction === faction.name ? newName : c.faction })),
+              npcs: (d.npcs || []).map(n => ({ ...n, faction: n.faction === faction.name ? newName : n.faction })),
+            })
+          };
+        }
+      },
+      {
+        id: "border_shift",
+        weight: 3,
+        apply: (data, rng, relations) => {
+          if (data.factions.length < 2) return null;
+          const border = [];
+          for (const f1 of data.factions) {
+            for (const f2 of data.factions) {
+              if (f1.name !== f2.name) {
+                const hasAdjacentRegions = data.regions.some(r1 => r1.ctrl === f1.name && data.regions.some(r2 => r2.ctrl === f2.name));
+                if (hasAdjacentRegions && (relations?.getRelation(f1.name, f2.name) > 10 || f1.power > f2.power * 1.5)) {
+                  border.push([f1, f2]);
+                }
+              }
+            }
+          }
+          if (!border.length) return null;
+          const [stronger, weaker] = pick(border, rng);
+          const regions = data.regions.filter(r => r.ctrl === weaker.name);
+          if (!regions.length) return null;
+          const transferred = pick(regions, rng);
+          return {
+            headline: `Border Shift: ${transferred.name} Changes Hands`,
+            detail: `Through diplomatic negotiation and subtle pressure, the ${stronger.name} has convinced the ${weaker.name} to cede control of ${transferred.name}. The border has been redrawn and new banners now fly over the region.`,
+            category: "political",
+            icon: "🗺️",
+            importance: "standard",
+            mutations: (d) => ({
+              ...d,
+              regions: d.regions.map(r => r.name === transferred.name ? { ...r, ctrl: stronger.name } : r),
+              factions: d.factions.map(f => {
+                if (f.name === stronger.name) return { ...f, power: Math.min(100, f.power + 2) };
+                if (f.name === weaker.name) return { ...f, power: Math.max(0, f.power - 2) };
+                return f;
+              })
+            }),
+            relationMutation: (rel) => {
+              rel.modifyRelation(stronger.name, weaker.name, 5);
+            }
+          };
+        }
+      },
+      {
+        id: "faction_collapse",
+        weight: 1,
+        apply: (data, rng) => {
+          const collapsing = data.factions.filter(f => f.power < 15 && data.factions.length > 1);
+          if (!collapsing.length) return null;
+          const faction = pick(collapsing, rng);
+          return {
+            headline: `${faction.name} Disintegrates!`,
+            detail: `The ${faction.name} has finally succumbed to internal strife and external pressures. Their territories fall into chaos and are claimed by neighboring powers or left contested. A once-proud faction ceases to exist as a coherent power.`,
+            category: "political",
+            icon: "💀",
+            importance: "major",
+            mutations: (d) => ({
+              ...d,
+              regions: d.regions.map(r => r.ctrl === faction.name ? { ...r, ctrl: undefined, state: "contested", threat: "high" } : r),
+              factions: d.factions.map(f => {
+                if (f.name === faction.name) return { ...f, power: 0, trend: "declining" };
+                if (f.allies?.includes(faction.name)) return { ...f, allies: (f.allies || []).filter(x => x !== faction.name) };
+                if (f.rivals?.includes(faction.name)) return { ...f, rivals: (f.rivals || []).filter(x => x !== faction.name) };
+                return f;
+              })
+            })
+          };
+        }
+      },
+      {
+        id: "faction_emergence",
+        weight: 1,
+        apply: (data, rng) => {
+          const candidates = data.factions.filter(f => f.power > 70 && data.regions.filter(r => r.ctrl === f.name).length >= 3);
+          if (!candidates.length) return null;
+          const parent = pick(candidates, rng);
+          const parentRegions = data.regions.filter(r => r.ctrl === parent.name);
+          const splitCount = Math.min(2, parentRegions.length - 1);
+          const splitRegions = pickN(parentRegions, Math.min(splitCount, Math.floor(rng() * 2) + 1), rng);
+          if (!splitRegions.length) return null;
+          const govTypes = ["republic", "council", "monarchy", "tribal", "oligarchy"];
+          const rulerTitles = ["Chancellor", "President", "Chieftain", "Elder", "Consul"];
+          const newGovType = pick(govTypes, rng);
+          const newRulerTitle = pick(rulerTitles, rng);
+          const newName = `${pick(splitRegions, rng).name} ${pick(["Confederacy", "League", "Free State", "Principality"], rng)}`;
+          const newFaction = {
+            id: data.factions.length + 1,
+            name: newName,
+            attitude: "neutral",
+            power: 30 + Math.floor(rng() * 20),
+            trend: "rising",
+            desc: "A newly independent state that has broken away from its parent faction.",
+            color: pick(["#8b6d4a", "#4a6d8b", "#6d8b4a", "#8b4a6d", "#4a8b6d", "#6d4a8b", "#7a5c3c", "#3c5c7a"], rng),
+            govType: newGovType,
+            hierarchy: [{ title: newRulerTitle, name: generateReplacementName(rng), role: "ruler" }],
+            resources: [],
+            allies: [],
+            rivals: [parent.name]
+          };
+          return {
+            headline: `${newName} Emerges from ${parent.name}!`,
+            detail: `A revolutionary movement within the ${parent.name} has succeeded in establishing an independent state. The regions of ${splitRegions.map(r => r.name).join(" and ")} have declared themselves free from ${parent.name} rule. A new faction, the ${newName}, now stands as a separate power.`,
+            category: "political",
+            icon: "🆕",
+            importance: "major",
+            mutations: (d) => ({
+              ...d,
+              factions: [...d.factions.map(f => {
+                if (f.name === parent.name) return { ...f, power: Math.max(0, f.power - 15), trend: "declining" };
+                return f;
+              }), newFaction],
+              regions: d.regions.map(r => splitRegions.some(sr => sr.name === r.name) ? { ...r, ctrl: newName, state: "tense" } : r)
+            }),
+            relationMutation: (rel) => {
+              rel.modifyRelation(parent.name, newName, -20);
+            }
+          };
+        }
+      },
+      {
+        id: "government_reform",
+        weight: 2,
+        apply: (data, rng) => {
+          const candidates = data.factions.filter(f => {
+            if (f.power <= 40) return false;
+            const capital = data.regions.find(r => r.ctrl === f.name && (r.state === "stable" || r.state === "prosperous"));
+            return !!capital;
+          });
+          if (!candidates.length) return null;
+          const faction = pick(candidates, rng);
+          const govTypes = ["republic", "council", "monarchy", "oligarchy", "democracy", "theocracy"];
+          const newGovType = pick(govTypes.filter(g => g !== faction.govType), rng);
+          const newRulerTitle = newGovType === "republic" ? "President" : newGovType === "council" ? "Chancellor" : newGovType === "monarchy" ? "Monarch" : newGovType === "oligarchy" ? "Elder" : newGovType === "democracy" ? "Prime Minister" : "High Priestess";
+          return {
+            headline: `${faction.name} Undergoes Peaceful Government Reform`,
+            detail: `The ${faction.name} has embarked on a period of peaceful institutional reform. Through deliberation and consensus, the leadership has transitioned to a ${newGovType} system. Citizens celebrate this bloodless transformation of their government.`,
+            category: "political",
+            icon: "📜",
+            importance: "standard",
+            mutations: (d) => ({
+              ...d,
+              factions: d.factions.map(f => {
+                if (f.name !== faction.name) return f;
+                const newHierarchy = f.hierarchy.map(h => {
+                  if (h.role === "ruler") return { ...h, title: newRulerTitle };
+                  return h;
+                });
+                return { ...f, govType: newGovType, hierarchy: newHierarchy };
+              }),
+              regions: d.regions.map(r => r.ctrl === faction.name ? { ...r, state: "stable" } : r)
+            }),
+            relationMutation: (rel) => {
+              for (const other of data.factions) {
+                if (other.name !== faction.name && other.govType === newGovType) {
+                  rel.modifyRelation(faction.name, other.name, 5);
+                }
+              }
+            }
+          };
+        }
+      },
     ],
 
     // ── MILITARY ──

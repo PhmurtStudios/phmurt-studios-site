@@ -1955,9 +1955,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
   // Track when town images become available (loaded on demand)
   const [townImagesReady, setTownImagesReady] = useState(() => !!window.TOWN_IMAGES);
 
-  // ── Lazy-load town-images when user opens town view ──
+  // ── Lazy-load town-images when World tab opens (so buttons appear) ──
   useEffect(() => {
-    if (!townView) return;
     if (window.TOWN_IMAGES) { setTownImagesReady(true); return; }
     // Trigger lazy load from campaigns.html's loadDataModule function
     if (typeof window.loadDataModule === "function") {
@@ -1972,7 +1971,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
       if (window.TOWN_IMAGES) { setTownImagesReady(true); clearInterval(check); }
     }, 300);
     return () => clearInterval(check);
-  }, [townView]);
+  }, []);
 
   // Update zoom level label
   useEffect(() => {
@@ -2131,30 +2130,61 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
 
   const mapRegions = regionPositions();
 
-  // ── Procedural POIs (dungeons, ruins, shrines, caves scattered across the world) ──
+  // ── Procedural POIs — scattered around province centers (always on land) ──
   const worldPOIs = useCallback(() => {
-    const types = ["dungeon","ruins","dungeon","ruins","cave","shrine","cave","tower","grove","monolith"];
-    const names = ["Darkhollow Crypt","Shattered Pillar","The Sunken Vault","Serpent's Den","Whispering Grotto",
+    const landTypes = ["dungeon","ruins","cave","shrine","tower","grove","monolith","barrow","mine","outpost"];
+    const oceanTypes = ["shipwreck","sea_cave","lighthouse","tidal_shrine","sunken_ruins"];
+    const landNames = ["Darkhollow Crypt","Shattered Pillar","Serpent's Den","Whispering Grotto",
       "Moonlit Shrine","Dragon's Maw Cave","Old Watchtower","The Twisted Grove","The Standing Stone",
       "Tomb of the Forgotten","Crumbling Bastion","The Bone Pit","Iron Gate Ruins","Crystalvein Cavern",
       "Stormbreak Spire","The Withered Oak","Ancestor's Cairn","Wraithwood Hollow","The Ember Forge",
-      "Tidal Caves","Blightmoor Ruins","Gnarled Root Temple","Shadowpeak Mine","The Silent Obelisk",
+      "Blightmoor Ruins","Gnarled Root Temple","Shadowpeak Mine","The Silent Obelisk",
       "Windscour Heights","Blackwater Grotto","Duskfall Sanctum","The Petrified Circle","Ironmaw Depths",
       "Thornkeep Ruins","Mistwalker's Shrine","The Frozen Barrow","Starfall Crater","Ashveil Catacombs"];
-    const poiAnchors = [
-      { x:1220, y:940 }, { x:2120, y:680 }, { x:3870, y:850 }, { x:4760, y:1240 },
-      { x:4950, y:2410 }, { x:4290, y:3630 }, { x:2890, y:3840 }, { x:1280, y:3100 },
-      { x:960, y:2100 }, { x:2560, y:1380 }, { x:3500, y:2880 }, { x:1830, y:3440 },
-    ];
-    return poiAnchors.map((anchor, i) => ({
-      id:`poi-${i}`,
-      name:names[(Math.abs(seed(names[i % names.length])) + i) % names.length],
-      type:types[i % types.length],
-      x:Math.round(anchor.x + seedF(i,3,1) * 120 - 60),
-      y:Math.round(anchor.y + seedF(i,5,2) * 110 - 55),
-      threat:["low","medium","high","extreme"][Math.floor(seedF(i,9,4) * 4)],
-    }));
-  }, [seed, seedF]);
+    const oceanNames = ["The Sunken Vault","Tidal Caves","Stormwreck Reef","Drowned Sailor's Rest",
+      "Coral Throne","Siren's Lighthouse","Ghostship Wreckage","The Abyssal Grotto","Seaspray Shrine",
+      "Kraken's Maw","Barnacle Keep","The Drowned Temple"];
+    // Build anchors from province centers — always on land
+    const provs = atlasProvinces;
+    const anchorsPerProv = Math.max(2, Math.ceil(12 / Math.max(provs.length, 1)));
+    const allAnchors = [];
+    provs.forEach((p, pi) => {
+      for (let a = 0; a < anchorsPerProv && allAnchors.length < 12; a++) {
+        const angle = ((pi * anchorsPerProv + a) / Math.max(provs.length * anchorsPerProv, 1)) * Math.PI * 2 + seedF(pi, a, 7) * 1.2;
+        const dist = 80 + seedF(pi, a, 11) * Math.min(p.spreadX || 300, p.spreadY || 250) * 0.7;
+        allAnchors.push({
+          x: Math.round((p.labelX || p.cityX || 3000) + Math.cos(angle) * dist),
+          y: Math.round((p.labelY || p.cityY || 2250) + Math.sin(angle) * dist),
+          onLand: true,
+        });
+      }
+    });
+    // Add a few ocean/coast POIs near map edges (islands, coastlines)
+    const isles = atlasIslands || [];
+    if (isles.length > 0) {
+      // Place 2-3 ocean POIs near island centers
+      for (let ii = 0; ii < Math.min(3, isles.length); ii++) {
+        const isleMatch = isles[ii].path.match(/M(\d+),(\d+)/);
+        if (isleMatch) {
+          allAnchors.push({ x: parseInt(isleMatch[1]), y: parseInt(isleMatch[2]), onLand: false });
+        }
+      }
+    }
+    return allAnchors.slice(0, 15).map((anchor, i) => {
+      const isOcean = !anchor.onLand;
+      const typePool = isOcean ? oceanTypes : landTypes;
+      const namePool = isOcean ? oceanNames : landNames;
+      return {
+        id: `poi-${i}`,
+        name: namePool[(Math.abs(seed(namePool[i % namePool.length])) + i) % namePool.length],
+        type: typePool[i % typePool.length],
+        x: Math.round(anchor.x + seedF(i, 3, 1) * 100 - 50),
+        y: Math.round(anchor.y + seedF(i, 5, 2) * 90 - 45),
+        threat: ["low","medium","high","extreme"][Math.floor(seedF(i, 9, 4) * 4)],
+        isOcean: isOcean,
+      };
+    });
+  }, [seed, seedF, atlasProvinces, atlasIslands]);
 
   const pois = worldPOIs();
 
@@ -2196,12 +2226,10 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
   }, [mapRegions, data.quests, data.factions, data.regions]);
 
   // ── Zoom / Pan handlers — wider range for continental zoom (0.15x to 8x) ──
-  // When atlas map is active, map is locked in place (no pan/zoom)
-  const atlasLocked = !!data.atlasMapSeed;
+  const atlasLocked = false; // zoom & pan always enabled
 
   const handleWheel = useCallback((e) => {
     e.preventDefault();
-    if (atlasLocked) return;
     const rect = mapRef.current?.getBoundingClientRect();
     if (!rect) return;
     const mx = e.clientX - rect.left, my = e.clientY - rect.top;
@@ -2610,11 +2638,11 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
         ))}
         <div style={{ marginLeft:"auto", display:"flex", gap:8, alignItems:"center", justifyContent:"flex-end", flexWrap:"wrap" }}>
           {tab==="map" && <>
-            {false && <span style={{ fontFamily:T.ui, fontSize:8, color:T.crimson, letterSpacing:"1px", fontWeight:500 }}>{zoomLevel.toUpperCase()}</span>}
-            {false && <span style={{ fontFamily:T.ui, fontSize:8, color:T.textMuted, letterSpacing:"1px" }}>{Math.round(mapZoom*100)}%</span>}
-            {!atlasLocked && <button onClick={()=>setMapZoom(z=>Math.min(8,z*1.3))} style={{ padding:"4px 8px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontSize:13, cursor:"pointer", borderRadius:"2px" }}>+</button>}
-            {!atlasLocked && <button onClick={()=>setMapZoom(z=>Math.max(0.12,z*0.77))} style={{ padding:"4px 8px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontSize:13, cursor:"pointer", borderRadius:"2px" }}>−</button>}
-            {!atlasLocked && <button onClick={()=>{setMapZoom(WORLD_ZOOM_PRESETS.world.zoom);setMapPan(WORLD_ZOOM_PRESETS.world.pan);}} style={{ padding:"4px 10px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Atlas</button>}
+            <span style={{ fontFamily:T.ui, fontSize:8, color:T.crimson, letterSpacing:"1px", fontWeight:500 }}>{zoomLevel.toUpperCase()}</span>
+            <span style={{ fontFamily:T.ui, fontSize:8, color:T.textMuted, letterSpacing:"1px" }}>{Math.round(mapZoom*100)}%</span>
+            <button onClick={()=>setMapZoom(z=>Math.min(8,z*1.3))} style={{ padding:"4px 8px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontSize:13, cursor:"pointer", borderRadius:"2px" }}>+</button>
+            <button onClick={()=>setMapZoom(z=>Math.max(0.12,z*0.77))} style={{ padding:"4px 8px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontSize:13, cursor:"pointer", borderRadius:"2px" }}>−</button>
+            <button onClick={()=>{setMapZoom(0.25);setMapPan({x:0,y:0});}} style={{ padding:"4px 10px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Reset</button>
             {false && <button onClick={()=>focusWorldNode(selectedWorldNode?.mx != null ? selectedWorldNode : (worldNodes.find((n)=>n.id===worldMapState.lastFocusedRegionId) || worldNodes[0]), "region")} style={{ padding:"4px 10px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Region</button>}
             {false && <button onClick={()=>focusWorldNode(selectedWorldNode?.mx != null ? selectedWorldNode : (worldNodes.find((n)=>n.id===worldMapState.lastFocusedRegionId) || worldNodes[0]), "local")} style={{ padding:"4px 10px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Local</button>}
             {false && selectedWorldNode?.mx != null && selectedWorldNode?.type === "dungeon" && <button onClick={()=>focusWorldNode(selectedWorldNode, "site")} style={{ padding:"4px 10px", background:"rgba(212,67,58,0.08)", border:`1px solid ${T.crimsonBorder}`, color:T.crimson, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Site</button>}
@@ -2646,7 +2674,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
       <div style={{ display:"flex", flex:1, overflow:"hidden", position:"relative" }}>
         {/* ══════════ FANTASY MAP TAB — Multi-scale continental map ══════════ */}
         {tab==="map" && (
-          <div ref={mapRef} style={{ flex:1, overflow:"hidden", cursor: atlasLocked ? "default" : (dragging ? "grabbing" : "grab"), position:"relative", background: data.atlasMapSeed ? "#2a2520" : "linear-gradient(165deg, #e8ddc8 0%, #ddd0b8 45%, #d4c6a8 100%)", touchAction:"none", WebkitUserSelect:"none", userSelect:"none" }}
+          <div ref={mapRef} style={{ flex:1, overflow:"hidden", cursor: dragging ? "grabbing" : "grab", position:"relative", background: data.atlasMapSeed ? "#2a2520" : "linear-gradient(165deg, #e8ddc8 0%, #ddd0b8 45%, #d4c6a8 100%)", touchAction:"none", WebkitUserSelect:"none", userSelect:"none" }}
             onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
             onTouchStart={handleMapTouchStart} onTouchMove={handleMapTouchMove} onTouchEnd={handleMapTouchEnd} onTouchCancel={handleMapTouchEnd}
             onWheel={handleWheel}>
@@ -2751,11 +2779,26 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                   return (
                   <g key={`terr-${i}`} clipPath="url(#atlasLandClip)" style={{ cursor:"pointer" }} onClick={(e)=>{ e.stopPropagation(); setAtlasProvinceId(t.id); if (t.capitalNode) selectRegion(t.capitalNode); setTab("cities"); setCityRegionFocus(t.name); setSel(null); setSelType(null); }}>
                     <path d={t.path} fill={terrFill} opacity={isDestroyed ? 0.25 : isContested ? 0.22 : activeProvince ? 0.18 : 0.10} stroke={isDestroyed ? "#8b0000" : isContested ? "#c94040" : activeProvince ? "#7a6b4a" : terrFill} strokeWidth={isDestroyed ? 3 : isContested ? 2.5 : activeProvince ? 2.4 : 1.2} strokeOpacity={isDestroyed ? 0.7 : isContested ? 0.5 : activeProvince ? 0.55 : 0.35} strokeLinejoin="round" strokeDasharray={isContested ? "12,6" : "none"}/>
-                    {mapZoom < 1.3 && t.labelX != null && (
-                      <text x={t.labelX} y={t.labelY} textAnchor="middle" fill={activeProvince ? "#3d3220" : "#4a3f28"} stroke="rgba(252,248,236,0.5)" strokeWidth={Math.max(1, 2.2 / Math.max(mapZoom, 0.5))} paintOrder="stroke" fontFamily="'Cinzel', serif" fontSize={Math.max(28, 64 / Math.max(mapZoom, 0.36))} fontWeight="600" letterSpacing="3.5" opacity={activeProvince ? 0.92 : 0.76} style={{ pointerEvents:"none", textTransform:"uppercase" }}>
-                        {t.name}
-                      </text>
-                    )}
+                    {mapZoom < 1.3 && t.labelX != null && (() => {
+                      const regionForLabel = (data.regions || []).find(r => r.name === t.name);
+                      const ctrlFaction = regionForLabel?.ctrl ? (data.factions || []).find(f => f.name === regionForLabel.ctrl) : null;
+                      // If the controlling faction renamed itself (revolution/conquest), show the new faction name
+                      const displayName = ctrlFaction ? ctrlFaction.name : t.name;
+                      const fontSize = Math.max(28, 64 / Math.max(mapZoom, 0.36));
+                      return (
+                        <>
+                          <text x={t.labelX} y={t.labelY} textAnchor="middle" fill={isDestroyed ? "#6a2020" : isContested ? "#c94040" : activeProvince ? "#3d3220" : "#4a3f28"} stroke="rgba(252,248,236,0.5)" strokeWidth={Math.max(1, 2.2 / Math.max(mapZoom, 0.5))} paintOrder="stroke" fontFamily="'Cinzel', serif" fontSize={fontSize} fontWeight="600" letterSpacing="3.5" opacity={activeProvince ? 0.92 : 0.76} style={{ pointerEvents:"none", textTransform:"uppercase" }}>
+                            {displayName}
+                          </text>
+                          {/* Show government type or state under name when zoomed in */}
+                          {mapZoom > 0.45 && ctrlFaction?.govType && (
+                            <text x={t.labelX} y={t.labelY + fontSize * 0.65} textAnchor="middle" fill={isDestroyed ? "#6a2020" : "#6b5f4a"} stroke="rgba(252,248,236,0.4)" strokeWidth={1} paintOrder="stroke" fontFamily="'Spectral', serif" fontSize={Math.max(14, 24 / Math.max(mapZoom, 0.36))} fontStyle="italic" letterSpacing="1.5" opacity={0.55} style={{ pointerEvents:"none" }}>
+                              {isDestroyed ? "FALLEN" : isContested ? "CONTESTED" : ctrlFaction.govType.charAt(0).toUpperCase() + ctrlFaction.govType.slice(1)}
+                            </text>
+                          )}
+                        </>
+                      );
+                    })()}
                   </g>
                   );
                 })}
@@ -2930,8 +2973,30 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
 
                 {/* ═══ LAYER 6b: Atlas POI markers — clickable ═══ */}
                 {data.atlasMapSeed && (data.pois || []).map(poi => {
-                  const px = poi.mapX * MAP_W;
-                  const py = poi.mapY * MAP_H;
+                  let px = poi.mapX * MAP_W;
+                  let py = poi.mapY * MAP_H;
+                  // ── Snap ocean POIs toward nearest province center (always on land) ──
+                  const provCenters = atlasProvinces.map(p => ({ x: p.labelX || p.cityX, y: p.labelY || p.cityY }));
+                  const nearestProv = provCenters.reduce((best, c) => {
+                    const d = Math.hypot(px - c.x, py - c.y);
+                    return d < best.d ? { ...c, d } : best;
+                  }, { x: 3000, y: 2250, d: Infinity });
+                  // If POI is far from any province center, pull it toward land
+                  const maxDist = 1200; // max distance from any province center before snapping
+                  if (nearestProv.d > maxDist) {
+                    const ratio = maxDist / nearestProv.d;
+                    px = nearestProv.x + (px - nearestProv.x) * ratio;
+                    py = nearestProv.y + (py - nearestProv.y) * ratio;
+                  }
+                  // Check if within continent bounds (rough ellipse test centered at 3000,2250)
+                  const cDist = Math.hypot((px - 3000) / 2200, (py - 2250) / 1600);
+                  const isOceanPoi = cDist > 1.0;
+                  if (isOceanPoi) {
+                    // Pull toward continent center
+                    const pullRatio = 0.95 / cDist;
+                    px = 3000 + (px - 3000) * pullRatio;
+                    py = 2250 + (py - 2250) * pullRatio;
+                  }
                   const isActive = sel?.id === poi.id && selType === "poi";
                   const iconSz = Math.max(8, 16 / Math.max(mapZoom * 0.7, 0.3));
                   const labelSz = Math.max(8, 14 / Math.max(mapZoom * 0.7, 0.35));
@@ -3066,7 +3131,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                     onMouseEnter={e => { e.target.style.background = `${fc}30`; }}
                     onMouseLeave={e => { e.target.style.background = `${fc}18`; }}
                   >View Full Details</button>
-                  {window.TOWN_IMAGES && window.TOWN_IMAGES[c.name] && (
+                  {townImagesReady && window.TOWN_IMAGES && window.TOWN_IMAGES[c.name] && (
                     <button
                       onClick={() => { setTownView(c.name); setCityPopup(null); setTownSelBldg(null); setTownHovBldg(null); setTownZoom(0); setTownPan({x:0,y:0}); }}
                       style={{
@@ -3820,7 +3885,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                         background: "transparent", border: `1px solid ${T.border}`, borderRadius: "3px", color: T.textMuted,
                         fontFamily: T.ui, fontSize: 10, letterSpacing: "1.5px", textTransform: "uppercase", cursor: "pointer",
                       }}>◎ View on Map</button>
-                      {window.TOWN_IMAGES && window.TOWN_IMAGES[c.name] && (
+                      {townImagesReady && window.TOWN_IMAGES && window.TOWN_IMAGES[c.name] && (
                         <button onClick={() => { setTownView(c.name); setTownSelBldg(null); setTownHovBldg(null); setTownZoom(0); setTownPan({x:0,y:0}); }} style={{
                           display: "flex", alignItems: "center", gap: 6, padding: "8px 14px",
                           background: "linear-gradient(135deg, rgba(201,168,92,0.15), transparent)", border: `1px solid rgba(201,168,92,0.4)`, borderRadius: "3px", color: "#c9a85c",
@@ -4083,7 +4148,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                                     <span>1 tavern</span>
                                     <span>{(c.npcs || []).length} NPCs</span>
                                     <span>{(c.questHooks || []).length} quests</span>
-                                    {window.TOWN_IMAGES && window.TOWN_IMAGES[c.name] && (
+                                    {townImagesReady && window.TOWN_IMAGES && window.TOWN_IMAGES[c.name] && (
                                       <span onClick={(e) => { e.stopPropagation(); setTownView(c.name); setTownSelBldg(null); setTownHovBldg(null); setTownZoom(0); setTownPan({x:0,y:0}); }} style={{ marginLeft: "auto", color: "#c9a85c", cursor: "pointer", letterSpacing: "0.5px", fontWeight: 500 }}>🗺 Map</span>
                                     )}
                                   </div>
