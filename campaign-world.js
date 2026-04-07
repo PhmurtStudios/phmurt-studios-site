@@ -3021,23 +3021,21 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                   );
                 })}
 
-                {/* ═══ LAYER 6: Invisible clickable hit areas over atlas map's built-in city dots ═══ */}
-                {/* The atlas .webp image already renders city dots + labels.                      */}
-                {/* This layer adds ONLY transparent click targets on top — nothing visible.       */}
-                {/* Uses origX/origY (original atlas metadata coords) to match the .webp dots.     */}
+                {/* ═══ LAYER 6: Invisible clickable hit areas — locked to atlas image ═══ */}
+                {/* The atlas .webp already has city dots + labels baked in.              */}
+                {/* This layer is INSIDE the same <g transform> as the image, so it      */}
+                {/* moves, scales, and pans identically — hit areas never drift.          */}
+                {/* Hit radius is zoom-compensated so it stays ~25 CSS px on screen.      */}
                 {data.atlasMapSeed && (data.cities || []).map(city => {
-                  // Use original atlas coords so hit areas align with dots baked into the .webp
                   const cx = (city.origX != null ? city.origX : city.mapX) * MAP_W;
                   const cy = (city.origY != null ? city.origY : city.mapY) * MAP_H;
-                  // Generous hit area — extends well beyond the map dot for easy clicking
-                  const hitR = Math.max(20, 30 / Math.max(mapZoom * 0.5, 0.25));
+                  const hitR = Math.max(15, 25 / Math.max(mapZoom, 0.05));
                   return (
                     <g key={`cityhit-${city.id}`} style={{ cursor: "pointer" }}
                       onClick={(e) => {
                         e.stopPropagation();
                         setCityPopup(cityPopup?.city?.id === city.id ? null : { city });
                       }}>
-                      {/* Completely invisible hit target */}
                       <circle cx={cx} cy={cy} r={hitR} fill="transparent" stroke="none" />
                     </g>
                   );
@@ -3069,11 +3067,10 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                     px = 3000 + (px - 3000) * pullRatio;
                     py = 2250 + (py - 2250) * pullRatio;
                   }
-                  const hitR = Math.max(20, 30 / Math.max(mapZoom * 0.5, 0.25));
+                  const hitR = Math.max(15, 25 / Math.max(mapZoom, 0.05));
                   return (
                     <g key={poi.id} style={{ cursor: "pointer" }}
                       onClick={(e) => { e.stopPropagation(); setSel(poi); setSelType("poi"); }}>
-                      {/* Completely invisible hit target */}
                       <circle cx={px} cy={py} r={hitR} fill="transparent" stroke="none" />
                     </g>
                   );
