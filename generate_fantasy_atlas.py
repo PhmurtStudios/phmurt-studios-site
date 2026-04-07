@@ -332,6 +332,13 @@ REGION_NAME_POOL = [
     "Essear", "Belros", "Theanas", "Fara", "Elonia", "Cyrin", "Dravina",
     "Valdheim", "Korrath", "Tethys", "Ashmark", "Selvane", "Dremora", "Wyndell",
     "Caeloth", "Brynmar", "Tarnis", "Ondara", "Kelvor", "Mistvale", "Drakkos",
+    "Aethermoor", "Vornhelm", "Galanthia", "Iskarion", "Thornemark", "Solwynd",
+    "Kharadan", "Morvaine", "Duskveil", "Aelindor", "Greyhollow", "Pyremarch",
+    "Windmere", "Caltheon", "Verdantia", "Obsidara", "Felmoor", "Ravenmarch",
+    "Stormvale", "Ironreach", "Silverfen", "Nightward", "Goleli", "Sunmere",
+    "Blackmoor", "Thornwick", "Ashenveil", "Crystalis", "Dawnhollow", "Evershade",
+    "Frosthold", "Grimvale", "Highkeep", "Ironglenn", "Jadecross", "Lakeshore",
+    "Moonridge", "Northmere", "Oakhaven", "Pinecrest", "Rosedale", "Shadowfen",
 ]
 
 CITY_NAME_POOL = [
@@ -341,6 +348,14 @@ CITY_NAME_POOL = [
     "Borist", "Odrin", "Thornwall", "Ashwick", "Ravenmere", "Stormgate",
     "Ironholt", "Greenhollow", "Whitevale", "Deepwatch", "Foxbury", "Dunmore",
     "Harrowfield", "Millcross", "Copperside", "Brightmoor", "Kingsbridge",
+    "Alderhaven", "Blackrock", "Cinderfell", "Dawnwatch", "Eagleford", "Fernhollow",
+    "Greywater", "Highwall", "Ivyreach", "Jadeston", "Kettlebrook", "Longmere",
+    "Maplecross", "Northgate", "Oakmere", "Pinewood", "Quartzridge", "Redthorn",
+    "Silverton", "Tidefall", "Underbridge", "Valewick", "Westmarch", "Yellowfen",
+    "Ashbourne", "Brinewood", "Cliffhaven", "Duskwater", "Elmsworth", "Fogmere",
+    "Goldenleaf", "Hollowburg", "Inkwell", "Junipervale", "Knolltown", "Lakecrest",
+    "Moonshadow", "Nighthollow", "Oldbridge", "Pebblecreek", "Runeford", "Stonemere",
+    "Thistledown", "Urswick", "Vineyard", "Windcrest", "Yewborough", "Zenithburg",
 ]
 
 SUBTITLE_POOL = [
@@ -369,6 +384,11 @@ SEA_NAME_POOL = [
 MAP_NAME_POOL = [
     "CARDONIA", "VAELTHYR", "ALDENMOOR", "DRAKHEIM", "ESTEROS",
     "THALINDRA", "KORATHIS", "MYRANDEL", "SOLMERE", "ASHENDAL",
+    "VERANTHOS", "GRIMHOLDE", "CELESTARA", "NORDENVAAL", "EMBERLUND",
+    "KHARTOUM", "SILVANDOR", "WYRMREST", "THORNWALL", "GOLELI",
+    "IRONGATE", "MOONHAVEN", "STORMREACH", "DUSKWALD", "BRIGHTLAND",
+    "AETHERMERE", "OBSIDIAN", "RAVENMARK", "CRYSTHAVEN", "FROSTPEAK",
+    "VERDANTIS", "PYRECLIFF", "SHADOWDEEP", "STARFORGE", "THUNDERHOLM",
 ]
 
 DESCRIPTOR_POOL = [
