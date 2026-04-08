@@ -1006,69 +1006,165 @@ const CITY_FEATURES = [
 // ── POI Lore & Quest Data ──
 const POI_LORE = {
   Ruins: [
-    "Once a thriving settlement, now reduced to crumbling walls and overgrown courtyards. The stone bears scorch marks from an ancient siege.",
-    "Explorers report strange carvings on the walls that glow faintly at dusk. The architecture predates any known civilization.",
-    "Scattered bones and rusted armor suggest a final desperate battle was fought here centuries ago.",
+    "Once a thriving settlement, now reduced to crumbling walls and overgrown courtyards. The stone bears scorch marks from an ancient siege that razed the city in a single night. Charred timber beams still jut from collapsed doorways like broken ribs.",
+    "Explorers report strange carvings on the walls that glow faintly at dusk. The architecture predates any known civilization by thousands of years. Some symbols match no language ever cataloged.",
+    "Scattered bones and rusted armor suggest a final desperate battle was fought here centuries ago. The dead were never buried — they fell where they stood, swords still clutched in skeletal hands.",
+    "Vines and moss have claimed most of the stonework, but one chamber remains impossibly clean. No dust settles on its polished floor, and footsteps echo as if in a much larger space.",
+    "The ruins shift subtly when no one is watching. Passages that led north yesterday now face east. Mapmakers have gone mad trying to chart the interior.",
   ],
   Fortress: [
-    "An imposing stronghold built into the cliff face, its gates sealed by mechanisms long forgotten. Arrow slits still watch the approach.",
-    "This abandoned fortress was once the seat of a warlord whose name has been deliberately erased from all records.",
-    "The walls still hold despite centuries of neglect. Locals whisper that something within keeps the stones from crumbling.",
+    "An imposing stronghold built into the cliff face, its gates sealed by mechanisms long forgotten. Arrow slits still watch the approach, and some swear they've seen movement behind them.",
+    "This abandoned fortress was once the seat of a warlord whose name has been deliberately erased from all records. Every portrait was burned, every inscription chiseled away. Someone wanted the world to forget.",
+    "The walls still hold despite centuries of neglect. Locals whisper that something within keeps the stones from crumbling — a binding spell woven into the mortar itself.",
+    "A military engineering marvel with interlocking kill zones and hidden sally ports. The garrison vanished overnight but left the armory fully stocked, as if expecting to return.",
+    "The fortress straddles a strategic mountain pass, its twin towers connected by a bridge of iron and stone. The wind howls through its corridors like the screams of its former inhabitants.",
   ],
   Temple: [
-    "A solemn place of worship to a forgotten deity. The altar still radiates a faint warmth despite no flame having burned here in ages.",
-    "Pilgrims once traveled great distances to receive blessings here. The stained glass windows depict prophecies yet to be fulfilled.",
-    "The temple's inner sanctum is sealed behind a door of solid adamantine. No force or magic has been able to open it.",
+    "A solemn place of worship to a forgotten deity. The altar still radiates a faint warmth despite no flame having burned here in ages. Offerings left at dawn vanish by dusk.",
+    "Pilgrims once traveled great distances to receive blessings here. The stained glass windows depict prophecies yet to be fulfilled — scenes of fire, flood, and a crowned figure rising from the sea.",
+    "The temple's inner sanctum is sealed behind a door of solid adamantine. No force or magic has been able to open it. Scratching sounds from within grow louder each year.",
+    "Every surface is carved with prayers in a dozen languages, layered over centuries. The oldest inscriptions are in a tongue no living scholar reads, though the words seem to whisper themselves aloud at midnight.",
+    "The temple was built around a natural spring whose waters heal minor wounds. The clergy who once tended it left warnings carved above every doorway: 'Do not drink after dark.'",
   ],
   Tower: [
-    "A solitary spire rising above the landscape, built by a mage whose experiments could still be heard echoing from within on windless nights.",
-    "The tower's upper floors have collapsed, but the underground levels extend far deeper than expected.",
-    "Star charts and arcane instruments fill the abandoned observatory. Some claim the lenses still show impossible constellations.",
+    "A solitary spire rising above the landscape, built by a mage whose experiments could still be heard echoing from within on windless nights. Colored lights flicker in the upper windows.",
+    "The tower's upper floors have collapsed, but the underground levels extend far deeper than expected — at least seven sub-basements, each sealed with increasingly powerful wards.",
+    "Star charts and arcane instruments fill the abandoned observatory. Some claim the lenses still show impossible constellations that match no known sky, past or present.",
+    "The tower is taller on the inside than the outside. Climbing its spiral staircase takes three days, though the structure appears to be only five stories from the ground.",
+    "Lightning strikes the tower's peak with unnatural frequency, yet the structure is undamaged. The strikes follow a pattern that some mathematicians claim encodes a message.",
   ],
   Mine: [
-    "Deep tunnels once rich with precious ore. The miners abandoned it after breaking into an older, unknown tunnel system below.",
-    "The mine entrance is partially collapsed but passable. Strange mineral growths within glow with an otherworldly luminescence.",
-    "Tools and carts remain exactly where they were dropped, as if the miners fled in an instant. No one knows why.",
+    "Deep tunnels once rich with precious ore. The miners abandoned it after breaking into an older, unknown tunnel system below — one carved with tools that shouldn't exist.",
+    "The mine entrance is partially collapsed but passable. Strange mineral growths within glow with an otherworldly luminescence, illuminating passages in shifting shades of violet and teal.",
+    "Tools and carts remain exactly where they were dropped, as if the miners fled in an instant. No bodies were ever found. Meals sit half-eaten on stone benches, perfectly preserved.",
+    "The deepest shaft descends beyond any reasonable depth for the local geology. At the bottom, the walls are warm to the touch and veined with an unknown metal that sings when struck.",
+    "A collapsed section recently reopened after a tremor, revealing a vast underground lake. Something large moves beneath its still, black surface.",
   ],
   Shrine: [
-    "A humble roadside shrine where travelers leave offerings. The carved figure has been worn smooth by countless reverent hands.",
-    "This sacred grove shrine marks a convergence of ley lines. Magic is subtly amplified in its vicinity.",
-    "Built at the site of a legendary hero's last stand, this shrine is said to grant courage to those who kneel before it.",
+    "A humble roadside shrine where travelers leave offerings. The carved figure has been worn smooth by countless reverent hands, yet its expression seems to change with the seasons.",
+    "This sacred grove shrine marks a convergence of ley lines. Magic is subtly amplified in its vicinity — cantrips cast here burn brighter, divinations ring clearer.",
+    "Built at the site of a legendary hero's last stand, this shrine is said to grant courage to those who kneel before it. Soldiers visit before every campaign.",
+    "The shrine is tended by no one, yet fresh flowers always adorn its base. The petals are from no plant that grows within a hundred miles.",
+    "Carved from a single block of white marble that has never weathered or stained, the shrine predates the road it sits beside by several centuries.",
   ],
   Tomb: [
-    "A sealed burial vault of an ancient king. The wards carved into the entrance suggest what lies within should remain undisturbed.",
-    "A vast necropolis stretches beneath the surface. The dead here were buried with their weapons, ready for a war in the afterlife.",
-    "The tomb was opened once before. Only one expedition member returned, and they never spoke of what they found.",
+    "A sealed burial vault of an ancient king. The wards carved into the entrance suggest what lies within should remain undisturbed — not to protect the treasure, but to contain what guards it.",
+    "A vast necropolis stretches beneath the surface. The dead here were buried with their weapons, ready for a war in the afterlife. Some chambers show signs of that war already begun.",
+    "The tomb was opened once before. Only one expedition member returned, and they never spoke of what they found. They died three days later, hair turned white, clutching a golden coin no one could identify.",
+    "The entrance is flanked by statues of weeping angels whose stone tears leave actual wet trails. The air inside is cold regardless of season — breath frosts even in midsummer.",
+    "Every surface inside is covered in warnings written in blood-red pigment. The languages span every known civilization, all saying the same thing: 'The sleeper must not wake.'",
   ],
   Cavern: [
-    "A vast natural cave system with chambers large enough to hold a cathedral. Underground rivers echo in the darkness.",
-    "The cavern walls are covered in ancient paintings depicting creatures never seen on the surface.",
-    "Deep within, a warm draft carries the scent of sulfur. Scratching sounds echo from passages too narrow for humans.",
+    "A vast natural cave system with chambers large enough to hold a cathedral. Underground rivers echo in the darkness, their waters ice-cold and tasting faintly of silver.",
+    "The cavern walls are covered in ancient paintings depicting creatures never seen on the surface — winged serpents, six-legged beasts, and humanoid figures with too many eyes.",
+    "Deep within, a warm draft carries the scent of sulfur. Scratching sounds echo from passages too narrow for humans, growing louder the deeper one ventures.",
+    "Bioluminescent fungi carpet the cavern floor in patches of ghostly blue and green. The patterns shift overnight, forming shapes that some claim are maps or messages.",
+    "A massive stalactite formation resembles a frozen waterfall of stone. Behind it, explorers found a perfectly carved doorway leading into worked stone corridors of unknown origin.",
   ],
   Obelisk: [
-    "A towering black stone monolith inscribed with a spiral script that no scholar has deciphered. It hums faintly during storms.",
-    "The obelisk casts no shadow regardless of the sun's position. Animals refuse to approach within fifty paces.",
-    "Erected by an unknown civilization, the stone's surface is impossibly smooth and resists all attempts at sampling.",
+    "A towering black stone monolith inscribed with a spiral script that no scholar has deciphered. It hums faintly during storms, and compasses spin wildly within fifty paces.",
+    "The obelisk casts no shadow regardless of the sun's position. Animals refuse to approach within fifty paces, and birds alter their flight paths to avoid passing overhead.",
+    "Erected by an unknown civilization, the stone's surface is impossibly smooth and resists all attempts at sampling. Chisels shatter, acids bead off, and diamond blades dull on contact.",
+    "The obelisk appears on no map older than fifty years, yet geological analysis suggests it has stood for millennia. It is as if it simply appeared — or was revealed.",
+    "On moonless nights, the inscriptions emit a faint phosphorescence that casts shadows in impossible directions. Those who study the light too long report vivid dreams of alien landscapes.",
   ],
   "Standing Stones": [
-    "A circle of weathered menhirs arranged in precise astronomical alignment. During equinoxes, the stones sing in the wind.",
-    "The stones mark the boundary of an ancient pact. Stepping within the circle at midnight reveals glimpses of another era.",
-    "Local druids still perform rituals here, though even they admit the stones predate their oldest traditions.",
+    "A circle of weathered menhirs arranged in precise astronomical alignment. During equinoxes, the stones sing in the wind — a deep, resonant chord that can be heard for miles.",
+    "The stones mark the boundary of an ancient pact. Stepping within the circle at midnight reveals glimpses of another era — ghostly figures performing rituals around a great fire.",
+    "Local druids still perform rituals here, though even they admit the stones predate their oldest traditions by uncounted centuries.",
+    "Each stone is a different type of rock, quarried from locations hundreds of miles apart. How they were transported and erected remains one of the realm's great mysteries.",
+    "The grass within the circle grows in a perfect spiral pattern. Animals that graze here produce milk that heals minor ailments, and crops planted nearby yield triple harvests.",
   ],
   "Dragon Lair": [
-    "Massive claw marks score the cave entrance. The air inside is unnaturally warm and carries a faint metallic tang.",
-    "Whether a dragon still dwells here is debated — but the surrounding landscape bears unmistakable signs of dragonfire.",
-    "Adventurers occasionally emerge with scales and teeth from this lair, but none have claimed to slay the beast within.",
+    "Massive claw marks score the cave entrance. The air inside is unnaturally warm and carries a faint metallic tang. Melted stone drips like candle wax along the walls.",
+    "Whether a dragon still dwells here is debated — but the surrounding landscape bears unmistakable signs of dragonfire, with glassed sand and scorched earth stretching for acres.",
+    "Adventurers occasionally emerge with scales and teeth from this lair, but none have claimed to slay the beast within. The scales grow back, they say, as if the dragon sheds them willingly.",
+    "The lair's entrance is large enough to sail a warship through. Inside, the cavern opens into a volcanic hollow where rivers of magma illuminate a hoard of staggering proportion.",
+    "Bones of previous challengers line the approach — picked clean and arranged in deliberate patterns. The dragon, it seems, has a sense of humor about its visitors.",
   ],
   Portal: [
-    "A shimmering archway that occasionally flickers with otherworldly light. Objects thrown through sometimes return... changed.",
-    "Ancient runework frames a doorway to somewhere else. The destination seems to shift with the phases of the moon.",
-    "The portal has been dormant for decades, but recently began pulsing with energy. Scholars race to determine its destination.",
+    "A shimmering archway that occasionally flickers with otherworldly light. Objects thrown through sometimes return... changed. Wood becomes petrified, metal corrodes, and food turns to ash.",
+    "Ancient runework frames a doorway to somewhere else. The destination seems to shift with the phases of the moon — sometimes showing forests, sometimes deserts, sometimes void.",
+    "The portal has been dormant for decades, but recently began pulsing with energy. Scholars race to determine its destination before whatever is on the other side pushes through.",
+    "Two identical archways stand facing each other across a clearing. Stepping through one deposits you at the other, but the journey takes exactly seven hours regardless of the distance between them.",
+    "The air around the portal is several degrees colder than the surroundings. Frost forms on nearby vegetation year-round, and strange insects not native to this world occasionally crawl through.",
+  ],
+  Battlefield: [
+    "The earth here has never recovered from the bloodshed. Grass grows thin and red-tinged, and rusted weapons still surface after every rain. Locals say the ground itself remembers.",
+    "Two great armies clashed here in a battle that decided the fate of a kingdom. The victors left monuments, but time has eroded them to stumps while the battlefield remains eerily preserved.",
+    "On foggy mornings, the sounds of clashing steel and war cries echo across the field. Whether this is a trick of the wind or something more, the locals refuse to say.",
+    "A mass grave at the field's center has been consecrated seven times, yet restless spirits still rise on the anniversary of the battle. The local clergy have given up trying.",
+    "The commanding general's war tent still stands, somehow preserved by magic or sheer stubbornness. Inside, battle plans and personal letters paint a tragic portrait of the conflict.",
+  ],
+  "Fairy Ring": [
+    "A perfect circle of luminous mushrooms that appears and disappears with the seasons. Those who sleep within report dreams so vivid they carry real objects back upon waking.",
+    "The boundary between the Feywild and the material plane wears thin here. Colors are more vivid within the ring, sounds are sweeter, and time passes at an unpredictable rate.",
+    "A ring of ancient oaks whose branches intertwine overhead to form a natural cathedral. Pixie lights dance among the leaves at dusk, and laughter echoes from sources unseen.",
+    "Those who enter the ring at midnight may bargain with the fey. The deals are always fair — but 'fair' by fey reckoning is a dangerous standard.",
+    "The mushrooms glow brighter during full moons, and anyone standing in their light casts two shadows — one normal, one that moves independently.",
+  ],
+  Shipwreck: [
+    "The remains of a great vessel lie half-buried in sand or wedged between rocks, its hull split open like a cracked egg. Barnacles and salt crystals encrust the timbers.",
+    "This merchant galleon ran aground decades ago. Its cargo hold is rumored to still contain sealed crates of exotic goods from a distant continent no modern map records.",
+    "The ship's figurehead — a carved sea goddess — remains intact and eerily lifelike. Sailors insist her expression changes and that she weeps real saltwater tears before storms.",
+    "A warship of unknown origin, bearing flags and insignia that match no known navy. The crew's remains suggest they died fighting something that boarded from below.",
+    "The wreck is only accessible at low tide. Those who explore it find the captain's log still legible — describing a voyage to a place that shouldn't exist.",
+  ],
+  "Ancient Library": [
+    "Shelves carved directly into the living rock hold thousands of stone tablets, metal scrolls, and crystal memory shards. The cataloguing system defies all attempts at comprehension.",
+    "A hidden repository of forbidden knowledge, sealed away by a conclave of mages who feared what the texts contained. The wards are failing, and pages have begun to blow free on the wind.",
+    "Every book in this library is a copy of a text that was destroyed elsewhere. Somehow, the library knew — and preserved what the world tried to forget.",
+    "The library's guardian — a construct of bronze and crystal — still patrols the aisles. It will answer exactly three questions per visitor, then escort them firmly to the exit.",
+    "The deepest stacks contain books that write themselves, recording events as they happen across the realm. One shelf is devoted to prophecies, and several have recently been crossed out.",
+  ],
+  Graveyard: [
+    "An ancient burial ground where moss-covered headstones lean at odd angles. Some graves have been dug up from the inside, the earth pushed outward and the coffins empty.",
+    "The cemetery sits on consecrated ground, yet undead are drawn to its borders. They circle the fence at night, never entering, as if waiting for the protections to fail.",
+    "A beautifully maintained memorial garden with elaborate mausoleums and weeping statues. The groundskeeper has tended it alone for decades and never seems to age.",
+    "The headstones bear no names — only dates and single words: 'Betrayed.' 'Forgotten.' 'Silenced.' Someone carved them all in the same hand, though the graves span centuries.",
+    "Fresh flowers appear on one particular grave every morning, though no one has ever been seen placing them. The grave belongs to a child who died three hundred years ago.",
+  ],
+  "Witch's Hut": [
+    "A crooked cottage perched on the edge of a swamp, leaning at an angle that defies structural logic. Smoke rises from the chimney in spirals that form recognizable shapes.",
+    "The hut is surrounded by a garden of plants that shouldn't grow in this climate — tropical flowers beside arctic mosses, all thriving. The soil hums with enchantment.",
+    "Jars of preserved oddities line every surface — eyes, teeth, hair, and things less identifiable. A cauldron bubbles perpetually over a fire that produces no heat beyond its rim.",
+    "The witch who lived here vanished years ago, but the hut remains active. Potions brew themselves, the broom sweeps on its own, and the cat still demands to be fed.",
+    "Visitors who come with honest need find the door open and a remedy already prepared. Those who come with ill intent find the path back impossibly tangled.",
+  ],
+  Monolith: [
+    "A single massive stone stands upright in an otherwise flat plain, its surface covered in carved faces that shift expression when viewed from different angles.",
+    "The monolith predates every civilization in recorded history. It is composed of a mineral found nowhere else on the continent and responds to magical probing with a resonant vibration.",
+    "At its base, offerings from dozens of different cultures accumulate — coins, bones, flowers, and stranger things. Something about the stone compels visitors to leave a piece of themselves behind.",
+    "The monolith is warm to the touch even in winter and cold in summer. Its shadow moves opposite to the sun, pointing always toward something in the north.",
+    "Legend holds that the monolith marks the spot where a god fell to earth. The crater around it has long since filled in, but the stone remains — a tombstone for a deity.",
+  ],
+  "Enchanted Grove": [
+    "The trees in this grove grow in impossible shapes — spirals, archways, and perfect geometric forms. Their leaves shimmer with an iridescent quality not found in nature.",
+    "Animals in this grove are unnaturally intelligent. Foxes solve puzzles, ravens speak in riddles, and the deer seem to hold council at dawn. Something in the water, perhaps.",
+    "The grove exists in a state of perpetual autumn, leaves frozen mid-fall in a golden cascade that never reaches the ground. Time moves strangely here.",
+    "Every tree in the grove bears fruit year-round. The fruit heals, nourishes, and occasionally grants visions — though the visions are not always welcome.",
+    "A warm golden light suffuses the grove from no visible source. Wounds heal faster here, tempers cool, and even bitter enemies find themselves speaking civilly beneath its boughs.",
+  ],
+  "Sunken City": [
+    "The tops of towers and spires break the surface of a lake or marsh, hinting at a vast city submerged below. On still days, streets and plazas are visible through the clear water.",
+    "An earthquake centuries ago dropped an entire district below the waterline. The buildings remain intact, preserved by the cold, mineral-rich water in an eerie underwater tableau.",
+    "Fishermen report seeing lights in the submerged windows at night. Whether these are bioluminescent creatures or something more intentional remains a matter of heated tavern debate.",
+    "The city sank slowly enough that its inhabitants had time to seal their most precious possessions in waterproof vaults. Most remain unopened, protected by traps both mechanical and magical.",
+    "At certain tides, a bridge emerges connecting the shore to the tallest surviving tower. The bridge is only passable for a few hours before the water reclaims it.",
+  ],
+  "Cursed Ground": [
+    "Nothing grows here. The soil is ashen gray and dry regardless of rainfall. Animals cross the boundary reluctantly, and birds refuse to fly over it entirely.",
+    "A dark ritual was performed here long ago, and the land still bears the scar. Shadows move independently of their sources, and whispers fill the air at twilight.",
+    "Compasses spin wildly within the boundary. Maps drawn of the area rearrange themselves overnight. The curse seems to reject any attempt to understand or document it.",
+    "Those who camp here suffer nightmares of a great calamity — always the same vision, always ending with a scream that wakes them. The vision feels less like a dream and more like a memory.",
+    "The ground is warm year-round, and a faint red glow is visible through cracks in the earth after dark. Something is burning below, and it has been burning for a very long time.",
   ],
   default: [
-    "A mysterious location of unknown origin. Locals avoid it after dark and speak of it only in whispers.",
-    "Something about this place feels ancient and significant, though its true purpose has been lost to time.",
-    "Adventurers have explored this site and returned with more questions than answers.",
+    "A mysterious location of unknown origin. Locals avoid it after dark and speak of it only in whispers. Those brave enough to investigate rarely return unchanged.",
+    "Something about this place feels ancient and significant, though its true purpose has been lost to time. The air itself feels heavy with unspoken history.",
+    "Adventurers have explored this site and returned with more questions than answers. The few artifacts recovered defy identification by even the most learned scholars.",
+    "Local legends offer a dozen contradictory explanations for this place. The only point of agreement is that it should be treated with respect — and caution.",
+    "The site appears unremarkable at first glance, but prolonged observation reveals subtle wrongness — sounds that don't echo correctly, shadows that fall at the wrong angle, a persistent feeling of being watched.",
   ],
 };
 const POI_QUESTS = [
@@ -1103,6 +1199,26 @@ const POI_QUESTS = [
   { title: "The Spell's Source", desc: "Strange magical effects originate here. A mage council needs the source identified or neutralized." },
   { title: "Artifact Appraisal", desc: "Someone found something valuable here but needs experts to extract and evaluate it safely." },
   { title: "The Bloodline Test", desc: "A noble heir must complete a task here to prove worthiness to inherit. Protection and guidance offered to helpers." },
+  { title: "The Vanishing Scouts", desc: "Three separate scouting parties have disappeared within. The local militia captain suspects an ambush and needs someone expendable — or capable — to investigate." },
+  { title: "Harvest of Shadows", desc: "A rare shadow-bloom grows only in this lightless place. An herbalist will pay triple the usual rate, but the flowers are guarded by things that thrive in darkness." },
+  { title: "The Architect's Obsession", desc: "A half-mad architect insists this place holds the key to a building technique lost for millennia. She needs bodyguards while she studies the stonework." },
+  { title: "Grave Robber's Remorse", desc: "A thief stole something from this place and now cannot sleep, eat, or stop screaming at dusk. They'll pay anything to have the item returned." },
+  { title: "The Warden's Bargain", desc: "An ancient spirit bound to protect this place offers a deal: clear the vermin that infest its domain, and it will reveal the location of a hidden vault." },
+  { title: "Diplomatic Escort", desc: "An ambassador must pass through or near this dangerous site to reach a summit. Ensure their safe passage without provoking whatever dwells within." },
+  { title: "The Singing Stone", desc: "A bard has heard of a resonant crystal within that produces music no instrument can replicate. They'll share the proceeds from its performance — if it can be safely extracted." },
+  { title: "Plague Origin", desc: "A mysterious illness in a nearby village has been traced to water flowing from this location. Find the contamination source and purify or destroy it." },
+  { title: "The Map Thief", desc: "Someone has been selling maps to this place to naive adventurers who never return. Find the map-maker and determine if they're predator or pawn." },
+  { title: "The Awakening", desc: "Tremors and strange lights suggest something long dormant is stirring. A council of elders needs to know what's waking up before it fully rises." },
+  { title: "Fey Bargain", desc: "A fey lord claims ownership of this site and demands tribute from any who enter. Negotiate, pay, or find another way — but do not anger the fey." },
+  { title: "Ghost Story", desc: "A spectral figure has been seen near the entrance each night, beckoning travelers inside. A medium believes it's trying to communicate something important." },
+  { title: "The False Prophet", desc: "A cult leader claims this is a holy site and is recruiting followers. The local temple wants the truth established before the cult grows too powerful." },
+  { title: "Supply Line Threat", desc: "This location sits along a critical trade route and has become a staging ground for bandits. The merchant guild offers a bounty for clearing and securing it." },
+  { title: "The Time-Lost Soldier", desc: "A warrior in ancient armor emerged from this place, confused and speaking an archaic dialect. They claim the battle inside still rages. Investigate their claim." },
+  { title: "Mushroom Harvest", desc: "Rare fungi with potent alchemical properties grow deep within. An apothecary needs a fresh supply and will pay above market rate for a dangerous gathering expedition." },
+  { title: "The Duel Ground", desc: "Two rival nobles have chosen this place for a duel to the death. Both sides are hiring seconds and seeking any advantage the location might provide." },
+  { title: "Ancestral Communion", desc: "An elderly shaman believes they can commune with their ancestors at this site during the next solstice. They need protection during the three-day ritual." },
+  { title: "The Escaped Experiment", desc: "Something created by a wizard's failed experiment has taken refuge here. The wizard wants it captured alive; the local village wants it dead. Both are paying." },
+  { title: "Ley Line Disruption", desc: "Magical communication across the region has gone haywire. Diviners have traced the disruption to this location. Restoring the ley line flow would earn the gratitude of every mage in the land." },
 ];
 
 const POI_THREAT_LEVELS = ["safe","low","medium","high","extreme"];
@@ -1111,6 +1227,11 @@ const POI_REWARDS = [
   "Legendary sword","Dragon scales","Philosopher's stone","Crown of lost kings","Sacred texts","Artifact of power","Treasure map","Rare gems",
   "Enchanted armor","Healing elixir","Magical tome","Cursed amulet","Ancestral blade","Divine blessing","Ancient coins","Precious metals",
   "Forbidden grimoire","Staff of arcane power","Holy relics","Undead slayer weapon","Cloak of invisibility","Ring of wishes","Artifact of resurrection",
+  "Boots of elvenkind","Bag of holding","Decanter of endless water","Amulet of proof against detection","Periapt of wound closure",
+  "Flame tongue longsword","Frost brand greatsword","Wand of fireballs","Rod of the pact keeper","Helm of telepathy",
+  "Gauntlets of ogre power","Belt of dwarvenkind","Circlet of blasting","Eyes of the eagle","Lantern of revealing",
+  "Cape of the mountebank","Stone of good luck","Tome of understanding","Manual of bodily health","Ioun stone of protection",
+  "Driftglobe","Sending stones","Alchemy jug","Eversmoking bottle","Portable hole",
 ];
 
 /* Generate campaign regions and factions from ATLAS_METADATA (Python-generated data) */
@@ -1580,37 +1701,69 @@ function regionsAndFactionsFromMetadata(seedNum) {
   })();
 
   // ── Generate POI data (from atlas metadata OR procedurally for seeds without POIs) ──
-  const POI_TYPES_GEN = ["Ruins","Fortress","Temple","Tower","Mine","Shrine","Tomb","Cavern","Obelisk","Standing Stones","Dragon Lair","Portal"];
-  const POI_NAME_PRE = ["Tower of","Crypt of","Temple of","Shrine of","Keep of","Barrow of","Fortress of","The Lost","The Sunken","Tomb of","Halls of","The Shattered","Ruins of","Cave of","The Ancient"];
-  const POI_NAME_SUF = ["Ashenveil","Ironwatch","Moonfire","Frostpeak","Silentwood","Dreadhollow","Oakenshield","Brightveil","Mistpeak","Ebonreach","Starfall","Thornkeep","Shadowmere","Duskfall","Stormbreak","Wraithwood","Crystalvein","Windscour","Blackwater","Blightmoor"];
+  const POI_TYPES_GEN = ["Ruins","Fortress","Temple","Tower","Mine","Shrine","Tomb","Cavern","Obelisk","Standing Stones","Dragon Lair","Portal","Battlefield","Fairy Ring","Shipwreck","Ancient Library","Graveyard","Witch's Hut","Monolith","Enchanted Grove","Sunken City","Cursed Ground"];
+  const POI_NAME_PRE = ["Tower of","Crypt of","Temple of","Shrine of","Keep of","Barrow of","Fortress of","The Lost","The Sunken","Tomb of","Halls of","The Shattered","Ruins of","Cave of","The Ancient","Sanctum of","Den of","The Burning","The Frozen","Pit of","Spire of","Grove of","The Cursed","Vault of","The Whispering","Circle of","The Fallen","Throne of","The Hidden","Altar of"];
+  const POI_NAME_SUF = ["Ashenveil","Ironwatch","Moonfire","Frostpeak","Silentwood","Dreadhollow","Oakenshield","Brightveil","Mistpeak","Ebonreach","Starfall","Thornkeep","Shadowmere","Duskfall","Stormbreak","Wraithwood","Crystalvein","Windscour","Blackwater","Blightmoor","Serpentcrown","Emberheart","Nightbloom","Wyrmrest","Cinderfall","Ghosthollow","Ravenmoor","Silverspire","Bloodthorn","Deepstone","Greymantle","Wolfsong","Crowspeak","Dawnreach","Voidtide"];
   const rawPois = meta.pois || [];
   const generatedPois = rawPois.length > 0 ? rawPois : (() => {
-    // Generate 8-14 POIs from city/region positions for seeds without POI data
+    // Generate 14-22 POIs, filling blank spaces on the map intelligently
     const gRng = mulberry32(seedNum * 8191);
     const gPick = (arr) => arr[Math.floor(gRng() * arr.length)];
-    const numPois = 8 + Math.floor(gRng() * 7);
+    const numPois = 14 + Math.floor(gRng() * 9);
     const pois = [];
-    // Collect all city coords as anchors
     const cityAnchors = allCities.map(c => ({ x: c.mapX, y: c.mapY, region: c.region }));
     const usedNames = new Set();
-    for (let i = 0; i < numPois && cityAnchors.length > 0; i++) {
+    // Existing occupied positions (cities + already-placed POIs)
+    const occupied = cityAnchors.map(c => ({ x: c.x, y: c.y }));
+
+    // Phase 1: Place POIs near cities (wilderness just outside settlements)
+    const nearCityCount = Math.min(Math.floor(numPois * 0.4), cityAnchors.length);
+    for (let i = 0; i < nearCityCount; i++) {
       const anchor = cityAnchors[i % cityAnchors.length];
-      const angle = gRng() * Math.PI * 2;
-      const dist = 0.04 + gRng() * 0.08;
-      let px = anchor.x + Math.cos(angle) * dist;
-      let py = anchor.y + Math.sin(angle) * dist * 0.75;
-      px = Math.max(0.06, Math.min(0.94, px));
-      py = Math.max(0.06, Math.min(0.94, py));
-      // Ellipse clamp for POIs too
-      const pdx = (px - 0.5) / 0.35, pdy = (py - 0.5) / 0.33;
-      const peDist = Math.sqrt(pdx * pdx + pdy * pdy);
-      if (peDist > 1.0) { const ps = 0.90 / peDist; px = 0.5 + (px - 0.5) * ps; py = 0.5 + (py - 0.5) * ps; }
-      let name;
-      for (let attempt = 0; attempt < 10; attempt++) {
-        name = gPick(POI_NAME_PRE) + " " + gPick(POI_NAME_SUF);
-        if (!usedNames.has(name)) { usedNames.add(name); break; }
+      for (let attempt = 0; attempt < 20; attempt++) {
+        const angle = gRng() * Math.PI * 2;
+        const dist = 0.04 + gRng() * 0.06;
+        let px = anchor.x + Math.cos(angle) * dist;
+        let py = anchor.y + Math.sin(angle) * dist * 0.75;
+        px = Math.max(0.06, Math.min(0.94, px));
+        py = Math.max(0.06, Math.min(0.94, py));
+        const pdx = (px - 0.5) / 0.35, pdy = (py - 0.5) / 0.33;
+        const peDist = Math.sqrt(pdx * pdx + pdy * pdy);
+        if (peDist > 1.0) { const ps = 0.90 / peDist; px = 0.5 + (px - 0.5) * ps; py = 0.5 + (py - 0.5) * ps; }
+        // Check minimum distance from existing points
+        const tooClose = occupied.some(o => Math.sqrt((o.x-px)**2 + (o.y-py)**2) < 0.03);
+        if (!tooClose) {
+          let name;
+          for (let na = 0; na < 15; na++) { name = gPick(POI_NAME_PRE) + " " + gPick(POI_NAME_SUF); if (!usedNames.has(name)) { usedNames.add(name); break; } }
+          pois.push({ name, type: gPick(POI_TYPES_GEN), x: px, y: py });
+          occupied.push({ x: px, y: py });
+          break;
+        }
       }
-      pois.push({ name, type: gPick(POI_TYPES_GEN), x: px, y: py });
+    }
+
+    // Phase 2: Fill blank spaces — find areas far from any occupied point
+    const remaining = numPois - pois.length;
+    for (let i = 0; i < remaining; i++) {
+      let bestX = 0.5, bestY = 0.5, bestMinDist = 0;
+      // Sample random candidates and pick the one farthest from everything
+      for (let sample = 0; sample < 40; sample++) {
+        const cx = 0.08 + gRng() * 0.84;
+        const cy = 0.08 + gRng() * 0.84;
+        // Must be within land ellipse
+        const edx = (cx - 0.5) / 0.35, edy = (cy - 0.5) / 0.33;
+        if (Math.sqrt(edx * edx + edy * edy) > 0.95) continue;
+        // Find minimum distance to any occupied point
+        let minD = Infinity;
+        for (const o of occupied) { const d = Math.sqrt((o.x-cx)**2 + (o.y-cy)**2); if (d < minD) minD = d; }
+        if (minD > bestMinDist) { bestMinDist = minD; bestX = cx; bestY = cy; }
+      }
+      if (bestMinDist > 0.02) {
+        let name;
+        for (let na = 0; na < 15; na++) { name = gPick(POI_NAME_PRE) + " " + gPick(POI_NAME_SUF); if (!usedNames.has(name)) { usedNames.add(name); break; } }
+        pois.push({ name, type: gPick(POI_TYPES_GEN), x: bestX, y: bestY });
+        occupied.push({ x: bestX, y: bestY });
+      }
     }
     return pois;
   })();
@@ -1641,6 +1794,32 @@ function regionsAndFactionsFromMetadata(seedNum) {
         if (d < minDist) { minDist = d; nearestRegion = r.name; }
       });
     });
+    // Generate a rich, unique description based on type, threat, and region
+    const POI_DESC_TEMPLATES = {
+      Ruins: [`Crumbling remnants of a once-great structure, now claimed by nature and shadow in the wilds of ${nearestRegion}.`,`Weathered stone walls and shattered archways mark this forgotten place in ${nearestRegion}. The silence here feels deliberate.`,`An ancient ruin whose original purpose has been lost to time. Local shepherds in ${nearestRegion} give it a wide berth.`],
+      Fortress: [`A formidable stronghold commanding the approaches to ${nearestRegion}, its battlements scarred by siege and time.`,`Stone ramparts and iron-bound gates guard whatever secrets this abandoned fortress still holds in ${nearestRegion}.`,`A military fortification of impressive scale, built to control the strategic passes near ${nearestRegion}.`],
+      Temple: [`A sacred place of worship standing in quiet reverence amid the landscapes of ${nearestRegion}. Incense still seems to linger in the air.`,`This hallowed site in ${nearestRegion} once drew pilgrims from across the realm. The divine presence here feels diminished but not gone.`,`A temple of forgotten rites, its altars cold but not entirely abandoned. Something still watches from within.`],
+      Tower: [`A lone spire piercing the sky above ${nearestRegion}, its purpose debated by scholars and feared by locals.`,`This wizard's tower stands as a monument to arcane ambition in ${nearestRegion}. Strange lights still flicker in its windows.`,`A solitary tower whose upper chambers hold secrets the lower floors were designed to protect.`],
+      Mine: [`Deep shafts bore into the earth near ${nearestRegion}, once yielding precious minerals. The miners left, but something else moved in.`,`An abandoned excavation in the hills of ${nearestRegion}. The tunnels go deeper than any legitimate mining operation would warrant.`,`A network of tunnels and shafts carved into the rock, silent now except for the dripping of subterranean water.`],
+      Shrine: [`A small but potent holy site in ${nearestRegion} where the boundary between mortal and divine wears thin.`,`Offerings and prayer beads adorn this humble roadside shrine, tended by no one yet never neglected.`,`A place of quiet devotion in ${nearestRegion} where travelers pause to ask for blessings and leave tokens of gratitude.`],
+      Tomb: [`A sealed burial site in ${nearestRegion} whose occupant was important enough to be entombed with traps, guards, and wards.`,`The dead rest uneasily here. This burial vault in ${nearestRegion} is surrounded by warnings both ancient and recent.`,`A mausoleum of considerable grandeur, suggesting its occupant was royalty — or something that demanded royal treatment.`],
+      Cavern: [`A vast natural cave system beneath the terrain of ${nearestRegion}, echoing with the sounds of underground rivers and unseen movement.`,`Dark passages wind deep beneath ${nearestRegion}, opening into chambers of breathtaking — and terrifying — scale.`,`A cave mouth yawns in the hillside, exhaling cold air that carries unfamiliar scents from deep below.`],
+      Obelisk: [`A mysterious stone monolith standing in eerie isolation amid the terrain of ${nearestRegion}. Its inscriptions defy translation.`,`This towering pillar of dark stone hums with barely-contained energy. No one knows who raised it or why.`,`An ancient marker of unknown origin in ${nearestRegion}, seemingly placed with astronomical precision.`],
+      "Standing Stones": [`A circle of ancient menhirs arranged with mathematical precision in ${nearestRegion}. The air within the circle tastes of copper and ozone.`,`Weathered megaliths forming a ritual circle that predates every known civilization in the region.`,`These standing stones mark a place of power in ${nearestRegion} where the veil between worlds wears gossamer-thin.`],
+      "Dragon Lair": [`A scorched and scarred cavern reeking of sulfur and old fire. The lands around it in ${nearestRegion} bear the unmistakable marks of dragonfire.`,`The lair of a great wyrm — whether occupied or vacant, only the brave or foolish would enter to find out.`,`Bones of cattle and less identifiable creatures litter the approach to this lair in ${nearestRegion}. The ground itself feels warm.`],
+      Portal: [`A shimmering gateway to somewhere else, flickering with energies that make nearby compasses spin and hair stand on end.`,`An arcane doorway in ${nearestRegion} that opens to destinations unknown. The destination seems to shift with cosmic cycles.`,`A tear in the fabric of reality, framed by ancient stonework that suggests it was created deliberately — and recently reactivated.`],
+      Battlefield: [`Blood-soaked earth where armies clashed and fell in ${nearestRegion}. The land itself seems wounded, and nothing grows right here.`,`A scarred plain littered with the remnants of a great battle. Rusted weapons and bleached bones surface after every rain.`,`The site of a decisive conflict that shaped the history of ${nearestRegion}. Monuments to the fallen stand alongside unmarked mass graves.`],
+      "Fairy Ring": [`A circle of luminous mushrooms marking a thin spot between the material world and the Feywild in ${nearestRegion}.`,`Where the fey hold court in ${nearestRegion}, time runs sideways and bargains are never quite what they seem.`,`A natural circle of ancient trees where the boundary between worlds dissolves on certain nights. The rules here are not mortal rules.`],
+      Shipwreck: [`The shattered hull of a great vessel, beached or grounded far from any navigable water — raising disturbing questions about how it arrived.`,`A derelict ship whose cargo and crew tell a story of a voyage gone terribly wrong. The captain's log may hold answers.`,`Timbers and rigging from a wrecked vessel, its origin and final destination both mysteries worth unraveling.`],
+      "Ancient Library": [`A hidden repository of knowledge in ${nearestRegion}, its shelves holding texts that powerful factions would kill to possess — or destroy.`,`A vast collection of scrolls, tomes, and tablets accumulated over centuries. The organizational system is as inscrutable as the contents.`,`Knowledge forbidden, forgotten, and fiercely guarded — all stored in this silent library beneath the wilds of ${nearestRegion}.`],
+      Graveyard: [`An ancient burial ground in ${nearestRegion} where the dead don't always stay put. The caretaker has long since fled.`,`Row upon row of weathered headstones mark the resting places of the forgotten. Some graves have been disturbed — from the inside.`,`A cemetery of considerable age and dubious peace, where mist clings to the ground even at midday.`],
+      "Witch's Hut": [`A crooked dwelling on the edge of the wilds, home to hedge magic and questionable potions. The locals in ${nearestRegion} know to approach with respect.`,`A cottage wreathed in herb smoke and surrounded by impossible gardens. The occupant — if present — knows things no one should.`,`A ramshackle hut that is far more spacious inside than out. Bottles of strange liquids line every surface, each one labeled in a different hand.`],
+      Monolith: [`A single massive stone standing sentinel over the landscape of ${nearestRegion}, its purpose debated and its origin unknown.`,`A megalithic pillar that resonates with deep vibrations during thunderstorms. Something sleeps beneath it — or within it.`,`An ancient stone of impossible weight and unknown origin, covered in carvings that seem to shift when not directly observed.`],
+      "Enchanted Grove": [`A stand of trees suffused with primal magic in ${nearestRegion}. The forest here is ancient, aware, and not entirely friendly.`,`Golden light filters through impossible canopies in this enchanted woodland. Time flows differently beneath these boughs.`,`A grove where nature's magic runs wild and unchecked. The plants grow in patterns that suggest intelligence — or direction.`],
+      "Sunken City": [`The spires and rooftops of a drowned civilization break the surface of still waters in ${nearestRegion}. The city below is remarkably intact.`,`An entire settlement swallowed by water or earth, preserved in an eerie underwater stillness. Lights are sometimes seen in the depths.`,`A submerged metropolis whose streets can be walked at low tide — if you're quick, brave, and don't mind what might be watching.`],
+      "Cursed Ground": [`A blighted stretch of land in ${nearestRegion} where nothing thrives and even shadows seem reluctant to linger.`,`The earth here is wrong — ashen, warm, and hostile to life. Something terrible happened here, and the land remembers.`,`A place of palpable malice in ${nearestRegion}. Animals flee, plants wither, and travelers report a crushing sense of dread.`],
+    };
+    const descPool = POI_DESC_TEMPLATES[p.type] || [`A mysterious ${p.type.toLowerCase()} in the wilds of ${nearestRegion}, surrounded by legends and warnings in equal measure.`];
     allPois.push({
       id: `poi-${poiId++}`,
       name: p.name,
@@ -1653,7 +1832,7 @@ function regionsAndFactionsFromMetadata(seedNum) {
       quests: quests,
       explored: false,
       reward: pPick(POI_REWARDS),
-      description: `A ${p.type.toLowerCase()} located in the ${nearestRegion} region.`,
+      description: pPick(descPool),
     });
   });
 
@@ -1678,14 +1857,19 @@ function ensureDataConsistency(data) {
     });
   }
 
-  // 2. Sync region state into cities (destroyed regions = destroyed cities)
+  // 2. Sync region state into cities
+  // Destroyed regions = destroyed cities. Conquered regions = occupied (not destroyed — they have a new ruler).
   if (d.regions && d.cities) {
     d.cities = d.cities.map(city => {
       const region = (d.regions || []).find(r => r.name === city.region);
-      if (region && (region.state === "destroyed" || region.state === "conquered")) {
+      if (region && region.state === "destroyed") {
         return { ...city, destroyed: true };
       }
-      if (region && region.state !== "destroyed" && region.state !== "conquered" && city.destroyed) {
+      // Conquered regions are occupied, not destroyed — cities still function under new rule
+      if (region && region.state === "conquered") {
+        return { ...city, destroyed: false, faction: region.ctrl };
+      }
+      if (region && region.state !== "destroyed" && city.destroyed) {
         return { ...city, destroyed: false }; // recovered
       }
       return city;
@@ -1885,6 +2069,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
   const [lwTimeSkipOpen, setLwTimeSkipOpen] = useState(false);
   const [lwTimeSkipSummary, setLwTimeSkipSummary] = useState(null); // array of events or null
   const [lwTimeSkipProgress, setLwTimeSkipProgress] = useState(null); // null or { current, total }
+  const [lwPartyActionsOpen, setLwPartyActionsOpen] = useState(false); // party actions panel
+  const [lwActionTarget, setLwActionTarget] = useState(null); // { actionId, targetFaction?, allyFaction? }
   const lwTimerRef = useRef(null);
   const broadcastRef = useRef(null);
   const realtimeRef = useRef(null);
@@ -2453,9 +2639,10 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
     setEditing(false);
   };
 
-  // ── Kingdom territory polygons (convex hulls of faction-controlled regions) ──
+  // ── Kingdom territory polygons — merges provinces controlled by the same faction ──
   const territories = useCallback(() => {
-    return atlasProvinces.map((province) => {
+    // Step 1: Build per-province territory objects with faction info
+    const perProvince = atlasProvinces.map((province) => {
       const nodes = mapRegions.filter((r) => r.atlasProvinceId === province.id);
       const capitalNode = nodes.find((r) => ["kingdom","capital","city"].includes(r.type)) || nodes[0] || null;
       const dominantCtrl = capitalNode?.ctrl || nodes.find((r) => r.ctrl)?.ctrl || province.name;
@@ -2466,7 +2653,57 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
         regionCount: nodes.length,
       };
     });
-  }, [mapRegions]);
+
+    // Step 2: Group provinces by controlling faction
+    const factionGroups = {};
+    perProvince.forEach(t => {
+      const key = t.faction || t.name;
+      if (!factionGroups[key]) factionGroups[key] = [];
+      factionGroups[key].push(t);
+    });
+
+    // Step 3: Merge same-faction territory groups into unified territories
+    const merged = [];
+    Object.entries(factionGroups).forEach(([factionName, provs]) => {
+      if (provs.length === 1) {
+        // Single province — no merging needed
+        merged.push(provs[0]);
+      } else {
+        // Multiple provinces under same faction — merge paths and compute unified label
+        // Combined SVG path (draw all polygons as subpaths of a single compound path)
+        const mergedPath = provs.map(p => p.path).join(" ");
+
+        // Find the "capital" province (has the most important capital node)
+        const capitalProv = provs.find(p => p.capitalNode && ["kingdom","capital"].includes(p.capitalNode.type))
+          || provs.find(p => p.capitalNode) || provs[0];
+
+        // Compute weighted centroid for the merged label
+        let totalWeight = 0, labelCX = 0, labelCY = 0;
+        provs.forEach(p => {
+          const w = p.regionCount || 1;
+          labelCX += p.labelX * w;
+          labelCY += p.labelY * w;
+          totalWeight += w;
+        });
+        labelCX = Math.round(labelCX / totalWeight);
+        labelCY = Math.round(labelCY / totalWeight);
+
+        merged.push({
+          ...capitalProv,
+          id: capitalProv.id,
+          path: mergedPath,
+          labelX: labelCX,
+          labelY: labelCY,
+          faction: factionName,
+          regionCount: provs.reduce((sum, p) => sum + p.regionCount, 0),
+          _mergedProvinces: provs, // Keep originals for click handling
+          _isMerged: true,
+        });
+      }
+    });
+
+    return merged;
+  }, [mapRegions, atlasProvinces]);
 
   const updateFaction = (id, updates) => {
     setData(d=>({...d, factions:d.factions.map(f=>f.id===id?{...f,...updates}:f)}));
@@ -2885,24 +3122,60 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                 ))}
 
                 {/* Kingdom territories — visible at continent/kingdom zoom */}
+                {/* Merged territories: provinces under the same faction are drawn as one unified kingdom */}
                 {mapZoom < 2.5 && atlasTerritories.map((t,i) => {
-                  const activeProvince = atlasProvinceId === t.id || selectedWorldNode?.atlasProvinceId === t.id;
+                  const activeProvince = atlasProvinceId === t.id || (t._mergedProvinces || []).some(mp => mp.id === atlasProvinceId)
+                    || selectedWorldNode?.atlasProvinceId === t.id || (t._mergedProvinces || []).some(mp => mp.id === selectedWorldNode?.atlasProvinceId);
                   // Dynamic faction color — updates when Living World changes territory control
                   const factionForTerritory = data.factions?.find(f => f.name === t.faction);
                   const terrFill = factionForTerritory?.color || t.fill || "#d6c999";
-                  // Check if region is destroyed/conquered (state === "conquered" or "destroyed")
+                  // Check if ALL constituent regions are destroyed/conquered/contested
                   const regionData = (data.regions || []).find(r => r.name === t.name);
-                  const isContested = regionData?.state === "contested";
-                  const isDestroyed = regionData?.state === "destroyed" || regionData?.state === "conquered";
+                  const allRegionNames = t._mergedProvinces ? t._mergedProvinces.map(p => p.name) : [t.name];
+                  const regionStates = allRegionNames.map(n => (data.regions || []).find(r => r.name === n)?.state);
+                  const isContested = regionStates.some(s => s === "contested");
+                  const isDestroyed = regionStates.every(s => s === "destroyed" || s === "conquered") && regionStates.length > 0;
+
                   return (
                   <g key={`terr-${i}`} clipPath="url(#atlasLandClip)" style={{ cursor:"pointer" }} onClick={(e)=>{ e.stopPropagation(); setAtlasProvinceId(t.id); if (t.capitalNode) selectRegion(t.capitalNode); setTab("cities"); setCityRegionFocus(t.name); setSel(null); setSelType(null); }}>
-                    <path d={t.path} fill={terrFill} opacity={isDestroyed ? 0.28 : isContested ? 0.24 : activeProvince ? 0.20 : 0.13} stroke={isDestroyed ? "#8b0000" : isContested ? "#c94040" : activeProvince ? "#a89870" : "rgba(180,165,130,0.5)"} strokeWidth={isDestroyed ? 3.5 : isContested ? 2.8 : activeProvince ? 2.8 : 1.8} strokeOpacity={isDestroyed ? 0.75 : isContested ? 0.55 : activeProvince ? 0.6 : 0.4} strokeLinejoin="round" strokeDasharray={isContested ? "12,6" : "none"}/>
+                    {/* Unified fill — all subpaths drawn as one compound shape */}
+                    <path d={t.path} fill={terrFill} opacity={isDestroyed ? 0.28 : isContested ? 0.24 : activeProvince ? 0.22 : 0.14} stroke="none" fillRule="nonzero"/>
+                    {t._isMerged ? (
+                      <>
+                        {/* Merged territory: draw each province border, then overlay a strong outer stroke.
+                            Internal shared borders get a very subtle dashed line to hint at the original provinces. */}
+                        {t._mergedProvinces.map((mp, mi) => (
+                          <path key={`inner-${mi}`} d={mp.path} fill="none"
+                            stroke={terrFill}
+                            strokeWidth={1.2}
+                            strokeOpacity={0.15}
+                            strokeLinejoin="round"
+                            strokeDasharray="8,12"/>
+                        ))}
+                        {/* Strong outer border for the unified kingdom */}
+                        {t._mergedProvinces.map((mp, mi) => (
+                          <path key={`outer-${mi}`} d={mp.path} fill="none"
+                            stroke={isDestroyed ? "#8b0000" : isContested ? "#c94040" : activeProvince ? terrFill : terrFill}
+                            strokeWidth={isDestroyed ? 3.5 : isContested ? 2.8 : activeProvince ? 3.2 : 2.4}
+                            strokeOpacity={isDestroyed ? 0.55 : isContested ? 0.4 : activeProvince ? 0.45 : 0.3}
+                            strokeLinejoin="round" strokeDasharray={isContested ? "12,6" : "none"}/>
+                        ))}
+                      </>
+                    ) : (
+                      /* Single province: normal border rendering */
+                      <path d={t.path} fill="none"
+                        stroke={isDestroyed ? "#8b0000" : isContested ? "#c94040" : activeProvince ? "#a89870" : "rgba(180,165,130,0.5)"}
+                        strokeWidth={isDestroyed ? 3.5 : isContested ? 2.8 : activeProvince ? 2.8 : 1.8}
+                        strokeOpacity={isDestroyed ? 0.75 : isContested ? 0.55 : activeProvince ? 0.6 : 0.4}
+                        strokeLinejoin="round" strokeDasharray={isContested ? "12,6" : "none"}/>
+                    )}
                     {mapZoom < 1.3 && t.labelX != null && (() => {
-                      const regionForLabel = (data.regions || []).find(r => r.name === t.name);
-                      const ctrlFaction = regionForLabel?.ctrl ? (data.factions || []).find(f => f.name === regionForLabel.ctrl) : null;
-                      // If the controlling faction renamed itself (revolution/conquest), show the new faction name
-                      const displayName = ctrlFaction ? ctrlFaction.name : t.name;
-                      const fontSize = Math.max(28, 64 / Math.max(mapZoom, 0.36));
+                      const ctrlFaction = data.factions?.find(f => f.name === t.faction);
+                      // Show the controlling faction name (reflects conquests and renames)
+                      const displayName = ctrlFaction ? ctrlFaction.name : t.faction || t.name;
+                      // Larger font for merged (larger) kingdoms
+                      const sizeBoost = t._isMerged ? Math.min(1.4, 1 + (t._mergedProvinces.length - 1) * 0.15) : 1;
+                      const fontSize = Math.max(28, 64 / Math.max(mapZoom, 0.36)) * sizeBoost;
                       return (
                         <>
                           <text x={t.labelX} y={t.labelY} textAnchor="middle" fill={isDestroyed ? "#8a3030" : isContested ? "#c94040" : activeProvince ? "#4a3d28" : "#5a4f38"} stroke="rgba(252,248,236,0.55)" strokeWidth={Math.max(1.5, 3 / Math.max(mapZoom, 0.5))} paintOrder="stroke" fontFamily="'Cinzel', serif" fontSize={fontSize} fontWeight="700" letterSpacing="4" opacity={activeProvince ? 0.95 : 0.82} style={{ pointerEvents:"none", textTransform:"uppercase" }}>
@@ -3321,6 +3594,10 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                       style={{ padding:"3px 10px", background: lwTimeSkipOpen ? "rgba(201,168,92,0.2)" : "rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:"'Cinzel', serif", fontSize:8, color:"#c9a85c", cursor:"pointer", letterSpacing:"1px" }}>
                       ⏭ Skip Forward
                     </button>
+                    <button onClick={() => { setLwPartyActionsOpen(v => !v); setLwTimeSkipOpen(false); }}
+                      style={{ padding:"3px 10px", background: lwPartyActionsOpen ? "rgba(201,100,60,0.2)" : "rgba(30,26,22,0.9)", border: lwPartyActionsOpen ? "1px solid rgba(201,100,60,0.4)" : "1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:"'Cinzel', serif", fontSize:8, color: lwPartyActionsOpen ? "#e8a060" : "#c9a85c", cursor:"pointer", letterSpacing:"1px" }}>
+                      ⚔ Party Actions
+                    </button>
                   </div>
                 )}
               </div>
@@ -3378,6 +3655,127 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                       Go
                     </button>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* ── Party Actions Panel ── */}
+            {isLive && isDM && lwPartyActionsOpen && (
+              <div style={{
+                position:"absolute", top:80, left:12, background:"rgba(20,18,14,0.98)", border:"1px solid rgba(201,100,60,0.3)",
+                borderRadius:"6px", zIndex:30, width:320, boxShadow:"0 8px 24px rgba(0,0,0,0.6)",
+                maxHeight:"60vh", display:"flex", flexDirection:"column",
+              }}>
+                <div style={{ padding:"12px 16px", borderBottom:"1px solid rgba(201,100,60,0.15)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                  <div style={{ fontSize:11, color:"#e8a060", fontFamily:"'Cinzel', serif", letterSpacing:"1px" }}>Party Actions</div>
+                  <button onClick={() => setLwPartyActionsOpen(false)} style={{ background:"none", border:"none", color:"#8a8070", cursor:"pointer", fontSize:14, padding:"0 4px" }}>×</button>
+                </div>
+                <div style={{ padding:"8px 12px", fontSize:9, color:"#6a6050", lineHeight:1.5, borderBottom:"1px solid rgba(201,100,60,0.1)" }}>
+                  These actions represent what the adventuring party does in the world. Results are not guaranteed — the world reacts dynamically.
+                </div>
+                <div style={{ flex:1, overflowY:"auto", padding:"8px 0" }}>
+                  {!lwActionTarget ? (
+                    /* Step 1: Choose action */
+                    Object.values(window.PLAYER_ACTIONS || {}).map(action => (
+                      <button key={action.id}
+                        onClick={() => setLwActionTarget({ actionId: action.id, targetFaction: null, allyFaction: null })}
+                        style={{
+                          display:"flex", width:"100%", padding:"10px 16px", textAlign:"left", gap:10, alignItems:"flex-start",
+                          background:"transparent", border:"none", borderBottom:"1px solid rgba(201,100,60,0.08)", cursor:"pointer",
+                          transition:"all 0.2s",
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = "rgba(201,100,60,0.1)"}
+                        onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                      >
+                        <span style={{ fontSize:18, lineHeight:1, flexShrink:0 }}>{action.icon}</span>
+                        <div>
+                          <div style={{ fontSize:10, color:"#e8a060", fontFamily:"'Cinzel', serif", letterSpacing:"0.5px", marginBottom:2 }}>{action.label}</div>
+                          <div style={{ fontSize:9, color:"#7a7060", lineHeight:1.4 }}>{action.description}</div>
+                        </div>
+                      </button>
+                    ))
+                  ) : (
+                    /* Step 2: Choose target faction(s) */
+                    (() => {
+                      const action = (window.PLAYER_ACTIONS || {})[lwActionTarget.actionId];
+                      if (!action) return null;
+                      const needsSecondFaction = action.requiresTarget === "two_factions" && lwActionTarget.targetFaction && !lwActionTarget.allyFaction;
+                      const readyToExecute = action.requiresTarget === "faction" ? !!lwActionTarget.targetFaction
+                        : action.requiresTarget === "two_factions" ? !!lwActionTarget.targetFaction && !!lwActionTarget.allyFaction
+                        : true;
+                      return (
+                        <div>
+                          <div style={{ padding:"8px 16px", display:"flex", alignItems:"center", gap:8, borderBottom:"1px solid rgba(201,100,60,0.1)" }}>
+                            <button onClick={() => setLwActionTarget(null)} style={{ background:"none", border:"none", color:"#8a8070", cursor:"pointer", fontSize:10, fontFamily:"'Cinzel', serif" }}>← Back</button>
+                            <span style={{ fontSize:14 }}>{action.icon}</span>
+                            <span style={{ fontSize:10, color:"#e8a060", fontFamily:"'Cinzel', serif", letterSpacing:"0.5px" }}>{action.label}</span>
+                          </div>
+                          {!readyToExecute && (
+                            <div style={{ padding:"8px 16px" }}>
+                              <div style={{ fontSize:9, color:"#7a7060", marginBottom:8 }}>
+                                {!lwActionTarget.targetFaction ? "Select target faction:" : needsSecondFaction ? "Select second faction:" : ""}
+                              </div>
+                              {(data.factions || []).filter(f => {
+                                if (needsSecondFaction) return f.name !== lwActionTarget.targetFaction;
+                                return true;
+                              }).map(f => (
+                                <button key={f.name}
+                                  onClick={() => {
+                                    if (!lwActionTarget.targetFaction) {
+                                      setLwActionTarget(prev => ({ ...prev, targetFaction: f.name }));
+                                    } else if (needsSecondFaction) {
+                                      setLwActionTarget(prev => ({ ...prev, allyFaction: f.name }));
+                                    }
+                                  }}
+                                  style={{
+                                    display:"flex", width:"100%", padding:"8px 16px", textAlign:"left", gap:8, alignItems:"center",
+                                    background:"transparent", border:"none", borderBottom:"1px solid rgba(80,70,55,0.15)", cursor:"pointer",
+                                    transition:"all 0.2s",
+                                  }}
+                                  onMouseEnter={e => e.currentTarget.style.background = "rgba(201,100,60,0.08)"}
+                                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                                >
+                                  <span style={{ width:10, height:10, borderRadius:"50%", background: f.color || "#666", flexShrink:0, border:"1px solid rgba(255,255,255,0.2)" }} />
+                                  <span style={{ fontSize:10, color:"#c9a85c", fontFamily:"'Cinzel', serif" }}>{f.name}</span>
+                                  <span style={{ fontSize:8, color:"#5a5040", marginLeft:"auto" }}>Power: {f.power}</span>
+                                </button>
+                              ))}
+                            </div>
+                          )}
+                          {readyToExecute && (
+                            <div style={{ padding:"16px" }}>
+                              <div style={{ fontSize:9, color:"#7a7060", marginBottom:8, lineHeight:1.5 }}>
+                                {action.label} targeting <span style={{ color:"#e8a060" }}>{lwActionTarget.targetFaction}</span>
+                                {lwActionTarget.allyFaction && <> and <span style={{ color:"#e8a060" }}>{lwActionTarget.allyFaction}</span></>}
+                              </div>
+                              <button
+                                onClick={() => {
+                                  if (!window.livingWorld) return;
+                                  const result = window.livingWorld.triggerPlayerAction(lwActionTarget.actionId, data, {
+                                    targetFaction: lwActionTarget.targetFaction,
+                                    allyFaction: lwActionTarget.allyFaction,
+                                  });
+                                  if (result) {
+                                    setLwPartyActionsOpen(false);
+                                    setLwActionTarget(null);
+                                  }
+                                }}
+                                style={{
+                                  width:"100%", padding:"10px 16px", background:"rgba(201,100,60,0.2)", border:"1px solid rgba(201,100,60,0.4)",
+                                  borderRadius:"4px", color:"#e8a060", cursor:"pointer", fontFamily:"'Cinzel', serif", fontSize:10,
+                                  letterSpacing:"1px", textTransform:"uppercase", transition:"all 0.2s",
+                                }}
+                                onMouseEnter={e => e.target.style.background = "rgba(201,100,60,0.35)"}
+                                onMouseLeave={e => e.target.style.background = "rgba(201,100,60,0.2)"}
+                              >
+                                Execute Action
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()
+                  )}
                 </div>
               </div>
             )}
@@ -4995,32 +5393,64 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
 
                     {bd.detailType === "special" && (
                       <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.6 }}>
-                        {bldg.name === "Castle" && "The seat of power in this region. Heavily fortified with stone walls and guard towers."}
-                        {bldg.name === "Cathedral" && "A grand place of worship, its spires rising above the town skyline. Clerics can be found here offering healing and guidance."}
-                        {bldg.name === "Mage Tower" && "A mysterious tower crackling with arcane energy. Local mages study and practice their arts within."}
-                        {bldg.name === "Barracks" && "The town garrison, home to soldiers and guards who protect the settlement."}
-                        {bldg.name === "Town Hall" && "The center of local governance where the town council meets and records are kept."}
-                        {bldg.name === "Temple" && "A sacred site dedicated to the local deity, offering spiritual guidance and divine healing."}
-                        {!["Castle", "Cathedral", "Mage Tower", "Barracks", "Town Hall", "Temple"].includes(bldg.name) && "A notable structure in the town."}
+                        {(() => {
+                          const SPECIAL_DESCRIPTIONS = {
+                            "Castle": "The seat of power in this region, a formidable stone fortress with thick curtain walls, corner towers, and a central keep rising above the town. The lord's court convenes in the great hall, where petitions are heard and justice dispensed. A garrison of elite soldiers patrols the battlements day and night. The castle cellars hold armories, dungeons, and passages whose full extent is known only to the castellan.",
+                            "Cathedral": "A grand place of worship whose soaring spires pierce the skyline, visible from every corner of town. Stained glass windows cast colored light across stone floors worn smooth by centuries of worshippers. The high clergy perform rites of healing, blessing, and consecration here. A choir fills the nave with hymns at dawn and dusk, and the crypt below holds the remains of the town's most revered figures.",
+                            "Mage Tower": "A slender tower that crackles with arcane energy, its upper floors wreathed in faint luminescence on clear nights. The resident mages study the arcane arts within, conducting experiments that occasionally produce alarming sounds and smells. The tower's library contains rare grimoires and spell components, and its observatory tracks celestial events that may influence magical currents.",
+                            "Barracks": "The garrison headquarters where the town's soldiers live, train, and equip themselves. Rows of bunks line the upper floors while the ground level holds an armory, mess hall, and briefing room. The watch captain coordinates patrols and guard rotations from a planning chamber covered in maps. In times of crisis, the barracks becomes the military command center for the entire settlement.",
+                            "Town Hall": "The center of local governance, a dignified stone building where the town council convenes to debate policy, settle disputes, and manage civic affairs. Tax records, property deeds, and census rolls are stored in vaults below. A public notice board outside announces new ordinances, and the town crier delivers important proclamations from its steps each morning.",
+                            "Temple": "A sacred site dedicated to the local deity, its interior filled with the scent of incense and the soft glow of votive candles. Priests and acolytes minister to the faithful, offering spiritual counsel, divine healing, and funeral rites. The temple also serves as a sanctuary in times of danger — its consecrated ground is said to repel undead and fiends.",
+                            "Grand Market Hall": "A vast covered marketplace where merchants from across the region gather to trade. The vaulted ceiling echoes with the calls of vendors and the clink of coin. Stalls offer everything from common provisions to exotic imports, and a market court resolves disputes between traders. The hall is busiest on festival days, when traveling merchants arrive with rare goods.",
+                            "Guildhall": "The administrative heart of the town's trade guilds, where master craftspeople meet to set standards, arbitrate disputes, and govern the apprenticeship system. The building houses meeting halls, records offices, and a ceremonial chamber for inducting new masters. Its archives contain centuries of economic history and trade agreements.",
+                          };
+                          return SPECIAL_DESCRIPTIONS[bldg.name] || `A notable structure of importance to ${townView}. This ${bldg.name.toLowerCase()} serves a vital role in the community's governance, defense, or spiritual life.`;
+                        })()}
                       </div>
                     )}
 
                     {bd.detailType === "poi" && (
                       <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.6 }}>
-                        {bldg.name === "Town Well" && "The communal well, a gathering point for locals. Fresh water and fresh gossip are drawn here daily."}
-                        {bldg.name === "Fountain" && "An ornamental fountain in the town square, its waters said to bring good luck."}
-                        {bldg.name === "Statue" && "A weathered statue of a local hero, commemorating a great deed from long ago."}
-                        {bldg.name === "Notice Board" && "A board posted with job requests, wanted posters, and local announcements."}
-                        {bldg.name === "Shrine" && "A small roadside shrine where travelers leave offerings for safe passage."}
-                        {bldg.name === "Guard Post" && "A manned checkpoint where town guards keep watch for trouble."}
-                        {bldg.name === "Market Stall" && "A busy market stall selling local goods and seasonal produce."}
-                        {bldg.name === "Horse Stable" && "Stables where mounts can be housed, fed, and purchased."}
-                        {bldg.name === "Library" && "A repository of knowledge, containing rare books and ancient scrolls."}
-                        {bldg.name === "Graveyard" && "The town cemetery, where the dead rest... hopefully in peace."}
-                        {bldg.name === "Training Ground" && "An open area where warriors and guards hone their combat skills."}
-                        {bldg.name === "Watchtower" && "A tall tower providing a vantage point over the surrounding area."}
-                        {bldg.name === "Garden" && "A peaceful garden tended by locals, fragrant with herbs and flowers."}
-                        {!["Town Well", "Fountain", "Statue", "Notice Board", "Shrine", "Guard Post", "Market Stall", "Horse Stable", "Library", "Graveyard", "Training Ground", "Watchtower", "Garden"].includes(bldg.name) && "A point of interest in the town."}
+                        {(() => {
+                          const POI_DESCRIPTIONS = {
+                            "Town Well": "The communal well sits at a crossroads where neighbors gather each morning. The water is cold and clean, drawn from a deep aquifer. It serves as the town's unofficial meeting place — more deals are struck here than in any merchant's shop, and more secrets spilled than at any tavern.",
+                            "Fountain": "An ornamental fountain carved from local stone, its basin worn smooth by generations of children sitting on its edge. The central figure — a water nymph or local hero, depending on who you ask — spouts a gentle arc of water that catches the light. Coins glint at the bottom, each one a wish made and forgotten.",
+                            "Statue": "A weathered stone statue of a figure in heroic pose, commemorating a deed so great — or so old — that the details have blurred into legend. Pigeons roost on its shoulders, and children play at its base. The inscription, half-eroded, hints at a sacrifice that saved the town in a darker age.",
+                            "Notice Board": "A large wooden board bristling with parchments, nails, and wax seals. Job postings compete for space with wanted posters, lost pet notices, and cryptic personal messages. Adventurers check it daily for work, and the town crier updates it each morning with fresh bounties and announcements.",
+                            "Shrine": "A small stone shrine set back from the road, adorned with dried flowers, small coins, and handwritten prayers. The carved figure at its center represents a local patron saint or minor deity. Travelers pause here to ask for blessing before long journeys, and mourners come to remember the departed.",
+                            "Guard Post": "A fortified checkpoint manned by town guards in rotation. A heavy log barrier can be swung across the road at need. The guards here check cargo for contraband, collect tolls from merchants, and keep a watchful eye for troublemakers. A logbook records all notable comings and goings.",
+                            "Market Stall": "A bustling open-air stall with a canvas awning and rough-hewn counters piled with local goods — seasonal produce, cured meats, clay pots, and woven baskets. The vendor calls out prices in a practiced singsong, haggling with regulars and sizing up strangers for what they might pay.",
+                            "Horse Stable": "A sturdy timber stable with individual stalls for mounts, a hay loft above, and a small paddock out back. The stable master knows every horse in town by name and temperament. Travelers can board their mounts here, and a selection of riding horses and pack mules are available for purchase or hire.",
+                            "Stable": "A well-maintained stable block smelling of fresh hay and horse leather. Stalls line both sides of a central aisle, each with its own water trough and feed bag. The stable hands are skilled with animals and can tend to minor injuries. Mounts can be boarded, purchased, or hired for the road ahead.",
+                            "Library": "Floor-to-ceiling shelves hold a collection accumulated over generations — histories, bestiaries, herbalism guides, and a locked cabinet of texts deemed too dangerous for casual reading. The librarian maintains a meticulous catalog and will assist researchers, though certain sections require special permission to access.",
+                            "Graveyard": "Rows of headstones lean at weathered angles behind a low iron fence. Older plots near the back are moss-covered and illegible, while newer markers bear fresh flowers. A small chapel stands at the entrance for funeral rites. The groundskeeper insists the cemetery is peaceful, though he refuses to work past sundown.",
+                            "Training Ground": "A dirt yard packed hard by countless boots, surrounded by weapon racks, archery targets, and practice dummies stuffed with straw. Town guards and militia drill here at dawn, and the training master offers instruction to anyone willing to take a few bruises. Spectators watch from the fence, placing bets on sparring matches.",
+                            "Watchtower": "A tall stone tower rising above the rooftops, offering an unobstructed view of the surrounding countryside. Guards rotate shifts around the clock, scanning for approaching threats, signal fires, or incoming caravans. A brass bell at the top can be heard throughout the town — it rings only for genuine emergencies.",
+                            "Garden": "A walled garden lovingly tended by local residents, its paths winding between beds of medicinal herbs, flowering shrubs, and a few ancient fruit trees. Benches tucked into leafy alcoves offer quiet spots for contemplation. The garden is communal, and anyone may pick herbs for personal use — but taking more than your share earns sharp looks.",
+                            "Prison": "A squat stone building with barred windows and a heavy iron door. Inside, a handful of cells hold petty criminals, drunks sleeping off bad decisions, and occasionally someone far more dangerous awaiting transport to a larger facility. The jailer is both warden and counselor, and knows everyone's story.",
+                            "Warehouse": "A large, practical building used for storing trade goods, seasonal harvests, and supplies. The interior is organized with wooden shelving, marked crates, and a loading dock accessible by cart. The warehouse master keeps detailed inventory logs, and the building is locked and guarded at night to prevent theft.",
+                            "Granary": "A raised stone-and-timber building designed to keep grain dry and safe from vermin. The town's food reserves are stored here — enough to last through a harsh winter or short siege. The granary master monitors stores closely and reports to the town council on supply levels. It is one of the most strategically important buildings in town.",
+                            "Windmill": "A tall wooden windmill whose cloth-sailed arms turn steadily in the breeze, grinding grain into flour for the town's bakers and households. The miller works long hours during harvest season and is one of the town's essential tradespeople. The rhythmic creaking of the mechanism can be heard across the neighborhood.",
+                            "Bathhouse": "A public bathing house heated by a wood-fired furnace beneath stone tubs. Separate areas for men and women offer hot soaks, cold plunges, and steam rooms. The bathhouse is a social institution — townsfolk come to wash, gossip, conduct quiet business, and recover from the aches of hard labor.",
+                            "Clocktower": "A handsome stone tower housing a mechanical clock whose chimes mark each hour. The mechanism was built by a master clockmaker and requires daily winding. The tower also serves as a landmark and meeting point — 'meet me at the clocktower' is the most common arrangement in town.",
+                            "Dovecote": "A tall, cylindrical stone structure honeycombed with nesting holes for messenger pigeons. The keeper maintains a flock trained to carry messages to several nearby settlements. In times of siege or emergency, these birds become the town's most vital link to the outside world.",
+                            "Herbalist Garden": "A meticulously organized garden of medicinal and magical plants, each bed labeled with both common and alchemical names. The herbalist who tends it supplies the local apothecary and healer with ingredients. Some plants are kept behind locked gates — not all herbs here are benign.",
+                            "Amphitheater": "A semicircular stone seating area built into a natural slope, used for public performances, town assemblies, and festival celebrations. The acoustics are remarkably good — a speaker at the center can be heard clearly from the highest seats. On market days, traveling bards and theater troupes perform here.",
+                            "Pillory": "A wooden restraining device set in a public square, used to punish minor offenders through public humiliation. The stocks hold the convicted in view of passing townsfolk, who may jeer, throw rotten produce, or occasionally offer sympathy. It serves as both punishment and deterrent.",
+                            "Wishing Well": "A deep stone well in the town square, its inner walls glinting with hundreds of coins thrown in over generations. Legend holds that wishes made here come true if the coin strikes the bottom without bouncing. Children gather around it on festival days, and even skeptical adults have been known to toss a copper or two.",
+                            "Memorial": "A stone monument inscribed with the names of townsfolk lost to war, plague, or disaster. Wreaths and candles are placed here on remembrance days, and families come to trace the names of ancestors with their fingers. The memorial serves as a sobering reminder of the town's resilience through hardship.",
+                            "Kennels": "A fenced compound housing the town's working dogs — hunting hounds, guard mastiffs, and herding dogs bred for the surrounding farmland. The kennelmaster breeds and trains animals for both the militia and private buyers. The sound of barking carries across the neighborhood at feeding time.",
+                            "Brewery": "A sturdy stone building where local grain and hops are transformed into the ale that fuels the town's taverns. The brewmaster takes pride in several signature recipes passed down through generations. The sweet, yeasty smell of brewing day is a beloved — or dreaded — feature of the neighborhood.",
+                            "Smithy Yard": "An open yard adjacent to the main forge where larger metalwork is assembled — gates, wagon fittings, plow blades, and occasionally armor for the guard. An anvil stands on a stump in the center, and the ring of hammer on metal is a constant background rhythm during working hours.",
+                            "Lumber Yard": "Stacks of seasoned timber and fresh-cut logs fill this open yard near the town's edge. The lumber merchant supplies builders, carpenters, and coopers throughout the settlement. A large saw pit and drying racks occupy one corner, staffed by burly workers year-round.",
+                            "Fish Market": "A stone-floored open market where the day's catch is displayed on beds of crushed ice and wet seaweed. Fishmongers call out their wares in competitive chorus as housewives and cooks pick through the selection. The market opens at dawn and is packed away by midday — fresh fish waits for no one.",
+                            "Dye Works": "A pungent workshop where raw textiles are transformed into vibrant fabrics. Vats of indigo, madder, and woad line the yard, and the workers' hands are permanently stained in rainbow hues. The runoff is carefully channeled away from the town's water supply, though the smell is harder to contain.",
+                            "Tannery Yard": "A working yard where raw animal hides are transformed into leather through soaking, stretching, and curing. The process is essential but malodorous, which is why the tannery sits downwind of the main settlement. The tanners are skilled craftspeople whose work supplies cobblers, saddlers, and armorers throughout the region.",
+                            "Grand Market Hall": "A large covered hall where merchants gather to trade goods in all weather. Stalls line the interior walls, and the central floor hosts auctions, trade negotiations, and seasonal fairs. The market master enforces fair dealing and collects modest fees from vendors.",
+                            "Guildhall": "The administrative center of the local trade guilds. Master craftspeople meet here to set prices, resolve disputes, apprentice new members, and coordinate the town's economic life. The building also serves as a court for commercial matters and hosts lavish feasts on guild holidays.",
+                          };
+                          return POI_DESCRIPTIONS[bldg.name] || `A notable point of interest in ${townView}. This ${bldg.name.toLowerCase()} serves the community and adds character to the settlement.`;
+                        })()}
                       </div>
                     )}
 
