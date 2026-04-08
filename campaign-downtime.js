@@ -9,7 +9,7 @@
     {
       id: 'crafting',
       name: 'Crafting',
-      icon: '⚒',
+      icon: 'Hammer',
       description: 'Create items using materials and gold. Specialties vary by class.',
       durationDays: 10,
       goldCost: 50,
@@ -22,7 +22,7 @@
     {
       id: 'training',
       name: 'Training',
-      icon: '⚔',
+      icon: 'Swords',
       description: 'Learn a new proficiency or language. Complexity determines duration.',
       durationDays: 30,
       goldCost: 100,
@@ -35,7 +35,7 @@
     {
       id: 'research',
       name: 'Research',
-      icon: '≡',
+      icon: 'BookOpen',
       description: 'Study lore, discover faction secrets, identify magical items.',
       durationDays: 14,
       goldCost: 30,
@@ -48,7 +48,7 @@
     {
       id: 'working',
       name: 'Working',
-      icon: '◫',
+      icon: 'Coins',
       description: 'Earn gold at a profession. Daily rate depends on skill and city prosperity.',
       durationDays: 10,
       goldCost: 0,
@@ -61,7 +61,7 @@
     {
       id: 'carousing',
       name: 'Carousing',
-      icon: '⌀',
+      icon: 'Users',
       description: 'Socialize and make contacts. May gain an ally or make an enemy.',
       durationDays: 7,
       goldCost: 20,
@@ -74,7 +74,7 @@
     {
       id: 'business',
       name: 'Running a Business',
-      icon: '⌂',
+      icon: 'TrendingUp',
       description: 'Manage a shop or tavern. Roll for profit or loss per tenday.',
       durationDays: 10,
       goldCost: 0,
@@ -87,7 +87,7 @@
     {
       id: 'crime',
       name: 'Crime',
-      icon: '⚷',
+      icon: 'Lock',
       description: 'Pickpocketing, heists, or fence stolen goods. High risk, high reward.',
       durationDays: 10,
       goldCost: 0,
@@ -100,7 +100,7 @@
     {
       id: 'religious_devotion',
       name: 'Religious Devotion',
-      icon: '✝',
+      icon: 'Heart',
       description: 'Devotion to a deity. Gain divine favor or blessings.',
       durationDays: 10,
       goldCost: 25,
@@ -113,7 +113,7 @@
     {
       id: 'recuperating',
       name: 'Recuperating',
-      icon: '⊕',
+      icon: 'Activity',
       description: 'Heal lingering injuries, remove curses, recover from trauma.',
       durationDays: 14,
       goldCost: 60,
@@ -126,7 +126,7 @@
     {
       id: 'spellcasting_services',
       name: 'Spellcasting Services',
-      icon: '✦',
+      icon: 'Sparkles',
       description: 'Sell spell services to NPCs for gold. Casters only.',
       durationDays: 7,
       goldCost: 0,
@@ -135,8 +135,110 @@
       risks: ['Demanding client', 'Spell backfire', 'Reputation risk'],
       rewards: ['Gold payment', 'Reputation boost', 'Spell components'],
       outcomeProbabilities: { greatSuccess: 0.15, success: 0.70, complication: 0.15 }
+    },
+    {
+      id: 'building',
+      name: 'Building',
+      icon: 'Home',
+      description: 'Build or upgrade a stronghold, shop, temple, or other structure.',
+      durationDays: 30,
+      goldCost: 500,
+      goldReward: { min: 0, max: 0 },
+      requirements: { class: [], level: 5, location: 'city' },
+      risks: ['Structural failure', 'Cost overrun', 'Builder dispute'],
+      rewards: ['Stronghold established', 'Income property', 'Safe haven'],
+      outcomeProbabilities: { greatSuccess: 0.10, success: 0.60, complication: 0.30 }
+    },
+    {
+      id: 'networking',
+      name: 'Networking',
+      icon: 'Handshake',
+      description: 'Build political connections, gather rumors, and establish contacts.',
+      durationDays: 7,
+      goldCost: 50,
+      goldReward: { min: 0, max: 0 },
+      requirements: { class: [], level: 2, location: 'city' },
+      risks: ['Misinformation', 'Political entanglement', 'False lead'],
+      rewards: ['Valuable contact', 'Rumors uncovered', 'Political favor'],
+      outcomeProbabilities: { greatSuccess: 0.15, success: 0.65, complication: 0.20 }
+    },
+    {
+      id: 'brewing',
+      name: 'Brewing',
+      icon: 'Flask',
+      description: 'Brew potions and alchemical concoctions. Requires alchemical supplies.',
+      durationDays: 5,
+      goldCost: 25,
+      goldReward: { min: 0, max: 0 },
+      requirements: { class: ['Bard', 'Cleric', 'Druid', 'Sorcerer', 'Warlock', 'Wizard'], level: 3, location: 'workshop' },
+      risks: ['Potion fails', 'Unstable mixture', 'Ingredient shortage'],
+      rewards: ['Potion created', 'Rare extract', 'Alchemical discovery'],
+      outcomeProbabilities: { greatSuccess: 0.12, success: 0.68, complication: 0.20 }
+    },
+    {
+      id: 'scribing',
+      name: 'Scribing',
+      icon: 'PenTool',
+      description: 'Copy spell scrolls, scribe letters, or document knowledge.',
+      durationDays: 3,
+      goldCost: 10,
+      goldReward: { min: 0, max: 0 },
+      requirements: { class: ['Bard', 'Cleric', 'Druid', 'Sorcerer', 'Warlock', 'Wizard'], level: 1, location: 'library' },
+      risks: ['Ink spoils', 'Arcane error', 'Document damaged'],
+      rewards: ['Spell scroll created', 'Rare tome copied', 'Commissions earned'],
+      outcomeProbabilities: { greatSuccess: 0.20, success: 0.65, complication: 0.15 }
+    },
+    {
+      id: 'bounty_hunting',
+      name: 'Bounty Hunting',
+      icon: 'Target',
+      description: 'Track down and capture wanted criminals and dangerous fugitives.',
+      durationDays: 10,
+      goldCost: 0,
+      goldReward: { min: 75, max: 250 },
+      requirements: { class: [], level: 3, location: 'city' },
+      risks: ['Bounty escapes', 'Betrayal', 'Ambush'],
+      rewards: ['Bounty claimed', 'Reputation earned', 'Guild advancement'],
+      outcomeProbabilities: { greatSuccess: 0.10, success: 0.50, complication: 0.40 }
+    },
+    {
+      id: 'sailing',
+      name: 'Sailing',
+      icon: 'Wind',
+      description: 'Work aboard a ship, explore waterways, or trade along coasts.',
+      durationDays: 14,
+      goldCost: 0,
+      goldReward: { min: 25, max: 100 },
+      requirements: { class: [], level: 1, location: 'port' },
+      risks: ['Storm at sea', 'Piracy', 'Ship damage'],
+      rewards: ['Wages earned', 'Naval contacts', 'Chart discovered'],
+      outcomeProbabilities: { greatSuccess: 0.12, success: 0.63, complication: 0.25 }
     }
   ];
+
+  // ============================================================================
+  // ICON MAPPING FOR LUCIDE ICONS
+  // ============================================================================
+
+  const ICON_MAP = {
+    'Hammer': 'Hammer',
+    'Swords': 'Swords',
+    'BookOpen': 'BookOpen',
+    'Coins': 'Coins',
+    'Users': 'Users',
+    'TrendingUp': 'TrendingUp',
+    'Lock': 'Lock',
+    'Heart': 'Heart',
+    'Activity': 'Activity',
+    'Sparkles': 'Sparkles',
+    'Home': 'Home',
+    'Handshake': 'Handshake',
+    'Flask': 'Flask',
+    'PenTool': 'PenTool',
+    'Target': 'Target',
+    'Wind': 'Wind',
+    'Check': 'Check'
+  };
 
   // ============================================================================
   // DOWNTIME ENGINE
@@ -808,7 +910,7 @@
         flexDirection: 'column',
         gap: '16px',
         padding: '16px',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
+        fontFamily: "system-ui, -apple-system, sans-serif",
         backgroundColor: 'var(--bg-primary, #f5f5f5)',
         color: 'var(--text-primary, #333)',
         minHeight: '100vh'
@@ -821,7 +923,7 @@
           paddingBottom: '12px',
           borderBottom: '2px solid var(--border-color, #ddd)'
         }}>
-          <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>Downtime Management</h1>
+          <h1 style={{ margin: 0, fontSize: '28px', fontWeight: 'bold', fontFamily: "'Cinzel', serif" }}>Downtime Management</h1>
           <button
             onClick={() => setShowActivityModal(true)}
             style={{
@@ -843,20 +945,23 @@
         </div>
 
         {/* Tab Navigation */}
-        <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--border-color, #ddd)' }}>
+        <div style={{ display: 'flex', gap: '8px', borderBottom: '2px solid var(--border-color, #ddd)' }}>
           {['dashboard', 'history', 'skills', 'stats'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               style={{
-                padding: '8px 16px',
+                padding: '10px 20px',
                 backgroundColor: activeTab === tab ? 'var(--primary-color, #4CAF50)' : 'transparent',
                 color: activeTab === tab ? 'white' : 'var(--text-primary, #333)',
-                border: 'none',
-                borderRadius: '4px 4px 0 0',
+                border: activeTab === tab ? 'none' : '1px solid transparent',
+                borderBottom: activeTab === tab ? 'none' : '2px solid transparent',
+                borderRadius: activeTab === tab ? '4px 4px 0 0' : '0',
                 cursor: 'pointer',
                 fontSize: '14px',
-                fontWeight: activeTab === tab ? '600' : '400'
+                fontWeight: activeTab === tab ? '600' : '500',
+                fontFamily: "'Cinzel', serif",
+                transition: 'all 0.2s ease'
               }}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -880,25 +985,35 @@
                   <div
                     key={active.id}
                     style={{
-                      padding: '12px',
+                      padding: '14px',
                       backgroundColor: 'white',
-                      border: '1px solid var(--border-color, #ddd)',
-                      borderRadius: '6px',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                      border: '2px solid var(--primary-color, #4CAF50)',
+                      borderRadius: '8px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      transition: 'all 0.2s ease'
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
-                      <h3 style={{ margin: 0, fontSize: '14px', fontWeight: '600' }}>
-                        {active.characterName}
-                      </h3>
-                      <span style={{ fontSize: '12px', color: 'var(--text-secondary, #666)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '10px' }}>
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '600', fontFamily: "'Cinzel', serif", color: 'var(--text-primary, #333)' }}>
+                          {active.characterName}
+                        </h3>
+                        <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--text-secondary, #666)', fontWeight: '500' }}>
+                          {active.activityName}
+                        </p>
+                      </div>
+                      <div style={{
+                        padding: '6px 10px',
+                        backgroundColor: 'var(--bg-secondary, #f0f0f0)',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        fontWeight: '600',
+                        color: 'var(--text-secondary, #666)',
+                        border: '1px solid var(--border-color, #ddd)'
+                      }}>
                         {activity?.icon}
-                      </span>
+                      </div>
                     </div>
-
-                    <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--text-secondary, #666)' }}>
-                      {active.activityName}
-                    </p>
 
                     <div style={{ marginBottom: '8px' }}>
                       <div style={{
@@ -983,56 +1098,81 @@
                 No downtime history yet.
               </div>
             ) : (
-              downtimeData.history?.map(entry => (
-                <div
-                  key={entry.id}
-                  style={{
-                    padding: '12px',
-                    backgroundColor: 'white',
-                    border: `2px solid ${
-                      entry.outcome === 'great_success' ? 'var(--success-color, #8BC34A)' :
-                      entry.outcome === 'complication' ? 'var(--danger-color, #f44336)' :
-                      'var(--info-color, #2196F3)'
-                    }`,
-                    borderRadius: '6px',
-                    borderLeft: `4px solid ${
-                      entry.outcome === 'great_success' ? 'var(--success-color, #8BC34A)' :
-                      entry.outcome === 'complication' ? 'var(--danger-color, #f44336)' :
-                      'var(--info-color, #2196F3)'
-                    }`
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                    <div>
-                      <h4 style={{ margin: '0 0 2px 0', fontSize: '14px', fontWeight: '600' }}>
-                        {entry.characterName} - {entry.activityName}
-                      </h4>
-                      <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary, #666)' }}>
-                        {entry.narrative}
-                      </p>
-                    </div>
-                    <span style={{
-                      padding: '4px 8px',
-                      backgroundColor: entry.outcome === 'great_success' ? '#c8e6c9' :
-                                      entry.outcome === 'complication' ? '#ffcdd2' : '#bbdefb',
-                      color: entry.outcome === 'great_success' ? '#2e7d32' :
-                             entry.outcome === 'complication' ? '#c62828' : '#1565c0',
-                      borderRadius: '3px',
-                      fontSize: '11px',
-                      fontWeight: '600',
-                      whiteSpace: 'nowrap'
-                    }}>
-                      {entry.outcome.replace('_', ' ').toUpperCase()}
-                    </span>
-                  </div>
+              downtimeData.history?.map(entry => {
+                const activity = DOWNTIME_ACTIVITIES.find(a => a.id === entry.activityId);
+                const outcomeColor = entry.outcome === 'great_success' ? 'var(--success-color, #8BC34A)' :
+                                     entry.outcome === 'complication' ? 'var(--danger-color, #f44336)' :
+                                     'var(--info-color, #2196F3)';
+                const outcomeBg = entry.outcome === 'great_success' ? '#e8f5e9' :
+                                  entry.outcome === 'complication' ? '#ffebee' : '#e3f2fd';
 
-                  <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: 'var(--text-secondary, #666)' }}>
-                    {entry.goldEarned > 0 && <span style={{ color: 'var(--success-color, #8BC34A)' }}>+{entry.goldEarned}gp</span>}
-                    {entry.goldSpent > 0 && <span style={{ color: 'var(--danger-color, #f44336)' }}>-{entry.goldSpent}gp</span>}
-                    <span>{new Date(entry.completedDate).toLocaleDateString()}</span>
+                return (
+                  <div
+                    key={entry.id}
+                    style={{
+                      padding: '14px',
+                      backgroundColor: outcomeBg,
+                      border: `2px solid ${outcomeColor}`,
+                      borderRadius: '8px',
+                      borderLeft: `6px solid ${outcomeColor}`,
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '10px' }}>
+                      <div>
+                        <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '600', fontFamily: "'Cinzel', serif", color: 'var(--text-primary, #333)' }}>
+                          {entry.characterName}
+                        </h4>
+                        <p style={{ margin: '0 0 6px 0', fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary, #666)' }}>
+                          {entry.activityName}
+                        </p>
+                        <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary, #777)', lineHeight: '1.4' }}>
+                          {entry.narrative}
+                        </p>
+                      </div>
+                      <span style={{
+                        padding: '6px 12px',
+                        backgroundColor: outcomeColor,
+                        color: 'white',
+                        borderRadius: '4px',
+                        fontSize: '11px',
+                        fontWeight: '700',
+                        whiteSpace: 'nowrap',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px'
+                      }}>
+                        {entry.outcome.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: 'var(--text-secondary, #666)', flexWrap: 'wrap' }}>
+                      {entry.goldEarned > 0 && (
+                        <span style={{ color: 'var(--success-color, #8BC34A)', fontWeight: '600' }}>
+                          +{entry.goldEarned} gp
+                        </span>
+                      )}
+                      {entry.goldSpent > 0 && (
+                        <span style={{ color: 'var(--danger-color, #f44336)', fontWeight: '600' }}>
+                          -{entry.goldSpent} gp
+                        </span>
+                      )}
+                      {activity?.icon && (
+                        <span style={{
+                          padding: '2px 6px',
+                          backgroundColor: 'rgba(0,0,0,0.05)',
+                          borderRadius: '3px',
+                          fontSize: '11px'
+                        }}>
+                          {activity.icon}
+                        </span>
+                      )}
+                      <span style={{ marginLeft: 'auto' }}>
+                        {new Date(entry.completedDate).toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
         )}
@@ -1054,50 +1194,74 @@
                   <div
                     key={key}
                     style={{
-                      padding: '12px',
+                      padding: '14px',
                       backgroundColor: 'white',
-                      border: '1px solid var(--border-color, #ddd)',
-                      borderRadius: '6px'
+                      border: '2px solid var(--border-color, #ddd)',
+                      borderRadius: '8px',
+                      transition: 'all 0.2s ease'
                     }}
                   >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                      <h4 style={{ margin: 0, fontSize: '14px', fontWeight: '600' }}>
-                        {charName} - {activity?.name}
-                      </h4>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
+                      <div>
+                        <h4 style={{ margin: '0 0 2px 0', fontSize: '15px', fontWeight: '600', fontFamily: "'Cinzel', serif", color: 'var(--text-primary, #333)' }}>
+                          {charName}
+                        </h4>
+                        <p style={{ margin: 0, fontSize: '12px', fontWeight: '500', color: 'var(--text-secondary, #666)' }}>
+                          {activity?.name}
+                        </p>
+                      </div>
                       <span style={{
-                        padding: '4px 8px',
-                        backgroundColor: masteryInfo.level === 'Master' ? '#ffe0b2' :
-                                        masteryInfo.level === 'Expert' ? '#f0f4c3' :
-                                        masteryInfo.level === 'Proficient' ? '#c8e6c9' : '#eceff1',
-                        borderRadius: '3px',
+                        padding: '6px 10px',
+                        backgroundColor: masteryInfo.level === 'Master' ? '#ff8a65' :
+                                        masteryInfo.level === 'Expert' ? '#ffb74d' :
+                                        masteryInfo.level === 'Proficient' ? '#81c784' : '#90caf9',
+                        color: 'white',
+                        borderRadius: '4px',
                         fontSize: '11px',
-                        fontWeight: '600'
+                        fontWeight: '700',
+                        whiteSpace: 'nowrap',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.5px',
+                        textAlign: 'center'
                       }}>
-                        {masteryInfo.level} +{masteryInfo.bonus}%
+                        {masteryInfo.level}
                       </span>
                     </div>
 
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '8px',
-                      fontSize: '12px'
-                    }}>
-                      <span>Successes: {mastery.successes}</span>
+                    <div style={{ marginBottom: '8px' }}>
                       <div style={{
-                        flex: 1,
-                        height: '4px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        fontSize: '12px',
+                        marginBottom: '6px',
+                        fontWeight: '500'
+                      }}>
+                        <span>Progression</span>
+                        <span style={{ color: 'var(--primary-color, #4CAF50)', fontWeight: '600' }}>
+                          {Math.min(mastery.successes, 15)}/15
+                        </span>
+                      </div>
+                      <div style={{
+                        width: '100%',
+                        height: '8px',
                         backgroundColor: 'var(--bg-secondary, #eee)',
-                        borderRadius: '2px',
-                        overflow: 'hidden'
+                        borderRadius: '4px',
+                        overflow: 'hidden',
+                        border: '1px solid var(--border-color, #ddd)'
                       }}>
                         <div style={{
                           width: `${Math.min((mastery.successes / 15) * 100, 100)}%`,
                           height: '100%',
-                          backgroundColor: 'var(--primary-color, #4CAF50)'
+                          backgroundColor: masteryInfo.level === 'Master' ? '#ff8a65' :
+                                           masteryInfo.level === 'Expert' ? '#ffb74d' :
+                                           masteryInfo.level === 'Proficient' ? '#81c784' : '#4CAF50',
+                          transition: 'width 0.3s ease'
                         }} />
                       </div>
-                      <span>{masteryInfo.level === 'Master' ? '✓' : Math.min(mastery.successes, 15)}/15</span>
+                    </div>
+
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary, #666)', textAlign: 'right' }}>
+                      Mastery Bonus: +{masteryInfo.bonus}%
                     </div>
                   </div>
                 );
@@ -1108,94 +1272,136 @@
 
         {/* Stats Tab */}
         {activeTab === 'stats' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
-            <div style={{
-              padding: '16px',
-              backgroundColor: 'white',
-              border: '1px solid var(--border-color, #ddd)',
-              borderRadius: '6px'
-            }}>
-              <p style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary, #666)' }}>
-                Total Gold Earned
-              </p>
-              <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: 'var(--success-color, #8BC34A)' }}>
-                +{stats.totalGoldEarned}
-              </h2>
-            </div>
-
-            <div style={{
-              padding: '16px',
-              backgroundColor: 'white',
-              border: '1px solid var(--border-color, #ddd)',
-              borderRadius: '6px'
-            }}>
-              <p style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary, #666)' }}>
-                Total Gold Spent
-              </p>
-              <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: 'var(--danger-color, #f44336)' }}>
-                -{stats.totalGoldSpent}
-              </h2>
-            </div>
-
-            <div style={{
-              padding: '16px',
-              backgroundColor: 'white',
-              border: '1px solid var(--border-color, #ddd)',
-              borderRadius: '6px'
-            }}>
-              <p style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary, #666)' }}>
-                Net Gold
-              </p>
-              <h2 style={{
-                margin: 0,
-                fontSize: '24px',
-                fontWeight: 'bold',
-                color: stats.netGold >= 0 ? 'var(--success-color, #8BC34A)' : 'var(--danger-color, #f44336)'
+          <div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '20px' }}>
+              <div style={{
+                padding: '18px',
+                backgroundColor: '#e8f5e9',
+                border: '2px solid var(--success-color, #8BC34A)',
+                borderRadius: '8px'
               }}>
-                {stats.netGold >= 0 ? '+' : ''}{stats.netGold}
-              </h2>
+                <p style={{ margin: '0 0 10px 0', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--success-color, #8BC34A)' }}>
+                  Gold Earned
+                </p>
+                <h2 style={{ margin: 0, fontSize: '28px', fontWeight: 'bold', color: 'var(--success-color, #8BC34A)' }}>
+                  +{stats.totalGoldEarned}
+                </h2>
+              </div>
+
+              <div style={{
+                padding: '18px',
+                backgroundColor: '#ffebee',
+                border: '2px solid var(--danger-color, #f44336)',
+                borderRadius: '8px'
+              }}>
+                <p style={{ margin: '0 0 10px 0', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--danger-color, #f44336)' }}>
+                  Gold Spent
+                </p>
+                <h2 style={{ margin: 0, fontSize: '28px', fontWeight: 'bold', color: 'var(--danger-color, #f44336)' }}>
+                  -{stats.totalGoldSpent}
+                </h2>
+              </div>
+
+              <div style={{
+                padding: '18px',
+                backgroundColor: stats.netGold >= 0 ? '#e8f5e9' : '#ffebee',
+                border: `2px solid ${stats.netGold >= 0 ? 'var(--success-color, #8BC34A)' : 'var(--danger-color, #f44336)'}`,
+                borderRadius: '8px'
+              }}>
+                <p style={{ margin: '0 0 10px 0', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: stats.netGold >= 0 ? 'var(--success-color, #8BC34A)' : 'var(--danger-color, #f44336)' }}>
+                  Net Gold
+                </p>
+                <h2 style={{
+                  margin: 0,
+                  fontSize: '28px',
+                  fontWeight: 'bold',
+                  color: stats.netGold >= 0 ? 'var(--success-color, #8BC34A)' : 'var(--danger-color, #f44336)'
+                }}>
+                  {stats.netGold >= 0 ? '+' : ''}{stats.netGold}
+                </h2>
+              </div>
+
+              <div style={{
+                padding: '18px',
+                backgroundColor: '#fff3e0',
+                border: '2px solid var(--warning-color, #ff9800)',
+                borderRadius: '8px'
+              }}>
+                <p style={{ margin: '0 0 10px 0', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--warning-color, #ff9800)' }}>
+                  Complications
+                </p>
+                <h2 style={{ margin: 0, fontSize: '28px', fontWeight: 'bold', color: 'var(--warning-color, #ff9800)' }}>
+                  {stats.complications}
+                </h2>
+              </div>
+
+              <div style={{
+                padding: '18px',
+                backgroundColor: '#e3f2fd',
+                border: '2px solid var(--info-color, #2196F3)',
+                borderRadius: '8px'
+              }}>
+                <p style={{ margin: '0 0 10px 0', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--info-color, #2196F3)' }}>
+                  Total Activities
+                </p>
+                <h2 style={{ margin: 0, fontSize: '28px', fontWeight: 'bold', color: 'var(--info-color, #2196F3)' }}>
+                  {downtimeData.history?.length || 0}
+                </h2>
+              </div>
+
+              <div style={{
+                padding: '18px',
+                backgroundColor: '#f3e5f5',
+                border: '2px solid #9c27b0',
+                borderRadius: '8px'
+              }}>
+                <p style={{ margin: '0 0 10px 0', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#9c27b0' }}>
+                  Popular Activity
+                </p>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#7b1fa2' }}>
+                  {stats.mostPopular || 'None'}
+                </h3>
+              </div>
             </div>
 
+            {/* Between Sessions Summary */}
             <div style={{
-              padding: '16px',
+              padding: '18px',
               backgroundColor: 'white',
-              border: '1px solid var(--border-color, #ddd)',
-              borderRadius: '6px'
+              border: '2px solid var(--border-color, #ddd)',
+              borderRadius: '8px'
             }}>
-              <p style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary, #666)' }}>
-                Complications
-              </p>
-              <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: 'var(--warning-color, #ff9800)' }}>
-                {stats.complications}
-              </h2>
-            </div>
-
-            <div style={{
-              padding: '16px',
-              backgroundColor: 'white',
-              border: '1px solid var(--border-color, #ddd)',
-              borderRadius: '6px'
-            }}>
-              <p style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary, #666)' }}>
-                Most Popular Activity
-              </p>
-              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>
-                {stats.mostPopular}
+              <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', fontWeight: '600', fontFamily: "'Cinzel', serif" }}>
+                Campaign Summary
               </h3>
-            </div>
-
-            <div style={{
-              padding: '16px',
-              backgroundColor: 'white',
-              border: '1px solid var(--border-color, #ddd)',
-              borderRadius: '6px'
-            }}>
-              <p style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary, #666)' }}>
-                Total Activities
-              </p>
-              <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: 'var(--info-color, #2196F3)' }}>
-                {downtimeData.history?.length || 0}
-              </h2>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
+                <div>
+                  <p style={{ margin: '0 0 6px 0', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary, #666)' }}>
+                    Total Characters Active
+                  </p>
+                  <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: 'var(--text-primary, #333)' }}>
+                    {new Set(downtimeData.history?.map(h => h.characterName) || []).size}
+                  </p>
+                </div>
+                <div>
+                  <p style={{ margin: '0 0 6px 0', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary, #666)' }}>
+                    Success Rate
+                  </p>
+                  <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: 'var(--success-color, #8BC34A)' }}>
+                    {downtimeData.history?.length > 0
+                      ? Math.round((downtimeData.history.filter(h => h.outcome !== 'complication').length / downtimeData.history.length) * 100)
+                      : 0}%
+                  </p>
+                </div>
+                <div>
+                  <p style={{ margin: '0 0 6px 0', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary, #666)' }}>
+                    Great Successes
+                  </p>
+                  <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: 'var(--primary-color, #4CAF50)' }}>
+                    {downtimeData.history?.filter(h => h.outcome === 'great_success').length || 0}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         )}

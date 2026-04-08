@@ -2218,6 +2218,293 @@
         }
       },
       {
+        id: "plague_spreads",
+        weight: 2,
+        apply: (data, rng) => {
+          if (!data.plague || !data.plague.outbreaks || data.plague.outbreaks.length === 0) return null;
+          const cities = data.cities.filter(c => c.name);
+          if (!cities.length) return null;
+          const outbreak = pick(data.plague.outbreaks, rng);
+          const sourceCity = cities.find(c => c.name === outbreak.city);
+          if (!sourceCity) return null;
+          const neighbors = cities.filter(c => c.region !== sourceCity.region && c.region && Math.random() < 0.6);
+          if (!neighbors.length) return null;
+          const targetCity = pick(neighbors, rng);
+          const diseases = ["the Crimson Wasting", "Shadowpox", "the Grey Cough", "Boneshiver Fever"];
+          return {
+            headline: `${outbreak.disease || pick(diseases, rng)} Spreads to ${targetCity.name}`,
+            detail: `Travelers fleeing ${sourceCity.name} have unwittingly carried the contagion across regional borders. Cases are now appearing in ${targetCity.name}, and panic spreads faster than the disease itself.`,
+            category: "social",
+            icon: "⊕",
+            importance: "major",
+            mutations: (d) => ({
+              ...d,
+              plague: d.plague ? {
+                ...d.plague,
+                outbreaks: [
+                  ...(d.plague.outbreaks || []),
+                  { city: targetCity.name, disease: outbreak.disease, severity: outbreak.severity - 1, duration: 20 }
+                ]
+              } : d.plague,
+              regions: d.regions.map(r => r.name === targetCity.region ? { ...r, state: "dangerous", threat: "high" } : r)
+            })
+          };
+        }
+      },
+      {
+        id: "plague_quarantine",
+        weight: 2,
+        apply: (data, rng) => {
+          const dangerousCities = data.cities.filter(c => c.name && data.regions.some(r => r.name === c.region && r.threat === "high"));
+          if (!dangerousCities.length) return null;
+          const city = pick(dangerousCities, rng);
+          return {
+            headline: `Strict Quarantine Imposed in ${city.name}`,
+            detail: `In a desperate attempt to contain the plague, authorities seal ${city.name}'s gates completely. No goods enter or leave. Trade routes are disrupted, and neighboring regions fear economic collapse.`,
+            category: "social",
+            icon: "✠",
+            importance: "major",
+            mutations: (d) => ({
+              ...d,
+              regions: d.regions.map(r =>
+                r.name === city.region
+                  ? { ...r, economy: Math.max(20, (r.economy || 50) - 15), state: "dangerous" }
+                  : r.neighbors && r.neighbors.includes(city.region)
+                  ? { ...r, economy: Math.max(30, (r.economy || 50) - 8) }
+                  : r
+              )
+            })
+          };
+        }
+      },
+      {
+        id: "plague_cure_discovered",
+        weight: 1,
+        apply: (data, rng) => {
+          if (!data.plague || !data.plague.outbreaks || data.plague.outbreaks.length === 0) return null;
+          const outbreak = pick(data.plague.outbreaks, rng);
+          const cities = data.cities.filter(c => c.name && c.region);
+          const healerNames = ["Master Aldris", "Sister Maye", "Physician Corvus", "the Herbalist", "Sage Thalion", "Mother Greywort"];
+          return {
+            headline: `Cure Discovered for ${outbreak.disease || "the Plague"}`,
+            detail: `After months of tireless research, ${pick(healerNames, rng)} announces a partial cure for the spreading contagion. Mortality rates drop sharply, and hope spreads alongside the remedy.`,
+            category: "social",
+            icon: "◆",
+            importance: "major",
+            mutations: (d) => ({
+              ...d,
+              plague: d.plague ? {
+                ...d.plague,
+                outbreaks: (d.plague.outbreaks || []).map(o =>
+                  o.city === outbreak.city ? { ...o, severity: Math.max(1, o.severity - 2) } : o
+                )
+              } : d.plague,
+              regions: d.regions.map(r =>
+                data.cities.some(c => c.region === r.name && r.threat === "high")
+                  ? { ...r, threat: "medium" }
+                  : r
+              )
+            })
+          };
+        }
+      },
+      {
+        id: "plague_mutation",
+        weight: 1,
+        apply: (data, rng) => {
+          if (!data.plague || !data.plague.outbreaks || data.plague.outbreaks.length === 0) return null;
+          const outbreak = pick(data.plague.outbreaks, rng);
+          const mutationTypes = ["more virulent and deadly", "less severe but more contagious", "resistant to known treatments", "affecting livestock as well"];
+          const mutationType = pick(mutationTypes, rng);
+          return {
+            headline: `${outbreak.disease || "The Plague"} Mutates`,
+            detail: `Witnesses report that the contagion is changing. The disease is now ${mutationType}. Healers must adapt their methods, and fear grips the affected regions anew.`,
+            category: "social",
+            icon: "⊗",
+            importance: "major",
+            mutations: (d) => ({
+              ...d,
+              plague: d.plague ? {
+                ...d.plague,
+                outbreaks: (d.plague.outbreaks || []).map(o =>
+                  o.city === outbreak.city
+                    ? { ...o, severity: Math.min(5, o.severity + (Math.random() < 0.5 ? 1 : -1)), mutated: true }
+                    : o
+                )
+              } : d.plague
+            })
+          };
+        }
+      },
+      {
+        id: "plague_healer_martyred",
+        weight: 2,
+        apply: (data, rng) => {
+          if (!data.plague || !data.plague.outbreaks || data.plague.outbreaks.length === 0) return null;
+          const outbreak = pick(data.plague.outbreaks, rng);
+          const cities = data.cities.filter(c => c.name);
+          const healerNames = ["Master Aldris", "Sister Maye", "Physician Corvus", "Sage Thalion", "Mother Greywort", "Brother Keldan"];
+          const sourceCity = cities.find(c => c.name === outbreak.city);
+          if (!sourceCity) return null;
+          const factions = data.factions.filter(f => f.power < 85);
+          const faction = factions.length > 0 ? pick(factions, rng) : null;
+          return {
+            headline: `Healer ${pick(healerNames, rng)} Falls to the Plague`,
+            detail: `A renowned healer who worked tirelessly in ${sourceCity.name} succumbs to the very disease they fought. The tragedy galvanizes the people, and many rally to the cause, seeking to honor the healer's sacrifice.`,
+            category: "social",
+            icon: "✦",
+            importance: "standard",
+            mutations: (d) => ({
+              ...d,
+              regions: d.regions.map(r => r.name === sourceCity.region ? { ...r, morale: Math.max(30, (r.morale || 50) + 5) } : r),
+              factions: faction ? d.factions.map(f =>
+                f.name === faction.name ? { ...f, power: Math.min(100, f.power + 5), trend: "rising" } : f
+              ) : d.factions
+            })
+          };
+        }
+      },
+      {
+        id: "plague_rat_migration",
+        weight: 2,
+        apply: (data, rng) => {
+          const cities = data.cities.filter(c => c.name && c.region);
+          if (cities.length < 2) return null;
+          const sourceCity = pick(cities, rng);
+          const targetCities = cities.filter(c => c.region !== sourceCity.region).slice(0, 2);
+          if (targetCities.length === 0) return null;
+          return {
+            headline: `Diseased Rats Flee ${sourceCity.name}`,
+            detail: `Swarms of plague-carrying rats are abandoning the stricken city, spreading disease along trade routes and into neighboring settlements. Livestock sicken, and new outbreaks emerge along merchants' paths.`,
+            category: "social",
+            icon: "⊕",
+            importance: "major",
+            mutations: (d) => ({
+              ...d,
+              plague: d.plague ? {
+                ...d.plague,
+                outbreaks: [
+                  ...(d.plague.outbreaks || []),
+                  ...targetCities.map(tc => ({
+                    city: tc.name,
+                    disease: "Rat-Borne Plague",
+                    severity: 2,
+                    duration: 15
+                  }))
+                ]
+              } : d.plague,
+              regions: d.regions.map(r =>
+                targetCities.some(tc => tc.region === r.name) ? { ...r, threat: "high" } : r
+              )
+            })
+          };
+        }
+      },
+      {
+        id: "plague_divine_intervention",
+        weight: 1,
+        apply: (data, rng) => {
+          if (!data.plague || !data.plague.outbreaks || data.plague.outbreaks.length === 0) return null;
+          const outbreak = pick(data.plague.outbreaks, rng);
+          const cities = data.cities.filter(c => c.name && c.region);
+          const affectedCity = cities.find(c => c.name === outbreak.city);
+          if (!affectedCity) return null;
+          const temples = ["the Temple of the Sun God", "the Shrine of the Healer Goddess", "the Sacred Hall of the Ancients", "the Cathedral of the Starborn"];
+          return {
+            headline: `Divine Intervention Claimed in ${affectedCity.name}`,
+            detail: `Priests of ${pick(temples, rng)} proclaim that their deity has granted protection from the plague. Whether divine or coincidence, cases drop significantly in the city, and the faithful flock to the temple seeking salvation.`,
+            category: "social",
+            icon: "✡",
+            importance: "standard",
+            mutations: (d) => ({
+              ...d,
+              plague: d.plague ? {
+                ...d.plague,
+                outbreaks: (d.plague.outbreaks || []).map(o =>
+                  o.city === outbreak.city ? { ...o, severity: Math.max(1, o.severity - 1) } : o
+                )
+              } : d.plague,
+              regions: d.regions.map(r => r.name === affectedCity.region ? { ...r, morale: Math.min(100, (r.morale || 50) + 10) } : r)
+            })
+          };
+        }
+      },
+      {
+        id: "plague_refugee_crisis",
+        weight: 2,
+        apply: (data, rng) => {
+          const cities = data.cities.filter(c => c.name && c.region);
+          if (cities.length < 2) return null;
+          const sourceCity = pick(cities, rng);
+          const targetRegion = pick(data.regions.filter(r => r.name !== sourceCity.region), rng);
+          if (!targetRegion) return null;
+          return {
+            headline: `Plague Refugees Flood ${targetRegion.name}`,
+            detail: `Thousands of desperate refugees flee the plague-stricken regions, overwhelming ${targetRegion.name}'s resources. Shelters overflow, food grows scarce, and disease spreads anew as sanitation fails. Resentment builds between locals and newcomers.`,
+            category: "social",
+            icon: "⊞",
+            importance: "major",
+            mutations: (d) => ({
+              ...d,
+              regions: d.regions.map(r =>
+                r.name === targetRegion.name
+                  ? { ...r, economy: Math.max(20, (r.economy || 50) - 10), morale: Math.max(20, (r.morale || 50) - 8), state: "tense" }
+                  : r
+              ),
+              plague: d.plague ? {
+                ...d.plague,
+                outbreaks: [
+                  ...(d.plague.outbreaks || []),
+                  { city: targetRegion.name, disease: "Refugee-Borne Contagion", severity: 2, duration: 12 }
+                ]
+              } : d.plague
+            })
+          };
+        }
+      },
+      {
+        id: "plague_profiteering",
+        weight: 2,
+        apply: (data, rng) => {
+          const cities = data.cities.filter(c => c.name);
+          if (!cities.length) return null;
+          const city = pick(cities, rng);
+          const merchants = ["Merchant Guild", "Black Market Syndicate", "Caravan Masters", "Apothecaries Guild"];
+          return {
+            headline: `${pick(merchants, rng)} Hoards Healing Supplies in ${city.name}`,
+            detail: `Unscrupulous merchants have cornered the market on medicines and bandages, driving prices to ruinous heights. The poor cannot afford treatment, and anger at profiteering rivals anger at the disease itself.`,
+            category: "social",
+            icon: "◈",
+            importance: "standard",
+            mutations: (d) => ({
+              ...d,
+              regions: d.regions.map(r => r.name === city.region ? { ...r, morale: Math.max(20, (r.morale || 50) - 6), state: "tense" } : r)
+            })
+          };
+        }
+      },
+      {
+        id: "plague_immunity_rumors",
+        weight: 1,
+        apply: (data, rng) => {
+          const regions = data.regions.filter(r => r.name);
+          if (!regions.length) return null;
+          const region = pick(regions, rng);
+          const populationTypes = ["mountain dwellers", "nomadic tribes", "ancient bloodlines", "isolated communities"];
+          return {
+            headline: `Rumors of Natural Immunity in ${region.name}`,
+            detail: `Travelers speak of a mysterious population in ${region.name} who seem naturally immune to the plague. Scholars, healers, and adventurers alike wonder if seeking out these people could unlock the secret to survival.`,
+            category: "social",
+            icon: "◆",
+            importance: "minor",
+            mutations: (d) => ({
+              ...d,
+              regions: d.regions.map(r => r.name === region.name ? { ...r, intrigue: (r.intrigue || 0) + 3 } : r)
+            })
+          };
+        }
+      },
+      {
         id: "festival",
         weight: 4,
         apply: (data, rng) => {

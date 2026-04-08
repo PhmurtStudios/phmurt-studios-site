@@ -14,7 +14,7 @@
       height: '100%',
       backgroundColor: T.bg || 'var(--bg)',
       color: T.text || 'var(--text)',
-      fontFamily: T.ui || 'system-ui, -apple-system, sans-serif',
+      fontFamily: T.ui || "'Cinzel', serif",
       overflow: 'hidden'
     },
     header: {
@@ -28,12 +28,17 @@
     title: {
       fontSize: '24px',
       fontWeight: 'bold',
-      fontFamily: T.heading || 'serif',
+      fontFamily: T.heading || "'Cinzel', serif",
       color: T.gold || 'var(--gold)',
       margin: 0,
       display: 'flex',
       alignItems: 'center',
       gap: '12px'
+    },
+    difficultyCircles: {
+      display: 'inline-flex',
+      gap: '4px',
+      alignItems: 'center'
     },
     tabbar: {
       display: 'flex',
@@ -277,8 +282,156 @@
     { name: 'Wildcard', skills: ['Any specialty'], tools: ['Improvised', 'Unexpected', 'Creative'] }
   ];
 
-  const LOCATION_TYPES = ['Vault', 'Mansion', 'Castle', 'Temple', 'Guild Hall', 'Caravan', 'Ship', 'Museum'];
+  const LOCATION_TYPES = ['Vault', 'Mansion', 'Castle', 'Temple', 'Guild Hall', 'Caravan', 'Ship', 'Sewer', 'Tower', 'Tavern'];
   const REWARD_TIERS = ['Petty', 'Moderate', 'Valuable', 'Legendary'];
+
+  function seededRandom(seed) {
+    const x = Math.sin(seed++) * 10000;
+    return x - Math.floor(x);
+  }
+
+  function generateBlueprint(heistName, locationType) {
+    const template = BUILDING_TEMPLATES[locationType];
+    if (!template) return {};
+
+    const seed = heistName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const blueprint = {};
+
+    template.rooms.forEach((room, idx) => {
+      let guardCount = room.guards;
+      let hazards = room.hazards;
+      let loot = room.loot;
+
+      if (room.type === 'room' || room.type === 'corridor') {
+        const guardVar = Math.floor(seededRandom(seed + idx * 10) * 3);
+        guardCount = Math.max(0, room.guards - 1 + guardVar);
+      }
+
+      const roomId = 'room_' + idx;
+      blueprint[roomId] = {
+        id: roomId,
+        name: room.name,
+        type: room.type,
+        description: `${locationType} ${room.name.toLowerCase()}`,
+        hazards: hazards,
+        loot: loot,
+        guards: guardCount
+      };
+    });
+
+    return blueprint;
+  }
+
+  const BUILDING_TEMPLATES = {
+    'Vault': {
+      rooms: [
+        { name: 'Entrance', type: 'entrance', guards: 2, hazards: 'Heavy doors, alarm system', loot: 'None', connections: [1] },
+        { name: 'Lobby', type: 'corridor', guards: 1, hazards: 'None', loot: 'None', connections: [0, 2] },
+        { name: 'Guard Room', type: 'guard_post', guards: 3, hazards: 'Archer positions', loot: 'None', connections: [1, 3] },
+        { name: 'Inner Vault', type: 'vault', guards: 0, hazards: 'Magical ward', loot: 'Treasure chest', connections: [2, 4] },
+        { name: 'Trap Corridor', type: 'corridor', guards: 0, hazards: 'Pressure plates, blade traps', loot: 'None', connections: [3, 5] },
+        { name: 'Vault Chamber', type: 'vault', guards: 4, hazards: 'Enchanted locks, proximity sensors', loot: 'Crown jewels, gold bars', connections: [4] }
+      ]
+    },
+    'Mansion': {
+      rooms: [
+        { name: 'Front Entrance', type: 'entrance', guards: 2, hazards: 'Locked door, servants', loot: 'None', connections: [1] },
+        { name: 'Grand Hall', type: 'room', guards: 1, hazards: 'Chandeliers, open space', loot: 'Paintings', connections: [0, 2, 3, 4] },
+        { name: 'Kitchen', type: 'room', guards: 1, hazards: 'Servants, fire hazard', loot: 'Supplies', connections: [1, 7] },
+        { name: 'Bedroom', type: 'room', guards: 0, hazards: 'Alarm bell', loot: 'Jewelry, documents', connections: [1, 5] },
+        { name: 'Study', type: 'room', guards: 0, hazards: 'Locked cabinet', loot: 'Valuable books, ledgers', connections: [1, 6] },
+        { name: 'Treasury', type: 'vault', guards: 3, hazards: 'Magical protection', loot: 'Gold, gems', connections: [3] },
+        { name: 'Servant Quarters', type: 'corridor', guards: 0, hazards: 'Servants present', loot: 'None', connections: [4, 7] },
+        { name: 'Back Garden', type: 'exit', guards: 1, hazards: 'Walls, guards', loot: 'None', connections: [2, 6] }
+      ]
+    },
+    'Castle': {
+      rooms: [
+        { name: 'Gatehouse', type: 'entrance', guards: 4, hazards: 'Portcullis, guards', loot: 'None', connections: [1] },
+        { name: 'Courtyard', type: 'corridor', guards: 2, hazards: 'Open space, patrols', loot: 'None', connections: [0, 2, 3, 8] },
+        { name: 'Great Hall', type: 'room', guards: 1, hazards: 'Large, echoing', loot: 'Tapestries', connections: [1, 4] },
+        { name: 'Armory', type: 'room', guards: 3, hazards: 'Weapons, armor', loot: 'Enchanted sword', connections: [1, 5] },
+        { name: 'Dungeon', type: 'room', guards: 2, hazards: 'Prisoners, darkness', loot: 'Prisoner records', connections: [2, 7] },
+        { name: 'Tower', type: 'room', guards: 2, hazards: 'Stairs, height', loot: 'Spy glass', connections: [3, 6] },
+        { name: 'Throne Room', type: 'room', guards: 4, hazards: 'Royal guards', loot: 'Crown, scepter', connections: [5, 9] },
+        { name: 'Barracks', type: 'guard_post', guards: 5, hazards: 'Many soldiers', loot: 'None', connections: [4] },
+        { name: 'Chapel', type: 'room', guards: 1, hazards: 'Holy ground, priest', loot: 'Religious artifacts', connections: [1, 9] },
+        { name: 'Treasury', type: 'vault', guards: 3, hazards: 'Magical seals', loot: 'Royal treasury', connections: [6, 8] }
+      ]
+    },
+    'Temple': {
+      rooms: [
+        { name: 'Entrance', type: 'entrance', guards: 2, hazards: 'Priests, sacred ground', loot: 'None', connections: [1] },
+        { name: 'Nave', type: 'corridor', guards: 1, hazards: 'Worshippers, open space', loot: 'None', connections: [0, 2, 3] },
+        { name: 'Altar Room', type: 'room', guards: 2, hazards: 'Holy magic, priest', loot: 'Sacred relics', connections: [1, 4] },
+        { name: 'Crypt', type: 'room', guards: 0, hazards: 'Undead ward, darkness', loot: 'Burial treasures', connections: [1, 5] },
+        { name: 'Vault', type: 'vault', guards: 3, hazards: 'Divine protection', loot: 'Sacred gold', connections: [2] },
+        { name: 'Priest Quarters', type: 'room', guards: 1, hazards: 'Priest present', loot: 'Personal valuables', connections: [3, 6] },
+        { name: 'Bell Tower', type: 'exit', guards: 1, hazards: 'Bells, height, guards', loot: 'None', connections: [5] }
+      ]
+    },
+    'Guild Hall': {
+      rooms: [
+        { name: 'Entrance', type: 'entrance', guards: 1, hazards: 'Guard at desk', loot: 'None', connections: [1] },
+        { name: 'Common Room', type: 'corridor', guards: 2, hazards: 'Members present', loot: 'None', connections: [0, 2, 3, 4] },
+        { name: 'Meeting Hall', type: 'room', guards: 0, hazards: 'Large room, sound carries', loot: 'Documents', connections: [1, 5] },
+        { name: 'Vault', type: 'vault', guards: 4, hazards: 'Magical locks, alarm', loot: 'Guild treasury', connections: [1] },
+        { name: 'Archive', type: 'room', guards: 1, hazards: 'Valuable documents', loot: 'Contracts, records', connections: [1, 6] },
+        { name: 'Back Alley Exit', type: 'exit', guards: 1, hazards: 'Narrow, muddy', loot: 'None', connections: [2] },
+        { name: 'Rooftop', type: 'exit', guards: 1, hazards: 'Height, exposed', loot: 'None', connections: [4] }
+      ]
+    },
+    'Caravan': {
+      rooms: [
+        { name: 'Lead Wagon', type: 'entrance', guards: 2, hazards: 'Driver, guards', loot: 'None', connections: [1] },
+        { name: 'Cargo Wagon 1', type: 'room', guards: 1, hazards: 'Heavy crates', loot: 'Silk, spices', connections: [0, 2] },
+        { name: 'Cargo Wagon 2', type: 'room', guards: 1, hazards: 'Fragile goods', loot: 'Gems, oil', connections: [1, 3] },
+        { name: 'Rear Guard', type: 'guard_post', guards: 3, hazards: 'Armed guards', loot: 'None', connections: [2, 4] },
+        { name: 'Hidden Compartment', type: 'vault', guards: 2, hazards: 'Secret lock', loot: 'Contraband, gold', connections: [3] }
+      ]
+    },
+    'Ship': {
+      rooms: [
+        { name: 'Deck', type: 'entrance', guards: 2, hazards: 'Crew, waves, weather', loot: 'None', connections: [1, 2] },
+        { name: 'Captain\'s Cabin', type: 'room', guards: 1, hazards: 'Locked door', loot: 'Maps, logs, valuables', connections: [0, 3] },
+        { name: 'Cargo Hold', type: 'room', guards: 2, hazards: 'Dark, slippery', loot: 'Cargo, barrels', connections: [0, 4] },
+        { name: 'Brig', type: 'room', guards: 2, hazards: 'Prisoners, guards', loot: 'Prisoner records', connections: [1] },
+        { name: 'Crow\'s Nest', type: 'room', guards: 1, hazards: 'Height, exposed, swaying', loot: 'Telescope, coins', connections: [2, 5] },
+        { name: 'Secret Compartment', type: 'vault', guards: 0, hazards: 'Hidden hatch', loot: 'Pirate gold, jewels', connections: [4] }
+      ]
+    },
+    'Sewer': {
+      rooms: [
+        { name: 'Entrance', type: 'entrance', guards: 0, hazards: 'Stench, dark', loot: 'None', connections: [1] },
+        { name: 'Main Junction', type: 'corridor', guards: 1, hazards: 'Murky water, slippery', loot: 'None', connections: [0, 2, 3] },
+        { name: 'Waterway', type: 'corridor', guards: 0, hazards: 'Strong current, flooded', loot: 'None', connections: [1, 4] },
+        { name: 'Den', type: 'room', guards: 0, hazards: 'Rats, mold, unstable', loot: 'Bones, trash', connections: [1, 5] },
+        { name: 'Stash Room', type: 'vault', guards: 2, hazards: 'Hidden entrance, traps', loot: 'Stolen goods, gold', connections: [2] },
+        { name: 'Exit', type: 'exit', guards: 0, hazards: 'Grate, locked', loot: 'None', connections: [3, 6] },
+        { name: 'Flooded Chamber', type: 'room', guards: 0, hazards: 'Deep water, drowning risk', loot: 'Sunken treasures', connections: [5] }
+      ]
+    },
+    'Tower': {
+      rooms: [
+        { name: 'Ground Floor', type: 'entrance', guards: 2, hazards: 'Locked door, guards', loot: 'None', connections: [1] },
+        { name: 'Stairwell', type: 'corridor', guards: 1, hazards: 'Spiraling stairs, height', loot: 'None', connections: [0, 2, 3, 4] },
+        { name: 'Laboratory', type: 'room', guards: 1, hazards: 'Magical experiments, danger', loot: 'Spell components, artifacts', connections: [1, 5] },
+        { name: 'Library', type: 'room', guards: 1, hazards: 'Enchanted books', loot: 'Spellbooks, knowledge', connections: [1] },
+        { name: 'Summit', type: 'room', guards: 2, hazards: 'Exposed, windy, height', loot: 'Scrying orb, treasure', connections: [1] },
+        { name: 'Secret Basement', type: 'vault', guards: 3, hazards: 'Hidden entrance, traps', loot: 'Forbidden artifacts, gold', connections: [2] }
+      ]
+    },
+    'Tavern': {
+      rooms: [
+        { name: 'Common Room', type: 'entrance', guards: 1, hazards: 'Crowds, drunk patrons', loot: 'None', connections: [1, 2] },
+        { name: 'Kitchen', type: 'room', guards: 1, hazards: 'Heat, sharp objects', loot: 'Food, supplies', connections: [0, 3] },
+        { name: 'Cellar', type: 'vault', guards: 2, hazards: 'Dark, damp, locked', loot: 'Wine, ale, gold', connections: [0, 4] },
+        { name: 'Upstairs Rooms', type: 'room', guards: 0, hazards: 'Locked doors, patrons', loot: 'Personal items', connections: [1] },
+        { name: 'Back Office', type: 'room', guards: 1, hazards: 'Owner present, records', loot: 'Ledgers, cash box', connections: [2, 5] },
+        { name: 'Hidden Room', type: 'vault', guards: 2, hazards: 'Secret entrance, traps', loot: 'Secret treasury', connections: [4] }
+      ]
+    }
+  };
 
   function HeistCreationPanel({ data, setData, onClose }) {
     const [newHeist, setNewHeist] = useState({
@@ -359,6 +512,16 @@
             </div>
           </div>
 
+          <button
+            style={{...styles.button, backgroundColor: T.accent || '#6366f1'}}
+            onClick={() => {
+              const generatedBlueprint = generateBlueprint(newHeist.name, newHeist.type);
+              setNewHeist({...newHeist, blueprint: generatedBlueprint});
+            }}
+          >
+            <Layers size={16} /> Generate Blueprint
+          </button>
+
           <div>
             <div style={styles.label}>Description</div>
             <textarea
@@ -381,7 +544,7 @@
 
           <div style={styles.grid}>
             <div>
-              <div style={styles.label}>Difficulty (Skulls)</div>
+              <div style={styles.label}>Difficulty Slider</div>
               <input
                 style={styles.input}
                 type="range"
@@ -390,9 +553,6 @@
                 value={newHeist.difficulty}
                 onChange={(e) => setNewHeist({...newHeist, difficulty: parseInt(e.target.value)})}
               />
-              <div style={{textAlign: 'center', marginTop: '4px', fontSize: '12px'}}>
-                {'💀'.repeat(newHeist.difficulty)}
-              </div>
             </div>
             <div>
               <div style={styles.label}>Reward Tier</div>
@@ -403,6 +563,28 @@
               >
                 {REWARD_TIERS.map(r => <option key={r}>{r}</option>)}
               </select>
+            </div>
+          </div>
+
+          <div>
+            <div style={styles.label}>Difficulty Rating</div>
+            <div style={styles.difficultyCircles}>
+              {[1,2,3,4,5].map(i => (
+                <span key={i} style={{
+                  width: '20px',
+                  height: '20px',
+                  borderRadius: '50%',
+                  backgroundColor: i <= newHeist.difficulty ? (T.gold || 'var(--gold)') : (T.border || 'var(--border)'),
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  color: i <= newHeist.difficulty ? '#000' : (T.textDim || 'var(--text-dim)')
+                }}>
+                  {i <= newHeist.difficulty ? '★' : '○'}
+                </span>
+              ))}
             </div>
           </div>
 
@@ -478,7 +660,7 @@
                   </p>
                   <div style={{display: 'flex', gap: '12px', marginTop: '8px', flexWrap: 'wrap'}}>
                     <div style={styles.difficultyBadge(heist.difficulty)}>
-                      {'💀'.repeat(heist.difficulty)} {heist.difficulty}/5
+                      {'★'.repeat(heist.difficulty)}{'○'.repeat(5-heist.difficulty)} {heist.difficulty}/5
                     </div>
                     <div style={{...styles.difficultyBadge(1), backgroundColor: T.accent || '#6366f1'}}>
                       <Coins size={14} /> {heist.reward}
@@ -642,7 +824,7 @@
                   title={`${room.guards} guard${room.guards !== 1 ? 's' : ''} | Right-click to delete`}
                 >
                   {room.name}
-                  {room.guards > 0 && <div style={{fontSize: '10px', marginTop: '4px'}}>⚔ {room.guards}</div>}
+                  {room.guards > 0 && <div style={{fontSize: '10px', marginTop: '4px', color: '#f87171'}}>G: {room.guards}</div>}
                 </div>
               ))
             )}
@@ -990,7 +1172,7 @@
             <div>
               <div style={styles.label}>Difficulty</div>
               <div style={styles.difficultyBadge(heist.difficulty)}>
-                {'💀'.repeat(heist.difficulty)}
+                {'★'.repeat(heist.difficulty)}{'○'.repeat(5-heist.difficulty)}
               </div>
             </div>
             <div>

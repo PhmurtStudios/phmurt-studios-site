@@ -11,14 +11,14 @@
 
   // Default deity pantheon
   const DEFAULT_PANTHEON = [
-    { id: 'solarius', name: 'Solarius', domain: 'life', alignment: 'LG', symbol: '☀️', description: 'God of the Sun, Light, and Noble Life. Grants blessings to those who seek truth and justice.', temples: 3, favor: 0, activeBlessing: null, activeCurse: null },
-    { id: 'lunara', name: 'Lunara', domain: 'knowledge', alignment: 'CG', symbol: '🌙', description: 'Goddess of the Moon, Dreams, and Hidden Knowledge. Favors those who seek wisdom in darkness.', temples: 2, favor: 0, activeBlessing: null, activeCurse: null },
-    { id: 'ferros', name: 'Ferros', domain: 'war', alignment: 'LN', symbol: '⚔️', description: 'God of War, Valor, and Honorable Combat. Grants strength to those who fight with honor.', temples: 4, favor: 0, activeBlessing: null, activeCurse: null },
-    { id: 'verdana', name: 'Verdana', domain: 'nature', alignment: 'NG', symbol: '🌿', description: 'Goddess of Nature, Growth, and Renewal. Protects the balance of the wild.', temples: 2, favor: 0, activeBlessing: null, activeCurse: null },
-    { id: 'morthos', name: 'Morthos', domain: 'death', alignment: 'N', symbol: '💀', description: 'God of Death, Passage, and the Inevitable End. Neutral in all things mortal.', temples: 1, favor: 0, activeBlessing: null, activeCurse: null },
-    { id: 'auros', name: 'Auros', domain: 'trickery', alignment: 'CN', symbol: '💰', description: 'God of Commerce, Fortune, and Clever Deception. Favors the cunning and lucky.', temples: 5, favor: 0, activeBlessing: null, activeCurse: null },
+    { id: 'solarius', name: 'Solarius', domain: 'life', alignment: 'LG', symbol: '☉', description: 'God of the Sun, Light, and Noble Life. Grants blessings to those who seek truth and justice.', temples: 3, favor: 0, activeBlessing: null, activeCurse: null },
+    { id: 'lunara', name: 'Lunara', domain: 'knowledge', alignment: 'CG', symbol: '☽', description: 'Goddess of the Moon, Dreams, and Hidden Knowledge. Favors those who seek wisdom in darkness.', temples: 2, favor: 0, activeBlessing: null, activeCurse: null },
+    { id: 'ferros', name: 'Ferros', domain: 'war', alignment: 'LN', symbol: '⚔', description: 'God of War, Valor, and Honorable Combat. Grants strength to those who fight with honor.', temples: 4, favor: 0, activeBlessing: null, activeCurse: null },
+    { id: 'verdana', name: 'Verdana', domain: 'nature', alignment: 'NG', symbol: '❧', description: 'Goddess of Nature, Growth, and Renewal. Protects the balance of the wild.', temples: 2, favor: 0, activeBlessing: null, activeCurse: null },
+    { id: 'morthos', name: 'Morthos', domain: 'death', alignment: 'N', symbol: '☠', description: 'God of Death, Passage, and the Inevitable End. Neutral in all things mortal.', temples: 1, favor: 0, activeBlessing: null, activeCurse: null },
+    { id: 'auros', name: 'Auros', domain: 'trickery', alignment: 'CN', symbol: '◆', description: 'God of Commerce, Fortune, and Clever Deception. Favors the cunning and lucky.', temples: 5, favor: 0, activeBlessing: null, activeCurse: null },
     { id: 'tempestus', name: 'Tempestus', domain: 'tempest', alignment: 'CE', symbol: '⚡', description: 'God of Storms, Sea, and Chaos. Unpredictable and dangerous.', temples: 1, favor: 0, activeBlessing: null, activeCurse: null },
-    { id: 'forgara', name: 'Forgara', domain: 'forge', alignment: 'LG', symbol: '🔨', description: 'Goddess of Craft, Earth, and Creation. Grants skill to those who work with dedication.', temples: 3, favor: 0, activeBlessing: null, activeCurse: null }
+    { id: 'forgara', name: 'Forgara', domain: 'forge', alignment: 'LG', symbol: '⚒', description: 'Goddess of Craft, Earth, and Creation. Grants skill to those who work with dedication.', temples: 3, favor: 0, activeBlessing: null, activeCurse: null }
   ];
 
   const BLESSINGS_BY_DOMAIN = {
@@ -130,11 +130,11 @@
   function TriggerDisplay({ trigger, canEdit, onRemove }) {
     const getIcon = () => {
       switch(trigger.type) {
-        case 'faction_power': return '📊';
-        case 'npc_dead': return '💀';
-        case 'region_state': return '🗺️';
-        case 'war_declared': return '⚔️';
-        default: return '🎯';
+        case 'faction_power': return '◈';
+        case 'npc_dead': return '☠';
+        case 'region_state': return '◎';
+        case 'war_declared': return '⚔';
+        default: return '◆';
       }
     };
 

@@ -2,7 +2,7 @@
   'use strict';
 
   const { useState, useEffect, useCallback, useRef, useMemo } = React;
-  const { Crown, Eye, EyeOff, Users, Shield, Skull, Lock, Unlock, ChevronDown, ChevronUp, Plus, Edit2, Trash2, Check, X, AlertTriangle, Star, Target, Search, Layers, Activity, Heart, Swords, BookOpen, Sparkles, Undo } = window.LucideReact || {};
+  const { Crown, Eye, EyeOff, Users, Shield, Skull, Lock, Unlock, ChevronDown, ChevronUp, Plus, Edit2, Trash2, Check, X, AlertTriangle, Star, Target, Search, Layers, Activity, Heart, Swords, BookOpen, Sparkles, RotateCcw } = window.LucideReact || {};
 
   // Theme setup
   const T = window.__PHMURT_THEME || {};
@@ -307,7 +307,8 @@
     const styles = {
       container: {
         display: 'flex',
-        height: '100vh',
+        height: '100%',
+        flex: 1,
         background: `linear-gradient(135deg, ${T.bg || '#0a0e27'} 0%, ${T.bg || '#1a1f3a'} 100%)`,
         fontFamily: T.ui || 'system-ui, -apple-system, sans-serif',
         color: T.text || '#e0e0e0',
@@ -396,7 +397,7 @@
         fontWeight: 'bold'
       },
       detailPanel: {
-        position: 'fixed',
+        position: 'absolute',
         right: 0,
         top: 0,
         bottom: 0,
@@ -557,8 +558,8 @@
     // Hexagon node component
     const AgentHexagon = ({ agent, isRevealed, isEliminated, branchColor, isSelected }) => {
       const getStatusColor = () => {
-        if (isEliminated) return '#FF1744';
-        if (isRevealed) return '#4CAF50';
+        if (isEliminated) return T.crimson || '#FF1744';
+        if (isRevealed) return T.green || '#4CAF50';
         return '#555';
       };
 
@@ -590,7 +591,7 @@
     };
 
     // Connection line between nodes
-    const ConnectionLine = ({ x1, y1, x2, y2, color = '#FFD700' }) => {
+    const ConnectionLine = ({ x1, y1, x2, y2, color = T.gold || '#FFD700' }) => {
       const length = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
       const angle = Math.atan2(y2 - y1, x2 - x1);
 
@@ -735,7 +736,7 @@
                 <div style={{
                   width: '100%',
                   height: '100%',
-                  background: intrigue.shadowLeader.revealed ? '#FFD700' : '#333',
+                  background: intrigue.shadowLeader.revealed ? T.gold || '#FFD700' : '#333',
                   borderRadius: '50%',
                   border: selectedAgent?.id === 'leader' ? `3px solid ${T.gold || '#FFD700'}` : `2px solid ${T.gold || '#FFD700'}`,
                   display: 'flex',
@@ -750,7 +751,7 @@
                   fontSize: '48px',
                   fontWeight: 'bold'
                 }}>
-                  {intrigue.shadowLeader.revealed ? '👑' : '?'}
+                  {intrigue.shadowLeader.revealed ? <Crown size={48} style={{ display: 'block' }} /> : '?'}
                 </div>
               </div>
 
@@ -821,7 +822,7 @@
                               position: 'relative',
                               width: '100%',
                               height: '100%',
-                              background: agent.revealed ? '#4CAF50' : agent.status === 'eliminated' ? '#FF1744' : '#555',
+                              background: agent.revealed ? T.green || '#4CAF50' : agent.status === 'eliminated' ? T.crimson || '#FF1744' : '#555',
                               clipPath: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)',
                               border: selectedAgent?.id === agent.id ? `2px solid ${T.gold || '#FFD700'}` : `1px solid ${branch.color}`,
                               display: 'flex',
@@ -931,7 +932,7 @@
                 width: '120px',
                 height: '120px',
                 margin: '0 auto 20px',
-                background: selectedAgent.revealed ? '#4CAF50' : '#444',
+                background: selectedAgent.revealed ? T.green || '#4CAF50' : '#444',
                 borderRadius: '8px',
                 display: 'flex',
                 alignItems: 'center',
@@ -940,7 +941,7 @@
                 fontSize: '48px',
                 boxShadow: `0 0 20px ${T.gold || '#FFD700'}80`
               }}>
-                {selectedAgent.status === 'eliminated' ? '☠' : selectedAgent.revealed ? '👤' : '?'}
+                {selectedAgent.status === 'eliminated' ? 'X' : selectedAgent.revealed ? <Shield size={48} style={{ display: 'block' }} /> : '?'}
               </div>
 
               {/* NAME */}
@@ -1068,7 +1069,7 @@
                         }}
                         onClick={() => updateAgent(selectedAgent.id, { status: 'hidden' })}
                       >
-                        <Undo size={14} /> Restore
+                        <RotateCcw size={14} /> Restore
                       </button>
                     )}
                   </div>

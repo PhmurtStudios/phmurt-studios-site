@@ -503,7 +503,7 @@
                 opacity: hintsRevealed >= 3 ? 0.6 : 1
               }}
             >
-              {LightbulbIcon && <span style={{ marginRight: '4px' }}>💡</span>} Reveal Next Hint
+              {LightbulbIcon && <LightbulbIcon size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} />} Reveal Next Hint
             </button>
           </div>
 
@@ -904,7 +904,7 @@
       <div style={{ padding: '16px', color: T.text || 'var(--text)' }}>
         <div style={{ marginBottom: '20px' }}>
           <h1 style={{ margin: '0 0 12px 0', color: T.gold || 'var(--gold)', fontFamily: T.heading || 'serif', fontSize: '28px', fontWeight: 'bold' }}>
-            {BookOpen && <span style={{ marginRight: '8px' }}>📖</span>} Puzzle Master
+            {BookOpen && <BookOpen size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} />} Puzzle Master
           </h1>
           <p style={{ margin: 0, color: T.textDim || 'var(--text-dim)', fontSize: '13px' }}>
             Manage riddles, logic puzzles, and interactive challenges for your campaign.
@@ -928,9 +928,9 @@
                 transition: 'all 0.2s'
               }}
             >
-              {t === 'library' && Layers && <span style={{ marginRight: '4px' }}>📚</span>}
-              {t === 'session' && Target && <span style={{ marginRight: '4px' }}>🎯</span>}
-              {t === 'stats' && Star && <span style={{ marginRight: '4px' }}>⭐</span>}
+              {t === 'library' && Layers && <Layers size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} />}
+              {t === 'session' && Target && <Target size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} />}
+              {t === 'stats' && Star && <Star size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} />}
               {t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
           ))}
@@ -1038,7 +1038,7 @@
                     fontWeight: 'bold'
                   }}
                 >
-                  {Shuffle && <span style={{ marginRight: '4px' }}>🎲</span>} Random
+                  {Shuffle && <Shuffle size={14} style={{ marginRight: '4px', verticalAlign: 'middle' }} />} Random
                 </button>
               </div>
             </div>
