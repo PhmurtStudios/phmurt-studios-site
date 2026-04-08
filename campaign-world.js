@@ -2051,6 +2051,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
   const [routeDraft,setRouteDraft] = useState({ fromId: null, toId: null });
   const [cityPopup,setCityPopup] = useState(null); // { city, screenX, screenY } for map tooltip
   const [cityRegionFocus,setCityRegionFocus] = useState(null); // region name to highlight in Cities tab
+  const [expandedRegions, setExpandedRegions] = useState({}); // track which regions are expanded in consolidated view
+  const [regionDetailCity, setRegionDetailCity] = useState(null); // city selected within a region for detail view
   const [townView,setTownView] = useState(null); // city name string when viewing a town map
   const [townSelBldg,setTownSelBldg] = useState(null); // selected building index in town view
   const [townHovBldg,setTownHovBldg] = useState(null); // hovered building index in town view
@@ -3006,15 +3008,13 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
       <div style={{ display:"flex", alignItems:"center", gap:0, rowGap:6, flexWrap:"wrap", padding:"0 12px 8px", borderBottom:`1px solid ${T.border}`, flexShrink:0, background:T.bgNav }}>
         {(() => {
           const mods = data.modules || {};
-          const coreTabs = ["map","regions","factions","npcs","cities","party"];
+          const coreTabs = ["map","regions","factions","npcs","party"];
           const moduleTabs = [
-            { id:"economy", label:"Economy", module:"economy" },
             { id:"calendar", label:"Calendar", module:"calendar" },
-            { id:"religion", label:"Religion", module:"religion" },
             { id:"exploration", label:"Explore", module:"hexcrawl" },
           ];
           const activeTabs = [...coreTabs, ...moduleTabs.filter(mt => mods[mt.module] !== false).map(mt => mt.id)];
-          const labels = {map:"Atlas",cities:"Cities & Towns",economy:"Economy",calendar:"Calendar",religion:"Religion",exploration:"Explore"};
+          const labels = {map:"Atlas",calendar:"Calendar",exploration:"Explore"};
           return activeTabs.map(t => (
             <button key={t} onClick={()=>{setTab(t);if(t!=="map"){setSel(null);setAtlasProvinceId(null);setEditing(false);setCityPopup(null);}}} style={{
               padding:"14px clamp(8px, 1.6vw, 18px)", background:"transparent", border:"none", cursor:"pointer",
@@ -4067,56 +4067,347 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
         {/* ══════════ LIST TABS (regions / factions / npcs) ══════════ */}
         {tab!=="map" && (
           <div style={{ flex:1, overflowY:"auto", padding:"24px 48px" }}>
-            {tab==="regions" && (
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-                {data.regions.map(r => {
-                  const FantasyIcon = getFantasyIcon(r.type);
-                  const active=sel?.id===r.id&&selType==="region";
-                  const regionNpcs = (data.npcs || []).filter(n => n.loc === r.name);
-                  const governor = regionNpcs.find(n => n.role && n.role.includes(r.name));
-                  return (
-                    <div key={r.id} onClick={()=>{setSel(r);setSelType("region");setEditing(false);}} style={{
-                      background:active?T.bgHover:T.bgCard, padding:20, cursor:"pointer",
-                      border:`1px solid ${active?T.crimsonBorder:T.border}`, borderRadius:"4px",
-                      boxShadow:"0 2px 8px rgba(0,0,0,0.08)", transition:"all 0.2s",
+            {tab==="regions" && (() => {
+              const cities = data.cities || [];
+              const mods = data.modules || {};
+              const toggleRegion = (rId) => setExpandedRegions(prev => ({ ...prev, [rId]: !prev[rId] }));
+
+              // If a city detail is selected within regions view, show full city detail
+              if (regionDetailCity) {
+                const c = cities.find(ct => ct.id === regionDetailCity.id) || regionDetailCity;
+                const fc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || "#c9a85c"; })();
+                const cityNpcs = (data.npcs || []).filter(n => (c.npcs || []).includes(n.id));
+                return (
+                  <div style={{ display:"flex", flexDirection:"column", gap:0, maxWidth:900 }}>
+                    <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+                      <button onClick={() => setRegionDetailCity(null)} style={{
+                        display:"flex", alignItems:"center", gap:6, padding:"8px 14px",
+                        background:"transparent", border:`1px solid ${T.border}`, borderRadius:"3px", color:T.textMuted,
+                        fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer",
+                      }}><ArrowLeft size={12}/> Back to Regions</button>
+                      <button onClick={() => { setTab("map"); }} style={{
+                        display:"flex", alignItems:"center", gap:6, padding:"8px 14px",
+                        background:"transparent", border:`1px solid ${T.border}`, borderRadius:"3px", color:T.textMuted,
+                        fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer",
+                      }}>◎ View on Map</button>
+                      {townImagesReady && window.TOWN_IMAGES && window.TOWN_IMAGES[c.name] && (
+                        <button onClick={() => { setTownView(c.name); setTownSelBldg(null); setTownHovBldg(null); setTownZoom(0); setTownPan({x:0,y:0}); }} style={{
+                          display:"flex", alignItems:"center", gap:6, padding:"8px 14px",
+                          background:"linear-gradient(135deg, rgba(201,168,92,0.15), transparent)", border:"1px solid rgba(201,168,92,0.4)", borderRadius:"3px", color:"#c9a85c",
+                          fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer",
+                        }}>Explore Town</button>
+                      )}
+                    </div>
+                    <div style={{
+                      padding:"24px 28px", marginBottom:20,
+                      background:`linear-gradient(135deg, ${fc}12 0%, transparent 60%)`,
+                      borderLeft:`4px solid ${fc}`, borderRadius:"4px", border:`1px solid ${T.border}`,
                     }}>
-                      <div style={{ display:"flex", alignItems:"start", gap:14 }}>
-                        <div style={{ flexShrink:0, marginTop:-2, opacity:0.85 }}>
-                          <FantasyIcon size={r.type==="city"||r.type==="kingdom"||r.type==="capital"?36:28} color={tCols[r.threat]} />
+                      <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
+                        <span style={{ fontSize:22, fontWeight:400, color:T.text, fontFamily:"'Cinzel', serif", letterSpacing:"0.5px" }}>{c.name}</span>
+                        <span style={{ fontSize:9, color:c.isCapital?"#c9a85c":"#9a9080", border:`1px solid ${c.isCapital?"rgba(201,168,92,0.3)":"rgba(154,144,128,0.3)"}`, padding:"2px 8px", borderRadius:"2px", letterSpacing:"1px" }}>{c.isCapital?"CAPITAL":"SETTLEMENT"}</span>
+                      </div>
+                      <div style={{ fontSize:12, color:T.textMuted, marginBottom:8 }}>{c.region} · {c.faction} · Pop. {c.population}</div>
+                      <div style={{ fontSize:12, color:T.textDim, lineHeight:1.6 }}>{c.description}</div>
+                      {c.features && c.features.length > 0 && (
+                        <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginTop:12 }}>
+                          {c.features.map((f, fi) => <span key={fi} style={{ fontSize:10, color:"#c9a85c", border:"1px solid rgba(201,168,92,0.2)", padding:"3px 9px", borderRadius:"2px" }}>{f}</span>)}
                         </div>
-                        <div style={{ flex:1 }}>
-                          <div style={{ fontSize:16, fontWeight:400, color:T.text, marginBottom:2, letterSpacing:"0.5px" }}>{r.name}</div>
-                          {r.subtitle && <div style={{ fontSize:11, color:T.textFaint, fontStyle:"italic", marginBottom:8, fontWeight:300 }}>{r.subtitle}</div>}
-                          <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:8 }}>
-                            <Tag variant={r.threat==="extreme"?"critical":r.threat==="high"?"danger":r.threat==="medium"?"warning":"success"}>{r.threat}</Tag>
-                            <Tag variant="muted">{r.type}</Tag>
-                            {r.terrain && <Tag variant="muted">{r.terrain}</Tag>}
-                            {r.visited && <Tag variant="info">visited</Tag>}
+                      )}
+                    </div>
+                    {/* Tavern */}
+                    <div style={{ padding:"20px 24px", marginBottom:16, background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px" }}>
+                      <div style={{ fontSize:10, color:T.textFaint, letterSpacing:"2px", textTransform:"uppercase", marginBottom:12 }}>Tavern & Inn</div>
+                      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
+                        <span style={{ fontSize:16, fontWeight:400, color:T.text, fontFamily:"'Spectral', serif" }}>{c.tavern.name}</span>
+                        <span style={{ fontSize:11, color:T.textFaint }}>— Innkeeper: {c.tavern.innkeeper} ({c.tavern.innkeeperPersonality})</span>
+                      </div>
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:12 }}>
+                        {c.tavern.services.map((s, si) => (
+                          <div key={si} style={{ display:"flex", justifyContent:"space-between", padding:"6px 10px", background:"rgba(0,0,0,0.12)", borderRadius:"3px", fontSize:11 }}>
+                            <span style={{ color:T.textMuted }}>{s.name}</span>
+                            <span style={{ color:"#c9a85c", fontFamily:T.ui }}>{s.price}</span>
                           </div>
-                          <div style={{ fontSize:12, color:T.textMuted, fontWeight:300, marginBottom:6 }}>
-                            {r.ctrl} — <span style={{fontStyle:"italic"}}>{r.state}</span>
-                          </div>
-                          {r.population && <div style={{ fontSize:11, color:T.textFaint, marginBottom:6 }}>Population: ~{r.population}</div>}
-                          {r.governor && <div style={{ fontSize:11, color:T.textDim, marginBottom:4 }}>
-                            <span style={{ color:"#c9a85c", fontWeight:400 }}>{r.governorTitle}:</span> {r.governor}
-                          </div>}
-                          {r.cities && r.cities.length > 0 && (
-                            <div style={{ fontSize:11, color:T.textFaint, marginTop:4 }}>
-                              Settlements: {[...new Set(r.cities)].join(", ")}
-                            </div>
-                          )}
-                          {regionNpcs.length > 0 && (
-                            <div style={{ fontSize:10, color:T.textFaint, marginTop:6, borderTop:`1px solid ${T.border}`, paddingTop:6 }}>
-                              {regionNpcs.length} notable {regionNpcs.length === 1 ? "figure" : "figures"}
-                            </div>
-                          )}
+                        ))}
+                      </div>
+                      {c.tavern.rumor && (
+                        <div style={{ fontSize:11, color:"#e8ba40", fontStyle:"italic", padding:"8px 12px", background:"rgba(232,186,64,0.06)", border:"1px solid rgba(232,186,64,0.15)", borderRadius:"3px" }}>
+                          Rumor: "{c.tavern.rumor}"
                         </div>
+                      )}
+                    </div>
+                    {/* Shops */}
+                    <div style={{ marginBottom:16 }}>
+                      <div style={{ fontSize:10, color:T.textFaint, letterSpacing:"2px", textTransform:"uppercase", marginBottom:12, paddingLeft:4 }}>Shops & Merchants ({c.shops.length})</div>
+                      <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                        {c.shops.map(shop => (
+                          <div key={shop.id} style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", overflow:"hidden" }}>
+                            <div style={{ padding:"14px 20px", display:"flex", alignItems:"center", justifyContent:"space-between", borderBottom:`1px solid ${T.border}` }}>
+                              <div>
+                                <div style={{ fontSize:14, fontWeight:400, color:T.text }}>{shop.name}</div>
+                                <div style={{ fontSize:11, color:T.textFaint, marginTop:2 }}>{shop.type} — Owner: {shop.owner} ({shop.ownerPersonality})</div>
+                              </div>
+                              <span style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui }}>{shop.items.length} items</span>
+                            </div>
+                            <table style={{ width:"100%", borderCollapse:"collapse", fontSize:12 }}>
+                              <thead>
+                                <tr style={{ background:"rgba(0,0,0,0.15)" }}>
+                                  <th style={{ padding:"8px 16px", textAlign:"left", color:T.textFaint, fontWeight:400, fontSize:10, letterSpacing:"1px", textTransform:"uppercase" }}>Item</th>
+                                  <th style={{ padding:"8px 12px", textAlign:"center", color:T.textFaint, fontWeight:400, fontSize:10, letterSpacing:"1px", textTransform:"uppercase" }}>Rarity</th>
+                                  <th style={{ padding:"8px 12px", textAlign:"right", color:T.textFaint, fontWeight:400, fontSize:10, letterSpacing:"1px", textTransform:"uppercase" }}>Price</th>
+                                  <th style={{ padding:"8px 12px", textAlign:"center", color:T.textFaint, fontWeight:400, fontSize:10, letterSpacing:"1px", textTransform:"uppercase" }}>Stock</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {shop.items.map((item, ii) => (
+                                  <tr key={ii} style={{ borderTop:`1px solid ${T.border}`, opacity:item.inStock?1:0.4 }}>
+                                    <td style={{ padding:"8px 16px", color:T.text }}>{item.name}</td>
+                                    <td style={{ padding:"8px 12px", textAlign:"center" }}>
+                                      <span style={{ fontSize:10, color:item.rarity==="rare"?"#8b50f0":item.rarity==="uncommon"?"#2e8b57":T.textFaint, fontStyle:"italic" }}>{item.rarity}</span>
+                                    </td>
+                                    <td style={{ padding:"8px 12px", textAlign:"right", color:"#c9a85c", fontFamily:T.ui }}>{item.price}</td>
+                                    <td style={{ padding:"8px 12px", textAlign:"center", color:item.inStock?T.textMuted:T.crimson, fontSize:11 }}>{item.inStock?("×"+item.qty):"Out"}</td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ))}
                       </div>
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                    {/* Notable NPCs */}
+                    <div style={{ marginBottom:16 }}>
+                      <div style={{ fontSize:10, color:T.textFaint, letterSpacing:"2px", textTransform:"uppercase", marginBottom:12, paddingLeft:4 }}>Notable Residents ({cityNpcs.length})</div>
+                      <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                        {cityNpcs.map(n => (
+                          <div key={n.id} onClick={() => { setSel(n); setSelType("npc"); setTab("npcs"); setRegionDetailCity(null); }} style={{
+                            padding:"12px 16px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", cursor:"pointer",
+                          }}>
+                            <div style={{ fontSize:13, fontWeight:300, color:T.text, marginBottom:4 }}>{n.name}</div>
+                            <div style={{ fontSize:11, color:T.textFaint, fontStyle:"italic" }}>{n.role}</div>
+                          </div>
+                        ))}
+                        {c.shops.map(shop => (
+                          <div key={"owner-"+shop.id} style={{ padding:"12px 16px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px" }}>
+                            <div style={{ fontSize:13, fontWeight:300, color:T.text, marginBottom:4 }}>{shop.owner}</div>
+                            <div style={{ fontSize:11, color:T.textFaint, fontStyle:"italic" }}>{shop.type} Owner</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Quest Hooks */}
+                    {c.questHooks && c.questHooks.length > 0 && (
+                      <div style={{ marginBottom:16 }}>
+                        <div style={{ fontSize:10, color:T.textFaint, letterSpacing:"2px", textTransform:"uppercase", marginBottom:12, paddingLeft:4 }}>Quest Hooks</div>
+                        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                          {c.questHooks.map((q, qi) => (
+                            <div key={qi} style={{
+                              padding:"12px 16px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px",
+                              borderLeft:"3px solid #e8ba40", display:"flex", alignItems:"center", gap:12,
+                            }}>
+                              <Scroll size={14} color="#e8ba40" style={{ flexShrink:0 }}/>
+                              <span style={{ fontSize:12, color:T.textMuted, lineHeight:1.5, fontStyle:"italic" }}>{q}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+
+              return (
+                <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+                  {data.regions.map(r => {
+                    const FantasyIcon = getFantasyIcon(r.type);
+                    const active = sel?.id === r.id && selType === "region";
+                    const isExpanded = expandedRegions[r.id] || false;
+                    const regionNpcs = (data.npcs || []).filter(n => n.loc === r.name);
+                    const regionCities = cities.filter(c => c.region === r.name);
+                    const factionObj = (data.factions || []).find(f => f.name === r.ctrl);
+                    const fc = factionObj?.color || "#c9a85c";
+                    regionCities.sort((a, b) => (b.isCapital ? 1 : 0) - (a.isCapital ? 1 : 0) || (b.popNum || 0) - (a.popNum || 0));
+
+                    return (
+                      <div key={r.id} style={{
+                        borderRadius:"6px", overflow:"hidden",
+                        border: active ? `1px solid ${T.crimsonBorder}` : `1px solid ${T.border}`,
+                        boxShadow:"0 2px 8px rgba(0,0,0,0.08)", transition:"all 0.2s",
+                      }}>
+                        {/* Region Header */}
+                        <div onClick={() => { setSel(r); setSelType("region"); setEditing(false); toggleRegion(r.id); }} style={{
+                          padding:"18px 22px", cursor:"pointer",
+                          background: `linear-gradient(135deg, ${fc}12 0%, transparent 60%)`,
+                          borderLeft: `4px solid ${fc}`,
+                        }}>
+                          <div style={{ display:"flex", alignItems:"start", gap:14 }}>
+                            <div style={{ flexShrink:0, marginTop:2, opacity:0.85 }}>
+                              <FantasyIcon size={r.type==="city"||r.type==="kingdom"||r.type==="capital"?36:28} color={tCols[r.threat]}/>
+                            </div>
+                            <div style={{ flex:1 }}>
+                              <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:2 }}>
+                                <span style={{ fontSize:18, fontWeight:400, color:T.text, fontFamily:"'Cinzel', serif", letterSpacing:"0.5px" }}>{r.name}</span>
+                                {r.type && <span style={{ fontSize:9, color:fc, border:`1px solid ${fc}44`, padding:"2px 8px", borderRadius:"2px", letterSpacing:"1.2px", textTransform:"uppercase" }}>{r.type}</span>}
+                              </div>
+                              {r.subtitle && <div style={{ fontSize:11, color:T.textFaint, fontStyle:"italic", marginBottom:6, fontWeight:300 }}>{r.subtitle}</div>}
+                              <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:6 }}>
+                                <Tag variant={r.threat==="extreme"?"critical":r.threat==="high"?"danger":r.threat==="medium"?"warning":"success"}>{r.threat}</Tag>
+                                {r.terrain && <Tag variant="muted">{r.terrain}</Tag>}
+                                {r.visited && <Tag variant="info">visited</Tag>}
+                              </div>
+                              <div style={{ display:"flex", gap:14, flexWrap:"wrap", fontSize:11, color:T.textMuted }}>
+                                {r.ctrl && <span style={{ color:fc }}>⚑ {r.ctrl}</span>}
+                                {r.state && <span style={{ fontStyle:"italic" }}>{r.state}</span>}
+                                {r.population && <span>Pop. ~{r.population}</span>}
+                                {regionCities.length > 0 && <span>{regionCities.length} settlement{regionCities.length !== 1 ? "s" : ""}</span>}
+                              </div>
+                              {r.governor && <div style={{ fontSize:11, color:T.textDim, marginTop:6 }}>
+                                <span style={{ color:"#c9a85c", fontWeight:400 }}>{r.governorTitle || "Governor"}:</span> {r.governor}
+                              </div>}
+                            </div>
+                            <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8, flexShrink:0 }}>
+                              <div style={{ transition:"transform 0.2s", transform:isExpanded?"rotate(180deg)":"rotate(0deg)" }}>
+                                <ChevronDown size={16} color={T.textFaint}/>
+                              </div>
+                              <button onClick={(e) => { e.stopPropagation(); setTab("map"); setCityRegionFocus(r.name); }} style={{
+                                padding:"4px 10px", background:`${fc}18`, border:`1px solid ${fc}44`, borderRadius:"3px",
+                                color:fc, fontFamily:"'Cinzel', serif", fontSize:8, letterSpacing:"1px",
+                                textTransform:"uppercase", cursor:"pointer",
+                              }}>◎ Map</button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Expanded Content */}
+                        {isExpanded && (
+                          <div style={{ background:"rgba(0,0,0,0.04)", borderTop:`1px solid ${T.border}` }}>
+                            {/* Cities & Towns */}
+                            {regionCities.length > 0 && (
+                              <div style={{ padding:"16px 22px", borderBottom:`1px solid ${T.border}` }}>
+                                <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>
+                                  Cities & Towns ({regionCities.length})
+                                </div>
+                                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                                  {regionCities.map(c => {
+                                    const cityFc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || "#c9a85c"; })();
+                                    return (
+                                      <div key={c.id} onClick={(e) => { e.stopPropagation(); setRegionDetailCity(c); }} style={{
+                                        padding:"12px 16px", background:T.bgCard,
+                                        border:c.isCapital?`1px solid ${cityFc}55`:`1px solid ${T.border}`,
+                                        borderLeft:c.isCapital?`3px solid ${cityFc}`:`2px solid ${T.border}22`,
+                                        borderRadius:"4px", cursor:"pointer", transition:"border-color 0.2s, box-shadow 0.2s",
+                                      }}
+                                        onMouseEnter={e => e.currentTarget.style.boxShadow="0 2px 12px rgba(0,0,0,0.2)"}
+                                        onMouseLeave={e => e.currentTarget.style.boxShadow="none"}
+                                      >
+                                        <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:5 }}>
+                                          {c.isCapital
+                                            ? <span style={{ fontSize:16, color:cityFc }}>★</span>
+                                            : <span style={{ fontSize:14, color:T.textFaint }}>◆</span>}
+                                          <span style={{ fontSize:14, fontWeight:c.isCapital?500:300, color:T.text }}>{c.name}</span>
+                                          <span style={{ fontSize:8, color:c.isCapital?cityFc:"#9a9080", border:`1px solid ${c.isCapital?cityFc+"44":"rgba(154,144,128,0.3)"}`, padding:"1px 5px", borderRadius:"2px", letterSpacing:"0.5px" }}>{c.isCapital?"CAPITAL":"SETTLEMENT"}</span>
+                                        </div>
+                                        <div style={{ fontSize:10, color:T.textFaint, marginBottom:7 }}>Pop. {c.population}</div>
+                                        <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:7 }}>
+                                          {(c.features || []).slice(0, 2).map((f, fi) => (
+                                            <span key={fi} style={{ fontSize:9, color:T.textDim, background:"rgba(0,0,0,0.15)", padding:"2px 6px", borderRadius:"2px" }}>{f}</span>
+                                          ))}
+                                        </div>
+                                        <div style={{ display:"flex", alignItems:"center", gap:10, fontSize:10, color:T.textFaint }}>
+                                          <span>{c.shops.length} shops</span>
+                                          <span>1 tavern</span>
+                                          <span>{(c.npcs || []).length} NPCs</span>
+                                          <span>{(c.questHooks || []).length} quests</span>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Economy Info (if economy module is enabled) */}
+                            {mods.economy !== false && (
+                              <div style={{ padding:"16px 22px", borderBottom:`1px solid ${T.border}` }}>
+                                <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>
+                                  💰 Regional Economy
+                                </div>
+                                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
+                                  {(r.resources || ["Grain", "Timber", "Iron"]).map((res, ri) => (
+                                    <div key={ri} style={{ padding:"8px 12px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"3px", textAlign:"center" }}>
+                                      <div style={{ fontSize:10, color:T.textMuted, marginBottom:4 }}>{res}</div>
+                                      <div style={{ fontSize:12, color:"#c9a85c", fontFamily:T.ui }}>{Math.floor(Math.random()*8+2)} gp</div>
+                                    </div>
+                                  ))}
+                                </div>
+                                {factionObj && (
+                                  <div style={{ marginTop:10, display:"flex", gap:12, fontSize:10, color:T.textMuted }}>
+                                    <span>Treasury: <span style={{ color:"#c9a85c" }}>{(factionObj.treasury || 0).toLocaleString()} gp</span></span>
+                                    <span>Trade Status: <span style={{ color:"#5ee09a" }}>Active</span></span>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Religion Info (if religion module is enabled) */}
+                            {mods.religion !== false && (
+                              <div style={{ padding:"16px 22px" }}>
+                                <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>
+                                  ⛪ Faith & Temples
+                                </div>
+                                {regionCities.length > 0 ? (
+                                  <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                                    {regionCities.slice(0, 3).map(city => {
+                                      const templeDeity = city.features?.find(f => f.includes("Temple") || f.includes("Cathedral") || f.includes("Shrine"));
+                                      return (
+                                        <div key={city.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"3px" }}>
+                                          <div style={{ width:6, height:6, borderRadius:"50%", background:"#e8940a", flexShrink:0 }}/>
+                                          <span style={{ fontSize:11, color:T.text }}>{city.name}</span>
+                                          <span style={{ fontSize:10, color:T.textMuted, fontStyle:"italic" }}>{templeDeity || "Local shrine"}</span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                ) : (
+                                  <div style={{ fontSize:10, color:T.textFaint, fontStyle:"italic" }}>No settlements to house temples.</div>
+                                )}
+                              </div>
+                            )}
+
+                            {/* Notable NPCs summary */}
+                            {regionNpcs.length > 0 && (
+                              <div style={{ padding:"16px 22px", borderTop:`1px solid ${T.border}` }}>
+                                <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:10 }}>
+                                  Notable Figures ({regionNpcs.length})
+                                </div>
+                                <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
+                                  {regionNpcs.slice(0, 6).map(n => (
+                                    <div key={n.id} onClick={(e) => { e.stopPropagation(); setSel(n); setSelType("npc"); setTab("npcs"); }} style={{
+                                      padding:"6px 12px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"3px", cursor:"pointer", transition:"all 0.2s",
+                                    }}>
+                                      <span style={{ fontSize:11, color:T.text, fontWeight:300 }}>{n.name}</span>
+                                      <span style={{ fontSize:9, color:T.textFaint, marginLeft:6, fontStyle:"italic" }}>{n.role}</span>
+                                    </div>
+                                  ))}
+                                  {regionNpcs.length > 6 && (
+                                    <span style={{ fontSize:10, color:T.textFaint, padding:"6px 0", alignSelf:"center" }}>+{regionNpcs.length - 6} more</span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {data.regions.length === 0 && (
+                    <div style={{ padding:40, textAlign:"center", color:T.textFaint, fontStyle:"italic" }}>
+                      No regions yet. Select an atlas seed on the Map tab to generate world data.
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {tab==="factions" && (
               <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
@@ -4343,8 +4634,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
               );
             })()}
 
-            {/* ══════════ CITIES & TOWNS TAB ══════════ */}
-            {tab==="cities" && (() => {
+            {/* Cities tab removed — cities are now in the Regions tab */}
+            {false && (() => {
               const cities = data.cities || [];
               const selectedCity = sel && selType === "city" ? sel : null;
 
@@ -5215,8 +5506,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
         </div>
       </div>
 
-      {/* ══════════ ECONOMY PANEL ══════════ */}
-      {tab==="economy" && (
+      {/* Economy panel removed — economy info is now in the Regions tab */}
+      {false && (
         <div style={{ flex:1, overflowY:"auto", padding:"24px 48px" }}>
           <div style={{ marginBottom:40 }}>
             {/* Header & World Treasury */}
@@ -5411,8 +5702,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
         </div>
       )}
 
-      {/* ══════════ RELIGION PANEL ══════════ */}
-      {tab==="religion" && (
+      {/* Religion panel removed — religion info is now in the Regions tab */}
+      {false && (
         <div style={{ flex:1, overflowY:"auto", padding:"24px 48px" }}>
           <div style={{ marginBottom:40 }}>
             {/* Header */}
