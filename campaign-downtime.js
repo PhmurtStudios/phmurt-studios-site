@@ -765,6 +765,17 @@
       };
     }, [data.downtime]);
 
+    // Memoize success statistics to avoid recalculation on every render
+    const historyStats = useMemo(() => ({
+      total: downtimeData.history?.length || 0,
+      successCount: downtimeData.history?.filter(h => h.outcome !== 'complication').length || 0,
+      greatSuccessCount: downtimeData.history?.filter(h => h.outcome === 'great_success').length || 0
+    }), [downtimeData.history]);
+
+    const successRate = useMemo(() => {
+      return historyStats.total > 0 ? Math.round((historyStats.successCount / historyStats.total) * 100) : 0;
+    }, [historyStats.total, historyStats.successCount]);
+
     // Initialize character data if missing
     useEffect(() => {
       if (!data.downtime) {
@@ -910,10 +921,10 @@
         flexDirection: 'column',
         gap: '16px',
         padding: '16px',
-        fontFamily: "system-ui, -apple-system, sans-serif",
-        backgroundColor: 'var(--bg-primary, #f5f5f5)',
-        color: 'var(--text-primary, #333)',
-        minHeight: '100vh'
+        fontFamily: T.ui || "'Cinzel', serif",
+        backgroundColor: T.bg,
+        color: T.text,
+        minHeight: '100%'
       }}>
         {/* Header */}
         <div style={{
@@ -921,9 +932,9 @@
           justifyContent: 'space-between',
           alignItems: 'center',
           paddingBottom: '12px',
-          borderBottom: '2px solid var(--border-color, #ddd)'
+          borderBottom: `2px solid ${T.border}`
         }}>
-          <h1 style={{ margin: 0, fontSize: '28px', fontWeight: 'bold', fontFamily: "'Cinzel', serif" }}>Downtime Management</h1>
+          <h1 style={{ margin: 0, fontSize: '28px', fontWeight: 'bold', fontFamily: T.heading }}>Downtime Management</h1>
           <button
             onClick={() => setShowActivityModal(true)}
             style={{
@@ -931,7 +942,7 @@
               alignItems: 'center',
               gap: '6px',
               padding: '8px 16px',
-              backgroundColor: 'var(--primary-color, #4CAF50)',
+              backgroundColor: T.gold,
               color: 'white',
               border: 'none',
               borderRadius: '4px',
@@ -945,22 +956,22 @@
         </div>
 
         {/* Tab Navigation */}
-        <div style={{ display: 'flex', gap: '8px', borderBottom: '2px solid var(--border-color, #ddd)' }}>
+        <div style={{ display: 'flex', gap: '8px', borderBottom: `2px solid ${T.border}` }}>
           {['dashboard', 'history', 'skills', 'stats'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               style={{
                 padding: '10px 20px',
-                backgroundColor: activeTab === tab ? 'var(--primary-color, #4CAF50)' : 'transparent',
-                color: activeTab === tab ? 'white' : 'var(--text-primary, #333)',
+                backgroundColor: activeTab === tab ? (T.gold) : 'transparent',
+                color: activeTab === tab ? 'white' : (T.text),
                 border: activeTab === tab ? 'none' : '1px solid transparent',
                 borderBottom: activeTab === tab ? 'none' : '2px solid transparent',
                 borderRadius: activeTab === tab ? '4px 4px 0 0' : '0',
                 cursor: 'pointer',
                 fontSize: '14px',
                 fontWeight: activeTab === tab ? '600' : '500',
-                fontFamily: "'Cinzel', serif",
+                fontFamily: T.ui || "'Cinzel', serif",
                 transition: 'all 0.2s ease'
               }}
             >
@@ -973,7 +984,7 @@
         {activeTab === 'dashboard' && (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
             {downtimeData.activeActivities?.length === 0 ? (
-              <div style={{ gridColumn: '1 / -1', padding: '24px', textAlign: 'center', color: 'var(--text-secondary, #666)' }}>
+              <div style={{ gridColumn: '1 / -1', padding: '24px', textAlign: 'center', color: T.textDim }}>
                 No active downtime activities. Click "Start Activity" to begin.
               </div>
             ) : (
@@ -986,8 +997,8 @@
                     key={active.id}
                     style={{
                       padding: '14px',
-                      backgroundColor: 'white',
-                      border: '2px solid var(--primary-color, #4CAF50)',
+                      backgroundColor: T.bgCard,
+                      border: `2px solid ${T.gold}`,
                       borderRadius: '8px',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                       transition: 'all 0.2s ease'
@@ -995,21 +1006,21 @@
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '10px' }}>
                       <div>
-                        <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '600', fontFamily: "'Cinzel', serif", color: 'var(--text-primary, #333)' }}>
+                        <h3 style={{ margin: 0, fontSize: '15px', fontWeight: '600', fontFamily: T.heading, color: T.text }}>
                           {active.characterName}
                         </h3>
-                        <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: 'var(--text-secondary, #666)', fontWeight: '500' }}>
+                        <p style={{ margin: '4px 0 0 0', fontSize: '13px', color: T.textDim, fontWeight: '500' }}>
                           {active.activityName}
                         </p>
                       </div>
                       <div style={{
                         padding: '6px 10px',
-                        backgroundColor: 'var(--bg-secondary, #f0f0f0)',
+                        backgroundColor: T.bgHover,
                         borderRadius: '4px',
                         fontSize: '11px',
                         fontWeight: '600',
-                        color: 'var(--text-secondary, #666)',
-                        border: '1px solid var(--border-color, #ddd)'
+                        color: T.textDim,
+                        border: `1px solid ${T.border}`
                       }}>
                         {activity?.icon}
                       </div>
@@ -1028,14 +1039,14 @@
                       <div style={{
                         width: '100%',
                         height: '6px',
-                        backgroundColor: 'var(--bg-secondary, #eee)',
+                        backgroundColor: T.bgHover,
                         borderRadius: '3px',
                         overflow: 'hidden'
                       }}>
                         <div style={{
                           width: `${Math.min(progress, 100)}%`,
                           height: '100%',
-                          backgroundColor: 'var(--primary-color, #4CAF50)',
+                          backgroundColor: T.gold,
                           transition: 'width 0.3s ease'
                         }} />
                       </div>
@@ -1057,7 +1068,7 @@
                         style={{
                           flex: 1,
                           padding: '6px',
-                          backgroundColor: 'var(--info-color, #2196F3)',
+                          backgroundColor: T.gold,
                           color: 'white',
                           border: 'none',
                           borderRadius: '3px',
@@ -1072,7 +1083,7 @@
                         style={{
                           flex: 1,
                           padding: '6px',
-                          backgroundColor: 'var(--success-color, #8BC34A)',
+                          backgroundColor: T.green,
                           color: 'white',
                           border: 'none',
                           borderRadius: '3px',
@@ -1094,17 +1105,17 @@
         {activeTab === 'history' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {downtimeData.history?.length === 0 ? (
-              <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary, #666)' }}>
+              <div style={{ padding: '24px', textAlign: 'center', color: T.textDim }}>
                 No downtime history yet.
               </div>
             ) : (
               downtimeData.history?.map(entry => {
                 const activity = DOWNTIME_ACTIVITIES.find(a => a.id === entry.activityId);
-                const outcomeColor = entry.outcome === 'great_success' ? 'var(--success-color, #8BC34A)' :
-                                     entry.outcome === 'complication' ? 'var(--danger-color, #f44336)' :
-                                     'var(--info-color, #2196F3)';
-                const outcomeBg = entry.outcome === 'great_success' ? '#e8f5e9' :
-                                  entry.outcome === 'complication' ? '#ffebee' : '#e3f2fd';
+                const outcomeColor = entry.outcome === 'great_success' ? (T.gold) :
+                                     entry.outcome === 'complication' ? (T.crimson) :
+                                     (T.green);
+                const outcomeBg = entry.outcome === 'great_success' ? (T.bgCard) :
+                                  entry.outcome === 'complication' ? (T.bgCard) : (T.bgCard);
 
                 return (
                   <div
@@ -1120,13 +1131,13 @@
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '10px' }}>
                       <div>
-                        <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '600', fontFamily: "'Cinzel', serif", color: 'var(--text-primary, #333)' }}>
+                        <h4 style={{ margin: '0 0 4px 0', fontSize: '15px', fontWeight: '600', fontFamily: T.heading, color: T.text }}>
                           {entry.characterName}
                         </h4>
-                        <p style={{ margin: '0 0 6px 0', fontSize: '13px', fontWeight: '500', color: 'var(--text-secondary, #666)' }}>
+                        <p style={{ margin: '0 0 6px 0', fontSize: '13px', fontWeight: '500', color: T.textDim }}>
                           {entry.activityName}
                         </p>
-                        <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary, #777)', lineHeight: '1.4' }}>
+                        <p style={{ margin: 0, fontSize: '12px', color: T.textMuted, lineHeight: '1.4' }}>
                           {entry.narrative}
                         </p>
                       </div>
@@ -1145,14 +1156,14 @@
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: 'var(--text-secondary, #666)', flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: '12px', fontSize: '12px', color: T.textDim, flexWrap: 'wrap' }}>
                       {entry.goldEarned > 0 && (
-                        <span style={{ color: 'var(--success-color, #8BC34A)', fontWeight: '600' }}>
+                        <span style={{ color: T.green, fontWeight: '600' }}>
                           +{entry.goldEarned} gp
                         </span>
                       )}
                       {entry.goldSpent > 0 && (
-                        <span style={{ color: 'var(--danger-color, #f44336)', fontWeight: '600' }}>
+                        <span style={{ color: T.crimson, fontWeight: '600' }}>
                           -{entry.goldSpent} gp
                         </span>
                       )}
@@ -1181,7 +1192,7 @@
         {activeTab === 'skills' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             {Object.entries(downtimeData.skillMastery || {}).length === 0 ? (
-              <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary, #666)' }}>
+              <div style={{ padding: '24px', textAlign: 'center', color: T.textDim }}>
                 Complete activities to unlock skill mastery tracking.
               </div>
             ) : (
@@ -1195,26 +1206,26 @@
                     key={key}
                     style={{
                       padding: '14px',
-                      backgroundColor: 'white',
-                      border: '2px solid var(--border-color, #ddd)',
+                      backgroundColor: T.bgCard,
+                      border: `2px solid ${T.border}`,
                       borderRadius: '8px',
                       transition: 'all 0.2s ease'
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '12px' }}>
                       <div>
-                        <h4 style={{ margin: '0 0 2px 0', fontSize: '15px', fontWeight: '600', fontFamily: "'Cinzel', serif", color: 'var(--text-primary, #333)' }}>
+                        <h4 style={{ margin: '0 0 2px 0', fontSize: '15px', fontWeight: '600', fontFamily: T.heading, color: T.text }}>
                           {charName}
                         </h4>
-                        <p style={{ margin: 0, fontSize: '12px', fontWeight: '500', color: 'var(--text-secondary, #666)' }}>
+                        <p style={{ margin: 0, fontSize: '12px', fontWeight: '500', color: T.textDim }}>
                           {activity?.name}
                         </p>
                       </div>
                       <span style={{
                         padding: '6px 10px',
-                        backgroundColor: masteryInfo.level === 'Master' ? '#ff8a65' :
-                                        masteryInfo.level === 'Expert' ? '#ffb74d' :
-                                        masteryInfo.level === 'Proficient' ? '#81c784' : '#90caf9',
+                        backgroundColor: masteryInfo.level === 'Master' ? (T.crimson) :
+                                        masteryInfo.level === 'Expert' ? (T.orange) :
+                                        masteryInfo.level === 'Proficient' ? (T.green) : (T.gold),
                         color: 'white',
                         borderRadius: '4px',
                         fontSize: '11px',
@@ -1237,30 +1248,30 @@
                         fontWeight: '500'
                       }}>
                         <span>Progression</span>
-                        <span style={{ color: 'var(--primary-color, #4CAF50)', fontWeight: '600' }}>
+                        <span style={{ color: T.gold, fontWeight: '600' }}>
                           {Math.min(mastery.successes, 15)}/15
                         </span>
                       </div>
                       <div style={{
                         width: '100%',
                         height: '8px',
-                        backgroundColor: 'var(--bg-secondary, #eee)',
+                        backgroundColor: T.bgHover,
                         borderRadius: '4px',
                         overflow: 'hidden',
-                        border: '1px solid var(--border-color, #ddd)'
+                        border: `1px solid ${T.border}`
                       }}>
                         <div style={{
                           width: `${Math.min((mastery.successes / 15) * 100, 100)}%`,
                           height: '100%',
-                          backgroundColor: masteryInfo.level === 'Master' ? '#ff8a65' :
-                                           masteryInfo.level === 'Expert' ? '#ffb74d' :
-                                           masteryInfo.level === 'Proficient' ? '#81c784' : '#4CAF50',
+                          backgroundColor: masteryInfo.level === 'Master' ? (T.crimson) :
+                                           masteryInfo.level === 'Expert' ? (T.orange) :
+                                           masteryInfo.level === 'Proficient' ? (T.green) : (T.gold),
                           transition: 'width 0.3s ease'
                         }} />
                       </div>
                     </div>
 
-                    <div style={{ fontSize: '11px', color: 'var(--text-secondary, #666)', textAlign: 'right' }}>
+                    <div style={{ fontSize: '11px', color: T.textDim, textAlign: 'right' }}>
                       Mastery Bonus: +{masteryInfo.bonus}%
                     </div>
                   </div>
@@ -1276,46 +1287,46 @@
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '14px', marginBottom: '20px' }}>
               <div style={{
                 padding: '18px',
-                backgroundColor: '#e8f5e9',
-                border: '2px solid var(--success-color, #8BC34A)',
+                backgroundColor: T.bgCard,
+                border: `2px solid ${T.green}`,
                 borderRadius: '8px'
               }}>
-                <p style={{ margin: '0 0 10px 0', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--success-color, #8BC34A)' }}>
+                <p style={{ margin: '0 0 10px 0', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: T.green }}>
                   Gold Earned
                 </p>
-                <h2 style={{ margin: 0, fontSize: '28px', fontWeight: 'bold', color: 'var(--success-color, #8BC34A)' }}>
+                <h2 style={{ margin: 0, fontSize: '28px', fontWeight: 'bold', color: T.green }}>
                   +{stats.totalGoldEarned}
                 </h2>
               </div>
 
               <div style={{
                 padding: '18px',
-                backgroundColor: '#ffebee',
-                border: '2px solid var(--danger-color, #f44336)',
+                backgroundColor: T.bgCard,
+                border: `2px solid ${T.crimson}`,
                 borderRadius: '8px'
               }}>
-                <p style={{ margin: '0 0 10px 0', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--danger-color, #f44336)' }}>
+                <p style={{ margin: '0 0 10px 0', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: T.crimson }}>
                   Gold Spent
                 </p>
-                <h2 style={{ margin: 0, fontSize: '28px', fontWeight: 'bold', color: 'var(--danger-color, #f44336)' }}>
+                <h2 style={{ margin: 0, fontSize: '28px', fontWeight: 'bold', color: T.crimson }}>
                   -{stats.totalGoldSpent}
                 </h2>
               </div>
 
               <div style={{
                 padding: '18px',
-                backgroundColor: stats.netGold >= 0 ? '#e8f5e9' : '#ffebee',
-                border: `2px solid ${stats.netGold >= 0 ? 'var(--success-color, #8BC34A)' : 'var(--danger-color, #f44336)'}`,
+                backgroundColor: T.bgCard,
+                border: `2px solid ${stats.netGold >= 0 ? (T.green) : (T.crimson)}`,
                 borderRadius: '8px'
               }}>
-                <p style={{ margin: '0 0 10px 0', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: stats.netGold >= 0 ? 'var(--success-color, #8BC34A)' : 'var(--danger-color, #f44336)' }}>
+                <p style={{ margin: '0 0 10px 0', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: stats.netGold >= 0 ? (T.green) : (T.crimson) }}>
                   Net Gold
                 </p>
                 <h2 style={{
                   margin: 0,
                   fontSize: '28px',
                   fontWeight: 'bold',
-                  color: stats.netGold >= 0 ? 'var(--success-color, #8BC34A)' : 'var(--danger-color, #f44336)'
+                  color: stats.netGold >= 0 ? (T.green) : (T.crimson)
                 }}>
                   {stats.netGold >= 0 ? '+' : ''}{stats.netGold}
                 </h2>
@@ -1323,42 +1334,42 @@
 
               <div style={{
                 padding: '18px',
-                backgroundColor: '#fff3e0',
-                border: '2px solid var(--warning-color, #ff9800)',
+                backgroundColor: T.bgCard,
+                border: `2px solid ${T.orange}`,
                 borderRadius: '8px'
               }}>
-                <p style={{ margin: '0 0 10px 0', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--warning-color, #ff9800)' }}>
+                <p style={{ margin: '0 0 10px 0', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: T.orange }}>
                   Complications
                 </p>
-                <h2 style={{ margin: 0, fontSize: '28px', fontWeight: 'bold', color: 'var(--warning-color, #ff9800)' }}>
+                <h2 style={{ margin: 0, fontSize: '28px', fontWeight: 'bold', color: T.orange }}>
                   {stats.complications}
                 </h2>
               </div>
 
               <div style={{
                 padding: '18px',
-                backgroundColor: '#e3f2fd',
-                border: '2px solid var(--info-color, #2196F3)',
+                backgroundColor: T.bgCard,
+                border: `2px solid ${T.gold}`,
                 borderRadius: '8px'
               }}>
-                <p style={{ margin: '0 0 10px 0', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--info-color, #2196F3)' }}>
+                <p style={{ margin: '0 0 10px 0', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: T.gold }}>
                   Total Activities
                 </p>
-                <h2 style={{ margin: 0, fontSize: '28px', fontWeight: 'bold', color: 'var(--info-color, #2196F3)' }}>
+                <h2 style={{ margin: 0, fontSize: '28px', fontWeight: 'bold', color: T.gold }}>
                   {downtimeData.history?.length || 0}
                 </h2>
               </div>
 
               <div style={{
                 padding: '18px',
-                backgroundColor: '#f3e5f5',
-                border: '2px solid #9c27b0',
+                backgroundColor: T.bgCard,
+                border: `2px solid ${T.gold}`,
                 borderRadius: '8px'
               }}>
-                <p style={{ margin: '0 0 10px 0', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: '#9c27b0' }}>
+                <p style={{ margin: '0 0 10px 0', fontSize: '11px', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.5px', color: T.gold }}>
                   Popular Activity
                 </p>
-                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: '#7b1fa2' }}>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600', color: T.gold }}>
                   {stats.mostPopular || 'None'}
                 </h3>
               </div>
@@ -1367,38 +1378,36 @@
             {/* Between Sessions Summary */}
             <div style={{
               padding: '18px',
-              backgroundColor: 'white',
-              border: '2px solid var(--border-color, #ddd)',
+              backgroundColor: T.bgCard,
+              border: `2px solid ${T.border}`,
               borderRadius: '8px'
             }}>
-              <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', fontWeight: '600', fontFamily: "'Cinzel', serif" }}>
+              <h3 style={{ margin: '0 0 12px 0', fontSize: '16px', fontWeight: '600', fontFamily: T.heading }}>
                 Campaign Summary
               </h3>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
                 <div>
-                  <p style={{ margin: '0 0 6px 0', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary, #666)' }}>
+                  <p style={{ margin: '0 0 6px 0', fontSize: '12px', fontWeight: '600', color: T.textDim }}>
                     Total Characters Active
                   </p>
-                  <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: 'var(--text-primary, #333)' }}>
+                  <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: T.text }}>
                     {new Set(downtimeData.history?.map(h => h.characterName) || []).size}
                   </p>
                 </div>
                 <div>
-                  <p style={{ margin: '0 0 6px 0', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary, #666)' }}>
+                  <p style={{ margin: '0 0 6px 0', fontSize: '12px', fontWeight: '600', color: T.textDim }}>
                     Success Rate
                   </p>
-                  <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: 'var(--success-color, #8BC34A)' }}>
-                    {downtimeData.history?.length > 0
-                      ? Math.round((downtimeData.history.filter(h => h.outcome !== 'complication').length / downtimeData.history.length) * 100)
-                      : 0}%
+                  <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: T.green }}>
+                    {successRate}%
                   </p>
                 </div>
                 <div>
-                  <p style={{ margin: '0 0 6px 0', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary, #666)' }}>
+                  <p style={{ margin: '0 0 6px 0', fontSize: '12px', fontWeight: '600', color: T.textDim }}>
                     Great Successes
                   </p>
-                  <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: 'var(--primary-color, #4CAF50)' }}>
-                    {downtimeData.history?.filter(h => h.outcome === 'great_success').length || 0}
+                  <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: T.gold }}>
+                    {historyStats.greatSuccessCount}
                   </p>
                 </div>
               </div>
@@ -1421,7 +1430,7 @@
             zIndex: 1000
           }}>
             <div style={{
-              backgroundColor: 'white',
+              backgroundColor: T.bgCard,
               padding: '24px',
               borderRadius: '8px',
               maxWidth: '500px',
@@ -1431,7 +1440,7 @@
               boxShadow: '0 4px 16px rgba(0,0,0,0.2)'
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>Start New Activity</h2>
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: T.text }}>Start New Activity</h2>
                 <button
                   onClick={() => {
                     setShowActivityModal(false);
@@ -1443,7 +1452,7 @@
                     border: 'none',
                     fontSize: '20px',
                     cursor: 'pointer',
-                    color: 'var(--text-secondary, #666)'
+                    color: T.textDim
                   }}
                 >
                   ×
@@ -1452,7 +1461,7 @@
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px', color: 'var(--text-secondary, #666)' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px', color: T.textDim }}>
                     Character
                   </label>
                   <input
@@ -1463,16 +1472,18 @@
                     style={{
                       width: '100%',
                       padding: '8px',
-                      border: '1px solid var(--border-color, #ddd)',
+                      border: `1px solid ${T.border}`,
                       borderRadius: '4px',
                       fontSize: '14px',
-                      boxSizing: 'border-box'
+                      boxSizing: 'border-box',
+                      backgroundColor: T.bgInput || 'var(--bg-input)',
+                      color: T.text
                     }}
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px', color: 'var(--text-secondary, #666)' }}>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px', color: T.textDim }}>
                     Activity
                   </label>
                   <select
@@ -1481,10 +1492,12 @@
                     style={{
                       width: '100%',
                       padding: '8px',
-                      border: '1px solid var(--border-color, #ddd)',
+                      border: `1px solid ${T.border}`,
                       borderRadius: '4px',
                       fontSize: '14px',
-                      boxSizing: 'border-box'
+                      boxSizing: 'border-box',
+                      backgroundColor: T.bgInput || 'var(--bg-input)',
+                      color: T.text
                     }}
                   >
                     <option value="">Select an activity...</option>
@@ -1499,9 +1512,10 @@
                 {selectedActivityId && (
                   <div style={{
                     padding: '12px',
-                    backgroundColor: 'var(--bg-secondary, #f5f5f5)',
+                    backgroundColor: T.bgHover,
                     borderRadius: '4px',
-                    fontSize: '13px'
+                    fontSize: '13px',
+                    color: T.text
                   }}>
                     <p style={{ margin: '0 0 8px 0', fontWeight: '600' }}>Activity Details</p>
                     {(() => {
@@ -1525,7 +1539,7 @@
                     style={{
                       flex: 1,
                       padding: '10px',
-                      backgroundColor: selectedCharacter && selectedActivityId ? 'var(--primary-color, #4CAF50)' : 'var(--disabled-color, #ccc)',
+                      backgroundColor: selectedCharacter && selectedActivityId ? (T.gold) : (T.bgHover),
                       color: 'white',
                       border: 'none',
                       borderRadius: '4px',
@@ -1545,8 +1559,8 @@
                     style={{
                       flex: 1,
                       padding: '10px',
-                      backgroundColor: 'var(--bg-secondary, #eee)',
-                      color: 'var(--text-primary, #333)',
+                      backgroundColor: T.bgHover,
+                      color: T.text,
                       border: 'none',
                       borderRadius: '4px',
                       cursor: 'pointer',

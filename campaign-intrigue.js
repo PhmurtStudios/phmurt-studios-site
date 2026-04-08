@@ -29,7 +29,7 @@
         name: 'The Crown',
         icon: Crown,
         description: 'Royal Court manipulation',
-        color: '#FFD700',
+        color: T.gold,
         powerLevel: 75,
         sage: {
           id: 'sage_crown',
@@ -53,7 +53,7 @@
         name: 'The Coin',
         icon: Users,
         description: 'Economic & merchant guild control',
-        color: '#FFB700',
+        color: T.goldDim,
         powerLevel: 68,
         sage: {
           id: 'sage_coin',
@@ -78,7 +78,7 @@
         name: 'The Sword',
         icon: Swords,
         description: 'Military infiltration',
-        color: '#FF6B6B',
+        color: T.crimson,
         powerLevel: 82,
         sage: {
           id: 'sage_sword',
@@ -102,7 +102,7 @@
         name: 'The Eye',
         icon: Eye,
         description: 'Spy network & information control',
-        color: '#9D84B7',
+        color: T.textDim,
         powerLevel: 71,
         sage: {
           id: 'sage_eye',
@@ -127,7 +127,7 @@
         name: 'The Whisper',
         icon: BookOpen,
         description: 'Religious manipulation',
-        color: '#A78BFA',
+        color: T.textMuted,
         powerLevel: 64,
         sage: {
           id: 'sage_whisper',
@@ -151,7 +151,7 @@
         name: 'The Mask',
         icon: AlertTriangle,
         description: 'Underground & criminal control',
-        color: '#FF1744',
+        color: T.crimson,
         powerLevel: 79,
         sage: {
           id: 'sage_mask',
@@ -217,21 +217,40 @@
 
     // Update a specific agent
     const updateAgent = useCallback((agentId, updates) => {
-      const newIntrigue = JSON.parse(JSON.stringify(intrigue));
+      const newIntrigue = {
+        ...intrigue,
+        shadowLeader: { ...intrigue.shadowLeader },
+        branches: intrigue.branches.map(branch => ({
+          ...branch,
+          sage: { ...branch.sage },
+          agents: branch.agents.map(a => ({ ...a }))
+        }))
+      };
 
       // Check shadow leader
       if (newIntrigue.shadowLeader.id === agentId) {
-        Object.assign(newIntrigue.shadowLeader, updates);
+        newIntrigue.shadowLeader = { ...newIntrigue.shadowLeader, ...updates };
       } else {
         // Check branches
-        for (let branch of newIntrigue.branches) {
+        for (let i = 0; i < newIntrigue.branches.length; i++) {
+          let branch = newIntrigue.branches[i];
           if (branch.sage.id === agentId) {
-            Object.assign(branch.sage, updates);
+            newIntrigue.branches[i] = {
+              ...branch,
+              sage: { ...branch.sage, ...updates }
+            };
             break;
           }
-          const agent = branch.agents.find(a => a.id === agentId);
-          if (agent) {
-            Object.assign(agent, updates);
+          const agentIdx = branch.agents.findIndex(a => a.id === agentId);
+          if (agentIdx !== -1) {
+            newIntrigue.branches[i] = {
+              ...branch,
+              agents: [
+                ...branch.agents.slice(0, agentIdx),
+                { ...branch.agents[agentIdx], ...updates },
+                ...branch.agents.slice(agentIdx + 1)
+              ]
+            };
             break;
           }
         }
@@ -248,25 +267,25 @@
       return { x, y, angle };
     }, []);
 
-    // Pan handlers
-    const handleContainerMouseDown = (e) => {
+    // Pan handlers (memoized to prevent unnecessary re-renders on drag operations)
+    const handleContainerMouseDown = useCallback((e) => {
       if (e.button === 2) {
         setIsPanning(true);
         setPanStart({ x: e.clientX - panX, y: e.clientY - panY });
         e.preventDefault();
       }
-    };
+    }, [panX, panY]);
 
-    const handleContainerMouseMove = (e) => {
+    const handleContainerMouseMove = useCallback((e) => {
       if (isPanning) {
         setPanX(e.clientX - panStart.x);
         setPanY(e.clientY - panStart.y);
       }
-    };
+    }, [isPanning, panStart]);
 
-    const handleContainerMouseUp = () => {
+    const handleContainerMouseUp = useCallback(() => {
       setIsPanning(false);
-    };
+    }, []);
 
     // Get agent details
     const getAgentDetails = useCallback((agentId) => {
@@ -309,9 +328,9 @@
         display: 'flex',
         height: '100%',
         flex: 1,
-        background: `linear-gradient(135deg, ${T.bg || '#0a0e27'} 0%, ${T.bg || '#1a1f3a'} 100%)`,
-        fontFamily: T.ui || 'system-ui, -apple-system, sans-serif',
-        color: T.text || '#e0e0e0',
+        background: `linear-gradient(135deg, ${T.bg} 0%, ${T.bg} 100%)`,
+        fontFamily: T.ui,
+        color: T.text,
         overflow: 'hidden'
       },
       mainArea: {
@@ -323,20 +342,20 @@
       },
       header: {
         padding: '20px 24px',
-        borderBottom: `1px solid ${T.border || 'rgba(255, 215, 0, 0.1)'}`,
+        borderBottom: `1px solid ${T.border}`,
         background: `rgba(0, 0, 0, 0.3)`,
         backdropFilter: 'blur(10px)'
       },
       headerTitle: {
         fontSize: '24px',
         fontWeight: 'bold',
-        color: T.gold || '#FFD700',
+        color: T.gold,
         marginBottom: '8px',
-        fontFamily: T.heading || 'serif'
+        fontFamily: T.heading
       },
       headerSubtitle: {
         fontSize: '13px',
-        color: T.textDim || '#888',
+        color: T.textDim,
         display: 'flex',
         gap: '16px',
         alignItems: 'center'
@@ -378,7 +397,7 @@
         backdropFilter: 'blur(10px)',
         padding: '8px',
         borderRadius: '8px',
-        border: `1px solid ${T.border || 'rgba(255, 215, 0, 0.2)'}`,
+        border: `1px solid ${T.border}`,
         zIndex: 100
       },
       controlBtn: {
@@ -386,7 +405,7 @@
         height: '32px',
         border: 'none',
         background: 'rgba(255, 215, 0, 0.1)',
-        color: T.gold || '#FFD700',
+        color: T.gold,
         cursor: 'pointer',
         borderRadius: '4px',
         display: 'flex',
@@ -402,8 +421,8 @@
         top: 0,
         bottom: 0,
         width: '420px',
-        background: `linear-gradient(180deg, ${T.surface || '#1a1f3a'} 0%, ${T.bg || '#0a0e27'} 100%)`,
-        borderLeft: `2px solid ${T.gold || '#FFD700'}`,
+        background: `linear-gradient(180deg, ${T.bgCard} 0%, ${T.bg} 100%)`,
+        borderLeft: `2px solid ${T.gold}`,
         boxShadow: '0 0 60px rgba(255, 215, 0, 0.15)',
         display: 'flex',
         flexDirection: 'column',
@@ -416,7 +435,7 @@
         right: '16px',
         background: 'none',
         border: 'none',
-        color: T.gold || '#FFD700',
+        color: T.gold,
         cursor: 'pointer',
         fontSize: '20px',
         padding: '4px'
@@ -429,9 +448,9 @@
       detailHeader: {
         fontSize: '20px',
         fontWeight: 'bold',
-        color: T.gold || '#FFD700',
+        color: T.gold,
         marginBottom: '16px',
-        fontFamily: T.heading || 'serif'
+        fontFamily: T.heading
       },
       detailField: {
         marginBottom: '16px'
@@ -439,14 +458,14 @@
       detailLabel: {
         fontSize: '11px',
         fontWeight: '600',
-        color: T.textDim || '#888',
+        color: T.textDim,
         textTransform: 'uppercase',
         marginBottom: '4px',
         letterSpacing: '1px'
       },
       detailValue: {
         fontSize: '14px',
-        color: T.text || '#e0e0e0',
+        color: T.text,
         wordBreak: 'break-word'
       },
       statusBadge: {
@@ -461,7 +480,7 @@
         display: 'flex',
         gap: '8px',
         paddingTop: '16px',
-        borderTop: `1px solid ${T.border || 'rgba(255, 215, 0, 0.1)'}`
+        borderTop: `1px solid ${T.border}`
       },
       button: {
         flex: 1,
@@ -485,129 +504,6 @@
       revealed: 'rgba(76, 175, 80, 0.6)',
       eliminated: 'rgba(244, 67, 54, 0.6)',
       turned: 'rgba(103, 58, 183, 0.6)'
-    };
-
-    // Render a single agent node
-    const AgentNode = ({ agent, branchColor, parentData, isLeader = false }) => {
-      const isSelected = selectedAgent?.id === agent.id;
-      const isEliminated = agent.status === 'eliminated';
-      const isRevealed = agent.revealed;
-
-      let radius = agentRadius;
-      let index = 0;
-      let total = intrigue.branches.length;
-
-      if (isLeader) {
-        radius = 0;
-        index = 0;
-        total = 1;
-      } else if (parentData) {
-        if (parentData.type === 'sage') {
-          radius = sageRadius;
-          index = parentData.index;
-          total = intrigue.branches.length;
-        } else if (parentData.type === 'agent') {
-          const sage = parentData.sage;
-          const agentIndex = parentData.sage.agents.indexOf(agent);
-          const numAgents = parentData.sage.agents.length;
-          const sagePos = calculateNodePosition(parentData.index, intrigue.branches.length, sageRadius, centerX, centerY);
-          const angleSpread = Math.PI / 3;
-          const startAngle = sagePos.angle - angleSpread / 2;
-          const angle = startAngle + (agentIndex / numAgents) * angleSpread;
-          const x = centerX + agentRadius * Math.cos(angle);
-          const y = centerY + agentRadius * Math.sin(angle);
-
-          const nodeStyle = {
-            position: 'absolute',
-            left: x - 24,
-            top: y - 24,
-            width: '48px',
-            height: '48px',
-            cursor: 'pointer',
-            zIndex: isSelected ? 50 : 10,
-            transition: 'all 0.3s'
-          };
-
-          return (
-            <div key={agent.id} style={nodeStyle} onClick={() => setSelectedAgent(agent)}>
-              <AgentHexagon agent={agent} isRevealed={isRevealed} isEliminated={isEliminated} branchColor={branchColor} isSelected={isSelected} />
-            </div>
-          );
-        }
-      }
-
-      const pos = calculateNodePosition(index, total, radius, centerX, centerY);
-      const nodeStyle = {
-        position: 'absolute',
-        left: pos.x - 24,
-        top: pos.y - 24,
-        width: '48px',
-        height: '48px',
-        cursor: 'pointer',
-        zIndex: isSelected ? 50 : 10,
-        transition: 'all 0.3s'
-      };
-
-      return (
-        <div key={agent.id} style={nodeStyle} onClick={() => setSelectedAgent(agent)}>
-          <AgentHexagon agent={agent} isRevealed={isRevealed} isEliminated={isEliminated} branchColor={branchColor} isSelected={isSelected} />
-        </div>
-      );
-    };
-
-    // Hexagon node component
-    const AgentHexagon = ({ agent, isRevealed, isEliminated, branchColor, isSelected }) => {
-      const getStatusColor = () => {
-        if (isEliminated) return T.crimson || '#FF1744';
-        if (isRevealed) return T.green || '#4CAF50';
-        return '#555';
-      };
-
-      return (
-        <div style={{
-          position: 'relative',
-          width: '48px',
-          height: '48px',
-          background: getStatusColor(),
-          clipPath: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)',
-          border: isSelected ? `2px solid ${T.gold || '#FFD700'}` : `1px solid ${branchColor}`,
-          boxShadow: isSelected ? `0 0 30px ${T.gold || '#FFD700'}, inset 0 0 20px rgba(255,215,0,0.3)` : `0 0 10px ${branchColor}80`,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          animation: !isRevealed && !isEliminated ? 'pulse 2s infinite' : 'none',
-          cursor: 'pointer',
-          transition: 'all 0.2s'
-        }}>
-          {isEliminated ? (
-            <span style={{ fontSize: '24px', color: '#fff', fontWeight: 'bold' }}>✕</span>
-          ) : isRevealed ? (
-            <span style={{ fontSize: '16px', color: '#fff', fontWeight: 'bold' }}>✓</span>
-          ) : (
-            <span style={{ fontSize: '20px', color: '#999', fontWeight: 'bold' }}>?</span>
-          )}
-        </div>
-      );
-    };
-
-    // Connection line between nodes
-    const ConnectionLine = ({ x1, y1, x2, y2, color = T.gold || '#FFD700' }) => {
-      const length = Math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2);
-      const angle = Math.atan2(y2 - y1, x2 - x1);
-
-      return (
-        <div style={{
-          position: 'absolute',
-          left: x1,
-          top: y1,
-          width: length,
-          height: '1px',
-          background: `linear-gradient(to right, ${color}80, ${color}20)`,
-          transform: `rotate(${angle}rad)`,
-          transformOrigin: '0 0',
-          pointerEvents: 'none'
-        }} />
-      );
     };
 
     // Get status badge color
@@ -662,7 +558,7 @@
             <div style={styles.headerSubtitle}>
               <span>
                 <Sparkles size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
-                Power Level: <strong style={{ color: T.gold || '#FFD700' }}>{totalPower}%</strong>
+                Power Level: <strong style={{ color: T.gold }}>{totalPower}%</strong>
               </span>
               <span>
                 <Users size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
@@ -736,18 +632,18 @@
                 <div style={{
                   width: '100%',
                   height: '100%',
-                  background: intrigue.shadowLeader.revealed ? T.gold || '#FFD700' : '#333',
+                  background: intrigue.shadowLeader.revealed ? T.gold : T.bgCard,
                   borderRadius: '50%',
-                  border: selectedAgent?.id === 'leader' ? `3px solid ${T.gold || '#FFD700'}` : `2px solid ${T.gold || '#FFD700'}`,
+                  border: selectedAgent?.id === 'leader' ? `3px solid ${T.gold}` : `2px solid ${T.gold}`,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   boxShadow: selectedAgent?.id === 'leader'
-                    ? `0 0 40px ${T.gold || '#FFD700'}, inset 0 0 30px rgba(255,215,0,0.4)`
-                    : `0 0 25px ${T.gold || '#FFD700'}80, inset 0 0 15px rgba(255,215,0,0.2)`,
+                    ? `0 0 40px ${T.gold}, inset 0 0 30px rgba(255,215,0,0.4)`
+                    : `0 0 25px ${T.gold}80, inset 0 0 15px rgba(255,215,0,0.2)`,
                   transition: 'all 0.3s',
                   animation: !intrigue.shadowLeader.revealed ? 'pulse 3s infinite' : 'none',
-                  fontFamily: T.heading || 'serif',
+                  fontFamily: T.heading,
                   fontSize: '48px',
                   fontWeight: 'bold'
                 }}>
@@ -777,14 +673,14 @@
                       <div style={{
                         width: '100%',
                         height: '100%',
-                        background: branch.sage.revealed ? branch.color : '#444',
+                        background: branch.sage.revealed ? branch.color : T.bgInput,
                         clipPath: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)',
-                        border: selectedAgent?.id === branch.sage.id ? `2px solid ${T.gold || '#FFD700'}` : `1px solid ${branch.color}`,
+                        border: selectedAgent?.id === branch.sage.id ? `2px solid ${T.gold}` : `1px solid ${branch.color}`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
                         boxShadow: selectedAgent?.id === branch.sage.id
-                          ? `0 0 30px ${T.gold || '#FFD700'}, inset 0 0 20px rgba(255,215,0,0.3)`
+                          ? `0 0 30px ${T.gold}, inset 0 0 20px rgba(255,215,0,0.3)`
                           : `0 0 15px ${branch.color}80`,
                         transition: 'all 0.2s',
                         animation: !branch.sage.revealed ? 'pulse 2s infinite' : 'none',
@@ -822,14 +718,14 @@
                               position: 'relative',
                               width: '100%',
                               height: '100%',
-                              background: agent.revealed ? T.green || '#4CAF50' : agent.status === 'eliminated' ? T.crimson || '#FF1744' : '#555',
+                              background: agent.revealed ? T.green : agent.status === 'eliminated' ? T.crimson : T.textMuted,
                               clipPath: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)',
-                              border: selectedAgent?.id === agent.id ? `2px solid ${T.gold || '#FFD700'}` : `1px solid ${branch.color}`,
+                              border: selectedAgent?.id === agent.id ? `2px solid ${T.gold}` : `1px solid ${branch.color}`,
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
                               boxShadow: selectedAgent?.id === agent.id
-                                ? `0 0 30px ${T.gold || '#FFD700'}, inset 0 0 20px rgba(255,215,0,0.3)`
+                                ? `0 0 30px ${T.gold}, inset 0 0 20px rgba(255,215,0,0.3)`
                                 : `0 0 10px ${branch.color}80`,
                               transition: 'all 0.2s',
                               animation: !agent.revealed && agent.status !== 'eliminated' ? 'pulse 2s infinite' : 'none',
@@ -884,7 +780,7 @@
               +
             </button>
             <span style={{
-              color: T.textDim || '#888',
+              color: T.textDim,
               fontSize: '12px',
               padding: '0 8px',
               display: 'flex',
@@ -932,14 +828,14 @@
                 width: '120px',
                 height: '120px',
                 margin: '0 auto 20px',
-                background: selectedAgent.revealed ? T.green || '#4CAF50' : '#444',
+                background: selectedAgent.revealed ? T.green : T.bgInput,
                 borderRadius: '8px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                border: `2px solid ${T.gold || '#FFD700'}`,
+                border: `2px solid ${T.gold}`,
                 fontSize: '48px',
-                boxShadow: `0 0 20px ${T.gold || '#FFD700'}80`
+                boxShadow: `0 0 20px ${T.gold}80`
               }}>
                 {selectedAgent.status === 'eliminated' ? 'X' : selectedAgent.revealed ? <Shield size={48} style={{ display: 'block' }} /> : '?'}
               </div>
@@ -984,8 +880,8 @@
                     <Star
                       key={i}
                       size={16}
-                      fill={i < selectedAgent.influence ? T.gold || '#FFD700' : 'transparent'}
-                      color={i < selectedAgent.influence ? T.gold || '#FFD700' : T.textDim || '#666'}
+                      fill={i < selectedAgent.influence ? T.gold : 'transparent'}
+                      color={i < selectedAgent.influence ? T.gold : T.textDim}
                     />
                   ))}
                 </div>
@@ -996,7 +892,7 @@
                   <div style={styles.detailLabel}>Clues Found ({selectedAgent.clues.length})</div>
                   <div style={{
                     background: 'rgba(255, 215, 0, 0.05)',
-                    borderLeft: `2px solid ${T.gold || '#FFD700'}`,
+                    borderLeft: `2px solid ${T.gold}`,
                     padding: '8px 12px',
                     borderRadius: '4px',
                     fontSize: '13px'
@@ -1021,8 +917,8 @@
                         width: '100%',
                         minHeight: '80px',
                         background: 'rgba(0, 0, 0, 0.3)',
-                        border: `1px solid ${T.border || 'rgba(255, 215, 0, 0.2)'}`,
-                        color: T.text || '#e0e0e0',
+                        border: `1px solid ${T.border}`,
+                        color: T.text,
                         padding: '8px',
                         borderRadius: '4px',
                         fontFamily: 'monospace',
@@ -1038,8 +934,8 @@
                       <button
                         style={{
                           ...styles.button,
-                          background: 'rgba(76, 175, 80, 0.6)',
-                          color: '#81c784'
+                          background: T.green,
+                          color: T.bg
                         }}
                         onClick={() => updateAgent(selectedAgent.id, { revealed: true })}
                       >
@@ -1051,8 +947,8 @@
                       <button
                         style={{
                           ...styles.button,
-                          background: 'rgba(244, 67, 54, 0.6)',
-                          color: '#ef5350'
+                          background: T.crimson,
+                          color: T.bg
                         }}
                         onClick={() => updateAgent(selectedAgent.id, { status: 'eliminated' })}
                       >
@@ -1064,8 +960,8 @@
                       <button
                         style={{
                           ...styles.button,
-                          background: 'rgba(100, 100, 150, 0.6)',
-                          color: '#b0b0e0'
+                          background: T.bgInput,
+                          color: T.text
                         }}
                         onClick={() => updateAgent(selectedAgent.id, { status: 'hidden' })}
                       >

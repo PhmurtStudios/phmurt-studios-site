@@ -45,7 +45,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
         attitude === "neutral" ? 40 : attitude === "hostile" ? 10 :
         attitude === "at war" ? 0 : 40;
       const tier = score >= 80 ? "Allied" : score >= 60 ? "Friendly" : score >= 40 ? "Neutral" : score >= 20 ? "Unfriendly" : "Hostile";
-      const tierColor = score >= 80 ? T.green : score >= 60 ? "#6ecf8a" : score >= 40 ? T.textMuted : score >= 20 ? T.orange : T.crimson;
+      const tierColor = score >= 80 ? T.green : score >= 60 ? T.green : score >= 40 ? T.textMuted : score >= 20 ? T.orange : T.crimson;
       return { ...f, score, tier, tierColor, rep, isAlly: score >= 60, isEnemy: score < 30 };
     }).sort((a, b) => b.score - a.score);
   }, [factions, partyRep]);
@@ -58,7 +58,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
       const score = rep.score != null ? rep.score :
         att === "allied" || att === "friendly" ? 70 : att === "neutral" ? 50 : att === "hostile" ? 15 : 50;
       const tier = score >= 80 ? "Loyal" : score >= 60 ? "Friendly" : score >= 40 ? "Neutral" : score >= 20 ? "Unfriendly" : "Hostile";
-      const tierColor = score >= 80 ? T.green : score >= 60 ? "#6ecf8a" : score >= 40 ? T.textMuted : score >= 20 ? T.orange : T.crimson;
+      const tierColor = score >= 80 ? T.green : score >= 60 ? T.green : score >= 40 ? T.textMuted : score >= 20 ? T.orange : T.crimson;
       const fac = factionByName[n.faction];
       return { ...n, score, tier, tierColor, factionColor: fac?.color || T.textFaint, isAlly: score >= 60, isEnemy: score < 30 };
     }).sort((a, b) => b.score - a.score);
@@ -415,11 +415,11 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
       { value:"peasant",     label:"Peasant — Common folk, laborers, and farmers",             color: T.textFaint, lbl:"Peasants",      desc:"The party lives at the lowest rung. They have no political influence, few resources, and must earn every scrap of respect." },
       { value:"commoner",    label:"Commoner — Merchants, artisans, and townsfolk",            color: T.textMuted, lbl:"Commoners",     desc:"Ordinary citizens. The party can trade freely and move without suspicion, but holds no special privilege." },
       { value:"freeman",     label:"Freeman — Respected citizens with some standing",          color: T.textDim,   lbl:"Freemen",       desc:"Respected members of society. Some merchants offer discounts, and minor officials take their concerns seriously." },
-      { value:"guild_member",label:"Guild Member — Part of a recognized trade or adventurer's guild", color:"#4a90d9", lbl:"Guild Members", desc:"Recognized by a guild. The party has access to guild resources, safe houses, and a network of contacts." },
-      { value:"knight",      label:"Knight — Sworn warriors with land or title",               color:"#2e8b57",    lbl:"Knights",       desc:"Titled warriors with sworn oaths. The party commands respect from soldiers, has access to military resources, and may hold small lands." },
+      { value:"guild_member",label:"Guild Member — Part of a recognized trade or adventurer's guild", color: T.gold, lbl:"Guild Members", desc:"Recognized by a guild. The party has access to guild resources, safe houses, and a network of contacts." },
+      { value:"knight",      label:"Knight — Sworn warriors with land or title",               color: T.green,    lbl:"Knights",       desc:"Titled warriors with sworn oaths. The party commands respect from soldiers, has access to military resources, and may hold small lands." },
       { value:"lesser_noble",label:"Lesser Noble — Barons, baronesses, landed lords",          color: T.gold,      lbl:"Lesser Nobles", desc:"The party holds minor titles and lands. They attend court, can raise levies, and have political influence in their region." },
-      { value:"noble",       label:"Noble — Counts, dukes, or high-ranking aristocrats",       color:"#d4a017",    lbl:"Nobles",        desc:"High-ranking aristocrats. The party wields significant political power, commands armies, and influences the fate of regions." },
-      { value:"royal",       label:"Royal — Princes, princesses, or members of the royal family", color:"#8b50f0", lbl:"Royalty",       desc:"Members of the ruling family. The party has immense authority, vast wealth, and the weight of a dynasty behind their every action." },
+      { value:"noble",       label:"Noble — Counts, dukes, or high-ranking aristocrats",       color: T.goldDim,    lbl:"Nobles",        desc:"High-ranking aristocrats. The party wields significant political power, commands armies, and influences the fate of regions." },
+      { value:"royal",       label:"Royal — Princes, princesses, or members of the royal family", color: T.crimsonSoft, lbl:"Royalty",       desc:"Members of the ruling family. The party has immense authority, vast wealth, and the weight of a dynasty behind their every action." },
       { value:"ruler",       label:"Ruler — Kings, queens, emperors, or sovereign leaders",    color: T.crimson,   lbl:"Rulers",        desc:"The party sits atop the hierarchy. Their word is law, their armies vast, and their decisions shape the world itself." },
     ];
 

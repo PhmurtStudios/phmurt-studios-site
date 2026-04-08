@@ -136,20 +136,20 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
 
   const systems = [
     { key: "livingWorld", name: "Core Living World Engine", desc: "Base event system, faction politics, territory changes", icon: "⚔" },
-    { key: "economy", name: "Regional Economy", desc: "Trade goods, market prices, faction treasuries, trade routes", icon: "◆", requires: "livingWorld" },
-    { key: "calendar", name: "Seasons & Calendar", desc: "Fantasy calendar, weather, seasonal effects", icon: "◈" },
+    { key: "economy", name: "Regional Economy", desc: "Trade goods, market prices, faction treasuries, trade routes", icon: "⚖", requires: "livingWorld" },
+    { key: "calendar", name: "Seasons & Calendar", desc: "Fantasy calendar, weather, seasonal effects", icon: "☾" },
     { key: "religion", name: "Religion & Divine Influence", desc: "Pantheon, temples, divine favor, blessings/curses", icon: "✠", requires: "calendar" },
-    { key: "hexcrawl", name: "Wilderness Exploration", desc: "Hex crawl travel between cities, encounters, foraging", icon: "≈" },
+    { key: "hexcrawl", name: "Wilderness Exploration", desc: "Hex crawl travel between cities, encounters, foraging", icon: "☆" },
     { key: "questBoard", name: "Dynamic Quest Board", desc: "Procedural quest generation based on world state", icon: "⸎", requires: "livingWorld" },
     { key: "downtime", name: "Downtime Activities", desc: "Between-session crafting, training, carousing etc.", icon: "⌂" },
-    { key: "homebrew", name: "Homebrew Workshop", desc: "Custom monsters, items, spells, NPCs", icon: "◎" },
-    { key: "factionWar", name: "Faction War Simulator", desc: "Risk + Total War-style strategic warfare between campaign factions", icon: "⚔", requires: "factionTracker" },
-    { key: "prophecy", name: "Prophecy Engine & Religion", desc: "Deity pantheon, divine favor, prophecy creation & fulfillment, blessings/curses", icon: "✠", requires: "religion" },
+    { key: "homebrew", name: "Homebrew Workshop", desc: "Custom monsters, items, spells, NPCs", icon: "⚗" },
+    { key: "factionWar", name: "Faction War Simulator", desc: "Risk + Total War-style strategic warfare between campaign factions", icon: "⚐", requires: "factionTracker" },
+    { key: "prophecy", name: "Prophecy Engine & Religion", desc: "Deity pantheon, divine favor, prophecy creation & fulfillment, blessings/curses", icon: "☽", requires: "religion" },
     { key: "plague", name: "Plague & Contagion Tracker", desc: "Disease outbreaks, patient tracking, contagion spread simulation", icon: "☠" },
-    { key: "heist", name: "Heist Planner", desc: "Blueprint planning, crew roles, heat system, complication generator", icon: "◆" },
+    { key: "heist", name: "Heist Planner", desc: "Blueprint planning, crew roles, heat system, complication generator", icon: "⚷" },
     { key: "intrigue", name: "Court Intrigue", desc: "Shadow conspiracy web, agent tracking, clue system (Cult of Kosmos style)", icon: "◈" },
-    { key: "puzzles", name: "Puzzle Workshop", desc: "20+ puzzle templates, cipher wheels, grid puzzles, hint system, interactive components", icon: "◎" },
-    { key: "scheduler", name: "Session Scheduler", desc: "Player availability, session planning", icon: "◈" }
+    { key: "puzzles", name: "Puzzle Workshop", desc: "20+ puzzle templates, cipher wheels, grid puzzles, hint system, interactive components", icon: "⊞" },
+    { key: "scheduler", name: "Session Scheduler", desc: "Player availability, session planning", icon: "⊛" }
   ];
 
   return (

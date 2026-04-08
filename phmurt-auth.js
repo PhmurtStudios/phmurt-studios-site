@@ -171,7 +171,12 @@ var PhmurtDB = (function () {
   function _lsGet(key) {
     try {
       var r = localStorage.getItem(key);
-      if (r) return JSON.parse(r);
+      if (r) {
+        var parsed = JSON.parse(r);
+        // SECURITY: Validate parsed data is an object/array, not a primitive or code
+        if (parsed !== null && typeof parsed === 'object') return parsed;
+        return null;
+      }
     } catch (err) {
       if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Failed to read localStorage:', err.message || err);
     }
@@ -193,7 +198,11 @@ var PhmurtDB = (function () {
       if (cr) {
         try {
           var cp = JSON.parse(cr);
-          if (cp && cp.userId) { _lsSet(LS_SESSION, cp); return cp; }
+          // SECURITY (V-013): Validate session object structure before use
+          if (cp && typeof cp === 'object' && cp.userId && typeof cp.userId === 'string' && cp.email && typeof cp.email === 'string') {
+            _lsSet(LS_SESSION, cp);
+            return cp;
+          }
         } catch (parseErr) {
           if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Failed to parse session cookie:', parseErr.message || parseErr);
         }
@@ -223,13 +232,17 @@ var PhmurtDB = (function () {
   }
   function _legacyGetUsers() {
     var u = _lsGet(LS_USERS);
-    if (u && typeof u === 'object') return u;
+    if (u && typeof u === 'object' && !Array.isArray(u)) return u;
     try {
       var cr = _getCk(CK_USERS);
       if (cr) {
         try {
           var cp = JSON.parse(cr);
-          if (cp && typeof cp === 'object') { _lsSet(LS_USERS, cp); return cp; }
+          // SECURITY (V-014): Ensure users object is a plain object, not array or other type
+          if (cp && typeof cp === 'object' && !Array.isArray(cp)) {
+            _lsSet(LS_USERS, cp);
+            return cp;
+          }
         } catch (parseErr) {
           if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Failed to parse users cookie:', parseErr.message || parseErr);
         }
@@ -445,9 +458,11 @@ var PhmurtDB = (function () {
         };
 
         if (existingId && !/^\d+$/.test(existingId)) {
-          // Valid UUID — update
+          // SECURITY (V-016): Validate existingId is non-empty string before using in query
+          var safeId = String(existingId).trim();
+          if (!safeId) return Promise.resolve({ success: false, error: 'Invalid character ID.' });
           return sb.from('characters').update(row)
-            .eq('id', existingId).eq('owner_id', _session.userId)
+            .eq('id', safeId).eq('owner_id', _session.userId)
             .select('id').single()
             .then(function (r) {
               if (r.error) throw r.error;

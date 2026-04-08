@@ -269,12 +269,12 @@
 
   const getSeverityColor = (severity) => {
     const colors = {
-      mild: '#10b981',
-      moderate: '#f59e0b',
-      severe: '#ef4444',
-      deadly: '#991b1b'
+      mild: T.green,
+      moderate: T.orange,
+      severe: T.crimson,
+      deadly: T.crimsonSoft
     };
-    return colors[severity] || '#6b7280';
+    return colors[severity] || T.textMuted;
   };
 
   const getOutbreakSeverity = (infected, population) => {
@@ -296,6 +296,10 @@
     const [editingDisease, setEditingDisease] = useState(null);
     const [expandedOutbreak, setExpandedOutbreak] = useState(null);
     const [showNewDiseaseForm, setShowNewDiseaseForm] = useState(false);
+
+    // Memoize patient counts to avoid recalculation on every render
+    const infectedCount = useMemo(() => plague.patients?.filter(p => p.status === 'infected').length || 0, [plague.patients]);
+    const deceasedCount = useMemo(() => plague.patients?.filter(p => p.status === 'deceased').length || 0, [plague.patients]);
 
     // Initialize plague data structure
     const ensurePlagueData = useCallback(() => {
@@ -496,8 +500,8 @@
         {/* Outbreak Summary */}
         {plague.outbreaks && plague.outbreaks.length > 0 && (
           <div style={{
-            background: 'var(--surface)',
-            border: `2px solid ${T.border || 'var(--border)'}`,
+            background: T.bgCard,
+            border: `2px solid ${T.border}`,
             borderRadius: '8px',
             padding: '16px'
           }}>
@@ -631,7 +635,7 @@
               </div>
               <div>
                 <div style={{ fontSize: '12px', color: 'var(--text-dim)' }}>Quarantine</div>
-                <div style={{ fontSize: '14px', color: expandedOutbreak.quarantined ? '#10b981' : 'var(--crimson)' }}>
+                <div style={{ fontSize: '14px', color: expandedOutbreak.quarantined ? T.green : T.crimson }}>
                   {expandedOutbreak.quarantined ? 'Active' : 'None'}
                 </div>
               </div>
@@ -649,9 +653,9 @@
                     });
                   }}
                   style={{
-                    background: expandedOutbreak.quarantined ? '#10b981' : 'var(--surface)',
-                    color: expandedOutbreak.quarantined ? 'white' : 'var(--gold)',
-                    border: `1px solid var(--gold)`,
+                    background: expandedOutbreak.quarantined ? T.green : T.bgCard,
+                    color: expandedOutbreak.quarantined ? T.bg : T.gold,
+                    border: `1px solid ${T.border}`,
                     padding: '6px 12px',
                     borderRadius: '4px',
                     cursor: 'pointer',
@@ -794,7 +798,7 @@
                         style={{
                           width: '16px',
                           height: '16px',
-                          background: '#10b981',
+                          background: T.green,
                           borderRadius: '2px'
                         }}
                       />
@@ -816,8 +820,8 @@
                       <button
                         onClick={() => updatePatientSave(patient.id, 'success')}
                         style={{
-                          background: '#10b981',
-                          color: 'white',
+                          background: T.green,
+                          color: T.bg,
                           border: 'none',
                           padding: '4px 8px',
                           borderRadius: '3px',
@@ -1118,7 +1122,7 @@
                     padding: '8px',
                     borderRadius: '4px',
                     fontSize: '12px',
-                    borderLeft: `3px solid ${mut.severity === 'increased' ? 'var(--crimson)' : '#10b981'}`
+                    borderLeft: `3px solid ${mut.severity === 'increased' ? T.crimson : T.green}`
                   }}
                 >
                   <div style={{ color: 'var(--gold)', fontWeight: 'bold' }}>
@@ -1155,15 +1159,15 @@
                 Infected Patients
               </div>
               <div style={{ fontSize: '24px', fontWeight: 'bold', color: 'var(--crimson)' }}>
-                {plague.patients?.filter(p => p.status === 'infected').length || 0}
+                {infectedCount}
               </div>
             </div>
             <div>
               <div style={{ fontSize: '12px', color: 'var(--text-dim)', marginBottom: '4px' }}>
                 Deceased
               </div>
-              <div style={{ fontSize: '24px', fontWeight: 'bold', color: '#1f2937' }}>
-                {plague.patients?.filter(p => p.status === 'deceased').length || 0}
+              <div style={{ fontSize: '24px', fontWeight: 'bold', color: T.text }}>
+                {deceasedCount}
               </div>
             </div>
             <div>
@@ -1185,9 +1189,9 @@
 
     return (
       <div style={{
-        background: T.bg || 'var(--bg)',
-        color: T.text || 'var(--text)',
-        fontFamily: T.ui || 'system-ui, sans-serif',
+        background: T.bg,
+        color: T.text,
+        fontFamily: T.ui,
         minHeight: '100vh',
         padding: '20px'
       }}>
@@ -1195,7 +1199,7 @@
         <div style={{ marginBottom: '24px', borderBottom: `1px solid var(--border)`, paddingBottom: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
             {Skull && <Skull size={32} style={{ color: 'var(--crimson)' }} />}
-            <h1 style={{ margin: 0, color: 'var(--gold)', fontSize: '28px', fontFamily: T.heading || 'serif' }}>
+            <h1 style={{ margin: 0, color: T.gold, fontSize: '28px', fontFamily: T.heading }}>
               Plague & Contagion Tracker
             </h1>
           </div>

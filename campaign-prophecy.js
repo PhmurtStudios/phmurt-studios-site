@@ -109,7 +109,7 @@
 
   function initializeReligionState() {
     return {
-      pantheon: JSON.parse(JSON.stringify(DEFAULT_PANTHEON)),
+      pantheon: DEFAULT_PANTHEON.map(d => ({ ...d })),
       divineFavor: DEFAULT_PANTHEON.reduce((acc, d) => ({ ...acc, [d.id]: 0 }), {}),
       activeBlessing: null,
       activeCurse: null,
@@ -232,8 +232,8 @@
             }}>
               <span style={{
                 fontStyle: 'italic',
-                fontFamily: T.heading || 'serif',
-                color: 'var(--gold)',
+                fontFamily: T.heading,
+                color: T.gold,
                 fontSize: '13px',
                 flex: '1 1 100%'
               }}>
@@ -1379,7 +1379,7 @@
         height: '100%',
         backgroundColor: 'var(--bg)',
         color: 'var(--text)',
-        fontFamily: T.body || 'sans-serif'
+        fontFamily: T.body
       }}>
         {/* Left sidebar */}
         <div style={{

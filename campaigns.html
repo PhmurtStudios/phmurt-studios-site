@@ -5794,6 +5794,12 @@ window.pinToQuickNotes = function(setData, type, label, detail) {
 };
 
 function App() {
+  // ── Authentication Gate ──
+  const [authSession, setAuthSession] = useState(() => {
+    return window.PhmurtDB && typeof window.PhmurtDB.getSession === "function"
+      ? window.PhmurtDB.getSession() : null;
+  });
+
   const route = cmReadRoute();
   const [campaigns, setCampaigns] = useState([]);
   const [activeCampaignId, setActiveCampaignId] = useState(route.campaignId || null);
@@ -5827,6 +5833,17 @@ function App() {
     world: _tabModuleState.world,
     play: _tabModuleState.play,
   });
+
+  // ── Auth state listener ──
+  useEffect(() => {
+    const handleAuthChange = () => {
+      const s = window.PhmurtDB && typeof window.PhmurtDB.getSession === "function"
+        ? window.PhmurtDB.getSession() : null;
+      setAuthSession(s);
+    };
+    window.addEventListener("phmurt-auth-change", handleAuthChange);
+    return () => window.removeEventListener("phmurt-auth-change", handleAuthChange);
+  }, []);
 
   // ── Background-load all tab modules after Dashboard renders ──
   useEffect(() => {
@@ -6220,6 +6237,25 @@ function App() {
     return true;
   });
 
+  // ── Authentication Gate ──
+  if (!authSession) {
+    return (
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100vh", background:"var(--bg)", color:"var(--text)", fontFamily:"'Cinzel', serif", textAlign:"center", padding:"2rem" }}>
+        <div style={{ marginBottom:"2rem" }}>
+          <Shield size={48} style={{ color:"var(--gold)", marginBottom:"1rem" }} />
+          <h1 style={{ fontSize:"1.8rem", color:"var(--gold)", marginBottom:"0.5rem", fontFamily:"'Cinzel', serif" }}>Campaign Manager</h1>
+          <p style={{ color:"var(--text-dim)", fontSize:"0.9rem", maxWidth:"400px", lineHeight:"1.6" }}>
+            Sign in to access your campaigns. All your campaign data is saved securely to your account.
+          </p>
+        </div>
+        <button onClick={() => { if (window.PhmurtDB && window.PhmurtDB.openAuth) window.PhmurtDB.openAuth(); }}
+          style={{ padding:"12px 32px", background:"var(--gold)", color:"var(--bg)", border:"none", borderRadius:"4px", fontSize:"1rem", fontFamily:"'Cinzel', serif", cursor:"pointer", letterSpacing:"1px", fontWeight:"600" }}>
+          Sign In to Continue
+        </button>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100%", background:"var(--bg)", color:T.textFaint, fontFamily:T.ui, fontSize:14, letterSpacing:"2px" }}>
@@ -6334,7 +6370,7 @@ function App() {
           <div style={{ padding:"12px 14px", borderTop:"1px solid " + T.border }}>
             <div style={{ display:"flex", gap:4 }}>
               {["dm","player"].map(r => (
-                <button key={r} onClick={() => { if (campaignRoles[activeCampaignId] === "dm" || r === "player") setViewRole(r); }}
+                <button key={r} onClick={() => { if (campaignRoles[activeCampaignId] === "dm") setViewRole(r); }}
                   style={{ flex:1, padding:"6px", background: viewRole === r ? "rgba(212,67,58,0.1)" : "transparent", border:"1px solid " + (viewRole === r ? "rgba(212,67,58,0.3)" : T.border), borderRadius:"4px", cursor:"pointer", color: viewRole === r ? "var(--crimson)" : T.textFaint, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase" }}>
                   {r === "dm" ? "DM" : "Player"}
                 </button>

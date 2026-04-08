@@ -12,24 +12,24 @@
       display: 'flex',
       flexDirection: 'column',
       height: '100%',
-      backgroundColor: T.bg || 'var(--bg)',
-      color: T.text || 'var(--text)',
-      fontFamily: T.ui || "'Cinzel', serif",
+      backgroundColor: T.bg,
+      color: T.text,
+      fontFamily: T.ui,
       overflow: 'hidden'
     },
     header: {
       padding: '20px',
-      borderBottom: `1px solid ${T.border || 'var(--border)'}`,
+      borderBottom: `1px solid ${T.border}`,
       display: 'flex',
       justifyContent: 'space-between',
       alignItems: 'center',
-      backgroundColor: T.surface || 'var(--surface)'
+      backgroundColor: T.bgCard
     },
     title: {
       fontSize: '24px',
       fontWeight: 'bold',
-      fontFamily: T.heading || "'Cinzel', serif",
-      color: T.gold || 'var(--gold)',
+      fontFamily: T.heading,
+      color: T.gold,
       margin: 0,
       display: 'flex',
       alignItems: 'center',
@@ -44,16 +44,16 @@
       display: 'flex',
       gap: '8px',
       padding: '12px 20px',
-      borderBottom: `1px solid ${T.border || 'var(--border)'}`,
-      backgroundColor: T.bg || 'var(--bg)',
+      borderBottom: `1px solid ${T.border}`,
+      backgroundColor: T.bg,
       overflowX: 'auto'
     },
     tab: {
       padding: '8px 16px',
       border: 'none',
       borderRadius: '4px',
-      backgroundColor: T.ui || 'transparent',
-      color: T.textDim || 'var(--text-dim)',
+      backgroundColor: T.ui,
+      color: T.textDim,
       cursor: 'pointer',
       fontSize: '14px',
       fontWeight: '500',
@@ -61,19 +61,19 @@
       transition: 'all 0.2s'
     },
     tabActive: {
-      backgroundColor: T.gold || 'var(--gold)',
-      color: '#000',
+      backgroundColor: T.gold,
+      color: T.bg,
       fontWeight: 'bold'
     },
     content: {
       flex: 1,
       overflowY: 'auto',
       padding: '20px',
-      backgroundColor: T.bg || 'var(--bg)'
+      backgroundColor: T.bg
     },
     card: {
-      backgroundColor: T.surface || 'var(--surface)',
-      border: `1px solid ${T.border || 'var(--border)'}`,
+      backgroundColor: T.bgCard,
+      border: `1px solid ${T.border}`,
       borderRadius: '8px',
       padding: '16px',
       marginBottom: '12px'
@@ -81,9 +81,9 @@
     button: {
       padding: '8px 16px',
       borderRadius: '4px',
-      border: `1px solid ${T.gold || 'var(--gold)'}`,
-      backgroundColor: T.gold || 'var(--gold)',
-      color: '#000',
+      border: `1px solid ${T.gold}`,
+      backgroundColor: T.gold,
+      color: T.bg,
       cursor: 'pointer',
       fontWeight: '600',
       fontSize: '14px',
@@ -95,21 +95,21 @@
     },
     buttonSecondary: {
       backgroundColor: 'transparent',
-      color: T.gold || 'var(--gold)'
+      color: T.gold
     },
     input: {
       padding: '8px 12px',
       borderRadius: '4px',
-      border: `1px solid ${T.border || 'var(--border)'}`,
-      backgroundColor: T.bg || 'var(--bg)',
-      color: T.text || 'var(--text)',
+      border: `1px solid ${T.border}`,
+      backgroundColor: T.bg,
+      color: T.text,
       fontSize: '14px',
       fontFamily: 'inherit'
     },
     label: {
       fontSize: '12px',
       fontWeight: '600',
-      color: T.textDim || 'var(--text-dim)',
+      color: T.textDim,
       marginBottom: '4px',
       textTransform: 'uppercase',
       letterSpacing: '0.5px'
@@ -121,14 +121,14 @@
       marginBottom: '16px'
     },
     difficultyBadge: (difficulty) => {
-      const colors = { 1: '#4ade80', 2: '#60a5fa', 3: '#fbbf24', 4: '#f87171', 5: '#a21caf' };
+      const colors = { 1: T.green, 2: T.gold, 3: T.orange, 4: T.crimson, 5: T.crimsonSoft };
       return {
         display: 'inline-flex',
         alignItems: 'center',
         gap: '6px',
         padding: '4px 8px',
-        backgroundColor: colors[difficulty] || '#666',
-        color: '#000',
+        backgroundColor: colors[difficulty] || T.textMuted,
+        color: T.bg,
         borderRadius: '4px',
         fontSize: '12px',
         fontWeight: 'bold'
@@ -136,10 +136,10 @@
     },
     heatMeter: (heat) => ({
       height: '24px',
-      backgroundColor: T.bg || 'var(--bg)',
+      backgroundColor: T.bg,
       borderRadius: '4px',
       overflow: 'hidden',
-      border: `1px solid ${T.border || 'var(--border)'}`,
+      border: `1px solid ${T.border}`,
       position: 'relative'
     }),
     heatFill: (heat) => {
@@ -154,7 +154,7 @@
         justifyContent: 'center',
         fontSize: '12px',
         fontWeight: 'bold',
-        color: '#fff',
+        color: T.text,
         textShadow: '0 1px 2px rgba(0,0,0,0.5)'
       };
     },
@@ -167,11 +167,11 @@
     phaseNode: (complete, active) => ({
       padding: '8px 12px',
       borderRadius: '4px',
-      backgroundColor: complete ? (T.gold || 'var(--gold)') : (active ? (T.accent || '#6366f1') : (T.surface || 'var(--surface)')),
-      color: complete || active ? '#000' : (T.textDim || 'var(--text-dim)'),
+      backgroundColor: complete ? (T.gold) : (active ? (T.goldDim) : (T.bgCard)),
+      color: complete || active ? T.bg : (T.textDim),
       fontSize: '12px',
       fontWeight: '600',
-      border: `1px solid ${active ? (T.gold || 'var(--gold)') : (T.border || 'var(--border)')}`
+      border: `1px solid ${active ? (T.gold) : (T.border)}`
     }),
     section: {
       marginBottom: '24px'
@@ -179,7 +179,7 @@
     sectionTitle: {
       fontSize: '18px',
       fontWeight: 'bold',
-      color: T.gold || 'var(--gold)',
+      color: T.gold,
       marginBottom: '12px',
       display: 'flex',
       alignItems: 'center',
@@ -191,20 +191,20 @@
       gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))',
       gap: '8px',
       padding: '16px',
-      backgroundColor: T.bg || 'var(--bg)',
+      backgroundColor: T.bg,
       borderRadius: '8px',
-      border: `2px dotted ${T.border || 'var(--border)'}`,
+      border: `2px dotted ${T.border}`,
       minHeight: '400px'
     },
     roomTile: (selected) => ({
       padding: '12px',
-      backgroundColor: selected ? (T.gold || 'var(--gold)') : (T.surface || 'var(--surface)'),
-      border: `2px solid ${selected ? (T.gold || 'var(--gold)') : (T.border || 'var(--border)')}`,
+      backgroundColor: selected ? (T.gold) : (T.bgCard),
+      border: `2px solid ${selected ? (T.gold) : (T.border)}`,
       borderRadius: '6px',
       cursor: 'pointer',
       fontSize: '12px',
       fontWeight: '600',
-      color: selected ? '#000' : (T.text || 'var(--text)'),
+      color: selected ? T.bg : (T.text),
       textAlign: 'center',
       transition: 'all 0.2s',
       textTransform: 'uppercase',
@@ -212,27 +212,27 @@
     }),
     crewRole: {
       padding: '12px',
-      backgroundColor: T.surface || 'var(--surface)',
-      border: `1px solid ${T.border || 'var(--border)'}`,
+      backgroundColor: T.bgCard,
+      border: `1px solid ${T.border}`,
       borderRadius: '6px',
       marginBottom: '8px'
     },
     complicationItem: (severity) => {
-      const severityColors = { low: '#4ade80', medium: '#fbbf24', high: '#f87171' };
+      const severityColors = { low: T.green, medium: T.orange, high: T.crimson };
       return {
         padding: '12px',
-        backgroundColor: T.surface || 'var(--surface)',
-        border: `2px solid ${severityColors[severity] || '#666'}`,
+        backgroundColor: T.bgCard,
+        border: `2px solid ${severityColors[severity] || T.textMuted}`,
         borderRadius: '6px',
         marginBottom: '8px'
       };
     },
     heatAction: (type) => {
-      const colors = { increase: '#f87171', decrease: '#4ade80', neutral: '#60a5fa' };
+      const colors = { increase: T.crimson, decrease: T.green, neutral: T.gold };
       return {
         padding: '8px 12px',
-        backgroundColor: colors[type] || '#666',
-        color: '#000',
+        backgroundColor: colors[type] || T.textMuted,
+        color: T.bg,
         borderRadius: '4px',
         fontSize: '12px',
         fontWeight: '600',
@@ -244,7 +244,7 @@
     emptyState: {
       textAlign: 'center',
       padding: '40px 20px',
-      color: T.textDim || 'var(--text-dim)'
+      color: T.textDim
     }
   };
 
@@ -513,7 +513,7 @@
           </div>
 
           <button
-            style={{...styles.button, backgroundColor: T.accent || '#6366f1'}}
+            style={{...styles.button, backgroundColor: T.goldDim}}
             onClick={() => {
               const generatedBlueprint = generateBlueprint(newHeist.name, newHeist.type);
               setNewHeist({...newHeist, blueprint: generatedBlueprint});
@@ -574,13 +574,13 @@
                   width: '20px',
                   height: '20px',
                   borderRadius: '50%',
-                  backgroundColor: i <= newHeist.difficulty ? (T.gold || 'var(--gold)') : (T.border || 'var(--border)'),
+                  backgroundColor: i <= newHeist.difficulty ? (T.gold) : (T.border),
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   fontSize: '12px',
                   fontWeight: 'bold',
-                  color: i <= newHeist.difficulty ? '#000' : (T.textDim || 'var(--text-dim)')
+                  color: i <= newHeist.difficulty ? T.bg : (T.textDim)
                 }}>
                   {i <= newHeist.difficulty ? '★' : '○'}
                 </span>
@@ -648,10 +648,10 @@
             <div key={heist.id} style={styles.card}>
               <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '16px'}}>
                 <div style={{flex: 1}}>
-                  <h3 style={{margin: '0 0 8px 0', color: T.gold || 'var(--gold)', fontSize: '18px'}}>
+                  <h3 style={{margin: '0 0 8px 0', color: T.gold, fontSize: '18px'}}>
                     {heist.name}
                   </h3>
-                  <p style={{margin: '4px 0', fontSize: '14px', color: T.textDim || 'var(--text-dim)'}}>
+                  <p style={{margin: '4px 0', fontSize: '14px', color: T.textDim}}>
                     <MapPin size={14} style={{display: 'inline', marginRight: '4px'}} />
                     {heist.location} — {heist.type}
                   </p>
@@ -662,7 +662,7 @@
                     <div style={styles.difficultyBadge(heist.difficulty)}>
                       {'★'.repeat(heist.difficulty)}{'○'.repeat(5-heist.difficulty)} {heist.difficulty}/5
                     </div>
-                    <div style={{...styles.difficultyBadge(1), backgroundColor: T.accent || '#6366f1'}}>
+                    <div style={{...styles.difficultyBadge(1), backgroundColor: T.goldDim}}>
                       <Coins size={14} /> {heist.reward}
                     </div>
                     <div style={{...styles.difficultyBadge(1), backgroundColor: 'hsl(0, 80%, 50%)'}}>
@@ -678,7 +678,7 @@
                     <Edit2 size={16} /> Plan
                   </button>
                   <button
-                    style={{...styles.button, backgroundColor: '#f87171'}}
+                    style={{...styles.button, backgroundColor: T.crimson}}
                     onClick={() => deleteHeist(heist.id)}
                   >
                     <Trash2 size={16} />
@@ -808,7 +808,7 @@
           <div style={styles.sectionTitle}>Layout Grid</div>
           <div style={styles.floorGrid}>
             {Object.values(rooms).length === 0 ? (
-              <div style={{gridColumn: '1 / -1', textAlign: 'center', color: T.textDim || 'var(--text-dim)', padding: '40px'}}>
+              <div style={{gridColumn: '1 / -1', textAlign: 'center', color: T.textDim, padding: '40px'}}>
                 Add rooms to build your blueprint
               </div>
             ) : (
@@ -824,7 +824,7 @@
                   title={`${room.guards} guard${room.guards !== 1 ? 's' : ''} | Right-click to delete`}
                 >
                   {room.name}
-                  {room.guards > 0 && <div style={{fontSize: '10px', marginTop: '4px', color: '#f87171'}}>G: {room.guards}</div>}
+                  {room.guards > 0 && <div style={{fontSize: '10px', marginTop: '4px', color: T.crimson}}>G: {room.guards}</div>}
                 </div>
               ))
             )}
@@ -832,8 +832,8 @@
         </div>
 
         {selectedRoom && rooms[selectedRoom] && (
-          <div style={{...styles.card, marginTop: '16px', backgroundColor: T.bg || 'var(--bg)'}}>
-            <h4 style={{margin: '0 0 12px 0', color: T.gold || 'var(--gold)'}}>
+          <div style={{...styles.card, marginTop: '16px', backgroundColor: T.bg}}>
+            <h4 style={{margin: '0 0 12px 0', color: T.gold}}>
               {rooms[selectedRoom].name}
             </h4>
             <p><strong>Type:</strong> {rooms[selectedRoom].type}</p>
@@ -866,7 +866,7 @@
           <Users size={20} /> Crew Assembly
         </div>
 
-        <div style={{...styles.card, marginBottom: '16px', backgroundColor: T.surface || 'var(--surface)'}}>
+        <div style={{...styles.card, marginBottom: '16px', backgroundColor: T.bgCard}}>
           <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
             <span>Crew Readiness Score</span>
             <div style={styles.heatMeter(getReadinessScore())}>
@@ -882,11 +882,11 @@
             <div key={role.name} style={styles.crewRole}>
               <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px'}}>
                 <div>
-                  <h4 style={{margin: '0 0 4px 0', color: T.gold || 'var(--gold)'}}>{role.name}</h4>
-                  <p style={{margin: '0', fontSize: '12px', color: T.textDim || 'var(--text-dim)'}}>
+                  <h4 style={{margin: '0 0 4px 0', color: T.gold}}>{role.name}</h4>
+                  <p style={{margin: '0', fontSize: '12px', color: T.textDim}}>
                     Skills: {role.skills.join(', ')}
                   </p>
-                  <p style={{margin: '4px 0 0 0', fontSize: '12px', color: T.textDim || 'var(--text-dim)'}}>
+                  <p style={{margin: '4px 0 0 0', fontSize: '12px', color: T.textDim}}>
                     Tools: {role.tools.join(', ')}
                   </p>
                 </div>
@@ -945,7 +945,7 @@
             <div key={phase.key} style={styles.card}>
               <div style={{display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px'}}>
                 {Icon && <Icon size={18} />}
-                <h4 style={{margin: 0, flex: 1, color: T.gold || 'var(--gold)'}}>{phase.name}</h4>
+                <h4 style={{margin: 0, flex: 1, color: T.gold}}>{phase.name}</h4>
                 <select
                   style={{...styles.input, padding: '4px 8px'}}
                   value={phaseData.status}
@@ -956,7 +956,7 @@
                   <option>complete</option>
                 </select>
               </div>
-              <p style={{margin: '0 0 8px 0', fontSize: '12px', color: T.textDim || 'var(--text-dim)'}}>
+              <p style={{margin: '0 0 8px 0', fontSize: '12px', color: T.textDim}}>
                 {phase.description}
               </p>
               <textarea
@@ -1015,7 +1015,7 @@
 
         <div style={{marginTop: '16px'}}>
           {complications.length === 0 ? (
-            <div style={{...styles.card, textAlign: 'center', color: T.textDim || 'var(--text-dim)'}}>
+            <div style={{...styles.card, textAlign: 'center', color: T.textDim}}>
               No complications yet. Smooth sailing!
             </div>
           ) : (
@@ -1031,7 +1031,7 @@
                 <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
                   <div>
                     <h4 style={{margin: '0 0 4px 0'}}>{comp.name}</h4>
-                    <span style={{fontSize: '12px', textTransform: 'capitalize', color: T.textDim || 'var(--text-dim)'}}>
+                    <span style={{fontSize: '12px', textTransform: 'capitalize', color: T.textDim}}>
                       Severity: {comp.severity}
                     </span>
                   </div>
@@ -1043,7 +1043,7 @@
                       {comp.resolved ? <X size={16} /> : <Check size={16} />}
                     </button>
                     <button
-                      style={{...styles.button, padding: '6px 8px', backgroundColor: '#f87171'}}
+                      style={{...styles.button, padding: '6px 8px', backgroundColor: T.crimson}}
                       onClick={() => removeComplication(comp.id)}
                     >
                       <Trash2 size={16} />
@@ -1059,11 +1059,11 @@
   }
 
   function HeatSystem({ heist, setHeist }) {
-    const updateHeat = (amount) => {
+    const updateHeat = useCallback((amount) => {
       const updated = {...heist};
       updated.heat = Math.max(0, Math.min(100, updated.heat + amount));
       setHeist(updated);
-    };
+    }, [heist, setHeist]);
 
     const consequences = [
       { threshold: 25, text: 'Local guards on alert' },
@@ -1072,7 +1072,7 @@
       { threshold: 90, text: 'Guild/Noble sends assassins' }
     ];
 
-    const activeConsequences = consequences.filter(c => heist.heat >= c.threshold);
+    const activeConsequences = useMemo(() => consequences.filter(c => heist.heat >= c.threshold), [heist.heat]);
 
     return (
       <div style={styles.section}>
@@ -1093,25 +1093,25 @@
 
           <div style={{display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px'}}>
             <button
-              style={{...styles.button, backgroundColor: '#f87171'}}
+              style={{...styles.button, backgroundColor: T.crimson}}
               onClick={() => updateHeat(10)}
             >
               +10 Heat
             </button>
             <button
-              style={{...styles.button, backgroundColor: '#f87171'}}
+              style={{...styles.button, backgroundColor: T.crimson}}
               onClick={() => updateHeat(25)}
             >
               +25 Heat
             </button>
             <button
-              style={{...styles.button, backgroundColor: '#4ade80'}}
+              style={{...styles.button, backgroundColor: T.green}}
               onClick={() => updateHeat(-10)}
             >
               -10 Heat
             </button>
             <button
-              style={{...styles.button, backgroundColor: '#4ade80'}}
+              style={{...styles.button, backgroundColor: T.green}}
               onClick={() => updateHeat(-25)}
             >
               -25 Heat
@@ -1119,10 +1119,10 @@
           </div>
 
           {activeConsequences.length > 0 && (
-            <div style={{...styles.card, backgroundColor: '#7f1d1d', borderColor: '#f87171', padding: '12px'}}>
-              <h4 style={{margin: '0 0 8px 0', color: '#fca5a5'}}>Active Consequences:</h4>
+            <div style={{...styles.card, backgroundColor: T.bgCard, borderColor: T.crimson, padding: '12px'}}>
+              <h4 style={{margin: '0 0 8px 0', color: T.crimsonSoft}}>Active Consequences:</h4>
               {activeConsequences.map((cons, idx) => (
-                <p key={idx} style={{margin: '4px 0', fontSize: '14px', color: '#fca5a5'}}>
+                <p key={idx} style={{margin: '4px 0', fontSize: '14px', color: T.crimsonSoft}}>
                   {cons.text}
                 </p>
               ))}
@@ -1155,7 +1155,7 @@
     return (
       <div style={styles.content}>
         <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
-          <h2 style={{margin: 0, color: T.gold || 'var(--gold)'}}>
+          <h2 style={{margin: 0, color: T.gold}}>
             {heist.name}
           </h2>
           <button style={styles.button} onClick={onBack}>
@@ -1186,7 +1186,7 @@
           </div>
           <div style={{marginTop: '12px'}}>
             <div style={styles.label}>DM Notes</div>
-            <p style={{margin: 0, fontSize: '14px', color: T.textDim || 'var(--text-dim)'}}>{heist.dmNotes}</p>
+            <p style={{margin: 0, fontSize: '14px', color: T.textDim}}>{heist.dmNotes}</p>
           </div>
         </div>
 
@@ -1221,7 +1221,7 @@
           <h1 style={styles.title}>
             <Target size={28} /> Heist Planner
           </h1>
-          <div style={{fontSize: '12px', color: T.textDim || 'var(--text-dim)'}}>
+          <div style={{fontSize: '12px', color: T.textDim}}>
             {heistCount} active {heistCount === 1 ? 'heist' : 'heists'}
           </div>
         </div>

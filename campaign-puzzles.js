@@ -239,15 +239,15 @@
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
-        <svg width={size} height={size} style={{ border: `1px solid ${T.border || 'var(--border)'}`, borderRadius: '50%', background: T.bg || 'var(--bg)' }}>
-          <circle cx={radius} cy={radius} r={radius - 2} fill="none" stroke={T.border || 'var(--border)'} strokeWidth="1" opacity="0.3" />
-          <circle cx={radius} cy={radius} r={innerRadius} fill="none" stroke={T.border || 'var(--border)'} strokeWidth="1" opacity="0.3" />
+        <svg width={size} height={size} style={{ border: `1px solid ${T.border}`, borderRadius: '50%', background: T.bg || 'var(--bg)' }}>
+          <circle cx={radius} cy={radius} r={radius - 2} fill="none" stroke={T.border} strokeWidth="1" opacity="0.3" />
+          <circle cx={radius} cy={radius} r={innerRadius} fill="none" stroke={T.border} strokeWidth="1" opacity="0.3" />
           {letters.map((letter, i) => {
             const angle = (i / 26) * Math.PI * 2 - Math.PI / 2;
             const x = radius + Math.cos(angle) * (radius - 20);
             const y = radius + Math.sin(angle) * (radius - 20);
             return (
-              <text key={`outer-${i}`} x={x} y={y} textAnchor="middle" dominantBaseline="middle" fontSize="10" fill={T.text || 'var(--text)'} fontWeight="bold">
+              <text key={`outer-${i}`} x={x} y={y} textAnchor="middle" dominantBaseline="middle" fontSize="10" fill={T.text} fontWeight="bold">
                 {letter}
               </text>
             );
@@ -257,17 +257,17 @@
             const x = radius + Math.cos(angle) * innerRadius;
             const y = radius + Math.sin(angle) * innerRadius;
             return (
-              <text key={`inner-${i}`} x={x} y={y} textAnchor="middle" dominantBaseline="middle" fontSize="10" fill={T.gold || 'var(--gold)'} fontWeight="bold">
+              <text key={`inner-${i}`} x={x} y={y} textAnchor="middle" dominantBaseline="middle" fontSize="10" fill={T.gold} fontWeight="bold">
                 {letter}
               </text>
             );
           })}
-          <line x1={radius} y1={radius - innerRadius - 5} x2={radius} y2={5} stroke={T.gold || 'var(--gold)'} strokeWidth="2" />
+          <line x1={radius} y1={radius - innerRadius - 5} x2={radius} y2={5} stroke={T.gold} strokeWidth="2" />
         </svg>
         <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <button onClick={() => setShift((s) => (s - 1 + 26) % 26)} style={{ padding: '4px 8px', background: T.surface || 'var(--surface)', border: `1px solid ${T.border || 'var(--border)'}`, color: T.text || 'var(--text)', cursor: 'pointer', borderRadius: '4px' }}>←</button>
-          <span style={{ fontFamily: T.ui || 'monospace', fontSize: '14px', color: T.gold || 'var(--gold)', fontWeight: 'bold', minWidth: '80px', textAlign: 'center' }}>Shift: {shift}</span>
-          <button onClick={() => setShift((s) => (s + 1) % 26)} style={{ padding: '4px 8px', background: T.surface || 'var(--surface)', border: `1px solid ${T.border || 'var(--border)'}`, color: T.text || 'var(--text)', cursor: 'pointer', borderRadius: '4px' }}>→</button>
+          <button onClick={() => setShift((s) => (s - 1 + 26) % 26)} style={{ padding: '4px 8px', background: T.bgCard, border: `1px solid ${T.border}`, color: T.text, cursor: 'pointer', borderRadius: '4px' }}>←</button>
+          <span style={{ fontFamily: T.ui, fontSize: '14px', color: T.gold, fontWeight: 'bold', minWidth: '80px', textAlign: 'center' }}>Shift: {shift}</span>
+          <button onClick={() => setShift((s) => (s + 1) % 26)} style={{ padding: '4px 8px', background: T.bgCard, border: `1px solid ${T.border}`, color: T.text, cursor: 'pointer', borderRadius: '4px' }}>→</button>
         </div>
       </div>
     );
@@ -293,8 +293,8 @@
               style={{
                 width: size,
                 height: size,
-                background: cell ? (T.gold || 'var(--gold)') : (T.surface || 'var(--surface)'),
-                border: `1px solid ${T.border || 'var(--border)'}`,
+                background: cell ? (T.gold) : (T.bgCard),
+                border: `1px solid ${T.border}`,
                 cursor: 'pointer',
                 borderRadius: '2px',
                 display: 'flex',
@@ -302,7 +302,7 @@
                 justifyContent: 'center',
                 fontSize: '12px',
                 fontWeight: 'bold',
-                color: cell ? T.bg : (T.text || 'var(--text)'),
+                color: cell ? T.bg : (T.text),
                 transition: 'all 0.2s'
               }}
             >
@@ -318,8 +318,8 @@
     return (
       <div
         style={{
-          background: T.surface || 'var(--surface)',
-          border: `1px solid ${T.border || 'var(--border)'}`,
+          background: T.bgCard,
+          border: `1px solid ${T.border}`,
           borderRadius: '6px',
           padding: '12px',
           cursor: 'pointer',
@@ -331,20 +331,20 @@
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
           <div style={{ flex: 1 }}>
-            <h3 style={{ margin: '0 0 4px 0', color: T.gold || 'var(--gold)', fontFamily: T.heading || 'serif', fontSize: '16px', fontWeight: 'bold' }}>
+            <h3 style={{ margin: '0 0 4px 0', color: T.gold, fontFamily: T.heading, fontSize: '16px', fontWeight: 'bold' }}>
               {puzzle.name}
             </h3>
-            <p style={{ margin: '0 0 4px 0', fontSize: '12px', color: T.textDim || 'var(--text-dim)' }}>
+            <p style={{ margin: '0 0 4px 0', fontSize: '12px', color: T.textDim }}>
               {puzzle.type.charAt(0).toUpperCase() + puzzle.type.slice(1)} • Difficulty {puzzle.difficulty}/5
             </p>
           </div>
           <div style={{ display: 'flex', gap: '4px' }}>
             {Array(puzzle.difficulty).fill(0).map((_, i) => (
-              <Star key={i} size={12} fill={T.gold || 'var(--gold)'} color={T.gold || 'var(--gold)'} />
+              <Star key={i} size={12} fill={T.gold} color={T.gold} />
             ))}
           </div>
         </div>
-        <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: T.text || 'var(--text)', lineHeight: '1.4' }}>
+        <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: T.text, lineHeight: '1.4' }}>
           {puzzle.description}
         </p>
         <div style={{ display: 'flex', gap: '6px' }}>
@@ -353,7 +353,7 @@
             style={{
               flex: 1,
               padding: '6px 8px',
-              background: T.gold || 'var(--gold)',
+              background: T.gold,
               color: T.bg || 'var(--bg)',
               border: 'none',
               borderRadius: '4px',
@@ -371,9 +371,9 @@
             onClick={(e) => { e.stopPropagation(); onEdit(puzzle); }}
             style={{
               padding: '6px 8px',
-              background: T.surface || 'var(--surface)',
-              color: T.text || 'var(--text)',
-              border: `1px solid ${T.border || 'var(--border)'}`,
+              background: T.bgCard,
+              color: T.text,
+              border: `1px solid ${T.border}`,
               borderRadius: '4px',
               cursor: 'pointer',
               display: 'flex',
@@ -388,9 +388,9 @@
             onClick={(e) => { e.stopPropagation(); onDelete(puzzle.id); }}
             style={{
               padding: '6px 8px',
-              background: T.surface || 'var(--surface)',
-              color: T.crimson || 'var(--crimson)',
-              border: `1px solid ${T.crimson || 'var(--crimson)'}`,
+              background: T.bgCard,
+              color: T.crimson,
+              border: `1px solid ${T.crimson}`,
               borderRadius: '4px',
               cursor: 'pointer',
               display: 'flex',
@@ -427,19 +427,19 @@
       >
         <div
           style={{
-            background: T.surface || 'var(--surface)',
+            background: T.bgCard,
             borderRadius: '8px',
             padding: '20px',
             maxWidth: '600px',
             maxHeight: '90vh',
             overflow: 'auto',
-            border: `2px solid ${T.gold || 'var(--gold)'}`,
+            border: `2px solid ${T.gold}`,
             boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
           }}
           onClick={(e) => e.stopPropagation()}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h2 style={{ margin: 0, color: T.gold || 'var(--gold)', fontFamily: T.heading || 'serif', fontSize: '22px' }}>
+            <h2 style={{ margin: 0, color: T.gold, fontFamily: T.heading, fontSize: '22px' }}>
               {puzzle.name}
             </h2>
             <button
@@ -447,7 +447,7 @@
               style={{
                 background: 'none',
                 border: 'none',
-                color: T.text || 'var(--text)',
+                color: T.text,
                 cursor: 'pointer',
                 fontSize: '20px'
               }}
@@ -456,32 +456,32 @@
             </button>
           </div>
 
-          <div style={{ marginBottom: '16px', paddingBottom: '12px', borderBottom: `1px solid ${T.border || 'var(--border)'}` }}>
-            <p style={{ margin: '0 0 4px 0', fontSize: '13px', color: T.textDim || 'var(--text-dim)' }}>
+          <div style={{ marginBottom: '16px', paddingBottom: '12px', borderBottom: `1px solid ${T.border}` }}>
+            <p style={{ margin: '0 0 4px 0', fontSize: '13px', color: T.textDim }}>
               Type: {puzzle.type} • Difficulty: {puzzle.difficulty}/5 • Status: {puzzle.solved ? '✓ Solved' : 'Pending'}
             </p>
-            {puzzle.timeTaken && <p style={{ margin: '0 0 4px 0', fontSize: '13px', color: T.textDim || 'var(--text-dim)' }}>Time: {puzzle.timeTaken} min</p>}
+            {puzzle.timeTaken && <p style={{ margin: '0 0 4px 0', fontSize: '13px', color: T.textDim }}>Time: {puzzle.timeTaken} min</p>}
           </div>
 
           <div style={{ marginBottom: '16px' }}>
-            <h4 style={{ margin: '0 0 8px 0', color: T.gold || 'var(--gold)', fontFamily: T.heading || 'serif' }}>Setup</h4>
-            <p style={{ margin: 0, color: T.text || 'var(--text)', lineHeight: '1.6', fontStyle: 'italic' }}>"{puzzle.setup}"</p>
+            <h4 style={{ margin: '0 0 8px 0', color: T.gold, fontFamily: T.heading }}>Setup</h4>
+            <p style={{ margin: 0, color: T.text, lineHeight: '1.6', fontStyle: 'italic' }}>"{puzzle.setup}"</p>
           </div>
 
           {puzzle.interactive && (
             <div style={{ marginBottom: '16px', padding: '12px', background: T.bg || 'var(--bg)', borderRadius: '4px' }}>
-              <h4 style={{ margin: '0 0 12px 0', color: T.gold || 'var(--gold)', fontFamily: T.heading || 'serif' }}>Interactive Component</h4>
+              <h4 style={{ margin: '0 0 12px 0', color: T.gold, fontFamily: T.heading }}>Interactive Component</h4>
               {puzzle.interactive.type === 'wheel' && <CipherWheel puzzle={puzzle} />}
               {puzzle.interactive.type === 'grid' && <GridPuzzle puzzle={puzzle} width={puzzle.interactive.width} height={puzzle.interactive.height} labels={puzzle.interactive.labels} />}
             </div>
           )}
 
           <div style={{ marginBottom: '16px' }}>
-            <h4 style={{ margin: '0 0 8px 0', color: T.gold || 'var(--gold)', fontFamily: T.heading || 'serif' }}>Hints ({hintsRevealed}/3)</h4>
+            <h4 style={{ margin: '0 0 8px 0', color: T.gold, fontFamily: T.heading }}>Hints ({hintsRevealed}/3)</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {puzzle.hints.map((hint, i) => (
                 <div key={i} style={{ opacity: i < hintsRevealed ? 1 : 0.5 }}>
-                  <p style={{ margin: '0 0 4px 0', fontSize: '11px', color: T.textDim || 'var(--text-dim)', fontWeight: 'bold' }}>
+                  <p style={{ margin: '0 0 4px 0', fontSize: '11px', color: T.textDim, fontWeight: 'bold' }}>
                     Hint {i + 1}: {i < hintsRevealed ? hint : '(locked)'}
                   </p>
                 </div>
@@ -493,7 +493,7 @@
               style={{
                 marginTop: '8px',
                 padding: '6px 12px',
-                background: hintsRevealed >= 3 ? T.textDim || 'var(--text-dim)' : (T.gold || 'var(--gold)'),
+                background: hintsRevealed >= 3 ? T.textDim : (T.gold),
                 color: T.bg || 'var(--bg)',
                 border: 'none',
                 borderRadius: '4px',
@@ -507,9 +507,9 @@
             </button>
           </div>
 
-          <div style={{ marginBottom: '16px', padding: '12px', background: T.crimsonSoft || 'rgba(220,53,69,0.1)', borderRadius: '4px', border: `1px solid ${T.crimson || 'var(--crimson)'}` }}>
-            <h4 style={{ margin: '0 0 8px 0', color: T.gold || 'var(--gold)', fontFamily: T.heading || 'serif' }}>Solution (DM Only)</h4>
-            <p style={{ margin: 0, color: T.text || 'var(--text)', fontWeight: 'bold', fontFamily: T.ui || 'monospace' }}>
+          <div style={{ marginBottom: '16px', padding: '12px', background: T.crimsonSoft || 'rgba(220,53,69,0.1)', borderRadius: '4px', border: `1px solid ${T.crimson}` }}>
+            <h4 style={{ margin: '0 0 8px 0', color: T.gold, fontFamily: T.heading }}>Solution (DM Only)</h4>
+            <p style={{ margin: 0, color: T.text, fontWeight: 'bold', fontFamily: T.ui }}>
               {puzzle.solution}
             </p>
           </div>
@@ -520,7 +520,7 @@
               style={{
                 flex: 1,
                 padding: '10px 16px',
-                background: T.gold || 'var(--gold)',
+                background: T.gold,
                 color: T.bg || 'var(--bg)',
                 border: 'none',
                 borderRadius: '4px',
@@ -536,9 +536,9 @@
               style={{
                 flex: 1,
                 padding: '10px 16px',
-                background: T.surface || 'var(--surface)',
-                color: T.text || 'var(--text)',
-                border: `1px solid ${T.border || 'var(--border)'}`,
+                background: T.bgCard,
+                color: T.text,
+                border: `1px solid ${T.border}`,
                 borderRadius: '4px',
                 cursor: 'pointer',
                 fontSize: '13px',
@@ -592,24 +592,24 @@
       >
         <div
           style={{
-            background: T.surface || 'var(--surface)',
+            background: T.bgCard,
             borderRadius: '8px',
             padding: '20px',
             maxWidth: '600px',
             maxHeight: '90vh',
             overflow: 'auto',
-            border: `2px solid ${T.gold || 'var(--gold)'}`,
+            border: `2px solid ${T.gold}`,
             boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
           }}
           onClick={(e) => e.stopPropagation()}
         >
-          <h2 style={{ margin: '0 0 16px 0', color: T.gold || 'var(--gold)', fontFamily: T.heading || 'serif', fontSize: '22px' }}>
+          <h2 style={{ margin: '0 0 16px 0', color: T.gold, fontFamily: T.heading, fontSize: '22px' }}>
             Create Custom Puzzle
           </h2>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
             <div>
-              <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 'bold', color: T.text || 'var(--text)' }}>Name</label>
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 'bold', color: T.text }}>Name</label>
               <input
                 value={form.name}
                 onChange={(e) => handleChange('name', e.target.value)}
@@ -617,9 +617,9 @@
                   width: '100%',
                   padding: '8px',
                   background: T.bg || 'var(--bg)',
-                  border: `1px solid ${T.border || 'var(--border)'}`,
+                  border: `1px solid ${T.border}`,
                   borderRadius: '4px',
-                  color: T.text || 'var(--text)',
+                  color: T.text,
                   boxSizing: 'border-box',
                   fontSize: '13px'
                 }}
@@ -628,7 +628,7 @@
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 'bold', color: T.text || 'var(--text)' }}>Type</label>
+                <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 'bold', color: T.text }}>Type</label>
                 <select
                   value={form.type}
                   onChange={(e) => handleChange('type', e.target.value)}
@@ -636,9 +636,9 @@
                     width: '100%',
                     padding: '8px',
                     background: T.bg || 'var(--bg)',
-                    border: `1px solid ${T.border || 'var(--border)'}`,
+                    border: `1px solid ${T.border}`,
                     borderRadius: '4px',
-                    color: T.text || 'var(--text)',
+                    color: T.text,
                     fontSize: '13px'
                   }}
                 >
@@ -650,7 +650,7 @@
                 </select>
               </div>
               <div>
-                <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 'bold', color: T.text || 'var(--text)' }}>Difficulty</label>
+                <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 'bold', color: T.text }}>Difficulty</label>
                 <select
                   value={form.difficulty}
                   onChange={(e) => handleChange('difficulty', parseInt(e.target.value))}
@@ -658,9 +658,9 @@
                     width: '100%',
                     padding: '8px',
                     background: T.bg || 'var(--bg)',
-                    border: `1px solid ${T.border || 'var(--border)'}`,
+                    border: `1px solid ${T.border}`,
                     borderRadius: '4px',
-                    color: T.text || 'var(--text)',
+                    color: T.text,
                     fontSize: '13px'
                   }}
                 >
@@ -670,7 +670,7 @@
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 'bold', color: T.text || 'var(--text)' }}>Description</label>
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 'bold', color: T.text }}>Description</label>
               <input
                 value={form.description}
                 onChange={(e) => handleChange('description', e.target.value)}
@@ -678,9 +678,9 @@
                   width: '100%',
                   padding: '8px',
                   background: T.bg || 'var(--bg)',
-                  border: `1px solid ${T.border || 'var(--border)'}`,
+                  border: `1px solid ${T.border}`,
                   borderRadius: '4px',
-                  color: T.text || 'var(--text)',
+                  color: T.text,
                   boxSizing: 'border-box',
                   fontSize: '13px'
                 }}
@@ -688,7 +688,7 @@
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 'bold', color: T.text || 'var(--text)' }}>Setup (what players hear)</label>
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 'bold', color: T.text }}>Setup (what players hear)</label>
               <textarea
                 value={form.setup}
                 onChange={(e) => handleChange('setup', e.target.value)}
@@ -696,12 +696,12 @@
                   width: '100%',
                   padding: '8px',
                   background: T.bg || 'var(--bg)',
-                  border: `1px solid ${T.border || 'var(--border)'}`,
+                  border: `1px solid ${T.border}`,
                   borderRadius: '4px',
-                  color: T.text || 'var(--text)',
+                  color: T.text,
                   boxSizing: 'border-box',
                   fontSize: '13px',
-                  fontFamily: T.ui || 'monospace',
+                  fontFamily: T.ui,
                   minHeight: '80px',
                   resize: 'vertical'
                 }}
@@ -709,7 +709,7 @@
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 'bold', color: T.text || 'var(--text)' }}>Solution (DM Only)</label>
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 'bold', color: T.text }}>Solution (DM Only)</label>
               <input
                 value={form.solution}
                 onChange={(e) => handleChange('solution', e.target.value)}
@@ -717,9 +717,9 @@
                   width: '100%',
                   padding: '8px',
                   background: T.bg || 'var(--bg)',
-                  border: `1px solid ${T.border || 'var(--border)'}`,
+                  border: `1px solid ${T.border}`,
                   borderRadius: '4px',
-                  color: T.text || 'var(--text)',
+                  color: T.text,
                   boxSizing: 'border-box',
                   fontSize: '13px'
                 }}
@@ -727,7 +727,7 @@
             </div>
 
             <div>
-              <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 'bold', color: T.text || 'var(--text)' }}>Hints (3 levels)</label>
+              <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 'bold', color: T.text }}>Hints (3 levels)</label>
               {form.hints.map((hint, i) => (
                 <input
                   key={i}
@@ -738,9 +738,9 @@
                     width: '100%',
                     padding: '6px 8px',
                     background: T.bg || 'var(--bg)',
-                    border: `1px solid ${T.border || 'var(--border)'}`,
+                    border: `1px solid ${T.border}`,
                     borderRadius: '4px',
-                    color: T.text || 'var(--text)',
+                    color: T.text,
                     boxSizing: 'border-box',
                     fontSize: '12px',
                     marginBottom: i < 2 ? '6px' : '0'
@@ -759,7 +759,7 @@
                 style={{
                   flex: 1,
                   padding: '10px 16px',
-                  background: T.gold || 'var(--gold)',
+                  background: T.gold,
                   color: T.bg || 'var(--bg)',
                   border: 'none',
                   borderRadius: '4px',
@@ -775,9 +775,9 @@
                 style={{
                   flex: 1,
                   padding: '10px 16px',
-                  background: T.surface || 'var(--surface)',
-                  color: T.text || 'var(--text)',
-                  border: `1px solid ${T.border || 'var(--border)'}`,
+                  background: T.bgCard,
+                  color: T.text,
+                  border: `1px solid ${T.border}`,
                   borderRadius: '4px',
                   cursor: 'pointer',
                   fontSize: '13px',
@@ -802,21 +802,21 @@
 
     return (
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px' }}>
-        <div style={{ background: T.surface || 'var(--surface)', border: `1px solid ${T.border || 'var(--border)'}`, borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
-          <p style={{ margin: '0 0 4px 0', fontSize: '11px', color: T.textDim || 'var(--text-dim)', fontWeight: 'bold' }}>PRESENTED</p>
-          <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: T.gold || 'var(--gold)', fontFamily: T.ui || 'monospace' }}>{totalPresented}</p>
+        <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
+          <p style={{ margin: '0 0 4px 0', fontSize: '11px', color: T.textDim, fontWeight: 'bold' }}>PRESENTED</p>
+          <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: T.gold, fontFamily: T.ui }}>{totalPresented}</p>
         </div>
-        <div style={{ background: T.surface || 'var(--surface)', border: `1px solid ${T.border || 'var(--border)'}`, borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
-          <p style={{ margin: '0 0 4px 0', fontSize: '11px', color: T.textDim || 'var(--text-dim)', fontWeight: 'bold' }}>SOLVED</p>
-          <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: T.gold || 'var(--gold)', fontFamily: T.ui || 'monospace' }}>{totalSolved}</p>
+        <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
+          <p style={{ margin: '0 0 4px 0', fontSize: '11px', color: T.textDim, fontWeight: 'bold' }}>SOLVED</p>
+          <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: T.gold, fontFamily: T.ui }}>{totalSolved}</p>
         </div>
-        <div style={{ background: T.surface || 'var(--surface)', border: `1px solid ${T.border || 'var(--border)'}`, borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
-          <p style={{ margin: '0 0 4px 0', fontSize: '11px', color: T.textDim || 'var(--text-dim)', fontWeight: 'bold' }}>SOLVE RATE</p>
-          <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: T.gold || 'var(--gold)', fontFamily: T.ui || 'monospace' }}>{solveRate}%</p>
+        <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
+          <p style={{ margin: '0 0 4px 0', fontSize: '11px', color: T.textDim, fontWeight: 'bold' }}>SOLVE RATE</p>
+          <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: T.gold, fontFamily: T.ui }}>{solveRate}%</p>
         </div>
-        <div style={{ background: T.surface || 'var(--surface)', border: `1px solid ${T.border || 'var(--border)'}`, borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
-          <p style={{ margin: '0 0 4px 0', fontSize: '11px', color: T.textDim || 'var(--text-dim)', fontWeight: 'bold' }}>AVG HINTS</p>
-          <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: T.gold || 'var(--gold)', fontFamily: T.ui || 'monospace' }}>{avgHints}</p>
+        <div style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: '6px', padding: '12px', textAlign: 'center' }}>
+          <p style={{ margin: '0 0 4px 0', fontSize: '11px', color: T.textDim, fontWeight: 'bold' }}>AVG HINTS</p>
+          <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: T.gold, fontFamily: T.ui }}>{avgHints}</p>
         </div>
       </div>
     );
@@ -893,20 +893,20 @@
     };
 
     const puzzleTypeColors = {
-      riddle: T.gold || 'var(--gold)',
-      logic: '#4ecdc4',
-      cipher: '#ff6b6b',
-      mechanical: '#95e1d3',
-      environmental: '#6bcf7f'
+      riddle: T.gold,
+      logic: T.green || 'var(--green)',
+      cipher: T.crimson,
+      mechanical: T.orange || 'var(--orange)',
+      environmental: T.gold
     };
 
     return (
-      <div style={{ padding: '16px', color: T.text || 'var(--text)' }}>
+      <div style={{ padding: '16px', color: T.text }}>
         <div style={{ marginBottom: '20px' }}>
-          <h1 style={{ margin: '0 0 12px 0', color: T.gold || 'var(--gold)', fontFamily: T.heading || 'serif', fontSize: '28px', fontWeight: 'bold' }}>
+          <h1 style={{ margin: '0 0 12px 0', color: T.gold, fontFamily: T.heading, fontSize: '28px', fontWeight: 'bold' }}>
             {BookOpen && <BookOpen size={18} style={{ marginRight: '8px', verticalAlign: 'middle' }} />} Puzzle Master
           </h1>
-          <p style={{ margin: 0, color: T.textDim || 'var(--text-dim)', fontSize: '13px' }}>
+          <p style={{ margin: 0, color: T.textDim, fontSize: '13px' }}>
             Manage riddles, logic puzzles, and interactive challenges for your campaign.
           </p>
         </div>
@@ -918,9 +918,9 @@
               onClick={() => setTab(t)}
               style={{
                 padding: '8px 12px',
-                background: tab === t ? (T.gold || 'var(--gold)') : (T.surface || 'var(--surface)'),
-                color: tab === t ? (T.bg || 'var(--bg)') : (T.text || 'var(--text)'),
-                border: tab === t ? 'none' : `1px solid ${T.border || 'var(--border)'}`,
+                background: tab === t ? (T.gold) : (T.bgCard),
+                color: tab === t ? (T.bg || 'var(--bg)') : (T.text),
+                border: tab === t ? 'none' : `1px solid ${T.border}`,
                 borderRadius: '4px',
                 cursor: 'pointer',
                 fontSize: '12px',
@@ -938,12 +938,12 @@
 
         {tab === 'library' && (
           <div>
-            <div style={{ marginBottom: '16px', padding: '12px', background: T.surface || 'var(--surface)', borderRadius: '6px', border: `1px solid ${T.border || 'var(--border)'}` }}>
+            <div style={{ marginBottom: '16px', padding: '12px', background: T.bgCard, borderRadius: '6px', border: `1px solid ${T.border}` }}>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '12px' }}>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', fontWeight: 'bold', color: T.textDim || 'var(--text-dim)' }}>SEARCH</label>
-                  <div style={{ display: 'flex', alignItems: 'center', background: T.bg || 'var(--bg)', borderRadius: '4px', border: `1px solid ${T.border || 'var(--border)'}`, paddingLeft: '8px' }}>
-                    {Search && <Search size={14} color={T.textDim || 'var(--text-dim)'} />}
+                  <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', fontWeight: 'bold', color: T.textDim }}>SEARCH</label>
+                  <div style={{ display: 'flex', alignItems: 'center', background: T.bg || 'var(--bg)', borderRadius: '4px', border: `1px solid ${T.border}`, paddingLeft: '8px' }}>
+                    {Search && <Search size={14} color={T.textDim} />}
                     <input
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
@@ -953,7 +953,7 @@
                         padding: '6px 8px',
                         background: 'transparent',
                         border: 'none',
-                        color: T.text || 'var(--text)',
+                        color: T.text,
                         outline: 'none',
                         fontSize: '12px'
                       }}
@@ -961,7 +961,7 @@
                   </div>
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', fontWeight: 'bold', color: T.textDim || 'var(--text-dim)' }}>TYPE</label>
+                  <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', fontWeight: 'bold', color: T.textDim }}>TYPE</label>
                   <select
                     value={filterType}
                     onChange={(e) => setFilterType(e.target.value)}
@@ -969,9 +969,9 @@
                       width: '100%',
                       padding: '6px 8px',
                       background: T.bg || 'var(--bg)',
-                      border: `1px solid ${T.border || 'var(--border)'}`,
+                      border: `1px solid ${T.border}`,
                       borderRadius: '4px',
-                      color: T.text || 'var(--text)',
+                      color: T.text,
                       fontSize: '12px'
                     }}
                   >
@@ -984,7 +984,7 @@
                   </select>
                 </div>
                 <div>
-                  <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', fontWeight: 'bold', color: T.textDim || 'var(--text-dim)' }}>DIFFICULTY</label>
+                  <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', fontWeight: 'bold', color: T.textDim }}>DIFFICULTY</label>
                   <select
                     value={filterDifficulty}
                     onChange={(e) => setFilterDifficulty(e.target.value)}
@@ -992,9 +992,9 @@
                       width: '100%',
                       padding: '6px 8px',
                       background: T.bg || 'var(--bg)',
-                      border: `1px solid ${T.border || 'var(--border)'}`,
+                      border: `1px solid ${T.border}`,
                       borderRadius: '4px',
-                      color: T.text || 'var(--text)',
+                      color: T.text,
                       fontSize: '12px'
                     }}
                   >
@@ -1013,7 +1013,7 @@
                   style={{
                     flex: 1,
                     padding: '8px 12px',
-                    background: T.gold || 'var(--gold)',
+                    background: T.gold,
                     color: T.bg || 'var(--bg)',
                     border: 'none',
                     borderRadius: '4px',
@@ -1029,9 +1029,9 @@
                   style={{
                     flex: 1,
                     padding: '8px 12px',
-                    background: T.surface || 'var(--surface)',
-                    color: T.text || 'var(--text)',
-                    border: `1px solid ${T.border || 'var(--border)'}`,
+                    background: T.bgCard,
+                    color: T.text,
+                    border: `1px solid ${T.border}`,
                     borderRadius: '4px',
                     cursor: 'pointer',
                     fontSize: '12px',
@@ -1056,7 +1056,7 @@
             </div>
 
             {filteredPuzzles.length === 0 && (
-              <div style={{ textAlign: 'center', padding: '40px 20px', color: T.textDim || 'var(--text-dim)' }}>
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: T.textDim }}>
                 <p style={{ margin: 0, fontSize: '14px' }}>No puzzles match your filters.</p>
               </div>
             )}
@@ -1066,7 +1066,7 @@
         {tab === 'session' && (
           <div>
             <div style={{ marginBottom: '16px' }}>
-              <h2 style={{ margin: '0 0 12px 0', color: T.gold || 'var(--gold)', fontFamily: T.heading || 'serif', fontSize: '18px' }}>
+              <h2 style={{ margin: '0 0 12px 0', color: T.gold, fontFamily: T.heading, fontSize: '18px' }}>
                 Session Puzzles ({(data.puzzles || []).length})
               </h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '12px' }}>
@@ -1074,8 +1074,8 @@
                   <div
                     key={puzzle.id}
                     style={{
-                      background: T.surface || 'var(--surface)',
-                      border: `1px solid ${T.border || 'var(--border)'}`,
+                      background: T.bgCard,
+                      border: `1px solid ${T.border}`,
                       borderRadius: '6px',
                       padding: '12px',
                       boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
@@ -1083,16 +1083,16 @@
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
                       <div>
-                        <h3 style={{ margin: '0 0 4px 0', color: T.gold || 'var(--gold)', fontFamily: T.heading || 'serif', fontSize: '15px', fontWeight: 'bold' }}>
+                        <h3 style={{ margin: '0 0 4px 0', color: T.gold, fontFamily: T.heading, fontSize: '15px', fontWeight: 'bold' }}>
                           {puzzle.name}
                         </h3>
-                        <p style={{ margin: '0 0 4px 0', fontSize: '11px', color: T.textDim || 'var(--text-dim)' }}>
+                        <p style={{ margin: '0 0 4px 0', fontSize: '11px', color: T.textDim }}>
                           {puzzle.type} • Difficulty {puzzle.difficulty}/5
                         </p>
                       </div>
-                      {puzzle.solved && <span style={{ fontSize: '18px', color: T.gold || 'var(--gold)' }}>✓</span>}
+                      {puzzle.solved && <span style={{ fontSize: '18px', color: T.gold }}>✓</span>}
                     </div>
-                    <div style={{ marginBottom: '8px', fontSize: '12px', color: T.text || 'var(--text)' }}>
+                    <div style={{ marginBottom: '8px', fontSize: '12px', color: T.text }}>
                       <p style={{ margin: '4px 0', fontWeight: 'bold' }}>Hints: {puzzle.hintsRevealed}/3</p>
                       {puzzle.timeTaken && <p style={{ margin: '4px 0' }}>Time: {puzzle.timeTaken} min</p>}
                       {puzzle.solvedBy && <p style={{ margin: '4px 0' }}>Solved by: {puzzle.solvedBy}</p>}
@@ -1103,9 +1103,9 @@
                         style={{
                           flex: 1,
                           padding: '6px 8px',
-                          background: T.surface || 'var(--surface)',
-                          color: T.text || 'var(--text)',
-                          border: `1px solid ${T.border || 'var(--border)'}`,
+                          background: T.bgCard,
+                          color: T.text,
+                          border: `1px solid ${T.border}`,
                           borderRadius: '4px',
                           cursor: 'pointer',
                           fontSize: '11px',
@@ -1120,7 +1120,7 @@
                           style={{
                             flex: 1,
                             padding: '6px 8px',
-                            background: T.gold || 'var(--gold)',
+                            background: T.gold,
                             color: T.bg || 'var(--bg)',
                             border: 'none',
                             borderRadius: '4px',
@@ -1137,8 +1137,8 @@
                         style={{
                           padding: '6px 8px',
                           background: T.crimsonSoft || 'rgba(220,53,69,0.1)',
-                          color: T.crimson || 'var(--crimson)',
-                          border: `1px solid ${T.crimson || 'var(--crimson)'}`,
+                          color: T.crimson,
+                          border: `1px solid ${T.crimson}`,
                           borderRadius: '4px',
                           cursor: 'pointer',
                           fontSize: '11px',
@@ -1152,7 +1152,7 @@
                 ))}
               </div>
               {(data.puzzles || []).length === 0 && (
-                <p style={{ textAlign: 'center', color: T.textDim || 'var(--text-dim)', padding: '20px', fontSize: '13px' }}>
+                <p style={{ textAlign: 'center', color: T.textDim, padding: '20px', fontSize: '13px' }}>
                   No puzzles added to session yet.
                 </p>
               )}
@@ -1162,7 +1162,7 @@
 
         {tab === 'stats' && (
           <div>
-            <h2 style={{ margin: '0 0 16px 0', color: T.gold || 'var(--gold)', fontFamily: T.heading || 'serif', fontSize: '18px' }}>
+            <h2 style={{ margin: '0 0 16px 0', color: T.gold, fontFamily: T.heading, fontSize: '18px' }}>
               Puzzle Statistics
             </h2>
             <PuzzleStats data={data} />
