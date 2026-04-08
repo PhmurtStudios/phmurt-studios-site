@@ -1281,16 +1281,31 @@ function regionsAndFactionsFromMetadata(seedNum) {
     { suffix: "Cabal",       attitudes: ["hostile","neutral"],  descs: ["A shadow network of assassins and information brokers who sell loyalty to the highest bidder","A hidden organization that manipulates events from behind the scenes through fear and coin"], colors: ["#2c2c2c","#484848"], govType: "guild" },
   ];
 
-  const factionCount = Math.min(Math.max(3, meta.regions.length - 1), 5);
+  // Major (governing) factions: at least 3, up to meta.regions.length
+  const majorFactionCount = Math.min(Math.max(3, meta.regions.length - 1), meta.regions.length);
   const factions = [];
   const usedTemplates = [];
   let npcId = 1;
   const allNpcs = [];
 
+  // Sub-faction templates — organizations that exist WITHIN regions and exert influence
+  const subFactionTemplates = [
+    { suffix: "Thieves Guild", govType: "criminal syndicate", attitudes: ["hostile","neutral"], descs: ["A network of cutpurses, burglars, and fences operating from the shadows, their fingers in every pocket of the city","An underground syndicate of rogues controlling the black market, smuggling routes, and information trade"], colors: ["#3d3d3d","#555555"], influence: ["crime","trade","information"], powerRange: [15,45] },
+    { suffix: "Shadow Council", govType: "shadow government", attitudes: ["neutral","hostile"], descs: ["A secret cabal of nobles, merchants, and spies who pull the true strings of power from behind the throne","An invisible court whose whispered edicts shape policy while the puppet rulers smile for the public"], colors: ["#1a1a2e","#16213e"], influence: ["politics","espionage","assassination"], powerRange: [20,50] },
+    { suffix: "Arcane Collegium", govType: "arcane academy", attitudes: ["neutral","friendly"], descs: ["An elite order of wizards and sorcerers whose tower libraries hold knowledge forbidden to common folk","A prestigious academy of the arcane arts whose graduates advise kings and shape the weave of magic itself"], colors: ["#6a0dad","#9b59b6"], influence: ["magic","knowledge","defense"], powerRange: [25,55] },
+    { suffix: "Mercenary Company", govType: "mercenary band", attitudes: ["neutral","neutral"], descs: ["A disciplined company of sellswords whose loyalty can be bought but never truly held — they fight for gold, not glory","Battle-hardened veterans who have turned war into commerce, their steel available to any faction that can meet their price"], colors: ["#8b6914","#b8860b"], influence: ["military","protection","enforcement"], powerRange: [20,45] },
+    { suffix: "Merchant Consortium", govType: "trade guild", attitudes: ["friendly","neutral"], descs: ["A powerful trading house that controls tariffs, trade routes, and the flow of luxury goods across the region","A league of wealthy merchants whose caravans connect distant cities and whose gold can topple kings"], colors: ["#d4a017","#e8940a"], influence: ["trade","economy","logistics"], powerRange: [25,50] },
+    { suffix: "Holy Inquisition", govType: "religious order", attitudes: ["neutral","hostile"], descs: ["Fanatical templars who root out heresy, undead, and dark magic with fire and righteous fury","An order of divine soldiers who answer to no temporal king, only the will of their god as interpreted by their Grand Inquisitor"], colors: ["#daa520","#ffd700"], influence: ["religion","law","purification"], powerRange: [20,45] },
+    { suffix: "Assassins' Hand", govType: "assassin guild", attitudes: ["hostile","neutral"], descs: ["Silent killers for hire, trained in the arts of poison, blade, and disappearance — their mark means death","An ancient order of assassins whose contracts are sacred and whose blades have ended dynasties"], colors: ["#2c0a0a","#4a1111"], influence: ["assassination","fear","intelligence"], powerRange: [10,35] },
+    { suffix: "Rangers' Lodge", govType: "ranger order", attitudes: ["friendly","neutral"], descs: ["Woodsmen and scouts who patrol the wilds, protecting travelers and hunting the monsters that lurk beyond civilization","A loose brotherhood of survivalists, trackers, and beast-hunters who know every path and hidden cave in the region"], colors: ["#2d572c","#4a7c59"], influence: ["scouting","wilderness","protection"], powerRange: [15,35] },
+    { suffix: "Artificers' Forge", govType: "craft guild", attitudes: ["friendly","neutral"], descs: ["Master craftsmen and enchantresses who forge magical arms, armor, and wondrous items for those who can afford their prices","An exclusive guild of magical artisans whose work is prized above all others — their waiting lists span years"], colors: ["#b87333","#cd7f32"], influence: ["crafting","enchantment","supply"], powerRange: [15,40] },
+    { suffix: "Underbelly", govType: "criminal network", attitudes: ["hostile","neutral"], descs: ["The festering criminal underground — smugglers, gambling dens, fighting pits, and worse, all owing tribute to a single kingpin","A web of vice and corruption that exists beneath the polished surface, providing everything the law forbids"], colors: ["#3a1f1f","#5c3333"], influence: ["crime","vice","corruption"], powerRange: [10,35] },
+  ];
+
   // Shuffle templates so different seeds pick different ones
   const shuffledTemplates = [...factionTemplates].sort(() => rng() - 0.5);
 
-  for (let i = 0; i < factionCount; i++) {
+  for (let i = 0; i < majorFactionCount; i++) {
     const t = shuffledTemplates[i % shuffledTemplates.length];
     const regName = meta.regions[i % meta.regions.length]?.name || "Unknown";
     // Vary the naming style: full name, shortened, or creative prefix
@@ -1389,6 +1404,68 @@ function regionsAndFactionsFromMetadata(seedNum) {
     }
   }
 
+  // ── Generate sub-factions (2-3 per region, smaller organizations) ──
+  const shuffledSubTemplates = [...subFactionTemplates].sort(() => rng() - 0.5);
+  let subFactionIdx = 0;
+  meta.regions.forEach((reg, ri) => {
+    const parentFaction = factions[ri % factions.length];
+    const numSubs = 2 + Math.floor(rng() * 2); // 2-3 sub-factions per region
+    for (let si = 0; si < numSubs; si++) {
+      const st = shuffledSubTemplates[(subFactionIdx++) % shuffledSubTemplates.length];
+      const subPrefixes = ["The","Hidden","Crimson","Black","Silver","Iron","Midnight","Scarlet","Emerald","Gilded","Silent"];
+      const subName = pick(subPrefixes) + " " + st.suffix;
+
+      // Leader for sub-faction
+      const slGender = rng() > 0.5 ? "f" : "m";
+      const slTitle = st.govType === "criminal syndicate" ? "Guildmaster" :
+                      st.govType === "shadow government" ? "Shadow Regent" :
+                      st.govType === "arcane academy" ? "Archmage" :
+                      st.govType === "mercenary band" ? "Captain-General" :
+                      st.govType === "trade guild" ? "Trade Prince" :
+                      st.govType === "religious order" ? "Grand Inquisitor" :
+                      st.govType === "assassin guild" ? "Grandmaster" :
+                      st.govType === "ranger order" ? "Head Ranger" :
+                      st.govType === "craft guild" ? "Master Artificer" :
+                      st.govType === "criminal network" ? "Kingpin" : "Leader";
+      const slName = genName(slGender);
+
+      const subHierarchy = [
+        { title: slTitle, name: slName, role: "ruler" },
+        { title: "Lieutenant", name: genName(rng() > 0.5 ? "f" : "m"), role: "heir" },
+      ];
+
+      // Create NPC for sub-faction leader
+      allNpcs.push({
+        id: npcId++, name: slName, role: slTitle + " of " + subName,
+        loc: reg.name, faction: subName, attitude: pick(["neutral","cautious","hostile"]),
+        alive: true, traits: pickN(NPC_TRAITS, 2), secret: pick(NPC_SECRETS),
+        level: 6 + Math.floor(rng() * 8), isLeader: true,
+      });
+
+      const subPower = st.powerRange[0] + Math.floor(rng() * (st.powerRange[1] - st.powerRange[0]));
+      factions.push({
+        id: factions.length + 1,
+        name: subName,
+        attitude: pick(st.attitudes),
+        power: subPower,
+        trend: pick(["rising","stable","declining","rising"]),
+        desc: pick(st.descs),
+        color: pick(st.colors),
+        govType: st.govType,
+        hierarchy: subHierarchy,
+        resources: pickN(st.influence, Math.min(st.influence.length, 2)),
+        allies: rng() > 0.6 ? [parentFaction.name] : [],
+        rivals: rng() > 0.7 ? [factions[Math.floor(rng() * Math.min(factions.length, majorFactionCount))].name] : [],
+        // Sub-faction metadata
+        isSubFaction: true,
+        parentRegion: reg.name,
+        parentFaction: parentFaction.name,
+        influence: pickN(st.influence, Math.min(st.influence.length, 2 + Math.floor(rng() * 2))),
+        influenceLevel: subPower > 35 ? "major" : subPower > 20 ? "moderate" : "minor",
+      });
+    }
+  });
+
   // ── Regions with ruling hierarchy ──
   const regionTypes = ["kingdom","city","wilderness","town","dungeon","route"];
   const threatLevels = ["low","medium","high","extreme"];
@@ -1457,6 +1534,31 @@ function regionsAndFactionsFromMetadata(seedNum) {
     // Build cities list for the region from metadata (just names for backward compat)
     const cityNames = (r.cities || []).map(c => c.name);
 
+    // Climate descriptions by terrain
+    const climateMap = { plains:"Temperate grasslands with warm summers and mild winters", forest:"Dense canopy moderating temperatures, humid and shadowed year-round", mountains:"Alpine climate with harsh winters, thin air, and sudden storms", swamp:"Perpetually damp with thick fog and oppressive humidity", desert:"Scorching days and freezing nights under relentless sun", coast:"Salty sea breezes with frequent squalls and mild temperatures", tundra:"Frozen wastes with perpetual permafrost and brutal winds", hills:"Rolling terrain with variable weather and strong gusts" };
+    // Natural resources by terrain
+    const resourceMap = { plains:["grain","livestock","herbs","clay"], forest:["timber","game","mushrooms","rare wood"], mountains:["iron","gems","stone","silver"], swamp:["peat","rare moss","swamp gas","leeches"], desert:["glass","spices","ancient relics","fire opals"], coast:["fish","pearls","salt","coral"], tundra:["furs","mammoth ivory","frost crystals","tundra herbs"], hills:["copper","sheep","quarry stone","wildflowers"] };
+    // Dangers by threat/terrain
+    const dangerOptions = { low:["bandits on the roads","wild animal packs","petty thieves"], medium:["roving warbands","territorial monsters","cultist activity","smuggler networks"], high:["dragon sightings","undead incursions","demon-touched corruption","faction warfare"], extreme:["elder dragon lair","abyssal rift","necromancer citadel","planar instability"] };
+    // Lore snippets
+    const loreSnippets = [
+      "Ancient ruins dot the landscape, remnants of a civilization that vanished centuries ago.",
+      "Local legends speak of a sleeping god beneath the earth, whose dreams shape the land.",
+      "The old blood of elvenkind runs strong here — many locals have fey ancestry.",
+      "Travelers report strange lights in the sky at night, accompanied by eerie music.",
+      "The soil here is said to be blessed, yielding bountiful harvests even in lean years.",
+      "A great battle was fought here in ages past; bones and rusted weapons still surface after heavy rains.",
+      "The region was once underwater — fossil shells can be found high in the hills.",
+      "An ancient ley line runs through this territory, amplifying magical effects.",
+      "The locals follow customs that predate written history, including offerings to unnamed spirits.",
+      "Trade caravans have used this route for a thousand years, and the old stones still mark the way.",
+      "A famous hero fell here, and their tomb has become a pilgrimage site.",
+      "The forests are said to be haunted by the spirits of an elven host that died defending this land.",
+    ];
+
+    // Sub-factions operating in this region
+    const regionSubFactions = factions.filter(f => f.isSubFaction && f.parentRegion === r.name);
+
     return {
       id: i + 1,
       name: r.name,
@@ -1476,6 +1578,12 @@ function regionsAndFactionsFromMetadata(seedNum) {
                   (100 + Math.floor(rng() * 2000)).toLocaleString(),
       governor: govName,
       governorTitle: govTitle,
+      // Expanded region details
+      climate: climateMap[terrain] || "Varied climate with seasonal changes",
+      resources: pickN(resourceMap[terrain] || ["trade goods","raw materials"], 2 + Math.floor(rng() * 2)),
+      dangers: pickN(dangerOptions[threat] || dangerOptions.low, 1 + Math.floor(rng() * 2)),
+      lore: pick(loreSnippets),
+      subFactions: regionSubFactions.map(sf => sf.name),
     };
   });
 
@@ -4326,6 +4434,83 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                               </div>
                             )}
 
+                            {/* Region Details — Climate, Resources, Dangers, Lore */}
+                            <div style={{ padding:"16px 22px", borderBottom:`1px solid ${T.border}` }}>
+                              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+                                {/* Climate & Terrain */}
+                                <div>
+                                  <div style={{ fontSize:9, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:8 }}>🌤 Climate</div>
+                                  <div style={{ fontSize:11, color:T.textMuted, lineHeight:1.5 }}>{r.climate || "Varied climate"}</div>
+                                </div>
+                                {/* Known Dangers */}
+                                <div>
+                                  <div style={{ fontSize:9, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:8 }}>⚠ Known Dangers</div>
+                                  <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
+                                    {(r.dangers || ["bandits"]).map((d, di) => (
+                                      <div key={di} style={{ fontSize:10, color:r.threat==="extreme"||r.threat==="high"?T.crimson:T.textMuted, display:"flex", alignItems:"center", gap:6 }}>
+                                        <div style={{ width:4, height:4, borderRadius:"50%", background:r.threat==="extreme"?T.crimson:r.threat==="high"?"#e8940a":"#5ee09a", flexShrink:0 }}/>
+                                        {d}
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                              {/* Natural Resources */}
+                              {r.resources && r.resources.length > 0 && (
+                                <div style={{ marginTop:14 }}>
+                                  <div style={{ fontSize:9, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:8 }}>📦 Natural Resources</div>
+                                  <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                                    {r.resources.map((res, ri) => (
+                                      <span key={ri} style={{ fontSize:10, color:"#c9a85c", background:"rgba(201,168,92,0.06)", padding:"4px 10px", borderRadius:"3px", border:"1px solid rgba(201,168,92,0.15)" }}>{res}</span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              {/* Lore */}
+                              {r.lore && (
+                                <div style={{ marginTop:14, padding:"10px 14px", background:"rgba(232,186,64,0.04)", border:"1px solid rgba(232,186,64,0.12)", borderRadius:"3px", borderLeft:"3px solid rgba(232,186,64,0.3)" }}>
+                                  <div style={{ fontSize:9, color:"#e8ba40", fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase", marginBottom:4 }}>📜 Local Lore</div>
+                                  <div style={{ fontSize:11, color:T.textDim, fontStyle:"italic", lineHeight:1.5 }}>{r.lore}</div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Sub-Factions Operating in Region */}
+                            {(() => {
+                              const subFacs = (data.factions || []).filter(f => f.isSubFaction && f.parentRegion === r.name);
+                              if (subFacs.length === 0) return null;
+                              return (
+                                <div style={{ padding:"16px 22px", borderBottom:`1px solid ${T.border}` }}>
+                                  <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>
+                                    🗡 Organizations & Influence ({subFacs.length})
+                                  </div>
+                                  <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                                    {subFacs.map(sf => {
+                                      const infLvlColor = sf.influenceLevel === "major" ? "#d4433a" : sf.influenceLevel === "moderate" ? "#e8940a" : "#5ee09a";
+                                      return (
+                                        <div key={sf.id} style={{ padding:"10px 14px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", borderLeft:`3px solid ${sf.color}` }}>
+                                          <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                                            <span style={{ fontSize:12, color:T.text, fontWeight:400 }}>{sf.name}</span>
+                                            <span style={{ fontSize:8, color:infLvlColor, border:`1px solid ${infLvlColor}44`, padding:"1px 6px", borderRadius:"2px", letterSpacing:"0.5px", textTransform:"uppercase" }}>{sf.influenceLevel}</span>
+                                            <span style={{ fontSize:8, color:T.textFaint, marginLeft:"auto" }}>{sf.govType}</span>
+                                          </div>
+                                          <div style={{ fontSize:10, color:T.textDim, lineHeight:1.5, marginBottom:6 }}>{sf.desc}</div>
+                                          <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                                            {(sf.influence || []).map((inf, ii) => (
+                                              <span key={ii} style={{ fontSize:8, color:sf.color, background:`${sf.color}12`, padding:"2px 6px", borderRadius:"2px", border:`1px solid ${sf.color}33` }}>{inf}</span>
+                                            ))}
+                                            {sf.hierarchy && sf.hierarchy[0] && (
+                                              <span style={{ fontSize:9, color:T.textFaint, marginLeft:"auto" }}>Led by {sf.hierarchy[0].name}</span>
+                                            )}
+                                          </div>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            })()}
+
                             {/* Economy Info (if economy module is enabled) */}
                             {mods.economy !== false && (
                               <div style={{ padding:"16px 22px", borderBottom:`1px solid ${T.border}` }}>
@@ -4349,30 +4534,140 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                               </div>
                             )}
 
-                            {/* Religion Info (if religion module is enabled) */}
-                            {mods.religion !== false && (
-                              <div style={{ padding:"16px 22px" }}>
-                                <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>
-                                  ⛪ Faith & Temples
-                                </div>
-                                {regionCities.length > 0 ? (
-                                  <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                                    {regionCities.slice(0, 3).map(city => {
-                                      const templeDeity = city.features?.find(f => f.includes("Temple") || f.includes("Cathedral") || f.includes("Shrine"));
-                                      return (
-                                        <div key={city.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"3px" }}>
-                                          <div style={{ width:6, height:6, borderRadius:"50%", background:"#e8940a", flexShrink:0 }}/>
-                                          <span style={{ fontSize:11, color:T.text }}>{city.name}</span>
-                                          <span style={{ fontSize:10, color:T.textMuted, fontStyle:"italic" }}>{templeDeity || "Local shrine"}</span>
-                                        </div>
-                                      );
-                                    })}
+                            {/* Religion Info — Dominant Gods per Region */}
+                            {mods.religion !== false && (() => {
+                              // Get all temples in this region's cities
+                              const regionTemples = (data._temples || []).filter(t => regionCities.some(c => c.name === t.city));
+                              // Aggregate devotion by deity
+                              const deityDevotionMap = {};
+                              regionTemples.forEach(t => {
+                                if (!deityDevotionMap[t.deityId]) deityDevotionMap[t.deityId] = { devotion: 0, temples: [], level: "shrine" };
+                                deityDevotionMap[t.deityId].devotion += (t.devotion || 30);
+                                deityDevotionMap[t.deityId].temples.push(t);
+                                const lvlRank = { shrine:1, chapel:2, temple:3, cathedral:4, holy_citadel:5 };
+                                if ((lvlRank[t.level] || 0) > (lvlRank[deityDevotionMap[t.deityId].level] || 0)) {
+                                  deityDevotionMap[t.deityId].level = t.level;
+                                }
+                              });
+                              // If no temples data, seed deterministically from region name + cities
+                              if (regionTemples.length === 0 && regionCities.length > 0 && allDeities.length > 0) {
+                                // Use simple hash of region name to pick deities
+                                let hash = 0;
+                                for (let i = 0; i < r.name.length; i++) hash = ((hash << 5) - hash + r.name.charCodeAt(i)) | 0;
+                                const seedIdx = Math.abs(hash);
+                                const numDeities = Math.min(2 + Math.floor(regionCities.length / 2), 5, allDeities.length);
+                                for (let di = 0; di < numDeities; di++) {
+                                  const deity = allDeities[(seedIdx + di * 7) % allDeities.length];
+                                  const lvl = di === 0 ? "cathedral" : di === 1 ? "temple" : "chapel";
+                                  const devotion = di === 0 ? 80 : di === 1 ? 50 : 30;
+                                  deityDevotionMap[deity.id] = {
+                                    devotion: devotion, level: lvl,
+                                    temples: [{ deityId: deity.id, city: regionCities[di % regionCities.length]?.name || "Unknown", level: lvl, devotion: devotion }]
+                                  };
+                                }
+                              }
+                              // Sort by devotion, get top deities
+                              const sortedDeities = Object.entries(deityDevotionMap)
+                                .sort((a, b) => b[1].devotion - a[1].devotion);
+                              // Look up deity info from the DEITIES arrays
+                              const _p = window.PANTHEON || {};
+                              const allDeities = [
+                                ...(_p.greater || []),
+                                ...(_p.intermediate || []),
+                                ...(_p.lesser || [])
+                              ];
+                              const getDeity = (id) => allDeities.find(d => d.id === id);
+                              const alignColors = { "LG":"#4a90d9", "NG":"#5ee09a", "CG":"#7bc67b", "LN":"#c9a85c", "N":"#9a9080", "CN":"#e8ba40", "LE":"#d44a3a", "NE":"#a83232", "CE":"#8b2020" };
+
+                              return (
+                                <div style={{ padding:"16px 22px", borderBottom:`1px solid ${T.border}` }}>
+                                  <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>
+                                    ⛪ Faith & Divine Presence
                                   </div>
-                                ) : (
-                                  <div style={{ fontSize:10, color:T.textFaint, fontStyle:"italic" }}>No settlements to house temples.</div>
-                                )}
-                              </div>
-                            )}
+                                  {sortedDeities.length > 0 ? (
+                                    <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                                      {/* Dominant deity highlight */}
+                                      {sortedDeities.slice(0, 1).map(([deityId, info]) => {
+                                        const deity = getDeity(deityId);
+                                        if (!deity) return null;
+                                        return (
+                                          <div key={deityId} style={{
+                                            padding:"14px 16px", background:"linear-gradient(135deg, rgba(232,148,10,0.08), transparent)",
+                                            border:"1px solid rgba(232,148,10,0.25)", borderRadius:"4px",
+                                            borderLeft:"3px solid #e8940a",
+                                          }}>
+                                            <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:8 }}>
+                                              <span style={{ fontSize:22 }}>{deity.icon}</span>
+                                              <div>
+                                                <div style={{ fontSize:13, color:T.text, fontWeight:400 }}>{deity.name}</div>
+                                                <div style={{ fontSize:10, color:T.textMuted, fontStyle:"italic" }}>{deity.title}</div>
+                                              </div>
+                                              <div style={{ marginLeft:"auto", textAlign:"right" }}>
+                                                <span style={{ fontSize:8, color:alignColors[deity.alignment] || T.textFaint, border:`1px solid ${(alignColors[deity.alignment] || T.textFaint)}44`, padding:"2px 6px", borderRadius:"2px", letterSpacing:"0.5px" }}>{deity.alignment}</span>
+                                              </div>
+                                            </div>
+                                            <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:8 }}>
+                                              {deity.domains.map((d, di) => (
+                                                <span key={di} style={{ fontSize:9, color:"#e8940a", background:"rgba(232,148,10,0.08)", padding:"2px 8px", borderRadius:"2px", border:"1px solid rgba(232,148,10,0.2)" }}>{d}</span>
+                                              ))}
+                                              <span style={{ fontSize:9, color:T.textFaint, padding:"2px 8px" }}>Dominant Faith</span>
+                                            </div>
+                                            <div style={{ fontSize:10, color:T.textDim, lineHeight:1.5, marginBottom:6 }}>{deity.description}</div>
+                                            <div style={{ display:"flex", gap:12, fontSize:9, color:T.textMuted }}>
+                                              <span>{info.temples.length} {info.temples.length === 1 ? "temple" : "temples"}</span>
+                                              <span>Highest: {info.level}</span>
+                                              <span>Devotion: {info.devotion}</span>
+                                            </div>
+                                          </div>
+                                        );
+                                      })}
+                                      {/* Other worshipped deities */}
+                                      {sortedDeities.length > 1 && (
+                                        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
+                                          {sortedDeities.slice(1, 5).map(([deityId, info]) => {
+                                            const deity = getDeity(deityId);
+                                            if (!deity) return null;
+                                            return (
+                                              <div key={deityId} style={{ padding:"10px 12px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"3px" }}>
+                                                <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
+                                                  <span style={{ fontSize:16 }}>{deity.icon}</span>
+                                                  <span style={{ fontSize:11, color:T.text, fontWeight:300 }}>{deity.name}</span>
+                                                  <span style={{ fontSize:8, color:alignColors[deity.alignment] || T.textFaint, marginLeft:"auto" }}>{deity.alignment}</span>
+                                                </div>
+                                                <div style={{ fontSize:9, color:T.textFaint, marginBottom:4 }}>{deity.domains.join(", ")}</div>
+                                                <div style={{ fontSize:9, color:T.textMuted }}>
+                                                  {info.temples.length} {info.temples.length === 1 ? "site" : "sites"} · Devotion {info.devotion}
+                                                </div>
+                                              </div>
+                                            );
+                                          })}
+                                        </div>
+                                      )}
+                                      {/* Temple locations */}
+                                      {regionTemples.length > 0 && (
+                                        <div style={{ marginTop:4 }}>
+                                          <div style={{ fontSize:9, color:T.textFaint, letterSpacing:"1px", textTransform:"uppercase", marginBottom:6 }}>Temple Locations</div>
+                                          <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                                            {regionCities.filter(c => regionTemples.some(t => t.city === c.name)).map(city => {
+                                              const cityTempleCount = regionTemples.filter(t => t.city === city.name).length;
+                                              return (
+                                                <span key={city.id} style={{ fontSize:9, color:T.textMuted, padding:"3px 8px", background:"rgba(232,148,10,0.05)", border:"1px solid rgba(232,148,10,0.15)", borderRadius:"2px" }}>
+                                                  {city.name} ({cityTempleCount})
+                                                </span>
+                                              );
+                                            })}
+                                          </div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div style={{ fontSize:10, color:T.textFaint, fontStyle:"italic" }}>
+                                      {regionCities.length > 0 ? "No established temples — folk religions and local spirits dominate." : "No settlements to house temples."}
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
 
                             {/* Notable NPCs summary */}
                             {regionNpcs.length > 0 && (

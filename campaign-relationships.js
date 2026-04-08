@@ -14,11 +14,13 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
   const [pan, setPan] = React.useState({ x: 0, y: 0 });
   const [filters, setFilters] = React.useState({
     factions: true,
+    subfaction: true,
     npcs: true,
     cities: true,
     party: true,
     deities: true
   });
+  const [viewMode, setViewMode] = React.useState("graph"); // "graph" or "summary"
   const [searchTerm, setSearchTerm] = React.useState("");
   const svgRef = React.useRef(null);
   const physicsRef = React.useRef({});
@@ -57,53 +59,73 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
     const SVG_WIDTH = 1200;
     const SVG_HEIGHT = 700;
 
-    // Add faction nodes
+    // Build a name→id lookup for factions
+    const factionNameToId = {};
+    (data.factions || []).forEach(faction => {
+      factionNameToId[faction.name] = `faction_${faction.id}`;
+    });
+
+    // Add faction nodes — major factions get larger nodes
     (data.factions || []).forEach(faction => {
       const id = `faction_${faction.id}`;
       nodeMap.set(id, true);
+      const isSub = faction.isSubFaction;
+      const powerRadius = isSub ? Math.max(14, Math.min(22, 14 + faction.power / 10)) :
+                                  Math.max(22, Math.min(36, 22 + faction.power / 8));
       newNodes.push({
         id,
-        type: "faction",
+        type: isSub ? "subfaction" : "faction",
         label: faction.name,
         data: faction,
-        x: SVG_WIDTH / 2 + (Math.random() - 0.5) * 200,
-        y: SVG_HEIGHT / 2 + (Math.random() - 0.5) * 200,
+        x: SVG_WIDTH / 2 + (Math.random() - 0.5) * (isSub ? 350 : 200),
+        y: SVG_HEIGHT / 2 + (Math.random() - 0.5) * (isSub ? 350 : 200),
         vx: 0,
         vy: 0,
         color: faction.color || T.gold,
-        radius: 28
+        radius: powerRadius
       });
 
-      // Faction relationships (allies, rivals)
+      // Faction relationships (allies, rivals) — lookup by NAME not ID
       if (faction.allies && Array.isArray(faction.allies)) {
-        faction.allies.forEach(allyId => {
-          const targetId = `faction_${allyId}`;
-          newEdges.push({
-            source: id,
-            target: targetId,
-            type: "alliance",
-            label: "Allied"
-          });
+        faction.allies.forEach(allyName => {
+          const targetId = factionNameToId[allyName];
+          if (targetId) {
+            // Deduplicate edges (only add if we haven't seen the reverse)
+            const edgeKey = [id, targetId].sort().join("--");
+            if (!newEdges.some(e => [e.source, e.target].sort().join("--") === edgeKey && e.type === "alliance")) {
+              newEdges.push({ source: id, target: targetId, type: "alliance", label: "Allied" });
+            }
+          }
         });
       }
       if (faction.rivals && Array.isArray(faction.rivals)) {
-        faction.rivals.forEach(rivalId => {
-          const targetId = `faction_${rivalId}`;
-          newEdges.push({
-            source: id,
-            target: targetId,
-            type: "rivalry",
-            label: "Rivals"
-          });
+        faction.rivals.forEach(rivalName => {
+          const targetId = factionNameToId[rivalName];
+          if (targetId) {
+            const edgeKey = [id, targetId].sort().join("--");
+            if (!newEdges.some(e => [e.source, e.target].sort().join("--") === edgeKey && e.type === "rivalry")) {
+              newEdges.push({ source: id, target: targetId, type: "rivalry", label: "Rivals" });
+            }
+          }
         });
+      }
+
+      // Sub-faction → parent faction relationship
+      if (isSub && faction.parentFaction) {
+        const parentId = factionNameToId[faction.parentFaction];
+        if (parentId) {
+          newEdges.push({ source: id, target: parentId, type: "membership", label: "Operates within" });
+        }
       }
     });
 
-    // Add NPC nodes
+    // Add NPC nodes — only leaders, to reduce clutter
     (data.npcs || []).forEach(npc => {
+      if (!npc.isLeader) return; // Only show leaders on the graph
       const id = `npc_${npc.id}`;
       nodeMap.set(id, true);
-      const factionColor = (data.factions || []).find(f => f.id === npc.faction)?.color || T.text;
+      const factionObj = (data.factions || []).find(f => f.name === npc.faction);
+      const factionColor = factionObj?.color || T.text;
 
       newNodes.push({
         id,
@@ -115,47 +137,19 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
         vx: 0,
         vy: 0,
         color: factionColor,
-        radius: 16
+        radius: 14
       });
 
-      // NPC to faction membership
+      // NPC to faction membership (by name lookup)
       if (npc.faction) {
-        newEdges.push({
-          source: id,
-          target: `faction_${npc.faction}`,
-          type: "membership",
-          label: "Member of"
-        });
-      }
-
-      // NPC to location (city)
-      if (npc.loc) {
-        const cityId = `city_${npc.loc}`;
-        if (!nodeMap.has(cityId)) {
-          nodeMap.set(cityId, true);
-          newNodes.push({
-            id: cityId,
-            type: "city",
-            label: npc.loc,
-            data: { name: npc.loc },
-            x: SVG_WIDTH / 2 + (Math.random() - 0.5) * 400,
-            y: SVG_HEIGHT / 2 + (Math.random() - 0.5) * 400,
-            vx: 0,
-            vy: 0,
-            color: "#d4a574",
-            radius: 20
-          });
+        const factionNodeId = factionNameToId[npc.faction];
+        if (factionNodeId) {
+          newEdges.push({ source: id, target: factionNodeId, type: "membership", label: npc.role || "Member of" });
         }
-        newEdges.push({
-          source: id,
-          target: cityId,
-          type: "location",
-          label: "Located in"
-        });
       }
     });
 
-    // Add explicit city nodes from cities list
+    // Add city nodes (only from explicit cities list, skip NPC location duplication)
     (data.cities || []).forEach(city => {
       const cityId = `city_${city.name}`;
       if (!nodeMap.has(cityId)) {
@@ -169,9 +163,16 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
           y: SVG_HEIGHT / 2 + (Math.random() - 0.5) * 400,
           vx: 0,
           vy: 0,
-          color: city.type === "capital" ? "#f1c40f" : "#d4a574",
-          radius: city.type === "capital" ? 24 : city.type === "city" ? 20 : 14
+          color: city.isCapital ? "#f1c40f" : "#d4a574",
+          radius: city.isCapital ? 22 : 16
         });
+      }
+      // Connect city to controlling faction
+      if (city.faction) {
+        const fctId = factionNameToId[city.faction];
+        if (fctId) {
+          newEdges.push({ source: cityId, target: fctId, type: "trade", label: "Controlled by" });
+        }
       }
     });
 
@@ -440,19 +441,46 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
           {node.type.toUpperCase()}
         </div>
 
-        {node.type === "faction" && node.data && (
+        {(node.type === "faction" || node.type === "subfaction") && node.data && (
           <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.6 }}>
+            {node.data.govType && (
+              <div style={{ marginBottom: 8, fontSize: 10, color: T.textFaint, textTransform: "uppercase", letterSpacing: "1px" }}>
+                {node.data.govType}
+              </div>
+            )}
             <div style={{ marginBottom: 8 }}>
               <span style={{ color: T.gold, fontWeight: 600 }}>Power:</span> {node.data.power || "N/A"}
+              {node.data.trend && <span style={{ color: node.data.trend==="rising"?"#5ee09a":node.data.trend==="declining"?T.crimson:T.textFaint, marginLeft: 8 }}>{node.data.trend}</span>}
             </div>
+            {node.data.desc && (
+              <div style={{ marginBottom: 8, fontSize: 11, fontStyle: "italic", color: T.textFaint, lineHeight: 1.5 }}>
+                {node.data.desc}
+              </div>
+            )}
+            {node.data.isSubFaction && node.data.influence && (
+              <div style={{ marginBottom: 8 }}>
+                <div style={{ color: T.gold, fontWeight: 600, marginBottom: 4 }}>Influence:</div>
+                <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                  {node.data.influence.map((inf, i) => (
+                    <span key={i} style={{ fontSize: 9, padding: "2px 6px", background: "rgba(201,168,92,0.08)", border: `1px solid ${T.border}`, borderRadius: "2px", color: T.textMuted }}>{inf}</span>
+                  ))}
+                </div>
+              </div>
+            )}
             {node.data.hierarchy && node.data.hierarchy.length > 0 && (
               <div style={{ marginBottom: 8 }}>
-                <div style={{ color: T.gold, fontWeight: 600, marginBottom: 4 }}>Hierarchy:</div>
+                <div style={{ color: T.gold, fontWeight: 600, marginBottom: 4 }}>Leadership:</div>
                 {node.data.hierarchy.map((h, i) => (
-                  <div key={i} style={{ paddingLeft: 12, fontSize: 11 }}>
-                    {h.name} ({h.role})
+                  <div key={i} style={{ paddingLeft: 12, fontSize: 11, marginBottom: 3 }}>
+                    <span style={{ color: i === 0 ? T.gold : T.textMuted }}>{h.title}:</span> {h.name}
                   </div>
                 ))}
+              </div>
+            )}
+            {node.data.resources && node.data.resources.length > 0 && (
+              <div style={{ marginBottom: 8 }}>
+                <div style={{ color: T.gold, fontWeight: 600, marginBottom: 4 }}>Resources:</div>
+                <div style={{ fontSize: 11, color: T.textFaint }}>{node.data.resources.join(", ")}</div>
               </div>
             )}
           </div>
@@ -575,6 +603,19 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
           />
         </div>
 
+        {/* View Mode Toggle */}
+        <div style={{ display:"flex", gap:4, marginRight:8 }}>
+          {["graph","summary"].map(mode => (
+            <button key={mode} onClick={() => setViewMode(mode)} style={{
+              padding:"6px 12px", fontSize:10, fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase",
+              border: viewMode === mode ? `1px solid ${T.crimson}` : `1px solid ${T.border}`,
+              background: viewMode === mode ? "rgba(212,67,58,0.12)" : "transparent",
+              color: viewMode === mode ? T.crimson : T.textFaint,
+              borderRadius:"3px", cursor:"pointer",
+            }}>{mode}</button>
+          ))}
+        </div>
+
         {/* Filter Toggles */}
         <div style={{
           display: "flex",
@@ -582,30 +623,134 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
           gap: 6,
           marginLeft: "auto"
         }}>
-          {["factions", "npcs", "cities", "party"].map(type => (
+          {[{key:"factions",label:"Kingdoms"},{key:"subfaction",label:"Organizations"},{key:"npcs",label:"Leaders"},{key:"cities",label:"Cities"},{key:"party",label:"Party"}].map(({key,label}) => (
             <button
-              key={type}
-              onClick={() => setFilters(f => ({ ...f, [type]: !f[type] }))}
+              key={key}
+              onClick={() => setFilters(f => ({ ...f, [key]: !f[key] }))}
               style={{
                 padding: "6px 10px",
-                fontSize: 11,
+                fontSize: 10,
                 fontFamily: T.ui,
-                border: `1px solid ${filters[type] ? T.gold : T.border}`,
-                background: filters[type] ? "rgba(201,168,92,0.15)" : "transparent",
-                color: filters[type] ? T.gold : T.textFaint,
+                border: `1px solid ${filters[key] ? T.gold : T.border}`,
+                background: filters[key] ? "rgba(201,168,92,0.15)" : "transparent",
+                color: filters[key] ? T.gold : T.textFaint,
                 borderRadius: "3px",
                 cursor: "pointer",
-                textTransform: "capitalize"
+                letterSpacing: "0.5px",
               }}
             >
-              {type}
+              {label}
             </button>
           ))}
         </div>
       </div>
 
+      {/* Summary View */}
+      {viewMode === "summary" && (() => {
+        const facs = data.factions || [];
+        const majorFacs = facs.filter(f => !f.isSubFaction);
+        const subFacs = facs.filter(f => f.isSubFaction);
+        const alliances = [];
+        const rivalries = [];
+        const seen = new Set();
+        facs.forEach(f => {
+          (f.allies || []).forEach(a => {
+            const key = [f.name, a].sort().join("↔");
+            if (!seen.has(key)) { seen.add(key); alliances.push({ a: f.name, b: a, colorA: f.color }); }
+          });
+          (f.rivals || []).forEach(r => {
+            const key = [f.name, r].sort().join("↔");
+            if (!seen.has(key)) { seen.add(key); rivalries.push({ a: f.name, b: r, colorA: f.color }); }
+          });
+        });
+
+        return (
+          <div style={{ display:"flex", flexDirection:"column", gap:20, marginBottom:20 }}>
+            {/* Alliances & Rivalries Summary */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
+              <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"6px", padding:16 }}>
+                <div style={{ fontSize:12, color:"#2ecc71", fontFamily:T.ui, fontWeight:600, marginBottom:12, letterSpacing:"1px", textTransform:"uppercase" }}>
+                  Alliances ({alliances.length})
+                </div>
+                {alliances.length > 0 ? alliances.map((a, i) => (
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 0", borderBottom:i < alliances.length-1?`1px solid ${T.border}`:"none" }}>
+                    <div style={{ width:8, height:8, borderRadius:"50%", background:a.colorA || T.gold, flexShrink:0 }}/>
+                    <span style={{ fontSize:12, color:T.text }}>{a.a}</span>
+                    <span style={{ fontSize:10, color:"#2ecc71", fontFamily:T.ui }}>⟷</span>
+                    <span style={{ fontSize:12, color:T.text }}>{a.b}</span>
+                  </div>
+                )) : <div style={{ fontSize:11, color:T.textFaint, fontStyle:"italic" }}>No alliances formed</div>}
+              </div>
+
+              <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"6px", padding:16 }}>
+                <div style={{ fontSize:12, color:"#e74c3c", fontFamily:T.ui, fontWeight:600, marginBottom:12, letterSpacing:"1px", textTransform:"uppercase" }}>
+                  Rivalries & Conflicts ({rivalries.length})
+                </div>
+                {rivalries.length > 0 ? rivalries.map((r, i) => (
+                  <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 0", borderBottom:i < rivalries.length-1?`1px solid ${T.border}`:"none" }}>
+                    <div style={{ width:8, height:8, borderRadius:"50%", background:r.colorA || T.crimson, flexShrink:0 }}/>
+                    <span style={{ fontSize:12, color:T.text }}>{r.a}</span>
+                    <span style={{ fontSize:10, color:"#e74c3c", fontFamily:T.ui }}>⚔</span>
+                    <span style={{ fontSize:12, color:T.text }}>{r.b}</span>
+                  </div>
+                )) : <div style={{ fontSize:11, color:T.textFaint, fontStyle:"italic" }}>No active rivalries</div>}
+              </div>
+            </div>
+
+            {/* Major Factions Power Ranking */}
+            <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"6px", padding:16 }}>
+              <div style={{ fontSize:12, color:T.gold, fontFamily:T.ui, fontWeight:600, marginBottom:12, letterSpacing:"1px", textTransform:"uppercase" }}>
+                Power Ranking — Major Factions
+              </div>
+              {majorFacs.sort((a, b) => (b.power || 0) - (a.power || 0)).map((f, i) => (
+                <div key={f.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 0", borderBottom:i < majorFacs.length-1?`1px solid ${T.border}`:"none" }}>
+                  <span style={{ fontSize:16, color:T.textFaint, fontFamily:T.ui, width:24, textAlign:"right" }}>{i+1}</span>
+                  <div style={{ width:12, height:12, borderRadius:"50%", background:f.color, flexShrink:0 }}/>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:13, color:T.text, fontWeight:400 }}>{f.name}</div>
+                    <div style={{ fontSize:10, color:T.textFaint }}>{f.govType} · {f.attitude} · {f.trend}</div>
+                  </div>
+                  <div style={{ textAlign:"right" }}>
+                    <div style={{ fontSize:14, color:T.gold, fontFamily:T.ui }}>{f.power}</div>
+                    <div style={{ width:60, height:4, background:"rgba(0,0,0,0.3)", borderRadius:"2px", marginTop:4, overflow:"hidden" }}>
+                      <div style={{ height:"100%", width:`${f.power}%`, background:f.color, borderRadius:"2px" }}/>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Sub-Factions by Region */}
+            {subFacs.length > 0 && (
+              <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"6px", padding:16 }}>
+                <div style={{ fontSize:12, color:T.gold, fontFamily:T.ui, fontWeight:600, marginBottom:12, letterSpacing:"1px", textTransform:"uppercase" }}>
+                  Organizations & Shadow Powers
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
+                  {subFacs.map(sf => (
+                    <div key={sf.id} style={{ padding:"10px 14px", background:"rgba(0,0,0,0.15)", border:`1px solid ${T.border}`, borderRadius:"4px", borderLeft:`3px solid ${sf.color}` }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
+                        <span style={{ fontSize:12, color:T.text, fontWeight:400 }}>{sf.name}</span>
+                      </div>
+                      <div style={{ fontSize:9, color:T.textFaint, marginBottom:4 }}>{sf.govType} · Power {sf.power}</div>
+                      <div style={{ fontSize:10, color:T.textMuted, marginBottom:6, lineHeight:1.4 }}>{sf.desc?.substring(0, 80)}{sf.desc?.length > 80 ? "…" : ""}</div>
+                      <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
+                        {(sf.influence || []).map((inf, ii) => (
+                          <span key={ii} style={{ fontSize:8, color:sf.color, background:`${sf.color}15`, padding:"2px 6px", borderRadius:"2px", border:`1px solid ${sf.color}33` }}>{inf}</span>
+                        ))}
+                      </div>
+                      {sf.parentFaction && <div style={{ fontSize:9, color:T.textFaint, marginTop:6 }}>Within: {sf.parentFaction}</div>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
       {/* SVG Canvas */}
-      <div style={{
+      {viewMode === "graph" && <div style={{
         position: "relative",
         width: "100%",
         height: 700,
@@ -700,13 +845,13 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
                   <text
                     dy="0.3em"
                     textAnchor="middle"
-                    fontSize={10}
+                    fontSize={9}
                     fill={T.text}
                     fontFamily={T.heading}
                     fontWeight={500}
                     pointerEvents="none"
                   >
-                    {node.label.substring(0, 6)}
+                    {node.label.substring(0, 8)}
                   </text>
                 </g>
               );
@@ -779,7 +924,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
                     fontWeight={600}
                     pointerEvents="none"
                   >
-                    {node.label.substring(0, node.type === "faction" ? 4 : 3)}
+                    {node.label.substring(0, node.type === "faction" || node.type === "subfaction" ? 6 : 4)}
                   </text>
                 </g>
               );
@@ -805,7 +950,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
 
         {/* Detail Panel */}
         {renderDetailPanel()}
-      </div>
+      </div>}
 
       {/* Legend */}
       <div style={{

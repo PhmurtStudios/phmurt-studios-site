@@ -5183,10 +5183,18 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
         {/* Quests */}
         {data.modules.questTracker && (
           <div>
-            <SectionTitle icon={Scroll} action={isDm ? <LinkBtn onClick={()=>setAddingQuest(true)}><Plus size={10}/> Add Quest</LinkBtn> : null}>Active Quests</SectionTitle>
+            <SectionTitle icon={Scroll} action={
+              <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                {isDm && <LinkBtn onClick={()=>setAddingQuest(true)}><Plus size={10}/> Add Quest</LinkBtn>}
+                {data.quests.length > 0 && <LinkBtn onClick={()=>onNav("quests")}><Scroll size={10}/> View All ({data.quests.length})</LinkBtn>}
+              </div>
+            }>Active Quests</SectionTitle>
             <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-              {active.map(q => (
-                <div key={q.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 20px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", borderLeft:`3px solid ${q.type==="main"?T.crimson:T.textFaint}` }}>
+              {active.slice(0, 5).map(q => (
+                <div key={q.id} onClick={() => onNav("quests")} style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 20px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", borderLeft:`3px solid ${q.type==="main"?T.crimson:T.textFaint}`, cursor:"pointer", transition:"all 0.2s" }}
+                  onMouseEnter={e => e.currentTarget.style.borderColor = T.crimsonBorder}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = T.border; e.currentTarget.style.borderLeftColor = q.type==="main"?T.crimson:T.textFaint; }}
+                >
                   <div style={{ flex:1 }}>
                     <span style={{ fontSize:14, fontWeight:300, color:T.text }}>{q.title}</span>
                     <div style={{ display:"flex", gap:6, marginTop:6 }}>
@@ -5196,7 +5204,7 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
                     </div>
                   </div>
                   {isDm ? (
-                    <Select value={q.status} onChange={v=>setData(d=>({...d,quests:d.quests.map(qq=>qq.id===q.id?{...qq,status:v}:qq)}))} style={{width:120}}>
+                    <Select value={q.status} onChange={v=>{ v.stopPropagation && v.stopPropagation(); setData(d=>({...d,quests:d.quests.map(qq=>qq.id===q.id?{...qq,status:v}:qq)})); }} onClick={e=>e.stopPropagation()} style={{width:120}}>
                       {["active","completed","upcoming","failed"].map(s=><option key={s} value={s}>{s}</option>)}
                     </Select>
                   ) : (
@@ -5204,7 +5212,20 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
                   )}
                 </div>
               ))}
-              {active.length===0 && <p style={{ fontSize:13, color:T.textFaint, fontStyle:"italic", padding:16, fontWeight:300 }}>No active quests.</p>}
+              {active.length > 5 && (
+                <div onClick={() => onNav("quests")} style={{ textAlign:"center", padding:"10px", fontSize:11, color:T.crimson, cursor:"pointer", fontFamily:T.ui, letterSpacing:"1px" }}>
+                  + {active.length - 5} more active quests
+                </div>
+              )}
+              {active.length===0 && (
+                <div style={{ textAlign:"center", padding:24 }}>
+                  <Scroll size={28} color={T.textFaint} style={{ marginBottom:12 }}/>
+                  <p style={{ fontSize:13, color:T.textFaint, fontStyle:"italic", fontWeight:300, margin:"0 0 12px" }}>No active quests yet.</p>
+                  {isDm && (data.modules || {}).questBoard !== false && (
+                    <LinkBtn onClick={()=>onNav("quests")}><Scroll size={10}/> Open Quest Board</LinkBtn>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         )}
