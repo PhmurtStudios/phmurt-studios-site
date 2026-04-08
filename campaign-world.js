@@ -3022,13 +3022,12 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                 })}
 
                 {/* ═══ LAYER 6: Invisible clickable hit areas — locked to atlas image ═══ */}
-                {/* The atlas .webp already has city dots + labels baked in.              */}
-                {/* This layer is INSIDE the same <g transform> as the image, so it      */}
-                {/* moves, scales, and pans identically — hit areas never drift.          */}
+                {/* Uses post-processed mapX/mapY so overlapping cities (seeds 2-100)    */}
+                {/* are spread apart by jitter and each city is individually clickable.   */}
                 {/* Hit radius is zoom-compensated so it stays ~25 CSS px on screen.      */}
                 {data.atlasMapSeed && (data.cities || []).map(city => {
-                  const cx = (city.origX != null ? city.origX : city.mapX) * MAP_W;
-                  const cy = (city.origY != null ? city.origY : city.mapY) * MAP_H;
+                  const cx = city.mapX * MAP_W;
+                  const cy = city.mapY * MAP_H;
                   const hitR = Math.max(15, 25 / Math.max(mapZoom, 0.05));
                   return (
                     <g key={`cityhit-${city.id}`} style={{ cursor: "pointer" }}
@@ -3141,8 +3140,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
             {cityPopup && (() => {
               const c = cityPopup.city;
               const rect = mapRef.current?.getBoundingClientRect();
-              const popX = ((c.origX != null ? c.origX : c.mapX) * MAP_W * mapZoom + mapPan.x);
-              const popY = ((c.origY != null ? c.origY : c.mapY) * MAP_H * mapZoom + mapPan.y);
+              const popX = (c.mapX * MAP_W * mapZoom + mapPan.x);
+              const popY = (c.mapY * MAP_H * mapZoom + mapPan.y);
               const fc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || "#c9a85c"; })();
               const cityNpcs = (data.npcs || []).filter(n => c.npcs.includes(n.id));
               return (
