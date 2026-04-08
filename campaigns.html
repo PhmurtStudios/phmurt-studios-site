@@ -5271,10 +5271,11 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
             <SectionTitle icon={Globe} action={<LinkBtn onClick={()=>onNav("world")}>World State <ArrowRight size={10}/></LinkBtn>}>Factions</SectionTitle>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
               {(data.factions || []).map(f => (
-                <div key={f.id} style={{ padding:16, background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", borderLeft:`4px solid ${f.color}` }}>
+                <div key={f.id} onClick={() => onNav("world", { subTab:"factions", entityType:"faction", entityId:f.id })} style={{ padding:16, background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", borderLeft:`4px solid ${f.color}`, cursor:"pointer", transition:"border-color 0.2s" }}>
                   <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
                     <span style={{ fontSize:14, fontWeight:300, color:T.text }}>{f.name}</span>
                     <Tag variant={f.attitude==="allied"||f.attitude==="friendly"?"success":f.attitude==="hostile"?"danger":"muted"}>{f.attitude}</Tag>
+                    <ArrowRight size={10} color={T.textFaint} style={{ marginLeft:"auto" }}/>
                   </div>
                   <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                     <div style={{flex:1}}><PowerBar val={f.power} max={100} color={f.color}/></div>
@@ -5500,6 +5501,7 @@ function App() {
   const [joinError, setJoinError] = useState("");
   const [joinSuccess, setJoinSuccess] = useState("");
   const [showJoinModal, setShowJoinModal] = useState(false);
+  const [navTarget, setNavTarget] = useState(null); // { tab, subTab, entityType, entityId/entityName }
   const [campaignRoles, setCampaignRoles] = useState({}); // { campaignId: "dm"|"player" }
   const [saveStatus, setSaveStatus] = useState(""); // "", "saving", "saved", "error"
   const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -6003,7 +6005,7 @@ function App() {
 
       {/* Main Content Area — gradient extends full page */}
       <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0, overflowX:"hidden", overflowY: (activeTab === "world" || activeTab === "play" || activeTab === "relationships") ? "hidden" : "auto", position:"relative", background:"radial-gradient(ellipse at 20% 0%, var(--crimson-soft) 0%, transparent 55%), var(--bg)" }}>
-        {activeTab === "dashboard" && <DashboardView data={data} setData={setData} onNav={setActiveTab} activeCampaignId={activeCampaignId} viewRole={viewRole} />}
+        {activeTab === "dashboard" && <DashboardView data={data} setData={setData} onNav={(tab, target) => { setActiveTab(tab); if (target) setNavTarget(target); }} activeCampaignId={activeCampaignId} viewRole={viewRole} />}
         {activeTab === "timeline" && (
           tabsReady.timeline && window.CampaignTimelineView
             ? React.createElement(window.CampaignTimelineView, { data: data, setData: setData, onNav: setActiveTab, viewRole: viewRole })
@@ -6011,7 +6013,7 @@ function App() {
         )}
         {activeTab === "world" && (
           tabsReady.world && window.CampaignWorldView
-            ? React.createElement(window.CampaignWorldView, { data: data, setData: setData, onNav: setActiveTab, viewRole: viewRole })
+            ? React.createElement(window.CampaignWorldView, { data: data, setData: setData, onNav: setActiveTab, viewRole: viewRole, navTarget: navTarget, clearNavTarget: () => setNavTarget(null) })
             : <TabLoadingSpinner label="World" />
         )}
         {activeTab === "play" && (

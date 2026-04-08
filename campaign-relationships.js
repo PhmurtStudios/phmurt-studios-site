@@ -1,30 +1,13 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// CAMPAIGN RELATIONSHIP WEB – Interactive D&D Force-Directed Graph
-// Self-contained React component for NPC, faction, city & party relationships
+// CAMPAIGN RELATIONSHIP WEB – Structured D&D Relationship Viewer
+// Faction power rankings, alliance/rivalry maps, NPC networks, city control
 // ═══════════════════════════════════════════════════════════════════════════
 
 window.RelationshipWebView = function RelationshipWebView({ data, setData, viewRole }) {
-  const [nodes, setNodes] = React.useState([]);
-  const [edges, setEdges] = React.useState([]);
-  const [physics, setPhysics] = React.useState({});
-  const [hoveredNode, setHoveredNode] = React.useState(null);
-  const [selectedNode, setSelectedNode] = React.useState(null);
-  const [draggingNode, setDraggingNode] = React.useState(null);
-  const [zoom, setZoom] = React.useState(1);
-  const [pan, setPan] = React.useState({ x: 0, y: 0 });
-  const [filters, setFilters] = React.useState({
-    factions: true,
-    subfaction: true,
-    npcs: true,
-    cities: true,
-    party: true,
-    deities: true
-  });
-  const [viewMode, setViewMode] = React.useState("graph"); // "graph" or "summary"
+  const [viewMode, setViewMode] = React.useState("overview"); // "overview" | "factions" | "npcs" | "graph"
+  const [selectedEntity, setSelectedEntity] = React.useState(null); // { type, id }
   const [searchTerm, setSearchTerm] = React.useState("");
-  const svgRef = React.useRef(null);
-  const physicsRef = React.useRef({});
-  const animationRef = React.useRef(null);
+  const [graphZoom, setGraphZoom] = React.useState(1);
 
   // ─────────────────────────────────────────────────────────────────────
   // THEME
@@ -40,982 +23,676 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
     heading: "'Cinzel', serif", body: "'Spectral', serif", ui: "'Cinzel', serif"
   };
 
-  const RELATIONSHIP_TYPES = {
-    alliance: { label: "Alliance", color: "#2ecc71", style: "solid", weight: 2 },
-    rivalry: { label: "Rivalry/War", color: "#e74c3c", style: "dashed", weight: 3 },
-    trade: { label: "Trade", color: "#3498db", style: "dotted", weight: 1 },
-    membership: { label: "Membership", color: "#95a5a6", style: "solid", weight: 1 },
-    location: { label: "Location", color: "#9b59b6", style: "dotted", weight: 0.5 },
-    worship: { label: "Worship", color: "#8e44ad", style: "wavy", weight: 2 },
-    love: { label: "Love/Marriage", color: "#ff69b4", style: "solid", weight: 2 },
-    feud: { label: "Feud", color: "#f39c12", style: "jagged", weight: 2 }
+  const REL_COLORS = {
+    alliance: "#2ecc71", rivalry: "#e74c3c", trade: "#3498db",
+    membership: "#95a5a6", worship: "#8e44ad", love: "#ff69b4", feud: "#f39c12"
   };
 
   // ─────────────────────────────────────────────────────────────────────
-  // SEEDED RANDOM NUMBER GENERATOR
+  // DATA DERIVATION
   // ─────────────────────────────────────────────────────────────────────
-  const seedRng = (str) => {
-    let h = 0;
-    for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
-    return () => {
-      h = (h * 16807 + 0) % 2147483647;
-      return (h & 0x7fffffff) / 0x7fffffff;
-    };
-  };
+  const factions = React.useMemo(() => (data.factions || []), [data.factions]);
+  const npcs = React.useMemo(() => (data.npcs || []), [data.npcs]);
+  const cities = React.useMemo(() => (data.cities || []), [data.cities]);
+  const party = React.useMemo(() => (data.party || []), [data.party]);
+  const regions = React.useMemo(() => (data.regions || []), [data.regions]);
 
-  // ─────────────────────────────────────────────────────────────────────
-  // BUILD GRAPH DATA FROM CAMPAIGN
-  // ─────────────────────────────────────────────────────────────────────
-  React.useEffect(() => {
-    const newNodes = [];
-    const newEdges = [];
-    const nodeMap = new Map();
+  const majorFactions = React.useMemo(() => factions.filter(f => !f.isSubFaction).sort((a, b) => (b.power || 0) - (a.power || 0)), [factions]);
+  const subFactions = React.useMemo(() => factions.filter(f => f.isSubFaction), [factions]);
 
-    const SVG_WIDTH = 1200;
-    const SVG_HEIGHT = 700;
+  const factionByName = React.useMemo(() => {
+    const map = {};
+    factions.forEach(f => { map[f.name] = f; });
+    return map;
+  }, [factions]);
 
-    // Build a name→id lookup for factions
-    const factionNameToId = {};
-    (data.factions || []).forEach(faction => {
-      factionNameToId[faction.name] = `faction_${faction.id}`;
-    });
-
-    // Add faction nodes — major factions get larger nodes
-    (data.factions || []).forEach(faction => {
-      const id = `faction_${faction.id}`;
-      nodeMap.set(id, true);
-      const isSub = faction.isSubFaction;
-      const powerRadius = isSub ? Math.max(14, Math.min(22, 14 + faction.power / 10)) :
-                                  Math.max(22, Math.min(36, 22 + faction.power / 8));
-      const rng = seedRng(faction.name);
-      newNodes.push({
-        id,
-        type: isSub ? "subfaction" : "faction",
-        label: faction.name,
-        data: faction,
-        x: SVG_WIDTH / 2 + (rng() - 0.5) * (isSub ? 350 : 200),
-        y: SVG_HEIGHT / 2 + (rng() - 0.5) * (isSub ? 350 : 200),
-        vx: 0,
-        vy: 0,
-        color: faction.color || T.gold,
-        radius: powerRadius
-      });
-
-      // Faction relationships (allies, rivals) — lookup by NAME not ID
-      if (faction.allies && Array.isArray(faction.allies)) {
-        faction.allies.forEach(allyName => {
-          const targetId = factionNameToId[allyName];
-          if (targetId) {
-            // Deduplicate edges (only add if we haven't seen the reverse)
-            const edgeKey = [id, targetId].sort().join("--");
-            if (!newEdges.some(e => [e.source, e.target].sort().join("--") === edgeKey && e.type === "alliance")) {
-              newEdges.push({ source: id, target: targetId, type: "alliance", label: "Allied" });
-            }
-          }
-        });
-      }
-      if (faction.rivals && Array.isArray(faction.rivals)) {
-        faction.rivals.forEach(rivalName => {
-          const targetId = factionNameToId[rivalName];
-          if (targetId) {
-            const edgeKey = [id, targetId].sort().join("--");
-            if (!newEdges.some(e => [e.source, e.target].sort().join("--") === edgeKey && e.type === "rivalry")) {
-              newEdges.push({ source: id, target: targetId, type: "rivalry", label: "Rivals" });
-            }
-          }
-        });
-      }
-
-      // Sub-faction → parent faction relationship
-      if (isSub && faction.parentFaction) {
-        const parentId = factionNameToId[faction.parentFaction];
-        if (parentId) {
-          newEdges.push({ source: id, target: parentId, type: "membership", label: "Operates within" });
-        }
-      }
-    });
-
-    // Add NPC nodes — only leaders, to reduce clutter
-    (data.npcs || []).forEach(npc => {
-      if (!npc.isLeader) return; // Only show leaders on the graph
-      const id = `npc_${npc.id}`;
-      nodeMap.set(id, true);
-      const factionObj = (data.factions || []).find(f => f.name === npc.faction);
-      const factionColor = factionObj?.color || T.text;
-      const rng = seedRng(npc.name);
-
-      newNodes.push({
-        id,
-        type: "npc",
-        label: npc.name,
-        data: npc,
-        x: SVG_WIDTH / 2 + (rng() - 0.5) * 300,
-        y: SVG_HEIGHT / 2 + (rng() - 0.5) * 300,
-        vx: 0,
-        vy: 0,
-        color: factionColor,
-        radius: 14
-      });
-
-      // NPC to faction membership (by name lookup)
-      if (npc.faction) {
-        const factionNodeId = factionNameToId[npc.faction];
-        if (factionNodeId) {
-          newEdges.push({ source: id, target: factionNodeId, type: "membership", label: npc.role || "Member of" });
-        }
-      }
-    });
-
-    // Add city nodes (only from explicit cities list, skip NPC location duplication)
-    (data.cities || []).forEach(city => {
-      const cityId = `city_${city.name}`;
-      if (!nodeMap.has(cityId)) {
-        nodeMap.set(cityId, true);
-        const rng = seedRng(city.name);
-        newNodes.push({
-          id: cityId,
-          type: "city",
-          label: city.name,
-          data: city,
-          x: SVG_WIDTH / 2 + (rng() - 0.5) * 400,
-          y: SVG_HEIGHT / 2 + (rng() - 0.5) * 400,
-          vx: 0,
-          vy: 0,
-          color: city.isCapital ? T.questGold : T.text,
-          radius: city.isCapital ? 22 : 16
-        });
-      }
-      // Connect city to controlling faction
-      if (city.faction) {
-        const fctId = factionNameToId[city.faction];
-        if (fctId) {
-          newEdges.push({ source: cityId, target: fctId, type: "trade", label: "Controlled by" });
-        }
-      }
-    });
-
-    // Add party member nodes (stars)
-    (data.party || []).forEach((member, idx) => {
-      const id = `party_${idx}`;
-      nodeMap.set(id, true);
-      newNodes.push({
-        id,
-        type: "party",
-        label: member.name,
-        data: member,
-        x: 100 + idx * 100,
-        y: SVG_HEIGHT - 80,
-        vx: 0,
-        vy: 0,
-        color: T.questGold,
-        radius: 18
-      });
-    });
-
-    setNodes(newNodes);
-    setEdges(newEdges);
-    physicsRef.current = Object.fromEntries(newNodes.map(n => [n.id, { x: n.x, y: n.y, vx: n.vx, vy: n.vy }]));
-  }, [data]);
-
-  // ─────────────────────────────────────────────────────────────────────
-  // PHYSICS SIMULATION – Force-Directed Layout
-  // ─────────────────────────────────────────────────────────────────────
-  React.useEffect(() => {
-    if (nodes.length === 0) return;
-
-    const SVG_WIDTH = 1200;
-    const SVG_HEIGHT = 700;
-    const CENTER_X = SVG_WIDTH / 2;
-    const CENTER_Y = SVG_HEIGHT / 2;
-
-    const simulate = () => {
-      const physics = physicsRef.current;
-      const REPULSION = 400;
-      const ATTRACTION = 0.05;
-      const GRAVITY = 0.08;
-      const DAMPING = 0.85;
-      const MAX_VEL = 4;
-
-      // Reset forces
-      nodes.forEach(node => {
-        const p = physics[node.id];
-        p.fx = 0;
-        p.fy = 0;
-      });
-
-      // Repulsion between all nodes
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          const n1 = nodes[i];
-          const n2 = nodes[j];
-          const p1 = physics[n1.id];
-          const p2 = physics[n2.id];
-
-          const dx = p2.x - p1.x || 0.001;
-          const dy = p2.y - p1.y || 0.001;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          const minDist = n1.radius + n2.radius + 60;
-
-          if (dist > 0) {
-            const force = REPULSION / (dist * dist);
-            const fx = (dx / dist) * force;
-            const fy = (dy / dist) * force;
-            p1.fx -= fx;
-            p1.fy -= fy;
-            p2.fx += fx;
-            p2.fy += fy;
-          }
-        }
-      }
-
-      // Attraction along edges
-      edges.forEach(edge => {
-        const n1 = nodes.find(n => n.id === edge.source);
-        const n2 = nodes.find(n => n.id === edge.target);
-        if (!n1 || !n2) return;
-
-        const p1 = physics[n1.id];
-        const p2 = physics[n2.id];
-        const dx = p2.x - p1.x;
-        const dy = p2.y - p1.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-
-        if (dist > 0) {
-          const force = ATTRACTION * dist;
-          const fx = (dx / dist) * force;
-          const fy = (dy / dist) * force;
-          p1.fx += fx;
-          p1.fy += fy;
-          p2.fx -= fx;
-          p2.fy -= fy;
-        }
-      });
-
-      // Gravity toward center
-      nodes.forEach(node => {
-        const p = physics[node.id];
-        const dx = CENTER_X - p.x;
-        const dy = CENTER_Y - p.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist > 0) {
-          p.fx += (dx / dist) * GRAVITY;
-          p.fy += (dy / dist) * GRAVITY;
-        }
-      });
-
-      // Update velocities and positions
-      nodes.forEach(node => {
-        const p = physics[node.id];
-        p.vx = (p.vx + p.fx) * DAMPING;
-        p.vy = (p.vy + p.fy) * DAMPING;
-
-        const speed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
-        if (speed > MAX_VEL) {
-          p.vx = (p.vx / speed) * MAX_VEL;
-          p.vy = (p.vy / speed) * MAX_VEL;
-        }
-
-        p.x += p.vx;
-        p.y += p.vy;
-
-        // Bounds
-        p.x = Math.max(node.radius, Math.min(SVG_WIDTH - node.radius, p.x));
-        p.y = Math.max(node.radius, Math.min(SVG_HEIGHT - node.radius, p.y));
-
-        node.x = p.x;
-        node.y = p.y;
-      });
-
-      setNodes([...nodes]);
+  // Build all relationships as a flat list
+  const relationships = React.useMemo(() => {
+    const rels = [];
+    const seen = new Set();
+    const addRel = (a, b, type, label) => {
+      const key = [a, b].sort().join("||") + "||" + type;
+      if (seen.has(key)) return;
+      seen.add(key);
+      rels.push({ a, b, type, label });
     };
 
-    let iterCount = 0;
-    const timer = setInterval(() => {
-      simulate();
-      iterCount++;
-      if (iterCount > 150) {
-        clearInterval(timer);
-      }
-    }, 32);
-
-    return () => clearInterval(timer);
-  }, [nodes, edges]);
-
-  // ─────────────────────────────────────────────────────────────────────
-  // INTERACTION HANDLERS
-  // ─────────────────────────────────────────────────────────────────────
-  const handleNodeMouseEnter = (nodeId) => setHoveredNode(nodeId);
-  const handleNodeMouseLeave = () => setHoveredNode(null);
-
-  const handleNodeClick = (nodeId) => setSelectedNode(selectedNode === nodeId ? null : nodeId);
-
-  const handleNodeMouseDown = (nodeId) => {
-    setDraggingNode(nodeId);
-  };
-
-  const handleSVGMouseMove = (e) => {
-    if (!draggingNode || !svgRef.current) return;
-    const svg = svgRef.current;
-    const rect = svg.getBoundingClientRect();
-    const x = (e.clientX - rect.left - pan.x) / zoom;
-    const y = (e.clientY - rect.top - pan.y) / zoom;
-
-    const physics = physicsRef.current[draggingNode];
-    if (physics) {
-      physics.x = x;
-      physics.y = y;
-      physics.vx = 0;
-      physics.vy = 0;
-
-      const node = nodes.find(n => n.id === draggingNode);
-      if (node) {
-        node.x = x;
-        node.y = y;
-        setNodes([...nodes]);
-      }
-    }
-  };
-
-  const handleSVGMouseUp = () => setDraggingNode(null);
-
-  const handleWheel = (e) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    const newZoom = Math.max(0.5, Math.min(3, zoom * delta));
-    setZoom(newZoom);
-  };
-
-  const handleSVGContextMenu = (e) => {
-    e.preventDefault();
-    setPan({ x: 0, y: 0 });
-    setZoom(1);
-  };
-
-  // ─────────────────────────────────────────────────────────────────────
-  // FILTERING & SEARCH
-  // ─────────────────────────────────────────────────────────────────────
-  const visibleNodes = nodes.filter(n => {
-    if (filters[n.type] === false) return false;
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
-      return n.label.toLowerCase().includes(term) || (n.data.name && n.data.name.toLowerCase().includes(term));
-    }
-    return true;
-  });
-
-  const visibleNodeIds = new Set(visibleNodes.map(n => n.id));
-  const visibleEdges = edges.filter(e => visibleNodeIds.has(e.source) && visibleNodeIds.has(e.target));
-
-  // ─────────────────────────────────────────────────────────────────────
-  // RENDER DETAIL PANEL
-  // ─────────────────────────────────────────────────────────────────────
-  const renderDetailPanel = () => {
-    if (!selectedNode) return null;
-    const node = nodes.find(n => n.id === selectedNode);
-    if (!node) return null;
-
-    const connectedEdges = visibleEdges.filter(e => e.source === node.id || e.target === node.id);
-    const connections = connectedEdges.map(e => {
-      const other = nodes.find(n => n.id === (e.source === node.id ? e.target : e.source));
-      return { edge: e, node: other };
+    factions.forEach(f => {
+      (f.allies || []).forEach(a => addRel(f.name, a, "alliance", "Allied"));
+      (f.rivals || []).forEach(r => addRel(f.name, r, "rivalry", "Rivals"));
+      if (f.isSubFaction && f.parentFaction) addRel(f.name, f.parentFaction, "membership", "Operates within");
     });
 
-    return (
-      <div style={{
-        position: "absolute",
-        right: 20,
-        top: 80,
-        width: 320,
-        maxHeight: "calc(100% - 100px)",
-        background: T.bgCard,
-        border: `1px solid ${T.border}`,
-        borderRadius: "6px",
-        padding: "16px",
-        overflow: "auto",
-        zIndex: 100,
-        boxShadow: "0 8px 24px rgba(0,0,0,0.4)"
-      }}>
-        <div style={{
-          fontSize: 18,
-          color: T.text,
-          fontFamily: T.heading,
-          fontWeight: 600,
-          marginBottom: 8,
-          display: "flex",
-          alignItems: "center",
-          gap: 8
-        }}>
-          <div style={{
-            width: 16,
-            height: 16,
-            borderRadius: node.type === "city" ? "2px" : "50%",
-            background: node.color,
-            opacity: 0.8
-          }} />
-          {node.label}
-        </div>
+    npcs.filter(n => n.faction).forEach(n => {
+      addRel(n.name, n.faction, "membership", n.role || "Member");
+    });
 
-        <div style={{ fontSize: 11, color: T.textFaint, textTransform: "uppercase", letterSpacing: "1px", marginBottom: 12 }}>
-          {node.type.toUpperCase()}
-        </div>
+    cities.forEach(c => {
+      if (c.faction) addRel(c.name, c.faction, "trade", "Controlled by");
+    });
 
-        {(node.type === "faction" || node.type === "subfaction") && node.data && (
-          <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.6 }}>
-            {node.data.govType && (
-              <div style={{ marginBottom: 8, fontSize: 10, color: T.textFaint, textTransform: "uppercase", letterSpacing: "1px" }}>
-                {node.data.govType}
-              </div>
-            )}
-            <div style={{ marginBottom: 8 }}>
-              <span style={{ color: T.gold, fontWeight: 600 }}>Power:</span> {node.data.power || "N/A"}
-              {node.data.trend && <span style={{ color: node.data.trend==="rising"?"#5ee09a":node.data.trend==="declining"?T.crimson:T.textFaint, marginLeft: 8 }}>{node.data.trend}</span>}
-            </div>
-            {node.data.desc && (
-              <div style={{ marginBottom: 8, fontSize: 11, fontStyle: "italic", color: T.textFaint, lineHeight: 1.5 }}>
-                {node.data.desc}
-              </div>
-            )}
-            {node.data.isSubFaction && node.data.influence && (
-              <div style={{ marginBottom: 8 }}>
-                <div style={{ color: T.gold, fontWeight: 600, marginBottom: 4 }}>Influence:</div>
-                <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                  {node.data.influence.map((inf, i) => (
-                    <span key={i} style={{ fontSize: 9, padding: "2px 6px", background: "rgba(201,168,92,0.08)", border: `1px solid ${T.border}`, borderRadius: "2px", color: T.textMuted }}>{inf}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {node.data.hierarchy && node.data.hierarchy.length > 0 && (
-              <div style={{ marginBottom: 8 }}>
-                <div style={{ color: T.gold, fontWeight: 600, marginBottom: 4 }}>Leadership:</div>
-                {node.data.hierarchy.map((h, i) => (
-                  <div key={i} style={{ paddingLeft: 12, fontSize: 11, marginBottom: 3 }}>
-                    <span style={{ color: i === 0 ? T.gold : T.textMuted }}>{h.title}:</span> {h.name}
-                  </div>
-                ))}
-              </div>
-            )}
-            {node.data.resources && node.data.resources.length > 0 && (
-              <div style={{ marginBottom: 8 }}>
-                <div style={{ color: T.gold, fontWeight: 600, marginBottom: 4 }}>Resources:</div>
-                <div style={{ fontSize: 11, color: T.textFaint }}>{node.data.resources.join(", ")}</div>
-              </div>
-            )}
-          </div>
-        )}
+    return rels;
+  }, [factions, npcs, cities]);
 
-        {node.type === "npc" && node.data && (
-          <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.6 }}>
-            <div style={{ marginBottom: 6 }}>
-              <span style={{ color: T.gold, fontWeight: 600 }}>Faction:</span> {node.data.faction || "Independent"}
-            </div>
-            <div style={{ marginBottom: 6 }}>
-              <span style={{ color: T.gold, fontWeight: 600 }}>Location:</span> {node.data.loc || "Unknown"}
-            </div>
-            <div style={{ marginBottom: 6 }}>
-              <span style={{ color: T.gold, fontWeight: 600 }}>Role:</span> {node.data.role || "N/A"}
-            </div>
-            <div style={{ marginBottom: 6 }}>
-              <span style={{ color: T.gold, fontWeight: 600 }}>Attitude:</span> {node.data.attitude || "Neutral"}
-            </div>
-            {node.data.alive === false && (
-              <div style={{ color: T.crimson }}>Deceased</div>
-            )}
-          </div>
-        )}
+  // Get connections for a specific entity name
+  const getConnections = (name) => {
+    return relationships.filter(r => r.a === name || r.b === name).map(r => ({
+      ...r,
+      other: r.a === name ? r.b : r.a
+    }));
+  };
 
-        {node.type === "party" && node.data && (
-          <div style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.6 }}>
-            <div style={{ marginBottom: 6 }}>
-              <span style={{ color: T.gold, fontWeight: 600 }}>Class:</span> {node.data.class || "N/A"}
-            </div>
-            <div style={{ marginBottom: 6 }}>
-              <span style={{ color: T.gold, fontWeight: 600 }}>Level:</span> {node.data.level || "N/A"}
-            </div>
-          </div>
-        )}
+  // Search filter
+  const matchesSearch = (name) => {
+    if (!searchTerm.trim()) return true;
+    return name.toLowerCase().includes(searchTerm.toLowerCase());
+  };
 
-        {connections.length > 0 && (
-          <div style={{ marginTop: 16, paddingTop: 12, borderTop: `1px solid ${T.border}` }}>
-            <div style={{ fontSize: 11, color: T.gold, fontWeight: 600, marginBottom: 8, textTransform: "uppercase", letterSpacing: "1px" }}>
-              Connections ({connections.length})
-            </div>
-            {connections.map((conn, i) => {
-              const relType = RELATIONSHIP_TYPES[conn.edge.type];
-              return (
-                <div key={i} style={{
-                  fontSize: 11,
-                  color: T.textMuted,
-                  marginBottom: 6,
-                  paddingBottom: 6,
-                  borderBottom: i < connections.length - 1 ? `1px solid ${T.border}` : "none"
-                }}>
-                  <div style={{ color: relType.color, fontWeight: 500, marginBottom: 2 }}>
-                    {relType.label}
-                  </div>
-                  <div style={{ color: T.textFaint }}>
-                    {conn.node?.label || "Unknown"}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+  // ─────────────────────────────────────────────────────────────────────
+  // SHARED COMPONENTS
+  // ─────────────────────────────────────────────────────────────────────
+  const RelBadge = ({ type, label }) => {
+    const color = REL_COLORS[type] || T.textFaint;
+    return React.createElement("span", {
+      style: {
+        display: "inline-flex", alignItems: "center", gap: 4,
+        padding: "2px 8px", fontSize: 9, fontFamily: T.ui,
+        letterSpacing: "0.5px", borderRadius: "2px",
+        color: color, background: color + "12", border: `1px solid ${color}30`
+      }
+    }, type === "alliance" ? "⚔" : type === "rivalry" ? "⚡" : type === "trade" ? "◆" : type === "membership" ? "●" : "○", " ", label || type);
+  };
+
+  const PowerBar = ({ value, max, color }) => {
+    const pct = Math.min(100, Math.max(0, (value / max) * 100));
+    return React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
+      React.createElement("div", { style: { flex: 1, height: 5, background: "rgba(0,0,0,0.2)", borderRadius: 3, overflow: "hidden" } },
+        React.createElement("div", { style: { height: "100%", width: pct + "%", background: color || T.crimson, borderRadius: 3, transition: "width 0.3s ease" } })
+      ),
+      React.createElement("span", { style: { fontSize: 11, color: T.textMuted, fontFamily: T.ui, minWidth: 24, textAlign: "right" } }, value)
+    );
+  };
+
+  const SectionLabel = ({ children }) => React.createElement("div", {
+    style: { fontSize: 10, color: T.gold, fontFamily: T.ui, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 12 }
+  }, children);
+
+  // ─────────────────────────────────────────────────────────────────────
+  // OVERVIEW TAB
+  // ─────────────────────────────────────────────────────────────────────
+  const renderOverview = () => {
+    const alliances = relationships.filter(r => r.type === "alliance");
+    const rivalries = relationships.filter(r => r.type === "rivalry");
+    const leaders = npcs.filter(n => n.isLeader);
+
+    return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 24 } },
+
+      // Power Rankings
+      React.createElement("div", { style: { background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 4, padding: "20px 24px" } },
+        React.createElement(SectionLabel, null, "Power Rankings"),
+        React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 2 } },
+          majorFactions.map((f, i) => React.createElement("div", {
+            key: f.id,
+            onClick: () => setSelectedEntity({ type: "faction", name: f.name }),
+            style: {
+              display: "grid", gridTemplateColumns: "28px 12px 1fr 100px 60px 24px", alignItems: "center", gap: 12,
+              padding: "12px 16px", borderRadius: 3, cursor: "pointer",
+              background: selectedEntity?.name === f.name ? "rgba(212,67,58,0.06)" : i % 2 === 0 ? "transparent" : "rgba(0,0,0,0.08)",
+              transition: "background 0.15s"
+            }
+          },
+            React.createElement("span", { style: { fontSize: 18, color: i < 3 ? T.gold : T.textFaint, fontFamily: T.ui, textAlign: "right", fontWeight: 300 } }, i + 1),
+            React.createElement("div", { style: { width: 10, height: 10, borderRadius: "50%", background: f.color || T.gold } }),
+            React.createElement("div", null,
+              React.createElement("div", { style: { fontSize: 13, color: T.text, fontWeight: 400 } }, f.name),
+              React.createElement("div", { style: { fontSize: 10, color: T.textFaint, marginTop: 2 } },
+                [f.govType, f.attitude].filter(Boolean).join(" · ")
+              )
+            ),
+            React.createElement(PowerBar, { value: f.power || 0, max: 100, color: f.color }),
+            React.createElement("span", {
+              style: {
+                fontSize: 10, fontFamily: T.ui, textAlign: "center", letterSpacing: "0.5px",
+                color: f.trend === "rising" ? T.green : f.trend === "declining" ? T.crimson : T.textFaint
+              }
+            }, f.trend === "rising" ? "▲ Rising" : f.trend === "declining" ? "▼ Falling" : "— Stable"),
+            React.createElement("span", { style: { fontSize: 10, color: T.textFaint } }, "›")
+          ))
+        )
+      ),
+
+      // Alliances & Rivalries — side by side
+      React.createElement("div", { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 } },
+        // Alliances
+        React.createElement("div", { style: { background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 4, padding: "20px 24px" } },
+          React.createElement(SectionLabel, null, "Alliances (" + alliances.length + ")"),
+          alliances.length > 0
+            ? React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } },
+                alliances.map((a, i) => {
+                  const facA = factionByName[a.a];
+                  const facB = factionByName[a.b];
+                  return React.createElement("div", {
+                    key: i,
+                    style: { display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 3, background: "rgba(46,204,113,0.04)", border: "1px solid rgba(46,204,113,0.1)" }
+                  },
+                    React.createElement("div", { style: { width: 8, height: 8, borderRadius: "50%", background: facA?.color || T.gold, flexShrink: 0 } }),
+                    React.createElement("span", { style: { fontSize: 12, color: T.text, flex: 1 } }, a.a),
+                    React.createElement("span", { style: { fontSize: 14, color: "#2ecc71" } }, "⟷"),
+                    React.createElement("span", { style: { fontSize: 12, color: T.text, flex: 1, textAlign: "right" } }, a.b),
+                    React.createElement("div", { style: { width: 8, height: 8, borderRadius: "50%", background: facB?.color || T.gold, flexShrink: 0 } })
+                  );
+                })
+              )
+            : React.createElement("div", { style: { fontSize: 11, color: T.textFaint, fontStyle: "italic" } }, "No alliances formed")
+        ),
+
+        // Rivalries
+        React.createElement("div", { style: { background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 4, padding: "20px 24px" } },
+          React.createElement(SectionLabel, null, "Rivalries & Conflicts (" + rivalries.length + ")"),
+          rivalries.length > 0
+            ? React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } },
+                rivalries.map((r, i) => {
+                  const facA = factionByName[r.a];
+                  const facB = factionByName[r.b];
+                  return React.createElement("div", {
+                    key: i,
+                    style: { display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", borderRadius: 3, background: "rgba(231,76,60,0.04)", border: "1px solid rgba(231,76,60,0.1)" }
+                  },
+                    React.createElement("div", { style: { width: 8, height: 8, borderRadius: "50%", background: facA?.color || T.crimson, flexShrink: 0 } }),
+                    React.createElement("span", { style: { fontSize: 12, color: T.text, flex: 1 } }, r.a),
+                    React.createElement("span", { style: { fontSize: 14, color: "#e74c3c" } }, "⚔"),
+                    React.createElement("span", { style: { fontSize: 12, color: T.text, flex: 1, textAlign: "right" } }, r.b),
+                    React.createElement("div", { style: { width: 8, height: 8, borderRadius: "50%", background: facB?.color || T.crimson, flexShrink: 0 } })
+                  );
+                })
+              )
+            : React.createElement("div", { style: { fontSize: 11, color: T.textFaint, fontStyle: "italic" } }, "No active rivalries")
+        )
+      ),
+
+      // Organizations & Shadow Powers
+      subFactions.length > 0 && React.createElement("div", { style: { background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 4, padding: "20px 24px" } },
+        React.createElement(SectionLabel, null, "Organizations & Shadow Powers"),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 } },
+          subFactions.map(sf => React.createElement("div", {
+            key: sf.id,
+            onClick: () => setSelectedEntity({ type: "faction", name: sf.name }),
+            style: {
+              padding: "14px 16px", background: "rgba(0,0,0,0.1)", border: `1px solid ${T.border}`,
+              borderRadius: 4, borderLeft: `3px solid ${sf.color}`, cursor: "pointer", transition: "border-color 0.15s"
+            }
+          },
+            React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 6 } },
+              React.createElement("span", { style: { fontSize: 13, color: T.text, fontWeight: 400 } }, sf.name),
+              React.createElement("span", { style: { fontSize: 9, color: T.textFaint, marginLeft: "auto" } }, "Power ", sf.power)
+            ),
+            React.createElement("div", { style: { fontSize: 10, color: T.textFaint, marginBottom: 6 } }, sf.govType || "Unknown type"),
+            sf.desc && React.createElement("div", { style: { fontSize: 10, color: T.textMuted, lineHeight: 1.5, marginBottom: 8 } },
+              sf.desc.length > 100 ? sf.desc.substring(0, 100) + "…" : sf.desc
+            ),
+            React.createElement("div", { style: { display: "flex", gap: 4, flexWrap: "wrap" } },
+              (sf.influence || []).map((inf, ii) => React.createElement("span", {
+                key: ii,
+                style: { fontSize: 8, color: sf.color, background: sf.color + "15", padding: "2px 6px", borderRadius: 2, border: `1px solid ${sf.color}30` }
+              }, inf))
+            ),
+            sf.parentFaction && React.createElement("div", { style: { fontSize: 9, color: T.textFaint, marginTop: 8, paddingTop: 6, borderTop: `1px solid ${T.border}` } },
+              "Operates within: ", sf.parentFaction
+            )
+          ))
+        )
+      ),
+
+      // Key Leaders
+      leaders.length > 0 && React.createElement("div", { style: { background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 4, padding: "20px 24px" } },
+        React.createElement(SectionLabel, null, "Key Leaders"),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 10 } },
+          leaders.map(n => {
+            const fac = factionByName[n.faction];
+            return React.createElement("div", {
+              key: n.id,
+              onClick: () => setSelectedEntity({ type: "npc", name: n.name }),
+              style: {
+                display: "flex", alignItems: "center", gap: 12, padding: "12px 14px",
+                background: "rgba(0,0,0,0.06)", border: `1px solid ${T.border}`, borderRadius: 4,
+                borderLeft: `3px solid ${fac?.color || T.textFaint}`, cursor: "pointer"
+              }
+            },
+              React.createElement("div", { style: { width: 32, height: 32, borderRadius: "50%", background: fac?.color || T.gold, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14, color: T.bg, fontFamily: T.heading, fontWeight: 600, flexShrink: 0 } },
+                n.name.charAt(0)
+              ),
+              React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+                React.createElement("div", { style: { fontSize: 12, color: T.text, fontWeight: 400 } }, n.name),
+                React.createElement("div", { style: { fontSize: 10, color: T.textFaint, marginTop: 2 } },
+                  [n.role, n.faction].filter(Boolean).join(" · ")
+                )
+              ),
+              n.alive === false && React.createElement("span", { style: { fontSize: 9, color: T.crimson, fontFamily: T.ui } }, "DECEASED")
+            );
+          })
+        )
+      )
     );
   };
 
   // ─────────────────────────────────────────────────────────────────────
-  // RENDER SVG GRAPH
+  // FACTIONS TAB
   // ─────────────────────────────────────────────────────────────────────
-  return (
-    <div style={{
-      padding: "20px 40px 36px",
-      maxWidth: "100%",
-      margin: "0 auto",
-      width: "100%"
-    }}>
-      {/* Header */}
-      <div style={{
-        display: "flex",
-        flexWrap: "wrap",
-        alignItems: "center",
-        gap: 12,
-        marginBottom: 20
-      }}>
-        <div style={{ flex: "1 1 200px", minWidth: 0 }}>
-          <div style={{
-            fontSize: 22,
-            color: T.text,
-            fontWeight: 400,
-            fontFamily: T.body,
-            letterSpacing: "0.02em",
-            lineHeight: 1.2
-          }}>Relationship Web</div>
-          <div style={{ fontSize: 12, color: T.textMuted, fontWeight: 300, marginTop: 2 }}>
-            {visibleNodes.length} of {nodes.length} entities
-          </div>
-        </div>
+  const renderFactions = () => {
+    const filtered = factions.filter(f => matchesSearch(f.name));
 
-        {/* Search */}
-        <div style={{
-          flex: "1 1 200px",
-          minWidth: 120,
-          position: "relative"
-        }}>
-          <input
-            type="text"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Search entities…"
-            style={{
-              width: "100%",
-              padding: "8px 12px",
-              fontSize: 13,
-              background: T.bgNav,
-              border: `1px solid ${T.border}`,
-              borderRadius: "3px",
-              color: T.text,
-              fontFamily: T.body
-            }}
-          />
-        </div>
+    return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 16 } },
+      filtered.map(f => {
+        const conns = getConnections(f.name);
+        const allies = conns.filter(c => c.type === "alliance");
+        const rivals = conns.filter(c => c.type === "rivalry");
+        const members = conns.filter(c => c.type === "membership" && c.other !== f.name);
+        const isExpanded = selectedEntity?.name === f.name;
 
-        {/* View Mode Toggle */}
-        <div style={{ display:"flex", gap:4, marginRight:8 }}>
-          {["graph","summary"].map(mode => (
-            <button key={mode} onClick={() => setViewMode(mode)} style={{
-              padding:"6px 12px", fontSize:10, fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase",
-              border: viewMode === mode ? `1px solid ${T.crimson}` : `1px solid ${T.border}`,
-              background: viewMode === mode ? "rgba(212,67,58,0.12)" : "transparent",
-              color: viewMode === mode ? T.crimson : T.textFaint,
-              borderRadius:"3px", cursor:"pointer",
-            }}>{mode}</button>
-          ))}
-        </div>
-
-        {/* Filter Toggles */}
-        <div style={{
-          display: "flex",
-          flexWrap: "wrap",
-          gap: 6,
-          marginLeft: "auto"
-        }}>
-          {[{key:"factions",label:"Kingdoms"},{key:"subfaction",label:"Organizations"},{key:"npcs",label:"Leaders"},{key:"cities",label:"Cities"},{key:"party",label:"Party"}].map(({key,label}) => (
-            <button
-              key={key}
-              onClick={() => setFilters(f => ({ ...f, [key]: !f[key] }))}
-              style={{
-                padding: "6px 10px",
-                fontSize: 10,
-                fontFamily: T.ui,
-                border: `1px solid ${filters[key] ? T.gold : T.border}`,
-                background: filters[key] ? "rgba(201,168,92,0.15)" : "transparent",
-                color: filters[key] ? T.gold : T.textFaint,
-                borderRadius: "3px",
-                cursor: "pointer",
-                letterSpacing: "0.5px",
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Summary View */}
-      {viewMode === "summary" && (() => {
-        const facs = data.factions || [];
-        const majorFacs = facs.filter(f => !f.isSubFaction);
-        const subFacs = facs.filter(f => f.isSubFaction);
-        const alliances = [];
-        const rivalries = [];
-        const seen = new Set();
-        facs.forEach(f => {
-          (f.allies || []).forEach(a => {
-            const key = [f.name, a].sort().join("↔");
-            if (!seen.has(key)) { seen.add(key); alliances.push({ a: f.name, b: a, colorA: f.color }); }
-          });
-          (f.rivals || []).forEach(r => {
-            const key = [f.name, r].sort().join("↔");
-            if (!seen.has(key)) { seen.add(key); rivalries.push({ a: f.name, b: r, colorA: f.color }); }
-          });
-        });
-
-        return (
-          <div style={{ display:"flex", flexDirection:"column", gap:20, marginBottom:20 }}>
-            {/* Alliances & Rivalries Summary */}
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-              <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"6px", padding:16 }}>
-                <div style={{ fontSize:12, color:T.green, fontFamily:T.ui, fontWeight:600, marginBottom:12, letterSpacing:"1px", textTransform:"uppercase" }}>
-                  Alliances ({alliances.length})
-                </div>
-                {alliances.length > 0 ? alliances.map((a, i) => (
-                  <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 0", borderBottom:i < alliances.length-1?`1px solid ${T.border}`:"none" }}>
-                    <div style={{ width:8, height:8, borderRadius:"50%", background:a.colorA || T.gold, flexShrink:0 }}/>
-                    <span style={{ fontSize:12, color:T.text }}>{a.a}</span>
-                    <span style={{ fontSize:10, color:T.green, fontFamily:T.ui }}>⟷</span>
-                    <span style={{ fontSize:12, color:T.text }}>{a.b}</span>
-                  </div>
-                )) : <div style={{ fontSize:11, color:T.textFaint, fontStyle:"italic" }}>No alliances formed</div>}
-              </div>
-
-              <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"6px", padding:16 }}>
-                <div style={{ fontSize:12, color:T.crimson, fontFamily:T.ui, fontWeight:600, marginBottom:12, letterSpacing:"1px", textTransform:"uppercase" }}>
-                  Rivalries & Conflicts ({rivalries.length})
-                </div>
-                {rivalries.length > 0 ? rivalries.map((r, i) => (
-                  <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 0", borderBottom:i < rivalries.length-1?`1px solid ${T.border}`:"none" }}>
-                    <div style={{ width:8, height:8, borderRadius:"50%", background:r.colorA || T.crimson, flexShrink:0 }}/>
-                    <span style={{ fontSize:12, color:T.text }}>{r.a}</span>
-                    <span style={{ fontSize:10, color:T.crimson, fontFamily:T.ui }}>⚔</span>
-                    <span style={{ fontSize:12, color:T.text }}>{r.b}</span>
-                  </div>
-                )) : <div style={{ fontSize:11, color:T.textFaint, fontStyle:"italic" }}>No active rivalries</div>}
-              </div>
-            </div>
-
-            {/* Major Factions Power Ranking */}
-            <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"6px", padding:16 }}>
-              <div style={{ fontSize:12, color:T.gold, fontFamily:T.ui, fontWeight:600, marginBottom:12, letterSpacing:"1px", textTransform:"uppercase" }}>
-                Power Ranking — Major Factions
-              </div>
-              {majorFacs.sort((a, b) => (b.power || 0) - (a.power || 0)).map((f, i) => (
-                <div key={f.id} style={{ display:"flex", alignItems:"center", gap:12, padding:"10px 0", borderBottom:i < majorFacs.length-1?`1px solid ${T.border}`:"none" }}>
-                  <span style={{ fontSize:16, color:T.textFaint, fontFamily:T.ui, width:24, textAlign:"right" }}>{i+1}</span>
-                  <div style={{ width:12, height:12, borderRadius:"50%", background:f.color, flexShrink:0 }}/>
-                  <div style={{ flex:1 }}>
-                    <div style={{ fontSize:13, color:T.text, fontWeight:400 }}>{f.name}</div>
-                    <div style={{ fontSize:10, color:T.textFaint }}>{f.govType} · {f.attitude} · {f.trend}</div>
-                  </div>
-                  <div style={{ textAlign:"right" }}>
-                    <div style={{ fontSize:14, color:T.gold, fontFamily:T.ui }}>{f.power}</div>
-                    <div style={{ width:60, height:4, background:"rgba(0,0,0,0.3)", borderRadius:"2px", marginTop:4, overflow:"hidden" }}>
-                      <div style={{ height:"100%", width:`${f.power}%`, background:f.color, borderRadius:"2px" }}/>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Sub-Factions by Region */}
-            {subFacs.length > 0 && (
-              <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"6px", padding:16 }}>
-                <div style={{ fontSize:12, color:T.gold, fontFamily:T.ui, fontWeight:600, marginBottom:12, letterSpacing:"1px", textTransform:"uppercase" }}>
-                  Organizations & Shadow Powers
-                </div>
-                <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
-                  {subFacs.map(sf => (
-                    <div key={sf.id} style={{ padding:"10px 14px", background:"rgba(0,0,0,0.15)", border:`1px solid ${T.border}`, borderRadius:"4px", borderLeft:`3px solid ${sf.color}` }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:4 }}>
-                        <span style={{ fontSize:12, color:T.text, fontWeight:400 }}>{sf.name}</span>
-                      </div>
-                      <div style={{ fontSize:9, color:T.textFaint, marginBottom:4 }}>{sf.govType} · Power {sf.power}</div>
-                      <div style={{ fontSize:10, color:T.textMuted, marginBottom:6, lineHeight:1.4 }}>{sf.desc?.substring(0, 80)}{sf.desc?.length > 80 ? "…" : ""}</div>
-                      <div style={{ display:"flex", gap:4, flexWrap:"wrap" }}>
-                        {(sf.influence || []).map((inf, ii) => (
-                          <span key={ii} style={{ fontSize:8, color:sf.color, background:`${sf.color}15`, padding:"2px 6px", borderRadius:"2px", border:`1px solid ${sf.color}33` }}>{inf}</span>
-                        ))}
-                      </div>
-                      {sf.parentFaction && <div style={{ fontSize:9, color:T.textFaint, marginTop:6 }}>Within: {sf.parentFaction}</div>}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      })()}
-
-      {/* SVG Canvas */}
-      {viewMode === "graph" && <div style={{
-        position: "relative",
-        width: "100%",
-        height: 700,
-        background: "rgba(12, 8, 4, 0.4)",
-        border: `1px solid ${T.border}`,
-        borderRadius: "6px",
-        overflow: "hidden",
-        cursor: draggingNode ? "grabbing" : "grab"
-      }}>
-        <svg
-          ref={svgRef}
-          width="100%"
-          height="100%"
-          style={{
-            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-            transformOrigin: "0 0",
-            cursor: "inherit"
-          }}
-          onMouseMove={handleSVGMouseMove}
-          onMouseUp={handleSVGMouseUp}
-          onMouseLeave={handleSVGMouseUp}
-          onWheel={handleWheel}
-          onContextMenu={handleSVGContextMenu}
-        >
-          {/* Define line styles */}
-          <defs>
-            <style>{`
-              .edge-alliance { stroke: #2ecc71; stroke-width: 2; fill: none; }
-              .edge-rivalry { stroke: #e74c3c; stroke-width: 3; stroke-dasharray: 5,5; fill: none; }
-              .edge-trade { stroke: #3498db; stroke-width: 1; stroke-dasharray: 2,4; fill: none; }
-              .edge-membership { stroke: #95a5a6; stroke-width: 1; fill: none; }
-              .edge-location { stroke: #9b59b6; stroke-width: 0.5; stroke-dasharray: 2,4; fill: none; opacity: 0.6; }
-              .edge-worship { stroke: #8e44ad; stroke-width: 2; fill: none; }
-              .edge-love { stroke: #ff69b4; stroke-width: 2; fill: none; }
-              .edge-feud { stroke: #f39c12; stroke-width: 2; fill: none; }
-            `}</style>
-          </defs>
-
-          {/* Edges */}
-          {visibleEdges.map((edge, i) => {
-            const source = nodes.find(n => n.id === edge.source);
-            const target = nodes.find(n => n.id === edge.target);
-            if (!source || !target) return null;
-
-            const relType = RELATIONSHIP_TYPES[edge.type] || RELATIONSHIP_TYPES.trade;
-            const highlighted = hoveredNode === edge.source || hoveredNode === edge.target;
-
-            return (
-              <line
-                key={`edge_${i}`}
-                x1={source.x}
-                y1={source.y}
-                x2={target.x}
-                y2={target.y}
-                className={`edge-${edge.type}`}
-                opacity={highlighted ? 1 : 0.6}
-                style={{
-                  pointerEvents: "none",
-                  transition: "opacity 0.2s ease"
-                }}
-              />
-            );
-          })}
-
-          {/* Nodes */}
-          {visibleNodes.map(node => {
-            const isHovered = hoveredNode === node.id;
-            const isSelected = selectedNode === node.id;
-
-            let nodeShape;
-            if (node.type === "city") {
-              // Diamond for cities
-              const s = node.radius;
-              nodeShape = (
-                <g key={node.id} transform={`translate(${node.x},${node.y})`}>
-                  <polygon
-                    points={`0,-${s} ${s},0 0,${s} -${s},0`}
-                    fill={node.color}
-                    stroke={T.gold}
-                    strokeWidth={isSelected ? 2 : 1}
-                    opacity={isHovered || isSelected ? 1 : 0.85}
-                    style={{
-                      cursor: "pointer",
-                      filter: isSelected ? `drop-shadow(0 0 8px ${T.gold}90)` : isHovered ? `drop-shadow(0 0 6px ${T.gold}60)` : "none",
-                      transition: "filter 0.2s ease"
-                    }}
-                    onMouseEnter={() => handleNodeMouseEnter(node.id)}
-                    onMouseLeave={handleNodeMouseLeave}
-                    onClick={() => handleNodeClick(node.id)}
-                    onMouseDown={() => handleNodeMouseDown(node.id)}
-                  />
-                  <text
-                    dy="0.3em"
-                    textAnchor="middle"
-                    fontSize={9}
-                    fill={T.text}
-                    fontFamily={T.heading}
-                    fontWeight={500}
-                    pointerEvents="none"
-                  >
-                    {node.label.substring(0, 8)}
-                  </text>
-                </g>
-              );
-            } else if (node.type === "party") {
-              // Star for party members
-              const s = node.radius;
-              const points = [];
-              for (let i = 0; i < 10; i++) {
-                const angle = (i * Math.PI) / 5 - Math.PI / 2;
-                const r = i % 2 === 0 ? s : s * 0.4;
-                points.push([r * Math.cos(angle), r * Math.sin(angle)]);
-              }
-              nodeShape = (
-                <g key={node.id} transform={`translate(${node.x},${node.y})`}>
-                  <polygon
-                    points={points.map(p => p.join(",")).join(" ")}
-                    fill={node.color}
-                    stroke={T.gold}
-                    strokeWidth={isSelected ? 2 : 1}
-                    opacity={isHovered || isSelected ? 1 : 0.85}
-                    style={{
-                      cursor: "pointer",
-                      filter: isSelected ? `drop-shadow(0 0 8px ${T.gold}90)` : isHovered ? `drop-shadow(0 0 6px ${T.gold}60)` : "none",
-                      transition: "filter 0.2s ease"
-                    }}
-                    onMouseEnter={() => handleNodeMouseEnter(node.id)}
-                    onMouseLeave={handleNodeMouseLeave}
-                    onClick={() => handleNodeClick(node.id)}
-                    onMouseDown={() => handleNodeMouseDown(node.id)}
-                  />
-                  <text
-                    dy="0.25em"
-                    textAnchor="middle"
-                    fontSize={9}
-                    fill={T.bg}
-                    fontFamily={T.heading}
-                    fontWeight={600}
-                    pointerEvents="none"
-                  >
-                    {node.label.substring(0, 1)}
-                  </text>
-                </g>
-              );
-            } else {
-              // Circle for factions & NPCs
-              nodeShape = (
-                <g key={node.id} transform={`translate(${node.x},${node.y})`}>
-                  <circle
-                    r={node.radius}
-                    fill={node.color}
-                    stroke={T.gold}
-                    strokeWidth={isSelected ? 2 : 1}
-                    opacity={isHovered || isSelected ? 1 : 0.85}
-                    style={{
-                      cursor: "pointer",
-                      filter: isSelected ? `drop-shadow(0 0 8px ${T.gold}90)` : isHovered ? `drop-shadow(0 0 6px ${T.gold}60)` : "none",
-                      transition: "filter 0.2s ease"
-                    }}
-                    onMouseEnter={() => handleNodeMouseEnter(node.id)}
-                    onMouseLeave={handleNodeMouseLeave}
-                    onClick={() => handleNodeClick(node.id)}
-                    onMouseDown={() => handleNodeMouseDown(node.id)}
-                  />
-                  <text
-                    dy="0.3em"
-                    textAnchor="middle"
-                    fontSize={node.type === "faction" ? 12 : 10}
-                    fill={T.bg}
-                    fontFamily={T.heading}
-                    fontWeight={600}
-                    pointerEvents="none"
-                  >
-                    {node.label.substring(0, node.type === "faction" || node.type === "subfaction" ? 6 : 4)}
-                  </text>
-                </g>
-              );
+        return React.createElement("div", {
+          key: f.id,
+          style: {
+            background: T.bgCard, border: `1px solid ${isExpanded ? T.crimsonBorder : T.border}`,
+            borderRadius: 4, overflow: "hidden", transition: "border-color 0.2s"
+          }
+        },
+          // Header row
+          React.createElement("div", {
+            onClick: () => setSelectedEntity(isExpanded ? null : { type: "faction", name: f.name }),
+            style: {
+              display: "grid", gridTemplateColumns: "14px 1fr auto 80px 50px", alignItems: "center", gap: 12,
+              padding: "14px 20px", cursor: "pointer", borderLeft: `4px solid ${f.color}`
             }
+          },
+            React.createElement("div", { style: { width: 12, height: 12, borderRadius: "50%", background: f.color } }),
+            React.createElement("div", null,
+              React.createElement("div", { style: { fontSize: 14, color: T.text, fontWeight: 400 } }, f.name),
+              React.createElement("div", { style: { fontSize: 10, color: T.textFaint, marginTop: 2 } },
+                [f.govType, f.isSubFaction ? "Organization" : "Major Faction"].filter(Boolean).join(" · ")
+              )
+            ),
+            React.createElement("div", { style: { display: "flex", gap: 6 } },
+              allies.length > 0 && React.createElement("span", { style: { fontSize: 9, color: "#2ecc71", padding: "2px 6px", background: "rgba(46,204,113,0.1)", borderRadius: 2, fontFamily: T.ui } },
+                allies.length + " allies"
+              ),
+              rivals.length > 0 && React.createElement("span", { style: { fontSize: 9, color: "#e74c3c", padding: "2px 6px", background: "rgba(231,76,60,0.1)", borderRadius: 2, fontFamily: T.ui } },
+                rivals.length + " rivals"
+              )
+            ),
+            React.createElement(PowerBar, { value: f.power || 0, max: 100, color: f.color }),
+            React.createElement("span", { style: { fontSize: 12, color: T.textFaint, textAlign: "right", transition: "transform 0.2s", transform: isExpanded ? "rotate(90deg)" : "none" } }, "›")
+          ),
 
-            return nodeShape;
-          })}
-        </svg>
+          // Expanded details
+          isExpanded && React.createElement("div", {
+            style: { padding: "0 20px 20px 24px", borderTop: `1px solid ${T.border}`, marginTop: 0, paddingTop: 16 }
+          },
+            f.desc && React.createElement("div", { style: { fontSize: 11, color: T.textMuted, lineHeight: 1.6, marginBottom: 16, fontStyle: "italic", maxWidth: 700 } }, f.desc),
 
-        {/* Instructions Overlay */}
-        <div style={{
-          position: "absolute",
-          bottom: 12,
-          left: 12,
-          fontSize: 10,
-          color: T.textFaint,
-          fontFamily: T.body,
-          opacity: 0.6,
-          pointerEvents: "none"
-        }}>
-          Hover: highlight | Click: details | Drag: move | Scroll: zoom | Right-click: reset
-        </div>
+            // Attitude & Trend
+            React.createElement("div", { style: { display: "flex", gap: 24, marginBottom: 16 } },
+              React.createElement("div", null,
+                React.createElement("div", { style: { fontSize: 8, color: T.textFaint, fontFamily: T.ui, letterSpacing: "1px", textTransform: "uppercase", marginBottom: 4 } }, "Attitude"),
+                React.createElement("div", { style: { fontSize: 12, color: f.attitude === "hostile" ? T.crimson : f.attitude === "allied" || f.attitude === "friendly" ? T.green : T.text, textTransform: "capitalize" } }, f.attitude || "Neutral")
+              ),
+              React.createElement("div", null,
+                React.createElement("div", { style: { fontSize: 8, color: T.textFaint, fontFamily: T.ui, letterSpacing: "1px", textTransform: "uppercase", marginBottom: 4 } }, "Trend"),
+                React.createElement("div", { style: { fontSize: 12, color: f.trend === "rising" ? T.green : f.trend === "declining" ? T.crimson : T.textMuted } },
+                  f.trend === "rising" ? "▲ Rising" : f.trend === "declining" ? "▼ Declining" : "— Stable"
+                )
+              ),
+              f.resources && f.resources.length > 0 && React.createElement("div", null,
+                React.createElement("div", { style: { fontSize: 8, color: T.textFaint, fontFamily: T.ui, letterSpacing: "1px", textTransform: "uppercase", marginBottom: 4 } }, "Resources"),
+                React.createElement("div", { style: { fontSize: 11, color: T.textMuted } }, f.resources.join(", "))
+              )
+            ),
 
-        {/* Detail Panel */}
-        {renderDetailPanel()}
-      </div>}
+            // Hierarchy
+            f.hierarchy && f.hierarchy.length > 0 && React.createElement("div", { style: { marginBottom: 16 } },
+              React.createElement("div", { style: { fontSize: 8, color: T.textFaint, fontFamily: T.ui, letterSpacing: "1px", textTransform: "uppercase", marginBottom: 8 } }, "Leadership"),
+              React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 4 } },
+                f.hierarchy.map((h, i) => React.createElement("div", {
+                  key: i,
+                  style: { display: "flex", alignItems: "center", gap: 8, paddingLeft: i * 16, fontSize: 11 }
+                },
+                  React.createElement("span", { style: { color: i === 0 ? T.gold : T.textFaint } }, h.title + ":"),
+                  React.createElement("span", { style: { color: T.textMuted } }, h.name)
+                ))
+              )
+            ),
 
-      {/* Legend */}
-      <div style={{
-        marginTop: 20,
-        padding: 16,
-        background: T.bgCard,
-        border: `1px solid ${T.border}`,
-        borderRadius: "6px"
-      }}>
-        <div style={{
-          fontSize: 12,
-          color: T.gold,
-          fontFamily: T.ui,
-          fontWeight: 600,
-          marginBottom: 10,
-          textTransform: "uppercase",
-          letterSpacing: "1px"
-        }}>Relationship Types</div>
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-          gap: 12
-        }}>
-          {Object.entries(RELATIONSHIP_TYPES).map(([key, rel]) => (
-            <div key={key} style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-              fontSize: 11,
-              color: T.textMuted
-            }}>
-              <svg width="40" height="2" style={{ flexShrink: 0 }}>
-                <line
-                  x1="0"
-                  y1="1"
-                  x2="40"
-                  y2="1"
-                  stroke={rel.color}
-                  strokeWidth={rel.weight}
-                  strokeDasharray={rel.style === "dashed" ? "5,5" : rel.style === "dotted" ? "2,4" : "none"}
-                />
-              </svg>
-              <span>{rel.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
+            // Connections
+            conns.length > 0 && React.createElement("div", null,
+              React.createElement("div", { style: { fontSize: 8, color: T.textFaint, fontFamily: T.ui, letterSpacing: "1px", textTransform: "uppercase", marginBottom: 8 } }, "Connections"),
+              React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 } },
+                conns.map((c, i) => React.createElement("div", {
+                  key: i,
+                  onClick: (e) => { e.stopPropagation(); setSelectedEntity({ type: "any", name: c.other }); },
+                  style: {
+                    display: "flex", alignItems: "center", gap: 6, padding: "6px 10px",
+                    background: "rgba(0,0,0,0.1)", border: `1px solid ${T.border}`, borderRadius: 3,
+                    cursor: "pointer", fontSize: 11
+                  }
+                },
+                  React.createElement("div", { style: { width: 6, height: 6, borderRadius: "50%", background: REL_COLORS[c.type] || T.textFaint } }),
+                  React.createElement("span", { style: { color: T.textMuted } }, c.other),
+                  React.createElement("span", { style: { fontSize: 8, color: REL_COLORS[c.type] || T.textFaint, fontFamily: T.ui } }, c.label)
+                ))
+              )
+            )
+          )
+        );
+      })
+    );
+  };
+
+  // ─────────────────────────────────────────────────────────────────────
+  // NPC NETWORK TAB
+  // ─────────────────────────────────────────────────────────────────────
+  const renderNPCs = () => {
+    const leaders = npcs.filter(n => n.isLeader && matchesSearch(n.name));
+    const others = npcs.filter(n => !n.isLeader && matchesSearch(n.name));
+
+    const renderNPCCard = (n) => {
+      const fac = factionByName[n.faction];
+      const conns = getConnections(n.name);
+      const isExpanded = selectedEntity?.name === n.name;
+
+      return React.createElement("div", {
+        key: n.id,
+        onClick: () => setSelectedEntity(isExpanded ? null : { type: "npc", name: n.name }),
+        style: {
+          background: T.bgCard, border: `1px solid ${isExpanded ? T.crimsonBorder : T.border}`,
+          borderRadius: 4, borderLeft: `3px solid ${fac?.color || T.textFaint}`,
+          padding: "14px 16px", cursor: "pointer", transition: "border-color 0.15s"
+        }
+      },
+        React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: isExpanded ? 12 : 0 } },
+          React.createElement("div", { style: { width: 28, height: 28, borderRadius: "50%", background: fac?.color || T.gold, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: T.bg, fontFamily: T.heading, fontWeight: 600, flexShrink: 0 } },
+            n.name.charAt(0)
+          ),
+          React.createElement("div", { style: { flex: 1, minWidth: 0 } },
+            React.createElement("div", { style: { fontSize: 13, color: T.text, fontWeight: 400 } }, n.name),
+            React.createElement("div", { style: { fontSize: 10, color: T.textFaint, marginTop: 1 } },
+              [n.role, n.faction, n.loc].filter(Boolean).join(" · ")
+            )
+          ),
+          n.alive === false && React.createElement("span", { style: { fontSize: 8, color: T.crimson, fontFamily: T.ui, letterSpacing: "1px" } }, "DECEASED"),
+          React.createElement("span", {
+            style: {
+              fontSize: 10, padding: "2px 8px", borderRadius: 2, fontFamily: T.ui,
+              color: n.attitude === "hostile" ? T.crimson : n.attitude === "friendly" || n.attitude === "allied" ? T.green : T.textFaint,
+              background: n.attitude === "hostile" ? "rgba(212,67,58,0.08)" : n.attitude === "friendly" || n.attitude === "allied" ? "rgba(94,224,154,0.08)" : "rgba(0,0,0,0.08)"
+            }
+          }, n.attitude || "neutral")
+        ),
+
+        isExpanded && React.createElement("div", { style: { paddingTop: 12, borderTop: `1px solid ${T.border}` } },
+          n.desc && React.createElement("div", { style: { fontSize: 11, color: T.textMuted, lineHeight: 1.6, marginBottom: 12, fontStyle: "italic" } }, n.desc),
+          conns.length > 0 && React.createElement("div", { style: { display: "flex", flexWrap: "wrap", gap: 4 } },
+            conns.map((c, i) => React.createElement("span", {
+              key: i,
+              style: { display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 8px", fontSize: 9, background: "rgba(0,0,0,0.1)", border: `1px solid ${T.border}`, borderRadius: 2, color: T.textMuted }
+            },
+              React.createElement("div", { style: { width: 4, height: 4, borderRadius: "50%", background: REL_COLORS[c.type] || T.textFaint } }),
+              c.other, " — ", c.label
+            ))
+          )
+        )
+      );
+    };
+
+    return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 20 } },
+      leaders.length > 0 && React.createElement("div", null,
+        React.createElement(SectionLabel, null, "Leaders & Rulers"),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 10 } },
+          leaders.map(renderNPCCard)
+        )
+      ),
+      others.length > 0 && React.createElement("div", null,
+        React.createElement(SectionLabel, null, "Other NPCs"),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 10 } },
+          others.map(renderNPCCard)
+        )
+      ),
+      party.length > 0 && React.createElement("div", null,
+        React.createElement(SectionLabel, null, "Party Members"),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 10 } },
+          party.map((p, i) => React.createElement("div", {
+            key: i,
+            style: {
+              background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 4,
+              borderLeft: `3px solid ${T.questGold}`, padding: "14px 16px"
+            }
+          },
+            React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10 } },
+              React.createElement("div", { style: { width: 28, height: 28, borderRadius: "50%", background: T.questGold, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: T.bg, fontFamily: T.heading, fontWeight: 600, flexShrink: 0 } },
+                "★"
+              ),
+              React.createElement("div", null,
+                React.createElement("div", { style: { fontSize: 13, color: T.text, fontWeight: 400 } }, p.name),
+                React.createElement("div", { style: { fontSize: 10, color: T.textFaint, marginTop: 1 } },
+                  [p.race, p.class || p.class_, p.level ? "Lv" + p.level : null].filter(Boolean).join(" · ")
+                )
+              )
+            )
+          ))
+        )
+      )
+    );
+  };
+
+  // ─────────────────────────────────────────────────────────────────────
+  // GRAPH VIEW — Circular layout (much cleaner than force-directed)
+  // ─────────────────────────────────────────────────────────────────────
+  const renderGraph = () => {
+    const allEntities = [];
+    const entityMap = {};
+
+    // Add major factions first (inner ring), then sub-factions, then leaders
+    majorFactions.forEach(f => {
+      const id = "f_" + f.name;
+      allEntities.push({ id, name: f.name, type: "faction", color: f.color || T.gold, radius: Math.max(18, 18 + (f.power || 0) / 10), ring: 0 });
+      entityMap[f.name] = id;
+    });
+    subFactions.forEach(f => {
+      const id = "sf_" + f.name;
+      allEntities.push({ id, name: f.name, type: "subfaction", color: f.color || T.textFaint, radius: 14, ring: 1 });
+      entityMap[f.name] = id;
+    });
+    npcs.filter(n => n.isLeader).forEach(n => {
+      const fac = factionByName[n.faction];
+      const id = "n_" + n.name;
+      allEntities.push({ id, name: n.name, type: "npc", color: fac?.color || T.textFaint, radius: 10, ring: 2 });
+      entityMap[n.name] = id;
+    });
+    cities.forEach(c => {
+      const id = "c_" + c.name;
+      if (!entityMap[c.name]) {
+        allEntities.push({ id, name: c.name, type: "city", color: c.isCapital ? T.questGold : T.textMuted, radius: c.isCapital ? 14 : 10, ring: 2 });
+        entityMap[c.name] = id;
+      }
+    });
+
+    if (allEntities.length === 0) {
+      return React.createElement("div", { style: { padding: 40, textAlign: "center", color: T.textFaint, fontStyle: "italic" } },
+        "No entities to display. Add factions, NPCs, or cities to see the relationship graph."
+      );
+    }
+
+    const SVG_W = 900;
+    const SVG_H = 620;
+    const CX = SVG_W / 2;
+    const CY = SVG_H / 2;
+
+    // Position entities in concentric circles by ring
+    const rings = [[], [], []];
+    allEntities.forEach(e => rings[e.ring].push(e));
+
+    const ringRadii = [160, 250, 320];
+    rings.forEach((ring, ri) => {
+      ring.forEach((e, i) => {
+        const angle = (2 * Math.PI * i / ring.length) - Math.PI / 2;
+        e.x = CX + ringRadii[ri] * Math.cos(angle);
+        e.y = CY + ringRadii[ri] * Math.sin(angle);
+      });
+    });
+
+    // Build visible edges
+    const graphEdges = [];
+    relationships.forEach(r => {
+      const srcId = entityMap[r.a];
+      const tgtId = entityMap[r.b];
+      if (srcId && tgtId) {
+        const src = allEntities.find(e => e.id === srcId);
+        const tgt = allEntities.find(e => e.id === tgtId);
+        if (src && tgt) {
+          graphEdges.push({ src, tgt, type: r.type, label: r.label });
+        }
+      }
+    });
+
+    const hoveredName = selectedEntity?.name;
+
+    return React.createElement("div", {
+      style: { background: "rgba(12,8,4,0.3)", border: `1px solid ${T.border}`, borderRadius: 4, overflow: "hidden", position: "relative" }
+    },
+      React.createElement("svg", {
+        viewBox: `0 0 ${SVG_W} ${SVG_H}`,
+        style: { width: "100%", height: 620, display: "block", transform: `scale(${graphZoom})`, transformOrigin: "center center" },
+        onWheel: (e) => { e.preventDefault(); setGraphZoom(z => Math.max(0.5, Math.min(2.5, z + (e.deltaY > 0 ? -0.1 : 0.1)))); }
+      },
+        // Edges
+        graphEdges.map((edge, i) => {
+          const isHighlighted = hoveredName === edge.src.name || hoveredName === edge.tgt.name;
+          const color = REL_COLORS[edge.type] || "#555";
+          const dashArray = edge.type === "rivalry" ? "6,4" : edge.type === "trade" ? "2,4" : edge.type === "membership" ? "3,3" : "none";
+          return React.createElement("line", {
+            key: "e" + i,
+            x1: edge.src.x, y1: edge.src.y, x2: edge.tgt.x, y2: edge.tgt.y,
+            stroke: color, strokeWidth: isHighlighted ? 2.5 : 1.5, strokeDasharray: dashArray,
+            opacity: hoveredName ? (isHighlighted ? 0.9 : 0.1) : 0.4,
+            style: { transition: "opacity 0.2s" }
+          });
+        }),
+
+        // Nodes
+        allEntities.map(e => {
+          const isHovered = hoveredName === e.name;
+          const isConnected = hoveredName && relationships.some(r => (r.a === hoveredName && r.b === e.name) || (r.b === hoveredName && r.a === e.name));
+          const dimmed = hoveredName && !isHovered && !isConnected;
+
+          return React.createElement("g", {
+            key: e.id,
+            onClick: () => setSelectedEntity(selectedEntity?.name === e.name ? null : { type: e.type, name: e.name }),
+            style: { cursor: "pointer" }
+          },
+            // Node shape
+            e.type === "city"
+              ? React.createElement("rect", {
+                  x: e.x - e.radius, y: e.y - e.radius, width: e.radius * 2, height: e.radius * 2,
+                  rx: 2, fill: e.color, opacity: dimmed ? 0.15 : isHovered ? 1 : 0.8,
+                  stroke: isHovered ? T.gold : "none", strokeWidth: 1.5,
+                  style: { transition: "opacity 0.2s" }
+                })
+              : React.createElement("circle", {
+                  cx: e.x, cy: e.y, r: e.radius,
+                  fill: e.color, opacity: dimmed ? 0.15 : isHovered ? 1 : 0.8,
+                  stroke: isHovered ? T.gold : "none", strokeWidth: 1.5,
+                  style: { transition: "opacity 0.2s" }
+                }),
+            // Label
+            React.createElement("text", {
+              x: e.x, y: e.y + e.radius + 12,
+              textAnchor: "middle", fontSize: e.type === "faction" ? 10 : 8,
+              fill: dimmed ? "rgba(255,255,255,0.1)" : isHovered ? T.text : "rgba(255,255,255,0.5)",
+              fontFamily: T.heading, style: { pointerEvents: "none", transition: "fill 0.2s" }
+            }, e.name.length > 14 ? e.name.substring(0, 12) + "…" : e.name)
+          );
+        })
+      ),
+
+      // Legend overlay
+      React.createElement("div", {
+        style: { position: "absolute", bottom: 12, left: 12, display: "flex", gap: 12, flexWrap: "wrap" }
+      },
+        [["Alliance", "#2ecc71"], ["Rivalry", "#e74c3c"], ["Trade", "#3498db"], ["Membership", "#95a5a6"]].map(([label, color]) =>
+          React.createElement("div", {
+            key: label,
+            style: { display: "flex", alignItems: "center", gap: 4, fontSize: 9, color: "rgba(255,255,255,0.4)" }
+          },
+            React.createElement("div", { style: { width: 16, height: 2, background: color, borderRadius: 1 } }),
+            label
+          )
+        )
+      ),
+
+      // Interaction hint
+      React.createElement("div", {
+        style: { position: "absolute", bottom: 12, right: 12, fontSize: 9, color: "rgba(255,255,255,0.3)", fontFamily: T.body }
+      }, "Click: highlight connections · Scroll: zoom")
+    );
+  };
+
+  // ─────────────────────────────────────────────────────────────────────
+  // MAIN RENDER
+  // ─────────────────────────────────────────────────────────────────────
+  const tabs = [
+    { key: "overview", label: "Overview" },
+    { key: "factions", label: "Factions" },
+    { key: "npcs", label: "NPCs" },
+    { key: "graph", label: "Graph" }
+  ];
+
+  return React.createElement("div", {
+    style: { padding: "20px 40px 36px", maxWidth: "100%", width: "100%", overflowY: "auto", flex: 1 }
+  },
+    // Header
+    React.createElement("div", {
+      style: { display: "flex", flexWrap: "wrap", alignItems: "center", gap: 12, marginBottom: 24 }
+    },
+      React.createElement("div", { style: { flex: "1 1 200px" } },
+        React.createElement("div", { style: { fontSize: 22, color: T.text, fontWeight: 400, fontFamily: T.body, letterSpacing: "0.02em" } }, "Relationships"),
+        React.createElement("div", { style: { fontSize: 12, color: T.textMuted, fontWeight: 300, marginTop: 2 } },
+          factions.length + " factions · " + npcs.filter(n => n.isLeader).length + " leaders · " + relationships.length + " connections"
+        )
+      ),
+
+      // Search
+      React.createElement("div", { style: { flex: "1 1 180px", minWidth: 120, maxWidth: 280 } },
+        React.createElement("input", {
+          type: "text",
+          value: searchTerm,
+          onChange: (e) => setSearchTerm(e.target.value),
+          placeholder: "Search entities\u2026",
+          style: {
+            width: "100%", padding: "8px 12px", fontSize: 12,
+            background: T.bgNav, border: `1px solid ${T.border}`, borderRadius: 3,
+            color: T.text, fontFamily: T.body
+          }
+        })
+      ),
+
+      // View Tabs
+      React.createElement("div", { style: { display: "flex", gap: 4 } },
+        tabs.map(t => React.createElement("button", {
+          key: t.key,
+          onClick: () => { setViewMode(t.key); setSelectedEntity(null); },
+          style: {
+            padding: "6px 14px", fontSize: 10, fontFamily: T.ui, letterSpacing: "1px", textTransform: "uppercase",
+            border: viewMode === t.key ? `1px solid ${T.crimson}` : `1px solid ${T.border}`,
+            background: viewMode === t.key ? "rgba(212,67,58,0.12)" : "transparent",
+            color: viewMode === t.key ? T.crimson : T.textFaint,
+            borderRadius: 3, cursor: "pointer", transition: "all 0.15s"
+          }
+        }, t.label))
+      )
+    ),
+
+    // Content
+    viewMode === "overview" && renderOverview(),
+    viewMode === "factions" && renderFactions(),
+    viewMode === "npcs" && renderNPCs(),
+    viewMode === "graph" && renderGraph()
   );
 };

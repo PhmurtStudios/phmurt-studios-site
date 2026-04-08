@@ -2145,7 +2145,7 @@ function _lwBuildAutoSummary(events) {
 // WORLD STATE
 // ═══════════════════════════════════════════════════════════════════════════
 
-function WorldView({ data, setData, onNav, viewRole = "dm" }) {
+function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavTarget }) {
   const isDM = viewRole === "dm";
   const isLive = data.campaignType === "live";
   const [sel,setSel] = useState(null);
@@ -2177,6 +2177,27 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
   const townMapContainerRef = useRef(null);
   const [isMapCompact,setIsMapCompact] = useState(() => typeof window !== "undefined" ? window.innerWidth < 860 : false);
   const worldMapState = normalizeWorldMapState(data.worldMap);
+
+  // ── Deep-link navigation from other tabs ──
+  useEffect(() => {
+    if (!navTarget) return;
+    const { subTab, entityType, entityId, entityName } = navTarget;
+    if (subTab) setTab(subTab);
+    if (entityType && (entityId || entityName)) {
+      let entity = null;
+      const list = entityType === "faction" ? (data.factions || [])
+        : entityType === "npc" ? (data.npcs || [])
+        : entityType === "region" ? (data.regions || [])
+        : entityType === "city" ? (data.cities || [])
+        : [];
+      entity = entityId ? list.find(e => e.id === entityId) : list.find(e => e.name === entityName);
+      if (entity) {
+        setSel(entity);
+        setSelType(entityType);
+      }
+    }
+    if (clearNavTarget) clearNavTarget();
+  }, [navTarget]);
 
   // ── Living World Engine state ──
   const [lwActive, setLwActive] = useState(false);
@@ -3178,7 +3199,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
         </div>
       </div>
 
-      <div style={{ display:"flex", flex:1, overflow:"hidden", position:"relative" }}>
+      <div style={{ display: (tab === "calendar" || tab === "exploration") ? "none" : "flex", flex:1, overflow:"hidden", position:"relative" }}>
         {/* ══════════ FANTASY MAP TAB — Multi-scale continental map ══════════ */}
         {tab==="map" && (
           <div ref={mapRef} style={{ flex:1, overflow:"hidden", cursor: dragging ? "grabbing" : "grab", position:"relative", background: data.atlasMapSeed ? "#2a2520" : "linear-gradient(165deg, #e8ddc8 0%, #ddd0b8 45%, #d4c6a8 100%)", touchAction:"none", WebkitUserSelect:"none", userSelect:"none" }}
@@ -6092,8 +6113,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
 
       {/* ══════════ CALENDAR PANEL ══════════ */}
       {tab==="calendar" && (
-        <div style={{ flex:1, overflowY:"auto", padding:"24px 48px" }}>
-          <div style={{ marginBottom:40 }}>
+        <div style={{ flex:1, overflowY:"auto", padding:"24px 48px", minHeight:0 }}>
+          <div style={{ paddingBottom:40 }}>
             {/* Current Date Display */}
             <div style={{ marginBottom:32, textAlign:"center" }}>
               <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Current Date</div>
@@ -6320,17 +6341,19 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
 
         // ── Generate hex grid data when both cities are selected ──
         const hasRoute = hexOrigin && hexDest && hexOrigin !== hexDest;
-        const hexTerrains = ["plains","forest","hills","mountains","swamp","desert","coast","tundra"];
-        const hexIcons = { plains:"🌾", forest:"🌲", hills:"⛰️", mountains:"🏔️", swamp:"🌿", desert:"🏜️", coast:"🌊", tundra:"❄️" };
-        const hexColors = { plains:"rgba(139,195,74,0.18)", forest:"rgba(46,125,50,0.22)", hills:"rgba(168,140,80,0.18)", mountains:"rgba(120,120,140,0.22)", swamp:"rgba(60,100,60,0.22)", desert:"rgba(210,180,100,0.20)", coast:"rgba(70,150,200,0.18)", tundra:"rgba(180,210,230,0.18)" };
-        const hexDangers = { plains:["bandits","wolves","wild horses"], forest:["owlbears","spiders","elf patrol"], hills:["goblins","wyvern","rockslide"], mountains:["drake","giant","avalanche"], swamp:["hydra","cultists","will-o-wisp"], desert:["sandworm","nomads","mirage"], coast:["pirates","sea serpent","storm"], tundra:["yeti","frost wolves","blizzard"] };
-        const hexFeatures = ["river crossing","ancient waystone","abandoned camp","hidden cave","merchant trail","standing stones","old watchtower","sacred grove","mineral vein","crossroads"];
-        const hexWeathers = ["Clear","Overcast","Light Rain","Heavy Rain","Foggy","Windy","Storm"];
+        const hexTerrains = ["plains","forest","hills","mountains","swamp","desert","coast","tundra","jungle","badlands","river_valley","grassland"];
+        const hexIcons = { plains:"🌾", forest:"🌲", hills:"⛰️", mountains:"🏔️", swamp:"🌿", desert:"🏜️", coast:"🌊", tundra:"❄️", jungle:"🌴", badlands:"🪨", river_valley:"🏞️", grassland:"🌻" };
+        const hexColors = { plains:"rgba(139,195,74,0.18)", forest:"rgba(46,125,50,0.22)", hills:"rgba(168,140,80,0.18)", mountains:"rgba(120,120,140,0.22)", swamp:"rgba(60,100,60,0.22)", desert:"rgba(210,180,100,0.20)", coast:"rgba(70,150,200,0.18)", tundra:"rgba(180,210,230,0.18)", jungle:"rgba(20,120,40,0.24)", badlands:"rgba(160,80,40,0.20)", river_valley:"rgba(60,140,180,0.16)", grassland:"rgba(160,200,60,0.16)" };
+        const moveCosts = { plains:1, forest:1.5, hills:2, mountains:3, swamp:2, desert:2, coast:1, tundra:2.5, jungle:2, badlands:2, river_valley:1, grassland:1 };
+        const hexDangers = { plains:["bandits","wolves","wild horses","stampede"], forest:["owlbears","giant spiders","elf patrol","dire wolves","treant"], hills:["goblins","wyvern","rockslide","hill giant","harpy nest"], mountains:["drake","stone giant","avalanche","griffon","orc warband"], swamp:["hydra","cultists","will-o-wisp","black dragon","bog hag"], desert:["sandworm","nomad raiders","mirage","scorpion swarm","mummy"], coast:["pirates","sea serpent","storm","merfolk ambush","kraken spawn"], tundra:["yeti","frost wolves","blizzard","ice troll","white dragon"], jungle:["yuan-ti","panther pack","poison dart trap","dinosaur","vine blight"], badlands:["gnolls","dust devil","basilisk","vulture flock","bandit lord"], river_valley:["river trolls","nixies","flash flood","crocodile","water elemental"], grassland:["centaur patrol","bulette","grass fire","ankheg","horseback raiders"] };
+        const hexFeatures = ["river crossing","ancient waystone","abandoned camp","hidden cave","merchant trail","standing stones","old watchtower","sacred grove","mineral vein","crossroads","ruined bridge","druid circle","old battlefield","hermit's hut","hot springs","fairy ring","ancient tree","collapsed mine","refugee camp","signal tower","border marker","abandoned shrine","bandit hideout","hunter's lodge"];
+        const hexWeathers = ["Clear Skies","Partly Cloudy","Overcast","Light Rain","Heavy Rain","Thick Fog","Strong Winds","Thunderstorm","Drizzle","Haze"];
+        const hexDescriptions = { plains:"Wide open grasslands stretch to the horizon, dotted with wildflowers and low brush.", forest:"Dense canopy overhead filters the sunlight into dappled patterns on the forest floor.", hills:"Rolling terrain rises and falls in gentle waves, offering vistas of the surrounding lands.", mountains:"Jagged peaks and narrow passes dominate this unforgiving landscape.", swamp:"Murky water and gnarled roots make every step treacherous in this fetid marsh.", desert:"An endless expanse of sun-scorched sand and rock, shimmering with heat.", coast:"Salt-crusted cliffs overlook churning waves and sandy coves.", tundra:"Frozen wasteland of permafrost and biting winds under a pale sky.", jungle:"Thick tropical vegetation creates a wall of green, alive with strange calls.", badlands:"Eroded canyons and crumbling mesas of red and orange stone.", river_valley:"A fertile floodplain hugging a wide, slow-moving river.", grassland:"Tall grass sways in the wind like a golden sea." };
 
-        // Generate path hexes
-        const hexCount = hasRoute ? 6 + Math.floor(hexRng() * 6) : 0;
-        const originCity = cities.find(c => c.name === hexOrigin);
-        const destCity = cities.find(c => c.name === hexDest);
+        // Generate path hexes — more hexes, wider grid
+        const hexCount = hasRoute ? 8 + Math.floor(hexRng() * 8) : 0;
+        const GRID_COLS = Math.min(hexCount, 8);
+        const GRID_ROWS = Math.ceil(hexCount / GRID_COLS);
         const originRegion = regions.find(r => (r.cities || []).includes(hexOrigin));
         const destRegion = regions.find(r => (r.cities || []).includes(hexDest));
 
@@ -6339,41 +6362,63 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
           const pct = hi / Math.max(hexCount - 1, 1);
           const baseT = originRegion?.terrain || "plains";
           const endT = destRegion?.terrain || "forest";
-          const terrain = pct < 0.35 ? baseT : pct > 0.65 ? endT : hexPick(hexTerrains);
-          const danger = hexRng() < 0.3 ? hexPick(hexDangers[terrain] || hexDangers.plains) : null;
-          const feature = hexRng() < 0.4 ? hexPick(hexFeatures) : null;
+          // Terrain transitions: start region → mixed middle → end region
+          let terrain;
+          if (hi === 0) terrain = baseT;
+          else if (hi === hexCount - 1) terrain = endT;
+          else if (pct < 0.3) terrain = hexRng() < 0.7 ? baseT : hexPick(hexTerrains);
+          else if (pct > 0.7) terrain = hexRng() < 0.7 ? endT : hexPick(hexTerrains);
+          else terrain = hexPick(hexTerrains);
+
+          const dangerRoll = hexRng();
+          const danger = dangerRoll < 0.35 ? hexPick(hexDangers[terrain] || hexDangers.plains) : null;
+          const dangerCR = danger ? (2 + Math.floor(hexRng() * 10)) : 0;
+          const featureRoll = hexRng();
+          const feature = featureRoll < 0.5 ? hexPick(hexFeatures) : null;
           const weather = hexPick(hexWeathers);
-          hexes.push({ idx: hi, terrain, danger, feature, weather, explored: hi <= hexPartyPos, icon: hexIcons[terrain] || "🌍", color: hexColors[terrain] || hexColors.plains });
+          const elevation = terrain === "mountains" ? "High" : terrain === "hills" ? "Elevated" : terrain === "coast" || terrain === "swamp" || terrain === "river_valley" ? "Low" : "Normal";
+          const moveCost = moveCosts[terrain] || 1;
+          const restSafe = !danger && hexRng() > 0.3;
+
+          hexes.push({
+            idx: hi, terrain, danger, dangerCR, feature, weather, elevation, moveCost, restSafe,
+            explored: hi <= hexPartyPos,
+            icon: hexIcons[terrain] || "🌍",
+            color: hexColors[terrain] || hexColors.plains,
+            description: hexDescriptions[terrain] || "Unknown terrain.",
+          });
         }
 
-        // ── Flat-top hex geometry helper ──
-        const HEX_R = 38;
-        const HEX_W = HEX_R * 2;
-        const HEX_H = Math.sqrt(3) * HEX_R;
+        // ── Pointy-top hex geometry helper (better for grid layout) ──
+        const HEX_R = 36;
+        const HEX_W = Math.sqrt(3) * HEX_R;
+        const HEX_H = HEX_R * 2;
         const hexPointsStr = (cx, cy) => {
           const pts = [];
           for (let a = 0; a < 6; a++) {
-            const angle = (Math.PI / 180) * (60 * a);
+            const angle = (Math.PI / 180) * (60 * a - 30);
             pts.push(`${cx + HEX_R * Math.cos(angle)},${cy + HEX_R * Math.sin(angle)}`);
           }
           return pts.join(" ");
         };
 
-        // Arrange hexes in a flowing path (staggered row)
+        // Arrange hexes in a proper hex grid (offset rows)
         const hexPositions = hexes.map((h, i) => {
-          const col = i;
-          const row = i % 2 === 0 ? 0 : 1;
-          return { x: 60 + col * (HEX_W * 0.78), y: 55 + row * (HEX_H * 0.55), ...h };
+          const col = i % GRID_COLS;
+          const row = Math.floor(i / GRID_COLS);
+          const xOff = row % 2 === 1 ? HEX_W * 0.5 : 0;
+          return { x: 55 + col * HEX_W + xOff, y: 55 + row * (HEX_H * 0.75), ...h };
         });
-        const svgW = hexCount > 0 ? 60 + hexCount * (HEX_W * 0.78) + HEX_R : 400;
-        const svgH = 55 + HEX_H * 0.55 + HEX_R + 30;
+        const svgW = 55 + GRID_COLS * HEX_W + HEX_W * 0.5 + 20;
+        const svgH = 55 + GRID_ROWS * (HEX_H * 0.75) + HEX_R + 10;
+        const totalMoveCost = hexes.reduce((s, h) => s + h.moveCost, 0);
 
         const currentHex = hexes[hexPartyPos] || null;
         const detailHex = hexSelectedHex != null ? hexes[hexSelectedHex] : null;
 
         return (
-        <div style={{ flex:1, overflowY:"auto", padding:"24px 48px" }}>
-          <div style={{ marginBottom:40 }}>
+        <div style={{ flex:1, overflowY:"auto", padding:"24px 48px", minHeight:0 }}>
+          <div style={{ paddingBottom:40 }}>
             <div style={{ marginBottom:24 }}>
               <h2 style={{ fontFamily:T.heading, fontSize:24, color:T.text, marginBottom:4, letterSpacing:"0.5px" }}>Wilderness Exploration</h2>
               <div style={{ fontSize:12, color:T.textMuted }}>Hexcrawl & Discovery</div>
@@ -6400,9 +6445,15 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
               </div>
               {hasRoute && (
                 <div style={{ padding:12, background:"rgba(0,0,0,0.2)", borderRadius:"3px", marginBottom:12 }}>
-                  <div style={{ fontSize:10, color:T.textMuted }}>Route: <span style={{ color:T.text }}>{hexOrigin} → {hexDest}</span> · <span style={{ color:T.gold }}>{hexCount} hexes</span></div>
-                  <div style={{ fontSize:10, color:T.textMuted, marginTop:4 }}>Est. travel: <span style={{ color:T.text }}>{hexCount} - {hexCount + 3} days</span></div>
-                  <div style={{ marginTop:8, width:"100%", height:4, background:"rgba(0,0,0,0.3)", borderRadius:"2px", overflow:"hidden" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:8, marginBottom:8 }}>
+                    <div style={{ fontSize:10, color:T.textMuted }}>Route: <span style={{ color:T.text }}>{hexOrigin} → {hexDest}</span></div>
+                    <div style={{ display:"flex", gap:12 }}>
+                      <span style={{ fontSize:9, color:T.gold, fontFamily:T.ui, letterSpacing:"0.5px" }}>{hexCount} hexes</span>
+                      <span style={{ fontSize:9, color:T.textMuted, fontFamily:T.ui, letterSpacing:"0.5px" }}>~{Math.round(totalMoveCost)} days travel</span>
+                      <span style={{ fontSize:9, color:T.crimson, fontFamily:T.ui, letterSpacing:"0.5px" }}>{hexes.filter(h => h.danger).length} threats</span>
+                    </div>
+                  </div>
+                  <div style={{ width:"100%", height:4, background:"rgba(0,0,0,0.3)", borderRadius:"2px", overflow:"hidden" }}>
                     <div style={{ height:"100%", width:`${hexCount > 1 ? (hexPartyPos / (hexCount - 1)) * 100 : 0}%`, background:T.crimson, transition:"width 0.3s" }} />
                   </div>
                 </div>
@@ -6414,29 +6465,62 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
               {hasRoute ? (
                 <div style={{ overflowX:"auto", padding:"20px 16px" }}>
                   <svg width={svgW} height={svgH} style={{ display:"block", minWidth:svgW }}>
-                    {/* Path connections */}
+                    <defs>
+                      <filter id="hexGlow"><feDropShadow dx="0" dy="0" stdDeviation="4" floodColor="rgba(212,67,58,0.5)"/></filter>
+                      <filter id="hexFog"><feGaussianBlur stdDeviation="2"/></filter>
+                    </defs>
+                    {/* Path connections — sequential hex path */}
                     {hexPositions.slice(0, -1).map((h, i) => {
                       const next = hexPositions[i + 1];
-                      return <line key={`path-${i}`} x1={h.x} y1={h.y} x2={next.x} y2={next.y} stroke={i < hexPartyPos ? T.crimson : "rgba(255,255,255,0.1)"} strokeWidth={i < hexPartyPos ? 2.5 : 1.5} strokeDasharray={i >= hexPartyPos ? "6,4" : "none"} />;
+                      const traveled = i < hexPartyPos;
+                      return <line key={`path-${i}`} x1={h.x} y1={h.y} x2={next.x} y2={next.y} stroke={traveled ? "rgba(212,67,58,0.6)" : "rgba(255,255,255,0.08)"} strokeWidth={traveled ? 2.5 : 1.2} strokeDasharray={traveled ? "none" : "4,6"} />;
                     })}
                     {/* Hexes */}
                     {hexPositions.map((h, i) => {
                       const isParty = i === hexPartyPos;
                       const isSelected = i === hexSelectedHex;
                       const isExplored = h.explored;
+                      const isAdjacent = Math.abs(i - hexPartyPos) === 1;
+                      const isNext = i === hexPartyPos + 1;
                       return (
                         <g key={`hex-${i}`} style={{ cursor:"pointer" }} onClick={() => setHexSelectedHex(isSelected ? null : i)}>
-                          <polygon points={hexPointsStr(h.x, h.y)} fill={isParty ? "rgba(212,67,58,0.25)" : isExplored ? h.color : "rgba(255,255,255,0.03)"} stroke={isSelected ? T.crimson : isParty ? T.crimson : isExplored ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.06)"} strokeWidth={isSelected || isParty ? 2.5 : 1} />
-                          <text x={h.x} y={h.y - 4} textAnchor="middle" fontSize={isExplored ? 18 : 14} style={{ pointerEvents:"none" }}>{isExplored ? h.icon : "?"}</text>
-                          <text x={h.x} y={h.y + 16} textAnchor="middle" fontSize={7} fill={isExplored ? T.textMuted : T.textFaint} style={{ pointerEvents:"none", fontFamily:"'Cinzel', serif", letterSpacing:"0.5px" }}>
-                            {i === 0 ? hexOrigin.slice(0, 8) : i === hexCount - 1 ? hexDest.slice(0, 8) : isExplored ? h.terrain.slice(0, 8) : "???"}
+                          {/* Hex shape */}
+                          <polygon points={hexPointsStr(h.x, h.y)}
+                            fill={isParty ? "rgba(212,67,58,0.22)" : isExplored ? h.color : "rgba(255,255,255,0.02)"}
+                            stroke={isSelected ? "rgba(212,67,58,0.8)" : isParty ? "rgba(212,67,58,0.7)" : isNext ? "rgba(212,67,58,0.3)" : isExplored ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.04)"}
+                            strokeWidth={isSelected ? 2.5 : isParty ? 2 : isNext ? 1.5 : 0.8}
+                            filter={isParty ? "url(#hexGlow)" : "none"}
+                          />
+                          {/* Fog overlay for unexplored */}
+                          {!isExplored && <polygon points={hexPointsStr(h.x, h.y)} fill="rgba(8,8,12,0.55)" stroke="none" style={{pointerEvents:"none"}} />}
+                          {/* Terrain icon */}
+                          <text x={h.x} y={h.y - 2} textAnchor="middle" fontSize={isExplored ? 20 : 12} style={{ pointerEvents:"none", opacity: isExplored ? 1 : 0.3 }}>{isExplored ? h.icon : "❓"}</text>
+                          {/* Label */}
+                          <text x={h.x} y={h.y + 18} textAnchor="middle" fontSize={6.5} fill={isExplored ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.15)"} style={{ pointerEvents:"none", fontFamily:"'Cinzel', serif", letterSpacing:"0.5px", textTransform:"uppercase" }}>
+                            {i === 0 ? hexOrigin.slice(0, 9) : i === hexCount - 1 ? hexDest.slice(0, 9) : isExplored ? h.terrain.replace("_"," ").slice(0, 9) : "???"}
                           </text>
-                          {isParty && <text x={h.x} y={h.y - 22} textAnchor="middle" fontSize={14} style={{ pointerEvents:"none" }}>⚔️</text>}
-                          {h.danger && isExplored && <circle cx={h.x + HEX_R * 0.6} cy={h.y - HEX_R * 0.5} r={5} fill="rgba(212,67,58,0.7)" />}
-                          {h.feature && isExplored && <circle cx={h.x - HEX_R * 0.6} cy={h.y - HEX_R * 0.5} r={5} fill="rgba(201,168,92,0.7)" />}
+                          {/* Party marker */}
+                          {isParty && <text x={h.x} y={h.y - 20} textAnchor="middle" fontSize={16} style={{ pointerEvents:"none" }}>⚔️</text>}
+                          {/* Danger indicator */}
+                          {h.danger && isExplored && <><circle cx={h.x + HEX_R * 0.55} cy={h.y - HEX_R * 0.45} r={6} fill="rgba(212,67,58,0.85)" /><text x={h.x + HEX_R * 0.55} y={h.y - HEX_R * 0.45 + 3} textAnchor="middle" fontSize={7} fill="#fff" style={{pointerEvents:"none"}}>!</text></>}
+                          {/* Feature indicator */}
+                          {h.feature && isExplored && <><circle cx={h.x - HEX_R * 0.55} cy={h.y - HEX_R * 0.45} r={6} fill="rgba(201,168,92,0.85)" /><text x={h.x - HEX_R * 0.55} y={h.y - HEX_R * 0.45 + 3} textAnchor="middle" fontSize={7} fill="#fff" style={{pointerEvents:"none"}}>★</text></>}
+                          {/* Move cost badge */}
+                          {isExplored && h.moveCost > 1 && <><rect x={h.x - 8} y={h.y + 22} width={16} height={10} rx={2} fill="rgba(0,0,0,0.5)" /><text x={h.x} y={h.y + 30} textAnchor="middle" fontSize={6} fill="rgba(255,200,100,0.8)" style={{pointerEvents:"none"}}>{h.moveCost}d</text></>}
+                          {/* Safe rest indicator */}
+                          {isExplored && h.restSafe && !h.danger && <circle cx={h.x + HEX_R * 0.55} cy={h.y + HEX_R * 0.35} r={4} fill="rgba(94,224,154,0.6)" />}
+                          {/* Hex number */}
+                          <text x={h.x} y={h.y - HEX_R + 10} textAnchor="middle" fontSize={5} fill="rgba(255,255,255,0.2)" style={{pointerEvents:"none"}}>{i + 1}</text>
                         </g>
                       );
                     })}
+                    {/* Legend */}
+                    <g transform={`translate(${svgW - 110}, ${svgH - 50})`}>
+                      <rect x={0} y={0} width={100} height={45} rx={3} fill="rgba(0,0,0,0.4)" />
+                      <circle cx={12} cy={12} r={4} fill="rgba(212,67,58,0.85)" /><text x={20} y={15} fontSize={5.5} fill="rgba(255,255,255,0.5)" style={{fontFamily:"'Cinzel',serif"}}>Danger</text>
+                      <circle cx={12} cy={24} r={4} fill="rgba(201,168,92,0.85)" /><text x={20} y={27} fontSize={5.5} fill="rgba(255,255,255,0.5)" style={{fontFamily:"'Cinzel',serif"}}>Feature</text>
+                      <circle cx={12} cy={36} r={4} fill="rgba(94,224,154,0.6)" /><text x={20} y={39} fontSize={5.5} fill="rgba(255,255,255,0.5)" style={{fontFamily:"'Cinzel',serif"}}>Safe Rest</text>
+                    </g>
                   </svg>
                 </div>
               ) : (
@@ -6508,13 +6592,40 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                     </div>
                     <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
                       <span style={{ fontSize:32 }}>{detailHex.icon}</span>
-                      <div>
+                      <div style={{ flex:1 }}>
                         <div style={{ fontSize:16, color:T.text, fontFamily:T.heading, textTransform:"capitalize" }}>{detailHex.terrain}</div>
                         <div style={{ fontSize:10, color:T.textMuted }}>{detailHex.explored ? `Weather: ${detailHex.weather}` : "Unexplored territory"}</div>
                       </div>
+                      {detailHex.explored && (
+                        <div style={{ textAlign:"right" }}>
+                          <div style={{ fontSize:18, color:T.gold, fontFamily:T.ui }}>{detailHex.moveCost || 1}d</div>
+                          <div style={{ fontSize:8, color:T.textFaint, letterSpacing:"0.5px" }}>TRAVEL</div>
+                        </div>
+                      )}
                     </div>
                     {detailHex.explored ? (
                       <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                        {/* Description */}
+                        {detailHex.description && (
+                          <div style={{ fontSize:11, color:T.textDim, lineHeight:1.6, fontStyle:"italic", padding:"8px 0", borderBottom:`1px solid ${T.border}` }}>
+                            {detailHex.description}
+                          </div>
+                        )}
+                        {/* Stats Row */}
+                        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
+                          <div style={{ textAlign:"center", padding:"8px 4px", background:T.bgHover, borderRadius:"3px" }}>
+                            <div style={{ fontSize:14, color:T.text, fontFamily:T.ui }}>{detailHex.elevation || "—"}</div>
+                            <div style={{ fontSize:7, color:T.textFaint, letterSpacing:"1px", textTransform:"uppercase", marginTop:2 }}>Elevation</div>
+                          </div>
+                          <div style={{ textAlign:"center", padding:"8px 4px", background:T.bgHover, borderRadius:"3px" }}>
+                            <div style={{ fontSize:14, color:detailHex.dangerCR ? T.crimson : T.textFaint, fontFamily:T.ui }}>{detailHex.dangerCR || "—"}</div>
+                            <div style={{ fontSize:7, color:T.textFaint, letterSpacing:"1px", textTransform:"uppercase", marginTop:2 }}>Threat CR</div>
+                          </div>
+                          <div style={{ textAlign:"center", padding:"8px 4px", background:detailHex.restSafe ? "rgba(94,224,154,0.08)" : T.bgHover, borderRadius:"3px", border:detailHex.restSafe ? "1px solid rgba(94,224,154,0.2)" : "none" }}>
+                            <div style={{ fontSize:14, color:detailHex.restSafe ? T.green : T.textFaint, fontFamily:T.ui }}>{detailHex.restSafe ? "✓" : "✗"}</div>
+                            <div style={{ fontSize:7, color:T.textFaint, letterSpacing:"1px", textTransform:"uppercase", marginTop:2 }}>Safe Rest</div>
+                          </div>
+                        </div>
                         {detailHex.feature && (
                           <div style={{ padding:"10px 12px", background:"rgba(201,168,92,0.06)", border:"1px solid rgba(201,168,92,0.15)", borderRadius:"3px" }}>
                             <div style={{ fontSize:9, color:T.gold, fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase", marginBottom:4 }}>Feature</div>
@@ -6523,7 +6634,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                         )}
                         {detailHex.danger && (
                           <div style={{ padding:"10px 12px", background:"rgba(212,67,58,0.06)", border:"1px solid rgba(212,67,58,0.15)", borderRadius:"3px" }}>
-                            <div style={{ fontSize:9, color:T.crimson, fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase", marginBottom:4 }}>Danger</div>
+                            <div style={{ fontSize:9, color:T.crimson, fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase", marginBottom:4 }}>Danger — CR {detailHex.dangerCR || "?"}</div>
                             <div style={{ fontSize:11, color:T.textMuted, textTransform:"capitalize" }}>{detailHex.danger}</div>
                           </div>
                         )}
