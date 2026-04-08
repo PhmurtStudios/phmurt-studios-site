@@ -398,6 +398,62 @@
         }
       },
       {
+        // Assassination — a faction leader is killed by an assassin (random event)
+        id: "assassination",
+        weight: 1,
+        apply: (data, rng, relations) => {
+          const factions = data.factions.filter(f => f.hierarchy?.length > 0 && f.power > 20);
+          if (!factions.length) return null;
+          const target = pick(factions, rng);
+          const ruler = target.hierarchy.find(h => h.role === "ruler");
+          if (!ruler) return null;
+          const heir = target.hierarchy.find(h => h.role === "heir");
+          // Determine who hired the assassin
+          const rivals = data.factions.filter(f => f.name !== target.name && (f.rivals?.includes(target.name) || (relations && relations.getRelation(f.name, target.name) > 15)));
+          const suspectedEmployer = rivals.length > 0 ? pick(rivals, rng) : null;
+          const methods = [
+            "poisoned during a state banquet",
+            "struck down by an arrow from the shadows",
+            "found dead in their chambers with a blade between the ribs",
+            "killed by a disguised servant during a private audience",
+            "slain by a poisoned dart while addressing the court"
+          ];
+          const method = pick(methods, rng);
+          const suspectText = suspectedEmployer
+            ? ` Suspicion falls on agents of the ${suspectedEmployer.name}, though nothing can be proven.`
+            : " The assassin's employer remains unknown, fueling paranoid speculation throughout the court.";
+          return {
+            headline: `${ruler.name} of ${target.name} Assassinated!`,
+            detail: `${ruler.name}, ${ruler.title} of the ${target.name}, has been ${method}. The realm is plunged into chaos as ${heir ? heir.name + " scrambles to assume power" : "the succession is thrown into question"}.${suspectText}`,
+            category: "political",
+            icon: "🗡️",
+            importance: "critical",
+            mutations: (d) => ({
+              ...d,
+              factions: d.factions.map(f => {
+                if (f.name !== target.name) return f;
+                const newHierarchy = f.hierarchy.map(h => {
+                  if (h.role === "ruler" && heir) return { ...h, name: heir.name };
+                  if (h.role === "heir") return { ...h, name: generateReplacementName(rng) };
+                  return h;
+                });
+                // Major destabilization — significant power loss
+                return { ...f, hierarchy: newHierarchy, power: Math.max(5, f.power - 20), trend: "declining" };
+              }),
+              npcs: d.npcs.map(n => n.name === ruler.name ? { ...n, alive: false } : n),
+              // All regions under this faction become tense
+              regions: d.regions.map(r => r.ctrl === target.name ? { ...r, state: r.state === "stable" ? "tense" : r.state, threat: r.threat === "low" ? "medium" : r.threat } : r),
+            }),
+            relationMutation: (rel) => {
+              // Suspicion worsens relations with the suspected employer
+              if (suspectedEmployer) {
+                rel.modifyRelation(target.name, suspectedEmployer.name, 15);
+              }
+            }
+          };
+        }
+      },
+      {
         id: "royal_wedding",
         weight: 2,
         apply: (data, rng) => {
@@ -845,6 +901,87 @@
         }
       },
       {
+        // Full kingdom annexation — a powerful faction absorbs ALL territories of a weaker one
+        // This merges borders on the map, making one larger unified kingdom
+        id: "territory_annexed",
+        weight: 1,
+        apply: (data, rng, relations) => {
+          if (data.factions.length < 2) return null;
+          // Find a dominant faction that controls significantly more territory/power
+          const factionPower = data.factions.map(f => ({
+            faction: f,
+            regions: data.regions.filter(r => r.ctrl === f.name).length,
+            power: f.power || 50,
+          })).sort((a, b) => b.power - a.power);
+
+          // The strongest faction can annex the weakest if power difference is large enough
+          const strongest = factionPower[0];
+          const weakest = factionPower[factionPower.length - 1];
+          if (!strongest || !weakest || strongest.faction.name === weakest.faction.name) return null;
+          if (strongest.power < 60 || weakest.faction.power > 35) return null;
+          if (weakest.regions < 1) return null;
+
+          // Must be at war or have very hostile relations
+          const atWar = relations && relations.isAtWar(strongest.faction.name, weakest.faction.name);
+          const veryHostile = relations && relations.getRelation(strongest.faction.name, weakest.faction.name) > 30;
+          if (!atWar && !veryHostile && rng() > 0.2) return null;
+
+          const annexedRegions = data.regions.filter(r => r.ctrl === weakest.faction.name).map(r => r.name);
+          const annexedCities = data.cities.filter(c => annexedRegions.includes(c.region)).map(c => c.name);
+
+          return {
+            headline: `${strongest.faction.name} Annexes the ${weakest.faction.name}!`,
+            detail: `In a decisive act of military and political dominance, the ${strongest.faction.name} has formally annexed all territories held by the ${weakest.faction.name}. The conquered regions of ${annexedRegions.slice(0, 3).join(", ")}${annexedRegions.length > 3 ? ` and ${annexedRegions.length - 3} more` : ""} now fly the banners of the ${strongest.faction.name}. The ${weakest.faction.name} ceases to exist as a sovereign power, its remaining leadership either swearing fealty or fleeing into exile. The map of the realm has been redrawn — the ${strongest.faction.name} now commands a vast unified domain.`,
+            category: "military",
+            icon: "👑",
+            importance: "critical",
+            mutations: (d) => ({
+              ...d,
+              // Transfer ALL regions to the conquering faction
+              regions: d.regions.map(r => {
+                if (r.ctrl === weakest.faction.name) {
+                  return { ...r, ctrl: strongest.faction.name, state: "conquered", threat: "medium" };
+                }
+                return r;
+              }),
+              // Transfer all cities
+              cities: d.cities.map(c => {
+                if (annexedRegions.includes(c.region)) {
+                  return { ...c, faction: strongest.faction.name };
+                }
+                return c;
+              }),
+              // Update faction power — conqueror absorbs the defeated's remaining power
+              factions: d.factions.map(f => {
+                if (f.name === strongest.faction.name) {
+                  return { ...f, power: Math.min(100, f.power + Math.floor(weakest.faction.power * 0.5) + 10), trend: "rising" };
+                }
+                if (f.name === weakest.faction.name) {
+                  return { ...f, power: 0, trend: "declining" };
+                }
+                return f;
+              }),
+              // NPCs from the conquered faction lose their faction affiliation
+              npcs: d.npcs.map(n => {
+                if (n.faction === weakest.faction.name) {
+                  return { ...n, faction: strongest.faction.name };
+                }
+                return n;
+              }),
+            }),
+            relationMutation: (rel) => {
+              if (atWar) rel.endWar(strongest.faction.name, weakest.faction.name);
+              // Other factions grow wary of the new superpower
+              data.factions.forEach(f => {
+                if (f.name !== strongest.faction.name && f.name !== weakest.faction.name) {
+                  rel.modifyRelation(f.name, strongest.faction.name, 8);
+                }
+              });
+            }
+          };
+        }
+      },
+      {
         id: "faction_collapse",
         weight: 1,
         apply: (data, rng) => {
@@ -1135,6 +1272,30 @@
                 if (f.name === region.ctrl) return { ...f, power: Math.max(0, f.power - 5) };
                 return f;
               })
+            })
+          };
+        }
+      },
+      {
+        // Conquered regions are pacified and stabilized under new ownership
+        // This transitions "conquered" regions to "stable", visually integrating them into the new kingdom
+        id: "territory_pacified",
+        weight: 5,
+        apply: (data, rng) => {
+          const conqueredRegions = data.regions.filter(r => r.state === "conquered" && r.ctrl);
+          if (!conqueredRegions.length) return null;
+          const region = pick(conqueredRegions, rng);
+          const ctrl = data.factions.find(f => f.name === region.ctrl);
+          if (!ctrl) return null;
+          return {
+            headline: `${region.name} Pacified Under ${ctrl.name} Rule`,
+            detail: `After months of military occupation and diplomatic effort, ${region.name} has been fully integrated into the ${ctrl.name}. New administrators have been appointed, resistance has faded, and the banners of the ${ctrl.name} now fly unchallenged over the region. The borders of the realm have been permanently redrawn.`,
+            category: "political",
+            icon: "🏳️",
+            importance: "standard",
+            mutations: (d) => ({
+              ...d,
+              regions: d.regions.map(r => r.name === region.name ? { ...r, state: "stable", threat: "low" } : r),
             })
           };
         }
@@ -2495,7 +2656,270 @@
 
       return { events, finalData: currentData };
     }
+
+    /**
+     * Player/Party Actions — manually trigger specific events targeting chosen factions/regions.
+     * Returns an event object if successful, or null if the action couldn't be applied.
+     * @param {string} actionId - one of the PLAYER_ACTIONS keys
+     * @param {object} data - current campaign data
+     * @param {object} params - { targetFaction, targetRegion, allyFaction, etc. }
+     */
+    triggerPlayerAction(actionId, data, params = {}) {
+      const action = PLAYER_ACTIONS[actionId];
+      if (!action) return null;
+      const rng = this.rng || Math.random;
+      const event = action.apply(data, rng, this.relations, params);
+      if (!event) return null;
+      event.tickNumber = ++this.tickCount;
+      event.timestamp = Date.now();
+      event._playerAction = true; // Mark as player-triggered
+      this.eventLog.push(event);
+      this.pendingEvents.push(event);
+      if (this.onEvent) this.onEvent(event);
+      if (this.onStateUpdate && event.mutations) this.onStateUpdate(event.mutations);
+      if (event.relationMutation && this.relations) event.relationMutation(this.relations);
+      return event;
+    }
   }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // PLAYER ACTIONS — Events the party can trigger directly
+  // ═══════════════════════════════════════════════════════════════════
+
+  const PLAYER_ACTIONS = {
+    assassinate_leader: {
+      id: "assassinate_leader",
+      label: "Assassinate Leader",
+      icon: "🗡️",
+      description: "Send assassins to eliminate a faction's ruler, destabilizing their power structure.",
+      requiresTarget: "faction",
+      apply: (data, rng, relations, { targetFaction }) => {
+        const faction = data.factions.find(f => f.name === targetFaction);
+        if (!faction || !faction.hierarchy?.length) return null;
+        const ruler = faction.hierarchy.find(h => h.role === "ruler");
+        if (!ruler) return null;
+        const heir = faction.hierarchy.find(h => h.role === "heir");
+        // Success chance based on faction power (harder to kill powerful leaders)
+        const successChance = Math.max(0.3, 0.8 - faction.power / 200);
+        const success = rng() < successChance;
+        if (!success) {
+          return {
+            headline: `Assassination Attempt on ${ruler.name} Fails!`,
+            detail: `An assassination attempt against ${ruler.name} of the ${faction.name} has been foiled. The would-be assassins were captured, and the faction is now on high alert. Security has been doubled and all outsiders are viewed with suspicion.`,
+            category: "political",
+            icon: "🛡️",
+            importance: "major",
+            mutations: (d) => ({
+              ...d,
+              factions: d.factions.map(f => f.name === faction.name ? { ...f, power: Math.min(100, f.power + 5) } : f),
+              regions: d.regions.map(r => r.ctrl === faction.name ? { ...r, threat: "high" } : r),
+            }),
+          };
+        }
+        return {
+          headline: `${ruler.name} of ${faction.name} Assassinated by the Party!`,
+          detail: `Through cunning and deadly precision, agents have struck down ${ruler.name}, ${ruler.title} of the ${faction.name}. The faction is thrown into disarray as ${heir ? heir.name + " attempts to seize the reins of power" : "a power vacuum tears the leadership apart"}. The realm trembles at the audacity of the act.`,
+          category: "political",
+          icon: "🗡️",
+          importance: "critical",
+          mutations: (d) => ({
+            ...d,
+            factions: d.factions.map(f => {
+              if (f.name !== faction.name) return f;
+              const newHierarchy = f.hierarchy.map(h => {
+                if (h.role === "ruler" && heir) return { ...h, name: heir.name };
+                if (h.role === "heir") return { ...h, name: generateReplacementName(rng) };
+                return h;
+              });
+              return { ...f, hierarchy: newHierarchy, power: Math.max(0, f.power - 25), trend: "declining" };
+            }),
+            npcs: d.npcs.map(n => n.name === ruler.name ? { ...n, alive: false } : n),
+            regions: d.regions.map(r => r.ctrl === faction.name ? { ...r, state: "tense", threat: r.threat === "low" ? "medium" : "high" } : r),
+          }),
+        };
+      }
+    },
+
+    incite_rebellion: {
+      id: "incite_rebellion",
+      label: "Incite Rebellion",
+      icon: "🔥",
+      description: "Stir up unrest in a faction's territory, weakening their hold on the populace.",
+      requiresTarget: "faction",
+      apply: (data, rng, relations, { targetFaction }) => {
+        const faction = data.factions.find(f => f.name === targetFaction);
+        if (!faction) return null;
+        const regions = data.regions.filter(r => r.ctrl === faction.name && r.state !== "destroyed");
+        if (!regions.length) return null;
+        const targetRegion = pick(regions, rng);
+        const success = rng() < 0.65;
+        if (!success) {
+          return {
+            headline: `Rebellion Crushed in ${targetRegion.name}`,
+            detail: `An attempted uprising in ${targetRegion.name} was swiftly put down by ${faction.name} forces. The instigators were captured, and martial law has been declared throughout the region.`,
+            category: "social",
+            icon: "⛓️",
+            importance: "standard",
+            mutations: (d) => ({
+              ...d,
+              regions: d.regions.map(r => r.name === targetRegion.name ? { ...r, threat: "high" } : r),
+            }),
+          };
+        }
+        return {
+          headline: `Rebellion Erupts in ${targetRegion.name}!`,
+          detail: `The people of ${targetRegion.name} have risen up against the ${faction.name}! Barricades block the streets, the garrison is overwhelmed, and the local governor has fled. The region is now in open revolt and contested territory.`,
+          category: "social",
+          icon: "🔥",
+          importance: "major",
+          mutations: (d) => ({
+            ...d,
+            regions: d.regions.map(r => r.name === targetRegion.name ? { ...r, state: "contested", threat: "critical" } : r),
+            factions: d.factions.map(f => f.name === faction.name ? { ...f, power: Math.max(0, f.power - 10), trend: "declining" } : f),
+          }),
+        };
+      }
+    },
+
+    forge_alliance: {
+      id: "forge_alliance",
+      label: "Forge Alliance",
+      icon: "🤝",
+      description: "Broker a new alliance between two factions through diplomacy.",
+      requiresTarget: "two_factions",
+      apply: (data, rng, relations, { targetFaction, allyFaction }) => {
+        const f1 = data.factions.find(f => f.name === targetFaction);
+        const f2 = data.factions.find(f => f.name === allyFaction);
+        if (!f1 || !f2 || f1.name === f2.name) return null;
+        if (relations && relations.isAtWar(f1.name, f2.name)) {
+          return {
+            headline: `Peace Brokered Between ${f1.name} and ${f2.name}`,
+            detail: `Through extraordinary diplomatic effort, a ceasefire has been negotiated between the warring ${f1.name} and ${f2.name}. Hostilities cease immediately, and prisoners are exchanged. The road to lasting peace remains uncertain, but the bloodshed has stopped.`,
+            category: "political",
+            icon: "🕊️",
+            importance: "major",
+            mutations: (d) => ({
+              ...d,
+              factions: d.factions.map(f => {
+                if (f.name === f1.name) return { ...f, rivals: (f.rivals || []).filter(r => r !== f2.name) };
+                if (f.name === f2.name) return { ...f, rivals: (f.rivals || []).filter(r => r !== f1.name) };
+                return f;
+              }),
+            }),
+            relationMutation: (rel) => { rel.endWar(f1.name, f2.name); rel.modifyRelation(f1.name, f2.name, 20); },
+          };
+        }
+        return {
+          headline: `Alliance Forged: ${f1.name} and ${f2.name}`,
+          detail: `A historic alliance has been established between the ${f1.name} and the ${f2.name}. The pact promises mutual defense, shared intelligence, and open borders. Other factions watch the new power bloc with a mixture of hope and apprehension.`,
+          category: "political",
+          icon: "🤝",
+          importance: "major",
+          mutations: (d) => ({
+            ...d,
+            factions: d.factions.map(f => {
+              if (f.name === f1.name) return { ...f, allies: [...new Set([...(f.allies || []), f2.name])], rivals: (f.rivals || []).filter(r => r !== f2.name) };
+              if (f.name === f2.name) return { ...f, allies: [...new Set([...(f.allies || []), f1.name])], rivals: (f.rivals || []).filter(r => r !== f1.name) };
+              return f;
+            }),
+          }),
+          relationMutation: (rel) => { rel.modifyRelation(f1.name, f2.name, 30); rel.addTreaty(f1.name, f2.name, "alliance"); },
+        };
+      }
+    },
+
+    sabotage_supply_lines: {
+      id: "sabotage_supply_lines",
+      label: "Sabotage Supplies",
+      icon: "💣",
+      description: "Disrupt a faction's supply lines, weakening their military and economy.",
+      requiresTarget: "faction",
+      apply: (data, rng, relations, { targetFaction }) => {
+        const faction = data.factions.find(f => f.name === targetFaction);
+        if (!faction) return null;
+        return {
+          headline: `Supply Lines of ${faction.name} Sabotaged!`,
+          detail: `Critical supply routes serving the ${faction.name} have been disrupted. Warehouses burn, bridges collapse, and caravans are ambushed. The faction's military operations are severely hampered, and food prices in their territories have skyrocketed.`,
+          category: "military",
+          icon: "💣",
+          importance: "major",
+          mutations: (d) => ({
+            ...d,
+            factions: d.factions.map(f => f.name === faction.name ? { ...f, power: Math.max(0, f.power - 15), trend: "declining" } : f),
+            regions: d.regions.map(r => r.ctrl === faction.name ? { ...r, threat: r.threat === "low" ? "medium" : r.threat } : r),
+          }),
+        };
+      }
+    },
+
+    spread_propaganda: {
+      id: "spread_propaganda",
+      label: "Spread Propaganda",
+      icon: "📜",
+      description: "Spread rumors and propaganda to damage a faction's reputation and sow discord.",
+      requiresTarget: "faction",
+      apply: (data, rng, relations, { targetFaction }) => {
+        const faction = data.factions.find(f => f.name === targetFaction);
+        if (!faction) return null;
+        const propagandaTypes = [
+          `Pamphlets accusing ${faction.name} leadership of corruption have flooded the marketplaces`,
+          `Traveling bards are singing songs mocking the ${faction.name}'s recent military failures`,
+          `Forged documents suggesting ${faction.name} betrayed its own allies have been leaked to rival courts`,
+          `Rumors that the ${faction.name}'s treasury is empty have caused merchants to demand payment upfront`
+        ];
+        return {
+          headline: `Propaganda Campaign Against ${faction.name}`,
+          detail: `${pick(propagandaTypes, rng)}. Public confidence in the faction has plummeted, and even loyal subjects whisper doubts. The ${faction.name}'s diplomatic standing has been severely damaged.`,
+          category: "social",
+          icon: "📜",
+          importance: "standard",
+          mutations: (d) => ({
+            ...d,
+            factions: d.factions.map(f => f.name === faction.name ? { ...f, power: Math.max(0, f.power - 8) } : f),
+          }),
+          relationMutation: (rel) => {
+            // Worsen relations with everyone
+            data.factions.forEach(f => {
+              if (f.name !== faction.name) rel.modifyRelation(f.name, faction.name, -5);
+            });
+          },
+        };
+      }
+    },
+
+    declare_war: {
+      id: "declare_war",
+      label: "Declare War",
+      icon: "⚔️",
+      description: "Provoke open warfare between two factions.",
+      requiresTarget: "two_factions",
+      apply: (data, rng, relations, { targetFaction, allyFaction }) => {
+        const aggressor = data.factions.find(f => f.name === targetFaction);
+        const defender = data.factions.find(f => f.name === allyFaction);
+        if (!aggressor || !defender || aggressor.name === defender.name) return null;
+        if (relations && relations.isAtWar(aggressor.name, defender.name)) return null;
+        return {
+          headline: `War Declared: ${aggressor.name} vs ${defender.name}!`,
+          detail: `Through careful manipulation and provocation, open war has erupted between the ${aggressor.name} and the ${defender.name}. Armies mobilize, borders are fortified, and the drums of war echo across the land. Civilians flee the border regions as the first skirmishes begin.`,
+          category: "military",
+          icon: "⚔️",
+          importance: "critical",
+          mutations: (d) => ({
+            ...d,
+            factions: d.factions.map(f => {
+              if (f.name === aggressor.name) return { ...f, rivals: [...new Set([...(f.rivals || []), defender.name])], allies: (f.allies || []).filter(a => a !== defender.name) };
+              if (f.name === defender.name) return { ...f, rivals: [...new Set([...(f.rivals || []), aggressor.name])], allies: (f.allies || []).filter(a => a !== aggressor.name) };
+              return f;
+            }),
+          }),
+          relationMutation: (rel) => { rel.declareWar(aggressor.name, defender.name); },
+        };
+      }
+    },
+  };
+
+  // Expose PLAYER_ACTIONS for UI
+  window.PLAYER_ACTIONS = PLAYER_ACTIONS;
 
   // ═══════════════════════════════════════════════════════════════════
   // EXPORT — Global singleton

@@ -2080,6 +2080,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
   useEffect(() => {
     if (!isLive) return;
     if (!window.livingWorld) return;
+    if ((data.modules || {}).livingWorld === false) return; // Module disabled in settings
     const engine = window.livingWorld;
     if (lwActive && data.factions?.length > 0) {
       engine.setData(data);
@@ -3003,14 +3004,26 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
     <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
       {/* Top bar */}
       <div style={{ display:"flex", alignItems:"center", gap:0, rowGap:6, flexWrap:"wrap", padding:"0 12px 8px", borderBottom:`1px solid ${T.border}`, flexShrink:0, background:T.bgNav }}>
-        {["map","regions","factions","npcs","cities","party"].map(t => (
-          <button key={t} onClick={()=>{setTab(t);if(t!=="map"){setSel(null);setAtlasProvinceId(null);setEditing(false);setCityPopup(null);}}} style={{
-            padding:"14px clamp(12px, 2.2vw, 24px)", background:"transparent", border:"none", cursor:"pointer",
-            fontFamily:T.ui, fontSize:9, letterSpacing:"2px", textTransform:"uppercase", fontWeight:500,
-            color:tab===t?T.crimson:T.textMuted, transition:"all 0.3s",
-            borderBottom:tab===t?`2px solid ${T.crimson}`:"2px solid transparent",
-          }}>{t==="map"?"Atlas":t==="cities"?"Cities & Towns":t}</button>
-        ))}
+        {(() => {
+          const mods = data.modules || {};
+          const coreTabs = ["map","regions","factions","npcs","cities","party"];
+          const moduleTabs = [
+            { id:"economy", label:"Economy", module:"economy" },
+            { id:"calendar", label:"Calendar", module:"calendar" },
+            { id:"religion", label:"Religion", module:"religion" },
+            { id:"exploration", label:"Explore", module:"hexcrawl" },
+          ];
+          const activeTabs = [...coreTabs, ...moduleTabs.filter(mt => mods[mt.module] !== false).map(mt => mt.id)];
+          const labels = {map:"Atlas",cities:"Cities & Towns",economy:"Economy",calendar:"Calendar",religion:"Religion",exploration:"Explore"};
+          return activeTabs.map(t => (
+            <button key={t} onClick={()=>{setTab(t);if(t!=="map"){setSel(null);setAtlasProvinceId(null);setEditing(false);setCityPopup(null);}}} style={{
+              padding:"14px clamp(8px, 1.6vw, 18px)", background:"transparent", border:"none", cursor:"pointer",
+              fontFamily:T.ui, fontSize:8, letterSpacing:"1.5px", textTransform:"uppercase", fontWeight:500,
+              color:tab===t?T.crimson:T.textMuted, transition:"all 0.3s",
+              borderBottom:tab===t?`2px solid ${T.crimson}`:"2px solid transparent",
+            }}>{labels[t]||t}</button>
+          ));
+        })()}
         <div style={{ marginLeft:"auto", display:"flex", gap:8, alignItems:"center", justifyContent:"flex-end", flexWrap:"wrap" }}>
           {tab==="map" && <>
             <div style={{ display:"flex", alignItems:"center", gap:2, padding:"2px 4px", background:"rgba(0,0,0,0.2)", border:`1px solid ${T.border}`, borderRadius:"4px" }}>
@@ -3583,8 +3596,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
               </div>}
             </div>
 
-            {/* ── Living World Controls (DM only) ── */}
-            {isLive && isDM && data.factions?.length > 0 && (
+            {/* ── Living World Controls (DM only, requires module enabled) ── */}
+            {isLive && isDM && data.factions?.length > 0 && (data.modules || {}).livingWorld !== false && (
               <div style={{ position:"absolute", top:12, left:12, display:"flex", flexDirection:"column", gap:6, zIndex:10 }}>
                 <button
                   onClick={() => setLwActive(a => !a)}
@@ -5201,6 +5214,440 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
           )}
         </div>
       </div>
+
+      {/* ══════════ ECONOMY PANEL ══════════ */}
+      {tab==="economy" && (
+        <div style={{ flex:1, overflowY:"auto", padding:"24px 48px" }}>
+          <div style={{ marginBottom:40 }}>
+            {/* Header & World Treasury */}
+            <div style={{ marginBottom:32 }}>
+              <h2 style={{ fontFamily:T.heading, fontSize:24, color:T.text, marginBottom:4, letterSpacing:"0.5px" }}>Regional Economy</h2>
+              <div style={{ fontSize:12, color:T.textMuted }}>World Treasury & Trade Networks</div>
+            </div>
+
+            {/* World Treasury Summary */}
+            <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:20, marginBottom:24 }}>
+              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:8 }}>Total Treasury</div>
+              <div style={{ fontSize:32, color:T.gold, fontFamily:T.ui, fontWeight:600 }}>
+                {(data.factions || []).reduce((sum, f) => sum + (f.treasury || 0), 0).toLocaleString()} gp
+              </div>
+              <div style={{ fontSize:11, color:T.textMuted, marginTop:8 }}>{data.factions?.length || 0} factions managing wealth</div>
+            </div>
+
+            {/* Faction Treasuries Row */}
+            <div style={{ marginBottom:24 }}>
+              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Faction Treasuries</div>
+              <div style={{ display:"flex", gap:12, overflowX:"auto", paddingBottom:8 }}>
+                {(data.factions || []).map(f => (
+                  <div key={f.id} style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:16, minWidth:200, flexShrink:0 }}>
+                    <div style={{ fontSize:11, color:T.textMuted, marginBottom:4 }}>{f.name}</div>
+                    <div style={{ fontSize:18, color:T.gold, fontFamily:T.ui, fontWeight:600, marginBottom:8 }}>{(f.treasury || 0).toLocaleString()} gp</div>
+                    <div style={{ fontSize:10, color:f.trend==="rising"?"#5ee09a":f.trend==="falling"?T.crimson:T.textMuted, display:"flex", gap:4, alignItems:"center" }}>
+                      {f.trend==="rising"?"📈":"📉"} {f.income || 0} gp/tick
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Market Prices Section */}
+            <div style={{ marginBottom:24 }}>
+              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Market Prices by Region</div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                {(data.regions || []).slice(0, 6).map(r => (
+                  <div key={r.id} style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:16 }}>
+                    <div style={{ fontSize:12, color:T.text, fontWeight:400, marginBottom:10 }}>{r.name}</div>
+                    <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                      <div style={{ fontSize:10, color:T.textMuted }}>Grain: <span style={{ color:"#5ee09a" }}>2gp</span></div>
+                      <div style={{ fontSize:10, color:T.textMuted }}>Steel: <span style={{ color:T.crimson }}>8gp</span></div>
+                      <div style={{ fontSize:10, color:T.textMuted }}>Luxury: <span style={{ color:T.gold }}>15gp</span></div>
+                    </div>
+                    <div style={{ marginTop:10, width:"100%", height:6, background:"rgba(0,0,0,0.3)", borderRadius:"2px", overflow:"hidden" }}>
+                      <div style={{ height:"100%", width:"60%", background:"#5ee09a" }} />
+                    </div>
+                    <div style={{ fontSize:8, color:T.textFaint, marginTop:6 }}>Supply: Good</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Trade Routes Section */}
+            <div style={{ marginBottom:24 }}>
+              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Active Trade Routes</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                {data.factions?.length ? (
+                  data.factions.slice(0, 3).map(f => (
+                    <div key={f.id} style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:14 }}>
+                      <div style={{ fontSize:11, color:T.text, marginBottom:6 }}>
+                        {data.cities?.[0]?.name || "City A"} → {data.cities?.[1]?.name || "City B"}
+                      </div>
+                      <div style={{ fontSize:10, color:T.textMuted, marginBottom:4 }}>Goods: Spices, Silks</div>
+                      <div style={{ fontSize:10, color:"#5ee09a" }}>Profit: 12 gp/tick</div>
+                      <div style={{ fontSize:9, color:T.textFaint }}>Controlled by: {f.name}</div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ color:T.textMuted, fontStyle:"italic", fontSize:11, padding:10 }}>No trade routes established yet.</div>
+                )}
+              </div>
+            </div>
+
+            {/* Economy Events Log */}
+            <div>
+              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Recent Economy Events</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                <div style={{ background:"rgba(94,224,154,0.06)", border:"1px solid rgba(94,224,154,0.2)", borderRadius:"4px", padding:12 }}>
+                  <div style={{ fontSize:10, color:"#5ee09a", marginBottom:4 }}>Bumper Harvest</div>
+                  <div style={{ fontSize:9, color:T.textMuted }}>Grain prices dropped 3gp due to surplus.</div>
+                </div>
+                <div style={{ background:"rgba(212,67,58,0.06)", border:"1px solid rgba(212,67,58,0.2)", borderRadius:"4px", padding:12 }}>
+                  <div style={{ fontSize:10, color:T.crimson, marginBottom:4 }}>Bandit Activity</div>
+                  <div style={{ fontSize:9, color:T.textMuted }}>Trade disrupted on northern route.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════ CALENDAR PANEL ══════════ */}
+      {tab==="calendar" && (
+        <div style={{ flex:1, overflowY:"auto", padding:"24px 48px" }}>
+          <div style={{ marginBottom:40 }}>
+            {/* Current Date Display */}
+            <div style={{ marginBottom:32, textAlign:"center" }}>
+              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Current Date</div>
+              <div style={{ fontSize:42, color:T.gold, fontFamily:T.ui, fontWeight:600, marginBottom:4, letterSpacing:"1px" }}>
+                15th of Bloomsreach
+              </div>
+              <div style={{ fontSize:18, color:T.text, fontFamily:T.heading }}>Year 1042</div>
+              <div style={{ fontSize:12, color:T.textMuted, marginTop:8 }}>Spring Season 🌱</div>
+            </div>
+
+            {/* Season Info Card */}
+            <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:20, marginBottom:24 }}>
+              <div style={{ fontSize:11, color:T.textMuted, marginBottom:2 }}>Spring (Growth & Renewal)</div>
+              <div style={{ fontSize:12, color:T.textDim, marginBottom:12 }}>Crops plant, animals breed, trade increases</div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, fontSize:10, color:T.textMuted, marginBottom:12 }}>
+                <div>Movement: +10%</div>
+                <div>Resource Yield: +15%</div>
+              </div>
+              <div style={{ fontSize:10, color:T.textFaint }}>Days until next season: 76</div>
+              <div style={{ marginTop:12, width:"100%", height:6, background:"rgba(0,0,0,0.3)", borderRadius:"2px", overflow:"hidden" }}>
+                <div style={{ height:"100%", width:"33%", background:"#5ee09a" }} />
+              </div>
+            </div>
+
+            {/* Weather Map */}
+            <div style={{ marginBottom:24 }}>
+              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Regional Weather</div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
+                {(data.regions || []).slice(0, 6).map(r => (
+                  <div key={r.id} style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:12, textAlign:"center" }}>
+                    <div style={{ fontSize:24, marginBottom:4 }}>☀️</div>
+                    <div style={{ fontSize:10, color:T.text, marginBottom:2 }}>{r.name}</div>
+                    <div style={{ fontSize:9, color:T.textMuted }}>Clear Skies</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Advance Controls (DM Only) */}
+            {isDM && (
+              <div style={{ marginBottom:24, display:"flex", gap:10, flexWrap:"wrap" }}>
+                <button style={{ padding:"10px 16px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", color:T.text, fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", transition:"all 0.2s" }}>
+                  📅 Advance 1 Day
+                </button>
+                <button style={{ padding:"10px 16px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", color:T.text, fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", transition:"all 0.2s" }}>
+                  📅 Advance 1 Week
+                </button>
+                <button style={{ padding:"10px 16px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", color:T.text, fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", transition:"all 0.2s" }}>
+                  📅 Next Season
+                </button>
+              </div>
+            )}
+
+            {/* Calendar View */}
+            <div style={{ marginBottom:24 }}>
+              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Bloomsreach Calendar</div>
+              <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:16 }}>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(7, 1fr)", gap:4, marginBottom:12 }}>
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
+                    <div key={d} style={{ textAlign:"center", fontSize:9, color:T.textMuted, fontWeight:600, padding:4 }}>{d}</div>
+                  ))}
+                </div>
+                <div style={{ display:"grid", gridTemplateColumns:"repeat(7, 1fr)", gap:4 }}>
+                  {[...Array(31)].map((_, i) => (
+                    <div key={i} style={{
+                      padding:8,
+                      textAlign:"center",
+                      background:i===14?"rgba(212,67,58,0.14)":"transparent",
+                      border:`1px solid ${i===14?T.crimson:T.border}`,
+                      borderRadius:"2px",
+                      color:i===14?T.crimson:T.textMuted,
+                      fontSize:9,
+                      cursor:"pointer",
+                    }}>{i+1}</div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Upcoming Events */}
+            <div>
+              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Upcoming Events</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:12 }}>
+                  <div style={{ fontSize:10, color:T.text }}>Summer Festival</div>
+                  <div style={{ fontSize:9, color:T.textMuted, marginTop:2 }}>2 months away</div>
+                </div>
+                <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:12 }}>
+                  <div style={{ fontSize:10, color:T.text }}>Harvest Moon</div>
+                  <div style={{ fontSize:9, color:T.textMuted, marginTop:2 }}>6 months away</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════ RELIGION PANEL ══════════ */}
+      {tab==="religion" && (
+        <div style={{ flex:1, overflowY:"auto", padding:"24px 48px" }}>
+          <div style={{ marginBottom:40 }}>
+            {/* Header */}
+            <div style={{ marginBottom:32 }}>
+              <h2 style={{ fontFamily:T.heading, fontSize:24, color:T.text, marginBottom:4, letterSpacing:"0.5px" }}>Divine Pantheon</h2>
+              <div style={{ fontSize:12, color:T.textMuted }}>Deities, Faith & Divine Favor</div>
+            </div>
+
+            {/* Greater Deities */}
+            <div style={{ marginBottom:28 }}>
+              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Greater Deities</div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12 }}>
+                {[{emoji:"⚔️", name:"Valorath", domain:"War", align:"Chaotic Good"},
+                  {emoji:"🌙", name:"Nocturnia", domain:"Night", align:"Neutral Evil"},
+                  {emoji:"🌾", name:"Eldora", domain:"Life", align:"Lawful Good"}].map((d, i) => (
+                  <div key={i} style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:16, cursor:"pointer", transition:"all 0.2s" }}>
+                    <div style={{ fontSize:28, marginBottom:8 }}>{d.emoji}</div>
+                    <div style={{ fontSize:12, color:T.text, fontWeight:400, marginBottom:2 }}>{d.name}</div>
+                    <div style={{ fontSize:9, color:T.textMuted, marginBottom:8 }}>{d.domain}</div>
+                    <div style={{ fontSize:8, color:T.textFaint, marginBottom:10 }}>{d.align}</div>
+                    <div style={{ fontSize:9, color:"#5ee09a" }}>Favor: +45</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Lesser Deities */}
+            <div style={{ marginBottom:28 }}>
+              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Lesser Deities</div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12 }}>
+                {[{emoji:"🏘️", name:"Civitas", domain:"Cities", align:"Lawful Neutral"},
+                  {emoji:"🎭", name:"Jestara", domain:"Trickery", align:"Chaotic Neutral"},
+                  {emoji:"📚", name:"Scrolliana", domain:"Magic", align:"Neutral"}].map((d, i) => (
+                  <div key={i} style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:16, cursor:"pointer", transition:"all 0.2s" }}>
+                    <div style={{ fontSize:28, marginBottom:8 }}>{d.emoji}</div>
+                    <div style={{ fontSize:12, color:T.text, fontWeight:400, marginBottom:2 }}>{d.name}</div>
+                    <div style={{ fontSize:9, color:T.textMuted, marginBottom:8 }}>{d.domain}</div>
+                    <div style={{ fontSize:8, color:T.textFaint, marginBottom:10 }}>{d.align}</div>
+                    <div style={{ fontSize:9, color:T.textMuted }}>Favor: 0</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Temple Map */}
+            <div style={{ marginBottom:28 }}>
+              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Major Temples</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                {(data.cities || []).slice(0, 3).map(city => (
+                  <div key={city.id} style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:14 }}>
+                    <div style={{ fontSize:11, color:T.text, marginBottom:8 }}>{city.name}</div>
+                    <div style={{ fontSize:9, color:T.textMuted, marginBottom:6 }}>Cathedral of Valorath</div>
+                    <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+                      <div style={{ flex:1, height:6, background:"rgba(0,0,0,0.3)", borderRadius:"2px", overflow:"hidden" }}>
+                        <div style={{ height:"100%", width:"75%", background:"#e8940a" }} />
+                      </div>
+                      <div style={{ fontSize:8, color:T.textFaint }}>Level 3</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Divine Favor Tracker */}
+            <div style={{ marginBottom:28 }}>
+              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Faction Divine Standing</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:12 }}>
+                {(data.factions || []).slice(0, 2).map(f => (
+                  <div key={f.id} style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:14 }}>
+                    <div style={{ fontSize:10, color:T.text, marginBottom:10 }}>{f.name}</div>
+                    <div style={{ display:"grid", gridTemplateColumns:"repeat(3, 1fr)", gap:8 }}>
+                      {[{name:"Valorath", val:45}, {name:"Nocturnia", val:-30}, {name:"Eldora", val:20}].map(d => (
+                        <div key={d.name} style={{ background:"rgba(0,0,0,0.2)", borderRadius:"2px", padding:8, textAlign:"center" }}>
+                          <div style={{ fontSize:8, color:T.textMuted, marginBottom:4 }}>{d.name}</div>
+                          <div style={{ fontSize:10, color:d.val>0?"#5ee09a":d.val<0?T.crimson:T.textMuted, fontWeight:600 }}>{d.val>0?"+":""}{d.val}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Religion Actions (DM) */}
+            {isDM && (
+              <div style={{ marginBottom:28, display:"flex", gap:10, flexWrap:"wrap" }}>
+                <button style={{ padding:"10px 16px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", color:T.text, fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", transition:"all 0.2s" }}>
+                  Trigger Divine Event
+                </button>
+                <button style={{ padding:"10px 16px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", color:T.text, fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", transition:"all 0.2s" }}>
+                  Build Temple
+                </button>
+                <button style={{ padding:"10px 16px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", color:T.text, fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", transition:"all 0.2s" }}>
+                  Desecrate
+                </button>
+              </div>
+            )}
+
+            {/* Divine Events Log */}
+            <div>
+              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Recent Divine Events</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                <div style={{ background:"rgba(94,224,154,0.06)", border:"1px solid rgba(94,224,154,0.2)", borderRadius:"4px", padding:12 }}>
+                  <div style={{ fontSize:10, color:"#5ee09a", marginBottom:4 }}>Blessing Bestowed</div>
+                  <div style={{ fontSize:9, color:T.textMuted }}>Valorath blessed the warriors with courage.</div>
+                </div>
+                <div style={{ background:"rgba(212,67,58,0.06)", border:"1px solid rgba(212,67,58,0.2)", borderRadius:"4px", padding:12 }}>
+                  <div style={{ fontSize:10, color:T.crimson, marginBottom:4 }}>Temple Desecrated</div>
+                  <div style={{ fontSize:9, color:T.textMuted }}>Nocturnia's shrine was corrupted by dark magic.</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════ EXPLORATION PANEL ══════════ */}
+      {tab==="exploration" && (
+        <div style={{ flex:1, overflowY:"auto", padding:"24px 48px" }}>
+          <div style={{ marginBottom:40 }}>
+            {/* Header */}
+            <div style={{ marginBottom:32 }}>
+              <h2 style={{ fontFamily:T.heading, fontSize:24, color:T.text, marginBottom:4, letterSpacing:"0.5px" }}>Wilderness Exploration</h2>
+              <div style={{ fontSize:12, color:T.textMuted }}>Hexcrawl & Discovery</div>
+            </div>
+
+            {/* Travel Planner */}
+            <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:20, marginBottom:24 }}>
+              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Travel Planner</div>
+              <div style={{ display:"flex", gap:12, alignItems:"flex-end", flexWrap:"wrap", marginBottom:12 }}>
+                <div style={{ flex:1, minWidth:200 }}>
+                  <div style={{ fontSize:9, color:T.textMuted, marginBottom:4 }}>From</div>
+                  <select style={{ width:"100%", padding:"8px", background:T.bgInput, border:`1px solid ${T.border}`, borderRadius:"3px", color:T.text, fontFamily:T.body, fontSize:10 }}>
+                    <option>Select origin city...</option>
+                    {(data.cities || []).map(c => <option key={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div style={{ flex:1, minWidth:200 }}>
+                  <div style={{ fontSize:9, color:T.textMuted, marginBottom:4 }}>To</div>
+                  <select style={{ width:"100%", padding:"8px", background:T.bgInput, border:`1px solid ${T.border}`, borderRadius:"3px", color:T.text, fontFamily:T.body, fontSize:10 }}>
+                    <option>Select destination city...</option>
+                    {(data.cities || []).map(c => <option key={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div style={{ padding:12, background:"rgba(0,0,0,0.2)", borderRadius:"3px", marginBottom:12 }}>
+                <div style={{ fontSize:10, color:T.textMuted }}>Est. travel time: <span style={{ color:T.text }}>8-12 days</span></div>
+                <div style={{ fontSize:10, color:T.textMuted, marginTop:4 }}>Terrain: Forest, grassland, hills</div>
+                <div style={{ fontSize:10, color:T.textMuted, marginTop:4 }}>Danger level: <span style={{ color:T.crimson }}>Moderate</span></div>
+              </div>
+              <button style={{ width:"100%", padding:"10px", background:"linear-gradient(135deg, rgba(212,67,58,0.2), transparent)", border:`1px solid ${T.crimsonBorder}`, color:T.crimson, borderRadius:"3px", fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", fontWeight:600, transition:"all 0.2s" }}>
+                ► Begin Journey
+              </button>
+            </div>
+
+            {/* Hex Map Placeholder */}
+            <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:40, marginBottom:24, textAlign:"center" }}>
+              <div style={{ fontSize:12, color:T.textMuted, fontStyle:"italic" }}>Hex map will render when journey begins</div>
+              <div style={{ fontSize:10, color:T.textFaint, marginTop:8 }}>Select origin and destination above to start</div>
+            </div>
+
+            {/* Current Hex Info */}
+            <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:16, marginBottom:24 }}>
+              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Current Hex</div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, fontSize:10, color:T.textMuted }}>
+                <div>Terrain: Deciduous Forest</div>
+                <div>Weather: Clear Skies</div>
+                <div>Danger: Low</div>
+                <div>Features: River, Game Trail</div>
+              </div>
+            </div>
+
+            {/* Party Status */}
+            <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:16, marginBottom:24 }}>
+              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Party Status</div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
+                <div>
+                  <div style={{ fontSize:9, color:T.textMuted, marginBottom:4 }}>Movement Points</div>
+                  <div style={{ display:"flex", gap:4 }}>
+                    {[...Array(6)].map((_, i) => <div key={i} style={{ width:12, height:12, background:i<4?"#5ee09a":"rgba(0,0,0,0.3)", borderRadius:"2px" }} />)}
+                  </div>
+                </div>
+                <div>
+                  <div style={{ fontSize:9, color:T.textMuted, marginBottom:4 }}>Provisions</div>
+                  <div style={{ fontSize:10, color:T.text }}>Ample Supply</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div style={{ marginBottom:24, display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
+              {["⬆️ North", "⬇️ South", "⬅️ West"].map(dir => (
+                <button key={dir} style={{ padding:"10px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", color:T.text, fontFamily:T.ui, fontSize:9, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", transition:"all 0.2s" }}>
+                  {dir}
+                </button>
+              ))}
+              {["➡️ East", "🏕️ Camp", "🔍 Explore"].map(dir => (
+                <button key={dir} style={{ padding:"10px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", color:T.text, fontFamily:T.ui, fontSize:9, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", transition:"all 0.2s" }}>
+                  {dir}
+                </button>
+              ))}
+            </div>
+
+            {/* Discovery Log */}
+            <div style={{ marginBottom:24 }}>
+              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Discoveries</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                <div style={{ background:"rgba(94,224,154,0.06)", border:"1px solid rgba(94,224,154,0.2)", borderRadius:"4px", padding:12 }}>
+                  <div style={{ fontSize:10, color:"#5ee09a", marginBottom:2 }}>Elven Ruins</div>
+                  <div style={{ fontSize:9, color:T.textMuted }}>Ancient stone structures hidden in the forest</div>
+                </div>
+                <div style={{ background:"rgba(212,67,58,0.06)", border:"1px solid rgba(212,67,58,0.2)", borderRadius:"4px", padding:12 }}>
+                  <div style={{ fontSize:10, color:T.crimson, marginBottom:2 }}>Goblin Warren</div>
+                  <div style={{ fontSize:9, color:T.textMuted }}>Dangerous cave system with recent activity</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Encounter Log */}
+            <div>
+              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Recent Encounters</div>
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:12 }}>
+                  <div style={{ fontSize:10, color:T.text }}>Bandits on the Road (Defeated)</div>
+                  <div style={{ fontSize:9, color:T.textMuted, marginTop:2 }}>3 days ago - 6 bandits, 1 leader</div>
+                </div>
+                <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:12 }}>
+                  <div style={{ fontSize:10, color:T.text }}>Merchant Caravan (Befriended)</div>
+                  <div style={{ fontSize:9, color:T.textMuted, marginTop:2 }}>1 week ago - Offered passage</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ══════════ TOWN MAP OVERLAY ══════════ */}
       {townView && (() => {

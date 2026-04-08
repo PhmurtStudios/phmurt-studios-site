@@ -1703,6 +1703,9 @@ POI_TYPES = [
     "Town Well", "Statue", "Fountain", "Notice Board", "Shrine", "Guard Post",
     "Market Stall", "Stable", "Library", "Graveyard", "Training Ground",
     "Watchtower", "Garden", "Prison", "Warehouse", "Granary", "Windmill",
+    "Bathhouse", "Clocktower", "Dovecote", "Herbalist Garden", "Amphitheater",
+    "Pillory", "Wishing Well", "Memorial", "Kennels", "Brewery",
+    "Smithy Yard", "Lumber Yard", "Fish Market", "Dye Works", "Tannery Yard",
 ]
 
 
@@ -2383,25 +2386,73 @@ def place_shops_and_taverns(roads: list[Road], wall_poly: list[Point],
 def place_pois(wall_poly: list[Point], spatial: SpatialHash,
                cx: float, cy: float, rng: random.Random,
                tier: str, canvas_w: int = 1600, canvas_h: int = 1200) -> list[Building]:
-    num = {"capital": 16, "large_town": 10, "small_town": 6, "village": 3}[tier]
+    num = {"capital": 24, "large_town": 16, "small_town": 10, "village": 5}[tier]
     pool = list(POI_TYPES)
     rng.shuffle(pool)
+    # If we need more POIs than unique types, allow repeats
+    while len(pool) < num:
+        extra = list(POI_TYPES)
+        rng.shuffle(extra)
+        pool.extend(extra)
     buildings: list[Building] = []
     base_r = min(canvas_w, canvas_h) * 0.35
+    placed_positions: list[tuple[float, float]] = []
 
-    for i in range(min(num, len(pool))):
-        for attempt in range(50):
+    # Phase 1: Place POIs near the center and along main areas
+    center_count = min(num // 3, len(pool))
+    for i in range(center_count):
+        for attempt in range(80):
             angle = rng.uniform(0, TAU)
-            r = rng.uniform(20, base_r)
+            r = rng.uniform(20, base_r * 0.6)
             px = cx + r * cos(angle)
             py = cy + r * sin(angle)
             rect = (px - 10, py - 10, px + 10, py + 10)
             if wall_poly and point_in_polygon(px, py, wall_poly) and \
                not spatial.collides(rect, pad=6):
-                spatial.insert(rect)
-                b = Building(px - 10, py - 10, 20, 20, "poi", name=pool[i], district="residential")
-                buildings.append(b)
-                break
+                # Check distance from other POIs for good spacing
+                too_close = any(
+                    ((px - ox) ** 2 + (py - oy) ** 2) < 900
+                    for ox, oy in placed_positions
+                )
+                if not too_close:
+                    spatial.insert(rect)
+                    b = Building(px - 10, py - 10, 20, 20, "poi", name=pool[i], district="residential")
+                    buildings.append(b)
+                    placed_positions.append((px, py))
+                    break
+
+    # Phase 2: Fill outer areas and blank spaces
+    remaining_idx = center_count
+    for i in range(remaining_idx, min(num, len(pool))):
+        best_pos = None
+        best_min_dist = 0
+        # Sample many positions and pick the one farthest from existing content
+        for sample in range(60):
+            angle = rng.uniform(0, TAU)
+            r = rng.uniform(base_r * 0.2, base_r * 0.95)
+            px = cx + r * cos(angle)
+            py = cy + r * sin(angle)
+            rect = (px - 10, py - 10, px + 10, py + 10)
+            if wall_poly and point_in_polygon(px, py, wall_poly) and \
+               not spatial.collides(rect, pad=6):
+                # Find minimum distance to any placed POI
+                if placed_positions:
+                    min_d = min(
+                        ((px - ox) ** 2 + (py - oy) ** 2) ** 0.5
+                        for ox, oy in placed_positions
+                    )
+                else:
+                    min_d = 999
+                if min_d > best_min_dist:
+                    best_min_dist = min_d
+                    best_pos = (px, py, rect)
+
+        if best_pos and best_min_dist > 20:
+            px, py, rect = best_pos
+            spatial.insert(rect)
+            b = Building(px - 10, py - 10, 20, 20, "poi", name=pool[i], district="residential")
+            buildings.append(b)
+            placed_positions.append((px, py))
 
     return buildings
 

@@ -38,14 +38,34 @@
   <script src="monster-data.js" defer></script>
   <script src="campaign-play-loader.js" defer></script>
   <script src="combat-flow-ui.js" defer></script>
+  <!-- New campaign systems — deferred for fast initial load -->
+  <script src="campaign-economy.js" defer></script>
+  <script src="campaign-seasons.js" defer></script>
+  <script src="campaign-religion.js" defer></script>
+  <script src="campaign-hexcrawl.js" defer></script>
+  <script src="campaign-downtime.js" defer></script>
+  <script src="campaign-homebrew.js" defer></script>
+  <script src="campaign-scheduler.js" defer></script>
   <style>
+    html {
+      overflow: hidden !important;
+      height: 100%;
+    }
+    body {
+      overflow: hidden !important;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+    }
     #campaign-root {
       width: 100%;
-      min-height: 100vh;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
     }
     /* Instant loading shell — shown before React mounts, hidden by React */
     .cm-loading-shell {
-      display: flex; height: 100vh; background: var(--bg, #0c0804);
+      display: flex; height: 100%; background: var(--bg, #0c0804);
       font-family: 'Spectral', serif; color: rgba(255,255,255,0.35);
     }
     .cm-loading-shell .cm-ls-nav {
@@ -1668,6 +1688,20 @@ const NEW_CAMPAIGN = (type = "traditional") => ({
     timeline: true, worldState: true, playMode: true, scheduler: true,
     questTracker: true, factionTracker: true, npcTracker: true,
     playerUploads: true, notesEditor: true,
+    // Living World systems (DM toggles these in Settings)
+    livingWorld: false, economy: false, calendar: false, religion: false,
+    hexcrawl: false, questBoard: false, downtime: false,
+    homebrew: true, // always on by default
+    // Player visibility
+    playerWorldMap: true, playerFactions: false, playerEconomy: false,
+    playerQuests: true, playerRelationships: false,
+    // System configs
+    lwEventFrequency: 60, economyVolatility: "medium",
+    calendarStartYear: 1042, calendarStartSeason: "verdance",
+    weatherIntensity: "moderate", religionPantheon: "full",
+    divineFrequency: "occasional", encounterFrequency: "normal",
+    travelDifficulty: "normal", questGenRate: "moderate",
+    questAutoExpire: true, downtimeGoldMultiplier: 1, downtimeRisk: "moderate",
   },
   atlasMapSeed: "1",
   party: [], quests: [], factions: [], regions: [], npcs: [], cities: [],
@@ -1689,6 +1723,17 @@ const EXAMPLE_CAMPAIGN = {
     timeline: true, worldState: true, playMode: true, scheduler: true,
     questTracker: true, factionTracker: true, npcTracker: true,
     playerUploads: true, notesEditor: true,
+    // Example campaign has all systems enabled for demo
+    livingWorld: true, economy: true, calendar: true, religion: true,
+    hexcrawl: true, questBoard: true, downtime: true, homebrew: true,
+    playerWorldMap: true, playerFactions: true, playerEconomy: false,
+    playerQuests: true, playerRelationships: false,
+    lwEventFrequency: 60, economyVolatility: "medium",
+    calendarStartYear: 1042, calendarStartSeason: "verdance",
+    weatherIntensity: "moderate", religionPantheon: "full",
+    divineFrequency: "occasional", encounterFrequency: "normal",
+    travelDifficulty: "normal", questGenRate: "moderate",
+    questAutoExpire: true, downtimeGoldMultiplier: 1, downtimeRisk: "moderate",
   },
   party: [
     { id:1, name:"Kael Stormwind",   cls:"Paladin", lv:9, hp:78, maxHp:85, ac:20, player:"Marcus", status:"healthy", sheetUrl:null, sheetName:null, race:"Human", bio:"Former soldier turned holy warrior." },
@@ -5375,10 +5420,17 @@ function App() {
         await loadDataModule("atlas-images", "atlas-images.js");
         await loadTabModule("living-world", "living-world.js");
         await loadTabModule("world", "campaign-world.js");
+        await loadTabModule("relationships", "campaign-relationships.js");
         setTabsReady(function(prev) { return Object.assign({}, prev, { world: true }); });
 
         await loadTabModule("play", "campaign-play.js");
         setTabsReady(function(prev) { return Object.assign({}, prev, { play: true }); });
+
+        // Load remaining tab views in background
+        await loadTabModule("quests-view", "campaign-quests-view.js");
+        await loadTabModule("homebrew-view", "campaign-homebrew-view.js");
+        await loadTabModule("scheduler-view", "campaign-scheduler-view.js");
+        await loadTabModule("settings-view", "campaign-settings-view.js");
       } catch (e) {
         console.error("[App] Background tab loading error:", e);
       }
@@ -5695,24 +5747,35 @@ function App() {
     }
   }, []);
 
+  const mods = data.modules || {};
   const allNavItems = [
     { id:"dashboard", label:"Dashboard", icon: DashboardNavIcon, roles:["dm","player"] },
     { id:"timeline", label:"Timeline", icon: Clock, roles:["dm","player"] },
     { id:"world", label:"World", icon: Globe, roles:["dm"] },
     { id:"play", label:"Play", icon: PlayNavIcon, roles:["dm","player"] },
+    { id:"quests", label:"Quests", icon: Scroll, roles:["dm","player"], module:"questBoard" },
+    { id:"relationships", label:"Relations", icon: Activity, roles:["dm"], module:"livingWorld" },
+    { id:"homebrew", label:"Homebrew", icon: Wand2, roles:["dm"], module:"homebrew" },
+    { id:"scheduler", label:"Schedule", icon: Calendar, roles:["dm","player"], module:"scheduler" },
+    { id:"settings", label:"Settings", icon: Settings, roles:["dm"] },
   ];
-  const navItems = allNavItems.filter(function(item) { return item.roles.includes(viewRole); });
+  const navItems = allNavItems.filter(function(item) {
+    if (!item.roles.includes(viewRole)) return false;
+    // Module-gated tabs: show if module is enabled, or if no module requirement
+    if (item.module && mods[item.module] === false) return false;
+    return true;
+  });
 
   if (loading) {
     return (
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100vh", background:"var(--bg)", color:T.textFaint, fontFamily:T.ui, fontSize:14, letterSpacing:"2px" }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100%", background:"var(--bg)", color:T.textFaint, fontFamily:T.ui, fontSize:14, letterSpacing:"2px" }}>
         Loading...
       </div>
     );
   }
 
   return (
-    <div style={{ display:"flex", height:"100vh", background:"var(--bg)", overflow:"hidden" }}>
+    <div style={{ display:"flex", height:"100%", background:"var(--bg)", overflow:"hidden" }}>
       {/* Left Navigation Rail */}
       <div style={{
         width: sidebarCollapsed ? 52 : 200,
@@ -5825,7 +5888,7 @@ function App() {
       </div>
 
       {/* Main Content Area — gradient extends full page */}
-      <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0, overflowX:"hidden", overflowY: (activeTab === "world" || activeTab === "play") ? "hidden" : "auto", position:"relative", background:"radial-gradient(ellipse at 20% 0%, var(--crimson-soft) 0%, transparent 55%), var(--bg)" }}>
+      <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0, overflowX:"hidden", overflowY: (activeTab === "world" || activeTab === "play" || activeTab === "relationships") ? "hidden" : "auto", position:"relative", background:"radial-gradient(ellipse at 20% 0%, var(--crimson-soft) 0%, transparent 55%), var(--bg)" }}>
         {activeTab === "dashboard" && <DashboardView data={data} setData={setData} onNav={setActiveTab} activeCampaignId={activeCampaignId} viewRole={viewRole} />}
         {activeTab === "timeline" && (
           tabsReady.timeline && window.CampaignTimelineView
@@ -5854,6 +5917,31 @@ function App() {
           ) : (
             <TabLoadingSpinner label={!tabsReady.play ? "Play" : "Combat Engine"} />
           )
+        )}
+        {activeTab === "quests" && (
+          window.CampaignQuestsView
+            ? React.createElement(window.CampaignQuestsView, { data: data, setData: setData, viewRole: viewRole })
+            : <TabLoadingSpinner label="Quests" />
+        )}
+        {activeTab === "relationships" && (
+          window.RelationshipWebView
+            ? React.createElement(window.RelationshipWebView, { data: data, setData: setData, viewRole: viewRole })
+            : <TabLoadingSpinner label="Relationships" />
+        )}
+        {activeTab === "homebrew" && (
+          window.CampaignHomebrewView
+            ? React.createElement(window.CampaignHomebrewView, { data: data, setData: setData, viewRole: viewRole })
+            : <TabLoadingSpinner label="Homebrew" />
+        )}
+        {activeTab === "scheduler" && (
+          window.CampaignSchedulerView
+            ? React.createElement(window.CampaignSchedulerView, { data: data, setData: setData, viewRole: viewRole, campaignMembers: campaignMembers })
+            : <TabLoadingSpinner label="Scheduler" />
+        )}
+        {activeTab === "settings" && (
+          window.CampaignSettingsView
+            ? React.createElement(window.CampaignSettingsView, { data: data, setData: setData, viewRole: viewRole, campaignMembers: campaignMembers })
+            : <TabLoadingSpinner label="Settings" />
         )}
       </div>
 
