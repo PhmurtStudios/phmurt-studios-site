@@ -4,8 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta name="referrer" content="strict-origin" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), usb=(), payment=(), serial=(), bluetooth=()" />
   <title>DM Random Generators · Phmurt Studios</title>
   <meta name="description" content="Comprehensive D&D random generator suite. NPC, tavern, dungeon, treasure, encounter, plot hooks, and more — everything a DM needs." />
   <meta property="og:title" content="DM Random Generators · Phmurt Studios" />
@@ -2770,12 +2771,21 @@
     // ═══════════════════════════════ GENERATOR DATA & UTILITIES ═══════════════════════════════
 
     // HTML escaping to prevent XSS
+    // SECURITY (V-010): Robust HTML escaping for all contexts (text nodes and attributes)
     function escapeHtml(text) {
-      if (!text) return '';
-      var div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
+      if (text == null) return '';
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#x27;');
     }
+
+    // SECURITY NOTE (V-010): All user-input data must be escaped with escapeHtml()
+    // before being used in innerHTML assignments or inline event handler attributes (e.g., onclick).
+    // The DATA arrays below contain hardcoded strings, so they are safe.
+    // However, any future integration with user-submitted content MUST escape that data.
 
     const DATA = {
       npcNames: {
@@ -3775,7 +3785,7 @@
           <div class="gen-result-item">
             <div class="gen-result-label">Food Menu</div>
             <div class="gen-result-value" style="display: flex; flex-wrap: wrap; gap: 8px;">
-              ${menuItems.map(item => '<div style="background: var(--bg-card); padding: 6px 10px; border-radius: 3px; font-size: 12px; border-left: 2px solid var(--crimson);">🍖 ' + item + '</div>').join('')}
+              ${menuItems.map(item => '<div style="background: var(--bg-card); padding: 6px 10px; border-radius: 3px; font-size: 12px; border-left: 2px solid var(--crimson);">⚘ ' + item + '</div>').join('')}
             </div>
           </div>
           <div class="gen-result-item">
@@ -3812,7 +3822,7 @@
 
           <div class="gen-result-subheading">The Regulars</div>
           ${regulars.map(r => `<div style="background: var(--bg-mid); padding: 12px; margin-bottom: 8px; border-left: 3px solid var(--crimson); border-radius: 2px;">
-            <div style="font-weight: bold; margin-bottom: 4px;">👤 ${r.name}</div>
+            <div style="font-weight: bold; margin-bottom: 4px;">⊙ ${r.name}</div>
             <div style="font-size: 12px; color: var(--text-dim);">${r.desc}</div>
           </div>`).join('')}
 
@@ -3939,7 +3949,7 @@
             </div>
           </div>
           <div class="gen-boss-card">
-            <div class="gen-boss-title">⚔️ Boss Encounter</div>
+            <div class="gen-boss-title">⚔ Boss Encounter</div>
             <div style="font-size: 14px; margin: 8px 0;"><strong>${boss.name}</strong></div>
             <div style="font-size: 12px; color: var(--text-dim);">Challenge Rating: <strong style="color: var(--text);">${boss.cr}</strong></div>
             <div style="font-size: 12px; margin-top: 8px;">Estimated XP: <strong>${boss.cr * 100}</strong></div>
@@ -4740,7 +4750,7 @@
           <div class="gen-result-item">
             <div class="gen-result-label">Weather Condition</div>
             <div class="gen-result-value">
-              <span style="font-size: 20px; margin-right: 8px;">${weather.condition.includes('Clear') ? '☀️' : weather.condition.includes('Cloudy') ? '☁️' : weather.condition.includes('Rain') ? '🌧️' : weather.condition.includes('Snow') ? '❄️' : weather.condition.includes('Storm') ? '⛈️' : weather.condition.includes('Fog') ? '🌫️' : weather.condition.includes('Windy') ? '💨' : '🌤️'}</span>
+              <span style="font-size: 20px; margin-right: 8px;">${weather.condition.includes('Clear') ? '✦' : weather.condition.includes('Cloudy') ? '☁️' : weather.condition.includes('Rain') ? '∿' : weather.condition.includes('Snow') ? '✧' : weather.condition.includes('Storm') ? '∿' : weather.condition.includes('Fog') ? '≋' : weather.condition.includes('Windy') ? '≈' : '✦'}</span>
               ${weather.condition}
             </div>
           </div>
@@ -5338,7 +5348,7 @@
           <div class="gen-result-item">
             <div class="gen-result-label">Items in Pocket (3)</div>
             <div class="gen-result-value">
-              ${items.map(i => `<div style="padding: 8px; background: var(--bg-mid); margin: 4px 0; border-left: 3px solid var(--crimson); border-radius: 2px;">📦 ${i}</div>`).join('')}
+              ${items.map(i => `<div style="padding: 8px; background: var(--bg-mid); margin: 4px 0; border-left: 3px solid var(--crimson); border-radius: 2px;">◫ ${i}</div>`).join('')}
             </div>
           </div>
         `;
@@ -5358,7 +5368,7 @@
           <div class="gen-result-item">
             <div class="gen-result-label">Ambient Sounds (3)</div>
             <div class="gen-result-value">
-              ${sounds.map(s => `<div style="padding: 8px; background: var(--bg-mid); margin: 4px 0; border-left: 3px solid var(--crimson); border-radius: 2px;">🔊 ${s}<br><small style="color: var(--text-dim);">Comes from ${random(['nearby', 'above', 'below', 'in the distance', 'right behind you'])}</small></div>`).join('')}
+              ${sounds.map(s => `<div style="padding: 8px; background: var(--bg-mid); margin: 4px 0; border-left: 3px solid var(--crimson); border-radius: 2px;">◎ ${s}<br><small style="color: var(--text-dim);">Comes from ${random(['nearby', 'above', 'below', 'in the distance', 'right behind you'])}</small></div>`).join('')}
             </div>
           </div>
         `;
@@ -5368,7 +5378,7 @@
           <div class="gen-result-item">
             <div class="gen-result-label">Books on Shelf (3)</div>
             <div class="gen-result-value">
-              ${books.map(b => `<div style="padding: 8px; background: var(--bg-mid); margin: 4px 0; border-left: 3px solid var(--crimson); border-radius: 2px;">📖 <strong>${b}</strong><br><small style="color: var(--text-dim);">Subject: ${random(['History', 'Magic', 'Herbs', 'Poetry', 'Adventure', 'Forbidden Knowledge'])}</small></div>`).join('')}
+              ${books.map(b => `<div style="padding: 8px; background: var(--bg-mid); margin: 4px 0; border-left: 3px solid var(--crimson); border-radius: 2px;">⸎ <strong>${b}</strong><br><small style="color: var(--text-dim);">Subject: ${random(['History', 'Magic', 'Herbs', 'Poetry', 'Adventure', 'Forbidden Knowledge'])}</small></div>`).join('')}
             </div>
           </div>
         `;
@@ -5424,7 +5434,7 @@
           <div class="gen-result-item">
             <div class="gen-result-label">${selectedRace} Character Names (3)</div>
             <div class="gen-result-value">
-              ${names.map(n => `<div style="padding: 8px; background: var(--bg-mid); margin: 4px 0; border-left: 3px solid var(--crimson); border-radius: 2px;">👤 ${n}</div>`).join('')}
+              ${names.map(n => `<div style="padding: 8px; background: var(--bg-mid); margin: 4px 0; border-left: 3px solid var(--crimson); border-radius: 2px;">⊙ ${n}</div>`).join('')}
             </div>
           </div>
         `;
@@ -6731,7 +6741,8 @@
     };
 
     function autoCompleteMonsterFields() {
-      const name = document.getElementById('monsterName').value;
+      const nameRaw = document.getElementById('monsterName').value;
+      const name = escapeHtml(nameRaw); // SECURITY: escape user input before innerHTML
       const cr = parseFloat(document.getElementById('monsterCR').value);
       const type = document.getElementById('monsterType').value;
       const size = document.getElementById('monsterSize').value;
@@ -13378,8 +13389,8 @@ function cityGen_ensureTooltip() {
 
 function cityGen_showTooltip(landmark, screenX, screenY) {
     var tip = cityGen_ensureTooltip();
-    var name = landmark.shopName || (LANDMARK_TYPES[landmark.type] ? LANDMARK_TYPES[landmark.type].label : landmark.type);
-    var label = landmark.shopLabel || '';
+    var name = escapeHtml(landmark.shopName || (LANDMARK_TYPES[landmark.type] ? LANDMARK_TYPES[landmark.type].label : landmark.type));
+    var label = escapeHtml(landmark.shopLabel || '');
     tip.innerHTML = '<div style="font-weight:bold;font-size:14px;">' + name + '</div>' +
         (label && label !== name ? '<div style="font-size:11px;color:#c8b898;font-style:italic;">' + label + '</div>' : '') +
         '<div style="font-size:11px;color:#a89878;margin-top:2px;">Click for details</div>';

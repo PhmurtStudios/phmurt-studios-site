@@ -4,8 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta name="referrer" content="strict-origin" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co https://unpkg.com https://cdn.jsdelivr.net; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), usb=(), payment=(), serial=(), bluetooth=()" />
   <title>Campaign Manager · Phmurt Studios</title>
   <meta name="description" content="Manage your D&D campaigns with our comprehensive campaign manager. Track parties, encounters, sessions, and initiative." />
   <meta property="og:title" content="Campaign Manager · Phmurt Studios" />
@@ -1579,14 +1580,14 @@
   <div id="campaign-root"><div class="cm-loading-shell"><div class="cm-ls-nav"><div class="cm-ls-title">Campaign</div><div class="cm-ls-sub">Manager</div><div class="cm-ls-items"><div class="cm-ls-item active">Dashboard</div><div class="cm-ls-item">Timeline</div><div class="cm-ls-item">World</div><div class="cm-ls-item">Play</div></div></div><div class="cm-ls-main"><div class="cm-ls-spinner"></div></div></div></div>
 
   <!-- React 18 via CDN -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script crossorigin="anonymous" src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin="anonymous" src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <!-- Babel Standalone for JSX -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin="anonymous"></script>
   <!-- Bridge: lucide-react UMD expects window.react but React CDN sets window.React -->
   <script>window.react = window.React;</script>
   <!-- Lucide React Icons -->
-  <script src="https://unpkg.com/lucide-react@0.383.0/dist/umd/lucide-react.min.js"></script>
+  <script src="https://unpkg.com/lucide-react@0.383.0/dist/umd/lucide-react.min.js" crossorigin="anonymous"></script>
 
   <script type="text/babel">
 
@@ -1635,6 +1636,44 @@ const T = {
   orange:        "var(--orange)",
   orangeDim:     "var(--orange-dim)",
   questGold:     "var(--quest-gold)",
+  /* HP bar colors */
+  hpRed:         "var(--hp-red)",
+  hpYellow:      "var(--hp-yellow)",
+  hpGreen:       "var(--hp-green)",
+  /* Action resource colors */
+  moveBlue:      "var(--move-blue)",
+  actionRed:     "var(--action-red)",
+  bonusGold:     "var(--bonus-gold)",
+  reactionPurple:"var(--reaction-purple)",
+  /* Roll type colors */
+  rollCrit:      "var(--roll-crit-color)",
+  rollHit:       "var(--roll-hit)",
+  rollMiss:      "var(--roll-miss)",
+  rollSpecial:   "var(--roll-special)",
+  /* Allies/rivals */
+  allyGreen:     "var(--ally-green)",
+  rivalRed:      "var(--rival-red)",
+  /* Threat levels */
+  threatExtreme: "var(--threat-extreme)",
+  threatHigh:    "var(--threat-high)",
+  threatMedium:  "var(--threat-medium)",
+  threatLow:     "var(--threat-low)",
+  /* Tag variants */
+  tagDangerBg:   "var(--tag-danger-bg)",
+  tagDangerText: "var(--tag-danger-text)",
+  tagDangerBorder:"var(--tag-danger-border)",
+  tagSuccessBg:  "var(--tag-success-bg)",
+  tagSuccessText:"var(--tag-success-text)",
+  tagSuccessBorder:"var(--tag-success-border)",
+  tagWarningBg:  "var(--tag-warning-bg)",
+  tagWarningText:"var(--tag-warning-text)",
+  tagWarningBorder:"var(--tag-warning-border)",
+  tagInfoBg:     "var(--tag-info-bg)",
+  tagInfoText:   "var(--tag-info-text)",
+  tagInfoBorder: "var(--tag-info-border)",
+  tagCriticalBg: "var(--tag-critical-bg)",
+  tagCriticalText:"var(--tag-critical-text)",
+  tagCriticalBorder:"var(--tag-critical-border)",
 };
 
 /* Read a computed CSS variable value — needed for <canvas> fillStyle/strokeStyle
@@ -1645,9 +1684,9 @@ const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyV
 
 /* Get HP color based on health percentage. Consistent across all locations. */
 const getHpColor = (hp, maxHp) => {
-  if (hp < maxHp * 0.3) return "#d4433a"; // red
-  if (hp < maxHp * 0.6) return "#e8940a"; // yellow
-  return "#2e8b57"; // green
+  if (hp < maxHp * 0.3) return T.hpRed;
+  if (hp < maxHp * 0.6) return T.hpYellow;
+  return T.hpGreen;
 };
 
 const DND_CONDITIONS = [
@@ -1845,11 +1884,11 @@ const EXAMPLE_CAMPAIGN = {
 const Tag = ({ children, variant = "default" }) => {
   const m = {
     default:  { bg: T.crimsonSoft, c: T.crimson,  b: T.crimsonBorder },
-    danger:   { bg: "rgba(212,67,58,0.16)", c: "#f06858", b: "rgba(212,67,58,0.42)" },
-    success:  { bg: "rgba(52,168,83,0.14)", c: "#5ee09a", b: "rgba(52,168,83,0.32)" },
-    warning:  { bg: "rgba(234,138,16,0.12)", c: "#f5c45c", b: "rgba(234,138,16,0.28)" },
-    info:     { bg: "rgba(148,175,210,0.12)", c: "#b0c8e4", b: "rgba(148,175,210,0.28)" },
-    critical: { bg: "rgba(212,67,58,0.22)", c: "#ff6b6b", b: "rgba(212,67,58,0.50)" },
+    danger:   { bg: T.tagDangerBg, c: T.tagDangerText, b: T.tagDangerBorder },
+    success:  { bg: T.tagSuccessBg, c: T.tagSuccessText, b: T.tagSuccessBorder },
+    warning:  { bg: T.tagWarningBg, c: T.tagWarningText, b: T.tagWarningBorder },
+    info:     { bg: T.tagInfoBg, c: T.tagInfoText, b: T.tagInfoBorder },
+    critical: { bg: T.tagCriticalBg, c: T.tagCriticalText, b: T.tagCriticalBorder },
     muted:    { bg: T.bgInput, c: T.textMuted, b: T.border },
   };
   const s = m[variant] || m.default;
@@ -2044,10 +2083,10 @@ function getWorldStateMeta(state) {
 }
 
 function getWorldThreatColor(threat) {
-  if (threat === "extreme") return "#f06858";
-  if (threat === "high") return "#e8940a";
-  if (threat === "medium") return "#f5c45c";
-  return "#5ee09a";
+  if (threat === "extreme") return T.threatExtreme;
+  if (threat === "high") return T.threatHigh;
+  if (threat === "medium") return T.threatMedium;
+  return T.threatLow;
 }
 
 function getWorldTravelCost(region) {
@@ -2081,7 +2120,7 @@ const InitiativeStrip = ({ combatants, tokens, turn, round, onSelectCombatant })
       const isCurrent = idx === turn;
       const isDead = (c.hp || 0) <= 0;
       const hpPct = c.maxHp ? Math.max(0, Math.min(100, Math.round((c.hp || 0) / c.maxHp * 100))) : 0;
-      const hpCol = c.maxHp ? getHpColor(c.hp || 0, c.maxHp) : "#555";
+      const hpCol = c.maxHp ? getHpColor(c.hp || 0, c.maxHp) : T.textMuted;
       // SVG ring shows HP fraction as an arc around the avatar
       const ringR = 13; const ringC = 2 * Math.PI * ringR;
       const ringOffset = ringC * (1 - hpPct / 100);
@@ -2090,7 +2129,7 @@ const InitiativeStrip = ({ combatants, tokens, turn, round, onSelectCombatant })
           className={"cm-init-chip" + (isCurrent ? " is-active" : "") + (isDead ? " is-dead" : "")}
           onClick={() => tok && onSelectCombatant(tok.id)}
           title={c.name + " · Init " + c.init + " · " + (c.hp ?? "?") + "/" + (c.maxHp ?? "?") + " HP · AC " + (tok?.ac || "?")}>
-          <div className="cm-init-avatar" style={{ background: tok?.color || c.color || "#555" }}>
+          <div className="cm-init-avatar" style={{ background: tok?.color || c.color || T.textMuted }}>
             {tok?.imageSrc ? <img src={tok.imageSrc} style={{ width:"100%", height:"100%", objectFit:"cover" }} alt="" /> : (tok?.label || c.name.substring(0,2)).toUpperCase()}
             {c.maxHp > 0 && (
               <svg className="cm-init-hp-ring" viewBox="0 0 30 30" style={{ transform:"rotate(-90deg)" }}>
@@ -2135,7 +2174,7 @@ const TurnControls = ({ combatLive, canControlTurn, onUndo, onNextTurn, onToggle
 
 /* ── Top Bar (initiative rail + round badge + controls + roll display) ── */
 const CombatTopBar = ({ combatLive, round, turn, combatants, tokens, canControlTurn, logOpen, onUndo, onNextTurn, onToggleLog, onSelectCombatant, onEndCombat, combatRollLog }) => {
-  const rollTypeColor = (type) => type === "crit" ? "#ffd700" : type === "hit" ? "#5ee09a" : type === "miss" ? "#f06858" : "#b574ff";
+  const rollTypeColor = (type) => type === "crit" ? T.rollCrit : type === "hit" ? T.rollHit : type === "miss" ? T.rollMiss : T.rollSpecial;
   const rollTypeIcon = (type) => type === "crit" ? "\u2728" : type === "hit" ? "\u2694\uFE0F" : type === "miss" ? "\u26A0\uFE0F" : "\u2728";
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
@@ -2186,11 +2225,11 @@ const CombatTopBar = ({ combatLive, round, turn, combatants, tokens, canControlT
 const FocusStrip = ({ token, combatant, conditions, moveLabel, actionReady, bonusReady, reactionReady, canAdjustHp, onAdjustHp, onToggleCondition }) => {
   const [showCondEditor, setShowCondEditor] = React.useState(false);
   if (!token) return null;
-  const hpCol = token.maxHp ? getHpColor(token.hp || 0, token.maxHp) : "#7d8394";
-  const condMetas = (conditions || []).slice(0, 6).map(c => DND_CONDITIONS.find(dc => dc.name === c) || { name: c, color: "#aaa" });
+  const hpCol = token.maxHp ? getHpColor(token.hp || 0, token.maxHp) : T.textMuted;
+  const condMetas = (conditions || []).slice(0, 6).map(c => DND_CONDITIONS.find(dc => dc.name === c) || { name: c, color: T.textMuted });
   return (
     <div className="cm-focus-strip" style={{ position:"relative" }}>
-      <div className="cm-focus-avatar" style={{ background: token.color || "#555" }}>
+      <div className="cm-focus-avatar" style={{ background: token.color || T.textMuted }}>
         {token.imageSrc ? <img src={token.imageSrc} style={{ width:"100%", height:"100%", objectFit:"cover" }} alt="" /> : (token.label || token.name.substring(0,2)).toUpperCase()}
       </div>
       <div className="cm-focus-col">
@@ -2204,10 +2243,10 @@ const FocusStrip = ({ token, combatant, conditions, moveLabel, actionReady, bonu
       {/* Action economy dots */}
       <div className="cm-economy-dots">
         {[
-          { color:"#58aaff", ready: moveLabel !== "0 ft", title:"Move: " + moveLabel },
-          { color:"#dc143c", ready: actionReady, title:"Action: " + (actionReady ? "Ready" : "Spent") },
-          { color:"#ffd54f", ready: bonusReady, title:"Bonus: " + (bonusReady ? "Ready" : "Spent") },
-          { color:"#b574ff", ready: reactionReady, title:"Reaction: " + (reactionReady ? "Ready" : "Spent") },
+          { color: T.moveBlue, ready: moveLabel !== "0 ft", title:"Move: " + moveLabel },
+          { color: T.actionRed, ready: actionReady, title:"Action: " + (actionReady ? "Ready" : "Spent") },
+          { color: T.bonusGold, ready: bonusReady, title:"Bonus: " + (bonusReady ? "Ready" : "Spent") },
+          { color: T.reactionPurple, ready: reactionReady, title:"Reaction: " + (reactionReady ? "Ready" : "Spent") },
         ].map((d, i) => (
           <div key={"eco-" + i} className={"cm-eco-dot" + (d.ready ? " is-ready" : "")}
             style={{ background: d.ready ? d.color : "transparent", borderColor: d.ready ? d.color : undefined, color: d.color }}
@@ -2265,7 +2304,7 @@ const ActionHotbar = ({ visible, token, moveLabel, actions, selectedActionKey, o
         style={{ borderColor: moveDisabled ? undefined : "rgba(88,170,255,0.18)" }}
         title={moveDisabled ? "No movement remaining" : "Move (" + moveLabel + ") — press M"}>
         <span className="cm-hot-key">M</span>
-        <span className="cm-hot-icon" style={{ color: moveDisabled ? T.textFaint : "#58aaff" }}><Compass size={13} /> Move</span>
+        <span className="cm-hot-icon" style={{ color: moveDisabled ? T.textFaint : T.moveBlue }}><Compass size={13} /> Move</span>
         <span className="cm-hot-sub">{moveLabel}</span>
       </button>
       {/* Action slots — numbered 1–9 */}
@@ -2311,7 +2350,7 @@ const ConfirmFlyout = ({ open, uiMode, token, pendingAction, activeSpell, focusT
   return (
     <div className={"cm-confirm-flyout" + (open ? "" : " is-collapsed")}>
       <div className="cm-flyout-header">
-        <span className="cm-flyout-title" style={{ color: isAbility ? "#b574ff" : isMove ? "#58aaff" : "var(--crimson)" }}>
+        <span className="cm-flyout-title" style={{ color: isAbility ? T.reactionPurple : isMove ? T.moveBlue : T.crimson }}>
           {isMove ? "Movement" : isAbility ? (activeSpell ? activeSpell.name : (action?.name || "Ability")) : (action?.name || "Attack")}
         </span>
         <button type="button" className="cm-flyout-close" onClick={onCancel}><X size={12} /></button>
@@ -2319,7 +2358,7 @@ const ConfirmFlyout = ({ open, uiMode, token, pendingAction, activeSpell, focusT
 
       {isMove && (
         <div className="cm-flyout-grid">
-          <div className="cm-flyout-cell"><div className="cm-flyout-cell-label">Remaining</div><div className="cm-flyout-cell-value" style={{ color:"#58aaff" }}>{moveRemaining} ft</div></div>
+          <div className="cm-flyout-cell"><div className="cm-flyout-cell-label">Remaining</div><div className="cm-flyout-cell-value" style={{ color: T.moveBlue }}>{moveRemaining} ft</div></div>
           <div className="cm-flyout-cell"><div className="cm-flyout-cell-label">Planned</div><div className="cm-flyout-cell-value">{pathFt} ft</div></div>
         </div>
       )}
@@ -2333,7 +2372,7 @@ const ConfirmFlyout = ({ open, uiMode, token, pendingAction, activeSpell, focusT
             <div className="cm-flyout-cell"><div className="cm-flyout-cell-label">Target</div><div className="cm-flyout-cell-value">{focusTarget ? focusTarget.name : "Pick on map"}</div></div>
           </div>
           {focusTarget && focusLane && (
-            <div style={{ padding:"4px 8px", borderRadius:8, background: focusLane.hasLineOfSight ? "rgba(88,170,255,0.04)" : "rgba(240,104,88,0.06)", border:"1px solid " + (focusLane.hasLineOfSight ? "rgba(88,170,255,0.12)" : "rgba(240,104,88,0.12)"), font:"400 9px/1.3 'Spectral', serif", color: focusLane.hasLineOfSight ? "#58aaff" : "#f06858" }}>
+            <div style={{ padding:"4px 8px", borderRadius:8, background: focusLane.hasLineOfSight ? "rgba(88,170,255,0.04)" : "rgba(240,104,88,0.06)", border:"1px solid " + (focusLane.hasLineOfSight ? "rgba(88,170,255,0.12)" : "rgba(240,104,88,0.12)"), font:"400 9px/1.3 'Spectral', serif", color: focusLane.hasLineOfSight ? T.moveBlue : T.rollMiss }}>
               {focusDistance} ft · {focusLane.hasLineOfSight ? "LoS clear" : "LoS blocked"}{focusLane.coverACBonus ? " · +" + focusLane.coverACBonus + " cover" : ""}
             </div>
           )}
@@ -2364,12 +2403,12 @@ const CombatLogOverlay = ({ open, entries, latestResolution, onClear }) => {
   return (
     <div className={"cm-log-overlay" + (open ? "" : " is-hidden")}>
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-        <span style={{ font:"700 8px/1 'Cinzel', serif", letterSpacing:"1px", color:"#58aaff", textTransform:"uppercase" }}>Combat Log</span>
+        <span style={{ font:"700 8px/1 'Cinzel', serif", letterSpacing:"1px", color: T.moveBlue, textTransform:"uppercase" }}>Combat Log</span>
         <button type="button" onClick={onClear} style={{ border:"none", background:"none", color:T.textFaint, font:"700 7px/1 'Cinzel', serif", letterSpacing:"0.8px", textTransform:"uppercase", cursor:"pointer", padding:"2px 4px" }}>Clear</button>
       </div>
       {latestResolution?.title && (
         <div style={{ padding:"5px 7px", borderRadius:8, border:"1px solid rgba(94,224,154,0.12)", background:"rgba(94,224,154,0.04)", marginBottom:6 }}>
-          <div style={{ font:"700 8px/1 'Cinzel', serif", color:"#5ee09a", letterSpacing:"0.8px", textTransform:"uppercase" }}>{latestResolution.title}</div>
+          <div style={{ font:"700 8px/1 'Cinzel', serif", color: T.green, letterSpacing:"0.8px", textTransform:"uppercase" }}>{latestResolution.title}</div>
           {latestLines.slice(0, 2).map((line, ix) => <div key={"lr-" + ix} style={{ marginTop:3, font:"400 10px/1.3 'Spectral', serif", color:T.textMuted }}>{line}</div>)}
         </div>
       )}
@@ -2407,7 +2446,7 @@ const EnhancedCombatLogSidebar = ({ open, entries, round, viewRole, onClose, onC
       // Fallback: basic format
       return {
         id: entry.id, time: entry.time, type: entry.type,
-        icon: "⚔️", color: "#f4ead6",
+        icon: "⚔", color: "#f4ead6",
         headline: entry.text || entry.action || (entry.attacker ? (entry.attacker + " → " + (entry.target || "?")) : "Event"),
         sublines: entry.damage ? [{ text: entry.damage + " damage", accent: "#dc143c", bold: true }] : [],
         expandable: false,
@@ -2796,7 +2835,7 @@ const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, sel
             </button>
           )}
           {onEndCombat && (
-            <button onClick={onEndCombat} style={{ background: "var(--bg-hover-subtle)", border: "1px solid var(--border-mid)", borderRadius: 6, padding: "3px 10px", cursor: "pointer", color: "#f06858", fontFamily: T.ui, fontSize: 9, letterSpacing: "1px" }}
+            <button onClick={onEndCombat} style={{ background: "var(--bg-hover-subtle)", border: "1px solid var(--border-mid)", borderRadius: 6, padding: "3px 10px", cursor: "pointer", color: T.rollMiss, fontFamily: T.ui, fontSize: 9, letterSpacing: "1px" }}
               onMouseEnter={e => e.currentTarget.style.opacity = "0.85"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
               END
             </button>
@@ -2857,7 +2896,7 @@ const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, sel
                   border: isDead ? "2px solid #f06858" : (isPC ? "2px solid rgba(46,139,87,0.6)" : "2px solid var(--border)"),
                   position: "relative", overflow: "hidden",
                 }}>
-                  {isDead ? <X size={isActive ? 14 : 10} color="#f06858" /> : (tk.label || tk.name.substring(0, 2)).toUpperCase()}
+                  {isDead ? <X size={isActive ? 14 : 10} color={T.rollMiss} /> : (tk.label || tk.name.substring(0, 2)).toUpperCase()}
                 </div>
                 {/* Name */}
                 <div style={{
@@ -2927,7 +2966,7 @@ const TurnBanner = ({ announcement }) => {
   if (!visible || !announcement) return null;
 
   const isPC = announcement.isPC;
-  const accentColor = isPC ? "#5ee09a" : "#f06858";
+  const accentColor = isPC ? T.green : T.crimson;
   const glowColor = isPC ? "rgba(94,224,154,0.4)" : "rgba(240,104,88,0.4)";
 
   return (
@@ -2977,7 +3016,7 @@ const CombatRollDisplay = ({ combatRollLog }) => {
   const splashCrit = latestRoll.type === "crit";
   const splashHit = latestRoll.type === "hit";
   const splashMiss = latestRoll.type === "miss";
-  const splashColor = splashCrit ? "#ffd700" : splashHit ? "#5ee09a" : splashMiss ? "#f06858" : "#b574ff";
+  const splashColor = splashCrit ? T.rollCrit : splashHit ? T.rollHit : splashMiss ? T.rollMiss : T.rollSpecial;
   const splashScale = showSplash ? (latestAge < 0.05 ? 0.3 + latestAge * 14 : (latestAge < 0.15 ? 1 : 1 - (latestAge - 0.15) * 0.15)) : 0.6;
   const splashOpacity = showSplash ? (latestAge < 0.05 ? latestAge * 20 : (latestAge < 0.35 ? 1 : Math.max(0, 1 - (latestAge - 0.35) * 6))) : 0;
 
@@ -3030,7 +3069,7 @@ const CombatRollDisplay = ({ combatRollLog }) => {
           const isCrit = roll.type === "crit";
           const isHit = roll.type === "hit";
           const isMiss = roll.type === "miss";
-          const color = isCrit ? "#ffd700" : isHit ? "#5ee09a" : isMiss ? "#f06858" : "#b574ff";
+          const color = isCrit ? T.rollCrit : isHit ? T.rollHit : isMiss ? T.rollMiss : T.rollSpecial;
           const bgColor = isCrit ? "rgba(255,215,0,0.15)" : isHit ? "rgba(94,224,154,0.12)" : isMiss ? "rgba(240,104,88,0.12)" : "rgba(181,116,255,0.12)";
           const resultLabel = isCrit ? "CRITICAL HIT!" : isHit ? "HIT!" : isMiss ? "MISS" : "EFFECT";
           const d20Match = roll.detail ? roll.detail.match(/= (\d+) vs AC (\d+)/) : null;
@@ -3077,7 +3116,7 @@ const CombatRollDisplay = ({ combatRollLog }) => {
                   </div>
                 )}
                 {dmgText && (
-                  <div style={{ fontFamily:"'Spectral', serif", fontSize:12, color: isHit || isCrit ? "#5ee09a" : "var(--text-muted)", marginTop:2, fontWeight:700 }}>
+                  <div style={{ fontFamily:"'Spectral', serif", fontSize:12, color: isHit || isCrit ? T.green : T.textMuted, marginTop:2, fontWeight:700 }}>
                     {dmgText}
                   </div>
                 )}
@@ -3141,8 +3180,8 @@ const TokenActionRing = ({ visible, token, actions, screenX, screenY, tokenRadiu
           }}
           onMouseEnter={e => { if (!moveDisabled) e.currentTarget.style.background = "rgba(88,170,255,0.2)"; }}
           onMouseLeave={e => { if (!moveDisabled) e.currentTarget.style.background = "rgba(88,170,255,0.12)"; }}>
-          <Compass size={12} color={moveDisabled ? T.textFaint : "#58aaff"} />
-          <span style={{ fontFamily: T.ui, fontSize: 9, letterSpacing: "1px", color: moveDisabled ? T.textFaint : "#58aaff", fontWeight: 600 }}>{moveLabel}</span>
+          <Compass size={12} color={moveDisabled ? T.textFaint : T.moveBlue} />
+          <span style={{ fontFamily: T.ui, fontSize: 9, letterSpacing: "1px", color: moveDisabled ? T.textFaint : T.moveBlue, fontWeight: 600 }}>{moveLabel}</span>
         </button>
       </div>
 
@@ -3343,8 +3382,11 @@ const ToggleSwitch = ({ on, onToggle, label }) => (
 function useCountdown(target) {
   const [s,setS] = useState("");
   useEffect(() => {
+    if (!target) { setS(""); return; }
+    const targetDate = new Date(target);
+    if (isNaN(targetDate.getTime())) { setS(""); return; }
     const tick = () => {
-      const d = new Date(target) - new Date();
+      const d = targetDate - new Date();
       if (d<=0) { setS("Now"); return; }
       const days=Math.floor(d/864e5), hrs=Math.floor((d%864e5)/36e5), min=Math.floor((d%36e5)/6e4);
       setS(days>0 ? `${days}d ${hrs}h` : `${hrs}h ${min}m`);
@@ -3405,10 +3447,11 @@ const cmReadRoute = () => {
   const validTab = ["dashboard", "timeline", "world", "play", "generator", "notes", "settings"].includes(routeTab)
     ? routeTab
     : "";
+  // SECURITY: role parameter removed from URL to prevent privilege escalation (V-001)
+  // Role is determined server-side via campaign membership data only
   return {
     campaignId: params.get("campaign") || "",
-    tab: validTab || (params.get("role") === "player" ? "play" : "dashboard"),
-    role: params.get("role") || "",
+    tab: validTab || "dashboard",
   };
 };
 
@@ -3417,6 +3460,8 @@ const cmSyncRoute = (campaignId, tab) => {
   if (campaignId) params.set("campaign", String(campaignId));
   else params.delete("campaign");
   params.set("tab", tab || "dashboard");
+  // SECURITY: strip role from URL to prevent bookmarked privilege escalation (V-001)
+  params.delete("role");
   const query = params.toString();
   const nextUrl = window.location.pathname + (query ? `?${query}` : "");
   window.history.replaceState(null, "", nextUrl);
@@ -3603,6 +3648,45 @@ const cmCompactForCloud = (data) => {
     if (Array.isArray(d[key]) && d[key].length === 0) delete d[key];
   }
 
+  // 8b. Trim activity log to most recent 30 entries
+  if (d.activity && Array.isArray(d.activity) && d.activity.length > 30) {
+    d.activity = d.activity.slice(0, 30);
+  }
+
+  // 8c. Trim combat ledger to most recent 150 entries and compact each entry
+  if (d.combatLedger && Array.isArray(d.combatLedger) && d.combatLedger.length > 150) {
+    d.combatLedger = d.combatLedger.slice(0, 150);
+  }
+
+  // 8d. Trim timeline to most recent 200 events
+  if (d.timeline && Array.isArray(d.timeline) && d.timeline.length > 200) {
+    d.timeline = d.timeline.slice(0, 200);
+  }
+
+  // 8e. Strip default module settings that match NEW_CAMPAIGN defaults (save ~200 bytes per campaign)
+  if (d.modules && typeof d.modules === 'object') {
+    const defaults = { lwEventFrequency:60, economyVolatility:"medium", calendarStartYear:1042, calendarStartSeason:"verdance", weatherIntensity:"moderate", religionPantheon:"full", divineFrequency:"occasional", encounterFrequency:"normal", travelDifficulty:"normal", questGenRate:"moderate", questAutoExpire:true, downtimeGoldMultiplier:1, downtimeRisk:"moderate" };
+    for (const [k, v] of Object.entries(defaults)) {
+      if (d.modules[k] === v) delete d.modules[k];
+    }
+  }
+
+  // 9b. Strip activeCombat if combat is not live (no need to persist idle state)
+  if (d.activeCombat && !d.activeCombat.combatLive) {
+    delete d.activeCombat;
+  }
+  // If combat IS active, strip token image data to reduce payload size
+  if (d.activeCombat && d.activeCombat.tokens) {
+    d.activeCombat.tokens = d.activeCombat.tokens.map(function(t) {
+      var clean = {};
+      for (var k in t) {
+        if (k === 'imageData' || k === '_imgElement') continue;
+        clean[k] = t[k];
+      }
+      return clean;
+    });
+  }
+
   d._compactVersion = 2; // Increment to track enhanced compaction version
 
   // 9. Log compaction size for monitoring
@@ -3731,6 +3815,22 @@ const cmExpandFromCloud = (data) => {
   if (!d.worldMap) d.worldMap = { pendingLaunch: null, lastRoute: null, lastFocusedRegionId: null };
   if (!d.party) d.party = [];
   if (!d._lwEventLog) d._lwEventLog = [];
+
+  // Restore default module settings that were stripped during compaction
+  if (d.modules && typeof d.modules === 'object') {
+    const defaults = { lwEventFrequency:60, economyVolatility:"medium", calendarStartYear:1042, calendarStartSeason:"verdance", weatherIntensity:"moderate", religionPantheon:"full", divineFrequency:"occasional", encounterFrequency:"normal", travelDifficulty:"normal", questGenRate:"moderate", questAutoExpire:true, downtimeGoldMultiplier:1, downtimeRisk:"moderate" };
+    for (const [k, v] of Object.entries(defaults)) {
+      if (d.modules[k] === undefined) d.modules[k] = v;
+    }
+  }
+
+  // Seed combat state for Play tab restore (if active combat was saved)
+  // Note: d._campaignId is set by the caller before expand when available
+  if (d.activeCombat && d.activeCombat.combatLive && d._campaignId) {
+    if (!window._cmActiveCombatState) window._cmActiveCombatState = {};
+    window._cmActiveCombatState[d._campaignId] = d.activeCombat;
+  }
+  delete d._campaignId;
 
   return d;
 };
@@ -4259,13 +4359,13 @@ function InitiativeTracker({ party }) {
           }}>
             <div style={{ display:"flex", alignItems:"center", gap:8 }}>
               <span style={{ fontSize:12, fontFamily:T.body, fontWeight:500, color:T.textFaint, minWidth:20 }}>{c.init}</span>
-              <span style={{ width:5, height:5, borderRadius:"50%", flexShrink:0, background:c.type==="pc"?"#5ee09a":T.crimson }} />
+              <span style={{ width:5, height:5, borderRadius:"50%", flexShrink:0, background:c.type==="pc"? T.green :T.crimson }} />
               <span style={{ flex:1, fontSize:13, fontFamily:T.body, fontWeight:400, color:T.text, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{c.name}</span>
               <span style={{ fontFamily:T.ui, fontSize:8, color:T.textFaint, letterSpacing:"1px" }}>AC {c.ac}</span>
               <div style={{ display:"flex", alignItems:"center", gap:2 }}>
                 <button onClick={()=>adjHp(c.id,-5)} style={{ background:"none", border:"none", cursor:"pointer", color:T.crimson, fontSize:14, padding:"2px 4px" }}>−</button>
                 <span style={{ fontSize:11, fontFamily:T.body, fontWeight:500, minWidth:42, textAlign:"center", color:c.hp<c.maxHp*0.3?T.crimson:c.hp<c.maxHp*0.6?"#e8940a":T.textDim }}>{c.hp}/{c.maxHp}</span>
-                <button onClick={()=>adjHp(c.id,5)} style={{ background:"none", border:"none", cursor:"pointer", color:"#5ee09a", fontSize:14, padding:"2px 4px" }}>+</button>
+                <button onClick={()=>adjHp(c.id,5)} style={{ background:"none", border:"none", cursor:"pointer", color: T.green, fontSize:14, padding:"2px 4px" }}>+</button>
               </div>
               {c.type==="enemy" && <button onClick={()=>remove(c.id)} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:"2px" }}><X size={10}/></button>}
             </div>
@@ -4639,8 +4739,8 @@ function CampaignSelector({ campaigns, activeCampaignId, onSelect, onCreate, onD
                 <div>
                   <div style={{ fontSize:13, color:T.text, fontWeight:300, display:"flex", alignItems:"center", gap:8 }}>
                     {c.data.name}
-                    <span style={{ fontSize:8, fontWeight:500, letterSpacing:"0.5px", padding:"2px 6px", borderRadius:"2px", background: c.data.campaignType === "live" ? "rgba(94,224,154,0.15)" : "rgba(201,168,92,0.15)", color: c.data.campaignType === "live" ? "#5ee09a" : "rgba(201,168,92,0.8)" }}>
-                      {c.data.campaignType === "live" ? "⚡ LIVE" : "📜 TRAD"}
+                    <span style={{ fontSize:8, fontWeight:500, letterSpacing:"0.5px", padding:"2px 6px", borderRadius:"2px", background: c.data.campaignType === "live" ? "rgba(94,224,154,0.15)" : "rgba(201,168,92,0.15)", color: c.data.campaignType === "live" ? T.green : T.gold }}>
+                      {c.data.campaignType === "live" ? "↯ LIVE" : "⸎ TRAD"}
                     </span>
                   </div>
                   <div style={{ fontSize:10, color:T.textFaint, fontStyle:"italic" }}>
@@ -4871,9 +4971,9 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
               fontSize:10, fontWeight:500, letterSpacing:"0.5px", textTransform:"uppercase",
               padding:"4px 10px", borderRadius:"3px",
               background: data.campaignType === "live" ? "rgba(94,224,154,0.15)" : "rgba(201,168,92,0.15)",
-              color: data.campaignType === "live" ? "#5ee09a" : "rgba(201,168,92,0.9)"
+              color: data.campaignType === "live" ? T.green : T.gold
             }}>
-              {data.campaignType === "live" ? "⚡ Live Campaign" : "📜 Traditional Campaign"}
+              {data.campaignType === "live" ? "↯ Live Campaign" : "⸎ Traditional Campaign"}
             </span>
           </div>
         </div>
@@ -4883,8 +4983,8 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
           {[
             { label:"Sessions", val:data.sessionsPlayed, icon:BookOpen, accent:"#c9a84c" },
             { label:"Quests", val:data.quests.length, icon:Scroll, accent:T.crimson },
-            { label:"Party", val:data.party.length, icon:Users, accent:"#58aaff" },
-            { label:"Regions", val:data.regions.length, icon:MapPin, accent:"#5ee09a" },
+            { label:"Party", val:data.party.length, icon:Users, accent: T.moveBlue },
+            { label:"Regions", val:data.regions.length, icon:MapPin, accent: T.green },
           ].map((s,i) => (
             <div key={i} style={{
               flex:1, padding:"18px 20px", background:`linear-gradient(135deg, ${T.bgCard} 0%, rgba(255,255,255,0.01) 100%)`,
@@ -4934,7 +5034,7 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
                 {data.party.slice(0, 8).map((p, pi) => {
                   const avail = (data.playerAvailability || {})[p.name];
                   const status = avail ? (avail.available ? "available" : avail.tentative ? "tentative" : "unavailable") : "unknown";
-                  const statusColor = status === "available" ? "#5ee09a" : status === "tentative" ? "#e8ba40" : status === "unavailable" ? T.crimson : T.textFaint;
+                  const statusColor = status === "available" ? T.green : status === "tentative" ? T.questGold : status === "unavailable" ? T.crimson : T.textFaint;
                   return (
                     <div key={pi} style={{ display:"flex", alignItems:"center", gap:5, padding:"4px 10px", background:"rgba(0,0,0,0.15)", borderRadius:"3px", border:`1px solid ${statusColor}33` }}>
                       <div style={{ width:6, height:6, borderRadius:"50%", background:statusColor, flexShrink:0 }} />
@@ -4974,7 +5074,7 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
                     {["Available", "Tentative", "Unavailable"].map(status => {
                       const currentAvail = (data.playerAvailability || {})[data.party?.find(p => p._isCurrentPlayer)?.name || ""];
                       const isActive = (status === "Available" && currentAvail?.available) || (status === "Tentative" && currentAvail?.tentative) || (status === "Unavailable" && currentAvail?.unavailable);
-                      const col = status === "Available" ? "#5ee09a" : status === "Tentative" ? "#e8ba40" : T.crimson;
+                      const col = status === "Available" ? T.green : status === "Tentative" ? T.questGold : T.crimson;
                       return (
                         <button key={status} onClick={() => {
                           const playerName = data.party?.find(p => p._isCurrentPlayer)?.name;
@@ -5296,7 +5396,7 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
           <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
             {steps.map((s,i) => (
               <div key={i} style={{ display:"flex", alignItems:"start", gap:10, opacity:s.done?0.4:1 }}>
-                {s.done ? <CheckCircle size={14} color="#5ee09a" style={{marginTop:2,flexShrink:0}}/> : <Circle size={14} color={T.crimson} style={{marginTop:2,flexShrink:0}}/>}
+                {s.done ? <CheckCircle size={14} color={T.green} style={{marginTop:2,flexShrink:0}}/> : <Circle size={14} color={T.crimson} style={{marginTop:2,flexShrink:0}}/>}
                 <span style={{ fontSize:13, fontFamily:T.body, fontWeight:300, color:s.done?T.textFaint:T.textDim, textDecoration:s.done?"line-through":"none" }}>{s.text}</span>
               </div>
             ))}
@@ -5339,8 +5439,8 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
           <SectionTitle icon={Wand2}>Quick Tools</SectionTitle>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
             {[
-              { label:"NPC Gen", icon:Users, accent:"#58aaff", url:`generators.html?export=campaign&campaignId=${activeCampaignId}` },
-              { label:"Encounter", icon:Swords, accent:"#5ee09a", url:`generators.html?export=campaign&campaignId=${activeCampaignId}&type=encounter` },
+              { label:"NPC Gen", icon:Users, accent: T.moveBlue, url:`generators.html?export=campaign&campaignId=${activeCampaignId}` },
+              { label:"Encounter", icon:Swords, accent: T.green, url:`generators.html?export=campaign&campaignId=${activeCampaignId}&type=encounter` },
               { label:"Treasure", icon:Package, accent:"#c9a84c", url:`generators.html?export=campaign&campaignId=${activeCampaignId}&type=treasure` },
               { label:"Compendium", icon:BookOpen, accent:"#c792ea", url:"compendium.html" },
               { label:"Grimoire", icon:Wand2, accent:"#f2917c", url:"grimoire.html" },
@@ -5491,7 +5591,8 @@ function App() {
   const [activeTab, setActiveTab] = useState(route.tab || "dashboard");
   const [loading, setLoading] = useState(true);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [viewRole, setViewRole] = useState(route.role || "dm");
+  // SECURITY: viewRole always starts as "dm" and is only changed by server-side campaign membership (V-001)
+  const [viewRole, setViewRole] = useState("dm");
   const [combatAssetsReady, setCombatAssetsReady] = useState(typeof window.CombatEngine !== "undefined");
   // ── Multiplayer: invite codes, campaign members, join flow ──
   const [inviteCodes, setInviteCodes] = useState([]);
@@ -5575,6 +5676,13 @@ function App() {
   useEffect(() => {
     const cached = cmLoadCampaignCache();
     if (cached && cached.campaigns.length > 0) {
+      // Seed combat state for Play tab restore
+      if (!window._cmActiveCombatState) window._cmActiveCombatState = {};
+      cached.campaigns.forEach(function(c) {
+        if (c.data && c.data.activeCombat && c.data.activeCombat.combatLive) {
+          window._cmActiveCombatState[c.id] = c.data.activeCombat;
+        }
+      });
       setCampaigns(cached.campaigns);
       if (cached.activeCampaignId && cached.campaigns.find(c => c.id === cached.activeCampaignId)) {
         setActiveCampaignId(cached.activeCampaignId);
@@ -5765,7 +5873,8 @@ function App() {
         var seen = {};
         prev.forEach(function(c) { seen[c.id] = true; });
         var newOnes = cloudCampaigns.filter(function(c) { return !seen[c.id]; }).map(function(c) {
-          return { id: c.id, data: cmExpandFromCloud(c.data || NEW_CAMPAIGN()), _role: c._role };
+          var raw = c.data || NEW_CAMPAIGN(); raw._campaignId = c.id;
+          return { id: c.id, data: cmExpandFromCloud(raw), _role: c._role };
         });
         return newOnes.length > 0 ? prev.concat(newOnes) : prev;
       });
@@ -5774,7 +5883,8 @@ function App() {
 
   // ── Set viewRole based on campaign membership when switching campaigns ──
   useEffect(() => {
-    if (!activeCampaignId || route.role) return; // URL override takes precedence
+    if (!activeCampaignId) return;
+    // SECURITY: role is always determined by server-side campaign membership (V-001)
     var role = campaignRoles[activeCampaignId];
     if (role === "player") setViewRole("player");
     else if (role === "dm") setViewRole("dm");
@@ -5782,7 +5892,7 @@ function App() {
 
   // ── Auto-redirect players away from DM-only tabs ──
   useEffect(() => {
-    if (viewRole === "player" && !["play","timeline","dashboard"].includes(activeTab)) setActiveTab("play");
+    if (viewRole === "player" && !["play","timeline","dashboard","world","quests","relationships"].includes(activeTab)) setActiveTab("play");
   }, [viewRole]);
 
   // ── Load invite codes + members when opening invite panel ──
@@ -5794,6 +5904,7 @@ function App() {
   }, [showInvitePanel, activeCampaignId]);
 
   const handleCreateInvite = () => {
+    if (viewRole !== "dm") return; // SECURITY: only DM can create invite codes
     if (typeof PhmurtDB === "undefined" || typeof PhmurtDB.createInviteCode !== "function" || !activeCampaignId) return;
     PhmurtDB.createInviteCode(activeCampaignId).then(function(code) {
       if (code) {
@@ -5803,6 +5914,7 @@ function App() {
   };
 
   const handleDeleteInvite = (inviteId) => {
+    if (viewRole !== "dm") return; // SECURITY: only DM can delete invite codes
     if (typeof PhmurtDB === "undefined" || typeof PhmurtDB.deleteInviteCode !== "function") return;
     PhmurtDB.deleteInviteCode(inviteId).then(function(ok) {
       if (ok) setInviteCodes(function(prev) { return prev.filter(function(c) { return c.id !== inviteId; }); });
@@ -5823,7 +5935,8 @@ function App() {
           if (camp) {
             setCampaigns(function(prev) {
               if (prev.find(function(c) { return c.id === camp.id; })) return prev;
-              return prev.concat([{ id: camp.id, data: cmExpandFromCloud(camp.data || NEW_CAMPAIGN()), _role: "player" }]);
+              var rawJoin = camp.data || NEW_CAMPAIGN(); rawJoin._campaignId = camp.id;
+              return prev.concat([{ id: camp.id, data: cmExpandFromCloud(rawJoin), _role: "player" }]);
             });
             setActiveCampaignId(camp.id);
             setViewRole("player");
@@ -5839,8 +5952,9 @@ function App() {
   };
 
   const getInviteLink = (code) => {
+    // SECURITY: role parameter removed from invite links - role is determined server-side
     var base = window.location.origin + window.location.pathname;
-    return base + "?campaign=" + activeCampaignId + "&role=player&invite=" + code;
+    return base + "?campaign=" + activeCampaignId + "&invite=" + code;
   };
 
   // ── Check URL for invite code on mount ──
@@ -5866,10 +5980,10 @@ function App() {
   const allNavItems = [
     { id:"dashboard", label:"Dashboard", icon: DashboardNavIcon, roles:["dm","player"] },
     { id:"timeline", label:"Timeline", icon: Clock, roles:["dm","player"] },
-    { id:"world", label:"World", icon: Globe, roles:["dm"] },
+    { id:"world", label:"World", icon: Globe, roles:["dm","player"] },
     { id:"play", label:"Play", icon: PlayNavIcon, roles:["dm","player"] },
     { id:"quests", label:"Quests", icon: Scroll, roles:["dm","player"], module:"questBoard" },
-    { id:"relationships", label:"Relations", icon: Activity, roles:["dm"], module:"livingWorld" },
+    { id:"relationships", label:"Relations", icon: Activity, roles:["dm","player"], module:"livingWorld" },
     { id:"homebrew", label:"Homebrew", icon: Wand2, roles:["dm"], module:"homebrew" },
     // Schedule tab removed — scheduler is now built into the Dashboard's Next Session card
     // { id:"scheduler", label:"Schedule", icon: Calendar, roles:["dm","player"], module:"scheduler" },
@@ -5933,8 +6047,8 @@ function App() {
                 <span style={{ fontSize:9, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1px" }}>SAVING...</span>
               </>}
               {saveStatus === "saved" && <>
-                <CheckCircle size={10} color="#5ee09a"/>
-                <span style={{ fontSize:9, color:"#5ee09a", fontFamily:T.ui, letterSpacing:"1px" }}>SAVED TO CLOUD</span>
+                <CheckCircle size={10} color={T.green}/>
+                <span style={{ fontSize:9, color: T.green, fontFamily:T.ui, letterSpacing:"1px" }}>SAVED TO CLOUD</span>
               </>}
               {saveStatus === "error" && <>
                 <AlertTriangle size={10} color={T.crimson}/>
@@ -5973,11 +6087,11 @@ function App() {
         </div>
 
         {/* View Role Toggle */}
-        {!sidebarCollapsed && (
+        {!sidebarCollapsed && campaignRoles[activeCampaignId] === "dm" && (
           <div style={{ padding:"12px 14px", borderTop:"1px solid " + T.border }}>
             <div style={{ display:"flex", gap:4 }}>
               {["dm","player"].map(r => (
-                <button key={r} onClick={() => setViewRole(r)}
+                <button key={r} onClick={() => { if (campaignRoles[activeCampaignId] === "dm" || r === "player") setViewRole(r); }}
                   style={{ flex:1, padding:"6px", background: viewRole === r ? "rgba(212,67,58,0.1)" : "transparent", border:"1px solid " + (viewRole === r ? "rgba(212,67,58,0.3)" : T.border), borderRadius:"4px", cursor:"pointer", color: viewRole === r ? "var(--crimson)" : T.textFaint, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase" }}>
                   {r === "dm" ? "DM" : "Player"}
                 </button>
@@ -5991,7 +6105,7 @@ function App() {
           <div style={{ padding:"8px 14px 12px", borderTop:"1px solid " + T.border }}>
             {viewRole === "dm" && (
               <button onClick={() => setShowInvitePanel(!showInvitePanel)}
-                style={{ width:"100%", padding:"7px 8px", background:"rgba(94,224,154,0.06)", border:"1px solid rgba(94,224,154,0.15)", borderRadius:"4px", cursor:"pointer", color:"#5ee09a", fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+                style={{ width:"100%", padding:"7px 8px", background:"rgba(94,224,154,0.06)", border:"1px solid rgba(94,224,154,0.15)", borderRadius:"4px", cursor:"pointer", color: T.green, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
                 <Link size={10}/> Invite Players
               </button>
             )}
@@ -6077,9 +6191,9 @@ function App() {
                 <div style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", textTransform:"uppercase", color:T.textFaint, marginBottom:10 }}>Active Codes</div>
                 {inviteCodes.map((inv, i) => (
                   <div key={inv.id || i} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:"rgba(255,255,255,0.02)", border:"1px solid " + T.border, borderRadius:8, marginBottom:6 }}>
-                    <code style={{ fontFamily:"monospace", fontSize:15, fontWeight:700, color:"#5ee09a", flex:1, letterSpacing:"1px" }}>{inv.code}</code>
+                    <code style={{ fontFamily:"monospace", fontSize:15, fontWeight:700, color: T.green, flex:1, letterSpacing:"1px" }}>{inv.code}</code>
                     <button onClick={() => { navigator.clipboard.writeText(inv.code); }} title="Copy code"
-                      style={{ background:"rgba(94,224,154,0.08)", border:"1px solid rgba(94,224,154,0.2)", borderRadius:6, padding:"5px 10px", cursor:"pointer", color:"#5ee09a", fontFamily:T.ui, fontSize:8, letterSpacing:"0.5px" }}>Copy Code</button>
+                      style={{ background:"rgba(94,224,154,0.08)", border:"1px solid rgba(94,224,154,0.2)", borderRadius:6, padding:"5px 10px", cursor:"pointer", color: T.green, fontFamily:T.ui, fontSize:8, letterSpacing:"0.5px" }}>Copy Code</button>
                     <button onClick={() => { navigator.clipboard.writeText(getInviteLink(inv.code)); }} title="Copy link"
                       style={{ background:"rgba(201,168,76,0.08)", border:"1px solid rgba(201,168,76,0.2)", borderRadius:6, padding:"5px 10px", cursor:"pointer", color:"#c9a84c", fontFamily:T.ui, fontSize:8, letterSpacing:"0.5px" }}>Copy Link</button>
                     {inv.id && <button onClick={() => handleDeleteInvite(inv.id)} title="Delete"
@@ -6095,7 +6209,7 @@ function App() {
                 {campaignMembers.map((m, i) => (
                   <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", background:"rgba(255,255,255,0.015)", border:"1px solid " + T.border, borderRadius:6, marginBottom:4 }}>
                     <span style={{ fontFamily:T.ui, fontSize:11, color:T.text, flex:1 }}>{m.profiles?.name || m.profiles?.email || m.user_id?.substring(0,8)}</span>
-                    <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", color: m.role === "dm" ? "#c9a84c" : "#5ee09a", background: m.role === "dm" ? "rgba(201,168,76,0.08)" : "rgba(94,224,154,0.08)", padding:"2px 8px", borderRadius:999 }}>{m.role}</span>
+                    <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", color: m.role === "dm" ? T.gold : T.green, background: m.role === "dm" ? "rgba(201,168,76,0.08)" : "rgba(94,224,154,0.08)", padding:"2px 8px", borderRadius:999 }}>{m.role}</span>
                   </div>
                 ))}
               </div>
@@ -6118,7 +6232,7 @@ function App() {
               <CrimsonBtn onClick={handleJoinByCode}>Join</CrimsonBtn>
             </div>
             {joinError && <div style={{ padding:"8px 12px", background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.2)", borderRadius:6, color:"#ef4444", fontFamily:T.body, fontSize:12, marginBottom:8 }}>{joinError}</div>}
-            {joinSuccess && <div style={{ padding:"8px 12px", background:"rgba(94,224,154,0.06)", border:"1px solid rgba(94,224,154,0.2)", borderRadius:6, color:"#5ee09a", fontFamily:T.body, fontSize:12, marginBottom:8 }}>{joinSuccess}</div>}
+            {joinSuccess && <div style={{ padding:"8px 12px", background:"rgba(94,224,154,0.06)", border:"1px solid rgba(94,224,154,0.2)", borderRadius:6, color: T.green, fontFamily:T.body, fontSize:12, marginBottom:8 }}>{joinSuccess}</div>}
           </div>
         </Modal>
       )}
@@ -6189,7 +6303,7 @@ function App() {
                     onMouseEnter={e => { e.currentTarget.style.background = "rgba(201,168,92,0.12)"; e.currentTarget.style.transform = "scale(1.02)"; }}
                     onMouseLeave={e => { e.currentTarget.style.background = createType === "traditional" ? "rgba(201,168,92,0.08)" : "rgba(255,255,255,0.02)"; e.currentTarget.style.transform = "scale(1)"; }}
                   >
-                    <div style={{ fontSize:28, marginBottom:8 }}>📜</div>
+                    <div style={{ fontSize:28, marginBottom:8 }}>⸎</div>
                     <h3 style={{ fontFamily:T.heading, fontSize:13, color:"#f0e8d0", margin:"0 0 8px 0", letterSpacing:"0.5px" }}>
                       Traditional Campaign
                     </h3>
@@ -6218,7 +6332,7 @@ function App() {
                     onMouseEnter={e => { e.currentTarget.style.background = "rgba(94,224,154,0.12)"; e.currentTarget.style.transform = "scale(1.02)"; }}
                     onMouseLeave={e => { e.currentTarget.style.background = createType === "live" ? "rgba(94,224,154,0.08)" : "rgba(255,255,255,0.02)"; e.currentTarget.style.transform = "scale(1)"; }}
                   >
-                    <div style={{ fontSize:28, marginBottom:8 }}>⚡</div>
+                    <div style={{ fontSize:28, marginBottom:8 }}>↯</div>
                     <h3 style={{ fontFamily:T.heading, fontSize:13, color:"#f0e8d0", margin:"0 0 8px 0", letterSpacing:"0.5px" }}>
                       Live Campaign
                     </h3>
@@ -6248,14 +6362,14 @@ function App() {
                   </p>
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
                     {[
-                      { key:"livingWorld", label:"Living World", desc:"Factions act autonomously, events unfold in real-time", icon:"🌍" },
-                      { key:"economy", label:"Economy", desc:"Trade goods, market prices, faction treasuries", icon:"💰" },
-                      { key:"calendar", label:"Calendar & Seasons", desc:"Fantasy calendar, weather, seasonal effects", icon:"📅" },
+                      { key:"livingWorld", label:"Living World", desc:"Factions act autonomously, events unfold in real-time", icon:"◎" },
+                      { key:"economy", label:"Economy", desc:"Trade goods, market prices, faction treasuries", icon:"◆" },
+                      { key:"calendar", label:"Calendar & Seasons", desc:"Fantasy calendar, weather, seasonal effects", icon:"◈" },
                       { key:"religion", label:"Religion & Divine", desc:"D&D 5e pantheon, temples, divine favor", icon:"⛪" },
-                      { key:"hexcrawl", label:"Hexcrawl Exploration", desc:"Wilderness travel, foraging, random encounters", icon:"🗺️" },
-                      { key:"questBoard", label:"Quest Board", desc:"Dynamic quest generation, chains, deadlines", icon:"📜" },
-                      { key:"downtime", label:"Downtime Activities", desc:"Crafting, research, training between sessions", icon:"🔨" },
-                      { key:"scheduler", label:"Session Scheduler", desc:"Player availability, optimal time finder", icon:"🗓️" },
+                      { key:"hexcrawl", label:"Hexcrawl Exploration", desc:"Wilderness travel, foraging, random encounters", icon:"⬡" },
+                      { key:"questBoard", label:"Quest Board", desc:"Dynamic quest generation, chains, deadlines", icon:"⸎" },
+                      { key:"downtime", label:"Downtime Activities", desc:"Crafting, research, training between sessions", icon:"⚒" },
+                      { key:"scheduler", label:"Session Scheduler", desc:"Player availability, optimal time finder", icon:"◈" },
                     ].map(mod => {
                       const enabled = createModules[mod.key] !== undefined ? createModules[mod.key] : false;
                       return (
@@ -6287,7 +6401,7 @@ function App() {
                   </div>
                   <div style={{ marginTop:12 }}>
                     <button onClick={(e) => { e.stopPropagation(); setCreateModules({ livingWorld:true, economy:true, calendar:true, religion:true, hexcrawl:true, questBoard:true, downtime:true, scheduler:true }); }}
-                      style={{ padding:"6px 12px", background:"transparent", border:"1px solid rgba(94,224,154,0.3)", borderRadius:"3px", color:"#5ee09a", fontFamily:T.ui, fontSize:9, letterSpacing:"1px", cursor:"pointer", marginRight:8 }}>
+                      style={{ padding:"6px 12px", background:"transparent", border:"1px solid rgba(94,224,154,0.3)", borderRadius:"3px", color: T.green, fontFamily:T.ui, fontSize:9, letterSpacing:"1px", cursor:"pointer", marginRight:8 }}>
                       Enable All
                     </button>
                     <button onClick={(e) => { e.stopPropagation(); setCreateModules({}); }}

@@ -4,8 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta name="referrer" content="strict-origin" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), usb=(), payment=(), serial=(), bluetooth=()" />
   <title>Character Gallery · Phmurt Studios</title>
   <meta name="description" content="Browse premade D&D 5e characters ready to play, or explore community-created heroes for inspiration." />
   <meta property="og:title" content="Character Gallery · Phmurt Studios" />
@@ -638,15 +639,15 @@
 
     <div class="character-grid">
       <div class="community-card">
-        <div class="community-placeholder-icon">✨</div>
+        <div class="community-placeholder-icon">✦</div>
         <div class="community-placeholder-text">Community content coming soon</div>
       </div>
       <div class="community-card">
-        <div class="community-placeholder-icon">🎭</div>
+        <div class="community-placeholder-icon">⊛</div>
         <div class="community-placeholder-text">Be the first to share your hero</div>
       </div>
       <div class="community-card">
-        <div class="community-placeholder-icon">⚔️</div>
+        <div class="community-placeholder-icon">⚔</div>
         <div class="community-placeholder-text">Inspire other adventurers</div>
       </div>
     </div>
@@ -683,7 +684,7 @@
         level: 3,
         subclass: 'College of Lore',
         flavor: 'Her melodies can charm a dragon or shatter stone.',
-        icon: '🎵',
+        icon: '♪',
         abilities: { STR: 8, DEX: 14, CON: 12, INT: 13, WIS: 10, CHA: 17 },
         features: [
           'Bardic Inspiration — Grant allies a d6 to add to ability checks, attack rolls, or saving throws',
@@ -701,7 +702,7 @@
         level: 3,
         subclass: 'Life Domain',
         flavor: 'The light of Pelor burns in his unwavering faith.',
-        icon: '✨',
+        icon: '✦',
         abilities: { STR: 14, DEX: 10, CON: 13, INT: 12, WIS: 17, CHA: 8 },
         features: [
           'Channel Divinity — Turn undead or heal creatures',
@@ -719,7 +720,7 @@
         level: 3,
         subclass: 'Circle of the Moon',
         flavor: 'She speaks the old tongue of root and rain.',
-        icon: '🌿',
+        icon: '⚘',
         abilities: { STR: 10, DEX: 14, CON: 13, INT: 12, WIS: 17, CHA: 8 },
         features: [
           'Wild Shape — Transform into a beast with challenge rating up to 1 (wolf, bear)',
@@ -737,7 +738,7 @@
         level: 3,
         subclass: 'Champion',
         flavor: 'A knight whose shield has turned a thousand blades.',
-        icon: '🛡️',
+        icon: '⛨',
         abilities: { STR: 17, DEX: 12, CON: 16, INT: 10, WIS: 13, CHA: 8 },
         features: [
           'Fighting Style — Defense: +1 to AC while wearing armor',
@@ -755,7 +756,7 @@
         level: 3,
         subclass: 'Way of the Open Hand',
         flavor: 'Silence is his weapon; speed, his armor.',
-        icon: '✊',
+        icon: '⊞',
         abilities: { STR: 10, DEX: 17, CON: 13, INT: 12, WIS: 16, CHA: 8 },
         features: [
           'Martial Arts — Unarmed strikes and monk weapons deal increased damage',
@@ -773,7 +774,7 @@
         level: 3,
         subclass: 'Oath of Devotion',
         flavor: 'Her oath binds her to justice above all.',
-        icon: '⚔️',
+        icon: '⚔',
         abilities: { STR: 16, DEX: 10, CON: 14, INT: 8, WIS: 12, CHA: 17 },
         features: [
           'Divine Smite — Channel divine magic into weapon strikes for extra radiant damage',
@@ -791,7 +792,7 @@
         level: 3,
         subclass: 'Hunter',
         flavor: 'No quarry escapes his eye; no forest denies him passage.',
-        icon: '🏹',
+        icon: '↝',
         abilities: { STR: 12, DEX: 17, CON: 14, INT: 10, WIS: 16, CHA: 8 },
         features: [
           'Favored Enemy — Gain advantage against specific creature types',
@@ -809,7 +810,7 @@
         level: 3,
         subclass: 'Thief',
         flavor: 'If you can see her, it\'s already too late.',
-        icon: '🗡️',
+        icon: '†',
         abilities: { STR: 8, DEX: 17, CON: 12, INT: 14, WIS: 13, CHA: 10 },
         features: [
           'Sneak Attack — Deal extra damage when attacking with advantage or ally nearby',
@@ -827,7 +828,7 @@
         level: 3,
         subclass: 'Draconic Bloodline',
         flavor: 'Wild magic courses through her infernal blood.',
-        icon: '🔥',
+        icon: '⟡',
         abilities: { STR: 8, DEX: 13, CON: 14, INT: 10, WIS: 12, CHA: 17 },
         features: [
           'Draconic Resilience — Gain AC bonus and extra hit points based on sorcerer level',
@@ -845,7 +846,7 @@
         level: 3,
         subclass: 'The Great Old One',
         flavor: 'The pact was sealed in starlight and whispers.',
-        icon: '👁️',
+        icon: '◉',
         abilities: { STR: 10, DEX: 14, CON: 13, INT: 12, WIS: 8, CHA: 17 },
         features: [
           'Eldritch Invocations — Unlock magical abilities that don\'t consume spell slots',
@@ -863,7 +864,7 @@
         level: 3,
         subclass: 'School of Evocation',
         flavor: 'Knowledge is the only true power.',
-        icon: '📚',
+        icon: '≡',
         abilities: { STR: 8, DEX: 13, CON: 12, INT: 17, WIS: 14, CHA: 10 },
         features: [
           'Arcane Recovery — Recover spell slots equal to half your wizard level',

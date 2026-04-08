@@ -135,15 +135,15 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
   };
 
   const systems = [
-    { key: "livingWorld", name: "Core Living World Engine", desc: "Base event system, faction politics, territory changes", icon: "⚔️" },
-    { key: "economy", name: "Regional Economy", desc: "Trade goods, market prices, faction treasuries, trade routes", icon: "💰", requires: "livingWorld" },
-    { key: "calendar", name: "Seasons & Calendar", desc: "Fantasy calendar, weather, seasonal effects", icon: "📅" },
-    { key: "religion", name: "Religion & Divine Influence", desc: "Pantheon, temples, divine favor, blessings/curses", icon: "⛪", requires: "calendar" },
-    { key: "hexcrawl", name: "Wilderness Exploration", desc: "Hex crawl travel between cities, encounters, foraging", icon: "🗺️" },
-    { key: "questBoard", name: "Dynamic Quest Board", desc: "Procedural quest generation based on world state", icon: "📜", requires: "livingWorld" },
-    { key: "downtime", name: "Downtime Activities", desc: "Between-session crafting, training, carousing etc.", icon: "🏠" },
-    { key: "homebrew", name: "Homebrew Workshop", desc: "Custom monsters, items, spells, NPCs", icon: "🧪" },
-    { key: "scheduler", name: "Session Scheduler", desc: "Player availability, session planning", icon: "📆" }
+    { key: "livingWorld", name: "Core Living World Engine", desc: "Base event system, faction politics, territory changes", icon: "⚔" },
+    { key: "economy", name: "Regional Economy", desc: "Trade goods, market prices, faction treasuries, trade routes", icon: "◆", requires: "livingWorld" },
+    { key: "calendar", name: "Seasons & Calendar", desc: "Fantasy calendar, weather, seasonal effects", icon: "◈" },
+    { key: "religion", name: "Religion & Divine Influence", desc: "Pantheon, temples, divine favor, blessings/curses", icon: "✠", requires: "calendar" },
+    { key: "hexcrawl", name: "Wilderness Exploration", desc: "Hex crawl travel between cities, encounters, foraging", icon: "≈" },
+    { key: "questBoard", name: "Dynamic Quest Board", desc: "Procedural quest generation based on world state", icon: "⸎", requires: "livingWorld" },
+    { key: "downtime", name: "Downtime Activities", desc: "Between-session crafting, training, carousing etc.", icon: "⌂" },
+    { key: "homebrew", name: "Homebrew Workshop", desc: "Custom monsters, items, spells, NPCs", icon: "◎" },
+    { key: "scheduler", name: "Session Scheduler", desc: "Player availability, session planning", icon: "◈" }
   ];
 
   return (

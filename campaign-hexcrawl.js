@@ -8,7 +8,7 @@
     plains: {
       id: 'plains',
       name: 'Plains',
-      icon: '🌾',
+      icon: '⚌',
       travelCost: 1,
       forageDC: 10,
       shelterAvailable: true,
@@ -19,7 +19,7 @@
     forest: {
       id: 'forest',
       name: 'Forest',
-      icon: '🌲',
+      icon: '⚍',
       travelCost: 2,
       forageDC: 11,
       shelterAvailable: true,
@@ -30,7 +30,7 @@
     hills: {
       id: 'hills',
       name: 'Hills',
-      icon: '⛰️',
+      icon: '△',
       travelCost: 2,
       forageDC: 12,
       shelterAvailable: false,
@@ -41,7 +41,7 @@
     mountains: {
       id: 'mountains',
       name: 'Mountains',
-      icon: '🏔️',
+      icon: '▲',
       travelCost: 3,
       forageDC: 14,
       shelterAvailable: false,
@@ -52,7 +52,7 @@
     swamp: {
       id: 'swamp',
       name: 'Swamp',
-      icon: '🌿',
+      icon: '⚘',
       travelCost: 3,
       forageDC: 13,
       shelterAvailable: false,
@@ -63,7 +63,7 @@
     desert: {
       id: 'desert',
       name: 'Desert',
-      icon: '🏜️',
+      icon: '∷',
       travelCost: 2,
       forageDC: 15,
       shelterAvailable: false,
@@ -74,7 +74,7 @@
     tundra: {
       id: 'tundra',
       name: 'Tundra',
-      icon: '❄️',
+      icon: '✧',
       travelCost: 2,
       forageDC: 16,
       shelterAvailable: false,
@@ -85,7 +85,7 @@
     jungle: {
       id: 'jungle',
       name: 'Jungle',
-      icon: '🌴',
+      icon: '⚍',
       travelCost: 3,
       forageDC: 12,
       shelterAvailable: true,
@@ -96,7 +96,7 @@
     coast: {
       id: 'coast',
       name: 'Coast',
-      icon: '🏖️',
+      icon: '≈',
       travelCost: 1,
       forageDC: 11,
       shelterAvailable: true,
@@ -107,7 +107,7 @@
     river: {
       id: 'river',
       name: 'River',
-      icon: '💧',
+      icon: '○',
       travelCost: 2,
       forageDC: 10,
       shelterAvailable: true,
@@ -118,7 +118,7 @@
     lake: {
       id: 'lake',
       name: 'Lake',
-      icon: '💦',
+      icon: '○',
       travelCost: 1,
       forageDC: 9,
       shelterAvailable: false,
@@ -129,7 +129,7 @@
     ruins: {
       id: 'ruins',
       name: 'Ancient Ruins',
-      icon: '🏛️',
+      icon: '⏣',
       travelCost: 2,
       forageDC: 14,
       shelterAvailable: true,
@@ -143,17 +143,17 @@
   // EXPLORATION FEATURES
   // ============================================================================
   const HEX_FEATURES = [
-    { id: 'campsite', name: 'Abandoned Campsite', icon: '⛺', description: 'Former adventurer camp with cold fire pit', mechanicalEffect: 'shelter_available' },
-    { id: 'stream', name: 'Crystal Stream', icon: '🏞️', description: 'Clear water source', mechanicalEffect: 'water_source' },
-    { id: 'cave', name: 'Cave Entrance', icon: '🕳️', description: 'Leads into darkness', mechanicalEffect: 'shelter_or_danger' },
-    { id: 'standing_stones', name: 'Standing Stones', icon: '🔷', description: 'Ancient circle of mysterious megaliths', mechanicalEffect: 'arcane_resonance' },
-    { id: 'fairy_ring', name: 'Fairy Ring', icon: '💫', description: 'Circle of mushrooms with otherworldly aura', mechanicalEffect: 'magic_site' },
-    { id: 'old_road', name: 'Old Road', icon: '🛣️', description: 'Cobblestone path, long abandoned', mechanicalEffect: 'travel_bonus' },
-    { id: 'animal_den', name: 'Animal Den', icon: '🦙', description: 'Burrow or lair of local fauna', mechanicalEffect: 'encounter_likely' },
-    { id: 'herb_patch', name: 'Herb Patch', icon: '🌿', description: 'Medicinal plants growing wild', mechanicalEffect: 'forage_bonus' },
-    { id: 'mineral_vein', name: 'Mineral Vein', icon: '💎', description: 'Exposed ore deposit', mechanicalEffect: 'material_source' },
-    { id: 'viewpoint', name: 'Natural Viewpoint', icon: '👁️', description: 'High vantage point overlooking the land', mechanicalEffect: 'vision_bonus' },
-    { id: 'hidden_trail', name: 'Hidden Trail', icon: '🥾', description: 'Overgrown path through thick brush', mechanicalEffect: 'shortcut' }
+    { id: 'campsite', name: 'Abandoned Campsite', icon: '⌂', description: 'Former adventurer camp with cold fire pit', mechanicalEffect: 'shelter_available' },
+    { id: 'stream', name: 'Crystal Stream', icon: '≈', description: 'Clear water source', mechanicalEffect: 'water_source' },
+    { id: 'cave', name: 'Cave Entrance', icon: '⌂', description: 'Leads into darkness', mechanicalEffect: 'shelter_or_danger' },
+    { id: 'standing_stones', name: 'Standing Stones', icon: '⊙', description: 'Ancient circle of mysterious megaliths', mechanicalEffect: 'arcane_resonance' },
+    { id: 'fairy_ring', name: 'Fairy Ring', icon: '◎', description: 'Circle of mushrooms with otherworldly aura', mechanicalEffect: 'magic_site' },
+    { id: 'old_road', name: 'Old Road', icon: '─', description: 'Cobblestone path, long abandoned', mechanicalEffect: 'travel_bonus' },
+    { id: 'animal_den', name: 'Animal Den', icon: '◎', description: 'Burrow or lair of local fauna', mechanicalEffect: 'encounter_likely' },
+    { id: 'herb_patch', name: 'Herb Patch', icon: '⚘', description: 'Medicinal plants growing wild', mechanicalEffect: 'forage_bonus' },
+    { id: 'mineral_vein', name: 'Mineral Vein', icon: '◆', description: 'Exposed ore deposit', mechanicalEffect: 'material_source' },
+    { id: 'viewpoint', name: 'Natural Viewpoint', icon: '◉', description: 'High vantage point overlooking the land', mechanicalEffect: 'vision_bonus' },
+    { id: 'hidden_trail', name: 'Hidden Trail', icon: '┐', description: 'Overgrown path through thick brush', mechanicalEffect: 'shortcut' }
   ];
 
   // ============================================================================

@@ -1,15 +1,26 @@
 /* ═══════════════════════════════════════════════════════════════════
    SUPABASE CONFIG – Phmurt Studios
    ═══════════════════════════════════════════════════════════════════
-   SETUP:
-     1. Go to https://supabase.com → your project → Settings → API
-     2. Copy "Project URL"    → paste into SUPABASE_URL below
-     3. Copy "anon / public"  → paste into SUPABASE_ANON_KEY below
-     4. Save and reload — cloud auth and data sync activate automatically.
+   SECURITY (V-002): Supabase anon key is a public key by design
+   (intended for client-side use). Real security is enforced via:
+   1. Row-Level Security (RLS) policies on all Supabase tables
+   2. Server-side auth verification for privileged operations
+   3. Supabase JWT verification for all API calls
+
+   IMPORTANT RLS REQUIREMENTS (must be enabled in Supabase dashboard):
+   - characters:  SELECT/UPDATE/DELETE WHERE owner_id = auth.uid()
+   - campaigns:   SELECT/UPDATE/DELETE WHERE owner_id = auth.uid() OR id IN (campaign_members)
+   - profiles:    SELECT own profile, UPDATE only own profile
+   - campaign_invites: INSERT/DELETE WHERE owner_id = auth.uid()
+   - encounter_templates: SELECT/UPDATE/DELETE WHERE owner_id = auth.uid()
    ═══════════════════════════════════════════════════════════════════ */
 
 var SUPABASE_URL      = 'https://zrfmboqoyrqsyckktgpv.supabase.co';
 var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpyZm1ib3FveXJxc3lja2t0Z3B2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5OTY0MzQsImV4cCI6MjA4OTU3MjQzNH0.1tzr_vD7wF2tjFw9fCyqYsAs_EZ_hJ1zlKERwrTFi5I';
+
+/* SECURITY (V-020): Gate debug logging behind flag. Set to true only for development. */
+Object.defineProperty(window, 'PHMURT_DEBUG', { value: false, writable: false, configurable: false });
+var PHMURT_DEBUG = window.PHMURT_DEBUG;
 
 /* ── Admin email verification ────────────────────────────────────
    DEPRECATED: Admin email list has been moved to server-side verification.
@@ -40,10 +51,10 @@ var phmurtSupabase = null;
           storageKey:         'phmurt_sb_auth'
         }
       });
-      console.info('[Phmurt] Supabase client ready.');
+      if (PHMURT_DEBUG) console.info('[Phmurt] Supabase client ready.');
       window.dispatchEvent(new Event('phmurt-supabase-ready'));
     } catch (e) {
-      console.warn('[Phmurt] Supabase init failed – running in offline mode.', e);
+      if (PHMURT_DEBUG) console.warn('[Phmurt] Supabase init failed – running in offline mode.', e);
     }
   }
 
@@ -55,7 +66,7 @@ var phmurtSupabase = null;
     var s = document.createElement('script');
     s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
     s.onload  = _createClient;
-    s.onerror = function () { console.warn('[Phmurt] Supabase CDN failed to load – offline mode.'); };
+    s.onerror = function () { if (PHMURT_DEBUG) console.warn('[Phmurt] Supabase CDN failed to load – offline mode.'); };
     document.head.appendChild(s);
   }
 })();

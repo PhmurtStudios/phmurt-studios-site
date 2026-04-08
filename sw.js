@@ -1,4 +1,4 @@
-const CACHE_VERSION = 121;
+const CACHE_VERSION = 129;
 const CACHE_NAME = 'phmurt-v' + CACHE_VERSION;
 const PRECACHE_URLS = [
   '/',
@@ -6,14 +6,22 @@ const PRECACHE_URLS = [
   'style.css',
   'phmurt-auth.js',
   'phmurt-shell.js',
+  'phmurt-realtime.js',
+  'phmurt-char-sync.js',
   'supabase-config.js',
+  'site-config.js',
+  'theme.js',
   'builder-data.js',
   'builder-data-35.js',
+  'builder-common.js',
   'monster-data.js',
   'campaign-combat-integration.js',
+  'campaign-play-loader.js',
   'combat-engine.js',
+  'combat-flow-ui.js',
   'visual-effects.js',
   'campaign-world.js',
+  'campaign-timeline.js',
   'living-world.js',
   'campaign-economy.js',
   'campaign-seasons.js',
@@ -27,11 +35,12 @@ const PRECACHE_URLS = [
   'campaign-homebrew-view.js',
   'campaign-scheduler-view.js',
   'campaign-settings-view.js',
+  'campaign-play.js',
   'logo.png'
 ];
 
-// Maximum age for cached assets before forced revalidation (24 hours)
-const MAX_CACHE_AGE = 24 * 60 * 60 * 1000;
+// Maximum age for cached assets before forced revalidation (4 hours)
+const MAX_CACHE_AGE = 4 * 60 * 60 * 1000;
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -72,6 +81,10 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   if (url.protocol === 'chrome-extension:') return;
   if (url.origin !== self.location.origin) return;
+  // SECURITY (V-013): Never cache admin page
+  if (url.pathname.includes('admin')) {
+    return event.respondWith(fetch(event.request));
+  }
   // Avoid caching API-like data requests; keep them network-only.
   if ((request.headers.get('accept') || '').includes('application/json')) return;
 

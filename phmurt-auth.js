@@ -30,6 +30,17 @@ var PhmurtDB = (function () {
   var _session   = null;
   var _listeners = [];
 
+  // SECURITY (V-012): Session nonce to mitigate CSRF in state-changing operations
+  var _csrfNonce = '';
+  try {
+    var arr = new Uint8Array(16);
+    crypto.getRandomValues(arr);
+    _csrfNonce = Array.from(arr, function(b) { return b.toString(16).padStart(2, '0'); }).join('');
+  } catch(e) { _csrfNonce = Math.random().toString(36).slice(2); }
+
+  // SECURITY: Rate limiting in closure scope (inaccessible from console)
+  var _signInAttempts = [];
+
   /* ── Supabase ref ────────────────────────────────────────────────── */
   function _sb() {
     return (typeof phmurtSupabase !== 'undefined' && phmurtSupabase) ? phmurtSupabase : null;
@@ -60,7 +71,7 @@ var PhmurtDB = (function () {
       try {
         fn();
       } catch (e) {
-        console.warn('[PhmurtAuth] Listener error:', e.message || e);
+        if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Listener error:', e.message || e);
       }
     });
     window.dispatchEvent(new Event('phmurt-auth-change'));
@@ -73,7 +84,7 @@ var PhmurtDB = (function () {
     return sb.from('profiles').select('*').eq('id', userId).maybeSingle()
       .then(function (r) { return r.data || null; })
       .catch(function (err) {
-        console.warn('[PhmurtAuth] Failed to fetch profile:', err ? err.message : 'Unknown error');
+        if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Failed to fetch profile:', err ? err.message : 'Unknown error');
         return null;
       });
   }
@@ -92,7 +103,7 @@ var PhmurtDB = (function () {
       }
       _fireChange();
     }).catch(function (err) {
-      console.warn('[PhmurtAuth] Supabase init failed:', err ? err.message : 'Unknown error');
+      if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Supabase init failed:', err ? err.message : 'Unknown error');
       _initLegacy();
     });
 
@@ -138,9 +149,9 @@ var PhmurtDB = (function () {
   function _setCk(n, v, d) {
     try {
       var e = d ? '; expires=' + (function () { var x = new Date(); x.setTime(x.getTime() + d * 864e5); return x.toUTCString(); }()) : '';
-      document.cookie = n + '=' + encodeURIComponent(v || '') + e + '; path=/; SameSite=Strict';
+      document.cookie = n + '=' + encodeURIComponent(v || '') + e + '; path=/; SameSite=Strict; Secure';
     } catch (err) {
-      console.warn('[PhmurtAuth] Failed to set cookie:', err.message || err);
+      if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Failed to set cookie:', err.message || err);
     }
   }
   function _getCk(n) {
@@ -151,7 +162,7 @@ var PhmurtDB = (function () {
         if (c.indexOf(p) === 0) return decodeURIComponent(c.substring(p.length));
       }
     } catch (err) {
-      console.warn('[PhmurtAuth] Failed to read cookie:', err.message || err);
+      if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Failed to read cookie:', err.message || err);
     }
     return null;
   }
@@ -162,7 +173,7 @@ var PhmurtDB = (function () {
       var r = localStorage.getItem(key);
       if (r) return JSON.parse(r);
     } catch (err) {
-      console.warn('[PhmurtAuth] Failed to read localStorage:', err.message || err);
+      if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Failed to read localStorage:', err.message || err);
     }
     return null;
   }
@@ -170,7 +181,7 @@ var PhmurtDB = (function () {
     try {
       localStorage.setItem(key, typeof val === 'string' ? val : JSON.stringify(val));
     } catch (err) {
-      console.warn('[PhmurtAuth] Failed to write localStorage:', err.message || err);
+      if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Failed to write localStorage:', err.message || err);
     }
   }
 
@@ -184,16 +195,20 @@ var PhmurtDB = (function () {
           var cp = JSON.parse(cr);
           if (cp && cp.userId) { _lsSet(LS_SESSION, cp); return cp; }
         } catch (parseErr) {
-          console.warn('[PhmurtAuth] Failed to parse session cookie:', parseErr.message || parseErr);
+          if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Failed to parse session cookie:', parseErr.message || parseErr);
         }
       }
     } catch (err) {
-      console.warn('[PhmurtAuth] Error getting legacy session:', err.message || err);
+      if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Error getting legacy session:', err.message || err);
     }
     return null;
   }
+  // SECURITY (V-004): Legacy sessions must NEVER have isAdmin=true.
+  // Admin status is only valid when verified through Supabase profile.
   function _legacySetSession(data) {
     if (data) {
+      // Strip isAdmin from legacy sessions as a safety measure
+      if (data.isAdmin) data = Object.assign({}, data, { isAdmin: false });
       var j = JSON.stringify(data);
       _lsSet(LS_SESSION, j);
       _setCk(CK_SESSION, j, 30);
@@ -201,7 +216,7 @@ var PhmurtDB = (function () {
       try {
         localStorage.removeItem(LS_SESSION);
       } catch (err) {
-        console.warn('[PhmurtAuth] Failed to remove session:', err.message || err);
+        if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Failed to remove session:', err.message || err);
       }
       _delCk(CK_SESSION);
     }
@@ -216,11 +231,11 @@ var PhmurtDB = (function () {
           var cp = JSON.parse(cr);
           if (cp && typeof cp === 'object') { _lsSet(LS_USERS, cp); return cp; }
         } catch (parseErr) {
-          console.warn('[PhmurtAuth] Failed to parse users cookie:', parseErr.message || parseErr);
+          if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Failed to parse users cookie:', parseErr.message || parseErr);
         }
       }
     } catch (err) {
-      console.warn('[PhmurtAuth] Error getting legacy users:', err.message || err);
+      if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Error getting legacy users:', err.message || err);
     }
     return {};
   }
@@ -282,6 +297,7 @@ var PhmurtDB = (function () {
   return {
 
     getSession: function () { return _session; },
+    getCsrfNonce: function () { return _csrfNonce; },
     isAdmin:    function () { return !!(_session && _session.isAdmin); },
     db:         function () { return _sb(); },
 
@@ -312,7 +328,7 @@ var PhmurtDB = (function () {
             });
           })
           .catch(function (err) {
-            console.warn('[PhmurtAuth] Sign-up error:', err.message || err);
+            if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Sign-up error:', err.message || err);
             throw err;
           });
       }
@@ -334,6 +350,15 @@ var PhmurtDB = (function () {
 
     /* ── Sign In ──────────────────────────────────────────────── */
     signIn: function (email, password) {
+      // SECURITY (V-011): Client-side rate limiting on sign-in attempts
+      var now = Date.now();
+      // Remove attempts older than 60 seconds
+      _signInAttempts = _signInAttempts.filter(function(t) { return now - t < 60000; });
+      if (_signInAttempts.length >= 5) {
+        return Promise.reject(new Error('Too many sign-in attempts. Please wait 60 seconds.'));
+      }
+      _signInAttempts.push(now);
+
       var ne = (email || '').trim().toLowerCase();
       if (!ne)       return Promise.reject(new Error('Email is required.'));
       if (!password) return Promise.reject(new Error('Password is required.'));
@@ -347,7 +372,7 @@ var PhmurtDB = (function () {
             return _fetchProfile(user.id).then(function (profile) {
               if (profile && profile.is_banned) {
                 sb.auth.signOut().catch(function (err) {
-                  console.warn('[PhmurtAuth] Sign-out after ban check failed:', err.message || err);
+                  if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Sign-out after ban check failed:', err.message || err);
                 });
                 throw new Error('This account has been suspended.');
               }
@@ -358,7 +383,7 @@ var PhmurtDB = (function () {
             });
           })
           .catch(function (err) {
-            console.warn('[PhmurtAuth] Sign-in error:', err.message || err);
+            if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Sign-in error:', err.message || err);
             throw err;
           });
       }
@@ -366,9 +391,9 @@ var PhmurtDB = (function () {
       // Legacy
       var users = _legacyGetUsers();
       var u = users[ne];
-      if (!u) return Promise.reject(new Error('No account found with that email.'));
+      if (!u) return Promise.reject(new Error('Invalid email or password.'));
       return _legacyHashPwd(password, ne).then(function (hash) {
-        if (hash !== u.passwordHash) throw new Error('Incorrect password.');
+        if (hash !== u.passwordHash) throw new Error('Invalid email or password.');
         var sess = { userId: u.userId, name: u.name, email: ne, displayName: u.name, isAdmin: false };
         _legacySetSession(sess);
         _session = sess;
@@ -382,7 +407,7 @@ var PhmurtDB = (function () {
       var sb = _sb();
       if (sb) {
         sb.auth.signOut().catch(function (err) {
-          console.warn('[PhmurtAuth] Supabase sign-out failed:', err.message || err);
+          if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Supabase sign-out failed:', err.message || err);
         });
       }
       _legacySetSession(null);
@@ -398,12 +423,14 @@ var PhmurtDB = (function () {
     saveCharacter: function (snapshot, existingId) {
       if (!_session) return Promise.resolve({ success: false, error: 'Not signed in.' });
 
+      // SECURITY (V-015): Input validation
+      var name = snapshot && snapshot.name ? String(snapshot.name).slice(0, 100) : 'Unnamed';
+      var race = snapshot && snapshot.race ? String(snapshot.race).slice(0, 50) : '';
+      var cls = snapshot && snapshot.class ? String(snapshot.class).slice(0, 50) : '';
+      var level = snapshot && snapshot.level ? Math.min(Math.max(1, parseInt(snapshot.level) || 1), 30) : 1;
+
       var sb = _sb();
       if (sb) {
-        var name    = (snapshot.details && snapshot.details.name) || 'Unnamed Character';
-        var race    = snapshot.race  || '';
-        var cls     = snapshot.cls   || snapshot.class_ || '';
-        var level   = snapshot.level || 1;
         var builder = existingId ? (snapshot.builderType || '5e') : (snapshot.cls ? '5e' : '35e');
 
         var row = {
@@ -445,14 +472,17 @@ var PhmurtDB = (function () {
 
       // Legacy localStorage
       try {
+        var dataStr = JSON.stringify(snapshot);
+        if (dataStr.length > 2000000) return Promise.resolve({ success: false, error: 'Character data too large.' });
+
         var chars = _legacyGetChars();
         var idx   = (existingId !== undefined && existingId !== null) ? parseInt(existingId, 10) : NaN;
         var entry = {
           id:    isNaN(idx) ? Date.now().toString() : existingId,
-          name:  (snapshot.details && snapshot.details.name) || 'Unnamed Character',
-          race:  snapshot.race || '',
-          class: snapshot.cls  || '',
-          level: snapshot.level || 1,
+          name:  name,
+          race:  race,
+          class: cls,
+          level: level,
           data:  snapshot
         };
         if (!isNaN(idx) && idx >= 0 && idx < chars.length) {
@@ -534,10 +564,14 @@ var PhmurtDB = (function () {
       if (!_session) return Promise.resolve(false);
       var sb = _sb();
       if (sb) {
+        // SECURITY (V-026): Validate campaign data size
+        var dataStr = JSON.stringify(campaign);
+        if (dataStr.length > 5000000) return Promise.reject(new Error('Campaign data exceeds maximum size.'));
+
         return sb.from('campaigns').upsert({
           id:          campaign.id,
           owner_id:    _session.userId,
-          name:        campaign.name || 'Unnamed Campaign',
+          name:        (campaign.name || 'Unnamed Campaign').slice(0, 80),
           description: campaign.description || '',
           system:      campaign.system || '5e',
           invite_code: campaign.inviteCode || null,
@@ -766,7 +800,7 @@ var PhmurtDB = (function () {
         if (!name)           { showErr('Please enter a display name.'); return; }
         if (!email)          { showErr('Please enter your email address.'); return; }
         if (!pass)           { showErr('Please choose a password.'); return; }
-        if (pass.length < 8) { showErr('Password must be at least 8 characters.'); return; }
+        if (pass.length < 12) { showErr('Password must be at least 12 characters.'); return; }
         if (pass !== pass2)  { showErr('Passwords do not match.'); return; }
         setLoading('pa-up-submit', true);
         PhmurtDB.signUp(name, email, pass)
@@ -929,7 +963,7 @@ var PhmurtDB = (function () {
       var path = _session.userId + '/' + campaignId + '/' + Date.now() + '-' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
       return sb.storage.from('map-images').upload(path, file, { upsert: false })
         .then(function (r) {
-          if (r.error) { console.warn('[PhmurtDB] Map upload failed:', r.error.message); return null; }
+          if (r.error) { if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtDB] Map upload failed:', r.error.message); return null; }
           return sb.storage.from('map-images').createSignedUrl(path, 60 * 60 * 24 * 7) // 7-day URL
             .then(function (u) { return u.data ? u.data.signedUrl : null; });
         });
@@ -949,7 +983,7 @@ var PhmurtDB = (function () {
       var path = _session.userId + '/' + entityId + '.' + (file.name.split('.').pop() || 'jpg');
       return sb.storage.from('portraits').upload(path, file, { upsert: true })
         .then(function (r) {
-          if (r.error) { console.warn('[PhmurtDB] Portrait upload failed:', r.error.message); return null; }
+          if (r.error) { if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtDB] Portrait upload failed:', r.error.message); return null; }
           return sb.storage.from('portraits').createSignedUrl(path, 60 * 60 * 24 * 30)
             .then(function (u) { return u.data ? u.data.signedUrl : null; });
         });

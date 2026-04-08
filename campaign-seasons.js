@@ -52,7 +52,7 @@ window.CampaignSeasons = (function(){
       headline: 'The First Frost descends upon the land',
       detail: 'Temperatures plummet as winter makes its appearance. Rivers begin to freeze at their edges.',
       category: 'weather',
-      icon: '❄️',
+      icon: '✧',
       importance: 'major',
       mutations: { frostfall_power: 15, movement_penalty: 0.1 },
       calendarEffect: { winter_begins: true }
@@ -63,7 +63,7 @@ window.CampaignSeasons = (function(){
       headline: 'The Spring Thaw awakens the world',
       detail: 'Snow melts rapidly, swelling rivers and streams. Flooding is common in low-lying areas.',
       category: 'environmental',
-      icon: '🌊',
+      icon: '≈',
       importance: 'major',
       mutations: { verdance_power: 20, flooding_risk: true },
       calendarEffect: { spring_begins: true }
@@ -74,7 +74,7 @@ window.CampaignSeasons = (function(){
       headline: 'The Harvest Festival commences',
       detail: 'Communities gather to celebrate the season of plenty. Trade flourishes and spirits are high.',
       category: 'cultural',
-      icon: '🌾',
+      icon: '⚌',
       importance: 'major',
       mutations: { harvest_power: 25, trade_bonus: 0.3 },
       calendarEffect: { harvest_season: true }
@@ -85,7 +85,7 @@ window.CampaignSeasons = (function(){
       headline: 'The Midsummer Celebration brings revelry',
       detail: 'The longest day arrives. Festivals light fires, bards sing, and magic feels strongest.',
       category: 'cultural',
-      icon: '🔥',
+      icon: '⟡',
       importance: 'major',
       mutations: { solstice_power: 20, magic_surge: true },
       calendarEffect: { midsummer: true }
@@ -96,7 +96,7 @@ window.CampaignSeasons = (function(){
       headline: 'Severe drought grips the southern lands',
       detail: 'Crops wither, wells run dry, and water becomes precious. Prices for grain skyrocket.',
       category: 'environmental',
-      icon: '☀️',
+      icon: '✦',
       importance: 'severe',
       mutations: { water_prices: 2.0, crop_yield: 0.5, unrest: 0.2 },
       calendarEffect: { drought: true }
@@ -107,7 +107,7 @@ window.CampaignSeasons = (function(){
       headline: 'Catastrophic floods sweep through the valleys',
       detail: 'Rivers overflow their banks. Villages are threatened and trade routes become impassable.',
       category: 'environmental',
-      icon: '🌊',
+      icon: '≈',
       importance: 'severe',
       mutations: { travel_blocked: true, unrest: 0.3, damage: 0.2 },
       calendarEffect: { flood: true }
@@ -118,7 +118,7 @@ window.CampaignSeasons = (function(){
       headline: 'Unseasonable cold strikes during summer',
       detail: 'Unexpected frosts damage crops and confuse wildlife. People huddle in unusual times.',
       category: 'weather',
-      icon: '❄️',
+      icon: '✧',
       importance: 'moderate',
       mutations: { crop_yield: 0.7, unrest: 0.1 },
       calendarEffect: {}
@@ -129,7 +129,7 @@ window.CampaignSeasons = (function(){
       headline: 'The perfect growing season arrives',
       detail: 'Weather, rain, and sun align perfectly. Crops flourish beyond expectation.',
       category: 'environmental',
-      icon: '🌱',
+      icon: '❦',
       importance: 'major',
       mutations: { crop_yield: 1.5, prosperity: 0.2 },
       calendarEffect: { abundance: true }
@@ -140,7 +140,7 @@ window.CampaignSeasons = (function(){
       headline: 'The moons align in an Arcane Eclipse',
       detail: 'Reality shivers as the moons pass. Magical energies surge wildly across the world.',
       category: 'arcane',
-      icon: '🌑',
+      icon: '☽',
       importance: 'severe',
       mutations: { wild_magic: true, magic_surge: 0.5, planar_breach: true },
       calendarEffect: { eclipse: true }
@@ -151,7 +151,7 @@ window.CampaignSeasons = (function(){
       headline: 'The Blood Moon rises in the sky',
       detail: 'The moon turns red. Undead stir from their rest, and evil things grow bold.',
       category: 'supernatural',
-      icon: '🌙',
+      icon: '☾',
       importance: 'severe',
       mutations: { undead_activity: 2.0, evil_power: 0.3, unrest: 0.2 },
       calendarEffect: { blood_moon: true }
@@ -172,16 +172,16 @@ window.CampaignSeasons = (function(){
   };
 
   const WEATHER_STATES = {
-    Clear: { icon: '☀️', visibility: 'excellent', hazard: false, effects: [] },
-    Cloudy: { icon: '☁️', visibility: 'good', hazard: false, effects: [] },
-    'Light Rain': { icon: '🌧️', visibility: 'fair', hazard: false, effects: ['ground_wet'] },
-    'Heavy Rain': { icon: '⛈️', visibility: 'poor', hazard: true, effects: ['movement_slow', 'ranged_disadvantage'] },
-    Thunderstorm: { icon: '⚡', visibility: 'very_poor', hazard: true, effects: ['movement_slow', 'ranged_disadvantage', 'metal_danger', 'fire_damage_up'] },
-    Fog: { icon: '🌫️', visibility: 'very_poor', hazard: false, effects: ['stealth_advantage', 'ranged_disadvantage'] },
-    Snow: { icon: '❄️', visibility: 'poor', hazard: true, effects: ['movement_slow', 'cold_damage'] },
-    Blizzard: { icon: '🌪️', visibility: 'none', hazard: true, effects: ['movement_halved', 'ranged_disadvantage', 'cold_damage_severe'] },
-    Heatwave: { icon: '🔥', visibility: 'excellent', hazard: true, effects: ['con_saves', 'heat_damage'] },
-    Sandstorm: { icon: '💨', visibility: 'poor', hazard: true, effects: ['movement_slow', 'ranged_disadvantage', 'sand_damage'] }
+    Clear: { icon: '✦', visibility: 'excellent', hazard: false, effects: [] },
+    Cloudy: { icon: '◌', visibility: 'good', hazard: false, effects: [] },
+    'Light Rain': { icon: '⏐', visibility: 'fair', hazard: false, effects: ['ground_wet'] },
+    'Heavy Rain': { icon: '⏐', visibility: 'poor', hazard: true, effects: ['movement_slow', 'ranged_disadvantage'] },
+    Thunderstorm: { icon: '↯', visibility: 'very_poor', hazard: true, effects: ['movement_slow', 'ranged_disadvantage', 'metal_danger', 'fire_damage_up'] },
+    Fog: { icon: '≡', visibility: 'very_poor', hazard: false, effects: ['stealth_advantage', 'ranged_disadvantage'] },
+    Snow: { icon: '✧', visibility: 'poor', hazard: true, effects: ['movement_slow', 'cold_damage'] },
+    Blizzard: { icon: '◇', visibility: 'none', hazard: true, effects: ['movement_halved', 'ranged_disadvantage', 'cold_damage_severe'] },
+    Heatwave: { icon: '⟡', visibility: 'excellent', hazard: true, effects: ['con_saves', 'heat_damage'] },
+    Sandstorm: { icon: '∿', visibility: 'poor', hazard: true, effects: ['movement_slow', 'ranged_disadvantage', 'sand_damage'] }
   };
 
   // ═══════════════════════════════════════════════════════════════════════════

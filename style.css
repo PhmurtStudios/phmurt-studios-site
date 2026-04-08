@@ -109,6 +109,44 @@ textarea{
   --orange:        #e8940a;
   --orange-dim:    rgba(232,148,10,0.12);
   --quest-gold:    #e8ba40;
+  /* ── Tag variant colors (dark mode defaults) ── */
+  --tag-danger-bg:     rgba(212,67,58,0.16);
+  --tag-danger-text:   #f06858;
+  --tag-danger-border: rgba(212,67,58,0.42);
+  --tag-success-bg:    rgba(52,168,83,0.14);
+  --tag-success-text:  #5ee09a;
+  --tag-success-border: rgba(52,168,83,0.32);
+  --tag-warning-bg:    rgba(234,138,16,0.12);
+  --tag-warning-text:  #f5c45c;
+  --tag-warning-border: rgba(234,138,16,0.28);
+  --tag-info-bg:       rgba(148,175,210,0.12);
+  --tag-info-text:     #b0c8e4;
+  --tag-info-border:   rgba(148,175,210,0.28);
+  --tag-critical-bg:   rgba(212,67,58,0.22);
+  --tag-critical-text: #ff6b6b;
+  --tag-critical-border: rgba(212,67,58,0.50);
+  /* ── HP bar colors ── */
+  --hp-red:        #d4433a;
+  --hp-yellow:     #e8940a;
+  --hp-green:      #2e8b57;
+  /* ── Action resource colors (combat) ── */
+  --move-blue:     #58aaff;
+  --action-red:    #dc143c;
+  --bonus-gold:    #ffd54f;
+  --reaction-purple: #b574ff;
+  /* ── Roll type colors ── */
+  --roll-crit-color: #ffd700;
+  --roll-hit:      #5ee09a;
+  --roll-miss:     #f06858;
+  --roll-special:  #b574ff;
+  /* ── Allies/rivals colors ── */
+  --ally-green:    #2ecc71;
+  --rival-red:     #e74c3c;
+  /* ── Threat level colors ── */
+  --threat-extreme: #f06858;
+  --threat-high:    #e8940a;
+  --threat-medium:  #f5c45c;
+  --threat-low:     #5ee09a;
 }
 
 /* ═══════════════════════════════
@@ -158,6 +196,28 @@ html.light-mode{
   --tag-critical-bg:   rgba(160,30,20,0.18);
   --tag-critical-text: #d63030;
   --tag-critical-border: rgba(160,30,20,0.40);
+  /* ── HP bar colors (light mode) ── */
+  --hp-red:        #c23028;
+  --hp-yellow:     #b87600;
+  --hp-green:      #267a4a;
+  /* ── Action resource colors (light mode) ── */
+  --move-blue:     #3070cc;
+  --action-red:    #b01030;
+  --bonus-gold:    #9a7a10;
+  --reaction-purple: #7a3aba;
+  /* ── Roll type colors (light mode) ── */
+  --roll-crit-color: #b89420;
+  --roll-hit:      #2d9d57;
+  --roll-miss:     #c23028;
+  --roll-special:  #7a3aba;
+  /* ── Allies/rivals colors (light mode) ── */
+  --ally-green:    #228b4a;
+  --rival-red:     #b83e32;
+  /* ── Threat level colors (light mode) ── */
+  --threat-extreme: #c23028;
+  --threat-high:    #b87600;
+  --threat-medium:  #9a7a10;
+  --threat-low:     #2d9d57;
   /* ── Dice roll indicator colors (light mode) ── */
   --roll-crit:            #d4a400;
   --roll-crit-shadow:     rgba(212,164,0,0.4);

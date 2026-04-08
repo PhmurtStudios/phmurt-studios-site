@@ -1,23 +1,30 @@
 (function () {
   // ── HTML sanitizer for user content ──
+  // SECURITY (V-010): Robust HTML escaping for all contexts (text nodes and attributes)
   window.psEscapeHtml = function(str) {
-    if (!str) return '';
-    var div = document.createElement('div');
-    div.appendChild(document.createTextNode(str));
-    return div.innerHTML;
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#x27;');
   };
 
   // ── Admin verification (server-side check) ────────────────────────────
   // Admin status is now verified through the database profile flag (is_admin)
   // rather than client-side email list comparison. This prevents exposing
   // admin identities to all users and improves security.
+  // SECURITY (V-004): Admin status verified through PhmurtDB session,
+  // which is set from Supabase profile data (server-side is_admin flag).
+  // Never reads directly from localStorage to prevent tampering.
   function _shellIsAdmin() {
     try {
-      var raw = localStorage.getItem('phmurt_auth_session');
-      var s = raw ? JSON.parse(raw) : null;
-      if (!s) return false;
-      // Use the isAdmin flag from the profile/session, verified server-side
-      return !!(s.isAdmin === true);
+      if (typeof PhmurtDB !== 'undefined' && PhmurtDB.getSession) {
+        var sess = PhmurtDB.getSession();
+        return !!(sess && sess.isAdmin === true);
+      }
+      return false;
     } catch(e) { return false; }
   }
 
@@ -180,7 +187,7 @@
       const [labelPart, hrefPart] = part.split('|').map(v => (v || '').trim());
       return {
         label: labelPart,
-        href: hrefPart || undefined,
+        href: (hrefPart && !/^(javascript|data|vbscript):/i.test(hrefPart)) ? hrefPart : undefined,
         current: !hrefPart || index === arr.length - 1
       };
     }).filter(item => item.label);
@@ -257,8 +264,8 @@
       <nav class="ps-breadcrumb" aria-label="Breadcrumb">
         ${items.map((item, index) => {
           const crumb = item.current || !item.href
-            ? `<span class="current">${item.label}</span>`
-            : `<a href="${item.href}">${item.label}</a>`;
+            ? `<span class="current">${psEscapeHtml(item.label)}</span>`
+            : `<a href="${psEscapeHtml(item.href)}">${psEscapeHtml(item.label)}</a>`;
           const sep = index < items.length - 1 ? '<span class="sep">/</span>' : '';
           return crumb + sep;
         }).join('')}
@@ -365,7 +372,11 @@
       return PhmurtDB.getSession();
     }
     /* Fallback: read localStorage directly */
-    try { return JSON.parse(localStorage.getItem('phmurt_auth_session') || 'null'); }
+    try {
+      var s = JSON.parse(localStorage.getItem('phmurt_auth_session') || 'null');
+      if (s) s.isAdmin = false; // SECURITY (V-025): Never trust isAdmin from localStorage
+      return s;
+    }
     catch(e) { return null; }
   }
 

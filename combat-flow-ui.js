@@ -13,20 +13,20 @@ window.CombatFlowUI = (() => {
   // ─── DAMAGE TYPE VISUAL CONFIG ─────────────────────────────────────────────
 
   const DAMAGE_TYPE_CONFIG = {
-    fire:         { color: "#ff4500", glow: "#ff6347", icon: "🔥", label: "Fire" },
-    cold:         { color: "#00bfff", glow: "#87ceeb", icon: "❄️",  label: "Cold" },
+    fire:         { color: "#ff4500", glow: "#ff6347", icon: "⟡", label: "Fire" },
+    cold:         { color: "#00bfff", glow: "#87ceeb", icon: "✧",  label: "Cold" },
     lightning:    { color: "#00e5ff", glow: "#b3f0ff", icon: "⚡", label: "Lightning" },
-    thunder:      { color: "#9c88ff", glow: "#c4b5fd", icon: "💥", label: "Thunder" },
-    acid:         { color: "#76ff03", glow: "#b2ff59", icon: "🧪", label: "Acid" },
-    poison:       { color: "#4caf50", glow: "#81c784", icon: "☠️",  label: "Poison" },
-    necrotic:     { color: "#8b5cf6", glow: "#a78bfa", icon: "💀", label: "Necrotic" },
-    radiant:      { color: "#ffd54f", glow: "#fff176", icon: "✨", label: "Radiant" },
-    force:        { color: "#e040fb", glow: "#ea80fc", icon: "💫", label: "Force" },
-    psychic:      { color: "#ec407a", glow: "#f48fb1", icon: "🧠", label: "Psychic" },
-    bludgeoning:  { color: "#bcaaa4", glow: "#d7ccc8", icon: "🔨", label: "Bludgeoning" },
-    piercing:     { color: "#e0e0e0", glow: "#f5f5f5", icon: "🗡️",  label: "Piercing" },
-    slashing:     { color: "#ef9a9a", glow: "#ffcdd2", icon: "⚔️",  label: "Slashing" },
-    healing:      { color: "#66bb6a", glow: "#a5d6a7", icon: "💚", label: "Healing" },
+    thunder:      { color: "#9c88ff", glow: "#c4b5fd", icon: "⊛", label: "Thunder" },
+    acid:         { color: "#76ff03", glow: "#b2ff59", icon: "⊛", label: "Acid" },
+    poison:       { color: "#4caf50", glow: "#81c784", icon: "☠",  label: "Poison" },
+    necrotic:     { color: "#8b5cf6", glow: "#a78bfa", icon: "☠", label: "Necrotic" },
+    radiant:      { color: "#ffd54f", glow: "#fff176", icon: "✦", label: "Radiant" },
+    force:        { color: "#e040fb", glow: "#ea80fc", icon: "◎", label: "Force" },
+    psychic:      { color: "#ec407a", glow: "#f48fb1", icon: "◈", label: "Psychic" },
+    bludgeoning:  { color: "#bcaaa4", glow: "#d7ccc8", icon: "⚒", label: "Bludgeoning" },
+    piercing:     { color: "#e0e0e0", glow: "#f5f5f5", icon: "†",  label: "Piercing" },
+    slashing:     { color: "#ef9a9a", glow: "#ffcdd2", icon: "⚔",  label: "Slashing" },
+    healing:      { color: "#66bb6a", glow: "#a5d6a7", icon: "⊕", label: "Healing" },
     untyped:      { color: "#ffffff", glow: "#e0e0e0", icon: "⚪", label: "Damage" },
   };
 
@@ -607,7 +607,7 @@ window.CombatFlowUI = (() => {
       id: entry.id,
       time: entry.time || "",
       type: entry.type || "system",
-      icon: "⚔️",
+      icon: "⚔",
       color: "#f4ead6",
       headline: "",
       sublines: [],
@@ -619,7 +619,7 @@ window.CombatFlowUI = (() => {
       case "attack": {
         const atkName = maskName(entry.attacker, entry.attackerId);
         const tgtName = maskName(entry.target, entry.targetId);
-        formatted.icon = entry.isCrit ? "💥" : "⚔️";
+        formatted.icon = entry.isCrit ? "⊛" : "⚔";
         formatted.color = "#dc143c";
         formatted.headline = atkName + " → " + tgtName + ": " + (entry.action || "Attack");
         formatted.expandable = true;
@@ -673,7 +673,7 @@ window.CombatFlowUI = (() => {
       case "miss": {
         const atkName = maskName(entry.attacker, entry.attackerId);
         const tgtName = maskName(entry.target, entry.targetId);
-        formatted.icon = "🛡️";
+        formatted.icon = "⛨";
         formatted.color = "#78909c";
         formatted.headline = atkName + " → " + tgtName + ": " + (entry.action || "Attack") + " — MISS";
         formatted.expandable = true;
@@ -693,7 +693,7 @@ window.CombatFlowUI = (() => {
 
       case "save": {
         const tgtName = maskName(entry.target, entry.targetId);
-        formatted.icon = entry.success ? "✅" : "❌";
+        formatted.icon = entry.success ? "✓" : "✗";
         formatted.color = entry.success ? "#66bb6a" : "#ef5350";
         formatted.headline = tgtName + ": " + (entry.ability || "").toUpperCase() + " Save" +
           (entry.action ? " vs " + entry.action : "") +
@@ -718,21 +718,21 @@ window.CombatFlowUI = (() => {
       }
 
       case "heal": {
-        formatted.icon = "💚";
+        formatted.icon = "⊕";
         formatted.color = "#66bb6a";
         formatted.headline = (entry.target || "?") + " healed for " + (entry.amount || 0) + " HP";
         break;
       }
 
       case "death": {
-        formatted.icon = "💀";
+        formatted.icon = "☠";
         formatted.color = "#d32f2f";
         formatted.headline = (entry.target || "?") + " — " + (entry.text || "Defeated");
         break;
       }
 
       case "condition": {
-        formatted.icon = entry.applied ? "🔶" : "🔹";
+        formatted.icon = entry.applied ? "◆" : "◇";
         formatted.color = entry.applied ? "#ffa726" : "#78909c";
         formatted.headline = (entry.target || "?") + ": " +
           (entry.applied ? "+" : "−") + " " + (entry.condition || "Condition");
@@ -740,7 +740,7 @@ window.CombatFlowUI = (() => {
       }
 
       case "initiative": {
-        formatted.icon = "🎲";
+        formatted.icon = "⊞";
         formatted.color = "#ffd54f";
         formatted.headline = entry.text || "Initiative rolled";
         break;
@@ -761,7 +761,7 @@ window.CombatFlowUI = (() => {
       }
 
       default: {
-        formatted.icon = "📜";
+        formatted.icon = "⸎";
         formatted.color = "rgba(242,232,214,0.5)";
         formatted.headline = entry.text || "Unknown action";
         break;

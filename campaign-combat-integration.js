@@ -9,6 +9,21 @@
 
   var VERSION = 1;
 
+  // SECURITY (V-016): Sanitize object keys to prevent prototype pollution
+  function _safeAssign(target) {
+    for (var i = 1; i < arguments.length; i++) {
+      var src = arguments[i];
+      if (src && typeof src === 'object') {
+        Object.keys(src).forEach(function(key) {
+          if (key !== '__proto__' && key !== 'constructor' && key !== 'prototype') {
+            target[key] = src[key];
+          }
+        });
+      }
+    }
+    return target;
+  }
+
   /**
    * Ensure campaign JSON has integration fields and stable actorId on party/npcs.
    * Returns the same reference if nothing changed.
@@ -24,15 +39,15 @@
     var npcsOk = !npcs.some(function (n) { return n.actorId == null; });
     if (verOk && encountersOk && ledgerOk && partyOk && npcsOk) return data;
 
-    return Object.assign({}, data, {
+    return _safeAssign({}, data, {
       battleIntegrationVersion: VERSION,
       encounters: encountersOk ? data.encounters : [],
       combatLedger: ledgerOk ? data.combatLedger : [],
       party: party.map(function (p) {
-        return p.actorId != null ? p : Object.assign({}, p, { actorId: "pc-" + String(p.id) });
+        return p.actorId != null ? p : _safeAssign({}, p, { actorId: "pc-" + String(p.id) });
       }),
       npcs: npcs.map(function (n) {
-        return n.actorId != null ? n : Object.assign({}, n, { actorId: "npc-" + String(n.id) });
+        return n.actorId != null ? n : _safeAssign({}, n, { actorId: "npc-" + String(n.id) });
       }),
     });
   }
@@ -121,13 +136,13 @@
     opts = opts || {};
     setData(function (d) {
       var ledger = Array.isArray(d.combatLedger) ? d.combatLedger : [];
-      var row = Object.assign({}, entry, {
+      var row = _safeAssign({}, entry, {
         id: "cl-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8),
         at: new Date().toISOString(),
       });
       var act = d.activity || [];
       var line = entry.summary || entry.title || entry.type || "Combat log";
-      var out = Object.assign({}, d, {
+      var out = _safeAssign({}, d, {
         combatLedger: [row].concat(ledger).slice(0, 250),
       });
       if (!opts.skipActivity) {
@@ -146,7 +161,7 @@
       location: enc.location || "",
       notes: enc.notes || "",
       participants: (enc.participants || []).map(function (p) {
-        return Object.assign({}, p);
+        return _safeAssign({}, p);
       }),
     };
   }
@@ -182,10 +197,10 @@
         dmOnly: !!payload.dmOnly,
         scope: "party",
       };
-      var newHead = Object.assign({}, head, {
+      var newHead = _safeAssign({}, head, {
         events: (head.events || []).concat([ev]),
       });
-      return Object.assign({}, d, {
+      return _safeAssign({}, d, {
         timeline: [newHead].concat(tl.slice(1)),
       });
     });

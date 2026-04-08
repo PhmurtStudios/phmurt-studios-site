@@ -809,10 +809,10 @@ window.CampaignHomebrewView = function CampaignHomebrewView({ data, setData, vie
   const homebrew = data._homebrew || { monsters: [], items: [], spells: [], npcs: [] };
 
   const categoryData = {
-    monsters: { data: homebrew.monsters, label: "Monsters", icon: "🐉", templates: window.MONSTER_TEMPLATES || {} },
+    monsters: { data: homebrew.monsters, label: "Monsters", icon: "⊛", templates: window.MONSTER_TEMPLATES || {} },
     items: { data: homebrew.items, label: "Items", icon: "⚔", templates: window.ITEM_TEMPLATES || {} },
-    spells: { data: homebrew.spells, label: "Spells", icon: "✨", templates: window.SPELL_TEMPLATES || {} },
-    npcs: { data: homebrew.npcs, label: "NPCs", icon: "👤", templates: window.NPC_TEMPLATES || {} }
+    spells: { data: homebrew.spells, label: "Spells", icon: "✦", templates: window.SPELL_TEMPLATES || {} },
+    npcs: { data: homebrew.npcs, label: "NPCs", icon: "◉", templates: window.NPC_TEMPLATES || {} }
   };
 
   const currentCat = categoryData[activeTab];

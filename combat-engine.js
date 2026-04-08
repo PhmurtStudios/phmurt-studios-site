@@ -930,37 +930,37 @@ window.CombatEngine = (() => {
   // All standard actions a character can take in combat
 
   const STANDARD_ACTIONS = [
-    { name: "Attack", type: "action", description: "Make a melee or ranged weapon attack. Extra Attack allows multiple attacks.", icon: "⚔️" },
-    { name: "Cast a Spell", type: "action", description: "Cast a spell with a casting time of 1 action.", icon: "✨" },
-    { name: "Dash", type: "action", description: "Double your movement speed for this turn.", icon: "💨", effect: "doubleMovement" },
-    { name: "Disengage", type: "action", description: "Your movement doesn't provoke opportunity attacks for the rest of the turn.", icon: "🏃", effect: "noOpportunityAttacks" },
-    { name: "Dodge", type: "action", description: "Until your next turn, attacks against you have disadvantage if you can see the attacker. DEX saves have advantage.", icon: "🛡️", effect: "dodge" },
-    { name: "Help", type: "action", description: "Give an ally advantage on their next ability check or attack roll.", icon: "🤝", effect: "helpAlly" },
-    { name: "Hide", type: "action", description: "Make a Dexterity (Stealth) check to hide.", icon: "👁️", effect: "hide" },
+    { name: "Attack", type: "action", description: "Make a melee or ranged weapon attack. Extra Attack allows multiple attacks.", icon: "⚔" },
+    { name: "Cast a Spell", type: "action", description: "Cast a spell with a casting time of 1 action.", icon: "✦" },
+    { name: "Dash", type: "action", description: "Double your movement speed for this turn.", icon: "≈", effect: "doubleMovement" },
+    { name: "Disengage", type: "action", description: "Your movement doesn't provoke opportunity attacks for the rest of the turn.", icon: "↺", effect: "noOpportunityAttacks" },
+    { name: "Dodge", type: "action", description: "Until your next turn, attacks against you have disadvantage if you can see the attacker. DEX saves have advantage.", icon: "⛨", effect: "dodge" },
+    { name: "Help", type: "action", description: "Give an ally advantage on their next ability check or attack roll.", icon: "⚖", effect: "helpAlly" },
+    { name: "Hide", type: "action", description: "Make a Dexterity (Stealth) check to hide.", icon: "◉", effect: "hide" },
     { name: "Ready", type: "action", description: "Prepare an action to trigger on a specific condition.", icon: "⏳", effect: "ready" },
-    { name: "Search", type: "action", description: "Make a Wisdom (Perception) or Intelligence (Investigation) check.", icon: "🔍", effect: "search" },
-    { name: "Use an Object", type: "action", description: "Interact with an object that requires your action (potion, scroll, etc.).", icon: "🧪", effect: "useObject" },
-    { name: "Grapple", type: "action", description: "Athletics check vs target's Athletics or Acrobatics. Replaces one attack.", icon: "🤼", effect: "grapple" },
-    { name: "Shove", type: "action", description: "Athletics check to push target 5ft away or knock prone. Replaces one attack.", icon: "👊", effect: "shove" },
+    { name: "Search", type: "action", description: "Make a Wisdom (Perception) or Intelligence (Investigation) check.", icon: "⊙", effect: "search" },
+    { name: "Use an Object", type: "action", description: "Interact with an object that requires your action (potion, scroll, etc.).", icon: "⊛", effect: "useObject" },
+    { name: "Grapple", type: "action", description: "Athletics check vs target's Athletics or Acrobatics. Replaces one attack.", icon: "⊠", effect: "grapple" },
+    { name: "Shove", type: "action", description: "Athletics check to push target 5ft away or knock prone. Replaces one attack.", icon: "⊞", effect: "shove" },
   ];
 
   const BONUS_ACTIONS = [
-    { name: "Offhand Attack", type: "bonus", description: "Attack with a light weapon in your other hand (no ability mod to damage).", icon: "🗡️" },
-    { name: "Cast Bonus Spell", type: "bonus", description: "Cast a spell with a casting time of 1 bonus action.", icon: "✨" },
+    { name: "Offhand Attack", type: "bonus", description: "Attack with a light weapon in your other hand (no ability mod to damage).", icon: "†" },
+    { name: "Cast Bonus Spell", type: "bonus", description: "Cast a spell with a casting time of 1 bonus action.", icon: "✦" },
     { name: "Class Feature", type: "bonus", description: "Use a class-specific bonus action (Cunning Action, Rage, etc.).", icon: "⭐" },
   ];
 
   const REACTIONS = [
-    { name: "Opportunity Attack", type: "reaction", description: "Attack a creature leaving your reach.", icon: "⚔️" },
+    { name: "Opportunity Attack", type: "reaction", description: "Attack a creature leaving your reach.", icon: "⚔" },
     { name: "Readied Action", type: "reaction", description: "Execute your readied action when the trigger occurs.", icon: "⏳" },
-    { name: "Cast Reaction Spell", type: "reaction", description: "Cast Shield, Counterspell, or other reaction spells.", icon: "✨" },
+    { name: "Cast Reaction Spell", type: "reaction", description: "Cast Shield, Counterspell, or other reaction spells.", icon: "✦" },
   ];
 
   const FREE_ACTIONS = [
-    { name: "Interact with Object", type: "free", description: "One free object interaction per turn (draw weapon, open door, etc.).", icon: "🚪" },
-    { name: "Communicate", type: "free", description: "Brief utterance or signal during your turn.", icon: "💬" },
-    { name: "Drop Prone", type: "free", description: "Drop to the ground (costs no movement).", icon: "⬇️" },
-    { name: "Drop Item", type: "free", description: "Release a held item.", icon: "📦" },
+    { name: "Interact with Object", type: "free", description: "One free object interaction per turn (draw weapon, open door, etc.).", icon: "⌂" },
+    { name: "Communicate", type: "free", description: "Brief utterance or signal during your turn.", icon: "⊳" },
+    { name: "Drop Prone", type: "free", description: "Drop to the ground (costs no movement).", icon: "↓" },
+    { name: "Drop Item", type: "free", description: "Release a held item.", icon: "◫" },
   ];
 
 

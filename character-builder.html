@@ -4,8 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-  <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <meta name="referrer" content="strict-origin" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), usb=(), payment=(), serial=(), bluetooth=()" />
   <title>Character Builder · Phmurt Studios</title>
   <meta name="description" content="Build your D&D 5e character step by step with the Phmurt Studios character builder." />
   <meta property="og:title" content="Character Builder · Phmurt Studios" />
@@ -2158,7 +2159,7 @@ function renderSpells(){
   const spellList=DND_DATA.spells[C.cls];
   if(!spellList){
     var hbClsName = cls.name || 'This class';
-    container.innerHTML='<div class="cb-detail" style="text-align:center;padding:56px 32px;"><div style="font-size:40px;margin-bottom:16px;opacity:.2;">📜</div><div class="cb-detail-title">'+escapeHtml(hbClsName)+': Spellcasting</div><div class="cb-detail-sub" style="margin-top:10px;">Spell list not configured. Edit this homebrew class to assign a spell list.</div><button data-hb-edit-type="class" data-hb-edit-id="'+escapeHtml(C.cls)+'" style="margin-top:20px;font-family:Cinzel,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:9px 20px;background:transparent;border:1px solid #8b6914;color:#8b6914;cursor:pointer;">✎ Edit Homebrew Class</button></div>';
+    container.innerHTML='<div class="cb-detail" style="text-align:center;padding:56px 32px;"><div style="font-size:40px;margin-bottom:16px;opacity:.2;">⸎</div><div class="cb-detail-title">'+escapeHtml(hbClsName)+': Spellcasting</div><div class="cb-detail-sub" style="margin-top:10px;">Spell list not configured. Edit this homebrew class to assign a spell list.</div><button data-hb-edit-type="class" data-hb-edit-id="'+escapeHtml(C.cls)+'" style="margin-top:20px;font-family:Cinzel,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:9px 20px;background:transparent;border:1px solid #8b6914;color:#8b6914;cursor:pointer;">✎ Edit Homebrew Class</button></div>';
     var editBtn = container.querySelector('[data-hb-edit-type]');
     if (editBtn) editBtn.addEventListener('click', function(){ editHBEntity(this.dataset.hbEditType, this.dataset.hbEditId); });
     return;
@@ -7261,7 +7262,7 @@ function _hbcRenderCommunity() {
 
   if (!filtered.length) {
     return '<div style="text-align:center;padding:32px 0;">'
-      + '<div style="font-size:32px;opacity:.2;margin-bottom:12px;">📜</div>'
+      + '<div style="font-size:32px;opacity:.2;margin-bottom:12px;">⸎</div>'
       + '<div style="font-family:Cinzel,serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;">No community content yet</div>'
       + '<div style="font-size:13px;color:var(--text-faint);">Be the first to share your homebrew creations!</div>'
       + '</div>';

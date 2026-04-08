@@ -207,7 +207,7 @@
             headline: `${a.name} and ${b.name} Forge Alliance`,
             detail: `Diplomats from the ${a.name} and the ${b.name} have signed a pact of mutual defense and trade cooperation.`,
             category: "political",
-            icon: "🤝",
+            icon: "⚖",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -246,7 +246,7 @@
             headline: `${a.name} Breaks Alliance with ${b.name}`,
             detail: `The alliance between the ${a.name} and the ${b.name} has collapsed due to ${pick(reasons, rng)}.`,
             category: "political",
-            icon: "💔",
+            icon: "⊘",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -287,7 +287,7 @@
             headline: `${heir.name} Ascends to Lead ${faction.name}`,
             detail: `${cause}. ${heir.name}, formerly ${heir.title}, now assumes command as the new ${ruler.title} of the ${faction.name}.`,
             category: "political",
-            icon: "👑",
+            icon: "♔",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -366,7 +366,7 @@
             headline: outcome.success ? `${faction.name} Leadership Overturned` : `Coup Thwarted in ${faction.name}`,
             detail: `${outcome.text}. The faction's internal stability hangs in the balance as power consolidates or fragments.`,
             category: "political",
-            icon: "🗡️",
+            icon: "†",
             importance: "major",
             mutations: (d) => {
               if (!outcome.success) {
@@ -426,7 +426,7 @@
             headline: `${ruler.name} of ${target.name} Assassinated!`,
             detail: `${ruler.name}, ${ruler.title} of the ${target.name}, has been ${method}. The realm is plunged into chaos as ${heir ? heir.name + " scrambles to assume power" : "the succession is thrown into question"}.${suspectText}`,
             category: "political",
-            icon: "🗡️",
+            icon: "†",
             importance: "critical",
             mutations: (d) => ({
               ...d,
@@ -465,7 +465,7 @@
             headline: `${pick(royalty, rng)} of ${a.name} Weds ${pick(royalty, rng)} of ${b.name}`,
             detail: `A grand wedding ceremony has united the ${a.name} and ${b.name} through marriage. This dynastic union cements a powerful alliance between the two factions.`,
             category: "political",
-            icon: "💒",
+            icon: "✠",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -500,7 +500,7 @@
             headline: `Diplomatic Summit: ${a.name} and ${b.name} Negotiate`,
             detail: `High-ranking diplomats from the ${a.name} and ${b.name} have met to discuss a ${outcome.duration} ceasefire. Tensions ease momentarily as both sides seek respite from conflict.`,
             category: "political",
-            icon: "🤐",
+            icon: "⊘",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -525,7 +525,7 @@
             headline: `Tax Revolt in ${region.name}`,
             detail: `Citizens of ${region.name} have risen up against heavy taxation imposed by the ${region.ctrl}. Protests have turned violent as the ruling faction struggles to maintain order.`,
             category: "political",
-            icon: "🔥",
+            icon: "⟡",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -546,7 +546,7 @@
             headline: `New Ruler Crowned: ${faction.name} Ascends Under New Leadership`,
             detail: `After the death and retirement of the previous ruler, a new leader has been formally coronated as the head of the ${faction.name}. The hierarchy is reorganized as courtiers vie for position near the throne.`,
             category: "political",
-            icon: "👑",
+            icon: "♔",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -565,7 +565,7 @@
             headline: `Spy Ring Discovered: ${a.name} Exposed in ${b.name}`,
             detail: `An extensive espionage network operating on behalf of the ${a.name} has been uncovered within ${b.name} territory. The discovery has sparked outrage and severely damaged diplomatic relations between the two factions.`,
             category: "political",
-            icon: "🕵️",
+            icon: "◉",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -592,7 +592,7 @@
             headline: `${vassal.name} Submits to ${overlord.name}`,
             detail: `Facing overwhelming pressure and dwindling resources, the ${vassal.name} has submitted to the overlordship of the ${overlord.name}. In exchange for protection, they agree to pay tribute and provide soldiers when called upon.`,
             category: "political",
-            icon: "🏛️",
+            icon: "⏣",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -628,7 +628,7 @@
             headline: `${vassal.name} Declares Independence from ${overlord.name}`,
             detail: `After years of vassalage, the ${vassal.name} have risen up and declared independence. The ${overlord.name} views this as a grave betrayal of their agreement.`,
             category: "political",
-            icon: "🔓",
+            icon: "⊙",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -667,7 +667,7 @@
             headline: `Peace Treaty Signed: ${fA} and ${fB}`,
             detail: `After a long and bitter conflict, the ${fA} and ${fB} have negotiated a peace treaty. The ${winner.name} emerge victorious and have secured significant territorial concessions.`,
             category: "political",
-            icon: "🕊️",
+            icon: "⊕",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -701,7 +701,7 @@
             headline: `Non-Aggression Pact: ${a.name} and ${b.name}`,
             detail: `Tired of constant conflict, the ${a.name} and ${b.name} have agreed to a non-aggression pact. Both sides pledge to stop military hostilities and refrain from attacks on each other's territories.`,
             category: "political",
-            icon: "✋",
+            icon: "⊘",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -736,7 +736,7 @@
             headline: `Betrayal! ${betrayer.name} Turns on ${victim.name}`,
             detail: `In a shocking turn of events, the ${betrayer.name} have backstabbed their former ally, the ${victim.name}. All treaties are abandoned and open hostilities erupt as trust shatters completely.`,
             category: "political",
-            icon: "🗡️",
+            icon: "†",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -782,7 +782,7 @@
             headline: `${faction.name} Undergoes Revolution!`,
             detail: `The ${faction.name} has undergone a dramatic upheaval. The old order has been cast down and a new ${newGovType} has risen in its place. ${newName !== faction.name ? `The faction has also renamed itself to the ${newName}.` : ""}`,
             category: "political",
-            icon: "🔴",
+            icon: "●",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -835,7 +835,7 @@
             headline: `${faction.name} Renamed to ${newName}`,
             detail: `Following its recent military conquests, the ${faction.name} has declared a new name to reflect its expanded dominion: the ${newName}. Official proclamations herald a new era of glory and strength.`,
             category: "political",
-            icon: "🏰",
+            icon: "♜",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -883,7 +883,7 @@
             headline: `Border Shift: ${transferred.name} Changes Hands`,
             detail: `Through diplomatic negotiation and subtle pressure, the ${stronger.name} has convinced the ${weaker.name} to cede control of ${transferred.name}. The border has been redrawn and new banners now fly over the region.`,
             category: "political",
-            icon: "🗺️",
+            icon: "⬡",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -933,7 +933,7 @@
             headline: `${strongest.faction.name} Annexes the ${weakest.faction.name}!`,
             detail: `In a decisive act of military and political dominance, the ${strongest.faction.name} has formally annexed all territories held by the ${weakest.faction.name}. The conquered regions of ${annexedRegions.slice(0, 3).join(", ")}${annexedRegions.length > 3 ? ` and ${annexedRegions.length - 3} more` : ""} now fly the banners of the ${strongest.faction.name}. The ${weakest.faction.name} ceases to exist as a sovereign power, its remaining leadership either swearing fealty or fleeing into exile. The map of the realm has been redrawn — the ${strongest.faction.name} now commands a vast unified domain.`,
             category: "military",
-            icon: "👑",
+            icon: "♔",
             importance: "critical",
             mutations: (d) => ({
               ...d,
@@ -992,7 +992,7 @@
             headline: `${faction.name} Disintegrates!`,
             detail: `The ${faction.name} has finally succumbed to internal strife and external pressures. Their territories fall into chaos and are claimed by neighboring powers or left contested. A once-proud faction ceases to exist as a coherent power.`,
             category: "political",
-            icon: "💀",
+            icon: "☠",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -1075,7 +1075,7 @@
             headline: `${faction.name} Undergoes Peaceful Government Reform`,
             detail: `The ${faction.name} has embarked on a period of peaceful institutional reform. Through deliberation and consensus, the leadership has transitioned to a ${newGovType} system. Citizens celebrate this bloodless transformation of their government.`,
             category: "political",
-            icon: "📜",
+            icon: "⸎",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -1122,7 +1122,7 @@
             headline: `War! ${aggressor.name} Attacks ${defender.name}`,
             detail: `The ${aggressor.name} has declared open war on the ${defender.name}. Armies are mobilizing and border regions are being fortified. Civilians flee the frontier.`,
             category: "military",
-            icon: "⚔️",
+            icon: "⚔",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -1159,7 +1159,7 @@
               headline: `${aggressor.name} Seizes ${target.name}`,
               detail: `Forces loyal to the ${aggressor.name} have occupied ${target.name}, wresting control from the ${oldCtrl}. The population watches nervously as new banners are raised over the settlement.`,
               category: "military",
-              icon: "🏴",
+              icon: "⚑",
               importance: "major",
               mutations: (d) => ({
                 ...d,
@@ -1194,7 +1194,7 @@
             headline: `${attacker.name} ${headlineVerb} ${region.name}`,
             detail: detailText,
             category: "military",
-            icon: isTotalConquest ? "💀" : "🏴",
+            icon: isTotalConquest ? "☠" : "⚑",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -1239,7 +1239,7 @@
             headline: `${city.name} Raided by ${raider.charAt(0).toUpperCase() + raider.slice(1)}`,
             detail: `A band of ${raider} attacked ${city.name} in the ${city.region} region. While the town guard managed to drive them off, significant damage was done to the outer districts.`,
             category: "military",
-            icon: "🔥",
+            icon: "⟡",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -1262,7 +1262,7 @@
             headline: `${besieger.name} Lays Siege to ${region.name}`,
             detail: `The ${besieger.name} have surrounded ${region.name} and begun a prolonged siege. Supply lines are cut and the region's defenders prepare for a long and difficult campaign.`,
             category: "military",
-            icon: "🏰",
+            icon: "♜",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -1291,7 +1291,7 @@
             headline: `${region.name} Pacified Under ${ctrl.name} Rule`,
             detail: `After months of military occupation and diplomatic effort, ${region.name} has been fully integrated into the ${ctrl.name}. New administrators have been appointed, resistance has faded, and the banners of the ${ctrl.name} now fly unchallenged over the region. The borders of the realm have been permanently redrawn.`,
             category: "political",
-            icon: "🏳️",
+            icon: "⊕",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -1312,7 +1312,7 @@
             headline: `Mercenaries Arrive to Aid ${faction.name}`,
             detail: `A contingent of ${pick(mercTypes, rng)} has been hired by the ${faction.name}. With fresh troops and battle-hardened warriors, the faction's military strength has increased dramatically.`,
             category: "military",
-            icon: "⚔️",
+            icon: "⚔",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -1333,7 +1333,7 @@
             headline: `Mass Desertion in ${faction.name} Forces`,
             detail: `Soldiers of the ${faction.name} have begun abandoning their posts, disillusioned by constant defeats and poor leadership. The exodus weakens the faction's military capacity.`,
             category: "military",
-            icon: "🏃",
+            icon: "↺",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -1353,7 +1353,7 @@
             headline: `New Fortification Completed in ${region.name}`,
             detail: `A massive fortress has been completed in ${region.name}, bolstering the defenses of the ${region.ctrl}. With enhanced fortifications, the region is now far more resistant to invasion.`,
             category: "military",
-            icon: "🏰",
+            icon: "♜",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -1373,7 +1373,7 @@
             headline: `Arms Race: ${a.name} and ${b.name} Escalate Military Buildup`,
             detail: `In response to perceived threats, both the ${a.name} and the ${b.name} have dramatically increased military production. Armor smithies work day and night, and both factions grow more formidable.`,
             category: "military",
-            icon: "⚙️",
+            icon: "⚙",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -1398,7 +1398,7 @@
             headline: `Seasoned Veterans Return to ${faction.name}`,
             detail: `Battle-hardened soldiers who were long thought lost have returned from a distant campaign. Their experience and skill have reinvigorated the ${faction.name}'s military forces.`,
             category: "military",
-            icon: "🎖️",
+            icon: "⊛",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -1429,7 +1429,7 @@
             headline: `Battle: ${winner.name} Defeats ${loser.name}`,
             detail: `A major battle has been fought between the ${factionA.name} and the ${factionB.name}. The ${winner.name} emerge victorious after fierce combat. Casualties are heavy on both sides.`,
             category: "military",
-            icon: "⚔️",
+            icon: "⚔",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -1462,7 +1462,7 @@
             headline: `Naval Blockade: ${blockader.name} Seals ${target.name} Coast`,
             detail: `The ${blockader.name} have established a naval blockade along the ${target.name} coast, cutting off vital trade and supply routes. The ${target.name}'s maritime commerce grinds to a halt.`,
             category: "military",
-            icon: "⛓️",
+            icon: "⛓",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -1492,7 +1492,7 @@
             headline: `Border Skirmish: ${a.name} vs ${b.name}`,
             detail: `A minor border clash has erupted between soldiers of the ${a.name} and ${b.name}. Though brief, the skirmish leaves wounded on both sides and tensions further inflamed.`,
             category: "military",
-            icon: "🗡️",
+            icon: "†",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -1526,7 +1526,7 @@
             headline: `Joint Military Exercise: ${a.name} and ${b.name}`,
             detail: `The military forces of the ${a.name} and ${b.name} have conducted a massive joint training exercise. The display of coordinated strength reinforces their alliance and boosts morale.`,
             category: "military",
-            icon: "💪",
+            icon: "⊞",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -1570,7 +1570,7 @@
             headline: `Trade Boom in ${region.name}`,
             detail: `A new trade route carrying ${good} has brought unprecedented wealth to ${region.name}. Merchants flock to the region's markets and the economy flourishes.`,
             category: "economic",
-            icon: "💰",
+            icon: "◆",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -1596,7 +1596,7 @@
             headline: `Famine Strikes ${region.name}`,
             detail: `Crop failures and livestock disease have plunged ${region.name} into famine. The people grow desperate and unrest spreads as food stores dwindle.`,
             category: "economic",
-            icon: "🌾",
+            icon: "⚌",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -1618,7 +1618,7 @@
             headline: `Gold Rush in ${region.name}`,
             detail: `Rich deposits of ${pick(resources, rng)} have been discovered in ${region.name}. Prospectors and merchants flock to the region, bringing unprecedented wealth.`,
             category: "economic",
-            icon: "💎",
+            icon: "◇",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -1645,7 +1645,7 @@
             headline: `${embargo.name} Imposes Trade Embargo on ${target.name}`,
             detail: `The ${embargo.name} has cut off all trade with the ${target.name}, denying them access to vital goods and resources. The ${target.name}'s economy begins to falter.`,
             category: "economic",
-            icon: "🚫",
+            icon: "⊘",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -1670,7 +1670,7 @@
             headline: `Pirate Fleet Terrorizes ${region.name} Coast`,
             detail: `A fearsome pirate armada has appeared off the coast of ${region.name}, raiding merchant vessels and coastal settlements. Trade routes are disrupted and insurance costs soar.`,
             category: "economic",
-            icon: "🏴‍☠️",
+            icon: "☠",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -1691,7 +1691,7 @@
             headline: `Bountiful Harvest Festival in ${region.name}`,
             detail: `An exceptional harvest has blessed ${region.name} with abundance. The ensuing festival draws traders and travelers from across the realm, bringing prosperity and joy to the region.`,
             category: "economic",
-            icon: "🌾",
+            icon: "⚌",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -1712,7 +1712,7 @@
             headline: `Market Crash in ${region.name}`,
             detail: `Speculation and overextended credit have led to an economic collapse in ${region.name}. Markets crash, fortunes evaporate, and widespread poverty spreads as merchants go bankrupt.`,
             category: "economic",
-            icon: "📉",
+            icon: "▼",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -1733,7 +1733,7 @@
             headline: `New Trade Route Established: ${a.name} to ${b.name}`,
             detail: `A new merchant route has been established connecting ${a.name} and ${b.name}. Both regions benefit from increased commerce and economic cooperation between the ${a.ctrl} and ${b.ctrl}.`,
             category: "economic",
-            icon: "🛤️",
+            icon: "⟿",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -1778,7 +1778,7 @@
             headline: `Trade Agreement: ${a.name} and ${b.name}`,
             detail: `The ${a.name} and ${b.name} have signed a comprehensive trade agreement, opening their markets to each other. Merchants celebrate as tariffs are slashed and commerce flourishes.`,
             category: "economic",
-            icon: "💼",
+            icon: "◫",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -1807,7 +1807,7 @@
             headline: `Resource Dispute: ${a.name} vs ${b.name}`,
             detail: `The ${a.name} and ${b.name} are in fierce dispute over control of valuable ${pick(resources, rng)}. Both claim historical rights to the resource and tensions escalate.`,
             category: "economic",
-            icon: "⛏️",
+            icon: "⚒",
             importance: "standard",
             mutations: (d) => d,
             relationMutation: (rel) => {
@@ -1833,7 +1833,7 @@
             headline: `Coalition Imposes Sanctions on ${target.name}`,
             detail: `A coalition of allied factions has imposed comprehensive economic sanctions on the ${target.name} due to their aggressive expansion. Trade is banned and assets frozen.`,
             category: "economic",
-            icon: "🚷",
+            icon: "⊘",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -1870,7 +1870,7 @@
             headline: `Mutual Investment: ${a.name} and ${b.name}`,
             detail: `The ${a.name} and ${b.name} have announced a major joint investment project in ${region.name}. Infrastructure is built, businesses expand, and both factions benefit from the partnership.`,
             category: "economic",
-            icon: "🏗️",
+            icon: "⚒",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -1904,7 +1904,7 @@
             headline: `Plague Outbreak in ${city.name}`,
             detail: `${pick(plagues, rng)} has broken out in ${city.name}. The city gates are sealed and healers work tirelessly, but the death toll rises daily.`,
             category: "social",
-            icon: "☠️",
+            icon: "☠",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -1929,7 +1929,7 @@
             headline: `${pick(festivals, rng)} in ${city.name}`,
             detail: `The streets of ${city.name} are alive with celebration. Travelers from across the region gather to partake in the festivities, bringing commerce and merriment.`,
             category: "social",
-            icon: "🎉",
+            icon: "✦",
             importance: "minor",
             mutations: (d) => ({
               ...d,
@@ -1949,7 +1949,7 @@
             headline: `Peasant Uprising in ${region.name}`,
             detail: `The common folk of ${region.name} have risen up against their rulers. Armed with pitchforks and fury, they storm tax collectors' offices and burn noble estates.`,
             category: "social",
-            icon: "✊",
+            icon: "⊞",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -1992,7 +1992,7 @@
             headline: `Mass Exodus from ${region.name}`,
             detail: `Hundreds of families are fleeing ${region.name}, overwhelmed by war, disease, or disaster. The region's population dwindles and cities grow quiet.`,
             category: "social",
-            icon: "👥",
+            icon: "⊙",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -2014,7 +2014,7 @@
             headline: `Religious Schism Tears Through ${faction.name}`,
             detail: `A bitter theological dispute over the worship of ${pick(faiths, rng)} has split the ${faction.name} into factions. Families are torn apart and violence brews.`,
             category: "social",
-            icon: "⚜️",
+            icon: "⚜",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -2034,7 +2034,7 @@
             headline: `Prophesied Child Born in ${faction.name}`,
             detail: `An ancient prophecy has been fulfilled with the birth of a child spoken of in sacred texts. The newborn is believed to be destined for greatness, and the ${faction.name} morale reaches unprecedented heights.`,
             category: "social",
-            icon: "👶",
+            icon: "◌",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -2054,7 +2054,7 @@
             headline: `Great Tournament Held in ${city.name}`,
             detail: `Warriors from across the realm have gathered in ${city.name} for a legendary tournament. Champions compete for glory, treasure, and renown, drawing thousands of spectators and boosting the city's reputation.`,
             category: "social",
-            icon: "🏆",
+            icon: "◆",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -2075,7 +2075,7 @@
             headline: `Cultural Renaissance Blooms in ${region.name}`,
             detail: `Art, music, and learning flourish in ${region.name} as patrons invest in culture and artists flock to the thriving region. Magnificent works are created and knowledge spreads far and wide.`,
             category: "social",
-            icon: "🎭",
+            icon: "⊛",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -2108,7 +2108,7 @@
             headline: `Magical Anomaly in ${region.name}`,
             detail: `${pick(anomalies, rng)}. Scholars and adventurers alike rush to investigate.`,
             category: "arcane",
-            icon: "✨",
+            icon: "✦",
             importance: "standard",
             mutations: (d) => d // No state mutation — flavor event for DM hooks
           };
@@ -2130,7 +2130,7 @@
             headline: `Artifact Discovered Near ${city.name}`,
             detail: `Miners near ${city.name} have unearthed ${pick(artifacts, rng)}. Multiple factions are sending agents to secure it.`,
             category: "arcane",
-            icon: "🔮",
+            icon: "◎",
             importance: "major",
             mutations: (d) => d
           };
@@ -2174,7 +2174,7 @@
             headline: `Ley Line Shift in ${region.name}`,
             detail: `The arcane energies flowing through ${region.name} have shifted dramatically. The fundamental forces of magic in the region ${pick(shifts, rng)}.`,
             category: "arcane",
-            icon: "✨",
+            icon: "✦",
             importance: "standard",
             mutations: (d) => d // Flavor event — DM to interpret magical effects
           };
@@ -2195,7 +2195,7 @@
             headline: `Summoning Gone Wrong in ${city.name}`,
             detail: `A magical ritual in ${city.name} has catastrophically failed, summoning ${pick(creatures, rng)} instead of the intended entity. The creature rampages through the city, leaving destruction in its wake.`,
             category: "arcane",
-            icon: "👹",
+            icon: "☠",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -2215,7 +2215,7 @@
             headline: `Planar Convergence Detected in ${region.name}`,
             detail: `The barrier between the mortal plane and the realm of fey has grown dangerously thin in ${region.name}. Strange creatures and unearthly phenomena plague the region as the boundaries of reality blur.`,
             category: "arcane",
-            icon: "🌀",
+            icon: "⟲",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -2235,7 +2235,7 @@
             headline: `Arcane Academy Founded in ${city.name}`,
             detail: `A grand academy of magic has been established in ${city.name}, attracting scholars and mages from across the realm. The city becomes a beacon of knowledge and magical learning, elevating its prestige.`,
             category: "arcane",
-            icon: "📚",
+            icon: "≡",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -2255,7 +2255,7 @@
             headline: `Ancient Prophecy Fulfilled: Major Shift for ${faction.name}`,
             detail: `An ancient prophecy recorded in sacred texts for centuries has finally come to pass. The ${faction.name} experiences a seismic shift in their fortunes as fate itself seems to reshape the balance of power.`,
             category: "arcane",
-            icon: "🔮",
+            icon: "◎",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -2291,7 +2291,7 @@
             headline: `${d.type.charAt(0).toUpperCase() + d.type.slice(1)} Devastates ${region.name}`,
             detail: `${d.text}. Recovery will take months, and aid is desperately needed.`,
             category: "natural",
-            icon: "🌪️",
+            icon: "⟲",
             importance: "standard",
             mutations: (data) => ({
               ...data,
@@ -2316,7 +2316,7 @@
             headline: `${pick(monsters, rng).split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")} Spotted Near ${region.name}`,
             detail: `Scouts report dangerous creatures moving through ${region.name}. Travelers are warned and bounties have been posted.`,
             category: "natural",
-            icon: "🐉",
+            icon: "⊛",
             importance: "minor",
             mutations: (d) => ({
               ...d,
@@ -2336,7 +2336,7 @@
             headline: `Bountiful Spring Returns to ${region.name}`,
             detail: `After seasons of hardship, the land of ${region.name} begins to recover. Abundant rains and warm weather restore life to the region. Crops flourish and hope returns to the people.`,
             category: "natural",
-            icon: "🌱",
+            icon: "❦",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -2357,7 +2357,7 @@
             headline: `Volcanic Eruption Devastates ${region.name}`,
             detail: `A dormant volcano has awakened with catastrophic fury, unleashing lava, ash, and destruction across ${region.name}. The region is engulfed in flames and toxic smoke, rendering it uninhabitable.`,
             category: "natural",
-            icon: "🌋",
+            icon: "▲",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -2379,7 +2379,7 @@
             headline: `Great Migration Disrupts ${region.name}`,
             detail: `A massive movement of wild animals has swept through ${region.name}. ${pick(animals, rng)} block roads, trample crops, and disrupt normal trade and travel.`,
             category: "natural",
-            icon: "🦌",
+            icon: "⊛",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -2690,7 +2690,7 @@
     assassinate_leader: {
       id: "assassinate_leader",
       label: "Assassinate Leader",
-      icon: "🗡️",
+      icon: "†",
       description: "Send assassins to eliminate a faction's ruler, destabilizing their power structure.",
       requiresTarget: "faction",
       apply: (data, rng, relations, { targetFaction }) => {
@@ -2707,7 +2707,7 @@
             headline: `Assassination Attempt on ${ruler.name} Fails!`,
             detail: `An assassination attempt against ${ruler.name} of the ${faction.name} has been foiled. The would-be assassins were captured, and the faction is now on high alert. Security has been doubled and all outsiders are viewed with suspicion.`,
             category: "political",
-            icon: "🛡️",
+            icon: "⛨",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -2720,7 +2720,7 @@
           headline: `${ruler.name} of ${faction.name} Assassinated by the Party!`,
           detail: `Through cunning and deadly precision, agents have struck down ${ruler.name}, ${ruler.title} of the ${faction.name}. The faction is thrown into disarray as ${heir ? heir.name + " attempts to seize the reins of power" : "a power vacuum tears the leadership apart"}. The realm trembles at the audacity of the act.`,
           category: "political",
-          icon: "🗡️",
+          icon: "†",
           importance: "critical",
           mutations: (d) => ({
             ...d,
@@ -2743,7 +2743,7 @@
     incite_rebellion: {
       id: "incite_rebellion",
       label: "Incite Rebellion",
-      icon: "🔥",
+      icon: "⟡",
       description: "Stir up unrest in a faction's territory, weakening their hold on the populace.",
       requiresTarget: "faction",
       apply: (data, rng, relations, { targetFaction }) => {
@@ -2758,7 +2758,7 @@
             headline: `Rebellion Crushed in ${targetRegion.name}`,
             detail: `An attempted uprising in ${targetRegion.name} was swiftly put down by ${faction.name} forces. The instigators were captured, and martial law has been declared throughout the region.`,
             category: "social",
-            icon: "⛓️",
+            icon: "⛓",
             importance: "standard",
             mutations: (d) => ({
               ...d,
@@ -2770,7 +2770,7 @@
           headline: `Rebellion Erupts in ${targetRegion.name}!`,
           detail: `The people of ${targetRegion.name} have risen up against the ${faction.name}! Barricades block the streets, the garrison is overwhelmed, and the local governor has fled. The region is now in open revolt and contested territory.`,
           category: "social",
-          icon: "🔥",
+          icon: "⟡",
           importance: "major",
           mutations: (d) => ({
             ...d,
@@ -2784,7 +2784,7 @@
     forge_alliance: {
       id: "forge_alliance",
       label: "Forge Alliance",
-      icon: "🤝",
+      icon: "⚖",
       description: "Broker a new alliance between two factions through diplomacy.",
       requiresTarget: "two_factions",
       apply: (data, rng, relations, { targetFaction, allyFaction }) => {
@@ -2796,7 +2796,7 @@
             headline: `Peace Brokered Between ${f1.name} and ${f2.name}`,
             detail: `Through extraordinary diplomatic effort, a ceasefire has been negotiated between the warring ${f1.name} and ${f2.name}. Hostilities cease immediately, and prisoners are exchanged. The road to lasting peace remains uncertain, but the bloodshed has stopped.`,
             category: "political",
-            icon: "🕊️",
+            icon: "⊕",
             importance: "major",
             mutations: (d) => ({
               ...d,
@@ -2813,7 +2813,7 @@
           headline: `Alliance Forged: ${f1.name} and ${f2.name}`,
           detail: `A historic alliance has been established between the ${f1.name} and the ${f2.name}. The pact promises mutual defense, shared intelligence, and open borders. Other factions watch the new power bloc with a mixture of hope and apprehension.`,
           category: "political",
-          icon: "🤝",
+          icon: "⚖",
           importance: "major",
           mutations: (d) => ({
             ...d,
@@ -2831,7 +2831,7 @@
     sabotage_supply_lines: {
       id: "sabotage_supply_lines",
       label: "Sabotage Supplies",
-      icon: "💣",
+      icon: "⊛",
       description: "Disrupt a faction's supply lines, weakening their military and economy.",
       requiresTarget: "faction",
       apply: (data, rng, relations, { targetFaction }) => {
@@ -2841,7 +2841,7 @@
           headline: `Supply Lines of ${faction.name} Sabotaged!`,
           detail: `Critical supply routes serving the ${faction.name} have been disrupted. Warehouses burn, bridges collapse, and caravans are ambushed. The faction's military operations are severely hampered, and food prices in their territories have skyrocketed.`,
           category: "military",
-          icon: "💣",
+          icon: "⊛",
           importance: "major",
           mutations: (d) => ({
             ...d,
@@ -2855,7 +2855,7 @@
     spread_propaganda: {
       id: "spread_propaganda",
       label: "Spread Propaganda",
-      icon: "📜",
+      icon: "⸎",
       description: "Spread rumors and propaganda to damage a faction's reputation and sow discord.",
       requiresTarget: "faction",
       apply: (data, rng, relations, { targetFaction }) => {
@@ -2871,7 +2871,7 @@
           headline: `Propaganda Campaign Against ${faction.name}`,
           detail: `${pick(propagandaTypes, rng)}. Public confidence in the faction has plummeted, and even loyal subjects whisper doubts. The ${faction.name}'s diplomatic standing has been severely damaged.`,
           category: "social",
-          icon: "📜",
+          icon: "⸎",
           importance: "standard",
           mutations: (d) => ({
             ...d,
@@ -2890,7 +2890,7 @@
     declare_war: {
       id: "declare_war",
       label: "Declare War",
-      icon: "⚔️",
+      icon: "⚔",
       description: "Provoke open warfare between two factions.",
       requiresTarget: "two_factions",
       apply: (data, rng, relations, { targetFaction, allyFaction }) => {
@@ -2902,7 +2902,7 @@
           headline: `War Declared: ${aggressor.name} vs ${defender.name}!`,
           detail: `Through careful manipulation and provocation, open war has erupted between the ${aggressor.name} and the ${defender.name}. Armies mobilize, borders are fortified, and the drums of war echo across the land. Civilians flee the border regions as the first skirmishes begin.`,
           category: "military",
-          icon: "⚔️",
+          icon: "⚔",
           importance: "critical",
           mutations: (d) => ({
             ...d,

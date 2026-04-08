@@ -28,7 +28,7 @@
       name: "Timber",
       category: "raw",
       basePrice: 8,
-      icon: "🪵",
+      icon: "≡",
       volatility: 0.10,
       description: "Felled logs suitable for construction and fuel",
       weight: 2
@@ -48,7 +48,7 @@
       name: "Grain",
       category: "raw",
       basePrice: 2,
-      icon: "🌾",
+      icon: "⚌",
       volatility: 0.18,
       description: "Wheat, barley, and other staple crops",
       weight: 1
@@ -58,7 +58,7 @@
       name: "Livestock",
       category: "raw",
       basePrice: 25,
-      icon: "🐄",
+      icon: "◬",
       volatility: 0.15,
       description: "Cattle, sheep, and other domesticated animals",
       weight: 0.5
@@ -68,7 +68,7 @@
       name: "Furs",
       category: "raw",
       basePrice: 18,
-      icon: "🦊",
+      icon: "◇",
       volatility: 0.14,
       description: "Pelts from hunting and trapping",
       weight: 0.5
@@ -90,7 +90,7 @@
       name: "Cloth",
       category: "refined",
       basePrice: 12,
-      icon: "🧵",
+      icon: "⊸",
       volatility: 0.09,
       description: "Woven linen, wool, and cotton",
       weight: 1
@@ -100,7 +100,7 @@
       name: "Leather",
       category: "refined",
       basePrice: 20,
-      icon: "🎒",
+      icon: "◫",
       volatility: 0.12,
       description: "Treated and finished leather goods",
       weight: 1
@@ -110,7 +110,7 @@
       name: "Ale & Wine",
       category: "refined",
       basePrice: 14,
-      icon: "🍺",
+      icon: "⌀",
       volatility: 0.13,
       description: "Fermented beverages for trade and consumption",
       weight: 1
@@ -122,7 +122,7 @@
       name: "Gems",
       category: "luxury",
       basePrice: 120,
-      icon: "💎",
+      icon: "◆",
       volatility: 0.16,
       description: "Precious gemstones for nobility and magic",
       weight: 0.1
@@ -132,7 +132,7 @@
       name: "Spices",
       category: "luxury",
       basePrice: 60,
-      icon: "🌶",
+      icon: "⊕",
       volatility: 0.17,
       description: "Exotic spices from distant lands",
       weight: 0.5
@@ -142,7 +142,7 @@
       name: "Silk",
       category: "luxury",
       basePrice: 45,
-      icon: "✨",
+      icon: "✦",
       volatility: 0.14,
       description: "Fine silk fabrics for the wealthy",
       weight: 0.5
@@ -152,7 +152,7 @@
       name: "Arcane Components",
       category: "luxury",
       basePrice: 85,
-      icon: "🔮",
+      icon: "◎",
       volatility: 0.19,
       description: "Rare materials for spellcasting and enchantments",
       weight: 0.2
@@ -164,7 +164,7 @@
       name: "Weapons",
       category: "strategic",
       basePrice: 50,
-      icon: "🗡",
+      icon: "†",
       volatility: 0.20,
       description: "Arms and armor for military use",
       weight: 1
@@ -174,7 +174,7 @@
       name: "Warhorses",
       category: "strategic",
       basePrice: 200,
-      icon: "🐴",
+      icon: "◇",
       volatility: 0.18,
       description: "Trained war-ready horses for cavalry",
       weight: 0.2
@@ -671,7 +671,7 @@
           headline: `${good.name} Boom in ${region.name}`,
           detail: `Sudden demand surge for ${good.name}! Prices in ${region.name} spike from ${currentPrice} to ${boomedPrice} gold per unit.`,
           category: "economic",
-          icon: "📈",
+          icon: "▲",
           importance: "standard",
           mutations: d => d,
           economyMutation: (eco) => {
@@ -705,7 +705,7 @@
           headline: `Oversupply Crashes ${good.name} Market`,
           detail: `Too much ${good.name} flooding the market in ${region.name}! Prices plummet from ${currentPrice} to ${crashedPrice} gold per unit.`,
           category: "economic",
-          icon: "📉",
+          icon: "▼",
           importance: "standard",
           mutations: d => d,
           economyMutation: (eco) => {
@@ -744,7 +744,7 @@
           headline: `Merchant Caravan Departs ${fromRegion.name}`,
           detail: `A lucrative caravan carrying ${goodNames} is headed to ${toRegion.name}. Savvy traders can profit from regional price differences!`,
           category: "economic",
-          icon: "🛒",
+          icon: "◈",
           importance: "standard",
           mutations: d => d,
           economyMutation: (eco) => {
@@ -769,7 +769,7 @@
           headline: `Pirates Attack Trade in ${region.name}`,
           detail: `Notorious sea pirates have struck a major trading post in ${region.name}, disrupting shipments and terrorizing merchants.`,
           category: "economic",
-          icon: "🏴‍☠️",
+          icon: "⚑",
           importance: "major",
           mutations: d => d,
           economyMutation: (eco) => {
@@ -848,7 +848,7 @@
           headline: `${sanctioner.name} Imposes Trade Embargo on ${target}`,
           detail: `In a bold economic move, the ${sanctioner.name} has cut off all trade with the ${target}. Expect prices to skyrocket in ${target} territories!`,
           category: "economic",
-          icon: "🚫",
+          icon: "⊘",
           importance: "major",
           mutations: d => d,
           economyMutation: (eco) => {
@@ -893,7 +893,7 @@
           headline: `${good.name} Price ${manipulated === "inflated" ? "Inflated" : "Deflated"} in ${region.name}`,
           detail: `Merchants with deep pockets are artificially ${manipulated} the price of ${good.name} in ${region.name} for profit!`,
           category: "economic",
-          icon: manipulated === "inflated" ? "📊" : "💸",
+          icon: manipulated === "inflated" ? "≡" : "◆",
           importance: "standard",
           mutations: d => d,
           economyMutation: (eco) => {
@@ -923,7 +923,7 @@
           headline: `Famine Strikes ${region.name}`,
           detail: `Crop failure and food shortages plague ${region.name}. Grain prices have tripled, and peasants go hungry as traders hoard supplies.`,
           category: "economic",
-          icon: "🌾",
+          icon: "⚌",
           importance: "critical",
           mutations: d => d,
           economyMutation: (eco) => {

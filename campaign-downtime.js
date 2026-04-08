@@ -9,7 +9,7 @@
     {
       id: 'crafting',
       name: 'Crafting',
-      icon: '🔨',
+      icon: '⚒',
       description: 'Create items using materials and gold. Specialties vary by class.',
       durationDays: 10,
       goldCost: 50,
@@ -22,7 +22,7 @@
     {
       id: 'training',
       name: 'Training',
-      icon: '⚔️',
+      icon: '⚔',
       description: 'Learn a new proficiency or language. Complexity determines duration.',
       durationDays: 30,
       goldCost: 100,
@@ -35,7 +35,7 @@
     {
       id: 'research',
       name: 'Research',
-      icon: '📚',
+      icon: '≡',
       description: 'Study lore, discover faction secrets, identify magical items.',
       durationDays: 14,
       goldCost: 30,
@@ -48,7 +48,7 @@
     {
       id: 'working',
       name: 'Working',
-      icon: '💼',
+      icon: '◫',
       description: 'Earn gold at a profession. Daily rate depends on skill and city prosperity.',
       durationDays: 10,
       goldCost: 0,
@@ -61,7 +61,7 @@
     {
       id: 'carousing',
       name: 'Carousing',
-      icon: '🍺',
+      icon: '⌀',
       description: 'Socialize and make contacts. May gain an ally or make an enemy.',
       durationDays: 7,
       goldCost: 20,
@@ -74,7 +74,7 @@
     {
       id: 'business',
       name: 'Running a Business',
-      icon: '🏪',
+      icon: '⌂',
       description: 'Manage a shop or tavern. Roll for profit or loss per tenday.',
       durationDays: 10,
       goldCost: 0,
@@ -87,7 +87,7 @@
     {
       id: 'crime',
       name: 'Crime',
-      icon: '🗝️',
+      icon: '⚷',
       description: 'Pickpocketing, heists, or fence stolen goods. High risk, high reward.',
       durationDays: 10,
       goldCost: 0,
@@ -100,7 +100,7 @@
     {
       id: 'pit_fighting',
       name: 'Pit Fighting',
-      icon: '👊',
+      icon: '⊕',
       description: 'Underground arena combat for gold and reputation.',
       durationDays: 7,
       goldCost: 0,
@@ -113,7 +113,7 @@
     {
       id: 'gambling',
       name: 'Gambling',
-      icon: '🎲',
+      icon: '⊞',
       description: 'Games of chance with variable stakes and outcomes.',
       durationDays: 3,
       goldCost: 0,
@@ -126,7 +126,7 @@
     {
       id: 'religious_service',
       name: 'Religious Service',
-      icon: '⛪',
+      icon: '✠',
       description: 'Devotion to a deity. Gain divine favor or blessings.',
       durationDays: 10,
       goldCost: 25,
@@ -139,7 +139,7 @@
     {
       id: 'recuperating',
       name: 'Recuperating',
-      icon: '💊',
+      icon: '⊕',
       description: 'Heal lingering injuries, remove curses, recover from trauma.',
       durationDays: 14,
       goldCost: 60,
@@ -152,7 +152,7 @@
     {
       id: 'spellcasting_services',
       name: 'Spellcasting Services',
-      icon: '✨',
+      icon: '✦',
       description: 'Sell spell services to NPCs for gold. Casters only.',
       durationDays: 7,
       goldCost: 0,

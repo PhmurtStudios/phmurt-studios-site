@@ -1523,6 +1523,72 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     return Object.keys(window.CombatEngine.WEAPONS).sort();
   }, []);
 
+  // ── Combat State Cloud Persistence ──
+  // Save combat state to campaign data so it persists across reloads and syncs to cloud
+  const _combatSaveTimer = useRef(null);
+  const _combatRestored = useRef(false);
+
+  // Restore combat state from cloud on mount (once)
+  useEffect(() => {
+    if (_combatRestored.current || !setData) return;
+    _combatRestored.current = true;
+    // Read saved combat state from campaign data via a temporary ref
+    try {
+      const saved = window._cmActiveCombatState?.[activeCampaignId];
+      if (saved && saved.combatLive) {
+        if (saved.combatants?.length) setCombatants(saved.combatants);
+        if (saved.turn != null) setTurn(saved.turn);
+        if (saved.round != null) setRound(saved.round);
+        if (saved.combatLive != null) setCombatLive(saved.combatLive);
+        if (saved.conditions) setConditions(saved.conditions);
+        if (saved.tokens?.length) setTokens(saved.tokens);
+        if (saved.walls?.length) setWalls(saved.walls);
+        if (saved.drawings?.length) setDrawings(saved.drawings);
+        if (saved.fogCells) setFogCells(saved.fogCells);
+        if (saved.terrainCells) setTerrainCells(saved.terrainCells);
+        if (saved.turnStateByToken) setTurnStateByToken(saved.turnStateByToken);
+        if (saved.combatTargetByActor) setCombatTargetByActor(saved.combatTargetByActor);
+        if (saved.bgImage) setBgImage(saved.bgImage);
+        if (saved.gridSize) setGridSize(saved.gridSize);
+      }
+    } catch (e) { /* ignore restore errors */ }
+  }, [activeCampaignId]);
+
+  // Debounced save of combat state to campaign data (2s debounce to avoid excessive writes)
+  useEffect(() => {
+    if (!setData) return;
+    if (_combatSaveTimer.current) clearTimeout(_combatSaveTimer.current);
+    _combatSaveTimer.current = setTimeout(() => {
+      const combatSnapshot = combatLive ? {
+        combatLive: true,
+        combatants: combatants,
+        turn: turn,
+        round: round,
+        conditions: conditions,
+        tokens: tokens.map(t => {
+          // Strip image data to keep size down — only save essential token fields
+          const { imageData, _imgElement, ...essentials } = t;
+          return essentials;
+        }),
+        walls: walls,
+        drawings: drawings,
+        fogCells: fogCells,
+        terrainCells: terrainCells,
+        turnStateByToken: turnStateByToken,
+        combatTargetByActor: combatTargetByActor,
+        bgImage: bgImage,
+        gridSize: gridSize,
+        _savedAt: Date.now(),
+      } : null;
+      // Store in window for cross-component access (used during restore)
+      if (!window._cmActiveCombatState) window._cmActiveCombatState = {};
+      window._cmActiveCombatState[activeCampaignId] = combatSnapshot;
+      // Persist to campaign data (triggers cloud save via the main save loop)
+      setData(d => ({ ...d, activeCombat: combatSnapshot }));
+    }, 2000);
+    return () => clearTimeout(_combatSaveTimer.current);
+  }, [combatLive, combatants, turn, round, conditions, tokens, walls, drawings, fogCells, terrainCells, turnStateByToken, combatTargetByActor, bgImage, gridSize, setData, activeCampaignId]);
+
   const addCombatLogEntry = (entry) => {
     const enriched = {...entry, id: "log-" + Date.now() + "-" + Math.random().toString(16).slice(2), time: new Date().toLocaleTimeString()};
     setCombatLog(prev => [enriched, ...prev].slice(0, 100));
@@ -12115,10 +12181,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   onMouseLeave={e => { e.currentTarget.style.background = entry.type === "attack" ? "rgba(212,67,58,0.04)" : entry.type === "miss" ? "rgba(136,136,136,0.04)" : entry.type === "save" ? "rgba(88,170,255,0.04)" : bg02; }}>
                   <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                     <span style={{ fontWeight:500, color:T.text, whiteSpace: entry.type === "system" ? "pre-line" : "normal" }}>
-                      {entry.type === "attack" && (entry.isCrit ? "💥 CRITICAL! " : "⚔️ ")}
-                      {entry.type === "miss" && "💨 "}
-                      {entry.type === "save" && "🛡️ "}
-                      {entry.type === "system" && "📋 "}
+                      {entry.type === "attack" && (entry.isCrit ? "⊕ CRITICAL! " : "⚔ ")}
+                      {entry.type === "miss" && "∿ "}
+                      {entry.type === "save" && "⛨ "}
+                      {entry.type === "system" && "⸎ "}
                       {entry.text || (entry.type === "attack" ? `${entry.attacker} → ${entry.target}` : entry.type === "miss" ? `${entry.attacker} misses ${entry.target}` : entry.type === "save" ? `${entry.target} ${entry.success ? "saves" : "fails"} vs ${entry.action}` : "")}
                     </span>
                     <span style={{ fontSize:7, color:T.textFaint }}>{entry.time}</span>

@@ -2162,6 +2162,11 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
   const [cityRegionFocus,setCityRegionFocus] = useState(null); // region name to highlight in Cities tab
   const [expandedRegions, setExpandedRegions] = useState({}); // track which regions are expanded in consolidated view
   const [regionDetailCity, setRegionDetailCity] = useState(null); // city selected within a region for detail view
+  // ── Calendar state ──
+  const [calKingdom, setCalKingdom] = useState("all");
+  const [calDay, setCalDay] = useState(data.calendarDay || 15);
+  const [calMonth, setCalMonth] = useState(data.calendarMonth || 0);
+  const [calYear, setCalYear] = useState(data.calendarYear || 1042);
   // ── Hex exploration state ──
   const [hexOrigin, setHexOrigin] = useState("");
   const [hexDest, setHexDest] = useState("");
@@ -2484,7 +2489,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
     else if(type==="npc"){ if(ent.faction){const f=data.factions.find(f=>f.name===ent.faction); if(f) c.push({type:"faction",e:f,label:"Member of"});} const r=data.regions.find(r=>r.name===ent.loc); if(r) c.push({type:"region",e:r,label:"Located in"}); }
     return c;
   };
-  const tCols = { low:"#5ee09a", medium:"#e8ba40", high:"#e8940a", extreme:T.crimson };
+  const tCols = { low: T.green, medium: T.questGold, high: T.orange, extreme: T.crimson };
 
   // ── Continental map — 6000×4500 world ──
   const MAP_W = 6000, MAP_H = 4500;
@@ -2635,19 +2640,38 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
   // ── Encounter zone generation ──
 
   // ── Roads: connect regions by faction, proximity, and type — with major/minor classifications ──
-  const roads = useCallback(() => {
+  // Memoized to avoid recomputing O(N²) path generation on every render
+  const roadList = useMemo(() => {
     const rs = [];
     const mr = mapRegions;
+    // Pre-build lookup maps to eliminate nested .some() scans
+    const regionByName = {};
+    (data.regions || []).forEach(r => { regionByName[r.name] = r; });
+    const factionRegions = {};
+    (data.factions || []).forEach(f => {
+      factionRegions[f.name] = new Set((data.regions || []).filter(r => r.ctrl === f.name).map(r => r.name));
+    });
+    const questLinks = new Set();
+    (data.quests || []).forEach(q => {
+      if (!q.region || !q.faction) return;
+      const linkedRegions = factionRegions[q.faction];
+      if (!linkedRegions) return;
+      linkedRegions.forEach(rName => {
+        if (rName !== q.region) {
+          questLinks.add(q.region + '|' + rName);
+          questLinks.add(rName + '|' + q.region);
+        }
+      });
+    });
     for (let i=0; i<mr.length; i++) {
       for (let j=i+1; j<mr.length; j++) {
         const a = mr[i], b = mr[j];
         const shareCtrl = a.ctrl && b.ctrl && a.ctrl === b.ctrl;
-        const questLink = data.quests.some(q => (q.region===a.name && data.factions.some(f=>f.name===q.faction && data.regions.some(r2=>r2.ctrl===f.name && r2.name===b.name))) || (q.region===b.name && data.factions.some(f=>f.name===q.faction && data.regions.some(r2=>r2.ctrl===f.name && r2.name===a.name))));
+        const hasQuestLink = questLinks.has(a.name + '|' + b.name);
         const isRoute = a.type==="route" || b.type==="route";
         const dist = Math.hypot(a.mx-b.mx, a.my-b.my);
         const isMajor = (a.type==="city"||a.type==="kingdom"||a.type==="capital") && (b.type==="city"||b.type==="kingdom"||b.type==="capital");
-        if (shareCtrl || questLink || isRoute || dist < 1200) {
-          // Multi-segment organic curved path for longer roads
+        if (shareCtrl || hasQuestLink || isRoute || dist < 1200) {
           const segs = dist > 800 ? 3 : dist > 400 ? 2 : 1;
           let path = `M${a.mx},${a.my}`;
           for (let s=0; s<segs; s++) {
@@ -2868,19 +2892,26 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
     return merged;
   }, [mapRegions, atlasProvinces]);
 
+  // SECURITY: All edit/add functions guarded by DM role check (V-003)
+  // isDM is already declared at the top of WorldView
+
   const updateFaction = (id, updates) => {
+    if (!isDM) return; // SECURITY: only DM can edit factions
     setData(d=>({...d, factions:d.factions.map(f=>f.id===id?{...f,...updates}:f)}));
     if(sel?.id===id && selType==="faction") setSel(p=>({...p,...updates}));
   };
   const updateRegion = (id, updates) => {
+    if (!isDM) return; // SECURITY: only DM can edit regions
     setData(d=>({...d, regions:d.regions.map(r=>r.id===id?{...r,...updates}:r)}));
     if(sel?.id===id && selType==="region") setSel(p=>({...p,...updates}));
   };
   const updateNpc = (id, updates) => {
+    if (!isDM) return; // SECURITY: only DM can edit NPCs
     setData(d=>({...d, npcs:d.npcs.map(n=>n.id===id?{...n,...updates}:n)}));
     if(sel?.id===id && selType==="npc") setSel(p=>({...p,...updates}));
   };
   const addEntity = (type, entity) => {
+    if (!isDM) return; // SECURITY: only DM can add entities
     const id = uid();
     const newE = { ...entity, id };
     if (type === "npc") newE.actorId = "npc-" + id;
@@ -2905,7 +2936,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
     );
   };
 
-  const roadList = roads();
+  // roadList is already memoized via useMemo above
   const atlasTerritories = territories();
 
   const worldNodes = useMemo(() => mapRegions.map((r) => {
@@ -3423,7 +3454,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       <rect x={r.mx - sqHalf} y={r.my - sqHalf} width={sqHalf * 2} height={sqHalf * 2} fill={active ? "#2e2414" : (dimUndiscovered ? "#6b6454" : "#3d3422")} stroke={active ? "#f5eed8" : "#b5a67e"} strokeWidth={active ? 1.4 : 1}/>
                       {false && (routeDraft.fromId === r.id || routeDraft.toId === r.id) && (
                         <g transform={`translate(${r.mx + (isBig?28:20)},${r.my - (isBig?30:22)})`}>
-                          <circle r="10" fill={routeDraft.fromId === r.id ? "#5ee09a" : "#f06858"} opacity="0.95"/>
+                          <circle r="10" fill={routeDraft.fromId === r.id ? T.green : T.crimson} opacity="0.95"/>
                           <text x="0" y="3" textAnchor="middle" fill="#0d0f13" fontFamily="'Cinzel', serif" fontSize="8" fontWeight="700">{routeDraft.fromId === r.id ? "A" : "B"}</text>
                         </g>
                       )}
@@ -3451,8 +3482,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       )}
                       {false && r.encounters?.length > 0 && mapZoom > 1.1 && (
                         <g transform={`translate(${r.mx+(isBig?44:34)},${r.my+(isBig?18:14)})`}>
-                          <circle r="8" fill="rgba(212,67,58,0.16)" stroke="#f06858" strokeWidth="0.8"/>
-                          <path d="M-3,-2 L3,4 M3,-2 L-3,4" stroke="#f06858" strokeWidth="1.4" strokeLinecap="round"/>
+                          <circle r="8" fill="rgba(212,67,58,0.16)" stroke={T.crimson} strokeWidth="0.8"/>
+                          <path d="M-3,-2 L3,4 M3,-2 L-3,4" stroke={T.crimson} strokeWidth="1.4" strokeLinecap="round"/>
                         </g>
                       )}
                       {/* Visited marker — local zoom+ */}
@@ -3667,7 +3698,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
               const popY = (t.labelY || t.cityY || 2250) * mapZoom + mapPan.y;
               const threatColors = { low: "#6a9955", medium: "#c9a85c", high: "#d97b3c", extreme: "#d4433a" };
               const threatCol = threatColors[r?.threat] || "#c9a85c";
-              const typeIcons = { capital: "\u{1F3F0}", kingdom: "\u{2694}\uFE0F", city: "\u{1F3D9}\uFE0F", town: "\u{1F3E0}", wilderness: "\u{1F332}", dungeon: "\u{1F480}", route: "\u{1F6E4}\uFE0F" };
+              const typeIcons = { capital: "♔", kingdom: "⚔", city: "⏣", town: "⌂", wilderness: "⚍", dungeon: "☠", route: "⟿" };
               const typeIcon = typeIcons[r?.type] || "\u{1F30D}";
               return (
                 <div style={{
@@ -4543,7 +4574,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
                                 {/* Climate & Terrain */}
                                 <div>
-                                  <div style={{ fontSize:9, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:8 }}>🌤 Climate</div>
+                                  <div style={{ fontSize:9, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:8 }}>✦ Climate</div>
                                   <div style={{ fontSize:11, color:T.textMuted, lineHeight:1.5 }}>{r.climate || "Varied climate"}</div>
                                 </div>
                                 {/* Known Dangers */}
@@ -4552,7 +4583,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                                   <div style={{ display:"flex", flexDirection:"column", gap:4 }}>
                                     {(r.dangers || ["bandits"]).map((d, di) => (
                                       <div key={di} style={{ fontSize:10, color:r.threat==="extreme"||r.threat==="high"?T.crimson:T.textMuted, display:"flex", alignItems:"center", gap:6 }}>
-                                        <div style={{ width:4, height:4, borderRadius:"50%", background:r.threat==="extreme"?T.crimson:r.threat==="high"?"#e8940a":"#5ee09a", flexShrink:0 }}/>
+                                        <div style={{ width:4, height:4, borderRadius:"50%", background:r.threat==="extreme"?T.crimson:r.threat==="high"?T.orange:T.green, flexShrink:0 }}/>
                                         {d}
                                       </div>
                                     ))}
@@ -4562,7 +4593,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                               {/* Natural Resources */}
                               {r.resources && r.resources.length > 0 && (
                                 <div style={{ marginTop:14 }}>
-                                  <div style={{ fontSize:9, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:8 }}>📦 Natural Resources</div>
+                                  <div style={{ fontSize:9, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:8 }}>◫ Natural Resources</div>
                                   <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                                     {r.resources.map((res, ri) => (
                                       <span key={ri} style={{ fontSize:10, color:T.gold, background:"rgba(201,168,92,0.06)", padding:"4px 10px", borderRadius:"3px", border:"1px solid rgba(201,168,92,0.15)" }}>{res}</span>
@@ -4573,7 +4604,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                               {/* Lore */}
                               {r.lore && (
                                 <div style={{ marginTop:14, padding:"10px 14px", background:"rgba(232,186,64,0.04)", border:"1px solid rgba(232,186,64,0.12)", borderRadius:"3px", borderLeft:"3px solid rgba(232,186,64,0.3)" }}>
-                                  <div style={{ fontSize:9, color:T.questGold, fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase", marginBottom:4 }}>📜 Local Lore</div>
+                                  <div style={{ fontSize:9, color:T.questGold, fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase", marginBottom:4 }}>⸎ Local Lore</div>
                                   <div style={{ fontSize:11, color:T.textDim, fontStyle:"italic", lineHeight:1.5 }}>{r.lore}</div>
                                 </div>
                               )}
@@ -4586,11 +4617,11 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                               return (
                                 <div style={{ padding:"16px 22px", borderBottom:`1px solid ${T.border}` }}>
                                   <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>
-                                    🗡 Organizations & Influence ({subFacs.length})
+                                    † Organizations & Influence ({subFacs.length})
                                   </div>
                                   <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                                     {subFacs.map(sf => {
-                                      const infLvlColor = sf.influenceLevel === "major" ? "#d4433a" : sf.influenceLevel === "moderate" ? "#e8940a" : "#5ee09a";
+                                      const infLvlColor = sf.influenceLevel === "major" ? T.crimson : sf.influenceLevel === "moderate" ? T.orange : T.green;
                                       return (
                                         <div key={sf.id} style={{ padding:"10px 14px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", borderLeft:`3px solid ${sf.color}` }}>
                                           <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
@@ -4619,7 +4650,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                             {mods.economy !== false && (
                               <div style={{ padding:"16px 22px", borderBottom:`1px solid ${T.border}` }}>
                                 <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>
-                                  💰 Regional Economy
+                                  ◆ Regional Economy
                                 </div>
                                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
                                   {(r.resources || ["Grain", "Timber", "Iron"]).map((res, ri) => (
@@ -4686,7 +4717,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                               return (
                                 <div style={{ padding:"16px 22px", borderBottom:`1px solid ${T.border}` }}>
                                   <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>
-                                    ⛪ Faith & Divine Presence
+                                    ✠ Faith & Divine Presence
                                   </div>
                                   {sortedDeities.length > 0 ? (
                                     <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
@@ -4831,12 +4862,12 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                 const leaders = factionNpcs.filter(n => n.isLeader);
                 const controlledRegions = regions.filter(r => r.ctrl === f.name);
                 const govTypeIcons = {
-                  "monarchy":"👑", "empire":"⚔️", "republic":"🏛️", "council":"📜", "druidic":"🌿",
-                  "guild":"💰", "cult":"🔮", "theocracy":"⛪", "tribal":"🏕️", "military junta":"🛡️",
-                  "oligarchy":"⚖️", "criminal syndicate":"🗡️", "shadow government":"👁️",
-                  "arcane academy":"🔮", "mercenary band":"⚔️", "trade guild":"💰",
-                  "religious order":"✝️", "assassin guild":"🗡️", "ranger order":"🏹",
-                  "craft guild":"🔨", "criminal network":"💀",
+                  "monarchy":"♔", "empire":"⚔", "republic":"⏣", "council":"⸎", "druidic":"⚘",
+                  "guild":"◆", "cult":"◎", "theocracy":"✠", "tribal":"⌂", "military junta":"⛨",
+                  "oligarchy":"⚖", "criminal syndicate":"†", "shadow government":"◉",
+                  "arcane academy":"◎", "mercenary band":"⚔", "trade guild":"◆",
+                  "religious order":"✝", "assassin guild":"†", "ranger order":"↝",
+                  "craft guild":"⚒", "criminal network":"☠",
                 };
                 return (
                   <div key={f.id} onClick={() => { setSel(f); setSelType("faction"); setEditing(false); }} style={{
@@ -4848,12 +4879,12 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       <span style={{ fontSize: 16 }}>{govTypeIcons[f.govType] || "⚑"}</span>
                       <span style={{ fontSize: isCompact ? 14 : 17, fontWeight: 400, color: T.text, letterSpacing: "0.5px" }}>{f.name}</span>
                       <Tag variant={f.attitude === "allied" || f.attitude === "friendly" ? "success" : f.attitude === "hostile" ? "danger" : "muted"}>{f.attitude}</Tag>
-                      {f.trend === "rising" ? <TrendingUp size={12} color={T.crimson}/> : f.trend === "declining" ? <TrendingDown size={12} color="#5ee09a"/> : <Minus size={12} color={T.textFaint}/>}
+                      {f.trend === "rising" ? <TrendingUp size={12} color={T.crimson}/> : f.trend === "declining" ? <TrendingDown size={12} color={T.green}/> : <Minus size={12} color={T.textFaint}/>}
                       {f.isSubFaction && f.influenceLevel && (
-                        <span style={{ fontSize: 8, color: f.influenceLevel === "major" ? "#d4433a" : f.influenceLevel === "moderate" ? "#e8940a" : "#5ee09a", border: `1px solid currentColor`, padding: "1px 5px", borderRadius: "2px", letterSpacing: "0.5px", textTransform: "uppercase", marginLeft: "auto" }}>{f.influenceLevel}</span>
+                        <span style={{ fontSize: 8, color: f.influenceLevel === "major" ? T.crimson : f.influenceLevel === "moderate" ? T.orange : T.green, border: `1px solid currentColor`, padding: "1px 5px", borderRadius: "2px", letterSpacing: "0.5px", textTransform: "uppercase", marginLeft: "auto" }}>{f.influenceLevel}</span>
                       )}
                     </div>
-                    {f.govType && <div style={{ fontSize: 10, color: "#c9a85c", letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 6 }}>{f.govType}</div>}
+                    {f.govType && <div style={{ fontSize: 10, color: T.gold, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 6 }}>{f.govType}</div>}
                     <p style={{ fontSize: 12, color: T.textDim, margin: "0 0 10px", fontWeight: 300, fontStyle: "italic", lineHeight: "1.5" }}>{f.desc}</p>
 
                     {/* Power bar */}
@@ -4903,7 +4934,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     )}
                     {(f.allies?.length > 0 || f.rivals?.length > 0) && (
                       <div style={{ marginTop: 6, display: "flex", gap: 16, flexWrap: "wrap" }}>
-                        {f.allies?.length > 0 && <div style={{ fontSize: 11, color: "#5ee09a" }}>Allies: {f.allies.join(", ")}</div>}
+                        {f.allies?.length > 0 && <div style={{ fontSize: 11, color: T.allyGreen }}>Allies: {f.allies.join(", ")}</div>}
                         {f.rivals?.length > 0 && <div style={{ fontSize: 11, color: T.crimson }}>Rivals: {f.rivals.join(", ")}</div>}
                       </div>
                     )}
@@ -5190,7 +5221,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                           display: "flex", alignItems: "center", gap: 6, padding: "8px 14px",
                           background: "linear-gradient(135deg, rgba(201,168,92,0.15), transparent)", border: `1px solid rgba(201,168,92,0.4)`, borderRadius: "3px", color: "#c9a85c",
                           fontFamily: T.ui, fontSize: 10, letterSpacing: "1.5px", textTransform: "uppercase", cursor: "pointer",
-                        }}>🗺 Explore Town</button>
+                        }}>⬡ Explore Town</button>
                       )}
                     </div>
 
@@ -5449,7 +5480,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                                     <span>{(c.npcs || []).length} NPCs</span>
                                     <span>{(c.questHooks || []).length} quests</span>
                                     {townImagesReady && window.TOWN_IMAGES && window.TOWN_IMAGES[c.name] && (
-                                      <span onClick={(e) => { e.stopPropagation(); setTownView(c.name); setTownSelBldg(null); setTownHovBldg(null); setTownZoom(0); setTownPan({x:0,y:0}); }} style={{ marginLeft: "auto", color: "#c9a85c", cursor: "pointer", letterSpacing: "0.5px", fontWeight: 500 }}>🗺 Map</span>
+                                      <span onClick={(e) => { e.stopPropagation(); setTownView(c.name); setTownSelBldg(null); setTownHovBldg(null); setTownZoom(0); setTownPan({x:0,y:0}); }} style={{ marginLeft: "auto", color: "#c9a85c", cursor: "pointer", letterSpacing: "0.5px", fontWeight: 500 }}>⬡ Map</span>
                                     )}
                                   </div>
                                 </div>
@@ -5660,7 +5691,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                           {(data.factions || []).filter(f => f.id !== sel.id).map(f => {
                             const isAlly = (sel.allies || []).includes(f.name);
                             return (
-                              <label key={f.id} style={{ display:"flex", alignItems:"center", gap:6, padding:"3px 0", cursor:"pointer", fontSize:12, color: isAlly ? "#5ee09a" : T.textFaint }}>
+                              <label key={f.id} style={{ display:"flex", alignItems:"center", gap:6, padding:"3px 0", cursor:"pointer", fontSize:12, color: isAlly ? T.green : T.textFaint }}>
                                 <input type="checkbox" checked={isAlly} onChange={() => {
                                   const newAllies = isAlly ? (sel.allies || []).filter(a => a !== f.name) : [...(sel.allies || []), f.name];
                                   updateFaction(sel.id, { allies: newAllies });
@@ -5771,7 +5802,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       </div>
                       <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Location: <span style={{color:T.textDim}}>{sel.loc}</span></div>
                       {sel.faction && <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Faction: <span style={{color:T.textDim}}>{sel.faction}</span></div>}
-                      <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Status: <span style={{color: sel.alive ? "#5ee09a" : T.crimson}}>{sel.alive?"Alive":"Deceased"}</span></div>
+                      <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Status: <span style={{color: sel.alive ? T.green : T.crimson}}>{sel.alive?"Alive":"Deceased"}</span></div>
                       {sel.traits && sel.traits.length > 0 && <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Traits: <span style={{color:T.textDim, fontStyle:"italic"}}>{sel.traits.join(", ")}</span></div>}
                       {isDM && sel.secret && <div style={{ fontSize:12, color:"#8b50f0", marginTop:6, fontStyle:"italic" }}>Secret: {sel.secret}</div>}
                     </>}
@@ -5782,9 +5813,9 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                   <div style={{ display:"flex", flexDirection:"column", gap:12, marginBottom:20 }}>
                     <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
                       {[
-                        { label:"Quests", value:selectedWorldNode.activeQuests?.length || 0, color:"#ffd54f" },
-                        { label:"NPCs", value:selectedWorldNode.npcs?.length || 0, color:"#9bb8ff" },
-                        { label:"Encounters", value:selectedWorldNode.encounters?.length || 0, color:"#f06858" },
+                        { label:"Quests", value:selectedWorldNode.activeQuests?.length || 0, color: T.bonusGold },
+                        { label:"NPCs", value:selectedWorldNode.npcs?.length || 0, color: T.moveBlue },
+                        { label:"Encounters", value:selectedWorldNode.encounters?.length || 0, color: T.crimson },
                       ].map((stat) => (
                         <div key={stat.label} style={{
                           padding:"10px 8px", borderRadius:12, textAlign:"center",
@@ -6043,8 +6074,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                   <div key={f.id} style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:16, minWidth:200, flexShrink:0 }}>
                     <div style={{ fontSize:11, color:T.textMuted, marginBottom:4 }}>{f.name}</div>
                     <div style={{ fontSize:18, color:T.gold, fontFamily:T.ui, fontWeight:600, marginBottom:8 }}>{(f.treasury || 0).toLocaleString()} gp</div>
-                    <div style={{ fontSize:10, color:f.trend==="rising"?"#5ee09a":f.trend==="falling"?T.crimson:T.textMuted, display:"flex", gap:4, alignItems:"center" }}>
-                      {f.trend==="rising"?"📈":"📉"} {f.income || 0} gp/tick
+                    <div style={{ fontSize:10, color:f.trend==="rising"?T.green:f.trend==="falling"?T.crimson:T.textMuted, display:"flex", gap:4, alignItems:"center" }}>
+                      {f.trend==="rising"?"▲":"▼"} {f.income || 0} gp/tick
                     </div>
                   </div>
                 ))}
@@ -6064,7 +6095,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       <div style={{ fontSize:10, color:T.textMuted }}>Luxury: <span style={{ color:T.gold }}>15gp</span></div>
                     </div>
                     <div style={{ marginTop:10, width:"100%", height:6, background:"rgba(0,0,0,0.3)", borderRadius:"2px", overflow:"hidden" }}>
-                      <div style={{ height:"100%", width:"60%", background:"#5ee09a" }} />
+                      <div style={{ height:"100%", width:"60%", background: T.green }} />
                     </div>
                     <div style={{ fontSize:8, color:T.textFaint, marginTop:6 }}>Supply: Good</div>
                   </div>
@@ -6112,105 +6143,330 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
       )}
 
       {/* ══════════ CALENDAR PANEL ══════════ */}
-      {tab==="calendar" && (
+      {tab==="calendar" && (() => {
+        // ── Kingdom Cultural Calendar System ──
+        // Each faction/kingdom can have its own calendar naming, holidays, and cultural events
+        const facs = (data.factions || []).filter(f => !f.isSubFaction);
+        const seedHash = (s) => { let h = 0; for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0; return Math.abs(h); };
+
+        // Universal months (shared structure) with kingdom-specific names
+        const universalMonths = [
+          { name: "Frostdeep", season: "Winter", icon: "✧", days: 30, effects: { move: -20, crops: -50, trade: -10 } },
+          { name: "Thawmere", season: "Winter", icon: "◇", days: 28, effects: { move: -10, crops: -20, trade: 0 } },
+          { name: "Bloomsreach", season: "Spring", icon: "❦", days: 31, effects: { move: 10, crops: 30, trade: 15 } },
+          { name: "Greenspire", season: "Spring", icon: "⚘", days: 30, effects: { move: 15, crops: 40, trade: 20 } },
+          { name: "Highsun", season: "Summer", icon: "✦", days: 31, effects: { move: 5, crops: 25, trade: 25 } },
+          { name: "Embertide", season: "Summer", icon: "⟡", days: 30, effects: { move: 0, crops: 10, trade: 30 } },
+          { name: "Goldfall", season: "Autumn", icon: "❧", days: 31, effects: { move: 5, crops: 50, trade: 20 } },
+          { name: "Harvestwane", season: "Autumn", icon: "⚌", days: 30, effects: { move: 0, crops: 20, trade: 10 } },
+          { name: "Dimtober", season: "Autumn", icon: "⊛", days: 31, effects: { move: -5, crops: -10, trade: 5 } },
+          { name: "Gloomhearth", season: "Winter", icon: "☽", days: 30, effects: { move: -15, crops: -40, trade: -5 } },
+          { name: "Stillnight", season: "Winter", icon: "☾", days: 31, effects: { move: -25, crops: -60, trade: -15 } },
+          { name: "Dawncrest", season: "Spring", icon: "✶", days: 28, effects: { move: 5, crops: 10, trade: 10 } }
+        ];
+
+        // Generate kingdom-specific cultural data from faction names
+        const kingdomCalendars = {};
+        facs.forEach(f => {
+          const h = seedHash(f.name);
+          const culturalPrefixes = ["The Month of", "Season of", "Time of", "The", "Days of"];
+          const culturalSuffixes = [" Blades", " Crowns", " Hammers", " Shields", " Stars", " Flames", " Shadows", " Oaths", " Tides", " Songs", " Wolves", " Eagles"];
+          const holidayTypes = ["Coronation Day", "Founding Festival", "Battle Remembrance", "Harvest Feast", "Night of Vigils", "Grand Tournament", "Sacred Rite", "Market Week", "Spirit Calling", "Oath Renewal", "Blood Moon Rites", "Ancestor's Wake"];
+
+          const monthNames = universalMonths.map((m, mi) => {
+            const pIdx = (h + mi * 7) % culturalPrefixes.length;
+            const sIdx = (h + mi * 13) % culturalSuffixes.length;
+            return culturalPrefixes[pIdx] + culturalSuffixes[sIdx];
+          });
+
+          const holidays = [];
+          const numHolidays = 3 + (h % 4);
+          for (let hi = 0; hi < numHolidays; hi++) {
+            const hMonth = (h * (hi + 1) * 3) % 12;
+            const hDay = 1 + ((h * (hi + 1) * 7) % universalMonths[hMonth].days);
+            const hType = holidayTypes[(h + hi * 5) % holidayTypes.length];
+            holidays.push({ month: hMonth, day: hDay, name: `${f.name} ${hType}`, desc: `A cultural event of the ${f.name}`, color: f.color });
+          }
+
+          kingdomCalendars[f.name] = { monthNames, holidays, color: f.color };
+        });
+
+        const curMonth = universalMonths[calMonth];
+        const seasonColor = curMonth.season === "Winter" ? T.moveBlue : curMonth.season === "Spring" ? T.green : curMonth.season === "Summer" ? T.questGold : T.orange;
+        const daysInMonth = curMonth.days;
+
+        // Get holidays for current month from selected kingdom or all
+        const curHolidays = [];
+        if (calKingdom === "all") {
+          Object.entries(kingdomCalendars).forEach(([fname, cal]) => {
+            cal.holidays.filter(h => h.month === calMonth).forEach(h => curHolidays.push(h));
+          });
+        } else {
+          const cal = kingdomCalendars[calKingdom];
+          if (cal) cal.holidays.filter(h => h.month === calMonth).forEach(h => curHolidays.push(h));
+        }
+
+        // Timeline events for this month
+        const timelineEvents = (data.timeline || []).flatMap(s => (s.events || []).map(ev => ({ ...ev, sessionDate: s.date, sessionTitle: s.title }))).slice(0, 20);
+
+        const advanceDay = (days) => {
+          let d = calDay + days;
+          let m = calMonth;
+          let y = calYear;
+          while (d > universalMonths[m].days) {
+            d -= universalMonths[m].days;
+            m++;
+            if (m >= 12) { m = 0; y++; }
+          }
+          while (d < 1) {
+            m--;
+            if (m < 0) { m = 11; y--; }
+            d += universalMonths[m].days;
+          }
+          setCalDay(d); setCalMonth(m); setCalYear(y);
+          setData(prev => ({ ...prev, calendarDay: d, calendarMonth: m, calendarYear: y }));
+        };
+
+        const displayMonthName = calKingdom !== "all" && kingdomCalendars[calKingdom]
+          ? kingdomCalendars[calKingdom].monthNames[calMonth]
+          : curMonth.name;
+
+        // Day names vary by kingdom
+        const dayNamesUniversal = ["Moonday", "Fireday", "Earthday", "Windday", "Starday", "Lightday", "Restday"];
+        const dayNamesForKingdom = calKingdom !== "all" && kingdomCalendars[calKingdom]
+          ? dayNamesUniversal.map((d, i) => { const h = seedHash(calKingdom); const suffixes = ["day","morn","dusk","tide","mark","end","rise"]; return d.slice(0, 3) + suffixes[(h + i) % suffixes.length]; })
+          : dayNamesUniversal;
+
+        // Seeded weather per region
+        const regionWeathers = (data.regions || []).slice(0, 8).map(r => {
+          const ws = ["Clear Skies","Partly Cloudy","Overcast","Light Rain","Heavy Rain","Thick Fog","Strong Winds","Thunderstorm","Snow","Blizzard"];
+          const sIdx = curMonth.season === "Winter" ? [0,2,5,6,8,9] : curMonth.season === "Summer" ? [0,0,1,3,6,7] : [0,1,2,3,4,5];
+          const wIdx = (seedHash(r.name + calMonth + calDay) % sIdx.length);
+          return { name: r.name, weather: ws[sIdx[wIdx]], terrain: r.terrain || "temperate" };
+        });
+
+        return (
         <div style={{ flex:1, overflowY:"auto", padding:"24px 48px", minHeight:0 }}>
           <div style={{ paddingBottom:40 }}>
+            {/* Kingdom Selector */}
+            <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:20, flexWrap:"wrap" }}>
+              <div style={{ fontSize:9, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase" }}>View As:</div>
+              <button onClick={() => setCalKingdom("all")} style={{
+                padding:"5px 12px", fontSize:10, fontFamily:T.ui, letterSpacing:"0.5px",
+                border: calKingdom === "all" ? `1px solid ${T.crimson}` : `1px solid ${T.border}`,
+                background: calKingdom === "all" ? "rgba(212,67,58,0.12)" : "transparent",
+                color: calKingdom === "all" ? T.crimson : T.textFaint, borderRadius:3, cursor:"pointer"
+              }}>Universal</button>
+              {facs.map(f => (
+                <button key={f.id} onClick={() => setCalKingdom(f.name)} style={{
+                  padding:"5px 12px", fontSize:10, fontFamily:T.ui, letterSpacing:"0.5px",
+                  border: calKingdom === f.name ? `1px solid ${f.color}` : `1px solid ${T.border}`,
+                  background: calKingdom === f.name ? (f.color + "20") : "transparent",
+                  color: calKingdom === f.name ? f.color : T.textFaint, borderRadius:3, cursor:"pointer"
+                }}>{f.name}</button>
+              ))}
+            </div>
+
             {/* Current Date Display */}
-            <div style={{ marginBottom:32, textAlign:"center" }}>
-              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Current Date</div>
-              <div style={{ fontSize:42, color:T.gold, fontFamily:T.ui, fontWeight:600, marginBottom:4, letterSpacing:"1px" }}>
-                15th of Bloomsreach
+            <div style={{ marginBottom:28, textAlign:"center" }}>
+              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>
+                {calKingdom !== "all" ? `${calKingdom} Reckoning` : "Common Reckoning"}
               </div>
-              <div style={{ fontSize:18, color:T.text, fontFamily:T.heading }}>Year 1042</div>
-              <div style={{ fontSize:12, color:T.textMuted, marginTop:8 }}>Spring Season 🌱</div>
+              <div style={{ fontSize:36, color:T.gold, fontFamily:T.ui, fontWeight:600, marginBottom:4, letterSpacing:"1px" }}>
+                {calDay}{calDay === 1 || calDay === 21 || calDay === 31 ? "st" : calDay === 2 || calDay === 22 ? "nd" : calDay === 3 || calDay === 23 ? "rd" : "th"} of {displayMonthName}
+              </div>
+              <div style={{ fontSize:18, color:T.text, fontFamily:T.heading }}>Year {calYear}</div>
+              <div style={{ fontSize:12, color:seasonColor, marginTop:8 }}>{curMonth.icon} {curMonth.season} Season</div>
             </div>
 
-            {/* Season Info Card */}
-            <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:20, marginBottom:24 }}>
-              <div style={{ fontSize:11, color:T.textMuted, marginBottom:2 }}>Spring (Growth & Renewal)</div>
-              <div style={{ fontSize:12, color:T.textDim, marginBottom:12 }}>Crops plant, animals breed, trade increases</div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10, fontSize:10, color:T.textMuted, marginBottom:12 }}>
-                <div>Movement: +10%</div>
-                <div>Resource Yield: +15%</div>
+            {/* Season Effects Card */}
+            <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:4, padding:20, marginBottom:24 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+                <div>
+                  <div style={{ fontSize:13, color:T.text }}>{curMonth.season} — {curMonth.name}</div>
+                  <div style={{ fontSize:10, color:T.textFaint, marginTop:2 }}>Day {calDay} of {daysInMonth}</div>
+                </div>
+                <div style={{ fontSize:28 }}>{curMonth.icon}</div>
               </div>
-              <div style={{ fontSize:10, color:T.textFaint }}>Days until next season: 76</div>
-              <div style={{ marginTop:12, width:"100%", height:6, background:"rgba(0,0,0,0.3)", borderRadius:"2px", overflow:"hidden" }}>
-                <div style={{ height:"100%", width:"33%", background:"#5ee09a" }} />
-              </div>
-            </div>
-
-            {/* Weather Map */}
-            <div style={{ marginBottom:24 }}>
-              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Regional Weather</div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10 }}>
-                {(data.regions || []).slice(0, 6).map(r => (
-                  <div key={r.id} style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:12, textAlign:"center" }}>
-                    <div style={{ fontSize:24, marginBottom:4 }}>☀️</div>
-                    <div style={{ fontSize:10, color:T.text, marginBottom:2 }}>{r.name}</div>
-                    <div style={{ fontSize:9, color:T.textMuted }}>Clear Skies</div>
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:10, marginBottom:12 }}>
+                {[
+                  { label: "Movement", val: curMonth.effects.move, suffix: "%" },
+                  { label: "Crop Yield", val: curMonth.effects.crops, suffix: "%" },
+                  { label: "Trade", val: curMonth.effects.trade, suffix: "%" }
+                ].map(e => (
+                  <div key={e.label} style={{ textAlign:"center", padding:"10px 8px", background:"rgba(0,0,0,0.1)", borderRadius:3 }}>
+                    <div style={{ fontSize:16, color: e.val > 0 ? T.green : e.val < 0 ? T.crimson : T.textFaint, fontFamily:T.ui }}>
+                      {e.val > 0 ? "+" : ""}{e.val}{e.suffix}
+                    </div>
+                    <div style={{ fontSize:8, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase", marginTop:4 }}>{e.label}</div>
                   </div>
                 ))}
               </div>
+              <div style={{ width:"100%", height:6, background:"rgba(0,0,0,0.3)", borderRadius:3, overflow:"hidden" }}>
+                <div style={{ height:"100%", width:`${(calDay / daysInMonth) * 100}%`, background:seasonColor, borderRadius:3, transition:"width 0.3s" }} />
+              </div>
+              <div style={{ fontSize:9, color:T.textFaint, marginTop:6, textAlign:"right" }}>{daysInMonth - calDay} days remaining in {curMonth.name}</div>
             </div>
 
-            {/* Advance Controls (DM Only) */}
+            {/* DM Advance Controls */}
             {isDM && (
-              <div style={{ marginBottom:24, display:"flex", gap:10, flexWrap:"wrap" }}>
-                <button style={{ padding:"10px 16px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", color:T.text, fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", transition:"all 0.2s" }}>
-                  📅 Advance 1 Day
-                </button>
-                <button style={{ padding:"10px 16px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", color:T.text, fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", transition:"all 0.2s" }}>
-                  📅 Advance 1 Week
-                </button>
-                <button style={{ padding:"10px 16px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", color:T.text, fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", transition:"all 0.2s" }}>
-                  📅 Next Season
-                </button>
+              <div style={{ marginBottom:24, display:"flex", gap:8, flexWrap:"wrap" }}>
+                {[
+                  { label: "−1 Day", days: -1 },
+                  { label: "+1 Day", days: 1 },
+                  { label: "+1 Week", days: 7 },
+                  { label: "+1 Month", days: daysInMonth - calDay + 1 },
+                  { label: "Next Season", days: (() => { let d = 0; let m = calMonth; const curSeason = curMonth.season; while (universalMonths[m % 12].season === curSeason) { d += universalMonths[m % 12].days; m++; } return d - calDay + 1; })() }
+                ].map(b => (
+                  <button key={b.label} onClick={() => advanceDay(b.days)} style={{
+                    padding:"8px 14px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:3,
+                    color:T.text, fontFamily:T.ui, fontSize:9, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer"
+                  }}>{b.label}</button>
+                ))}
               </div>
             )}
 
-            {/* Calendar View */}
-            <div style={{ marginBottom:24 }}>
-              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Bloomsreach Calendar</div>
-              <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:16 }}>
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(7, 1fr)", gap:4, marginBottom:12 }}>
-                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map(d => (
-                    <div key={d} style={{ textAlign:"center", fontSize:9, color:T.textMuted, fontWeight:600, padding:4 }}>{d}</div>
-                  ))}
+            {/* Month Navigation + Calendar Grid */}
+            <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:4, padding:20, marginBottom:24 }}>
+              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
+                <button onClick={() => { const prev = calMonth - 1; if (prev < 0) { setCalMonth(11); setCalYear(y => y - 1); } else setCalMonth(prev); setCalDay(1); }} style={{ background:"none", border:"none", color:T.textMuted, cursor:"pointer", fontSize:16, padding:"4px 8px" }}>◄</button>
+                <div style={{ textAlign:"center" }}>
+                  <div style={{ fontSize:14, color:T.text, fontFamily:T.heading }}>{displayMonthName}</div>
+                  <div style={{ fontSize:9, color:T.textFaint }}>{curMonth.name} · {curMonth.season} · {daysInMonth} days</div>
                 </div>
-                <div style={{ display:"grid", gridTemplateColumns:"repeat(7, 1fr)", gap:4 }}>
-                  {[...Array(31)].map((_, i) => (
-                    <div key={i} style={{
-                      padding:8,
-                      textAlign:"center",
-                      background:i===14?"rgba(212,67,58,0.14)":"transparent",
-                      border:`1px solid ${i===14?T.crimson:T.border}`,
-                      borderRadius:"2px",
-                      color:i===14?T.crimson:T.textMuted,
-                      fontSize:9,
-                      cursor:"pointer",
-                    }}>{i+1}</div>
-                  ))}
-                </div>
+                <button onClick={() => { const next = calMonth + 1; if (next >= 12) { setCalMonth(0); setCalYear(y => y + 1); } else setCalMonth(next); setCalDay(1); }} style={{ background:"none", border:"none", color:T.textMuted, cursor:"pointer", fontSize:16, padding:"4px 8px" }}>►</button>
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(7, 1fr)", gap:3, marginBottom:8 }}>
+                {dayNamesForKingdom.map(d => (
+                  <div key={d} style={{ textAlign:"center", fontSize:8, color:T.textFaint, fontWeight:600, padding:4, fontFamily:T.ui, letterSpacing:"0.5px" }}>{d.slice(0, 4)}</div>
+                ))}
+              </div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(7, 1fr)", gap:3 }}>
+                {[...Array(daysInMonth)].map((_, i) => {
+                  const day = i + 1;
+                  const isToday = day === calDay;
+                  const holiday = curHolidays.find(h => h.day === day);
+                  return (
+                    <div key={i} onClick={() => { if (!isDM) return; setCalDay(day); setData(prev => ({ ...prev, calendarDay: day })); }} style={{
+                      padding:"6px 4px", textAlign:"center", position:"relative",
+                      background: isToday ? "rgba(212,67,58,0.14)" : holiday ? (holiday.color || T.gold) + "10" : "transparent",
+                      border:`1px solid ${isToday ? T.crimson : holiday ? (holiday.color || T.gold) + "30" : T.border}`,
+                      borderRadius:2, color: isToday ? T.crimson : holiday ? (holiday.color || T.gold) : T.textMuted,
+                      fontSize:9, cursor:"pointer", minHeight:32
+                    }}>
+                      {day}
+                      {holiday && <div style={{ width:4, height:4, borderRadius:"50%", background: holiday.color || T.gold, margin:"2px auto 0" }} />}
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Upcoming Events */}
-            <div>
-              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Upcoming Events</div>
-              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:12 }}>
-                  <div style={{ fontSize:10, color:T.text }}>Summer Festival</div>
-                  <div style={{ fontSize:9, color:T.textMuted, marginTop:2 }}>2 months away</div>
-                </div>
-                <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:12 }}>
-                  <div style={{ fontSize:10, color:T.text }}>Harvest Moon</div>
-                  <div style={{ fontSize:9, color:T.textMuted, marginTop:2 }}>6 months away</div>
-                </div>
+            {/* Regional Weather */}
+            <div style={{ marginBottom:24 }}>
+              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Regional Weather</div>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(140px, 1fr))", gap:10 }}>
+                {regionWeathers.map(r => {
+                  const wIcon = r.weather.includes("Snow") || r.weather.includes("Blizzard") ? "✧" : r.weather.includes("Rain") || r.weather.includes("Thunder") ? "⏐" : r.weather.includes("Fog") ? "≡" : r.weather.includes("Wind") ? "∿" : r.weather.includes("Cloud") || r.weather.includes("Overcast") ? "◌" : "✦";
+                  return (
+                    <div key={r.name} style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:4, padding:12, textAlign:"center" }}>
+                      <div style={{ fontSize:22, marginBottom:4 }}>{wIcon}</div>
+                      <div style={{ fontSize:10, color:T.text, marginBottom:2 }}>{r.name}</div>
+                      <div style={{ fontSize:9, color:T.textMuted }}>{r.weather}</div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
+
+            {/* Kingdom Holidays & Events */}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16, marginBottom:24 }}>
+              {/* This Month's Holidays */}
+              <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:4, padding:20 }}>
+                <div style={{ fontSize:10, color:T.gold, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>
+                  Holidays & Festivals — {displayMonthName}
+                </div>
+                {curHolidays.length > 0 ? (
+                  <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                    {curHolidays.map((h, i) => (
+                      <div key={i} style={{ padding:"10px 12px", borderRadius:3, borderLeft:`3px solid ${h.color || T.gold}`, background:(h.color || T.gold) + "08" }}>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                          <div style={{ fontSize:11, color:T.text }}>{h.name}</div>
+                          <div style={{ fontSize:9, color:T.textFaint }}>Day {h.day}</div>
+                        </div>
+                        <div style={{ fontSize:9, color:T.textMuted, marginTop:3 }}>{h.desc}</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div style={{ fontSize:11, color:T.textFaint, fontStyle:"italic" }}>No holidays this month</div>
+                )}
+              </div>
+
+              {/* Recent World Events */}
+              <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:4, padding:20 }}>
+                <div style={{ fontSize:10, color:T.crimson, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>
+                  Recent World Events
+                </div>
+                {timelineEvents.length > 0 ? (
+                  <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                    {timelineEvents.slice(0, 6).map((ev, i) => {
+                      const catColor = ev.category === "military" ? T.crimson : ev.category === "political" ? T.gold : ev.category === "economic" ? T.green : T.textMuted;
+                      return (
+                        <div key={i} style={{ padding:"8px 10px", borderRadius:3, borderLeft:`2px solid ${catColor}`, background:"rgba(0,0,0,0.06)" }}>
+                          <div style={{ fontSize:10, color:T.text }}>{ev.headline || ev.text}</div>
+                          <div style={{ fontSize:8, color:T.textFaint, marginTop:3 }}>
+                            {ev.category && <span style={{ color:catColor, textTransform:"capitalize" }}>{ev.category}</span>}
+                            {ev.location && <span> · {ev.location}</span>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div style={{ fontSize:11, color:T.textFaint, fontStyle:"italic" }}>No world events recorded yet</div>
+                )}
+              </div>
+            </div>
+
+            {/* Kingdom Calendar Comparison */}
+            {facs.length > 1 && (
+              <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:4, padding:20 }}>
+                <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:14 }}>
+                  Cultural Calendar Comparison — {curMonth.name}
+                </div>
+                <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
+                  <div style={{ display:"grid", gridTemplateColumns:"140px 1fr 80px 60px", gap:12, padding:"6px 10px", fontSize:8, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase" }}>
+                    <span>Kingdom</span><span>Local Name</span><span>Holidays</span><span>Season</span>
+                  </div>
+                  {facs.map((f, fi) => {
+                    const cal = kingdomCalendars[f.name];
+                    if (!cal) return null;
+                    const hCount = cal.holidays.filter(h => h.month === calMonth).length;
+                    return (
+                      <div key={f.id} onClick={() => setCalKingdom(f.name)} style={{
+                        display:"grid", gridTemplateColumns:"140px 1fr 80px 60px", gap:12,
+                        padding:"10px", borderRadius:3, cursor:"pointer",
+                        background: calKingdom === f.name ? (f.color + "10") : fi % 2 === 0 ? "transparent" : "rgba(0,0,0,0.04)",
+                        borderLeft: calKingdom === f.name ? `3px solid ${f.color}` : "3px solid transparent"
+                      }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                          <div style={{ width:8, height:8, borderRadius:"50%", background:f.color, flexShrink:0 }} />
+                          <span style={{ fontSize:11, color:T.text }}>{f.name}</span>
+                        </div>
+                        <span style={{ fontSize:10, color:T.textMuted, fontStyle:"italic" }}>{cal.monthNames[calMonth]}</span>
+                        <span style={{ fontSize:10, color: hCount > 0 ? T.gold : T.textFaint }}>{hCount > 0 ? hCount + " festivals" : "None"}</span>
+                        <span style={{ fontSize:10, color:seasonColor }}>{curMonth.season}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* Religion panel removed — religion info is now in the Regions tab */}
       {false && (
@@ -6226,9 +6482,9 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
             <div style={{ marginBottom:28 }}>
               <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Greater Deities</div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12 }}>
-                {[{emoji:"⚔️", name:"Valorath", domain:"War", align:"Chaotic Good"},
-                  {emoji:"🌙", name:"Nocturnia", domain:"Night", align:"Neutral Evil"},
-                  {emoji:"🌾", name:"Eldora", domain:"Life", align:"Lawful Good"}].map((d, i) => (
+                {[{emoji:"⚔", name:"Valorath", domain:"War", align:"Chaotic Good"},
+                  {emoji:"☽", name:"Nocturnia", domain:"Night", align:"Neutral Evil"},
+                  {emoji:"⚌", name:"Eldora", domain:"Life", align:"Lawful Good"}].map((d, i) => (
                   <div key={i} style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:16, cursor:"pointer", transition:"all 0.2s" }}>
                     <div style={{ fontSize:28, marginBottom:8 }}>{d.emoji}</div>
                     <div style={{ fontSize:12, color:T.text, fontWeight:400, marginBottom:2 }}>{d.name}</div>
@@ -6244,9 +6500,9 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
             <div style={{ marginBottom:28 }}>
               <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Lesser Deities</div>
               <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:12 }}>
-                {[{emoji:"🏘️", name:"Civitas", domain:"Cities", align:"Lawful Neutral"},
-                  {emoji:"🎭", name:"Jestara", domain:"Trickery", align:"Chaotic Neutral"},
-                  {emoji:"📚", name:"Scrolliana", domain:"Magic", align:"Neutral"}].map((d, i) => (
+                {[{emoji:"⌂", name:"Civitas", domain:"Cities", align:"Lawful Neutral"},
+                  {emoji:"⊛", name:"Jestara", domain:"Trickery", align:"Chaotic Neutral"},
+                  {emoji:"≡", name:"Scrolliana", domain:"Magic", align:"Neutral"}].map((d, i) => (
                   <div key={i} style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:16, cursor:"pointer", transition:"all 0.2s" }}>
                     <div style={{ fontSize:28, marginBottom:8 }}>{d.emoji}</div>
                     <div style={{ fontSize:12, color:T.text, fontWeight:400, marginBottom:2 }}>{d.name}</div>
@@ -6268,7 +6524,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     <div style={{ fontSize:9, color:T.textMuted, marginBottom:6 }}>Cathedral of Valorath</div>
                     <div style={{ display:"flex", gap:10, alignItems:"center" }}>
                       <div style={{ flex:1, height:6, background:"rgba(0,0,0,0.3)", borderRadius:"2px", overflow:"hidden" }}>
-                        <div style={{ height:"100%", width:"75%", background:"#e8940a" }} />
+                        <div style={{ height:"100%", width:"75%", background: T.orange }} />
                       </div>
                       <div style={{ fontSize:8, color:T.textFaint }}>Level 3</div>
                     </div>
@@ -6288,7 +6544,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       {[{name:"Valorath", val:45}, {name:"Nocturnia", val:-30}, {name:"Eldora", val:20}].map(d => (
                         <div key={d.name} style={{ background:"rgba(0,0,0,0.2)", borderRadius:"2px", padding:8, textAlign:"center" }}>
                           <div style={{ fontSize:8, color:T.textMuted, marginBottom:4 }}>{d.name}</div>
-                          <div style={{ fontSize:10, color:d.val>0?"#5ee09a":d.val<0?T.crimson:T.textMuted, fontWeight:600 }}>{d.val>0?"+":""}{d.val}</div>
+                          <div style={{ fontSize:10, color:d.val>0?T.green:d.val<0?T.crimson:T.textMuted, fontWeight:600 }}>{d.val>0?"+":""}{d.val}</div>
                         </div>
                       ))}
                     </div>
@@ -6342,7 +6598,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
         // ── Generate hex grid data when both cities are selected ──
         const hasRoute = hexOrigin && hexDest && hexOrigin !== hexDest;
         const hexTerrains = ["plains","forest","hills","mountains","swamp","desert","coast","tundra","jungle","badlands","river_valley","grassland"];
-        const hexIcons = { plains:"🌾", forest:"🌲", hills:"⛰️", mountains:"🏔️", swamp:"🌿", desert:"🏜️", coast:"🌊", tundra:"❄️", jungle:"🌴", badlands:"🪨", river_valley:"🏞️", grassland:"🌻" };
+        const hexIcons = { plains:"⚌", forest:"⚍", hills:"△", mountains:"▲", swamp:"≋", desert:"∷", coast:"〜", tundra:"✧", jungle:"⚍", badlands:"⊿", river_valley:"≈", grassland:"⚌" };
         const hexColors = { plains:"rgba(139,195,74,0.18)", forest:"rgba(46,125,50,0.22)", hills:"rgba(168,140,80,0.18)", mountains:"rgba(120,120,140,0.22)", swamp:"rgba(60,100,60,0.22)", desert:"rgba(210,180,100,0.20)", coast:"rgba(70,150,200,0.18)", tundra:"rgba(180,210,230,0.18)", jungle:"rgba(20,120,40,0.24)", badlands:"rgba(160,80,40,0.20)", river_valley:"rgba(60,140,180,0.16)", grassland:"rgba(160,200,60,0.16)" };
         const moveCosts = { plains:1, forest:1.5, hills:2, mountains:3, swamp:2, desert:2, coast:1, tundra:2.5, jungle:2, badlands:2, river_valley:1, grassland:1 };
         const hexDangers = { plains:["bandits","wolves","wild horses","stampede"], forest:["owlbears","giant spiders","elf patrol","dire wolves","treant"], hills:["goblins","wyvern","rockslide","hill giant","harpy nest"], mountains:["drake","stone giant","avalanche","griffon","orc warband"], swamp:["hydra","cultists","will-o-wisp","black dragon","bog hag"], desert:["sandworm","nomad raiders","mirage","scorpion swarm","mummy"], coast:["pirates","sea serpent","storm","merfolk ambush","kraken spawn"], tundra:["yeti","frost wolves","blizzard","ice troll","white dragon"], jungle:["yuan-ti","panther pack","poison dart trap","dinosaur","vine blight"], badlands:["gnolls","dust devil","basilisk","vulture flock","bandit lord"], river_valley:["river trolls","nixies","flash flood","crocodile","water elemental"], grassland:["centaur patrol","bulette","grass fire","ankheg","horseback raiders"] };
@@ -6383,7 +6639,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
           hexes.push({
             idx: hi, terrain, danger, dangerCR, feature, weather, elevation, moveCost, restSafe,
             explored: hi <= hexPartyPos,
-            icon: hexIcons[terrain] || "🌍",
+            icon: hexIcons[terrain] || "◎",
             color: hexColors[terrain] || hexColors.plains,
             description: hexDescriptions[terrain] || "Unknown terrain.",
           });
@@ -6494,13 +6750,13 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                           {/* Fog overlay for unexplored */}
                           {!isExplored && <polygon points={hexPointsStr(h.x, h.y)} fill="rgba(8,8,12,0.55)" stroke="none" style={{pointerEvents:"none"}} />}
                           {/* Terrain icon */}
-                          <text x={h.x} y={h.y - 2} textAnchor="middle" fontSize={isExplored ? 20 : 12} style={{ pointerEvents:"none", opacity: isExplored ? 1 : 0.3 }}>{isExplored ? h.icon : "❓"}</text>
+                          <text x={h.x} y={h.y - 2} textAnchor="middle" fontSize={isExplored ? 20 : 12} style={{ pointerEvents:"none", opacity: isExplored ? 1 : 0.3 }}>{isExplored ? h.icon : "?"}</text>
                           {/* Label */}
                           <text x={h.x} y={h.y + 18} textAnchor="middle" fontSize={6.5} fill={isExplored ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.15)"} style={{ pointerEvents:"none", fontFamily:"'Cinzel', serif", letterSpacing:"0.5px", textTransform:"uppercase" }}>
                             {i === 0 ? hexOrigin.slice(0, 9) : i === hexCount - 1 ? hexDest.slice(0, 9) : isExplored ? h.terrain.replace("_"," ").slice(0, 9) : "???"}
                           </text>
                           {/* Party marker */}
-                          {isParty && <text x={h.x} y={h.y - 20} textAnchor="middle" fontSize={16} style={{ pointerEvents:"none" }}>⚔️</text>}
+                          {isParty && <text x={h.x} y={h.y - 20} textAnchor="middle" fontSize={16} style={{ pointerEvents:"none" }}>⚔</text>}
                           {/* Danger indicator */}
                           {h.danger && isExplored && <><circle cx={h.x + HEX_R * 0.55} cy={h.y - HEX_R * 0.45} r={6} fill="rgba(212,67,58,0.85)" /><text x={h.x + HEX_R * 0.55} y={h.y - HEX_R * 0.45 + 3} textAnchor="middle" fontSize={7} fill="#fff" style={{pointerEvents:"none"}}>!</text></>}
                           {/* Feature indicator */}
@@ -6541,13 +6797,105 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:10 }}>Current Position — Hex {hexPartyPos + 1}/{hexCount}</div>
                       <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12 }}>
                         <span style={{ fontSize:28 }}>{currentHex.icon}</span>
-                        <div>
-                          <div style={{ fontSize:14, color:T.text, fontWeight:400, textTransform:"capitalize" }}>{currentHex.terrain}</div>
-                          <div style={{ fontSize:10, color:T.textMuted }}>Weather: {currentHex.weather}</div>
+                        <div style={{ flex:1 }}>
+                          <div style={{ fontSize:14, color:T.text, fontWeight:400, textTransform:"capitalize" }}>{currentHex.terrain.replace("_"," ")}</div>
+                          <div style={{ fontSize:10, color:T.textMuted }}>Weather: {currentHex.weather} · Elevation: {currentHex.elevation}</div>
+                        </div>
+                        <div style={{ textAlign:"right" }}>
+                          <div style={{ fontSize:16, color:T.gold, fontFamily:T.ui }}>{currentHex.moveCost}d</div>
+                          <div style={{ fontSize:7, color:T.textFaint }}>TRAVEL</div>
                         </div>
                       </div>
-                      {currentHex.feature && <div style={{ fontSize:10, color:T.gold, marginBottom:6 }}>Feature: {currentHex.feature}</div>}
-                      {currentHex.danger && <div style={{ fontSize:10, color:T.crimson, marginBottom:6 }}>⚠ Danger: {currentHex.danger}</div>}
+                      {currentHex.description && <div style={{ fontSize:10, color:T.textDim, fontStyle:"italic", lineHeight:1.5, marginBottom:10, paddingBottom:8, borderBottom:`1px solid ${T.border}` }}>{currentHex.description}</div>}
+                      {currentHex.feature && <div style={{ fontSize:10, color:T.gold, marginBottom:6, padding:"6px 8px", background:"rgba(201,168,92,0.06)", borderRadius:3, border:"1px solid rgba(201,168,92,0.12)" }}>★ Feature: {currentHex.feature}</div>}
+                      {currentHex.danger && (
+                        <div style={{ padding:"8px 10px", background:"rgba(212,67,58,0.06)", borderRadius:3, border:"1px solid rgba(212,67,58,0.12)", marginBottom:6 }}>
+                          <div style={{ fontSize:10, color:T.crimson, marginBottom:6 }}>⚠ {currentHex.danger} (CR {currentHex.dangerCR})</div>
+                          {/* Decision buttons for encounters */}
+                          <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                            <button onClick={() => {
+                              const enc = { id: "enc-hex-" + Date.now(), name: `${currentHex.danger} (Hex ${hexPartyPos + 1})`, location: `${hexOrigin} → ${hexDest} route`, notes: `Terrain: ${currentHex.terrain}, Weather: ${currentHex.weather}, CR ${currentHex.dangerCR}`, participants: [{ type:"partyAll" }] };
+                              setData(d => ({ ...d, encounters: [...(d.encounters || []), enc], activity: [{ time:"Just now", text:`Encounter added: ${currentHex.danger}` }, ...(d.activity || [])].slice(0, 20) }));
+                              setHexLog(prev => [{ time:`Hex ${hexPartyPos + 1}`, text:`⚔ FIGHT — Engaged ${currentHex.danger}! Encounter added to Play tab.`, type:"combat" }, ...prev].slice(0, 30));
+                            }} style={{ padding:"6px 12px", background:"rgba(212,67,58,0.15)", border:`1px solid ${T.crimsonBorder}`, borderRadius:3, color:T.crimson, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", fontWeight:600 }}>
+                              ⚔ Fight
+                            </button>
+                            <button onClick={() => {
+                              const roll = Math.floor(Math.random() * 20) + 1;
+                              const dc = 8 + currentHex.dangerCR;
+                              const success = roll >= dc;
+                              setHexLog(prev => [{ time:`Hex ${hexPartyPos + 1}`, text: success ? `⚖ NEGOTIATE (${roll} vs DC ${dc}) — Resolved ${currentHex.danger} peacefully.` : `⚖ NEGOTIATE (${roll} vs DC ${dc}) — Failed! ${currentHex.danger} attacks!`, type: success ? "success" : "combat" }, ...prev].slice(0, 30));
+                              if (!success) {
+                                const enc = { id: "enc-hex-" + Date.now(), name: `${currentHex.danger} — Failed Negotiation`, location: `${hexOrigin} → ${hexDest} route`, notes: `Failed negotiate DC ${dc}. Terrain: ${currentHex.terrain}, CR ${currentHex.dangerCR}`, participants: [{ type:"partyAll" }] };
+                                setData(d => ({ ...d, encounters: [...(d.encounters || []), enc], activity: [{ time:"Just now", text:`Encounter: ${currentHex.danger} (failed negotiate)` }, ...(d.activity || [])].slice(0, 20) }));
+                              }
+                            }} style={{ padding:"6px 12px", background:"rgba(201,168,92,0.1)", border:`1px solid rgba(201,168,92,0.2)`, borderRadius:3, color:T.gold, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer" }}>
+                              ⚖ Negotiate
+                            </button>
+                            <button onClick={() => {
+                              const roll = Math.floor(Math.random() * 20) + 1;
+                              const dc = 10 + Math.floor(currentHex.dangerCR / 2);
+                              const success = roll >= dc;
+                              setHexLog(prev => [{ time:`Hex ${hexPartyPos + 1}`, text: success ? `⊘ SNEAK (${roll} vs DC ${dc}) — Bypassed ${currentHex.danger} undetected.` : `⊘ SNEAK (${roll} vs DC ${dc}) — Spotted by ${currentHex.danger}! Disadvantaged fight!`, type: success ? "success" : "combat" }, ...prev].slice(0, 30));
+                              if (!success) {
+                                const enc = { id: "enc-hex-" + Date.now(), name: `${currentHex.danger} — Ambush (spotted)`, location: `${hexOrigin} → ${hexDest} route`, notes: `Failed stealth DC ${dc}. Party surprised! CR ${currentHex.dangerCR}`, participants: [{ type:"partyAll" }] };
+                                setData(d => ({ ...d, encounters: [...(d.encounters || []), enc], activity: [{ time:"Just now", text:`Ambush: ${currentHex.danger} (failed sneak)` }, ...(d.activity || [])].slice(0, 20) }));
+                              }
+                            }} style={{ padding:"6px 12px", background:"rgba(100,100,200,0.1)", border:`1px solid rgba(100,100,200,0.2)`, borderRadius:3, color:"#8888dd", fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer" }}>
+                              ⊘ Sneak
+                            </button>
+                            <button onClick={() => {
+                              const roll = Math.floor(Math.random() * 20) + 1;
+                              const dc = 8 + Math.floor(currentHex.dangerCR / 3);
+                              const success = roll >= dc;
+                              setHexLog(prev => [{ time:`Hex ${hexPartyPos + 1}`, text: success ? `↺ FLEE (${roll} vs DC ${dc}) — Escaped ${currentHex.danger}! Retreated 1 hex.` : `↺ FLEE (${roll} vs DC ${dc}) — Cannot escape! Forced to fight ${currentHex.danger}!`, type: success ? "neutral" : "combat" }, ...prev].slice(0, 30));
+                              if (success) { setHexPartyPos(p => Math.max(0, p - 1)); }
+                              else {
+                                const enc = { id: "enc-hex-" + Date.now(), name: `${currentHex.danger} — Failed Escape`, location: `${hexOrigin} → ${hexDest} route`, notes: `Failed flee DC ${dc}. No retreat possible! CR ${currentHex.dangerCR}`, participants: [{ type:"partyAll" }] };
+                                setData(d => ({ ...d, encounters: [...(d.encounters || []), enc], activity: [{ time:"Just now", text:`Forced fight: ${currentHex.danger} (failed flee)` }, ...(d.activity || [])].slice(0, 20) }));
+                              }
+                            }} style={{ padding:"6px 12px", background:"rgba(0,0,0,0.08)", border:`1px solid ${T.border}`, borderRadius:3, color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer" }}>
+                              ↺ Flee
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      {/* Action buttons */}
+                      <div style={{ display:"flex", gap:6, marginTop:10, paddingTop:10, borderTop:`1px solid ${T.border}` }}>
+                        <button onClick={() => {
+                          const roll = Math.floor(Math.random() * 20) + 1;
+                          const dc = currentHex.terrain === "forest" || currentHex.terrain === "jungle" || currentHex.terrain === "grassland" ? 10 : currentHex.terrain === "desert" || currentHex.terrain === "tundra" ? 18 : 13;
+                          const success = roll >= dc;
+                          setHexLog(prev => [{ time:`Hex ${hexPartyPos + 1}`, text: success ? `⚘ FORAGE (${roll} vs DC ${dc}) — Found food and water. Party resupplied.` : `⚘ FORAGE (${roll} vs DC ${dc}) — Found nothing useful.`, type: success ? "success" : "neutral" }, ...prev].slice(0, 30));
+                        }} style={{ padding:"6px 10px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:3, color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"0.5px", textTransform:"uppercase", cursor:"pointer" }}>
+                          ⚘ Forage
+                        </button>
+                        <button onClick={() => {
+                          if (hexPartyPos < hexCount - 1) {
+                            const nextH = hexes[hexPartyPos + 1];
+                            setHexLog(prev => [{ time:`Hex ${hexPartyPos + 1}`, text: `⊙ SCOUT — Hex ${hexPartyPos + 2}: ${nextH.terrain.replace("_"," ")}${nextH.danger ? `, ⚠ ${nextH.danger} present!` : ""}${nextH.feature ? `, ★ ${nextH.feature}` : ""}`, type: nextH.danger ? "danger" : "success" }, ...prev].slice(0, 30));
+                            nextH.explored = true;
+                            setHexSelectedHex(hexPartyPos + 1);
+                          }
+                        }} disabled={hexPartyPos >= hexCount - 1} style={{ padding:"6px 10px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:3, color:hexPartyPos >= hexCount - 1 ? T.textFaint : T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"0.5px", textTransform:"uppercase", cursor: hexPartyPos >= hexCount - 1 ? "not-allowed" : "pointer", opacity: hexPartyPos >= hexCount - 1 ? 0.5 : 1 }}>
+                          ⊙ Scout Ahead
+                        </button>
+                        <button onClick={() => {
+                          const restSafe = currentHex.restSafe;
+                          const ambushRoll = Math.floor(Math.random() * 20) + 1;
+                          const ambush = !restSafe && ambushRoll <= 5;
+                          if (ambush) {
+                            const ambushDanger = currentHex.danger || "night prowlers";
+                            setHexLog(prev => [{ time:`Hex ${hexPartyPos + 1}`, text:`⌂ CAMP — Ambushed during the night by ${ambushDanger}!`, type:"combat" }, ...prev].slice(0, 30));
+                            const enc = { id: "enc-hex-" + Date.now(), name: `Night Ambush: ${ambushDanger}`, location: `${hexOrigin} → ${hexDest} route, Hex ${hexPartyPos + 1}`, notes: `Night ambush while camping in ${currentHex.terrain}. Party may be surprised.`, participants: [{ type:"partyAll" }] };
+                            setData(d => ({ ...d, encounters: [...(d.encounters || []), enc], activity: [{ time:"Just now", text:`Night ambush: ${ambushDanger}` }, ...(d.activity || [])].slice(0, 20) }));
+                          } else {
+                            setHexLog(prev => [{ time:`Hex ${hexPartyPos + 1}`, text: restSafe ? "⌂ CAMP — Restful night. Party recovered." : `⌂ CAMP — Uneasy rest (watch roll: ${ambushRoll}). Party recovered but exhausted.`, type: restSafe ? "success" : "neutral" }, ...prev].slice(0, 30));
+                          }
+                        }} style={{ padding:"6px 10px", background: currentHex.restSafe ? "rgba(94,224,154,0.06)" : "rgba(0,0,0,0.08)", border:`1px solid ${currentHex.restSafe ? "rgba(94,224,154,0.15)" : T.border}`, borderRadius:3, color: currentHex.restSafe ? T.green : T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"0.5px", textTransform:"uppercase", cursor:"pointer" }}>
+                          ⌂ Make Camp
+                        </button>
+                      </div>
                     </div>
                   )}
                   {/* Movement Controls */}
@@ -6561,8 +6909,11 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       setHexPartyPos(nextPos);
                       setHexSelectedHex(null);
                       if (nextHex) {
-                        const entry = { time: `Hex ${nextPos + 1}`, text: `Entered ${nextHex.terrain}${nextHex.feature ? ` — found ${nextHex.feature}` : ""}${nextHex.danger ? ` — encountered ${nextHex.danger}!` : ""}` };
-                        setHexLog(prev => [entry, ...prev].slice(0, 20));
+                        const entries = [];
+                        entries.push({ time: `Hex ${nextPos + 1}`, text: `Entered ${nextHex.terrain.replace("_"," ")} — ${nextHex.weather}`, type:"neutral" });
+                        if (nextHex.feature) entries.push({ time: `Hex ${nextPos + 1}`, text: `★ Discovered: ${nextHex.feature}`, type:"feature" });
+                        if (nextHex.danger) entries.push({ time: `Hex ${nextPos + 1}`, text: `⚠ ${nextHex.danger} blocks the path! (CR ${nextHex.dangerCR})`, type:"danger" });
+                        setHexLog(prev => [...entries.reverse(), ...prev].slice(0, 30));
                       }
                     }} style={{ flex:2, padding:"10px", background:hexPartyPos >= hexCount - 1 ? "rgba(0,0,0,0.1)" : "linear-gradient(135deg, rgba(212,67,58,0.2), transparent)", border:`1px solid ${hexPartyPos >= hexCount - 1 ? T.border : T.crimsonBorder}`, borderRadius:"4px", color:hexPartyPos >= hexCount - 1 ? T.textFaint : T.crimson, fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", textTransform:"uppercase", cursor:hexPartyPos >= hexCount - 1 ? "not-allowed" : "pointer", fontWeight:600, opacity:hexPartyPos >= hexCount - 1 ? 0.5 : 1 }}>
                       {hexPartyPos >= hexCount - 1 ? `✓ Arrived at ${hexDest}` : "Advance ►"}
@@ -6573,8 +6924,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:16 }}>
                       <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:10 }}>Journey Log</div>
                       <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                        {hexLog.slice(0, 8).map((entry, i) => (
-                          <div key={i} style={{ fontSize:10, color:T.textMuted, borderLeft:`2px solid ${entry.text.includes("encountered") ? T.crimson : entry.text.includes("found") ? T.gold : T.border}`, paddingLeft:8, lineHeight:1.5 }}>
+                        {hexLog.slice(0, 12).map((entry, i) => (
+                          <div key={i} style={{ fontSize:10, color:T.textMuted, borderLeft:`2px solid ${entry.type === "combat" || entry.type === "danger" ? T.crimson : entry.type === "feature" || entry.type === "success" ? T.gold : T.border}`, paddingLeft:8, lineHeight:1.5 }}>
                             <span style={{ color:T.textFaint, marginRight:8 }}>{entry.time}</span>{entry.text}
                           </div>
                         ))}
