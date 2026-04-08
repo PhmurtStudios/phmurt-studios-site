@@ -1675,6 +1675,9 @@ const T = {
   tagCriticalText:"var(--tag-critical-text)",
   tagCriticalBorder:"var(--tag-critical-border)",
 };
+// Expose theme globally so lazy-loaded tab modules can access it
+window.__PHMURT_THEME = T;
+window.T = T;
 
 /* Read a computed CSS variable value — needed for <canvas> fillStyle/strokeStyle
    which cannot interpret var() references. */
@@ -5515,6 +5518,7 @@ window.__CM = {
 /* Tab module loading state */
 const _tabModuleState = { dashboard: true, timeline: false, world: false, play: false };
 const _tabModulePromises = {};
+const _MODULE_VERSION = 152; // Bump to force re-fetch past service worker cache
 
 /**
  * Lazy-load a tab module: fetch JSX, transpile with Babel, execute.
@@ -5524,7 +5528,7 @@ function loadTabModule(name, url) {
   if (_tabModuleState[name]) return Promise.resolve();
   if (_tabModulePromises[name]) return _tabModulePromises[name];
 
-  _tabModulePromises[name] = fetch(url, { cache: "no-cache" })
+  _tabModulePromises[name] = fetch(url + "?v=" + _MODULE_VERSION, { cache: "no-cache" })
     .then(function(r) { return r.text(); })
     .then(function(jsx) {
       var js = Babel.transform(jsx, { presets: ["react"] }).code;
@@ -5552,7 +5556,7 @@ function loadDataModule(name, url) {
   if (_tabModuleState[name]) return Promise.resolve();
   if (_tabModulePromises[name]) return _tabModulePromises[name];
 
-  _tabModulePromises[name] = fetch(url, { cache: "no-cache" })
+  _tabModulePromises[name] = fetch(url + "?v=" + _MODULE_VERSION, { cache: "no-cache" })
     .then(function(r) { return r.text(); })
     .then(function(code) {
       var script = document.createElement("script");
