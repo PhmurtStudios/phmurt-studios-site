@@ -101,6 +101,14 @@ textarea{
   --sidebar-shadow:       -4px 0 24px rgba(0,0,0,0.4);
   --hp-bar-track:         rgba(255,255,255,0.05);
   --bg-hover-subtle:      rgba(255,255,255,0.04);
+  /* ── Semantic accent colors ── */
+  --gold:          #c9a85c;
+  --gold-dim:      rgba(201,168,92,0.15);
+  --green:         #5ee09a;
+  --green-dim:     rgba(94,224,154,0.14);
+  --orange:        #e8940a;
+  --orange-dim:    rgba(232,148,10,0.12);
+  --quest-gold:    #e8ba40;
 }
 
 /* ═══════════════════════════════
@@ -185,6 +193,14 @@ html.light-mode{
   --sidebar-shadow:       -4px 0 24px rgba(60,40,20,0.15);
   --hp-bar-track:         rgba(12,4,0,0.08);
   --bg-hover-subtle:      rgba(12,4,0,0.06);
+  /* ── Semantic accent colors (light mode) ── */
+  --gold:          #9a7a30;
+  --gold-dim:      rgba(154,122,48,0.12);
+  --green:         #2d9d57;
+  --green-dim:     rgba(45,157,87,0.12);
+  --orange:        #c87a00;
+  --orange-dim:    rgba(200,122,0,0.10);
+  --quest-gold:    #b89420;
 }
 
 /* ═══════════════════════════════

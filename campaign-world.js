@@ -2162,6 +2162,12 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
   const [cityRegionFocus,setCityRegionFocus] = useState(null); // region name to highlight in Cities tab
   const [expandedRegions, setExpandedRegions] = useState({}); // track which regions are expanded in consolidated view
   const [regionDetailCity, setRegionDetailCity] = useState(null); // city selected within a region for detail view
+  // ── Hex exploration state ──
+  const [hexOrigin, setHexOrigin] = useState("");
+  const [hexDest, setHexDest] = useState("");
+  const [hexPartyPos, setHexPartyPos] = useState(0); // current hex index on the path (0 = origin)
+  const [hexLog, setHexLog] = useState([]); // exploration log entries
+  const [hexSelectedHex, setHexSelectedHex] = useState(null); // index of clicked hex for detail
   const [townView,setTownView] = useState(null); // city name string when viewing a town map
   const [townSelBldg,setTownSelBldg] = useState(null); // selected building index in town view
   const [townHovBldg,setTownHovBldg] = useState(null); // hovered building index in town view
@@ -3125,7 +3131,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
           const activeTabs = [...coreTabs, ...moduleTabs.filter(mt => mods[mt.module] !== false).map(mt => mt.id)];
           const labels = {map:"Atlas",calendar:"Calendar",exploration:"Explore"};
           return activeTabs.map(t => (
-            <button key={t} onClick={()=>{setTab(t);if(t!=="map"){setSel(null);setAtlasProvinceId(null);setEditing(false);setCityPopup(null);setRegionPopup(null);}}} style={{
+            <button key={t} onClick={()=>{setTab(t);if(t!=="map"){setSel(null);setSelType(null);setAtlasProvinceId(null);setEditing(false);setCityPopup(null);setRegionPopup(null);}}} style={{
               padding:"14px clamp(8px, 1.6vw, 18px)", background:"transparent", border:"none", cursor:"pointer",
               fontFamily:T.ui, fontSize:8, letterSpacing:"1.5px", textTransform:"uppercase", fontWeight:500,
               color:tab===t?T.crimson:T.textMuted, transition:"all 0.3s",
@@ -3147,7 +3153,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
             {false && <button onClick={()=>focusWorldNode(selectedWorldNode?.mx != null ? selectedWorldNode : (worldNodes.find((n)=>n.id===worldMapState.lastFocusedRegionId) || worldNodes[0]), "region")} style={{ padding:"4px 10px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Region</button>}
             {false && <button onClick={()=>focusWorldNode(selectedWorldNode?.mx != null ? selectedWorldNode : (worldNodes.find((n)=>n.id===worldMapState.lastFocusedRegionId) || worldNodes[0]), "local")} style={{ padding:"4px 10px", background:"transparent", border:`1px solid ${T.border}`, color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Local</button>}
             {false && selectedWorldNode?.mx != null && selectedWorldNode?.type === "dungeon" && <button onClick={()=>focusWorldNode(selectedWorldNode, "site")} style={{ padding:"4px 10px", background:"rgba(212,67,58,0.08)", border:`1px solid ${T.crimsonBorder}`, color:T.crimson, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Site</button>}
-            {activeRoute && <button onClick={clearWorldRoute} style={{ padding:"4px 10px", background:"rgba(94,224,154,0.08)", border:"1px solid rgba(94,224,154,0.22)", color:"#5ee09a", fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Clear Route</button>}
+            {activeRoute && <button onClick={clearWorldRoute} style={{ padding:"4px 10px", background:"rgba(94,224,154,0.08)", border:"1px solid rgba(94,224,154,0.22)", color:T.green, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", borderRadius:"2px" }}>Clear Route</button>}
             {false && <div style={{ display:"flex", gap:4, padding:"3px", border:`1px solid ${T.border}`, borderRadius:"999px", background:"rgba(0,0,0,0.14)", maxWidth:isMapCompact ? "100%" : 420, overflowX:"auto" }}>
               {WORLD_OVERLAYS.map((overlay) => (
                 <button key={overlay.id} onClick={()=>setWorldOverlay(overlay.id)} style={{
@@ -3168,7 +3174,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                 }} />
             </div>
           </>}
-          <CrimsonBtn onClick={()=>setAddingEntity(true)} small><Plus size={11}/> Add</CrimsonBtn>
+          {tab !== "calendar" && tab !== "exploration" && <CrimsonBtn onClick={()=>setAddingEntity(true)} small><Plus size={11}/> Add</CrimsonBtn>}
         </div>
       </div>
 
@@ -3739,7 +3745,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                           setData(d => { const { atlasMapSeed, generatedAtlas, ...rest } = d; return { ...rest, activity: [{ time: "Just now", text: "Reverted to default map" }, ...(d.activity || [])].slice(0, 40) }; });
                         }
                       }}
-                      style={{ padding:"4px 8px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(232,186,64,0.25)", borderRadius:"4px", fontFamily:"'Cinzel', serif", fontSize:9, color:"#c9a85c", outline:"none", cursor:"pointer", letterSpacing:"1px" }}
+                      style={{ padding:"4px 8px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(232,186,64,0.25)", borderRadius:"4px", fontFamily:"'Cinzel', serif", fontSize:9, color:T.gold, outline:"none", cursor:"pointer", letterSpacing:"1px" }}
                     >
                       {Array.from({length:100}, (_,i) => i+1).map(s => {
                         const m = (typeof ATLAS_METADATA !== 'undefined') && ATLAS_METADATA[s];
@@ -3763,7 +3769,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                         name: (meta && meta.mapName) || d.name,
                         activity: [{ time: "Just now", text: `Regenerated world map (seed ${next})` }, ...(d.activity || [])].slice(0, 40),
                       }));
-                    }} style={{ padding:"5px 12px", background:"rgba(30,26,22,0.85)", backdropFilter:"blur(8px)", border:"1px solid rgba(232,186,64,0.35)", borderRadius:"4px", fontFamily:"'Cinzel', serif", fontSize:9, color:"#e8ba40", letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", boxShadow:"0 2px 10px rgba(0,0,0,0.3)", transition:"all 0.2s", whiteSpace:"nowrap" }}
+                    }} style={{ padding:"5px 12px", background:"rgba(30,26,22,0.85)", backdropFilter:"blur(8px)", border:"1px solid rgba(232,186,64,0.35)", borderRadius:"4px", fontFamily:"'Cinzel', serif", fontSize:9, color:T.questGold, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", boxShadow:"0 2px 10px rgba(0,0,0,0.3)", transition:"all 0.2s", whiteSpace:"nowrap" }}
                       onMouseEnter={e => { e.target.style.borderColor = "rgba(232,186,64,0.7)"; e.target.style.color = "#f5d66a"; }}
                       onMouseLeave={e => { e.target.style.borderColor = "rgba(232,186,64,0.35)"; e.target.style.color = "#e8ba40"; }}
                       title="Generate a new world with the next seed"
@@ -3801,18 +3807,18 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                 {lwActive && (
                   <div style={{ display:"flex", gap:4 }}>
                     <select value={lwSpeed} onChange={e => { setLwSpeed(Number(e.target.value)); if (lwActive) { setLwActive(false); setTimeout(() => setLwActive(true), 100); } }}
-                      style={{ padding:"3px 6px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:"'Cinzel', serif", fontSize:8, color:"#c9a85c", outline:"none", cursor:"pointer" }}>
+                      style={{ padding:"3px 6px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:"'Cinzel', serif", fontSize:8, color:T.gold, outline:"none", cursor:"pointer" }}>
                       <option value={30}>Fast (30s)</option>
                       <option value={60}>Normal (60s)</option>
                       <option value={90}>Slow (90s)</option>
                       <option value={180}>Very Slow (3m)</option>
                     </select>
                     <button onClick={() => setLwShowLog(v => !v)}
-                      style={{ padding:"3px 10px", background: lwShowLog ? "rgba(201,168,92,0.2)" : "rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:"'Cinzel', serif", fontSize:8, color:"#c9a85c", cursor:"pointer", letterSpacing:"1px" }}>
+                      style={{ padding:"3px 10px", background: lwShowLog ? "rgba(201,168,92,0.2)" : "rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:"'Cinzel', serif", fontSize:8, color:T.gold, cursor:"pointer", letterSpacing:"1px" }}>
                       {lwShowLog ? "Hide Log" : "Event Log"} ({lwLog.length})
                     </button>
                     <button onClick={() => setLwTimeSkipOpen(v => !v)}
-                      style={{ padding:"3px 10px", background: lwTimeSkipOpen ? "rgba(201,168,92,0.2)" : "rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:"'Cinzel', serif", fontSize:8, color:"#c9a85c", cursor:"pointer", letterSpacing:"1px" }}>
+                      style={{ padding:"3px 10px", background: lwTimeSkipOpen ? "rgba(201,168,92,0.2)" : "rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:"'Cinzel', serif", fontSize:8, color:T.gold, cursor:"pointer", letterSpacing:"1px" }}>
                       ⏭ Skip Forward
                     </button>
                     <button onClick={() => { setLwPartyActionsOpen(v => !v); setLwTimeSkipOpen(false); }}
@@ -3830,7 +3836,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                 position:"absolute", top:140, left:12, background:"rgba(20,18,14,0.98)", border:"1px solid rgba(201,168,92,0.25)",
                 borderRadius:"6px", zIndex:30, minWidth:140, boxShadow:"0 8px 24px rgba(0,0,0,0.6)"
               }}>
-                <div style={{ padding:"8px 0", fontSize:9, fontFamily:"'Cinzel', serif", color:"#c9a85c", letterSpacing:"1px" }}>
+                <div style={{ padding:"8px 0", fontSize:9, fontFamily:"'Cinzel', serif", color:T.gold, letterSpacing:"1px" }}>
                   {[
                     { label: "1 Week", events: 3 },
                     { label: "1 Month", events: 12 },
@@ -3844,7 +3850,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                       }}
                       style={{
                         display:"block", width:"100%", padding:"8px 12px", textAlign:"left",
-                        background:"transparent", border:"none", color:"#c9a85c", cursor:"pointer",
+                        background:"transparent", border:"none", color:T.gold, cursor:"pointer",
                         fontFamily:"'Cinzel', serif", fontSize:9, letterSpacing:"0.5px",
                         borderBottom:"1px solid rgba(201,168,92,0.1)", transition:"all 0.2s"
                       }}
@@ -3858,7 +3864,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                     <input type="number" min="1" max="365" defaultValue="7" id="customSkipEvents"
                       style={{
                         flex:1, padding:"3px 6px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.2)",
-                        borderRadius:"3px", color:"#c9a85c", fontFamily:"'Cinzel', serif", fontSize:8, outline:"none"
+                        borderRadius:"3px", color:T.gold, fontFamily:"'Cinzel', serif", fontSize:8, outline:"none"
                       }} />
                     <button onClick={() => {
                       const num = parseInt(document.getElementById("customSkipEvents")?.value || "7");
@@ -3869,7 +3875,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                     }}
                       style={{
                         padding:"3px 8px", background:"rgba(201,168,92,0.2)", border:"1px solid rgba(201,168,92,0.4)",
-                        borderRadius:"3px", color:"#c9a85c", cursor:"pointer", fontFamily:"'Cinzel', serif", fontSize:7,
+                        borderRadius:"3px", color:T.gold, cursor:"pointer", fontFamily:"'Cinzel', serif", fontSize:7,
                         letterSpacing:"0.5px", textTransform:"uppercase"
                       }}
                     >
@@ -3957,7 +3963,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                                 >
                                   <span style={{ width:10, height:10, borderRadius:"50%", background: f.color || "#666", flexShrink:0, border:"1px solid rgba(255,255,255,0.2)" }} />
-                                  <span style={{ fontSize:10, color:"#c9a85c", fontFamily:"'Cinzel', serif" }}>{f.name}</span>
+                                  <span style={{ fontSize:10, color:T.gold, fontFamily:"'Cinzel', serif" }}>{f.name}</span>
                                   <span style={{ fontSize:8, color:"#5a5040", marginLeft:"auto" }}>Power: {f.power}</span>
                                 </button>
                               ))}
@@ -4024,7 +4030,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                       transition:"width 0.1s linear"
                     }} />
                   </div>
-                  <div style={{ fontSize:10, color:"#c9a85c", marginTop:12, letterSpacing:"0.5px" }}>
+                  <div style={{ fontSize:10, color:T.gold, marginTop:12, letterSpacing:"0.5px" }}>
                     {lwTimeSkipProgress.current} / {lwTimeSkipProgress.total} events
                   </div>
                 </div>
@@ -4074,7 +4080,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                     }}
                       style={{
                         padding:"8px 16px", background:"rgba(201,168,92,0.2)", border:"1px solid rgba(201,168,92,0.4)",
-                        borderRadius:"4px", color:"#c9a85c", cursor:"pointer", fontFamily:"'Cinzel', serif", fontSize:9,
+                        borderRadius:"4px", color:T.gold, cursor:"pointer", fontFamily:"'Cinzel', serif", fontSize:9,
                         letterSpacing:"1px", textTransform:"uppercase", transition:"all 0.2s"
                       }}
                       onMouseEnter={e => e.target.style.background = "rgba(201,168,92,0.35)"}
@@ -4085,7 +4091,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                     <button onClick={() => setLwTimeSkipSummary(null)}
                       style={{
                         padding:"8px 16px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.25)",
-                        borderRadius:"4px", color:"#c9a85c", cursor:"pointer", fontFamily:"'Cinzel', serif", fontSize:9,
+                        borderRadius:"4px", color:T.gold, cursor:"pointer", fontFamily:"'Cinzel', serif", fontSize:9,
                         letterSpacing:"1px", textTransform:"uppercase", transition:"all 0.2s"
                       }}
                       onMouseEnter={e => e.target.style.background = "rgba(201,168,92,0.1)"}
@@ -4278,7 +4284,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                       {townImagesReady && window.TOWN_IMAGES && window.TOWN_IMAGES[c.name] && (
                         <button onClick={() => { setTownView(c.name); setTownSelBldg(null); setTownHovBldg(null); setTownZoom(0); setTownPan({x:0,y:0}); }} style={{
                           display:"flex", alignItems:"center", gap:6, padding:"8px 14px",
-                          background:"linear-gradient(135deg, rgba(201,168,92,0.15), transparent)", border:"1px solid rgba(201,168,92,0.4)", borderRadius:"3px", color:"#c9a85c",
+                          background:"linear-gradient(135deg, rgba(201,168,92,0.15), transparent)", border:"1px solid rgba(201,168,92,0.4)", borderRadius:"3px", color:T.gold,
                           fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer",
                         }}>Explore Town</button>
                       )}
@@ -4296,7 +4302,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                       <div style={{ fontSize:12, color:T.textDim, lineHeight:1.6 }}>{c.description}</div>
                       {c.features && c.features.length > 0 && (
                         <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginTop:12 }}>
-                          {c.features.map((f, fi) => <span key={fi} style={{ fontSize:10, color:"#c9a85c", border:"1px solid rgba(201,168,92,0.2)", padding:"3px 9px", borderRadius:"2px" }}>{f}</span>)}
+                          {c.features.map((f, fi) => <span key={fi} style={{ fontSize:10, color:T.gold, border:"1px solid rgba(201,168,92,0.2)", padding:"3px 9px", borderRadius:"2px" }}>{f}</span>)}
                         </div>
                       )}
                     </div>
@@ -4311,12 +4317,12 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                         {c.tavern.services.map((s, si) => (
                           <div key={si} style={{ display:"flex", justifyContent:"space-between", padding:"6px 10px", background:"rgba(0,0,0,0.12)", borderRadius:"3px", fontSize:11 }}>
                             <span style={{ color:T.textMuted }}>{s.name}</span>
-                            <span style={{ color:"#c9a85c", fontFamily:T.ui }}>{s.price}</span>
+                            <span style={{ color:T.gold, fontFamily:T.ui }}>{s.price}</span>
                           </div>
                         ))}
                       </div>
                       {c.tavern.rumor && (
-                        <div style={{ fontSize:11, color:"#e8ba40", fontStyle:"italic", padding:"8px 12px", background:"rgba(232,186,64,0.06)", border:"1px solid rgba(232,186,64,0.15)", borderRadius:"3px" }}>
+                        <div style={{ fontSize:11, color:T.questGold, fontStyle:"italic", padding:"8px 12px", background:"rgba(232,186,64,0.06)", border:"1px solid rgba(232,186,64,0.15)", borderRadius:"3px" }}>
                           Rumor: "{c.tavern.rumor}"
                         </div>
                       )}
@@ -4350,7 +4356,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                                     <td style={{ padding:"8px 12px", textAlign:"center" }}>
                                       <span style={{ fontSize:10, color:item.rarity==="rare"?"#8b50f0":item.rarity==="uncommon"?"#2e8b57":T.textFaint, fontStyle:"italic" }}>{item.rarity}</span>
                                     </td>
-                                    <td style={{ padding:"8px 12px", textAlign:"right", color:"#c9a85c", fontFamily:T.ui }}>{item.price}</td>
+                                    <td style={{ padding:"8px 12px", textAlign:"right", color:T.gold, fontFamily:T.ui }}>{item.price}</td>
                                     <td style={{ padding:"8px 12px", textAlign:"center", color:item.inStock?T.textMuted:T.crimson, fontSize:11 }}>{item.inStock?("×"+item.qty):"Out"}</td>
                                   </tr>
                                 ))}
@@ -4447,7 +4453,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                                 {regionCities.length > 0 && <span>{regionCities.length} settlement{regionCities.length !== 1 ? "s" : ""}</span>}
                               </div>
                               {r.governor && <div style={{ fontSize:11, color:T.textDim, marginTop:6 }}>
-                                <span style={{ color:"#c9a85c", fontWeight:400 }}>{r.governorTitle || "Governor"}:</span> {r.governor}
+                                <span style={{ color:T.gold, fontWeight:400 }}>{r.governorTitle || "Governor"}:</span> {r.governor}
                               </div>}
                             </div>
                             <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:8, flexShrink:0 }}>
@@ -4538,7 +4544,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                                   <div style={{ fontSize:9, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:8 }}>📦 Natural Resources</div>
                                   <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                                     {r.resources.map((res, ri) => (
-                                      <span key={ri} style={{ fontSize:10, color:"#c9a85c", background:"rgba(201,168,92,0.06)", padding:"4px 10px", borderRadius:"3px", border:"1px solid rgba(201,168,92,0.15)" }}>{res}</span>
+                                      <span key={ri} style={{ fontSize:10, color:T.gold, background:"rgba(201,168,92,0.06)", padding:"4px 10px", borderRadius:"3px", border:"1px solid rgba(201,168,92,0.15)" }}>{res}</span>
                                     ))}
                                   </div>
                                 </div>
@@ -4546,7 +4552,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                               {/* Lore */}
                               {r.lore && (
                                 <div style={{ marginTop:14, padding:"10px 14px", background:"rgba(232,186,64,0.04)", border:"1px solid rgba(232,186,64,0.12)", borderRadius:"3px", borderLeft:"3px solid rgba(232,186,64,0.3)" }}>
-                                  <div style={{ fontSize:9, color:"#e8ba40", fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase", marginBottom:4 }}>📜 Local Lore</div>
+                                  <div style={{ fontSize:9, color:T.questGold, fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase", marginBottom:4 }}>📜 Local Lore</div>
                                   <div style={{ fontSize:11, color:T.textDim, fontStyle:"italic", lineHeight:1.5 }}>{r.lore}</div>
                                 </div>
                               )}
@@ -4598,14 +4604,14 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                                   {(r.resources || ["Grain", "Timber", "Iron"]).map((res, ri) => (
                                     <div key={ri} style={{ padding:"8px 12px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"3px", textAlign:"center" }}>
                                       <div style={{ fontSize:10, color:T.textMuted, marginBottom:4 }}>{res}</div>
-                                      <div style={{ fontSize:12, color:"#c9a85c", fontFamily:T.ui }}>{Math.floor(Math.random()*8+2)} gp</div>
+                                      <div style={{ fontSize:12, color:T.gold, fontFamily:T.ui }}>{(() => { let h = 0; for (let c = 0; c < r.name.length; c++) h = ((h << 5) - h + r.name.charCodeAt(c)) | 0; return Math.abs((h * (ri + 1) * 7) % 8) + 2; })()} gp</div>
                                     </div>
                                   ))}
                                 </div>
                                 {factionObj && (
                                   <div style={{ marginTop:10, display:"flex", gap:12, fontSize:10, color:T.textMuted }}>
-                                    <span>Treasury: <span style={{ color:"#c9a85c" }}>{(factionObj.treasury || 0).toLocaleString()} gp</span></span>
-                                    <span>Trade Status: <span style={{ color:"#5ee09a" }}>Active</span></span>
+                                    <span>Treasury: <span style={{ color:T.gold }}>{(factionObj.treasury || 0).toLocaleString()} gp</span></span>
+                                    <span>Trade Status: <span style={{ color:T.green }}>Active</span></span>
                                   </div>
                                 )}
                               </div>
@@ -4613,6 +4619,14 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
 
                             {/* Religion Info — Dominant Gods per Region */}
                             {mods.religion !== false && (() => {
+                              // Look up deity info from the DEITIES arrays
+                              const _p = window.PANTHEON || {};
+                              const allDeities = [
+                                ...(_p.greater || []),
+                                ...(_p.intermediate || []),
+                                ...(_p.lesser || [])
+                              ];
+                              const getDeity = (id) => allDeities.find(d => d.id === id);
                               // Get all temples in this region's cities
                               const regionTemples = (data._temples || []).filter(t => regionCities.some(c => c.name === t.city));
                               // Aggregate devotion by deity
@@ -4646,14 +4660,6 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                               // Sort by devotion, get top deities
                               const sortedDeities = Object.entries(deityDevotionMap)
                                 .sort((a, b) => b[1].devotion - a[1].devotion);
-                              // Look up deity info from the DEITIES arrays
-                              const _p = window.PANTHEON || {};
-                              const allDeities = [
-                                ...(_p.greater || []),
-                                ...(_p.intermediate || []),
-                                ...(_p.lesser || [])
-                              ];
-                              const getDeity = (id) => allDeities.find(d => d.id === id);
                               const alignColors = { "LG":"#4a90d9", "NG":"#5ee09a", "CG":"#7bc67b", "LN":"#c9a85c", "N":"#9a9080", "CN":"#e8ba40", "LE":"#d44a3a", "NE":"#a83232", "CE":"#8b2020" };
 
                               return (
@@ -4685,7 +4691,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                                             </div>
                                             <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:8 }}>
                                               {deity.domains.map((d, di) => (
-                                                <span key={di} style={{ fontSize:9, color:"#e8940a", background:"rgba(232,148,10,0.08)", padding:"2px 8px", borderRadius:"2px", border:"1px solid rgba(232,148,10,0.2)" }}>{d}</span>
+                                                <span key={di} style={{ fontSize:9, color:T.orange, background:"rgba(232,148,10,0.08)", padding:"2px 8px", borderRadius:"2px", border:"1px solid rgba(232,148,10,0.2)" }}>{d}</span>
                                               ))}
                                               <span style={{ fontSize:9, color:T.textFaint, padding:"2px 8px" }}>Dominant Faith</span>
                                             </div>
@@ -5448,7 +5454,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                   </Select>
                   {data.partyKingdom && (
                     <div style={{ fontSize:12, color:T.textMuted, fontStyle:"italic" }}>
-                      The party is affiliated with <span style={{ color:"#c9a85c" }}>{data.partyKingdom}</span>
+                      The party is affiliated with <span style={{ color:T.gold }}>{data.partyKingdom}</span>
                       {(() => {
                         const f = (data.factions || []).find(f => f.name === data.partyKingdom);
                         return f ? <> — a {f.govType || "faction"} currently {f.trend || "stable"}</> : null;
@@ -5482,7 +5488,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                       freeman:      { color:T.textDim, label:"Freemen", desc:"Respected members of society. Some merchants offer discounts, and minor officials take their concerns seriously." },
                       guild_member: { color:"#4a90d9", label:"Guild Members", desc:"Recognized by a guild. The party has access to guild resources, safe houses, and a network of contacts." },
                       knight:       { color:"#2e8b57", label:"Knights", desc:"Titled warriors with sworn oaths. The party commands respect from soldiers, has access to military resources, and may hold small lands." },
-                      lesser_noble: { color:"#c9a85c", label:"Lesser Nobles", desc:"The party holds minor titles and lands. They attend court, can raise levies, and have political influence in their region." },
+                      lesser_noble: { color:T.gold, label:"Lesser Nobles", desc:"The party holds minor titles and lands. They attend court, can raise levies, and have political influence in their region." },
                       noble:        { color:"#d4a017", label:"Nobles", desc:"High-ranking aristocrats. The party wields significant political power, commands armies, and influences the fate of regions." },
                       royal:        { color:"#8b50f0", label:"Royalty", desc:"Members of the ruling family. The party has immense authority, vast wealth, and the weight of a dynasty behind their every action." },
                       ruler:        { color:T.crimson, label:"Rulers", desc:"The party sits atop the hierarchy. Their word is law, their armies vast, and their decisions shape the world itself." },
@@ -5540,7 +5546,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                         }}>
                           <span style={{ fontSize:13, color:T.text, fontWeight:300, flex:1 }}>{f.name}</span>
                           <div style={{ display:"flex", gap:8, fontSize:10 }}>
-                            {f.allies?.length > 0 && <span style={{ color:"#5ee09a" }}>{f.allies.length} allies</span>}
+                            {f.allies?.length > 0 && <span style={{ color:T.green }}>{f.allies.length} allies</span>}
                             {f.rivals?.length > 0 && <span style={{ color:T.crimson }}>{f.rivals.length} rivals</span>}
                             {!f.allies?.length && !f.rivals?.length && <span style={{ color:T.textFaint }}>no relationships</span>}
                           </div>
@@ -5563,7 +5569,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
 
         {/* ══════════ DETAIL PANEL (right side) ══════════ */}
         <div style={{
-          width: sel ? ((tab==="map" && isMapCompact) ? "100%" : 360) : 0,
+          width: (sel && tab !== "calendar" && tab !== "exploration") ? ((tab==="map" && isMapCompact) ? "100%" : 360) : 0,
           overflowY:"auto",
           overflowX:"hidden",
           transition:"width 0.25s ease, max-height 0.25s ease, transform 0.25s ease",
@@ -5581,7 +5587,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
           borderRadius:(sel && tab==="map" && isMapCompact) ? "18px 18px 0 0" : 0,
           backdropFilter:(sel && tab==="map" && isMapCompact) ? "blur(14px)" : "none",
         }}>
-          {sel && (
+          {sel && tab !== "calendar" && tab !== "exploration" && (
             <div style={{ padding: tab==="map" && isMapCompact ? 18 : 24, width: (tab==="map" && isMapCompact) ? "100%" : 360, boxSizing:"border-box" }}>
               <Section>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
@@ -5629,7 +5635,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                       <div style={{ borderTop:`1px solid ${T.border}`, paddingTop:8, marginTop:4 }}>
                         <span style={{ fontFamily:T.ui, fontSize:8, color:T.textFaint, letterSpacing:"1.5px" }}>RELATIONSHIPS</span>
                         <div style={{ marginTop:6 }}>
-                          <span style={{ fontSize:10, color:"#5ee09a", marginBottom:2, display:"block" }}>Allies</span>
+                          <span style={{ fontSize:10, color:T.green, marginBottom:2, display:"block" }}>Allies</span>
                           {(data.factions || []).filter(f => f.id !== sel.id).map(f => {
                             const isAlly = (sel.allies || []).includes(f.name);
                             return (
@@ -5706,11 +5712,11 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                       <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Threat: <Tag variant={sel.threat==="extreme"?"critical":sel.threat==="high"?"danger":sel.threat==="medium"?"warning":"success"}>{sel.threat}</Tag></div>
                       <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Controlled by: <span style={{color:T.textDim}}>{sel.ctrl || "Unaligned"}</span></div>
                       {sel.population && <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Population: <span style={{color:T.textDim}}>~{sel.population}</span></div>}
-                      {sel.governor && <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>{sel.governorTitle || "Governor"}: <span style={{color:"#c9a85c"}}>{sel.governor}</span></div>}
+                      {sel.governor && <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>{sel.governorTitle || "Governor"}: <span style={{color:T.gold}}>{sel.governor}</span></div>}
                       {sel.cities && sel.cities.length > 0 && <div style={{ fontSize:12, color:T.textMuted }}>Settlements: <span style={{color:T.textDim}}>{[...new Set(sel.cities)].join(", ")}</span></div>}
                     </>}
                     {selType==="faction" && <>
-                      {sel.govType && <div style={{ fontSize:10, color:"#c9a85c", letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:8 }}>{sel.govType}</div>}
+                      {sel.govType && <div style={{ fontSize:10, color:T.gold, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:8 }}>{sel.govType}</div>}
                       <p style={{ fontSize:13, color:T.textDim, margin:"0 0 10px", fontWeight:300, fontStyle:"italic", lineHeight:"1.5" }}>{sel.desc}</p>
                       <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Power: <span style={{color:T.textDim}}>{sel.power}/100</span></div>
                       <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Trend: <span style={{color:T.textDim}}>{sel.trend}</span></div>
@@ -5726,12 +5732,12 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                       )}
                       {sel.resources && sel.resources.length > 0 && (
                         <div style={{ marginTop:8, display:"flex", gap:4, flexWrap:"wrap" }}>
-                          {sel.resources.map((r, ri) => <span key={ri} style={{ padding:"2px 6px", background:"rgba(201,168,92,0.08)", border:"1px solid rgba(201,168,92,0.18)", borderRadius:"3px", fontSize:10, color:"#c9a85c" }}>{r}</span>)}
+                          {sel.resources.map((r, ri) => <span key={ri} style={{ padding:"2px 6px", background:"rgba(201,168,92,0.08)", border:"1px solid rgba(201,168,92,0.18)", borderRadius:"3px", fontSize:10, color:T.gold }}>{r}</span>)}
                         </div>
                       )}
                       {(sel.allies?.length > 0 || sel.rivals?.length > 0) && (
                         <div style={{ marginTop:8, borderTop:`1px solid ${T.border}`, paddingTop:8 }}>
-                          {sel.allies?.length > 0 && <div style={{ fontSize:11, color:"#5ee09a", marginBottom:3 }}>Allies: {sel.allies.join(", ")}</div>}
+                          {sel.allies?.length > 0 && <div style={{ fontSize:11, color:T.green, marginBottom:3 }}>Allies: {sel.allies.join(", ")}</div>}
                           {sel.rivals?.length > 0 && <div style={{ fontSize:11, color:T.crimson }}>Rivals: {sel.rivals.join(", ")}</div>}
                         </div>
                       )}
@@ -5740,7 +5746,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
                         <span style={{ fontSize:12, color:T.textMuted }}>Role: <span style={{color:T.textDim}}>{sel.role}</span></span>
                         {sel.level && <span style={{ fontSize:10, color:T.textFaint }}>Lv{sel.level}</span>}
-                        {sel.isLeader && <span style={{ fontSize:9, color:"#c9a85c", border:"1px solid rgba(201,168,92,0.3)", padding:"1px 5px", borderRadius:"2px" }}>LEADER</span>}
+                        {sel.isLeader && <span style={{ fontSize:9, color:T.gold, border:"1px solid rgba(201,168,92,0.3)", padding:"1px 5px", borderRadius:"2px" }}>LEADER</span>}
                       </div>
                       <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Location: <span style={{color:T.textDim}}>{sel.loc}</span></div>
                       {sel.faction && <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Faction: <span style={{color:T.textDim}}>{sel.faction}</span></div>}
@@ -5789,7 +5795,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
 
                     {activeRoute && (
                       <div style={{ padding:14, borderRadius:14, border:"1px solid rgba(94,224,154,0.2)", background:"rgba(94,224,154,0.06)" }}>
-                        <div style={{ fontFamily:T.ui, fontSize:10, letterSpacing:"1.3px", textTransform:"uppercase", color:"#5ee09a", marginBottom:8 }}>Route Plan</div>
+                        <div style={{ fontFamily:T.ui, fontSize:10, letterSpacing:"1.3px", textTransform:"uppercase", color:T.green, marginBottom:8 }}>Route Plan</div>
                         {activeRoute.blocked ? (
                           <div style={{ fontSize:12, color:T.textMuted, fontStyle:"italic" }}>No connected road route between those locations yet.</div>
                         ) : (
@@ -5958,7 +5964,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                                 <span style={{ fontSize:9, color:tCol, border:`1px solid ${tCol}33`, padding:"2px 8px", borderRadius:"2px", letterSpacing:"0.5px" }}>{q.difficulty}</span>
                               </div>
                               <div style={{ fontSize:11, color:T.textDim, lineHeight:1.7, marginBottom:10 }}>{q.desc}</div>
-                              <div style={{ fontSize:10, color:"#c9a85c", fontStyle:"italic" }}>Reward: {q.reward}</div>
+                              <div style={{ fontSize:10, color:T.gold, fontStyle:"italic" }}>Reward: {q.reward}</div>
                             </div>
                           ))}
                         </div>
@@ -5967,7 +5973,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                     {/* Reward */}
                     {p.reward && (
                       <div style={{ padding:"14px 20px", background:"rgba(201,168,92,0.06)", border:"1px solid rgba(201,168,92,0.18)", borderRadius:"4px", marginBottom:16 }}>
-                        <div style={{ fontSize:10, color:"#c9a85c", letterSpacing:"1px", marginBottom:4 }}>POTENTIAL REWARD</div>
+                        <div style={{ fontSize:10, color:T.gold, letterSpacing:"1px", marginBottom:4 }}>POTENTIAL REWARD</div>
                         <div style={{ fontSize:13, color:T.text, fontFamily:"'Spectral', serif" }}>{p.reward}</div>
                       </div>
                     )}
@@ -6032,7 +6038,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                   <div key={r.id} style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:16 }}>
                     <div style={{ fontSize:12, color:T.text, fontWeight:400, marginBottom:10 }}>{r.name}</div>
                     <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                      <div style={{ fontSize:10, color:T.textMuted }}>Grain: <span style={{ color:"#5ee09a" }}>2gp</span></div>
+                      <div style={{ fontSize:10, color:T.textMuted }}>Grain: <span style={{ color:T.green }}>2gp</span></div>
                       <div style={{ fontSize:10, color:T.textMuted }}>Steel: <span style={{ color:T.crimson }}>8gp</span></div>
                       <div style={{ fontSize:10, color:T.textMuted }}>Luxury: <span style={{ color:T.gold }}>15gp</span></div>
                     </div>
@@ -6056,7 +6062,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                         {data.cities?.[0]?.name || "City A"} → {data.cities?.[1]?.name || "City B"}
                       </div>
                       <div style={{ fontSize:10, color:T.textMuted, marginBottom:4 }}>Goods: Spices, Silks</div>
-                      <div style={{ fontSize:10, color:"#5ee09a" }}>Profit: 12 gp/tick</div>
+                      <div style={{ fontSize:10, color:T.green }}>Profit: 12 gp/tick</div>
                       <div style={{ fontSize:9, color:T.textFaint }}>Controlled by: {f.name}</div>
                     </div>
                   ))
@@ -6071,7 +6077,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
               <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Recent Economy Events</div>
               <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                 <div style={{ background:"rgba(94,224,154,0.06)", border:"1px solid rgba(94,224,154,0.2)", borderRadius:"4px", padding:12 }}>
-                  <div style={{ fontSize:10, color:"#5ee09a", marginBottom:4 }}>Bumper Harvest</div>
+                  <div style={{ fontSize:10, color:T.green, marginBottom:4 }}>Bumper Harvest</div>
                   <div style={{ fontSize:9, color:T.textMuted }}>Grain prices dropped 3gp due to surplus.</div>
                 </div>
                 <div style={{ background:"rgba(212,67,58,0.06)", border:"1px solid rgba(212,67,58,0.2)", borderRadius:"4px", padding:12 }}>
@@ -6207,7 +6213,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                     <div style={{ fontSize:12, color:T.text, fontWeight:400, marginBottom:2 }}>{d.name}</div>
                     <div style={{ fontSize:9, color:T.textMuted, marginBottom:8 }}>{d.domain}</div>
                     <div style={{ fontSize:8, color:T.textFaint, marginBottom:10 }}>{d.align}</div>
-                    <div style={{ fontSize:9, color:"#5ee09a" }}>Favor: +45</div>
+                    <div style={{ fontSize:9, color:T.green }}>Favor: +45</div>
                   </div>
                 ))}
               </div>
@@ -6290,7 +6296,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
               <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Recent Divine Events</div>
               <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                 <div style={{ background:"rgba(94,224,154,0.06)", border:"1px solid rgba(94,224,154,0.2)", borderRadius:"4px", padding:12 }}>
-                  <div style={{ fontSize:10, color:"#5ee09a", marginBottom:4 }}>Blessing Bestowed</div>
+                  <div style={{ fontSize:10, color:T.green, marginBottom:4 }}>Blessing Bestowed</div>
                   <div style={{ fontSize:9, color:T.textMuted }}>Valorath blessed the warriors with courage.</div>
                 </div>
                 <div style={{ background:"rgba(212,67,58,0.06)", border:"1px solid rgba(212,67,58,0.2)", borderRadius:"4px", padding:12 }}>
@@ -6304,11 +6310,71 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
       )}
 
       {/* ══════════ EXPLORATION PANEL ══════════ */}
-      {tab==="exploration" && (
+      {tab==="exploration" && (() => {
+        const cities = data.cities || [];
+        const regions = data.regions || [];
+        // ── Seeded hex RNG from origin+dest names ──
+        const hexSeedStr = (hexOrigin || "a") + (hexDest || "b");
+        const hexRng = (() => { let h = 0; for (let i = 0; i < hexSeedStr.length; i++) h = ((h << 5) - h + hexSeedStr.charCodeAt(i)) | 0; return () => { h = (h * 16807 + 0) % 2147483647; return (h & 0x7fffffff) / 0x7fffffff; }; })();
+        const hexPick = (arr) => arr[Math.floor(hexRng() * arr.length)];
+
+        // ── Generate hex grid data when both cities are selected ──
+        const hasRoute = hexOrigin && hexDest && hexOrigin !== hexDest;
+        const hexTerrains = ["plains","forest","hills","mountains","swamp","desert","coast","tundra"];
+        const hexIcons = { plains:"🌾", forest:"🌲", hills:"⛰️", mountains:"🏔️", swamp:"🌿", desert:"🏜️", coast:"🌊", tundra:"❄️" };
+        const hexColors = { plains:"rgba(139,195,74,0.18)", forest:"rgba(46,125,50,0.22)", hills:"rgba(168,140,80,0.18)", mountains:"rgba(120,120,140,0.22)", swamp:"rgba(60,100,60,0.22)", desert:"rgba(210,180,100,0.20)", coast:"rgba(70,150,200,0.18)", tundra:"rgba(180,210,230,0.18)" };
+        const hexDangers = { plains:["bandits","wolves","wild horses"], forest:["owlbears","spiders","elf patrol"], hills:["goblins","wyvern","rockslide"], mountains:["drake","giant","avalanche"], swamp:["hydra","cultists","will-o-wisp"], desert:["sandworm","nomads","mirage"], coast:["pirates","sea serpent","storm"], tundra:["yeti","frost wolves","blizzard"] };
+        const hexFeatures = ["river crossing","ancient waystone","abandoned camp","hidden cave","merchant trail","standing stones","old watchtower","sacred grove","mineral vein","crossroads"];
+        const hexWeathers = ["Clear","Overcast","Light Rain","Heavy Rain","Foggy","Windy","Storm"];
+
+        // Generate path hexes
+        const hexCount = hasRoute ? 6 + Math.floor(hexRng() * 6) : 0;
+        const originCity = cities.find(c => c.name === hexOrigin);
+        const destCity = cities.find(c => c.name === hexDest);
+        const originRegion = regions.find(r => (r.cities || []).includes(hexOrigin));
+        const destRegion = regions.find(r => (r.cities || []).includes(hexDest));
+
+        const hexes = [];
+        for (let hi = 0; hi < hexCount; hi++) {
+          const pct = hi / Math.max(hexCount - 1, 1);
+          const baseT = originRegion?.terrain || "plains";
+          const endT = destRegion?.terrain || "forest";
+          const terrain = pct < 0.35 ? baseT : pct > 0.65 ? endT : hexPick(hexTerrains);
+          const danger = hexRng() < 0.3 ? hexPick(hexDangers[terrain] || hexDangers.plains) : null;
+          const feature = hexRng() < 0.4 ? hexPick(hexFeatures) : null;
+          const weather = hexPick(hexWeathers);
+          hexes.push({ idx: hi, terrain, danger, feature, weather, explored: hi <= hexPartyPos, icon: hexIcons[terrain] || "🌍", color: hexColors[terrain] || hexColors.plains });
+        }
+
+        // ── Flat-top hex geometry helper ──
+        const HEX_R = 38;
+        const HEX_W = HEX_R * 2;
+        const HEX_H = Math.sqrt(3) * HEX_R;
+        const hexPointsStr = (cx, cy) => {
+          const pts = [];
+          for (let a = 0; a < 6; a++) {
+            const angle = (Math.PI / 180) * (60 * a);
+            pts.push(`${cx + HEX_R * Math.cos(angle)},${cy + HEX_R * Math.sin(angle)}`);
+          }
+          return pts.join(" ");
+        };
+
+        // Arrange hexes in a flowing path (staggered row)
+        const hexPositions = hexes.map((h, i) => {
+          const col = i;
+          const row = i % 2 === 0 ? 0 : 1;
+          return { x: 60 + col * (HEX_W * 0.78), y: 55 + row * (HEX_H * 0.55), ...h };
+        });
+        const svgW = hexCount > 0 ? 60 + hexCount * (HEX_W * 0.78) + HEX_R : 400;
+        const svgH = 55 + HEX_H * 0.55 + HEX_R + 30;
+
+        const currentHex = hexes[hexPartyPos] || null;
+        const detailHex = hexSelectedHex != null ? hexes[hexSelectedHex] : null;
+
+        return (
         <div style={{ flex:1, overflowY:"auto", padding:"24px 48px" }}>
           <div style={{ marginBottom:40 }}>
-            {/* Header */}
-            <div style={{ marginBottom:32 }}>
+            <div style={{ marginBottom:24 }}>
               <h2 style={{ fontFamily:T.heading, fontSize:24, color:T.text, marginBottom:4, letterSpacing:"0.5px" }}>Wilderness Exploration</h2>
               <div style={{ fontSize:12, color:T.textMuted }}>Hexcrawl & Discovery</div>
             </div>
@@ -6319,109 +6385,165 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
               <div style={{ display:"flex", gap:12, alignItems:"flex-end", flexWrap:"wrap", marginBottom:12 }}>
                 <div style={{ flex:1, minWidth:200 }}>
                   <div style={{ fontSize:9, color:T.textMuted, marginBottom:4 }}>From</div>
-                  <select style={{ width:"100%", padding:"8px", background:T.bgInput, border:`1px solid ${T.border}`, borderRadius:"3px", color:T.text, fontFamily:T.body, fontSize:10 }}>
-                    <option>Select origin city...</option>
-                    {(data.cities || []).map(c => <option key={c.id}>{c.name}</option>)}
+                  <select value={hexOrigin} onChange={e => { setHexOrigin(e.target.value); setHexPartyPos(0); setHexSelectedHex(null); setHexLog([]); }} style={{ width:"100%", padding:"8px", background:T.bgInput, border:`1px solid ${T.border}`, borderRadius:"3px", color:T.text, fontFamily:T.body, fontSize:10 }}>
+                    <option value="">Select origin city...</option>
+                    {cities.map(c => <option key={c.id} value={c.name}>{c.name} ({c.region})</option>)}
                   </select>
                 </div>
                 <div style={{ flex:1, minWidth:200 }}>
                   <div style={{ fontSize:9, color:T.textMuted, marginBottom:4 }}>To</div>
-                  <select style={{ width:"100%", padding:"8px", background:T.bgInput, border:`1px solid ${T.border}`, borderRadius:"3px", color:T.text, fontFamily:T.body, fontSize:10 }}>
-                    <option>Select destination city...</option>
-                    {(data.cities || []).map(c => <option key={c.id}>{c.name}</option>)}
+                  <select value={hexDest} onChange={e => { setHexDest(e.target.value); setHexPartyPos(0); setHexSelectedHex(null); setHexLog([]); }} style={{ width:"100%", padding:"8px", background:T.bgInput, border:`1px solid ${T.border}`, borderRadius:"3px", color:T.text, fontFamily:T.body, fontSize:10 }}>
+                    <option value="">Select destination city...</option>
+                    {cities.filter(c => c.name !== hexOrigin).map(c => <option key={c.id} value={c.name}>{c.name} ({c.region})</option>)}
                   </select>
                 </div>
               </div>
-              <div style={{ padding:12, background:"rgba(0,0,0,0.2)", borderRadius:"3px", marginBottom:12 }}>
-                <div style={{ fontSize:10, color:T.textMuted }}>Est. travel time: <span style={{ color:T.text }}>8-12 days</span></div>
-                <div style={{ fontSize:10, color:T.textMuted, marginTop:4 }}>Terrain: Forest, grassland, hills</div>
-                <div style={{ fontSize:10, color:T.textMuted, marginTop:4 }}>Danger level: <span style={{ color:T.crimson }}>Moderate</span></div>
-              </div>
-              <button style={{ width:"100%", padding:"10px", background:"linear-gradient(135deg, rgba(212,67,58,0.2), transparent)", border:`1px solid ${T.crimsonBorder}`, color:T.crimson, borderRadius:"3px", fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", fontWeight:600, transition:"all 0.2s" }}>
-                ► Begin Journey
-              </button>
-            </div>
-
-            {/* Hex Map Placeholder */}
-            <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:40, marginBottom:24, textAlign:"center" }}>
-              <div style={{ fontSize:12, color:T.textMuted, fontStyle:"italic" }}>Hex map will render when journey begins</div>
-              <div style={{ fontSize:10, color:T.textFaint, marginTop:8 }}>Select origin and destination above to start</div>
-            </div>
-
-            {/* Current Hex Info */}
-            <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:16, marginBottom:24 }}>
-              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Current Hex</div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, fontSize:10, color:T.textMuted }}>
-                <div>Terrain: Deciduous Forest</div>
-                <div>Weather: Clear Skies</div>
-                <div>Danger: Low</div>
-                <div>Features: River, Game Trail</div>
-              </div>
-            </div>
-
-            {/* Party Status */}
-            <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:16, marginBottom:24 }}>
-              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Party Status</div>
-              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
-                <div>
-                  <div style={{ fontSize:9, color:T.textMuted, marginBottom:4 }}>Movement Points</div>
-                  <div style={{ display:"flex", gap:4 }}>
-                    {[...Array(6)].map((_, i) => <div key={i} style={{ width:12, height:12, background:i<4?"#5ee09a":"rgba(0,0,0,0.3)", borderRadius:"2px" }} />)}
+              {hasRoute && (
+                <div style={{ padding:12, background:"rgba(0,0,0,0.2)", borderRadius:"3px", marginBottom:12 }}>
+                  <div style={{ fontSize:10, color:T.textMuted }}>Route: <span style={{ color:T.text }}>{hexOrigin} → {hexDest}</span> · <span style={{ color:T.gold }}>{hexCount} hexes</span></div>
+                  <div style={{ fontSize:10, color:T.textMuted, marginTop:4 }}>Est. travel: <span style={{ color:T.text }}>{hexCount} - {hexCount + 3} days</span></div>
+                  <div style={{ marginTop:8, width:"100%", height:4, background:"rgba(0,0,0,0.3)", borderRadius:"2px", overflow:"hidden" }}>
+                    <div style={{ height:"100%", width:`${hexCount > 1 ? (hexPartyPos / (hexCount - 1)) * 100 : 0}%`, background:T.crimson, transition:"width 0.3s" }} />
                   </div>
                 </div>
+              )}
+            </div>
+
+            {/* ═══ HEX MAP ═══ */}
+            <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", marginBottom:24, overflow:"hidden" }}>
+              {hasRoute ? (
+                <div style={{ overflowX:"auto", padding:"20px 16px" }}>
+                  <svg width={svgW} height={svgH} style={{ display:"block", minWidth:svgW }}>
+                    {/* Path connections */}
+                    {hexPositions.slice(0, -1).map((h, i) => {
+                      const next = hexPositions[i + 1];
+                      return <line key={`path-${i}`} x1={h.x} y1={h.y} x2={next.x} y2={next.y} stroke={i < hexPartyPos ? T.crimson : "rgba(255,255,255,0.1)"} strokeWidth={i < hexPartyPos ? 2.5 : 1.5} strokeDasharray={i >= hexPartyPos ? "6,4" : "none"} />;
+                    })}
+                    {/* Hexes */}
+                    {hexPositions.map((h, i) => {
+                      const isParty = i === hexPartyPos;
+                      const isSelected = i === hexSelectedHex;
+                      const isExplored = h.explored;
+                      return (
+                        <g key={`hex-${i}`} style={{ cursor:"pointer" }} onClick={() => setHexSelectedHex(isSelected ? null : i)}>
+                          <polygon points={hexPointsStr(h.x, h.y)} fill={isParty ? "rgba(212,67,58,0.25)" : isExplored ? h.color : "rgba(255,255,255,0.03)"} stroke={isSelected ? T.crimson : isParty ? T.crimson : isExplored ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.06)"} strokeWidth={isSelected || isParty ? 2.5 : 1} />
+                          <text x={h.x} y={h.y - 4} textAnchor="middle" fontSize={isExplored ? 18 : 14} style={{ pointerEvents:"none" }}>{isExplored ? h.icon : "?"}</text>
+                          <text x={h.x} y={h.y + 16} textAnchor="middle" fontSize={7} fill={isExplored ? T.textMuted : T.textFaint} style={{ pointerEvents:"none", fontFamily:"'Cinzel', serif", letterSpacing:"0.5px" }}>
+                            {i === 0 ? hexOrigin.slice(0, 8) : i === hexCount - 1 ? hexDest.slice(0, 8) : isExplored ? h.terrain.slice(0, 8) : "???"}
+                          </text>
+                          {isParty && <text x={h.x} y={h.y - 22} textAnchor="middle" fontSize={14} style={{ pointerEvents:"none" }}>⚔️</text>}
+                          {h.danger && isExplored && <circle cx={h.x + HEX_R * 0.6} cy={h.y - HEX_R * 0.5} r={5} fill="rgba(212,67,58,0.7)" />}
+                          {h.feature && isExplored && <circle cx={h.x - HEX_R * 0.6} cy={h.y - HEX_R * 0.5} r={5} fill="rgba(201,168,92,0.7)" />}
+                        </g>
+                      );
+                    })}
+                  </svg>
+                </div>
+              ) : (
+                <div style={{ padding:40, textAlign:"center" }}>
+                  <div style={{ fontSize:14, color:T.textMuted, fontStyle:"italic", marginBottom:8 }}>Select an origin and destination to generate the hex map</div>
+                  <div style={{ fontSize:10, color:T.textFaint }}>Each hex represents a day's travel through varied terrain</div>
+                </div>
+              )}
+            </div>
+
+            {hasRoute && (
+              <div style={{ display:"grid", gridTemplateColumns:detailHex ? "1fr 1fr" : "1fr", gap:16, marginBottom:24 }}>
+                {/* Current Position / Actions */}
                 <div>
-                  <div style={{ fontSize:9, color:T.textMuted, marginBottom:4 }}>Provisions</div>
-                  <div style={{ fontSize:10, color:T.text }}>Ample Supply</div>
+                  {/* Current Hex Info */}
+                  {currentHex && (
+                    <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:16, marginBottom:16 }}>
+                      <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:10 }}>Current Position — Hex {hexPartyPos + 1}/{hexCount}</div>
+                      <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:12 }}>
+                        <span style={{ fontSize:28 }}>{currentHex.icon}</span>
+                        <div>
+                          <div style={{ fontSize:14, color:T.text, fontWeight:400, textTransform:"capitalize" }}>{currentHex.terrain}</div>
+                          <div style={{ fontSize:10, color:T.textMuted }}>Weather: {currentHex.weather}</div>
+                        </div>
+                      </div>
+                      {currentHex.feature && <div style={{ fontSize:10, color:T.gold, marginBottom:6 }}>Feature: {currentHex.feature}</div>}
+                      {currentHex.danger && <div style={{ fontSize:10, color:T.crimson, marginBottom:6 }}>⚠ Danger: {currentHex.danger}</div>}
+                    </div>
+                  )}
+                  {/* Movement Controls */}
+                  <div style={{ display:"flex", gap:8, marginBottom:16 }}>
+                    <button disabled={hexPartyPos <= 0} onClick={() => { setHexPartyPos(p => Math.max(0, p - 1)); setHexSelectedHex(null); }} style={{ flex:1, padding:"10px", background:hexPartyPos <= 0 ? "rgba(0,0,0,0.1)" : T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", color:hexPartyPos <= 0 ? T.textFaint : T.text, fontFamily:T.ui, fontSize:9, letterSpacing:"1px", textTransform:"uppercase", cursor:hexPartyPos <= 0 ? "not-allowed" : "pointer", opacity:hexPartyPos <= 0 ? 0.5 : 1 }}>
+                      ◄ Retreat
+                    </button>
+                    <button disabled={hexPartyPos >= hexCount - 1} onClick={() => {
+                      const nextPos = hexPartyPos + 1;
+                      const nextHex = hexes[nextPos];
+                      setHexPartyPos(nextPos);
+                      setHexSelectedHex(null);
+                      if (nextHex) {
+                        const entry = { time: `Hex ${nextPos + 1}`, text: `Entered ${nextHex.terrain}${nextHex.feature ? ` — found ${nextHex.feature}` : ""}${nextHex.danger ? ` — encountered ${nextHex.danger}!` : ""}` };
+                        setHexLog(prev => [entry, ...prev].slice(0, 20));
+                      }
+                    }} style={{ flex:2, padding:"10px", background:hexPartyPos >= hexCount - 1 ? "rgba(0,0,0,0.1)" : "linear-gradient(135deg, rgba(212,67,58,0.2), transparent)", border:`1px solid ${hexPartyPos >= hexCount - 1 ? T.border : T.crimsonBorder}`, borderRadius:"4px", color:hexPartyPos >= hexCount - 1 ? T.textFaint : T.crimson, fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", textTransform:"uppercase", cursor:hexPartyPos >= hexCount - 1 ? "not-allowed" : "pointer", fontWeight:600, opacity:hexPartyPos >= hexCount - 1 ? 0.5 : 1 }}>
+                      {hexPartyPos >= hexCount - 1 ? `✓ Arrived at ${hexDest}` : "Advance ►"}
+                    </button>
+                  </div>
+                  {/* Journey Log */}
+                  {hexLog.length > 0 && (
+                    <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:16 }}>
+                      <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:10 }}>Journey Log</div>
+                      <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                        {hexLog.slice(0, 8).map((entry, i) => (
+                          <div key={i} style={{ fontSize:10, color:T.textMuted, borderLeft:`2px solid ${entry.text.includes("encountered") ? T.crimson : entry.text.includes("found") ? T.gold : T.border}`, paddingLeft:8, lineHeight:1.5 }}>
+                            <span style={{ color:T.textFaint, marginRight:8 }}>{entry.time}</span>{entry.text}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            </div>
 
-            {/* Action Buttons */}
-            <div style={{ marginBottom:24, display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8 }}>
-              {["⬆️ North", "⬇️ South", "⬅️ West"].map(dir => (
-                <button key={dir} style={{ padding:"10px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", color:T.text, fontFamily:T.ui, fontSize:9, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", transition:"all 0.2s" }}>
-                  {dir}
-                </button>
-              ))}
-              {["➡️ East", "🏕️ Camp", "🔍 Explore"].map(dir => (
-                <button key={dir} style={{ padding:"10px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", color:T.text, fontFamily:T.ui, fontSize:9, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", transition:"all 0.2s" }}>
-                  {dir}
-                </button>
-              ))}
-            </div>
-
-            {/* Discovery Log */}
-            <div style={{ marginBottom:24 }}>
-              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Discoveries</div>
-              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                <div style={{ background:"rgba(94,224,154,0.06)", border:"1px solid rgba(94,224,154,0.2)", borderRadius:"4px", padding:12 }}>
-                  <div style={{ fontSize:10, color:"#5ee09a", marginBottom:2 }}>Elven Ruins</div>
-                  <div style={{ fontSize:9, color:T.textMuted }}>Ancient stone structures hidden in the forest</div>
-                </div>
-                <div style={{ background:"rgba(212,67,58,0.06)", border:"1px solid rgba(212,67,58,0.2)", borderRadius:"4px", padding:12 }}>
-                  <div style={{ fontSize:10, color:T.crimson, marginBottom:2 }}>Goblin Warren</div>
-                  <div style={{ fontSize:9, color:T.textMuted }}>Dangerous cave system with recent activity</div>
-                </div>
+                {/* Selected Hex Detail */}
+                {detailHex && (
+                  <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:16 }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+                      <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase" }}>Hex {hexSelectedHex + 1} Details</div>
+                      <button onClick={() => setHexSelectedHex(null)} style={{ background:"none", border:"none", color:T.textFaint, cursor:"pointer", fontSize:14 }}>×</button>
+                    </div>
+                    <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:16 }}>
+                      <span style={{ fontSize:32 }}>{detailHex.icon}</span>
+                      <div>
+                        <div style={{ fontSize:16, color:T.text, fontFamily:T.heading, textTransform:"capitalize" }}>{detailHex.terrain}</div>
+                        <div style={{ fontSize:10, color:T.textMuted }}>{detailHex.explored ? `Weather: ${detailHex.weather}` : "Unexplored territory"}</div>
+                      </div>
+                    </div>
+                    {detailHex.explored ? (
+                      <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                        {detailHex.feature && (
+                          <div style={{ padding:"10px 12px", background:"rgba(201,168,92,0.06)", border:"1px solid rgba(201,168,92,0.15)", borderRadius:"3px" }}>
+                            <div style={{ fontSize:9, color:T.gold, fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase", marginBottom:4 }}>Feature</div>
+                            <div style={{ fontSize:11, color:T.textMuted, textTransform:"capitalize" }}>{detailHex.feature}</div>
+                          </div>
+                        )}
+                        {detailHex.danger && (
+                          <div style={{ padding:"10px 12px", background:"rgba(212,67,58,0.06)", border:"1px solid rgba(212,67,58,0.15)", borderRadius:"3px" }}>
+                            <div style={{ fontSize:9, color:T.crimson, fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase", marginBottom:4 }}>Danger</div>
+                            <div style={{ fontSize:11, color:T.textMuted, textTransform:"capitalize" }}>{detailHex.danger}</div>
+                          </div>
+                        )}
+                        {!detailHex.feature && !detailHex.danger && (
+                          <div style={{ fontSize:10, color:T.textFaint, fontStyle:"italic" }}>No notable features or dangers in this hex.</div>
+                        )}
+                      </div>
+                    ) : (
+                      <div style={{ fontSize:10, color:T.textFaint, fontStyle:"italic", textAlign:"center", padding:20 }}>
+                        This hex has not been explored yet. Advance the party to reveal its contents.
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
-            </div>
-
-            {/* Encounter Log */}
-            <div>
-              <div style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:12 }}>Recent Encounters</div>
-              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:12 }}>
-                  <div style={{ fontSize:10, color:T.text }}>Bandits on the Road (Defeated)</div>
-                  <div style={{ fontSize:9, color:T.textMuted, marginTop:2 }}>3 days ago - 6 bandits, 1 leader</div>
-                </div>
-                <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", padding:12 }}>
-                  <div style={{ fontSize:10, color:T.text }}>Merchant Caravan (Befriended)</div>
-                  <div style={{ fontSize:9, color:T.textMuted, marginTop:2 }}>1 week ago - Offered passage</div>
-                </div>
-              </div>
-            </div>
+            )}
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* ══════════ TOWN MAP OVERLAY ══════════ */}
       {townView && (() => {

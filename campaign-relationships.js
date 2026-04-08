@@ -30,10 +30,13 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
   // THEME
   // ─────────────────────────────────────────────────────────────────────
   const T = {
-    bg: "#0c0804", bgNav: "#100c08", bgCard: "rgba(18,14,10,0.97)",
-    text: "#e8dcc8", textMuted: "#a89878", textFaint: "#6a6050",
-    crimson: "#d4433a", crimsonBorder: "rgba(212,67,58,0.15)",
-    gold: "#c9a85c", border: "rgba(212,67,58,0.08)",
+    bg: "var(--bg)", bgNav: "var(--bg-nav)", bgCard: "var(--bg-card)",
+    bgHover: "var(--bg-hover)", bgInput: "var(--bg-input)",
+    text: "var(--text)", textDim: "var(--text-dim)", textMuted: "var(--text-muted)", textFaint: "var(--text-faint)",
+    crimson: "var(--crimson)", crimsonDim: "var(--crimson-dim)", crimsonBorder: "var(--crimson-border)", crimsonSoft: "var(--crimson-soft)",
+    border: "var(--border)", borderMid: "var(--border-mid)",
+    gold: "var(--gold)", goldDim: "var(--gold-dim)", green: "var(--green)", greenDim: "var(--green-dim)",
+    orange: "var(--orange)", orangeDim: "var(--orange-dim)", questGold: "var(--quest-gold)",
     heading: "'Cinzel', serif", body: "'Spectral', serif", ui: "'Cinzel', serif"
   };
 
@@ -46,6 +49,18 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
     worship: { label: "Worship", color: "#8e44ad", style: "wavy", weight: 2 },
     love: { label: "Love/Marriage", color: "#ff69b4", style: "solid", weight: 2 },
     feud: { label: "Feud", color: "#f39c12", style: "jagged", weight: 2 }
+  };
+
+  // ─────────────────────────────────────────────────────────────────────
+  // SEEDED RANDOM NUMBER GENERATOR
+  // ─────────────────────────────────────────────────────────────────────
+  const seedRng = (str) => {
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+    return () => {
+      h = (h * 16807 + 0) % 2147483647;
+      return (h & 0x7fffffff) / 0x7fffffff;
+    };
   };
 
   // ─────────────────────────────────────────────────────────────────────
@@ -72,13 +87,14 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
       const isSub = faction.isSubFaction;
       const powerRadius = isSub ? Math.max(14, Math.min(22, 14 + faction.power / 10)) :
                                   Math.max(22, Math.min(36, 22 + faction.power / 8));
+      const rng = seedRng(faction.name);
       newNodes.push({
         id,
         type: isSub ? "subfaction" : "faction",
         label: faction.name,
         data: faction,
-        x: SVG_WIDTH / 2 + (Math.random() - 0.5) * (isSub ? 350 : 200),
-        y: SVG_HEIGHT / 2 + (Math.random() - 0.5) * (isSub ? 350 : 200),
+        x: SVG_WIDTH / 2 + (rng() - 0.5) * (isSub ? 350 : 200),
+        y: SVG_HEIGHT / 2 + (rng() - 0.5) * (isSub ? 350 : 200),
         vx: 0,
         vy: 0,
         color: faction.color || T.gold,
@@ -126,14 +142,15 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
       nodeMap.set(id, true);
       const factionObj = (data.factions || []).find(f => f.name === npc.faction);
       const factionColor = factionObj?.color || T.text;
+      const rng = seedRng(npc.name);
 
       newNodes.push({
         id,
         type: "npc",
         label: npc.name,
         data: npc,
-        x: SVG_WIDTH / 2 + (Math.random() - 0.5) * 300,
-        y: SVG_HEIGHT / 2 + (Math.random() - 0.5) * 300,
+        x: SVG_WIDTH / 2 + (rng() - 0.5) * 300,
+        y: SVG_HEIGHT / 2 + (rng() - 0.5) * 300,
         vx: 0,
         vy: 0,
         color: factionColor,
@@ -154,16 +171,17 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
       const cityId = `city_${city.name}`;
       if (!nodeMap.has(cityId)) {
         nodeMap.set(cityId, true);
+        const rng = seedRng(city.name);
         newNodes.push({
           id: cityId,
           type: "city",
           label: city.name,
           data: city,
-          x: SVG_WIDTH / 2 + (Math.random() - 0.5) * 400,
-          y: SVG_HEIGHT / 2 + (Math.random() - 0.5) * 400,
+          x: SVG_WIDTH / 2 + (rng() - 0.5) * 400,
+          y: SVG_HEIGHT / 2 + (rng() - 0.5) * 400,
           vx: 0,
           vy: 0,
-          color: city.isCapital ? "#f1c40f" : "#d4a574",
+          color: city.isCapital ? T.questGold : T.text,
           radius: city.isCapital ? 22 : 16
         });
       }
@@ -189,7 +207,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
         y: SVG_HEIGHT - 80,
         vx: 0,
         vy: 0,
-        color: "#f1c40f",
+        color: T.questGold,
         radius: 18
       });
     });
@@ -669,28 +687,28 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
             {/* Alliances & Rivalries Summary */}
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
               <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"6px", padding:16 }}>
-                <div style={{ fontSize:12, color:"#2ecc71", fontFamily:T.ui, fontWeight:600, marginBottom:12, letterSpacing:"1px", textTransform:"uppercase" }}>
+                <div style={{ fontSize:12, color:T.green, fontFamily:T.ui, fontWeight:600, marginBottom:12, letterSpacing:"1px", textTransform:"uppercase" }}>
                   Alliances ({alliances.length})
                 </div>
                 {alliances.length > 0 ? alliances.map((a, i) => (
                   <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 0", borderBottom:i < alliances.length-1?`1px solid ${T.border}`:"none" }}>
                     <div style={{ width:8, height:8, borderRadius:"50%", background:a.colorA || T.gold, flexShrink:0 }}/>
                     <span style={{ fontSize:12, color:T.text }}>{a.a}</span>
-                    <span style={{ fontSize:10, color:"#2ecc71", fontFamily:T.ui }}>⟷</span>
+                    <span style={{ fontSize:10, color:T.green, fontFamily:T.ui }}>⟷</span>
                     <span style={{ fontSize:12, color:T.text }}>{a.b}</span>
                   </div>
                 )) : <div style={{ fontSize:11, color:T.textFaint, fontStyle:"italic" }}>No alliances formed</div>}
               </div>
 
               <div style={{ background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"6px", padding:16 }}>
-                <div style={{ fontSize:12, color:"#e74c3c", fontFamily:T.ui, fontWeight:600, marginBottom:12, letterSpacing:"1px", textTransform:"uppercase" }}>
+                <div style={{ fontSize:12, color:T.crimson, fontFamily:T.ui, fontWeight:600, marginBottom:12, letterSpacing:"1px", textTransform:"uppercase" }}>
                   Rivalries & Conflicts ({rivalries.length})
                 </div>
                 {rivalries.length > 0 ? rivalries.map((r, i) => (
                   <div key={i} style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 0", borderBottom:i < rivalries.length-1?`1px solid ${T.border}`:"none" }}>
                     <div style={{ width:8, height:8, borderRadius:"50%", background:r.colorA || T.crimson, flexShrink:0 }}/>
                     <span style={{ fontSize:12, color:T.text }}>{r.a}</span>
-                    <span style={{ fontSize:10, color:"#e74c3c", fontFamily:T.ui }}>⚔</span>
+                    <span style={{ fontSize:10, color:T.crimson, fontFamily:T.ui }}>⚔</span>
                     <span style={{ fontSize:12, color:T.text }}>{r.b}</span>
                   </div>
                 )) : <div style={{ fontSize:11, color:T.textFaint, fontStyle:"italic" }}>No active rivalries</div>}

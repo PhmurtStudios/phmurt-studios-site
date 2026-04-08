@@ -1628,6 +1628,13 @@ const T = {
   ui:            "'Cinzel', serif",
   heading:       "'Cinzel', serif",
   body:          "'Spectral', Georgia, serif",
+  gold:          "var(--gold)",
+  goldDim:       "var(--gold-dim)",
+  green:         "var(--green)",
+  greenDim:      "var(--green-dim)",
+  orange:        "var(--orange)",
+  orangeDim:     "var(--orange-dim)",
+  questGold:     "var(--quest-gold)",
 };
 
 /* Read a computed CSS variable value — needed for <canvas> fillStyle/strokeStyle
@@ -5263,7 +5270,7 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
           <div>
             <SectionTitle icon={Globe} action={<LinkBtn onClick={()=>onNav("world")}>World State <ArrowRight size={10}/></LinkBtn>}>Factions</SectionTitle>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:16 }}>
-              {data.factions.map(f => (
+              {(data.factions || []).map(f => (
                 <div key={f.id} style={{ padding:16, background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px", borderLeft:`4px solid ${f.color}` }}>
                   <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:8 }}>
                     <span style={{ fontSize:14, fontWeight:300, color:T.text }}>{f.name}</span>
@@ -5272,7 +5279,7 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
                   <div style={{ display:"flex", alignItems:"center", gap:8 }}>
                     <div style={{flex:1}}><PowerBar val={f.power} max={100} color={f.color}/></div>
                     <span style={{ fontSize:11, color:T.textMuted }}>{f.power}</span>
-                    {f.trend==="rising"?<TrendingUp size={10} color={T.crimson}/>:f.trend==="declining"?<TrendingDown size={10} color="#5ee09a"/>:<Minus size={10} color={T.textFaint}/>}
+                    {f.trend==="rising"?<TrendingUp size={10} color={T.crimson}/>:f.trend==="declining"?<TrendingDown size={10} color={T.green}/>:<Minus size={10} color={T.textFaint}/>}
                   </div>
                 </div>
               ))}
