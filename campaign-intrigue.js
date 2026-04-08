@@ -178,6 +178,31 @@
   });
 
   // MAIN COMPONENT
+  // Connection line between two points on the conspiracy web
+  function ConnectionLine({ x1, y1, x2, y2, color }) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const length = Math.sqrt(dx * dx + dy * dy);
+    const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+    const lineColor = color || 'rgba(255,215,0,0.3)';
+
+    return (
+      <div style={{
+        position: 'absolute',
+        left: x1,
+        top: y1,
+        width: length,
+        height: '2px',
+        background: `linear-gradient(90deg, ${lineColor}, ${lineColor}44)`,
+        transform: `rotate(${angle}deg)`,
+        transformOrigin: '0 50%',
+        pointerEvents: 'none',
+        opacity: 0.6,
+        zIndex: 1
+      }} />
+    );
+  }
+
   function CourtIntrigueView({ data, setData, viewRole }) {
     const [selectedAgent, setSelectedAgent] = useState(null);
     const [selectedBranchId, setSelectedBranchId] = useState(null);
