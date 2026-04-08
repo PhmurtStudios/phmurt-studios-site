@@ -1,1004 +1,954 @@
 (function() {
   'use strict';
 
-  const { useState, useEffect, useCallback, useRef, useMemo } = React;
-  const { Crown, Eye, EyeOff, Users, Shield, Skull, Lock, Unlock, ChevronDown, ChevronUp, Plus, Edit2, Trash2, Check, X, AlertTriangle, Star, Target, Search, Layers, Activity, Heart, Swords, BookOpen, Sparkles, RotateCcw } = window.LucideReact || {};
+  const { useState, useEffect, useCallback, useRef, useMemo, Fragment } = React;
+  const { Crown, Eye, EyeOff, Users, Shield, Skull, Lock, Unlock, ChevronDown, ChevronUp, Plus, Edit2, Trash2, Check, X, AlertTriangle, Star, Target, Search, Layers, Activity, Heart, Swords, BookOpen, Sparkles, RotateCcw, ArrowLeft, ChevronRight, MapPin, FileText, Zap, Network, UserPlus, Copy, MoreVertical, Circle } = window.LucideReact || {};
 
-  // Theme setup
   const T = window.__PHMURT_THEME || {};
-  try {
-    if (window.T) Object.assign(T, window.T);
-  } catch(e) {}
+  try { if (window.T) Object.assign(T, window.T); } catch(e) {}
 
-  // Initialize default data structure
-  const initializeIntrigueData = () => ({
-    shadowLeader: {
-      id: 'leader',
-      name: 'The Shadow Leader',
-      revealed: false,
-      title: 'True Power Behind the Throne',
-      status: 'hidden',
-      influence: 5,
-      clues: [],
-      location: 'Unknown',
-      notes: 'The ultimate architect of this conspiracy'
-    },
-    branches: [
-      {
-        id: 'crown',
-        name: 'The Crown',
-        icon: Crown,
-        description: 'Royal Court manipulation',
-        color: T.gold,
-        powerLevel: 75,
-        sage: {
-          id: 'sage_crown',
-          name: 'The Courtier',
-          revealed: false,
-          title: 'Royal Advisor',
-          status: 'hidden',
-          influence: 4,
-          clues: [],
-          location: 'Palace',
-          notes: ''
-        },
-        agents: [
-          { id: 'agent_c1', name: 'Lord Theron', revealed: false, title: 'Chancellor', status: 'hidden', influence: 3, clues: [], location: 'Throne Room', notes: '' },
-          { id: 'agent_c2', name: 'Lady Morgeth', revealed: false, title: 'Court Enchantress', status: 'hidden', influence: 3, clues: [], location: 'Tower of Sages', notes: '' },
-          { id: 'agent_c3', name: 'Master Aldric', revealed: false, title: 'Head Guard Captain', status: 'hidden', influence: 2, clues: [], location: 'Guard Barracks', notes: '' }
-        ]
-      },
-      {
-        id: 'coin',
-        name: 'The Coin',
-        icon: Users,
-        description: 'Economic & merchant guild control',
-        color: T.goldDim,
-        powerLevel: 68,
-        sage: {
-          id: 'sage_coin',
-          name: 'The Merchant Prince',
-          revealed: false,
-          title: 'Guild Master',
-          status: 'hidden',
-          influence: 4,
-          clues: [],
-          location: 'Merchant District',
-          notes: ''
-        },
-        agents: [
-          { id: 'agent_m1', name: 'Kess the Banker', revealed: false, title: 'Master of Coins', status: 'hidden', influence: 3, clues: [], location: 'Treasury House', notes: '' },
-          { id: 'agent_m2', name: 'Varys the Trader', revealed: false, title: 'Spice Merchant', status: 'hidden', influence: 3, clues: [], location: 'Market Square', notes: '' },
-          { id: 'agent_m3', name: 'Helena Goldsmith', revealed: false, title: 'Jeweler & Fence', status: 'hidden', influence: 2, clues: [], location: 'Jewel Quarter', notes: '' },
-          { id: 'agent_m4', name: 'Dorian Cartographer', revealed: false, title: 'Trade Route Master', status: 'hidden', influence: 2, clues: [], location: 'Docks', notes: '' }
-        ]
-      },
-      {
-        id: 'sword',
-        name: 'The Sword',
-        icon: Swords,
-        description: 'Military infiltration',
-        color: T.crimson,
-        powerLevel: 82,
-        sage: {
-          id: 'sage_sword',
-          name: 'The General',
-          revealed: false,
-          title: 'War Commander',
-          status: 'hidden',
-          influence: 5,
-          clues: [],
-          location: 'Military Fortress',
-          notes: ''
-        },
-        agents: [
-          { id: 'agent_s1', name: 'Commander Darius', revealed: false, title: 'Colonel of the North', status: 'hidden', influence: 4, clues: [], location: 'Northern Camp', notes: '' },
-          { id: 'agent_s2', name: 'Captain Lena', revealed: false, title: 'Shadow Ops', status: 'hidden', influence: 3, clues: [], location: 'Secret Base', notes: '' },
-          { id: 'agent_s3', name: 'Sergeant Vex', revealed: false, title: 'Supply Master', status: 'hidden', influence: 2, clues: [], location: 'Armory', notes: '' }
-        ]
-      },
-      {
-        id: 'eye',
-        name: 'The Eye',
-        icon: Eye,
-        description: 'Spy network & information control',
-        color: T.textDim,
-        powerLevel: 71,
-        sage: {
-          id: 'sage_eye',
-          name: 'The Spymaster',
-          revealed: false,
-          title: 'Master of Shadows',
-          status: 'hidden',
-          influence: 4,
-          clues: [],
-          location: 'Hidden Lair',
-          notes: ''
-        },
-        agents: [
-          { id: 'agent_e1', name: 'Whisper', revealed: false, title: 'Information Broker', status: 'hidden', influence: 3, clues: [], location: 'Tavern', notes: '' },
-          { id: 'agent_e2', name: 'Rook', revealed: false, title: 'Street Informant', status: 'hidden', influence: 2, clues: [], location: 'Underworld', notes: '' },
-          { id: 'agent_e3', name: 'Maven', revealed: false, title: 'Scholar & Archive', status: 'hidden', influence: 3, clues: [], location: 'Library', notes: '' },
-          { id: 'agent_e4', name: 'Shadow', revealed: false, title: 'Assassin', status: 'hidden', influence: 4, clues: [], location: 'Rooftops', notes: '' }
-        ]
-      },
-      {
-        id: 'whisper',
-        name: 'The Whisper',
-        icon: BookOpen,
-        description: 'Religious manipulation',
-        color: T.textMuted,
-        powerLevel: 64,
-        sage: {
-          id: 'sage_whisper',
-          name: 'The High Priest',
-          revealed: false,
-          title: 'Divine Authority',
-          status: 'hidden',
-          influence: 4,
-          clues: [],
-          location: 'Temple',
-          notes: ''
-        },
-        agents: [
-          { id: 'agent_w1', name: 'Bishop Aldric', revealed: false, title: 'Temple Administrator', status: 'hidden', influence: 3, clues: [], location: 'Sacred Temple', notes: '' },
-          { id: 'agent_w2', name: 'Priestess Lyra', revealed: false, title: 'Oracle', status: 'hidden', influence: 3, clues: [], location: 'Shrine', notes: '' },
-          { id: 'agent_w3', name: 'Monk Thorne', revealed: false, title: 'Scribe', status: 'hidden', influence: 2, clues: [], location: 'Monastery', notes: '' }
-        ]
-      },
-      {
-        id: 'mask',
-        name: 'The Mask',
-        icon: AlertTriangle,
-        description: 'Underground & criminal control',
-        color: T.crimson,
-        powerLevel: 79,
-        sage: {
-          id: 'sage_mask',
-          name: 'The Crime Lord',
-          revealed: false,
-          title: 'Underworld Boss',
-          status: 'hidden',
-          influence: 5,
-          clues: [],
-          location: 'Underground',
-          notes: ''
-        },
-        agents: [
-          { id: 'agent_k1', name: 'Blackthorn', revealed: false, title: 'Assassin Guild Leader', status: 'hidden', influence: 4, clues: [], location: 'Guild Hall', notes: '' },
-          { id: 'agent_k2', name: 'Scar', revealed: false, title: 'Thief', status: 'hidden', influence: 3, clues: [], location: 'Slums', notes: '' },
-          { id: 'agent_k3', name: 'Echo', revealed: false, title: 'Fence', status: 'hidden', influence: 2, clues: [], location: 'Black Market', notes: '' },
-          { id: 'agent_k4', name: 'Raze', revealed: false, title: 'Enforcer', status: 'hidden', influence: 3, clues: [], location: 'Docks', notes: '' }
-        ]
-      }
-    ],
-    events: [
-      { id: 'evt1', date: 'Day 1', title: 'Suspicious Meeting', description: 'Three nobles met in secret at midnight', linkedAgents: [] }
-    ]
+  /* ───────────────────── STATUS SYSTEM ───────────────────── */
+  const STATUS = {
+    hidden:     { label: 'Hidden',     color: 'rgba(120,120,170,0.7)', text: '#b0b0e0', icon: EyeOff },
+    suspected:  { label: 'Suspected',  color: 'rgba(255,200,0,0.6)',   text: '#ffe066', icon: Search },
+    revealed:   { label: 'Revealed',   color: 'rgba(76,175,80,0.6)',   text: '#81c784', icon: Eye },
+    eliminated: { label: 'Eliminated', color: 'rgba(220,60,50,0.6)',   text: '#ef5350', icon: Skull },
+    turned:     { label: 'Turned',     color: 'rgba(130,80,220,0.6)',  text: '#b39ddb', icon: RotateCcw },
+    fled:       { label: 'Fled',       color: 'rgba(100,100,100,0.5)', text: '#999',    icon: ArrowLeft },
+  };
+  const STATUS_KEYS = Object.keys(STATUS);
+
+  const RANK_LABELS = { leader: 'Arch-Conspirator', sage: 'Inner Circle', agent: 'Operative', asset: 'Asset' };
+
+  /* ───────────────────── DEFAULT DATA ───────────────────── */
+  const uid = () => 'i_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+
+  const makeAgent = (overrides) => ({
+    id: uid(), name: 'Unknown Agent', title: '', rank: 'agent',
+    status: 'hidden', revealed: false, influence: 2,
+    location: '', notes: '', clues: [], connections: [],
+    ...overrides,
   });
 
-  // MAIN COMPONENT
-  // Connection line between two points on the conspiracy web
-  function ConnectionLine({ x1, y1, x2, y2, color }) {
-    const dx = x2 - x1;
-    const dy = y2 - y1;
-    const length = Math.sqrt(dx * dx + dy * dy);
-    const angle = Math.atan2(dy, dx) * (180 / Math.PI);
-    const lineColor = color || 'rgba(255,215,0,0.3)';
+  const makeBranch = (overrides) => ({
+    id: uid(), name: 'New Faction', description: '',
+    colorHue: Math.floor(Math.random() * 360), powerLevel: 50,
+    sage: makeAgent({ rank: 'sage', name: 'Unknown Leader', influence: 4 }),
+    agents: [],
+    missions: [],
+    events: [],
+    ...overrides,
+  });
 
+  const initializeIntrigueData = () => ({
+    shadowLeader: makeAgent({
+      id: 'leader', name: 'The Shadow Leader', rank: 'leader',
+      title: 'True Power Behind the Throne', influence: 5,
+      location: 'Unknown', notes: 'The ultimate architect of this conspiracy',
+    }),
+    branches: [
+      makeBranch({
+        id: 'crown', name: 'The Crown', description: 'Royal Court manipulation',
+        colorHue: 45, powerLevel: 75,
+        sage: makeAgent({ id: 'sage_crown', rank: 'sage', name: 'The Courtier', title: 'Royal Advisor', influence: 4, location: 'Palace' }),
+        agents: [
+          makeAgent({ id: 'a_c1', name: 'Lord Theron', title: 'Chancellor', influence: 3, location: 'Throne Room' }),
+          makeAgent({ id: 'a_c2', name: 'Lady Morgeth', title: 'Court Enchantress', influence: 3, location: 'Tower of Sages' }),
+          makeAgent({ id: 'a_c3', name: 'Master Aldric', title: 'Head Guard Captain', influence: 2, location: 'Guard Barracks' }),
+        ],
+      }),
+      makeBranch({
+        id: 'coin', name: 'The Coin', description: 'Economic & merchant guild control',
+        colorHue: 35, powerLevel: 68,
+        sage: makeAgent({ id: 'sage_coin', rank: 'sage', name: 'The Merchant Prince', title: 'Guild Master', influence: 4, location: 'Merchant District' }),
+        agents: [
+          makeAgent({ id: 'a_m1', name: 'Kess the Banker', title: 'Master of Coins', influence: 3, location: 'Treasury House' }),
+          makeAgent({ id: 'a_m2', name: 'Varys the Trader', title: 'Spice Merchant', influence: 3, location: 'Market Square' }),
+          makeAgent({ id: 'a_m3', name: 'Helena Goldsmith', title: 'Jeweler & Fence', influence: 2, location: 'Jewel Quarter' }),
+        ],
+      }),
+      makeBranch({
+        id: 'sword', name: 'The Sword', description: 'Military infiltration',
+        colorHue: 0, powerLevel: 82,
+        sage: makeAgent({ id: 'sage_sword', rank: 'sage', name: 'The General', title: 'War Commander', influence: 5, location: 'Military Fortress' }),
+        agents: [
+          makeAgent({ id: 'a_s1', name: 'Commander Darius', title: 'Colonel of the North', influence: 4, location: 'Northern Camp' }),
+          makeAgent({ id: 'a_s2', name: 'Captain Lena', title: 'Shadow Ops', influence: 3, location: 'Secret Base' }),
+          makeAgent({ id: 'a_s3', name: 'Sergeant Vex', title: 'Supply Master', influence: 2, location: 'Armory' }),
+        ],
+      }),
+      makeBranch({
+        id: 'eye', name: 'The Eye', description: 'Spy network & information control',
+        colorHue: 210, powerLevel: 71,
+        sage: makeAgent({ id: 'sage_eye', rank: 'sage', name: 'The Spymaster', title: 'Master of Shadows', influence: 4, location: 'Hidden Lair' }),
+        agents: [
+          makeAgent({ id: 'a_e1', name: 'Whisper', title: 'Information Broker', influence: 3, location: 'Tavern' }),
+          makeAgent({ id: 'a_e2', name: 'Rook', title: 'Street Informant', influence: 2, location: 'Underworld' }),
+          makeAgent({ id: 'a_e3', name: 'Maven', title: 'Scholar & Archive', influence: 3, location: 'Library' }),
+          makeAgent({ id: 'a_e4', name: 'Shadow', title: 'Assassin', influence: 4, location: 'Rooftops' }),
+        ],
+      }),
+      makeBranch({
+        id: 'whisper', name: 'The Whisper', description: 'Religious manipulation',
+        colorHue: 270, powerLevel: 64,
+        sage: makeAgent({ id: 'sage_whisper', rank: 'sage', name: 'The High Priest', title: 'Divine Authority', influence: 4, location: 'Temple' }),
+        agents: [
+          makeAgent({ id: 'a_w1', name: 'Bishop Aldric', title: 'Temple Administrator', influence: 3, location: 'Sacred Temple' }),
+          makeAgent({ id: 'a_w2', name: 'Priestess Lyra', title: 'Oracle', influence: 3, location: 'Shrine' }),
+        ],
+      }),
+      makeBranch({
+        id: 'mask', name: 'The Mask', description: 'Underground & criminal control',
+        colorHue: 350, powerLevel: 79,
+        sage: makeAgent({ id: 'sage_mask', rank: 'sage', name: 'The Crime Lord', title: 'Underworld Boss', influence: 5, location: 'Underground' }),
+        agents: [
+          makeAgent({ id: 'a_k1', name: 'Blackthorn', title: 'Assassin Guild Leader', influence: 4, location: 'Guild Hall' }),
+          makeAgent({ id: 'a_k2', name: 'Scar', title: 'Thief', influence: 3, location: 'Slums' }),
+          makeAgent({ id: 'a_k3', name: 'Echo', title: 'Fence', influence: 2, location: 'Black Market' }),
+          makeAgent({ id: 'a_k4', name: 'Raze', title: 'Enforcer', influence: 3, location: 'Docks' }),
+        ],
+      }),
+    ],
+    clueBoard: [],
+    globalEvents: [
+      { id: uid(), date: 'Day 1', text: 'The conspiracy begins...', branchId: null },
+    ],
+  });
+
+  /* ───────────────────── HELPERS ───────────────────── */
+  const branchColor = (hue, a) => `hsla(${hue}, 60%, 55%, ${a || 1})`;
+  const branchBg    = (hue, a) => `hsla(${hue}, 40%, 12%, ${a || 1})`;
+  const branchGlow  = (hue) => `0 0 20px hsla(${hue}, 60%, 55%, 0.25)`;
+
+  const countByStatus = (agents) => {
+    const c = {};
+    STATUS_KEYS.forEach(k => { c[k] = 0; });
+    agents.forEach(a => { c[a.status] = (c[a.status] || 0) + 1; });
+    return c;
+  };
+
+  /* ───────────────────── SUB-COMPONENTS ───────────────────── */
+
+  /* ── Influence Stars ── */
+  function InfluenceStars({ value, max, color }) {
     return (
-      <div style={{
-        position: 'absolute',
-        left: x1,
-        top: y1,
-        width: length,
-        height: '2px',
-        background: `linear-gradient(90deg, ${lineColor}, ${lineColor}44)`,
-        transform: `rotate(${angle}deg)`,
-        transformOrigin: '0 50%',
-        pointerEvents: 'none',
-        opacity: 0.6,
-        zIndex: 1
-      }} />
+      <span style={{ display: 'inline-flex', gap: 2 }}>
+        {[...Array(max || 5)].map((_, i) => (
+          <Star key={i} size={12} fill={i < value ? (color || T.gold) : 'transparent'} color={i < value ? (color || T.gold) : T.textFaint} />
+        ))}
+      </span>
     );
   }
 
-  function CourtIntrigueView({ data, setData, viewRole }) {
-    const [selectedAgent, setSelectedAgent] = useState(null);
-    const [selectedBranchId, setSelectedBranchId] = useState(null);
-    const [zoom, setZoom] = useState(1);
-    const [panX, setPanX] = useState(0);
-    const [panY, setPanY] = useState(0);
-    const [isPanning, setIsPanning] = useState(false);
-    const [panStart, setPanStart] = useState({ x: 0, y: 0 });
-    const [showCluePanel, setShowCluePanel] = useState(false);
-    const [newClueText, setNewClueText] = useState('');
-    const [filterStatus, setFilterStatus] = useState('all');
-    const containerRef = useRef(null);
-
-    const intrigue = data.intrigue || initializeIntrigueData();
-
-    const isDM = viewRole === 'DM' || viewRole === 'dm';
-
-    // Initialize data if needed
-    useEffect(() => {
-      if (!data.intrigue) {
-        setData(prev => {
-          const d = { ...prev };
-          d.intrigue = initializeIntrigueData();
-          return d;
-        });
-      }
-    }, []);
-
-    // Update intrigue data
-    const updateIntrigue = useCallback((updates) => {
-      setData(prev => {
-        const d = { ...prev };
-        d.intrigue = { ...intrigue, ...updates };
-        return d;
-      });
-    }, [intrigue]);
-
-    // Update a specific agent
-    const updateAgent = useCallback((agentId, updates) => {
-      const newIntrigue = {
-        ...intrigue,
-        shadowLeader: { ...intrigue.shadowLeader },
-        branches: intrigue.branches.map(branch => ({
-          ...branch,
-          sage: { ...branch.sage },
-          agents: branch.agents.map(a => ({ ...a }))
-        }))
-      };
-
-      // Check shadow leader
-      if (newIntrigue.shadowLeader.id === agentId) {
-        newIntrigue.shadowLeader = { ...newIntrigue.shadowLeader, ...updates };
-      } else {
-        // Check branches
-        for (let i = 0; i < newIntrigue.branches.length; i++) {
-          let branch = newIntrigue.branches[i];
-          if (branch.sage.id === agentId) {
-            newIntrigue.branches[i] = {
-              ...branch,
-              sage: { ...branch.sage, ...updates }
-            };
-            break;
-          }
-          const agentIdx = branch.agents.findIndex(a => a.id === agentId);
-          if (agentIdx !== -1) {
-            newIntrigue.branches[i] = {
-              ...branch,
-              agents: [
-                ...branch.agents.slice(0, agentIdx),
-                { ...branch.agents[agentIdx], ...updates },
-                ...branch.agents.slice(agentIdx + 1)
-              ]
-            };
-            break;
-          }
-        }
-      }
-
-      updateIntrigue(newIntrigue);
-    }, [intrigue, updateIntrigue]);
-
-    // Calculate positions for radial layout
-    const calculateNodePosition = useCallback((index, total, radius, centerX, centerY) => {
-      const angle = (index / total) * Math.PI * 2 - Math.PI / 2;
-      const x = centerX + radius * Math.cos(angle);
-      const y = centerY + radius * Math.sin(angle);
-      return { x, y, angle };
-    }, []);
-
-    // Pan handlers (memoized to prevent unnecessary re-renders on drag operations)
-    const handleContainerMouseDown = useCallback((e) => {
-      if (e.button === 2) {
-        setIsPanning(true);
-        setPanStart({ x: e.clientX - panX, y: e.clientY - panY });
-        e.preventDefault();
-      }
-    }, [panX, panY]);
-
-    const handleContainerMouseMove = useCallback((e) => {
-      if (isPanning) {
-        setPanX(e.clientX - panStart.x);
-        setPanY(e.clientY - panStart.y);
-      }
-    }, [isPanning, panStart]);
-
-    const handleContainerMouseUp = useCallback(() => {
-      setIsPanning(false);
-    }, []);
-
-    // Get agent details
-    const getAgentDetails = useCallback((agentId) => {
-      if (intrigue.shadowLeader.id === agentId) return intrigue.shadowLeader;
-
-      for (let branch of intrigue.branches) {
-        if (branch.sage.id === agentId) return branch.sage;
-        const agent = branch.agents.find(a => a.id === agentId);
-        if (agent) return agent;
-      }
-      return null;
-    }, [intrigue]);
-
-    // Get parent of agent (branch or leader)
-    const getAgentParent = useCallback((agentId) => {
-      for (let branch of intrigue.branches) {
-        if (branch.sage.id === agentId) return { type: 'branch', data: branch };
-        if (branch.agents.some(a => a.id === agentId)) return { type: 'branch', data: branch };
-      }
-      return null;
-    }, [intrigue]);
-
-    // Calculate total conspiracy power
-    const totalPower = useMemo(() => {
-      const branchPower = intrigue.branches.reduce((sum, b) => sum + b.powerLevel, 0);
-      return Math.round((branchPower / (intrigue.branches.length * 100)) * 100);
-    }, [intrigue.branches]);
-
-    // Web dimensions
-    const webWidth = 1000;
-    const webHeight = 1000;
-    const centerX = webWidth / 2;
-    const centerY = webHeight / 2;
-    const leaderRadius = 80;
-    const sageRadius = 250;
-    const agentRadius = 450;
-
-    const styles = {
-      container: {
-        display: 'flex',
-        height: '100%',
-        flex: 1,
-        background: `linear-gradient(135deg, ${T.bg} 0%, ${T.bg} 100%)`,
-        fontFamily: T.ui,
-        color: T.text,
-        overflow: 'hidden'
-      },
-      mainArea: {
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'relative',
-        overflow: 'hidden'
-      },
-      header: {
-        padding: '20px 24px',
-        borderBottom: `1px solid ${T.border}`,
-        background: `rgba(0, 0, 0, 0.3)`,
-        backdropFilter: 'blur(10px)'
-      },
-      headerTitle: {
-        fontSize: '24px',
-        fontWeight: 'bold',
-        color: T.gold,
-        marginBottom: '8px',
-        fontFamily: T.heading
-      },
-      headerSubtitle: {
-        fontSize: '13px',
-        color: T.textDim,
-        display: 'flex',
-        gap: '16px',
-        alignItems: 'center'
-      },
-      webCanvas: {
-        flex: 1,
-        position: 'relative',
-        overflow: 'auto',
-        background: `radial-gradient(ellipse at center, rgba(255,215,0,0.03) 0%, transparent 70%),
-                     repeating-linear-gradient(0deg, rgba(255,215,0,0.02) 0px, rgba(255,215,0,0.02) 1px, transparent 1px, transparent 2px)`,
-        cursor: isPanning ? 'grabbing' : 'grab'
-      },
-      webContent: {
-        position: 'relative',
-        width: webWidth,
-        height: webHeight,
-        margin: 'auto',
-        transform: `translate(${panX}px, ${panY}px) scale(${zoom})`,
-        transformOrigin: '0 0',
-        transition: isPanning ? 'none' : 'transform 0.2s ease'
-      },
-      webBg: {
-        position: 'absolute',
-        inset: 0,
-        borderRadius: '50%',
-        background: `radial-gradient(circle at center,
-                     rgba(255,215,0,0.05) 0%,
-                     rgba(255,215,0,0.02) 30%,
-                     transparent 70%)`,
-        pointerEvents: 'none'
-      },
-      controls: {
-        position: 'absolute',
-        bottom: '20px',
-        right: '20px',
-        display: 'flex',
-        gap: '8px',
-        background: 'rgba(0, 0, 0, 0.4)',
-        backdropFilter: 'blur(10px)',
-        padding: '8px',
-        borderRadius: '8px',
-        border: `1px solid ${T.border}`,
-        zIndex: 100
-      },
-      controlBtn: {
-        width: '32px',
-        height: '32px',
-        border: 'none',
-        background: 'rgba(255, 215, 0, 0.1)',
-        color: T.gold,
-        cursor: 'pointer',
-        borderRadius: '4px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontSize: '14px',
-        transition: 'all 0.2s',
-        fontWeight: 'bold'
-      },
-      detailPanel: {
-        position: 'absolute',
-        right: 0,
-        top: 0,
-        bottom: 0,
-        width: '420px',
-        background: `linear-gradient(180deg, ${T.bgCard} 0%, ${T.bg} 100%)`,
-        borderLeft: `2px solid ${T.gold}`,
-        boxShadow: '0 0 60px rgba(255, 215, 0, 0.15)',
-        display: 'flex',
-        flexDirection: 'column',
-        zIndex: 1000,
-        animation: 'slideIn 0.3s ease'
-      },
-      detailClose: {
-        position: 'absolute',
-        top: '16px',
-        right: '16px',
-        background: 'none',
-        border: 'none',
-        color: T.gold,
-        cursor: 'pointer',
-        fontSize: '20px',
-        padding: '4px'
-      },
-      detailContent: {
-        flex: 1,
-        overflowY: 'auto',
-        padding: '32px 24px 24px'
-      },
-      detailHeader: {
-        fontSize: '20px',
-        fontWeight: 'bold',
-        color: T.gold,
-        marginBottom: '16px',
-        fontFamily: T.heading
-      },
-      detailField: {
-        marginBottom: '16px'
-      },
-      detailLabel: {
-        fontSize: '11px',
-        fontWeight: '600',
-        color: T.textDim,
-        textTransform: 'uppercase',
-        marginBottom: '4px',
-        letterSpacing: '1px'
-      },
-      detailValue: {
-        fontSize: '14px',
-        color: T.text,
-        wordBreak: 'break-word'
-      },
-      statusBadge: {
-        display: 'inline-block',
-        padding: '4px 10px',
-        borderRadius: '12px',
-        fontSize: '12px',
-        fontWeight: '600',
-        marginBottom: '12px'
-      },
-      buttonGroup: {
-        display: 'flex',
-        gap: '8px',
-        paddingTop: '16px',
-        borderTop: `1px solid ${T.border}`
-      },
-      button: {
-        flex: 1,
-        padding: '10px 12px',
-        border: 'none',
-        borderRadius: '4px',
-        cursor: 'pointer',
-        fontSize: '13px',
-        fontWeight: '600',
-        transition: 'all 0.2s',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '6px'
-      }
-    };
-
-    const statusColors = {
-      hidden: 'rgba(100, 100, 150, 0.6)',
-      suspected: 'rgba(255, 200, 0, 0.6)',
-      revealed: 'rgba(76, 175, 80, 0.6)',
-      eliminated: 'rgba(244, 67, 54, 0.6)',
-      turned: 'rgba(103, 58, 183, 0.6)'
-    };
-
-    // Get status badge color
-    const getStatusBadgeStyle = (status) => {
-      const statusMap = {
-        hidden: { bg: 'rgba(100, 100, 150, 0.6)', text: '#b0b0e0' },
-        suspected: { bg: 'rgba(255, 200, 0, 0.6)', text: '#ffe066' },
-        revealed: { bg: 'rgba(76, 175, 80, 0.6)', text: '#81c784' },
-        eliminated: { bg: 'rgba(244, 67, 54, 0.6)', text: '#ef5350' },
-        turned: { bg: 'rgba(103, 58, 183, 0.6)', text: '#b39ddb' }
-      };
-      const s = statusMap[status] || statusMap.hidden;
-      return { background: s.bg, color: s.text };
-    };
-
+  /* ── Status Badge ── */
+  function StatusBadge({ status, small }) {
+    const s = STATUS[status] || STATUS.hidden;
+    const Icon = s.icon;
     return (
-      <div style={styles.container}>
-        <style>{`
-          @keyframes slideIn {
-            from { transform: translateX(420px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-          }
-          @keyframes pulse {
-            0%, 100% { box-shadow: 0 0 10px rgba(255,215,0,0.4), inset 0 0 10px rgba(255,215,0,0.1); }
-            50% { box-shadow: 0 0 20px rgba(255,215,0,0.6), inset 0 0 15px rgba(255,215,0,0.2); }
-          }
-          @keyframes glow {
-            0%, 100% { text-shadow: 0 0 10px rgba(255,215,0,0.5); }
-            50% { text-shadow: 0 0 20px rgba(255,215,0,0.8); }
-          }
-          .intrigue-scroll::-webkit-scrollbar {
-            width: 8px;
-          }
-          .intrigue-scroll::-webkit-scrollbar-track {
-            background: rgba(255, 215, 0, 0.05);
-          }
-          .intrigue-scroll::-webkit-scrollbar-thumb {
-            background: rgba(255, 215, 0, 0.3);
-            border-radius: 4px;
-          }
-          .intrigue-scroll::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 215, 0, 0.5);
-          }
-        `}</style>
-        <div style={styles.mainArea}>
-          {/* HEADER */}
-          <div style={styles.header}>
-            <div style={styles.headerTitle}>
-              <Crown size={20} style={{ display: 'inline', marginRight: '8px', verticalAlign: 'middle' }} />
-              The Court Intrigue Web
-            </div>
-            <div style={styles.headerSubtitle}>
-              <span>
-                <Sparkles size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
-                Power Level: <strong style={{ color: T.gold }}>{totalPower}%</strong>
-              </span>
-              <span>
-                <Users size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
-                {intrigue.branches.length} Branches
-              </span>
-              <span>
-                <Target size={14} style={{ display: 'inline', marginRight: '4px', verticalAlign: 'middle' }} />
-                {intrigue.branches.reduce((sum, b) => sum + b.agents.length, 0)} Agents
-              </span>
-            </div>
+      <span style={{
+        display: 'inline-flex', alignItems: 'center', gap: 4,
+        background: s.color, color: s.text,
+        padding: small ? '2px 6px' : '3px 10px', borderRadius: 10,
+        fontSize: small ? 10 : 11, fontWeight: 600, letterSpacing: '0.5px',
+        fontFamily: T.ui, textTransform: 'uppercase',
+      }}>
+        {Icon && <Icon size={small ? 10 : 12} />}
+        {s.label}
+      </span>
+    );
+  }
+
+  /* ── Power Bar ── */
+  function PowerBar({ value, hue }) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
+        <div style={{
+          flex: 1, height: 6, borderRadius: 3,
+          background: 'rgba(255,255,255,0.06)', overflow: 'hidden',
+        }}>
+          <div style={{
+            height: '100%', borderRadius: 3, width: value + '%',
+            background: `linear-gradient(90deg, ${branchColor(hue, 0.7)}, ${branchColor(hue, 1)})`,
+            transition: 'width 0.5s ease',
+          }} />
+        </div>
+        <span style={{ fontSize: 11, color: branchColor(hue), fontWeight: 700, fontFamily: T.ui, minWidth: 32, textAlign: 'right' }}>
+          {value}%
+        </span>
+      </div>
+    );
+  }
+
+  /* ── Editable Text ── */
+  function EditableText({ value, onChange, placeholder, multiline, style: extStyle }) {
+    const Tag = multiline ? 'textarea' : 'input';
+    return (
+      <Tag
+        value={value || ''}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder || ''}
+        style={{
+          width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid ' + T.border,
+          color: T.text, padding: '6px 8px', borderRadius: 4, fontFamily: T.body,
+          fontSize: 13, resize: multiline ? 'vertical' : 'none',
+          minHeight: multiline ? 60 : 'auto', outline: 'none',
+          ...extStyle,
+        }}
+      />
+    );
+  }
+
+  /* ── Section Header ── */
+  function SectionLabel({ children }) {
+    return (
+      <div style={{
+        fontSize: 10, fontWeight: 700, color: T.textFaint, textTransform: 'uppercase',
+        letterSpacing: '1.5px', marginBottom: 6, fontFamily: T.ui, marginTop: 16,
+      }}>{children}</div>
+    );
+  }
+
+  /* ── Tree Node (for hierarchy) ── */
+  function TreeNode({ agent, hue, depth, isDM, onSelect, isSelected }) {
+    const color = branchColor(hue);
+    const StatusIcon = (STATUS[agent.status] || STATUS.hidden).icon;
+    return (
+      <div style={{ marginLeft: depth * 28 }}>
+        <div
+          onClick={() => onSelect(agent)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
+            background: isSelected ? branchBg(hue, 0.6) : 'rgba(0,0,0,0.15)',
+            border: isSelected ? '1px solid ' + color : '1px solid transparent',
+            borderRadius: 6, cursor: 'pointer', transition: 'all 0.2s',
+            marginBottom: 4,
+          }}
+        >
+          {/* Rank Indicator */}
+          <div style={{
+            width: agent.rank === 'sage' ? 36 : 28,
+            height: agent.rank === 'sage' ? 36 : 28,
+            borderRadius: agent.rank === 'sage' ? 6 : '50%',
+            background: agent.revealed ? color : 'rgba(255,255,255,0.06)',
+            border: '1px solid ' + (agent.revealed ? color : 'rgba(255,255,255,0.1)'),
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            flexShrink: 0, fontSize: agent.rank === 'sage' ? 16 : 12,
+            color: agent.revealed ? '#000' : T.textFaint,
+            fontWeight: 700,
+            boxShadow: agent.revealed ? branchGlow(hue) : 'none',
+          }}>
+            {agent.revealed ? (StatusIcon ? <StatusIcon size={agent.rank === 'sage' ? 18 : 14} /> : '?') : '?'}
           </div>
 
-          {/* WEB CANVAS */}
-          <div
-            style={styles.webCanvas}
-            ref={containerRef}
-            onMouseDown={handleContainerMouseDown}
-            onMouseMove={handleContainerMouseMove}
-            onMouseUp={handleContainerMouseUp}
-            onMouseLeave={handleContainerMouseUp}
-            onContextMenu={(e) => e.preventDefault()}
-            className="intrigue-scroll"
-          >
-            <div style={styles.webContent}>
-              <div style={styles.webBg} />
-
-              {/* Draw connection lines from shadow leader to sages */}
-              {intrigue.branches.map((branch, idx) => {
-                const sagePos = calculateNodePosition(idx, intrigue.branches.length, sageRadius, centerX, centerY);
-                return (
-                  <ConnectionLine key={`line_leader_${branch.id}`} x1={centerX} y1={centerY} x2={sagePos.x} y2={sagePos.y} color={branch.color} />
-                );
-              })}
-
-              {/* Draw connection lines from sages to their agents */}
-              {intrigue.branches.map((branch, branchIdx) => {
-                const sagePos = calculateNodePosition(branchIdx, intrigue.branches.length, sageRadius, centerX, centerY);
-                const angleSpread = Math.PI / 3;
-                const startAngle = sagePos.angle - angleSpread / 2;
-
-                return branch.agents.map((agent, agentIdx) => {
-                  const angle = startAngle + (agentIdx / branch.agents.length) * angleSpread;
-                  const agentX = centerX + agentRadius * Math.cos(angle);
-                  const agentY = centerY + agentRadius * Math.sin(angle);
-                  return (
-                    <ConnectionLine
-                      key={`line_${branch.id}_${agent.id}`}
-                      x1={sagePos.x}
-                      y1={sagePos.y}
-                      x2={agentX}
-                      y2={agentY}
-                      color={branch.color}
-                    />
-                  );
-                });
-              })}
-
-              {/* SHADOW LEADER (center) */}
-              <div
-                style={{
-                  position: 'absolute',
-                  left: centerX - 48,
-                  top: centerY - 48,
-                  width: '96px',
-                  height: '96px',
-                  cursor: 'pointer',
-                  zIndex: selectedAgent?.id === 'leader' ? 50 : 20
-                }}
-                onClick={() => setSelectedAgent(intrigue.shadowLeader)}
-              >
-                <div style={{
-                  width: '100%',
-                  height: '100%',
-                  background: intrigue.shadowLeader.revealed ? T.gold : T.bgCard,
-                  borderRadius: '50%',
-                  border: selectedAgent?.id === 'leader' ? `3px solid ${T.gold}` : `2px solid ${T.gold}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: selectedAgent?.id === 'leader'
-                    ? `0 0 40px ${T.gold}, inset 0 0 30px rgba(255,215,0,0.4)`
-                    : `0 0 25px ${T.gold}80, inset 0 0 15px rgba(255,215,0,0.2)`,
-                  transition: 'all 0.3s',
-                  animation: !intrigue.shadowLeader.revealed ? 'pulse 3s infinite' : 'none',
-                  fontFamily: T.heading,
-                  fontSize: '48px',
-                  fontWeight: 'bold'
-                }}>
-                  {intrigue.shadowLeader.revealed ? <Crown size={48} style={{ display: 'block' }} /> : '?'}
-                </div>
-              </div>
-
-              {/* BRANCH SAGES AND AGENTS */}
-              {intrigue.branches.map((branch, branchIdx) => {
-                const sagePos = calculateNodePosition(branchIdx, intrigue.branches.length, sageRadius, centerX, centerY);
-
-                return (
-                  <div key={branch.id}>
-                    {/* SAGE */}
-                    <div
-                      style={{
-                        position: 'absolute',
-                        left: sagePos.x - 32,
-                        top: sagePos.y - 32,
-                        width: '64px',
-                        height: '64px',
-                        cursor: 'pointer',
-                        zIndex: selectedAgent?.id === branch.sage.id ? 50 : 20
-                      }}
-                      onClick={() => setSelectedAgent(branch.sage)}
-                    >
-                      <div style={{
-                        width: '100%',
-                        height: '100%',
-                        background: branch.sage.revealed ? branch.color : T.bgInput,
-                        clipPath: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)',
-                        border: selectedAgent?.id === branch.sage.id ? `2px solid ${T.gold}` : `1px solid ${branch.color}`,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: selectedAgent?.id === branch.sage.id
-                          ? `0 0 30px ${T.gold}, inset 0 0 20px rgba(255,215,0,0.3)`
-                          : `0 0 15px ${branch.color}80`,
-                        transition: 'all 0.2s',
-                        animation: !branch.sage.revealed ? 'pulse 2s infinite' : 'none',
-                        fontWeight: 'bold'
-                      }}>
-                        {branch.sage.status === 'eliminated' ? '✕' : branch.sage.revealed ? '✓' : '?'}
-                      </div>
-                    </div>
-
-                    {/* AGENTS */}
-                    {(() => {
-                      const angleSpread = Math.PI / 3;
-                      const startAngle = sagePos.angle - angleSpread / 2;
-
-                      return branch.agents.map((agent, agentIdx) => {
-                        const angle = startAngle + (agentIdx / branch.agents.length) * angleSpread;
-                        const agentX = centerX + agentRadius * Math.cos(angle);
-                        const agentY = centerY + agentRadius * Math.sin(angle);
-
-                        return (
-                          <div
-                            key={agent.id}
-                            style={{
-                              position: 'absolute',
-                              left: agentX - 24,
-                              top: agentY - 24,
-                              width: '48px',
-                              height: '48px',
-                              cursor: 'pointer',
-                              zIndex: selectedAgent?.id === agent.id ? 50 : 10
-                            }}
-                            onClick={() => setSelectedAgent(agent)}
-                          >
-                            <div style={{
-                              position: 'relative',
-                              width: '100%',
-                              height: '100%',
-                              background: agent.revealed ? T.green : agent.status === 'eliminated' ? T.crimson : T.textMuted,
-                              clipPath: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)',
-                              border: selectedAgent?.id === agent.id ? `2px solid ${T.gold}` : `1px solid ${branch.color}`,
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              boxShadow: selectedAgent?.id === agent.id
-                                ? `0 0 30px ${T.gold}, inset 0 0 20px rgba(255,215,0,0.3)`
-                                : `0 0 10px ${branch.color}80`,
-                              transition: 'all 0.2s',
-                              animation: !agent.revealed && agent.status !== 'eliminated' ? 'pulse 2s infinite' : 'none',
-                              fontWeight: 'bold'
-                            }}>
-                              {agent.status === 'eliminated' ? '✕' : agent.revealed ? '✓' : '?'}
-                            </div>
-                          </div>
-                        );
-                      });
-                    })()}
-                  </div>
-                );
-              })}
-
-              {/* LEGEND RINGS (optional visual guides) */}
-              <div style={{
-                position: 'absolute',
-                left: centerX - agentRadius,
-                top: centerY - agentRadius,
-                width: agentRadius * 2,
-                height: agentRadius * 2,
-                border: '1px solid rgba(255, 215, 0, 0.1)',
-                borderRadius: '50%',
-                pointerEvents: 'none'
-              }} />
-              <div style={{
-                position: 'absolute',
-                left: centerX - sageRadius,
-                top: centerY - sageRadius,
-                width: sageRadius * 2,
-                height: sageRadius * 2,
-                border: '1px solid rgba(255, 215, 0, 0.15)',
-                borderRadius: '50%',
-                pointerEvents: 'none'
-              }} />
-            </div>
-          </div>
-
-          {/* ZOOM CONTROLS */}
-          <div style={styles.controls}>
-            <button
-              style={{
-                ...styles.controlBtn,
-                opacity: zoom >= 2 ? 0.5 : 1,
-                cursor: zoom >= 2 ? 'not-allowed' : 'pointer'
-              }}
-              onClick={() => setZoom(Math.min(2, zoom + 0.2))}
-              title="Zoom in"
-              disabled={zoom >= 2}
-            >
-              +
-            </button>
-            <span style={{
-              color: T.textDim,
-              fontSize: '12px',
-              padding: '0 8px',
-              display: 'flex',
-              alignItems: 'center'
+          {/* Info */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{
+              fontSize: 13, fontWeight: 600, color: T.text, fontFamily: T.heading,
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
             }}>
-              {Math.round(zoom * 100)}%
-            </span>
-            <button
-              style={{
-                ...styles.controlBtn,
-                opacity: zoom <= 0.5 ? 0.5 : 1,
-                cursor: zoom <= 0.5 ? 'not-allowed' : 'pointer'
-              }}
-              onClick={() => setZoom(Math.max(0.5, zoom - 0.2))}
-              title="Zoom out"
-              disabled={zoom <= 0.5}
-            >
-              -
-            </button>
-            <div style={{ width: '1px', background: 'rgba(255, 215, 0, 0.2)' }} />
-            <button
-              style={styles.controlBtn}
-              onClick={() => { setZoom(1); setPanX(0); setPanY(0); }}
-              title="Reset view"
-            >
-              ⊙
-            </button>
+              {(isDM || agent.revealed) ? agent.name : 'Unknown ' + (RANK_LABELS[agent.rank] || 'Agent')}
+            </div>
+            {(isDM || agent.revealed) && agent.title && (
+              <div style={{ fontSize: 11, color: T.textDim, marginTop: 1 }}>{agent.title}</div>
+            )}
+          </div>
+
+          {/* Right Side */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+            <InfluenceStars value={agent.influence} max={5} color={color} />
+            <StatusBadge status={agent.status} small />
           </div>
         </div>
+      </div>
+    );
+  }
 
-        {/* DETAIL PANEL */}
-        {selectedAgent && (
-          <div style={styles.detailPanel}>
-            <button
-              style={styles.detailClose}
-              onClick={() => setSelectedAgent(null)}
-              title="Close panel"
-            >
-              ✕
+  /* ════════════════════════════════════════════════════════════
+     MAIN COMPONENT
+  ════════════════════════════════════════════════════════════ */
+  function CourtIntrigueView({ data, setData, viewRole }) {
+    const [view, setView] = useState('overview');           // 'overview' | branchId
+    const [selectedAgent, setSelectedAgent] = useState(null);
+    const [editingAgent, setEditingAgent] = useState(null);  // agent being edited in panel
+    const [showAddAgent, setShowAddAgent] = useState(false);
+    const [showAddBranch, setShowAddBranch] = useState(false);
+    const [newBranchName, setNewBranchName] = useState('');
+    const [newBranchDesc, setNewBranchDesc] = useState('');
+    const [newClue, setNewClue] = useState('');
+    const [showEventLog, setShowEventLog] = useState(false);
+    const [newEventText, setNewEventText] = useState('');
+
+    const intrigue = data.intrigue || initializeIntrigueData();
+    const isDM = viewRole === 'DM' || viewRole === 'dm';
+
+    // ── Init ──
+    useEffect(() => {
+      if (!data.intrigue) {
+        setData(prev => ({ ...prev, intrigue: initializeIntrigueData() }));
+      }
+    }, []);
+
+    // ── Core updaters ──
+    const update = useCallback((patch) => {
+      setData(prev => ({ ...prev, intrigue: { ...prev.intrigue || intrigue, ...patch } }));
+    }, [intrigue, setData]);
+
+    const updateBranch = useCallback((branchId, patch) => {
+      update({
+        branches: intrigue.branches.map(b => b.id === branchId ? { ...b, ...patch } : b),
+      });
+    }, [intrigue, update]);
+
+    const updateAgentInBranch = useCallback((branchId, agentId, patch) => {
+      update({
+        branches: intrigue.branches.map(b => {
+          if (b.id !== branchId) return b;
+          if (b.sage.id === agentId) return { ...b, sage: { ...b.sage, ...patch } };
+          return { ...b, agents: b.agents.map(a => a.id === agentId ? { ...a, ...patch } : a) };
+        }),
+      });
+      if (editingAgent && editingAgent.id === agentId) {
+        setEditingAgent(prev => prev ? { ...prev, ...patch } : prev);
+      }
+    }, [intrigue, update, editingAgent]);
+
+    const addAgentToBranch = useCallback((branchId) => {
+      const agent = makeAgent({});
+      update({
+        branches: intrigue.branches.map(b =>
+          b.id === branchId ? { ...b, agents: [...b.agents, agent] } : b
+        ),
+      });
+      setEditingAgent(agent);
+      setShowAddAgent(false);
+    }, [intrigue, update]);
+
+    const removeAgentFromBranch = useCallback((branchId, agentId) => {
+      update({
+        branches: intrigue.branches.map(b =>
+          b.id === branchId ? { ...b, agents: b.agents.filter(a => a.id !== agentId) } : b
+        ),
+      });
+      if (editingAgent && editingAgent.id === agentId) setEditingAgent(null);
+    }, [intrigue, update, editingAgent]);
+
+    const addBranch = useCallback(() => {
+      if (!newBranchName.trim()) return;
+      const branch = makeBranch({ name: newBranchName.trim(), description: newBranchDesc.trim() });
+      update({ branches: [...intrigue.branches, branch] });
+      setNewBranchName('');
+      setNewBranchDesc('');
+      setShowAddBranch(false);
+      setView(branch.id);
+    }, [intrigue, update, newBranchName, newBranchDesc]);
+
+    const removeBranch = useCallback((branchId) => {
+      if (!confirm('Remove this entire faction and all its agents?')) return;
+      update({ branches: intrigue.branches.filter(b => b.id !== branchId) });
+      if (view === branchId) setView('overview');
+    }, [intrigue, update, view]);
+
+    const addClueToAgent = useCallback((branchId, agentId, text) => {
+      if (!text.trim()) return;
+      const agent = findAgent(agentId);
+      if (!agent) return;
+      const clues = [...(agent.clues || []), text.trim()];
+      updateAgentInBranch(branchId, agentId, { clues });
+    }, [updateAgentInBranch]);
+
+    const addEvent = useCallback((branchId, text) => {
+      if (!text.trim()) return;
+      const evt = { id: uid(), date: 'Session ' + (intrigue.globalEvents?.length || 0 + 1), text: text.trim(), branchId };
+      update({ globalEvents: [...(intrigue.globalEvents || []), evt] });
+    }, [intrigue, update]);
+
+    // ── Finders ──
+    const findAgent = useCallback((agentId) => {
+      if (intrigue.shadowLeader.id === agentId) return intrigue.shadowLeader;
+      for (const b of intrigue.branches) {
+        if (b.sage.id === agentId) return b.sage;
+        const a = b.agents.find(x => x.id === agentId);
+        if (a) return a;
+      }
+      return null;
+    }, [intrigue]);
+
+    const findBranchForAgent = useCallback((agentId) => {
+      for (const b of intrigue.branches) {
+        if (b.sage.id === agentId) return b;
+        if (b.agents.some(a => a.id === agentId)) return b;
+      }
+      return null;
+    }, [intrigue]);
+
+    // ── Stats ──
+    const totalAgents = useMemo(() =>
+      intrigue.branches.reduce((s, b) => s + 1 + b.agents.length, 0) + 1
+    , [intrigue.branches]);
+    const totalRevealed = useMemo(() => {
+      let c = intrigue.shadowLeader.revealed ? 1 : 0;
+      intrigue.branches.forEach(b => {
+        if (b.sage.revealed) c++;
+        b.agents.forEach(a => { if (a.revealed) c++; });
+      });
+      return c;
+    }, [intrigue]);
+
+    const activeBranch = view !== 'overview' ? intrigue.branches.find(b => b.id === view) : null;
+
+    /* ════════════════════ RENDER ════════════════════ */
+    return (
+      <div style={{
+        display: 'flex', flexDirection: 'column', height: '100%',
+        background: T.bg, color: T.text, fontFamily: T.body, overflow: 'hidden',
+      }}>
+        <style>{`
+          @keyframes intriguePulse { 0%,100%{opacity:0.6} 50%{opacity:1} }
+          @keyframes intrigueSlideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+          .intrigue-card:hover { border-color: rgba(255,255,255,0.15) !important; transform: translateY(-2px); }
+          .intrigue-tree-node:hover { background: rgba(255,255,255,0.04) !important; }
+          .intrigue-scroll::-webkit-scrollbar { width: 6px; }
+          .intrigue-scroll::-webkit-scrollbar-track { background: transparent; }
+          .intrigue-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+        `}</style>
+
+        {/* ── HEADER BAR ── */}
+        <div style={{
+          padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12,
+          borderBottom: '1px solid ' + T.border, background: 'rgba(0,0,0,0.2)',
+          flexShrink: 0,
+        }}>
+          {view !== 'overview' && (
+            <button onClick={() => { setView('overview'); setEditingAgent(null); }}
+              style={{ background: 'none', border: 'none', color: T.gold, cursor: 'pointer', padding: 4, display: 'flex' }}>
+              <ArrowLeft size={18} />
             </button>
+          )}
+          <Crown size={20} style={{ color: T.gold, flexShrink: 0 }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: T.heading, fontSize: 18, fontWeight: 700, color: T.gold, letterSpacing: '1px' }}>
+              {activeBranch ? activeBranch.name : 'Court Intrigue'}
+            </div>
+            {!activeBranch && (
+              <div style={{ fontSize: 11, color: T.textDim, marginTop: 1 }}>
+                {totalRevealed}/{totalAgents} agents revealed across {intrigue.branches.length} factions
+              </div>
+            )}
+            {activeBranch && (
+              <div style={{ fontSize: 11, color: T.textDim, marginTop: 1 }}>{activeBranch.description}</div>
+            )}
+          </div>
 
-            <div style={styles.detailContent}>
-              {/* PORTRAIT */}
-              <div style={{
-                width: '120px',
-                height: '120px',
-                margin: '0 auto 20px',
-                background: selectedAgent.revealed ? T.green : T.bgInput,
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: `2px solid ${T.gold}`,
-                fontSize: '48px',
-                boxShadow: `0 0 20px ${T.gold}80`
+          {/* Global Stats */}
+          <div style={{ display: 'flex', gap: 16, flexShrink: 0, fontSize: 12, color: T.textDim }}>
+            <span><Network size={13} style={{ verticalAlign: 'middle', marginRight: 3 }} />{intrigue.branches.length} Factions</span>
+            <span><Users size={13} style={{ verticalAlign: 'middle', marginRight: 3 }} />{totalAgents} Agents</span>
+            <span><Eye size={13} style={{ verticalAlign: 'middle', marginRight: 3 }} />{totalRevealed} Revealed</span>
+          </div>
+
+          {isDM && view === 'overview' && (
+            <button onClick={() => setShowAddBranch(true)}
+              style={{
+                background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.2)',
+                color: T.gold, padding: '6px 12px', borderRadius: 4, cursor: 'pointer',
+                fontFamily: T.ui, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4,
+                letterSpacing: '0.5px',
               }}>
-                {selectedAgent.status === 'eliminated' ? 'X' : selectedAgent.revealed ? <Shield size={48} style={{ display: 'block' }} /> : '?'}
-              </div>
+              <Plus size={13} /> Faction
+            </button>
+          )}
+        </div>
 
-              {/* NAME */}
-              <div style={styles.detailHeader}>
-                {selectedAgent.revealed || isDM ? selectedAgent.name : 'Unknown Agent'}
-              </div>
+        {/* ── BODY ── */}
+        <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
-              {/* STATUS BADGE */}
-              {selectedAgent.id !== 'leader' && (
-                <div style={{
-                  ...styles.statusBadge,
-                  ...getStatusBadgeStyle(selectedAgent.status)
-                }}>
-                  {selectedAgent.status.charAt(0).toUpperCase() + selectedAgent.status.slice(1)}
-                </div>
-              )}
-
-              {/* DETAILS */}
-              <div style={styles.detailField}>
-                <div style={styles.detailLabel}>Title / Position</div>
-                <div style={styles.detailValue}>{selectedAgent.title}</div>
-              </div>
-
-              {(selectedAgent.revealed || isDM) && (
-                <div style={styles.detailField}>
-                  <div style={styles.detailLabel}>Status</div>
-                  <div style={styles.detailValue}>{selectedAgent.status}</div>
-                </div>
-              )}
-
-              <div style={styles.detailField}>
-                <div style={styles.detailLabel}>Last Known Location</div>
-                <div style={styles.detailValue}>{selectedAgent.location}</div>
-              </div>
-
-              <div style={styles.detailField}>
-                <div style={styles.detailLabel}>Influence</div>
-                <div style={{ display: 'flex', gap: '4px' }}>
-                  {[...Array(5)].map((_, i) => (
-                    <Star
-                      key={i}
-                      size={16}
-                      fill={i < selectedAgent.influence ? T.gold : 'transparent'}
-                      color={i < selectedAgent.influence ? T.gold : T.textDim}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {(selectedAgent.revealed || isDM) && selectedAgent.clues?.length > 0 && (
-                <div style={styles.detailField}>
-                  <div style={styles.detailLabel}>Clues Found ({selectedAgent.clues.length})</div>
+          {/* ══════════ OVERVIEW ══════════ */}
+          {view === 'overview' && (
+            <div className="intrigue-scroll" style={{
+              flex: 1, overflowY: 'auto', padding: 20,
+            }}>
+              {/* Shadow Leader Card */}
+              <div style={{
+                marginBottom: 20, padding: 20, borderRadius: 8,
+                background: 'linear-gradient(135deg, rgba(255,215,0,0.06) 0%, rgba(0,0,0,0.3) 100%)',
+                border: '1px solid rgba(255,215,0,0.15)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
                   <div style={{
-                    background: 'rgba(255, 215, 0, 0.05)',
-                    borderLeft: `2px solid ${T.gold}`,
-                    padding: '8px 12px',
-                    borderRadius: '4px',
-                    fontSize: '13px'
+                    width: 56, height: 56, borderRadius: '50%',
+                    background: intrigue.shadowLeader.revealed ? T.gold : 'rgba(255,215,0,0.1)',
+                    border: '2px solid ' + T.gold, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    boxShadow: '0 0 30px rgba(255,215,0,0.2)',
+                    fontSize: 28, fontWeight: 700, color: intrigue.shadowLeader.revealed ? '#000' : T.gold,
+                    animation: !intrigue.shadowLeader.revealed ? 'intriguePulse 3s infinite' : 'none',
                   }}>
-                    {selectedAgent.clues.map((clue, idx) => (
-                      <div key={idx} style={{ marginBottom: idx < selectedAgent.clues.length - 1 ? '8px' : 0 }}>
-                        • {clue}
+                    {intrigue.shadowLeader.revealed ? <Crown size={28} /> : '?'}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontFamily: T.heading, fontSize: 16, fontWeight: 700, color: T.gold }}>
+                      {isDM || intrigue.shadowLeader.revealed ? intrigue.shadowLeader.name : 'The Shadow Leader'}
+                    </div>
+                    <div style={{ fontSize: 12, color: T.textDim, marginTop: 2 }}>{intrigue.shadowLeader.title}</div>
+                  </div>
+                  <StatusBadge status={intrigue.shadowLeader.status} />
+                  <InfluenceStars value={intrigue.shadowLeader.influence} max={5} />
+                </div>
+              </div>
+
+              {/* Faction Grid */}
+              <div style={{
+                display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14,
+              }}>
+                {intrigue.branches.map(branch => {
+                  const allAgents = [branch.sage, ...branch.agents];
+                  const counts = countByStatus(allAgents);
+                  const hue = branch.colorHue || 45;
+                  const color = branchColor(hue);
+
+                  return (
+                    <div
+                      key={branch.id}
+                      className="intrigue-card"
+                      onClick={() => setView(branch.id)}
+                      style={{
+                        padding: 18, borderRadius: 8, cursor: 'pointer',
+                        background: branchBg(hue, 0.5),
+                        border: '1px solid ' + branchColor(hue, 0.15),
+                        transition: 'all 0.25s',
+                      }}
+                    >
+                      {/* Card Header */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                        <div>
+                          <div style={{ fontFamily: T.heading, fontSize: 15, fontWeight: 700, color }}>
+                            {branch.name}
+                          </div>
+                          <div style={{ fontSize: 11, color: T.textDim, marginTop: 2 }}>{branch.description}</div>
+                        </div>
+                        <ChevronRight size={16} style={{ color: T.textFaint }} />
                       </div>
-                    ))}
+
+                      {/* Power Bar */}
+                      <PowerBar value={branch.powerLevel} hue={hue} />
+
+                      {/* Agent Stats */}
+                      <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 11, color: T.textDim }}>
+                          <Users size={11} style={{ verticalAlign: 'middle', marginRight: 2 }} />
+                          {allAgents.length} agents
+                        </span>
+                        {counts.revealed > 0 && (
+                          <span style={{ fontSize: 11, color: STATUS.revealed.text }}>
+                            {counts.revealed} revealed
+                          </span>
+                        )}
+                        {counts.eliminated > 0 && (
+                          <span style={{ fontSize: 11, color: STATUS.eliminated.text }}>
+                            {counts.eliminated} eliminated
+                          </span>
+                        )}
+                        {counts.suspected > 0 && (
+                          <span style={{ fontSize: 11, color: STATUS.suspected.text }}>
+                            {counts.suspected} suspected
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Sage Preview */}
+                      <div style={{
+                        marginTop: 12, padding: '8px 10px', borderRadius: 4,
+                        background: 'rgba(0,0,0,0.2)', border: '1px solid ' + branchColor(hue, 0.1),
+                        display: 'flex', alignItems: 'center', gap: 8,
+                      }}>
+                        <div style={{
+                          width: 24, height: 24, borderRadius: 4,
+                          background: branch.sage.revealed ? color : 'rgba(255,255,255,0.06)',
+                          border: '1px solid ' + branchColor(hue, 0.3),
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 10, fontWeight: 700, color: branch.sage.revealed ? '#000' : T.textFaint,
+                        }}>
+                          {branch.sage.revealed ? <Shield size={12} /> : '?'}
+                        </div>
+                        <div style={{ fontSize: 12, color: T.text, flex: 1 }}>
+                          {isDM || branch.sage.revealed ? branch.sage.name : 'Unknown Leader'}
+                        </div>
+                        <StatusBadge status={branch.sage.status} small />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Add Branch Modal */}
+              {showAddBranch && isDM && (
+                <div style={{
+                  position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }} onClick={() => setShowAddBranch(false)}>
+                  <div onClick={e => e.stopPropagation()} style={{
+                    background: T.bgCard, border: '1px solid ' + T.border, borderRadius: 8,
+                    padding: 24, width: 400, maxWidth: '90vw',
+                  }}>
+                    <div style={{ fontFamily: T.heading, fontSize: 16, color: T.gold, marginBottom: 16 }}>Create New Faction</div>
+                    <SectionLabel>Name</SectionLabel>
+                    <EditableText value={newBranchName} onChange={setNewBranchName} placeholder="Faction name..." />
+                    <SectionLabel>Description</SectionLabel>
+                    <EditableText value={newBranchDesc} onChange={setNewBranchDesc} placeholder="Brief description..." />
+                    <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
+                      <button onClick={addBranch} disabled={!newBranchName.trim()}
+                        style={{
+                          flex: 1, padding: '10px 16px', background: T.gold, color: '#000',
+                          border: 'none', borderRadius: 4, cursor: 'pointer', fontFamily: T.ui,
+                          fontSize: 12, fontWeight: 700, opacity: newBranchName.trim() ? 1 : 0.4,
+                        }}>Create Faction</button>
+                      <button onClick={() => setShowAddBranch(false)}
+                        style={{
+                          padding: '10px 16px', background: 'transparent', color: T.textDim,
+                          border: '1px solid ' + T.border, borderRadius: 4, cursor: 'pointer',
+                          fontFamily: T.ui, fontSize: 12,
+                        }}>Cancel</button>
+                    </div>
                   </div>
                 </div>
-              )}
-
-              {isDM && (
-                <>
-                  <div style={styles.detailField}>
-                    <div style={styles.detailLabel}>DM Notes</div>
-                    <textarea
-                      value={selectedAgent.notes || ''}
-                      onChange={(e) => updateAgent(selectedAgent.id, { notes: e.target.value })}
-                      style={{
-                        width: '100%',
-                        minHeight: '80px',
-                        background: 'rgba(0, 0, 0, 0.3)',
-                        border: `1px solid ${T.border}`,
-                        color: T.text,
-                        padding: '8px',
-                        borderRadius: '4px',
-                        fontFamily: 'monospace',
-                        fontSize: '12px',
-                        resize: 'none'
-                      }}
-                      placeholder="Private DM notes..."
-                    />
-                  </div>
-
-                  <div style={styles.buttonGroup}>
-                    {!selectedAgent.revealed && selectedAgent.id !== 'leader' && (
-                      <button
-                        style={{
-                          ...styles.button,
-                          background: T.green,
-                          color: T.bg
-                        }}
-                        onClick={() => updateAgent(selectedAgent.id, { revealed: true })}
-                      >
-                        <Eye size={14} /> Reveal
-                      </button>
-                    )}
-
-                    {selectedAgent.status !== 'eliminated' && selectedAgent.id !== 'leader' && (
-                      <button
-                        style={{
-                          ...styles.button,
-                          background: T.crimson,
-                          color: T.bg
-                        }}
-                        onClick={() => updateAgent(selectedAgent.id, { status: 'eliminated' })}
-                      >
-                        <Skull size={14} /> Eliminate
-                      </button>
-                    )}
-
-                    {selectedAgent.status === 'eliminated' && selectedAgent.id !== 'leader' && (
-                      <button
-                        style={{
-                          ...styles.button,
-                          background: T.bgInput,
-                          color: T.text
-                        }}
-                        onClick={() => updateAgent(selectedAgent.id, { status: 'hidden' })}
-                      >
-                        <RotateCcw size={14} /> Restore
-                      </button>
-                    )}
-                  </div>
-                </>
               )}
             </div>
-          </div>
-        )}
+          )}
+
+          {/* ══════════ FACTION DETAIL PAGE ══════════ */}
+          {activeBranch && (
+            <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+
+              {/* LEFT: Hierarchy Tree */}
+              <div className="intrigue-scroll" style={{
+                flex: 1, overflowY: 'auto', padding: 20, minWidth: 0,
+              }}>
+                {/* Faction Header Card */}
+                <div style={{
+                  marginBottom: 16, padding: 16, borderRadius: 8,
+                  background: branchBg(activeBranch.colorHue, 0.6),
+                  border: '1px solid ' + branchColor(activeBranch.colorHue, 0.15),
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+                    <div style={{ fontFamily: T.heading, fontSize: 18, fontWeight: 700, color: branchColor(activeBranch.colorHue) }}>
+                      {activeBranch.name}
+                    </div>
+                    {isDM && (
+                      <button onClick={() => removeBranch(activeBranch.id)}
+                        style={{ background: 'none', border: 'none', color: T.textFaint, cursor: 'pointer', padding: 4 }}>
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                  <PowerBar value={activeBranch.powerLevel} hue={activeBranch.colorHue} />
+
+                  {isDM && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
+                      <SectionLabel>Power Level</SectionLabel>
+                      <input type="range" min={0} max={100} value={activeBranch.powerLevel}
+                        onChange={e => updateBranch(activeBranch.id, { powerLevel: Number(e.target.value) })}
+                        style={{ flex: 1, accentColor: branchColor(activeBranch.colorHue) }}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Hierarchy Tree */}
+                <SectionLabel>Hierarchy</SectionLabel>
+
+                {/* Connection to Shadow Leader */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', marginBottom: 4,
+                  background: 'rgba(255,215,0,0.04)', borderRadius: 4, border: '1px solid rgba(255,215,0,0.08)',
+                  cursor: 'pointer', fontSize: 12, color: T.gold, fontFamily: T.ui,
+                }} onClick={() => {
+                  setEditingAgent(intrigue.shadowLeader);
+                }}>
+                  <Crown size={14} />
+                  <span>{isDM || intrigue.shadowLeader.revealed ? intrigue.shadowLeader.name : 'The Shadow Leader'}</span>
+                  <ChevronDown size={12} style={{ marginLeft: 'auto', color: T.textFaint }} />
+                </div>
+
+                {/* Sage (Inner Circle) */}
+                <TreeNode
+                  agent={activeBranch.sage}
+                  hue={activeBranch.colorHue}
+                  depth={1}
+                  isDM={isDM}
+                  onSelect={a => setEditingAgent(a)}
+                  isSelected={editingAgent?.id === activeBranch.sage.id}
+                />
+
+                {/* Agents */}
+                {activeBranch.agents.map(agent => (
+                  <TreeNode
+                    key={agent.id}
+                    agent={agent}
+                    hue={activeBranch.colorHue}
+                    depth={2}
+                    isDM={isDM}
+                    onSelect={a => setEditingAgent(a)}
+                    isSelected={editingAgent?.id === agent.id}
+                  />
+                ))}
+
+                {/* Add Agent Button */}
+                {isDM && (
+                  <div style={{ marginLeft: 56, marginTop: 4 }}>
+                    <button onClick={() => addAgentToBranch(activeBranch.id)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
+                        background: 'rgba(255,255,255,0.03)', border: '1px dashed ' + T.border,
+                        borderRadius: 6, cursor: 'pointer', color: T.textDim, fontSize: 12,
+                        fontFamily: T.ui, width: '100%',
+                      }}>
+                      <UserPlus size={13} /> Add Operative
+                    </button>
+                  </div>
+                )}
+
+                {/* Event Log */}
+                <SectionLabel>Event Log</SectionLabel>
+                <div style={{ marginTop: 4 }}>
+                  {(intrigue.globalEvents || []).filter(e => !e.branchId || e.branchId === activeBranch.id).slice(-10).reverse().map(evt => (
+                    <div key={evt.id} style={{
+                      padding: '6px 10px', marginBottom: 3, borderRadius: 4,
+                      background: 'rgba(0,0,0,0.15)', fontSize: 12, color: T.textDim,
+                      borderLeft: '2px solid ' + branchColor(activeBranch.colorHue, 0.3),
+                    }}>
+                      <span style={{ color: T.textFaint, fontSize: 10, marginRight: 6 }}>{evt.date}</span>
+                      {evt.text}
+                    </div>
+                  ))}
+                  {isDM && (
+                    <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
+                      <EditableText value={newEventText} onChange={setNewEventText} placeholder="Log an event..." />
+                      <button onClick={() => { addEvent(activeBranch.id, newEventText); setNewEventText(''); }}
+                        disabled={!newEventText.trim()}
+                        style={{
+                          padding: '6px 12px', background: branchColor(activeBranch.colorHue, 0.2),
+                          border: '1px solid ' + branchColor(activeBranch.colorHue, 0.3),
+                          color: branchColor(activeBranch.colorHue), borderRadius: 4, cursor: 'pointer',
+                          fontSize: 11, fontFamily: T.ui, whiteSpace: 'nowrap',
+                          opacity: newEventText.trim() ? 1 : 0.4,
+                        }}>
+                        <Plus size={12} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* RIGHT: Agent Detail Panel */}
+              {editingAgent && (
+                <div className="intrigue-scroll" style={{
+                  width: 380, borderLeft: '1px solid ' + T.border,
+                  overflowY: 'auto', background: 'rgba(0,0,0,0.15)',
+                  animation: 'intrigueSlideIn 0.25s ease',
+                  flexShrink: 0,
+                }}>
+                  <div style={{ padding: 20 }}>
+                    {/* Close */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                      <div style={{ fontFamily: T.heading, fontSize: 14, color: T.gold, letterSpacing: '1px' }}>
+                        {RANK_LABELS[editingAgent.rank] || 'Agent'} Detail
+                      </div>
+                      <button onClick={() => setEditingAgent(null)}
+                        style={{ background: 'none', border: 'none', color: T.textFaint, cursor: 'pointer' }}>
+                        <X size={16} />
+                      </button>
+                    </div>
+
+                    {/* Status Badge */}
+                    <div style={{ marginBottom: 16, textAlign: 'center' }}>
+                      <StatusBadge status={editingAgent.status} />
+                    </div>
+
+                    {/* Name & Title */}
+                    {isDM ? (
+                      <>
+                        <SectionLabel>Name</SectionLabel>
+                        <EditableText
+                          value={editingAgent.name}
+                          onChange={v => {
+                            const b = findBranchForAgent(editingAgent.id);
+                            if (b) updateAgentInBranch(b.id, editingAgent.id, { name: v });
+                            else if (editingAgent.id === 'leader') update({ shadowLeader: { ...intrigue.shadowLeader, name: v } });
+                          }}
+                          placeholder="Agent name..."
+                        />
+                        <SectionLabel>Title / Position</SectionLabel>
+                        <EditableText
+                          value={editingAgent.title}
+                          onChange={v => {
+                            const b = findBranchForAgent(editingAgent.id);
+                            if (b) updateAgentInBranch(b.id, editingAgent.id, { title: v });
+                            else if (editingAgent.id === 'leader') update({ shadowLeader: { ...intrigue.shadowLeader, title: v } });
+                          }}
+                          placeholder="Title or role..."
+                        />
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ fontFamily: T.heading, fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 4 }}>
+                          {editingAgent.revealed ? editingAgent.name : 'Unknown ' + (RANK_LABELS[editingAgent.rank] || 'Agent')}
+                        </div>
+                        {editingAgent.revealed && editingAgent.title && (
+                          <div style={{ fontSize: 13, color: T.textDim, marginBottom: 12 }}>{editingAgent.title}</div>
+                        )}
+                      </>
+                    )}
+
+                    {/* Location */}
+                    <SectionLabel>Location</SectionLabel>
+                    {isDM ? (
+                      <EditableText
+                        value={editingAgent.location}
+                        onChange={v => {
+                          const b = findBranchForAgent(editingAgent.id);
+                          if (b) updateAgentInBranch(b.id, editingAgent.id, { location: v });
+                          else if (editingAgent.id === 'leader') update({ shadowLeader: { ...intrigue.shadowLeader, location: v } });
+                        }}
+                        placeholder="Last known location..."
+                      />
+                    ) : (
+                      <div style={{ fontSize: 13, color: T.text }}>{editingAgent.location || 'Unknown'}</div>
+                    )}
+
+                    {/* Influence */}
+                    <SectionLabel>Influence</SectionLabel>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <InfluenceStars value={editingAgent.influence} max={5} />
+                      {isDM && (
+                        <input type="range" min={1} max={5} step={1} value={editingAgent.influence}
+                          onChange={e => {
+                            const v = Number(e.target.value);
+                            const b = findBranchForAgent(editingAgent.id);
+                            if (b) updateAgentInBranch(b.id, editingAgent.id, { influence: v });
+                            else if (editingAgent.id === 'leader') update({ shadowLeader: { ...intrigue.shadowLeader, influence: v } });
+                          }}
+                          style={{ flex: 1, accentColor: T.gold }}
+                        />
+                      )}
+                    </div>
+
+                    {/* Status Selector (DM) */}
+                    {isDM && (
+                      <>
+                        <SectionLabel>Status</SectionLabel>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                          {STATUS_KEYS.map(key => (
+                            <button key={key}
+                              onClick={() => {
+                                const patch = { status: key, revealed: key !== 'hidden' ? true : editingAgent.revealed };
+                                const b = findBranchForAgent(editingAgent.id);
+                                if (b) updateAgentInBranch(b.id, editingAgent.id, patch);
+                                else if (editingAgent.id === 'leader') update({ shadowLeader: { ...intrigue.shadowLeader, ...patch } });
+                              }}
+                              style={{
+                                padding: '4px 10px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                                fontSize: 10, fontWeight: 600, fontFamily: T.ui, letterSpacing: '0.5px',
+                                background: editingAgent.status === key ? STATUS[key].color : 'rgba(255,255,255,0.04)',
+                                color: editingAgent.status === key ? STATUS[key].text : T.textFaint,
+                              }}>
+                              {STATUS[key].label}
+                            </button>
+                          ))}
+                        </div>
+                      </>
+                    )}
+
+                    {/* Clues */}
+                    <SectionLabel>Clues ({(editingAgent.clues || []).length})</SectionLabel>
+                    <div style={{
+                      background: 'rgba(0,0,0,0.2)', borderRadius: 4, padding: 8,
+                      borderLeft: '2px solid ' + T.gold,
+                    }}>
+                      {(editingAgent.clues || []).length === 0 && (
+                        <div style={{ fontSize: 12, color: T.textFaint, fontStyle: 'italic' }}>No clues discovered yet.</div>
+                      )}
+                      {(editingAgent.clues || []).map((clue, i) => (
+                        <div key={i} style={{ fontSize: 12, color: T.textDim, padding: '4px 0', borderBottom: i < editingAgent.clues.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                          <span style={{ color: T.gold, marginRight: 6, fontSize: 10 }}>#{i + 1}</span>
+                          {clue}
+                        </div>
+                      ))}
+                      {isDM && (
+                        <div style={{ display: 'flex', gap: 4, marginTop: 6 }}>
+                          <EditableText value={newClue} onChange={setNewClue} placeholder="Add clue..." style={{ fontSize: 11 }} />
+                          <button onClick={() => {
+                            const b = findBranchForAgent(editingAgent.id);
+                            if (b) addClueToAgent(b.id, editingAgent.id, newClue);
+                            setNewClue('');
+                          }} disabled={!newClue.trim()}
+                            style={{
+                              padding: '4px 10px', background: 'rgba(255,215,0,0.15)',
+                              border: '1px solid rgba(255,215,0,0.2)', color: T.gold,
+                              borderRadius: 4, cursor: 'pointer', fontSize: 10,
+                              opacity: newClue.trim() ? 1 : 0.4,
+                            }}>
+                            <Plus size={11} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* DM Notes */}
+                    {isDM && (
+                      <>
+                        <SectionLabel>DM Notes</SectionLabel>
+                        <EditableText
+                          multiline
+                          value={editingAgent.notes}
+                          onChange={v => {
+                            const b = findBranchForAgent(editingAgent.id);
+                            if (b) updateAgentInBranch(b.id, editingAgent.id, { notes: v });
+                            else if (editingAgent.id === 'leader') update({ shadowLeader: { ...intrigue.shadowLeader, notes: v } });
+                          }}
+                          placeholder="Private DM notes..."
+                        />
+                      </>
+                    )}
+
+                    {/* Actions */}
+                    {isDM && editingAgent.id !== 'leader' && (
+                      <>
+                        <SectionLabel>Actions</SectionLabel>
+                        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                          {!editingAgent.revealed && (
+                            <button onClick={() => {
+                              const b = findBranchForAgent(editingAgent.id);
+                              if (b) updateAgentInBranch(b.id, editingAgent.id, { revealed: true, status: 'revealed' });
+                            }} style={{
+                              padding: '8px 14px', borderRadius: 4, border: 'none', cursor: 'pointer',
+                              background: STATUS.revealed.color, color: '#fff', fontSize: 12,
+                              fontFamily: T.ui, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4,
+                            }}>
+                              <Eye size={13} /> Reveal
+                            </button>
+                          )}
+                          {editingAgent.rank === 'agent' && (
+                            <button onClick={() => {
+                              if (confirm('Remove this agent permanently?')) {
+                                removeAgentFromBranch(activeBranch.id, editingAgent.id);
+                              }
+                            }} style={{
+                              padding: '8px 14px', borderRadius: 4, border: '1px solid ' + T.crimson,
+                              background: 'transparent', color: T.crimson, fontSize: 12,
+                              fontFamily: T.ui, fontWeight: 600, cursor: 'pointer',
+                              display: 'flex', alignItems: 'center', gap: 4,
+                            }}>
+                              <Trash2 size={13} /> Remove
+                            </button>
+                          )}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
     );
   }
