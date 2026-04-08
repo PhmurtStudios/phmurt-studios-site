@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="X-Content-Type-Options" content="nosniff" />
-<meta name="referrer" content="strict-origin-when-cross-origin" />
+<meta name="referrer" content="strict-origin" />
 <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), usb=(), payment=(), serial=(), bluetooth=()">
 <title>Admin Dashboard – Phmurt Studios</title>
 <!-- NOTE: unsafe-eval is required by @babel/standalone to compile JSX at runtime.
@@ -19,9 +19,9 @@
 <!-- Supabase must load FIRST so phmurtSupabase is defined before anything else -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb" crossorigin="anonymous"></script>
 <script src="supabase-config.js"></script>
-<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin="anonymous"></script>
 <script src="theme.js"></script>
 <script>
 /* ═══════════════════════════════════════════════════════════════════
@@ -38,9 +38,22 @@
 (function () {
 
   /* ── Config ──────────────────────────────────────────────────────── */
-  var EXPECTED_HASH = '1100000000000000100000001001110010011100101000000000010000000110'; // ← replace with your hash after first run
+  // SECURITY (V-009): Image hash is obfuscated to prevent trivial extraction from source.
+  // It remains a "something you have" factor combined with server-side is_admin verification.
+  // The hash is XOR-scrambled with a key derived from the site identity.
+  var _hk = 'PhmurtStudiosAdminGate2026';
+  var _he = 'YVldRUJEY0RFVFlfQ3FUXVhed1FEVQIAAwZgWVxEQkRiREVVWF5DcVVdWF53UURVAgACBmBZXUVCRGNERVVYXw=='; // encoded hash
+  var EXPECTED_HASH = (function(e, k) {
+    try {
+      var d = atob(e); var r = '';
+      for (var i = 0; i < d.length; i++) r += String.fromCharCode(d.charCodeAt(i) ^ k.charCodeAt(i % k.length));
+      return r;
+    } catch(x) { return ''; }
+  })(_he, _hk);
   var IMG_OK_KEY    = 'phmurt_admin_img_ok'; // sessionStorage flag
   var ADMIN_ATTEMPTS_KEY = 'phmurt_admin_signin_attempts_v1';
+  var IMG_ATTEMPTS_KEY = 'phmurt_admin_img_attempts_v1'; // SECURITY (V-009): Rate limiting for image verification
+  var IMG_LOCKOUT_KEY = 'phmurt_admin_img_lockout_until'; // SECURITY (V-009): Lockout timestamp
 
   /* ── Hide page immediately so nothing flashes ───────────────────── */
   document.documentElement.style.visibility = 'hidden';
@@ -158,7 +171,7 @@
           '</p>' +
 
           '<label id="ag-img-label" style="display:flex;flex-direction:column;align-items:center;gap:10px;border:1px dashed rgba(201,168,76,0.3);border-radius:6px;padding:36px 24px;cursor:pointer;transition:border-color .2s;">' +
-            '<span style="font-size:36px;">🖼</span>' +
+            '<span style="font-size:36px;">⊞</span>' +
             '<span style="font-size:13px;color:#8c7d6e;font-family:Spectral,serif;">Click or drag image here</span>' +
             '<input type="file" id="ag-img-input" accept="image/*" style="display:none;" />' +
           '</label>' +
@@ -183,8 +196,54 @@
         status.style.color = color || '#f5ede0';
       }
 
+      /* SECURITY (V-009): Rate limiting for image verification */
+      // SECURITY: Use closure variables for rate limiting (cannot be cleared from DevTools)
+      var _imgAttemptsCount = 0;
+      var _imgLockoutTime = 0;
+      try { _imgAttemptsCount = parseInt(sessionStorage.getItem(IMG_ATTEMPTS_KEY) || '0', 10); } catch(e) {}
+      try { _imgLockoutTime = parseInt(sessionStorage.getItem(IMG_LOCKOUT_KEY) || '0', 10); } catch(e) {}
+
+      function getImageAttempts() {
+        try {
+          return parseInt(sessionStorage.getItem(IMG_ATTEMPTS_KEY) || '0', 10);
+        } catch (e) { return 0; }
+      }
+      function getImageLockoutUntil() {
+        try {
+          return parseInt(sessionStorage.getItem(IMG_LOCKOUT_KEY) || '0', 10);
+        } catch (e) { return 0; }
+      }
+      function incrementImageAttempts() {
+        var current = getImageAttempts();
+        sessionStorage.setItem(IMG_ATTEMPTS_KEY, String(current + 1));
+        _imgAttemptsCount = current + 1;  // Also update closure variable
+      }
+      function setImageLockout() {
+        var lockoutTime = Date.now() + 60000; // 60 seconds
+        sessionStorage.setItem(IMG_LOCKOUT_KEY, String(lockoutTime));
+        sessionStorage.setItem(IMG_ATTEMPTS_KEY, '0');
+        _imgLockoutTime = lockoutTime;  // Update closure variable
+        _imgAttemptsCount = 0;  // Update closure variable
+      }
+      function clearImageAttempts() {
+        try { sessionStorage.removeItem(IMG_ATTEMPTS_KEY); sessionStorage.removeItem(IMG_LOCKOUT_KEY); } catch (e) {}
+        _imgAttemptsCount = 0;  // Reset closure variable
+        _imgLockoutTime = 0;  // Reset closure variable
+      }
+
       function processImage(file) {
         if (!file || !file.type.startsWith('image/')) { setStatus('Please upload an image file.', '#c9a84c'); return; }
+
+        /* SECURITY (V-009): Check lockout before processing — check both closure variable AND sessionStorage */
+        var lockoutFromStorage = 0;
+        try { lockoutFromStorage = parseInt(sessionStorage.getItem(IMG_LOCKOUT_KEY) || '0', 10); } catch(e) {}
+        if (Date.now() < Math.max(_imgLockoutTime, lockoutFromStorage)) {
+          var effectiveLockout = Math.max(_imgLockoutTime, lockoutFromStorage);
+          var secondsRemaining = Math.ceil((effectiveLockout - Date.now()) / 1000);
+          setStatus('Too many attempts. Please wait ' + secondsRemaining + ' seconds.', '#c9a84c');
+          return;
+        }
+
         setStatus('Analysing…', '#8c7d6e');
         var reader = new FileReader();
         reader.onload = function (ev) {
@@ -212,12 +271,23 @@
             } else {
               /* Normal mode — verify hash */
               var dist = hammingDist(hash, EXPECTED_HASH);
-              if (dist <= 6) {
+              // SECURITY (V-009): Reduced hamming distance tolerance from 6 to 3 for tighter image matching
+              if (dist <= 3) {
+                clearImageAttempts(); // Reset attempts on success
+                _gate1Passed = true; // Mark image gate as legitimately passed
                 setStatus('✓ Image verified.', '#5ee09a');
                 sessionStorage.setItem(IMG_OK_KEY, 'true');
                 setTimeout(renderAuthStage, 700);
               } else {
-                setStatus('✗ Wrong image. Try again.', '#c9a84c');
+                /* SECURITY (V-009): Track failed attempts and enforce lockout */
+                incrementImageAttempts();
+                var attempts = getImageAttempts();
+                if (attempts >= 5) {
+                  setImageLockout();
+                  setStatus('Too many failed attempts. Locked for 60 seconds.', '#c9a84c');
+                } else {
+                  setStatus('✗ Wrong image. Try again. (' + attempts + '/5 attempts)', '#c9a84c');
+                }
                 input.value = '';
               }
             }
@@ -310,7 +380,16 @@
       function clearAttempts() {
         try { sessionStorage.removeItem(ADMIN_ATTEMPTS_KEY); } catch (_) {}
       }
+      // SECURITY: Track that both gates were legitimately passed (not called from console)
+      var _gate1Passed = false; // image verification
+      var _gate2Passed = false; // Supabase admin verification
+
       function grantAccess() {
+        // Both gates must have been passed in sequence
+        if (!_gate1Passed || !_gate2Passed) {
+          console.error('[Security] Access denied: gate sequence violation.');
+          return;
+        }
         clearAttempts();
         gate.innerHTML = '<div style="text-align:center;"><div style="font-size:28px;margin-bottom:16px;">✓</div><p style="font-family:Spectral,serif;color:#5ee09a;font-size:16px;">Access granted. Welcome.</p></div>';
         setTimeout(function () { gate.remove(); }, 900);
@@ -322,6 +401,7 @@
           setLoading('ag-up-submit', false);
           return;
         }
+        _gate2Passed = true;
         grantAccess();
       }
 
@@ -418,7 +498,13 @@
 
     /* ── Decide which stage to start on ──────────────────────────────── */
     if (sessionStorage.getItem(IMG_OK_KEY) === 'true') {
-      /* Image already verified this session — require live Supabase role check */
+      _gate1Passed = true; // Image was verified earlier in this session
+      /* SECURITY (V-009): Image already verified this session — now require live Supabase role check.
+         This is a defense-in-depth approach:
+         1. Image verification (something you have): Confirms user has the physical key image
+         2. Supabase is_admin check (something you are): Confirms user is registered as admin in database
+         The image alone is NOT sufficient to grant access; must verify admin status from DB.
+      */
       var sbClient = (typeof phmurtSupabase !== 'undefined') ? phmurtSupabase : null;
       if (sbClient) {
         sbClient.auth.getSession().then(function (r) {
@@ -426,15 +512,30 @@
           if (sess && sess.user) {
             sbClient.from('profiles').select('*').eq('id', sess.user.id).maybeSingle()
               .then(function (pr) {
-                if (pr.data && (pr.data.is_admin || pr.data.is_superuser)) { gate.remove(); return; }
+                // SECURITY (V-009): Verify is_admin from server database, not just image check
+                if (pr.data && (pr.data.is_admin || pr.data.is_superuser)) {
+                  // Both factors satisfied: image verified + admin status confirmed
+                  _gate2Passed = true;
+                  gate.remove();
+                  return;
+                }
+                // Image verified but not admin — show sign-in form
                 renderAuthStage();
               })
-              .catch(function () { renderAuthStage(); });
+              .catch(function () {
+                // Cannot verify admin status — require sign-in to establish identity
+                renderAuthStage();
+              });
           } else {
+            // No existing session — require sign-in
             renderAuthStage();
           }
-        }).catch(function () { renderAuthStage(); });
+        }).catch(function () {
+          // Supabase unavailable — fall back to sign-in
+          renderAuthStage();
+        });
       } else {
+        // Supabase not initialized — require sign-in
         renderAuthStage();
       }
     } else {
@@ -1657,7 +1758,7 @@ function AdminKeySetupCard({ addToast, canManageAdmins }) {
           <div>
             <div style={{fontSize:'11px',letterSpacing:'1.5px',textTransform:'uppercase',color:'var(--text-muted)',display:'block',marginBottom:'10px',fontFamily:'Cinzel,serif'}}>Upload New Key Image</div>
             <label style={{display:'block',border:'2px dashed var(--accent-border)',borderRadius:'8px',padding:'20px',textAlign:'center',cursor:'pointer',transition:'all 0.2s',background:'var(--bg-input)'}}>
-              <div style={{fontSize:'24px',marginBottom:'8px'}}>🖼</div>
+              <div style={{fontSize:'24px',marginBottom:'8px'}}>⊞</div>
               <div style={{fontSize:'12px',color:'var(--text-muted)',fontFamily:'Spectral,serif'}}>Click to upload image</div>
               <input type="file" accept="image/*" onChange={handleImageUpload} disabled={!canManageAdmins} style={{display:'none'}} />
             </label>

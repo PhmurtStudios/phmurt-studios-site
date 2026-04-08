@@ -3175,7 +3175,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
       <div style={{ display:"flex", alignItems:"center", gap:0, rowGap:6, flexWrap:"wrap", padding:"0 12px 8px", borderBottom:`1px solid ${T.border}`, flexShrink:0, background:T.bgNav }}>
         {(() => {
           const mods = data.modules || {};
-          const coreTabs = ["map","regions","factions","npcs","party"];
+          const coreTabs = ["map","regions","factions","npcs"];
           const moduleTabs = [
             { id:"calendar", label:"Calendar", module:"calendar" },
             { id:"exploration", label:"Explore", module:"hexcrawl" },
@@ -5070,8 +5070,34 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                 return f?.color || "#c9a85c";
               };
 
+              /* ── role → icon + color mapping ── */
+              const RANK_ICON_MAP = {
+                ruler:    { Icon: Crown,    color: "#c9a85c" },
+                heir:     { Icon: Crown,    color: "#a08944" },
+                general:  { Icon: Swords,   color: "#dc143c" },
+                advisor:  { Icon: Eye,      color: "#58aaff" },
+                religious:{ Icon: Star,     color: "#e8940a" },
+                noble:    { Icon: Shield,   color: "#b574ff" },
+                military: { Icon: Swords,   color: "#8b97a8" },
+                scholar:  { Icon: BookOpen,  color: "#5ee09a" },
+                merchant: { Icon: Package,  color: "#ffd54f" },
+                criminal: { Icon: Skull,    color: "#f06858" },
+                commoner: { Icon: Users,    color: T.textFaint },
+              };
+              const rankKeyOf = (n) => {
+                const roleLc = (n.role || "").toLowerCase();
+                for (const [cat, titles] of Object.entries(NPC_ROLES)) {
+                  if (titles.some(t => roleLc.includes(t.toLowerCase()))) return cat;
+                }
+                return "commoner";
+              };
+
               const renderNpcCard = (n) => {
                 const active = sel?.id === n.id && selType === "npc";
+                const rk = rankKeyOf(n);
+                const iconInfo = RANK_ICON_MAP[rk] || RANK_ICON_MAP.commoner;
+                const RoleIcon = !n.alive ? Skull : iconInfo.Icon;
+                const roleIconColor = !n.alive ? T.crimson : iconInfo.color;
                 return (
                   <div key={n.id} onClick={() => { setSel(n); setSelType("npc"); setEditing(false); }} style={{
                     background: active ? T.bgHover : T.bgCard, padding: "14px 16px", cursor: "pointer", opacity: n.alive ? 1 : 0.45,
@@ -5079,7 +5105,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     boxShadow: "0 2px 8px rgba(0,0,0,0.08)", transition: "all 0.2s",
                   }}>
                     <div style={{ display: "flex", alignItems: "start", gap: 10 }}>
-                      {n.alive ? <Users size={14} color={T.textFaint} /> : <Skull size={14} color={T.crimson} />}
+                      <RoleIcon size={14} color={roleIconColor} />
                       <div style={{ flex: 1 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
                           <span style={{ fontSize: 15, fontWeight: 300, color: T.text }}>{n.name}</span>
@@ -5495,127 +5521,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
               );
             })()}
 
-            {tab==="party" && isDM && (
-              <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
-                {/* Party Kingdom Affiliation */}
-                <div style={{ background:T.bgCard, padding:24, border:`1px solid ${T.border}`, borderRadius:"4px", boxShadow:"0 2px 8px rgba(0,0,0,0.08)" }}>
-                  <div style={{ fontSize:10, color:T.textFaint, letterSpacing:"2px", textTransform:"uppercase", marginBottom:12 }}>Kingdom Affiliation</div>
-                  <Select value={data.partyKingdom || ""} onChange={v => setData(d => ({ ...d, partyKingdom: v }))} style={{ width:"100%", marginBottom:12 }}>
-                    <option value="">No Affiliation (Independent)</option>
-                    {(data.factions || []).map(f => <option key={f.id} value={f.name}>{f.name}</option>)}
-                  </Select>
-                  {data.partyKingdom && (
-                    <div style={{ fontSize:12, color:T.textMuted, fontStyle:"italic" }}>
-                      The party is affiliated with <span style={{ color:T.gold }}>{data.partyKingdom}</span>
-                      {(() => {
-                        const f = (data.factions || []).find(f => f.name === data.partyKingdom);
-                        return f ? <> — a {f.govType || "faction"} currently {f.trend || "stable"}</> : null;
-                      })()}
-                    </div>
-                  )}
-                </div>
-
-                {/* Social Rank / Aristocracy Level */}
-                <div style={{ background:T.bgCard, padding:24, border:`1px solid ${T.border}`, borderRadius:"4px", boxShadow:"0 2px 8px rgba(0,0,0,0.08)" }}>
-                  <div style={{ fontSize:10, color:T.textFaint, letterSpacing:"2px", textTransform:"uppercase", marginBottom:12 }}>Party Social Standing</div>
-                  <Select value={data.partyRank || "commoner"} onChange={v => setData(d => ({ ...d, partyRank: v }))} style={{ width:"100%", marginBottom:12 }}>
-                    {[
-                      { value:"outcast",     label:"Outcast — Exiled, wanted, or shunned by society" },
-                      { value:"peasant",     label:"Peasant — Common folk, laborers, and farmers" },
-                      { value:"commoner",    label:"Commoner — Merchants, artisans, and townsfolk" },
-                      { value:"freeman",     label:"Freeman — Respected citizens with some standing" },
-                      { value:"guild_member",label:"Guild Member — Part of a recognized trade or adventurer's guild" },
-                      { value:"knight",      label:"Knight — Sworn warriors with land or title" },
-                      { value:"lesser_noble",label:"Lesser Noble — Barons, baronesses, landed lords" },
-                      { value:"noble",       label:"Noble — Counts, dukes, or high-ranking aristocrats" },
-                      { value:"royal",       label:"Royal — Princes, princesses, or members of the royal family" },
-                      { value:"ruler",       label:"Ruler — Kings, queens, emperors, or sovereign leaders" },
-                    ].map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
-                  </Select>
-                  {(() => {
-                    const rankInfo = {
-                      outcast:      { color:T.crimson, label:"Outcasts", desc:"The party is shunned or hunted. Guards are suspicious, merchants refuse service, and most doors are closed to them." },
-                      peasant:      { color:T.textFaint, label:"Peasants", desc:"The party lives at the lowest rung. They have no political influence, few resources, and must earn every scrap of respect." },
-                      commoner:     { color:T.textMuted, label:"Commoners", desc:"Ordinary citizens. The party can trade freely and move without suspicion, but holds no special privilege." },
-                      freeman:      { color:T.textDim, label:"Freemen", desc:"Respected members of society. Some merchants offer discounts, and minor officials take their concerns seriously." },
-                      guild_member: { color:"#4a90d9", label:"Guild Members", desc:"Recognized by a guild. The party has access to guild resources, safe houses, and a network of contacts." },
-                      knight:       { color:"#2e8b57", label:"Knights", desc:"Titled warriors with sworn oaths. The party commands respect from soldiers, has access to military resources, and may hold small lands." },
-                      lesser_noble: { color:T.gold, label:"Lesser Nobles", desc:"The party holds minor titles and lands. They attend court, can raise levies, and have political influence in their region." },
-                      noble:        { color:"#d4a017", label:"Nobles", desc:"High-ranking aristocrats. The party wields significant political power, commands armies, and influences the fate of regions." },
-                      royal:        { color:"#8b50f0", label:"Royalty", desc:"Members of the ruling family. The party has immense authority, vast wealth, and the weight of a dynasty behind their every action." },
-                      ruler:        { color:T.crimson, label:"Rulers", desc:"The party sits atop the hierarchy. Their word is law, their armies vast, and their decisions shape the world itself." },
-                    };
-                    const info = rankInfo[data.partyRank || "commoner"];
-                    return info ? (
-                      <div style={{ padding:12, background:T.bg, border:`1px solid ${T.border}`, borderRadius:"3px" }}>
-                        <div style={{ fontSize:14, color:info.color, fontWeight:400, marginBottom:6 }}>{info.label}</div>
-                        <div style={{ fontSize:12, color:T.textMuted, fontWeight:300, lineHeight:"1.5" }}>{info.desc}</div>
-                      </div>
-                    ) : null;
-                  })()}
-                </div>
-
-                {/* Party's Standing with Each Faction */}
-                <div style={{ background:T.bgCard, padding:24, border:`1px solid ${T.border}`, borderRadius:"4px", boxShadow:"0 2px 8px rgba(0,0,0,0.08)" }}>
-                  <div style={{ fontSize:10, color:T.textFaint, letterSpacing:"2px", textTransform:"uppercase", marginBottom:12 }}>Party Reputation by Faction</div>
-                  {(data.factions || []).length === 0 ? (
-                    <div style={{ fontSize:12, color:T.textFaint, fontStyle:"italic" }}>No factions exist yet. Generate a world first.</div>
-                  ) : (
-                    <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-                      {(data.factions || []).map(f => {
-                        const rep = (data.partyReputations || {})[f.name] || "neutral";
-                        return (
-                          <div key={f.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 12px", background:T.bg, border:`1px solid ${T.border}`, borderRadius:"3px", borderLeft:`3px solid ${f.color}` }}>
-                            <span style={{ flex:1, fontSize:13, color:T.text, fontWeight:300 }}>{f.name}</span>
-                            <Select value={rep} onChange={v => {
-                              setData(d => ({
-                                ...d,
-                                partyReputations: { ...(d.partyReputations || {}), [f.name]: v },
-                              }));
-                            }} style={{ width:130 }}>
-                              {["revered","allied","friendly","neutral","cautious","hostile","hated"].map(a => <option key={a} value={a}>{a}</option>)}
-                            </Select>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                {/* Faction Diplomacy Matrix */}
-                <div style={{ background:T.bgCard, padding:24, border:`1px solid ${T.border}`, borderRadius:"4px", boxShadow:"0 2px 8px rgba(0,0,0,0.08)" }}>
-                  <div style={{ fontSize:10, color:T.textFaint, letterSpacing:"2px", textTransform:"uppercase", marginBottom:12 }}>Faction Diplomacy</div>
-                  <div style={{ fontSize:11, color:T.textMuted, marginBottom:12 }}>Set relationships between factions. Select a faction to edit its allies and rivals in the detail panel.</div>
-                  {(data.factions || []).length < 2 ? (
-                    <div style={{ fontSize:12, color:T.textFaint, fontStyle:"italic" }}>Need at least 2 factions to set relationships.</div>
-                  ) : (
-                    <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
-                      {(data.factions || []).map(f => (
-                        <div key={f.id} onClick={() => { setSel(f); setSelType("faction"); setEditing(true); }} style={{
-                          display:"flex", alignItems:"center", gap:10, padding:"10px 12px",
-                          background:T.bg, border:`1px solid ${T.border}`, borderRadius:"3px",
-                          borderLeft:`3px solid ${f.color}`, cursor:"pointer", transition:"all 0.2s",
-                        }}>
-                          <span style={{ fontSize:13, color:T.text, fontWeight:300, flex:1 }}>{f.name}</span>
-                          <div style={{ display:"flex", gap:8, fontSize:10 }}>
-                            {f.allies?.length > 0 && <span style={{ color:T.green }}>{f.allies.length} allies</span>}
-                            {f.rivals?.length > 0 && <span style={{ color:T.crimson }}>{f.rivals.length} rivals</span>}
-                            {!f.allies?.length && !f.rivals?.length && <span style={{ color:T.textFaint }}>no relationships</span>}
-                          </div>
-                          <Edit3 size={12} color={T.textFaint} />
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {tab==="party" && !isDM && (
-              <div style={{ padding:40, textAlign:"center", color:T.textFaint, fontStyle:"italic" }}>
-                Party settings are managed by the DM.
-              </div>
-            )}
+            {/* Party tab moved to Relations view */}
           </div>
         )}
 
