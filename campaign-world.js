@@ -2158,6 +2158,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
   const [worldSearch,setWorldSearch] = useState("");
   const [routeDraft,setRouteDraft] = useState({ fromId: null, toId: null });
   const [cityPopup,setCityPopup] = useState(null); // { city, screenX, screenY } for map tooltip
+  const [regionPopup,setRegionPopup] = useState(null); // { region, territory } for map region tooltip
   const [cityRegionFocus,setCityRegionFocus] = useState(null); // region name to highlight in Cities tab
   const [expandedRegions, setExpandedRegions] = useState({}); // track which regions are expanded in consolidated view
   const [regionDetailCity, setRegionDetailCity] = useState(null); // city selected within a region for detail view
@@ -3124,7 +3125,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
           const activeTabs = [...coreTabs, ...moduleTabs.filter(mt => mods[mt.module] !== false).map(mt => mt.id)];
           const labels = {map:"Atlas",calendar:"Calendar",exploration:"Explore"};
           return activeTabs.map(t => (
-            <button key={t} onClick={()=>{setTab(t);if(t!=="map"){setSel(null);setAtlasProvinceId(null);setEditing(false);setCityPopup(null);}}} style={{
+            <button key={t} onClick={()=>{setTab(t);if(t!=="map"){setSel(null);setAtlasProvinceId(null);setEditing(false);setCityPopup(null);setRegionPopup(null);}}} style={{
               padding:"14px clamp(8px, 1.6vw, 18px)", background:"transparent", border:"none", cursor:"pointer",
               fontFamily:T.ui, fontSize:8, letterSpacing:"1.5px", textTransform:"uppercase", fontWeight:500,
               color:tab===t?T.crimson:T.textMuted, transition:"all 0.3s",
@@ -3177,7 +3178,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
           <div ref={mapRef} style={{ flex:1, overflow:"hidden", cursor: dragging ? "grabbing" : "grab", position:"relative", background: data.atlasMapSeed ? "#2a2520" : "linear-gradient(165deg, #e8ddc8 0%, #ddd0b8 45%, #d4c6a8 100%)", touchAction:"none", WebkitUserSelect:"none", userSelect:"none" }}
             onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
             onTouchStart={handleMapTouchStart} onTouchMove={handleMapTouchMove} onTouchEnd={handleMapTouchEnd} onTouchCancel={handleMapTouchEnd}>
-            <svg width="100%" height="100%" style={{ display:"block" }} onClick={() => setCityPopup(null)}>
+            <svg width="100%" height="100%" style={{ display:"block" }} onClick={() => { setCityPopup(null); setRegionPopup(null); }}>
               <defs>
                 {/* Parchment texture filter */}
                 <filter id="parchment">
@@ -3281,7 +3282,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                   const isDestroyed = regionStates.every(s => s === "destroyed" || s === "conquered") && regionStates.length > 0;
 
                   return (
-                  <g key={`terr-${i}`} clipPath="url(#atlasLandClip)" style={{ cursor:"pointer" }} onClick={(e)=>{ e.stopPropagation(); setAtlasProvinceId(t.id); if (t.capitalNode) selectRegion(t.capitalNode); setTab("cities"); setCityRegionFocus(t.name); setSel(null); setSelType(null); }}>
+                  <g key={`terr-${i}`} clipPath="url(#atlasLandClip)" style={{ cursor:"pointer" }} onClick={(e)=>{ e.stopPropagation(); setCityPopup(null); setAtlasProvinceId(t.id); if (t.capitalNode) selectRegion(t.capitalNode); const regionData = (data.regions || []).find(r => r.name === t.name); setRegionPopup({ territory: t, region: regionData || null }); setSel(null); setSelType(null); }}>
                     {/* Unified fill — all subpaths drawn as one compound shape */}
                     <path d={t.path} fill={terrFill} opacity={isDestroyed ? 0.28 : isContested ? 0.24 : activeProvince ? 0.22 : 0.14} stroke="none" fillRule="nonzero"/>
                     {t._isMerged ? (
@@ -3450,6 +3451,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                     <g key={`cityhit-${city.id}`} style={{ cursor: "pointer" }}
                       onClick={(e) => {
                         e.stopPropagation();
+                        setRegionPopup(null);
                         setCityPopup(cityPopup?.city?.id === city.id ? null : { city });
                       }}>
                       <circle cx={cx} cy={cy} r={hitR} fill="transparent" stroke="none" />
@@ -3624,6 +3626,81 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                         >Explore Map</button>
                       )}
                     </div>
+                  </div>
+                </div>
+              );
+            })()}
+
+            {/* ── Region quick-info popup ── */}
+            {regionPopup && (() => {
+              const t = regionPopup.territory;
+              const r = regionPopup.region;
+              const fc = (() => { const f = (data.factions || []).find(f => f.name === t.faction); return f?.color || "#c9a85c"; })();
+              const popX = (t.labelX || t.cityX || 3000) * mapZoom + mapPan.x;
+              const popY = (t.labelY || t.cityY || 2250) * mapZoom + mapPan.y;
+              const threatColors = { low: "#6a9955", medium: "#c9a85c", high: "#d97b3c", extreme: "#d4433a" };
+              const threatCol = threatColors[r?.threat] || "#c9a85c";
+              const typeIcons = { capital: "\u{1F3F0}", kingdom: "\u{2694}\uFE0F", city: "\u{1F3D9}\uFE0F", town: "\u{1F3E0}", wilderness: "\u{1F332}", dungeon: "\u{1F480}", route: "\u{1F6E4}\uFE0F" };
+              const typeIcon = typeIcons[r?.type] || "\u{1F30D}";
+              return (
+                <div style={{
+                  position: "absolute", left: Math.min(popX + 20, (mapRef.current?.clientWidth || 800) - 340), top: Math.max(popY - 40, 10), zIndex: 50,
+                  background: "var(--bg-card)", border: `1px solid var(--crimson-border)`, borderRadius: "4px",
+                  padding: 0, minWidth: 300, maxWidth: 380,
+                  boxShadow: `0 12px 40px rgba(0,0,6,0.50), 0 0 0 1px rgba(0,0,0,0.2)`,
+                  backdropFilter: "blur(16px)", overflow: "hidden",
+                }} onClick={e => e.stopPropagation()}>
+                  {/* Header */}
+                  <div style={{ padding: "14px 18px 12px", borderBottom: `1px solid var(--border)`, background: `linear-gradient(135deg, ${fc}12, transparent)` }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+                      <div>
+                        <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text)", fontFamily: "'Cinzel', serif", letterSpacing: "0.8px" }}>{typeIcon} {t.name}</div>
+                        <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 3, fontFamily: "'Cinzel', serif", letterSpacing: "1.2px", textTransform: "uppercase" }}>
+                          {r ? `${r.type} \u00b7 ${r.terrain} \u00b7 Pop. ${r.population}` : t.faction || "Unknown Region"}
+                        </div>
+                      </div>
+                      <button onClick={() => setRegionPopup(null)} style={{ background: "var(--bg-input)", border: `1px solid var(--border)`, borderRadius: "3px", color: "var(--text-faint)", cursor: "pointer", fontSize: 13, padding: "2px 8px", lineHeight: 1.2, transition: "all 0.15s" }} onMouseEnter={e=>{e.target.style.borderColor="var(--crimson-border)";e.target.style.color="var(--crimson)";}} onMouseLeave={e=>{e.target.style.borderColor="var(--border)";e.target.style.color="var(--text-faint)";}}>×</button>
+                    </div>
+                  </div>
+                  {/* Body */}
+                  <div style={{ padding: "12px 18px 16px" }}>
+                    {/* Ruling faction */}
+                    <div style={{ borderLeft: `2px solid ${fc}66`, paddingLeft: 10, marginBottom: 12 }}>
+                      <div style={{ fontSize: 10, color: fc, marginBottom: 3, fontFamily: "'Cinzel', serif", letterSpacing: "0.8px", fontWeight: 500 }}>Ruled by {t.faction || r?.ctrl || "Unknown"}</div>
+                      {r?.governor && <div style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'Spectral', serif" }}>{r.governorTitle} {r.governor}</div>}
+                    </div>
+                    {/* Climate & Threat */}
+                    {r && (
+                      <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 8, color: "var(--text-muted)", background: "var(--bg-input)", border: "1px solid var(--border)", padding: "3px 8px", borderRadius: "3px", letterSpacing: "0.5px", fontFamily: "'Cinzel', serif", textTransform: "uppercase" }}>{r.terrain}</span>
+                        <span style={{ fontSize: 8, color: threatCol, background: `${threatCol}11`, border: `1px solid ${threatCol}33`, padding: "3px 8px", borderRadius: "3px", letterSpacing: "0.5px", fontFamily: "'Cinzel', serif", textTransform: "uppercase" }}>{r.threat} threat</span>
+                        <span style={{ fontSize: 8, color: "var(--text-muted)", background: "var(--bg-input)", border: "1px solid var(--border)", padding: "3px 8px", borderRadius: "3px", letterSpacing: "0.5px", fontFamily: "'Cinzel', serif", textTransform: "uppercase" }}>{r.state}</span>
+                      </div>
+                    )}
+                    {/* Lore snippet */}
+                    {r?.lore && (
+                      <div style={{ fontSize: 11, color: "var(--text-dim)", lineHeight: 1.55, fontFamily: "'Spectral', serif", fontStyle: "italic", marginBottom: 12, padding: "8px 10px", background: "rgba(201,168,92,0.04)", borderRadius: "3px", border: "1px solid rgba(201,168,92,0.10)" }}>
+                        {r.lore}
+                      </div>
+                    )}
+                    {/* Quick stats */}
+                    {r && (
+                      <div style={{ display: "flex", gap: 14, marginBottom: 12, fontSize: 10, color: "var(--text-muted)", fontFamily: "'Spectral', serif" }}>
+                        <span>Cities: {(r.cities || []).length}</span>
+                        <span>Resources: {(r.resources || []).slice(0, 2).join(", ")}</span>
+                      </div>
+                    )}
+                    {/* View Details button */}
+                    <button
+                      onClick={() => { setTab("regions"); setRegionPopup(null); setExpandedRegions(prev => ({ ...prev, [r?.id || t.name]: true })); }}
+                      style={{
+                        width: "100%", padding: "9px 0", background: "linear-gradient(180deg, var(--crimson), var(--crimson-dim))", border: `1px solid var(--crimson-border)`, borderRadius: "4px",
+                        color: "var(--text)", fontFamily: "'Cinzel', serif", fontSize: 9, letterSpacing: "1.5px", textTransform: "uppercase", cursor: "pointer",
+                        transition: "all 0.2s", boxShadow: "0 2px 8px rgba(212,67,58,0.2)",
+                      }}
+                      onMouseEnter={e => { e.target.style.boxShadow = "0 4px 16px rgba(212,67,58,0.35)"; e.target.style.transform = "translateY(-1px)"; }}
+                      onMouseLeave={e => { e.target.style.boxShadow = "0 2px 8px rgba(212,67,58,0.2)"; e.target.style.transform = "translateY(0)"; }}
+                    >View Region Details</button>
                   </div>
                 </div>
               );
@@ -4343,7 +4420,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
                         boxShadow:"0 2px 8px rgba(0,0,0,0.08)", transition:"all 0.2s",
                       }}>
                         {/* Region Header */}
-                        <div onClick={() => { setSel(r); setSelType("region"); setEditing(false); toggleRegion(r.id); }} style={{
+                        <div onClick={() => { setSel(null); setSelType(null); setEditing(false); toggleRegion(r.id); }} style={{
                           padding:"18px 22px", cursor:"pointer",
                           background: `linear-gradient(135deg, ${fc}12 0%, transparent 60%)`,
                           borderLeft: `4px solid ${fc}`,
@@ -4704,76 +4781,187 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
               );
             })()}
 
-            {tab==="factions" && (
-              <div style={{ display:"flex", flexDirection:"column", gap:16 }}>
-                {data.factions.map(f => {
-                  const active=sel?.id===f.id&&selType==="faction";
-                  const factionNpcs = (data.npcs || []).filter(n => n.faction === f.name);
-                  const leaders = factionNpcs.filter(n => n.isLeader);
-                  const controlledRegions = (data.regions || []).filter(r => r.ctrl === f.name);
-                  return (
-                    <div key={f.id} onClick={()=>{setSel(f);setSelType("faction");setEditing(false);}} style={{
-                      background:active?T.bgHover:T.bgCard, padding:24, cursor:"pointer",
-                      border:`1px solid ${active?T.crimsonBorder:T.border}`, borderRadius:"4px",
-                      borderLeft:`4px solid ${f.color}`, boxShadow:"0 2px 8px rgba(0,0,0,0.08)", transition:"all 0.2s",
-                    }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:4 }}>
-                        <span style={{ fontSize:18, fontWeight:400, color:T.text, letterSpacing:"0.5px" }}>{f.name}</span>
-                        <Tag variant={f.attitude==="allied"||f.attitude==="friendly"?"success":f.attitude==="hostile"?"danger":"muted"}>{f.attitude}</Tag>
-                        {f.trend==="rising"?<TrendingUp size={12} color={T.crimson}/>:f.trend==="declining"?<TrendingDown size={12} color="#5ee09a"/>:<Minus size={12} color={T.textFaint}/>}
-                      </div>
-                      {f.govType && <div style={{ fontSize:10, color:"#c9a85c", letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:8 }}>{f.govType}</div>}
-                      <p style={{ fontSize:13, color:T.textDim, margin:"0 0 12px", fontWeight:300, fontStyle:"italic", lineHeight:"1.5" }}>{f.desc}</p>
+            {tab==="factions" && (() => {
+              const allFactions = data.factions || [];
+              const majorFactions = allFactions.filter(f => !f.isSubFaction);
+              const subFactions = allFactions.filter(f => f.isSubFaction);
+              const regions = data.regions || [];
 
-                      {/* Power bar */}
-                      <div style={{ display:"flex", alignItems:"center", gap:10, maxWidth:300, marginBottom:12 }}>
-                        <span style={{ fontFamily:T.ui, fontSize:8, color:T.textFaint, letterSpacing:"1.5px" }}>PWR</span>
-                        <div style={{flex:1}}><PowerBar val={f.power} max={100} color={f.color}/></div>
-                        <span style={{ fontSize:12, color:T.textMuted }}>{f.power}</span>
+              // Group by region: each region gets its ruling faction + sub-factions
+              const regionGroups = regions.map(r => {
+                const ruler = majorFactions.find(f => f.name === r.ctrl);
+                const subs = subFactions.filter(sf => sf.parentRegion === r.name);
+                return { region: r, ruler, subs };
+              });
+
+              // Unaffiliated factions (major factions that don't control any region)
+              const controlledNames = new Set(regions.map(r => r.ctrl));
+              const unaffiliated = majorFactions.filter(f => !controlledNames.has(f.name));
+
+              const renderFactionCard = (f, isCompact) => {
+                const active = sel?.id === f.id && selType === "faction";
+                const factionNpcs = (data.npcs || []).filter(n => n.faction === f.name);
+                const leaders = factionNpcs.filter(n => n.isLeader);
+                const controlledRegions = regions.filter(r => r.ctrl === f.name);
+                const govTypeIcons = {
+                  "monarchy":"👑", "empire":"⚔️", "republic":"🏛️", "council":"📜", "druidic":"🌿",
+                  "guild":"💰", "cult":"🔮", "theocracy":"⛪", "tribal":"🏕️", "military junta":"🛡️",
+                  "oligarchy":"⚖️", "criminal syndicate":"🗡️", "shadow government":"👁️",
+                  "arcane academy":"🔮", "mercenary band":"⚔️", "trade guild":"💰",
+                  "religious order":"✝️", "assassin guild":"🗡️", "ranger order":"🏹",
+                  "craft guild":"🔨", "criminal network":"💀",
+                };
+                return (
+                  <div key={f.id} onClick={() => { setSel(f); setSelType("faction"); setEditing(false); }} style={{
+                    background: active ? T.bgHover : T.bgCard, padding: isCompact ? 14 : 20, cursor: "pointer",
+                    border: `1px solid ${active ? T.crimsonBorder : T.border}`, borderRadius: "4px",
+                    borderLeft: `4px solid ${f.color}`, boxShadow: "0 2px 8px rgba(0,0,0,0.08)", transition: "all 0.2s",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                      <span style={{ fontSize: 16 }}>{govTypeIcons[f.govType] || "⚑"}</span>
+                      <span style={{ fontSize: isCompact ? 14 : 17, fontWeight: 400, color: T.text, letterSpacing: "0.5px" }}>{f.name}</span>
+                      <Tag variant={f.attitude === "allied" || f.attitude === "friendly" ? "success" : f.attitude === "hostile" ? "danger" : "muted"}>{f.attitude}</Tag>
+                      {f.trend === "rising" ? <TrendingUp size={12} color={T.crimson}/> : f.trend === "declining" ? <TrendingDown size={12} color="#5ee09a"/> : <Minus size={12} color={T.textFaint}/>}
+                      {f.isSubFaction && f.influenceLevel && (
+                        <span style={{ fontSize: 8, color: f.influenceLevel === "major" ? "#d4433a" : f.influenceLevel === "moderate" ? "#e8940a" : "#5ee09a", border: `1px solid currentColor`, padding: "1px 5px", borderRadius: "2px", letterSpacing: "0.5px", textTransform: "uppercase", marginLeft: "auto" }}>{f.influenceLevel}</span>
+                      )}
+                    </div>
+                    {f.govType && <div style={{ fontSize: 10, color: "#c9a85c", letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 6 }}>{f.govType}</div>}
+                    <p style={{ fontSize: 12, color: T.textDim, margin: "0 0 10px", fontWeight: 300, fontStyle: "italic", lineHeight: "1.5" }}>{f.desc}</p>
+
+                    {/* Power bar */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, maxWidth: 300, marginBottom: 10 }}>
+                      <span style={{ fontFamily: T.ui, fontSize: 8, color: T.textFaint, letterSpacing: "1.5px" }}>PWR</span>
+                      <div style={{ flex: 1 }}><PowerBar val={f.power} max={100} color={f.color}/></div>
+                      <span style={{ fontSize: 12, color: T.textMuted }}>{f.power}</span>
+                    </div>
+
+                    {/* Influence spheres for sub-factions */}
+                    {f.isSubFaction && f.influence && f.influence.length > 0 && (
+                      <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 8 }}>
+                        {f.influence.map((inf, ii) => (
+                          <span key={ii} style={{ fontSize: 9, color: f.color, background: `${f.color}12`, padding: "2px 8px", borderRadius: "2px", border: `1px solid ${f.color}33` }}>{inf}</span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Leadership hierarchy */}
+                    {!isCompact && (f.hierarchy || leaders.length > 0) && (
+                      <div style={{ borderTop: `1px solid ${T.border}`, paddingTop: 8, marginTop: 4 }}>
+                        <div style={{ fontSize: 10, color: T.textFaint, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 6 }}>Leadership</div>
+                        {(f.hierarchy || leaders.map(l => ({ title: l.role, name: l.name }))).map((h, hi) => (
+                          <div key={hi} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3, paddingLeft: hi === 0 ? 0 : hi * 8 }}>
+                            <div style={{ width: 5, height: 5, borderRadius: "50%", background: hi === 0 ? f.color : T.textFaint, opacity: hi === 0 ? 1 : 0.5, flexShrink: 0 }}/>
+                            <span style={{ fontSize: 11, color: hi === 0 ? "#c9a85c" : T.textMuted, fontWeight: hi === 0 ? 400 : 300 }}>{h.title}:</span>
+                            <span style={{ fontSize: 11, color: T.text, fontWeight: 300 }}>{h.name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Resources */}
+                    {!isCompact && f.resources && f.resources.length > 0 && (
+                      <div style={{ marginTop: 8, display: "flex", gap: 4, flexWrap: "wrap" }}>
+                        {f.resources.map((res, ri) => (
+                          <span key={ri} style={{ padding: "2px 8px", background: "rgba(201,168,92,0.08)", border: "1px solid rgba(201,168,92,0.18)", borderRadius: "3px", fontSize: 10, color: "#c9a85c", letterSpacing: "0.5px" }}>{res}</span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Territories & relationships */}
+                    {!isCompact && controlledRegions.length > 0 && (
+                      <div style={{ marginTop: 8, fontSize: 11, color: T.textFaint }}>
+                        Territories: {controlledRegions.map(r => r.name).join(", ")}
+                      </div>
+                    )}
+                    {(f.allies?.length > 0 || f.rivals?.length > 0) && (
+                      <div style={{ marginTop: 6, display: "flex", gap: 16, flexWrap: "wrap" }}>
+                        {f.allies?.length > 0 && <div style={{ fontSize: 11, color: "#5ee09a" }}>Allies: {f.allies.join(", ")}</div>}
+                        {f.rivals?.length > 0 && <div style={{ fontSize: 11, color: T.crimson }}>Rivals: {f.rivals.join(", ")}</div>}
+                      </div>
+                    )}
+                  </div>
+                );
+              };
+
+              return (
+                <div style={{ display: "flex", flexDirection: "column", gap: 28 }}>
+                  {/* Stats banner */}
+                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                    {[
+                      { label: "Major Powers", val: majorFactions.length, color: "#c9a85c" },
+                      { label: "Organizations", val: subFactions.length, color: "#6a0dad" },
+                      { label: "Total Factions", val: allFactions.length, color: T.crimson },
+                    ].map((s, i) => (
+                      <div key={i} style={{ padding: "12px 20px", background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: "4px", borderTop: `2px solid ${s.color}`, flex: 1, minWidth: 120 }}>
+                        <div style={{ fontSize: 8, color: T.textFaint, fontFamily: T.ui, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 4 }}>{s.label}</div>
+                        <div style={{ fontSize: 24, color: T.text, fontWeight: 300 }}>{s.val}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Grouped by region */}
+                  {regionGroups.map(({ region, ruler, subs }) => (
+                    <div key={region.id} style={{ borderRadius: "6px", overflow: "hidden", border: `1px solid ${T.border}` }}>
+                      {/* Region header */}
+                      <div style={{
+                        padding: "12px 18px",
+                        background: `linear-gradient(135deg, ${(ruler?.color || "#c9a85c")}12 0%, transparent 60%)`,
+                        borderBottom: `1px solid ${T.border}`,
+                        display: "flex", alignItems: "center", gap: 10,
+                      }}>
+                        <MapPin size={14} color={ruler?.color || T.textFaint}/>
+                        <span style={{ fontSize: 14, fontFamily: "'Cinzel', serif", color: T.text, letterSpacing: "0.5px" }}>{region.name}</span>
+                        <span style={{ fontSize: 9, color: T.textFaint }}>{region.type}</span>
+                        <span style={{ fontSize: 9, color: T.textFaint, marginLeft: "auto" }}>
+                          {1 + subs.length} {1 + subs.length === 1 ? "faction" : "factions"}
+                        </span>
                       </div>
 
-                      {/* Leadership hierarchy */}
-                      {(f.hierarchy || leaders.length > 0) && (
-                        <div style={{ borderTop:`1px solid ${T.border}`, paddingTop:10, marginTop:4 }}>
-                          <div style={{ fontSize:10, color:T.textFaint, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:8 }}>Leadership</div>
-                          {(f.hierarchy || leaders.map(l => ({ title: l.role, name: l.name }))).map((h, hi) => (
-                            <div key={hi} style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4, paddingLeft: hi === 0 ? 0 : hi * 8 }}>
-                              <div style={{ width:6, height:6, borderRadius:"50%", background: hi === 0 ? f.color : T.textFaint, opacity: hi === 0 ? 1 : 0.5, flexShrink:0 }} />
-                              <span style={{ fontSize:12, color: hi === 0 ? "#c9a85c" : T.textMuted, fontWeight: hi === 0 ? 400 : 300 }}>{h.title}:</span>
-                              <span style={{ fontSize:12, color:T.text, fontWeight:300 }}>{h.name}</span>
+                      <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
+                        {/* Ruling faction (full card) */}
+                        {ruler && (
+                          <div>
+                            <div style={{ fontSize: 9, fontFamily: T.ui, letterSpacing: "1.5px", color: T.textFaint, textTransform: "uppercase", marginBottom: 8 }}>Ruling Power</div>
+                            {renderFactionCard(ruler, false)}
+                          </div>
+                        )}
+
+                        {/* Sub-factions (compact cards) */}
+                        {subs.length > 0 && (
+                          <div>
+                            <div style={{ fontSize: 9, fontFamily: T.ui, letterSpacing: "1.5px", color: T.textFaint, textTransform: "uppercase", marginBottom: 8 }}>
+                              Organizations & Influence ({subs.length})
                             </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Resources */}
-                      {f.resources && f.resources.length > 0 && (
-                        <div style={{ marginTop:10, display:"flex", gap:4, flexWrap:"wrap" }}>
-                          {f.resources.map((res, ri) => (
-                            <span key={ri} style={{ padding:"2px 8px", background:"rgba(201,168,92,0.08)", border:"1px solid rgba(201,168,92,0.18)", borderRadius:"3px", fontSize:10, color:"#c9a85c", letterSpacing:"0.5px" }}>{res}</span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Territories & relationships */}
-                      <div style={{ marginTop:10, display:"flex", gap:16, flexWrap:"wrap" }}>
-                        {controlledRegions.length > 0 && (
-                          <div style={{ fontSize:11, color:T.textFaint }}>
-                            Territories: {controlledRegions.map(r => r.name).join(", ")}
+                            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                              {subs.sort((a, b) => (b.power || 0) - (a.power || 0)).map(sf => renderFactionCard(sf, true))}
+                            </div>
                           </div>
                         )}
                       </div>
-                      {(f.allies?.length > 0 || f.rivals?.length > 0) && (
-                        <div style={{ marginTop:6, display:"flex", gap:16, flexWrap:"wrap" }}>
-                          {f.allies?.length > 0 && <div style={{ fontSize:11, color:"#5ee09a" }}>Allies: {f.allies.join(", ")}</div>}
-                          {f.rivals?.length > 0 && <div style={{ fontSize:11, color:T.crimson }}>Rivals: {f.rivals.join(", ")}</div>}
-                        </div>
-                      )}
                     </div>
-                  );
-                })}
-              </div>
-            )}
+                  ))}
+
+                  {/* Unaffiliated factions */}
+                  {unaffiliated.length > 0 && (
+                    <div style={{ borderRadius: "6px", overflow: "hidden", border: `1px solid ${T.border}` }}>
+                      <div style={{
+                        padding: "12px 18px",
+                        background: "rgba(255,255,255,0.02)",
+                        borderBottom: `1px solid ${T.border}`,
+                        display: "flex", alignItems: "center", gap: 10,
+                      }}>
+                        <Globe size={14} color={T.textFaint}/>
+                        <span style={{ fontSize: 14, fontFamily: "'Cinzel', serif", color: T.text, letterSpacing: "0.5px" }}>Unaffiliated Powers</span>
+                      </div>
+                      <div style={{ padding: "16px 18px", display: "flex", flexDirection: "column", gap: 12 }}>
+                        {unaffiliated.map(f => renderFactionCard(f, false))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {tab==="npcs" && (() => {
               /* ── rank ordering for sort ── */
