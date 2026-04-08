@@ -1097,8 +1097,6 @@
     );
   }
 
-  /* ── Register ── */
-  window.registerCampaignTab('intrigue', function intrigueLoader({ React }) {
-    return CourtIntrigueView;
-  });
+  /* ── Register for lazy-loader ── */
+  window.CourtIntrigueView = CourtIntrigueView;
 })();
