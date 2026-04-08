@@ -98,35 +98,9 @@
       outcomeProbabilities: { greatSuccess: 0.10, success: 0.50, complication: 0.40 }
     },
     {
-      id: 'pit_fighting',
-      name: 'Pit Fighting',
-      icon: '⊕',
-      description: 'Underground arena combat for gold and reputation.',
-      durationDays: 7,
-      goldCost: 0,
-      goldReward: { min: 20, max: 100 },
-      requirements: { class: [], level: 2, location: 'city' },
-      risks: ['Serious injury', 'Gamblers seeking debts'],
-      rewards: ['Arena reputation', 'Gold winnings'],
-      outcomeProbabilities: { greatSuccess: 0.20, success: 0.60, complication: 0.20 }
-    },
-    {
-      id: 'gambling',
-      name: 'Gambling',
-      icon: '⊞',
-      description: 'Games of chance with variable stakes and outcomes.',
-      durationDays: 3,
-      goldCost: 0,
-      goldReward: { min: -100, max: 200 },
-      requirements: { class: [], level: 1, location: 'tavern' },
-      risks: ['Debt owed', 'Cheating accusations'],
-      rewards: ['Winnings', 'New contacts'],
-      outcomeProbabilities: { greatSuccess: 0.15, success: 0.45, complication: 0.40 }
-    },
-    {
-      id: 'religious_service',
-      name: 'Religious Service',
-      icon: '✠',
+      id: 'religious_devotion',
+      name: 'Religious Devotion',
+      icon: '✝',
       description: 'Devotion to a deity. Gain divine favor or blessings.',
       durationDays: 10,
       goldCost: 25,
@@ -297,15 +271,25 @@
       });
     }
 
-    getDowntimeLog() {
-      return [...this.log];
+    completeAssignment(characterName, activityId) {
+      const assignment = this.assignments.find(
+        a => a.characterName === characterName && a.activityId === activityId && a.status === 'pending'
+      );
+      if (!assignment) return null;
+      assignment.status = 'resolved';
+      return assignment;
+    }
+
+    getAssignmentsForCharacter(characterName) {
+      return this.assignments.filter(a => a.characterName === characterName);
+    }
+
+    getActiveAssignments() {
+      return this.assignments.filter(a => a.status === 'pending');
     }
 
     serialize() {
-      return JSON.stringify({
-        assignments: this.assignments,
-        log: this.log
-      });
+      return JSON.stringify({ assignments: this.assignments, log: this.log });
     }
 
     static deserialize(json) {
@@ -318,85 +302,167 @@
   }
 
   // ============================================================================
+  // QUEST BOARD
+  // ============================================================================
+
+  class QuestBoard {
+    constructor() {
+      this.quests = [];
+      this.nextId = 1;
+    }
+
+    addQuest(quest) {
+      const q = { ...quest, id: this.nextId++, status: 'available', createdAt: Date.now() };
+      this.quests.push(q);
+      return q;
+    }
+
+    updateQuest(questId, updates) {
+      const quest = this.quests.find(q => q.id === questId);
+      if (!quest) throw new Error(`Quest ${questId} not found`);
+      Object.assign(quest, updates);
+      return quest;
+    }
+
+    acceptQuest(questId) {
+      const quest = this.quests.find(q => q.id === questId);
+      if (!quest) throw new Error(`Quest ${questId} not found`);
+      quest.status = 'active';
+      quest.acceptedAt = Date.now();
+      return quest;
+    }
+
+    completeObjective(questId, objectiveIndex) {
+      const quest = this.quests.find(q => q.id === questId);
+      if (!quest) throw new Error(`Quest ${questId} not found`);
+      if (quest.objectives && quest.objectives[objectiveIndex]) {
+        quest.objectives[objectiveIndex].completed = true;
+      }
+      return quest;
+    }
+
+    completeQuest(questId) {
+      const quest = this.quests.find(q => q.id === questId);
+      if (!quest) throw new Error(`Quest ${questId} not found`);
+      quest.status = 'completed';
+      return { quest, rewards: quest.rewards };
+    }
+
+    failQuest(questId) {
+      const quest = this.quests.find(q => q.id === questId);
+      if (!quest) throw new Error(`Quest ${questId} not found`);
+      quest.status = 'failed';
+      return quest;
+    }
+
+    getActiveQuests() {
+      return this.quests.filter(q => q.status === 'active');
+    }
+
+    getAvailableQuests() {
+      return this.quests.filter(q => q.status === 'available');
+    }
+
+    getCompletedQuests() {
+      return this.quests.filter(q => q.status === 'completed');
+    }
+
+    getQuestChain(chainId) {
+      return this.quests.filter(q => q.chain === chainId);
+    }
+
+    checkDeadlines(currentDay) {
+      const expired = [];
+      this.quests.forEach(quest => {
+        if (quest.deadline && quest.deadline < currentDay && quest.status === 'available') {
+          quest.status = 'expired';
+          expired.push(quest);
+        }
+      });
+      return expired;
+    }
+
+    getQuestsByRegion(regionName) {
+      return this.quests.filter(q => q.region === regionName && q.status !== 'expired');
+    }
+
+    serialize() {
+      return JSON.stringify({
+        quests: this.quests,
+        nextId: this.nextId
+      });
+    }
+
+    static deserialize(json) {
+      const board = new QuestBoard();
+      const data = JSON.parse(json);
+      board.quests = data.quests || [];
+      board.nextId = data.nextId || 1;
+      return board;
+    }
+  }
+
+  // ============================================================================
   // QUEST TEMPLATES
   // ============================================================================
 
   const QUEST_TEMPLATES = [
-    // Bounty Quests
+    // Kill Quests
     {
-      type: 'bounty',
-      subtype: 'hunt_monster',
+      type: 'kill',
+      subtype: 'slay_monster',
       generateTitle: (rng) => {
-        const monsters = ['dire wolf', 'basilisk', 'wyvern', 'owlbear', 'manticore'];
+        const monsters = ['goblin', 'troll', 'ogre', 'giant spider', 'basilisk', 'wyvern'];
         const m = monsters[Math.floor(rng() * monsters.length)];
-        return `Hunt the ${m}`;
+        return `Slay the ${m}`;
       },
       generateDescription: (data, rng) => {
-        return `A dangerous creature has been terrorizing the region. The local militia needs adventurers to track it down and eliminate the threat.`;
+        return `A dangerous creature has been terrorizing the area. Locals are desperate for someone brave enough to put an end to the threat.`;
       },
       generateObjectives: (rng) => [
-        { text: 'Track the creature to its lair', completed: false },
+        { text: 'Locate the creature', completed: false },
         { text: 'Defeat the creature', completed: false },
-        { text: 'Return proof of the kill', completed: false }
+        { text: 'Bring proof of victory', completed: false }
       ],
       suggestRewards: (difficulty) => {
-        const baseGold = { trivial: 25, easy: 50, medium: 100, hard: 250, legendary: 500 };
-        return { gold: baseGold[difficulty] || 100, xp: 200, items: [], reputation: 1 };
+        const baseGold = { trivial: 50, easy: 100, medium: 200, hard: 500, legendary: 1000 };
+        return { gold: baseGold[difficulty] || 300, xp: 300, items: [], reputation: 2 };
       }
     },
     {
-      type: 'bounty',
-      subtype: 'capture_outlaw',
+      type: 'kill',
+      subtype: 'eliminate_bandits',
       generateTitle: (rng) => {
-        const titles = ['Capture the outlaw', 'Bring in the fugitive', 'Find the wanted criminal'];
-        return titles[Math.floor(rng() * titles.length)];
+        return 'Eliminate a bandit camp';
       },
       generateDescription: (data, rng) => {
-        return `A wanted criminal is loose in the region. Local authorities offer a reward for their capture, dead or alive.`;
+        return `Bandits have been plaguing trade routes. A merchant lord will pay handsomely for their elimination.`;
       },
       generateObjectives: (rng) => [
-        { text: 'Locate the outlaw', completed: false },
-        { text: 'Capture or defeat the outlaw', completed: false },
-        { text: 'Deliver to authorities', completed: false }
+        { text: 'Scout the bandit camp', completed: false },
+        { text: 'Defeat or scatter the bandits', completed: false },
+        { text: 'Report back with results', completed: false }
       ],
       suggestRewards: (difficulty) => {
-        const baseGold = { trivial: 50, easy: 100, medium: 200, hard: 400, legendary: 750 };
-        return { gold: baseGold[difficulty] || 150, xp: 250, items: [], reputation: 2 };
+        const baseGold = { trivial: 75, easy: 150, medium: 300, hard: 600, legendary: 1200 };
+        return { gold: baseGold[difficulty] || 400, xp: 350, items: [], reputation: 3 };
       }
     },
     {
-      type: 'bounty',
-      subtype: 'clear_dungeon',
+      type: 'kill',
+      subtype: 'defeat_boss',
       generateTitle: (rng) => {
-        const names = ['the goblin warren', 'the troll den', 'the lich tomb', 'the dragon hoard'];
-        const name = names[Math.floor(rng() * names.length)];
-        return `Clear ${name}`;
+        const bosses = ['the necromancer', 'the cult leader', 'the dragon lord', 'the shadow king'];
+        const b = bosses[Math.floor(rng() * bosses.length)];
+        return `Defeat ${b}`;
       },
       generateDescription: (data, rng) => {
-        return `A dangerous dungeon has become a haven for monsters and criminals. The regional lord seeks adventurers to clear it out.`;
+        return `A powerful enemy threatens the realm. Only the most skilled adventurers have any hope of defeating this foe.`;
       },
       generateObjectives: (rng) => [
-        { text: 'Enter the dungeon', completed: false },
-        { text: 'Eliminate the main threat', completed: false },
-        { text: 'Secure the area', completed: false }
-      ],
-      suggestRewards: (difficulty) => {
-        const baseGold = { trivial: 75, easy: 150, medium: 300, hard: 500, legendary: 1000 };
-        return { gold: baseGold[difficulty] || 200, xp: 300, items: ['treasure'], reputation: 2 };
-      }
-    },
-    {
-      type: 'bounty',
-      subtype: 'eliminate_threat',
-      generateTitle: (rng) => {
-        return 'Eliminate a dark threat';
-      },
-      generateDescription: (data, rng) => {
-        return `Evil forces gather in the shadows. A mysterious threat must be eliminated before it grows too powerful.`;
-      },
-      generateObjectives: (rng) => [
-        { text: 'Investigate the threat', completed: false },
-        { text: 'Confront the source', completed: false },
+        { text: 'Gather intelligence on the boss', completed: false },
+        { text: 'Assemble a strong team', completed: false },
+        { text: 'Defeat the boss in combat', completed: false },
         { text: 'Seal or destroy the threat', completed: false }
       ],
       suggestRewards: (difficulty) => {
@@ -497,370 +563,800 @@
       },
       generateObjectives: (rng) => [
         { text: 'Meet the caravan at the departure point', completed: false },
-        { text: 'Guard the caravan during travel', completed: false },
-        { text: 'Arrive safely at the destination', completed: false }
+        { text: 'Protect the caravan from bandits and monsters', completed: false },
+        { text: 'Deliver the caravan safely to its destination', completed: false }
       ],
       suggestRewards: (difficulty) => {
-        const baseGold = { trivial: 50, easy: 100, medium: 200, hard: 300, legendary: 600 };
-        return { gold: baseGold[difficulty] || 150, xp: 200, items: [], reputation: 2 };
+        const baseGold = { trivial: 35, easy: 70, medium: 140, hard: 280, legendary: 560 };
+        return { gold: baseGold[difficulty] || 105, xp: 160, items: [], reputation: 2 };
       }
     },
     {
       type: 'escort',
-      subtype: 'guide_pilgrim',
+      subtype: 'guide_npc',
       generateTitle: (rng) => {
-        return 'Guide a pilgrim to a holy site';
+        return 'Guide an NPC to safety';
       },
       generateDescription: (data, rng) => {
-        return `A faithful pilgrim seeks an escort to a sacred location. The journey is long and beset with perils.`;
+        return `A noble or dignitary needs an escort to a distant location. The journey is fraught with danger.`;
       },
       generateObjectives: (rng) => [
-        { text: 'Meet the pilgrim', completed: false },
-        { text: 'Guide them through dangerous terrain', completed: false },
-        { text: 'Reach the destination together', completed: false }
+        { text: 'Meet the NPC', completed: false },
+        { text: 'Protect them during travel', completed: false },
+        { text: 'Deliver them to the destination', completed: false }
       ],
       suggestRewards: (difficulty) => {
-        const baseGold = { trivial: 40, easy: 80, medium: 150, hard: 250, legendary: 500 };
-        return { gold: baseGold[difficulty] || 120, xp: 180, items: [], reputation: 2 };
-      }
-    },
-    {
-      type: 'escort',
-      subtype: 'escort_diplomat',
-      generateTitle: (rng) => {
-        return 'Escort a diplomat safely';
-      },
-      generateDescription: (data, rng) => {
-        return `A diplomat of importance requires protection for a critical journey. Failure could have political consequences.`;
-      },
-      generateObjectives: (rng) => [
-        { text: 'Protect the diplomat from threats', completed: false },
-        { text: 'Navigate political intrigue', completed: false },
-        { text: 'Ensure safe arrival for negotiations', completed: false }
-      ],
-      suggestRewards: (difficulty) => {
-        const baseGold = { trivial: 75, easy: 150, medium: 300, hard: 500, legendary: 1000 };
-        return { gold: baseGold[difficulty] || 250, xp: 250, items: [], reputation: 3 };
+        const baseGold = { trivial: 30, easy: 60, medium: 120, hard: 240, legendary: 480 };
+        return { gold: baseGold[difficulty] || 100, xp: 140, items: [], reputation: 2 };
       }
     },
     // Investigation Quests
     {
       type: 'investigation',
-      subtype: 'solve_murder',
+      subtype: 'find_criminal',
       generateTitle: (rng) => {
-        return 'Investigate a murder';
+        return 'Track down a fugitive';
       },
       generateDescription: (data, rng) => {
-        return `Someone has been killed under mysterious circumstances. The authorities seek investigators to uncover the truth.`;
+        return `A criminal has fled the city. Authorities offer a reward for information leading to their capture.`;
       },
       generateObjectives: (rng) => [
-        { text: 'Examine the crime scene', completed: false },
+        { text: 'Gather clues about their whereabouts', completed: false },
+        { text: 'Track down the criminal', completed: false },
+        { text: 'Apprehend or eliminate the target', completed: false }
+      ],
+      suggestRewards: (difficulty) => {
+        const baseGold = { trivial: 40, easy: 80, medium: 160, hard: 320, legendary: 640 };
+        return { gold: baseGold[difficulty] || 120, xp: 170, items: [], reputation: 2 };
+      }
+    },
+    {
+      type: 'investigation',
+      subtype: 'solve_mystery',
+      generateTitle: (rng) => {
+        const mysteries = ['a series of robberies', 'strange murders', 'a haunting', 'a sabotage plot'];
+        const m = mysteries[Math.floor(rng() * mysteries.length)];
+        return `Solve ${m}`;
+      },
+      generateDescription: (data, rng) => {
+        return `A mystery plagues the town. Someone must uncover the truth and bring the culprits to justice.`;
+      },
+      generateObjectives: (rng) => [
+        { text: 'Investigate the crime scene', completed: false },
         { text: 'Interview witnesses and suspects', completed: false },
-        { text: 'Identify and apprehend the killer', completed: false }
+        { text: 'Gather evidence and solve the mystery', completed: false }
       ],
       suggestRewards: (difficulty) => {
         const baseGold = { trivial: 50, easy: 100, medium: 200, hard: 400, legendary: 800 };
-        return { gold: baseGold[difficulty] || 150, xp: 250, items: [], reputation: 2 };
-      }
-    },
-    {
-      type: 'investigation',
-      subtype: 'uncover_conspiracy',
-      generateTitle: (rng) => {
-        return 'Uncover a dark conspiracy';
-      },
-      generateDescription: (data, rng) => {
-        return `Strange events suggest a larger plot at work. Someone seeks brave souls to unravel the conspiracy.`;
-      },
-      generateObjectives: (rng) => [
-        { text: 'Gather intelligence on the plot', completed: false },
-        { text: 'Identify the conspirators', completed: false },
-        { text: 'Stop the conspiracy before it succeeds', completed: false }
-      ],
-      suggestRewards: (difficulty) => {
-        const baseGold = { trivial: 75, easy: 150, medium: 300, hard: 600, legendary: 1200 };
-        return { gold: baseGold[difficulty] || 250, xp: 350, items: [], reputation: 3 };
-      }
-    },
-    {
-      type: 'investigation',
-      subtype: 'find_missing_person',
-      generateTitle: (rng) => {
-        return 'Find a missing person';
-      },
-      generateDescription: (data, rng) => {
-        return `Someone important has disappeared without a trace. Their family seeks adventurers to locate them.`;
-      },
-      generateObjectives: (rng) => [
-        { text: 'Investigate their disappearance', completed: false },
-        { text: 'Follow leads to their location', completed: false },
-        { text: 'Rescue and return them safely', completed: false }
-      ],
-      suggestRewards: (difficulty) => {
-        const baseGold = { trivial: 40, easy: 80, medium: 150, hard: 300, legendary: 600 };
-        return { gold: baseGold[difficulty] || 120, xp: 200, items: [], reputation: 2 };
-      }
-    },
-    // Political Quests
-    {
-      type: 'political',
-      subtype: 'broker_peace',
-      generateTitle: (rng) => {
-        return 'Broker peace between rivals';
-      },
-      generateDescription: (data, rng) => {
-        return `Two factions stand on the brink of conflict. A neutral party seeks help negotiating peace before war erupts.`;
-      },
-      generateObjectives: (rng) => [
-        { text: 'Meet with both faction leaders', completed: false },
-        { text: 'Negotiate terms acceptable to both', completed: false },
-        { text: 'Formalize the peace agreement', completed: false }
-      ],
-      suggestRewards: (difficulty) => {
-        const baseGold = { trivial: 75, easy: 150, medium: 300, hard: 600, legendary: 1200 };
-        return { gold: baseGold[difficulty] || 250, xp: 300, items: [], reputation: 3 };
-      }
-    },
-    {
-      type: 'political',
-      subtype: 'sabotage_faction',
-      generateTitle: (rng) => {
-        return 'Sabotage enemy operations';
-      },
-      generateDescription: (data, rng) => {
-        return `A rival faction seeks to hire adventurers for covert operations against their enemies.`;
-      },
-      generateObjectives: (rng) => [
-        { text: 'Infiltrate the target location', completed: false },
-        { text: 'Sabotage or steal the objective', completed: false },
-        { text: 'Escape without getting caught', completed: false }
-      ],
-      suggestRewards: (difficulty) => {
-        const baseGold = { trivial: 100, easy: 200, medium: 400, hard: 750, legendary: 1500 };
-        return { gold: baseGold[difficulty] || 300, xp: 300, items: [], reputation: 2 };
-      }
-    },
-    {
-      type: 'political',
-      subtype: 'deliver_ultimatum',
-      generateTitle: (rng) => {
-        return 'Deliver an ultimatum';
-      },
-      generateDescription: (data, rng) => {
-        return `A powerful faction demands an intermediary deliver a message to their rivals. Diplomacy—or intimidation—required.`;
-      },
-      generateObjectives: (rng) => [
-        { text: 'Locate the recipient', completed: false },
-        { text: 'Deliver the message convincingly', completed: false },
-        { text: 'Return with their response', completed: false }
-      ],
-      suggestRewards: (difficulty) => {
-        const baseGold = { trivial: 60, easy: 120, medium: 250, hard: 500, legendary: 1000 };
-        return { gold: baseGold[difficulty] || 200, xp: 250, items: [], reputation: 2 };
-      }
-    },
-    // Exploration Quests
-    {
-      type: 'exploration',
-      subtype: 'map_region',
-      generateTitle: (rng) => {
-        return 'Map uncharted territory';
-      },
-      generateDescription: (data, rng) => {
-        return `Geographical societies seek accurate maps of unexplored regions. Adventurers willing to chart new lands will be well compensated.`;
-      },
-      generateObjectives: (rng) => [
-        { text: 'Explore the unmapped region', completed: false },
-        { text: 'Document key landmarks and hazards', completed: false },
-        { text: 'Deliver the completed map', completed: false }
-      ],
-      suggestRewards: (difficulty) => {
-        const baseGold = { trivial: 50, easy: 100, medium: 200, hard: 400, legendary: 800 };
-        return { gold: baseGold[difficulty] || 150, xp: 250, items: [], reputation: 2 };
-      }
-    },
-    {
-      type: 'exploration',
-      subtype: 'find_lost_city',
-      generateTitle: (rng) => {
-        return 'Locate a legendary lost city';
-      },
-      generateDescription: (data, rng) => {
-        return `Legends speak of a magnificent city lost to time. Scholars and treasure hunters seek adventurers to find it.`;
-      },
-      generateObjectives: (rng) => [
-        { text: 'Research the city location', completed: false },
-        { text: 'Navigate to the supposed site', completed: false },
-        { text: 'Confirm the discovery', completed: false }
-      ],
-      suggestRewards: (difficulty) => {
-        const baseGold = { trivial: 100, easy: 200, medium: 400, hard: 800, legendary: 1600 };
-        return { gold: baseGold[difficulty] || 300, xp: 400, items: ['legendary'], reputation: 4 };
-      }
-    },
-    {
-      type: 'exploration',
-      subtype: 'investigate_anomaly',
-      generateTitle: (rng) => {
-        return 'Investigate a strange phenomenon';
-      },
-      generateDescription: (data, rng) => {
-        return `Bizarre events hint at something unnatural occurring in a region. Adventurers are sought to investigate.`;
-      },
-      generateObjectives: (rng) => [
-        { text: 'Travel to the anomaly location', completed: false },
-        { text: 'Research the cause', completed: false },
-        { text: 'Resolve or contain the phenomenon', completed: false }
-      ],
-      suggestRewards: (difficulty) => {
-        const baseGold = { trivial: 75, easy: 150, medium: 300, hard: 600, legendary: 1200 };
-        return { gold: baseGold[difficulty] || 250, xp: 350, items: [], reputation: 3 };
+        return { gold: baseGold[difficulty] || 150, xp: 200, items: [], reputation: 3 };
       }
     }
   ];
 
   // ============================================================================
-  // QUEST BOARD
+  // REACT DOWNTIME VIEW COMPONENT
   // ============================================================================
 
-  class QuestBoard {
-    constructor() {
-      this.quests = [];
-      this.nextId = 1;
-    }
+  const { useState, useEffect, useCallback, useRef, useMemo } = React;
+  const T = window.__PHMURT_THEME || {};
+  try { if (window.T) Object.assign(T, window.T); } catch(e) {}
 
-    generateQuests(data, count, rng = Math.random) {
-      const newQuests = [];
+  const {
+    Clock, Hammer, BookOpen, Coins, Users, Shield, Star, Plus, Check, X,
+    ChevronDown, ChevronUp, Edit2, Trash2, Target, Activity, TrendingUp
+  } = window.LucideReact || {};
 
-      for (let i = 0; i < count; i++) {
-        const template = QUEST_TEMPLATES[Math.floor(rng() * QUEST_TEMPLATES.length)];
-        const difficulty = this._selectDifficulty(rng);
+  function DowntimeView({ data, setData, viewRole }) {
+    const [selectedCharacter, setSelectedCharacter] = useState(null);
+    const [showActivityModal, setShowActivityModal] = useState(false);
+    const [showResolveModal, setShowResolveModal] = useState(false);
+    const [selectedActivityId, setSelectedActivityId] = useState(null);
+    const [expandedCharacter, setExpandedCharacter] = useState(null);
+    const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, history, skills, stats
 
-        const giver = data.npcs && data.npcs.length > 0
-          ? data.npcs[Math.floor(rng() * data.npcs.length)].name
-          : 'Unknown Benefactor';
+    const downtimeData = useMemo(() => {
+      return data.downtime || {
+        characters: {},
+        activeActivities: [],
+        history: [],
+        skillMastery: {}
+      };
+    }, [data.downtime]);
 
-        const region = data.cities && data.cities.length > 0
-          ? data.cities[Math.floor(rng() * data.cities.length)].region
-          : 'Unknown Region';
-
-        const faction = data.factions && data.factions.length > 0
-          ? data.factions[Math.floor(rng() * data.factions.length)].name
-          : null;
-
-        const quest = {
-          id: this.nextId++,
-          title: template.generateTitle(rng),
-          type: template.type,
-          subtype: template.subtype,
-          status: 'available',
-          urgency: Math.ceil(rng() * 5),
-          faction: faction,
-          region: region,
-          giver: giver,
-          description: template.generateDescription(data, rng),
-          objectives: template.generateObjectives(rng),
-          rewards: template.suggestRewards(difficulty),
-          deadline: null,
-          difficulty: difficulty,
-          chain: null,
-          prerequisite: null,
-          discoveredBy: ['rumor', 'notice_board', 'npc'][Math.floor(rng() * 3)],
-          lore: '',
-          createdDay: 0
-        };
-
-        this.quests.push(quest);
-        newQuests.push(quest);
+    // Initialize character data if missing
+    useEffect(() => {
+      if (!data.downtime) {
+        setData({
+          ...data,
+          downtime: {
+            characters: {},
+            activeActivities: [],
+            history: [],
+            skillMastery: {}
+          }
+        });
       }
+    }, []);
 
-      return newQuests;
-    }
+    // Calculate mastery level for character+activity
+    const getMasteryLevel = useCallback((characterName, activityId) => {
+      const key = `${characterName}:${activityId}`;
+      const mastery = downtimeData.skillMastery?.[key] || { successes: 0, level: 'Novice' };
 
-    _selectDifficulty(rng) {
-      const roll = rng();
-      if (roll < 0.15) return 'trivial';
-      if (roll < 0.35) return 'easy';
-      if (roll < 0.65) return 'medium';
-      if (roll < 0.85) return 'hard';
-      return 'legendary';
-    }
+      if (mastery.successes >= 15) return { level: 'Master', bonus: 15 };
+      if (mastery.successes >= 7) return { level: 'Expert', bonus: 10 };
+      if (mastery.successes >= 3) return { level: 'Proficient', bonus: 5 };
+      return { level: 'Novice', bonus: 0 };
+    }, [downtimeData.skillMastery]);
 
-    acceptQuest(questId) {
-      const quest = this.quests.find(q => q.id === questId);
-      if (!quest) throw new Error(`Quest ${questId} not found`);
-      quest.status = 'active';
-      return quest;
-    }
+    // Handle activity assignment
+    const handleAssignActivity = useCallback(() => {
+      if (!selectedCharacter || !selectedActivityId) return;
 
-    completeObjective(questId, objectiveIndex) {
-      const quest = this.quests.find(q => q.id === questId);
-      if (!quest) throw new Error(`Quest ${questId} not found`);
-      if (quest.objectives[objectiveIndex]) {
-        quest.objectives[objectiveIndex].completed = true;
-      }
-      return quest;
-    }
+      const activity = DOWNTIME_ACTIVITIES.find(a => a.id === selectedActivityId);
+      if (!activity) return;
 
-    completeQuest(questId) {
-      const quest = this.quests.find(q => q.id === questId);
-      if (!quest) throw new Error(`Quest ${questId} not found`);
-      quest.status = 'completed';
-      return { quest, rewards: quest.rewards };
-    }
+      const newActive = {
+        id: `${selectedCharacter}_${Date.now()}`,
+        characterName: selectedCharacter,
+        activityId: selectedActivityId,
+        activityName: activity.name,
+        daysRequired: activity.durationDays,
+        daysElapsed: 0,
+        startDate: new Date().toISOString(),
+        status: 'active',
+        goldCost: activity.goldCost
+      };
 
-    failQuest(questId) {
-      const quest = this.quests.find(q => q.id === questId);
-      if (!quest) throw new Error(`Quest ${questId} not found`);
-      quest.status = 'failed';
-      return quest;
-    }
-
-    getActiveQuests() {
-      return this.quests.filter(q => q.status === 'active');
-    }
-
-    getAvailableQuests() {
-      return this.quests.filter(q => q.status === 'available');
-    }
-
-    getCompletedQuests() {
-      return this.quests.filter(q => q.status === 'completed');
-    }
-
-    getQuestChain(chainId) {
-      return this.quests.filter(q => q.chain === chainId);
-    }
-
-    checkDeadlines(currentDay) {
-      const expired = [];
-      this.quests.forEach(quest => {
-        if (quest.deadline && quest.deadline < currentDay && quest.status === 'available') {
-          quest.status = 'expired';
-          expired.push(quest);
+      setData({
+        ...data,
+        downtime: {
+          ...downtimeData,
+          activeActivities: [...downtimeData.activeActivities, newActive]
         }
       });
-      return expired;
-    }
 
-    getQuestsByRegion(regionName) {
-      return this.quests.filter(q => q.region === regionName && q.status !== 'expired');
-    }
+      setShowActivityModal(false);
+      setSelectedActivityId(null);
+      setSelectedCharacter(null);
+    }, [selectedCharacter, selectedActivityId, data, downtimeData, setData]);
 
-    serialize() {
-      return JSON.stringify({
-        quests: this.quests,
-        nextId: this.nextId
+    // Handle activity resolution
+    const handleResolveActivity = useCallback((activeActivityId) => {
+      const active = downtimeData.activeActivities.find(a => a.id === activeActivityId);
+      if (!active) return;
+
+      const activity = DOWNTIME_ACTIVITIES.find(a => a.id === active.activityId);
+      if (!activity) return;
+
+      // Simulate resolution
+      const roll = Math.random();
+      let outcome = 'success';
+      if (roll < activity.outcomeProbabilities.greatSuccess) {
+        outcome = 'great_success';
+      } else if (roll > (1 - activity.outcomeProbabilities.complication)) {
+        outcome = 'complication';
+      }
+
+      // Generate gold reward
+      let goldEarned = 0;
+      if (outcome !== 'complication') {
+        const goldMin = Math.max(0, activity.goldReward.min);
+        const goldMax = activity.goldReward.max;
+        goldEarned = Math.floor(Math.random() * (goldMax - goldMin + 1)) + goldMin;
+        if (outcome === 'great_success') goldEarned = Math.ceil(goldEarned * 1.5);
+      }
+
+      // Create history entry
+      const historyEntry = {
+        id: `${active.characterName}_${Date.now()}`,
+        characterName: active.characterName,
+        activityId: active.activityId,
+        activityName: active.activityName,
+        outcome,
+        goldEarned,
+        goldSpent: active.goldCost,
+        narrative: `${active.characterName} ${outcome === 'great_success' ? 'excelled at' : outcome === 'complication' ? 'had complications with' : 'completed'} ${active.activityName.toLowerCase()}.`,
+        completedDate: new Date().toISOString()
+      };
+
+      // Update skill mastery
+      const masteryKey = `${active.characterName}:${active.activityId}`;
+      const currentMastery = downtimeData.skillMastery?.[masteryKey] || { successes: 0, level: 'Novice' };
+      if (outcome !== 'complication') {
+        currentMastery.successes++;
+      }
+
+      setData({
+        ...data,
+        downtime: {
+          ...downtimeData,
+          activeActivities: downtimeData.activeActivities.filter(a => a.id !== activeActivityId),
+          history: [...downtimeData.history, historyEntry],
+          skillMastery: { ...downtimeData.skillMastery, [masteryKey]: currentMastery }
+        }
       });
-    }
 
-    static deserialize(json) {
-      const board = new QuestBoard();
-      const data = JSON.parse(json);
-      board.quests = data.quests || [];
-      board.nextId = data.nextId || 1;
-      return board;
-    }
+      setShowResolveModal(false);
+    }, [downtimeData, data, setData]);
+
+    // Calculate stats
+    const stats = useMemo(() => {
+      const totalGoldEarned = downtimeData.history?.reduce((sum, h) => sum + h.goldEarned, 0) || 0;
+      const totalGoldSpent = downtimeData.history?.reduce((sum, h) => sum + h.goldSpent, 0) || 0;
+      const complications = downtimeData.history?.filter(h => h.outcome === 'complication').length || 0;
+
+      const activityCounts = {};
+      downtimeData.history?.forEach(h => {
+        activityCounts[h.activityName] = (activityCounts[h.activityName] || 0) + 1;
+      });
+
+      const mostPopular = Object.entries(activityCounts).sort((a, b) => b[1] - a[1])[0];
+
+      return {
+        totalGoldEarned,
+        totalGoldSpent,
+        netGold: totalGoldEarned - totalGoldSpent,
+        complications,
+        mostPopular: mostPopular ? mostPopular[0] : 'None'
+      };
+    }, [downtimeData.history]);
+
+    return (
+      <div style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px',
+        padding: '16px',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+        backgroundColor: 'var(--bg-primary, #f5f5f5)',
+        color: 'var(--text-primary, #333)',
+        minHeight: '100vh'
+      }}>
+        {/* Header */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          paddingBottom: '12px',
+          borderBottom: '2px solid var(--border-color, #ddd)'
+        }}>
+          <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold' }}>Downtime Management</h1>
+          <button
+            onClick={() => setShowActivityModal(true)}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              padding: '8px 16px',
+              backgroundColor: 'var(--primary-color, #4CAF50)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: '600'
+            }}
+          >
+            {Plus && <Plus size={18} />} Start Activity
+          </button>
+        </div>
+
+        {/* Tab Navigation */}
+        <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--border-color, #ddd)' }}>
+          {['dashboard', 'history', 'skills', 'stats'].map(tab => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              style={{
+                padding: '8px 16px',
+                backgroundColor: activeTab === tab ? 'var(--primary-color, #4CAF50)' : 'transparent',
+                color: activeTab === tab ? 'white' : 'var(--text-primary, #333)',
+                border: 'none',
+                borderRadius: '4px 4px 0 0',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: activeTab === tab ? '600' : '400'
+              }}
+            >
+              {tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          ))}
+        </div>
+
+        {/* Active Downtime Tracker */}
+        {activeTab === 'dashboard' && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }}>
+            {downtimeData.activeActivities?.length === 0 ? (
+              <div style={{ gridColumn: '1 / -1', padding: '24px', textAlign: 'center', color: 'var(--text-secondary, #666)' }}>
+                No active downtime activities. Click "Start Activity" to begin.
+              </div>
+            ) : (
+              downtimeData.activeActivities?.map(active => {
+                const activity = DOWNTIME_ACTIVITIES.find(a => a.id === active.activityId);
+                const progress = (active.daysElapsed / active.daysRequired) * 100;
+
+                return (
+                  <div
+                    key={active.id}
+                    style={{
+                      padding: '12px',
+                      backgroundColor: 'white',
+                      border: '1px solid var(--border-color, #ddd)',
+                      borderRadius: '6px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }}>
+                      <h3 style={{ margin: 0, fontSize: '14px', fontWeight: '600' }}>
+                        {active.characterName}
+                      </h3>
+                      <span style={{ fontSize: '12px', color: 'var(--text-secondary, #666)' }}>
+                        {activity?.icon}
+                      </span>
+                    </div>
+
+                    <p style={{ margin: '0 0 8px 0', fontSize: '13px', color: 'var(--text-secondary, #666)' }}>
+                      {active.activityName}
+                    </p>
+
+                    <div style={{ marginBottom: '8px' }}>
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        fontSize: '12px',
+                        marginBottom: '4px'
+                      }}>
+                        <span>Progress</span>
+                        <span>{active.daysElapsed}/{active.daysRequired} days</span>
+                      </div>
+                      <div style={{
+                        width: '100%',
+                        height: '6px',
+                        backgroundColor: 'var(--bg-secondary, #eee)',
+                        borderRadius: '3px',
+                        overflow: 'hidden'
+                      }}>
+                        <div style={{
+                          width: `${Math.min(progress, 100)}%`,
+                          height: '100%',
+                          backgroundColor: 'var(--primary-color, #4CAF50)',
+                          transition: 'width 0.3s ease'
+                        }} />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '6px', fontSize: '12px' }}>
+                      <button
+                        onClick={() => {
+                          setData({
+                            ...data,
+                            downtime: {
+                              ...downtimeData,
+                              activeActivities: downtimeData.activeActivities.map(a =>
+                                a.id === active.id ? { ...a, daysElapsed: a.daysElapsed + 1 } : a
+                              )
+                            }
+                          });
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '6px',
+                          backgroundColor: 'var(--info-color, #2196F3)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '3px',
+                          cursor: 'pointer',
+                          fontSize: '12px'
+                        }}
+                      >
+                        +Day
+                      </button>
+                      <button
+                        onClick={() => handleResolveActivity(active.id)}
+                        style={{
+                          flex: 1,
+                          padding: '6px',
+                          backgroundColor: 'var(--success-color, #8BC34A)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '3px',
+                          cursor: 'pointer',
+                          fontSize: '12px'
+                        }}
+                      >
+                        Resolve
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {/* History Tab */}
+        {activeTab === 'history' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {downtimeData.history?.length === 0 ? (
+              <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary, #666)' }}>
+                No downtime history yet.
+              </div>
+            ) : (
+              downtimeData.history?.map(entry => (
+                <div
+                  key={entry.id}
+                  style={{
+                    padding: '12px',
+                    backgroundColor: 'white',
+                    border: `2px solid ${
+                      entry.outcome === 'great_success' ? 'var(--success-color, #8BC34A)' :
+                      entry.outcome === 'complication' ? 'var(--danger-color, #f44336)' :
+                      'var(--info-color, #2196F3)'
+                    }`,
+                    borderRadius: '6px',
+                    borderLeft: `4px solid ${
+                      entry.outcome === 'great_success' ? 'var(--success-color, #8BC34A)' :
+                      entry.outcome === 'complication' ? 'var(--danger-color, #f44336)' :
+                      'var(--info-color, #2196F3)'
+                    }`
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <div>
+                      <h4 style={{ margin: '0 0 2px 0', fontSize: '14px', fontWeight: '600' }}>
+                        {entry.characterName} - {entry.activityName}
+                      </h4>
+                      <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary, #666)' }}>
+                        {entry.narrative}
+                      </p>
+                    </div>
+                    <span style={{
+                      padding: '4px 8px',
+                      backgroundColor: entry.outcome === 'great_success' ? '#c8e6c9' :
+                                      entry.outcome === 'complication' ? '#ffcdd2' : '#bbdefb',
+                      color: entry.outcome === 'great_success' ? '#2e7d32' :
+                             entry.outcome === 'complication' ? '#c62828' : '#1565c0',
+                      borderRadius: '3px',
+                      fontSize: '11px',
+                      fontWeight: '600',
+                      whiteSpace: 'nowrap'
+                    }}>
+                      {entry.outcome.replace('_', ' ').toUpperCase()}
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '16px', fontSize: '12px', color: 'var(--text-secondary, #666)' }}>
+                    {entry.goldEarned > 0 && <span style={{ color: 'var(--success-color, #8BC34A)' }}>+{entry.goldEarned}gp</span>}
+                    {entry.goldSpent > 0 && <span style={{ color: 'var(--danger-color, #f44336)' }}>-{entry.goldSpent}gp</span>}
+                    <span>{new Date(entry.completedDate).toLocaleDateString()}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
+        {/* Skills Tab */}
+        {activeTab === 'skills' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {Object.entries(downtimeData.skillMastery || {}).length === 0 ? (
+              <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary, #666)' }}>
+                Complete activities to unlock skill mastery tracking.
+              </div>
+            ) : (
+              Object.entries(downtimeData.skillMastery || {}).map(([key, mastery]) => {
+                const [charName, actId] = key.split(':');
+                const activity = DOWNTIME_ACTIVITIES.find(a => a.id === actId);
+                const masteryInfo = getMasteryLevel(charName, actId);
+
+                return (
+                  <div
+                    key={key}
+                    style={{
+                      padding: '12px',
+                      backgroundColor: 'white',
+                      border: '1px solid var(--border-color, #ddd)',
+                      borderRadius: '6px'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                      <h4 style={{ margin: 0, fontSize: '14px', fontWeight: '600' }}>
+                        {charName} - {activity?.name}
+                      </h4>
+                      <span style={{
+                        padding: '4px 8px',
+                        backgroundColor: masteryInfo.level === 'Master' ? '#ffe0b2' :
+                                        masteryInfo.level === 'Expert' ? '#f0f4c3' :
+                                        masteryInfo.level === 'Proficient' ? '#c8e6c9' : '#eceff1',
+                        borderRadius: '3px',
+                        fontSize: '11px',
+                        fontWeight: '600'
+                      }}>
+                        {masteryInfo.level} +{masteryInfo.bonus}%
+                      </span>
+                    </div>
+
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px',
+                      fontSize: '12px'
+                    }}>
+                      <span>Successes: {mastery.successes}</span>
+                      <div style={{
+                        flex: 1,
+                        height: '4px',
+                        backgroundColor: 'var(--bg-secondary, #eee)',
+                        borderRadius: '2px',
+                        overflow: 'hidden'
+                      }}>
+                        <div style={{
+                          width: `${Math.min((mastery.successes / 15) * 100, 100)}%`,
+                          height: '100%',
+                          backgroundColor: 'var(--primary-color, #4CAF50)'
+                        }} />
+                      </div>
+                      <span>{masteryInfo.level === 'Master' ? '✓' : Math.min(mastery.successes, 15)}/15</span>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        )}
+
+        {/* Stats Tab */}
+        {activeTab === 'stats' && (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+            <div style={{
+              padding: '16px',
+              backgroundColor: 'white',
+              border: '1px solid var(--border-color, #ddd)',
+              borderRadius: '6px'
+            }}>
+              <p style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary, #666)' }}>
+                Total Gold Earned
+              </p>
+              <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: 'var(--success-color, #8BC34A)' }}>
+                +{stats.totalGoldEarned}
+              </h2>
+            </div>
+
+            <div style={{
+              padding: '16px',
+              backgroundColor: 'white',
+              border: '1px solid var(--border-color, #ddd)',
+              borderRadius: '6px'
+            }}>
+              <p style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary, #666)' }}>
+                Total Gold Spent
+              </p>
+              <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: 'var(--danger-color, #f44336)' }}>
+                -{stats.totalGoldSpent}
+              </h2>
+            </div>
+
+            <div style={{
+              padding: '16px',
+              backgroundColor: 'white',
+              border: '1px solid var(--border-color, #ddd)',
+              borderRadius: '6px'
+            }}>
+              <p style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary, #666)' }}>
+                Net Gold
+              </p>
+              <h2 style={{
+                margin: 0,
+                fontSize: '24px',
+                fontWeight: 'bold',
+                color: stats.netGold >= 0 ? 'var(--success-color, #8BC34A)' : 'var(--danger-color, #f44336)'
+              }}>
+                {stats.netGold >= 0 ? '+' : ''}{stats.netGold}
+              </h2>
+            </div>
+
+            <div style={{
+              padding: '16px',
+              backgroundColor: 'white',
+              border: '1px solid var(--border-color, #ddd)',
+              borderRadius: '6px'
+            }}>
+              <p style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary, #666)' }}>
+                Complications
+              </p>
+              <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: 'var(--warning-color, #ff9800)' }}>
+                {stats.complications}
+              </h2>
+            </div>
+
+            <div style={{
+              padding: '16px',
+              backgroundColor: 'white',
+              border: '1px solid var(--border-color, #ddd)',
+              borderRadius: '6px'
+            }}>
+              <p style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary, #666)' }}>
+                Most Popular Activity
+              </p>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>
+                {stats.mostPopular}
+              </h3>
+            </div>
+
+            <div style={{
+              padding: '16px',
+              backgroundColor: 'white',
+              border: '1px solid var(--border-color, #ddd)',
+              borderRadius: '6px'
+            }}>
+              <p style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary, #666)' }}>
+                Total Activities
+              </p>
+              <h2 style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: 'var(--info-color, #2196F3)' }}>
+                {downtimeData.history?.length || 0}
+              </h2>
+            </div>
+          </div>
+        )}
+
+        {/* Activity Assignment Modal */}
+        {showActivityModal && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000
+          }}>
+            <div style={{
+              backgroundColor: 'white',
+              padding: '24px',
+              borderRadius: '8px',
+              maxWidth: '500px',
+              width: '90%',
+              maxHeight: '80vh',
+              overflowY: 'auto',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.2)'
+            }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold' }}>Start New Activity</h2>
+                <button
+                  onClick={() => {
+                    setShowActivityModal(false);
+                    setSelectedCharacter(null);
+                    setSelectedActivityId(null);
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '20px',
+                    cursor: 'pointer',
+                    color: 'var(--text-secondary, #666)'
+                  }}
+                >
+                  ×
+                </button>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px', color: 'var(--text-secondary, #666)' }}>
+                    Character
+                  </label>
+                  <input
+                    type="text"
+                    value={selectedCharacter || ''}
+                    onChange={(e) => setSelectedCharacter(e.target.value)}
+                    placeholder="Enter character name"
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: '1px solid var(--border-color, #ddd)',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      boxSizing: 'border-box'
+                    }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px', color: 'var(--text-secondary, #666)' }}>
+                    Activity
+                  </label>
+                  <select
+                    value={selectedActivityId || ''}
+                    onChange={(e) => setSelectedActivityId(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: '1px solid var(--border-color, #ddd)',
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      boxSizing: 'border-box'
+                    }}
+                  >
+                    <option value="">Select an activity...</option>
+                    {DOWNTIME_ACTIVITIES.map(activity => (
+                      <option key={activity.id} value={activity.id}>
+                        {activity.name} ({activity.durationDays} days, {activity.goldCost}gp)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {selectedActivityId && (
+                  <div style={{
+                    padding: '12px',
+                    backgroundColor: 'var(--bg-secondary, #f5f5f5)',
+                    borderRadius: '4px',
+                    fontSize: '13px'
+                  }}>
+                    <p style={{ margin: '0 0 8px 0', fontWeight: '600' }}>Activity Details</p>
+                    {(() => {
+                      const act = DOWNTIME_ACTIVITIES.find(a => a.id === selectedActivityId);
+                      return act ? (
+                        <>
+                          <p style={{ margin: '4px 0', fontSize: '12px' }}><strong>Description:</strong> {act.description}</p>
+                          <p style={{ margin: '4px 0', fontSize: '12px' }}><strong>Duration:</strong> {act.durationDays} days</p>
+                          <p style={{ margin: '4px 0', fontSize: '12px' }}><strong>Cost:</strong> {act.goldCost}gp</p>
+                          <p style={{ margin: '4px 0', fontSize: '12px' }}><strong>Reward Range:</strong> {act.goldReward.min}-{act.goldReward.max}gp</p>
+                        </>
+                      ) : null;
+                    })()}
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                  <button
+                    onClick={handleAssignActivity}
+                    disabled={!selectedCharacter || !selectedActivityId}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      backgroundColor: selectedCharacter && selectedActivityId ? 'var(--primary-color, #4CAF50)' : 'var(--disabled-color, #ccc)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: selectedCharacter && selectedActivityId ? 'pointer' : 'not-allowed',
+                      fontSize: '14px',
+                      fontWeight: '600'
+                    }}
+                  >
+                    Start Activity
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowActivityModal(false);
+                      setSelectedCharacter(null);
+                      setSelectedActivityId(null);
+                    }}
+                    style={{
+                      flex: 1,
+                      padding: '10px',
+                      backgroundColor: 'var(--bg-secondary, #eee)',
+                      color: 'var(--text-primary, #333)',
+                      border: 'none',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '14px',
+                      fontWeight: '600'
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
   }
 
   // ============================================================================
@@ -871,5 +1367,6 @@
   window.DOWNTIME_ACTIVITIES = DOWNTIME_ACTIVITIES;
   window.QuestBoard = QuestBoard;
   window.QUEST_TEMPLATES = QUEST_TEMPLATES;
+  window.DowntimeView = DowntimeView;
 
 })();

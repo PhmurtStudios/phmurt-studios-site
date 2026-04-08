@@ -1595,7 +1595,7 @@
     const { useState, useEffect, useCallback, useRef, useMemo } = React;
 
     // Lucide icons from global
-    const { ChevronDown, ChevronRight, ChevronLeft, Swords, Users, MapPin, Crown, Scroll, Clock, Star, BookOpen, Dice6, Target, Heart, CheckCircle, Circle, ArrowRight, Plus, Compass, Mountain, Castle, Skull, Flag, TrendingUp, TrendingDown, Minus, SkipForward, Search, Bell, Settings, X, Edit3, Trash2, Eye, EyeOff, Globe, Layers, Activity, Upload, Download, FileText, Save, Copy, Calendar, Lock, Unlock, ToggleLeft, ToggleRight, AlertTriangle, Package, Shield, Wand2, Map: MapIcon, LayoutDashboard, Link, RefreshCw, ChevronUp, MoreVertical, Check, Image, Bold, Italic, List, Type, Heading, Filter, Flame, TreePine, Anchor, Sparkles } = window.LucideReact || {};
+    const { ChevronDown, ChevronRight, ChevronLeft, Swords, Users, MapPin, Crown, Scroll, Clock, Star, BookOpen, Dice6, Target, Heart, CheckCircle, Circle, ArrowRight, Plus, Compass, Mountain, Castle, Skull, Flag, TrendingUp, TrendingDown, Minus, SkipForward, Search, Bell, Settings, X, Edit3, Trash2, Eye, EyeOff, Globe, Layers, Activity, Upload, Download, FileText, Save, Copy, Calendar, Lock, Unlock, ToggleLeft, ToggleRight, AlertTriangle, Package, Shield, Wand2, Map: MapIcon, LayoutDashboard, Link, RefreshCw, ChevronUp, MoreVertical, Check, Image, Bold, Italic, List, Type, Heading, Filter, Flame, TreePine, Anchor, Sparkles, StickyNote, Pin, PinOff, GripVertical, Palette } = window.LucideReact || {};
     const FilterIcon = Filter || Layers;
     /* Play tab: Lucide "Map" is imported as MapIcon so we do not use the JS built-in Map. Dashboard: Layout was never imported—use LayoutDashboard (fallback Layers). */
     const DashboardNavIcon = LayoutDashboard || Layers;
@@ -1738,6 +1738,12 @@ const NEW_CAMPAIGN = (type = "traditional") => ({
     livingWorld: false, economy: false, calendar: false, religion: false,
     hexcrawl: false, questBoard: false, downtime: false,
     homebrew: true, // always on by default
+    factionWar: false, // Faction War Simulator (Risk + Total War style)
+    prophecy: false, // Prophecy Engine + Enhanced Religion
+    plague: false, // Plague & Contagion Tracker
+    heist: false, // Heist Planner
+    intrigue: false, // Court Intrigue (Cult of Kosmos style)
+    puzzles: false, // Comprehensive Puzzle system
     // Player visibility
     playerWorldMap: true, playerFactions: false, playerEconomy: false,
     playerQuests: true, playerRelationships: false,
@@ -1752,6 +1758,7 @@ const NEW_CAMPAIGN = (type = "traditional") => ({
   atlasMapSeed: "1",
   party: [], quests: [], factions: [], regions: [], npcs: [], cities: [],
   timeline: [], campaignNotes: [],
+  quickNotes: { notes: [], pins: [] },
   encounters: [],
   combatLedger: [],
   worldMap: { pendingLaunch: null, lastRoute: null, lastFocusedRegionId: null },
@@ -4317,12 +4324,12 @@ function InitiativeTracker({ party }) {
     if (prevIdx >= 0) setTurn(prevIdx);
   };
   const adjHp = (id,d) => setCombatants(p=>p.map(c=>c.id===id?{...c,hp:Math.max(0,Math.min(c.maxHp,c.hp+d))}:c));
-  const remove = (id) => { setCombatants(p=>p.filter(c=>c.id!==id)); if(turn >= combatants.length-1) setTurn(t=>Math.max(0,t-1)); };
+  const remove = (id) => { setCombatants(p=>{ const next=p.filter(c=>c.id!==id); if(turn >= next.length) setTurn(t=>Math.max(0,next.length-1)); return next; }); };
   const addCondition = (id, cond) => { if(!cond) return; setConditions(p=>({...p, [id]: [...(p[id]||[]), cond]})); };
   const removeCondition = (id, idx) => { setConditions(p=>({...p, [id]: (p[id]||[]).filter((_,i)=>i!==idx)})); };
   const add = () => {
     if(!name.trim()||!init) return;
-    const newC = {id:`c-${Date.now()}`,name,init:parseInt(init),hp:parseInt(hpVal)||30,maxHp:parseInt(hpVal)||30,ac:parseInt(acVal)||12,type:"enemy"};
+    const newC = {id:`c-${Date.now()}`,name,init:parseInt(init)||0,hp:parseInt(hpVal)||30,maxHp:parseInt(hpVal)||30,ac:parseInt(acVal)||12,type:"enemy"};
     setCombatants(p=>[...p,newC].sort((a,b)=>b.init-a.init));
     setName(""); setInit(""); setHpVal(""); setAcVal("");
   };
@@ -5584,6 +5591,208 @@ function TabLoadingSpinner({ label }) {
   );
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   DM QUICK NOTES — Sticky-note scratchpad overlay
+   Accessible from every tab via sidebar button.
+   Saves to campaign data (quickNotes.notes[] and quickNotes.pins[]).
+   ═══════════════════════════════════════════════════════════════ */
+const NOTE_COLORS = [
+  { label: "Gold",    bg: "#3a3420", border: "#c9a85c", text: "#f2e8d6" },
+  { label: "Crimson", bg: "#2a1515", border: "#d4433a", text: "#f2e8d6" },
+  { label: "Blue",    bg: "#152030", border: "#58aaff", text: "#f2e8d6" },
+  { label: "Green",   bg: "#152a1a", border: "#5ee09a", text: "#f2e8d6" },
+  { label: "Purple",  bg: "#201530", border: "#b574ff", text: "#f2e8d6" },
+  { label: "Parchment", bg: "#2a2518", border: "#8c7d6e", text: "#cfc0a8" },
+];
+
+function QuickNotesPanel({ data, setData, onClose }) {
+  const qn = data.quickNotes || { notes: [], pins: [] };
+  const notes = qn.notes || [];
+  const pins = qn.pins || [];
+  const canvasRef = useRef(null);
+  const [dragging, setDragging] = useState(null); // { id, offsetX, offsetY }
+  const [editing, setEditing] = useState(null); // note id being edited
+  const [colorPicker, setColorPicker] = useState(null); // note id showing color picker
+  const [panelTab, setPanelTab] = useState("notes"); // "notes" | "pins"
+
+  const updateNotes = (newNotes) => {
+    setData(prev => ({ ...prev, quickNotes: { ...prev.quickNotes, notes: newNotes, pins: prev.quickNotes?.pins || [] } }));
+  };
+  const updatePins = (newPins) => {
+    setData(prev => ({ ...prev, quickNotes: { ...prev.quickNotes, notes: prev.quickNotes?.notes || [], pins: newPins } }));
+  };
+
+  const addNote = () => {
+    const id = "qn-" + Date.now();
+    const col = NOTE_COLORS[0];
+    const newNote = { id, text: "", x: 20 + Math.random() * 200, y: 20 + Math.random() * 100, w: 200, h: 150, color: 0 };
+    updateNotes([...notes, newNote]);
+    setTimeout(() => setEditing(id), 50);
+  };
+
+  const deleteNote = (id) => { updateNotes(notes.filter(n => n.id !== id)); setEditing(null); };
+  const deletePin = (id) => { updatePins(pins.filter(p => p.id !== id)); };
+
+  const updateNoteText = (id, text) => {
+    updateNotes(notes.map(n => n.id === id ? { ...n, text } : n));
+  };
+  const updateNoteColor = (id, colorIdx) => {
+    updateNotes(notes.map(n => n.id === id ? { ...n, color: colorIdx } : n));
+    setColorPicker(null);
+  };
+
+  const handleMouseDown = (e, note) => {
+    if (editing === note.id) return; // don't drag while editing
+    const rect = canvasRef.current.getBoundingClientRect();
+    setDragging({ id: note.id, offsetX: e.clientX - (rect.left + note.x), offsetY: e.clientY - (rect.top + note.y) });
+  };
+  const handleMouseMove = useCallback((e) => {
+    if (!dragging || !canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = Math.max(0, Math.min(rect.width - 80, e.clientX - rect.left - dragging.offsetX));
+    const y = Math.max(0, Math.min(rect.height - 40, e.clientY - rect.top - dragging.offsetY));
+    updateNotes(notes.map(n => n.id === dragging.id ? { ...n, x, y } : n));
+  }, [dragging, notes]);
+  const handleMouseUp = useCallback(() => { setDragging(null); }, []);
+
+  useEffect(() => {
+    if (dragging) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+      return () => { window.removeEventListener("mousemove", handleMouseMove); window.removeEventListener("mouseup", handleMouseUp); };
+    }
+  }, [dragging, handleMouseMove, handleMouseUp]);
+
+  return (
+    <div style={{ position:"fixed", top:0, right:0, width:420, height:"100vh", background:"var(--bg-nav)", borderLeft:"2px solid var(--crimson-border)", zIndex:9999, display:"flex", flexDirection:"column", boxShadow:"-8px 0 32px rgba(0,0,0,0.5)" }}
+      onClick={(e) => { if (e.target === e.currentTarget) { /* noop */ } }}>
+      {/* Header */}
+      <div style={{ padding:"14px 16px", borderBottom:"1px solid " + T.border, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <StickyNote size={16} color={T.gold}/>
+          <span style={{ fontFamily:T.heading, fontSize:14, color:T.text, letterSpacing:"1px" }}>DM Quick Notes</span>
+        </div>
+        <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:4 }}><X size={16}/></button>
+      </div>
+
+      {/* Tab bar */}
+      <div style={{ display:"flex", borderBottom:"1px solid " + T.border }}>
+        {[{id:"notes",label:"Sticky Notes",icon:StickyNote},{id:"pins",label:"Pinned Items",icon:Pin}].map(t => (
+          <button key={t.id} onClick={() => setPanelTab(t.id)}
+            style={{ flex:1, padding:"10px", background: panelTab === t.id ? "rgba(212,67,58,0.08)" : "transparent", border:"none", borderBottom: panelTab === t.id ? "2px solid var(--crimson)" : "2px solid transparent", cursor:"pointer", color: panelTab === t.id ? T.crimson : T.textMuted, fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", textTransform:"uppercase", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+            <t.icon size={12}/> {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Notes Canvas */}
+      {panelTab === "notes" && (
+        <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden" }}>
+          <div style={{ padding:"8px 12px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <span style={{ fontFamily:T.body, fontSize:11, color:T.textFaint }}>{notes.length} note{notes.length !== 1 ? "s" : ""}</span>
+            <button onClick={addNote} style={{ background:"rgba(201,168,76,0.08)", border:"1px solid rgba(201,168,76,0.2)", borderRadius:4, cursor:"pointer", color:T.gold, fontFamily:T.ui, fontSize:9, letterSpacing:"1px", padding:"5px 10px", display:"flex", alignItems:"center", gap:4 }}>
+              <Plus size={10}/> ADD NOTE
+            </button>
+          </div>
+          <div ref={canvasRef} style={{ flex:1, position:"relative", overflow:"auto", background:"var(--bg)", margin:"0 8px 8px", borderRadius:6, border:"1px solid " + T.border, backgroundImage:"radial-gradient(circle, rgba(201,168,76,0.04) 1px, transparent 1px)", backgroundSize:"24px 24px" }}>
+            {notes.length === 0 && (
+              <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", textAlign:"center", color:T.textFaint, fontFamily:T.body, fontSize:13 }}>
+                <StickyNote size={28} style={{ opacity:0.3, marginBottom:8 }}/><br/>
+                Click "Add Note" to create a sticky note.<br/>
+                <span style={{ fontSize:11 }}>Drag to move · Click to edit</span>
+              </div>
+            )}
+            {notes.map(note => {
+              const col = NOTE_COLORS[note.color || 0];
+              const isEditing = editing === note.id;
+              return (
+                <div key={note.id}
+                  onMouseDown={(e) => handleMouseDown(e, note)}
+                  onDoubleClick={() => setEditing(note.id)}
+                  style={{ position:"absolute", left:note.x, top:note.y, width: note.w || 200, minHeight: note.h || 150, background:col.bg, border:"1px solid " + col.border, borderRadius:6, cursor: isEditing ? "text" : "grab", userSelect: isEditing ? "text" : "none", boxShadow:"0 4px 16px rgba(0,0,0,0.3)", display:"flex", flexDirection:"column", transition: dragging?.id === note.id ? "none" : "box-shadow 0.15s" }}>
+                  {/* Note header bar */}
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"4px 6px", borderBottom:"1px solid " + col.border + "44", minHeight:24 }}>
+                    <GripVertical size={10} color={col.border} style={{ opacity:0.5 }}/>
+                    <div style={{ display:"flex", gap:2 }}>
+                      <button onClick={(e) => { e.stopPropagation(); setColorPicker(colorPicker === note.id ? null : note.id); }}
+                        style={{ background:"none", border:"none", cursor:"pointer", padding:2, color:col.border }}><Palette size={11}/></button>
+                      <button onClick={(e) => { e.stopPropagation(); deleteNote(note.id); }}
+                        style={{ background:"none", border:"none", cursor:"pointer", padding:2, color:T.crimson }}><X size={11}/></button>
+                    </div>
+                  </div>
+                  {/* Color picker dropdown */}
+                  {colorPicker === note.id && (
+                    <div style={{ display:"flex", gap:4, padding:"4px 8px", borderBottom:"1px solid " + col.border + "44" }}>
+                      {NOTE_COLORS.map((c, i) => (
+                        <button key={i} onClick={(e) => { e.stopPropagation(); updateNoteColor(note.id, i); }}
+                          style={{ width:18, height:18, borderRadius:"50%", background:c.border, border: i === (note.color||0) ? "2px solid #fff" : "2px solid transparent", cursor:"pointer" }}/>
+                      ))}
+                    </div>
+                  )}
+                  {/* Note content */}
+                  <div style={{ flex:1, padding:"8px 10px" }}>
+                    {isEditing ? (
+                      <textarea
+                        autoFocus
+                        value={note.text}
+                        onChange={e => updateNoteText(note.id, e.target.value)}
+                        onBlur={() => setEditing(null)}
+                        onKeyDown={e => { if (e.key === "Escape") setEditing(null); }}
+                        style={{ width:"100%", height:"100%", minHeight:90, background:"transparent", border:"none", outline:"none", color:col.text, fontFamily:T.body, fontSize:13, lineHeight:1.5, resize:"vertical" }}
+                        placeholder="Type your note..."
+                      />
+                    ) : (
+                      <div style={{ color:col.text, fontFamily:T.body, fontSize:13, lineHeight:1.5, whiteSpace:"pre-wrap", minHeight:90, opacity: note.text ? 1 : 0.4 }}>
+                        {note.text || "Double-click to edit..."}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Pinned Items */}
+      {panelTab === "pins" && (
+        <div style={{ flex:1, overflow:"auto", padding:"12px" }}>
+          {pins.length === 0 ? (
+            <div style={{ textAlign:"center", padding:"40px 20px", color:T.textFaint, fontFamily:T.body, fontSize:13 }}>
+              <Pin size={28} style={{ opacity:0.3, marginBottom:8 }}/><br/>
+              No pinned items yet.<br/>
+              <span style={{ fontSize:11 }}>Use the pin button on NPCs, quests,<br/>and generator results to save them here.</span>
+            </div>
+          ) : (
+            <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+              {pins.map(pin => (
+                <div key={pin.id} style={{ background:T.bgCard, border:"1px solid " + T.border, borderRadius:6, padding:"10px 12px", display:"flex", alignItems:"flex-start", gap:10 }}>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontFamily:T.ui, fontSize:10, letterSpacing:"1px", textTransform:"uppercase", color:T.crimson, marginBottom:3 }}>{pin.type || "Item"}</div>
+                    <div style={{ fontFamily:T.body, fontSize:13, color:T.text }}>{pin.label}</div>
+                    {pin.detail && <div style={{ fontFamily:T.body, fontSize:11, color:T.textMuted, marginTop:3 }}>{pin.detail}</div>}
+                  </div>
+                  <button onClick={() => deletePin(pin.id)}
+                    style={{ background:"none", border:"none", cursor:"pointer", padding:2, color:T.textFaint, flexShrink:0 }}><X size={13}/></button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* Global helper: pin an item to quick notes from any view */
+window.pinToQuickNotes = function(setData, type, label, detail) {
+  setData(prev => {
+    const qn = prev.quickNotes || { notes: [], pins: [] };
+    const id = "pin-" + Date.now();
+    return { ...prev, quickNotes: { ...qn, notes: qn.notes || [], pins: [...(qn.pins || []), { id, type, label, detail }] } };
+  });
+};
+
 function App() {
   const route = cmReadRoute();
   const [campaigns, setCampaigns] = useState([]);
@@ -5598,6 +5807,7 @@ function App() {
   const [inviteCodes, setInviteCodes] = useState([]);
   const [campaignMembers, setCampaignMembers] = useState([]);
   const [showInvitePanel, setShowInvitePanel] = useState(false);
+  const [showQuickNotes, setShowQuickNotes] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState("");
   const [joinSuccess, setJoinSuccess] = useState("");
@@ -5641,6 +5851,13 @@ function App() {
         await loadTabModule("homebrew-view", "campaign-homebrew-view.js");
         await loadTabModule("scheduler-view", "campaign-scheduler-view.js");
         await loadTabModule("settings-view", "campaign-settings-view.js");
+        await loadTabModule("factionwar", "campaign-factionwar.js");
+        await loadTabModule("prophecy", "campaign-prophecy.js");
+        await loadTabModule("plague", "campaign-plague.js");
+        await loadTabModule("heist", "campaign-heist.js");
+        await loadTabModule("intrigue", "campaign-intrigue.js");
+        await loadTabModule("downtime", "campaign-downtime.js");
+        await loadTabModule("puzzles", "campaign-puzzles.js");
       } catch (e) {
         console.error("[App] Background tab loading error:", e);
       }
@@ -5653,7 +5870,7 @@ function App() {
   // ── If user switches to an unloaded tab, prioritize loading it ──
   useEffect(() => {
     if (activeTab === "dashboard" || tabsReady[activeTab]) return;
-    var urls = { timeline: "campaign-timeline.js", world: "campaign-world.js", play: "campaign-play.js" };
+    var urls = { timeline: "campaign-timeline.js", world: "campaign-world.js", play: "campaign-play.js", factionwar: "campaign-factionwar.js", prophecy: "campaign-prophecy.js", plague: "campaign-plague.js", heist: "campaign-heist.js", intrigue: "campaign-intrigue.js", downtime: "campaign-downtime.js", puzzles: "campaign-puzzles.js" };
     var preload = activeTab === "world" ? loadDataModule("atlas-images", "atlas-images.js").then(function() { return loadTabModule("living-world", "living-world.js"); }) : Promise.resolve();
     preload.then(function() { return loadTabModule(activeTab, urls[activeTab]); }).then(function() {
       setTabsReady(function(prev) { var n = Object.assign({}, prev); n[activeTab] = true; return n; });
@@ -5985,6 +6202,13 @@ function App() {
     { id:"quests", label:"Quests", icon: Scroll, roles:["dm","player"], module:"questBoard" },
     { id:"relationships", label:"Relations", icon: Activity, roles:["dm","player"], module:"livingWorld" },
     { id:"homebrew", label:"Homebrew", icon: Wand2, roles:["dm"], module:"homebrew" },
+    { id:"factionwar", label:"War", icon: Swords, roles:["dm"], module:"factionWar" },
+    { id:"prophecy", label:"Prophecy", icon: BookOpen, roles:["dm"], module:"prophecy" },
+    { id:"plague", label:"Plague", icon: Skull, roles:["dm"], module:"plague" },
+    { id:"heist", label:"Heist", icon: Lock, roles:["dm"], module:"heist" },
+    { id:"intrigue", label:"Intrigue", icon: Crown, roles:["dm"], module:"intrigue" },
+    { id:"downtime", label:"Downtime", icon: Package, roles:["dm"], module:"downtime" },
+    { id:"puzzles", label:"Puzzles", icon: Dice6, roles:["dm"], module:"puzzles" },
     // Schedule tab removed — scheduler is now built into the Dashboard's Next Session card
     // { id:"scheduler", label:"Schedule", icon: Calendar, roles:["dm","player"], module:"scheduler" },
     { id:"settings", label:"Settings", icon: Settings, roles:["dm"] },
@@ -6086,6 +6310,25 @@ function App() {
           })}
         </div>
 
+        {/* DM Quick Notes Button */}
+        <div style={{ padding: sidebarCollapsed ? "8px 4px" : "8px 14px", borderTop:"1px solid " + T.border }}>
+          <button onClick={() => setShowQuickNotes(!showQuickNotes)}
+            onMouseEnter={e => e.currentTarget.style.background="rgba(201,168,76,0.1)"}
+            onMouseLeave={e => e.currentTarget.style.background = showQuickNotes ? "rgba(201,168,76,0.08)" : "transparent"}
+            style={{
+              width:"100%", padding: sidebarCollapsed ? "8px 0" : "8px 12px",
+              background: showQuickNotes ? "rgba(201,168,76,0.08)" : "transparent",
+              border:"1px solid " + (showQuickNotes ? "rgba(201,168,76,0.25)" : "transparent"),
+              borderRadius:4, cursor:"pointer", display:"flex", alignItems:"center",
+              justifyContent: sidebarCollapsed ? "center" : "flex-start", gap:8, transition:"all 0.15s",
+            }}>
+            <StickyNote size={14} color={showQuickNotes ? T.gold : T.textMuted}/>
+            {!sidebarCollapsed && (
+              <span style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", textTransform:"uppercase", color: showQuickNotes ? T.gold : T.textMuted }}>Quick Notes</span>
+            )}
+          </button>
+        </div>
+
         {/* View Role Toggle */}
         {!sidebarCollapsed && campaignRoles[activeCampaignId] === "dm" && (
           <div style={{ padding:"12px 14px", borderTop:"1px solid " + T.border }}>
@@ -6168,12 +6411,50 @@ function App() {
             ? React.createElement(window.CampaignSchedulerView, { data: data, setData: setData, viewRole: viewRole, campaignMembers: campaignMembers })
             : <TabLoadingSpinner label="Scheduler" />
         )}
+        {activeTab === "factionwar" && (
+          window.FactionWarView
+            ? React.createElement(window.FactionWarView, { data: data, setData: setData, viewRole: viewRole })
+            : <TabLoadingSpinner label="Faction War" />
+        )}
+        {activeTab === "prophecy" && (
+          window.ProphecyReligionView
+            ? React.createElement(window.ProphecyReligionView, { data: data, setData: setData, viewRole: viewRole })
+            : <TabLoadingSpinner label="Prophecy" />
+        )}
+        {activeTab === "plague" && (
+          window.PlagueTrackerView
+            ? React.createElement(window.PlagueTrackerView, { data: data, setData: setData, viewRole: viewRole })
+            : <TabLoadingSpinner label="Plague" />
+        )}
+        {activeTab === "heist" && (
+          window.HeistPlannerView
+            ? React.createElement(window.HeistPlannerView, { data: data, setData: setData, viewRole: viewRole })
+            : <TabLoadingSpinner label="Heist" />
+        )}
+        {activeTab === "intrigue" && (
+          window.CourtIntrigueView
+            ? React.createElement(window.CourtIntrigueView, { data: data, setData: setData, viewRole: viewRole })
+            : <TabLoadingSpinner label="Intrigue" />
+        )}
+        {activeTab === "downtime" && (
+          window.DowntimeView
+            ? React.createElement(window.DowntimeView, { data: data, setData: setData, viewRole: viewRole })
+            : <TabLoadingSpinner label="Downtime" />
+        )}
+        {activeTab === "puzzles" && (
+          window.PuzzlePageView
+            ? React.createElement(window.PuzzlePageView, { data: data, setData: setData, viewRole: viewRole })
+            : <TabLoadingSpinner label="Puzzles" />
+        )}
         {activeTab === "settings" && (
           window.CampaignSettingsView
             ? React.createElement(window.CampaignSettingsView, { data: data, setData: setData, viewRole: viewRole, campaignMembers: campaignMembers })
             : <TabLoadingSpinner label="Settings" />
         )}
       </div>
+
+      {/* ══ DM Quick Notes Panel ══ */}
+      {showQuickNotes && <QuickNotesPanel data={data} setData={setData} onClose={() => setShowQuickNotes(false)} />}
 
       {/* ══ Invite Players Modal ══ */}
       {showInvitePanel && (

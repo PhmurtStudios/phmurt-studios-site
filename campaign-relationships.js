@@ -504,6 +504,306 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
   };
 
   // ─────────────────────────────────────────────────────────────────────
+  // REPUTATION LEDGER — Comprehensive ledger system with events, rewards, and tracking
+  // ─────────────────────────────────────────────────────────────────────
+  const [newEventDesc, setNewEventDesc] = React.useState("");
+  const [newEventFaction, setNewEventFaction] = React.useState(factions.length > 0 ? factions[0].name : "");
+  const [newEventAmount, setNewEventAmount] = React.useState("5");
+  const [newEventSource, setNewEventSource] = React.useState("");
+  const [ledgerFilterFaction, setLedgerFilterFaction] = React.useState("");
+
+  // Initialize ledger data if not present
+  const ledger = React.useMemo(() => (data.reputationLedger || {}), [data.reputationLedger]);
+  const rewardTiers = React.useMemo(() => (ledger.rewardTiers || {}), [ledger]);
+  const eventLog = React.useMemo(() => (ledger.eventLog || []), [ledger]);
+  const favorBalances = React.useMemo(() => (ledger.favorBalances || {}), [ledger]);
+  const decayRates = React.useMemo(() => (ledger.decayRates || {}), [ledger]);
+
+  // Add event to ledger
+  const addLedgerEvent = () => {
+    if (!newEventDesc.trim() || !newEventFaction) return;
+    const amount = parseInt(newEventAmount, 10) || 0;
+    setData(d => {
+      const existing = d.reputationLedger || {};
+      const log = existing.eventLog || [];
+      const newEntry = {
+        id: Date.now(),
+        date: new Date().toISOString().split('T')[0],
+        description: newEventDesc,
+        faction: newEventFaction,
+        amount: amount,
+        source: newEventSource || "Manual entry",
+        triggered: viewRole === "dm" ? "DM" : "System"
+      };
+      // Also update party reputation
+      const currentRep = (d.partyReputation || {})[newEventFaction] || {};
+      const newScore = Math.max(0, Math.min(100, (currentRep.score || 50) + amount));
+      return {
+        ...d,
+        reputationLedger: { ...existing, eventLog: [...log, newEntry] },
+        partyReputation: { ...(d.partyReputation || {}), [newEventFaction]: { ...currentRep, score: newScore } }
+      };
+    });
+    setNewEventDesc("");
+    setNewEventAmount("5");
+    setNewEventSource("");
+  };
+
+  // Update favor balance
+  const updateFavor = (factionName, delta) => {
+    setData(d => ({
+      ...d,
+      reputationLedger: {
+        ...(d.reputationLedger || {}),
+        favorBalances: {
+          ...(d.reputationLedger?.favorBalances || {}),
+          [factionName]: Math.max(0, (d.reputationLedger?.favorBalances?.[factionName] || 0) + delta)
+        }
+      }
+    }));
+  };
+
+  // Set reward tier for faction
+  const setRewardTier = (factionName, threshold, reward) => {
+    setData(d => {
+      const existing = d.reputationLedger || {};
+      const tiers = existing.rewardTiers || {};
+      if (!tiers[factionName]) tiers[factionName] = [];
+      const updated = [...(tiers[factionName] || [])];
+      const idx = updated.findIndex(t => t.threshold === threshold);
+      if (idx >= 0) {
+        updated[idx] = { threshold, reward };
+      } else {
+        updated.push({ threshold, reward });
+      }
+      updated.sort((a, b) => b.threshold - a.threshold);
+      return {
+        ...d,
+        reputationLedger: { ...existing, rewardTiers: { ...tiers, [factionName]: updated } }
+      };
+    });
+  };
+
+  const renderLedger = () => {
+    const filtered = factionStandings.filter(f => !ledgerFilterFaction || f.name === ledgerFilterFaction);
+    const filteredEvents = ledgerFilterFaction ? eventLog.filter(e => e.faction === ledgerFilterFaction) : eventLog;
+    const sortedEvents = [...filteredEvents].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 24 } },
+      // Event Log Section
+      React.createElement("div", { style: { background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 4, padding: "20px 24px" } },
+        React.createElement(SectionLabel, { count: sortedEvents.length }, "Reputation Event Log"),
+
+        // Filter by faction
+        React.createElement("div", { style: { marginBottom: 16 } },
+          React.createElement("select", {
+            value: ledgerFilterFaction,
+            onChange: (e) => setLedgerFilterFaction(e.target.value),
+            style: {
+              padding: "6px 10px", fontSize: 11, fontFamily: T.body, background: T.bgInput, border: `1px solid ${T.border}`,
+              borderRadius: 3, color: T.text, cursor: "pointer"
+            }
+          },
+            React.createElement("option", { value: "" }, "All factions"),
+            factionStandings.map(f => React.createElement("option", { key: f.id, value: f.name }, f.name))
+          )
+        ),
+
+        sortedEvents.length === 0
+          ? React.createElement("div", { style: { fontSize: 12, color: T.textFaint, fontStyle: "italic", paddingTop: 8 } }, "No events recorded yet.")
+          : React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8, maxHeight: "400px", overflowY: "auto" } },
+              sortedEvents.map((evt, i) => {
+                const isPositive = evt.amount > 0;
+                return React.createElement("div", {
+                  key: evt.id,
+                  style: {
+                    padding: "10px 14px", background: i % 2 === 0 ? "transparent" : "rgba(0,0,0,0.06)",
+                    borderLeft: `3px solid ${isPositive ? T.green : T.crimson}`, borderRadius: 2
+                  }
+                },
+                  React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, marginBottom: 4 } },
+                    React.createElement("span", { style: { fontSize: 10, color: T.textFaint, fontFamily: T.ui, minWidth: 75 } }, evt.date),
+                    React.createElement("span", { style: { fontSize: 11, color: T.text, flex: 1 } }, evt.description),
+                    React.createElement("span", { style: { fontSize: 10, color: T.textFaint } }, evt.faction),
+                    React.createElement("span", {
+                      style: {
+                        fontSize: 10, fontWeight: 500, color: isPositive ? T.green : T.crimson,
+                        background: (isPositive ? T.green : T.crimson) + "15", padding: "2px 8px", borderRadius: 2
+                      }
+                    }, (isPositive ? "+" : "") + evt.amount)
+                  ),
+                  React.createElement("div", { style: { fontSize: 9, color: T.textFaint, marginLeft: "85px" } }, "From: " + evt.source)
+                );
+              })
+            ),
+
+        // DM: Add event form
+        isDM && React.createElement("div", { style: { marginTop: 16, paddingTop: 16, borderTop: `1px solid ${T.border}` } },
+          React.createElement("div", { style: { fontSize: 10, color: T.gold, fontFamily: T.ui, fontWeight: 600, letterSpacing: "1.5px", textTransform: "uppercase", marginBottom: 12 } }, "Add Event"),
+          React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } },
+            React.createElement("input", {
+              type: "text", value: newEventDesc, onChange: (e) => setNewEventDesc(e.target.value),
+              placeholder: "Event description\u2026",
+              style: { padding: "8px 10px", fontSize: 11, fontFamily: T.body, background: T.bgInput, border: `1px solid ${T.border}`, borderRadius: 3, color: T.text }
+            }),
+            React.createElement("div", { style: { display: "flex", gap: 10 } },
+              React.createElement("select", {
+                value: newEventFaction,
+                onChange: (e) => setNewEventFaction(e.target.value),
+                style: { flex: 1, padding: "6px 8px", fontSize: 11, fontFamily: T.body, background: T.bgInput, border: `1px solid ${T.border}`, borderRadius: 3, color: T.text, cursor: "pointer" }
+              },
+                factionStandings.map(f => React.createElement("option", { key: f.id, value: f.name }, f.name))
+              ),
+              React.createElement("input", {
+                type: "number", value: newEventAmount, onChange: (e) => setNewEventAmount(e.target.value),
+                placeholder: "Amount",
+                style: { width: 80, padding: "6px 8px", fontSize: 11, fontFamily: T.body, background: T.bgInput, border: `1px solid ${T.border}`, borderRadius: 3, color: T.text }
+              })
+            ),
+            React.createElement("input", {
+              type: "text", value: newEventSource, onChange: (e) => setNewEventSource(e.target.value),
+              placeholder: "Source (quest, action, etc.)\u2026",
+              style: { padding: "6px 8px", fontSize: 11, fontFamily: T.body, background: T.bgInput, border: `1px solid ${T.border}`, borderRadius: 3, color: T.text }
+            }),
+            React.createElement("button", {
+              onClick: addLedgerEvent,
+              style: {
+                padding: "8px 12px", fontSize: 11, fontFamily: T.ui, fontWeight: 500, color: T.text, background: T.crimson,
+                border: "none", borderRadius: 3, cursor: "pointer", transition: "opacity 0.2s"
+              }
+            }, "Add Event")
+          )
+        )
+      ),
+
+      // Threshold Rewards Section
+      React.createElement("div", { style: { background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 4, padding: "20px 24px" } },
+        React.createElement(SectionLabel, null, "Reward Thresholds"),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 12 } },
+          filtered.map(f => {
+            const tiers = rewardTiers[f.name] || [];
+            const nextTier = tiers.find(t => t.threshold > f.score);
+            const progressToNext = nextTier ? Math.round(((f.score - (tiers.filter(t => t.threshold <= f.score).pop()?.threshold || 0)) / (nextTier.threshold - (tiers.filter(t => t.threshold <= f.score).pop()?.threshold || 0))) * 100) : 100;
+
+            return React.createElement("div", {
+              key: f.id,
+              style: { padding: "16px", background: "rgba(0,0,0,0.06)", border: `1px solid ${T.border}`, borderRadius: 4, borderLeft: `3px solid ${f.color}` }
+            },
+              React.createElement("div", { style: { fontSize: 13, color: T.text, fontWeight: 500, marginBottom: 10 } }, f.name),
+              React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 } },
+                tiers.length === 0
+                  ? React.createElement("div", { style: { fontSize: 10, color: T.textFaint, fontStyle: "italic" } }, "No thresholds defined")
+                  : tiers.map((tier, i) => {
+                      const unlocked = f.score >= tier.threshold;
+                      return React.createElement("div", {
+                        key: i,
+                        style: {
+                          padding: "8px 10px", borderRadius: 2, background: unlocked ? f.color + "20" : "rgba(0,0,0,0.1)",
+                          borderLeft: `2px solid ${unlocked ? f.color : T.border}`
+                        }
+                      },
+                        React.createElement("div", { style: { fontSize: 10, color: unlocked ? f.color : T.textFaint, fontWeight: 500 } },
+                          "@" + tier.threshold + (unlocked ? " ✓" : "")
+                        ),
+                        React.createElement("div", { style: { fontSize: 10, color: T.textMuted, marginTop: 2 } }, tier.reward)
+                      );
+                    })
+              ),
+              nextTier && React.createElement("div", { style: { paddingTop: 10, borderTop: `1px solid ${T.border}` } },
+                React.createElement("div", { style: { fontSize: 9, color: T.textFaint, marginBottom: 4 } }, "Next: " + nextTier.threshold + " (" + progressToNext + "%)"),
+                React.createElement("div", {
+                  style: {
+                    height: 6, background: "rgba(0,0,0,0.25)", borderRadius: 3, overflow: "hidden"
+                  }
+                },
+                  React.createElement("div", { style: { height: "100%", width: progressToNext + "%", background: f.color, transition: "width 0.3s" } })
+                )
+              )
+            );
+          })
+        )
+      ),
+
+      // Decay & Growth Rates
+      React.createElement("div", { style: { background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 4, padding: "20px 24px" } },
+        React.createElement(SectionLabel, null, "Decay & Growth Rates"),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 } },
+          filtered.map(f => {
+            const rate = decayRates[f.name] || 0;
+            const projectedScore = Math.max(0, Math.min(100, f.score + (rate * 0.1)));
+
+            return React.createElement("div", {
+              key: f.id,
+              style: { padding: "14px", background: "rgba(0,0,0,0.06)", border: `1px solid ${T.border}`, borderRadius: 4 }
+            },
+              React.createElement("div", { style: { fontSize: 12, color: T.text, fontWeight: 500, marginBottom: 10 } }, f.name),
+              React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, marginBottom: 10 } },
+                React.createElement("span", { style: { fontSize: 10, color: T.textFaint } }, "Decay rate:"),
+                React.createElement("span", { style: { fontSize: 11, color: rate > 0 ? T.green : rate < 0 ? T.crimson : T.textMuted, fontWeight: 500 } },
+                  (rate > 0 ? "+" : "") + rate + "/cycle"
+                )
+              ),
+              isDM && React.createElement("div", { style: { display: "flex", gap: 4 } },
+                [-2, -1, 0, 1, 2].map(delta => React.createElement("button", {
+                  key: delta,
+                  onClick: () => setData(d => ({
+                    ...d,
+                    reputationLedger: {
+                      ...(d.reputationLedger || {}),
+                      decayRates: { ...(d.reputationLedger?.decayRates || {}), [f.name]: delta }
+                    }
+                  })),
+                  style: {
+                    flex: 1, padding: "4px 6px", fontSize: 9, fontFamily: T.ui, border: rate === delta ? `1px solid ${T.gold}` : `1px solid ${T.border}`,
+                    background: rate === delta ? "rgba(212,175,55,0.2)" : "transparent", color: rate === delta ? T.gold : T.textFaint,
+                    borderRadius: 2, cursor: "pointer", fontWeight: rate === delta ? 600 : 400
+                  }
+                }, delta))
+              ),
+              React.createElement("div", { style: { marginTop: 10, paddingTop: 10, borderTop: `1px solid ${T.border}`, fontSize: 10, color: T.textFaint } },
+                React.createElement("div", null, "Current: " + Math.round(f.score)),
+                React.createElement("div", { style: { marginTop: 4 } }, "Projected: " + Math.round(projectedScore))
+              )
+            );
+          })
+        )
+      ),
+
+      // Favor Tracker
+      React.createElement("div", { style: { background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 4, padding: "20px 24px" } },
+        React.createElement(SectionLabel, null, "Faction Favor Balance"),
+        React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 } },
+          filtered.map(f => {
+            const favors = favorBalances[f.name] || 0;
+
+            return React.createElement("div", {
+              key: f.id,
+              style: { padding: "14px", background: "rgba(0,0,0,0.06)", border: `1px solid ${T.border}`, borderRadius: 4, borderLeft: `3px solid ${f.color}` }
+            },
+              React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, marginBottom: 10 } },
+                React.createElement("span", { style: { fontSize: 12, color: T.text, fontWeight: 500 } }, f.name),
+                React.createElement("span", { style: { fontSize: 14, color: f.color, fontFamily: T.ui, fontWeight: 600, marginLeft: "auto" } }, favors + " favor" + (favors !== 1 ? "s" : ""))
+              ),
+              React.createElement("div", { style: { fontSize: 10, color: T.textMuted, marginBottom: 10, lineHeight: 1.5 } }, "Special favors earned from major quests or faction events. Can be spent for military aid, rare items, or political support."),
+              isDM && React.createElement("div", { style: { display: "flex", gap: 6 } },
+                [-5, -1, 1, 5].map(delta => React.createElement("button", {
+                  key: delta,
+                  onClick: () => updateFavor(f.name, delta),
+                  style: {
+                    flex: 1, padding: "6px 4px", fontSize: 9, fontFamily: T.ui, border: `1px solid ${T.border}`,
+                    background: delta > 0 ? "rgba(46,204,113,0.08)" : "rgba(231,76,60,0.08)",
+                    color: delta > 0 ? T.green : T.crimson, borderRadius: 2, cursor: "pointer"
+                  }
+                }, (delta > 0 ? "+" : "") + delta))
+              )
+            );
+          })
+        )
+      )
+    );
+  };
+
+  // ─────────────────────────────────────────────────────────────────────
   // MAIN LAYOUT
   // ─────────────────────────────────────────────────────────────────────
   const tabs = [
@@ -511,7 +811,8 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
     { key: "allies", label: "Allies" },
     { key: "enemies", label: "Enemies" },
     { key: "npcs", label: "NPC Network" },
-    { key: "party", label: "Party" }
+    { key: "party", label: "Party" },
+    { key: "ledger", label: "Ledger" }
   ];
 
   return React.createElement("div", {
@@ -551,6 +852,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
     viewMode === "allies" && renderAllies(),
     viewMode === "enemies" && renderEnemies(),
     viewMode === "npcs" && renderNPCs(),
-    viewMode === "party" && renderParty()
+    viewMode === "party" && renderParty(),
+    viewMode === "ledger" && renderLedger()
   );
 };

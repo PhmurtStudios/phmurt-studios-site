@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta name="referrer" content="strict-origin" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), usb=(), payment=(), serial=(), bluetooth=()" />
+  <title>Learn to DM · Phmurt Studios</title>
+  <meta name="description" content="A beginner-friendly guide to Dungeon Mastering. Learn session prep, improv, encounter building, and player management step by step." />
+  <meta property="og:title" content="Learn to DM · Phmurt Studios" />
+  <meta property="og:description" content="Your first steps behind the DM screen — an interactive primer for new Dungeon Masters." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://phmurtstudios.com/learn-dm.html" />
+  <meta property="og:image" content="https://phmurtstudios.com/logo.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Learn to DM · Phmurt Studios" />
+  <meta name="twitter:description" content="Your first steps behind the DM screen — an interactive primer for new Dungeon Masters." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+  <link rel="manifest" href="site.webmanifest" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="theme.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb" crossorigin="anonymous"></script>
+  <script src="supabase-config.js"></script>
+  <script src="phmurt-auth.js"></script>
+
+  <style>
+    /* ═══════════════════════════════════════════════════════════════════
+       LEARN TO DM PAGE
+       Beginner-friendly primer — same visual system as learn.html
+       ═══════════════════════════════════════════════════════════════════ */
+
+    /* ── Progress Bar ── */
+    .learn-progress-bar {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: 3px; background: var(--bg-mid); z-index: 300;
+    }
+    .learn-progress-fill {
+      height: 100%; width: 0%;
+      background: linear-gradient(90deg, var(--crimson), #ff6b4a);
+      transition: width 0.3s ease;
+    }
+
+    /* ── Back to Top ── */
+    .learn-back-to-top {
+      position: fixed; bottom: 40px; right: 40px;
+      width: 44px; height: 44px; background: var(--crimson);
+      border: 1px solid var(--crimson-border); border-radius: 2px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; opacity: 0; pointer-events: none;
+      transition: opacity 0.3s, transform 0.2s; z-index: 299;
+      font-family: 'Cinzel', serif; font-size: 18px; color: #f5f0e8;
+    }
+    .learn-back-to-top.visible { opacity: 1; pointer-events: all; }
+    .learn-back-to-top:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(212,67,58,0.35); }
+
+    /* ── Side Navigation ── */
+    .learn-side-nav {
+      position: fixed; left: 0; top: 80px; width: 220px;
+      max-height: calc(100vh - 100px); background: var(--bg-card);
+      border-right: 1px solid var(--border); padding: 20px 0;
+      overflow-y: auto; z-index: 200; display: none;
+    }
+    @media (min-width: 1200px) { .learn-side-nav { display: block; } }
+    .learn-nav-group-label {
+      font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 3px;
+      text-transform: uppercase; color: var(--crimson); padding: 16px 20px 6px;
+      opacity: 0.7;
+    }
+    .learn-nav-item {
+      padding: 10px 20px 10px 24px; border-left: 2px solid transparent;
+      cursor: pointer; font-size: 12px; color: var(--text-muted);
+      transition: all 0.2s; font-family: 'Spectral', serif; line-height: 1.4;
+    }
+    .learn-nav-item:hover { color: var(--text); background: var(--bg-mid); }
+    .learn-nav-item.active {
+      border-left-color: var(--crimson); color: var(--crimson);
+      background: var(--crimson-soft); font-weight: 500;
+    }
+    .learn-nav-check { font-size: 10px; margin-left: 4px; opacity: 0.6; }
+
+    /* ── Content ── */
+    .learn-content { max-width: 1100px; margin: 0 auto; padding: 0 56px 60px; }
+    @media (min-width: 1200px) {
+      .learn-content {
+        margin-left: max(240px, calc(50vw - 550px));
+        margin-right: max(20px, calc(50vw - 550px));
+      }
+    }
+    @media (max-width: 860px) { .learn-content { padding: 0 24px 40px; } }
+
+    /* ── Hero ── */
+    .learn-hero {
+      padding: 100px 40px 60px; text-align: center;
+      background: radial-gradient(ellipse at 50% 0%, var(--crimson-soft) 0%, transparent 60%);
+    }
+    .learn-hero-content { max-width: 720px; margin: 0 auto; }
+    .learn-hero-eyebrow {
+      font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 4px;
+      text-transform: uppercase; color: var(--crimson); margin-bottom: 16px;
+    }
+    .learn-hero-title {
+      font-family: 'Cinzel', serif; font-size: clamp(28px, 5vw, 48px);
+      font-weight: 700; color: var(--text); margin: 0 0 16px; line-height: 1.2;
+    }
+    .learn-hero-subtitle {
+      font-family: 'Spectral', serif; font-size: 16px; color: var(--text-dim);
+      line-height: 1.7; max-width: 600px; margin: 0 auto 40px;
+    }
+
+    /* ── Roadmap ── */
+    .learn-roadmap {
+      display: flex; justify-content: center; flex-wrap: wrap; gap: 8px;
+      margin: 0 auto; max-width: 650px;
+    }
+    .learn-roadmap-step {
+      display: flex; align-items: center; gap: 8px; padding: 8px 14px;
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 4px;
+      font-family: 'Spectral', serif; font-size: 12px; color: var(--text-muted);
+      cursor: pointer; transition: all 0.2s;
+    }
+    .learn-roadmap-step:hover { border-color: var(--crimson-border); color: var(--text); }
+    .learn-roadmap-step.completed { border-color: rgba(94,224,154,0.3); color: var(--green); }
+    .learn-roadmap-num {
+      width: 20px; height: 20px; border-radius: 50%; font-size: 10px;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg-mid); color: var(--text-faint); font-family: 'Cinzel', serif;
+      flex-shrink: 0;
+    }
+    .learn-roadmap-step.completed .learn-roadmap-num { background: rgba(94,224,154,0.15); color: var(--green); }
+
+    /* ── Section Divider ── */
+    .learn-section-divider-full {
+      display: flex; align-items: center; gap: 12px; padding: 30px 40px;
+      max-width: 800px; margin: 0 auto;
+    }
+    .learn-divider-line { flex: 1; height: 1px; background: var(--border); }
+    .learn-divider-line.r { flex: 1; height: 1px; background: var(--border); }
+    .learn-divider-ornament { display: flex; align-items: center; gap: 8px; }
+    .learn-divider-dot { width: 4px; height: 4px; background: var(--text-faint); border-radius: 50%; }
+    .learn-divider-gem { width: 8px; height: 8px; background: var(--crimson); transform: rotate(45deg); }
+
+    /* ── Group Headers ── */
+    .learn-group { margin-bottom: 12px; }
+    .learn-group-header { display: flex; align-items: center; gap: 16px; }
+    .learn-group-tier {
+      font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px;
+      text-transform: uppercase; padding: 4px 12px; border-radius: 2px;
+      flex-shrink: 0;
+    }
+    .learn-group-tier.beginner { background: rgba(94,224,154,0.1); color: var(--green); border: 1px solid rgba(94,224,154,0.2); }
+    .learn-group-tier.intermediate { background: rgba(201,168,76,0.1); color: var(--gold); border: 1px solid rgba(201,168,76,0.2); }
+    .learn-group-tier.advanced { background: rgba(212,67,58,0.1); color: var(--crimson); border: 1px solid rgba(212,67,58,0.2); }
+    .learn-group-line { flex: 1; height: 1px; background: var(--border); }
+
+    /* ── Section Cards ── */
+    .learn-section {
+      margin-bottom: 48px; opacity: 0; transform: translateY(20px);
+      transition: opacity 0.5s, transform 0.5s;
+    }
+    .learn-section.reveal { opacity: 1; transform: translateY(0); }
+    .learn-section-header {
+      display: flex; align-items: flex-start; gap: 16px; margin-bottom: 20px;
+    }
+    .learn-section-number {
+      width: 36px; height: 36px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      border: 2px solid var(--crimson-border); border-radius: 50%;
+      font-family: 'Cinzel', serif; font-size: 14px; color: var(--crimson);
+    }
+    .learn-section-heading { flex: 1; }
+    .learn-section-title {
+      font-family: 'Cinzel', serif; font-size: 22px; font-weight: 600;
+      color: var(--text); margin: 0 0 4px; line-height: 1.3;
+    }
+    .learn-section-meta { display: flex; gap: 12px; }
+    .learn-section-time {
+      font-family: 'Spectral', serif; font-size: 12px; color: var(--text-faint);
+      font-style: italic;
+    }
+    .learn-section-status { width: 24px; flex-shrink: 0; text-align: center; padding-top: 8px; }
+    .learn-section-content {
+      padding-left: 52px; font-family: 'Spectral', serif; font-size: 15px;
+      color: var(--text-dim); line-height: 1.8;
+    }
+    @media (max-width: 600px) { .learn-section-content { padding-left: 0; } }
+
+    /* ── Objectives ── */
+    .learn-objectives {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+      padding: 16px 20px; margin-bottom: 20px;
+    }
+    .learn-objectives-title {
+      font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--crimson); margin-bottom: 10px;
+    }
+    .learn-objectives-list { list-style: none; padding: 0; margin: 0; }
+    .learn-objectives-list li {
+      padding: 4px 0 4px 20px; position: relative; font-size: 13px; color: var(--text-muted);
+    }
+    .learn-objectives-list li::before {
+      content: '◆'; position: absolute; left: 0; color: var(--crimson); font-size: 8px; top: 8px;
+    }
+
+    /* ── Intro Text ── */
+    .learn-intro { margin-bottom: 24px; }
+
+    /* ── Labels ── */
+    .learn-label {
+      font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--gold); margin-bottom: 12px; margin-top: 28px;
+    }
+
+    /* ── Takeaway Boxes ── */
+    .learn-takeaway {
+      background: var(--bg-card); border-left: 3px solid var(--crimson);
+      border-radius: 0 6px 6px 0; padding: 16px 20px; margin-top: 24px;
+    }
+    .learn-takeaway-title {
+      font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--crimson); margin-bottom: 8px;
+    }
+    .learn-takeaway-text { font-size: 14px; color: var(--text-dim); line-height: 1.7; }
+
+    /* ── Scenario / Interactive ── */
+    .learn-scenario {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+      padding: 20px; margin-bottom: 20px;
+    }
+    .learn-scenario-header {
+      font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--gold); margin-bottom: 12px;
+    }
+    .learn-scenario-text {
+      font-family: 'Spectral', serif; font-size: 14px; color: var(--text-dim);
+      line-height: 1.7; margin-bottom: 16px; font-style: italic;
+    }
+    .learn-choices { display: flex; flex-direction: column; gap: 8px; }
+    .learn-choice-btn {
+      padding: 12px 16px; background: var(--bg-mid); border: 1px solid var(--border);
+      border-radius: 4px; cursor: pointer; font-family: 'Spectral', serif;
+      font-size: 13px; color: var(--text-muted); text-align: left; transition: all 0.2s;
+    }
+    .learn-choice-btn:hover { border-color: var(--crimson-border); color: var(--text); }
+    .learn-choice-btn.selected { border-color: var(--crimson); color: var(--crimson); background: var(--crimson-soft); }
+    .learn-outcome {
+      display: none; padding: 14px 16px; margin-top: 12px;
+      background: rgba(94,224,154,0.05); border: 1px solid rgba(94,224,154,0.15);
+      border-radius: 4px; font-size: 14px; color: var(--text-dim); line-height: 1.7;
+    }
+    .learn-outcome.active { display: block; }
+
+    /* ── Tip Cards ── */
+    .learn-tip-grid {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px; margin: 16px 0;
+    }
+    .learn-tip-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+      padding: 16px; transition: border-color 0.2s;
+    }
+    .learn-tip-card:hover { border-color: var(--crimson-border); }
+    .learn-tip-card-icon { font-size: 20px; margin-bottom: 8px; }
+    .learn-tip-card-title {
+      font-family: 'Cinzel', serif; font-size: 12px; color: var(--text);
+      margin-bottom: 6px; letter-spacing: 0.5px;
+    }
+    .learn-tip-card-text { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+    /* ── Encounter Table ── */
+    .learn-encounter-table {
+      width: 100%; border-collapse: collapse; margin: 16px 0;
+      font-family: 'Spectral', serif; font-size: 13px;
+    }
+    .learn-encounter-table th {
+      font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--crimson); text-align: left;
+      padding: 10px 12px; border-bottom: 2px solid var(--crimson-border);
+    }
+    .learn-encounter-table td {
+      padding: 10px 12px; border-bottom: 1px solid var(--border);
+      color: var(--text-dim);
+    }
+    .learn-encounter-table tr:hover td { background: var(--bg-hover); }
+
+    /* ── Checklist ── */
+    .learn-checklist { list-style: none; padding: 0; margin: 16px 0; }
+    .learn-checklist li {
+      display: flex; align-items: flex-start; gap: 10px; padding: 10px 0;
+      border-bottom: 1px solid var(--border); font-size: 14px; color: var(--text-dim);
+      cursor: pointer; transition: opacity 0.2s;
+    }
+    .learn-checklist li:last-child { border-bottom: none; }
+    .learn-checklist li.checked { opacity: 0.5; text-decoration: line-through; }
+    .learn-check-box {
+      width: 18px; height: 18px; border: 1px solid var(--crimson-border);
+      border-radius: 3px; flex-shrink: 0; display: flex;
+      align-items: center; justify-content: center;
+      font-size: 12px; color: var(--crimson); margin-top: 2px;
+    }
+    .learn-checklist li.checked .learn-check-box {
+      background: var(--crimson-soft); border-color: var(--crimson);
+    }
+
+    /* ── Do/Don't Columns ── */
+    .learn-do-dont {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0;
+    }
+    @media (max-width: 600px) { .learn-do-dont { grid-template-columns: 1fr; } }
+    .learn-do, .learn-dont {
+      background: var(--bg-card); border-radius: 6px; padding: 16px;
+    }
+    .learn-do { border: 1px solid rgba(94,224,154,0.2); }
+    .learn-dont { border: 1px solid rgba(212,67,58,0.2); }
+    .learn-do-title, .learn-dont-title {
+      font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 2px;
+      text-transform: uppercase; margin-bottom: 10px;
+    }
+    .learn-do-title { color: var(--green); }
+    .learn-dont-title { color: var(--crimson); }
+    .learn-do ul, .learn-dont ul {
+      list-style: none; padding: 0; margin: 0;
+    }
+    .learn-do li, .learn-dont li {
+      padding: 5px 0; font-size: 13px; color: var(--text-muted); line-height: 1.5;
+      padding-left: 16px; position: relative;
+    }
+    .learn-do li::before { content: '✓'; position: absolute; left: 0; color: var(--green); font-size: 11px; }
+    .learn-dont li::before { content: '✗'; position: absolute; left: 0; color: var(--crimson); font-size: 11px; }
+
+    /* ── Quiz ── */
+    .learn-quiz { margin: 16px 0; }
+    .learn-quiz-question {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+      padding: 20px; margin-bottom: 12px;
+    }
+    .learn-quiz-prompt {
+      font-family: 'Spectral', serif; font-size: 14px; color: var(--text);
+      margin-bottom: 14px; font-weight: 500;
+    }
+    .learn-quiz-option {
+      padding: 10px 14px; margin-bottom: 6px; background: var(--bg-mid);
+      border: 1px solid var(--border); border-radius: 4px; cursor: pointer;
+      font-size: 13px; color: var(--text-muted); transition: all 0.2s;
+    }
+    .learn-quiz-option:hover { border-color: var(--crimson-border); color: var(--text); }
+    .learn-quiz-option.correct { border-color: var(--green); color: var(--green); background: rgba(94,224,154,0.05); }
+    .learn-quiz-option.wrong { border-color: var(--crimson); color: var(--crimson); background: rgba(212,67,58,0.05); }
+    .learn-quiz-option.disabled { pointer-events: none; opacity: 0.6; }
+    .learn-quiz-feedback {
+      display: none; padding: 10px 14px; margin-top: 8px; border-radius: 4px;
+      font-size: 13px; line-height: 1.6;
+    }
+    .learn-quiz-feedback.show { display: block; }
+    .learn-quiz-feedback.correct { background: rgba(94,224,154,0.05); border: 1px solid rgba(94,224,154,0.15); color: var(--text-dim); }
+    .learn-quiz-feedback.wrong { background: rgba(212,67,58,0.05); border: 1px solid rgba(212,67,58,0.15); color: var(--text-dim); }
+
+    /* ── Session Prep Simulator ── */
+    .learn-prep-sim {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
+      padding: 20px; margin: 16px 0;
+    }
+    .learn-prep-header {
+      font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--gold); margin-bottom: 14px;
+    }
+    .learn-prep-step {
+      display: flex; align-items: flex-start; gap: 12px; padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .learn-prep-step:last-child { border-bottom: none; }
+    .learn-prep-num {
+      width: 24px; height: 24px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      background: var(--bg-mid); color: var(--text-faint); font-size: 11px;
+      font-family: 'Cinzel', serif;
+    }
+    .learn-prep-step.active .learn-prep-num { background: var(--crimson-soft); color: var(--crimson); }
+    .learn-prep-step.done .learn-prep-num { background: rgba(94,224,154,0.15); color: var(--green); }
+    .learn-prep-text { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+    .learn-prep-step.active .learn-prep-text { color: var(--text); }
+
+    @media (max-width: 480px) {
+      .learn-tip-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body data-nav-active="Players" data-footer-copy="Roll Well. Play Weird.">
+  <div id="ps-site-shell"></div>
+  <div id="ps-page-breadcrumb"></div>
+
+  <div class="learn-progress-bar"><div class="learn-progress-fill" id="progressFill"></div></div>
+
+  <!-- ═══ HERO ═══ -->
+  <div class="learn-hero">
+    <div class="learn-hero-content">
+      <div class="learn-hero-eyebrow">Step Behind the Screen</div>
+      <h1 class="learn-hero-title">Learn to DM</h1>
+      <p class="learn-hero-subtitle">A beginner-friendly primer that walks you through running your first session — from prep to improv to keeping players engaged.</p>
+
+      <div class="learn-roadmap" id="roadmap">
+        <!-- Generated by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ SIDE NAV ═══ -->
+  <div class="learn-side-nav" id="sideNav"></div>
+  <div class="learn-back-to-top" id="backToTop">↑</div>
+
+  <div class="learn-section-divider-full">
+    <div class="learn-divider-line"></div>
+    <div class="learn-divider-ornament"><div class="learn-divider-dot"></div><div class="learn-divider-gem"></div><div class="learn-divider-dot"></div></div>
+    <div class="learn-divider-line r"></div>
+  </div>
+
+  <div class="learn-content">
+
+    <!-- ═══════════════════════════════════════════════════
+         GROUP 1: GETTING STARTED (Beginner)
+         ═══════════════════════════════════════════════════ -->
+    <div class="learn-group">
+      <div class="learn-group-header">
+        <span class="learn-group-tier beginner">The Basics</span>
+        <div class="learn-group-line"></div>
+      </div>
+    </div>
+
+    <!-- SECTION 1: WHAT DOES A DM DO? -->
+    <div class="learn-section" data-section-title="What Does a DM Do?">
+      <div class="learn-section-header">
+        <div class="learn-section-number">1</div>
+        <div class="learn-section-heading">
+          <h2 class="learn-section-title">What Does a DM Actually Do?</h2>
+          <div class="learn-section-meta">
+            <span class="learn-section-time">3 min read</span>
+          </div>
+        </div>
+        <div class="learn-section-status"></div>
+      </div>
+      <div class="learn-section-content">
+        <div class="learn-objectives">
+          <div class="learn-objectives-title">What You'll Learn</div>
+          <ul class="learn-objectives-list">
+            <li>The three core responsibilities of a Dungeon Master</li>
+            <li>Why DMing is more fun than it sounds</li>
+            <li>The most common fear new DMs have (and why it's wrong)</li>
+          </ul>
+        </div>
+
+        <p class="learn-intro">The Dungeon Master is the narrator, referee, and world-builder of a D&D game. You describe what the players see, voice the characters they meet, and decide what happens when they try something unexpected. It sounds like a lot, but it boils down to three things.</p>
+
+        <div class="learn-label">Your Three Jobs</div>
+        <div class="learn-tip-grid">
+          <div class="learn-tip-card">
+            <div class="learn-tip-card-icon">🎭</div>
+            <div class="learn-tip-card-title">Narrator</div>
+            <div class="learn-tip-card-text">You describe the world. "The tavern is warm and crowded. A bard strums in the corner." You paint the scene and let players react.</div>
+          </div>
+          <div class="learn-tip-card">
+            <div class="learn-tip-card-icon">⚖️</div>
+            <div class="learn-tip-card-title">Referee</div>
+            <div class="learn-tip-card-text">When a player tries something, you decide the DC and interpret the rules. You don't need to memorize everything — just know where to look.</div>
+          </div>
+          <div class="learn-tip-card">
+            <div class="learn-tip-card-icon">🌍</div>
+            <div class="learn-tip-card-title">World Builder</div>
+            <div class="learn-tip-card-text">You decide what exists in the world — towns, villains, treasure. This can be as simple as running a published adventure or as deep as creating your own setting.</div>
+          </div>
+        </div>
+
+        <div class="learn-label">Your First Decision</div>
+        <div class="learn-scenario">
+          <div class="learn-scenario-header">Interactive Scenario</div>
+          <div class="learn-scenario-text">
+            Your players walk into a village and the fighter says: "I want to arm-wrestle the blacksmith." This isn't in any rulebook. What do you do?
+          </div>
+          <div class="learn-choices" id="choices-1">
+            <button class="learn-choice-btn" data-choice="1a">Say no — that's not in the rules</button>
+            <button class="learn-choice-btn" data-choice="1b">Ask for a Strength (Athletics) check, DC 14</button>
+            <button class="learn-choice-btn" data-choice="1c">Say "Sure!" and roleplay the blacksmith trash-talking</button>
+          </div>
+          <div class="learn-outcome" id="outcome-1a"><strong>Not ideal.</strong> Saying "no" shuts down player creativity. D&D works best when players feel like they can try anything. Save "no" for things that are truly impossible or harmful to the game.</div>
+          <div class="learn-outcome" id="outcome-1b"><strong>Great call!</strong> You picked a reasonable ability check and set a fair DC. This is the core DM skill — translating player ideas into game mechanics on the fly.</div>
+          <div class="learn-outcome" id="outcome-1c"><strong>Also great!</strong> Sometimes the best response is just to roll with it and make it fun. Not everything needs a dice roll — sometimes roleplay is enough.</div>
+        </div>
+
+        <div class="learn-takeaway">
+          <div class="learn-takeaway-title">Key Takeaway</div>
+          <div class="learn-takeaway-text">The number one job of a DM is to say "yes" (or "yes, but...") and keep the game moving. You don't need to know every rule. You need to keep things fun and fair.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 2: SESSION PREP -->
+    <div class="learn-section" data-section-title="Session Prep">
+      <div class="learn-section-header">
+        <div class="learn-section-number">2</div>
+        <div class="learn-section-heading">
+          <h2 class="learn-section-title">Session Prep That Actually Works</h2>
+          <div class="learn-section-meta">
+            <span class="learn-section-time">5 min read</span>
+          </div>
+        </div>
+        <div class="learn-section-status"></div>
+      </div>
+      <div class="learn-section-content">
+        <div class="learn-objectives">
+          <div class="learn-objectives-title">What You'll Learn</div>
+          <ul class="learn-objectives-list">
+            <li>How much prep is actually needed (less than you think)</li>
+            <li>The "three things" prep method</li>
+            <li>What to prepare vs. what to improvise</li>
+          </ul>
+        </div>
+
+        <p class="learn-intro">New DMs often over-prepare, writing pages of notes the players will never see. The secret? You only need to stay one step ahead of your players. Most of what makes a session great happens in the moment, not on your prep sheet.</p>
+
+        <div class="learn-label">The Three-Thing Method</div>
+        <p>Before every session, prepare exactly three things. That's it. This keeps you focused and gives you enough structure to improvise around.</p>
+
+        <div class="learn-prep-sim" id="prepSim">
+          <div class="learn-prep-header">Session Prep Simulator — Click each step</div>
+          <div class="learn-prep-step active" data-step="1">
+            <div class="learn-prep-num">1</div>
+            <div>
+              <div class="learn-prep-text"><strong>A strong opening scene.</strong> How does the session start? Drop players into action or intrigue immediately. "You wake to the sound of screaming outside your inn" is better than "you're still in the tavern from last time."</div>
+            </div>
+          </div>
+          <div class="learn-prep-step" data-step="2">
+            <div class="learn-prep-num">2</div>
+            <div>
+              <div class="learn-prep-text"><strong>One or two encounters.</strong> A combat encounter, a puzzle, a social challenge — whatever fits your story. Know the monster stats and have a rough map ready. You don't need more than two prepared because sessions rarely go faster than that.</div>
+            </div>
+          </div>
+          <div class="learn-prep-step" data-step="3">
+            <div class="learn-prep-num">3</div>
+            <div>
+              <div class="learn-prep-text"><strong>A handful of NPCs.</strong> Prepare 2-3 named NPCs with a one-line personality and a motivation. "Mara, suspicious merchant, wants to leave town before the festival." That's enough — you'll fill in the rest at the table.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="learn-do-dont">
+          <div class="learn-do">
+            <div class="learn-do-title">Do Prepare</div>
+            <ul>
+              <li>NPC names and one-line personalities</li>
+              <li>Monster stat blocks you'll actually use</li>
+              <li>A rough outline of what <em>could</em> happen</li>
+              <li>A list of random names for improvised NPCs</li>
+            </ul>
+          </div>
+          <div class="learn-dont">
+            <div class="learn-dont-title">Don't Prepare</div>
+            <ul>
+              <li>Exact dialogue scripts (players won't follow them)</li>
+              <li>Every room in a 50-room dungeon</li>
+              <li>A fixed plot the players must follow</li>
+              <li>Solutions to puzzles (let players surprise you)</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="learn-takeaway">
+          <div class="learn-takeaway-title">Key Takeaway</div>
+          <div class="learn-takeaway-text">30 minutes of focused prep beats 3 hours of unfocused writing. Prepare situations, not scripts. Your players will do things you never imagined — and that's exactly the point.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         GROUP 2: RUNNING THE GAME (Intermediate)
+         ═══════════════════════════════════════════════════ -->
+    <div class="learn-group">
+      <div class="learn-group-header">
+        <span class="learn-group-tier intermediate">Running the Game</span>
+        <div class="learn-group-line"></div>
+      </div>
+    </div>
+
+    <!-- SECTION 3: IMPROV AND THINKING ON YOUR FEET -->
+    <div class="learn-section" data-section-title="Improv & Thinking Fast">
+      <div class="learn-section-header">
+        <div class="learn-section-number">3</div>
+        <div class="learn-section-heading">
+          <h2 class="learn-section-title">Improv &amp; Thinking on Your Feet</h2>
+          <div class="learn-section-meta">
+            <span class="learn-section-time">4 min read</span>
+          </div>
+        </div>
+        <div class="learn-section-status"></div>
+      </div>
+      <div class="learn-section-content">
+        <div class="learn-objectives">
+          <div class="learn-objectives-title">What You'll Learn</div>
+          <ul class="learn-objectives-list">
+            <li>The "Yes, and..." principle adapted for D&D</li>
+            <li>How to handle players going off-script</li>
+            <li>Three improv tricks every DM should know</li>
+          </ul>
+        </div>
+
+        <p class="learn-intro">Your players will go off the rails. That's not a problem — it's the best part. The DMs who thrive are the ones who learn to roll with surprises instead of fighting them. You don't need to be a performer. You just need a few reliable tricks.</p>
+
+        <div class="learn-label">The DM's Improv Toolkit</div>
+        <div class="learn-tip-grid">
+          <div class="learn-tip-card">
+            <div class="learn-tip-card-icon">🔄</div>
+            <div class="learn-tip-card-title">"Yes, And..."</div>
+            <div class="learn-tip-card-text">Accept what players do and build on it. "I climb the chandelier!" — "Yes, and as you swing across the room, the chain starts to give way. Roll Acrobatics."</div>
+          </div>
+          <div class="learn-tip-card">
+            <div class="learn-tip-card-icon">🎯</div>
+            <div class="learn-tip-card-title">"Yes, But..."</div>
+            <div class="learn-tip-card-text">Let it work with a complication. "I try to bribe the guard." — "He pockets the gold, but says he has to report it to his captain first. You have ten minutes."</div>
+          </div>
+          <div class="learn-tip-card">
+            <div class="learn-tip-card-icon">⏸️</div>
+            <div class="learn-tip-card-title">Buy Time</div>
+            <div class="learn-tip-card-text">When stuck, ask a player to describe what their character does. While they talk, you plan your next move. "How does your character feel about this?"</div>
+          </div>
+        </div>
+
+        <div class="learn-label">When Players Surprise You</div>
+        <div class="learn-scenario">
+          <div class="learn-scenario-header">Interactive Scenario</div>
+          <div class="learn-scenario-text">
+            You've prepared a dungeon. Your players decide to skip it entirely and sail to a different continent. Your notes are useless. What now?
+          </div>
+          <div class="learn-choices" id="choices-3">
+            <button class="learn-choice-btn" data-choice="3a">Railroad them back — "a storm forces you to shore near the dungeon"</button>
+            <button class="learn-choice-btn" data-choice="3b">Call a 10-minute break and quickly re-skin your dungeon as a pirate cave on the new continent</button>
+            <button class="learn-choice-btn" data-choice="3c">Panic and end the session early</button>
+          </div>
+          <div class="learn-outcome" id="outcome-3a"><strong>Tempting but risky.</strong> Players notice when they're being railroaded. Use this sparingly. If you do redirect, make the reason feel natural and give them meaningful choices within it.</div>
+          <div class="learn-outcome" id="outcome-3b"><strong>The DM's secret weapon: re-skinning.</strong> Your dungeon map becomes a sea cave. Your goblin chief becomes a pirate captain. The treasure is the same. Players never know, and your prep isn't wasted.</div>
+          <div class="learn-outcome" id="outcome-3c"><strong>We've all been tempted.</strong> But a better move is to take a short break, then improvise. Even a rocky session where you wing it teaches you more than ten sessions of scripted play.</div>
+        </div>
+
+        <div class="learn-takeaway">
+          <div class="learn-takeaway-title">Key Takeaway</div>
+          <div class="learn-takeaway-text">Prepare situations and NPCs, not plots. When players zig instead of zag, move your prepared content to wherever they go. The story belongs to the table, not your notes.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 4: BUILDING ENCOUNTERS -->
+    <div class="learn-section" data-section-title="Building Encounters">
+      <div class="learn-section-header">
+        <div class="learn-section-number">4</div>
+        <div class="learn-section-heading">
+          <h2 class="learn-section-title">Building Encounters That Sing</h2>
+          <div class="learn-section-meta">
+            <span class="learn-section-time">5 min read</span>
+          </div>
+        </div>
+        <div class="learn-section-status"></div>
+      </div>
+      <div class="learn-section-content">
+        <div class="learn-objectives">
+          <div class="learn-objectives-title">What You'll Learn</div>
+          <ul class="learn-objectives-list">
+            <li>How Challenge Rating (CR) works in practice</li>
+            <li>The difference between easy, medium, hard, and deadly encounters</li>
+            <li>Why interesting terrain matters more than monster stats</li>
+          </ul>
+        </div>
+
+        <p class="learn-intro">Combat is where D&D's mechanical depth shines. A well-designed encounter isn't just a fair fight — it's a puzzle with swords. The key is balancing difficulty so players feel challenged but not hopeless.</p>
+
+        <div class="learn-label">Encounter Difficulty Quick Reference</div>
+        <table class="learn-encounter-table">
+          <thead>
+            <tr><th>Difficulty</th><th>What It Feels Like</th><th>When to Use</th></tr>
+          </thead>
+          <tbody>
+            <tr><td style="color:var(--green)">Easy</td><td>Players win without spending many resources</td><td>Random encounters, attrition between big fights</td></tr>
+            <tr><td style="color:var(--gold)">Medium</td><td>A real challenge, but players should win</td><td>Standard dungeon rooms, most sessions</td></tr>
+            <tr><td style="color:var(--orange)">Hard</td><td>Could go badly — someone might drop to 0 HP</td><td>Boss room, climactic moments, 1-2 per session</td></tr>
+            <tr><td style="color:var(--crimson)">Deadly</td><td>Genuinely dangerous — characters could die</td><td>Final boss, desperate last stands, rarely</td></tr>
+          </tbody>
+        </table>
+
+        <div class="learn-label">The Secret: Make the Battlefield Interesting</div>
+        <p>Monsters standing in an empty room is boring regardless of CR. Add terrain that forces decisions. Consider these elements for every combat:</p>
+
+        <div class="learn-tip-grid">
+          <div class="learn-tip-card">
+            <div class="learn-tip-card-icon">🪨</div>
+            <div class="learn-tip-card-title">Cover & Obstacles</div>
+            <div class="learn-tip-card-text">Pillars, overturned tables, rubble. Gives ranged characters and monsters places to hide. Forces movement.</div>
+          </div>
+          <div class="learn-tip-card">
+            <div class="learn-tip-card-icon">⚠️</div>
+            <div class="learn-tip-card-title">Hazards</div>
+            <div class="learn-tip-card-text">Lava pools, crumbling floor, magical darkness. Adds risk to positioning and rewards clever play.</div>
+          </div>
+          <div class="learn-tip-card">
+            <div class="learn-tip-card-icon">🎯</div>
+            <div class="learn-tip-card-title">Objectives</div>
+            <div class="learn-tip-card-text">Give combat a goal beyond "kill everything." Protect the ritual, stop the alarm, escape before the ceiling collapses.</div>
+          </div>
+        </div>
+
+        <div class="learn-takeaway">
+          <div class="learn-takeaway-title">Key Takeaway</div>
+          <div class="learn-takeaway-text">A CR-appropriate fight in an interesting location with a clear objective is more memorable than a perfectly balanced fight in a blank room. Design the battlefield first, then add monsters.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════
+         GROUP 3: MASTERING THE TABLE (Advanced)
+         ═══════════════════════════════════════════════════ -->
+    <div class="learn-group">
+      <div class="learn-group-header">
+        <span class="learn-group-tier advanced">Mastering the Table</span>
+        <div class="learn-group-line"></div>
+      </div>
+    </div>
+
+    <!-- SECTION 5: MANAGING PLAYERS -->
+    <div class="learn-section" data-section-title="Managing Players">
+      <div class="learn-section-header">
+        <div class="learn-section-number">5</div>
+        <div class="learn-section-heading">
+          <h2 class="learn-section-title">Managing Your Players</h2>
+          <div class="learn-section-meta">
+            <span class="learn-section-time">4 min read</span>
+          </div>
+        </div>
+        <div class="learn-section-status"></div>
+      </div>
+      <div class="learn-section-content">
+        <div class="learn-objectives">
+          <div class="learn-objectives-title">What You'll Learn</div>
+          <ul class="learn-objectives-list">
+            <li>How to keep quiet players engaged</li>
+            <li>How to handle rules disputes gracefully</li>
+            <li>Setting expectations with a Session Zero</li>
+          </ul>
+        </div>
+
+        <p class="learn-intro">The hardest part of DMing isn't the rules or the monsters — it's the people. Every table has different personalities, and the DM's job is to make sure everyone has a good time. That starts before the first session even begins.</p>
+
+        <div class="learn-label">Session Zero: Set Expectations Early</div>
+        <p>Before your campaign starts, have a Session Zero where you discuss ground rules, tone, and boundaries. This prevents 90% of table problems.</p>
+
+        <div class="learn-checklist" id="sessionZeroList">
+          <!-- Generated by JS -->
+        </div>
+
+        <div class="learn-label">Common Table Challenges</div>
+        <div class="learn-scenario">
+          <div class="learn-scenario-header">Interactive Scenario</div>
+          <div class="learn-scenario-text">
+            One player dominates every conversation and talks over others. A quieter player hasn't spoken in 20 minutes. What do you do?
+          </div>
+          <div class="learn-choices" id="choices-5">
+            <button class="learn-choice-btn" data-choice="5a">Call out the dominant player publicly</button>
+            <button class="learn-choice-btn" data-choice="5b">Turn to the quiet player: "Kira, what is Thorn doing while this happens?"</button>
+            <button class="learn-choice-btn" data-choice="5c">Talk to the dominant player privately after the session</button>
+          </div>
+          <div class="learn-outcome" id="outcome-5a"><strong>Avoid this.</strong> Calling someone out in front of the group creates tension. Handle behavioral issues privately whenever possible.</div>
+          <div class="learn-outcome" id="outcome-5b"><strong>Perfect in-game solution.</strong> Directly inviting a player into the scene by using their character name gives them a natural opening without putting anyone on the spot.</div>
+          <div class="learn-outcome" id="outcome-5c"><strong>Also excellent.</strong> Combining this with option B is the best approach. Address the in-game moment now, then have a kind private conversation later.</div>
+        </div>
+
+        <div class="learn-takeaway">
+          <div class="learn-takeaway-title">Key Takeaway</div>
+          <div class="learn-takeaway-text">Be the host of the table, not just the storyteller. Check in with quiet players, redirect spotlight hogs gently, and remember that everyone — including you — is there to have fun.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 6: YOUR FIRST SESSION -->
+    <div class="learn-section" data-section-title="Your First Session">
+      <div class="learn-section-header">
+        <div class="learn-section-number">6</div>
+        <div class="learn-section-heading">
+          <h2 class="learn-section-title">Running Your First Session</h2>
+          <div class="learn-section-meta">
+            <span class="learn-section-time">4 min read</span>
+          </div>
+        </div>
+        <div class="learn-section-status"></div>
+      </div>
+      <div class="learn-section-content">
+        <div class="learn-objectives">
+          <div class="learn-objectives-title">What You'll Learn</div>
+          <ul class="learn-objectives-list">
+            <li>A concrete checklist for your first session</li>
+            <li>The best starter adventures for new DMs</li>
+            <li>What to do when you don't know a rule</li>
+          </ul>
+        </div>
+
+        <p class="learn-intro">You've read the sections above. You know the basics. Now it's time to actually run a game. Here's the truth: your first session won't be perfect, and that's completely fine. Every great DM started with a messy first game.</p>
+
+        <div class="learn-label">First Session Prep Checklist</div>
+        <div class="learn-checklist" id="firstSessionList">
+          <!-- Generated by JS -->
+        </div>
+
+        <div class="learn-label">When You Don't Know a Rule</div>
+        <div class="learn-do-dont">
+          <div class="learn-do">
+            <div class="learn-do-title">Do This</div>
+            <ul>
+              <li>Make a quick ruling and keep moving</li>
+              <li>Write it down to look up later</li>
+              <li>Say "Let's use this for now and I'll check after"</li>
+              <li>Ask the player what their character sheet says</li>
+            </ul>
+          </div>
+          <div class="learn-dont">
+            <div class="learn-dont-title">Not This</div>
+            <ul>
+              <li>Stop the game for 15 minutes to look it up</li>
+              <li>Argue with a player about rules mid-combat</li>
+              <li>Pretend you know when you don't</li>
+              <li>Let one player become the "rules lawyer" for you</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="learn-label">Recommended Starter Adventures</div>
+        <div class="learn-tip-grid">
+          <div class="learn-tip-card">
+            <div class="learn-tip-card-icon">📖</div>
+            <div class="learn-tip-card-title">Lost Mine of Phandelver</div>
+            <div class="learn-tip-card-text">The gold standard starter adventure. Clear structure, great NPCs, runs levels 1-5. Included in the D&D Starter Set.</div>
+          </div>
+          <div class="learn-tip-card">
+            <div class="learn-tip-card-icon">🐉</div>
+            <div class="learn-tip-card-title">Dragon of Icespire Peak</div>
+            <div class="learn-tip-card-text">A more open-ended alternative. Players pick quests from a job board. Great if your group likes freedom. In the Essentials Kit.</div>
+          </div>
+          <div class="learn-tip-card">
+            <div class="learn-tip-card-icon">✍️</div>
+            <div class="learn-tip-card-title">Write Your Own One-Shot</div>
+            <div class="learn-tip-card-text">A simple quest: go to a place, fight a thing, get a reward. One dungeon, one boss, 3 hours. The best way to learn by doing.</div>
+          </div>
+        </div>
+
+        <div class="learn-takeaway">
+          <div class="learn-takeaway-title">Key Takeaway</div>
+          <div class="learn-takeaway-text">The best DM advice in two words: just start. Your first session will be imperfect and that's what makes it yours. Every mistake is a lesson, and your players will remember the fun, not the fumbles.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 7: KNOWLEDGE CHECK -->
+    <div class="learn-section" data-section-title="Knowledge Check">
+      <div class="learn-section-header">
+        <div class="learn-section-number">7</div>
+        <div class="learn-section-heading">
+          <h2 class="learn-section-title">DM Knowledge Check</h2>
+          <div class="learn-section-meta">
+            <span class="learn-section-time">Quiz</span>
+          </div>
+        </div>
+        <div class="learn-section-status"></div>
+      </div>
+      <div class="learn-section-content">
+        <p class="learn-intro">Test what you've learned. Don't worry — there's no wrong answers that'll summon a tarrasque.</p>
+        <div class="learn-quiz" id="quizContainer">
+          <!-- Generated by JS -->
+        </div>
+        <div id="quizResult" style="display:none; margin-top:20px; padding:20px; background:var(--bg-card); border:1px solid var(--border); border-radius:6px; text-align:center;">
+          <div style="font-family:'Cinzel',serif; font-size:18px; color:var(--text); margin-bottom:8px;" id="quizScore"></div>
+          <div style="font-family:'Spectral',serif; font-size:14px; color:var(--text-dim);" id="quizMessage"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 8: NEXT STEPS -->
+    <div class="learn-section" data-section-title="Next Steps">
+      <div class="learn-section-header">
+        <div class="learn-section-number">8</div>
+        <div class="learn-section-heading">
+          <h2 class="learn-section-title">Your DM Journey Starts Now</h2>
+          <div class="learn-section-meta">
+            <span class="learn-section-time">Resources</span>
+          </div>
+        </div>
+        <div class="learn-section-status"></div>
+      </div>
+      <div class="learn-section-content">
+        <p class="learn-intro">You have everything you need to run your first session. Here are some Phmurt Studios tools to help you along the way.</p>
+
+        <div class="learn-tip-grid">
+          <a href="campaigns.html" style="text-decoration:none;">
+            <div class="learn-tip-card" style="cursor:pointer;">
+              <div class="learn-tip-card-icon">⚔️</div>
+              <div class="learn-tip-card-title">Campaign Manager</div>
+              <div class="learn-tip-card-text">Track your campaign, manage NPCs, run combat, and use the Living World engine to bring your setting to life.</div>
+            </div>
+          </a>
+          <a href="generators.html" style="text-decoration:none;">
+            <div class="learn-tip-card" style="cursor:pointer;">
+              <div class="learn-tip-card-icon">🎲</div>
+              <div class="learn-tip-card-title">Random Generators</div>
+              <div class="learn-tip-card-text">Need an NPC name, tavern, or plot hook on the fly? Our generators have you covered.</div>
+            </div>
+          </a>
+          <a href="compendium.html" style="text-decoration:none;">
+            <div class="learn-tip-card" style="cursor:pointer;">
+              <div class="learn-tip-card-icon">📚</div>
+              <div class="learn-tip-card-title">Compendium</div>
+              <div class="learn-tip-card-text">Look up monsters, spells, and items. Everything you need for encounter building in one place.</div>
+            </div>
+          </a>
+        </div>
+
+        <div class="learn-takeaway">
+          <div class="learn-takeaway-title">Final Words</div>
+          <div class="learn-takeaway-text">DMing isn't about being perfect — it's about creating moments your friends will talk about for years. The fact that you're reading this means you care enough to be a great DM. Now go roll some dice.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="learn-section-divider-full">
+    <div class="learn-divider-line"></div>
+    <div class="learn-divider-ornament"><div class="learn-divider-dot"></div><div class="learn-divider-gem"></div><div class="learn-divider-dot"></div></div>
+    <div class="learn-divider-line r"></div>
+  </div>
+
+  <div id="ps-site-footer"></div>
+
+  <script src="phmurt-shell.js"></script>
+  <script>
+    // ═══════════════════════════════════════════════════════════════════
+    // LEARN TO DM — JAVASCRIPT
+    // ═══════════════════════════════════════════════════════════════════
+
+    var ESC = function(s) { var d = document.createElement('div'); d.textContent = s; return d.innerHTML; };
+
+    var SECTIONS = [
+      { title: 'What Does a DM Do?', group: 'The Basics' },
+      { title: 'Session Prep', group: 'The Basics' },
+      { title: 'Improv & Thinking Fast', group: 'Running the Game' },
+      { title: 'Building Encounters', group: 'Running the Game' },
+      { title: 'Managing Players', group: 'Mastering the Table' },
+      { title: 'Your First Session', group: 'Mastering the Table' },
+      { title: 'Knowledge Check', group: 'Mastering the Table' },
+      { title: 'Next Steps', group: 'Mastering the Table' },
+    ];
+
+    var SESSION_ZERO_ITEMS = [
+      'Discuss the campaign tone (serious, comedic, gritty, heroic)',
+      'Set content boundaries everyone is comfortable with',
+      'Agree on scheduling — when, how often, what happens if someone misses',
+      'Discuss PvP rules (usually: no PvP unless everyone consents)',
+      'Explain your ruling style: "I\'ll make fast calls and we can look things up after"',
+      'Let players introduce their characters to each other',
+      'Ask each player what they want out of the game',
+    ];
+
+    var FIRST_SESSION_ITEMS = [
+      'Read (or write) the adventure once all the way through',
+      'Have monster stat blocks bookmarked or printed',
+      'Prepare a strong opening scene — something happens immediately',
+      'Bring a list of 10 random NPC names',
+      'Set up your DM screen (physical or digital)',
+      'Have pencils, paper, and dice for everyone',
+      'Take a deep breath — you\'ve got this',
+    ];
+
+    var QUIZ_QUESTIONS = [
+      {
+        prompt: 'A player wants to do something not covered by the rules. What\'s the best first response?',
+        options: ['Tell them they can\'t', 'Ask for an ability check with a reasonable DC', 'Look it up in the rulebook for 10 minutes', 'Let them auto-succeed'],
+        correct: 1,
+        feedback: 'Setting a DC and asking for a roll is the core DM skill. It keeps the game moving while letting dice add tension.'
+      },
+      {
+        prompt: 'How much should you typically prepare for a single session?',
+        options: ['Every possible outcome for every player choice', 'An opening scene, 1-2 encounters, and a few NPCs', 'Nothing — just improvise everything', 'A 10-page script of dialogue'],
+        correct: 1,
+        feedback: 'The "three things" method gives you structure to improvise around. Over-preparing leads to railroad plots; under-preparing leads to dead air.'
+      },
+      {
+        prompt: 'Your players skip the dungeon you prepared and go somewhere unexpected. What\'s the best approach?',
+        options: ['Force them back with an in-game disaster', 'Re-skin your dungeon content to fit the new location', 'End the session and prep for next week', 'Punish them for going off-script'],
+        correct: 1,
+        feedback: 'Re-skinning is a DM superpower. Your goblin lair becomes a bandit camp, your puzzles still work, and players never know the difference.'
+      },
+      {
+        prompt: 'What\'s the most important thing about encounter design?',
+        options: ['Perfectly balanced CR math', 'Interesting terrain and objectives', 'Having the deadliest possible monsters', 'Making sure players always win'],
+        correct: 1,
+        feedback: 'Interesting terrain, hazards, and objectives turn a simple fight into a memorable set piece. CR math is a starting point, not the goal.'
+      },
+      {
+        prompt: 'During a session, you realize you got a rule wrong 20 minutes ago. What do you do?',
+        options: ['Retcon everything that happened', 'Keep going with your ruling and correct it for future sessions', 'Stop the game and argue about it', 'Pretend it didn\'t happen'],
+        correct: 1,
+        feedback: 'Consistency within a session matters more than perfection. Note the correct rule for next time and keep the current session flowing.'
+      }
+    ];
+
+    // ── Roadmap ──
+    (function initRoadmap() {
+      var container = document.getElementById('roadmap');
+      if (!container) return;
+      var completed = {};
+      try { completed = JSON.parse(localStorage.getItem('phmurt_learn_dm_completed') || '{}'); } catch(e) {}
+      SECTIONS.forEach(function(s, i) {
+        var step = document.createElement('div');
+        step.className = 'learn-roadmap-step' + (completed[i] ? ' completed' : '');
+        step.innerHTML = '<div class="learn-roadmap-num">' + (i + 1) + '</div>' + ESC(s.title);
+        step.addEventListener('click', function() {
+          var sections = document.querySelectorAll('.learn-section');
+          if (sections[i]) sections[i].scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+        container.appendChild(step);
+      });
+    })();
+
+    // ── Side Navigation ──
+    (function initSideNav() {
+      var nav = document.getElementById('sideNav');
+      if (!nav) return;
+      var currentGroup = '';
+      SECTIONS.forEach(function(s, i) {
+        if (s.group !== currentGroup) {
+          currentGroup = s.group;
+          var label = document.createElement('div');
+          label.className = 'learn-nav-group-label';
+          label.textContent = currentGroup;
+          nav.appendChild(label);
+        }
+        var item = document.createElement('div');
+        item.className = 'learn-nav-item';
+        item.setAttribute('data-nav-index', i);
+        item.textContent = s.title;
+        item.addEventListener('click', function() {
+          var sections = document.querySelectorAll('.learn-section');
+          if (sections[i]) sections[i].scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+        nav.appendChild(item);
+      });
+    })();
+
+    // ── Scroll Tracking ──
+    (function initScrollTracking() {
+      var sections = document.querySelectorAll('.learn-section');
+      var navItems = document.querySelectorAll('.learn-nav-item');
+      var progressFill = document.getElementById('progressFill');
+      var backToTop = document.getElementById('backToTop');
+      var completed = {};
+      try { completed = JSON.parse(localStorage.getItem('phmurt_learn_dm_completed') || '{}'); } catch(e) {}
+
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('reveal');
+            var idx = Array.from(sections).indexOf(entry.target);
+            if (idx >= 0 && !completed[idx]) {
+              completed[idx] = true;
+              try { localStorage.setItem('phmurt_learn_dm_completed', JSON.stringify(completed)); } catch(e) {}
+              var roadmapSteps = document.querySelectorAll('.learn-roadmap-step');
+              if (roadmapSteps[idx]) roadmapSteps[idx].classList.add('completed');
+              if (navItems[idx]) {
+                var check = navItems[idx].querySelector('.learn-nav-check');
+                if (!check) {
+                  check = document.createElement('span');
+                  check.className = 'learn-nav-check';
+                  check.textContent = '✓';
+                  navItems[idx].appendChild(check);
+                }
+              }
+            }
+          }
+        });
+      }, { threshold: 0.15 });
+
+      sections.forEach(function(s) { observer.observe(s); });
+
+      // Active nav item tracking
+      var navObserver = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            var idx = Array.from(sections).indexOf(entry.target);
+            navItems.forEach(function(n) { n.classList.remove('active'); });
+            if (navItems[idx]) navItems[idx].classList.add('active');
+          }
+        });
+      }, { threshold: 0.3 });
+      sections.forEach(function(s) { navObserver.observe(s); });
+
+      // Progress bar
+      window.addEventListener('scroll', function() {
+        var scrollTop = window.scrollY;
+        var docHeight = document.documentElement.scrollHeight - window.innerHeight;
+        var progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+        if (progressFill) progressFill.style.width = Math.min(100, progress) + '%';
+        if (backToTop) {
+          if (scrollTop > 400) backToTop.classList.add('visible');
+          else backToTop.classList.remove('visible');
+        }
+      });
+
+      if (backToTop) {
+        backToTop.addEventListener('click', function() {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+      }
+    })();
+
+    // ── Interactive Choices ──
+    (function initChoices() {
+      document.querySelectorAll('.learn-choices').forEach(function(container) {
+        container.querySelectorAll('.learn-choice-btn').forEach(function(btn) {
+          btn.addEventListener('click', function() {
+            var choiceId = btn.getAttribute('data-choice');
+            // Deselect siblings
+            container.querySelectorAll('.learn-choice-btn').forEach(function(b) { b.classList.remove('selected'); });
+            btn.classList.add('selected');
+            // Hide all outcomes in parent scenario
+            var scenario = container.closest('.learn-scenario') || container.parentElement;
+            scenario.querySelectorAll('.learn-outcome').forEach(function(o) { o.classList.remove('active'); });
+            var outcome = document.getElementById('outcome-' + choiceId);
+            if (outcome) outcome.classList.add('active');
+          });
+        });
+      });
+    })();
+
+    // ── Session Prep Simulator ──
+    (function initPrepSim() {
+      var sim = document.getElementById('prepSim');
+      if (!sim) return;
+      var steps = sim.querySelectorAll('.learn-prep-step');
+      steps.forEach(function(step, i) {
+        step.addEventListener('click', function() {
+          steps.forEach(function(s, j) {
+            if (j < i) { s.classList.remove('active'); s.classList.add('done'); }
+            else if (j === i) { s.classList.add('active'); s.classList.remove('done'); }
+            else { s.classList.remove('active'); s.classList.remove('done'); }
+          });
+        });
+      });
+    })();
+
+    // ── Checklists ──
+    (function initChecklists() {
+      function buildChecklist(containerId, items, storageKey) {
+        var container = document.getElementById(containerId);
+        if (!container) return;
+        var checked = {};
+        try { checked = JSON.parse(localStorage.getItem(storageKey) || '{}'); } catch(e) {}
+        items.forEach(function(item, i) {
+          var li = document.createElement('li');
+          if (checked[i]) li.classList.add('checked');
+          li.innerHTML = '<div class="learn-check-box">' + (checked[i] ? '✓' : '') + '</div><span>' + ESC(item) + '</span>';
+          li.addEventListener('click', function() {
+            checked[i] = !checked[i];
+            li.classList.toggle('checked');
+            li.querySelector('.learn-check-box').textContent = checked[i] ? '✓' : '';
+            try { localStorage.setItem(storageKey, JSON.stringify(checked)); } catch(e) {}
+          });
+          container.appendChild(li);
+        });
+      }
+      buildChecklist('sessionZeroList', SESSION_ZERO_ITEMS, 'phmurt_learn_dm_s0');
+      buildChecklist('firstSessionList', FIRST_SESSION_ITEMS, 'phmurt_learn_dm_s1');
+    })();
+
+    // ── Quiz ──
+    (function initQuiz() {
+      var container = document.getElementById('quizContainer');
+      if (!container) return;
+      var score = 0;
+      var answered = 0;
+
+      QUIZ_QUESTIONS.forEach(function(q, qi) {
+        var qDiv = document.createElement('div');
+        qDiv.className = 'learn-quiz-question';
+        var prompt = document.createElement('div');
+        prompt.className = 'learn-quiz-prompt';
+        prompt.textContent = (qi + 1) + '. ' + q.prompt;
+        qDiv.appendChild(prompt);
+
+        var feedback = document.createElement('div');
+        feedback.className = 'learn-quiz-feedback';
+        feedback.textContent = q.feedback;
+
+        q.options.forEach(function(opt, oi) {
+          var optDiv = document.createElement('div');
+          optDiv.className = 'learn-quiz-option';
+          optDiv.textContent = opt;
+          optDiv.addEventListener('click', function() {
+            if (optDiv.classList.contains('disabled')) return;
+            qDiv.querySelectorAll('.learn-quiz-option').forEach(function(o) { o.classList.add('disabled'); });
+            if (oi === q.correct) {
+              optDiv.classList.add('correct');
+              feedback.classList.add('correct');
+              score++;
+            } else {
+              optDiv.classList.add('wrong');
+              feedback.classList.add('wrong');
+              qDiv.querySelectorAll('.learn-quiz-option')[q.correct].classList.add('correct');
+            }
+            feedback.classList.add('show');
+            answered++;
+            if (answered === QUIZ_QUESTIONS.length) showQuizResult();
+          });
+          qDiv.appendChild(optDiv);
+        });
+
+        qDiv.appendChild(feedback);
+        container.appendChild(qDiv);
+      });
+
+      function showQuizResult() {
+        var result = document.getElementById('quizResult');
+        var scoreEl = document.getElementById('quizScore');
+        var msgEl = document.getElementById('quizMessage');
+        if (!result) return;
+        result.style.display = 'block';
+        scoreEl.textContent = score + ' / ' + QUIZ_QUESTIONS.length;
+        if (score === QUIZ_QUESTIONS.length) {
+          msgEl.textContent = 'Perfect score! You\'re ready to sit behind the screen.';
+        } else if (score >= QUIZ_QUESTIONS.length - 1) {
+          msgEl.textContent = 'Excellent! You\'ve got a strong grasp of DM fundamentals.';
+        } else if (score >= Math.floor(QUIZ_QUESTIONS.length / 2)) {
+          msgEl.textContent = 'Good foundation! Review the sections you missed and you\'ll be ready.';
+        } else {
+          msgEl.textContent = 'Give the guide another read — you\'ll pick it up fast!';
+        }
+      }
+    })();
+
+  </script>
+</body>
+</html>

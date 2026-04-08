@@ -143,6 +143,12 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
     { key: "questBoard", name: "Dynamic Quest Board", desc: "Procedural quest generation based on world state", icon: "⸎", requires: "livingWorld" },
     { key: "downtime", name: "Downtime Activities", desc: "Between-session crafting, training, carousing etc.", icon: "⌂" },
     { key: "homebrew", name: "Homebrew Workshop", desc: "Custom monsters, items, spells, NPCs", icon: "◎" },
+    { key: "factionWar", name: "Faction War Simulator", desc: "Risk + Total War-style strategic warfare between campaign factions", icon: "⚔", requires: "factionTracker" },
+    { key: "prophecy", name: "Prophecy Engine & Religion", desc: "Deity pantheon, divine favor, prophecy creation & fulfillment, blessings/curses", icon: "📖", requires: "religion" },
+    { key: "plague", name: "Plague & Contagion Tracker", desc: "Disease outbreaks, patient tracking, contagion spread simulation", icon: "☠" },
+    { key: "heist", name: "Heist Planner", desc: "Blueprint planning, crew roles, heat system, complication generator", icon: "🔒" },
+    { key: "intrigue", name: "Court Intrigue", desc: "Shadow conspiracy web, agent tracking, clue system (Cult of Kosmos style)", icon: "👑" },
+    { key: "puzzles", name: "Puzzle Workshop", desc: "20+ puzzle templates, cipher wheels, grid puzzles, hint system, interactive components", icon: "🎲" },
     { key: "scheduler", name: "Session Scheduler", desc: "Player availability, session planning", icon: "◈" }
   ];
 

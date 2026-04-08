@@ -1,4 +1,4 @@
-const CACHE_VERSION = 132;
+const CACHE_VERSION = 141;
 const CACHE_NAME = 'phmurt-v' + CACHE_VERSION;
 const PRECACHE_URLS = [
   '/',
@@ -29,6 +29,12 @@ const PRECACHE_URLS = [
   'campaign-hexcrawl.js',
   'campaign-downtime.js',
   'campaign-homebrew.js',
+  'campaign-factionwar.js',
+  'campaign-prophecy.js',
+  'campaign-plague.js',
+  'campaign-heist.js',
+  'campaign-intrigue.js',
+  'campaign-puzzles.js',
   'campaign-scheduler.js',
   'campaign-relationships.js',
   'campaign-quests-view.js',

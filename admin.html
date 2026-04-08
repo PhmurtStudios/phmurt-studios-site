@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Spectral:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
 <!-- Supabase must load FIRST so phmurtSupabase is defined before anything else -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
 <script src="supabase-config.js"></script>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin="anonymous"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
@@ -75,7 +75,7 @@
         d.setTime(d.getTime() + days * 24 * 60 * 60 * 1000);
         expires = '; expires=' + d.toUTCString();
       }
-      document.cookie = name + '=' + encodeURIComponent(value || '') + expires + '; path=/; SameSite=Strict';
+      document.cookie = name + '=' + encodeURIComponent(value || '') + expires + '; path=/; SameSite=Strict; Secure';
     } catch (e) {}
   }
 
@@ -156,6 +156,7 @@
 
     /* ── STAGE 1: Image upload ──────────────────────────────────────── */
     function renderImageStage() {
+      document.documentElement.style.visibility = ''; // Ensure page is visible for the gate overlay
       var isSetup = EXPECTED_HASH === 'SETUP';
       gate.innerHTML =
         '<div style="max-width:460px;width:100%;text-align:center;">' +
@@ -306,6 +307,7 @@
 
     /* ── STAGE 2: Sign in ────────────────────────────────────────────── */
     function renderAuthStage() {
+      document.documentElement.style.visibility = ''; // Ensure page is visible for the gate overlay
       var mode = 'in'; // 'in' | 'up'
       gate.innerHTML =
         '<div style="max-width:400px;width:100%;">' +
@@ -390,6 +392,7 @@
         }
         clearAttempts();
         gate.innerHTML = '<div style="text-align:center;"><div style="font-size:28px;margin-bottom:16px;">✓</div><p style="font-family:Spectral,serif;color:#5ee09a;font-size:16px;">Access granted. Welcome.</p></div>';
+        document.documentElement.style.visibility = '';
         setTimeout(function () { gate.remove(); }, 900);
       }
       function afterSignIn(session) {
@@ -466,6 +469,7 @@
                   /* Write a compatible session so the rest of the gate recognises it */
                   var dispName = (pr.data && pr.data.name) || (user.user_metadata && user.user_metadata.name) || email.split('@')[0];
                   setSession({ userId: user.id, name: dispName, email: email, isAdmin: !!(pr.data && pr.data.is_admin), isSuperuser: !!(pr.data && pr.data.is_superuser) });
+                  _gate2Passed = true;
                   grantAccess();
                 })
                 .catch(function () {
@@ -514,6 +518,7 @@
                   // Both factors satisfied: image verified + admin status confirmed
                   _gate2Passed = true;
                   gate.remove();
+                  document.documentElement.style.visibility = '';
                   return;
                 }
                 // Image verified but not admin — show sign-in form
@@ -809,11 +814,20 @@ function useAdminQuery(fetchFn, deps = []) {
   const [error, setError]   = useState(null);
 
   const fetch_ = useCallback(() => {
-    if (!sb) { setLoading(false); setError('Supabase not configured.'); return; }
+    if (!sb) {
+      setLoading(false);
+      setError('Supabase connection failed. The Supabase JS library may not have loaded. Check your network connection and reload the page.');
+      return;
+    }
     setLoading(true);
     fetchFn(sb)
       .then(d  => { setData(d); setError(null); })
-      .catch(e => setError(e.message || 'Load failed'))
+      .catch(e => {
+        const msg = e.message || 'Load failed';
+        if (msg.includes('JWT')) setError('Session expired. Please reload the page and sign in again.');
+        else if (msg.includes('permission') || msg.includes('policy')) setError('Permission denied. Your admin role may need to be re-verified. Try signing out and back in.');
+        else setError(msg);
+      })
       .finally(() => setLoading(false));
   }, deps);  // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -936,7 +950,7 @@ function DashboardPage({ onNavigate }) {
   });
 
   if (loading) return <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)',fontFamily:'Spectral,serif'}}>Loading…</div>;
-  if (error)   return <div style={{padding:'40px',color:'var(--danger)',fontFamily:'Spectral,serif'}}>{error}</div>;
+  if (error)   return <div style={{padding:'40px',color:'var(--danger)',fontFamily:'Spectral,serif',background:'rgba(212,67,58,0.06)',border:'1px solid rgba(212,67,58,0.2)',borderRadius:8,margin:20,textAlign:'center',lineHeight:1.6}}><div style={{fontSize:18,marginBottom:8}}>Connection Error</div><div style={{fontSize:13,color:'var(--text-muted)'}}>{error}</div><button onClick={() => window.location.reload()} style={{marginTop:16,padding:'8px 20px',background:'rgba(212,67,58,0.12)',border:'1px solid rgba(212,67,58,0.3)',borderRadius:4,color:'var(--danger)',cursor:'pointer',fontFamily:'Spectral,serif',fontSize:12}}>Reload Page</button></div>;
 
   const s = stats || { users:0, chars:0, camps:0, visits:0, recent:[] };
 

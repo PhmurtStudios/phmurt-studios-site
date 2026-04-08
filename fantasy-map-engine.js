@@ -6883,7 +6883,7 @@ function fmUpdateBreadcrumb() {
           ${fmEscapeHtml(FMap.world.name || 'World')}
         </span>
         <span style="margin: 0 6px;">></span>
-        <span style="cursor: pointer; color: var(--text);" onclick="fmRenderKingdomMap('${kingdom.id}'); fmUpdateBreadcrumb(); fmUpdateInfoPanel();">
+        <span style="cursor: pointer; color: var(--text);" onclick="fmRenderKingdomMap('${fmEscapeHtml(String(kingdom.id))}'); fmUpdateBreadcrumb(); fmUpdateInfoPanel();">
           ${fmEscapeHtml(kingdom.name)}
         </span>
         <span style="margin: 0 6px;">></span>
@@ -6935,7 +6935,7 @@ function fmBuildWorldInfoPanel() {
   FMap.world.kingdoms.forEach(k => {
     const capital = k.capital ? FMap.world.cities.find(c => c.id === k.capital) : null;
     html += `
-      <li style="cursor: pointer; margin: 4px 0;" onclick="fmRenderKingdomMap('${k.id}'); fmUpdateBreadcrumb(); fmUpdateInfoPanel();">
+      <li style="cursor: pointer; margin: 4px 0;" onclick="fmRenderKingdomMap('${fmEscapeHtml(String(k.id))}'); fmUpdateBreadcrumb(); fmUpdateInfoPanel();">
         <strong>${fmEscapeHtml(k.name)}</strong> - Ruler: ${fmEscapeHtml(k.ruler || 'Unknown')}
         ${capital ? `<br/>Capital: ${fmEscapeHtml(capital.name)}` : ''}
       </li>
@@ -6962,7 +6962,7 @@ function fmBuildKingdomInfoPanel(kingdom) {
 
   cities.forEach(city => {
     html += `
-      <li style="cursor: pointer; margin: 3px 0;" onclick="fmRenderCityMap({...${JSON.stringify(city)}}); fmUpdateBreadcrumb(); fmUpdateInfoPanel();">
+      <li style="cursor: pointer; margin: 3px 0;" data-city-id="${fmEscapeHtml(String(city.id))}" onclick="var el=this; var c=FMap.world.cities.find(function(x){return x.id===el.dataset.cityId;}); if(c){fmRenderCityMap({...c}); fmUpdateBreadcrumb(); fmUpdateInfoPanel();}">
         <strong>${fmEscapeHtml(city.name)}</strong> (${fmEscapeHtml(city.type)}, Pop ~${city.population})
       </li>
     `;

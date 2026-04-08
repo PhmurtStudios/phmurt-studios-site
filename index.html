@@ -126,6 +126,12 @@
       <div class="ps-card-excerpt">An interactive guide for new adventurers. Learn the basics of dice, combat, and roleplaying step by step.</div>
       <div class="ps-card-footer"><span class="ps-card-tag">Beginner</span><span class="ps-card-arrow">↗</span></div>
     </a>
+    <a href="learn-dm.html" class="ps-card">
+      <div class="ps-card-type">Tutorial</div>
+      <div class="ps-card-title">Learn to DM</div>
+      <div class="ps-card-excerpt">Your first steps behind the DM screen. Session prep, improv, encounter building, and player management for new Dungeon Masters.</div>
+      <div class="ps-card-footer"><span class="ps-card-tag">Beginner</span><span class="ps-card-arrow">↗</span></div>
+    </a>
     <a href="gallery.html" class="ps-card">
       <div class="ps-card-type">Gallery</div>
       <div class="ps-card-title">Character Gallery</div>
@@ -159,11 +165,20 @@
 
   <script src="phmurt-shell.js"></script>
   <script>
-    // Parallax
-    window.addEventListener('scroll', function() {
+    // Parallax (throttled via rAF)
+    (function() {
       var castle = document.querySelector('.ps-castle-wrap');
-      if (castle) castle.style.transform = 'translateY(' + (window.scrollY * 0.25) + 'px)';
-    }, { passive: true });
+      var ticking = false;
+      window.addEventListener('scroll', function() {
+        if (!ticking) {
+          requestAnimationFrame(function() {
+            if (castle) castle.style.transform = 'translateY(' + (window.scrollY * 0.25) + 'px)';
+            ticking = false;
+          });
+          ticking = true;
+        }
+      }, { passive: true });
+    })();
   </script>
 
 </body>

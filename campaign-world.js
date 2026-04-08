@@ -2209,7 +2209,12 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
   const [lwEvents, setLwEvents] = useState(() => (data._lwEventLog || []).slice(0, 30)); // visible event ticker items
   const [lwLog, setLwLog] = useState(() => data._lwEventLog || []); // full event history
   const [lwShowLog, setLwShowLog] = useState(false);
-  const [lwSpeed, setLwSpeed] = useState(90); // seconds between events
+  const [lwSpeed, setLwSpeed] = useState(() => {
+    const freq = data.modules && data.modules.lwEventFrequency;
+    if (freq === "Custom") return parseInt(data.modules.lwEventFrequencyCustom) || 90;
+    if (freq) return parseInt(freq) || 90;
+    return 90;
+  }); // seconds between events
   const [lwTimeSkipOpen, setLwTimeSkipOpen] = useState(false);
   const [lwTimeSkipSummary, setLwTimeSkipSummary] = useState(null); // array of events or null
   const [lwTimeSkipProgress, setLwTimeSkipProgress] = useState(null); // null or { current, total }
@@ -3863,7 +3868,9 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       <option value={30}>Fast (30s)</option>
                       <option value={60}>Normal (60s)</option>
                       <option value={90}>Slow (90s)</option>
-                      <option value={180}>Very Slow (3m)</option>
+                      <option value={180}>Relaxed (3m)</option>
+                      <option value={300}>Slow (5m)</option>
+                      <option value={600}>Very Slow (10m)</option>
                     </select>
                     <button onClick={() => setLwShowLog(v => !v)}
                       style={{ padding:"3px 10px", background: lwShowLog ? "rgba(201,168,92,0.2)" : "rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:"'Cinzel', serif", fontSize:8, color:T.gold, cursor:"pointer", letterSpacing:"1px" }}>

@@ -1543,6 +1543,310 @@
           };
         }
       },
+
+      // ═══════════════════════════════════════════════════════════
+      //  SIEGE MECHANICS — extended warfare events
+      // ═══════════════════════════════════════════════════════════
+      {
+        id: "siege_escalates",
+        weight: 3,
+        apply: (data, rng, relations) => {
+          const besieged = data.regions.filter(r => r.state === "contested" && r.threat === "critical" && r.ctrl);
+          if (!besieged.length) return null;
+          const region = pick(besieged, rng);
+          const besiegers = data.factions.filter(f => f.name !== region.ctrl && (f.rivals?.includes(region.ctrl) || (relations && relations.isAtWar(f.name, region.ctrl))));
+          if (!besiegers.length) return null;
+          const besieger = pick(besiegers, rng);
+          const tactics = [
+            { name: "sappers", desc: `Tunnelers from the ${besieger.name} have burrowed beneath the walls of ${region.name}. The foundations groan and crack as siege engineers collapse key sections, leaving the defenders scrambling to shore up breaches.`, defLoss: 8, atkGain: 3 },
+            { name: "siege towers", desc: `Massive wooden siege towers, clad in wet hides against fire, roll toward the walls of ${region.name}. The ${besieger.name} troops scale the ramparts under a hail of arrows, gaining a foothold on the battlements.`, defLoss: 6, atkGain: 4 },
+            { name: "Greek fire", desc: `Alchemical fire rains down on ${region.name} as the ${besieger.name} deploys incendiary weapons. Buildings within the walls burn uncontrollably, sowing panic among the defenders.`, defLoss: 10, atkGain: 2 },
+            { name: "starvation", desc: `With supply lines severed for weeks, the defenders of ${region.name} grow gaunt. Rats and leather become meals. The ${besieger.name} need only wait as hunger does the work of a thousand soldiers.`, defLoss: 7, atkGain: 1 },
+            { name: "bombardment", desc: `Day and night, the trebuchets of the ${besieger.name} hurl massive stones into ${region.name}. Towers crumble, walls crack, and morale within the city plummets with each thunderous impact.`, defLoss: 9, atkGain: 3 },
+          ];
+          const tactic = pick(tactics, rng);
+          return {
+            headline: `Siege of ${region.name} Intensifies — ${tactic.name.charAt(0).toUpperCase() + tactic.name.slice(1)}`,
+            detail: tactic.desc,
+            category: "military",
+            icon: "🔥",
+            importance: "major",
+            mutations: (d) => ({
+              ...d,
+              factions: d.factions.map(f => {
+                if (f.name === besieger.name) return { ...f, power: Math.min(100, f.power + tactic.atkGain) };
+                if (f.name === region.ctrl) return { ...f, power: Math.max(0, f.power - tactic.defLoss) };
+                return f;
+              })
+            }),
+            relationMutation: (rel) => {
+              if (rel && region.ctrl) rel.modifyWarScore(besieger.name, region.ctrl, 5);
+            }
+          };
+        }
+      },
+      {
+        id: "siege_broken",
+        weight: 2,
+        apply: (data, rng, relations) => {
+          const besieged = data.regions.filter(r => r.state === "contested" && r.threat === "critical" && r.ctrl);
+          if (!besieged.length) return null;
+          const region = pick(besieged, rng);
+          const defender = data.factions.find(f => f.name === region.ctrl);
+          if (!defender || defender.power < 15) return null;
+          const methods = [
+            `A daring night sally by the garrison of ${region.name} shattered the besieging camp. Fires lit among the siege equipment spread chaos, and the attackers fled into the darkness.`,
+            `A relief army arrived from allied territory, smashing through the siege lines surrounding ${region.name}. The besiegers, caught between the garrison and the relief force, were routed.`,
+            `The defenders of ${region.name} discovered a weak point in the enemy encirclement and launched a devastating counterattack. Siege engines were captured and turned against their makers.`,
+            `Foul weather and disease ravaged the besieging army outside ${region.name}. With soldiers dying faster from plague than combat, the siege collapsed of its own accord.`,
+          ];
+          return {
+            headline: `Siege of ${region.name} Broken!`,
+            detail: pick(methods, rng),
+            category: "military",
+            icon: "⚑",
+            importance: "major",
+            mutations: (d) => ({
+              ...d,
+              regions: d.regions.map(r => r.name === region.name ? { ...r, state: "tense", threat: "medium" } : r),
+              factions: d.factions.map(f => {
+                if (f.name === defender.name) return { ...f, power: Math.min(100, f.power + 6), trend: "rising" };
+                return f;
+              })
+            }),
+            relationMutation: (rel) => {
+              if (rel && region.ctrl) {
+                const enemy = data.factions.find(f => f.name !== region.ctrl && rel.isAtWar(f.name, region.ctrl));
+                if (enemy) rel.modifyWarScore(enemy.name, region.ctrl, -8);
+              }
+            }
+          };
+        }
+      },
+      {
+        id: "wall_breach",
+        weight: 2,
+        apply: (data, rng, relations) => {
+          const walled = data.regions.filter(r => r.state === "contested" && r.ctrl && (r.type === "capital" || r.type === "city"));
+          if (!walled.length) return null;
+          const region = pick(walled, rng);
+          const attackers = data.factions.filter(f => f.name !== region.ctrl && (relations ? relations.isAtWar(f.name, region.ctrl) : f.rivals?.includes(region.ctrl)));
+          if (!attackers.length) return null;
+          const attacker = pick(attackers, rng);
+          return {
+            headline: `Walls of ${region.name} Breached!`,
+            detail: `After relentless bombardment, the great walls of ${region.name} have been breached. The ${attacker.name} pour through the gap in a tide of steel. Street-to-street fighting erupts as the defenders fall back to inner fortifications, but the outcome hangs by a thread.`,
+            category: "military",
+            icon: "💥",
+            importance: "critical",
+            mutations: (d) => ({
+              ...d,
+              regions: d.regions.map(r => r.name === region.name ? { ...r, threat: "critical" } : r),
+              factions: d.factions.map(f => {
+                if (f.name === attacker.name) return { ...f, power: Math.min(100, f.power + 5) };
+                if (f.name === region.ctrl) return { ...f, power: Math.max(0, f.power - 8) };
+                return f;
+              })
+            }),
+            relationMutation: (rel) => {
+              if (rel) rel.modifyWarScore(attacker.name, region.ctrl, 8);
+            }
+          };
+        }
+      },
+      {
+        id: "siege_sortie",
+        weight: 2,
+        apply: (data, rng) => {
+          const besieged = data.regions.filter(r => r.state === "contested" && r.ctrl);
+          if (!besieged.length) return null;
+          const region = pick(besieged, rng);
+          const defender = data.factions.find(f => f.name === region.ctrl);
+          if (!defender) return null;
+          const success = rng() > 0.45;
+          return {
+            headline: success
+              ? `Garrison of ${region.name} Launches Successful Sortie`
+              : `Failed Sortie from ${region.name}`,
+            detail: success
+              ? `Under cover of dawn mist, the garrison of ${region.name} burst from the gates and struck the siege camp of the enemy. Siege engines were set ablaze and supply wagons captured before the defenders withdrew behind their walls, bloodied but victorious.`
+              : `A desperate sortie from ${region.name} met a prepared enemy. The garrison suffered heavy losses and was forced back behind the walls, their morale shaken and their numbers thinned.`,
+            category: "military",
+            icon: success ? "⚔" : "↺",
+            importance: "standard",
+            mutations: (d) => ({
+              ...d,
+              factions: d.factions.map(f => {
+                if (f.name === defender.name) return { ...f, power: Math.max(0, f.power + (success ? 4 : -6)) };
+                return f;
+              }),
+              regions: d.regions.map(r => r.name === region.name && !success ? { ...r, threat: "critical" } : r)
+            })
+          };
+        }
+      },
+      {
+        id: "siege_disease",
+        weight: 2,
+        apply: (data, rng) => {
+          const besieged = data.regions.filter(r => r.state === "contested" && r.threat === "critical" && r.ctrl);
+          if (!besieged.length) return null;
+          const region = pick(besieged, rng);
+          const affectsBoth = rng() > 0.5;
+          const diseases = ["dysentery", "plague", "typhus", "cholera", "the sweating sickness"];
+          const disease = pick(diseases, rng);
+          const besieger = data.factions.find(f => f.name !== region.ctrl && (f.rivals?.includes(region.ctrl) || f.attitude === "hostile"));
+          return {
+            headline: `${disease.charAt(0).toUpperCase() + disease.slice(1)} Ravages the Siege of ${region.name}`,
+            detail: affectsBoth
+              ? `${disease.charAt(0).toUpperCase() + disease.slice(1)} has broken out among both the defenders of ${region.name} and the besieging army. Corpses are catapulted over walls, water sources are fouled, and soldiers on both sides fall to fever faster than to swords.`
+              : `The cramped and filthy conditions inside besieged ${region.name} have bred ${disease}. The defenders weaken daily, and the stench of death rises over the walls. The besiegers need only wait.`,
+            category: "military",
+            icon: "☠",
+            importance: "major",
+            mutations: (d) => ({
+              ...d,
+              factions: d.factions.map(f => {
+                if (f.name === region.ctrl) return { ...f, power: Math.max(0, f.power - 8) };
+                if (affectsBoth && besieger && f.name === besieger.name) return { ...f, power: Math.max(0, f.power - 5) };
+                return f;
+              })
+            })
+          };
+        }
+      },
+      {
+        id: "siege_negotiation",
+        weight: 2,
+        apply: (data, rng, relations) => {
+          const besieged = data.regions.filter(r => r.state === "contested" && r.ctrl);
+          if (!besieged.length) return null;
+          const region = pick(besieged, rng);
+          const defender = data.factions.find(f => f.name === region.ctrl);
+          const attacker = data.factions.find(f => f.name !== region.ctrl && (relations ? relations.isAtWar(f.name, region.ctrl) : f.rivals?.includes(region.ctrl)));
+          if (!defender || !attacker) return null;
+          const accepted = rng() > 0.6;
+          return {
+            headline: accepted
+              ? `${region.name} Surrenders After Siege Negotiations`
+              : `Siege Negotiations Collapse at ${region.name}`,
+            detail: accepted
+              ? `After protracted negotiations, the defenders of ${region.name} have agreed to open their gates to the ${attacker.name}. In exchange for a bloodless surrender, the garrison is allowed to march out with their weapons. The region changes hands without further destruction.`
+              : `Negotiations between the ${attacker.name} and the besieged ${defender.name} garrison in ${region.name} have collapsed. The defenders vow to fight to the last, and the ${attacker.name} prepare for a final, bloody assault.`,
+            category: "military",
+            icon: accepted ? "🏳" : "⚔",
+            importance: "major",
+            mutations: (d) => ({
+              ...d,
+              regions: d.regions.map(r => {
+                if (r.name !== region.name) return r;
+                return accepted
+                  ? { ...r, ctrl: attacker.name, state: "conquered", threat: "medium" }
+                  : { ...r, threat: "critical" };
+              }),
+              factions: d.factions.map(f => {
+                if (accepted && f.name === attacker.name) return { ...f, power: Math.min(100, f.power + 6) };
+                if (accepted && f.name === defender.name) return { ...f, power: Math.max(0, f.power - 8) };
+                if (!accepted && f.name === defender.name) return { ...f, power: Math.max(0, f.power + 2) }; // Resolve boost
+                return f;
+              }),
+              cities: accepted ? d.cities.map(c => c.region === region.name ? { ...c, faction: attacker.name } : c) : d.cities
+            }),
+            relationMutation: (rel) => {
+              if (accepted && rel) {
+                rel.modifyWarScore(attacker.name, defender.name, 12);
+                if (rel.getWarScore(attacker.name, defender.name) > 50) rel.endWar(attacker.name, defender.name);
+              }
+            }
+          };
+        }
+      },
+      {
+        id: "siege_relief_army",
+        weight: 2,
+        apply: (data, rng) => {
+          const besieged = data.regions.filter(r => r.state === "contested" && r.threat === "critical" && r.ctrl);
+          if (!besieged.length) return null;
+          const region = pick(besieged, rng);
+          const ctrl = data.factions.find(f => f.name === region.ctrl);
+          if (!ctrl) return null;
+          const allies = (ctrl.allies || []).map(n => data.factions.find(f => f.name === n)).filter(Boolean);
+          const reliever = allies.length > 0 && rng() > 0.4 ? pick(allies, rng) : ctrl;
+          const isAlly = reliever.name !== ctrl.name;
+          return {
+            headline: isAlly
+              ? `${reliever.name} Marches to Relieve ${region.name}`
+              : `Relief Force Assembles for ${region.name}`,
+            detail: isAlly
+              ? `Honoring their alliance, the ${reliever.name} have dispatched a relief army to break the siege of ${region.name}. The besiegers now face war on two fronts as fresh troops approach from the ${["north","south","east","west"][Math.floor(rng()*4)]}.`
+              : `The ${ctrl.name} have gathered reserves from across their realm and march to relieve the besieged garrison of ${region.name}. The siege may soon be shattered — or a decisive battle fought.`,
+            category: "military",
+            icon: "🏇",
+            importance: "major",
+            mutations: (d) => ({
+              ...d,
+              factions: d.factions.map(f => {
+                if (f.name === ctrl.name) return { ...f, power: Math.min(100, f.power + 4) };
+                if (isAlly && f.name === reliever.name) return { ...f, power: Math.max(0, f.power - 2) }; // Cost of sending army
+                return f;
+              })
+            }),
+            relationMutation: (rel) => {
+              if (isAlly && rel) rel.modifyRelation(ctrl.name, reliever.name, 10);
+            }
+          };
+        }
+      },
+      {
+        id: "scorched_earth",
+        weight: 1,
+        apply: (data, rng) => {
+          const contested = data.regions.filter(r => (r.state === "contested" || r.state === "conquered") && r.ctrl);
+          if (!contested.length) return null;
+          const region = pick(contested, rng);
+          const ctrl = data.factions.find(f => f.name === region.ctrl);
+          if (!ctrl) return null;
+          return {
+            headline: `${ctrl.name} Orders Scorched Earth in ${region.name}`,
+            detail: `Rather than let valuable resources fall to the enemy, the ${ctrl.name} have ordered the burning of crops, poisoning of wells, and destruction of infrastructure in ${region.name}. The land itself is turned into a weapon — but at terrible cost to the populace.`,
+            category: "military",
+            icon: "🔥",
+            importance: "critical",
+            mutations: (d) => ({
+              ...d,
+              regions: d.regions.map(r => r.name === region.name ? { ...r, state: "dangerous", threat: "high" } : r),
+              factions: d.factions.map(f => f.name === ctrl.name ? { ...f, power: Math.max(0, f.power - 3) } : f)
+            })
+          };
+        }
+      },
+      {
+        id: "siege_engines_destroyed",
+        weight: 2,
+        apply: (data, rng) => {
+          const besieged = data.regions.filter(r => r.state === "contested" && r.ctrl);
+          if (!besieged.length) return null;
+          const region = pick(besieged, rng);
+          const attacker = data.factions.find(f => f.name !== region.ctrl && (f.rivals?.includes(region.ctrl) || f.attitude === "hostile"));
+          if (!attacker) return null;
+          const methods = [
+            `A daring commando raid by the defenders destroyed the enemy's trebuchets and catapults`,
+            `A fire arrow from the walls ignited the pitch stores near the siege engines, and the resulting inferno consumed them all`,
+            `Saboteurs infiltrated the enemy camp under cover of darkness and weakened the siege engines' supports, causing them to collapse under their own weight`,
+          ];
+          return {
+            headline: `Siege Engines Destroyed at ${region.name}`,
+            detail: `${pick(methods, rng)}. Without their siege equipment, the ${attacker.name} cannot breach the walls of ${region.name}. The siege stalls.`,
+            category: "military",
+            icon: "💥",
+            importance: "standard",
+            mutations: (d) => ({
+              ...d,
+              factions: d.factions.map(f => f.name === attacker.name ? { ...f, power: Math.max(0, f.power - 5) } : f)
+            })
+          };
+        }
+      },
     ],
 
     // ── ECONOMIC ──
