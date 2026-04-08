@@ -398,13 +398,120 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
   };
 
   // ─────────────────────────────────────────────────────────────────────
+  // PARTY TAB — Kingdom affiliation, social rank, faction reputation, diplomacy
+  // ─────────────────────────────────────────────────────────────────────
+  const Select = ({ value, onChange, style, children }) => React.createElement("select", {
+    value, onChange: e => onChange(e.target.value),
+    style: { padding: "8px 12px", fontSize: 12, background: T.bgInput, border: `1px solid ${T.border}`, borderRadius: 3, color: T.text, fontFamily: T.body, cursor: "pointer", ...style }
+  }, children);
+
+  const renderParty = () => {
+    if (!isDM) {
+      return React.createElement("div", { style: { padding: 40, textAlign: "center", color: T.textFaint, fontStyle: "italic" } }, "Party settings are managed by the DM.");
+    }
+
+    const SOCIAL_RANKS = [
+      { value:"outcast",     label:"Outcast — Exiled, wanted, or shunned by society",         color: T.crimson,   lbl:"Outcasts",      desc:"The party is shunned or hunted. Guards are suspicious, merchants refuse service, and most doors are closed to them." },
+      { value:"peasant",     label:"Peasant — Common folk, laborers, and farmers",             color: T.textFaint, lbl:"Peasants",      desc:"The party lives at the lowest rung. They have no political influence, few resources, and must earn every scrap of respect." },
+      { value:"commoner",    label:"Commoner — Merchants, artisans, and townsfolk",            color: T.textMuted, lbl:"Commoners",     desc:"Ordinary citizens. The party can trade freely and move without suspicion, but holds no special privilege." },
+      { value:"freeman",     label:"Freeman — Respected citizens with some standing",          color: T.textDim,   lbl:"Freemen",       desc:"Respected members of society. Some merchants offer discounts, and minor officials take their concerns seriously." },
+      { value:"guild_member",label:"Guild Member — Part of a recognized trade or adventurer's guild", color:"#4a90d9", lbl:"Guild Members", desc:"Recognized by a guild. The party has access to guild resources, safe houses, and a network of contacts." },
+      { value:"knight",      label:"Knight — Sworn warriors with land or title",               color:"#2e8b57",    lbl:"Knights",       desc:"Titled warriors with sworn oaths. The party commands respect from soldiers, has access to military resources, and may hold small lands." },
+      { value:"lesser_noble",label:"Lesser Noble — Barons, baronesses, landed lords",          color: T.gold,      lbl:"Lesser Nobles", desc:"The party holds minor titles and lands. They attend court, can raise levies, and have political influence in their region." },
+      { value:"noble",       label:"Noble — Counts, dukes, or high-ranking aristocrats",       color:"#d4a017",    lbl:"Nobles",        desc:"High-ranking aristocrats. The party wields significant political power, commands armies, and influences the fate of regions." },
+      { value:"royal",       label:"Royal — Princes, princesses, or members of the royal family", color:"#8b50f0", lbl:"Royalty",       desc:"Members of the ruling family. The party has immense authority, vast wealth, and the weight of a dynasty behind their every action." },
+      { value:"ruler",       label:"Ruler — Kings, queens, emperors, or sovereign leaders",    color: T.crimson,   lbl:"Rulers",        desc:"The party sits atop the hierarchy. Their word is law, their armies vast, and their decisions shape the world itself." },
+    ];
+
+    const currentRankInfo = SOCIAL_RANKS.find(r => r.value === (data.partyRank || "commoner"));
+
+    return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 20 } },
+
+      // Kingdom Affiliation
+      React.createElement("div", { style: { background: T.bgCard, padding: 24, border: `1px solid ${T.border}`, borderRadius: 4, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" } },
+        React.createElement("div", { style: { fontSize: 10, color: T.textFaint, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 12 } }, "Kingdom Affiliation"),
+        React.createElement(Select, { value: data.partyKingdom || "", onChange: v => setData(d => ({ ...d, partyKingdom: v })), style: { width: "100%", marginBottom: 12 } },
+          React.createElement("option", { value: "" }, "No Affiliation (Independent)"),
+          factions.map(f => React.createElement("option", { key: f.id, value: f.name }, f.name))
+        ),
+        data.partyKingdom && React.createElement("div", { style: { fontSize: 12, color: T.textMuted, fontStyle: "italic" } },
+          "The party is affiliated with ",
+          React.createElement("span", { style: { color: T.gold } }, data.partyKingdom),
+          (() => { const f = factions.find(f => f.name === data.partyKingdom); return f ? " — a " + (f.govType || "faction") + " currently " + (f.trend || "stable") : null; })()
+        )
+      ),
+
+      // Social Standing
+      React.createElement("div", { style: { background: T.bgCard, padding: 24, border: `1px solid ${T.border}`, borderRadius: 4, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" } },
+        React.createElement("div", { style: { fontSize: 10, color: T.textFaint, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 12 } }, "Party Social Standing"),
+        React.createElement(Select, { value: data.partyRank || "commoner", onChange: v => setData(d => ({ ...d, partyRank: v })), style: { width: "100%", marginBottom: 12 } },
+          SOCIAL_RANKS.map(r => React.createElement("option", { key: r.value, value: r.value }, r.label))
+        ),
+        currentRankInfo && React.createElement("div", { style: { padding: 12, background: T.bg, border: `1px solid ${T.border}`, borderRadius: 3 } },
+          React.createElement("div", { style: { fontSize: 14, color: currentRankInfo.color, fontWeight: 400, marginBottom: 6 } }, currentRankInfo.lbl),
+          React.createElement("div", { style: { fontSize: 12, color: T.textMuted, fontWeight: 300, lineHeight: "1.5" } }, currentRankInfo.desc)
+        )
+      ),
+
+      // Party Reputation by Faction
+      React.createElement("div", { style: { background: T.bgCard, padding: 24, border: `1px solid ${T.border}`, borderRadius: 4, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" } },
+        React.createElement("div", { style: { fontSize: 10, color: T.textFaint, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 12 } }, "Party Reputation by Faction"),
+        factions.length === 0
+          ? React.createElement("div", { style: { fontSize: 12, color: T.textFaint, fontStyle: "italic" } }, "No factions exist yet. Generate a world first.")
+          : React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8 } },
+              factions.map(f => {
+                const rep = (data.partyReputations || {})[f.name] || "neutral";
+                return React.createElement("div", {
+                  key: f.id,
+                  style: { display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 3, borderLeft: `3px solid ${f.color}` }
+                },
+                  React.createElement("span", { style: { flex: 1, fontSize: 13, color: T.text, fontWeight: 300 } }, f.name),
+                  React.createElement(Select, {
+                    value: rep,
+                    onChange: v => setData(d => ({ ...d, partyReputations: { ...(d.partyReputations || {}), [f.name]: v } })),
+                    style: { width: 130 }
+                  }, ["revered","allied","friendly","neutral","cautious","hostile","hated"].map(a => React.createElement("option", { key: a, value: a }, a)))
+                );
+              })
+            )
+      ),
+
+      // Faction Diplomacy Matrix
+      React.createElement("div", { style: { background: T.bgCard, padding: 24, border: `1px solid ${T.border}`, borderRadius: 4, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" } },
+        React.createElement("div", { style: { fontSize: 10, color: T.textFaint, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 12 } }, "Faction Diplomacy"),
+        React.createElement("div", { style: { fontSize: 11, color: T.textMuted, marginBottom: 12 } }, "Faction-to-faction relationships. Click to view details."),
+        factions.length < 2
+          ? React.createElement("div", { style: { fontSize: 12, color: T.textFaint, fontStyle: "italic" } }, "Need at least 2 factions to set relationships.")
+          : React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 6 } },
+              factions.map(f => React.createElement("div", {
+                key: f.id,
+                style: {
+                  display: "flex", alignItems: "center", gap: 10, padding: "10px 12px",
+                  background: T.bg, border: `1px solid ${T.border}`, borderRadius: 3,
+                  borderLeft: `3px solid ${f.color}`, transition: "all 0.2s"
+                }
+              },
+                React.createElement("span", { style: { fontSize: 13, color: T.text, fontWeight: 300, flex: 1 } }, f.name),
+                React.createElement("div", { style: { display: "flex", gap: 8, fontSize: 10 } },
+                  f.allies?.length > 0 && React.createElement("span", { style: { color: T.green } }, f.allies.length + " allies"),
+                  f.rivals?.length > 0 && React.createElement("span", { style: { color: T.crimson } }, f.rivals.length + " rivals"),
+                  !f.allies?.length && !f.rivals?.length && React.createElement("span", { style: { color: T.textFaint } }, "no relationships")
+                )
+              ))
+            )
+      )
+    );
+  };
+
+  // ─────────────────────────────────────────────────────────────────────
   // MAIN LAYOUT
   // ─────────────────────────────────────────────────────────────────────
   const tabs = [
     { key: "standing", label: "Standing" },
     { key: "allies", label: "Allies" },
     { key: "enemies", label: "Enemies" },
-    { key: "npcs", label: "NPC Network" }
+    { key: "npcs", label: "NPC Network" },
+    { key: "party", label: "Party" }
   ];
 
   return React.createElement("div", {
@@ -443,6 +550,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
     viewMode === "standing" && renderStanding(),
     viewMode === "allies" && renderAllies(),
     viewMode === "enemies" && renderEnemies(),
-    viewMode === "npcs" && renderNPCs()
+    viewMode === "npcs" && renderNPCs(),
+    viewMode === "party" && renderParty()
   );
 };

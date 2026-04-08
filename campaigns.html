@@ -4982,9 +4982,9 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
         <div style={{ display:"flex", gap:12 }}>
           {[
             { label:"Sessions", val:data.sessionsPlayed, icon:BookOpen, accent:"#c9a84c" },
-            { label:"Quests", val:data.quests.length, icon:Scroll, accent:T.crimson },
-            { label:"Party", val:data.party.length, icon:Users, accent: T.moveBlue },
-            { label:"Regions", val:data.regions.length, icon:MapPin, accent: T.green },
+            { label:"Quests", val:data.quests.length, icon:Scroll, accent:"#9b2c2c" },
+            { label:"Party", val:data.party.length, icon:Users, accent:"#58aaff" },
+            { label:"Regions", val:data.regions.length, icon:MapPin, accent:"#5a8f5a" },
           ].map((s,i) => (
             <div key={i} style={{
               flex:1, padding:"18px 20px", background:`linear-gradient(135deg, ${T.bgCard} 0%, rgba(255,255,255,0.01) 100%)`,

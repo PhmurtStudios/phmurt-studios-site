@@ -104,7 +104,7 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
 
   const systemConfigs = {
     livingWorld: [
-      { label: "Event Frequency", key: "lwEventFrequency", type: "select", options: ["30s", "60s", "90s", "180s"] },
+      { label: "Event Frequency", key: "lwEventFrequency", type: "select", options: ["30s", "60s", "90s", "180s", "300s", "600s", "Custom"] },
       { label: "Auto-Timeline Integration", key: "lwAutoTimeline", type: "toggle" }
     ],
     economy: [
@@ -372,24 +372,49 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
                             {config.label}
                           </div>
                           {config.type === "select" && (
-                            <select
-                              value={data.modules[config.key] || config.options[0]}
-                              onChange={(e) => updateModuleConfig(config.key, e.target.value)}
-                              style={{
-                                width: "100%",
-                                padding: "0.5rem",
-                                background: T.bg,
-                                border: `1px solid ${T.border}`,
-                                color: T.text,
-                                borderRadius: "4px",
-                                fontFamily: T.body,
-                                fontSize: "0.85rem"
-                              }}
-                            >
-                              {config.options.map(opt => (
-                                <option key={opt} value={opt}>{opt}</option>
-                              ))}
-                            </select>
+                            <div>
+                              <select
+                                value={(data.modules[config.key] || config.options[0]) === "Custom" || (config.options.includes("Custom") && !config.options.includes(data.modules[config.key]) && data.modules[config.key]) ? "Custom" : (data.modules[config.key] || config.options[0])}
+                                onChange={(e) => updateModuleConfig(config.key, e.target.value)}
+                                style={{
+                                  width: "100%",
+                                  padding: "0.5rem",
+                                  background: T.bg,
+                                  border: `1px solid ${T.border}`,
+                                  color: T.text,
+                                  borderRadius: "4px",
+                                  fontFamily: T.body,
+                                  fontSize: "0.85rem"
+                                }}
+                              >
+                                {config.options.map(opt => (
+                                  <option key={opt} value={opt}>{opt}</option>
+                                ))}
+                              </select>
+                              {config.options.includes("Custom") && ((data.modules[config.key] || "") === "Custom" || (!config.options.slice(0, -1).includes(data.modules[config.key]) && data.modules[config.key] && data.modules[config.key] !== config.options[0])) && (
+                                <div style={{ marginTop: "0.4rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
+                                  <input
+                                    type="number"
+                                    min="10"
+                                    max="3600"
+                                    placeholder="seconds"
+                                    value={data.modules[config.key + "Custom"] || ""}
+                                    onChange={(e) => updateModuleConfig(config.key + "Custom", parseInt(e.target.value) || "")}
+                                    style={{
+                                      flex: 1,
+                                      padding: "0.5rem",
+                                      background: T.bg,
+                                      border: `1px solid ${T.border}`,
+                                      color: T.text,
+                                      borderRadius: "4px",
+                                      fontFamily: T.body,
+                                      fontSize: "0.85rem"
+                                    }}
+                                  />
+                                  <span style={{ fontSize: "0.8rem", color: T.textMuted }}>seconds</span>
+                                </div>
+                              )}
+                            </div>
                           )}
                           {config.type === "number" && (
                             <input

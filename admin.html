@@ -27,8 +27,12 @@
 /* ═══════════════════════════════════════════════════════════════════
    ADMIN GATE  —  Self-contained two-factor access control
    ═══════════════════════════════════════════════════════════════════
-   Stage 1 — Key image upload (shown to everyone, no prior sign-in needed)
-   Stage 2 — Admin account sign-in (shown after image passes)
+   Stage 1 — Key image upload (UI deterrent, not a security boundary)
+   Stage 2 — Admin account sign-in via Supabase (the REAL access control)
+
+   Security model: Stage 1 keeps casual visitors out. Stage 2 (Supabase
+   auth + is_admin DB check) is the actual security gate. Even if Stage 1
+   is bypassed, no access is granted without valid admin credentials.
 
    FIRST-TIME SETUP:
      EXPECTED_HASH is 'SETUP'. Upload the image → the computed hash
@@ -38,18 +42,11 @@
 (function () {
 
   /* ── Config ──────────────────────────────────────────────────────── */
-  // SECURITY (V-009): Image hash is obfuscated to prevent trivial extraction from source.
-  // It remains a "something you have" factor combined with server-side is_admin verification.
-  // The hash is XOR-scrambled with a key derived from the site identity.
-  var _hk = 'PhmurtStudiosAdminGate2026';
-  var _he = 'YVldRUJEY0RFVFlfQ3FUXVhed1FEVQIAAwZgWVxEQkRiREVVWF5DcVVdWF53UURVAgACBmBZXUVCRGNERVVYXw=='; // encoded hash
-  var EXPECTED_HASH = (function(e, k) {
-    try {
-      var d = atob(e); var r = '';
-      for (var i = 0; i < d.length; i++) r += String.fromCharCode(d.charCodeAt(i) ^ k.charCodeAt(i % k.length));
-      return r;
-    } catch(x) { return ''; }
-  })(_he, _hk);
+  // NOTE (V-C1): The image hash is stored in plain text. This is intentional.
+  // Image verification is a UI-level deterrent only — NOT a security boundary.
+  // The real access control is Stage 2: Supabase auth + server-side is_admin check.
+  // Knowing the hash does not grant admin access without valid Supabase credentials.
+  var EXPECTED_HASH = '1100000000000000100000001001110010011100101000000000010000000110';
   var IMG_OK_KEY    = 'phmurt_admin_img_ok'; // sessionStorage flag
   var ADMIN_ATTEMPTS_KEY = 'phmurt_admin_signin_attempts_v1';
   var IMG_ATTEMPTS_KEY = 'phmurt_admin_img_attempts_v1'; // SECURITY (V-009): Rate limiting for image verification
@@ -380,9 +377,10 @@
       function clearAttempts() {
         try { sessionStorage.removeItem(ADMIN_ATTEMPTS_KEY); } catch (_) {}
       }
-      // SECURITY: Track that both gates were legitimately passed (not called from console)
-      var _gate1Passed = false; // image verification
-      var _gate2Passed = false; // Supabase admin verification
+      // Gate tracking — closure variables prevent trivial console bypass of grantAccess().
+      // _gate1Passed = image deterrent (UI only), _gate2Passed = Supabase admin check (real security).
+      var _gate1Passed = false;
+      var _gate2Passed = false;
 
       function grantAccess() {
         // Both gates must have been passed in sequence
@@ -499,11 +497,10 @@
     /* ── Decide which stage to start on ──────────────────────────────── */
     if (sessionStorage.getItem(IMG_OK_KEY) === 'true') {
       _gate1Passed = true; // Image was verified earlier in this session
-      /* SECURITY (V-009): Image already verified this session — now require live Supabase role check.
-         This is a defense-in-depth approach:
-         1. Image verification (something you have): Confirms user has the physical key image
-         2. Supabase is_admin check (something you are): Confirms user is registered as admin in database
-         The image alone is NOT sufficient to grant access; must verify admin status from DB.
+      /* NOTE (V-C1): sessionStorage flag can be set manually via DevTools.
+         This is acceptable because image verification is only a UI deterrent.
+         The real security gate is Supabase auth + is_admin DB check below.
+         Even if someone sets this flag manually, they cannot bypass Stage 2.
       */
       var sbClient = (typeof phmurtSupabase !== 'undefined') ? phmurtSupabase : null;
       if (sbClient) {

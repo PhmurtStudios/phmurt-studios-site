@@ -1,0 +1,4 @@
+# Dependencies — not needed for GitHub Pages static hosting
+package.json
+package-lock.json
+node_modules/

@@ -842,8 +842,8 @@ window.CampaignHomebrewView = function CampaignHomebrewView({ data, setData, vie
       flexDirection: "column"
     }}>
       {/* Top Bar */}
-      <div style={{ backgroundColor: T.bgNav, borderBottom: `2px solid ${T.gold}`, padding: "24px 20px" }}>
-        <h1 style={{ margin: "0 0 8px 0", fontSize: "28px", fontFamily: T.heading, color: T.gold }}>Homebrew Workshop</h1>
+      <div style={{ borderBottom: `1px solid ${T.border}`, padding: "24px 20px" }}>
+        <h1 style={{ margin: "0 0 8px 0", fontSize: "28px", fontFamily: T.heading, color: T.crimson }}>Homebrew Workshop</h1>
         <p style={{ margin: 0, fontSize: "13px", color: T.textMuted, fontStyle: "italic" }}>Forge custom content for your campaign</p>
 
         {/* Category Tabs */}
@@ -939,7 +939,7 @@ window.CampaignHomebrewView = function CampaignHomebrewView({ data, setData, vie
                 <button onClick={() => handleDelete(expandedCard)} style={{
                   marginTop: "16px",
                   padding: "6px 12px",
-                  backgroundColor: "#8b3a3a",
+                  backgroundColor: T.crimson,
                   color: "#fff",
                   border: "none",
                   borderRadius: "4px",
@@ -961,7 +961,7 @@ window.CampaignHomebrewView = function CampaignHomebrewView({ data, setData, vie
                 <button onClick={() => handleDelete(expandedCard)} style={{
                   marginTop: "16px",
                   padding: "6px 12px",
-                  backgroundColor: "#8b3a3a",
+                  backgroundColor: T.crimson,
                   color: "#fff",
                   border: "none",
                   borderRadius: "4px",
@@ -984,7 +984,7 @@ window.CampaignHomebrewView = function CampaignHomebrewView({ data, setData, vie
                 <button onClick={() => handleDelete(expandedCard)} style={{
                   marginTop: "16px",
                   padding: "6px 12px",
-                  backgroundColor: "#8b3a3a",
+                  backgroundColor: T.crimson,
                   color: "#fff",
                   border: "none",
                   borderRadius: "4px",
@@ -1013,7 +1013,7 @@ window.CampaignHomebrewView = function CampaignHomebrewView({ data, setData, vie
                 <button onClick={() => handleDelete(expandedCard)} style={{
                   marginTop: "16px",
                   padding: "6px 12px",
-                  backgroundColor: "#8b3a3a",
+                  backgroundColor: T.crimson,
                   color: "#fff",
                   border: "none",
                   borderRadius: "4px",
