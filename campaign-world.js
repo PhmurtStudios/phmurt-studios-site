@@ -2057,6 +2057,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
   const [townZoom,setTownZoom] = useState(1);
   const [townPan,setTownPan] = useState({ x: 0, y: 0 });
   const townDragRef = useRef(null);
+  const townMapContainerRef = useRef(null);
   const [isMapCompact,setIsMapCompact] = useState(() => typeof window !== "undefined" ? window.innerWidth < 860 : false);
   const worldMapState = normalizeWorldMapState(data.worldMap);
 
@@ -2541,6 +2542,29 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
     setMapZoom(newZoom);
   }, [mapZoom, atlasLocked]);
 
+  // Attach wheel listener imperatively with { passive: false } so preventDefault() works
+  // React's onWheel is passive by default in modern browsers, causing page scroll
+  useEffect(() => {
+    const el = mapRef.current;
+    if (!el) return;
+    const handler = (e) => handleWheel(e);
+    el.addEventListener("wheel", handler, { passive: false });
+    return () => el.removeEventListener("wheel", handler);
+  }, [handleWheel]);
+
+  // Town map wheel handler — same passive:false fix
+  useEffect(() => {
+    const el = townMapContainerRef.current;
+    if (!el) return;
+    const handler = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setTownZoom(z => Math.min(3, Math.max(0.15, (z > 0 ? z : 1) + (e.deltaY > 0 ? -0.08 : 0.08))));
+    };
+    el.addEventListener("wheel", handler, { passive: false });
+    return () => el.removeEventListener("wheel", handler);
+  }, []);
+
   const handleMouseDown = useCallback((e) => {
     if (atlasLocked) return;
     if (e.button !== 0) return;
@@ -2976,7 +3000,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
   };
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", height:"calc(100dvh - 56px)", overflow:"hidden" }}>
+    <div style={{ display:"flex", flexDirection:"column", height:"100%", overflow:"hidden" }}>
       {/* Top bar */}
       <div style={{ display:"flex", alignItems:"center", gap:0, rowGap:6, flexWrap:"wrap", padding:"0 12px 8px", borderBottom:`1px solid ${T.border}`, flexShrink:0, background:T.bgNav }}>
         {["map","regions","factions","npcs","cities","party"].map(t => (
@@ -3031,8 +3055,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
         {tab==="map" && (
           <div ref={mapRef} style={{ flex:1, overflow:"hidden", cursor: dragging ? "grabbing" : "grab", position:"relative", background: data.atlasMapSeed ? "#2a2520" : "linear-gradient(165deg, #e8ddc8 0%, #ddd0b8 45%, #d4c6a8 100%)", touchAction:"none", WebkitUserSelect:"none", userSelect:"none" }}
             onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
-            onTouchStart={handleMapTouchStart} onTouchMove={handleMapTouchMove} onTouchEnd={handleMapTouchEnd} onTouchCancel={handleMapTouchEnd}
-            onWheel={handleWheel}>
+            onTouchStart={handleMapTouchStart} onTouchMove={handleMapTouchMove} onTouchEnd={handleMapTouchEnd} onTouchCancel={handleMapTouchEnd}>
             <svg width="100%" height="100%" style={{ display:"block" }} onClick={() => setCityPopup(null)}>
               <defs>
                 {/* Parchment texture filter */}
@@ -5267,13 +5290,9 @@ function WorldView({ data, setData, onNav, viewRole = "dm" }) {
             {/* Main content: map + optional detail panel */}
             <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
               {/* Map area */}
-              <div style={{
+              <div ref={townMapContainerRef} style={{
                 flex: 1, position: "relative", overflow: "hidden", cursor: "default",
               }}
-                onWheel={e => {
-                  e.preventDefault();
-                  setTownZoom(z => Math.min(3, Math.max(0.15, (z > 0 ? z : effectiveZoom) + (e.deltaY > 0 ? -0.08 : 0.08))));
-                }}
               >
                 <div style={{
                   transform: `scale(${effectiveZoom})`,
