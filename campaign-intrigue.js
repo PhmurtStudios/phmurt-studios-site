@@ -17,27 +17,22 @@
     fled:       { label: 'Fled',       color: 'rgba(100,100,100,0.5)', text: '#999',    icon: ArrowLeft },
   };
   const STATUS_KEYS = Object.keys(STATUS);
-
   const RANK_LABELS = { leader: 'Arch-Conspirator', sage: 'Inner Circle', agent: 'Operative', asset: 'Asset' };
 
   /* ───────────────────── DEFAULT DATA ───────────────────── */
   const uid = () => 'i_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
 
-  const makeAgent = (overrides) => ({
+  const makeAgent = (o) => ({
     id: uid(), name: 'Unknown Agent', title: '', rank: 'agent',
     status: 'hidden', revealed: false, influence: 2,
-    location: '', notes: '', clues: [], connections: [],
-    ...overrides,
+    location: '', notes: '', clues: [], connections: [], ...o,
   });
 
-  const makeBranch = (overrides) => ({
+  const makeBranch = (o) => ({
     id: uid(), name: 'New Faction', description: '',
     colorHue: Math.floor(Math.random() * 360), powerLevel: 50,
     sage: makeAgent({ rank: 'sage', name: 'Unknown Leader', influence: 4 }),
-    agents: [],
-    missions: [],
-    events: [],
-    ...overrides,
+    agents: [], missions: [], events: [], ...o,
   });
 
   const initializeIntrigueData = () => ({
@@ -47,9 +42,7 @@
       location: 'Unknown', notes: 'The ultimate architect of this conspiracy',
     }),
     branches: [
-      makeBranch({
-        id: 'crown', name: 'The Crown', description: 'Royal Court manipulation',
-        colorHue: 45, powerLevel: 75,
+      makeBranch({ id: 'crown', name: 'The Crown', description: 'Royal Court manipulation', colorHue: 45, powerLevel: 75,
         sage: makeAgent({ id: 'sage_crown', rank: 'sage', name: 'The Courtier', title: 'Royal Advisor', influence: 4, location: 'Palace' }),
         agents: [
           makeAgent({ id: 'a_c1', name: 'Lord Theron', title: 'Chancellor', influence: 3, location: 'Throne Room' }),
@@ -57,9 +50,7 @@
           makeAgent({ id: 'a_c3', name: 'Master Aldric', title: 'Head Guard Captain', influence: 2, location: 'Guard Barracks' }),
         ],
       }),
-      makeBranch({
-        id: 'coin', name: 'The Coin', description: 'Economic & merchant guild control',
-        colorHue: 35, powerLevel: 68,
+      makeBranch({ id: 'coin', name: 'The Coin', description: 'Economic & merchant guild control', colorHue: 35, powerLevel: 68,
         sage: makeAgent({ id: 'sage_coin', rank: 'sage', name: 'The Merchant Prince', title: 'Guild Master', influence: 4, location: 'Merchant District' }),
         agents: [
           makeAgent({ id: 'a_m1', name: 'Kess the Banker', title: 'Master of Coins', influence: 3, location: 'Treasury House' }),
@@ -67,9 +58,7 @@
           makeAgent({ id: 'a_m3', name: 'Helena Goldsmith', title: 'Jeweler & Fence', influence: 2, location: 'Jewel Quarter' }),
         ],
       }),
-      makeBranch({
-        id: 'sword', name: 'The Sword', description: 'Military infiltration',
-        colorHue: 0, powerLevel: 82,
+      makeBranch({ id: 'sword', name: 'The Sword', description: 'Military infiltration', colorHue: 0, powerLevel: 82,
         sage: makeAgent({ id: 'sage_sword', rank: 'sage', name: 'The General', title: 'War Commander', influence: 5, location: 'Military Fortress' }),
         agents: [
           makeAgent({ id: 'a_s1', name: 'Commander Darius', title: 'Colonel of the North', influence: 4, location: 'Northern Camp' }),
@@ -77,9 +66,7 @@
           makeAgent({ id: 'a_s3', name: 'Sergeant Vex', title: 'Supply Master', influence: 2, location: 'Armory' }),
         ],
       }),
-      makeBranch({
-        id: 'eye', name: 'The Eye', description: 'Spy network & information control',
-        colorHue: 210, powerLevel: 71,
+      makeBranch({ id: 'eye', name: 'The Eye', description: 'Spy network & information control', colorHue: 210, powerLevel: 71,
         sage: makeAgent({ id: 'sage_eye', rank: 'sage', name: 'The Spymaster', title: 'Master of Shadows', influence: 4, location: 'Hidden Lair' }),
         agents: [
           makeAgent({ id: 'a_e1', name: 'Whisper', title: 'Information Broker', influence: 3, location: 'Tavern' }),
@@ -88,18 +75,14 @@
           makeAgent({ id: 'a_e4', name: 'Shadow', title: 'Assassin', influence: 4, location: 'Rooftops' }),
         ],
       }),
-      makeBranch({
-        id: 'whisper', name: 'The Whisper', description: 'Religious manipulation',
-        colorHue: 270, powerLevel: 64,
+      makeBranch({ id: 'whisper', name: 'The Whisper', description: 'Religious manipulation', colorHue: 270, powerLevel: 64,
         sage: makeAgent({ id: 'sage_whisper', rank: 'sage', name: 'The High Priest', title: 'Divine Authority', influence: 4, location: 'Temple' }),
         agents: [
           makeAgent({ id: 'a_w1', name: 'Bishop Aldric', title: 'Temple Administrator', influence: 3, location: 'Sacred Temple' }),
           makeAgent({ id: 'a_w2', name: 'Priestess Lyra', title: 'Oracle', influence: 3, location: 'Shrine' }),
         ],
       }),
-      makeBranch({
-        id: 'mask', name: 'The Mask', description: 'Underground & criminal control',
-        colorHue: 350, powerLevel: 79,
+      makeBranch({ id: 'mask', name: 'The Mask', description: 'Underground & criminal control', colorHue: 350, powerLevel: 79,
         sage: makeAgent({ id: 'sage_mask', rank: 'sage', name: 'The Crime Lord', title: 'Underworld Boss', influence: 5, location: 'Underground' }),
         agents: [
           makeAgent({ id: 'a_k1', name: 'Blackthorn', title: 'Assassin Guild Leader', influence: 4, location: 'Guild Hall' }),
@@ -110,193 +93,190 @@
       }),
     ],
     clueBoard: [],
-    globalEvents: [
-      { id: uid(), date: 'Day 1', text: 'The conspiracy begins...', branchId: null },
-    ],
+    globalEvents: [{ id: uid(), date: 'Day 1', text: 'The conspiracy begins...', branchId: null }],
   });
 
   /* ───────────────────── HELPERS ───────────────────── */
-  const branchColor = (hue, a) => `hsla(${hue}, 60%, 55%, ${a || 1})`;
-  const branchBg    = (hue, a) => `hsla(${hue}, 40%, 12%, ${a || 1})`;
-  const branchGlow  = (hue) => `0 0 20px hsla(${hue}, 60%, 55%, 0.25)`;
+  const bC = (hue, a) => `hsla(${hue}, 60%, 55%, ${a || 1})`;
+  const bBg = (hue, a) => `hsla(${hue}, 40%, 12%, ${a || 1})`;
+  const bGlow = (hue) => `0 0 20px hsla(${hue}, 60%, 55%, 0.25)`;
+  const gold = T.gold || '#ffd700';
 
-  const countByStatus = (agents) => {
-    const c = {};
-    STATUS_KEYS.forEach(k => { c[k] = 0; });
-    agents.forEach(a => { c[a.status] = (c[a.status] || 0) + 1; });
-    return c;
-  };
-
-  /* ───────────────────── SUB-COMPONENTS ───────────────────── */
-
-  /* ── Influence Stars ── */
+  /* ───────────────────── TINY COMPONENTS ───────────────────── */
   function InfluenceStars({ value, max, color }) {
     return (
       <span style={{ display: 'inline-flex', gap: 2 }}>
         {[...Array(max || 5)].map((_, i) => (
-          <Star key={i} size={12} fill={i < value ? (color || T.gold) : 'transparent'} color={i < value ? (color || T.gold) : T.textFaint} />
+          <Star key={i} size={11} fill={i < value ? (color || gold) : 'transparent'} color={i < value ? (color || gold) : (T.textFaint || '#555')} />
         ))}
       </span>
     );
   }
 
-  /* ── Status Badge ── */
   function StatusBadge({ status, small }) {
     const s = STATUS[status] || STATUS.hidden;
     const Icon = s.icon;
     return (
       <span style={{
-        display: 'inline-flex', alignItems: 'center', gap: 4,
+        display: 'inline-flex', alignItems: 'center', gap: 3,
         background: s.color, color: s.text,
-        padding: small ? '2px 6px' : '3px 10px', borderRadius: 10,
-        fontSize: small ? 10 : 11, fontWeight: 600, letterSpacing: '0.5px',
-        fontFamily: T.ui, textTransform: 'uppercase',
+        padding: small ? '1px 5px' : '2px 8px', borderRadius: 10,
+        fontSize: small ? 9 : 10, fontWeight: 600, letterSpacing: '0.5px',
+        fontFamily: T.ui, textTransform: 'uppercase', whiteSpace: 'nowrap',
       }}>
-        {Icon && <Icon size={small ? 10 : 12} />}
+        {Icon && <Icon size={small ? 9 : 11} />}
         {s.label}
       </span>
     );
   }
 
-  /* ── Power Bar ── */
   function PowerBar({ value, hue }) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%' }}>
-        <div style={{
-          flex: 1, height: 6, borderRadius: 3,
-          background: 'rgba(255,255,255,0.06)', overflow: 'hidden',
-        }}>
-          <div style={{
-            height: '100%', borderRadius: 3, width: value + '%',
-            background: `linear-gradient(90deg, ${branchColor(hue, 0.7)}, ${branchColor(hue, 1)})`,
-            transition: 'width 0.5s ease',
-          }} />
+        <div style={{ flex: 1, height: 5, borderRadius: 3, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+          <div style={{ height: '100%', borderRadius: 3, width: value + '%',
+            background: `linear-gradient(90deg, ${bC(hue, 0.7)}, ${bC(hue, 1)})`, transition: 'width 0.5s ease' }} />
         </div>
-        <span style={{ fontSize: 11, color: branchColor(hue), fontWeight: 700, fontFamily: T.ui, minWidth: 32, textAlign: 'right' }}>
-          {value}%
-        </span>
+        <span style={{ fontSize: 10, color: bC(hue), fontWeight: 700, fontFamily: T.ui, minWidth: 28, textAlign: 'right' }}>{value}%</span>
       </div>
     );
   }
 
-  /* ── Editable Text ── */
   function EditableText({ value, onChange, placeholder, multiline, style: extStyle }) {
     const Tag = multiline ? 'textarea' : 'input';
     return (
-      <Tag
-        value={value || ''}
-        onChange={e => onChange(e.target.value)}
-        placeholder={placeholder || ''}
-        style={{
-          width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid ' + T.border,
-          color: T.text, padding: '6px 8px', borderRadius: 4, fontFamily: T.body,
+      <Tag value={value || ''} onChange={e => onChange(e.target.value)} placeholder={placeholder || ''}
+        style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid ' + (T.border || '#333'),
+          color: T.text || '#eee', padding: '6px 8px', borderRadius: 4, fontFamily: T.body,
           fontSize: 13, resize: multiline ? 'vertical' : 'none',
-          minHeight: multiline ? 60 : 'auto', outline: 'none',
-          ...extStyle,
-        }}
-      />
+          minHeight: multiline ? 60 : 'auto', outline: 'none', ...extStyle }} />
     );
   }
 
-  /* ── Section Header ── */
   function SectionLabel({ children }) {
     return (
-      <div style={{
-        fontSize: 10, fontWeight: 700, color: T.textFaint, textTransform: 'uppercase',
-        letterSpacing: '1.5px', marginBottom: 6, fontFamily: T.ui, marginTop: 16,
-      }}>{children}</div>
+      <div style={{ fontSize: 10, fontWeight: 700, color: T.textFaint || '#666', textTransform: 'uppercase',
+        letterSpacing: '1.5px', marginBottom: 6, fontFamily: T.ui, marginTop: 16 }}>{children}</div>
     );
   }
 
-  /* ── Tree Node (for hierarchy) ── */
-  function TreeNode({ agent, hue, depth, isDM, onSelect, isSelected }) {
-    const color = branchColor(hue);
-    const StatusIcon = (STATUS[agent.status] || STATUS.hidden).icon;
+  /* ═════════════════════════════════════════════════════════════
+     SVG WEB / TREE DRAWING HELPERS
+  ═════════════════════════════════════════════════════════════ */
+
+  // Curved connection line between two points
+  function WebLine({ x1, y1, x2, y2, color, opacity, pulse, thickness }) {
+    const mx = (x1 + x2) / 2;
+    const my = (y1 + y2) / 2;
+    // Slight curve offset perpendicular to the line
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const len = Math.sqrt(dx * dx + dy * dy) || 1;
+    const curveMag = len * 0.12;
+    // perpendicular
+    const px = -dy / len * curveMag;
+    const py = dx / len * curveMag;
+    const cx = mx + px;
+    const cy = my + py;
+    const d = `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`;
     return (
-      <div style={{ marginLeft: depth * 28 }}>
-        <div
-          onClick={() => onSelect(agent)}
-          style={{
-            display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px',
-            background: isSelected ? branchBg(hue, 0.6) : 'rgba(0,0,0,0.15)',
-            border: isSelected ? '1px solid ' + color : '1px solid transparent',
-            borderRadius: 6, cursor: 'pointer', transition: 'all 0.2s',
-            marginBottom: 4,
-          }}
-        >
-          {/* Rank Indicator */}
-          <div style={{
-            width: agent.rank === 'sage' ? 36 : 28,
-            height: agent.rank === 'sage' ? 36 : 28,
-            borderRadius: agent.rank === 'sage' ? 6 : '50%',
-            background: agent.revealed ? color : 'rgba(255,255,255,0.06)',
-            border: '1px solid ' + (agent.revealed ? color : 'rgba(255,255,255,0.1)'),
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            flexShrink: 0, fontSize: agent.rank === 'sage' ? 16 : 12,
-            color: agent.revealed ? '#000' : T.textFaint,
-            fontWeight: 700,
-            boxShadow: agent.revealed ? branchGlow(hue) : 'none',
-          }}>
-            {agent.revealed ? (StatusIcon ? <StatusIcon size={agent.rank === 'sage' ? 18 : 14} /> : '?') : '?'}
-          </div>
-
-          {/* Info */}
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{
-              fontSize: 13, fontWeight: 600, color: T.text, fontFamily: T.heading,
-              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            }}>
-              {(isDM || agent.revealed) ? agent.name : 'Unknown ' + (RANK_LABELS[agent.rank] || 'Agent')}
-            </div>
-            {(isDM || agent.revealed) && agent.title && (
-              <div style={{ fontSize: 11, color: T.textDim, marginTop: 1 }}>{agent.title}</div>
-            )}
-          </div>
-
-          {/* Right Side */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-            <InfluenceStars value={agent.influence} max={5} color={color} />
-            <StatusBadge status={agent.status} small />
-          </div>
-        </div>
-      </div>
+      <g>
+        {/* Glow */}
+        <path d={d} fill="none" stroke={color} strokeWidth={(thickness || 1.5) + 2} strokeOpacity={(opacity || 0.5) * 0.15} />
+        {/* Main line */}
+        <path d={d} fill="none" stroke={color} strokeWidth={thickness || 1.5} strokeOpacity={opacity || 0.5}
+          strokeDasharray={pulse ? '4 4' : 'none'}>
+          {pulse && <animate attributeName="stroke-dashoffset" from="8" to="0" dur="1.5s" repeatCount="indefinite" />}
+        </path>
+      </g>
     );
   }
 
-  /* ════════════════════════════════════════════════════════════
+  // Node circle for the web
+  function WebNode({ x, y, r, color, glowColor, filled, pulsing, label, sublabel, onClick, isSelected, statusColor }) {
+    return (
+      <g onClick={onClick} style={{ cursor: onClick ? 'pointer' : 'default' }}>
+        {/* Glow ring */}
+        {(isSelected || pulsing) && (
+          <circle cx={x} cy={y} r={r + 6} fill="none" stroke={glowColor || color} strokeWidth={2} strokeOpacity={0.3}>
+            {pulsing && <animate attributeName="r" values={`${r+4};${r+10};${r+4}`} dur="2.5s" repeatCount="indefinite" />}
+            {pulsing && <animate attributeName="stroke-opacity" values="0.3;0.1;0.3" dur="2.5s" repeatCount="indefinite" />}
+          </circle>
+        )}
+        {/* Selection ring */}
+        {isSelected && <circle cx={x} cy={y} r={r + 3} fill="none" stroke={color} strokeWidth={2} strokeOpacity={0.7} />}
+        {/* Status ring */}
+        {statusColor && <circle cx={x} cy={y} r={r + 1} fill="none" stroke={statusColor} strokeWidth={2} strokeOpacity={0.8} />}
+        {/* Main node */}
+        <circle cx={x} cy={y} r={r} fill={filled ? color : 'rgba(0,0,0,0.6)'} stroke={color} strokeWidth={filled ? 0 : 1.5} />
+        {/* Inner icon area - a ? for hidden */}
+        {!filled && (
+          <text x={x} y={y + 1} textAnchor="middle" dominantBaseline="middle"
+            fill={color} fontSize={r * 0.8} fontWeight="700" fontFamily={T.ui}>?</text>
+        )}
+        {/* Label below */}
+        {label && (
+          <text x={x} y={y + r + 14} textAnchor="middle" fill={T.text || '#eee'}
+            fontSize={11} fontWeight="600" fontFamily={T.heading}>
+            {label.length > 16 ? label.slice(0, 14) + '…' : label}
+          </text>
+        )}
+        {sublabel && (
+          <text x={x} y={y + r + 26} textAnchor="middle" fill={T.textDim || '#888'}
+            fontSize={9} fontFamily={T.ui}>
+            {sublabel.length > 20 ? sublabel.slice(0, 18) + '…' : sublabel}
+          </text>
+        )}
+      </g>
+    );
+  }
+
+  /* ═════════════════════════════════════════════════════════════
      MAIN COMPONENT
-  ════════════════════════════════════════════════════════════ */
+  ═════════════════════════════════════════════════════════════ */
   function CourtIntrigueView({ data, setData, viewRole }) {
-    const [view, setView] = useState('overview');           // 'overview' | branchId
-    const [selectedAgent, setSelectedAgent] = useState(null);
-    const [editingAgent, setEditingAgent] = useState(null);  // agent being edited in panel
-    const [showAddAgent, setShowAddAgent] = useState(false);
+    const [view, setView] = useState('overview');
+    const [editingAgent, setEditingAgent] = useState(null);
     const [showAddBranch, setShowAddBranch] = useState(false);
     const [newBranchName, setNewBranchName] = useState('');
     const [newBranchDesc, setNewBranchDesc] = useState('');
     const [newClue, setNewClue] = useState('');
-    const [showEventLog, setShowEventLog] = useState(false);
     const [newEventText, setNewEventText] = useState('');
+    const [hoveredNode, setHoveredNode] = useState(null);
+    const containerRef = useRef(null);
+    const [containerSize, setContainerSize] = useState({ w: 900, h: 600 });
 
     const intrigue = data.intrigue || initializeIntrigueData();
     const isDM = viewRole === 'DM' || viewRole === 'dm';
 
-    // ── Init ──
     useEffect(() => {
       if (!data.intrigue) {
         setData(prev => ({ ...prev, intrigue: initializeIntrigueData() }));
       }
     }, []);
 
-    // ── Core updaters ──
+    // Measure container
+    useEffect(() => {
+      if (!containerRef.current) return;
+      const measure = () => {
+        const rect = containerRef.current.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+          setContainerSize({ w: rect.width, h: rect.height });
+        }
+      };
+      measure();
+      const ro = new ResizeObserver(measure);
+      ro.observe(containerRef.current);
+      return () => ro.disconnect();
+    }, [view]);
+
+    /* ── Updaters ── */
     const update = useCallback((patch) => {
-      setData(prev => ({ ...prev, intrigue: { ...prev.intrigue || intrigue, ...patch } }));
+      setData(prev => ({ ...prev, intrigue: { ...(prev.intrigue || intrigue), ...patch } }));
     }, [intrigue, setData]);
 
     const updateBranch = useCallback((branchId, patch) => {
-      update({
-        branches: intrigue.branches.map(b => b.id === branchId ? { ...b, ...patch } : b),
-      });
+      update({ branches: intrigue.branches.map(b => b.id === branchId ? { ...b, ...patch } : b) });
     }, [intrigue, update]);
 
     const updateAgentInBranch = useCallback((branchId, agentId, patch) => {
@@ -314,21 +294,12 @@
 
     const addAgentToBranch = useCallback((branchId) => {
       const agent = makeAgent({});
-      update({
-        branches: intrigue.branches.map(b =>
-          b.id === branchId ? { ...b, agents: [...b.agents, agent] } : b
-        ),
-      });
+      update({ branches: intrigue.branches.map(b => b.id === branchId ? { ...b, agents: [...b.agents, agent] } : b) });
       setEditingAgent(agent);
-      setShowAddAgent(false);
     }, [intrigue, update]);
 
     const removeAgentFromBranch = useCallback((branchId, agentId) => {
-      update({
-        branches: intrigue.branches.map(b =>
-          b.id === branchId ? { ...b, agents: b.agents.filter(a => a.id !== agentId) } : b
-        ),
-      });
+      update({ branches: intrigue.branches.map(b => b.id === branchId ? { ...b, agents: b.agents.filter(a => a.id !== agentId) } : b) });
       if (editingAgent && editingAgent.id === agentId) setEditingAgent(null);
     }, [intrigue, update, editingAgent]);
 
@@ -336,9 +307,7 @@
       if (!newBranchName.trim()) return;
       const branch = makeBranch({ name: newBranchName.trim(), description: newBranchDesc.trim() });
       update({ branches: [...intrigue.branches, branch] });
-      setNewBranchName('');
-      setNewBranchDesc('');
-      setShowAddBranch(false);
+      setNewBranchName(''); setNewBranchDesc(''); setShowAddBranch(false);
       setView(branch.id);
     }, [intrigue, update, newBranchName, newBranchDesc]);
 
@@ -352,17 +321,15 @@
       if (!text.trim()) return;
       const agent = findAgent(agentId);
       if (!agent) return;
-      const clues = [...(agent.clues || []), text.trim()];
-      updateAgentInBranch(branchId, agentId, { clues });
+      updateAgentInBranch(branchId, agentId, { clues: [...(agent.clues || []), text.trim()] });
     }, [updateAgentInBranch]);
 
     const addEvent = useCallback((branchId, text) => {
       if (!text.trim()) return;
-      const evt = { id: uid(), date: 'Session ' + (intrigue.globalEvents?.length || 0 + 1), text: text.trim(), branchId };
+      const evt = { id: uid(), date: 'Session ' + ((intrigue.globalEvents?.length || 0) + 1), text: text.trim(), branchId };
       update({ globalEvents: [...(intrigue.globalEvents || []), evt] });
     }, [intrigue, update]);
 
-    // ── Finders ──
     const findAgent = useCallback((agentId) => {
       if (intrigue.shadowLeader.id === agentId) return intrigue.shadowLeader;
       for (const b of intrigue.branches) {
@@ -381,440 +348,512 @@
       return null;
     }, [intrigue]);
 
-    // ── Stats ──
-    const totalAgents = useMemo(() =>
-      intrigue.branches.reduce((s, b) => s + 1 + b.agents.length, 0) + 1
-    , [intrigue.branches]);
+    /* ── Stats ── */
+    const totalAgents = useMemo(() => intrigue.branches.reduce((s, b) => s + 1 + b.agents.length, 0) + 1, [intrigue.branches]);
     const totalRevealed = useMemo(() => {
       let c = intrigue.shadowLeader.revealed ? 1 : 0;
-      intrigue.branches.forEach(b => {
-        if (b.sage.revealed) c++;
-        b.agents.forEach(a => { if (a.revealed) c++; });
-      });
+      intrigue.branches.forEach(b => { if (b.sage.revealed) c++; b.agents.forEach(a => { if (a.revealed) c++; }); });
       return c;
     }, [intrigue]);
 
     const activeBranch = view !== 'overview' ? intrigue.branches.find(b => b.id === view) : null;
 
-    /* ════════════════════ RENDER ════════════════════ */
+    /* ═══════════════════════════════════════════════════
+       SPIDERWEB OVERVIEW LAYOUT CALCULATOR
+    ═══════════════════════════════════════════════════ */
+    const webLayout = useMemo(() => {
+      const { w, h } = containerSize;
+      const cx = w / 2;
+      const cy = h / 2;
+      const branches = intrigue.branches;
+      const n = branches.length;
+      if (n === 0) return { center: { x: cx, y: cy }, branches: [] };
+
+      // Radii for each ring
+      const sageRadius = Math.min(w, h) * 0.28;
+      const agentRadius = Math.min(w, h) * 0.46;
+
+      const branchLayouts = branches.map((branch, i) => {
+        const angle = (i / n) * Math.PI * 2 - Math.PI / 2; // start from top
+        const sageX = cx + Math.cos(angle) * sageRadius;
+        const sageY = cy + Math.sin(angle) * sageRadius;
+
+        // Spread agents in a fan around the sage
+        const agentCount = branch.agents.length;
+        const fanSpread = Math.min(0.6, (agentCount > 1 ? 0.15 * agentCount : 0));
+        const agentLayouts = branch.agents.map((agent, j) => {
+          let agentAngle;
+          if (agentCount === 1) {
+            agentAngle = angle;
+          } else {
+            const t = agentCount > 1 ? (j / (agentCount - 1)) - 0.5 : 0;
+            agentAngle = angle + t * fanSpread;
+          }
+          return {
+            agent,
+            x: cx + Math.cos(agentAngle) * agentRadius,
+            y: cy + Math.sin(agentAngle) * agentRadius,
+          };
+        });
+
+        return { branch, sageX, sageY, angle, agents: agentLayouts };
+      });
+
+      return { center: { x: cx, y: cy }, sageRadius, agentRadius, branches: branchLayouts };
+    }, [containerSize, intrigue.branches]);
+
+    /* ═══════════════════════════════════════════════════
+       TREE LAYOUT FOR FACTION DETAIL
+    ═══════════════════════════════════════════════════ */
+    const treeLayout = useMemo(() => {
+      if (!activeBranch) return null;
+      const { w, h } = containerSize;
+      const agents = activeBranch.agents;
+      const n = agents.length;
+
+      // Leader at top, sage below, agents fanning out below sage
+      const leaderX = w / 2;
+      const leaderY = 60;
+      const sageY = 180;
+      const sageX = w / 2;
+
+      // Agents in a row or arc below
+      const agentY = 320;
+      const maxSpan = Math.min(w - 80, n * 120);
+      const startX = (w - maxSpan) / 2 + 40;
+      const step = n > 1 ? maxSpan / (n - 1) : 0;
+
+      const agentPositions = agents.map((agent, i) => ({
+        agent,
+        x: n === 1 ? w / 2 : startX + i * step,
+        y: agentY,
+      }));
+
+      // Sub-level: if agents have many, spread a third row
+      // For now we keep 3 tiers: leader, sage, agents
+
+      return { leaderX, leaderY, sageX, sageY, agents: agentPositions };
+    }, [activeBranch, containerSize]);
+
+    /* ════════════════════════════════════════════════════
+       RENDER
+    ════════════════════════════════════════════════════ */
     return (
-      <div style={{
-        display: 'flex', flexDirection: 'column', height: '100%',
-        background: T.bg, color: T.text, fontFamily: T.body, overflow: 'hidden',
-      }}>
+      <div style={{ display: 'flex', flexDirection: 'column', height: '100%',
+        background: T.bg || '#0a0a1a', color: T.text || '#eee', fontFamily: T.body, overflow: 'hidden' }}>
         <style>{`
           @keyframes intriguePulse { 0%,100%{opacity:0.6} 50%{opacity:1} }
           @keyframes intrigueSlideIn { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
           .intrigue-card:hover { border-color: rgba(255,255,255,0.15) !important; transform: translateY(-2px); }
-          .intrigue-tree-node:hover { background: rgba(255,255,255,0.04) !important; }
           .intrigue-scroll::-webkit-scrollbar { width: 6px; }
           .intrigue-scroll::-webkit-scrollbar-track { background: transparent; }
           .intrigue-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
+          .web-node:hover { filter: brightness(1.3); }
         `}</style>
 
         {/* ── HEADER BAR ── */}
         <div style={{
-          padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12,
-          borderBottom: '1px solid ' + T.border, background: 'rgba(0,0,0,0.2)',
-          flexShrink: 0,
+          padding: '12px 20px', display: 'flex', alignItems: 'center', gap: 12,
+          borderBottom: '1px solid ' + (T.border || '#333'), background: 'rgba(0,0,0,0.2)', flexShrink: 0,
         }}>
           {view !== 'overview' && (
             <button onClick={() => { setView('overview'); setEditingAgent(null); }}
-              style={{ background: 'none', border: 'none', color: T.gold, cursor: 'pointer', padding: 4, display: 'flex' }}>
+              style={{ background: 'none', border: 'none', color: gold, cursor: 'pointer', padding: 4, display: 'flex' }}>
               <ArrowLeft size={18} />
             </button>
           )}
-          <Crown size={20} style={{ color: T.gold, flexShrink: 0 }} />
+          <Crown size={20} style={{ color: gold, flexShrink: 0 }} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontFamily: T.heading, fontSize: 18, fontWeight: 700, color: T.gold, letterSpacing: '1px' }}>
+            <div style={{ fontFamily: T.heading, fontSize: 18, fontWeight: 700, color: gold, letterSpacing: '1px' }}>
               {activeBranch ? activeBranch.name : 'Court Intrigue'}
             </div>
-            {!activeBranch && (
-              <div style={{ fontSize: 11, color: T.textDim, marginTop: 1 }}>
-                {totalRevealed}/{totalAgents} agents revealed across {intrigue.branches.length} factions
-              </div>
-            )}
-            {activeBranch && (
-              <div style={{ fontSize: 11, color: T.textDim, marginTop: 1 }}>{activeBranch.description}</div>
-            )}
+            <div style={{ fontSize: 11, color: T.textDim || '#888', marginTop: 1 }}>
+              {activeBranch ? activeBranch.description :
+                `${totalRevealed}/${totalAgents} agents revealed across ${intrigue.branches.length} factions`}
+            </div>
           </div>
-
-          {/* Global Stats */}
-          <div style={{ display: 'flex', gap: 16, flexShrink: 0, fontSize: 12, color: T.textDim }}>
-            <span><Network size={13} style={{ verticalAlign: 'middle', marginRight: 3 }} />{intrigue.branches.length} Factions</span>
-            <span><Users size={13} style={{ verticalAlign: 'middle', marginRight: 3 }} />{totalAgents} Agents</span>
-            <span><Eye size={13} style={{ verticalAlign: 'middle', marginRight: 3 }} />{totalRevealed} Revealed</span>
+          <div style={{ display: 'flex', gap: 16, flexShrink: 0, fontSize: 12, color: T.textDim || '#888' }}>
+            <span><Network size={13} style={{ verticalAlign: 'middle', marginRight: 3 }} />{intrigue.branches.length}</span>
+            <span><Users size={13} style={{ verticalAlign: 'middle', marginRight: 3 }} />{totalAgents}</span>
+            <span><Eye size={13} style={{ verticalAlign: 'middle', marginRight: 3 }} />{totalRevealed}</span>
           </div>
-
           {isDM && view === 'overview' && (
-            <button onClick={() => setShowAddBranch(true)}
-              style={{
-                background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.2)',
-                color: T.gold, padding: '6px 12px', borderRadius: 4, cursor: 'pointer',
-                fontFamily: T.ui, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4,
-                letterSpacing: '0.5px',
-              }}>
-              <Plus size={13} /> Faction
-            </button>
+            <button onClick={() => setShowAddBranch(true)} style={{
+              background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.2)',
+              color: gold, padding: '6px 12px', borderRadius: 4, cursor: 'pointer',
+              fontFamily: T.ui, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, letterSpacing: '0.5px',
+            }}><Plus size={13} /> Faction</button>
+          )}
+          {isDM && activeBranch && (
+            <button onClick={() => addAgentToBranch(activeBranch.id)} style={{
+              background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.2)',
+              color: gold, padding: '6px 12px', borderRadius: 4, cursor: 'pointer',
+              fontFamily: T.ui, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4,
+            }}><UserPlus size={13} /> Agent</button>
           )}
         </div>
 
         {/* ── BODY ── */}
         <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
-          {/* ══════════ OVERVIEW ══════════ */}
+          {/* ══════════════════ SPIDERWEB OVERVIEW ══════════════════ */}
           {view === 'overview' && (
-            <div className="intrigue-scroll" style={{
-              flex: 1, overflowY: 'auto', padding: 20,
-            }}>
-              {/* Shadow Leader Card */}
-              <div style={{
-                marginBottom: 20, padding: 20, borderRadius: 8,
-                background: 'linear-gradient(135deg, rgba(255,215,0,0.06) 0%, rgba(0,0,0,0.3) 100%)',
-                border: '1px solid rgba(255,215,0,0.15)',
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                  <div style={{
-                    width: 56, height: 56, borderRadius: '50%',
-                    background: intrigue.shadowLeader.revealed ? T.gold : 'rgba(255,215,0,0.1)',
-                    border: '2px solid ' + T.gold, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: '0 0 30px rgba(255,215,0,0.2)',
-                    fontSize: 28, fontWeight: 700, color: intrigue.shadowLeader.revealed ? '#000' : T.gold,
-                    animation: !intrigue.shadowLeader.revealed ? 'intriguePulse 3s infinite' : 'none',
-                  }}>
-                    {intrigue.shadowLeader.revealed ? <Crown size={28} /> : '?'}
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontFamily: T.heading, fontSize: 16, fontWeight: 700, color: T.gold }}>
-                      {isDM || intrigue.shadowLeader.revealed ? intrigue.shadowLeader.name : 'The Shadow Leader'}
-                    </div>
-                    <div style={{ fontSize: 12, color: T.textDim, marginTop: 2 }}>{intrigue.shadowLeader.title}</div>
-                  </div>
-                  <StatusBadge status={intrigue.shadowLeader.status} />
-                  <InfluenceStars value={intrigue.shadowLeader.influence} max={5} />
-                </div>
-              </div>
+            <div ref={containerRef} style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
+              {/* Background radial lines */}
+              <svg width={containerSize.w} height={containerSize.h} style={{ position: 'absolute', top: 0, left: 0 }}>
+                <defs>
+                  <radialGradient id="webBgGrad" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="rgba(255,215,0,0.03)" />
+                    <stop offset="100%" stopColor="transparent" />
+                  </radialGradient>
+                  <filter id="glow">
+                    <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                    <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                  </filter>
+                </defs>
 
-              {/* Faction Grid */}
-              <div style={{
-                display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 14,
-              }}>
-                {intrigue.branches.map(branch => {
-                  const allAgents = [branch.sage, ...branch.agents];
-                  const counts = countByStatus(allAgents);
-                  const hue = branch.colorHue || 45;
-                  const color = branchColor(hue);
+                {/* Web background glow */}
+                <circle cx={webLayout.center.x} cy={webLayout.center.y} r={Math.min(containerSize.w, containerSize.h) * 0.5} fill="url(#webBgGrad)" />
 
+                {/* Concentric web rings */}
+                {[0.28, 0.46].map((r, i) => (
+                  <circle key={i} cx={webLayout.center.x} cy={webLayout.center.y}
+                    r={Math.min(containerSize.w, containerSize.h) * r}
+                    fill="none" stroke="rgba(255,215,0,0.04)" strokeWidth={1} strokeDasharray="4 8" />
+                ))}
+
+                {/* Radial web lines from center outward */}
+                {webLayout.branches.map((bl, i) => {
+                  const endX = webLayout.center.x + Math.cos(bl.angle) * Math.min(containerSize.w, containerSize.h) * 0.5;
+                  const endY = webLayout.center.y + Math.sin(bl.angle) * Math.min(containerSize.w, containerSize.h) * 0.5;
                   return (
-                    <div
-                      key={branch.id}
-                      className="intrigue-card"
-                      onClick={() => setView(branch.id)}
-                      style={{
-                        padding: 18, borderRadius: 8, cursor: 'pointer',
-                        background: branchBg(hue, 0.5),
-                        border: '1px solid ' + branchColor(hue, 0.15),
-                        transition: 'all 0.25s',
-                      }}
-                    >
-                      {/* Card Header */}
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                        <div>
-                          <div style={{ fontFamily: T.heading, fontSize: 15, fontWeight: 700, color }}>
-                            {branch.name}
-                          </div>
-                          <div style={{ fontSize: 11, color: T.textDim, marginTop: 2 }}>{branch.description}</div>
-                        </div>
-                        <ChevronRight size={16} style={{ color: T.textFaint }} />
-                      </div>
-
-                      {/* Power Bar */}
-                      <PowerBar value={branch.powerLevel} hue={hue} />
-
-                      {/* Agent Stats */}
-                      <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 11, color: T.textDim }}>
-                          <Users size={11} style={{ verticalAlign: 'middle', marginRight: 2 }} />
-                          {allAgents.length} agents
-                        </span>
-                        {counts.revealed > 0 && (
-                          <span style={{ fontSize: 11, color: STATUS.revealed.text }}>
-                            {counts.revealed} revealed
-                          </span>
-                        )}
-                        {counts.eliminated > 0 && (
-                          <span style={{ fontSize: 11, color: STATUS.eliminated.text }}>
-                            {counts.eliminated} eliminated
-                          </span>
-                        )}
-                        {counts.suspected > 0 && (
-                          <span style={{ fontSize: 11, color: STATUS.suspected.text }}>
-                            {counts.suspected} suspected
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Sage Preview */}
-                      <div style={{
-                        marginTop: 12, padding: '8px 10px', borderRadius: 4,
-                        background: 'rgba(0,0,0,0.2)', border: '1px solid ' + branchColor(hue, 0.1),
-                        display: 'flex', alignItems: 'center', gap: 8,
-                      }}>
-                        <div style={{
-                          width: 24, height: 24, borderRadius: 4,
-                          background: branch.sage.revealed ? color : 'rgba(255,255,255,0.06)',
-                          border: '1px solid ' + branchColor(hue, 0.3),
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: 10, fontWeight: 700, color: branch.sage.revealed ? '#000' : T.textFaint,
-                        }}>
-                          {branch.sage.revealed ? <Shield size={12} /> : '?'}
-                        </div>
-                        <div style={{ fontSize: 12, color: T.text, flex: 1 }}>
-                          {isDM || branch.sage.revealed ? branch.sage.name : 'Unknown Leader'}
-                        </div>
-                        <StatusBadge status={branch.sage.status} small />
-                      </div>
-                    </div>
+                    <line key={i} x1={webLayout.center.x} y1={webLayout.center.y} x2={endX} y2={endY}
+                      stroke="rgba(255,215,0,0.03)" strokeWidth={1} />
                   );
                 })}
-              </div>
 
-              {/* Add Branch Modal */}
-              {showAddBranch && isDM && (
-                <div style={{
-                  position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }} onClick={() => setShowAddBranch(false)}>
-                  <div onClick={e => e.stopPropagation()} style={{
-                    background: T.bgCard, border: '1px solid ' + T.border, borderRadius: 8,
-                    padding: 24, width: 400, maxWidth: '90vw',
-                  }}>
-                    <div style={{ fontFamily: T.heading, fontSize: 16, color: T.gold, marginBottom: 16 }}>Create New Faction</div>
-                    <SectionLabel>Name</SectionLabel>
-                    <EditableText value={newBranchName} onChange={setNewBranchName} placeholder="Faction name..." />
-                    <SectionLabel>Description</SectionLabel>
-                    <EditableText value={newBranchDesc} onChange={setNewBranchDesc} placeholder="Brief description..." />
-                    <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
-                      <button onClick={addBranch} disabled={!newBranchName.trim()}
-                        style={{
-                          flex: 1, padding: '10px 16px', background: T.gold, color: '#000',
-                          border: 'none', borderRadius: 4, cursor: 'pointer', fontFamily: T.ui,
-                          fontSize: 12, fontWeight: 700, opacity: newBranchName.trim() ? 1 : 0.4,
-                        }}>Create Faction</button>
-                      <button onClick={() => setShowAddBranch(false)}
-                        style={{
-                          padding: '10px 16px', background: 'transparent', color: T.textDim,
-                          border: '1px solid ' + T.border, borderRadius: 4, cursor: 'pointer',
-                          fontFamily: T.ui, fontSize: 12,
-                        }}>Cancel</button>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* ══════════ FACTION DETAIL PAGE ══════════ */}
-          {activeBranch && (
-            <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
-
-              {/* LEFT: Hierarchy Tree */}
-              <div className="intrigue-scroll" style={{
-                flex: 1, overflowY: 'auto', padding: 20, minWidth: 0,
-              }}>
-                {/* Faction Header Card */}
-                <div style={{
-                  marginBottom: 16, padding: 16, borderRadius: 8,
-                  background: branchBg(activeBranch.colorHue, 0.6),
-                  border: '1px solid ' + branchColor(activeBranch.colorHue, 0.15),
-                }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-                    <div style={{ fontFamily: T.heading, fontSize: 18, fontWeight: 700, color: branchColor(activeBranch.colorHue) }}>
-                      {activeBranch.name}
-                    </div>
-                    {isDM && (
-                      <button onClick={() => removeBranch(activeBranch.id)}
-                        style={{ background: 'none', border: 'none', color: T.textFaint, cursor: 'pointer', padding: 4 }}>
-                        <Trash2 size={14} />
-                      </button>
-                    )}
-                  </div>
-                  <PowerBar value={activeBranch.powerLevel} hue={activeBranch.colorHue} />
-
-                  {isDM && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 10 }}>
-                      <SectionLabel>Power Level</SectionLabel>
-                      <input type="range" min={0} max={100} value={activeBranch.powerLevel}
-                        onChange={e => updateBranch(activeBranch.id, { powerLevel: Number(e.target.value) })}
-                        style={{ flex: 1, accentColor: branchColor(activeBranch.colorHue) }}
-                      />
-                    </div>
-                  )}
-                </div>
-
-                {/* Hierarchy Tree */}
-                <SectionLabel>Hierarchy</SectionLabel>
-
-                {/* Connection to Shadow Leader */}
-                <div style={{
-                  display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', marginBottom: 4,
-                  background: 'rgba(255,215,0,0.04)', borderRadius: 4, border: '1px solid rgba(255,215,0,0.08)',
-                  cursor: 'pointer', fontSize: 12, color: T.gold, fontFamily: T.ui,
-                }} onClick={() => {
-                  setEditingAgent(intrigue.shadowLeader);
-                }}>
-                  <Crown size={14} />
-                  <span>{isDM || intrigue.shadowLeader.revealed ? intrigue.shadowLeader.name : 'The Shadow Leader'}</span>
-                  <ChevronDown size={12} style={{ marginLeft: 'auto', color: T.textFaint }} />
-                </div>
-
-                {/* Sage (Inner Circle) */}
-                <TreeNode
-                  agent={activeBranch.sage}
-                  hue={activeBranch.colorHue}
-                  depth={1}
-                  isDM={isDM}
-                  onSelect={a => setEditingAgent(a)}
-                  isSelected={editingAgent?.id === activeBranch.sage.id}
-                />
-
-                {/* Agents */}
-                {activeBranch.agents.map(agent => (
-                  <TreeNode
-                    key={agent.id}
-                    agent={agent}
-                    hue={activeBranch.colorHue}
-                    depth={2}
-                    isDM={isDM}
-                    onSelect={a => setEditingAgent(a)}
-                    isSelected={editingAgent?.id === agent.id}
+                {/* Connection lines: center → sages */}
+                {webLayout.branches.map((bl, i) => (
+                  <WebLine key={'cs_' + i}
+                    x1={webLayout.center.x} y1={webLayout.center.y}
+                    x2={bl.sageX} y2={bl.sageY}
+                    color={bC(bl.branch.colorHue, 1)}
+                    opacity={bl.branch.sage.revealed ? 0.6 : 0.15}
+                    thickness={2}
+                    pulse={bl.branch.sage.status === 'suspected'}
                   />
                 ))}
 
-                {/* Add Agent Button */}
-                {isDM && (
-                  <div style={{ marginLeft: 56, marginTop: 4 }}>
-                    <button onClick={() => addAgentToBranch(activeBranch.id)}
-                      style={{
-                        display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px',
-                        background: 'rgba(255,255,255,0.03)', border: '1px dashed ' + T.border,
-                        borderRadius: 6, cursor: 'pointer', color: T.textDim, fontSize: 12,
-                        fontFamily: T.ui, width: '100%',
-                      }}>
-                      <UserPlus size={13} /> Add Operative
-                    </button>
-                  </div>
+                {/* Connection lines: sages → agents */}
+                {webLayout.branches.map((bl, i) =>
+                  bl.agents.map((al, j) => (
+                    <WebLine key={'sa_' + i + '_' + j}
+                      x1={bl.sageX} y1={bl.sageY}
+                      x2={al.x} y2={al.y}
+                      color={bC(bl.branch.colorHue, 1)}
+                      opacity={al.agent.revealed ? 0.5 : 0.1}
+                      thickness={1.2}
+                      pulse={al.agent.status === 'suspected'}
+                    />
+                  ))
                 )}
 
-                {/* Event Log */}
-                <SectionLabel>Event Log</SectionLabel>
-                <div style={{ marginTop: 4 }}>
-                  {(intrigue.globalEvents || []).filter(e => !e.branchId || e.branchId === activeBranch.id).slice(-10).reverse().map(evt => (
-                    <div key={evt.id} style={{
-                      padding: '6px 10px', marginBottom: 3, borderRadius: 4,
-                      background: 'rgba(0,0,0,0.15)', fontSize: 12, color: T.textDim,
-                      borderLeft: '2px solid ' + branchColor(activeBranch.colorHue, 0.3),
+                {/* Cross-web connections between adjacent sages (the web strands) */}
+                {webLayout.branches.map((bl, i) => {
+                  const next = webLayout.branches[(i + 1) % webLayout.branches.length];
+                  return (
+                    <WebLine key={'web_' + i}
+                      x1={bl.sageX} y1={bl.sageY}
+                      x2={next.sageX} y2={next.sageY}
+                      color="rgba(255,215,0,0.5)"
+                      opacity={0.06}
+                      thickness={0.8}
+                    />
+                  );
+                })}
+
+                {/* Agent nodes (outer ring) */}
+                {webLayout.branches.map((bl, i) =>
+                  bl.agents.map((al, j) => (
+                    <WebNode key={'an_' + i + '_' + j}
+                      x={al.x} y={al.y} r={12}
+                      color={bC(bl.branch.colorHue, 1)}
+                      glowColor={bC(bl.branch.colorHue, 0.5)}
+                      filled={al.agent.revealed}
+                      pulsing={al.agent.status === 'suspected'}
+                      label={isDM || al.agent.revealed ? al.agent.name : null}
+                      sublabel={isDM || al.agent.revealed ? al.agent.title : null}
+                      statusColor={(STATUS[al.agent.status] || STATUS.hidden).color}
+                      isSelected={editingAgent?.id === al.agent.id}
+                      onClick={() => {
+                        setEditingAgent(al.agent);
+                      }}
+                    />
+                  ))
+                )}
+
+                {/* Sage nodes (middle ring) */}
+                {webLayout.branches.map((bl, i) => (
+                  <WebNode key={'sn_' + i}
+                    x={bl.sageX} y={bl.sageY} r={20}
+                    color={bC(bl.branch.colorHue, 1)}
+                    glowColor={bC(bl.branch.colorHue, 0.5)}
+                    filled={bl.branch.sage.revealed}
+                    pulsing={bl.branch.sage.status === 'suspected'}
+                    label={isDM || bl.branch.sage.revealed ? bl.branch.sage.name : bl.branch.name}
+                    sublabel={isDM || bl.branch.sage.revealed ? bl.branch.name : null}
+                    statusColor={(STATUS[bl.branch.sage.status] || STATUS.hidden).color}
+                    isSelected={editingAgent?.id === bl.branch.sage.id}
+                    onClick={() => setView(bl.branch.id)}
+                  />
+                ))}
+
+                {/* Center node: Shadow Leader */}
+                <WebNode
+                  x={webLayout.center.x} y={webLayout.center.y} r={28}
+                  color={gold} glowColor="rgba(255,215,0,0.4)"
+                  filled={intrigue.shadowLeader.revealed}
+                  pulsing={!intrigue.shadowLeader.revealed}
+                  label={isDM || intrigue.shadowLeader.revealed ? intrigue.shadowLeader.name : 'The Shadow Leader'}
+                  isSelected={editingAgent?.id === 'leader'}
+                  onClick={() => setEditingAgent(intrigue.shadowLeader)}
+                />
+              </svg>
+
+              {/* Faction labels as HTML overlays with click to enter faction */}
+              {webLayout.branches.map((bl, i) => {
+                // Position a small badge near the sage
+                const badgeX = bl.sageX;
+                const badgeY = bl.sageY - 36;
+                return (
+                  <div key={'lbl_' + i} onClick={() => setView(bl.branch.id)}
+                    style={{
+                      position: 'absolute',
+                      left: badgeX, top: badgeY,
+                      transform: 'translate(-50%, -50%)',
+                      padding: '3px 10px', borderRadius: 10,
+                      background: bC(bl.branch.colorHue, 0.15),
+                      border: '1px solid ' + bC(bl.branch.colorHue, 0.3),
+                      cursor: 'pointer', whiteSpace: 'nowrap',
+                      fontSize: 10, fontWeight: 700, fontFamily: T.ui,
+                      color: bC(bl.branch.colorHue), letterSpacing: '0.5px',
+                      pointerEvents: 'auto', zIndex: 10,
+                      transition: 'all 0.2s',
                     }}>
-                      <span style={{ color: T.textFaint, fontSize: 10, marginRight: 6 }}>{evt.date}</span>
-                      {evt.text}
-                    </div>
+                    {bl.branch.name} <span style={{ opacity: 0.5, marginLeft: 2 }}>{bl.branch.powerLevel}%</span>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* ══════════════════ FACTION TREE DETAIL ══════════════════ */}
+          {activeBranch && treeLayout && (
+            <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+              <div ref={containerRef} style={{ flex: 1, position: 'relative', overflow: 'auto' }}>
+                <svg width={containerSize.w} height={Math.max(containerSize.h, 440)}
+                  style={{ position: 'absolute', top: 0, left: 0 }}>
+                  <defs>
+                    <radialGradient id="treeBgGrad" cx="50%" cy="20%" r="60%">
+                      <stop offset="0%" stopColor={bC(activeBranch.colorHue, 0.04)} />
+                      <stop offset="100%" stopColor="transparent" />
+                    </radialGradient>
+                  </defs>
+
+                  {/* Background */}
+                  <rect width="100%" height="100%" fill="url(#treeBgGrad)" />
+
+                  {/* Connection: leader → sage */}
+                  <WebLine
+                    x1={treeLayout.leaderX} y1={treeLayout.leaderY}
+                    x2={treeLayout.sageX} y2={treeLayout.sageY}
+                    color={gold} opacity={0.3} thickness={2}
+                  />
+
+                  {/* Connections: sage → agents */}
+                  {treeLayout.agents.map((al, i) => (
+                    <WebLine key={'ta_' + i}
+                      x1={treeLayout.sageX} y1={treeLayout.sageY}
+                      x2={al.x} y2={al.y}
+                      color={bC(activeBranch.colorHue, 1)}
+                      opacity={al.agent.revealed ? 0.5 : 0.15}
+                      thickness={1.5}
+                      pulse={al.agent.status === 'suspected'}
+                    />
                   ))}
-                  {isDM && (
-                    <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-                      <EditableText value={newEventText} onChange={setNewEventText} placeholder="Log an event..." />
-                      <button onClick={() => { addEvent(activeBranch.id, newEventText); setNewEventText(''); }}
-                        disabled={!newEventText.trim()}
-                        style={{
-                          padding: '6px 12px', background: branchColor(activeBranch.colorHue, 0.2),
-                          border: '1px solid ' + branchColor(activeBranch.colorHue, 0.3),
-                          color: branchColor(activeBranch.colorHue), borderRadius: 4, cursor: 'pointer',
-                          fontSize: 11, fontFamily: T.ui, whiteSpace: 'nowrap',
-                          opacity: newEventText.trim() ? 1 : 0.4,
-                        }}>
-                        <Plus size={12} />
-                      </button>
+
+                  {/* Cross connections between agents (web strands) */}
+                  {treeLayout.agents.length > 1 && treeLayout.agents.map((al, i) => {
+                    if (i === treeLayout.agents.length - 1) return null;
+                    const next = treeLayout.agents[i + 1];
+                    return (
+                      <WebLine key={'tw_' + i}
+                        x1={al.x} y1={al.y}
+                        x2={next.x} y2={next.y}
+                        color={bC(activeBranch.colorHue, 0.5)}
+                        opacity={0.05}
+                        thickness={0.8}
+                      />
+                    );
+                  })}
+
+                  {/* Agent nodes */}
+                  {treeLayout.agents.map((al, i) => (
+                    <WebNode key={'tn_' + i}
+                      x={al.x} y={al.y} r={16}
+                      color={bC(activeBranch.colorHue, 1)}
+                      glowColor={bC(activeBranch.colorHue, 0.5)}
+                      filled={al.agent.revealed}
+                      pulsing={al.agent.status === 'suspected'}
+                      label={isDM || al.agent.revealed ? al.agent.name : 'Unknown Operative'}
+                      sublabel={isDM || al.agent.revealed ? al.agent.title : null}
+                      statusColor={(STATUS[al.agent.status] || STATUS.hidden).color}
+                      isSelected={editingAgent?.id === al.agent.id}
+                      onClick={() => setEditingAgent(al.agent)}
+                    />
+                  ))}
+
+                  {/* Sage node */}
+                  <WebNode
+                    x={treeLayout.sageX} y={treeLayout.sageY} r={24}
+                    color={bC(activeBranch.colorHue, 1)}
+                    glowColor={bC(activeBranch.colorHue, 0.5)}
+                    filled={activeBranch.sage.revealed}
+                    pulsing={activeBranch.sage.status === 'suspected'}
+                    label={isDM || activeBranch.sage.revealed ? activeBranch.sage.name : 'Unknown Leader'}
+                    sublabel={activeBranch.sage.title}
+                    statusColor={(STATUS[activeBranch.sage.status] || STATUS.hidden).color}
+                    isSelected={editingAgent?.id === activeBranch.sage.id}
+                    onClick={() => setEditingAgent(activeBranch.sage)}
+                  />
+
+                  {/* Leader node at top */}
+                  <WebNode
+                    x={treeLayout.leaderX} y={treeLayout.leaderY} r={20}
+                    color={gold} glowColor="rgba(255,215,0,0.4)"
+                    filled={intrigue.shadowLeader.revealed}
+                    pulsing={!intrigue.shadowLeader.revealed}
+                    label={isDM || intrigue.shadowLeader.revealed ? intrigue.shadowLeader.name : 'The Shadow Leader'}
+                    isSelected={editingAgent?.id === 'leader'}
+                    onClick={() => setEditingAgent(intrigue.shadowLeader)}
+                  />
+                </svg>
+
+                {/* Power bar + info overlay */}
+                <div style={{
+                  position: 'absolute', bottom: 0, left: 0, right: 0, padding: '12px 20px',
+                  background: 'linear-gradient(transparent, rgba(0,0,0,0.7))', pointerEvents: 'none',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, pointerEvents: 'auto' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 10, color: T.textFaint || '#666', textTransform: 'uppercase', letterSpacing: '1px', marginBottom: 4, fontFamily: T.ui }}>
+                        Faction Power
+                      </div>
+                      <PowerBar value={activeBranch.powerLevel} hue={activeBranch.colorHue} />
+                      {isDM && (
+                        <input type="range" min={0} max={100} value={activeBranch.powerLevel}
+                          onChange={e => updateBranch(activeBranch.id, { powerLevel: Number(e.target.value) })}
+                          style={{ width: '100%', accentColor: bC(activeBranch.colorHue), marginTop: 4 }} />
+                      )}
                     </div>
-                  )}
+                    <div style={{ fontSize: 11, color: T.textDim || '#888', textAlign: 'right' }}>
+                      <div>{1 + activeBranch.agents.length} agents</div>
+                      <div>{activeBranch.agents.filter(a => a.revealed).length + (activeBranch.sage.revealed ? 1 : 0)} revealed</div>
+                    </div>
+                    {isDM && (
+                      <button onClick={() => removeBranch(activeBranch.id)} style={{
+                        background: 'rgba(220,60,50,0.15)', border: '1px solid rgba(220,60,50,0.3)',
+                        color: '#ef5350', padding: '6px 10px', borderRadius: 4, cursor: 'pointer', fontSize: 10, fontFamily: T.ui,
+                      }}><Trash2 size={12} /></button>
+                    )}
+                  </div>
+
+                  {/* Event log */}
+                  <div style={{ marginTop: 10, maxHeight: 120, overflowY: 'auto', pointerEvents: 'auto' }}>
+                    {(intrigue.globalEvents || []).filter(e => !e.branchId || e.branchId === activeBranch.id).slice(-5).reverse().map(evt => (
+                      <div key={evt.id} style={{
+                        padding: '4px 8px', marginBottom: 2, borderRadius: 3,
+                        background: 'rgba(0,0,0,0.3)', fontSize: 11, color: T.textDim || '#888',
+                        borderLeft: '2px solid ' + bC(activeBranch.colorHue, 0.3),
+                      }}>
+                        <span style={{ color: T.textFaint || '#666', fontSize: 9, marginRight: 6 }}>{evt.date}</span>
+                        {evt.text}
+                      </div>
+                    ))}
+                    {isDM && (
+                      <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+                        <EditableText value={newEventText} onChange={setNewEventText} placeholder="Log an event..." style={{ fontSize: 11 }} />
+                        <button onClick={() => { addEvent(activeBranch.id, newEventText); setNewEventText(''); }}
+                          disabled={!newEventText.trim()}
+                          style={{
+                            padding: '4px 10px', background: bC(activeBranch.colorHue, 0.2),
+                            border: '1px solid ' + bC(activeBranch.colorHue, 0.3),
+                            color: bC(activeBranch.colorHue), borderRadius: 4, cursor: 'pointer',
+                            fontSize: 10, fontFamily: T.ui, opacity: newEventText.trim() ? 1 : 0.4,
+                          }}><Plus size={11} /></button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* RIGHT: Agent Detail Panel */}
+              {/* ── RIGHT PANEL: Agent Detail ── */}
               {editingAgent && (
                 <div className="intrigue-scroll" style={{
-                  width: 380, borderLeft: '1px solid ' + T.border,
-                  overflowY: 'auto', background: 'rgba(0,0,0,0.15)',
-                  animation: 'intrigueSlideIn 0.25s ease',
-                  flexShrink: 0,
+                  width: 340, borderLeft: '1px solid ' + (T.border || '#333'),
+                  overflowY: 'auto', background: 'rgba(0,0,0,0.2)',
+                  animation: 'intrigueSlideIn 0.25s ease', flexShrink: 0,
                 }}>
-                  <div style={{ padding: 20 }}>
-                    {/* Close */}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                      <div style={{ fontFamily: T.heading, fontSize: 14, color: T.gold, letterSpacing: '1px' }}>
-                        {RANK_LABELS[editingAgent.rank] || 'Agent'} Detail
+                  <div style={{ padding: 16 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                      <div style={{ fontFamily: T.heading, fontSize: 13, color: gold, letterSpacing: '1px' }}>
+                        {RANK_LABELS[editingAgent.rank] || 'Agent'}
                       </div>
                       <button onClick={() => setEditingAgent(null)}
-                        style={{ background: 'none', border: 'none', color: T.textFaint, cursor: 'pointer' }}>
+                        style={{ background: 'none', border: 'none', color: T.textFaint || '#666', cursor: 'pointer' }}>
                         <X size={16} />
                       </button>
                     </div>
 
-                    {/* Status Badge */}
-                    <div style={{ marginBottom: 16, textAlign: 'center' }}>
-                      <StatusBadge status={editingAgent.status} />
-                    </div>
+                    <div style={{ marginBottom: 12, textAlign: 'center' }}><StatusBadge status={editingAgent.status} /></div>
 
-                    {/* Name & Title */}
                     {isDM ? (
-                      <>
+                      <Fragment>
                         <SectionLabel>Name</SectionLabel>
-                        <EditableText
-                          value={editingAgent.name}
-                          onChange={v => {
-                            const b = findBranchForAgent(editingAgent.id);
-                            if (b) updateAgentInBranch(b.id, editingAgent.id, { name: v });
-                            else if (editingAgent.id === 'leader') update({ shadowLeader: { ...intrigue.shadowLeader, name: v } });
-                          }}
-                          placeholder="Agent name..."
-                        />
-                        <SectionLabel>Title / Position</SectionLabel>
-                        <EditableText
-                          value={editingAgent.title}
-                          onChange={v => {
-                            const b = findBranchForAgent(editingAgent.id);
-                            if (b) updateAgentInBranch(b.id, editingAgent.id, { title: v });
-                            else if (editingAgent.id === 'leader') update({ shadowLeader: { ...intrigue.shadowLeader, title: v } });
-                          }}
-                          placeholder="Title or role..."
-                        />
-                      </>
+                        <EditableText value={editingAgent.name} onChange={v => {
+                          const b = findBranchForAgent(editingAgent.id);
+                          if (b) updateAgentInBranch(b.id, editingAgent.id, { name: v });
+                          else if (editingAgent.id === 'leader') update({ shadowLeader: { ...intrigue.shadowLeader, name: v } });
+                        }} placeholder="Agent name..." />
+                        <SectionLabel>Title</SectionLabel>
+                        <EditableText value={editingAgent.title} onChange={v => {
+                          const b = findBranchForAgent(editingAgent.id);
+                          if (b) updateAgentInBranch(b.id, editingAgent.id, { title: v });
+                          else if (editingAgent.id === 'leader') update({ shadowLeader: { ...intrigue.shadowLeader, title: v } });
+                        }} placeholder="Title or role..." />
+                      </Fragment>
                     ) : (
-                      <>
-                        <div style={{ fontFamily: T.heading, fontSize: 18, fontWeight: 700, color: T.text, marginBottom: 4 }}>
+                      <Fragment>
+                        <div style={{ fontFamily: T.heading, fontSize: 16, fontWeight: 700, color: T.text || '#eee', marginBottom: 4 }}>
                           {editingAgent.revealed ? editingAgent.name : 'Unknown ' + (RANK_LABELS[editingAgent.rank] || 'Agent')}
                         </div>
                         {editingAgent.revealed && editingAgent.title && (
-                          <div style={{ fontSize: 13, color: T.textDim, marginBottom: 12 }}>{editingAgent.title}</div>
+                          <div style={{ fontSize: 12, color: T.textDim || '#888', marginBottom: 12 }}>{editingAgent.title}</div>
                         )}
-                      </>
+                      </Fragment>
                     )}
 
-                    {/* Location */}
                     <SectionLabel>Location</SectionLabel>
                     {isDM ? (
-                      <EditableText
-                        value={editingAgent.location}
-                        onChange={v => {
-                          const b = findBranchForAgent(editingAgent.id);
-                          if (b) updateAgentInBranch(b.id, editingAgent.id, { location: v });
-                          else if (editingAgent.id === 'leader') update({ shadowLeader: { ...intrigue.shadowLeader, location: v } });
-                        }}
-                        placeholder="Last known location..."
-                      />
+                      <EditableText value={editingAgent.location} onChange={v => {
+                        const b = findBranchForAgent(editingAgent.id);
+                        if (b) updateAgentInBranch(b.id, editingAgent.id, { location: v });
+                        else if (editingAgent.id === 'leader') update({ shadowLeader: { ...intrigue.shadowLeader, location: v } });
+                      }} placeholder="Last known location..." />
                     ) : (
-                      <div style={{ fontSize: 13, color: T.text }}>{editingAgent.location || 'Unknown'}</div>
+                      <div style={{ fontSize: 13, color: T.text || '#eee' }}>{editingAgent.location || 'Unknown'}</div>
                     )}
 
-                    {/* Influence */}
                     <SectionLabel>Influence</SectionLabel>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <InfluenceStars value={editingAgent.influence} max={5} />
@@ -826,50 +865,40 @@
                             if (b) updateAgentInBranch(b.id, editingAgent.id, { influence: v });
                             else if (editingAgent.id === 'leader') update({ shadowLeader: { ...intrigue.shadowLeader, influence: v } });
                           }}
-                          style={{ flex: 1, accentColor: T.gold }}
-                        />
+                          style={{ flex: 1, accentColor: gold }} />
                       )}
                     </div>
 
-                    {/* Status Selector (DM) */}
                     {isDM && (
-                      <>
+                      <Fragment>
                         <SectionLabel>Status</SectionLabel>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                           {STATUS_KEYS.map(key => (
-                            <button key={key}
-                              onClick={() => {
-                                const patch = { status: key, revealed: key !== 'hidden' ? true : editingAgent.revealed };
-                                const b = findBranchForAgent(editingAgent.id);
-                                if (b) updateAgentInBranch(b.id, editingAgent.id, patch);
-                                else if (editingAgent.id === 'leader') update({ shadowLeader: { ...intrigue.shadowLeader, ...patch } });
-                              }}
-                              style={{
-                                padding: '4px 10px', borderRadius: 10, border: 'none', cursor: 'pointer',
-                                fontSize: 10, fontWeight: 600, fontFamily: T.ui, letterSpacing: '0.5px',
-                                background: editingAgent.status === key ? STATUS[key].color : 'rgba(255,255,255,0.04)',
-                                color: editingAgent.status === key ? STATUS[key].text : T.textFaint,
-                              }}>
-                              {STATUS[key].label}
-                            </button>
+                            <button key={key} onClick={() => {
+                              const patch = { status: key, revealed: key !== 'hidden' ? true : editingAgent.revealed };
+                              const b = findBranchForAgent(editingAgent.id);
+                              if (b) updateAgentInBranch(b.id, editingAgent.id, patch);
+                              else if (editingAgent.id === 'leader') update({ shadowLeader: { ...intrigue.shadowLeader, ...patch } });
+                            }} style={{
+                              padding: '3px 8px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                              fontSize: 9, fontWeight: 600, fontFamily: T.ui, letterSpacing: '0.5px',
+                              background: editingAgent.status === key ? STATUS[key].color : 'rgba(255,255,255,0.04)',
+                              color: editingAgent.status === key ? STATUS[key].text : (T.textFaint || '#666'),
+                            }}>{STATUS[key].label}</button>
                           ))}
                         </div>
-                      </>
+                      </Fragment>
                     )}
 
-                    {/* Clues */}
                     <SectionLabel>Clues ({(editingAgent.clues || []).length})</SectionLabel>
-                    <div style={{
-                      background: 'rgba(0,0,0,0.2)', borderRadius: 4, padding: 8,
-                      borderLeft: '2px solid ' + T.gold,
-                    }}>
+                    <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 4, padding: 8, borderLeft: '2px solid ' + gold }}>
                       {(editingAgent.clues || []).length === 0 && (
-                        <div style={{ fontSize: 12, color: T.textFaint, fontStyle: 'italic' }}>No clues discovered yet.</div>
+                        <div style={{ fontSize: 11, color: T.textFaint || '#666', fontStyle: 'italic' }}>No clues yet.</div>
                       )}
                       {(editingAgent.clues || []).map((clue, i) => (
-                        <div key={i} style={{ fontSize: 12, color: T.textDim, padding: '4px 0', borderBottom: i < editingAgent.clues.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
-                          <span style={{ color: T.gold, marginRight: 6, fontSize: 10 }}>#{i + 1}</span>
-                          {clue}
+                        <div key={i} style={{ fontSize: 11, color: T.textDim || '#888', padding: '3px 0',
+                          borderBottom: i < editingAgent.clues.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none' }}>
+                          <span style={{ color: gold, marginRight: 4, fontSize: 9 }}>#{i + 1}</span>{clue}
                         </div>
                       ))}
                       {isDM && (
@@ -879,39 +908,28 @@
                             const b = findBranchForAgent(editingAgent.id);
                             if (b) addClueToAgent(b.id, editingAgent.id, newClue);
                             setNewClue('');
-                          }} disabled={!newClue.trim()}
-                            style={{
-                              padding: '4px 10px', background: 'rgba(255,215,0,0.15)',
-                              border: '1px solid rgba(255,215,0,0.2)', color: T.gold,
-                              borderRadius: 4, cursor: 'pointer', fontSize: 10,
-                              opacity: newClue.trim() ? 1 : 0.4,
-                            }}>
-                            <Plus size={11} />
-                          </button>
+                          }} disabled={!newClue.trim()} style={{
+                            padding: '3px 8px', background: 'rgba(255,215,0,0.15)',
+                            border: '1px solid rgba(255,215,0,0.2)', color: gold,
+                            borderRadius: 4, cursor: 'pointer', fontSize: 10, opacity: newClue.trim() ? 1 : 0.4,
+                          }}><Plus size={10} /></button>
                         </div>
                       )}
                     </div>
 
-                    {/* DM Notes */}
                     {isDM && (
-                      <>
+                      <Fragment>
                         <SectionLabel>DM Notes</SectionLabel>
-                        <EditableText
-                          multiline
-                          value={editingAgent.notes}
-                          onChange={v => {
-                            const b = findBranchForAgent(editingAgent.id);
-                            if (b) updateAgentInBranch(b.id, editingAgent.id, { notes: v });
-                            else if (editingAgent.id === 'leader') update({ shadowLeader: { ...intrigue.shadowLeader, notes: v } });
-                          }}
-                          placeholder="Private DM notes..."
-                        />
-                      </>
+                        <EditableText multiline value={editingAgent.notes} onChange={v => {
+                          const b = findBranchForAgent(editingAgent.id);
+                          if (b) updateAgentInBranch(b.id, editingAgent.id, { notes: v });
+                          else if (editingAgent.id === 'leader') update({ shadowLeader: { ...intrigue.shadowLeader, notes: v } });
+                        }} placeholder="Private DM notes..." />
+                      </Fragment>
                     )}
 
-                    {/* Actions */}
                     {isDM && editingAgent.id !== 'leader' && (
-                      <>
+                      <Fragment>
                         <SectionLabel>Actions</SectionLabel>
                         <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                           {!editingAgent.revealed && (
@@ -919,12 +937,10 @@
                               const b = findBranchForAgent(editingAgent.id);
                               if (b) updateAgentInBranch(b.id, editingAgent.id, { revealed: true, status: 'revealed' });
                             }} style={{
-                              padding: '8px 14px', borderRadius: 4, border: 'none', cursor: 'pointer',
-                              background: STATUS.revealed.color, color: '#fff', fontSize: 12,
+                              padding: '6px 12px', borderRadius: 4, border: 'none', cursor: 'pointer',
+                              background: STATUS.revealed.color, color: '#fff', fontSize: 11,
                               fontFamily: T.ui, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4,
-                            }}>
-                              <Eye size={13} /> Reveal
-                            </button>
+                            }}><Eye size={12} /> Reveal</button>
                           )}
                           {editingAgent.rank === 'agent' && (
                             <button onClick={() => {
@@ -932,26 +948,157 @@
                                 removeAgentFromBranch(activeBranch.id, editingAgent.id);
                               }
                             }} style={{
-                              padding: '8px 14px', borderRadius: 4, border: '1px solid ' + T.crimson,
-                              background: 'transparent', color: T.crimson, fontSize: 12,
-                              fontFamily: T.ui, fontWeight: 600, cursor: 'pointer',
-                              display: 'flex', alignItems: 'center', gap: 4,
-                            }}>
-                              <Trash2 size={13} /> Remove
-                            </button>
+                              padding: '6px 12px', borderRadius: 4, border: '1px solid ' + (T.crimson || '#ef5350'),
+                              background: 'transparent', color: T.crimson || '#ef5350', fontSize: 11,
+                              fontFamily: T.ui, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4,
+                            }}><Trash2 size={12} /> Remove</button>
                           )}
                         </div>
-                      </>
+                      </Fragment>
                     )}
                   </div>
                 </div>
               )}
             </div>
           )}
+
+          {/* ── OVERVIEW Right Panel (when agent selected from web) ── */}
+          {view === 'overview' && editingAgent && (
+            <div className="intrigue-scroll" style={{
+              width: 340, borderLeft: '1px solid ' + (T.border || '#333'),
+              overflowY: 'auto', background: 'rgba(0,0,0,0.2)',
+              animation: 'intrigueSlideIn 0.25s ease', flexShrink: 0,
+            }}>
+              <div style={{ padding: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                  <div style={{ fontFamily: T.heading, fontSize: 13, color: gold, letterSpacing: '1px' }}>
+                    {RANK_LABELS[editingAgent.rank] || 'Agent'}
+                  </div>
+                  <button onClick={() => setEditingAgent(null)}
+                    style={{ background: 'none', border: 'none', color: T.textFaint || '#666', cursor: 'pointer' }}>
+                    <X size={16} />
+                  </button>
+                </div>
+                <div style={{ marginBottom: 12, textAlign: 'center' }}><StatusBadge status={editingAgent.status} /></div>
+
+                {isDM ? (
+                  <Fragment>
+                    <SectionLabel>Name</SectionLabel>
+                    <EditableText value={editingAgent.name} onChange={v => {
+                      const b = findBranchForAgent(editingAgent.id);
+                      if (b) updateAgentInBranch(b.id, editingAgent.id, { name: v });
+                      else if (editingAgent.id === 'leader') update({ shadowLeader: { ...intrigue.shadowLeader, name: v } });
+                    }} placeholder="Agent name..." />
+                    <SectionLabel>Title</SectionLabel>
+                    <EditableText value={editingAgent.title} onChange={v => {
+                      const b = findBranchForAgent(editingAgent.id);
+                      if (b) updateAgentInBranch(b.id, editingAgent.id, { title: v });
+                      else if (editingAgent.id === 'leader') update({ shadowLeader: { ...intrigue.shadowLeader, title: v } });
+                    }} placeholder="Title..." />
+                  </Fragment>
+                ) : (
+                  <Fragment>
+                    <div style={{ fontFamily: T.heading, fontSize: 16, fontWeight: 700, color: T.text || '#eee', marginBottom: 4 }}>
+                      {editingAgent.revealed ? editingAgent.name : 'Unknown'}
+                    </div>
+                    {editingAgent.revealed && editingAgent.title && (
+                      <div style={{ fontSize: 12, color: T.textDim || '#888', marginBottom: 12 }}>{editingAgent.title}</div>
+                    )}
+                  </Fragment>
+                )}
+
+                <SectionLabel>Location</SectionLabel>
+                <div style={{ fontSize: 13, color: T.text || '#eee' }}>
+                  {(isDM || editingAgent.revealed) ? (editingAgent.location || 'Unknown') : 'Unknown'}
+                </div>
+
+                <SectionLabel>Influence</SectionLabel>
+                <InfluenceStars value={editingAgent.influence} max={5} />
+
+                {isDM && (
+                  <Fragment>
+                    <SectionLabel>Status</SectionLabel>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                      {STATUS_KEYS.map(key => (
+                        <button key={key} onClick={() => {
+                          const patch = { status: key, revealed: key !== 'hidden' ? true : editingAgent.revealed };
+                          const b = findBranchForAgent(editingAgent.id);
+                          if (b) updateAgentInBranch(b.id, editingAgent.id, patch);
+                          else if (editingAgent.id === 'leader') update({ shadowLeader: { ...intrigue.shadowLeader, ...patch } });
+                        }} style={{
+                          padding: '3px 8px', borderRadius: 10, border: 'none', cursor: 'pointer',
+                          fontSize: 9, fontWeight: 600, fontFamily: T.ui,
+                          background: editingAgent.status === key ? STATUS[key].color : 'rgba(255,255,255,0.04)',
+                          color: editingAgent.status === key ? STATUS[key].text : (T.textFaint || '#666'),
+                        }}>{STATUS[key].label}</button>
+                      ))}
+                    </div>
+                  </Fragment>
+                )}
+
+                <SectionLabel>Clues ({(editingAgent.clues || []).length})</SectionLabel>
+                <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 4, padding: 8, borderLeft: '2px solid ' + gold }}>
+                  {(editingAgent.clues || []).length === 0 && (
+                    <div style={{ fontSize: 11, color: T.textFaint || '#666', fontStyle: 'italic' }}>No clues yet.</div>
+                  )}
+                  {(editingAgent.clues || []).map((clue, i) => (
+                    <div key={i} style={{ fontSize: 11, color: T.textDim || '#888', padding: '3px 0' }}>
+                      <span style={{ color: gold, marginRight: 4, fontSize: 9 }}>#{i + 1}</span>{clue}
+                    </div>
+                  ))}
+                </div>
+
+                {isDM && (
+                  <Fragment>
+                    <SectionLabel>DM Notes</SectionLabel>
+                    <EditableText multiline value={editingAgent.notes} onChange={v => {
+                      const b = findBranchForAgent(editingAgent.id);
+                      if (b) updateAgentInBranch(b.id, editingAgent.id, { notes: v });
+                      else if (editingAgent.id === 'leader') update({ shadowLeader: { ...intrigue.shadowLeader, notes: v } });
+                    }} placeholder="Private DM notes..." />
+                  </Fragment>
+                )}
+              </div>
+            </div>
+          )}
         </div>
+
+        {/* ── ADD BRANCH MODAL ── */}
+        {showAddBranch && isDM && (
+          <div style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999,
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+          }} onClick={() => setShowAddBranch(false)}>
+            <div onClick={e => e.stopPropagation()} style={{
+              background: T.bgCard || '#1a1a2e', border: '1px solid ' + (T.border || '#333'), borderRadius: 8,
+              padding: 24, width: 400, maxWidth: '90vw',
+            }}>
+              <div style={{ fontFamily: T.heading, fontSize: 16, color: gold, marginBottom: 16 }}>Create New Faction</div>
+              <SectionLabel>Name</SectionLabel>
+              <EditableText value={newBranchName} onChange={setNewBranchName} placeholder="Faction name..." />
+              <SectionLabel>Description</SectionLabel>
+              <EditableText value={newBranchDesc} onChange={setNewBranchDesc} placeholder="Brief description..." />
+              <div style={{ display: 'flex', gap: 8, marginTop: 20 }}>
+                <button onClick={addBranch} disabled={!newBranchName.trim()} style={{
+                  flex: 1, padding: '10px 16px', background: gold, color: '#000',
+                  border: 'none', borderRadius: 4, cursor: 'pointer', fontFamily: T.ui,
+                  fontSize: 12, fontWeight: 700, opacity: newBranchName.trim() ? 1 : 0.4,
+                }}>Create Faction</button>
+                <button onClick={() => setShowAddBranch(false)} style={{
+                  padding: '10px 16px', background: 'transparent', color: T.textDim || '#888',
+                  border: '1px solid ' + (T.border || '#333'), borderRadius: 4, cursor: 'pointer',
+                  fontFamily: T.ui, fontSize: 12,
+                }}>Cancel</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
-  window.CourtIntrigueView = CourtIntrigueView;
+  /* ── Register ── */
+  window.registerCampaignTab('intrigue', function intrigueLoader({ React }) {
+    return CourtIntrigueView;
+  });
 })();
