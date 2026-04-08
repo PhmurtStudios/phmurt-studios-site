@@ -1,5 +1,6 @@
 (function() {
   'use strict';
+  console.log('[Intrigue] Module loading v155...');
 
   const { useState, useEffect, useCallback, useRef, useMemo, Fragment } = React;
   const { Crown, Eye, EyeOff, Users, Shield, Skull, Lock, Unlock, ChevronDown, ChevronUp, Plus, Edit2, Trash2, Check, X, AlertTriangle, Star, Target, Search, Layers, Activity, Heart, Swords, BookOpen, Sparkles, RotateCcw, ArrowLeft, ChevronRight, MapPin, FileText, Zap, Network, UserPlus, Copy, MoreVertical, Circle } = window.LucideReact || {};
@@ -1099,4 +1100,5 @@
 
   /* ── Register for lazy-loader ── */
   window.CourtIntrigueView = CourtIntrigueView;
+  console.log('[Intrigue] Module registered OK, CourtIntrigueView:', typeof window.CourtIntrigueView);
 })();
