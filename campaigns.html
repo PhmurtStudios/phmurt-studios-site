@@ -5870,7 +5870,7 @@ function App() {
         await loadTabModule("settings-view", "campaign-settings-view.js");
         await loadTabModule("factionwar", "campaign-factionwar.js");
         await loadTabModule("prophecy", "campaign-prophecy.js");
-        await loadTabModule("plague", "campaign-plague.js");
+        // Plague standalone tab removed — events integrated into living-world.js
         await loadTabModule("heist", "campaign-heist.js");
         await loadTabModule("intrigue", "campaign-intrigue.js");
         await loadTabModule("downtime", "campaign-downtime.js");
@@ -5887,7 +5887,7 @@ function App() {
   // ── If user switches to an unloaded tab, prioritize loading it ──
   useEffect(() => {
     if (activeTab === "dashboard" || tabsReady[activeTab]) return;
-    var urls = { timeline: "campaign-timeline.js", world: "campaign-world.js", play: "campaign-play.js", factionwar: "campaign-factionwar.js", prophecy: "campaign-prophecy.js", plague: "campaign-plague.js", heist: "campaign-heist.js", intrigue: "campaign-intrigue.js", downtime: "campaign-downtime.js", puzzles: "campaign-puzzles.js" };
+    var urls = { timeline: "campaign-timeline.js", world: "campaign-world.js", play: "campaign-play.js", factionwar: "campaign-factionwar.js", prophecy: "campaign-prophecy.js", heist: "campaign-heist.js", intrigue: "campaign-intrigue.js", downtime: "campaign-downtime.js", puzzles: "campaign-puzzles.js" };
     var preload = activeTab === "world" ? loadDataModule("atlas-images", "atlas-images.js").then(function() { return loadTabModule("living-world", "living-world.js"); }) : Promise.resolve();
     preload.then(function() { return loadTabModule(activeTab, urls[activeTab]); }).then(function() {
       setTabsReady(function(prev) { var n = Object.assign({}, prev); n[activeTab] = true; return n; });
@@ -5906,8 +5906,10 @@ function App() {
     return () => clearInterval(interval);
   }, [combatAssetsReady]);
 
-  // ── Load campaigns from cache on mount ──
+  // ── Load campaigns from cache (re-runs when auth state changes) ──
   useEffect(() => {
+    if (!authSession) return; // Don't load until authenticated — auth gate handles UI
+    console.log("[CampaignManager] Auth resolved, loading campaigns for user:", authSession.userId);
     const cached = cmLoadCampaignCache();
     if (cached && cached.campaigns.length > 0) {
       // Seed combat state for Play tab restore
@@ -5935,7 +5937,7 @@ function App() {
       setActiveCampaignId(example.id);
     }
     setLoading(false);
-  }, []);
+  }, [authSession]);
 
   // ── Auto-save campaigns (local + cloud) ──
   const saveTimerRef = useRef(null);
@@ -5947,6 +5949,7 @@ function App() {
     // Local save (fast, 1.2s debounce)
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
+      console.log("[CampaignManager] Local save:", campaigns.filter(c => !c.isExample).length, "campaigns to key:", cmCacheKey());
       cmSaveCampaignCache(campaigns, activeCampaignId);
     }, CAMPAIGN_SAVE_DELAY_MS);
 
@@ -6096,9 +6099,12 @@ function App() {
 
   // ── Multiplayer: load roles from getMyCampaigns and determine viewRole per campaign ──
   useEffect(() => {
-    if (loading || typeof PhmurtDB === "undefined" || typeof PhmurtDB.getMyCampaigns !== "function") return;
+    if (loading || !authSession) return; // Wait for both loading complete AND auth
+    if (typeof PhmurtDB === "undefined" || typeof PhmurtDB.getMyCampaigns !== "function") return;
+    console.log("[CampaignManager] Fetching cloud campaigns...");
     PhmurtDB.getMyCampaigns().then(function(cloudCampaigns) {
-      if (!cloudCampaigns || cloudCampaigns.length === 0) return;
+      if (!cloudCampaigns || cloudCampaigns.length === 0) { console.log("[CampaignManager] No cloud campaigns found."); return; }
+      console.log("[CampaignManager] Merging", cloudCampaigns.length, "cloud campaigns");
       var roles = {};
       cloudCampaigns.forEach(function(c) { if (c.id && c._role) roles[c.id] = c._role; });
       setCampaignRoles(roles);
@@ -6110,10 +6116,11 @@ function App() {
           var raw = c.data || NEW_CAMPAIGN(); raw._campaignId = c.id;
           return { id: c.id, data: cmExpandFromCloud(raw), _role: c._role };
         });
+        if (newOnes.length > 0) console.log("[CampaignManager] Added", newOnes.length, "new campaigns from cloud");
         return newOnes.length > 0 ? prev.concat(newOnes) : prev;
       });
     });
-  }, [loading]);
+  }, [loading, authSession]);
 
   // ── Set viewRole based on campaign membership when switching campaigns ──
   useEffect(() => {
@@ -6221,7 +6228,7 @@ function App() {
     { id:"homebrew", label:"Homebrew", icon: Wand2, roles:["dm"], module:"homebrew" },
     { id:"factionwar", label:"War", icon: Swords, roles:["dm"], module:"factionWar" },
     { id:"prophecy", label:"Prophecy", icon: BookOpen, roles:["dm"], module:"prophecy" },
-    { id:"plague", label:"Plague", icon: Skull, roles:["dm"], module:"plague" },
+    // Plague standalone tab removed — plague events integrated into Living World Atlas
     { id:"heist", label:"Heist", icon: Lock, roles:["dm"], module:"heist" },
     { id:"intrigue", label:"Intrigue", icon: Crown, roles:["dm"], module:"intrigue" },
     { id:"downtime", label:"Downtime", icon: Package, roles:["dm"], module:"downtime" },
@@ -6457,11 +6464,7 @@ function App() {
             ? React.createElement(window.ProphecyReligionView, { data: data, setData: setData, viewRole: viewRole })
             : <TabLoadingSpinner label="Prophecy" />
         )}
-        {activeTab === "plague" && (
-          window.PlagueTrackerView
-            ? React.createElement(window.PlagueTrackerView, { data: data, setData: setData, viewRole: viewRole })
-            : <TabLoadingSpinner label="Plague" />
-        )}
+        {/* Plague standalone tab removed — integrated into Living World Atlas */}
         {activeTab === "heist" && (
           window.HeistPlannerView
             ? React.createElement(window.HeistPlannerView, { data: data, setData: setData, viewRole: viewRole })

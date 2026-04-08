@@ -1,4 +1,4 @@
-const CACHE_VERSION = 150;
+const CACHE_VERSION = 151;
 const CACHE_NAME = 'phmurt-v' + CACHE_VERSION;
 const PRECACHE_URLS = [
   '/',
@@ -31,7 +31,7 @@ const PRECACHE_URLS = [
   'campaign-homebrew.js',
   'campaign-factionwar.js',
   'campaign-prophecy.js',
-  'campaign-plague.js',
+  // campaign-plague.js removed from standalone tab — plague events in living-world.js
   'campaign-heist.js',
   'campaign-intrigue.js',
   'campaign-puzzles.js',

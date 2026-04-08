@@ -1,10 +1,19 @@
-const T = {
-  bg: "#0c0804", bgNav: "#100c08", bgCard: "rgba(18,14,10,0.97)",
-  text: "#e8dcc8", textMuted: "#a89878", textFaint: "#6a6050",
-  crimson: "#d4433a", crimsonBorder: "rgba(212,67,58,0.15)",
-  gold: "#c9a85c", border: "rgba(212,67,58,0.08)",
-  heading: "'Cinzel', serif", body: "'Spectral', serif", ui: "'Cinzel', serif"
-};
+const T = window.__PHMURT_THEME || {};
+try { if (window.T) Object.assign(T, window.T); } catch(e) {}
+// Fallback: ensure all tokens are defined via CSS custom properties
+if (!T.bg) T.bg = "var(--bg)";
+if (!T.bgNav) T.bgNav = "var(--bg-nav)";
+if (!T.bgCard) T.bgCard = "var(--bg-card)";
+if (!T.text) T.text = "var(--text)";
+if (!T.textMuted) T.textMuted = "var(--text-dim)";
+if (!T.textFaint) T.textFaint = "var(--text-faint)";
+if (!T.crimson) T.crimson = "var(--crimson)";
+if (!T.crimsonBorder) T.crimsonBorder = "var(--crimson-border)";
+if (!T.gold) T.gold = "var(--gold)";
+if (!T.border) T.border = "var(--border)";
+if (!T.heading) T.heading = "'Cinzel', serif";
+if (!T.body) T.body = "'Spectral', serif";
+if (!T.ui) T.ui = "'Cinzel', serif";
 
 const CRColors = {
   0: "#8a7c6f", 1: "#8a7c6f", 2: "#6ba85c", 3: "#5c9ba8", 4: "#5c7ba8",
