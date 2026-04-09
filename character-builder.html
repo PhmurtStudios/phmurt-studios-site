@@ -38,7 +38,7 @@
     /* ── SIDEBAR STEPS ── */
     .cb-step-item { display: flex; align-items: center; gap: 14px; padding: 14px 24px; cursor: pointer; transition: all 0.25s; position: relative; }
     .cb-step-item::after { content:''; position:absolute; left:38px; top:100%; width:1px; height:0; background:var(--border-mid); z-index:1; }
-    .cb-step-item:not(:last-of-type)::after { height:100%; }
+    .cb-step-item[data-step]:not([data-step="9"])::after { height:100%; }
     .cb-step-item:hover { background: var(--crimson-soft); }
     .cb-step-item.active { background: var(--crimson-soft); }
     .cb-step-item.active::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--crimson); border-radius:0 2px 2px 0; }
@@ -226,7 +226,7 @@
     .cb-alert strong { color: var(--crimson); font-style: normal; font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1px; }
 
     /* ── INFO TOOLTIPS ── */
-    .cb-info-tip { display: inline-block; width: 16px; height: 16px; border-radius: 50%; background: rgba(212,67,58,0.2); color: var(--crimson); text-align: center; font-size: 10px; line-height: 16px; font-weight: bold; cursor: help; position: relative; margin-left: 6px; vertical-align: middle; transition: background 0.2s; }
+    .cb-info-tip { display: none; }
     .cb-info-tip:hover { background: rgba(212,67,58,0.4); }
     .cb-info-tip::after { content: attr(data-tip); position: absolute; bottom: 100%; left: 50%; transform: translateX(-50%); background: var(--bg-nav); color: var(--text); padding: 8px 12px; font-family: 'Spectral', serif; font-size: 12px; white-space: normal; max-width: 280px; border: 1px solid var(--border); z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.4); margin-bottom: 6px; display: none; border-radius: 2px; font-weight: normal; line-height: 1.4; }
     .cb-info-tip:hover::after { display: block; }
@@ -1680,8 +1680,18 @@ function goToStep(n, skipVal){
   updateMiniSummary();
   window.scrollTo({top:0,behavior:'smooth'});
 }
-function nextStep(n){ goToStep(n+1); }
-function prevStep(n){ goToStep(n-1,true); }
+function nextStep(n){
+  var next = n+1;
+  // Skip spells step (7) for non-spellcasting classes
+  if(next===7 && C.cls && DND_DATA.classes[C.cls] && !DND_DATA.classes[C.cls].spellcastingAbility) next=8;
+  goToStep(next);
+}
+function prevStep(n){
+  var prev = n-1;
+  // Skip spells step (7) going backwards for non-spellcasting classes
+  if(prev===7 && C.cls && DND_DATA.classes[C.cls] && !DND_DATA.classes[C.cls].spellcastingAbility) prev=6;
+  goToStep(prev,true);
+}
 function startOver(){ location.reload(); }
 
 // ══════════════════════════════════════════
@@ -5625,8 +5635,10 @@ async function saveCharacterToDB(){
       }).catch(function(e){ console.warn('[CharBuilder] sync push failed', e); });
     }
   } else {
-    if(status) status.textContent = 'Save failed';
-    setTimeout(()=>{ if(status) status.textContent=''; }, 3000);
+    var errMsg = (r && r.error) ? r.error : 'Unknown error';
+    console.error('[CharBuilder] Save failed:', errMsg, r);
+    if(status) status.textContent = 'Save failed: ' + errMsg;
+    setTimeout(()=>{ if(status) status.textContent=''; }, 5000);
   }
 }
 
@@ -8534,8 +8546,17 @@ function goToStep35(n, skipVal) {
   updateMini35();
   window.scrollTo({top:0,behavior:'smooth'});
 }
-function nextStep35(n) { goToStep35(n+1); }
-function prevStep35(n) { goToStep35(n-1, true); }
+function nextStep35(n) {
+  var next = n+1;
+  // Skip spells step (8) for non-spellcasting classes
+  if(next===8 && C35.cls && DND35_DATA.classes[C35.cls] && !DND35_DATA.classes[C35.cls].spellcastingAbility) next=9;
+  goToStep35(next);
+}
+function prevStep35(n) {
+  var prev = n-1;
+  if(prev===8 && C35.cls && DND35_DATA.classes[C35.cls] && !DND35_DATA.classes[C35.cls].spellcastingAbility) prev=7;
+  goToStep35(prev, true);
+}
 
 // ── STEP 1: RACE ──
 function renderRaces35() {

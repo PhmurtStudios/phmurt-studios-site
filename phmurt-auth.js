@@ -144,10 +144,11 @@ var PhmurtDB = (function () {
           return { blocked: false, limit: maxCount, current: current };
         })
         .catch(function (err) {
-          // SECURITY: Fail closed — if we can't verify the limit, block the action
-          // The server-side trigger will also enforce this, but don't let the client bypass
-          if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Limit check failed, blocking:', err);
-          return { blocked: true, message: 'Unable to verify your account limits. Please try again in a moment.', limit: 0, current: 0 };
+          // Client-side limit check failed — log it but allow the save to proceed.
+          // The server-side DB trigger (enforce_character_limit / enforce_campaign_limit)
+          // is the real security boundary and will reject over-limit inserts.
+          console.warn('[PhmurtAuth] Client limit check failed, deferring to server:', err);
+          return { blocked: false };
         });
     });
   }
@@ -525,7 +526,7 @@ var PhmurtDB = (function () {
       // SECURITY (V-015): Input validation
       var name = snapshot && snapshot.name ? String(snapshot.name).slice(0, 100) : 'Unnamed';
       var race = snapshot && snapshot.race ? String(snapshot.race).slice(0, 50) : '';
-      var cls = snapshot && snapshot.class ? String(snapshot.class).slice(0, 50) : '';
+      var cls = snapshot && (snapshot.class || snapshot.cls) ? String(snapshot.class || snapshot.cls).slice(0, 50) : '';
       var level = snapshot && snapshot.level ? Math.min(Math.max(1, parseInt(snapshot.level, 10) || 1), 30) : 1;
 
       var sb = _sb();

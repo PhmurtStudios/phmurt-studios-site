@@ -35,7 +35,7 @@
     .cb-main { padding:48px 40px; }
     .cb-step-item { display:flex; align-items:center; gap:14px; padding:14px 24px; cursor:pointer; transition:all 0.25s; position:relative; }
     .cb-step-item::after { content:''; position:absolute; left:38px; top:100%; width:1px; height:0; background:var(--border-mid); z-index:1; }
-    .cb-step-item:not(:last-of-type)::after { height:100%; }
+    .cb-step-item[data-step]:not([data-step="9"])::after { height:100%; }
     .cb-step-item:hover { background:var(--crimson-soft); }
     .cb-step-item.active { background:var(--crimson-soft); }
     .cb-step-item.active::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--crimson); border-radius:0 2px 2px 0; }
@@ -881,8 +881,17 @@ function goToStep35(n, skipVal) {
   updateMini35();
   window.scrollTo({top:0,behavior:'smooth'});
 }
-function nextStep35(n) { goToStep35(n+1); }
-function prevStep35(n) { goToStep35(n-1, true); }
+function nextStep35(n) {
+  var next = n+1;
+  // Skip spells step (8) for non-spellcasting classes
+  if(next===8 && C35.cls && DND35_DATA.classes[C35.cls] && !DND35_DATA.classes[C35.cls].spellcastingAbility) next=9;
+  goToStep35(next);
+}
+function prevStep35(n) {
+  var prev = n-1;
+  if(prev===8 && C35.cls && DND35_DATA.classes[C35.cls] && !DND35_DATA.classes[C35.cls].spellcastingAbility) prev=7;
+  goToStep35(prev, true);
+}
 
 // ── STEP 1: RACE ──
 var raceFlavorTexts35 = {
