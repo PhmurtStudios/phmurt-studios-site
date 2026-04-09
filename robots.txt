@@ -1,5 +1,7 @@
 User-agent: *
 Allow: /
 Disallow: /reset-password.html
+Disallow: /admin.html
+Disallow: /supabase-setup-admin.html
 
 Sitemap: https://phmurtstudios.com/sitemap.xml

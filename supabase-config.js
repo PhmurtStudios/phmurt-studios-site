@@ -65,6 +65,7 @@ var phmurtSupabase = null;
     /* Dynamically inject the CDN — works on any page without manual <script> tags */
     var s = document.createElement('script');
     s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+    s.crossOrigin = 'anonymous';
     s.onload  = _createClient;
     s.onerror = function () { if (PHMURT_DEBUG) console.warn('[Phmurt] Supabase CDN failed to load – offline mode.'); };
     document.head.appendChild(s);

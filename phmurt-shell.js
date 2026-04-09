@@ -139,6 +139,18 @@
     '404.html': [
       { href: 'index.html', label: 'Home' },
       { label: 'Page Not Found', current: true }
+    ],
+    'privacy.html': [
+      { href: 'index.html', label: 'Home' },
+      { label: 'Privacy Policy', current: true }
+    ],
+    'terms.html': [
+      { href: 'index.html', label: 'Home' },
+      { label: 'Terms of Service', current: true }
+    ],
+    'ogl.html': [
+      { href: 'index.html', label: 'Home' },
+      { label: 'OGL Attribution', current: true }
     ]
   };
 
@@ -200,28 +212,28 @@
       if (item.children) {
         const isActive = item.label === activeLabel;
         const childLinks = item.children.map(c =>
-          `<a href="${c.href}" class="ps-dropdown-link">${c.label}</a>`
+          `<a href="${psEscapeHtml(c.href)}" class="ps-dropdown-link">${psEscapeHtml(c.label)}</a>`
         ).join('');
         return `<div class="ps-nav-dropdown${isActive ? ' active' : ''}">
-          <button class="ps-nav-dropdown-btn${isActive ? ' active' : ''}" type="button">${item.label} <span class="ps-nav-caret">▾</span></button>
+          <button class="ps-nav-dropdown-btn${isActive ? ' active' : ''}" type="button">${psEscapeHtml(item.label)} <span class="ps-nav-caret">▾</span></button>
           <div class="ps-dropdown-panel">${childLinks}</div>
         </div>`;
       }
-      return `<a href="${item.href}"${item.label === activeLabel ? ' class="active"' : ''}>${item.label}</a>`;
+      return `<a href="${psEscapeHtml(item.href)}"${item.label === activeLabel ? ' class="active"' : ''}>${psEscapeHtml(item.label)}</a>`;
     }).join('');
 
     // Mobile nav uses flat list with group headers
     let mobileLinks = '';
     SHELL.nav.forEach((item, index) => {
       if (item.children) {
-        mobileLinks += `<div class="ps-mobile-group-label">${item.label}</div>`;
+        mobileLinks += `<div class="ps-mobile-group-label">${psEscapeHtml(item.label)}</div>`;
         item.children.forEach(c => {
-          mobileLinks += `<a href="${c.href}">${c.label}</a>`;
+          mobileLinks += `<a href="${psEscapeHtml(c.href)}">${psEscapeHtml(c.label)}</a>`;
         });
         mobileLinks += '<div class="ps-mobile-divider"></div>';
       } else {
         if (index > 0) mobileLinks += '<div class="ps-mobile-divider"></div>';
-        mobileLinks += `<a href="${item.href}"${item.label === activeLabel ? ' class="active"' : ''}>${item.label}</a>`;
+        mobileLinks += `<a href="${psEscapeHtml(item.href)}"${item.label === activeLabel ? ' class="active"' : ''}>${psEscapeHtml(item.label)}</a>`;
       }
     });
 
@@ -278,9 +290,16 @@
       <footer class="ps-footer" role="contentinfo">
         <div class="ps-footer-logo">
           <img src="logo.png" alt="Phmurt Studios" />
-          <span class="ps-footer-name">${SHELL.footerName}</span>
+          <span class="ps-footer-name">${psEscapeHtml(SHELL.footerName)}</span>
         </div>
         <div class="ps-footer-copy">${getFooterCopy()}</div>
+        <div class="ps-footer-legal" style="margin-top:0.5rem;font-size:0.85rem;opacity:0.7;text-align:center;">
+          <a href="privacy.html" style="color:inherit;text-decoration:underline;">Privacy Policy</a>
+          <span style="margin:0 0.5rem;">|</span>
+          <a href="terms.html" style="color:inherit;text-decoration:underline;">Terms of Service</a>
+          <span style="margin:0 0.5rem;">|</span>
+          <a href="ogl.html" style="color:inherit;text-decoration:underline;">OGL Attribution</a>
+        </div>
       </footer>
     `;
   }
@@ -375,6 +394,7 @@
     try {
       var s = JSON.parse(localStorage.getItem('phmurt_auth_session') || 'null');
       if (s) s.isAdmin = false; // SECURITY (V-025): Never trust isAdmin from localStorage
+      if (s) s.isSuperuser = false; // SECURITY: Never trust isSuperuser from localStorage
       return s;
     }
     catch(e) { return null; }
@@ -562,6 +582,119 @@
     revealEls.forEach((el) => obs.observe(el));
   }
 
+  function setupCookieConsent() {
+    // Check if user has already consented
+    const consent = localStorage.getItem('phmurt_cookie_consent');
+    if (consent) return; // User has already made a choice
+
+    // Create the banner element
+    const banner = document.createElement('div');
+    banner.id = 'phmurt-cookie-banner';
+    banner.setAttribute('role', 'dialog');
+    banner.setAttribute('aria-labelledby', 'cookie-banner-title');
+    banner.innerHTML = `
+      <div style="
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        background-color: rgba(10, 10, 15, 0.95);
+        color: #f0f0f0;
+        padding: 20px;
+        border-top: 1px solid rgba(200, 140, 80, 0.3);
+        font-family: Spectral, serif;
+        font-size: 14px;
+        line-height: 1.6;
+        z-index: 10000;
+        box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+        animation: slideUp 0.3s ease-out;
+      " id="cookie-banner-content">
+        <span id="cookie-banner-title" style="flex: 1; min-width: 300px;">
+          This site uses cookies and local storage for authentication, preferences, and functionality. See our <a href="privacy.html" style="color: #d4a574; text-decoration: underline; cursor: pointer;">Privacy Policy</a> for details.
+        </span>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; min-width: fit-content;">
+          <button id="cookie-accept-btn" style="
+            background-color: #8b6f47;
+            color: white;
+            border: 1px solid #a08560;
+            padding: 8px 20px;
+            border-radius: 4px;
+            font-family: Spectral, serif;
+            font-size: 13px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+          " type="button">Accept</button>
+          <button id="cookie-decline-btn" style="
+            background-color: transparent;
+            color: #d4a574;
+            border: 1px solid #d4a574;
+            padding: 8px 20px;
+            border-radius: 4px;
+            font-family: Spectral, serif;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+          " type="button">Decline Non-Essential</button>
+        </div>
+      </div>
+      <style>
+        @keyframes slideUp {
+          from {
+            transform: translateY(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+        #cookie-accept-btn:hover {
+          background-color: #9d8559;
+        }
+        #cookie-decline-btn:hover {
+          background-color: rgba(212, 165, 116, 0.1);
+          border-color: #e8b88a;
+        }
+      </style>
+    `;
+
+    document.body.appendChild(banner);
+
+    // Wire up button handlers
+    const acceptBtn = document.getElementById('cookie-accept-btn');
+    const declineBtn = document.getElementById('cookie-decline-btn');
+
+    const dismissBanner = () => {
+      const content = document.getElementById('cookie-banner-content');
+      if (content) {
+        content.style.animation = 'slideUp 0.3s ease-out reverse';
+        setTimeout(() => {
+          const b = document.getElementById('phmurt-cookie-banner');
+          if (b) b.remove();
+        }, 300);
+      }
+    };
+
+    if (acceptBtn) {
+      acceptBtn.addEventListener('click', () => {
+        localStorage.setItem('phmurt_cookie_consent', 'accepted');
+        dismissBanner();
+      });
+    }
+
+    if (declineBtn) {
+      declineBtn.addEventListener('click', () => {
+        localStorage.setItem('phmurt_cookie_consent', 'declined');
+        dismissBanner();
+      });
+    }
+  }
+
   function setupAuthDropdownClose() {
     document.addEventListener('click', function (e) {
       if (e.target.closest('.nav-auth-wrap')) return;
@@ -730,6 +863,7 @@
   document.addEventListener('DOMContentLoaded', function () {
     if (document.body) document.body.classList.remove('page-out');
     ensureShell();
+    setupCookieConsent();
     updateAuthNav();
     wireAuthButton();
     setupMobileNav();

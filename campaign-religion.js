@@ -438,7 +438,7 @@
         rivalDeities: ['pelor', 'selune', 'lathander'],
         alliedDeities: ['cyric', 'lolth', 'talona'],
         clericDomains: ['Death', 'Trickery'],
-        holyDay: 'New Moon (every month, dark of the moon)',
+        holyDay: 'Nightal 24 (12th month, 24th day)',
         associatedRace: 'Secretive folk'
       },
       {
@@ -781,7 +781,7 @@
         alliedDeities: ['talos', 'shar'],
         clericDomains: ['Nature', 'Tempest'],
         holyDay: 'Deepwinter (1st month, 15th day)',
-        associatedRace: None
+        associatedRace: null
       },
       {
         id: 'malar',
@@ -809,7 +809,7 @@
         alliedDeities: ['gruumsh', 'talos'],
         clericDomains: ['Nature'],
         holyDay: 'Highharvestide (10th month, 15th day)',
-        associatedRace: None
+        associatedRace: null
       },
       {
         id: 'talos',
@@ -837,7 +837,7 @@
         alliedDeities: ['gruumsh', 'malar'],
         clericDomains: ['Tempest'],
         holyDay: 'Midsummer (7th month, 21st day)',
-        associatedRace: None
+        associatedRace: null
       },
       {
         id: 'umberlee',
@@ -893,7 +893,7 @@
         alliedDeities: ['shar', 'cyric'],
         clericDomains: ['Death'],
         holyDay: 'Deepwinter (1st month, 15th day)',
-        associatedRace: None
+        associatedRace: null
       },
       {
         id: 'loviatar',
@@ -921,7 +921,7 @@
         alliedDeities: ['bane', 'cyric', 'bhaal'],
         clericDomains: ['Death'],
         holyDay: 'Spellnight (9th month, 13th day)',
-        associatedRace: None
+        associatedRace: null
       },
       {
         id: 'savras',

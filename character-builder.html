@@ -6418,7 +6418,7 @@ function renderHBEForm(type, existing) {
   // Buttons
   html += '<div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">';
   html += '<button onclick="closeHBEntityModal()" style="font-family:Cinzel,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:10px 20px;background:transparent;border:1px solid var(--border);color:var(--text-muted);cursor:pointer;">Cancel</button>';
-  if (isEdit) html += '<button onclick="deleteHBEntity(\''+type+'\',\''+_hbeEditId+'\')" style="font-family:Cinzel,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:10px 20px;background:transparent;border:1px solid var(--crimson-border);color:var(--crimson);cursor:pointer;">Delete</button>';
+  if (isEdit) html += '<button onclick="deleteHBEntity(\''+escapeHtml(type)+'\',\''+escapeHtml(_hbeEditId)+'\')" style="font-family:Cinzel,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:10px 20px;background:transparent;border:1px solid var(--crimson-border);color:var(--crimson);cursor:pointer;">Delete</button>';
   html += '<button onclick="saveHBEntity()" style="font-family:Cinzel,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:10px 20px;background:var(--crimson);border:none;color:#f5f0e8;cursor:pointer;">' + (isEdit ? 'Save Changes' : 'Create') + '</button>';
   html += '</div>';
 

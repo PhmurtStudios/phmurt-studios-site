@@ -81,7 +81,7 @@ window.SRD_MONSTERS = [
     "subtype": "any race",
     "alignment": "any alignment",
     "ac": 10,
-    "acType": "natural armor",
+    "acType": "",
     "hp": 9,
     "hpFormula": "2d8",
     "speed": "30 ft.",
@@ -494,7 +494,7 @@ window.SRD_MONSTERS = [
       }
     ],
     "reactions": [],
-    "xp": 8000
+    "xp": 8400
   },
   {
     "name": "Adult Gold Dragon",
@@ -869,7 +869,7 @@ window.SRD_MONSTERS = [
       }
     ],
     "reactions": [],
-    "xp": 27000
+    "xp": 25000
   },
   {
     "name": "Ancient Black Dragon",
@@ -1027,7 +1027,7 @@ window.SRD_MONSTERS = [
       }
     ],
     "reactions": [],
-    "xp": 33000
+    "xp": 50000
   },
   {
     "name": "Ancient Brass Dragon",
@@ -1102,7 +1102,7 @@ window.SRD_MONSTERS = [
       }
     ],
     "reactions": [],
-    "xp": 24500
+    "xp": 25000
   },
   {
     "name": "Ancient Bronze Dragon",
@@ -1572,7 +1572,7 @@ window.SRD_MONSTERS = [
       }
     ],
     "reactions": [],
-    "xp": 52500
+    "xp": 50000
   },
   {
     "name": "Ancient White Dragon",
@@ -1651,7 +1651,7 @@ window.SRD_MONSTERS = [
       }
     ],
     "reactions": [],
-    "xp": 20000
+    "xp": 25000
   },
   {
     "name": "Animated Armor",
@@ -1974,7 +1974,7 @@ window.SRD_MONSTERS = [
     "damageImmunities": "",
     "conditionImmunities": "",
     "damageVulnerabilities": "",
-    "xp": 0
+    "xp": 10
   },
   {
     "name": "Beholder",
@@ -2543,7 +2543,7 @@ window.SRD_MONSTERS = [
     "damageImmunities": "",
     "conditionImmunities": "",
     "damageVulnerabilities": "",
-    "xp": 0
+    "xp": 10
   },
   {
     "name": "Chuul",
@@ -2735,7 +2735,7 @@ window.SRD_MONSTERS = [
     "damageImmunities": "",
     "conditionImmunities": "",
     "damageVulnerabilities": "",
-    "xp": 0
+    "xp": 10
   },
   {
     "name": "Constrictor Snake",
@@ -2985,7 +2985,7 @@ window.SRD_MONSTERS = [
     "damageImmunities": "",
     "conditionImmunities": "",
     "damageVulnerabilities": "",
-    "xp": 0
+    "xp": 10
   },
   {
     "name": "Dire Wolf",
@@ -3110,7 +3110,7 @@ window.SRD_MONSTERS = [
     "damageImmunities": "",
     "conditionImmunities": "",
     "damageVulnerabilities": "",
-    "xp": 0
+    "xp": 10
   },
   {
     "name": "Elephant",
@@ -3380,7 +3380,7 @@ window.SRD_MONSTERS = [
     "damageImmunities": "",
     "conditionImmunities": "",
     "damageVulnerabilities": "",
-    "xp": 0
+    "xp": 10
   },
   {
     "name": "Giant Ape",
@@ -4324,7 +4324,7 @@ window.SRD_MONSTERS = [
       }
     ],
     "reactions": [],
-    "xp": 5000
+    "xp": 3900
   },
   {
     "name": "Young Copper Dragon",
@@ -4553,7 +4553,7 @@ window.SRD_MONSTERS = [
       }
     ],
     "reactions": [],
-    "xp": 5000
+    "xp": 3900
   },
   {
     "name": "Young Red Dragon",

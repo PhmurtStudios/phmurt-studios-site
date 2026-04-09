@@ -582,7 +582,7 @@ window.CampaignSeasons = (function(){
       category: eventTemplate.category,
       icon: eventTemplate.icon,
       importance: eventTemplate.importance,
-      triggeredAt: calendar.getDateString(),
+      triggeredAt: Date.now(),
       mutations: eventTemplate.mutations,
       calendarEffect: eventTemplate.calendarEffect
     };

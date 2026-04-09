@@ -1,4 +1,15 @@
 window.CampaignSettingsView = function CampaignSettingsView({ data, setData, viewRole, campaignMembers }) {
+  const T = window.__PHMURT_THEME || {};
+  try { if (window.T) Object.assign(T, window.T); } catch(e) {}
+  // Fallback: ensure all tokens are defined via CSS custom properties
+  if (!T.bg) T.bg = "var(--bg)";
+  if (!T.bgNav) T.bgNav = "var(--bg-nav)";
+  if (!T.bgCard) T.bgCard = "var(--bg-card)";
+  if (!T.text) T.text = "var(--text)";
+  if (!T.textMuted) T.textMuted = "var(--text-dim)";
+  if (!T.textFaint) T.textFaint = "var(--text-faint)";
+  if (!T.crimson) T.crimson = "var(--crimson)";
+
   if (viewRole !== "dm") {
     return (
       <div style={{

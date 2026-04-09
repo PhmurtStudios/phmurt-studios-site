@@ -307,7 +307,7 @@
       const rewards = [];
 
       if (outcome === 'great_success') {
-        const goldMin = Math.max(0, activity.goldReward.min);
+        const goldMin = activity.goldReward.min;
         const goldMax = activity.goldReward.max;
         const gold = Math.floor(rng() * (goldMax - goldMin + 1)) + goldMin;
         if (gold > 0) rewards.push({ type: 'gold', value: Math.ceil(gold * 1.5) });
@@ -315,7 +315,7 @@
         const idx = Math.floor(rng() * activity.rewards.length);
         rewards.push({ type: 'special', value: activity.rewards[idx] });
       } else if (outcome === 'success') {
-        const goldMin = Math.max(0, activity.goldReward.min);
+        const goldMin = activity.goldReward.min;
         const goldMax = activity.goldReward.max;
         const gold = Math.floor(rng() * (goldMax - goldMin + 1)) + goldMin;
         if (gold > 0) rewards.push({ type: 'gold', value: gold });
@@ -447,7 +447,7 @@
       const quest = this.quests.find(q => q.id === questId);
       if (!quest) throw new Error(`Quest ${questId} not found`);
       quest.status = 'completed';
-      return { quest, rewards: quest.rewards };
+      return { quest, rewards: quest.rewards || {} };
     }
 
     failQuest(questId) {

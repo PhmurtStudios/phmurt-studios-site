@@ -1194,6 +1194,7 @@ function UsersPage({ addToast, canManageAdmins }) {
   });
 
   async function toggleBan(user) {
+    if (!canManageAdmins) { addToast('Superuser privileges required.', 'error'); return; }
     if (user.is_superuser) { addToast('Superuser accounts cannot be modified.', 'error'); return; }
     const next = !user.is_banned;
     const { error } = await sb.from('profiles').update({ is_banned: next }).eq('id', user.id);
@@ -1218,7 +1219,7 @@ function UsersPage({ addToast, canManageAdmins }) {
     if (!confirm('Delete this profile row? If auth/user data exists elsewhere, remove it separately.')) return;
     const { error } = await sb.from('profiles').delete().eq('id', id);
     if (error) { addToast('Delete failed: ' + error.message, 'error'); return; }
-    addToast('User deleted.', 'error');
+    addToast('User deleted.', 'success');
     refetch(); setSelectedUser(null);
   }
 
@@ -1839,6 +1840,10 @@ function ManageAdminsCard({ addToast, canManageAdmins }) {
     if (!canManageAdmins) { addToast('Only superusers can grant admin access.', 'error'); return; }
     if (!sb) { addToast('Supabase not configured.', 'error'); return; }
     const addr = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addr)) {
+      addToast('Please enter a valid email address.', 'error');
+      return;
+    }
     if (!addr) { addToast('Enter an email address.', 'error'); return; }
     setWorking(true);
     // Look up the user in profiles by email

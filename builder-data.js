@@ -88,7 +88,7 @@ classes: {
   },
   rogue: { name:"Rogue", hitDie:8, saves:["dex","int"], primaryAbility:"dex", armorProf:["Light armor"], weaponProf:["Simple weapons","Hand crossbows","Longswords","Rapiers","Shortswords"], skillCount:4, skillOptions:["Acrobatics","Athletics","Deception","Insight","Intimidation","Investigation","Perception","Performance","Persuasion","Sleight of Hand","Stealth"],
     subclasses:["Thief","Assassin","Arcane Trickster"],
-    features:[{level:1,name:"Expertise",desc:"Choose 2 proficient skills. Your proficiency bonus is doubled for those skills."},{level:1,name:"Sneak Attack",desc:"Once per turn, deal extra 1d6 damage when you have advantage or an ally is adjacent to target."},{level:1,name:"Thieves' Cant",desc:"A secret mix of dialect, jargon, and code used by rogues and criminals."}],
+    features:[{level:1,name:"Expertise",desc:"Choose 2 proficient skills. Your proficiency bonus is doubled for those skills."},{level:1,name:"Sneak Attack",desc:"Once per turn, you can deal extra 1d6 damage to one creature you hit with an attack if you have advantage on the attack roll. The attack must use a finesse or ranged weapon. You don't need advantage if another enemy of the target is within 5 feet of it, that enemy isn't incapacitated, and you don't have disadvantage on the attack roll."},{level:1,name:"Thieves' Cant",desc:"A secret mix of dialect, jargon, and code used by rogues and criminals."}],
     equipment:[["Rapier","Shortsword"],["Shortbow + 20 arrows","Shortsword"],["Burglar's pack","Dungeoneer's pack","Explorer's pack"],["Leather armor","Daggers x2","Thieves' tools"]]
   },
   sorcerer: { name:"Sorcerer", hitDie:6, saves:["con","cha"], primaryAbility:"cha", spellcastingAbility:"cha", armorProf:[], weaponProf:["Daggers","Darts","Slings","Quarterstaffs","Light crossbows"], skillCount:2, skillOptions:["Arcana","Deception","Insight","Intimidation","Persuasion","Religion"],
@@ -98,11 +98,11 @@ classes: {
   },
   warlock: { name:"Warlock", hitDie:8, saves:["wis","cha"], primaryAbility:"cha", spellcastingAbility:"cha", armorProf:["Light armor"], weaponProf:["Simple weapons"], skillCount:2, skillOptions:["Arcana","Deception","History","Intimidation","Investigation","Nature","Religion"],
     subclasses:["Archfey","Fiend","Great Old One"],
-    features:[{level:1,name:"Otherworldly Patron",desc:"Choose your patron: Archfey, Fiend, or Great Old One. Grants expanded spell list and bonus features."},{level:1,name:"Pact Magic",desc:"Cha-based spellcasting. Spell slots recharge on short rest. 1 cantrip known, 2 spells known, 1 first-level slot."}],
+    features:[{level:1,name:"Otherworldly Patron",desc:"Choose your patron: Archfey, Fiend, or Great Old One. Grants expanded spell list and bonus features."},{level:1,name:"Pact Magic",desc:"Cha-based spellcasting. Spell slots recharge on short rest. 2 cantrips known, 2 spells known, 1 first-level slot."}],
     equipment:[["Light crossbow + 20 bolts","Any simple weapon"],["Component pouch","Arcane focus"],["Scholar's pack","Dungeoneer's pack"],["Leather armor","Any simple weapon","Two daggers"]]
   },
   wizard: { name:"Wizard", hitDie:6, saves:["int","wis"], primaryAbility:"int", spellcastingAbility:"int", armorProf:[], weaponProf:["Daggers","Darts","Slings","Quarterstaffs","Light crossbows"], skillCount:2, skillOptions:["Arcana","History","Insight","Investigation","Medicine","Religion"],
-    features:[{level:1,name:"Spellcasting",desc:"Int-based spellcasting. Spellbook starts with 6 first-level spells. Prepare Int mod + Wizard level spells. Ritual Casting."},{level:1,name:"Arcane Recovery",desc:"Once per day on short rest, recover spell slots with total level equal to half wizard level (rounded up)."}],
+    features:[{level:1,name:"Spellcasting",desc:"Int-based spellcasting. Spellbook starts with 6 first-level spells. Prepare Int mod + Wizard level spells. Ritual Casting."},{level:1,name:"Arcane Recovery",desc:"Once per long rest, during a short rest, you can recover expended spell slots with a combined level equal to or less than half your wizard level (rounded up), and none of the slots can be 6th level or higher."}],
     subclasses:["Abjuration","Conjuration","Divination","Enchantment","Evocation","Illusion","Necromancy","Transmutation"],
     equipment:[["Quarterstaff","Dagger"],["Component pouch","Arcane focus"],["Scholar's pack","Explorer's pack"],["Spellbook"]]
   }
@@ -269,7 +269,7 @@ DND_DATA.abilityUses = {
     {name:'Natural Explorer', uses:0, recharge:'passive', desc:'Expertise in chosen terrain: no difficult terrain slow, never lost, advantage on initiative, extra rations, tracking more creatures.'}
   ],
   rogue:[
-    {name:'Sneak Attack', uses:0, recharge:'passive', desc:'Once per turn: +1d6 damage when you have advantage or ally within 5ft of target.'},
+    {name:'Sneak Attack', uses:0, recharge:'passive', desc:'Once per turn, you can deal extra 1d6 damage to one creature you hit with an attack if you have advantage on the attack roll. The attack must use a finesse or ranged weapon. You don\'t need advantage if another enemy of the target is within 5 feet of it, that enemy isn\'t incapacitated, and you don\'t have disadvantage on the attack roll.'},
     {name:'Cunning Action', uses:0, recharge:'passive', desc:'Bonus action: Dash, Disengage, or Hide.'}
   ],
   sorcerer:[
@@ -281,7 +281,7 @@ DND_DATA.abilityUses = {
     {name:'Dark One\'s Blessing', uses:0, recharge:'passive', desc:'Fiend patron: when you reduce a creature to 0 HP, gain CHA mod + Warlock level temp HP.'}
   ],
   wizard:[
-    {name:'Arcane Recovery', uses:1, recharge:'long_rest', desc:'Once per day on a short rest: recover spell slots totaling up to half Wizard level (rounded up, max 5th level).'}
+    {name:'Arcane Recovery', uses:1, recharge:'long_rest', desc:'Once per long rest, during a short rest, you can recover expended spell slots with a combined level equal to or less than half your wizard level (rounded up), and none of the slots can be 6th level or higher.'}
   ]
 };
 
@@ -686,7 +686,7 @@ DND_DATA.levelFeatures = {
   paladin: {
     2:  [{name:"Fighting Style",desc:"Choose a fighting style: Defense (+1 AC in armor), Dueling (+2 damage with one-handed weapon), Great Weapon Fighting (reroll 1s and 2s on two-handed weapon damage), or Protection (use reaction to impose disadvantage on attacker of ally)."},
          {name:"Spellcasting",desc:"You are a half-caster. Use CHA for spellcasting. You prepare paladin spells (CHA mod + half paladin level, rounded down). You also always have your Sacred Oath spells prepared."},
-         {name:"Divine Smite",desc:"When you hit with a melee weapon attack, expend a spell slot to deal extra radiant damage: 2d8 per slot level (3d8 vs undead/fiends). No action required."}],
+         {name:"Divine Smite",desc:"When you hit with a melee weapon attack, expend a spell slot to deal extra radiant damage: 2d8 for a 1st-level slot, plus 1d8 for each slot level above 1st (max 5d8). The damage increases by 1d8 if the target is an undead or a fiend."}],
     3:  [{name:"Divine Health",desc:"The divine magic flowing through you makes you immune to disease."},
          {name:"Sacred Oath",desc:"Swear an oath: Oath of Devotion, Oath of the Ancients, Oath of Vengeance, or another. Grants Oath spells, Channel Divinity options, and features at levels 3, 7, 15, and 20."}],
     4:  [{name:"Ability Score Improvement",isASI:true,desc:"Increase one ability score by 2, or two scores by 1 each."}],

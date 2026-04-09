@@ -319,16 +319,15 @@
       // Count from completed sessions
       for (const session of this.sessions) {
         if (session.status === 'completed') {
+          // Count total sessions for all registered players
+          for (const playerId of Object.keys(stats)) {
+            stats[playerId].total++;
+          }
+
+          // Count attendance: only players in attendees array
           for (const attendee of session.attendees) {
             if (stats[attendee]) {
               stats[attendee].attended++;
-            }
-          }
-
-          // Count all possible attendees
-          for (const [playerId] of this.players) {
-            if (stats[playerId]) {
-              stats[playerId].total++;
             }
           }
         }
@@ -337,7 +336,7 @@
       // Calculate rates
       const result = Object.values(stats);
       result.forEach(s => {
-        s.rate = s.total > 0 ? (s.attended / s.total).toFixed(2) : 0;
+        s.rate = s.total > 0 ? parseFloat((s.attended / s.total).toFixed(2)) : 0;
       });
 
       return result;

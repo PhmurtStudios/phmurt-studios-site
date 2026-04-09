@@ -1,4 +1,4 @@
-const CACHE_VERSION = 156;
+const CACHE_VERSION = 158;
 const CACHE_NAME = 'phmurt-v' + CACHE_VERSION;
 const PRECACHE_URLS = [
   '/',
@@ -42,7 +42,16 @@ const PRECACHE_URLS = [
   'campaign-scheduler-view.js',
   'campaign-settings-view.js',
   'campaign-play.js',
-  'logo.png'
+  'logo.png',
+  'about.html',
+  'gallery.html',
+  'learn.html',
+  'learn-dm.html',
+  'grimoire.html',
+  'compendium.html',
+  'privacy.html',
+  'terms.html',
+  'ogl.html'
 ];
 
 // Maximum age for cached assets before forced revalidation (4 hours)

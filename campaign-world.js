@@ -2264,7 +2264,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
       engine.stop();
     }
     return () => { engine.stop(); };
-  }, [lwActive, lwSpeed, isLive]);
+  }, [data, lwActive, lwSpeed, isLive]);
 
   // Keep engine's data reference current
   useEffect(() => {
@@ -2281,9 +2281,14 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
 
     // Listen for updates from other tabs (DM → Player sync)
     channel.onmessage = (event) => {
+      // Validate incoming message has expected shape
+      if (!event.data || typeof event.data !== 'object') return;
       if (event.data.type === 'state-update' && viewRole === 'player') {
         // Player receives DM's state updates
-        setData(d => ({ ...d, ...event.data.payload }));
+        const payload = event.data.payload;
+        if (payload && typeof payload === 'object') {
+          setData(d => ({ ...d, ...payload }));
+        }
       }
     };
 
@@ -2342,8 +2347,19 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
           }
           if (incomingState.pois) merged.pois = incomingState.pois;
           if (incomingState._lwEvents) {
-            // Merge Living World events
-            setLwEvents(prev => [...(incomingState._lwEvents || []), ...prev].slice(0, 30));
+            // Merge Living World events with deduplication
+            setLwEvents(prev => {
+              const combined = [...(incomingState._lwEvents || []), ...prev];
+              const seen = new Set();
+              const deduplicated = combined.filter(evt => {
+                // Use event ID or timestamp as unique key
+                const key = evt.id || evt.timestamp || String(Date.now()) + Math.random();
+                if (seen.has(key)) return false;
+                seen.add(key);
+                return true;
+              });
+              return deduplicated.slice(0, 30);
+            });
             setLwLog(prev => [...(incomingState._lwEvents || []), ...prev]);
           }
           // Persist DM's full event history locally

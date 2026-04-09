@@ -622,7 +622,7 @@ function parseDiceExpression(expr) {
   // Handle "NxDICE+MOD" notation (e.g., "3x1d4+1" for Magic Missile = 3 separate rolls of 1d4+1)
   const multiMatch = trimmed.match(/^(\d+)x(.+)$/);
   if (multiMatch) {
-    const repeatCount = parseInt(multiMatch[1]);
+    const repeatCount = parseInt(multiMatch[1], 10);
     const innerExpr = multiMatch[2];
     let combinedRolls = [];
     let combinedTotal = 0;
@@ -650,10 +650,10 @@ function parseDiceExpression(expr) {
     const diceMatch = p.match(/^([+-])?(\d+)?d(\d+)(kh|kl)?(\d+)?$/);
     if (diceMatch) {
       const sign = diceMatch[1] === '-' ? -1 : 1;
-      const count = Math.min(Math.max(1, parseInt(diceMatch[2] || 1)), 100); // Cap at 100 dice
-      const sides = Math.min(Math.max(1, parseInt(diceMatch[3])), 1000); // Cap at d1000
+      const count = Math.min(Math.max(1, parseInt(diceMatch[2] || 1, 10)), 100); // Cap at 100 dice
+      const sides = Math.min(Math.max(1, parseInt(diceMatch[3], 10)), 1000); // Cap at d1000
       const keepOp = diceMatch[4];
-      const keepNum = Math.min(diceMatch[5] ? parseInt(diceMatch[5]) : count, count);
+      const keepNum = Math.min(diceMatch[5] ? parseInt(diceMatch[5], 10) : count, count);
 
       const diceRolls = [];
       for (let i = 0; i < count; i++) {
@@ -675,7 +675,7 @@ function parseDiceExpression(expr) {
       rolls.push(...diceRolls.map(r => r * sign));
     } else {
       // Try to parse as modifier
-      const num = parseInt(p);
+      const num = parseInt(p, 10);
       if (!isNaN(num)) {
         modifier += num;
         total += num;
@@ -2002,6 +2002,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         const conScore = resolvedTarget.con || resolvedTarget.stats?.con || 10;
         const save = window.CombatEngine.rollConcentrationSave({ ...resolvedTarget, con: conScore }, totalDamage);
         if (save.concentrationBroken) {
+          // D&D 5e: Failed concentration save breaks concentration, ending the spell
           addCombatLogEntry({ type:"save", text: resolvedTarget.name + " FAILS concentration save (DC " + save.dc + ", rolled " + save.total + ") — " + (resolvedTarget.activeConcentrationSpell || "spell") + " ends!" });
           updateToken(resolvedTarget.id, { activeConcentrationSpell: null });
           removeTokenCondition(resolvedTarget.id, "Concentrating");
@@ -2090,27 +2091,38 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       }
 
       // ── BG3: Sneak Attack (Rogue) ──
+      // D&D 5e: Sneak Attack requires finesse or ranged weapons
       const attackerClass = (attacker.class || attacker.cls || "").toLowerCase();
       if (attackerClass.includes("rogue") && !attacker._sneakAttackUsedThisTurn) {
-        const allies = tokens.filter(t => t.id !== attacker.id && t.id !== target.id && t.tokenType === attacker.tokenType && (t.hp || 0) > 0);
-        const sneakCheck = CE.checkSneakAttack(
-          { ...pcStats, class: attacker.class || attacker.cls },
-          target, r0.attackRoll?.mode === "advantage", allies, weaponName
-        );
-        if (sneakCheck.eligible) {
-          const sneakRoll = CE.rollSneakAttack(pcStats.lv || 1);
-          bonusDamage += sneakRoll.total;
-          bonusLabels.push("Sneak Attack +" + sneakRoll.total);
-          addCombatLogEntry({ type: "system", text: attacker.name + " triggers Sneak Attack for " + sneakRoll.total + " extra damage (" + sneakRoll.expression + ")" });
-          updateToken(attacker.id, { _sneakAttackUsedThisTurn: true });
+        // TODO: Add weapon.finesse and weapon.ranged properties to weapon data structure for proper validation
+        const isFinessedOrRanged = !weaponName ||
+          weaponName.toLowerCase().match(/finesse|dagger|rapier|short sword|hand crossbow|light crossbow|bow|dart|sling|javelin|thrown/) !== null;
+        if (isFinessedOrRanged) {
+          const allies = tokens.filter(t => t.id !== attacker.id && t.id !== target.id && t.tokenType === attacker.tokenType && (t.hp || 0) > 0);
+          const sneakCheck = CE.checkSneakAttack(
+            { ...pcStats, class: attacker.class || attacker.cls },
+            target, r0.attackRoll?.mode === "advantage", allies, weaponName
+          );
+          if (sneakCheck.eligible) {
+            const sneakRoll = CE.rollSneakAttack(pcStats.lv || 1);
+            bonusDamage += sneakRoll.total;
+            bonusLabels.push("Sneak Attack +" + sneakRoll.total);
+            addCombatLogEntry({ type: "system", text: attacker.name + " triggers Sneak Attack for " + sneakRoll.total + " extra damage (" + sneakRoll.expression + ")" });
+            updateToken(attacker.id, { _sneakAttackUsedThisTurn: true });
+          }
         }
       }
 
       // ── BG3: Rage damage (Barbarian) ──
+      // D&D 5e: Rage damage only applies to melee weapon attacks using Strength
       if (attackerClass.includes("barbarian") && getMergedConditionsForToken(attacker).includes("Raging")) {
-        const rageDmg = CE.getRageDamage(pcStats.lv || 1);
-        bonusDamage += rageDmg;
-        bonusLabels.push("Rage +" + rageDmg);
+        const isRangedWeapon = weaponName && (weaponName.toLowerCase().match(/bow|crossbow|dart|sling|javelin|thrown/) !== null);
+        const isMeleeAttack = !isRangedWeapon;
+        if (isMeleeAttack) {
+          const rageDmg = CE.getRageDamage(pcStats.lv || 1);
+          bonusDamage += rageDmg;
+          bonusLabels.push("Rage +" + rageDmg);
+        }
       }
 
       const totalDmg = result.totalDamage + bonusDamage;
@@ -2958,7 +2970,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             ),
           }));
         }
-      }).catch(() => {});
+      }).catch(function(err) { console.warn('Operation failed:', err && err.message || err); });
     });
   }, [party?.length]);
 
@@ -4091,7 +4103,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     const upcastDamage = getUpcastDamage(spell, effectiveCastLevel);
     const upcastHealing = getUpcastHealing(spell, effectiveCastLevel);
 
-    // ── Consume spell slot (if not cantrip) ──
+    // ── Check spell slot availability (if not cantrip) ──
+    // D&D 5e: Spell slot should only be consumed on successful casting
     if (spell.level > 0 && caster && caster.spellSlots) {
       const slotLevel = effectiveCastLevel;
       const maxSlot = caster.spellSlots[slotLevel] || 0;
@@ -4101,9 +4114,6 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         setTimeout(() => setSpellLog(prev => prev.slice(1)), 3000);
         return;
       }
-      // Consume the slot
-      const newUsed = { ...(caster.usedSlots || {}), [slotLevel]: usedSlot + 1 };
-      updateToken(caster.id, { usedSlots: newUsed });
     }
 
     let hitTokens = [];
@@ -4247,6 +4257,17 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       }
     }
 
+    // ── Consume spell slot on successful cast (D&D 5e: only after successful casting) ──
+    if (spell.level > 0 && caster && caster.spellSlots) {
+      const slotLevel = effectiveCastLevel;
+      const maxSlot = caster.spellSlots[slotLevel] || 0;
+      const usedSlot = (caster.usedSlots || {})[slotLevel] || 0;
+      if (usedSlot < maxSlot) {
+        const newUsed = { ...(caster.usedSlots || {}), [slotLevel]: usedSlot + 1 };
+        updateToken(caster.id, { usedSlots: newUsed });
+      }
+    }
+
     // Create visual effect
     setSpellEffects(prev => [...prev, { id, x: worldX, y: worldY, spell, startTime: Date.now(), casterX: caster?.x || worldX, casterY: caster?.y || worldY }]);
 
@@ -4290,7 +4311,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       if (rows && rows.length > 0) {
         setTemplates(rows.map(r => ({ ...r.data, id: r.id, _fromCloud: true })));
       }
-    }).catch(() => {});
+    }).catch(function(err) { console.warn('Operation failed:', err && err.message || err); });
   }, [activeCampaignId]);
   const [templateName, setTemplateName] = useState("");
   const [showTemplateInput, setShowTemplateInput] = useState(false);
@@ -9664,6 +9685,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       reactionSpent: false,
       freeObjectUsed: false,
       _sneakAttackUsedThisTurn: false,
+      // D&D 5e: Reset movement budget at the start of each creature's turn
+      distanceMoved: 0,
     };
     if (token.monsterData?.legendaryActions?.length) {
       tokenPatch.legendaryActionMax = getLegendaryActionMax(token);
@@ -9975,7 +9998,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     localStorage.setItem(TEMPLATE_KEY, JSON.stringify(updated));
     // Also save to Supabase cloud
     if (typeof PhmurtDB !== 'undefined' && activeCampaignId && activeCampaignId !== 'example') {
-      PhmurtDB.saveEncounterTemplate(activeCampaignId, tpl).catch(() => {});
+      PhmurtDB.saveEncounterTemplate(activeCampaignId, tpl).catch(function(err) { console.warn('Operation failed:', err && err.message || err); });
     }
     setTemplateName("");
     setShowTemplateInput(false);
@@ -10000,7 +10023,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     localStorage.setItem(TEMPLATE_KEY, JSON.stringify(updated));
     // Also delete from Supabase cloud
     if (typeof PhmurtDB !== 'undefined' && tpl && tpl._fromCloud) {
-      PhmurtDB.deleteEncounterTemplate(id).catch(() => {});
+      PhmurtDB.deleteEncounterTemplate(id).catch(function(err) { console.warn('Operation failed:', err && err.message || err); });
     }
   };
 

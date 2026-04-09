@@ -5518,7 +5518,7 @@ window.__CM = {
 /* Tab module loading state */
 const _tabModuleState = { dashboard: true, timeline: false, world: false, play: false };
 const _tabModulePromises = {};
-const _MODULE_VERSION = 152; // Bump to force re-fetch past service worker cache
+const _MODULE_VERSION = 157; // Bump to force re-fetch past service worker cache
 
 /**
  * Lazy-load a tab module: fetch JSX, transpile with Babel, execute.
@@ -5528,9 +5528,13 @@ function loadTabModule(name, url) {
   if (_tabModuleState[name]) return Promise.resolve();
   if (_tabModulePromises[name]) return _tabModulePromises[name];
 
-  _tabModulePromises[name] = fetch(url + "?v=" + _MODULE_VERSION, { cache: "no-cache" })
-    .then(function(r) { return r.text(); })
+  _tabModulePromises[name] = fetch(url + "?v=" + _MODULE_VERSION + "&t=" + Date.now(), { cache: "no-store" })
+    .then(function(r) {
+      if (!r.ok) throw new Error("HTTP " + r.status + " loading " + name);
+      return r.text();
+    })
     .then(function(jsx) {
+      console.log("[LazyLoader] Transforming " + name + " (" + jsx.length + " bytes)");
       var js = Babel.transform(jsx, { presets: ["react"] }).code;
       var script = document.createElement("script");
       // Wrap in IIFE to avoid const/let redeclaration conflicts with main scope
@@ -5538,6 +5542,7 @@ function loadTabModule(name, url) {
       document.head.appendChild(script);
       _tabModuleState[name] = true;
       delete _tabModulePromises[name];
+      console.log("[LazyLoader] " + name + " loaded OK");
     })
     .catch(function(err) {
       console.error("[LazyLoader] Failed to load " + name + ":", err);

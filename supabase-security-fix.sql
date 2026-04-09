@@ -29,11 +29,18 @@ CREATE POLICY "profiles_select_own"
   ON profiles FOR SELECT
   USING (auth.uid() = id);
 
--- Users can only update their own profile
+-- Users can only update their own profile,
+-- but CANNOT modify privilege/moderation columns (is_admin, is_superuser, is_banned).
+-- The WITH CHECK ensures these columns match their current DB values.
 CREATE POLICY "profiles_update_own"
   ON profiles FOR UPDATE
   USING (auth.uid() = id)
-  WITH CHECK (auth.uid() = id);
+  WITH CHECK (
+    auth.uid() = id
+    AND is_admin    = (SELECT p.is_admin    FROM profiles p WHERE p.id = auth.uid())
+    AND is_superuser = (SELECT p.is_superuser FROM profiles p WHERE p.id = auth.uid())
+    AND is_banned   = (SELECT p.is_banned   FROM profiles p WHERE p.id = auth.uid())
+  );
 
 -- Users can insert their own profile (for sign-up)
 CREATE POLICY "profiles_insert_own"

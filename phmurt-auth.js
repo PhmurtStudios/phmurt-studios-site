@@ -440,7 +440,7 @@ var PhmurtDB = (function () {
       var name = snapshot && snapshot.name ? String(snapshot.name).slice(0, 100) : 'Unnamed';
       var race = snapshot && snapshot.race ? String(snapshot.race).slice(0, 50) : '';
       var cls = snapshot && snapshot.class ? String(snapshot.class).slice(0, 50) : '';
-      var level = snapshot && snapshot.level ? Math.min(Math.max(1, parseInt(snapshot.level) || 1), 30) : 1;
+      var level = snapshot && snapshot.level ? Math.min(Math.max(1, parseInt(snapshot.level, 10) || 1), 30) : 1;
 
       var sb = _sb();
       if (sb) {
@@ -471,7 +471,7 @@ var PhmurtDB = (function () {
             .catch(function (e) {
               // If not found, insert fresh
               return sb.from('characters').insert(row).select('id').single()
-                .then(function (r2) { return { success: true, id: r2.data.id }; })
+                .then(function (r2) { if (r2.error || !r2.data) return { success: false }; return { success: true, id: r2.data.id }; })
                 .catch(function (e2) { return { success: false, error: e2.message }; });
             });
         } else {
@@ -746,7 +746,8 @@ var PhmurtDB = (function () {
               '<input id="pa-up-pass" type="password" autocomplete="new-password" placeholder="Choose a password" style="' + S.input + '" /></div>' +
             '<div style="' + S.field + '"><label style="' + S.label + '">Confirm Password</label>' +
               '<input id="pa-up-pass2" type="password" autocomplete="new-password" placeholder="Repeat your password" style="' + S.input + '" /></div>' +
-            '<button id="pa-up-submit" style="' + S.btn + '">Create Account</button>' +
+            '<div style="' + S.field + 'display:flex;align-items:flex-start;gap:8px;"><input id="pa-up-age-check" type="checkbox" style="margin-top:2px;cursor:pointer;"/><label style="' + S.label + 'margin-bottom:0;cursor:pointer;">I confirm I am at least 13 years of age</label></div>' +
+            '<button id="pa-up-submit" style="' + S.btn + 'opacity:0.6;cursor:not-allowed;" disabled>Create Account</button>' +
             (usingSupabase ? '<p style="' + S.note + '">A confirmation email may be sent to verify your address.</p>' : '') +
           '</div>' +
         '</div>';
@@ -786,6 +787,24 @@ var PhmurtDB = (function () {
       document.getElementById('pa-tab-in').addEventListener('click', function () { switchTab('in'); });
       document.getElementById('pa-tab-up').addEventListener('click', function () { switchTab('up'); });
 
+      // Handle age verification checkbox
+      var ageCheckbox = document.getElementById('pa-up-age-check');
+      var submitBtn = document.getElementById('pa-up-submit');
+      if (ageCheckbox && submitBtn) {
+        function updateSubmitButton() {
+          if (ageCheckbox.checked) {
+            submitBtn.disabled = false;
+            submitBtn.style.opacity = '1';
+            submitBtn.style.cursor = 'pointer';
+          } else {
+            submitBtn.disabled = true;
+            submitBtn.style.opacity = '0.6';
+            submitBtn.style.cursor = 'not-allowed';
+          }
+        }
+        ageCheckbox.addEventListener('change', updateSubmitButton);
+      }
+
       function closeModal() { modal.remove(); }
       document.getElementById('pa-close').addEventListener('click', closeModal);
       modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
@@ -812,11 +831,13 @@ var PhmurtDB = (function () {
         var email = document.getElementById('pa-up-email').value.trim();
         var pass  = document.getElementById('pa-up-pass').value;
         var pass2 = document.getElementById('pa-up-pass2').value;
+        var ageCheck = document.getElementById('pa-up-age-check').checked;
         if (!name)           { showErr('Please enter a display name.'); return; }
         if (!email)          { showErr('Please enter your email address.'); return; }
         if (!pass)           { showErr('Please choose a password.'); return; }
         if (pass.length < 12) { showErr('Password must be at least 12 characters.'); return; }
         if (pass !== pass2)  { showErr('Passwords do not match.'); return; }
+        if (!ageCheck)       { showErr('You must confirm you are at least 13 years of age.'); return; }
         setLoading('pa-up-submit', true);
         PhmurtDB.signUp(name, email, pass)
           .then(function (sess) {
@@ -930,7 +951,8 @@ var PhmurtDB = (function () {
       var sb = _sb();
       if (!sb) return Promise.resolve(false);
       return sb.from('campaign_invites').delete().eq('id', inviteId)
-        .then(function (r) { return !r.error; });
+        .then(function (r) { return !r.error; })
+        .catch(function() { return false; });
     },
 
     /* ── Campaign Members ─────────────────────────────────────── */
@@ -975,7 +997,8 @@ var PhmurtDB = (function () {
     uploadMapImage: function (campaignId, file) {
       var sb = _sb();
       if (!sb || !_session) return Promise.resolve(null);
-      var path = _session.userId + '/' + campaignId + '/' + Date.now() + '-' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      if (!file || !file.name) return Promise.resolve({ error: 'No file provided' });
+      var path = _session.userId + '/' + campaignId + '/' + Date.now() + '-' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\.\./g, '_');
       return sb.storage.from('map-images').upload(path, file, { upsert: false })
         .then(function (r) {
           if (r.error) { if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtDB] Map upload failed:', r.error.message); return null; }
@@ -995,7 +1018,8 @@ var PhmurtDB = (function () {
     uploadPortrait: function (entityId, file) {
       var sb = _sb();
       if (!sb || !_session) return Promise.resolve(null);
-      var path = _session.userId + '/' + entityId + '.' + (file.name.split('.').pop() || 'jpg');
+      if (!file || !file.name) return Promise.resolve({ error: 'No file provided' });
+      var path = _session.userId + '/' + entityId + '.' + (file.name.split('.').pop() || 'jpg').replace(/\.\./g, '_');
       return sb.storage.from('portraits').upload(path, file, { upsert: true })
         .then(function (r) {
           if (r.error) { if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtDB] Portrait upload failed:', r.error.message); return null; }

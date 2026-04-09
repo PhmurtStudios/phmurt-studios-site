@@ -139,7 +139,7 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
       <div
         key={quest.id}
         style={{
-          backgroundColor: isExpanded ? T.bgCard : T.bgCard,
+          backgroundColor: isExpanded ? T.bgCard : T.bg,
           border: `1px solid ${isExpanded ? T.crimson : T.textFaint}33`,
           borderRadius: '8px',
           padding: '16px',

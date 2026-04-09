@@ -215,7 +215,14 @@
 
       // Pick 2-4 goods for this region
       const numGoods = Math.floor(rng() * 3) + 2; // 2-4
-      const shuffled = [...options].sort(() => rng() - 0.5);
+      const shuffled = [...options];
+      // Fisher-Yates shuffle
+      for (var i = shuffled.length - 1; i > 0; i--) {
+        var j = Math.floor(rng() * (i + 1));
+        var tmp = shuffled[i];
+        shuffled[i] = shuffled[j];
+        shuffled[j] = tmp;
+      }
       const selected = shuffled.slice(0, Math.min(numGoods, shuffled.length));
 
       // Add one "secondary" good from anywhere
@@ -313,8 +320,8 @@
           const volatility = good.volatility || 0.12;
           const change = (supplyFactor * 0.1 + (rng() - 0.5) * volatility);
 
-          const newPrice = Math.round(price * (1 + change));
-          regionMarket.set(goodId, Math.max(1, newPrice));
+          const newPrice = Math.max(1, Math.min(99999, Math.round(price * (1 + change))));
+          regionMarket.set(goodId, newPrice);
 
           // Supply decreases due to consumption
           const consumption = 1 + rng() * 2;
