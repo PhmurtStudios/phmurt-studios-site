@@ -2415,6 +2415,10 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
   const [mapPan, setMapPan] = useState({ x: 60, y: 30 });
   const [dragging, setDragging] = useState(null);
   const mapRef = useRef(null);
+  const mapCanvasRef = useRef(null);
+  const mapEngineRef = useRef(null);
+  const dataRef = useRef(data); // kept in sync for MapEngine callbacks
+  dataRef.current = data;
   const mapTouchRef = useRef({ active: false });
   const [zoomLevel, setZoomLevel] = useState("continent"); // continent | kingdom | local | detail
 
@@ -2502,6 +2506,78 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
       }));
     }
   }, [data.atlasMapSeed]);
+
+  // ── MapEngine: create/destroy instance when canvas mounts or seed changes ──
+  useEffect(() => {
+    if (tab !== "map" || !mapCanvasRef.current) return;
+    const seedNum = parseInt(data.atlasMapSeed || "1");
+    if (isNaN(seedNum)) return;
+
+    // Destroy old engine
+    if (mapEngineRef.current && mapEngineRef.current.renderer) {
+      mapEngineRef.current.renderer.destroy();
+    }
+
+    // Create new engine
+    if (typeof window.MapEngine !== "function") return; // guard if script not loaded
+    const engine = new window.MapEngine(mapCanvasRef.current);
+    mapEngineRef.current = engine;
+
+    // Wire callbacks: when user clicks a region/city on the canvas map, select it in the side panel
+    engine.onRegionClick(function(region, faction) {
+      if (region) {
+        const d = dataRef.current;
+        const r = (d.regions || []).find(function(reg) { return reg.name === region.name; });
+        if (r) { setSel(r); setSelType("region"); }
+      }
+    });
+    engine.onCityClick(function(city) {
+      if (city) {
+        const d = dataRef.current;
+        const c = (d.cities || []).find(function(ci) { return ci.name === city.name; });
+        if (c) { setSel(c); setSelType("city"); }
+      }
+    });
+
+    // Generate the map
+    engine.generate(seedNum);
+
+    // If world data hasn't been generated yet, do it now via bridge
+    if (typeof window.mapEngineToWorldData === "function" && (!data.regions || data.regions.length === 0)) {
+      const worldData = window.mapEngineToWorldData(engine, seedNum);
+      if (worldData) {
+        setData(function(d) {
+          return Object.assign({}, d, {
+            regions: worldData.regions,
+            factions: worldData.factions,
+            npcs: worldData.npcs || [],
+            cities: worldData.cities || [],
+            pois: worldData.pois || [],
+            name: worldData.name || d.name,
+          });
+        });
+      }
+    }
+
+    return function() {
+      if (mapEngineRef.current && mapEngineRef.current.renderer) {
+        mapEngineRef.current.renderer.destroy();
+      }
+      mapEngineRef.current = null;
+    };
+  }, [tab, data.atlasMapSeed]);
+
+  // ── MapEngine: resize canvas when container resizes ──
+  useEffect(() => {
+    if (tab !== "map" || !mapCanvasRef.current || !mapEngineRef.current) return;
+    const ro = new ResizeObserver(function() {
+      if (mapEngineRef.current && mapEngineRef.current.renderer) {
+        mapEngineRef.current.renderer.render();
+      }
+    });
+    if (mapRef.current) ro.observe(mapRef.current);
+    return function() { ro.disconnect(); };
+  }, [tab, data.atlasMapSeed]);
 
   const conns = (type,ent) => {
     const c=[];
@@ -3254,10 +3330,11 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
       <div style={{ display: (tab === "calendar" || tab === "exploration") ? "none" : "flex", flex:1, overflow:"hidden", position:"relative" }}>
         {/* ══════════ FANTASY MAP TAB — Multi-scale continental map ══════════ */}
         {tab==="map" && (
-          <div ref={mapRef} style={{ flex:1, overflow:"hidden", cursor: dragging ? "grabbing" : "grab", position:"relative", background: data.atlasMapSeed ? "#2a2520" : "linear-gradient(165deg, #e8ddc8 0%, #ddd0b8 45%, #d4c6a8 100%)", touchAction:"none", WebkitUserSelect:"none", userSelect:"none" }}
-            onMouseDown={handleMouseDown} onMouseMove={handleMouseMove} onMouseUp={handleMouseUp} onMouseLeave={handleMouseUp}
-            onTouchStart={handleMapTouchStart} onTouchMove={handleMapTouchMove} onTouchEnd={handleMapTouchEnd} onTouchCancel={handleMapTouchEnd}>
-            <svg width="100%" height="100%" style={{ display:"block" }} onClick={() => { setCityPopup(null); setRegionPopup(null); }}>
+          <div ref={mapRef} style={{ flex:1, overflow:"hidden", position:"relative", background:"#1a1814", touchAction:"none", WebkitUserSelect:"none", userSelect:"none" }}>
+            {/* ── New MapEngine Canvas ── */}
+            <canvas ref={mapCanvasRef} style={{ width:"100%", height:"100%", display:"block" }} />
+            {/* ── Legacy SVG hidden — kept for non-MapEngine fallback ── */}
+            <svg width="0" height="0" style={{ display:"none" }}>
               <defs>
                 {/* Parchment texture filter */}
                 <filter id="parchment">
@@ -3634,8 +3711,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
               </g>
             </svg>
 
-            {/* ── City quick-info popup ── */}
-            {cityPopup && (() => {
+            {/* ── City quick-info popup (legacy SVG mode — hidden when MapEngine active) ── */}
+            {!mapEngineRef.current && cityPopup && (() => {
               const c = cityPopup.city;
               const rect = mapRef.current?.getBoundingClientRect();
               const popX = ((c.origX != null ? c.origX : c.mapX) * MAP_W * mapZoom + mapPan.x);
@@ -3710,8 +3787,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
               );
             })()}
 
-            {/* ── Region quick-info popup ── */}
-            {regionPopup && (() => {
+            {/* ── Region quick-info popup (legacy SVG mode — hidden when MapEngine active) ── */}
+            {!mapEngineRef.current && regionPopup && (() => {
               const t = regionPopup.territory;
               const r = regionPopup.region;
               const fc = (() => { const f = (data.factions || []).find(f => f.name === t.faction); return f?.color || "#c9a85c"; })();
@@ -3799,47 +3876,64 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                         const seedVal = e.target.value;
                         if (seedVal) {
                           const seedNum = parseInt(seedVal);
-                          const atlas = generateAtlasData(seedNum);
-                          const result = regionsAndFactionsFromMetadata(seedNum);
-                          const meta = (typeof ATLAS_METADATA !== 'undefined') && ATLAS_METADATA[seedNum];
+                          // Generate map via new MapEngine + bridge
+                          if (mapEngineRef.current) {
+                            mapEngineRef.current.generate(seedNum);
+                          }
+                          var worldData = null;
+                          if (typeof window.mapEngineToWorldData === "function" && mapEngineRef.current) {
+                            worldData = window.mapEngineToWorldData(mapEngineRef.current, seedNum);
+                          }
+                          if (!worldData) {
+                            // Fallback to old generation if bridge not available
+                            var atlas = generateAtlasData(seedNum);
+                            worldData = regionsAndFactionsFromMetadata(seedNum);
+                          }
                           setData(d => ({
                             ...d,
                             atlasMapSeed: seedVal,
-                            generatedAtlas: atlas,
-                            regions: result.regions,
-                            factions: result.factions,
-                            npcs: result.npcs || d.npcs,
-                            cities: result.cities || [],
-                            pois: result.pois || [],
-                            name: (meta && meta.mapName) || d.name,
+                            regions: worldData.regions || d.regions,
+                            factions: worldData.factions || d.factions,
+                            npcs: worldData.npcs || d.npcs,
+                            cities: worldData.cities || [],
+                            pois: worldData.pois || [],
+                            name: worldData.name || d.name,
                             activity: [{ time: "Just now", text: `Generated world map (seed ${seedVal})` }, ...(d.activity || [])].slice(0, 40),
                           }));
                         } else {
                           setData(d => { const { atlasMapSeed, generatedAtlas, ...rest } = d; return { ...rest, activity: [{ time: "Just now", text: "Reverted to default map" }, ...(d.activity || [])].slice(0, 40) }; });
                         }
-                      }}
+                      }
                       style={{ padding:"4px 8px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(232,186,64,0.25)", borderRadius:"4px", fontFamily:"'Cinzel', serif", fontSize:9, color:T.gold, outline:"none", cursor:"pointer", letterSpacing:"1px" }}
                     >
                       {Array.from({length:100}, (_,i) => i+1).map(s => {
-                        const m = (typeof ATLAS_METADATA !== 'undefined') && ATLAS_METADATA[s];
-                        return <option key={s} value={s}>{m ? m.mapName : `World Seed ${s}`}</option>;
+                        return <option key={s} value={s}>{`World Seed ${s}`}</option>;
                       })}
                     </select>
                     <button onClick={() => {
                       const current = parseInt(data.atlasMapSeed || "0");
                       const next = (current % 100) + 1;
-                      const atlas = generateAtlasData(next);
-                      const result = regionsAndFactionsFromMetadata(next);
-                      const meta = (typeof ATLAS_METADATA !== 'undefined') && ATLAS_METADATA[next];
+                      // Generate via new MapEngine + bridge
+                      if (mapEngineRef.current) {
+                        mapEngineRef.current.generate(next);
+                      }
+                      var worldData = null;
+                      if (typeof window.mapEngineToWorldData === "function" && mapEngineRef.current) {
+                        worldData = window.mapEngineToWorldData(mapEngineRef.current, next);
+                      }
+                      if (!worldData) {
+                        var atlas = generateAtlasData(next);
+                        worldData = regionsAndFactionsFromMetadata(next);
+                      }
                       setData(d => ({
                         ...d,
                         atlasMapSeed: String(next),
-                        generatedAtlas: atlas,
-                        regions: result.regions,
-                        factions: result.factions,
-                        npcs: result.npcs || d.npcs,
-                        cities: result.cities || [],
-                        name: (meta && meta.mapName) || d.name,
+                        regions: worldData.regions || d.regions,
+                        factions: worldData.factions || d.factions,
+                        npcs: worldData.npcs || d.npcs,
+                        cities: worldData.cities || [],
+                        pois: worldData.pois || [],
+                        name: worldData.name || d.name,
                         activity: [{ time: "Just now", text: `Regenerated world map (seed ${next})` }, ...(d.activity || [])].slice(0, 40),
                       }));
                     }} style={{ padding:"5px 12px", background:"rgba(30,26,22,0.85)", backdropFilter:"blur(8px)", border:"1px solid rgba(232,186,64,0.35)", borderRadius:"4px", fontFamily:"'Cinzel', serif", fontSize:9, color:T.questGold, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", boxShadow:"0 2px 10px rgba(0,0,0,0.3)", transition:"all 0.2s", whiteSpace:"nowrap" }}

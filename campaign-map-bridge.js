@@ -1,0 +1,852 @@
+(function(global) {
+  'use strict';
+
+  // ============================================================================
+  // SEEDED RNG - same as campaign-world.js (mulberry32)
+  // ============================================================================
+  function mulberry32(a) {
+    return function() {
+      a |= 0;
+      a = (a + 0x6d2b79f5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  // ============================================================================
+  // DATA POOLS - comprehensive name, role, trait, and detail pools
+  // ============================================================================
+  const DATA_POOLS = {
+    maleFirstNames: [
+      'Aldric','Bran','Cedric','Darius','Edmund','Fendrel','Gareth','Haldor','Isen','Jareth',
+      'Kael','Lucian','Mordecai','Noran','Orin','Percival','Roderic','Soren','Theron','Ulric',
+      'Vance','Willem','Ragnar','Osric','Corwin','Dorian','Emeric','Balthazar','Caspian','Desmond',
+      'Evander','Griffith','Hadrian','Julius','Magnus','Nikolai','Oberon','Quentin','Reinhardt','Silas',
+      'Tobias','Viktor','Wolfgang','Bastian','Callum','Dante','Erasmus','Gunnar','Henrik','Lysander',
+      'Matthias','Tristan','Valerian','Wulfric','Alistair','Benedict','Cassius','Ezekiel','Felix','Hugo',
+      'Merrick','Severin','Duncan','Eamon','Sigmund','Tormund','Viggo','Lachlan','Garrett','Brennus',
+      'Roland','Leofric','Cormac','Gideon','Jasper','Alaric','Caius','Draven','Florian','Harlan',
+    ],
+    femaleFirstNames: [
+      'Alara','Brielle','Celia','Daphne','Elara','Freya','Gwendolyn','Helena','Isolde','Jaina',
+      'Kaida','Lyra','Miriel','Nessa','Ophira','Petra','Rhiannon','Sera','Thalia','Ursa',
+      'Vespera','Wren','Yara','Astrid','Brigid','Cassara','Dahlia','Elowen','Faye','Giselle',
+      'Hestia','Iris','Juno','Aveline','Calista','Delphine','Eira','Fiora','Morrigan','Nerissa',
+      'Rowena','Saoirse','Tamsin','Cordelia','Evangeline','Guinevere','Imogen','Juliana','Lorelei','Nimue',
+      'Penelope','Rosalind','Seraphina','Briar','Cressida','Elspeth','Felicity','Ingrid','Kestrel','Lenore',
+      'Marigold','Niamh','Persephone','Ravenna','Sylvana','Adelaide','Bronwyn','Celeste','Emilia','Hazel',
+      'Magnolia','Opal','Rosalie','Sabina','Valentina','Willow','Anastasia','Esme','Viveka','Melusine',
+    ],
+    lastNames: [
+      'Blackwood','Ironforge','Stormwind','Ashworth','Greymane','Thornwall','Darkholme','Brightblade',
+      'Ravencrest','Nightshade','Goldmantle','Silverthorn','Wyrmwood','Frostborn','Emberheart','Oakenshield',
+      'Duskwalker','Stoneheart','Hawkridge','Moonvale','Dawnbringer','Whitecrest','Shadowmere','Firebrand',
+      'Steelhand','Wolfsbane','Coldstream','Starfall','Highcastle','Deepwater','Ashford','Blackthorn',
+      'Eldergrove','Foxglove','Greymark','Lockwood','Mossgrove','Northwind','Redmane','Silverlock',
+      'Thistledown','Winterbourne','Crowshield','Grimshaw','Hollowbone','Longspear','Nighthollow','Proudfoot',
+      'Quicksilver','Sandstone','Cindervale','Eaglecrest','Flintshire','Goldwater','Heathcliff','Icemantle',
+      'Kingsley','Lionsgate','Marshwood','Nethervane','Pendrake','Sunforge','Tidewater','Windhollow',
+      'Aldervale','Copperhelm','Darkmoor','Edgewood','Hartwell','Moorehead','Pyreforge','Stormforge',
+      'Ravenshaw','Sablewood','Trueblood','Voidhart','Woodhaven','Balefrost','Graveston','Hearthfire',
+    ],
+    npcRoles: {
+      ruler: ['King', 'Queen', 'Emperor', 'Empress', 'Prince', 'Princess', 'Warlord', 'High Chieftain'],
+      heir: ['Crown Prince', 'Crown Princess', 'Heir Apparent', 'Designated Successor'],
+      general: ['General', 'Commander', 'Captain', 'War Marshal', 'Knight Commander', 'Strategist'],
+      advisor: ['Chancellor', 'Counselor', 'Vizier', 'Steward', 'Seneschal', 'Regent', 'Minister'],
+      religious: ['High Priest', 'Archbishop', 'Abbess', 'Oracle', 'Druid Elder', 'Shaman', 'Inquisitor'],
+      merchant: ['Guildmaster', 'Merchant Prince', 'Tradesman', 'Caravan Master', 'Smuggler', 'Fence'],
+      criminal: ['Crime Boss', 'Thieves Guild Master', 'Bandit Leader', 'Corrupt Official', 'Dark Master'],
+      scholar: ['Archivist', 'Mage-Philosopher', 'Scribe Master', 'Historian', 'Sage', 'Artificer'],
+      military: ['Captain', 'Sergeant', 'Knight', 'Soldier', 'Ranger', 'Paladin'],
+      noble: ['Lord', 'Lady', 'Count', 'Countess', 'Baron', 'Baroness', 'Duke', 'Duchess'],
+      commoner: ['Mayor', 'Blacksmith', 'Innkeeper', 'Farmer', 'Guard Captain', 'Militia Master'],
+    },
+    traits: [
+      'ambitious', 'arrogant', 'calculating', 'cautious', 'charismatic', 'cunning', 'cynical',
+      'determined', 'diplomatic', 'driven', 'eloquent', 'evasive', 'faithful', 'fearless',
+      'feckless', 'flamboyant', 'glib', 'grim', 'hasty', 'honorable', 'impulsive', 'inquisitive',
+      'jovial', 'keen-eyed', 'kindhearted', 'loyal', 'manipulative', 'methodical', 'meticulous',
+      'moody', 'mysterious', 'naive', 'obsessive', 'paranoid', 'passionate', 'patient', 'pragmatic',
+      'proud', 'reckless', 'reliable', 'reserved', 'resourceful', 'ruthless', 'sarcastic', 'scheming',
+      'secretive', 'sharp-tongued', 'single-minded', 'shrewd', 'skeptical', 'sly', 'spirited',
+      'steady', 'stoic', 'suspicious', 'tactical', 'talkative', 'temperate', 'thoughtful', 'treacherous',
+      'trusting', 'unpredictable', 'unyielding', 'valiant', 'vengeful', 'vivacious', 'volatile', 'wary',
+    ],
+    secrets: [
+      'harbors a forbidden love',
+      'secretly funds a rival faction',
+      'is not who they claim to be',
+      'committed a terrible crime',
+      'possesses an ancient artifact',
+      'has a bastard child in hiding',
+      'is slowly being corrupted by dark magic',
+      'takes orders from a hidden master',
+      'hoards stolen wealth',
+      'has a terminal illness and hides it',
+      'plans a coup or assassination',
+      'was cursed by a powerful mage',
+      'is a spy or double agent',
+      'made a deal with a devil',
+      'betrayed someone close to them',
+    ],
+    shopTypes: [
+      'Adventurer\'s Supply', 'Blacksmith', 'Alchemist', 'Armory', 'Tavern & Lodging',
+      'General Store', 'Weaponsmith', 'Jeweler', 'Curiosities', 'Rare Books',
+      'Herbalist', 'Provisioner', 'Leatherworker', 'Artificer\'s Workshop', 'Apothecary',
+    ],
+    shopPrefixes: [
+      'The', 'Old', 'Silver', 'Golden', 'Iron', 'Rusty', 'Crimson', 'Azure', 'Verdant',
+      'Mystic', 'Wise', 'Lucky', 'Wandering', 'Mighty', 'Loyal', 'Three', 'Seven',
+    ],
+    shopSuffixes: [
+      'Inn', 'Tavern', 'Lodge', 'House', 'Emporium', 'Bazaar', 'Market', 'Counter',
+      'Shop', 'Stall', 'Post', 'Station', 'Hall', 'Chamber', 'Keep', 'Den',
+    ],
+    itemsByCategory: {
+      weapons: [
+        { name: 'Longsword', price: 15, rarity: 'common' },
+        { name: 'Shortsword', price: 10, rarity: 'common' },
+        { name: 'Greataxe', price: 30, rarity: 'common' },
+        { name: 'Dagger', price: 2, rarity: 'common' },
+        { name: 'Bow', price: 25, rarity: 'common' },
+        { name: 'Crossbow', price: 25, rarity: 'uncommon' },
+        { name: 'Spear', price: 5, rarity: 'common' },
+        { name: 'Mace', price: 5, rarity: 'common' },
+        { name: 'Rapier', price: 25, rarity: 'uncommon' },
+        { name: 'Scimitar', price: 25, rarity: 'uncommon' },
+      ],
+      armor: [
+        { name: 'Leather Armor', price: 10, rarity: 'common' },
+        { name: 'Chain Mail', price: 75, rarity: 'uncommon' },
+        { name: 'Plate Armor', price: 1500, rarity: 'rare' },
+        { name: 'Shield', price: 10, rarity: 'common' },
+        { name: 'Helmet', price: 10, rarity: 'common' },
+      ],
+      potions: [
+        { name: 'Potion of Healing', price: 50, rarity: 'uncommon' },
+        { name: 'Potion of Strength', price: 100, rarity: 'uncommon' },
+        { name: 'Potion of Speed', price: 150, rarity: 'rare' },
+        { name: 'Antitoxin', price: 25, rarity: 'common' },
+        { name: 'Oil of Etherealness', price: 300, rarity: 'very rare' },
+      ],
+      scrolls: [
+        { name: 'Scroll of Magic Missile', price: 100, rarity: 'uncommon' },
+        { name: 'Scroll of Fireball', price: 300, rarity: 'rare' },
+        { name: 'Scroll of Teleport', price: 500, rarity: 'rare' },
+        { name: 'Scroll of Identify', price: 25, rarity: 'common' },
+      ],
+      general: [
+        { name: 'Rope (50ft)', price: 1, rarity: 'common' },
+        { name: 'Torch', price: 1, rarity: 'common' },
+        { name: 'Bedroll', price: 1, rarity: 'common' },
+        { name: 'Waterskin', price: 5, rarity: 'common' },
+        { name: 'Lantern', price: 5, rarity: 'common' },
+        { name: 'Backpack', price: 2, rarity: 'common' },
+        { name: 'Lockpicks', price: 25, rarity: 'uncommon' },
+        { name: 'Spyglass', price: 1000, rarity: 'rare' },
+      ],
+    },
+    tavernPrefixes: [
+      'The', 'Old', 'Silver', 'Golden', 'Iron', 'Rusty', 'Crimson', 'Azure', 'Wandering',
+      'Lucky', 'Peaceful', 'Merciless', 'Broken', 'Bleeding', 'Blind', 'Floating', 'Soaring',
+    ],
+    tavernSuffixes: [
+      'Dragon', 'Griffin', 'Basilisk', 'Phoenix', 'Unicorn', 'Hydra', 'Manticore', 'Chimera',
+      'Golem', 'Wyvern', 'Pegasus', 'Sphinx', 'Harpy', 'Kraken', 'Leviathan', 'Serpent',
+      'Crown', 'Ale', 'Horn', 'Axe', 'Sword', 'Shield', 'Tavern', 'Inn',
+      'Hall', 'Lodge', 'House', 'Manor', 'Keep', 'Tower', 'Fortress', 'Castle',
+    ],
+    innServices: [
+      'rooms available', 'hot meals', 'ale and mead', 'wine selection', 'stables',
+      'entertainment', 'musicians', 'storytellers', 'gambling', 'information broker',
+      'equipment repair', 'laundry service', 'hot baths', 'healing potions', 'message board',
+    ],
+    questHooks: [
+      'A merchant seeks protection on a trade route.',
+      'A local noble is missing and presumed kidnapped.',
+      'Bandits have been plaguing the roads.',
+      'A mysterious cult has appeared in the region.',
+      'Ruins nearby contain something of value or danger.',
+      'A plague or blight is affecting the land.',
+      'A monster has been spotted hunting in the area.',
+      'An ancient prophecy is coming to pass.',
+      'A wizard seeks adventurers for an expedition.',
+      'A hidden treasure is said to be nearby.',
+      'Political tensions are near to boiling over.',
+      'A sacred relic has been stolen.',
+      'Strange disappearances have the town on edge.',
+      'A rival faction is making aggressive moves.',
+      'An old enemy has resurfaced.',
+    ],
+    cityFeatures: [
+      'ancient fortress', 'marble library', 'great cathedral', 'bustling market', 'shadowy district',
+      'tower district', 'warehouse district', 'garden district', 'merchant quarter', 'noble quarter',
+      'smithies and forges', 'mills and granaries', 'docks and wharves', 'arena or colosseum',
+      'university or academy', 'monastery or temple', 'catacombs beneath', 'city walls',
+    ],
+    factionTemplates: [
+      {
+        type: 'Kingdom',
+        govType: 'Monarchy',
+        color: '#4169E1',
+        attitudes: ['neutral', 'friendly', 'cautious', 'allied'],
+        desc: 'A proud monarchy ruling with tradition and honor.',
+        colors: ['#1E90FF', '#4169E1', '#6495ED', '#87CEEB']
+      },
+      {
+        type: 'Guild',
+        govType: 'Guildmaster Council',
+        color: '#FF8C00',
+        attitudes: ['neutral', 'cautious', 'friendly'],
+        desc: 'A merchant guild controlling commerce and trade.',
+        colors: ['#FF6347', '#FF8C00', '#FFA500', '#FFB90F']
+      },
+      {
+        type: 'Theocracy',
+        govType: 'High Priest',
+        color: '#FFD700',
+        attitudes: ['friendly', 'hostile', 'cautious', 'allied'],
+        desc: 'A religious order devoted to their faith.',
+        colors: ['#FFD700', '#FFA500', '#FF8C00', '#DC143C']
+      },
+      {
+        type: 'Bandit Network',
+        govType: 'Warlord',
+        color: '#8B0000',
+        attitudes: ['hostile', 'cautious', 'neutral'],
+        desc: 'A loose confederation of outlaws and criminals.',
+        colors: ['#8B0000', '#DC143C', '#FF4500', '#FF6347']
+      },
+      {
+        type: 'Mage Cabal',
+        govType: 'Archwizard Council',
+        color: '#9932CC',
+        attitudes: ['neutral', 'cautious', 'allied'],
+        desc: 'A secretive order of powerful mages.',
+        colors: ['#9932CC', '#8A2BE2', '#BA55D3', '#DDA0DD']
+      },
+      {
+        type: 'Free City',
+        govType: 'Democratic Council',
+        color: '#20B2AA',
+        attitudes: ['neutral', 'friendly', 'cautious'],
+        desc: 'An independent city governing itself by common law.',
+        colors: ['#20B2AA', '#48D1CC', '#5F9EA0', '#66CDAA']
+      },
+      {
+        type: 'Horde',
+        govType: 'Chieftain',
+        color: '#32CD32',
+        attitudes: ['hostile', 'cautious', 'neutral'],
+        desc: 'A fierce tribal confederation.',
+        colors: ['#32CD32', '#00FA9A', '#3CB371', '#90EE90']
+      },
+      {
+        type: 'Autonomous Region',
+        govType: 'Regional Governor',
+        color: '#FF1493',
+        attitudes: ['neutral', 'cautious', 'friendly'],
+        desc: 'A semi-independent territory with local governance.',
+        colors: ['#FF1493', '#FF69B4', '#FFB6C1', '#FFC0CB']
+      },
+      {
+        type: 'Shadow Syndicate',
+        govType: 'Shadow Master',
+        color: '#000000',
+        attitudes: ['hostile', 'neutral', 'cautious'],
+        desc: 'A mysterious criminal organization lurking in darkness.',
+        colors: ['#000000', '#2F4F4F', '#696969', '#808080']
+      },
+      {
+        type: 'Dwarven Hold',
+        govType: 'Clan Thane',
+        color: '#B8860B',
+        attitudes: ['neutral', 'friendly', 'cautious', 'allied'],
+        desc: 'A proud dwarven stronghold delving deep underground.',
+        colors: ['#B8860B', '#DAA520', '#CD853F', '#DEB887']
+      },
+      {
+        type: 'Elven Realm',
+        govType: 'Elven Court',
+        color: '#228B22',
+        attitudes: ['neutral', 'cautious', 'friendly'],
+        desc: 'An ancient elven kingdom preserving the old ways.',
+        colors: ['#228B22', '#32CD32', '#7CB342', '#9ACD32']
+      },
+      {
+        type: 'Merchant Republic',
+        govType: 'Merchant Council',
+        color: '#C0C0C0',
+        attitudes: ['neutral', 'friendly', 'cautious'],
+        desc: 'A prosperous republic driven by commerce and wealth.',
+        colors: ['#C0C0C0', '#D3D3D3', '#A9A9A9', '#808080']
+      },
+    ],
+    subFactionTemplates: [
+      { name: 'Thieves Guild', type: 'criminal', role: 'criminal' },
+      { name: 'Shadow Council', type: 'political', role: 'advisor' },
+      { name: 'Arcane Collegium', type: 'scholarly', role: 'scholar' },
+      { name: 'Holy Inquisition', type: 'religious', role: 'religious' },
+      { name: 'Merchant Consortium', type: 'economic', role: 'merchant' },
+      { name: 'City Guard', type: 'military', role: 'military' },
+      { name: 'Assassin\'s Brotherhood', type: 'criminal', role: 'criminal' },
+      { name: 'Ranger\'s Conclave', type: 'military', role: 'military' },
+    ],
+    loreSnippets: [
+      'An ancient curse lingers over this land.',
+      'A great battle was fought here centuries ago.',
+      'Legends speak of a hidden treasure.',
+      'Dark rituals were performed in these ruins.',
+      'A great hero fell defending these lands.',
+      'The Old Empire once ruled here with iron fist.',
+      'Powerful magic warps reality in these places.',
+      'A plague once wiped out a thriving city.',
+      'Dragons once nested in the high peaks.',
+      'An elder dragon made this region its lair.',
+      'This land was birthed from primal chaos.',
+      'A god once walked these fields.',
+    ],
+    climateByTerrain: {
+      plains: [
+        'Rolling grasslands with mild climate.',
+        'Temperate plains with seasonal variations.',
+        'Wind-swept grasslands with extreme temperatures.',
+      ],
+      forest: [
+        'Dense woodland with cool, humid air.',
+        'Ancient forest shrouded in mist.',
+        'Vibrant jungle thick with life.',
+      ],
+      mountains: [
+        'Snow-capped peaks with thin, cold air.',
+        'Jagged mountain range with harsh weather.',
+        'High plateaus with bitter winds.',
+      ],
+      swamp: [
+        'Murky wetlands thick with decay and disease.',
+        'Foggy marshland teeming with strange life.',
+        'Pestilent bog with noxious air.',
+      ],
+      desert: [
+        'Scorching dunes of endless sand.',
+        'Arid wastelands with scarce water.',
+        'Baking badlands with dramatic rock formations.',
+      ],
+      coast: [
+        'Rocky coastline pounded by sea spray.',
+        'Sandy beaches with salt in the air.',
+        'Cliff-lined shores with treacherous waters.',
+      ],
+      tundra: [
+        'Frozen wasteland of ice and permafrost.',
+        'Bitter tundra where few survive.',
+        'Icy plains swept by howling winds.',
+      ],
+      hills: [
+        'Gentle rolling hills with mixed terrain.',
+        'Steep hillsides with scattered outcrops.',
+        'Hilly region with deep valleys.',
+      ],
+    },
+    resourcesByTerrain: {
+      plains: ['grain', 'livestock', 'horses', 'clay'],
+      forest: ['timber', 'furs', 'herbs', 'game'],
+      mountains: ['ore', 'gems', 'metals', 'stone'],
+      swamp: ['peat', 'rare herbs', 'strange creatures', 'murk'],
+      desert: ['salt', 'spices', 'obsidian', 'sand gems'],
+      coast: ['fish', 'pearls', 'salt', 'sea trade'],
+      tundra: ['furs', 'ivory', 'seal oil', 'amber'],
+      hills: ['stone', 'gems', 'cave systems', 'mineral deposits'],
+    },
+    dangerDescriptions: {
+      low: 'Minor threats from wildlife or brigands.',
+      medium: 'Significant dangers from monsters and bandits.',
+      high: 'Serious threats including powerful creatures or raiders.',
+      extreme: 'Catastrophic dangers; only the brave should venture here.',
+    },
+    regionStates: [
+      'stable', 'tense', 'rebuilding', 'corrupted', 'prosperous', 'dangerous', 'contested',
+    ],
+  };
+
+  // ============================================================================
+  // NAME GENERATION HELPERS
+  // ============================================================================
+  function generateNPCName(rng, maleWeight = 0.5) {
+    const isMale = rng() < maleWeight;
+    const firstName = isMale
+      ? DATA_POOLS.maleFirstNames[Math.floor(rng() * DATA_POOLS.maleFirstNames.length)]
+      : DATA_POOLS.femaleFirstNames[Math.floor(rng() * DATA_POOLS.femaleFirstNames.length)];
+    const lastName = DATA_POOLS.lastNames[Math.floor(rng() * DATA_POOLS.lastNames.length)];
+    return `${firstName} ${lastName}`;
+  }
+
+  function generateShopName(rng) {
+    const prefix = DATA_POOLS.shopPrefixes[Math.floor(rng() * DATA_POOLS.shopPrefixes.length)];
+    const suffix = DATA_POOLS.shopSuffixes[Math.floor(rng() * DATA_POOLS.shopSuffixes.length)];
+    return `${prefix} ${suffix}`;
+  }
+
+  function generateTavernName(rng) {
+    const prefix = DATA_POOLS.tavernPrefixes[Math.floor(rng() * DATA_POOLS.tavernPrefixes.length)];
+    const suffix = DATA_POOLS.tavernSuffixes[Math.floor(rng() * DATA_POOLS.tavernSuffixes.length)];
+    return prefix === 'The' ? `The ${suffix}` : `The ${prefix} ${suffix}`;
+  }
+
+  function generateWorldName(seed) {
+    const rng = mulberry32(seed * 31337);
+    const realmNames = [
+      'Aethermoor', 'Blackthorn', 'Celestia', 'Drakeholm', 'Eldermark', 'Frostholm',
+      'Graymere', 'Highreach', 'Ironpeak', 'Jade Vale', 'Kingshire', 'Lorimere',
+      'Midvale', 'Northmarch', 'Oakenwood', 'Pendrake', 'Queensgate', 'Ravenmoor',
+      'Silvermere', 'Thornwick', 'Ulvenholm', 'Valorian', 'Westmarch', 'Xanthos',
+      'Yedrin', 'Zenith',
+    ];
+    const name = realmNames[Math.floor(rng() * realmNames.length)];
+    return `The Realm of ${name}`;
+  }
+
+  // ============================================================================
+  // TERRAIN DETECTION
+  // ============================================================================
+  function detectTerrainFromRegion(region, engine) {
+    if (!region || !engine) return 'plains';
+
+    const cells = Array.from(region.cells || []);
+    if (cells.length === 0) return 'plains';
+
+    let avgElevation = 0;
+    let avgCoastDist = 0;
+    let ySum = 0;
+
+    for (const cellIdx of cells) {
+      avgElevation += engine.grid.elevation[cellIdx] || 0;
+      avgCoastDist += engine.grid.coastDist[cellIdx] || 999;
+      const y = Math.floor(cellIdx / engine.grid.cols);
+      ySum += y;
+    }
+
+    avgElevation /= cells.length;
+    avgCoastDist /= cells.length;
+    const avgY = ySum / cells.length;
+    const mapHeight = engine.grid.rows;
+    const northPercent = avgY / mapHeight;
+
+    // Terrain detection logic
+    if (avgCoastDist < 3) return 'coast';
+    if (avgElevation > 0.7) return 'mountains';
+    if (avgElevation > 0.5) return 'hills';
+    if (avgElevation < 0.2 && avgCoastDist < 5) return 'swamp';
+    if (northPercent < 0.2 && avgCoastDist > 5) return 'tundra';
+    if (northPercent > 0.8 && avgCoastDist > 10) return 'desert';
+    if (avgElevation > 0.3 && avgElevation < 0.5) return 'forest';
+
+    return 'plains';
+  }
+
+  // ============================================================================
+  // MAIN BRIDGE FUNCTION
+  // ============================================================================
+  function mapEngineToWorldData(engine, seed) {
+    if (!engine || !engine.territory) {
+      throw new Error('Invalid MapEngine instance provided to mapEngineToWorldData');
+    }
+
+    const rng = mulberry32(seed * 31337);
+    const npcIdMap = {}; // Maps npc names to ids
+    let npcIdCounter = 1;
+    const data = {
+      name: generateWorldName(seed),
+      regions: [],
+      factions: [],
+      cities: [],
+      npcs: [],
+      pois: [],
+    };
+
+    // ========================================================================
+    // FACTIONS
+    // ========================================================================
+    const factionMap = {}; // Maps engine faction id to our faction object
+    const factionsById = new Map(engine.territory.factions.map(f => [f.id, f]));
+
+    for (const engineFaction of engine.territory.factions) {
+      const factionTemplate = DATA_POOLS.factionTemplates[
+        Math.floor(rng() * DATA_POOLS.factionTemplates.length)
+      ];
+
+      const faction = {
+        id: parseInt(engineFaction.id) || data.factions.length + 1,
+        name: engineFaction.name || factionTemplate.type,
+        attitude: factionTemplate.attitudes[
+          Math.floor(rng() * factionTemplate.attitudes.length)
+        ],
+        power: Math.floor(rng() * 61) + 30, // 30-90
+        trend: ['rising', 'stable', 'declining'][Math.floor(rng() * 3)],
+        desc: factionTemplate.desc,
+        color: engineFaction.fill || factionTemplate.color,
+        govType: factionTemplate.govType,
+        hierarchy: [],
+        resources: [],
+        allies: [],
+        rivals: [],
+      };
+
+      // Generate hierarchy
+      const hierarchyRoles = ['ruler', 'heir', 'general', 'advisor'];
+      for (const role of hierarchyRoles) {
+        const npcName = generateNPCName(rng);
+        const roleTitles = DATA_POOLS.npcRoles[role] || ['Leader'];
+        faction.hierarchy.push({
+          title: roleTitles[Math.floor(rng() * roleTitles.length)],
+          name: npcName,
+          role: role,
+        });
+        npcIdMap[npcName] = npcIdCounter++;
+      }
+
+      // Assign resources and allies/rivals (will refine later)
+      const terrainTypes = Object.keys(DATA_POOLS.resourcesByTerrain);
+      const terrain = terrainTypes[Math.floor(rng() * terrainTypes.length)];
+      faction.resources = DATA_POOLS.resourcesByTerrain[terrain];
+
+      data.factions.push(faction);
+      factionMap[engineFaction.id] = faction;
+    }
+
+    // ========================================================================
+    // REGIONS
+    // ========================================================================
+    const regionMap = {}; // Maps engine region id to our region object
+    const regionsByName = {};
+
+    for (const engineRegion of engine.territory.regions) {
+      const terrain = detectTerrainFromRegion(engineRegion, engine);
+      const state = DATA_POOLS.regionStates[Math.floor(rng() * DATA_POOLS.regionStates.length)];
+      const threat = ['low', 'medium', 'high', 'extreme'][Math.floor(rng() * 4)];
+
+      const controllingFaction = engineRegion.factionId && factionMap[engineRegion.factionId]
+        ? factionMap[engineRegion.factionId].name
+        : (data.factions.length > 0 ? data.factions[0].name : 'Unknown');
+
+      const region = {
+        id: parseInt(engineRegion.id) || data.regions.length + 1,
+        name: engineRegion.name || `Region ${data.regions.length + 1}`,
+        subtitle: `The ${terrain.charAt(0).toUpperCase() + terrain.slice(1)} Territory`,
+        type: engineRegion.cities?.some(c => c.capital) ? 'kingdom' : 'wilderness',
+        ctrl: controllingFaction,
+        threat: threat,
+        state: state,
+        visited: false,
+        terrain: terrain,
+        cities: engineRegion.cities?.map(c => c.name) || [],
+        population: '0',
+        governor: generateNPCName(rng),
+        governorTitle: 'Regional Governor',
+        climate: DATA_POOLS.climateByTerrain[terrain][
+          Math.floor(rng() * DATA_POOLS.climateByTerrain[terrain].length)
+        ],
+        resources: DATA_POOLS.resourcesByTerrain[terrain],
+        dangers: [DATA_POOLS.dangerDescriptions[threat]],
+        lore: DATA_POOLS.loreSnippets[Math.floor(rng() * DATA_POOLS.loreSnippets.length)],
+        subFactions: [],
+      };
+
+      // Track governor NPC
+      npcIdMap[region.governor] = npcIdCounter++;
+
+      // Add some sub-factions
+      const numSubFactions = Math.floor(rng() * 3);
+      for (let i = 0; i < numSubFactions; i++) {
+        const subFac = DATA_POOLS.subFactionTemplates[
+          Math.floor(rng() * DATA_POOLS.subFactionTemplates.length)
+        ];
+        region.subFactions.push(subFac.name);
+      }
+
+      data.regions.push(region);
+      regionMap[engineRegion.id] = region;
+      regionsByName[region.name] = region;
+    }
+
+    // ========================================================================
+    // CITIES
+    // ========================================================================
+    let cityId = 1;
+    const cityMap = {};
+
+    for (const engineRegion of engine.territory.regions) {
+      const region = regionMap[engineRegion.id];
+      if (!region) continue;
+
+      for (const engineCity of engineRegion.cities || []) {
+        const worldW = engine.grid.cols * engine.grid.step;
+        const worldH = engine.grid.rows * engine.grid.step;
+        const normX = worldW > 0 ? engineCity.x / worldW : 0.5;
+        const normY = worldH > 0 ? engineCity.y / worldH : 0.5;
+
+        const city = {
+          id: cityId++,
+          name: engineCity.name || `City ${cityId}`,
+          region: region.name,
+          faction: region.ctrl,
+          isCapital: engineCity.capital || false,
+          population: formatPopulation(engineCity.population || Math.floor(rng() * 50000) + 5000),
+          popNum: engineCity.population || Math.floor(rng() * 50000) + 5000,
+          mapX: normX,
+          mapY: normY,
+          origX: normX,
+          origY: normY,
+          terrain: region.terrain,
+          threat: region.threat,
+          features: DATA_POOLS.cityFeatures
+            .sort(() => rng() - 0.5)
+            .slice(0, Math.floor(rng() * 3) + 2),
+          shops: [],
+          tavern: {},
+          npcs: [],
+          questHooks: [],
+          description: engineCity.trait || `A prosperous ${region.terrain} settlement.`,
+        };
+
+        // Generate shops
+        const numShops = Math.floor(rng() * 4) + 2;
+        for (let i = 0; i < numShops; i++) {
+          const shopType = DATA_POOLS.shopTypes[Math.floor(rng() * DATA_POOLS.shopTypes.length)];
+          const shopName = generateShopName(rng);
+          const shopOwner = generateNPCName(rng);
+          npcIdMap[shopOwner] = npcIdCounter++;
+
+          const shop = {
+            id: i,
+            name: shopName,
+            type: shopType,
+            owner: shopOwner,
+            ownerPersonality: DATA_POOLS.traits[Math.floor(rng() * DATA_POOLS.traits.length)],
+            items: [],
+          };
+
+          // Add items based on shop type
+          const categories = shopType.includes('Alchemist') || shopType.includes('Herbalist')
+            ? ['potions']
+            : shopType.includes('Blacksmith') || shopType.includes('Weaponsmith')
+              ? ['weapons', 'armor']
+              : ['general', 'weapons'];
+
+          for (const cat of categories) {
+            const itemList = DATA_POOLS.itemsByCategory[cat] || DATA_POOLS.itemsByCategory.general;
+            for (let j = 0; j < 3; j++) {
+              const item = itemList[Math.floor(rng() * itemList.length)];
+              shop.items.push({
+                name: item.name,
+                price: Math.floor(item.price * (0.8 + rng() * 0.4)),
+                rarity: item.rarity,
+                inStock: rng() > 0.3,
+                qty: Math.floor(rng() * 10) + 1,
+              });
+            }
+          }
+
+          city.shops.push(shop);
+        }
+
+        // Generate tavern
+        const tavernName = generateTavernName(rng);
+        const innkeeper = generateNPCName(rng);
+        npcIdMap[innkeeper] = npcIdCounter++;
+
+        city.tavern = {
+          name: tavernName,
+          innkeeper: innkeeper,
+          innkeeperPersonality: DATA_POOLS.traits[Math.floor(rng() * DATA_POOLS.traits.length)],
+          services: DATA_POOLS.innServices
+            .sort(() => rng() - 0.5)
+            .slice(0, Math.floor(rng() * 4) + 2),
+          rumor: DATA_POOLS.questHooks[Math.floor(rng() * DATA_POOLS.questHooks.length)],
+        };
+
+        // Add quest hooks
+        const numHooks = Math.floor(rng() * 2) + 1;
+        for (let i = 0; i < numHooks; i++) {
+          city.questHooks.push(
+            DATA_POOLS.questHooks[Math.floor(rng() * DATA_POOLS.questHooks.length)]
+          );
+        }
+
+        data.cities.push(city);
+        cityMap[engineCity.name] = city;
+      }
+    }
+
+    // Update region city populations
+    for (const region of data.regions) {
+      const regionCities = data.cities.filter(c => c.region === region.name);
+      const totalPop = regionCities.reduce((sum, c) => sum + c.popNum, 0);
+      region.population = formatPopulation(totalPop);
+    }
+
+    // ========================================================================
+    // NPCs (from cities and factions)
+    // ========================================================================
+    for (const city of data.cities) {
+      const numCityNPCs = Math.floor(rng() * 3) + 2;
+      for (let i = 0; i < numCityNPCs; i++) {
+        const npcName = generateNPCName(rng);
+        if (!npcIdMap[npcName]) {
+          npcIdMap[npcName] = npcIdCounter++;
+        }
+
+        const npc = {
+          id: npcIdMap[npcName],
+          name: npcName,
+          role: selectRandomElement(
+            DATA_POOLS.npcRoles[selectRandomElement(Object.keys(DATA_POOLS.npcRoles), rng)],
+            rng
+          ),
+          loc: city.name,
+          faction: city.faction,
+          attitude: ['neutral', 'friendly', 'hostile', 'cautious'][Math.floor(rng() * 4)],
+          alive: true,
+          traits: [],
+          secret: DATA_POOLS.secrets[Math.floor(rng() * DATA_POOLS.secrets.length)],
+          level: Math.floor(rng() * 10) + 1,
+          isLeader: rng() < 0.2,
+        };
+
+        // Add traits
+        const numTraits = Math.floor(rng() * 3) + 1;
+        for (let j = 0; j < numTraits; j++) {
+          npc.traits.push(DATA_POOLS.traits[Math.floor(rng() * DATA_POOLS.traits.length)]);
+        }
+
+        data.npcs.push(npc);
+        city.npcs.push(npc.id);
+      }
+    }
+
+    // Add faction hierarchy NPCs
+    for (const faction of data.factions) {
+      for (const member of faction.hierarchy) {
+        if (!npcIdMap[member.name]) {
+          npcIdMap[member.name] = npcIdCounter++;
+        }
+
+        const npc = {
+          id: npcIdMap[member.name],
+          name: member.name,
+          role: member.title,
+          loc: `${faction.name} Stronghold`,
+          faction: faction.name,
+          attitude: 'neutral',
+          alive: true,
+          traits: [],
+          secret: DATA_POOLS.secrets[Math.floor(rng() * DATA_POOLS.secrets.length)],
+          level: Math.floor(rng() * 15) + 5,
+          isLeader: true,
+        };
+
+        const numTraits = Math.floor(rng() * 4) + 2;
+        for (let j = 0; j < numTraits; j++) {
+          npc.traits.push(DATA_POOLS.traits[Math.floor(rng() * DATA_POOLS.traits.length)]);
+        }
+
+        // Avoid duplicates
+        if (!data.npcs.find(n => n.id === npc.id)) {
+          data.npcs.push(npc);
+        }
+      }
+    }
+
+    // ========================================================================
+    // POIs (from MapEngine)
+    // ========================================================================
+    if (engine.pois && engine.pois.length > 0) {
+      for (let i = 0; i < engine.pois.length; i++) {
+        const enginePoi = engine.pois[i];
+        const poiWorldW = engine.grid.cols * engine.grid.step;
+        const poiWorldH = engine.grid.rows * engine.grid.step;
+        const normX = poiWorldW > 0 ? enginePoi.x / poiWorldW : 0.5;
+        const normY = poiWorldH > 0 ? enginePoi.y / poiWorldH : 0.5;
+
+        // Find nearest region
+        let nearestRegion = data.regions[0];
+        let minDist = Infinity;
+        for (const region of data.regions) {
+          if (!regionMap[region.id]) continue;
+          const engineRegion = engine.territory.regions.find(er => regionMap[er.id] === region);
+          if (!engineRegion) continue;
+          const regLabelX = engineRegion.labelX || 0;
+          const regLabelY = engineRegion.labelY || 0;
+          // Use raw world-space coords for distance (both poi and region are in same space)
+          const dist = Math.hypot(enginePoi.x - regLabelX, enginePoi.y - regLabelY);
+          if (dist < minDist) {
+            minDist = dist;
+            nearestRegion = region;
+          }
+        }
+
+        const poi = {
+          id: i + 1,
+          name: enginePoi.name || `POI ${i + 1}`,
+          type: enginePoi.type || 'ruin',
+          mapX: normX,
+          mapY: normY,
+          description: enginePoi.description || `A mysterious location of interest.`,
+          hook: enginePoi.hook || DATA_POOLS.questHooks[Math.floor(rng() * DATA_POOLS.questHooks.length)],
+          danger: enginePoi.danger !== undefined ? enginePoi.danger : Math.floor(rng() * 5),
+          major: enginePoi.major || enginePoi.alwaysMajor || false,
+          icon: enginePoi.icon || '📍',
+          region: nearestRegion.name,
+        };
+
+        data.pois.push(poi);
+      }
+    }
+
+    // ========================================================================
+    // SET ALLIES AND RIVALS
+    // ========================================================================
+    for (const faction of data.factions) {
+      const otherFactions = data.factions.filter(f => f.id !== faction.id);
+      const numAllies = Math.floor(rng() * 2);
+      const numRivals = Math.floor(rng() * 2);
+
+      for (let i = 0; i < numAllies && otherFactions.length > 0; i++) {
+        const ally = otherFactions[Math.floor(rng() * otherFactions.length)];
+        if (!faction.allies.includes(ally.name)) {
+          faction.allies.push(ally.name);
+        }
+      }
+
+      for (let i = 0; i < numRivals && otherFactions.length > 0; i++) {
+        const rival = otherFactions[Math.floor(rng() * otherFactions.length)];
+        if (!faction.rivals.includes(rival.name) && !faction.allies.includes(rival.name)) {
+          faction.rivals.push(rival.name);
+        }
+      }
+    }
+
+    return data;
+  }
+
+  // ============================================================================
+  // UTILITY HELPERS
+  // ============================================================================
+  function formatPopulation(num) {
+    if (num === 0) return '0';
+    if (num < 1000) return num.toString();
+    if (num < 1000000) return (num / 1000).toFixed(0) + 'K';
+    return (num / 1000000).toFixed(1) + 'M';
+  }
+
+  function selectRandomElement(arr, rng) {
+    return arr[Math.floor(rng() * arr.length)];
+  }
+
+  // ============================================================================
+  // EXPORT
+  // ============================================================================
+  global.mapEngineToWorldData = mapEngineToWorldData;
+})(typeof window !== 'undefined' ? window : this);
