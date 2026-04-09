@@ -864,6 +864,13 @@ const Icons = {
   Back: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>,
   Check: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="20 6 9 17 4 12"/></svg>,
   Moon: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>,
+  Download: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>,
+  Flag: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>,
+  Bell: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>,
+  Sliders: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>,
+  Trash: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
+  ClipboardList: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/></svg>,
+  Tool: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>,
 };
 
 // ═══════════════════════════════
@@ -889,6 +896,25 @@ function timeAgo(iso) {
   if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
   return Math.floor(diff / 86400) + 'd ago';
 }
+// ═══════════════════════════════
+// AUDIT LOG HELPER
+// ═══════════════════════════════
+async function logAuditEvent(action, targetType, targetId, details = {}) {
+  if (!sb) return;
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    const user = session && session.user;
+    await sb.from('admin_audit_log').insert({
+      admin_id: user ? user.id : null,
+      admin_email: user ? user.email : null,
+      action,
+      target_type: targetType,
+      target_id: String(targetId || ''),
+      details,
+    });
+  } catch (e) { /* best-effort logging */ }
+}
+
 // ═══════════════════════════════
 // TOAST SYSTEM
 // ═══════════════════════════════
@@ -1087,6 +1113,7 @@ function CampaignsPage({ addToast, canDeleteContent }) {
     if (!confirm('Delete this campaign? This cannot be undone.')) return;
     const { error } = await sb.from('campaigns').delete().eq('id', id);
     if (error) { addToast('Delete failed: ' + error.message, 'error'); return; }
+    logAuditEvent('delete_campaign', 'campaign', id, { name: selected?.name });
     addToast('Campaign deleted.', 'success');
     setSelected(null);
     refetch();
@@ -1096,6 +1123,7 @@ function CampaignsPage({ addToast, canDeleteContent }) {
     const next = !c.flagged;
     const { error } = await sb.from('campaigns').update({ flagged: next, flag_reason: next ? (reason || 'Flagged by admin') : null }).eq('id', c.id);
     if (error) { addToast('Flag update failed: ' + error.message, 'error'); return; }
+    logAuditEvent(next ? 'flag_campaign' : 'unflag_campaign', 'campaign', c.id, { reason: reason || 'Flagged by admin' });
     addToast(next ? 'Campaign flagged.' : 'Flag removed.', next ? 'error' : 'success');
     refetch();
   }
@@ -1340,6 +1368,7 @@ function UsersPage({ addToast, canManageAdmins }) {
     const next = !user.is_banned;
     const { error } = await sb.from('profiles').update({ is_banned: next }).eq('id', user.id);
     if (error) { addToast('Update failed: ' + error.message, 'error'); return; }
+    logAuditEvent(next ? 'ban_user' : 'unban_user', 'user', user.id, { email: user.email, name: user.name });
     addToast(next ? 'User banned.' : 'User unbanned.', next ? 'error' : 'success');
     refetch(); setSelectedUser(null);
   }
@@ -1350,6 +1379,7 @@ function UsersPage({ addToast, canManageAdmins }) {
     const next = !user.is_admin;
     const { error } = await sb.from('profiles').update({ is_admin: next }).eq('id', user.id);
     if (error) { addToast('Update failed: ' + error.message, 'error'); return; }
+    logAuditEvent(next ? 'grant_admin' : 'revoke_admin', 'user', user.id, { email: user.email });
     addToast(next ? 'Admin privileges granted.' : 'Admin privileges removed.', 'success');
     refetch(); setSelectedUser(null);
   }
@@ -1360,6 +1390,7 @@ function UsersPage({ addToast, canManageAdmins }) {
     if (!confirm('Delete this profile row? If auth/user data exists elsewhere, remove it separately.')) return;
     const { error } = await sb.from('profiles').delete().eq('id', id);
     if (error) { addToast('Delete failed: ' + error.message, 'error'); return; }
+    logAuditEvent('delete_user', 'user', id, { email: user?.email, name: user?.name });
     addToast('User deleted.', 'success');
     refetch(); setSelectedUser(null);
   }
@@ -1368,6 +1399,7 @@ function UsersPage({ addToast, canManageAdmins }) {
     if (!sb) { addToast('Supabase not configured.', 'error'); return; }
     const { error } = await sb.auth.resetPasswordForEmail(email);
     if (error) { addToast('Reset email failed: ' + error.message, 'error'); return; }
+    logAuditEvent('password_reset', 'user', null, { email });
     addToast('Password reset email sent to ' + email, 'success');
   }
 
@@ -1560,6 +1592,7 @@ function CharactersPage({ addToast, canDeleteContent }) {
     if (!confirm('Delete this character sheet? This cannot be undone.')) return;
     const { error } = await sb.from('characters').delete().eq('id', id);
     if (error) { addToast('Delete failed: ' + error.message, 'error'); return; }
+    logAuditEvent('delete_character', 'character', id, { name: selected?.name });
     addToast('Character deleted.', 'success');
     setSelected(null);
     refetch();
@@ -1569,6 +1602,7 @@ function CharactersPage({ addToast, canDeleteContent }) {
     const next = !c.flagged;
     const { error } = await sb.from('characters').update({ flagged: next, flag_reason: next ? (reason || 'Flagged by admin') : null }).eq('id', c.id);
     if (error) { addToast('Flag update failed: ' + error.message, 'error'); return; }
+    logAuditEvent(next ? 'flag_character' : 'unflag_character', 'character', c.id, { reason: reason || 'Flagged by admin' });
     addToast(next ? 'Character flagged.' : 'Flag removed.', next ? 'error' : 'success');
     refetch();
   }
@@ -1578,6 +1612,7 @@ function CharactersPage({ addToast, canDeleteContent }) {
     const ids = Array.from(selectedIds);
     const { error } = await sb.from('characters').update({ flagged: true, flag_reason: 'Bulk flagged by admin' }).in('id', ids);
     if (error) { addToast('Bulk flag failed: ' + error.message, 'error'); return; }
+    logAuditEvent('bulk_flag_characters', 'character', null, { count: ids.length, ids });
     addToast(ids.length + ' characters flagged.', 'success');
     setSelectedIds(new Set());
     refetch();
@@ -2846,6 +2881,1029 @@ function EngagementPage() {
 }
 
 // ═══════════════════════════════
+// AUDIT LOG PAGE
+// ═══════════════════════════════
+function AuditLogPage() {
+  const [filterAction, setFilterAction] = useState('all');
+  const [filterTarget, setFilterTarget] = useState('all');
+  const [search, setSearch] = useState('');
+
+  const { data: logs, loading, error, refetch } = useAdminQuery(async (db) => {
+    const { data, error } = await db
+      .from('admin_audit_log')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error) throw error;
+    return data || [];
+  });
+
+  const actionTypes = useMemo(() => {
+    if (!logs) return [];
+    return [...new Set(logs.map(l => l.action))].sort();
+  }, [logs]);
+  const targetTypes = useMemo(() => {
+    if (!logs) return [];
+    return [...new Set(logs.map(l => l.target_type).filter(Boolean))].sort();
+  }, [logs]);
+
+  const filtered = (logs || []).filter(l => {
+    if (filterAction !== 'all' && l.action !== filterAction) return false;
+    if (filterTarget !== 'all' && l.target_type !== filterTarget) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return (l.action || '').toLowerCase().includes(q) ||
+             (l.admin_email || '').toLowerCase().includes(q) ||
+             (l.target_id || '').toLowerCase().includes(q) ||
+             JSON.stringify(l.details || {}).toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  const actionColor = (action) => {
+    if (action.includes('delete')) return '#ef4444';
+    if (action.includes('ban')) return '#ef4444';
+    if (action.includes('flag')) return '#f59e0b';
+    if (action.includes('grant') || action.includes('create')) return '#5ee09a';
+    return 'var(--accent)';
+  };
+
+  if (loading) return <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)'}}>Loading…</div>;
+  if (error) return <div style={{padding:'40px',color:'var(--danger)'}}>{error}</div>;
+
+  return (
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px'}}>
+        <h1 style={{fontFamily:'Cinzel, serif',fontSize:'20px',fontWeight:600,letterSpacing:'1px'}}>Audit Log</h1>
+        <button className="btn" onClick={refetch}><Icons.Refresh /> Refresh</button>
+      </div>
+
+      <div style={{display:'flex',gap:'12px',marginBottom:'20px',flexWrap:'wrap',alignItems:'center'}}>
+        <div className="search-bar" style={{maxWidth:'300px'}}>
+          <Icons.Search />
+          <input placeholder="Search logs..." value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <select value={filterAction} onChange={e => setFilterAction(e.target.value)} style={{padding:'8px 12px',background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:'6px',color:'var(--text)',fontSize:'12px',fontFamily:'Spectral,serif'}}>
+          <option value="all">All Actions</option>
+          {actionTypes.map(a => <option key={a} value={a}>{a.replace(/_/g, ' ')}</option>)}
+        </select>
+        <select value={filterTarget} onChange={e => setFilterTarget(e.target.value)} style={{padding:'8px 12px',background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:'6px',color:'var(--text)',fontSize:'12px',fontFamily:'Spectral,serif'}}>
+          <option value="all">All Targets</option>
+          {targetTypes.map(t => <option key={t} value={t}>{t}</option>)}
+        </select>
+        <span style={{fontSize:'12px',color:'var(--text-muted)'}}>{filtered.length} entries</span>
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="empty-state"><Icons.ClipboardList /><p>No audit log entries yet. Actions will appear here as you moderate content.</p></div>
+      ) : (
+        <div className="card" style={{overflow:'hidden'}}>
+          <table className="data-table">
+            <thead><tr><th>Time</th><th>Admin</th><th>Action</th><th>Target</th><th>Details</th></tr></thead>
+            <tbody>
+              {filtered.map(l => (
+                <tr key={l.id}>
+                  <td style={{whiteSpace:'nowrap',fontSize:'11px'}}>{formatDateTime(l.created_at)}</td>
+                  <td style={{fontSize:'12px'}}>{l.admin_email ? l.admin_email.split('@')[0] : '—'}</td>
+                  <td><span style={{padding:'2px 8px',borderRadius:'10px',fontSize:'11px',background:`${actionColor(l.action)}18`,color:actionColor(l.action),fontWeight:600}}>{l.action.replace(/_/g, ' ')}</span></td>
+                  <td style={{fontSize:'12px'}}>{l.target_type ? <span>{l.target_type} <span className="mono" style={{fontSize:'10px',color:'var(--text-faint)'}}>{(l.target_id || '').slice(0, 8)}</span></span> : '—'}</td>
+                  <td style={{fontSize:'11px',color:'var(--text-muted)',maxWidth:'250px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{l.details && Object.keys(l.details).length > 0 ? Object.entries(l.details).map(([k,v]) => `${k}: ${v}`).join(', ') : '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════
+// ANNOUNCEMENTS PAGE
+// ═══════════════════════════════
+function AnnouncementsPage({ addToast }) {
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [form, setForm] = useState({ title: '', message: '', type: 'info', dismissible: true, starts_at: '', expires_at: '', show_on: '' });
+
+  const { data: announcements, loading, error, refetch } = useAdminQuery(async (db) => {
+    const { data, error } = await db
+      .from('site_announcements')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(100);
+    if (error) throw error;
+    return data || [];
+  });
+
+  function resetForm() {
+    setForm({ title: '', message: '', type: 'info', dismissible: true, starts_at: '', expires_at: '', show_on: '' });
+    setEditing(null);
+    setShowForm(false);
+  }
+
+  function startEdit(a) {
+    setForm({
+      title: a.title || '', message: a.message || '', type: a.type || 'info',
+      dismissible: a.dismissible !== false, starts_at: a.starts_at ? a.starts_at.slice(0, 16) : '',
+      expires_at: a.expires_at ? a.expires_at.slice(0, 16) : '',
+      show_on: (a.show_on || []).join(', '),
+    });
+    setEditing(a);
+    setShowForm(true);
+  }
+
+  async function saveAnnouncement() {
+    if (!form.title.trim() || !form.message.trim()) { addToast('Title and message are required.', 'error'); return; }
+    const payload = {
+      title: form.title.trim(),
+      message: form.message.trim(),
+      type: form.type,
+      dismissible: form.dismissible,
+      starts_at: form.starts_at ? new Date(form.starts_at).toISOString() : new Date().toISOString(),
+      expires_at: form.expires_at ? new Date(form.expires_at).toISOString() : null,
+      show_on: form.show_on ? form.show_on.split(',').map(s => s.trim()).filter(Boolean) : [],
+      updated_at: new Date().toISOString(),
+    };
+
+    if (editing) {
+      const { error } = await sb.from('site_announcements').update(payload).eq('id', editing.id);
+      if (error) { addToast('Update failed: ' + error.message, 'error'); return; }
+      logAuditEvent('update_announcement', 'announcement', editing.id, { title: payload.title });
+      addToast('Announcement updated.', 'success');
+    } else {
+      const { data: sess } = await sb.auth.getSession();
+      payload.created_by = sess?.session?.user?.id || null;
+      payload.is_active = true;
+      const { error } = await sb.from('site_announcements').insert(payload);
+      if (error) { addToast('Create failed: ' + error.message, 'error'); return; }
+      logAuditEvent('create_announcement', 'announcement', null, { title: payload.title });
+      addToast('Announcement created.', 'success');
+    }
+    resetForm();
+    refetch();
+  }
+
+  async function toggleActive(a) {
+    const next = !a.is_active;
+    const { error } = await sb.from('site_announcements').update({ is_active: next, updated_at: new Date().toISOString() }).eq('id', a.id);
+    if (error) { addToast('Toggle failed: ' + error.message, 'error'); return; }
+    logAuditEvent(next ? 'activate_announcement' : 'deactivate_announcement', 'announcement', a.id, { title: a.title });
+    addToast(next ? 'Announcement activated.' : 'Announcement deactivated.', 'success');
+    refetch();
+  }
+
+  async function deleteAnnouncement(a) {
+    if (!confirm('Delete this announcement permanently?')) return;
+    const { error } = await sb.from('site_announcements').delete().eq('id', a.id);
+    if (error) { addToast('Delete failed: ' + error.message, 'error'); return; }
+    logAuditEvent('delete_announcement', 'announcement', a.id, { title: a.title });
+    addToast('Announcement deleted.', 'success');
+    refetch();
+  }
+
+  const typeColors = { info: '#58aaff', warning: '#f59e0b', success: '#5ee09a', danger: '#ef4444' };
+
+  if (loading) return <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)'}}>Loading…</div>;
+  if (error) return <div style={{padding:'40px',color:'var(--danger)'}}>{error}</div>;
+
+  return (
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px'}}>
+        <h1 style={{fontFamily:'Cinzel, serif',fontSize:'20px',fontWeight:600,letterSpacing:'1px'}}>Announcements</h1>
+        <div className="btn-group">
+          <button className="btn" onClick={refetch}><Icons.Refresh /> Refresh</button>
+          <button className="btn btn-primary" onClick={() => { resetForm(); setShowForm(true); }}><Icons.Plus /> New Announcement</button>
+        </div>
+      </div>
+
+      {showForm && (
+        <div className="card" style={{marginBottom:'24px'}}>
+          <div className="card-header"><h2>{editing ? 'Edit Announcement' : 'New Announcement'}</h2></div>
+          <div className="card-body" style={{display:'grid',gap:'14px'}}>
+            <div>
+              <label style={{fontSize:'11px',fontFamily:'Cinzel,serif',letterSpacing:'1px',textTransform:'uppercase',color:'var(--text-muted)',display:'block',marginBottom:'4px'}}>Title</label>
+              <input value={form.title} onChange={e => setForm({...form, title: e.target.value})} placeholder="Scheduled Maintenance" style={{width:'100%',padding:'8px 12px',background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:'6px',color:'var(--text)',fontSize:'13px'}} />
+            </div>
+            <div>
+              <label style={{fontSize:'11px',fontFamily:'Cinzel,serif',letterSpacing:'1px',textTransform:'uppercase',color:'var(--text-muted)',display:'block',marginBottom:'4px'}}>Message</label>
+              <textarea value={form.message} onChange={e => setForm({...form, message: e.target.value})} placeholder="We'll be performing maintenance from 2-4 AM EST." rows={3} style={{width:'100%',padding:'8px 12px',background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:'6px',color:'var(--text)',fontSize:'13px',resize:'vertical'}} />
+            </div>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr 1fr',gap:'12px'}}>
+              <div>
+                <label style={{fontSize:'11px',fontFamily:'Cinzel,serif',letterSpacing:'1px',textTransform:'uppercase',color:'var(--text-muted)',display:'block',marginBottom:'4px'}}>Type</label>
+                <select value={form.type} onChange={e => setForm({...form, type: e.target.value})} style={{width:'100%',padding:'8px 12px',background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:'6px',color:'var(--text)',fontSize:'12px'}}>
+                  <option value="info">Info (Blue)</option>
+                  <option value="warning">Warning (Yellow)</option>
+                  <option value="success">Success (Green)</option>
+                  <option value="danger">Danger (Red)</option>
+                </select>
+              </div>
+              <div>
+                <label style={{fontSize:'11px',fontFamily:'Cinzel,serif',letterSpacing:'1px',textTransform:'uppercase',color:'var(--text-muted)',display:'block',marginBottom:'4px'}}>Starts At</label>
+                <input type="datetime-local" value={form.starts_at} onChange={e => setForm({...form, starts_at: e.target.value})} style={{width:'100%',padding:'8px 12px',background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:'6px',color:'var(--text)',fontSize:'12px'}} />
+              </div>
+              <div>
+                <label style={{fontSize:'11px',fontFamily:'Cinzel,serif',letterSpacing:'1px',textTransform:'uppercase',color:'var(--text-muted)',display:'block',marginBottom:'4px'}}>Expires At</label>
+                <input type="datetime-local" value={form.expires_at} onChange={e => setForm({...form, expires_at: e.target.value})} style={{width:'100%',padding:'8px 12px',background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:'6px',color:'var(--text)',fontSize:'12px'}} />
+              </div>
+              <div style={{display:'flex',alignItems:'flex-end',paddingBottom:'4px'}}>
+                <label style={{display:'flex',alignItems:'center',gap:'8px',fontSize:'12px',cursor:'pointer'}}>
+                  <input type="checkbox" checked={form.dismissible} onChange={e => setForm({...form, dismissible: e.target.checked})} /> Dismissible
+                </label>
+              </div>
+            </div>
+            <div>
+              <label style={{fontSize:'11px',fontFamily:'Cinzel,serif',letterSpacing:'1px',textTransform:'uppercase',color:'var(--text-muted)',display:'block',marginBottom:'4px'}}>Show On Pages (comma-separated, blank = all)</label>
+              <input value={form.show_on} onChange={e => setForm({...form, show_on: e.target.value})} placeholder="/character-builder.html, /campaigns.html" style={{width:'100%',padding:'8px 12px',background:'var(--bg-card)',border:'1px solid var(--border)',borderRadius:'6px',color:'var(--text)',fontSize:'13px'}} />
+            </div>
+            <div className="btn-group">
+              <button className="btn btn-primary" onClick={saveAnnouncement}>{editing ? 'Update' : 'Create'}</button>
+              <button className="btn" onClick={resetForm}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {(announcements || []).length === 0 ? (
+        <div className="empty-state"><Icons.Bell /><p>No announcements yet. Create one to display a banner across your site.</p></div>
+      ) : (
+        <div style={{display:'grid',gap:'12px'}}>
+          {(announcements || []).map(a => (
+            <div key={a.id} className="card" style={{opacity: a.is_active ? 1 : 0.5}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'16px 20px',borderBottom:'1px solid var(--border-mid)'}}>
+                <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
+                  <div style={{width:'8px',height:'8px',borderRadius:'50%',background: a.is_active ? '#5ee09a' : 'var(--text-faint)'}} />
+                  <div>
+                    <div style={{fontSize:'14px',fontWeight:600}}>{a.title}</div>
+                    <div style={{fontSize:'12px',color:'var(--text-muted)',marginTop:'2px'}}>{a.message.length > 120 ? a.message.slice(0, 120) + '…' : a.message}</div>
+                  </div>
+                </div>
+                <div className="btn-group">
+                  <span style={{padding:'3px 10px',borderRadius:'10px',fontSize:'10px',fontWeight:600,color:typeColors[a.type] || '#58aaff',background:`${typeColors[a.type] || '#58aaff'}18`}}>{a.type}</span>
+                  <button className="btn btn-sm" onClick={() => toggleActive(a)}>{a.is_active ? 'Deactivate' : 'Activate'}</button>
+                  <button className="btn btn-sm" onClick={() => startEdit(a)}><Icons.Settings /></button>
+                  <button className="btn btn-sm btn-danger" onClick={() => deleteAnnouncement(a)}><Icons.Trash /></button>
+                </div>
+              </div>
+              <div style={{padding:'10px 20px',fontSize:'11px',color:'var(--text-faint)',display:'flex',gap:'16px'}}>
+                <span>Created: {formatDateTime(a.created_at)}</span>
+                {a.expires_at && <span>Expires: {formatDateTime(a.expires_at)}</span>}
+                {a.show_on && a.show_on.length > 0 && <span>Pages: {a.show_on.join(', ')}</span>}
+                <span>{a.dismissible ? 'Dismissible' : 'Persistent'}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════
+// DATA EXPORT PAGE
+// ═══════════════════════════════
+function DataExportPage({ addToast }) {
+  const [exporting, setExporting] = useState(null);
+
+  function toCSV(data, columns) {
+    if (!data || data.length === 0) return '';
+    const header = columns.map(c => c.label || c.key).join(',');
+    const rows = data.map(row => columns.map(c => {
+      let val = c.key.includes('.') ? c.key.split('.').reduce((o, k) => (o || {})[k], row) : row[c.key];
+      if (val === null || val === undefined) val = '';
+      if (typeof val === 'object') val = JSON.stringify(val);
+      val = String(val).replace(/"/g, '""');
+      return `"${val}"`;
+    }).join(','));
+    return header + '\n' + rows.join('\n');
+  }
+
+  function downloadCSV(csv, filename) {
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    document.body.removeChild(a); URL.revokeObjectURL(url);
+  }
+
+  async function exportData(type) {
+    if (!sb) { addToast('Supabase not configured.', 'error'); return; }
+    setExporting(type);
+    try {
+      let csv, filename;
+      const timestamp = new Date().toISOString().slice(0, 10);
+      switch (type) {
+        case 'users': {
+          const { data, error } = await sb.from('profiles').select('id, name, email, is_admin, is_superuser, is_banned, is_beta_user, admin_notes, tags, created_at').order('created_at', { ascending: false }).limit(10000);
+          if (error) throw error;
+          csv = toCSV(data, [
+            { key: 'id', label: 'User ID' }, { key: 'name', label: 'Name' }, { key: 'email', label: 'Email' },
+            { key: 'is_admin', label: 'Admin' }, { key: 'is_superuser', label: 'Superuser' }, { key: 'is_banned', label: 'Banned' },
+            { key: 'is_beta_user', label: 'Beta User' }, { key: 'admin_notes', label: 'Notes' }, { key: 'tags', label: 'Tags' }, { key: 'created_at', label: 'Joined' },
+          ]);
+          filename = `phmurt-users-${timestamp}.csv`;
+          break;
+        }
+        case 'characters': {
+          const { data, error } = await sb.from('characters').select('id, owner_id, name, race, class, level, builder_type, flagged, flag_reason, created_at, updated_at').order('updated_at', { ascending: false }).limit(10000);
+          if (error) throw error;
+          csv = toCSV(data, [
+            { key: 'id', label: 'Character ID' }, { key: 'owner_id', label: 'Owner ID' }, { key: 'name', label: 'Name' },
+            { key: 'race', label: 'Race' }, { key: 'class', label: 'Class' }, { key: 'level', label: 'Level' },
+            { key: 'builder_type', label: 'Builder' }, { key: 'flagged', label: 'Flagged' }, { key: 'flag_reason', label: 'Flag Reason' },
+            { key: 'created_at', label: 'Created' }, { key: 'updated_at', label: 'Updated' },
+          ]);
+          filename = `phmurt-characters-${timestamp}.csv`;
+          break;
+        }
+        case 'campaigns': {
+          const { data, error } = await sb.from('campaigns').select('id, owner_id, name, system, flagged, flag_reason, created_at, updated_at').order('updated_at', { ascending: false }).limit(10000);
+          if (error) throw error;
+          csv = toCSV(data, [
+            { key: 'id', label: 'Campaign ID' }, { key: 'owner_id', label: 'Owner ID' }, { key: 'name', label: 'Name' },
+            { key: 'system', label: 'System' }, { key: 'flagged', label: 'Flagged' }, { key: 'flag_reason', label: 'Flag Reason' },
+            { key: 'created_at', label: 'Created' }, { key: 'updated_at', label: 'Updated' },
+          ]);
+          filename = `phmurt-campaigns-${timestamp}.csv`;
+          break;
+        }
+        case 'audit': {
+          const { data, error } = await sb.from('admin_audit_log').select('*').order('created_at', { ascending: false }).limit(10000);
+          if (error) throw error;
+          csv = toCSV(data, [
+            { key: 'id', label: 'ID' }, { key: 'admin_email', label: 'Admin' }, { key: 'action', label: 'Action' },
+            { key: 'target_type', label: 'Target Type' }, { key: 'target_id', label: 'Target ID' },
+            { key: 'details', label: 'Details' }, { key: 'created_at', label: 'Time' },
+          ]);
+          filename = `phmurt-audit-log-${timestamp}.csv`;
+          break;
+        }
+        case 'errors': {
+          const { data, error } = await sb.from('site_errors').select('*').order('created_at', { ascending: false }).limit(10000);
+          if (error) throw error;
+          csv = toCSV(data, [
+            { key: 'id', label: 'ID' }, { key: 'message', label: 'Error' }, { key: 'page', label: 'Page' },
+            { key: 'user_agent', label: 'Browser' }, { key: 'user_id', label: 'User ID' }, { key: 'created_at', label: 'Time' },
+          ]);
+          filename = `phmurt-errors-${timestamp}.csv`;
+          break;
+        }
+        case 'visits': {
+          const { data, error } = await sb.from('site_visits').select('*').order('visited_at', { ascending: false }).limit(10000);
+          if (error) throw error;
+          csv = toCSV(data, [
+            { key: 'id', label: 'ID' }, { key: 'page', label: 'Page' }, { key: 'user_id', label: 'User ID' }, { key: 'visited_at', label: 'Visited At' },
+          ]);
+          filename = `phmurt-visits-${timestamp}.csv`;
+          break;
+        }
+        default: throw new Error('Unknown export type');
+      }
+      downloadCSV(csv, filename);
+      logAuditEvent('export_data', type, null, { filename });
+      addToast(`Exported ${type} data.`, 'success');
+    } catch (e) {
+      addToast('Export failed: ' + (e.message || 'Unknown error'), 'error');
+    } finally {
+      setExporting(null);
+    }
+  }
+
+  const exports = [
+    { type: 'users',      label: 'Users',        desc: 'All registered user profiles (ID, name, email, status, join date)',           icon: Icons.Users },
+    { type: 'characters', label: 'Characters',    desc: 'All character sheets (ID, owner, name, race, class, level, flags)',          icon: Icons.Keys },
+    { type: 'campaigns',  label: 'Campaigns',     desc: 'All campaigns (ID, owner, name, system, flags)',                             icon: Icons.Tenants },
+    { type: 'audit',      label: 'Audit Log',     desc: 'Admin action history (who did what, when)',                                   icon: Icons.ClipboardList },
+    { type: 'errors',     label: 'Error Log',     desc: 'Client-side JavaScript errors (message, page, browser, user)',                icon: Icons.X },
+    { type: 'visits',     label: 'Site Visits',   desc: 'Page visit records (page, user, timestamp)',                                  icon: Icons.RateLimit },
+  ];
+
+  return (
+    <div>
+      <h1 style={{fontFamily:'Cinzel, serif',fontSize:'20px',fontWeight:600,letterSpacing:'1px',marginBottom:'24px'}}>Data Export</h1>
+      <p style={{fontSize:'13px',color:'var(--text-muted)',marginBottom:'24px',lineHeight:1.6}}>
+        Export your site data as CSV files. Exports are limited to the most recent 10,000 records per table.
+      </p>
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px'}}>
+        {exports.map(exp => {
+          const Icon = exp.icon;
+          return (
+            <div key={exp.type} className="card">
+              <div className="card-body" style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <div style={{display:'flex',alignItems:'center',gap:'16px'}}>
+                  <div style={{width:'40px',height:'40px',borderRadius:'8px',background:'var(--accent-soft)',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--accent)'}}><Icon /></div>
+                  <div>
+                    <div style={{fontSize:'14px',fontWeight:600}}>{exp.label}</div>
+                    <div style={{fontSize:'12px',color:'var(--text-muted)',marginTop:'2px'}}>{exp.desc}</div>
+                  </div>
+                </div>
+                <button className="btn btn-primary" onClick={() => exportData(exp.type)} disabled={exporting === exp.type} style={{minWidth:'100px'}}>
+                  {exporting === exp.type ? 'Exporting…' : <><Icons.Download /> Export</>}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════
+// FEATURE FLAGS & MAINTENANCE MODE PAGE
+// ═══════════════════════════════
+function FeatureFlagsPage({ addToast, viewer }) {
+  const [editingKey, setEditingKey] = useState(null);
+  const [editValue, setEditValue] = useState('');
+  const [filterCat, setFilterCat] = useState('all');
+  const [confirmMaintenance, setConfirmMaintenance] = useState(false);
+
+  const { data: settings, loading, error, refetch } = useAdminQuery(async (db) => {
+    const { data, error } = await db
+      .from('site_settings')
+      .select('*')
+      .order('category')
+      .order('key');
+    if (error) throw error;
+    return data || [];
+  });
+
+  const categories = useMemo(() => {
+    if (!settings) return [];
+    return [...new Set(settings.map(s => s.category))].sort();
+  }, [settings]);
+
+  const filtered = (settings || []).filter(s => filterCat === 'all' || s.category === filterCat);
+
+  const grouped = useMemo(() => {
+    const groups = {};
+    filtered.forEach(s => {
+      if (!groups[s.category]) groups[s.category] = [];
+      groups[s.category].push(s);
+    });
+    return groups;
+  }, [filtered]);
+
+  const catLabels = {
+    maintenance: 'Maintenance Mode',
+    features: 'Feature Flags',
+    beta: 'Beta Features',
+    limits: 'Rate Limits & Guardrails',
+    general: 'General Settings',
+  };
+  const catIcons = {
+    maintenance: Icons.Tool,
+    features: Icons.Sliders,
+    beta: Icons.Flag,
+    limits: Icons.Shield,
+    general: Icons.Settings,
+  };
+  const catColors = {
+    maintenance: '#ef4444',
+    features: '#58aaff',
+    beta: '#a78bfa',
+    limits: '#f59e0b',
+    general: 'var(--accent)',
+  };
+
+  function parseValue(raw) {
+    try { return JSON.parse(raw); } catch { return raw; }
+  }
+
+  async function toggleBoolean(setting) {
+    const current = parseValue(setting.value);
+    const next = !current;
+
+    // Maintenance mode requires confirmation
+    if (setting.key === 'maintenance_mode' && next && !confirmMaintenance) {
+      setConfirmMaintenance(true);
+      return;
+    }
+    setConfirmMaintenance(false);
+
+    const { data: sess } = await sb.auth.getSession();
+    const { error } = await sb.from('site_settings').update({
+      value: JSON.stringify(next),
+      updated_by: sess?.session?.user?.id || null,
+      updated_at: new Date().toISOString(),
+    }).eq('key', setting.key);
+    if (error) { addToast('Update failed: ' + error.message, 'error'); return; }
+    logAuditEvent('toggle_setting', 'setting', setting.key, { old_value: current, new_value: next, label: setting.label });
+    addToast(`${setting.label}: ${next ? 'ON' : 'OFF'}`, next ? 'success' : 'info');
+    refetch();
+  }
+
+  async function saveEditValue(setting) {
+    let parsed;
+    try {
+      if (setting.data_type === 'number') parsed = Number(editValue);
+      else if (setting.data_type === 'json') parsed = JSON.parse(editValue);
+      else parsed = editValue;
+    } catch {
+      addToast('Invalid value format.', 'error'); return;
+    }
+
+    const { data: sess } = await sb.auth.getSession();
+    const { error } = await sb.from('site_settings').update({
+      value: JSON.stringify(parsed),
+      updated_by: sess?.session?.user?.id || null,
+      updated_at: new Date().toISOString(),
+    }).eq('key', setting.key);
+    if (error) { addToast('Update failed: ' + error.message, 'error'); return; }
+    logAuditEvent('update_setting', 'setting', setting.key, { old_value: parseValue(setting.value), new_value: parsed, label: setting.label });
+    addToast(`${setting.label} updated.`, 'success');
+    setEditingKey(null);
+    refetch();
+  }
+
+  function startEdit(s) {
+    const val = parseValue(s.value);
+    setEditValue(typeof val === 'object' ? JSON.stringify(val, null, 2) : String(val));
+    setEditingKey(s.key);
+  }
+
+  // Check maintenance status
+  const maintenanceSetting = (settings || []).find(s => s.key === 'maintenance_mode');
+  const isMaintenanceOn = maintenanceSetting && parseValue(maintenanceSetting.value) === true;
+
+  if (loading) return <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)'}}>Loading…</div>;
+  if (error) return <div style={{padding:'40px',color:'var(--danger)'}}>{error}</div>;
+
+  return (
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px'}}>
+        <h1 style={{fontFamily:'Cinzel, serif',fontSize:'20px',fontWeight:600,letterSpacing:'1px'}}>Feature Flags & Site Config</h1>
+        <button className="btn" onClick={refetch}><Icons.Refresh /> Refresh</button>
+      </div>
+
+      {/* Maintenance Mode Banner */}
+      {isMaintenanceOn && (
+        <div style={{padding:'14px 20px',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.3)',borderRadius:'8px',marginBottom:'24px',display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
+            <div style={{fontSize:'20px'}}>⚠</div>
+            <div>
+              <div style={{fontSize:'14px',fontWeight:600,color:'#ef4444'}}>MAINTENANCE MODE IS ACTIVE</div>
+              <div style={{fontSize:'12px',color:'var(--text-muted)',marginTop:'2px'}}>Users cannot save data. Turn off when maintenance is complete.</div>
+            </div>
+          </div>
+          <button className="btn btn-primary" onClick={() => toggleBoolean(maintenanceSetting)} style={{background:'#5ee09a',borderColor:'#5ee09a'}}>End Maintenance</button>
+        </div>
+      )}
+
+      {/* Maintenance Confirmation Modal */}
+      {confirmMaintenance && (
+        <Modal title="Enable Maintenance Mode?" onClose={() => setConfirmMaintenance(false)} footer={
+          <div className="btn-group">
+            <button className="btn btn-danger" onClick={() => { setConfirmMaintenance(false); toggleBoolean(maintenanceSetting); }}>Yes, Enable Maintenance Mode</button>
+            <button className="btn" onClick={() => setConfirmMaintenance(false)}>Cancel</button>
+          </div>
+        }>
+          <div style={{fontSize:'13px',lineHeight:1.7,color:'var(--text-muted)'}}>
+            <p style={{marginBottom:12}}>This will put the entire site into maintenance mode. Users will see a maintenance banner and will not be able to save characters, campaigns, or other data.</p>
+            <p style={{marginBottom:12}}>Before enabling, make sure to set the <strong>Maintenance Message</strong> and optionally the <strong>Maintenance ETA</strong> so users know what's happening.</p>
+            <p style={{color:'#ef4444',fontWeight:600}}>Are you sure you want to continue?</p>
+          </div>
+        </Modal>
+      )}
+
+      {/* Category filter pills */}
+      <div className="filter-pills" style={{marginBottom:'24px'}}>
+        <span className={`pill ${filterCat === 'all' ? 'active' : ''}`} onClick={() => setFilterCat('all')}>All</span>
+        {categories.map(cat => (
+          <span key={cat} className={`pill ${filterCat === cat ? 'active' : ''}`} onClick={() => setFilterCat(cat)} style={filterCat === cat ? {borderColor: catColors[cat], color: catColors[cat], background: `${catColors[cat]}12`} : {}}>
+            {catLabels[cat] || cat}
+          </span>
+        ))}
+      </div>
+
+      {/* Settings grouped by category */}
+      {Object.entries(grouped).map(([category, items]) => {
+        const CatIcon = catIcons[category] || Icons.Settings;
+        return (
+          <div key={category} className="card" style={{marginBottom:'20px'}}>
+            <div className="card-header" style={{display:'flex',alignItems:'center',gap:'10px'}}>
+              <div style={{color: catColors[category] || 'var(--accent)'}}><CatIcon /></div>
+              <h2 style={{color: catColors[category] || 'var(--accent)'}}>{catLabels[category] || category}</h2>
+            </div>
+            <div className="card-body" style={{padding:0}}>
+              {items.map(s => {
+                const val = parseValue(s.value);
+                const isBoolean = s.data_type === 'boolean';
+                const isEditing = editingKey === s.key;
+                return (
+                  <div key={s.key} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'14px 20px',borderBottom:'1px solid var(--border-mid)'}}>
+                    <div style={{flex:1,marginRight:'20px'}}>
+                      <div style={{fontSize:'13px',fontWeight:600,display:'flex',alignItems:'center',gap:'8px'}}>
+                        {s.label || s.key}
+                        {s.key === 'maintenance_mode' && val === true && <span style={{padding:'1px 8px',borderRadius:'10px',fontSize:'9px',background:'rgba(239,68,68,0.15)',color:'#ef4444',fontWeight:700,textTransform:'uppercase',letterSpacing:'1px'}}>ACTIVE</span>}
+                      </div>
+                      <div style={{fontSize:'11px',color:'var(--text-muted)',marginTop:'2px'}}>{s.description}</div>
+                      <div style={{fontSize:'10px',color:'var(--text-faint)',marginTop:'4px',fontFamily:'monospace'}}>{s.key} ({s.data_type}){s.updated_at ? ` · Updated ${timeAgo(s.updated_at)}` : ''}</div>
+                    </div>
+                    <div style={{display:'flex',alignItems:'center',gap:'10px',minWidth:'180px',justifyContent:'flex-end'}}>
+                      {isBoolean ? (
+                        <div
+                          className={`toggle ${val ? 'on' : ''}`}
+                          onClick={() => toggleBoolean(s)}
+                          style={{cursor:'pointer'}}
+                        />
+                      ) : isEditing ? (
+                        <div style={{display:'flex',gap:'6px',alignItems:'center'}}>
+                          {s.data_type === 'json' ? (
+                            <textarea value={editValue} onChange={e => setEditValue(e.target.value)} rows={3} style={{width:'200px',padding:'6px',background:'var(--bg-card)',border:'1px solid var(--accent-border)',borderRadius:'4px',color:'var(--text)',fontSize:'12px',fontFamily:'monospace',resize:'vertical'}} />
+                          ) : (
+                            <input
+                              type={s.data_type === 'number' ? 'number' : 'text'}
+                              value={editValue}
+                              onChange={e => setEditValue(e.target.value)}
+                              style={{width:'200px',padding:'6px 10px',background:'var(--bg-card)',border:'1px solid var(--accent-border)',borderRadius:'4px',color:'var(--text)',fontSize:'12px'}}
+                              onKeyDown={e => { if (e.key === 'Enter') saveEditValue(s); if (e.key === 'Escape') setEditingKey(null); }}
+                              autoFocus
+                            />
+                          )}
+                          <button className="btn btn-sm btn-primary" onClick={() => saveEditValue(s)}><Icons.Check /></button>
+                          <button className="btn btn-sm" onClick={() => setEditingKey(null)}><Icons.X /></button>
+                        </div>
+                      ) : (
+                        <div style={{display:'flex',gap:'8px',alignItems:'center'}}>
+                          <span className="mono" style={{fontSize:'12px',color:'var(--text-dim)',maxWidth:'160px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                            {typeof val === 'object' ? JSON.stringify(val) : String(val)}
+                          </span>
+                          <button className="btn btn-sm" onClick={() => startEdit(s)} style={{padding:'4px 8px',fontSize:'10px'}}>Edit</button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Quick actions panel */}
+      <div className="card">
+        <div className="card-header"><h2>Quick Actions</h2></div>
+        <div className="card-body" style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'12px'}}>
+          <button className="btn" onClick={() => {
+            const featureFlags = (settings || []).filter(s => s.category === 'features');
+            featureFlags.forEach(s => {
+              if (parseValue(s.value) !== true) toggleBoolean(s);
+            });
+          }} style={{padding:'14px',textAlign:'center'}}>
+            <div style={{fontSize:'18px',marginBottom:'4px'}}>✓</div>
+            <div style={{fontSize:'11px'}}>Enable All Features</div>
+          </button>
+          <button className="btn" onClick={() => {
+            const betaFlags = (settings || []).filter(s => s.category === 'beta');
+            betaFlags.forEach(s => {
+              if (parseValue(s.value) !== false) toggleBoolean(s);
+            });
+          }} style={{padding:'14px',textAlign:'center'}}>
+            <div style={{fontSize:'18px',marginBottom:'4px'}}>⨉</div>
+            <div style={{fontSize:'11px'}}>Disable All Beta</div>
+          </button>
+          <button className="btn btn-danger" onClick={() => {
+            if (maintenanceSetting && !isMaintenanceOn) toggleBoolean(maintenanceSetting);
+          }} style={{padding:'14px',textAlign:'center'}} disabled={isMaintenanceOn}>
+            <div style={{fontSize:'18px',marginBottom:'4px'}}>⚠</div>
+            <div style={{fontSize:'11px'}}>{isMaintenanceOn ? 'Maintenance Active' : 'Emergency Maintenance'}</div>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════
+// CLEANUP PAGE (Data Hygiene)
+// ═══════════════════════════════
+function CleanupPage({ addToast }) {
+  const [running, setRunning] = useState(false);
+  const [lastResult, setLastResult] = useState(null);
+  const [manualCounts, setManualCounts] = useState(null);
+
+  async function loadCounts() {
+    if (!sb) return;
+    try {
+      const [errors, visits, audit] = await Promise.all([
+        sb.from('site_errors').select('id', { count: 'exact' }).limit(0),
+        sb.from('site_visits').select('id', { count: 'exact' }).limit(0),
+        sb.from('admin_audit_log').select('id', { count: 'exact' }).limit(0),
+      ]);
+      setManualCounts({
+        errors: errors.count || 0,
+        visits: visits.count || 0,
+        audit: audit.count || 0,
+      });
+    } catch (e) { /* ignore */ }
+  }
+
+  useEffect(() => { loadCounts(); }, []);
+
+  async function runCleanup() {
+    if (!sb) { addToast('Supabase not configured.', 'error'); return; }
+    setRunning(true);
+    try {
+      const { data, error } = await sb.rpc('run_admin_cleanup');
+      if (error) throw error;
+      setLastResult(data);
+      logAuditEvent('run_cleanup', 'system', null, data);
+      addToast('Cleanup complete!', 'success');
+      loadCounts();
+    } catch (e) {
+      addToast('Cleanup failed: ' + (e.message || 'Unknown error'), 'error');
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  return (
+    <div>
+      <h1 style={{fontFamily:'Cinzel, serif',fontSize:'20px',fontWeight:600,letterSpacing:'1px',marginBottom:'24px'}}>Data Cleanup</h1>
+
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'16px',marginBottom:'24px'}}>
+        <div className="stat-card">
+          <div className="stat-label">Error Entries</div>
+          <div className="stat-value">{manualCounts ? manualCounts.errors : '—'}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Visit Entries</div>
+          <div className="stat-value">{manualCounts ? manualCounts.visits : '—'}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Audit Entries</div>
+          <div className="stat-value">{manualCounts ? manualCounts.audit : '—'}</div>
+        </div>
+      </div>
+
+      <div className="card" style={{marginBottom:'20px'}}>
+        <div className="card-header"><h2>Automatic Cleanup</h2></div>
+        <div className="card-body">
+          <p style={{fontSize:'13px',color:'var(--text-muted)',lineHeight:1.7,marginBottom:'16px'}}>
+            Runs the server-side cleanup function. This deletes error log entries older than the configured retention period,
+            visit log entries past retention, audit log entries older than 365 days, and deactivates expired announcements.
+            Retention periods are configured in Feature Flags under "Rate Limits & Guardrails."
+          </p>
+          <div style={{display:'flex',gap:'12px',alignItems:'center'}}>
+            <button className="btn btn-primary" onClick={runCleanup} disabled={running}>
+              {running ? 'Running…' : <><Icons.Trash /> Run Cleanup Now</>}
+            </button>
+            <button className="btn" onClick={loadCounts}><Icons.Refresh /> Refresh Counts</button>
+          </div>
+          {lastResult && (
+            <div style={{marginTop:'16px',padding:'12px 16px',background:'rgba(94,224,154,0.06)',border:'1px solid rgba(94,224,154,0.15)',borderRadius:'8px',fontSize:'13px'}}>
+              <div style={{fontWeight:600,color:'#5ee09a',marginBottom:'8px'}}>Cleanup Results</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px',fontSize:'12px',color:'var(--text-muted)'}}>
+                <div>Errors deleted: <strong style={{color:'var(--text)'}}>{lastResult.errors_deleted}</strong></div>
+                <div>Visits deleted: <strong style={{color:'var(--text)'}}>{lastResult.visits_deleted}</strong></div>
+                <div>Audit deleted: <strong style={{color:'var(--text)'}}>{lastResult.audit_deleted}</strong></div>
+              </div>
+              <div style={{fontSize:'11px',color:'var(--text-faint)',marginTop:'6px'}}>Ran at: {lastResult.ran_at ? formatDateTime(lastResult.ran_at) : 'just now'}</div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="card-header"><h2>Cleanup Schedule</h2></div>
+        <div className="card-body">
+          <p style={{fontSize:'13px',color:'var(--text-muted)',lineHeight:1.7}}>
+            For automatic scheduled cleanup, enable <strong>pg_cron</strong> in your Supabase project
+            (Dashboard → Database → Extensions) and add a cron job:
+          </p>
+          <div className="json-view" style={{marginTop:'12px',fontSize:'12px'}}>
+{`-- Run cleanup daily at 3:00 AM UTC
+select cron.schedule(
+  'phmurt-daily-cleanup',
+  '0 3 * * *',
+  $$ select public.run_admin_cleanup() $$
+);`}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════
+// SUBSCRIPTIONS PAGE
+// ═══════════════════════════════
+function SubscriptionsPage({ addToast }) {
+  const { data, loading, error, refetch } = useAdminQuery(async (db) => {
+    const [allProfiles, stripeEvents] = await Promise.all([
+      db.from('profiles')
+        .select('id, name, email, subscription_tier, subscription_status, stripe_customer_id, subscription_started_at, subscription_expires_at, subscription_cancel_at, created_at')
+        .order('subscription_started_at', { ascending: false, nullsFirst: false })
+        .limit(500),
+      db.from('stripe_events')
+        .select('id, stripe_event_id, event_type, customer_id, processed, created_at')
+        .order('created_at', { ascending: false })
+        .limit(50)
+        .then(r => r.data || [])
+        .catch(() => []),
+    ]);
+    if (allProfiles.error) throw allProfiles.error;
+    const profiles = allProfiles.data || [];
+    const proUsers = profiles.filter(p => p.subscription_tier === 'pro' && p.subscription_status === 'active');
+    const pastDueUsers = profiles.filter(p => p.subscription_status === 'past_due');
+    const cancelingUsers = profiles.filter(p => p.subscription_cancel_at && p.subscription_status === 'active');
+    // MRR: yearly subs contribute $50/12 ≈ $4.17/mo, monthly contribute $5/mo
+    // We can approximate by checking subscription_expires_at: if >6 months out, likely yearly
+    const monthlyPro = proUsers.filter(p => {
+      if (!p.subscription_expires_at) return true;
+      const exp = new Date(p.subscription_expires_at);
+      const start = p.subscription_started_at ? new Date(p.subscription_started_at) : new Date();
+      return (exp - start) < 180 * 24 * 60 * 60 * 1000; // Less than ~6 months = monthly
+    });
+    const yearlyPro = proUsers.filter(p => !monthlyPro.includes(p));
+    const totalRevenue = (monthlyPro.length * 5) + Math.round(yearlyPro.length * 50 / 12 * 100) / 100;
+    return {
+      profiles,
+      proUsers,
+      pastDueUsers,
+      cancelingUsers,
+      totalUsers: profiles.length,
+      totalPro: proUsers.length,
+      monthlyCount: monthlyPro.length,
+      yearlyCount: yearlyPro.length,
+      mrr: totalRevenue,
+      stripeEvents,
+    };
+  });
+
+  const [filterTier, setFilterTier] = useState('all');
+  const [search, setSearch] = useState('');
+
+  async function manualSetTier(userId, tier) {
+    // SECURITY: Validate tier and userId before sending to DB
+    if (tier !== 'free' && tier !== 'pro') { addToast('Invalid tier value.', 'error'); return; }
+    if (!userId || typeof userId !== 'string' || !/^[0-9a-f-]{36}$/i.test(userId)) { addToast('Invalid user ID.', 'error'); return; }
+    const { error } = await sb.from('profiles').update({
+      subscription_tier: tier,
+      subscription_status: tier === 'pro' ? 'active' : null,
+      subscription_started_at: tier === 'pro' ? new Date().toISOString() : null,
+      subscription_expires_at: null,
+    }).eq('id', userId);
+    if (error) { addToast('Update failed: ' + error.message, 'error'); return; }
+    logAuditEvent('manual_subscription_change', 'user', userId, { new_tier: tier });
+    addToast(`User tier set to ${tier}.`, 'success');
+    refetch();
+  }
+
+  if (loading) return <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)'}}>Loading…</div>;
+  if (error) return <div style={{padding:'40px',color:'var(--danger)'}}>{error}</div>;
+
+  const s = data || { profiles: [], proUsers: [], pastDueUsers: [], cancelingUsers: [], totalUsers: 0, totalPro: 0, monthlyCount: 0, yearlyCount: 0, mrr: 0, stripeEvents: [] };
+
+  const filtered = s.profiles.filter(p => {
+    if (filterTier === 'pro' && p.subscription_tier !== 'pro') return false;
+    if (filterTier === 'free' && p.subscription_tier !== 'free') return false;
+    if (filterTier === 'past_due' && p.subscription_status !== 'past_due') return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return (p.name || '').toLowerCase().includes(q) || (p.email || '').toLowerCase().includes(q);
+    }
+    return true;
+  });
+
+  return (
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px'}}>
+        <h1 style={{fontFamily:'Cinzel, serif',fontSize:'20px',fontWeight:600,letterSpacing:'1px'}}>Phmurt Studios Pro</h1>
+        <button className="btn" onClick={refetch}><Icons.Refresh /> Refresh</button>
+      </div>
+
+      {/* Revenue stats */}
+      <div className="stat-grid" style={{marginBottom:'24px'}}>
+        <div className="stat-card">
+          <div className="stat-label">Pro Subscribers</div>
+          <div className="stat-value">{s.totalPro}</div>
+          <div className="stat-sub">{s.monthlyCount} monthly · {s.yearlyCount} yearly</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Est. MRR</div>
+          <div className="stat-value" style={{color:'#5ee09a'}}>${s.mrr.toFixed(2)}</div>
+          <div className="stat-sub">${s.monthlyCount * 5} monthly + ${Math.round(s.yearlyCount * 50/12)} yearly</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Past Due</div>
+          <div className="stat-value" style={{color: s.pastDueUsers.length > 0 ? '#f59e0b' : 'var(--accent)'}}>{s.pastDueUsers.length}</div>
+          <div className="stat-sub">Failed payments</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Canceling</div>
+          <div className="stat-value" style={{color: s.cancelingUsers.length > 0 ? '#ef4444' : 'var(--accent)'}}>{s.cancelingUsers.length}</div>
+          <div className="stat-sub">Set to cancel at period end</div>
+        </div>
+      </div>
+
+      {/* Conversion funnel */}
+      <div className="card" style={{marginBottom:'20px'}}>
+        <div className="card-header"><h2>Conversion</h2></div>
+        <div className="card-body">
+          <div style={{display:'flex',alignItems:'center',gap:'16px',fontSize:'13px'}}>
+            <div style={{textAlign:'center'}}>
+              <div style={{fontSize:'24px',fontWeight:700,fontFamily:'Cinzel,serif'}}>{s.totalUsers}</div>
+              <div style={{color:'var(--text-muted)',fontSize:'11px'}}>Total Users</div>
+            </div>
+            <div style={{color:'var(--text-faint)',fontSize:'20px'}}>→</div>
+            <div style={{textAlign:'center'}}>
+              <div style={{fontSize:'24px',fontWeight:700,fontFamily:'Cinzel,serif',color:'#5ee09a'}}>{s.totalPro}</div>
+              <div style={{color:'var(--text-muted)',fontSize:'11px'}}>Pro</div>
+            </div>
+            <div style={{color:'var(--text-faint)',fontSize:'20px'}}>=</div>
+            <div style={{textAlign:'center'}}>
+              <div style={{fontSize:'24px',fontWeight:700,fontFamily:'Cinzel,serif',color:'var(--accent)'}}>{s.totalUsers > 0 ? Math.round(s.totalPro / s.totalUsers * 100) : 0}%</div>
+              <div style={{color:'var(--text-muted)',fontSize:'11px'}}>Conversion Rate</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* User list */}
+      <div style={{display:'flex',gap:'12px',marginBottom:'16px',flexWrap:'wrap',alignItems:'center'}}>
+        <div className="search-bar" style={{maxWidth:'300px'}}>
+          <Icons.Search />
+          <input placeholder="Search users..." value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <div className="filter-pills">
+          {['all','pro','free','past_due'].map(f => (
+            <span key={f} className={`pill ${filterTier === f ? 'active' : ''}`} onClick={() => setFilterTier(f)}>
+              {f === 'all' ? 'All' : f === 'past_due' ? 'Past Due' : f.charAt(0).toUpperCase() + f.slice(1)}
+            </span>
+          ))}
+        </div>
+        <span style={{fontSize:'12px',color:'var(--text-muted)'}}>{filtered.length} users</span>
+      </div>
+
+      <div className="card" style={{overflow:'hidden',marginBottom:'24px'}}>
+        <table className="data-table">
+          <thead><tr><th>User</th><th>Tier</th><th>Status</th><th>Started</th><th>Expires</th><th>Actions</th></tr></thead>
+          <tbody>
+            {filtered.slice(0, 100).map(p => (
+              <tr key={p.id}>
+                <td>
+                  <div style={{fontSize:'13px',fontWeight:600}}>{p.name || (p.email || '').split('@')[0] || 'Unknown'}</div>
+                  <div style={{fontSize:'11px',color:'var(--text-muted)'}}>{p.email || '—'}</div>
+                </td>
+                <td>
+                  <span style={{padding:'2px 10px',borderRadius:'10px',fontSize:'11px',fontWeight:600,
+                    background: p.subscription_tier === 'pro' ? 'rgba(94,224,154,0.12)' : 'rgba(255,255,255,0.04)',
+                    color: p.subscription_tier === 'pro' ? '#5ee09a' : 'var(--text-muted)',
+                  }}>
+                    {p.subscription_tier === 'pro' ? 'PRO' : 'FREE'}
+                  </span>
+                </td>
+                <td style={{fontSize:'12px',color: p.subscription_status === 'active' ? '#5ee09a' : p.subscription_status === 'past_due' ? '#f59e0b' : 'var(--text-muted)'}}>
+                  {p.subscription_status || '—'}
+                  {p.subscription_cancel_at && <span style={{fontSize:'10px',color:'#ef4444',marginLeft:'4px'}}>(canceling)</span>}
+                </td>
+                <td style={{fontSize:'12px'}}>{p.subscription_started_at ? formatDate(p.subscription_started_at) : '—'}</td>
+                <td style={{fontSize:'12px'}}>{p.subscription_expires_at ? formatDate(p.subscription_expires_at) : '—'}</td>
+                <td>
+                  <div className="btn-group">
+                    {p.subscription_tier !== 'pro' && (
+                      <button className="btn btn-sm btn-primary" onClick={() => manualSetTier(p.id, 'pro')} style={{fontSize:'10px'}}>Grant Pro</button>
+                    )}
+                    {p.subscription_tier === 'pro' && (
+                      <button className="btn btn-sm btn-danger" onClick={() => manualSetTier(p.id, 'free')} style={{fontSize:'10px'}}>Revoke</button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Recent Stripe events */}
+      {s.stripeEvents.length > 0 && (
+        <div className="card">
+          <div className="card-header"><h2>Recent Stripe Events</h2></div>
+          <div className="card-body" style={{maxHeight:'300px',overflowY:'auto'}}>
+            {s.stripeEvents.map(e => (
+              <div key={e.id} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--border-mid)',fontSize:'12px'}}>
+                <div>
+                  <span style={{fontWeight:600}}>{e.event_type}</span>
+                  <span className="mono" style={{fontSize:'10px',color:'var(--text-faint)',marginLeft:'8px'}}>{(e.customer_id || '').slice(0, 18)}</span>
+                </div>
+                <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+                  <span style={{width:'6px',height:'6px',borderRadius:'50%',background: e.processed ? '#5ee09a' : '#f59e0b'}} />
+                  <span style={{color:'var(--text-muted)'}}>{timeAgo(e.created_at)}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════
 // MAIN APP
 // ═══════════════════════════════
 function AdminApp() {
@@ -2910,33 +3968,47 @@ function AdminApp() {
 
   const navItems = [
     { section: 'Overview' },
-    { id: 'dashboard',   label: 'Dashboard',   icon: Icons.Dashboard },
+    { id: 'dashboard',      label: 'Dashboard',       icon: Icons.Dashboard },
     { section: 'Content' },
-    { id: 'users',       label: 'Users',        icon: Icons.Users },
-    { id: 'characters',  label: 'Characters',   icon: Icons.Keys },
-    { id: 'campaigns',   label: 'Campaigns',    icon: Icons.Tenants },
+    { id: 'users',          label: 'Users',            icon: Icons.Users },
+    { id: 'characters',     label: 'Characters',       icon: Icons.Keys },
+    { id: 'campaigns',      label: 'Campaigns',        icon: Icons.Tenants },
     { section: 'Moderation' },
-    { id: 'flagged',     label: 'Flagged',      icon: Icons.Shield },
+    { id: 'flagged',        label: 'Flagged',          icon: Icons.Shield },
     { section: 'Analytics' },
-    { id: 'traffic',     label: 'Site Traffic', icon: Icons.RateLimit },
-    { id: 'engagement',  label: 'Engagement',   icon: Icons.Audit },
-    { id: 'errors',      label: 'Error Log',    icon: Icons.X },
+    { id: 'traffic',        label: 'Site Traffic',     icon: Icons.RateLimit },
+    { id: 'engagement',     label: 'Engagement',       icon: Icons.Audit },
+    { id: 'errors',         label: 'Error Log',        icon: Icons.X },
+    { section: 'Revenue' },
+    { id: 'subscriptions',  label: 'Subscriptions',    icon: Icons.Shield },
+    { section: 'Admin Tools' },
+    { id: 'audit',          label: 'Audit Log',        icon: Icons.ClipboardList },
+    { id: 'announcements',  label: 'Announcements',    icon: Icons.Bell },
+    { id: 'flags',          label: 'Feature Flags',    icon: Icons.Sliders },
+    { id: 'export',         label: 'Data Export',      icon: Icons.Download },
+    { id: 'cleanup',        label: 'Data Cleanup',     icon: Icons.Trash },
     { section: 'System' },
-    { id: 'settings',    label: 'Settings',     icon: Icons.Settings },
+    { id: 'settings',       label: 'Settings',         icon: Icons.Settings },
   ];
 
   const renderPage = () => {
     switch(page) {
-      case 'dashboard':  return <DashboardPage onNavigate={setPage} />;
-      case 'users':      return <UsersPage addToast={addToast} canManageAdmins={canManageAdmins} />;
-      case 'characters': return <CharactersPage addToast={addToast} canDeleteContent={canManageAdmins} />;
-      case 'campaigns':  return <CampaignsPage addToast={addToast} canDeleteContent={canManageAdmins} />;
-      case 'flagged':    return <FlaggedContentPage addToast={addToast} canDeleteContent={canManageAdmins} />;
-      case 'traffic':    return <TrafficPage />;
-      case 'engagement': return <EngagementPage />;
-      case 'errors':     return <ErrorLogPage />;
-      case 'settings':   return <SettingsPage addToast={addToast} canManageAdmins={canManageAdmins} />;
-      default:           return <DashboardPage onNavigate={setPage} />;
+      case 'dashboard':     return <DashboardPage onNavigate={setPage} />;
+      case 'users':         return <UsersPage addToast={addToast} canManageAdmins={canManageAdmins} />;
+      case 'characters':    return <CharactersPage addToast={addToast} canDeleteContent={canManageAdmins} />;
+      case 'campaigns':     return <CampaignsPage addToast={addToast} canDeleteContent={canManageAdmins} />;
+      case 'flagged':       return <FlaggedContentPage addToast={addToast} canDeleteContent={canManageAdmins} />;
+      case 'traffic':       return <TrafficPage />;
+      case 'engagement':    return <EngagementPage />;
+      case 'errors':        return <ErrorLogPage />;
+      case 'subscriptions': return <SubscriptionsPage addToast={addToast} />;
+      case 'audit':         return <AuditLogPage />;
+      case 'announcements': return <AnnouncementsPage addToast={addToast} />;
+      case 'flags':         return <FeatureFlagsPage addToast={addToast} viewer={viewer} />;
+      case 'export':        return <DataExportPage addToast={addToast} />;
+      case 'cleanup':       return <CleanupPage addToast={addToast} />;
+      case 'settings':      return <SettingsPage addToast={addToast} canManageAdmins={canManageAdmins} />;
+      default:              return <DashboardPage onNavigate={setPage} />;
     }
   };
 

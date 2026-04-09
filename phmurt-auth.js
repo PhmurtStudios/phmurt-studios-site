@@ -55,15 +55,101 @@ var PhmurtDB = (function () {
     var name = (profile && profile.name)
       || (user.user_metadata && user.user_metadata.name)
       || (user.email || 'Adventurer').split('@')[0];
+    var tier = (profile && profile.subscription_tier) || 'free';
+    var subStatus = (profile && profile.subscription_status) || null;
+    // Check if subscription is still valid (not expired)
+    var subExpires = profile && profile.subscription_expires_at ? new Date(profile.subscription_expires_at) : null;
+    var isSubscribed = tier === 'pro' && subStatus === 'active' && (!subExpires || subExpires > new Date());
     return {
-      userId:      user.id,
-      name:        name,
-      email:       user.email || '',
-      displayName: name,
-      isAdmin:     _isAdmin(profile && profile.is_admin),
-      isSuperuser: !!(profile && profile.is_superuser),
-      isBanned:    !!(profile && profile.is_banned)
+      userId:              user.id,
+      name:                name,
+      email:               user.email || '',
+      displayName:         name,
+      isAdmin:             _isAdmin(profile && profile.is_admin),
+      isSuperuser:         !!(profile && profile.is_superuser),
+      isBanned:            !!(profile && profile.is_banned),
+      isBetaUser:          !!(profile && profile.is_beta_user),
+      subscriptionTier:    isSubscribed ? 'pro' : 'free',
+      isSubscribed:        isSubscribed,
+      subscriptionExpires: subExpires ? subExpires.toISOString() : null,
+      subscriptionCancelAt: (profile && profile.subscription_cancel_at) || null,
     };
+  }
+
+  /* ── Subscription limit checker ───────────────────────────────────
+     Counts the user's existing records and compares against the
+     configured limit for their subscription tier. Returns:
+       { blocked: false } or { blocked: true, message: '...', limit: N, current: N }
+  ────────────────────────────────────────────────────────────────── */
+  var _limitCache = {};  // Cache settings for 60 seconds
+  var _limitCacheTime = 0;
+
+  function _fetchLimits() {
+    var now = Date.now();
+    if (_limitCache && _limitCacheTime && (now - _limitCacheTime) < 60000) {
+      return Promise.resolve(_limitCache);
+    }
+    var sb = _sb();
+    if (!sb) return Promise.resolve({});
+    return sb.from('site_settings')
+      .select('key, value')
+      .in('key', ['free_max_characters', 'free_max_campaigns', 'paid_max_characters', 'paid_max_campaigns'])
+      .then(function (r) {
+        var map = {};
+        (r.data || []).forEach(function (s) {
+          try { map[s.key] = JSON.parse(s.value); } catch (e) { map[s.key] = s.value; }
+        });
+        _limitCache = map;
+        _limitCacheTime = Date.now();
+        return map;
+      })
+      .catch(function () {
+        // SECURITY: Return restrictive defaults if settings can't be fetched
+        // This ensures limits are enforced even if the settings query fails
+        return { free_max_characters: 3, free_max_campaigns: 1, paid_max_characters: -1, paid_max_campaigns: -1 };
+      });
+  }
+
+  function _checkLimit(table, freeKey, paidKey) {
+    var sb = _sb();
+    if (!sb || !_session) return Promise.resolve({ blocked: false });
+
+    // Admins bypass limits
+    if (_session.isAdmin || _session.isSuperuser) return Promise.resolve({ blocked: false });
+
+    return _fetchLimits().then(function (limits) {
+      var limitKey = _session.isSubscribed ? paidKey : freeKey;
+      var maxCount = limits[limitKey];
+      if (maxCount === undefined || maxCount === null) maxCount = _session.isSubscribed ? -1 : 3;
+      maxCount = parseInt(maxCount, 10);
+      if (maxCount < 0) return { blocked: false }; // -1 = unlimited
+
+      // Count current records
+      return sb.from(table).select('id', { count: 'exact' })
+        .eq('owner_id', _session.userId).limit(0)
+        .then(function (r) {
+          var current = r.count || 0;
+          if (current >= maxCount) {
+            var typeLabel = table === 'characters' ? 'characters' : 'campaigns';
+            var result = {
+              blocked: true,
+              message: 'You\'ve reached the maximum of ' + maxCount + ' ' + typeLabel + ' on the free plan. Upgrade to Phmurt Studios Pro for unlimited ' + typeLabel + '!',
+              limit: maxCount,
+              current: current
+            };
+            // Fire event so the upgrade banner can appear
+            try { window.dispatchEvent(new CustomEvent('phmurt-limit-reached', { detail: result })); } catch (e) {}
+            return result;
+          }
+          return { blocked: false, limit: maxCount, current: current };
+        })
+        .catch(function (err) {
+          // SECURITY: Fail closed — if we can't verify the limit, block the action
+          // The server-side trigger will also enforce this, but don't let the client bypass
+          if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Limit check failed, blocking:', err);
+          return { blocked: true, message: 'Unable to verify your account limits. Please try again in a moment.', limit: 0, current: 0 };
+        });
+    });
   }
 
   function _fireChange() {
@@ -457,6 +543,22 @@ var PhmurtDB = (function () {
           updated_at:   new Date().toISOString()
         };
 
+        // ── Subscription limit check (only for NEW characters) ────
+        var isNewCharacter = !existingId || /^\d+$/.test(existingId);
+        if (isNewCharacter) {
+          return _checkLimit('characters', 'free_max_characters', 'paid_max_characters').then(function (limitResult) {
+            if (limitResult.blocked) {
+              return { success: false, error: limitResult.message, limitReached: true };
+            }
+            return sb.from('characters').insert(row).select('id').single()
+              .then(function (r) {
+                if (r.error) throw r.error;
+                return { success: true, id: r.data.id };
+              })
+              .catch(function (e) { return { success: false, error: e.message }; });
+          });
+        }
+
         if (existingId && !/^\d+$/.test(existingId)) {
           // SECURITY (V-016): Validate existingId is non-empty string before using in query
           var safeId = String(existingId).trim();
@@ -469,19 +571,29 @@ var PhmurtDB = (function () {
               return { success: true, id: r.data.id };
             })
             .catch(function (e) {
-              // If not found, insert fresh
-              return sb.from('characters').insert(row).select('id').single()
-                .then(function (r2) { if (r2.error || !r2.data) return { success: false }; return { success: true, id: r2.data.id }; })
-                .catch(function (e2) { return { success: false, error: e2.message }; });
+              // If not found, check limit then insert fresh
+              return _checkLimit('characters', 'free_max_characters', 'paid_max_characters').then(function (limitResult) {
+                if (limitResult.blocked) {
+                  return { success: false, error: limitResult.message, limitReached: true };
+                }
+                return sb.from('characters').insert(row).select('id').single()
+                  .then(function (r2) { if (r2.error || !r2.data) return { success: false }; return { success: true, id: r2.data.id }; })
+                  .catch(function (e2) { return { success: false, error: e2.message }; });
+              });
             });
         } else {
-          // Insert new
-          return sb.from('characters').insert(row).select('id').single()
-            .then(function (r) {
-              if (r.error) throw r.error;
-              return { success: true, id: r.data.id };
-            })
-            .catch(function (e) { return { success: false, error: e.message }; });
+          // Insert new (with limit check)
+          return _checkLimit('characters', 'free_max_characters', 'paid_max_characters').then(function (limitResult) {
+            if (limitResult.blocked) {
+              return { success: false, error: limitResult.message, limitReached: true };
+            }
+            return sb.from('characters').insert(row).select('id').single()
+              .then(function (r) {
+                if (r.error) throw r.error;
+                return { success: true, id: r.data.id };
+              })
+              .catch(function (e) { return { success: false, error: e.message }; });
+          });
         }
       }
 
@@ -583,7 +695,7 @@ var PhmurtDB = (function () {
         var dataStr = JSON.stringify(campaign);
         if (dataStr.length > 5000000) return Promise.reject(new Error('Campaign data exceeds maximum size.'));
 
-        return sb.from('campaigns').upsert({
+        var campRow = {
           id:          campaign.id,
           owner_id:    _session.userId,
           name:        (campaign.name || 'Unnamed Campaign').slice(0, 80),
@@ -592,7 +704,22 @@ var PhmurtDB = (function () {
           invite_code: campaign.inviteCode || null,
           data:        campaign,
           updated_at:  new Date().toISOString()
-        }, { onConflict: 'id' })
+        };
+
+        // Check if this is a new campaign (no existing ID) or an update
+        var isNew = !campaign.id;
+        if (isNew) {
+          return _checkLimit('campaigns', 'free_max_campaigns', 'paid_max_campaigns').then(function (limitResult) {
+            if (limitResult.blocked) {
+              return Promise.reject(new Error(limitResult.message));
+            }
+            return sb.from('campaigns').insert(campRow).select('id').single()
+              .then(function (r) { if (r.error) throw r.error; campaign.id = r.data.id; return true; })
+              .catch(function () { _legacySaveCampLocal(campaign); return true; });
+          });
+        }
+
+        return sb.from('campaigns').upsert(campRow, { onConflict: 'id' })
           .then(function (r) { return !r.error; })
           .catch(function () {
             // Fallback: save to localStorage on cloud failure
@@ -1063,6 +1190,71 @@ var PhmurtDB = (function () {
           return sb.storage.from('portraits').createSignedUrl(path, 60 * 60 * 24 * 30)
             .then(function (u) { return u.data ? u.data.signedUrl : null; });
         });
+    },
+
+    /* ── Subscription Management ─────────────────────────────── */
+    getSubscriptionInfo: function () {
+      if (!_session) return { tier: 'free', isSubscribed: false };
+      return {
+        tier:        _session.subscriptionTier || 'free',
+        isSubscribed: !!_session.isSubscribed,
+        expiresAt:   _session.subscriptionExpires || null,
+        cancelAt:    _session.subscriptionCancelAt || null,
+      };
+    },
+
+    checkLimit: function (table) {
+      var freeKey = table === 'characters' ? 'free_max_characters' : 'free_max_campaigns';
+      var paidKey = table === 'characters' ? 'paid_max_characters' : 'paid_max_campaigns';
+      return _checkLimit(table, freeKey, paidKey);
+    },
+
+    startSubscription: function (returnUrl, interval) {
+      if (!_session) return Promise.reject(new Error('Not signed in.'));
+      var sb = _sb();
+      if (!sb) return Promise.reject(new Error('Supabase not configured.'));
+
+      var checkoutUrl = (typeof STRIPE_CHECKOUT_FUNCTION_URL !== 'undefined' && STRIPE_CHECKOUT_FUNCTION_URL)
+        ? STRIPE_CHECKOUT_FUNCTION_URL
+        : (typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL + '/functions/v1/stripe-checkout' : null);
+
+      if (!checkoutUrl) return Promise.reject(new Error('Stripe checkout not configured.'));
+
+      return sb.auth.getSession().then(function (r) {
+        var token = r.data && r.data.session && r.data.session.access_token;
+        if (!token) throw new Error('No active session.');
+
+        return fetch(checkoutUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token,
+          },
+          body: JSON.stringify({
+            return_url: returnUrl || window.location.href,
+            // SECURITY: Whitelist interval values — server also validates, but defense in depth
+            interval: (interval === 'yearly') ? 'yearly' : 'monthly',
+          }),
+        })
+        .then(function (resp) { return resp.json(); })
+        .then(function (data) {
+          if (data.error) throw new Error(data.error);
+          // SECURITY: Validate the redirect URL is an HTTPS Stripe URL (prevents javascript:/data: URI attacks)
+          if (data.url) {
+            try {
+              var parsed = new URL(data.url);
+              if (parsed.protocol !== 'https:' || (parsed.hostname.indexOf('stripe.com') === -1 && parsed.hostname.indexOf('phmurtstudios.com') === -1)) {
+                throw new Error('Unexpected redirect URL.');
+              }
+              window.location.href = data.url;
+            } catch (urlErr) {
+              if (urlErr.message === 'Unexpected redirect URL.') throw urlErr;
+              throw new Error('Invalid response from payment server.');
+            }
+          }
+          return data;
+        });
+      });
     }
   };
 
@@ -1117,4 +1309,291 @@ window.addEventListener('storage', function (e) {
       window.location.pathname
     );
   });
+})();
+
+/* ═══════════════════════════════════════════════════════════════════
+   FEATURE FLAGS, MAINTENANCE MODE & ANNOUNCEMENTS
+   ═══════════════════════════════════════════════════════════════════
+   Fetches site_settings and site_announcements from Supabase.
+   - Maintenance mode: shows a full-page overlay blocking saves
+   - Feature flags: redirects users away from disabled pages
+   - Announcements: shows a dismissible banner at the top of the page
+   ═══════════════════════════════════════════════════════════════════ */
+(function () {
+  var sb = (typeof phmurtSupabase !== 'undefined' && phmurtSupabase) ? phmurtSupabase : null;
+  if (!sb) return; // Skip if Supabase not configured
+
+  // Skip all of this on the admin page itself
+  var currentPage = window.location.pathname || '/';
+  if (currentPage.indexOf('admin') !== -1) return;
+
+  // ── Shared CSS injection ──────────────────────────────────────────
+  var style = document.createElement('style');
+  style.textContent = [
+    /* Subscription upgrade banner */
+    '.phmurt-upgrade-banner{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(135deg,#1a1510 0%,#2a2015 100%);border-top:2px solid rgba(201,168,76,0.4);padding:18px 24px;z-index:99997;display:flex;align-items:center;justify-content:center;gap:20px;font-family:Spectral,serif;animation:phmurt-slide-up 0.3s ease;flex-wrap:wrap;}',
+    '.phmurt-upgrade-banner .upgrade-text{color:#f5ede0;font-size:14px;text-align:center;}',
+    '.phmurt-upgrade-banner .upgrade-text strong{color:#c9a84c;}',
+    '.phmurt-upgrade-btns{display:flex;gap:10px;align-items:center;}',
+    '.phmurt-upgrade-banner .upgrade-btn{padding:10px 20px;background:#c9a84c;color:#1a1510;border:none;font-family:Cinzel,serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;border-radius:4px;font-weight:600;transition:background 0.15s;}',
+    '.phmurt-upgrade-banner .upgrade-btn:hover{background:#d4b55a;}',
+    '.phmurt-upgrade-banner .upgrade-btn.yearly{background:transparent;border:1.5px solid #c9a84c;color:#c9a84c;}',
+    '.phmurt-upgrade-banner .upgrade-btn.yearly:hover{background:rgba(201,168,76,0.1);}',
+    '.phmurt-upgrade-banner .upgrade-save{font-size:10px;color:#5ee09a;font-weight:600;letter-spacing:0.5px;}',
+    '.phmurt-upgrade-banner .upgrade-close{background:none;border:none;color:#8c7d6e;cursor:pointer;font-size:18px;padding:4px 8px;}',
+    '@keyframes phmurt-slide-up{from{transform:translateY(100%)}to{transform:translateY(0)}}',
+    '.phmurt-maintenance-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,12,8,0.97);z-index:99999;display:flex;align-items:center;justify-content:center;text-align:center;font-family:Spectral,serif;color:#f5ede0;}',
+    '.phmurt-maintenance-box{max-width:500px;padding:48px;border:1px solid rgba(201,168,76,0.2);border-radius:12px;background:rgba(30,25,18,0.95);}',
+    '.phmurt-maintenance-box h1{font-family:Cinzel,serif;font-size:24px;color:#c9a84c;margin-bottom:16px;letter-spacing:2px;}',
+    '.phmurt-maintenance-box p{font-size:15px;line-height:1.7;color:#b8a88a;margin-bottom:12px;}',
+    '.phmurt-maintenance-eta{font-size:13px;color:#c9a84c;margin-top:16px;padding:8px 16px;background:rgba(201,168,76,0.08);border-radius:6px;display:inline-block;}',
+    '.phmurt-announce-bar{padding:10px 20px;font-family:Spectral,serif;font-size:13px;text-align:center;position:relative;z-index:9998;display:flex;align-items:center;justify-content:center;gap:12px;}',
+    '.phmurt-announce-bar.info{background:#1a3a5c;color:#a8d4ff;border-bottom:1px solid #2a5080;}',
+    '.phmurt-announce-bar.warning{background:#3d2e0a;color:#f5d06e;border-bottom:1px solid #5c4a15;}',
+    '.phmurt-announce-bar.success{background:#0d3020;color:#7fe8a8;border-bottom:1px solid #1a5035;}',
+    '.phmurt-announce-bar.danger{background:#3d1010;color:#f5a0a0;border-bottom:1px solid #5c2020;}',
+    '.phmurt-announce-title{font-weight:600;margin-right:6px;}',
+    '.phmurt-announce-close{background:none;border:none;color:inherit;cursor:pointer;font-size:18px;padding:0 4px;opacity:0.6;line-height:1;}',
+    '.phmurt-announce-close:hover{opacity:1;}',
+    '.phmurt-disabled-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,12,8,0.95);z-index:99998;display:flex;align-items:center;justify-content:center;text-align:center;font-family:Spectral,serif;color:#f5ede0;}',
+    '.phmurt-disabled-box{max-width:450px;padding:40px;border:1px solid rgba(88,170,255,0.2);border-radius:12px;background:rgba(30,25,18,0.95);}',
+    '.phmurt-disabled-box h1{font-family:Cinzel,serif;font-size:20px;color:#58aaff;margin-bottom:12px;letter-spacing:1px;}',
+    '.phmurt-disabled-box p{font-size:14px;line-height:1.6;color:#b8a88a;}',
+    '.phmurt-disabled-box a{color:#c9a84c;text-decoration:none;}',
+  ].join('\n');
+  document.head.appendChild(style);
+
+  // ── Map pages to feature flag keys ────────────────────────────────
+  var pageFlags = {
+    '/character-builder.html':     'feature_character_builder',
+    '/character-builder-35.html':  'feature_character_builder',
+    '/campaigns.html':             'feature_campaign_manager',
+    '/gallery.html':               'feature_gallery',
+    '/compendium.html':            'feature_compendium',
+    '/generators.html':            'feature_generators',
+    '/soup-savant.html':           'feature_soup_savant',
+  };
+  // Beta pages require both the master beta toggle AND their specific flag
+  var betaFlags = {
+    '/character-builder-35.html':  'beta_character_builder_35',
+  };
+
+  // ── Fetch settings and announcements ──────────────────────────────
+  function fetchSettingsAndAnnouncements() {
+    Promise.all([
+      sb.from('site_settings').select('key, value, data_type').then(function (r) { return r.data || []; }).catch(function () { return []; }),
+      sb.from('site_announcements').select('*').eq('is_active', true).order('created_at', { ascending: false }).then(function (r) { return r.data || []; }).catch(function () { return []; }),
+    ]).then(function (results) {
+      var settings = results[0];
+      var announcements = results[1];
+
+      // Parse settings into a usable map
+      var flags = {};
+      settings.forEach(function (s) {
+        try { flags[s.key] = JSON.parse(s.value); } catch (e) { flags[s.key] = s.value; }
+      });
+
+      // Expose flags globally for other scripts
+      window.phmurtFlags = flags;
+      window.dispatchEvent(new CustomEvent('phmurt-flags-loaded', { detail: flags }));
+
+      // ── Maintenance mode ──────────────────────────────────────────
+      if (flags.maintenance_mode === true) {
+        var overlay = document.createElement('div');
+        overlay.className = 'phmurt-maintenance-overlay';
+        var box = document.createElement('div');
+        box.className = 'phmurt-maintenance-box';
+        box.innerHTML = '<h1>Under Maintenance</h1>';
+        var msg = flags.maintenance_message || 'We\'re performing scheduled maintenance. The site will be back shortly!';
+        box.innerHTML += '<p>' + msg.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>';
+        if (flags.maintenance_eta && flags.maintenance_eta !== 'null') {
+          try {
+            var eta = new Date(flags.maintenance_eta);
+            if (!isNaN(eta.getTime())) {
+              box.innerHTML += '<div class="phmurt-maintenance-eta">Estimated return: ' + eta.toLocaleString() + '</div>';
+            }
+          } catch (e) {}
+        }
+        overlay.appendChild(box);
+        document.body.appendChild(overlay);
+
+        // Block saves by overriding PhmurtDB methods
+        if (typeof PhmurtDB !== 'undefined') {
+          var _blockedMsg = { success: false, error: 'Site is in maintenance mode.' };
+          PhmurtDB.saveCharacter = function () { return Promise.resolve(_blockedMsg); };
+          PhmurtDB.saveCampaign = function () { return Promise.resolve(false); };
+          PhmurtDB.saveUserSyncBlob = function () { return Promise.resolve(_blockedMsg); };
+        }
+        return; // Don't process feature flags or announcements during maintenance
+      }
+
+      // ── Feature flag enforcement ──────────────────────────────────
+      var flagKey = pageFlags[currentPage];
+      if (flagKey && flags[flagKey] === false) {
+        showDisabledPage('This feature is currently disabled.', 'The site administrator has temporarily disabled this page. Please check back later.');
+        return;
+      }
+
+      // Beta page enforcement
+      var betaKey = betaFlags[currentPage];
+      if (betaKey) {
+        if (flags.beta_enabled !== true || flags[betaKey] !== true) {
+          // Check if user is a beta tester
+          var sess = null;
+          try { sess = PhmurtDB.getSession(); } catch (e) {}
+          if (!sess || !sess.isBetaUser) {
+            showDisabledPage('Beta Feature', 'This feature is currently in beta testing and not yet available to all users.');
+            return;
+          }
+        }
+      }
+
+      // ── New signup enforcement ────────────────────────────────────
+      if (flags.feature_new_signups === false) {
+        // Disable signup forms on pages that have them
+        window.addEventListener('phmurt-auth-ready', function () {
+          if (typeof PhmurtDB !== 'undefined') {
+            var _origSignUp = PhmurtDB.signUp;
+            PhmurtDB.signUp = function () {
+              return Promise.reject(new Error('New registrations are currently disabled. Please try again later.'));
+            };
+          }
+        });
+      }
+
+      // ── Password reset enforcement ────────────────────────────────
+      if (flags.feature_password_reset === false && currentPage.indexOf('reset-password') !== -1) {
+        showDisabledPage('Password Reset Disabled', 'Password reset is temporarily unavailable. Please contact an administrator for assistance.');
+        return;
+      }
+
+      // ── Announcements ─────────────────────────────────────────────
+      var now = new Date();
+      var dismissed = {};
+      try { dismissed = JSON.parse(sessionStorage.getItem('phmurt_dismissed_announcements') || '{}'); } catch (e) {}
+
+      announcements.forEach(function (a) {
+        // Check if already dismissed this session
+        if (dismissed[a.id]) return;
+        // Check date range
+        if (a.starts_at && new Date(a.starts_at) > now) return;
+        if (a.expires_at && new Date(a.expires_at) < now) return;
+        // Check page filter
+        if (a.show_on && a.show_on.length > 0) {
+          var matchesPage = false;
+          a.show_on.forEach(function (p) {
+            if (currentPage.indexOf(p) !== -1) matchesPage = true;
+          });
+          if (!matchesPage) return;
+        }
+
+        var bar = document.createElement('div');
+        // SECURITY: Whitelist announcement type to prevent CSS injection via className
+        var safeType = { info: 'info', warning: 'warning', success: 'success', danger: 'danger' }[a.type] || 'info';
+        bar.className = 'phmurt-announce-bar ' + safeType;
+
+        // SECURITY: Full HTML entity encoding to prevent XSS
+        function _esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+        var inner = '<span class="phmurt-announce-title">' + _esc(a.title) + '</span>';
+        inner += '<span>' + _esc(a.message) + '</span>';
+        if (a.dismissible !== false) {
+          // SECURITY: Escape data-id to prevent attribute injection
+          inner += '<button class="phmurt-announce-close" data-id="' + _esc(a.id) + '">&times;</button>';
+        }
+        bar.innerHTML = inner;
+        document.body.insertBefore(bar, document.body.firstChild);
+
+        // Dismiss handler
+        var closeBtn = bar.querySelector('.phmurt-announce-close');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', function () {
+            bar.remove();
+            try {
+              dismissed[a.id] = true;
+              sessionStorage.setItem('phmurt_dismissed_announcements', JSON.stringify(dismissed));
+            } catch (e) {}
+          });
+        }
+      });
+    }).catch(function () { /* Silently fail — don't break the site */ });
+  }
+
+  function showDisabledPage(title, message) {
+    var overlay = document.createElement('div');
+    overlay.className = 'phmurt-disabled-overlay';
+    overlay.innerHTML = '<div class="phmurt-disabled-box"><h1>' + title + '</h1><p>' + message + '</p><p style="margin-top:16px;"><a href="index.html">Return to Home</a></p></div>';
+    document.body.appendChild(overlay);
+  }
+
+  // ── Subscription success handler ────────────────────────────────
+  function checkSubscriptionSuccess() {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('subscription') === 'success') {
+      // Show success toast/banner
+      var banner = document.createElement('div');
+      banner.className = 'phmurt-announce-bar success';
+      banner.innerHTML = '<span class="phmurt-announce-title">Welcome to Phmurt Studios Pro!</span><span>Your subscription is now active. Enjoy unlimited characters and campaigns!</span><button class="phmurt-announce-close" onclick="this.parentElement.remove()">&times;</button>';
+      document.body.insertBefore(banner, document.body.firstChild);
+      // Clean URL
+      var url = new URL(window.location.href);
+      url.searchParams.delete('subscription');
+      window.history.replaceState({}, '', url.toString());
+      // Refresh session to pick up new subscription status
+      if (typeof PhmurtDB !== 'undefined' && sb) {
+        sb.auth.getSession().then(function (r) {
+          if (r.data && r.data.session && r.data.session.user) {
+            sb.from('profiles').select('*').eq('id', r.data.session.user.id).maybeSingle()
+              .then(function (pr) {
+                if (pr.data) {
+                  window.dispatchEvent(new Event('phmurt-auth-change'));
+                }
+              });
+          }
+        });
+      }
+    }
+  }
+
+  // ── Upgrade prompt (shown when save fails due to limit) ────────
+  window.addEventListener('phmurt-limit-reached', function (e) {
+    var detail = e.detail || {};
+    if (document.querySelector('.phmurt-upgrade-banner')) return; // Already showing
+    var banner = document.createElement('div');
+    banner.className = 'phmurt-upgrade-banner';
+    var msg = detail.message || 'You\'ve reached the free plan limit.';
+    banner.innerHTML =
+      '<div class="upgrade-text"><strong>Phmurt Studios Pro</strong> — ' + msg.replace(/</g, '&lt;') + '</div>' +
+      '<div class="phmurt-upgrade-btns">' +
+        '<button class="upgrade-btn" id="phmurt-upgrade-monthly">$5 / month</button>' +
+        '<button class="upgrade-btn yearly" id="phmurt-upgrade-yearly">$50 / year</button>' +
+        '<span class="upgrade-save">Save $10!</span>' +
+      '</div>' +
+      '<button class="upgrade-close" onclick="this.parentElement.remove()">&times;</button>';
+    document.body.appendChild(banner);
+    document.getElementById('phmurt-upgrade-monthly').addEventListener('click', function () {
+      if (typeof PhmurtDB !== 'undefined') {
+        PhmurtDB.startSubscription(null, 'monthly').catch(function (err) {
+          alert('Could not start subscription: ' + (err.message || 'Unknown error'));
+        });
+      }
+    });
+    document.getElementById('phmurt-upgrade-yearly').addEventListener('click', function () {
+      if (typeof PhmurtDB !== 'undefined') {
+        PhmurtDB.startSubscription(null, 'yearly').catch(function (err) {
+          alert('Could not start subscription: ' + (err.message || 'Unknown error'));
+        });
+      }
+    });
+  });
+
+  // Wait for DOM and Supabase to be ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      fetchSettingsAndAnnouncements();
+      checkSubscriptionSuccess();
+    });
+  } else {
+    fetchSettingsAndAnnouncements();
+    checkSubscriptionSuccess();
+  }
 })();
