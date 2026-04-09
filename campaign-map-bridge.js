@@ -492,6 +492,8 @@
         resources: [],
         allies: [],
         rivals: [],
+        treasury: Math.floor(rng() * 9001) + 1000, // 1000-10000 gp starting treasury
+        income: Math.floor(rng() * 401) + 100, // 100-500 gp/tick base income
       };
 
       // Generate hierarchy
