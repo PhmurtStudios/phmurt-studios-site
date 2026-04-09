@@ -545,7 +545,9 @@ var PhmurtDB = (function () {
         };
 
         // ── Subscription limit check (only for NEW characters) ────
-        var isNewCharacter = !existingId || /^\d+$/.test(existingId);
+        // A character is "new" if there's no existingId, or if the ID is a legacy
+        // numeric localStorage ID (not a UUID). UUIDs contain hyphens/letters.
+        var isNewCharacter = !existingId;
         if (isNewCharacter) {
           return _checkLimit('characters', 'free_max_characters', 'paid_max_characters').then(function (limitResult) {
             if (limitResult.blocked) {
@@ -560,7 +562,7 @@ var PhmurtDB = (function () {
           });
         }
 
-        if (existingId && !/^\d+$/.test(existingId)) {
+        if (existingId) {
           // SECURITY (V-016): Validate existingId is non-empty string before using in query
           var safeId = String(existingId).trim();
           if (!safeId) return Promise.resolve({ success: false, error: 'Invalid character ID.' });

@@ -7557,7 +7557,22 @@
         'dark': { name: 'Shroud of Darkness', desc: `The ${name} is surrounded by unnatural darkness in a 15-foot radius. This darkness cannot be dispelled by nonmagical light. Creatures in the darkness other than the ${name} are blinded.` },
         'burning': { name: 'Living Inferno', desc: `The ${name}'s body radiates extreme heat. Each creature that starts its turn within 5 feet takes ${dice} fire damage. Flammable objects within 10 feet that aren't being worn or carried ignite.` },
         'frozen': { name: 'Permafrost Body', desc: `The ${name}'s touch freezes everything it contacts. Each creature that hits the ${name} with a melee attack takes ${dice} cold damage, and the ground within 15 feet of the ${name} is difficult terrain due to ice.` },
-        'shadowy': { name: 'Shadow Melding', desc: `While in dim light or darkness, the ${name} can use a bonus action to become invisible until it attacks or moves into bright light. While invisible this way, it has advantage on Stealth checks.` }
+        'shadowy': { name: 'Shadow Melding', desc: `While in dim light or darkness, the ${name} can use a bonus action to become invisible until it attacks or moves into bright light. While invisible this way, it has advantage on Stealth checks.` },
+        'venomous': { name: 'Toxic Blood', desc: `Venom runs through the ${name}'s veins. When a creature hits the ${name} with a melee attack that deals piercing or slashing damage, the attacker must succeed on a DC ${dc} Constitution saving throw or be poisoned for 1 minute and take ${diceCount}d6 poison damage at the start of each of its turns while poisoned.` },
+        'spectral': { name: 'Incorporeal Movement', desc: `The ${name} can move through other creatures and objects as if they were difficult terrain. It takes ${diceCount}d10 force damage if it ends its turn inside an object. Nonmagical attacks pass through the ${name} harmlessly; it takes damage only from magical weapons, spells, and effects.` },
+        'cunning': { name: 'Tactical Genius', desc: `The ${name} can take the Help action as a bonus action. Additionally, when it uses the Help action, the aided creature gains advantage on the next two attack rolls against the target, not just one. The ${name} cannot be surprised and adds its Intelligence modifier to its initiative rolls.` },
+        'hungry': { name: 'Insatiable Hunger', desc: `When the ${name} reduces a creature to 0 hit points with a melee attack, it can spend a bonus action to feed, regaining ${Math.max(5, cr * 3)} hit points. While it has more than half its hit points, it has advantage on melee attack rolls. While below half, it must use its action to move toward and attack the nearest creature.` },
+        'crystalline': { name: 'Prismatic Body', desc: `The ${name}'s crystalline form refracts magical energy. When it is targeted by a spell that requires an attack roll, the attacker must roll with disadvantage. When the ${name} succeeds on a saving throw against a spell that deals damage, it takes no damage and each creature within 10 feet takes ${diceCount}d4 of the spell's damage type.` },
+        'ancient': { name: 'Timeless Resilience', desc: `The ${name} has existed for eons, granting it legendary fortitude. It has advantage on all saving throws and cannot be surprised.` },
+        'vengeful': { name: 'Retributive Strike', desc: `When a creature deals damage to the ${name}, it is marked for retribution until the end of the ${name}'s next turn. The ${name} deals an extra ${diceCount}d8 ${dice.includes('d') ? dmgType : 'force'} damage when it hits a marked creature and has advantage on attack rolls against it.` },
+        'armored': { name: 'Fortified Carapace', desc: `The ${name}'s armor is nearly impenetrable. It has resistance to bludgeoning, piercing, and slashing damage from nonmagical attacks. Critical hits against the ${name} become normal hits. Once per turn, it can reduce damage from one attack by ${cr * 2} (minimum 0).` },
+        'agile': { name: 'Uncanny Reflexes', desc: `The ${name} can take the Dodge action as a bonus action. It has advantage on Dexterity saving throws against effects it can see. When a creature misses it with a melee attack, the ${name} can move 5 feet without provoking opportunity attacks.` },
+        'toxic': { name: 'Miasma', desc: `The ${name} exudes a cloud of poisonous gas in a 15-foot radius. This area is lightly obscured. Any creature that starts its turn in the cloud must succeed on a DC ${dc} Constitution saving throw or take ${diceCount}d8 poison damage and be poisoned until the start of its next turn. The cloud moves with the ${name}.` },
+        'psychic': { name: 'Psionic Feedback', desc: `The ${name}'s mind is a fortress. When a creature forces the ${name} to make a Wisdom or Intelligence saving throw, the creature takes ${diceCount}d6 psychic damage regardless of whether the save succeeds. Creatures within 10 feet of the ${name} have disadvantage on concentration checks.` },
+        'rotting': { name: 'Aura of Decay', desc: `Living creatures that start their turn within 10 feet of the ${name} must succeed on a DC ${dc} Constitution saving throw or take ${diceCount}d6 necrotic damage and be unable to regain hit points until the start of their next turn. Plant creatures and magical plants wither and die within 30 feet.` },
+        'luminous': { name: 'Blinding Brilliance', desc: `The ${name} sheds bright light in a 30-foot radius and dim light for an additional 30 feet. Undead and creatures of darkness have disadvantage on attack rolls while in the bright light. As a bonus action, the ${name} can intensify its glow, forcing each creature within 15 feet to succeed on a DC ${dc} Constitution saving throw or be blinded until the end of its next turn.` },
+        'eldritch': { name: 'Reality Distortion', desc: `The ${name}'s presence warps reality itself. Spells cast within 30 feet of it have a 25% chance of producing a random magical effect in addition to their normal effects. Divination spells automatically fail within this area. The ${name} has advantage on saving throws against spells of 3rd level or lower.` },
+        'colossal': { name: 'Earthshaker', desc: `The ground trembles with each step the ${name} takes. Each creature within 15 feet of the ${name} when it moves must succeed on a DC ${dc} Dexterity saving throw or be knocked prone. The ${name} can move through spaces occupied by creatures two or more sizes smaller than it.` }
       };
 
       for (const adj of profile.adjectives) {
@@ -7594,7 +7609,23 @@
         'crawls': { name: () => 'Ambush Predator', gen: () => `The ${name} has advantage on attack rolls against any creature it has surprised. If it hits a surprised creature, the target takes an extra ${Math.max(2,diceCount)}d6 ${dmgType} damage and must succeed on a DC ${dc} Constitution saving throw or be ${thematicCondition()} until the end of its next turn.` },
         'poisons': { name: () => 'Virulent Injection', gen: () => `Melee Weapon Attack: +${atkBonus} to hit, reach 5 ft., one creature. Hit: ${diceCount}d6 piercing damage plus ${Math.max(2,diceCount)}d8 poison damage. The target must succeed on a DC ${dc} Constitution saving throw or be poisoned for 1 minute. While poisoned, the creature takes ${diceCount}d6 poison damage at the start of each of its turns.` },
         'casts': { name: () => 'Arcane Barrage', gen: () => `The ${name} launches ${Math.min(3, Math.max(1, Math.floor(cr / 4)))} bolts of magical energy at targets it can see within 120 feet. Each bolt requires a ranged spell attack (+${atkBonus} to hit) and deals ${diceCount}d10 ${dmgType} damage on a hit.` },
-        'channels': { name: () => `Channeled ${titleCase(dmgType)} (Recharge 5-6)`, gen: () => `The ${name} channels energy for a devastating attack. Each creature in a 60-foot line that is 5 feet wide must make a DC ${dc} ${thematicSave()} saving throw, taking ${Math.max(4, Math.floor(cr * 0.8))}d6 ${dmgType} damage on a failed save, or half as much on a success.` }
+        'channels': { name: () => `Channeled ${titleCase(dmgType)} (Recharge 5-6)`, gen: () => `The ${name} channels energy for a devastating attack. Each creature in a 60-foot line that is 5 feet wide must make a DC ${dc} ${thematicSave()} saving throw, taking ${Math.max(4, Math.floor(cr * 0.8))}d6 ${dmgType} damage on a failed save, or half as much on a success.` },
+        'corrupts': { name: () => 'Corrupting Touch', gen: () => `Melee Spell Attack: +${atkBonus} to hit, reach 5 ft., one creature. Hit: ${Math.max(2,diceCount)}d8 necrotic damage. The target must succeed on a DC ${dc} Charisma saving throw or gain one level of corruption: its maximum hit points are reduced by the damage dealt, and it has disadvantage on Charisma checks and saving throws until cured by a remove curse spell or similar magic.` },
+        'devours': { name: () => 'Devouring Maw', gen: () => `Melee Weapon Attack: +${atkBonus} to hit, reach 5 ft., one Medium or smaller creature. Hit: ${Math.max(2,diceCount)}d10 + ${getModifier(stats.str)} piercing damage. If this reduces the target to 0 hit points, the ${name} swallows it. A swallowed creature is blinded, restrained, and takes ${diceCount}d8 acid damage at the start of each of the ${name}'s turns.` },
+        'screams': { name: () => 'Wail of Agony (Recharge 6)', gen: () => `The ${name} releases a soul-rending scream. Each creature within 40 feet that can hear it must make a DC ${dc} Constitution saving throw, taking ${Math.max(3,diceCount)}d10 psychic damage on a failure, or half as much on a success. Creatures that fail by 5 or more are also stunned until the end of their next turn.` },
+        'lurks': { name: () => 'Strike from the Shadows', gen: () => `If the ${name} is hidden when it attacks, the first attack on its turn deals an extra ${Math.max(3,diceCount)}d6 ${dmgType} damage. After attacking, the ${name} can immediately use its bonus action to take the Hide action if it is in dim light or darkness.` },
+        'crushes': { name: () => 'Pulverizing Slam', gen: () => `Melee Weapon Attack: +${atkBonus} to hit, reach 10 ft., one target. Hit: ${Math.max(2,diceCount)}d12 + ${getModifier(stats.str)} bludgeoning damage. If the target is a creature, it must succeed on a DC ${dc} Strength saving throw or be knocked prone and have its speed reduced to 0 until the end of its next turn.` },
+        'binds': { name: () => 'Soul Shackle', gen: () => `The ${name} targets one creature it can see within 60 feet. The target must succeed on a DC ${dc} Wisdom saving throw or become soul-bound to the ${name} for 1 minute. While bound, the target takes ${diceCount}d6 psychic damage whenever it moves more than 60 feet from the ${name} or takes a hostile action against it. The target can repeat the saving throw at the end of each of its turns.` },
+        'swims': { name: () => 'Tidal Surge', gen: () => `The ${name} creates a wave of crushing water in a 30-foot cone. Each creature in that area must make a DC ${dc} Strength saving throw. On a failure, a creature takes ${Math.max(2,diceCount)}d8 bludgeoning damage and is pushed 15 feet away and knocked prone. On a success, a creature takes half damage and isn't pushed or knocked prone.` },
+        'burrows': { name: () => 'Eruption Strike', gen: () => `The ${name} burrows underground and erupts beneath a point within 30 feet. Each creature within 10 feet of the eruption point must make a DC ${dc} Dexterity saving throw, taking ${Math.max(2,diceCount)}d10 bludgeoning damage on a failure and being knocked prone, or half damage on a success.` },
+        'stalks': { name: () => 'Patient Hunter', gen: () => `The ${name} designates one creature it can see as its quarry (no action required). It has advantage on Wisdom (Perception) and Wisdom (Survival) checks to find the quarry, and it deals an extra ${Math.max(2,diceCount)}d6 ${dmgType} damage the first time it hits the quarry on each turn. The ${name} can change its quarry when it finishes a short or long rest.` },
+        'howls': { name: () => 'Dread Howl (Recharge 5-6)', gen: () => `The ${name} unleashes a bone-chilling howl. Each creature within 60 feet that can hear it must succeed on a DC ${dc} Wisdom saving throw or be frightened and have its speed halved for 1 minute. A frightened creature can repeat the saving throw at the end of each of its turns, ending both effects on a success.` },
+        'reflects': { name: () => 'Mirror Ward', gen: () => `When the ${name} is targeted by a spell of 4th level or lower, it can use its reaction to reflect the spell back at the caster, using the original spell save DC and attack bonus. Reflected spells use the original caster's spell slot. The ${name} can use this ability ${Math.max(2, Math.floor(cr / 5))} times per day.` },
+        'explodes': { name: () => 'Volatile Detonation', gen: () => `When the ${name} is reduced to 0 hit points, it explodes. Each creature within 20 feet must make a DC ${dc} Dexterity saving throw, taking ${Math.max(4,diceCount)}d8 ${dmgType} damage on a failed save, or half as much on a success. The ${name}'s body is completely destroyed.` },
+        'charges': { name: () => 'Devastating Charge', gen: () => `If the ${name} moves at least 20 feet straight toward a target and then hits it with a melee attack on the same turn, the target takes an extra ${Math.max(2,diceCount)}d8 ${dmgType} damage. If the target is a creature, it must succeed on a DC ${dc} Strength saving throw or be pushed up to 20 feet away and knocked prone.` },
+        'weaves': { name: () => 'Reality Weaver', gen: () => `As a bonus action, the ${name} warps the fabric of space within a 30-foot radius centered on itself. Until the start of its next turn, all distances within this area are doubled for enemies (affecting movement, range, and area of effect calculations). Allies of the ${name} are unaffected.` },
+        'sings': { name: () => 'Entrancing Melody', gen: () => `The ${name} begins a hauntingly beautiful song. Each creature within 60 feet that can hear it must succeed on a DC ${dc} Wisdom saving throw or be charmed until the song ends. The ${name} must use a bonus action on subsequent turns to continue singing. A charmed creature is incapacitated and moves toward the ${name} by the most direct route. A creature can repeat the saving throw when it takes damage.` },
+        'transforms': { name: () => 'Monstrous Metamorphosis (1/Day)', gen: () => `The ${name} transforms into a more powerful form for 1 minute. While transformed, it gains ${Math.max(20, cr * 5)} temporary hit points, its melee attacks deal an extra ${diceCount}d6 ${dmgType} damage, its size increases by one category, and it has advantage on Strength checks and saving throws.` }
       };
 
       for (const verb of profile.verbs) {
@@ -7649,6 +7680,16 @@
           motTrait = { name: 'Relentless Destroyer', description: `The ${name}'s drive to ${profile.userMotivation.toLowerCase()} fuels its fury. When it reduces a creature to 0 hit points, it can immediately move up to half its speed and make one additional melee attack. It deals double damage to objects and structures.` };
         } else if (/collect|hoard|gather/.test(mot)) {
           motTrait = { name: 'Obsessive Hoarder', description: `The ${name}'s compulsion to ${profile.userMotivation.toLowerCase()} makes it fiercely territorial. It has advantage on attack rolls against any creature carrying items it covets. Creatures within 30 feet cannot hide objects from it (it has truesight regarding hidden items).` };
+        } else if (/avenge|revenge|vengeance|punish/.test(mot)) {
+          motTrait = { name: 'Undying Vendetta', description: `The ${name}'s thirst for vengeance fuels its rage. It has advantage on attack rolls against any creature that has damaged it or its allies since the last dawn. When it hits a creature that previously reduced it below half its hit points, the attack deals an extra ${diceCount}d8 ${dmgType} damage.` };
+        } else if (/feed|hunger|consume|eat/.test(mot)) {
+          motTrait = { name: 'All-Consuming Hunger', description: `The ${name}'s insatiable appetite drives its every action. When it reduces a creature to 0 hit points with a melee attack, it regains ${Math.max(10, cr * 4)} hit points. If it goes more than 24 hours without feeding, it enters a frenzy, gaining advantage on attack rolls but granting advantage on attacks against it.` };
+        } else if (/spread|infect|corrupt|taint/.test(mot)) {
+          motTrait = { name: 'Contagious Blight', description: `The ${name}'s touch spreads its corruption. Creatures reduced to 0 hit points by the ${name}'s attacks must succeed on a DC ${dc} Constitution saving throw or rise as a zombie under the ${name}'s control after 1d4 rounds. The ${name} can control up to ${Math.max(3, Math.floor(cr / 2))} such creatures at a time.` };
+        } else if (/serve|obey|worship|follow/.test(mot)) {
+          motTrait = { name: 'Fanatical Devotion', description: `The ${name}'s absolute devotion to its master or cause makes it nearly impossible to turn. It is immune to the charmed and frightened conditions. When it is within 30 feet of the object of its devotion, it gains ${Math.max(5, cr * 2)} temporary hit points at the start of each of its turns.` };
+        } else if (/know|learn|study|understand|wisdom/.test(mot)) {
+          motTrait = { name: 'Eldritch Scholar', description: `The ${name}'s pursuit of knowledge has granted it unnatural insight. It knows the weaknesses of every creature it can see (it automatically identifies damage vulnerabilities and resistances). Once per turn, it can exploit a weakness: if the target has a vulnerability, attacks deal triple damage instead of double.` };
         } else {
           motTrait = { name: 'Driven Purpose', description: `The ${name} is consumed by its desire to ${profile.userMotivation.toLowerCase()}. This single-minded focus grants it advantage on saving throws against being charmed, frightened, or having its mind read. It cannot be persuaded to abandon its purpose.` };
         }
@@ -7920,6 +7961,184 @@
           name: 'Damage Resistance',
           description: `The ${name} has resistance to ${primaryDmgType} damage.`
         });
+      }
+
+      // ═════════════════════════════════════════════════════════════════════
+      // PACK TACTICS / SWARM
+      // ═════════════════════════════════════════════════════════════════════
+      if (/pack|swarm|horde|colony|hive|flock/.test(lower)) {
+        traits.push({
+          name: 'Pack Tactics',
+          description: `The ${name} has advantage on an attack roll against a creature if at least one of the ${name}'s allies is within 5 feet of the creature and the ally isn't incapacitated.`
+        });
+      }
+
+      // ═════════════════════════════════════════════════════════════════════
+      // VAMPIRIC / BLOOD
+      // ═════════════════════════════════════════════════════════════════════
+      if (/vampire|blood|bleed|hemorrh|sanguine/.test(lower) && !actions.find(a => a.name === 'Life Drain')) {
+        const dmgDice = Math.max(2, Math.floor(crData.dmgMax / 5));
+        actions.push({
+          name: 'Blood Siphon',
+          description: `Melee Weapon Attack: +${atkBonus} to hit, reach 5 ft., one willing creature, or a creature that is grappled, incapacitated, or restrained. Hit: ${dmgDice * 7} (${dmgDice}d6 + ${dmgDice}) necrotic damage. The ${name} regains hit points equal to the damage dealt. The target's hit point maximum is reduced by an amount equal to the necrotic damage taken. This reduction lasts until the target finishes a long rest.`
+        });
+      }
+
+      // ═════════════════════════════════════════════════════════════════════
+      // MIRROR / REFLECTION / MIMIC
+      // ═════════════════════════════════════════════════════════════════════
+      if (/mirror|reflect|mimic|copy|duplicate|clone/.test(lower)) {
+        traits.push({
+          name: 'Adaptive Mimicry',
+          description: `When a creature casts a spell within 60 feet of the ${name}, the ${name} can use its reaction to learn the spell. On its next turn, it can cast the copied spell once (spell save DC ${dc}, +${atkBonus} to hit), using the same slot level. The ${name} can only remember one spell at a time this way.`
+        });
+      }
+
+      // ═════════════════════════════════════════════════════════════════════
+      // GRAVITY / VOID / BLACK HOLE
+      // ═════════════════════════════════════════════════════════════════════
+      if (/gravity|void|black hole|singularity|pull|dense/.test(lower)) {
+        actions.push({
+          name: 'Gravitational Collapse (Recharge 5-6)',
+          description: `The ${name} creates a singularity at a point within 90 feet. Each creature within 30 feet of that point must succeed on a DC ${dc} Strength saving throw or be pulled to the nearest unoccupied space adjacent to the singularity and take ${Math.max(3, Math.floor(crData.dmgMax / 4))}d8 force damage. On a success, a creature takes half damage and isn't pulled. The area becomes difficult terrain until the end of the ${name}'s next turn.`
+        });
+      }
+
+      // ═════════════════════════════════════════════════════════════════════
+      // TIME / TEMPORAL
+      // ═════════════════════════════════════════════════════════════════════
+      if (/time|temporal|chrono|age|slow|haste|clock/.test(lower)) {
+        traits.push({
+          name: 'Temporal Displacement',
+          description: `The ${name} exists slightly out of phase with time. At the start of each of its turns, it can choose one: (1) take an additional bonus action this turn, (2) impose disadvantage on all attack rolls against it until the start of its next turn, or (3) teleport to a space it occupied during its previous turn.`
+        });
+        if (!actions.find(a => a.name.includes('Temporal'))) {
+          actions.push({
+            name: 'Temporal Rend',
+            description: `The ${name} tears at the fabric of time around one creature within 60 feet. The target must succeed on a DC ${dc} Wisdom saving throw or be aged ${Math.max(1, Math.floor(crData.dmgMax / 10))}d10 years. While magically aged this way, the creature has disadvantage on Strength, Dexterity, and Constitution checks and saving throws. The aging can be reversed by a greater restoration spell.`
+          });
+        }
+      }
+
+      // ═════════════════════════════════════════════════════════════════════
+      // PLANT / VINE / NATURE
+      // ═════════════════════════════════════════════════════════════════════
+      if (/plant|vine|tree|thorn|root|floral|bloom|spore/.test(lower)) {
+        if (/spore|fungus|fungi|mushroom/.test(lower)) {
+          actions.push({
+            name: 'Spore Cloud (Recharge 5-6)',
+            description: `The ${name} releases a cloud of toxic spores in a 20-foot radius. Each creature in the area must succeed on a DC ${dc} Constitution saving throw or take ${Math.max(2, Math.floor(crData.dmgMax / 5))}d8 poison damage and be infected. An infected creature takes ${Math.max(1,Math.floor(crData.dmgMin / 4))}d6 poison damage at the start of each of its turns and is poisoned. At the end of each of its turns, the creature can repeat the saving throw, ending the infection on a success.`
+          });
+        } else {
+          actions.push({
+            name: 'Entangling Vines',
+            description: `The ${name} causes grasping vines to erupt from the ground in a 20-foot square within 60 feet. The area becomes difficult terrain, and each creature in the area must succeed on a DC ${dc} Strength saving throw or be restrained. A restrained creature takes ${Math.max(1,Math.floor(crData.dmgMin / 3))}d6 piercing damage at the start of each of its turns. It can use an action to make a DC ${dc} Strength check, freeing itself on a success. The vines wilt after 1 minute.`
+          });
+        }
+      }
+
+      // ═════════════════════════════════════════════════════════════════════
+      // STORM / WEATHER
+      // ═════════════════════════════════════════════════════════════════════
+      if (/storm|thunder|tempest|hurricane|cyclone|tornado|weather/.test(lower)) {
+        if (!traits.find(t => t.name === 'Eye of the Storm')) {
+          traits.push({
+            name: 'Eye of the Storm',
+            description: `The ${name} is surrounded by a perpetual storm in a 60-foot radius. The area is heavily obscured for other creatures. Ranged weapon attacks that pass through the storm are made with disadvantage. At the start of each of the ${name}'s turns, each creature in the storm (excluding the ${name}) must succeed on a DC ${dc} Dexterity saving throw or take ${Math.max(1,Math.floor(crData.dmgMin / 3))}d6 lightning damage.`
+          });
+        }
+      }
+
+      // ═════════════════════════════════════════════════════════════════════
+      // CONSTRUCT / GOLEM / MECHANICAL
+      // ═════════════════════════════════════════════════════════════════════
+      if (/construct|golem|mechanical|automaton|clockwork|robot|forged/.test(lower)) {
+        if (!traits.find(t => t.name === 'Constructed Resilience')) {
+          traits.push({
+            name: 'Constructed Resilience',
+            description: `The ${name} is immune to poison damage and the charmed, exhaustion, frightened, paralyzed, petrified, and poisoned conditions. It doesn't require air, food, drink, or sleep. It cannot be healed by spells unless they specifically affect constructs (such as mending for minor repairs).`
+          });
+        }
+        if (!actions.find(a => a.name === 'Overdrive')) {
+          actions.push({
+            name: 'Overdrive (Recharge 5-6)',
+            description: `The ${name} pushes its mechanisms beyond their limits. For 1 minute, its speed doubles, it gains a +2 bonus to AC, it has advantage on Dexterity saving throws, and it makes one additional attack on each of its turns. When Overdrive ends, the ${name} takes ${Math.max(2,Math.floor(crData.hpMax / 10))} force damage as its systems overheat.`
+          });
+        }
+      }
+
+      // ═════════════════════════════════════════════════════════════════════
+      // UNDEAD-SPECIFIC (beyond basic life drain)
+      // ═════════════════════════════════════════════════════════════════════
+      if (/undead|lich|wraith|specter|ghost|haunt|revenant/.test(lower)) {
+        if (/lich|necromancer/.test(lower) && !traits.find(t => t.name === 'Phylactery Bond')) {
+          traits.push({
+            name: 'Phylactery Bond',
+            description: `If the ${name} is destroyed, its soul retreats to its phylactery, and a new body forms within 1d10 days. The phylactery must be destroyed to permanently kill the ${name}. While the ${name}'s body is reforming, its phylactery is vulnerable and can be located with a DC ${dc + 5} Intelligence (Arcana) check within 1 mile.`
+          });
+        }
+        if (!traits.find(t => t.name === 'Undead Fortitude')) {
+          traits.push({
+            name: 'Undead Fortitude',
+            description: `If damage reduces the ${name} to 0 hit points, it must make a Constitution saving throw with a DC equal to 5 + the damage taken, unless the damage is radiant or from a critical hit. On a success, the ${name} drops to 1 hit point instead.`
+          });
+        }
+      }
+
+      // ═════════════════════════════════════════════════════════════════════
+      // OOZE / AMORPHOUS
+      // ═════════════════════════════════════════════════════════════════════
+      if (/ooze|slime|jelly|amorphous|gelatinous|blob/.test(lower)) {
+        traits.push({
+          name: 'Amorphous',
+          description: `The ${name} can move through a space as narrow as 1 inch wide without squeezing. When a creature hits the ${name} with a melee weapon attack, the weapon takes a permanent cumulative -1 penalty to damage rolls. The weapon is destroyed if the penalty reduces its damage to 0.`
+        });
+        actions.push({
+          name: 'Engulf',
+          description: `The ${name} moves up to its speed. While doing so, it can enter Medium or smaller creatures' spaces. Whenever it enters a creature's space, the creature must succeed on a DC ${dc} Dexterity saving throw or be engulfed. An engulfed creature is restrained, unable to breathe, and takes ${Math.max(2, Math.floor(crData.dmgMax / 5))}d6 acid damage at the start of each of the ${name}'s turns. An engulfed creature can try to escape by using its action to make a DC ${dc} Strength check.`
+        });
+      }
+
+      // ═════════════════════════════════════════════════════════════════════
+      // MUSIC / SONG / SOUND
+      // ═════════════════════════════════════════════════════════════════════
+      if (/music|song|sing|melody|harmony|discordant|sonic|sound/.test(lower)) {
+        actions.push({
+          name: 'Discordant Resonance',
+          description: `The ${name} emits a wave of destructive sound in a 30-foot cone. Each creature in that area must make a DC ${dc} Constitution saving throw, taking ${Math.max(2, Math.floor(crData.dmgMax / 4))}d8 thunder damage on a failure, or half as much on a success. Creatures made of inorganic material (stone, crystal, metal) have disadvantage on this saving throw and take maximum damage on a failure.`
+        });
+      }
+
+      // ═════════════════════════════════════════════════════════════════════
+      // EYES / GAZE
+      // ═════════════════════════════════════════════════════════════════════
+      if (/eye|gaze|stare|glare|beholder|ocular/.test(lower) && !actions.find(a => a.name.includes('Gaze'))) {
+        const gazeEffects = [
+          { name: 'Death Gaze', desc: `The ${name} targets one creature it can see within 30 feet. If the target can see the ${name}, it must succeed on a DC ${dc} Constitution saving throw or take ${Math.max(3, Math.floor(crData.dmgMax / 3))}d10 necrotic damage. If this reduces the target to 0 hit points, it dies.` },
+          { name: 'Paralyzing Gaze', desc: `The ${name} fixes its gaze on one creature within 30 feet. If the target can see the ${name}, it must succeed on a DC ${dc} Wisdom saving throw or be paralyzed for 1 minute. The target can repeat the saving throw at the end of each of its turns, ending the effect on a success.` },
+          { name: 'Maddening Gaze', desc: `The ${name} locks eyes with one creature within 60 feet. The target must succeed on a DC ${dc} Intelligence saving throw or take ${Math.max(2, Math.floor(crData.dmgMax / 4))}d8 psychic damage and suffer short-term madness for 1 minute. While mad, the creature uses its action each turn to attack the nearest creature (determined randomly if multiple are equidistant).` }
+        ];
+        const gaze = gazeEffects[Math.floor(Math.random() * gazeEffects.length)];
+        actions.push({ name: gaze.name, description: gaze.desc });
+      }
+
+      // ═════════════════════════════════════════════════════════════════════
+      // REACTIONS (added to traits since displayed similarly)
+      // ═════════════════════════════════════════════════════════════════════
+      if (cr >= 5 && traits.length < 6) {
+        const reactionOptions = [];
+        if (/shell|armor|carapace|shield|defend/.test(lower)) {
+          reactionOptions.push({ name: 'Reactive Shell', description: `When the ${name} takes damage from an attack, it can use its reaction to halve the damage against it. It can use this reaction ${Math.max(2, Math.floor(cr / 5))} times per day.` });
+        }
+        if (/tail|tentacle|tendril|whip|lash/.test(lower)) {
+          reactionOptions.push({ name: 'Tail Lash', description: `When a creature the ${name} can see moves into a space within 10 feet of it, the ${name} can use its reaction to make a tail attack against the creature. On a hit, the creature takes ${Math.max(1, Math.floor(crData.dmgMax / 8))}d8 bludgeoning damage and must succeed on a DC ${dc} Strength saving throw or be knocked prone.` });
+        }
+        if (/quick|fast|agile|swift|nimble/.test(lower)) {
+          reactionOptions.push({ name: 'Evasive Roll', description: `When the ${name} is hit by an attack, it can use its reaction to roll ${Math.max(1, Math.floor(cr / 5))}d6 and reduce the damage by the total. If the damage is reduced to 0, the ${name} can move up to 10 feet without provoking opportunity attacks.` });
+        }
+        if (reactionOptions.length > 0) {
+          traits.push(reactionOptions[Math.floor(Math.random() * reactionOptions.length)]);
+        }
       }
 
       // ═════════════════════════════════════════════════════════════════════
