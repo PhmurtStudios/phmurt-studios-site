@@ -155,6 +155,10 @@
     gate.style.cssText = 'position:fixed;inset:0;z-index:99999;background:#0a0a10;display:flex;align-items:center;justify-content:center;padding:24px;font-family:Cinzel,serif;color:#f5ede0;';
     document.body.appendChild(gate);
 
+    // Shared gate state — must be in showGate() scope so both
+    // renderImageStage() and renderAuthStage() can access it.
+    var _gate1Passed = false;
+
     /* ── STAGE 1: Image upload ──────────────────────────────────────── */
     function renderImageStage() {
       document.documentElement.style.visibility = ''; // Ensure page is visible for the gate overlay
@@ -381,8 +385,8 @@
         try { sessionStorage.removeItem(ADMIN_ATTEMPTS_KEY); } catch (_) {}
       }
       // Gate tracking — closure variables prevent trivial console bypass of grantAccess().
-      // _gate1Passed = image deterrent (UI only), _gate2Passed = Supabase admin check (real security).
-      var _gate1Passed = false;
+      // _gate1Passed lives in showGate() scope (shared with renderImageStage).
+      // _gate2Passed = Supabase admin check (real security).
       var _gate2Passed = false;
 
       function grantAccess() {
