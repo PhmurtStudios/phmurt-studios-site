@@ -2547,15 +2547,9 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
     engine.onRegionClick(function(region, faction) {
       if (region) {
         const d = dataRef.current;
-        // Match by faction name (unified naming: region.name = faction.name in data)
-        // or fall back to geographic region name, or subtitle containing the geographic name
-        const factionName = faction ? faction.name : null;
+        // Region names in data now match engine region names directly
         const r = (d.regions || []).find(function(reg) {
-          if (factionName && reg.name === factionName) return true;
-          if (factionName && reg.name.indexOf(factionName) === 0) return true;
-          if (reg.name === region.name) return true;
-          if (reg.subtitle && reg.subtitle.indexOf(region.name) >= 0) return true;
-          return false;
+          return reg.name === region.name;
         });
         if (r) { setSel(r); setSelType("region"); }
       }
@@ -3366,7 +3360,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
       <div style={{ display: (tab === "calendar" || tab === "exploration") ? "none" : "flex", flex:1, overflow:"hidden", position:"relative" }}>
         {/* ══════════ FANTASY MAP TAB — Multi-scale continental map ══════════ */}
         {tab==="map" && (
-          <div ref={mapRef} style={{ flex:1, overflow:"hidden", position:"relative", background:"#0a1628", touchAction:"none", WebkitUserSelect:"none", userSelect:"none" }}>
+          <div ref={mapRef} style={{ flex:1, overflow:"hidden", position:"relative", background:"#0b1d3a", touchAction:"none", WebkitUserSelect:"none", userSelect:"none" }}>
             {/* ── New MapEngine Canvas ── */}
             <canvas ref={mapCanvasRef} style={{ width:"100%", height:"100%", display:"block" }} />
             {/* ── Legacy SVG hidden — kept for non-MapEngine fallback ── */}
@@ -5642,8 +5636,20 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                 if (poiSearch && !p.name.toLowerCase().includes(poiSearch.toLowerCase()) && !(p.description||"").toLowerCase().includes(poiSearch.toLowerCase())) return false;
                 return true;
               });
-              const majorPois = filtered.filter(p => p.major);
-              const minorPois = filtered.filter(p => !p.major);
+
+              // Group filtered POIs by region
+              const regionGroups = {};
+              const noRegion = [];
+              filtered.forEach(p => {
+                if (p.region) {
+                  if (!regionGroups[p.region]) regionGroups[p.region] = [];
+                  regionGroups[p.region].push(p);
+                } else {
+                  noRegion.push(p);
+                }
+              });
+              // Sort region names alphabetically, put major POIs first within each region
+              const regionNames = Object.keys(regionGroups).sort();
 
               return (
                 <div>
@@ -5668,8 +5674,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       <div style={{ fontSize:9, color:T.textMuted, letterSpacing:"1px", textTransform:"uppercase" }}>Total</div>
                     </div>
                     <div style={{ padding:"12px 16px", background:T.bgCard, border:"1px solid " + T.border, borderRadius:"4px", textAlign:"center" }}>
-                      <div style={{ fontSize:20, color:T.gold, fontWeight:600, fontFamily:T.ui }}>{pois.filter(p=>p.major).length}</div>
-                      <div style={{ fontSize:9, color:T.textMuted, letterSpacing:"1px", textTransform:"uppercase" }}>Major</div>
+                      <div style={{ fontSize:20, color:T.gold, fontWeight:600, fontFamily:T.ui }}>{regionNames.length}</div>
+                      <div style={{ fontSize:9, color:T.textMuted, letterSpacing:"1px", textTransform:"uppercase" }}>Regions</div>
                     </div>
                     <div style={{ padding:"12px 16px", background:T.bgCard, border:"1px solid " + T.border, borderRadius:"4px", textAlign:"center" }}>
                       <div style={{ fontSize:20, color:"#f87171", fontWeight:600, fontFamily:T.ui }}>{pois.filter(p=>p.danger>=3).length}</div>
@@ -5677,40 +5683,49 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     </div>
                   </div>
 
-                  {/* Major POIs section */}
-                  {majorPois.length > 0 && (
-                    <div style={{ marginBottom:32 }}>
-                      <div style={{ fontSize:11, color:T.gold, letterSpacing:"2px", textTransform:"uppercase", fontFamily:T.ui, marginBottom:12, paddingBottom:6, borderBottom:"1px solid rgba(201,168,92,0.2)" }}>Major Landmarks</div>
-                      <div style={{ display:"grid", gap:10 }}>
-                        {majorPois.map(poi => (
-                          <div key={poi.id} onClick={() => { setSel(poi); setSelType("poi"); }} style={{ padding:"16px 20px", background:T.bgCard, border:"1px solid " + T.border, borderRadius:"4px", cursor:"pointer", transition:"all 0.2s", borderLeft:"3px solid " + T.gold }}
-                            onMouseEnter={e => { e.currentTarget.style.background="var(--bg-hover)"; e.currentTarget.style.borderColor=T.gold; }}
-                            onMouseLeave={e => { e.currentTarget.style.background=T.bgCard; e.currentTarget.style.borderColor=T.border; }}
-                          >
-                            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-                              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                                <span style={{ fontSize:18 }}>{poi.icon || "📍"}</span>
-                                <span style={{ fontSize:14, color:T.text, fontWeight:400 }}>{poi.name}</span>
+                  {/* POIs grouped by region */}
+                  {regionNames.map(regionName => {
+                    const regionPois = regionGroups[regionName].sort((a,b) => (b.major?1:0) - (a.major?1:0) || (b.danger||0) - (a.danger||0));
+                    return (
+                      <div key={regionName} style={{ marginBottom:28 }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12, paddingBottom:6, borderBottom:"1px solid rgba(201,168,92,0.2)" }}>
+                          <span style={{ fontSize:11, color:T.gold, letterSpacing:"2px", textTransform:"uppercase", fontFamily:T.ui }}>{regionName}</span>
+                          <span style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui }}>({regionPois.length})</span>
+                        </div>
+                        <div style={{ display:"grid", gap:8 }}>
+                          {regionPois.map(poi => (
+                            <div key={poi.id} onClick={() => { setSel(poi); setSelType("poi"); }} style={{ padding: poi.major ? "16px 20px" : "12px 16px", background:T.bgCard, border:"1px solid " + T.border, borderRadius:"4px", cursor:"pointer", transition:"all 0.2s", borderLeft: poi.major ? "3px solid " + T.gold : "3px solid transparent" }}
+                              onMouseEnter={e => { e.currentTarget.style.background="var(--bg-hover)"; e.currentTarget.style.borderColor=T.gold; }}
+                              onMouseLeave={e => { e.currentTarget.style.background=T.bgCard; e.currentTarget.style.borderColor=T.border; }}
+                            >
+                              <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: poi.major ? 8 : 4 }}>
+                                <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                                  <span style={{ fontSize: poi.major ? 18 : 14 }}>{poi.icon || "📍"}</span>
+                                  <span style={{ fontSize: poi.major ? 14 : 13, color:T.text, fontWeight: poi.major ? 400 : 300 }}>{poi.name}</span>
+                                  {poi.major && <span style={{ fontSize:8, color:T.gold, letterSpacing:"1px", textTransform:"uppercase", fontFamily:T.ui }}>★ Major</span>}
+                                </div>
+                                <span style={{ fontSize: poi.major ? 10 : 9, color:dangerColors[poi.danger]||"#aaa", fontFamily:T.ui, letterSpacing:"1px" }}>{dangerLabels[poi.danger]||"Unknown"}</span>
                               </div>
-                              <span style={{ fontSize:10, color:dangerColors[poi.danger]||"#aaa", fontFamily:T.ui, letterSpacing:"1px" }}>{dangerLabels[poi.danger]||"Unknown"}</span>
+                              <div style={{ fontSize:11, color:T.textMuted, lineHeight:1.5, marginBottom:6 }}>{(poi.description||"").slice(0, poi.major ? 120 : 100)}{(poi.description||"").length>(poi.major?120:100)?"...":""}</div>
+                              <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
+                                <span style={{ fontSize:9, color:T.textFaint, letterSpacing:"0.5px" }}>{poi.type ? poi.type.replace(/_/g," ").replace(/\b\w/g,l=>l.toUpperCase()) : "Unknown"}</span>
+                              </div>
                             </div>
-                            <div style={{ fontSize:11, color:T.textMuted, lineHeight:1.5, marginBottom:6 }}>{(poi.description||"").slice(0,120)}{(poi.description||"").length>120?"...":""}</div>
-                            <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
-                              <span style={{ fontSize:9, color:T.textFaint, letterSpacing:"0.5px" }}>{poi.type ? poi.type.replace(/_/g," ").replace(/\b\w/g,l=>l.toUpperCase()) : "Unknown"}</span>
-                              {poi.region && <span style={{ fontSize:9, color:T.textFaint }}>• {poi.region}</span>}
-                            </div>
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })}
 
-                  {/* Minor POIs section */}
-                  {minorPois.length > 0 && (
-                    <div style={{ marginBottom:32 }}>
-                      <div style={{ fontSize:11, color:T.textMuted, letterSpacing:"2px", textTransform:"uppercase", fontFamily:T.ui, marginBottom:12, paddingBottom:6, borderBottom:"1px solid " + T.border }}>Local Points of Interest</div>
+                  {/* POIs with no region */}
+                  {noRegion.length > 0 && (
+                    <div style={{ marginBottom:28 }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12, paddingBottom:6, borderBottom:"1px solid " + T.border }}>
+                        <span style={{ fontSize:11, color:T.textMuted, letterSpacing:"2px", textTransform:"uppercase", fontFamily:T.ui }}>Uncharted</span>
+                        <span style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui }}>({noRegion.length})</span>
+                      </div>
                       <div style={{ display:"grid", gap:8 }}>
-                        {minorPois.map(poi => (
+                        {noRegion.map(poi => (
                           <div key={poi.id} onClick={() => { setSel(poi); setSelType("poi"); }} style={{ padding:"12px 16px", background:T.bgCard, border:"1px solid " + T.border, borderRadius:"4px", cursor:"pointer", transition:"all 0.2s" }}
                             onMouseEnter={e => { e.currentTarget.style.background="var(--bg-hover)"; }}
                             onMouseLeave={e => { e.currentTarget.style.background=T.bgCard; }}
@@ -5725,7 +5740,6 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                             <div style={{ fontSize:11, color:T.textMuted, lineHeight:1.4 }}>{(poi.description||"").slice(0,100)}{(poi.description||"").length>100?"...":""}</div>
                             <div style={{ display:"flex", gap:12, marginTop:4, flexWrap:"wrap" }}>
                               <span style={{ fontSize:9, color:T.textFaint }}>{poi.type ? poi.type.replace(/_/g," ").replace(/\b\w/g,l=>l.toUpperCase()) : "Unknown"}</span>
-                              {poi.region && <span style={{ fontSize:9, color:T.textFaint }}>• {poi.region}</span>}
                             </div>
                           </div>
                         ))}

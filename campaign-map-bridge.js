@@ -467,27 +467,15 @@
     };
 
     // ========================================================================
-    // UNIFIED KINGDOMS — each region IS a kingdom (region name = faction name)
-    // ========================================================================
-    // We build regions and factions together so every region has exactly one
-    // controlling faction whose name matches the region name.  The MapEngine's
-    // faction names are kingdom-style ("Kingdom of Aldenmoor") so they serve
-    // as the single canonical name for both the region and its ruling faction.
+    // KINGDOMS — region name = kingdom name (matches map labels)
+    // The engine's faction names become the government style (e.g. "The Stormborn Collective" → govType)
     // ========================================================================
     const factionMap = {}; // Maps engine faction id -> faction object
     const regionMap = {};  // Maps engine region id -> region object
     const regionsByName = {};
     const factionsById = new Map(engine.territory.factions.map(f => [f.id, f]));
 
-    // Build a lookup: factionId -> array of engine regions it owns
-    const regionsByFaction = {};
-    for (const er of engine.territory.regions) {
-      const fid = er.factionId >= 0 ? er.factionId : -1;
-      if (!regionsByFaction[fid]) regionsByFaction[fid] = [];
-      regionsByFaction[fid].push(er);
-    }
-
-    // Shuffle faction templates so different seeds feel different
+    // Shuffle faction templates for flavor variety
     const shuffledFactionTemplates = [...DATA_POOLS.factionTemplates].sort(() => rng() - 0.5);
     let fTemplateIdx = 0;
 
@@ -496,31 +484,21 @@
       const state = DATA_POOLS.regionStates[Math.floor(rng() * DATA_POOLS.regionStates.length)];
       const threat = ['low', 'medium', 'high', 'extreme'][Math.floor(rng() * 4)];
 
-      // Determine the kingdom name: use the engine faction name if this region
-      // has one, otherwise use the engine region name
       const engineFaction = engineRegion.factionId >= 0
         ? factionsById.get(engineRegion.factionId)
         : null;
 
-      // If this faction controls multiple regions, disambiguate by appending
-      // the geographic name.  Single-region factions just use the faction name.
-      let kingdomName;
-      if (engineFaction) {
-        const siblings = regionsByFaction[engineFaction.id] || [];
-        if (siblings.length > 1) {
-          kingdomName = engineFaction.name + ' — ' + (engineRegion.name || 'Territory');
-        } else {
-          kingdomName = engineFaction.name;
-        }
-      } else {
-        kingdomName = engineRegion.name || 'Unclaimed Territory';
-      }
+      // Region name = geographic name from the map engine (what the user sees on the map)
+      const kingdomName = engineRegion.name || 'Unknown Territory';
 
-      // Pick a faction template for flavor (govType, desc, etc.)
+      // The engine faction name becomes the government style label
+      const govLabel = engineFaction ? engineFaction.name : 'Independent';
+
+      // Pick a faction template for flavor
       const factionTemplate = shuffledFactionTemplates[fTemplateIdx % shuffledFactionTemplates.length];
       fTemplateIdx++;
 
-      // --- Create the faction (one per region, name = kingdom name) ---
+      // --- Create the faction (one per region, same name as region) ---
       const faction = {
         id: data.factions.length + 1,
         name: kingdomName,
@@ -531,7 +509,7 @@
         trend: ['rising', 'stable', 'declining'][Math.floor(rng() * 3)],
         desc: factionTemplate.desc,
         color: engineFaction ? (engineFaction.fill || factionTemplate.color) : factionTemplate.color,
-        govType: factionTemplate.govType,
+        govType: govLabel,
         hierarchy: [],
         resources: DATA_POOLS.resourcesByTerrain[terrain],
         allies: [],
@@ -556,13 +534,11 @@
       data.factions.push(faction);
       if (engineFaction) factionMap[engineFaction.id] = faction;
 
-      // --- Create the region (name = kingdom name = faction name) ---
+      // --- Create the region (name matches what's displayed on the map) ---
       const region = {
         id: parseInt(engineRegion.id) || data.regions.length + 1,
         name: kingdomName,
-        subtitle: engineRegion.name
-          ? `The ${engineRegion.name} Territory`
-          : `The ${terrain.charAt(0).toUpperCase() + terrain.slice(1)} Territory`,
+        subtitle: govLabel,
         type: engineRegion.cities?.some(c => c.capital) ? 'kingdom' : 'wilderness',
         ctrl: kingdomName,
         threat: threat,
@@ -582,7 +558,7 @@
         subFactions: [],
       };
 
-      // Track governor NPC (reuse the faction ruler — no separate governor)
+      // Track governor NPC (reuse the faction ruler)
       if (!npcIdMap[region.governor]) npcIdMap[region.governor] = npcIdCounter++;
 
       // Add some sub-factions

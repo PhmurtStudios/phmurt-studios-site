@@ -2295,10 +2295,10 @@
       this._boundListeners = [];    // tracks listeners for cleanup
 
       this.theme = {
-        bg: "#0a1628",
-        sea: "#122240",
-        seaDeep: "#0a1628",
-        shoreGlow: "rgba(40,70,100,0.18)",
+        bg: "#0b1d3a",
+        sea: "#1a3a6b",
+        seaDeep: "#0d2244",
+        shoreGlow: "rgba(50,90,140,0.22)",
         landBase: "#1e1e18",
         factionBorderWidth: 3.0,
         factionBorderColor: "rgba(20,18,14,0.45)",
@@ -3072,75 +3072,57 @@
           : 0.12;
         ctx.textAlign = "center"; ctx.textBaseline = "middle";
 
-        // Sort factions by territory size descending — largest placed first
-        const factionOrder = factions.slice().filter(f => f.regions.size > 0)
-          .sort((a, b) => {
-            let sA = 0, sB = 0;
-            for (const rId of a.regions) sA += regions[rId].cells.size;
-            for (const rId of b.regions) sB += regions[rId].cells.size;
-            return sB - sA;
-          });
+        // Sort regions by territory size descending — largest placed first
+        const regionOrder = regions.slice().filter(r => r.cells.size > 0)
+          .sort((a, b) => b.cells.size - a.cells.size);
 
-        for (const faction of factionOrder) {
+        for (const region of regionOrder) {
           // Collect all cell positions and compute bounding box
           let sx = 0, sy = 0, cellCount = 0;
           let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-          for (const rId of faction.regions) {
-            const reg = regions[rId];
-            for (const idx of reg.cells) {
-              const cx = grid.cx(idx), cy = grid.cy(idx);
-              sx += cx; sy += cy; cellCount++;
-              if (cx < minX) minX = cx; if (cx > maxX) maxX = cx;
-              if (cy < minY) minY = cy; if (cy > maxY) maxY = cy;
-            }
+          for (const idx of region.cells) {
+            const cx = grid.cx(idx), cy = grid.cy(idx);
+            sx += cx; sy += cy; cellCount++;
+            if (cx < minX) minX = cx; if (cx > maxX) maxX = cx;
+            if (cy < minY) minY = cy; if (cy > maxY) maxY = cy;
           }
           if (cellCount === 0) continue;
           const centX = sx / cellCount, centY = sy / cellCount;
           const terW = maxX - minX, terH = maxY - minY;
 
-          // Capitals belonging to this faction
-          const myCaps = capitalPts.filter(c => c.fid === faction.id);
-
-          const text = faction.name.toUpperCase();
+          const text = region.name.toUpperCase();
 
           // Size font purely from territory width — zoom-independent in world space
           const targetFill = 0.85;
           const targetW = terW * targetFill;
-          // Use a fixed reference size to measure text width, then scale proportionally
           const refSize = 50;
-          const ls = Math.max(2, terW * 0.003); // letter-spacing proportional to territory
+          const ls = Math.max(2, terW * 0.003);
           ctx.font = `700 ${refSize}px ${lf}`;
           try { ctx.letterSpacing = `${ls}px`; } catch(e) {}
           const refW = ctx.measureText(text).width;
-          // Scale font so text width matches target
           let ffs = refW > 0 ? clamp(refSize * (targetW / refW), 12, terH * 0.5) : refSize;
           ctx.font = `700 ${ffs}px ${lf}`;
-          let tw = ctx.measureText(text).width;
-          const th = ffs * 1.2;
 
-          // Count how many boundary-check points lie inside the faction
-          const boxInsideRatio = (bx, by, bw, bh, fid) => {
+          // Count how many boundary-check points lie inside the region
+          const boxInsideRatio = (bx, by, bw, bh, rid) => {
             let total = 0, inside = 0;
-            // 5 columns × 3 rows = 15 sample points
             for (let xf = -0.5; xf <= 0.5; xf += 0.25) {
               for (let yf = -0.5; yf <= 0.5; yf += 0.5) {
                 total++;
                 const ci = grid.cellAt(bx + bw * xf, by + bh * yf);
-                if (ci >= 0 && grid.faction[ci] === fid) inside++;
+                if (ci >= 0 && grid.owner[ci] === rid) inside++;
               }
             }
             return inside / total;
           };
 
-          // Build exclusion zones around cities (world-space, zoom-independent)
+          // Build exclusion zones around cities
           const cityZones = [];
           const capR = grid.step * 2.5;
           const townR = grid.step * 1.2;
-          for (const region of regions) {
-            for (const city of region.cities) {
-              const r = city.capital ? capR : townR;
-              cityZones.push({ x: city.x, y: city.y, r, x1: city.x - r, y1: city.y - r * 1.3, x2: city.x + r, y2: city.y + r * 1.3 });
-            }
+          for (const city of region.cities) {
+            const r = city.capital ? capR : townR;
+            cityZones.push({ x: city.x, y: city.y, r, x1: city.x - r, y1: city.y - r * 1.3, x2: city.x + r, y2: city.y + r * 1.3 });
           }
           const hitsCity = (x1, y1, x2, y2) => {
             for (const z of cityZones) {
@@ -3152,7 +3134,6 @@
           ctx.fillStyle = hexToRgba("#f2e8d6", alpha);
           let placed_ok = false;
 
-          // Progressively shrink font; always require ALL points inside territory
           const scaleSteps = [1.0, 0.85, 0.70, 0.55, 0.45, 0.35, 0.25];
 
           for (let ai = 0; ai < scaleSteps.length && !placed_ok; ai++) {
@@ -3161,7 +3142,6 @@
             const curTW = ctx.measureText(text).width;
             const curTH = curFFS * 1.2;
 
-            // Use finer sampling for smaller territories or later attempts
             const sampleDiv = ai < 3 ? 10 : 15;
             const sampleStep = Math.max(grid.step, Math.min(terW, terH) / sampleDiv);
 
@@ -3169,15 +3149,14 @@
             for (let py = minY + sampleStep * 0.5; py < maxY; py += sampleStep) {
               for (let px = minX + sampleStep * 0.5; px < maxX; px += sampleStep) {
                 const ci = grid.cellAt(px, py);
-                if (ci < 0 || grid.faction[ci] !== faction.id) continue;
+                if (ci < 0 || grid.owner[ci] !== region.id) continue;
 
-                const ratio = boxInsideRatio(px, py, curTW, curTH, faction.id);
-                if (ratio < 1.0) continue; // ALL points must be inside
+                const ratio = boxInsideRatio(px, py, curTW, curTH, region.id);
+                if (ratio < 1.0) continue;
 
                 const x1 = px - curTW * 0.5, y1 = py - curTH * 0.5;
                 const x2 = x1 + curTW, y2 = y1 + curTH;
 
-                // Only avoid cities in early attempts; later attempts skip this check
                 if (ai < 4 && hitsCity(x1, y1, x2, y2)) continue;
                 if (!this._labelFits(kingdomBoxes, x1, y1, x2, y2, pad)) continue;
 
@@ -3198,26 +3177,21 @@
             }
           }
 
-          // Last resort: place at the deepest interior point of the territory
+          // Last resort: place at the deepest interior point
           if (!placed_ok) {
             const fallFFS = Math.max(8, ffs * 0.2);
             ctx.font = `700 ${fallFFS}px ${lf}`;
 
-            // Find the cell farthest from any faction border (deepest interior)
             let bestIdx = -1, bestInterior = -1;
-            for (const rId of faction.regions) {
-              for (const idx of regions[rId].cells) {
-                // Check 4 neighbors — count how many are same faction
-                let interior = 0;
-                for (const nIdx of grid.neighbors4(idx)) {
-                  if (grid.faction[nIdx] === faction.id) interior++;
-                }
-                // Prefer cells closer to centroid as tiebreaker
-                const cx = grid.cx(idx), cy = grid.cy(idx);
-                const cDist = Math.sqrt((cx - centX) ** 2 + (cy - centY) ** 2);
-                const score = interior * 10000 - cDist;
-                if (score > bestInterior) { bestInterior = score; bestIdx = idx; }
+            for (const idx of region.cells) {
+              let interior = 0;
+              for (const nIdx of grid.neighbors4(idx)) {
+                if (grid.owner[nIdx] === region.id) interior++;
               }
+              const cx = grid.cx(idx), cy = grid.cy(idx);
+              const cDist = Math.sqrt((cx - centX) ** 2 + (cy - centY) ** 2);
+              const score = interior * 10000 - cDist;
+              if (score > bestInterior) { bestInterior = score; bestIdx = idx; }
             }
 
             if (bestIdx >= 0) {
