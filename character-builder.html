@@ -141,9 +141,9 @@
     .cb-spell-item { background: var(--bg-card); border: 1px solid var(--border); padding: 10px 14px; cursor: pointer; font-size: 13px; color:var(--text-muted); transition: all 0.25s; display: flex; align-items: center; gap: 8px; border-radius: 2px; }
     .cb-spell-item:hover { border-color: var(--crimson-border); color:var(--text); background: var(--bg-hover); }
     .cb-spell-item.selected { background: var(--crimson-soft); border-color: var(--crimson); color: var(--text); }
-    .cb-spell-dot { width: 8px; height: 8px; border: 2px solid var(--border); border-radius: 50%; flex-shrink: 0; transition: all 0.2s; }
-    .cb-spell-item:hover .cb-spell-dot { border-color: var(--crimson-border); }
-    .cb-spell-item.selected .cb-spell-dot { background: var(--crimson); border-color: var(--crimson); }
+    .cb-spell-dot { width: 14px; height: 14px; border: 2px solid var(--border); border-radius: 50%; flex-shrink: 0; transition: all 0.2s; }
+    .cb-spell-item:hover .cb-spell-dot { border-color: var(--crimson); transform: scale(1.1); }
+    .cb-spell-item.selected .cb-spell-dot { background: var(--crimson); border-color: var(--crimson); box-shadow: 0 0 6px rgba(212,67,58,0.3); }
     .cb-spell-count { font-family: 'Cinzel', serif; font-size: 10px; color:var(--text-muted); margin-bottom: 8px; }
     .cb-spell-count span { color: var(--crimson); }
 
@@ -190,7 +190,7 @@
     .cb-sheet-skill { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--border-mid); font-size: 13px; }
     .cb-sheet-skill-name { color:var(--text-dim); }
     .cb-sheet-skill-bonus { font-family: 'Cinzel', serif; font-size: 11px; color: var(--crimson); }
-    .cb-sheet-skill-prof { width: 8px; height: 8px; border: 1px solid rgba(212,67,58,0.4); flex-shrink: 0; }
+    .cb-sheet-skill-prof { width: 12px; height: 12px; border: 2px solid rgba(212,67,58,0.4); border-radius: 50%; flex-shrink: 0; transition: all 0.15s; }
     .cb-sheet-skill-prof.filled { background: var(--crimson); border-color: var(--crimson); }
     .cb-feature-item { padding: 10px 0; border-bottom: 1px solid var(--border-mid); }
     .cb-feature-name { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 1px; color:var(--text-dim); text-transform: uppercase; margin-bottom: 4px; }
@@ -400,6 +400,11 @@
     .cb-roll-btn span { font-size: 11px; color: var(--crimson); }
     .cb-roll-btn-death { border-color: rgba(212,67,58,0.5); color: rgba(212,67,58,0.8); }
     .cb-roll-btn-death:hover { background: rgba(212,67,58,0.25); color: var(--white); }
+    /* ── DRAG AND DROP ── */
+    .cb-array-val[draggable="true"] { cursor: grab; }
+    .cb-array-val[draggable="true"]:active { cursor: grabbing; }
+    .cb-array-val.dragging { opacity: 0.4; transform: scale(0.9); }
+    .cb-ability-box.drag-over { outline: 2px solid var(--crimson); outline-offset: -2px; background: rgba(212,67,58,0.08); }
     /* ── ROLL PANEL ── */
     #rollPanel { margin-bottom: 20px; }
     .cb-rolled-scores-wrap { margin-bottom: 16px; }
@@ -1708,7 +1713,7 @@ function renderRaces(){
     const hbBadge=race.source==='homebrew'?'<span style="font-family:Cinzel,serif;font-size:7px;letter-spacing:1px;text-transform:uppercase;color:#8b6914;margin-left:6px;">✶ HB</span>':'';
     const editBtn=race.source==='homebrew'?'<button data-hbe-edit-type="race" data-hbe-edit-id="'+escapeHtml(id)+'" style="position:absolute;top:6px;right:6px;background:none;border:none;color:#8b6914;cursor:pointer;font-size:11px;" title="Edit">✎</button>':'';
     d.style.position='relative';
-    var raceFlavorText = {human:'Versatile and ambitious, found in every corner of the world',elf:'Graceful and long-lived, with a deep bond to magic and nature',dwarf:'Stout and hardy, masters of stone and forge',halfling:'Small and nimble, with a knack for avoiding danger',gnome:'Curious and inventive, brimming with enthusiasm',half_elf:'Blending elven grace with human versatility','half-elf':'Blending elven grace with human versatility',half_orc:'Fierce and enduring, marked by strength and resilience','half-orc':'Fierce and enduring, marked by strength and resilience',tiefling:'Touched by infernal heritage, wielding dark charisma',dragonborn:'Proud and draconic, breathing elemental power'};
+    var raceFlavorText = {human:'Versatile and ambitious, found in every corner of the world',elf:'Graceful and long-lived, with a deep bond to magic and nature',dwarf:'Stout and hardy, masters of stone and forge',halfling:'Small and nimble, with a knack for avoiding danger',gnome:'Curious and inventive, brimming with enthusiasm',halfelf:'Blending elven grace with human versatility',half_elf:'Blending elven grace with human versatility','half-elf':'Blending elven grace with human versatility',halforc:'Fierce and enduring, marked by strength and resilience',half_orc:'Fierce and enduring, marked by strength and resilience','half-orc':'Fierce and enduring, marked by strength and resilience',tiefling:'Touched by infernal heritage, wielding dark charisma',dragonborn:'Proud and draconic, breathing elemental power'};
     var raceFlavor = raceFlavorText[id] || (escapeHtml(asi) + ' · ' + escapeHtml(race.size) + ' · ' + escapeHtml(race.speed) + 'ft');
     d.innerHTML=`<div class="cb-card-name">${escapeHtml(race.name)}${hbBadge}</div><div class="cb-card-detail">${raceFlavor}</div>${editBtn}`;
     c.appendChild(d);
@@ -1905,12 +1910,13 @@ function setScoreMethod(m){
 function renderArrayPool(){
   const pool=document.getElementById('arrayPool');
   const used=Object.values(C.arrayAssigned);
-  pool.innerHTML=STANDARD_ARRAY.map(v=>{
+  pool.innerHTML=STANDARD_ARRAY.map((v,idx)=>{
     const usedCount=used.filter(u=>u===v).length;
     const totalCount=STANDARD_ARRAY.filter(u=>u===v).length;
     const isUsed=usedCount>=totalCount;
     const isSel=C.selectedArrayVal===v;
-    return `<div class="cb-array-val ${isUsed?'used':''} ${isSel?'selected':''}" onclick="pickArrayVal(${v})">${v}</div>`;
+    const drag=isUsed?'':'draggable="true"';
+    return `<div class="cb-array-val ${isUsed?'used':''} ${isSel?'selected':''}" ${drag} data-drag-type="array" data-drag-val="${v}" onclick="pickArrayVal(${v})" ondragstart="onScoreDragStart(event,'array',${v},${idx})" ondragend="onScoreDragEnd(event)">${v}</div>`;
   }).join('');
 }
 
@@ -1939,7 +1945,8 @@ function renderRolledScores(){
   el.innerHTML=C.rolledScores.map((v,i)=>{
     const isUsed=used.includes(i);
     const isSel=C.selectedRolled===i;
-    return `<div class="cb-array-val ${isUsed?'used':''} ${isSel?'selected':''}" onclick="pickRolled(${i})">${v}</div>`;
+    const drag=isUsed?'':'draggable="true"';
+    return `<div class="cb-array-val ${isUsed?'used':''} ${isSel?'selected':''}" ${drag} data-drag-type="roll" data-drag-idx="${i}" onclick="pickRolled(${i})" ondragstart="onScoreDragStart(event,'roll',${v},${i})" ondragend="onScoreDragEnd(event)">${v}</div>`;
   }).join('');
 }
 
@@ -2005,7 +2012,7 @@ function renderAbilityGrid(){
       inner=`<div class="cb-score-btns"><button class="cb-score-btn" onclick="event.stopPropagation();manualAdjust('${ability}',-1)">−</button><span style="font-size:26px;font-weight:300;color:var(--text);min-width:38px;text-align:center;">${base}</span><button class="cb-score-btn" onclick="event.stopPropagation();manualAdjust('${ability}',1)">+</button></div>`;
     }
     var abilityDesc = DND_DATA.abilityDescriptions && DND_DATA.abilityDescriptions[ability] ? DND_DATA.abilityDescriptions[ability] : '';
-    return `<div class="cb-ability-box ${isSelecting?'selecting':''}" onclick="assignAbility('${ability}')">
+    return `<div class="cb-ability-box ${isSelecting?'selecting':''}" onclick="assignAbility('${ability}')" ondragover="onAbilityDragOver(event)" ondragleave="onAbilityDragLeave(event)" ondrop="onAbilityDrop(event,'${ability}')">
       <div class="cb-ability-name">${DND_DATA.abilityShort[ability]}${abilityDesc?`<span class="cb-info-tip" data-tip="${escapeHtml(abilityDesc)}">ⓘ</span>`:''}</div>
       ${inner}
       <div class="cb-ability-mod">${modStr(total)}</div>
@@ -2023,6 +2030,56 @@ function updateAsiNote(){
   if(C.subrace){ const sr=race.subraces.find(s=>s.id===C.subrace); if(sr) Object.entries(sr.asi||{}).forEach(([k,v])=>bonuses.push(`${DND_DATA.abilityNames[k]} +${v}`)); }
   if(bonuses.length){ note.style.display='block'; note.innerHTML=`<strong>Racial Bonuses Applied</strong>: ${escapeHtml(race.name)}: ${escapeHtml(bonuses.join(', '))}.`; }
   else note.style.display='none';
+}
+
+// ── Drag and Drop for ability score assignment ──
+var _dragData = null;
+function onScoreDragStart(e, type, val, idx) {
+  _dragData = { type: type, val: val, idx: idx };
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', val);
+  e.target.classList.add('dragging');
+}
+function onScoreDragEnd(e) {
+  e.target.classList.remove('dragging');
+  _dragData = null;
+}
+function onAbilityDragOver(e) {
+  if (!_dragData) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+function onAbilityDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+function onAbilityDrop(e, ability) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (!_dragData) return;
+  if (_dragData.type === 'array' && C.scoreMethod === 'standard') {
+    // Un-assign if this ability already has a value
+    if (C.arrayAssigned[ability] !== undefined) {
+      delete C.arrayAssigned[ability];
+      C.abilities[ability] = 8;
+    }
+    C.abilities[ability] = _dragData.val;
+    C.arrayAssigned[ability] = _dragData.val;
+    C.selectedArrayVal = null;
+    renderArrayPool();
+  } else if (_dragData.type === 'roll' && C.scoreMethod === 'roll') {
+    if (C.rolledAssigned[ability] !== undefined) {
+      delete C.rolledAssigned[ability];
+      C.abilities[ability] = 8;
+    }
+    C.abilities[ability] = _dragData.val;
+    C.rolledAssigned[ability] = _dragData.idx;
+    C.selectedRolled = null;
+    renderRolledScores();
+  }
+  _dragData = null;
+  renderAbilityGrid();
+  updateAsiNote();
 }
 
 // ══════════════════════════════════════════
