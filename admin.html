@@ -936,7 +936,7 @@ function DashboardPage({ onNavigate }) {
     const [users, chars, camps, visits, recent] = await Promise.all([
       db.from('profiles').select('id', { count: 'exact' }).limit(0),
       db.from('characters').select('id', { count: 'exact' }).limit(0),
-      db.from('campaigns').select('id', { count: 'exact' }).limit(0).catch(() => ({ count: null, error: null })),
+      Promise.resolve(db.from('campaigns').select('id', { count: 'exact' }).limit(0)).catch(() => ({ count: null, error: null })),
       db.from('site_visits').select('id', { count: 'exact' }).limit(0).gte('visited_at', today.toISOString()),
       db.from('profiles').select('id, name, email, created_at, is_admin, is_banned').order('created_at', { ascending: false }).limit(5),
     ]);
