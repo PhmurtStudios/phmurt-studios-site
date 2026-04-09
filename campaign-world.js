@@ -2505,13 +2505,16 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
   }, [fitAtlasToView]);
 
   // Auto-generate world data if seed is set but regions/factions/npcs are empty
-  // (handles new campaigns that default to seed 1)
+  // When MapEngine is available, its useEffect handles data generation via the bridge.
+  // This fallback only runs when MapEngine hasn't loaded yet (non-map tab on first load).
   useEffect(() => {
     if (!data.atlasMapSeed) return;
     const seedNum = parseInt(data.atlasMapSeed);
     if (isNaN(seedNum)) return;
     // Only auto-generate if the world data is empty (fresh campaign)
     if (data.regions && data.regions.length > 0) return;
+    // Skip if MapEngine + bridge are available — the map useEffect will handle it
+    if (typeof window.MapEngine === "function" && typeof window.mapEngineToWorldData === "function") return;
     const result = regionsAndFactionsFromMetadata(seedNum);
     const meta = (typeof ATLAS_METADATA !== 'undefined') && ATLAS_METADATA[seedNum];
     if (result) {
@@ -2527,7 +2530,43 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
     }
   }, [data.atlasMapSeed]);
 
-  // ── MapEngine: create/destroy instance when canvas mounts or seed changes ──
+  // ── Generate world data from MapEngine whenever seed changes (any tab) ──
+  // This ensures regions/factions/cities/npcs/pois always match the procedural map.
+  useEffect(() => {
+    if (!data.atlasMapSeed) return;
+    const seedNum = parseInt(data.atlasMapSeed);
+    if (isNaN(seedNum)) return;
+    if (typeof window.MapEngine !== "function" || typeof window.mapEngineToWorldData !== "function") return;
+
+    // Use an offscreen canvas for headless generation
+    const offscreen = document.createElement("canvas");
+    offscreen.width = 200; offscreen.height = 200;
+    const engine = new window.MapEngine(offscreen);
+    engine.generate(seedNum);
+
+    const worldData = window.mapEngineToWorldData(engine, seedNum);
+    if (worldData) {
+      setData(function(d) {
+        return Object.assign({}, d, {
+          regions: worldData.regions,
+          factions: worldData.factions,
+          npcs: worldData.npcs || [],
+          cities: worldData.cities || [],
+          pois: worldData.pois || [],
+          name: worldData.name || d.name,
+          _lwEventLog: [],
+          quests: [],
+          encounters: [],
+          activity: [{ time: "Just now", text: "World map generated (seed " + seedNum + ")" }],
+        });
+      });
+    }
+
+    // Clean up offscreen engine
+    if (engine.renderer) engine.renderer.destroy();
+  }, [data.atlasMapSeed]);
+
+  // ── MapEngine: create/destroy VISUAL instance when canvas mounts or seed changes ──
   useEffect(() => {
     if (tab !== "map" || !mapCanvasRef.current) return;
     const seedNum = parseInt(data.atlasMapSeed || "1");
@@ -2538,8 +2577,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
       mapEngineRef.current.renderer.destroy();
     }
 
-    // Create new engine
-    if (typeof window.MapEngine !== "function") return; // guard if script not loaded
+    // Create new engine attached to the visible canvas
+    if (typeof window.MapEngine !== "function") return;
     const engine = new window.MapEngine(mapCanvasRef.current);
     mapEngineRef.current = engine;
 
@@ -2547,7 +2586,6 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
     engine.onRegionClick(function(region, faction) {
       if (region) {
         const d = dataRef.current;
-        // Region names in data now match engine region names directly
         const r = (d.regions || []).find(function(reg) {
           return reg.name === region.name;
         });
@@ -2562,31 +2600,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
       }
     });
 
-    // Generate the map
+    // Generate the map (same seed = same deterministic output as the data generation)
     engine.generate(seedNum);
-
-    // Always regenerate world data from the map engine to keep everything in sync
-    if (typeof window.mapEngineToWorldData === "function") {
-      const worldData = window.mapEngineToWorldData(engine, seedNum);
-      if (worldData) {
-        setData(function(d) {
-          return Object.assign({}, d, {
-            // Core world data from the map engine
-            regions: worldData.regions,
-            factions: worldData.factions,
-            npcs: worldData.npcs || [],
-            cities: worldData.cities || [],
-            pois: worldData.pois || [],
-            name: worldData.name || d.name,
-            // Clear stale sub-system state that references old names
-            _lwEventLog: [],
-            quests: [],
-            encounters: [],
-            activity: [{ time: "Just now", text: "World map generated (seed " + seedNum + ")" }],
-          });
-        });
-      }
-    }
 
     return function() {
       if (mapEngineRef.current && mapEngineRef.current.renderer) {

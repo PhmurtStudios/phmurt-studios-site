@@ -36,9 +36,9 @@
   <script src="phmurt-char-sync.js"></script>
   <script src="phmurt-realtime.js"></script>
   <script src="phmurt-shell.js"></script>
-  <!-- New procedural map engine + data bridge -->
-  <script src="campaign-map-engine.js"></script>
-  <script src="campaign-map-bridge.js"></script>
+  <!-- New procedural map engine + data bridge (v2 = region-name labels + blue ocean) -->
+  <script src="campaign-map-engine.js?v=2"></script>
+  <script src="campaign-map-bridge.js?v=2"></script>
   <script src="campaign-combat-integration.js"></script>
   <!-- Play-tab assets: combat engine, VFX, SRD monsters — deferred for fast initial load -->
   <script src="combat-engine.js" defer></script>
@@ -5527,7 +5527,7 @@ window.__CM = {
 /* Tab module loading state */
 const _tabModuleState = { dashboard: true, timeline: false, world: false, play: false };
 const _tabModulePromises = {};
-const _MODULE_VERSION = 157; // Bump to force re-fetch past service worker cache
+const _MODULE_VERSION = 158; // Bump to force re-fetch past service worker cache
 
 /**
  * Lazy-load a tab module: fetch JSX, transpile with Babel, execute.
