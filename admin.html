@@ -993,8 +993,8 @@ function DashboardPage({ onNavigate }) {
           {s.recent.map(u => (
             <div key={u.id} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'12px 24px',borderBottom:'1px solid var(--border-mid)'}}>
               <div>
-                <div style={{fontSize:'13px',fontWeight:600,color:'var(--text)'}}>{u.name || u.email.split('@')[0]}</div>
-                <div style={{fontSize:'11px',color:'var(--text-muted)'}}>{u.email}</div>
+                <div style={{fontSize:'13px',fontWeight:600,color:'var(--text)'}}>{u.name || (u.email || '').split('@')[0] || 'Unknown'}</div>
+                <div style={{fontSize:'11px',color:'var(--text-muted)'}}>{u.email || '—'}</div>
               </div>
               <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
                 {u.is_admin && <span className="badge badge-admin">Admin</span>}
@@ -1060,10 +1060,14 @@ function DashboardPage({ onNavigate }) {
 // ═══════════════════════════════
 function CampaignsPage({ addToast, canDeleteContent }) {
   const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState(null);
+  const [filterFlag, setFilterFlag] = useState('all');
+  const [selectedIds, setSelectedIds] = useState(new Set());
+
   const { data: campaigns, loading, error, refetch } = useAdminQuery(async (db) => {
     const { data, error } = await db
       .from('campaigns')
-      .select('id, data, owner_id, created_at, updated_at')
+      .select('id, data, owner_id, name, system, flagged, flag_reason, created_at, updated_at')
       .order('updated_at', { ascending: false })
       .limit(200);
     if (error) throw error;
@@ -1071,8 +1075,9 @@ function CampaignsPage({ addToast, canDeleteContent }) {
   });
 
   const filtered = (campaigns || []).filter(c => {
+    if (filterFlag === 'flagged' && !c.flagged) return false;
     if (!search) return true;
-    const name = (c.data && c.data.name) || '';
+    const name = (c.data && c.data.name) || c.name || '';
     return name.toLowerCase().includes(search.toLowerCase()) ||
            (c.owner_id || '').toLowerCase().includes(search.toLowerCase());
   });
@@ -1083,7 +1088,102 @@ function CampaignsPage({ addToast, canDeleteContent }) {
     const { error } = await sb.from('campaigns').delete().eq('id', id);
     if (error) { addToast('Delete failed: ' + error.message, 'error'); return; }
     addToast('Campaign deleted.', 'success');
+    setSelected(null);
     refetch();
+  }
+
+  async function toggleFlag(c, reason) {
+    const next = !c.flagged;
+    const { error } = await sb.from('campaigns').update({ flagged: next, flag_reason: next ? (reason || 'Flagged by admin') : null }).eq('id', c.id);
+    if (error) { addToast('Flag update failed: ' + error.message, 'error'); return; }
+    addToast(next ? 'Campaign flagged.' : 'Flag removed.', next ? 'error' : 'success');
+    refetch();
+  }
+
+  async function bulkFlag() {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    const { error } = await sb.from('campaigns').update({ flagged: true, flag_reason: 'Bulk flagged by admin' }).in('id', ids);
+    if (error) { addToast('Bulk flag failed.', 'error'); return; }
+    addToast(ids.length + ' campaigns flagged.', 'success');
+    setSelectedIds(new Set()); refetch();
+  }
+
+  async function bulkDelete() {
+    if (selectedIds.size === 0 || !canDeleteContent) return;
+    if (!confirm('Delete ' + selectedIds.size + ' campaigns? This cannot be undone.')) return;
+    const ids = Array.from(selectedIds);
+    const { error } = await sb.from('campaigns').delete().in('id', ids);
+    if (error) { addToast('Bulk delete failed.', 'error'); return; }
+    addToast(ids.length + ' campaigns deleted.', 'success');
+    setSelectedIds(new Set()); refetch();
+  }
+
+  function toggleSelect(id) {
+    setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }
+
+  // Detail view
+  if (selected) {
+    const d = selected.data || {};
+    const players = d.players || d.party || d.members || [];
+    const npcs = d.npcs || d.npcList || [];
+    const sessions = d.sessions || d.sessionLog || [];
+    const quests = d.quests || [];
+    return (
+      <div>
+        <button className="btn btn-sm" onClick={() => setSelected(null)} style={{marginBottom:'16px'}}><Icons.Back /> Back to Campaigns</button>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'20px'}}>
+          <div>
+            <h1 style={{fontFamily:'Cinzel,serif',fontSize:'22px',fontWeight:600,letterSpacing:'1px',marginBottom:'4px'}}>{d.name || selected.name || 'Untitled Campaign'}</h1>
+            <div style={{fontSize:'13px',color:'var(--text-muted)'}}>{d.description || '—'}</div>
+          </div>
+          <div className="btn-group">
+            <button className={`btn btn-sm ${selected.flagged ? 'btn-primary' : 'btn-danger'}`} onClick={() => toggleFlag(selected)}>{selected.flagged ? 'Unflag' : 'Flag'}</button>
+            <button className="btn btn-sm btn-danger" onClick={() => deleteCampaign(selected.id)} disabled={!canDeleteContent}>Delete</button>
+          </div>
+        </div>
+        {selected.flagged && <div style={{padding:'10px 14px',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:6,marginBottom:'16px',fontSize:'13px',color:'#ef4444'}}>Flagged: {selected.flag_reason || 'No reason given'}</div>}
+
+        <div className="stat-grid" style={{marginBottom:'20px'}}>
+          <div className="stat-card"><div className="stat-label">Players</div><div className="stat-value">{players.length}</div></div>
+          <div className="stat-card"><div className="stat-label">NPCs</div><div className="stat-value">{npcs.length}</div></div>
+          <div className="stat-card"><div className="stat-label">Sessions</div><div className="stat-value">{sessions.length}</div></div>
+          <div className="stat-card"><div className="stat-label">Quests</div><div className="stat-value">{quests.length}</div></div>
+        </div>
+
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px'}}>
+          <div className="card">
+            <div className="card-header"><h2>Details</h2></div>
+            <div className="card-body" style={{fontSize:'13px',display:'grid',gap:'8px'}}>
+              <div><span style={{color:'var(--text-muted)'}}>Owner ID: </span><span className="mono" style={{fontSize:'11px'}}>{selected.owner_id}</span></div>
+              <div><span style={{color:'var(--text-muted)'}}>System: </span>{d.system || selected.system || '5e'}</div>
+              <div><span style={{color:'var(--text-muted)'}}>Invite Code: </span>{d.inviteCode || '—'}</div>
+              <div><span style={{color:'var(--text-muted)'}}>Created: </span>{formatDateTime(selected.created_at)}</div>
+              <div><span style={{color:'var(--text-muted)'}}>Updated: </span>{formatDateTime(selected.updated_at)}</div>
+              {d.calendar && <div><span style={{color:'var(--text-muted)'}}>Calendar: </span>{typeof d.calendar === 'object' ? (d.calendar.name || 'Custom') : d.calendar}</div>}
+              {d.economy && <div><span style={{color:'var(--text-muted)'}}>Economy: </span>Enabled</div>}
+            </div>
+          </div>
+          {players.length > 0 && <div className="card">
+            <div className="card-header"><h2>Party Members ({players.length})</h2></div>
+            <div className="card-body" style={{fontSize:'13px'}}>{players.map((p, i) => <div key={i} style={{padding:'6px 0',borderBottom:'1px solid var(--border-mid)',display:'flex',justifyContent:'space-between'}}><span style={{fontWeight:600}}>{typeof p === 'string' ? p : (p.name || p.characterName || 'Player ' + (i+1))}</span><span style={{color:'var(--text-muted)',fontSize:'11px'}}>{p.class || p.role || ''} {p.level ? 'Lv' + p.level : ''}</span></div>)}</div>
+          </div>}
+          {npcs.length > 0 && <div className="card">
+            <div className="card-header"><h2>NPCs ({npcs.length})</h2></div>
+            <div className="card-body" style={{fontSize:'13px'}}>{npcs.slice(0, 20).map((n, i) => <div key={i} style={{padding:'4px 0',borderBottom:'1px solid var(--border-mid)'}}>{typeof n === 'string' ? n : (n.name || 'NPC ' + (i+1))}{n.role ? <span style={{color:'var(--text-muted)'}}> — {n.role}</span> : ''}</div>)}{npcs.length > 20 && <div style={{padding:'8px 0',color:'var(--text-muted)'}}>+ {npcs.length - 20} more</div>}</div>
+          </div>}
+          {sessions.length > 0 && <div className="card">
+            <div className="card-header"><h2>Session Log ({sessions.length})</h2></div>
+            <div className="card-body" style={{fontSize:'13px'}}>{sessions.slice(-10).reverse().map((s, i) => <div key={i} style={{padding:'6px 0',borderBottom:'1px solid var(--border-mid)'}}><span style={{fontWeight:600}}>{s.title || s.name || 'Session ' + (sessions.length - i)}</span>{s.date && <span style={{color:'var(--text-muted)',fontSize:'11px',marginLeft:8}}>{s.date}</span>}{s.summary && <div style={{color:'var(--text-muted)',fontSize:'12px',marginTop:2}}>{String(s.summary).slice(0, 120)}{s.summary.length > 120 ? '…' : ''}</div>}</div>)}</div>
+          </div>}
+          {quests.length > 0 && <div className="card" style={{gridColumn:'1 / -1'}}>
+            <div className="card-header"><h2>Quests ({quests.length})</h2></div>
+            <div className="card-body" style={{fontSize:'13px'}}>{quests.map((q, i) => <div key={i} style={{padding:'6px 0',borderBottom:'1px solid var(--border-mid)',display:'flex',justifyContent:'space-between'}}><span>{typeof q === 'string' ? q : (q.name || q.title || 'Quest ' + (i+1))}</span>{q.status && <span className={`badge ${q.status === 'complete' || q.status === 'completed' ? 'badge-active' : 'badge-info'}`}>{q.status}</span>}</div>)}</div>
+          </div>}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -1093,9 +1193,20 @@ function CampaignsPage({ addToast, canDeleteContent }) {
         <button className="btn" onClick={refetch}><Icons.Refresh /> Refresh</button>
       </div>
 
-      <div className="search-bar" style={{marginBottom:'20px',maxWidth:'360px'}}>
-        <Icons.Search />
-        <input placeholder="Search campaigns..." value={search} onChange={e => setSearch(e.target.value)} />
+      <div style={{display:'flex',gap:'16px',alignItems:'center',marginBottom:'20px',flexWrap:'wrap'}}>
+        <div className="search-bar" style={{maxWidth:'360px'}}>
+          <Icons.Search />
+          <input placeholder="Search campaigns..." value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <div className="filter-pills">
+          {[['all','All'],['flagged','Flagged']].map(([k,l]) => (
+            <span key={k} className={`pill ${filterFlag===k?'active':''}`} onClick={() => setFilterFlag(k)}>{l}</span>
+          ))}
+        </div>
+        {selectedIds.size > 0 && <div className="btn-group">
+          <button className="btn btn-sm btn-danger" onClick={bulkFlag}>Flag ({selectedIds.size})</button>
+          <button className="btn btn-sm btn-danger" onClick={bulkDelete} disabled={!canDeleteContent}>Delete ({selectedIds.size})</button>
+        </div>}
       </div>
 
       {loading && <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)',fontFamily:'Spectral,serif'}}>Loading…</div>}
@@ -1144,22 +1255,28 @@ CREATE POLICY "campaigns_select" ON campaigns FOR SELECT
         <div className="card">
           <table className="data-table">
             <thead>
-              <tr><th>Campaign Name</th><th>Owner ID</th><th>Updated</th><th>Created</th><th></th></tr>
+              <tr><th style={{width:'30px'}}></th><th>Campaign Name</th><th>System</th><th>Owner ID</th><th>Updated</th><th></th></tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
-                <tr><td colSpan="5" style={{textAlign:'center',color:'var(--text-muted)',padding:'40px 16px'}}>No campaigns found.</td></tr>
+                <tr><td colSpan="6" style={{textAlign:'center',color:'var(--text-muted)',padding:'40px 16px'}}>No campaigns found.</td></tr>
               )}
               {filtered.map(c => {
-                const name = (c.data && c.data.name) || 'Untitled Campaign';
+                const name = (c.data && c.data.name) || c.name || 'Untitled Campaign';
                 return (
-                  <tr key={c.id}>
-                    <td style={{fontWeight:600,color:'var(--text)'}}>{name}</td>
+                  <tr key={c.id} style={c.flagged ? {background:'rgba(239,68,68,0.04)'} : {}}>
+                    <td><input type="checkbox" checked={selectedIds.has(c.id)} onChange={() => toggleSelect(c.id)} /></td>
+                    <td style={{fontWeight:600,color:'var(--text)',cursor:'pointer'}} onClick={() => setSelected(c)}>
+                      {name} {c.flagged && <span style={{color:'#ef4444',fontSize:'10px'}}>⚑</span>}
+                    </td>
+                    <td><span className="badge badge-info">{(c.data && c.data.system) || c.system || '5e'}</span></td>
                     <td className="mono" style={{fontSize:'11px'}}>{c.owner_id}</td>
                     <td>{timeAgo(c.updated_at)}</td>
-                    <td>{formatDate(c.created_at)}</td>
                     <td>
-                      <button className="btn btn-sm btn-danger" onClick={() => deleteCampaign(c.id)} disabled={!canDeleteContent}>Delete</button>
+                      <div className="btn-group">
+                        <button className="btn btn-sm" onClick={() => setSelected(c)}><Icons.Eye /></button>
+                        <button className="btn btn-sm btn-danger" onClick={() => deleteCampaign(c.id)} disabled={!canDeleteContent}>Delete</button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -1179,6 +1296,11 @@ function UsersPage({ addToast, canManageAdmins }) {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [selectedUser, setSelectedUser] = useState(null);
+  const [userChars, setUserChars] = useState([]);
+  const [userCamps, setUserCamps] = useState([]);
+  const [userVisits, setUserVisits] = useState([]);
+  const [noteText, setNoteText] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
 
   const { data: users, loading, error, refetch } = useAdminQuery(async (db) => {
     const { data, error } = await db
@@ -1197,6 +1319,20 @@ function UsersPage({ addToast, canManageAdmins }) {
                   !(u.email || '').toLowerCase().includes(search.toLowerCase())) return false;
     return true;
   });
+
+  async function selectUser(u) {
+    setSelectedUser(u);
+    setNoteText(u.admin_notes || '');
+    if (!sb) return;
+    const [chars, camps, visits] = await Promise.all([
+      sb.from('characters').select('id, name, class, race, level, builder_type, updated_at').eq('owner_id', u.id).order('updated_at', { ascending: false }).limit(20).then(r => r.data || []).catch(() => []),
+      Promise.resolve(sb.from('campaigns').select('id, name, data, system, updated_at').eq('owner_id', u.id).order('updated_at', { ascending: false }).limit(20)).then(r => r.data || []).catch(() => []),
+      sb.from('site_visits').select('page, visited_at').eq('user_id', u.id).order('visited_at', { ascending: false }).limit(30).then(r => r.data || []).catch(() => []),
+    ]);
+    setUserChars(chars);
+    setUserCamps(camps);
+    setUserVisits(visits);
+  }
 
   async function toggleBan(user) {
     if (!canManageAdmins) { addToast('Superuser privileges required.', 'error'); return; }
@@ -1226,6 +1362,110 @@ function UsersPage({ addToast, canManageAdmins }) {
     if (error) { addToast('Delete failed: ' + error.message, 'error'); return; }
     addToast('User deleted.', 'success');
     refetch(); setSelectedUser(null);
+  }
+
+  async function sendPasswordReset(email) {
+    if (!sb) { addToast('Supabase not configured.', 'error'); return; }
+    const { error } = await sb.auth.resetPasswordForEmail(email);
+    if (error) { addToast('Reset email failed: ' + error.message, 'error'); return; }
+    addToast('Password reset email sent to ' + email, 'success');
+  }
+
+  async function saveNote() {
+    if (!selectedUser || !sb) return;
+    setSavingNote(true);
+    const { error } = await sb.from('profiles').update({ admin_notes: noteText || null }).eq('id', selectedUser.id);
+    setSavingNote(false);
+    if (error) { addToast('Failed to save note: ' + error.message, 'error'); return; }
+    addToast('Note saved.', 'success');
+    refetch();
+  }
+
+  // Full detail view
+  if (selectedUser) {
+    const u = selectedUser;
+    return (
+      <div>
+        <button className="btn btn-sm" onClick={() => setSelectedUser(null)} style={{marginBottom:'16px'}}><Icons.Back /> Back to Users</button>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'20px'}}>
+          <div>
+            <h1 style={{fontFamily:'Cinzel,serif',fontSize:'22px',fontWeight:600,letterSpacing:'1px',marginBottom:'4px'}}>{u.name || (u.email || '').split('@')[0] || 'Unknown'}</h1>
+            <div style={{fontSize:'13px',color:'var(--text-muted)'}}>{u.email || '—'}</div>
+          </div>
+          <div className="btn-group">
+            <button className="btn btn-sm" onClick={() => sendPasswordReset(u.email)}>Send Password Reset</button>
+            <button className={`btn btn-sm ${u.is_banned ? 'btn-primary' : 'btn-danger'}`} onClick={() => toggleBan(u)}>{u.is_banned ? 'Unban' : 'Ban'}</button>
+            <button className="btn btn-sm" onClick={() => toggleAdmin(u)} disabled={!canManageAdmins}>{u.is_admin ? 'Remove Admin' : 'Make Admin'}</button>
+            <button className="btn btn-sm btn-danger" onClick={() => deleteUser(u.id, u)} disabled={!canManageAdmins}>Delete</button>
+          </div>
+        </div>
+
+        <div className="stat-grid" style={{marginBottom:'20px'}}>
+          <div className="stat-card"><div className="stat-label">Characters</div><div className="stat-value">{userChars.length}</div></div>
+          <div className="stat-card"><div className="stat-label">Campaigns</div><div className="stat-value">{userCamps.length}</div></div>
+          <div className="stat-card"><div className="stat-label">Recent Visits</div><div className="stat-value">{userVisits.length}</div></div>
+          <div className="stat-card"><div className="stat-label">Status</div><div className="stat-value" style={{fontSize:'14px'}}>{u.is_banned ? 'Banned' : u.is_superuser ? 'Superuser' : u.is_admin ? 'Admin' : 'Active'}</div></div>
+        </div>
+
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px'}}>
+          <div className="card">
+            <div className="card-header"><h2>Account Info</h2></div>
+            <div className="card-body" style={{fontSize:'13px',display:'grid',gap:'8px'}}>
+              <div><span style={{color:'var(--text-muted)'}}>User ID: </span><span className="mono" style={{fontSize:'11px'}}>{u.id}</span></div>
+              <div><span style={{color:'var(--text-muted)'}}>Name: </span>{u.name || '—'}</div>
+              <div><span style={{color:'var(--text-muted)'}}>Email: </span>{u.email || '—'}</div>
+              <div><span style={{color:'var(--text-muted)'}}>Joined: </span>{formatDateTime(u.created_at)}</div>
+              <div><span style={{color:'var(--text-muted)'}}>Admin: </span>{u.is_admin ? '✓ Yes' : 'No'}</div>
+              <div><span style={{color:'var(--text-muted)'}}>Superuser: </span>{u.is_superuser ? '✓ Yes' : 'No'}</div>
+              <div><span style={{color:'var(--text-muted)'}}>Banned: </span>{u.is_banned ? '✓ Yes' : 'No'}</div>
+              {u.tags && u.tags.length > 0 && <div><span style={{color:'var(--text-muted)'}}>Tags: </span>{u.tags.join(', ')}</div>}
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-header"><h2>Admin Notes</h2></div>
+            <div className="card-body">
+              <textarea value={noteText} onChange={e => setNoteText(e.target.value)} placeholder="Add internal notes about this user…" style={{width:'100%',minHeight:'100px',background:'rgba(255,255,255,0.04)',border:'1px solid var(--border-mid)',color:'var(--text)',fontFamily:'Spectral,serif',fontSize:'13px',padding:'10px',borderRadius:4,resize:'vertical',boxSizing:'border-box'}} />
+              <button className="btn btn-sm" onClick={saveNote} disabled={savingNote} style={{marginTop:'8px'}}>{savingNote ? 'Saving…' : 'Save Note'}</button>
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-header"><h2>Characters ({userChars.length})</h2></div>
+            <div className="card-body" style={{padding:0}}>
+              {userChars.length === 0 ? <div className="empty-state" style={{padding:'20px'}}><p>No characters.</p></div> :
+              userChars.map(c => (
+                <div key={c.id} style={{display:'flex',justifyContent:'space-between',padding:'10px 16px',borderBottom:'1px solid var(--border-mid)',fontSize:'13px'}}>
+                  <div><span style={{fontWeight:600}}>{c.name || 'Unnamed'}</span><span style={{color:'var(--text-muted)',marginLeft:8}}>{[c.race, c.class].filter(Boolean).join(' · ')}</span></div>
+                  <span style={{color:'var(--text-faint)',fontSize:'11px'}}>{timeAgo(c.updated_at)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-header"><h2>Campaigns ({userCamps.length})</h2></div>
+            <div className="card-body" style={{padding:0}}>
+              {userCamps.length === 0 ? <div className="empty-state" style={{padding:'20px'}}><p>No campaigns.</p></div> :
+              userCamps.map(c => (
+                <div key={c.id} style={{display:'flex',justifyContent:'space-between',padding:'10px 16px',borderBottom:'1px solid var(--border-mid)',fontSize:'13px'}}>
+                  <span style={{fontWeight:600}}>{c.name || (c.data && c.data.name) || 'Untitled'}</span>
+                  <span style={{color:'var(--text-faint)',fontSize:'11px'}}>{timeAgo(c.updated_at)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          {userVisits.length > 0 && <div className="card" style={{gridColumn:'1 / -1'}}>
+            <div className="card-header"><h2>Recent Activity ({userVisits.length})</h2></div>
+            <div className="card-body" style={{padding:0}}>
+              {userVisits.slice(0, 15).map((v, i) => (
+                <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'8px 16px',borderBottom:'1px solid var(--border-mid)',fontSize:'12px'}}>
+                  <span className="mono">{v.page || '/'}</span>
+                  <span style={{color:'var(--text-faint)'}}>{formatDateTime(v.visited_at)}</span>
+                </div>
+              ))}
+            </div>
+          </div>}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -1262,7 +1502,7 @@ function UsersPage({ addToast, canManageAdmins }) {
               )}
               {filtered.map(u => (
                 <tr key={u.id}>
-                  <td style={{fontWeight:600,color:'var(--text)'}}>{u.name || '—'}</td>
+                  <td style={{fontWeight:600,color:'var(--text)',cursor:'pointer'}} onClick={() => selectUser(u)}>{u.name || '—'}</td>
                   <td className="mono">{u.email}</td>
                   <td>
                     {u.is_superuser && <span className="badge badge-admin" style={{marginRight:'4px',background:'rgba(201,168,76,0.12)',color:'#c9a84c'}}>Superuser</span>}
@@ -1272,40 +1512,13 @@ function UsersPage({ addToast, canManageAdmins }) {
                   </td>
                   <td>{formatDate(u.created_at)}</td>
                   <td>
-                    <button className="btn btn-sm" onClick={() => setSelectedUser(u)}><Icons.Eye /></button>
+                    <button className="btn btn-sm" onClick={() => selectUser(u)}><Icons.Eye /></button>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      )}
-
-      {selectedUser && (
-        <Modal
-          title={`User: ${selectedUser.name || selectedUser.email}`}
-          onClose={() => setSelectedUser(null)}
-          footer={
-            <div className="btn-group">
-              <button className="btn btn-danger btn-sm" onClick={() => deleteUser(selectedUser.id, selectedUser)}>Delete</button>
-              <button className={`btn btn-sm ${selectedUser.is_banned ? 'btn-primary' : 'btn-danger'}`} onClick={() => toggleBan(selectedUser)}>
-                {selectedUser.is_banned ? 'Unban' : 'Ban'}
-              </button>
-              <button className="btn btn-sm" onClick={() => toggleAdmin(selectedUser)} disabled={!canManageAdmins}>
-                {selectedUser.is_admin ? 'Remove Admin' : 'Make Admin'}
-              </button>
-            </div>
-          }
-        >
-          <div style={{fontSize:'13px',display:'grid',gap:'10px'}}>
-            <div><span style={{color:'var(--text-muted)'}}>ID: </span><span className="mono" style={{fontSize:'11px'}}>{selectedUser.id}</span></div>
-            <div><span style={{color:'var(--text-muted)'}}>Name: </span>{selectedUser.name || '—'}</div>
-            <div><span style={{color:'var(--text-muted)'}}>Email: </span>{selectedUser.email}</div>
-            <div><span style={{color:'var(--text-muted)'}}>Joined: </span>{formatDateTime(selectedUser.created_at)}</div>
-            <div><span style={{color:'var(--text-muted)'}}>Admin: </span>{selectedUser.is_admin ? '✓ Yes' : 'No'}</div>
-            <div><span style={{color:'var(--text-muted)'}}>Banned: </span>{selectedUser.is_banned ? '✓ Yes' : 'No'}</div>
-          </div>
-        </Modal>
       )}
     </div>
   );
@@ -1316,11 +1529,14 @@ function UsersPage({ addToast, canManageAdmins }) {
 // ═══════════════════════════════
 function CharactersPage({ addToast, canDeleteContent }) {
   const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState(null);
+  const [filterFlag, setFilterFlag] = useState('all');
+  const [selectedIds, setSelectedIds] = useState(new Set());
 
   const { data: characters, loading, error, refetch } = useAdminQuery(async (db) => {
     const { data, error } = await db
       .from('characters')
-      .select('id, owner_id, data, created_at, updated_at')
+      .select('id, owner_id, name, race, class, level, builder_type, data, flagged, flag_reason, created_at, updated_at')
       .order('updated_at', { ascending: false })
       .limit(500);
     if (error) throw error;
@@ -1328,11 +1544,12 @@ function CharactersPage({ addToast, canDeleteContent }) {
   });
 
   const filtered = (characters || []).filter(c => {
+    if (filterFlag === 'flagged' && !c.flagged) return false;
     if (!search) return true;
     const d    = c.data || {};
-    const name = (d.name || '').toLowerCase();
-    const race = (d.race || '').toLowerCase();
-    const cls  = (d.class || d.class_ || '').toLowerCase();
+    const name = (d.name || c.name || '').toLowerCase();
+    const race = (d.race || c.race || '').toLowerCase();
+    const cls  = (d.class || d.class_ || c.class || '').toLowerCase();
     const q    = search.toLowerCase();
     return name.includes(q) || race.includes(q) || cls.includes(q) ||
            (c.owner_id || '').toLowerCase().includes(q);
@@ -1344,7 +1561,110 @@ function CharactersPage({ addToast, canDeleteContent }) {
     const { error } = await sb.from('characters').delete().eq('id', id);
     if (error) { addToast('Delete failed: ' + error.message, 'error'); return; }
     addToast('Character deleted.', 'success');
+    setSelected(null);
     refetch();
+  }
+
+  async function toggleFlag(c, reason) {
+    const next = !c.flagged;
+    const { error } = await sb.from('characters').update({ flagged: next, flag_reason: next ? (reason || 'Flagged by admin') : null }).eq('id', c.id);
+    if (error) { addToast('Flag update failed: ' + error.message, 'error'); return; }
+    addToast(next ? 'Character flagged.' : 'Flag removed.', next ? 'error' : 'success');
+    refetch();
+  }
+
+  async function bulkFlag() {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    const { error } = await sb.from('characters').update({ flagged: true, flag_reason: 'Bulk flagged by admin' }).in('id', ids);
+    if (error) { addToast('Bulk flag failed: ' + error.message, 'error'); return; }
+    addToast(ids.length + ' characters flagged.', 'success');
+    setSelectedIds(new Set());
+    refetch();
+  }
+
+  async function bulkDelete() {
+    if (selectedIds.size === 0 || !canDeleteContent) return;
+    if (!confirm('Delete ' + selectedIds.size + ' characters? This cannot be undone.')) return;
+    const ids = Array.from(selectedIds);
+    const { error } = await sb.from('characters').delete().in('id', ids);
+    if (error) { addToast('Bulk delete failed: ' + error.message, 'error'); return; }
+    addToast(ids.length + ' characters deleted.', 'success');
+    setSelectedIds(new Set());
+    refetch();
+  }
+
+  function toggleSelect(id) {
+    setSelectedIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  }
+
+  // Detail view
+  if (selected) {
+    const d = selected.data || {};
+    const abilities = d.abilities || d.abilityScores || {};
+    const equipment = d.equipment || d.items || [];
+    const spells = d.spells || d.spellsKnown || [];
+    const feats = d.feats || [];
+    const skills = d.skills || {};
+    return (
+      <div>
+        <button className="btn btn-sm" onClick={() => setSelected(null)} style={{marginBottom:'16px'}}><Icons.Back /> Back to Characters</button>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:'20px'}}>
+          <div>
+            <h1 style={{fontFamily:'Cinzel,serif',fontSize:'22px',fontWeight:600,letterSpacing:'1px',marginBottom:'4px'}}>{d.name || selected.name || 'Unnamed Character'}</h1>
+            <div style={{fontSize:'13px',color:'var(--text-muted)'}}>
+              {[d.race || selected.race, d.class || d.class_ || selected.class].filter(Boolean).join(' · ')} {d.level || selected.level ? '(Level ' + (d.level || selected.level) + ')' : ''}
+            </div>
+          </div>
+          <div className="btn-group">
+            <button className={`btn btn-sm ${selected.flagged ? 'btn-primary' : 'btn-danger'}`} onClick={() => toggleFlag(selected)}>{selected.flagged ? 'Unflag' : 'Flag'}</button>
+            <button className="btn btn-sm btn-danger" onClick={() => deleteCharacter(selected.id)} disabled={!canDeleteContent}>Delete</button>
+          </div>
+        </div>
+        {selected.flagged && <div style={{padding:'10px 14px',background:'rgba(239,68,68,0.08)',border:'1px solid rgba(239,68,68,0.2)',borderRadius:6,marginBottom:'16px',fontSize:'13px',color:'#ef4444'}}>Flagged: {selected.flag_reason || 'No reason given'}</div>}
+
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px'}}>
+          <div className="card">
+            <div className="card-header"><h2>Details</h2></div>
+            <div className="card-body" style={{fontSize:'13px',display:'grid',gap:'8px'}}>
+              <div><span style={{color:'var(--text-muted)'}}>Owner ID: </span><span className="mono" style={{fontSize:'11px'}}>{selected.owner_id}</span></div>
+              <div><span style={{color:'var(--text-muted)'}}>System: </span>{(d.system === '3.5e' || d.bab !== undefined || d.class_) ? '3.5e' : '5e'}</div>
+              <div><span style={{color:'var(--text-muted)'}}>Created: </span>{formatDateTime(selected.created_at)}</div>
+              <div><span style={{color:'var(--text-muted)'}}>Updated: </span>{formatDateTime(selected.updated_at)}</div>
+              <div><span style={{color:'var(--text-muted)'}}>HP: </span>{d.hp || d.hitPoints || d.maxHp || '—'}</div>
+              <div><span style={{color:'var(--text-muted)'}}>AC: </span>{d.ac || d.armorClass || '—'}</div>
+              <div><span style={{color:'var(--text-muted)'}}>Background: </span>{d.background || '—'}</div>
+              <div><span style={{color:'var(--text-muted)'}}>Alignment: </span>{d.alignment || '—'}</div>
+            </div>
+          </div>
+          <div className="card">
+            <div className="card-header"><h2>Ability Scores</h2></div>
+            <div className="card-body" style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'8px'}}>
+              {['STR','DEX','CON','INT','WIS','CHA'].map(ab => {
+                const val = abilities[ab] || abilities[ab.toLowerCase()] || abilities[ab.charAt(0) + ab.slice(1).toLowerCase()] || '—';
+                return <div key={ab} style={{textAlign:'center',padding:'8px',background:'rgba(255,255,255,0.02)',borderRadius:4}}><div style={{fontSize:'10px',color:'var(--text-muted)',letterSpacing:'1px'}}>{ab}</div><div style={{fontSize:'18px',fontWeight:600}}>{typeof val === 'object' ? (val.score || val.value || '—') : val}</div></div>;
+              })}
+            </div>
+          </div>
+          {feats.length > 0 && <div className="card">
+            <div className="card-header"><h2>Feats ({feats.length})</h2></div>
+            <div className="card-body" style={{fontSize:'13px'}}>{feats.map((f, i) => <div key={i} style={{padding:'4px 0',borderBottom:'1px solid var(--border-mid)'}}>{typeof f === 'string' ? f : (f.name || f.feat || JSON.stringify(f))}</div>)}</div>
+          </div>}
+          {Array.isArray(equipment) && equipment.length > 0 && <div className="card">
+            <div className="card-header"><h2>Equipment ({equipment.length})</h2></div>
+            <div className="card-body" style={{fontSize:'13px'}}>{equipment.slice(0, 30).map((e, i) => <div key={i} style={{padding:'4px 0',borderBottom:'1px solid var(--border-mid)'}}>{typeof e === 'string' ? e : (e.name || e.item || JSON.stringify(e))}</div>)}{equipment.length > 30 && <div style={{color:'var(--text-muted)',padding:'8px 0'}}>+ {equipment.length - 30} more items</div>}</div>
+          </div>}
+          {Array.isArray(spells) && spells.length > 0 && <div className="card">
+            <div className="card-header"><h2>Spells ({spells.length})</h2></div>
+            <div className="card-body" style={{fontSize:'13px'}}>{spells.slice(0, 20).map((s, i) => <div key={i} style={{padding:'4px 0',borderBottom:'1px solid var(--border-mid)'}}>{typeof s === 'string' ? s : (s.name || s.spell || JSON.stringify(s))}</div>)}{spells.length > 20 && <div style={{color:'var(--text-muted)',padding:'8px 0'}}>+ {spells.length - 20} more spells</div>}</div>
+          </div>}
+          {Object.keys(skills).length > 0 && <div className="card" style={{gridColumn:'1 / -1'}}>
+            <div className="card-header"><h2>Skills</h2></div>
+            <div className="card-body" style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:'4px',fontSize:'12px'}}>{Object.entries(skills).map(([k, v]) => <div key={k}><span style={{color:'var(--text-muted)'}}>{k}: </span>{typeof v === 'object' ? (v.total || v.bonus || v.value || '—') : v}</div>)}</div>
+          </div>}
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -1354,9 +1674,20 @@ function CharactersPage({ addToast, canDeleteContent }) {
         <button className="btn" onClick={refetch}><Icons.Refresh /> Refresh</button>
       </div>
 
-      <div className="search-bar" style={{marginBottom:'20px',maxWidth:'360px'}}>
-        <Icons.Search />
-        <input placeholder="Search by name, race, or class…" value={search} onChange={e => setSearch(e.target.value)} />
+      <div style={{display:'flex',gap:'16px',alignItems:'center',marginBottom:'20px',flexWrap:'wrap'}}>
+        <div className="search-bar" style={{maxWidth:'360px'}}>
+          <Icons.Search />
+          <input placeholder="Search by name, race, or class…" value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <div className="filter-pills">
+          {[['all','All'],['flagged','Flagged']].map(([k,l]) => (
+            <span key={k} className={`pill ${filterFlag===k?'active':''}`} onClick={() => setFilterFlag(k)}>{l}</span>
+          ))}
+        </div>
+        {selectedIds.size > 0 && <div className="btn-group">
+          <button className="btn btn-sm btn-danger" onClick={bulkFlag}>Flag ({selectedIds.size})</button>
+          <button className="btn btn-sm btn-danger" onClick={bulkDelete} disabled={!canDeleteContent}>Delete ({selectedIds.size})</button>
+        </div>}
       </div>
 
       {loading && <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)',fontFamily:'Spectral,serif'}}>Loading…</div>}
@@ -1366,24 +1697,30 @@ function CharactersPage({ addToast, canDeleteContent }) {
         <div className="card">
           <table className="data-table">
             <thead>
-              <tr><th>Character Name</th><th>Race · Class</th><th>Level</th><th>System</th><th>Updated</th><th></th></tr>
+              <tr><th style={{width:'30px'}}></th><th>Character Name</th><th>Race · Class</th><th>Level</th><th>System</th><th>Updated</th><th></th></tr>
             </thead>
             <tbody>
               {filtered.length === 0 && (
-                <tr><td colSpan="6" style={{textAlign:'center',color:'var(--text-muted)',padding:'40px 16px'}}>No characters found.</td></tr>
+                <tr><td colSpan="7" style={{textAlign:'center',color:'var(--text-muted)',padding:'40px 16px'}}>No characters found.</td></tr>
               )}
               {filtered.map(c => {
                 const d   = c.data || {};
-                const sub = [d.race, d.class || d.class_].filter(Boolean).join(' · ') || '—';
+                const sub = [d.race || c.race, d.class || d.class_ || c.class].filter(Boolean).join(' · ') || '—';
                 return (
-                  <tr key={c.id}>
-                    <td style={{fontWeight:600,color:'var(--text)'}}>{d.name || 'Unnamed'}</td>
+                  <tr key={c.id} style={c.flagged ? {background:'rgba(239,68,68,0.04)'} : {}}>
+                    <td><input type="checkbox" checked={selectedIds.has(c.id)} onChange={() => toggleSelect(c.id)} /></td>
+                    <td style={{fontWeight:600,color:'var(--text)',cursor:'pointer'}} onClick={() => setSelected(c)}>
+                      {d.name || c.name || 'Unnamed'} {c.flagged && <span style={{color:'#ef4444',fontSize:'10px'}}>⚑</span>}
+                    </td>
                     <td>{sub}</td>
-                    <td>{d.level || '—'}</td>
+                    <td>{d.level || c.level || '—'}</td>
                     <td><span className="badge badge-info">{(d.system === '3.5e' || d.bab !== undefined || d.class_) ? '3.5e' : '5e'}</span></td>
                     <td>{timeAgo(c.updated_at)}</td>
                     <td>
-                      <button className="btn btn-sm btn-danger" onClick={() => deleteCharacter(c.id)} disabled={!canDeleteContent}>Delete</button>
+                      <div className="btn-group">
+                        <button className="btn btn-sm" onClick={() => setSelected(c)}><Icons.Eye /></button>
+                        <button className="btn btn-sm btn-danger" onClick={() => deleteCharacter(c.id)} disabled={!canDeleteContent}>Delete</button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -1432,7 +1769,8 @@ function TrafficPage() {
       v.indexOf('%3e') !== -1 ||
       v.indexOf('union%20select') !== -1 ||
       v.indexOf('..') !== -1 ||
-      v.indexOf('script') !== -1
+      v.indexOf('<script') !== -1 ||
+      v.indexOf('script>') !== -1
     );
   }, []);
 
@@ -1835,7 +2173,7 @@ function ManageAdminsCard({ addToast, canManageAdmins }) {
     if (!sb) { setLoading(false); return; }
     setLoading(true);
     sb.from('profiles').select('*')
-      .eq('is_admin', true).order('email')
+      .or('is_admin.eq.true,is_superuser.eq.true').order('email')
       .then(r => { setAdmins(r.data || []); setLoading(false); })
       .catch(() => setLoading(false));
   }
@@ -1999,10 +2337,12 @@ create table if not exists public.profiles (
   id         uuid references auth.users on delete cascade primary key,
   name       text,
   email      text,
-  is_admin   boolean default false,
+  is_admin    boolean default false,
   is_superuser boolean default false,
-  is_banned  boolean default false,
-  created_at timestamptz default now()
+  is_banned   boolean default false,
+  admin_notes text,
+  tags        text[],
+  created_at  timestamptz default now()
 );
 alter table public.profiles enable row level security;
 create policy "Self read"     on public.profiles for select using (auth.uid() = id);
@@ -2014,8 +2354,14 @@ create policy "Superuser all" on public.profiles for all using (
 create table if not exists public.characters (
   id           uuid primary key default gen_random_uuid(),
   owner_id     uuid references auth.users on delete cascade not null,
+  name         text,
+  race         text,
+  class        text,
+  level        integer default 1,
   data         jsonb not null default '{}',
   builder_type text  default '5e',
+  flagged      boolean default false,
+  flag_reason  text,
   created_at   timestamptz default now(),
   updated_at   timestamptz default now()
 );
@@ -2028,11 +2374,17 @@ create policy "Superuser delete" on public.characters for delete using (
 
 -- campaigns
 create table if not exists public.campaigns (
-  id         uuid primary key default gen_random_uuid(),
-  owner_id   uuid references auth.users on delete cascade not null,
-  data       jsonb not null default '{}',
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
+  id          uuid primary key default gen_random_uuid(),
+  owner_id    uuid references auth.users on delete cascade not null,
+  name        text default 'Unnamed Campaign',
+  description text,
+  system      text default '5e',
+  invite_code text,
+  data        jsonb not null default '{}',
+  flagged     boolean default false,
+  flag_reason text,
+  created_at  timestamptz default now(),
+  updated_at  timestamptz default now()
 );
 alter table public.campaigns enable row level security;
 create policy "Own access" on public.campaigns for all using (auth.uid() = owner_id);
@@ -2053,6 +2405,21 @@ create policy "Anon insert" on public.site_visits for insert with check (true);
 create policy "Admin read"  on public.site_visits for select using (
   exists (select 1 from public.profiles where id = auth.uid() and (is_admin = true or is_superuser = true)));
 
+-- site_errors (client-side JS error reporting)
+create table if not exists public.site_errors (
+  id         bigserial primary key,
+  message    text,
+  stack      text,
+  page       text,
+  user_agent text,
+  user_id    uuid,
+  created_at timestamptz default now()
+);
+alter table public.site_errors enable row level security;
+create policy "Anon insert" on public.site_errors for insert with check (true);
+create policy "Admin read"  on public.site_errors for select using (
+  exists (select 1 from public.profiles where id = auth.uid() and (is_admin = true or is_superuser = true)));
+
 -- auto-create profile on signup
 create or replace function public.handle_new_user()
 returns trigger language plpgsql security definer as $$
@@ -2069,6 +2436,411 @@ create trigger on_auth_user_created after insert on auth.users
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════
+// FLAGGED CONTENT PAGE
+// ═══════════════════════════════
+function FlaggedContentPage({ addToast, canDeleteContent }) {
+  const { data, loading, error, refetch } = useAdminQuery(async (db) => {
+    const [chars, camps] = await Promise.all([
+      db.from('characters').select('id, owner_id, name, race, class, level, data, flagged, flag_reason, updated_at').eq('flagged', true).order('updated_at', { ascending: false }).limit(100).then(r => r.data || []).catch(() => []),
+      Promise.resolve(db.from('campaigns').select('id, owner_id, name, data, flagged, flag_reason, updated_at').eq('flagged', true).order('updated_at', { ascending: false }).limit(100)).then(r => r.data || []).catch(() => []),
+    ]);
+    return { characters: chars, campaigns: camps };
+  });
+
+  const flagged = data || { characters: [], campaigns: [] };
+  const total = flagged.characters.length + flagged.campaigns.length;
+
+  async function unflagChar(id) {
+    await sb.from('characters').update({ flagged: false, flag_reason: null }).eq('id', id);
+    addToast('Character unflagged.', 'success'); refetch();
+  }
+  async function unflagCamp(id) {
+    await sb.from('campaigns').update({ flagged: false, flag_reason: null }).eq('id', id);
+    addToast('Campaign unflagged.', 'success'); refetch();
+  }
+  async function deleteChar(id) {
+    if (!canDeleteContent) return;
+    if (!confirm('Delete this character?')) return;
+    await sb.from('characters').delete().eq('id', id);
+    addToast('Character deleted.', 'success'); refetch();
+  }
+  async function deleteCamp(id) {
+    if (!canDeleteContent) return;
+    if (!confirm('Delete this campaign?')) return;
+    await sb.from('campaigns').delete().eq('id', id);
+    addToast('Campaign deleted.', 'success'); refetch();
+  }
+
+  return (
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px'}}>
+        <h1 style={{fontFamily:'Cinzel,serif',fontSize:'20px',fontWeight:600,letterSpacing:'1px'}}>Flagged Content</h1>
+        <div style={{display:'flex',alignItems:'center',gap:'12px'}}>
+          <span style={{fontSize:'13px',color:'var(--text-muted)'}}>{total} flagged items</span>
+          <button className="btn" onClick={refetch}><Icons.Refresh /> Refresh</button>
+        </div>
+      </div>
+
+      {loading && <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)',fontFamily:'Spectral,serif'}}>Loading…</div>}
+      {error && <div style={{padding:'20px',color:'var(--danger)',fontFamily:'Spectral,serif'}}>{error}</div>}
+
+      {!loading && !error && total === 0 && (
+        <div className="card"><div className="card-body" style={{textAlign:'center',padding:'60px',color:'var(--text-muted)'}}>
+          <div style={{fontSize:'32px',marginBottom:'12px'}}>✓</div>
+          <div style={{fontFamily:'Spectral,serif',fontSize:'16px'}}>No flagged content. All clear.</div>
+        </div></div>
+      )}
+
+      {flagged.characters.length > 0 && (
+        <div className="card" style={{marginBottom:'20px'}}>
+          <div className="card-header"><h2>Flagged Characters ({flagged.characters.length})</h2></div>
+          <table className="data-table">
+            <thead><tr><th>Name</th><th>Reason</th><th>Owner</th><th>Updated</th><th></th></tr></thead>
+            <tbody>{flagged.characters.map(c => {
+              const d = c.data || {};
+              return (
+                <tr key={c.id} style={{background:'rgba(239,68,68,0.04)'}}>
+                  <td style={{fontWeight:600}}>{d.name || c.name || 'Unnamed'}</td>
+                  <td style={{fontSize:'12px',color:'#ef4444'}}>{c.flag_reason || '—'}</td>
+                  <td className="mono" style={{fontSize:'11px'}}>{c.owner_id}</td>
+                  <td>{timeAgo(c.updated_at)}</td>
+                  <td><div className="btn-group">
+                    <button className="btn btn-sm btn-primary" onClick={() => unflagChar(c.id)}>Unflag</button>
+                    <button className="btn btn-sm btn-danger" onClick={() => deleteChar(c.id)} disabled={!canDeleteContent}>Delete</button>
+                  </div></td>
+                </tr>
+              );
+            })}</tbody>
+          </table>
+        </div>
+      )}
+
+      {flagged.campaigns.length > 0 && (
+        <div className="card">
+          <div className="card-header"><h2>Flagged Campaigns ({flagged.campaigns.length})</h2></div>
+          <table className="data-table">
+            <thead><tr><th>Name</th><th>Reason</th><th>Owner</th><th>Updated</th><th></th></tr></thead>
+            <tbody>{flagged.campaigns.map(c => {
+              const name = (c.data && c.data.name) || c.name || 'Untitled';
+              return (
+                <tr key={c.id} style={{background:'rgba(239,68,68,0.04)'}}>
+                  <td style={{fontWeight:600}}>{name}</td>
+                  <td style={{fontSize:'12px',color:'#ef4444'}}>{c.flag_reason || '—'}</td>
+                  <td className="mono" style={{fontSize:'11px'}}>{c.owner_id}</td>
+                  <td>{timeAgo(c.updated_at)}</td>
+                  <td><div className="btn-group">
+                    <button className="btn btn-sm btn-primary" onClick={() => unflagCamp(c.id)}>Unflag</button>
+                    <button className="btn btn-sm btn-danger" onClick={() => deleteCamp(c.id)} disabled={!canDeleteContent}>Delete</button>
+                  </div></td>
+                </tr>
+              );
+            })}</tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════
+// ERROR LOG PAGE
+// ═══════════════════════════════
+function ErrorLogPage() {
+  const [filterText, setFilterText] = useState('');
+  const [rangeDays, setRangeDays] = useState(7);
+
+  const { data: errors, loading, error, refetch } = useAdminQuery(async (db) => {
+    const cutoff = new Date(Date.now() - rangeDays * 86400000).toISOString();
+    const { data, error } = await db
+      .from('site_errors')
+      .select('*')
+      .gte('created_at', cutoff)
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (error) throw error;
+    return data || [];
+  }, [rangeDays]);
+
+  const filtered = (errors || []).filter(e => {
+    if (!filterText) return true;
+    const q = filterText.toLowerCase();
+    return (e.message || '').toLowerCase().includes(q) || (e.page || '').toLowerCase().includes(q);
+  });
+
+  const grouped = useMemo(() => {
+    const map = {};
+    (filtered || []).forEach(e => {
+      const key = (e.message || 'Unknown error').slice(0, 120);
+      if (!map[key]) map[key] = { message: key, count: 0, lastSeen: e.created_at, pages: new Set(), users: new Set() };
+      map[key].count++;
+      if (e.page) map[key].pages.add(e.page);
+      if (e.user_id) map[key].users.add(e.user_id);
+      if (e.created_at > map[key].lastSeen) map[key].lastSeen = e.created_at;
+    });
+    return Object.values(map).sort((a, b) => b.count - a.count);
+  }, [filtered]);
+
+  return (
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px'}}>
+        <h1 style={{fontFamily:'Cinzel,serif',fontSize:'20px',fontWeight:600,letterSpacing:'1px'}}>Error Log</h1>
+        <div style={{display:'flex',gap:'8px',alignItems:'center'}}>
+          <div className="filter-pills">
+            {[7,14,30].map(d => <span key={d} className={`pill ${rangeDays===d?'active':''}`} onClick={() => setRangeDays(d)}>{d}d</span>)}
+          </div>
+          <button className="btn" onClick={refetch}><Icons.Refresh /></button>
+        </div>
+      </div>
+
+      <div className="stat-grid" style={{marginBottom:'20px'}}>
+        <div className="stat-card"><div className="stat-label">Total Errors</div><div className="stat-value">{filtered.length}</div></div>
+        <div className="stat-card"><div className="stat-label">Unique Errors</div><div className="stat-value">{grouped.length}</div></div>
+        <div className="stat-card"><div className="stat-label">Affected Pages</div><div className="stat-value">{new Set((filtered || []).map(e => e.page).filter(Boolean)).size}</div></div>
+        <div className="stat-card"><div className="stat-label">Affected Users</div><div className="stat-value">{new Set((filtered || []).map(e => e.user_id).filter(Boolean)).size}</div></div>
+      </div>
+
+      <div className="search-bar" style={{marginBottom:'20px',maxWidth:'400px'}}>
+        <Icons.Search />
+        <input placeholder="Filter by error message or page…" value={filterText} onChange={e => setFilterText(e.target.value)} />
+      </div>
+
+      {loading && <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)'}}>Loading…</div>}
+      {error && <div style={{padding:'20px',color:'var(--danger)'}}>{error}</div>}
+
+      {!loading && !error && grouped.length === 0 && (
+        <div className="card"><div className="card-body" style={{textAlign:'center',padding:'60px',color:'var(--text-muted)'}}>
+          <div style={{fontSize:'32px',marginBottom:'12px'}}>✓</div>
+          <div style={{fontFamily:'Spectral,serif',fontSize:'16px'}}>No errors in the last {rangeDays} days.</div>
+        </div></div>
+      )}
+
+      {!loading && !error && grouped.length > 0 && (
+        <div className="card">
+          <table className="data-table">
+            <thead><tr><th>Error Message</th><th>Count</th><th>Pages</th><th>Users</th><th>Last Seen</th></tr></thead>
+            <tbody>{grouped.map((g, i) => (
+              <tr key={i}>
+                <td style={{fontFamily:'monospace',fontSize:'11px',maxWidth:'400px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',color:'#ef4444'}}>{g.message}</td>
+                <td style={{fontWeight:600}}>{g.count}</td>
+                <td>{g.pages.size}</td>
+                <td>{g.users.size}</td>
+                <td>{timeAgo(g.lastSeen)}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════
+// ENGAGEMENT PAGE
+// ═══════════════════════════════
+function EngagementPage() {
+  const [rangeDays, setRangeDays] = useState(30);
+
+  const { data, loading, error, refetch } = useAdminQuery(async (db) => {
+    const cutoff = new Date(Date.now() - rangeDays * 86400000).toISOString();
+    const [profiles, chars, camps, visits] = await Promise.all([
+      db.from('profiles').select('id, created_at').order('created_at', { ascending: false }).limit(2000).then(r => r.data || []).catch(() => []),
+      db.from('characters').select('id, owner_id, created_at').order('created_at', { ascending: false }).limit(2000).then(r => r.data || []).catch(() => []),
+      Promise.resolve(db.from('campaigns').select('id, owner_id, data, system, created_at').order('created_at', { ascending: false }).limit(1000)).then(r => r.data || []).catch(() => []),
+      db.from('site_visits').select('user_id, page, visited_at').gte('visited_at', cutoff).order('visited_at', { ascending: false }).limit(5000).then(r => r.data || []).catch(() => []),
+    ]);
+    return { profiles, chars, camps, visits };
+  }, [rangeDays]);
+
+  const stats = useMemo(() => {
+    if (!data) return null;
+    const { profiles, chars, camps, visits } = data;
+    const now = Date.now();
+    const cutoffMs = rangeDays * 86400000;
+
+    // Sign-ups over time (by day)
+    const signupsByDay = {};
+    profiles.forEach(p => { const d = (p.created_at || '').slice(0, 10); if (d) signupsByDay[d] = (signupsByDay[d] || 0) + 1; });
+
+    // Active users (visited in range)
+    const activeUserIds = new Set();
+    const visitsByPage = {};
+    visits.forEach(v => {
+      if (v.user_id) activeUserIds.add(v.user_id);
+      const p = v.page || '/';
+      visitsByPage[p] = (visitsByPage[p] || 0) + 1;
+    });
+
+    // Churned users (signed up, not visited in range)
+    const churned = profiles.filter(p => !activeUserIds.has(p.id) && Date.parse(p.created_at) < now - cutoffMs).length;
+
+    // Funnel
+    const usersWithChars = new Set(chars.map(c => c.owner_id));
+    const usersWithCamps = new Set(camps.map(c => c.owner_id));
+    const totalUsers = profiles.length;
+    const withChar = usersWithChars.size;
+    const withCamp = usersWithCamps.size;
+    const withBoth = [...usersWithChars].filter(id => usersWithCamps.has(id)).length;
+
+    // Retention: cohort by sign-up week, % active in range
+    const cohorts = {};
+    profiles.forEach(p => {
+      const d = new Date(p.created_at);
+      const weekStart = new Date(d); weekStart.setDate(d.getDate() - d.getDay());
+      const key = weekStart.toISOString().slice(0, 10);
+      if (!cohorts[key]) cohorts[key] = { week: key, total: 0, active: 0 };
+      cohorts[key].total++;
+      if (activeUserIds.has(p.id)) cohorts[key].active++;
+    });
+    const cohortList = Object.values(cohorts).sort((a, b) => b.week.localeCompare(a.week)).slice(0, 12);
+
+    // Campaign stats
+    const systemCounts = {};
+    let totalPlayers = 0;
+    camps.forEach(c => {
+      const sys = (c.data && c.data.system) || c.system || '5e';
+      systemCounts[sys] = (systemCounts[sys] || 0) + 1;
+      const players = (c.data && (c.data.players || c.data.party || c.data.members)) || [];
+      totalPlayers += players.length;
+    });
+    const avgPartySize = camps.length > 0 ? (totalPlayers / camps.length).toFixed(1) : '—';
+
+    // Feature usage (top pages by logged-in visits)
+    const featurePages = Object.entries(visitsByPage)
+      .filter(([p]) => !p.includes('admin'))
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 10);
+
+    // Recent sign-ups (last N days)
+    const recentSignups = Object.entries(signupsByDay).sort((a, b) => b[0].localeCompare(a[0])).slice(0, Math.min(rangeDays, 30));
+    const maxSignup = Math.max(1, ...recentSignups.map(([, v]) => v));
+
+    return {
+      totalUsers, activeUsers: activeUserIds.size, churned,
+      withChar, withCamp, withBoth,
+      cohortList, systemCounts, avgPartySize,
+      featurePages, recentSignups, maxSignup,
+      totalChars: chars.length, totalCamps: camps.length,
+    };
+  }, [data, rangeDays]);
+
+  return (
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px'}}>
+        <h1 style={{fontFamily:'Cinzel,serif',fontSize:'20px',fontWeight:600,letterSpacing:'1px'}}>Engagement</h1>
+        <div style={{display:'flex',gap:'8px',alignItems:'center'}}>
+          <div className="filter-pills">
+            {[7,14,30,60].map(d => <span key={d} className={`pill ${rangeDays===d?'active':''}`} onClick={() => setRangeDays(d)}>{d}d</span>)}
+          </div>
+          <button className="btn" onClick={refetch}><Icons.Refresh /></button>
+        </div>
+      </div>
+
+      {loading && <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)'}}>Loading…</div>}
+      {error && <div style={{padding:'20px',color:'var(--danger)'}}>{error}</div>}
+
+      {!loading && !error && stats && (<>
+        <div className="stat-grid" style={{marginBottom:'20px'}}>
+          <div className="stat-card"><div className="stat-label">Total Users</div><div className="stat-value">{stats.totalUsers}</div></div>
+          <div className="stat-card"><div className="stat-label">Active ({rangeDays}d)</div><div className="stat-value" style={{color:'#5ee09a'}}>{stats.activeUsers}</div></div>
+          <div className="stat-card"><div className="stat-label">Churned</div><div className="stat-value" style={{color:'var(--text-muted)'}}>{stats.churned}</div></div>
+          <div className="stat-card"><div className="stat-label">Avg Party Size</div><div className="stat-value">{stats.avgPartySize}</div></div>
+        </div>
+
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px'}}>
+          {/* Funnel */}
+          <div className="card">
+            <div className="card-header"><h2>User Funnel</h2></div>
+            <div className="card-body">
+              {[
+                { label: 'Signed Up', value: stats.totalUsers, pct: 100 },
+                { label: 'Created a Character', value: stats.withChar, pct: stats.totalUsers ? Math.round(stats.withChar / stats.totalUsers * 100) : 0 },
+                { label: 'Started a Campaign', value: stats.withCamp, pct: stats.totalUsers ? Math.round(stats.withCamp / stats.totalUsers * 100) : 0 },
+                { label: 'Both', value: stats.withBoth, pct: stats.totalUsers ? Math.round(stats.withBoth / stats.totalUsers * 100) : 0 },
+              ].map((step, i) => (
+                <div key={i} style={{marginBottom:'12px'}}>
+                  <div style={{display:'flex',justifyContent:'space-between',fontSize:'13px',marginBottom:'4px'}}>
+                    <span>{step.label}</span>
+                    <span style={{color:'var(--accent)'}}>{step.value} ({step.pct}%)</span>
+                  </div>
+                  <div style={{height:'8px',background:'rgba(255,255,255,0.04)',borderRadius:4,overflow:'hidden'}}>
+                    <div style={{height:'100%',width:step.pct+'%',background:'var(--accent)',borderRadius:4,transition:'width .3s'}} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Campaign Systems */}
+          <div className="card">
+            <div className="card-header"><h2>Campaign Systems</h2></div>
+            <div className="card-body">
+              {Object.entries(stats.systemCounts).sort((a,b) => b[1]-a[1]).map(([sys, count]) => (
+                <div key={sys} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--border-mid)',fontSize:'13px'}}>
+                  <span style={{fontWeight:600}}>{sys}</span>
+                  <span style={{color:'var(--text-muted)'}}>{count} campaigns</span>
+                </div>
+              ))}
+              {Object.keys(stats.systemCounts).length === 0 && <div style={{color:'var(--text-muted)',fontSize:'13px',padding:'16px 0',textAlign:'center'}}>No campaigns yet.</div>}
+            </div>
+          </div>
+
+          {/* Sign-ups chart */}
+          <div className="card">
+            <div className="card-header"><h2>Sign-ups by Day</h2></div>
+            <div className="card-body" style={{maxHeight:'220px',overflowY:'auto'}}>
+              {stats.recentSignups.map(([day, count]) => (
+                <div key={day} style={{display:'flex',alignItems:'center',gap:'8px',padding:'3px 0',fontSize:'12px'}}>
+                  <span style={{width:'80px',color:'var(--text-muted)',flexShrink:0}}>{day.slice(5)}</span>
+                  <div style={{flex:1,height:'6px',background:'rgba(255,255,255,0.04)',borderRadius:3}}>
+                    <div style={{height:'100%',width:Math.max(2, count/stats.maxSignup*100)+'%',background:'var(--accent)',borderRadius:3}} />
+                  </div>
+                  <span style={{width:'24px',textAlign:'right',color:'var(--text-muted)'}}>{count}</span>
+                </div>
+              ))}
+              {stats.recentSignups.length === 0 && <div style={{color:'var(--text-muted)',fontSize:'13px',padding:'16px 0',textAlign:'center'}}>No sign-ups in range.</div>}
+            </div>
+          </div>
+
+          {/* Feature usage */}
+          <div className="card">
+            <div className="card-header"><h2>Feature Usage (Top Pages)</h2></div>
+            <div className="card-body">
+              {stats.featurePages.map(([page, count], i) => (
+                <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'6px 0',borderBottom:'1px solid var(--border-mid)',fontSize:'12px'}}>
+                  <span className="mono" style={{maxWidth:'200px',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{page}</span>
+                  <span style={{fontWeight:600}}>{count}</span>
+                </div>
+              ))}
+              {stats.featurePages.length === 0 && <div style={{color:'var(--text-muted)',fontSize:'13px',padding:'16px 0',textAlign:'center'}}>No visit data.</div>}
+            </div>
+          </div>
+
+          {/* Retention cohorts */}
+          <div className="card" style={{gridColumn:'1 / -1'}}>
+            <div className="card-header"><h2>Retention by Sign-up Cohort</h2></div>
+            <table className="data-table">
+              <thead><tr><th>Week of</th><th>Signed Up</th><th>Active ({rangeDays}d)</th><th>Retention</th><th></th></tr></thead>
+              <tbody>{stats.cohortList.map(c => {
+                const pct = c.total > 0 ? Math.round(c.active / c.total * 100) : 0;
+                return (
+                  <tr key={c.week}>
+                    <td style={{fontWeight:600}}>{c.week}</td>
+                    <td>{c.total}</td>
+                    <td>{c.active}</td>
+                    <td style={{color: pct >= 50 ? '#5ee09a' : pct >= 25 ? 'var(--accent)' : '#ef4444'}}>{pct}%</td>
+                    <td style={{width:'120px'}}><div style={{height:'6px',background:'rgba(255,255,255,0.04)',borderRadius:3}}><div style={{height:'100%',width:pct+'%',background: pct >= 50 ? '#5ee09a' : pct >= 25 ? 'var(--accent)' : '#ef4444',borderRadius:3}} /></div></td>
+                  </tr>
+                );
+              })}</tbody>
+            </table>
+          </div>
+        </div>
+      </>)}
     </div>
   );
 }
@@ -2143,8 +2915,12 @@ function AdminApp() {
     { id: 'users',       label: 'Users',        icon: Icons.Users },
     { id: 'characters',  label: 'Characters',   icon: Icons.Keys },
     { id: 'campaigns',   label: 'Campaigns',    icon: Icons.Tenants },
+    { section: 'Moderation' },
+    { id: 'flagged',     label: 'Flagged',      icon: Icons.Shield },
     { section: 'Analytics' },
     { id: 'traffic',     label: 'Site Traffic', icon: Icons.RateLimit },
+    { id: 'engagement',  label: 'Engagement',   icon: Icons.Audit },
+    { id: 'errors',      label: 'Error Log',    icon: Icons.X },
     { section: 'System' },
     { id: 'settings',    label: 'Settings',     icon: Icons.Settings },
   ];
@@ -2155,7 +2931,10 @@ function AdminApp() {
       case 'users':      return <UsersPage addToast={addToast} canManageAdmins={canManageAdmins} />;
       case 'characters': return <CharactersPage addToast={addToast} canDeleteContent={canManageAdmins} />;
       case 'campaigns':  return <CampaignsPage addToast={addToast} canDeleteContent={canManageAdmins} />;
+      case 'flagged':    return <FlaggedContentPage addToast={addToast} canDeleteContent={canManageAdmins} />;
       case 'traffic':    return <TrafficPage />;
+      case 'engagement': return <EngagementPage />;
+      case 'errors':     return <ErrorLogPage />;
       case 'settings':   return <SettingsPage addToast={addToast} canManageAdmins={canManageAdmins} />;
       default:           return <DashboardPage onNavigate={setPage} />;
     }

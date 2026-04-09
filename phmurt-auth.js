@@ -1074,3 +1074,47 @@ window.addEventListener('storage', function (e) {
     window.dispatchEvent(new Event('phmurt-auth-change'));
   }
 });
+
+/* ── Client-side error reporter ─────────────────────────────────── */
+/* Logs unhandled JS errors to the site_errors Supabase table so
+   admins can see what's breaking for users. Rate-limited to prevent
+   flooding: max 5 errors per page load. */
+(function () {
+  var _errorCount = 0;
+  var _MAX_ERRORS = 5;
+
+  function _reportError(message, stack, page) {
+    if (_errorCount >= _MAX_ERRORS) return;
+    _errorCount++;
+    try {
+      var sb = (typeof phmurtSupabase !== 'undefined' && phmurtSupabase) ? phmurtSupabase : null;
+      if (!sb) return;
+      var sess = null;
+      try { sess = PhmurtDB.getSession(); } catch (e) {}
+      sb.from('site_errors').insert({
+        message: String(message || 'Unknown error').slice(0, 500),
+        stack: String(stack || '').slice(0, 2000),
+        page: (page || window.location.pathname || '/').slice(0, 200),
+        user_agent: (navigator.userAgent || '').slice(0, 300),
+        user_id: sess ? sess.userId : null,
+      }).then(function () {}).catch(function () {});
+    } catch (e) { /* Never let error reporting itself cause errors */ }
+  }
+
+  window.addEventListener('error', function (e) {
+    _reportError(
+      e.message || 'Script error',
+      e.error && e.error.stack ? e.error.stack : (e.filename || '') + ':' + (e.lineno || ''),
+      window.location.pathname
+    );
+  });
+
+  window.addEventListener('unhandledrejection', function (e) {
+    var reason = e.reason || {};
+    _reportError(
+      reason.message || String(reason).slice(0, 500),
+      reason.stack || '',
+      window.location.pathname
+    );
+  });
+})();
