@@ -533,15 +533,13 @@ var PhmurtDB = (function () {
       if (sb) {
         var builder = existingId ? (snapshot.builderType || '5e') : (snapshot.cls ? '5e' : '35e');
 
-        // Store builder type inside the data snapshot (not a separate column)
-        snapshot.builderType = builder;
-
         var row = {
           owner_id:     _session.userId,
           name:         name,
           race:         race,
           class:        cls,
           level:        level,
+          builder_type: builder,
           data:         snapshot,
           updated_at:   new Date().toISOString()
         };
@@ -653,7 +651,7 @@ var PhmurtDB = (function () {
       var sb = _sb();
       if (sb) {
         return sb.from('characters')
-          .select('id, name, race, class, level, data, created_at, updated_at')
+          .select('id, name, race, class, level, builder_type, created_at, updated_at')
           .eq('owner_id', _session.userId)
           .order('updated_at', { ascending: false })
           .then(function (r) { return r.data || []; })
