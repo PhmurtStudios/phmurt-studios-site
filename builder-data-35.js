@@ -225,10 +225,10 @@ DND35_DATA.classes = {
       {level:1,name:'Aura of Good',desc:'The power of a paladin\'s aura of good equals the paladin level.'},
       {level:1,name:'Detect Evil',desc:'At will, detect evil as the spell.'},
       {level:1,name:'Smite Evil',uses:'cha_mod_min1',recharge:'day',isDaily:true,desc:'+CHA mod to attack roll, +paladin level to damage. Must be evil target.'},
-      {level:1,name:'Divine Grace',desc:'+CHA modifier bonus on all saving throws.'},
+      {level:2,name:'Divine Grace',desc:'+CHA modifier bonus on all saving throws.'},
       {level:1,name:'Lay on Hands',uses:'level_x_cha',recharge:'day',isDaily:true,isPool:true,desc:'Heal hit points equal to paladin level × CHA modifier. Alternatively, deal damage to undead.'},
-      {level:2,name:'Aura of Courage',desc:'Immune to fear. Allies within 10 ft gain +4 morale bonus on fear saves.'},
-      {level:2,name:'Divine Health',desc:'Immune to all diseases including supernatural and magical.'}
+      {level:3,name:'Aura of Courage',desc:'Immune to fear. Allies within 10 ft gain +4 morale bonus on fear saves.'},
+      {level:3,name:'Divine Health',desc:'Immune to all diseases including supernatural and magical.'}
     ],
     equipment:[['Longsword','Any martial weapon'],['Full plate'],['Heavy steel shield']]
   },
@@ -976,7 +976,7 @@ DND35_DATA.classFeaturesByLevel = {
     1: ['1st Favored Enemy', 'Track', 'Wild Empathy'],
     2: ['Combat Style'],
     3: ['Endurance'],
-    4: ['Animal Companion'],
+    4: ['Animal Companion', 'Spellcasting'],
     5: ['2nd Favored Enemy'],
     6: ['Improved Combat Style'],
     7: ['Woodland Stride'],

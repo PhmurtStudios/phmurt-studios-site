@@ -7,7 +7,20 @@
   <meta name="referrer" content="strict-origin" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
   <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), usb=(), payment=(), serial=(), bluetooth=()" />
-  <title>Fantasy Map Generator</title>
+  <title>Fantasy Map Generator · Phmurt Studios</title>
+  <meta name="description" content="Generate fantasy maps for your D&D campaigns with our interactive fantasy map generator." />
+  <meta property="og:title" content="Fantasy Map Generator · Phmurt Studios" />
+  <meta property="og:description" content="Generate fantasy maps for your D&D campaigns." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://phmurtstudios.com/fantasy_map.html" />
+  <meta property="og:image" content="https://phmurtstudios.com/logo.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Fantasy Map Generator · Phmurt Studios" />
+  <meta name="twitter:description" content="Generate fantasy maps for your D&D campaigns." />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
   <link rel="stylesheet" href="style.css" />
   <style>
     * {
@@ -133,8 +146,11 @@
   </style>
   <script src="theme.js"></script>
 </head>
-<body>
-  <div class="container">
+<body data-nav-active="Fantasy Map" data-footer-copy="Roll Well. Play Weird.">
+
+  <a href="#main-content" class="ps-skip-nav">Skip to content</a>
+  <div id="ps-site-shell"></div>
+  <div id="main-content" class="container">
     <h1>Fantasy Map Generator</h1>
 
     <div class="controls">
@@ -156,6 +172,8 @@
       <p>Click "Generate Map" to create a new fantasy world. Use seeds to recreate worlds.</p>
     </div>
   </div>
+
+  <div id="ps-site-footer"></div>
 
   <script>
     // ============================================================================
@@ -2075,5 +2093,7 @@
       setTimeout(generate, 100);
     });
   </script>
+
+  <script src="phmurt-shell.js"></script>
 </body>
 </html>

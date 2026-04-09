@@ -698,6 +698,161 @@
     }
   };
 
+  const CLASS_FEATURE_TEMPLATES = {
+    fighting_style: {
+      name: 'Custom Fighting Style',
+      featureType: 'class',
+      className: 'Fighter',
+      level: 1,
+      description: 'You adopt a particular style of fighting as your specialty.',
+      mechanics: 'Choose a benefit: +2 to damage with melee weapons, +2 to AC when wearing armor, etc.',
+      prerequisite: 'None',
+      source: 'homebrew'
+    },
+    channel_divinity: {
+      name: 'Custom Channel Divinity',
+      featureType: 'class',
+      className: 'Cleric',
+      level: 2,
+      description: 'You gain the ability to channel divine energy directly from your deity.',
+      mechanics: 'As an action, you present your holy symbol and invoke divine power. Describe the effect.',
+      prerequisite: 'Cleric Level 2',
+      source: 'homebrew'
+    },
+    metamagic: {
+      name: 'Custom Metamagic',
+      featureType: 'class',
+      className: 'Sorcerer',
+      level: 3,
+      description: 'You can twist your spells to suit your needs using sorcery points.',
+      mechanics: 'When you cast a spell, you can spend sorcery points to modify it. Describe the modification.',
+      prerequisite: 'Sorcerer Level 3',
+      source: 'homebrew'
+    },
+    invocation: {
+      name: 'Custom Eldritch Invocation',
+      featureType: 'class',
+      className: 'Warlock',
+      level: 2,
+      description: 'In your study of occult lore, you have unearthed eldritch invocations.',
+      mechanics: 'You gain a passive or activatable ability. Describe its effect.',
+      prerequisite: 'Warlock Level 2',
+      source: 'homebrew'
+    },
+    ki_technique: {
+      name: 'Custom Ki Technique',
+      featureType: 'class',
+      className: 'Monk',
+      level: 3,
+      description: 'You channel ki into a specialized martial technique.',
+      mechanics: 'You can spend ki points to activate this technique. Describe the effect and ki cost.',
+      prerequisite: 'Monk Level 3',
+      source: 'homebrew'
+    },
+    wild_shape_form: {
+      name: 'Custom Wild Shape Form',
+      featureType: 'class',
+      className: 'Druid',
+      level: 2,
+      description: 'You can use your action to magically assume a new shape.',
+      mechanics: 'You transform into a custom creature. Define its stats, abilities, and limitations.',
+      prerequisite: 'Druid Level 2',
+      source: 'homebrew'
+    },
+    subclass_feature: {
+      name: 'Custom Subclass Feature',
+      featureType: 'subclass',
+      className: '',
+      subclassName: '',
+      level: 3,
+      description: 'A specialized ability gained through your chosen archetype.',
+      mechanics: 'Describe the mechanical effect of this subclass feature.',
+      prerequisite: 'Level 3 in parent class',
+      source: 'homebrew'
+    },
+    rage_feature: {
+      name: 'Custom Rage Feature',
+      featureType: 'class',
+      className: 'Barbarian',
+      level: 3,
+      description: 'Your rage manifests in a unique way tied to your primal path.',
+      mechanics: 'While raging, you gain an additional benefit. Describe the effect.',
+      prerequisite: 'Barbarian Level 3',
+      source: 'homebrew'
+    }
+  };
+
+  const FEAT_TEMPLATES = {
+    combat_feat: {
+      name: 'Custom Combat Feat',
+      category: 'combat',
+      prerequisite: 'None',
+      description: 'You have trained extensively in a specialized combat technique.',
+      benefits: [
+        'Increase your Strength or Dexterity score by 1, to a maximum of 20.',
+        'Describe your first combat benefit here.',
+        'Describe your second combat benefit here.'
+      ],
+      source: 'homebrew'
+    },
+    magic_feat: {
+      name: 'Custom Magic Feat',
+      category: 'magic',
+      prerequisite: 'Spellcasting or Pact Magic feature',
+      description: 'Your study of magic has granted you special capabilities.',
+      benefits: [
+        'You learn two cantrips of your choice from any spell list.',
+        'Describe your magical benefit here.'
+      ],
+      source: 'homebrew'
+    },
+    skill_feat: {
+      name: 'Custom Skill Feat',
+      category: 'skill',
+      prerequisite: 'None',
+      description: 'You have honed a particular set of skills to remarkable proficiency.',
+      benefits: [
+        'Increase one ability score of your choice by 1, to a maximum of 20.',
+        'You gain proficiency in one skill of your choice.',
+        'Describe your additional skill benefit here.'
+      ],
+      source: 'homebrew'
+    },
+    racial_feat: {
+      name: 'Custom Racial Feat',
+      category: 'racial',
+      prerequisite: 'Specific race required',
+      description: 'You have unlocked abilities tied to your heritage.',
+      benefits: [
+        'Increase one ability score of your choice by 1, to a maximum of 20.',
+        'Describe your racial benefit here.'
+      ],
+      source: 'homebrew'
+    },
+    defensive_feat: {
+      name: 'Custom Defensive Feat',
+      category: 'defensive',
+      prerequisite: 'None',
+      description: 'You have trained to protect yourself with exceptional skill.',
+      benefits: [
+        'Increase your Constitution score by 1, to a maximum of 20.',
+        'Describe your defensive benefit here.'
+      ],
+      source: 'homebrew'
+    },
+    utility_feat: {
+      name: 'Custom Utility Feat',
+      category: 'utility',
+      prerequisite: 'None',
+      description: 'You have developed a versatile set of abilities useful in many situations.',
+      benefits: [
+        'Describe your first utility benefit here.',
+        'Describe your second utility benefit here.'
+      ],
+      source: 'homebrew'
+    }
+  };
+
   // ============================================================================
   // HOMEBREWWORKSHOP CLASS
   // ============================================================================
@@ -709,11 +864,15 @@
       this.items.set('items', new Map());
       this.items.set('spells', new Map());
       this.items.set('npcs', new Map());
+      this.items.set('classFeatures', new Map());
+      this.items.set('feats', new Map());
       this._idCounters = {
         monsters: 0,
         items: 0,
         spells: 0,
-        npcs: 0
+        npcs: 0,
+        classFeatures: 0,
+        feats: 0
       };
     }
 
@@ -741,6 +900,12 @@
           break;
         case 'npcs':
           template = NPC_TEMPLATES[templateId];
+          break;
+        case 'classFeatures':
+          template = CLASS_FEATURE_TEMPLATES[templateId];
+          break;
+        case 'feats':
+          template = FEAT_TEMPLATES[templateId];
           break;
         default:
           throw new Error(`Unknown type: ${type}`);
@@ -982,6 +1147,8 @@
         items: Array.from(this.items.get('items').values()),
         spells: Array.from(this.items.get('spells').values()),
         npcs: Array.from(this.items.get('npcs').values()),
+        classFeatures: Array.from(this.items.get('classFeatures').values()),
+        feats: Array.from(this.items.get('feats').values()),
         _idCounters: this._idCounters
       };
       return JSON.stringify(data, null, 2);
@@ -1013,6 +1180,16 @@
         if (data.npcs) {
           for (const n of data.npcs) {
             this.items.get('npcs').set(n._id, n);
+          }
+        }
+        if (data.classFeatures) {
+          for (const cf of data.classFeatures) {
+            this.items.get('classFeatures').set(cf._id, cf);
+          }
+        }
+        if (data.feats) {
+          for (const f of data.feats) {
+            this.items.get('feats').set(f._id, f);
           }
         }
 
@@ -1080,4 +1257,6 @@
   window.ITEM_TEMPLATES = ITEM_TEMPLATES;
   window.SPELL_TEMPLATES = SPELL_TEMPLATES;
   window.NPC_TEMPLATES = NPC_TEMPLATES;
+  window.CLASS_FEATURE_TEMPLATES = CLASS_FEATURE_TEMPLATES;
+  window.FEAT_TEMPLATES = FEAT_TEMPLATES;
 })();

@@ -83,7 +83,11 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
         const imported = JSON.parse(event.target.result);
         setData(d => ({ ...d, ...imported }));
       } catch (err) {
-        alert("Failed to parse JSON: " + err.message);
+        if (typeof window.psToast === 'function') {
+          window.psToast('Invalid JSON data');
+        } else {
+          console.warn('Failed to parse JSON: ' + err.message);
+        }
       }
     };
     reader.readAsText(file);

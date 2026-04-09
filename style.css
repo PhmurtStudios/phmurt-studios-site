@@ -50,28 +50,10 @@ textarea{
   --black-mid:  #1a1824;
   --bg-input:   rgba(255,255,255,0.055);
   --border-subtle: rgba(255,255,255,0.08);
-  /* ── Tag variant colors ── */
-  --tag-danger-bg:     rgba(212,67,58,0.16);
-  --tag-danger-text:   #e8605a;
-  --tag-danger-border: rgba(212,67,58,0.42);
-  --tag-success-bg:    rgba(52,168,83,0.14);
-  --tag-success-text:  #5ee09a;
-  --tag-success-border: rgba(52,168,83,0.32);
-  --tag-warning-bg:    rgba(217,119,6,0.12);
-  --tag-warning-text:  #f0b860;
-  --tag-warning-border: rgba(217,119,6,0.28);
-  --tag-info-bg:       rgba(148,163,184,0.10);
-  --tag-info-text:     #a8b8cc;
-  --tag-info-border:   rgba(148,163,184,0.25);
-  --tag-critical-bg:   rgba(212,67,58,0.22);
-  --tag-critical-text: #ff7070;
-  --tag-critical-border: rgba(212,67,58,0.50);
   /* ── Dice roll indicator colors ── */
   --roll-crit:            #f1c40f;
   --roll-crit-shadow:     rgba(241,196,15,0.5);
   --roll-fumble-shadow:   rgba(212,67,58,0.5);
-  /* ── Threat level colors ── */
-  --threat-medium:        #d4a843;
   /* ── Timeline event type colors ── */
   --event-encounter:      #8b0000;
   --event-discovery:      #1a6b3a;
@@ -222,8 +204,6 @@ html.light-mode{
   --roll-crit:            #d4a400;
   --roll-crit-shadow:     rgba(212,164,0,0.4);
   --roll-fumble-shadow:   rgba(160,30,20,0.4);
-  /* ── Threat level colors (light mode) ── */
-  --threat-medium:        #b8860a;
   /* ── Timeline event type colors (light mode) ── */
   --event-encounter:      #a82222;
   --event-discovery:      #2d8a52;
@@ -293,7 +273,7 @@ a{text-decoration:none;color:inherit;}
   width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;
   cursor: pointer; border-radius: 2px; transition: all 0.2s;
 }
-.ps-dice-btn:hover { background: var(--crimson-soft); color: var(--text); border-color: var(--crimson-border); }
+.ps-dice-btn:hover, .ps-dice-btn:focus { background: var(--crimson-soft); color: var(--text); border-color: var(--crimson-border); }
 .ps-dice-btn svg { width: 18px; height: 18px; }
 .ps-dice-btn.rolling { animation: dice-spin 0.5s ease; }
 @keyframes dice-spin {
@@ -330,7 +310,7 @@ a{text-decoration:none;color:inherit;}
   color: var(--text-muted); font-family: 'Cinzel', serif; font-size: 10px;
   cursor: pointer; border-radius: 2px; transition: all 0.15s; font-weight: 500;
 }
-.ps-die-btn:hover { border-color: var(--crimson); color: var(--crimson); }
+.ps-die-btn:hover, .ps-die-btn:focus { border-color: var(--crimson); color: var(--crimson); }
 .ps-die-btn.ps-die-selected {
   background: var(--crimson); border-color: var(--crimson); color: var(--white);
 }
@@ -353,7 +333,7 @@ a{text-decoration:none;color:inherit;}
   letter-spacing: 2px; text-transform: uppercase; cursor: pointer;
   border-radius: 2px; transition: all 0.2s; font-weight: 500; margin-bottom: 8px;
 }
-.ps-dice-roll-btn:hover { background: var(--crimson-dim); transform: translateY(-1px); }
+.ps-dice-roll-btn:hover, .ps-dice-roll-btn:focus { background: var(--crimson-dim); transform: translateY(-1px); }
 .ps-dice-result-num {
   font-family: 'Cinzel', serif; font-size: 36px; font-weight: 700;
   color: var(--text); line-height: 1; margin: 8px 0 4px;
@@ -443,7 +423,7 @@ a{text-decoration:none;color:inherit;}
   letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);
   text-decoration:none;white-space:nowrap;transition:all .15s;
 }
-.ps-dropdown-link:hover{color:var(--text);background:var(--bg-mid);padding-left:24px;}
+.ps-dropdown-link:hover, .ps-dropdown-link:focus{color:var(--text);background:var(--bg-mid);padding-left:24px;}
 .ps-dropdown-link::after{display:none !important;}
 
 /* ── MOBILE GROUP LABELS ── */
@@ -516,7 +496,7 @@ a{text-decoration:none;color:inherit;}
    ═══════════════════════════════ */
 .ps-breadcrumb{padding:14px 56px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border-mid);}
 .ps-breadcrumb a,.ps-breadcrumb span{font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);}
-.ps-breadcrumb a:hover{color:var(--crimson);}
+.ps-breadcrumb a:hover, .ps-breadcrumb a:focus{color:var(--crimson);}
 .ps-breadcrumb span.current{color:var(--text-dim);}
 .ps-breadcrumb .sep{color:var(--crimson-border);font-size:8px;}
 
@@ -532,7 +512,7 @@ a{text-decoration:none;color:inherit;}
 .ps-latest-meta{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
 .ps-badge{font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;border:1px solid var(--crimson-border);color:var(--crimson);padding:5px 12px;}
 .ps-cta{font-family:'Cinzel',serif;font-size:10px;letter-spacing:3px;text-transform:uppercase;color:#f5f0e8;background:var(--crimson);border:1px solid var(--crimson);padding:12px 28px;cursor:pointer;display:inline-block;}
-.ps-cta:hover{background:var(--crimson-dim);}
+.ps-cta:hover, .ps-cta:focus{background:var(--crimson-dim);}
 
 /* ── PREVIEW PANEL ── */
 .ps-preview-panel{background:var(--bg-card);border:1px solid var(--crimson-border);border-radius:2px;padding:36px;position:relative;overflow:hidden;}
@@ -558,7 +538,7 @@ a{text-decoration:none;color:inherit;}
 
 .ps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--crimson-border);margin:0 56px 56px;border:1px solid var(--crimson-border);}
 .ps-card{background:var(--bg-card);padding:32px 26px;cursor:pointer;display:block;}
-.ps-card:hover{background:var(--bg-hover);}
+.ps-card:hover, .ps-card:focus{background:var(--bg-hover);}
 .ps-card-type{font-family:'Cinzel',serif;font-size:8px;letter-spacing:3px;color:var(--crimson);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:10px;}
 .ps-card-type::after{content:'';flex:1;height:1px;background:var(--crimson-border);}
 .ps-card-title{font-size:21px;color:var(--text);font-weight:300;margin-bottom:10px;line-height:1.25;}
@@ -573,7 +553,7 @@ a{text-decoration:none;color:inherit;}
    ═══════════════════════════════ */
 .ps-grimoire-filters{padding:0 56px 32px;display:flex;gap:4px;}
 .ps-filter-btn{font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:7px 16px;cursor:pointer;background:transparent;border:1px solid var(--border);color:var(--text-muted);}
-.ps-filter-btn:hover{border-color:var(--crimson-border);color:var(--text-dim);}
+.ps-filter-btn:hover, .ps-filter-btn:focus{border-color:var(--crimson-border);color:var(--text-dim);}
 .ps-filter-btn.active{background:var(--crimson);border-color:var(--crimson);color:#f5f0e8;}
 .ps-grimoire-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--crimson-border);margin:0 56px 56px;border:1px solid var(--crimson-border);}
 .ps-grimoire-card{background:var(--bg-card);padding:32px 26px;display:block;}

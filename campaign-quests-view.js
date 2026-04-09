@@ -88,7 +88,8 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
   const getQuestGiver = (questId) => {
     const quest = quests.find(q => q.id === questId);
     if (!quest?.giver) return null;
-    return npcs.find(n => n.name === quest.giver);
+    const giver = npcs.find(n => n.name === quest.giver);
+    return giver || null;
   };
 
   // Handle quest status changes
@@ -107,6 +108,7 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
       ...d,
       quests: d.quests.map(q => {
         if (q.id === questId) {
+          if (objIndex < 0 || objIndex >= q.objectives.length) return q;
           const newObjs = [...q.objectives];
           newObjs[objIndex] = { ...newObjs[objIndex], completed: !newObjs[objIndex].completed };
           return { ...q, objectives: newObjs };

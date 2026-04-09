@@ -31,15 +31,35 @@ CREATE POLICY "profiles_select_own"
 
 -- Users can only update their own profile,
 -- but CANNOT modify privilege/moderation columns (is_admin, is_superuser, is_banned).
--- The WITH CHECK ensures these columns match their current DB values.
+--
+-- IMPORTANT: The old WITH CHECK used subqueries back to the profiles table,
+-- which caused infinite recursion in Supabase RLS evaluation. The fix uses a
+-- SECURITY DEFINER function that bypasses RLS to read the current privilege values.
+
+-- Helper function: reads privilege columns bypassing RLS (runs as DB owner)
+CREATE OR REPLACE FUNCTION public.profiles_privilege_check(
+  row_id uuid,
+  new_is_admin boolean,
+  new_is_superuser boolean,
+  new_is_banned boolean
+) RETURNS boolean
+LANGUAGE sql SECURITY DEFINER STABLE
+SET search_path = public
+AS $$
+  SELECT
+    COALESCE(new_is_admin, false)    = COALESCE(p.is_admin, false)
+    AND COALESCE(new_is_superuser, false) = COALESCE(p.is_superuser, false)
+    AND COALESCE(new_is_banned, false)    = COALESCE(p.is_banned, false)
+  FROM profiles p
+  WHERE p.id = row_id;
+$$;
+
 CREATE POLICY "profiles_update_own"
   ON profiles FOR UPDATE
   USING (auth.uid() = id)
   WITH CHECK (
     auth.uid() = id
-    AND is_admin    = (SELECT p.is_admin    FROM profiles p WHERE p.id = auth.uid())
-    AND is_superuser = (SELECT p.is_superuser FROM profiles p WHERE p.id = auth.uid())
-    AND is_banned   = (SELECT p.is_banned   FROM profiles p WHERE p.id = auth.uid())
+    AND public.profiles_privilege_check(id, is_admin, is_superuser, is_banned)
   );
 
 -- Users can insert their own profile (for sign-up)

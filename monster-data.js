@@ -4918,7 +4918,7 @@ window.SRD_MONSTERS = [
   "damageResistances": "",
   "damageImmunities": "poison",
   "conditionImmunities": "exhaustion, poisoned",
-  "damageVulnerabilities": "",
+  "damageVulnerabilities": "bludgeoning",
   "xp": 50
 },
   {
@@ -5753,5 +5753,261 @@ window.SRD_MONSTERS = [
   "conditionImmunities": "",
   "damageVulnerabilities": "",
   "xp": 700
+},
+{
+  "name": "Hill Giant",
+  "size": "Huge",
+  "type": "giant",
+  "alignment": "chaotic evil",
+  "ac": 13,
+  "acType": "natural armor",
+  "hp": 105,
+  "hpFormula": "10d12 + 40",
+  "speed": "40 ft.",
+  "str": 21,
+  "dex": 8,
+  "con": 19,
+  "int": 5,
+  "wis": 9,
+  "cha": 6,
+  "saves": "",
+  "skills": "Perception +2",
+  "senses": "passive Perception 12",
+  "languages": "Giant",
+  "cr": "5",
+  "crNum": 5,
+  "traits": [],
+  "actions": [
+    {
+      "name": "Multiattack",
+      "desc": "The giant makes two greatclub attacks."
+    },
+    {
+      "name": "Greatclub",
+      "desc": "Melee Weapon Attack: +8 to hit, reach 10 ft., one target. Hit: 18 (3d8 + 5) bludgeoning damage."
+    },
+    {
+      "name": "Rock",
+      "desc": "Ranged Weapon Attack: +8 to hit, range 60/240 ft., one target. Hit: 21 (3d10 + 5) bludgeoning damage."
+    }
+  ],
+  "legendaryActions": [],
+  "reactions": [],
+  "damageResistances": "",
+  "damageImmunities": "",
+  "conditionImmunities": "",
+  "damageVulnerabilities": "",
+  "xp": 1800
+},
+{
+  "name": "Lich",
+  "size": "Medium",
+  "type": "undead",
+  "alignment": "any evil alignment",
+  "ac": 17,
+  "acType": "natural armor",
+  "hp": 135,
+  "hpFormula": "18d8 + 54",
+  "speed": "30 ft.",
+  "str": 11,
+  "dex": 16,
+  "con": 16,
+  "int": 20,
+  "wis": 14,
+  "cha": 16,
+  "saves": "Con +10, Int +12, Wis +9",
+  "skills": "Arcana +18, History +12, Insight +9, Perception +9",
+  "senses": "truesight 120 ft., passive Perception 19",
+  "languages": "Common plus up to five other languages",
+  "cr": "21",
+  "crNum": 21,
+  "traits": [
+    {
+      "name": "Legendary Resistance (3/Day)",
+      "desc": "If the lich fails a saving throw, it can choose to succeed instead."
+    },
+    {
+      "name": "Rejuvenation",
+      "desc": "If it has a phylactery, a destroyed lich gains a new body in 1d10 days, regaining all its hit points and becoming active again. The new body appears within 5 feet of the phylactery."
+    },
+    {
+      "name": "Spellcasting",
+      "desc": "The lich is an 18th-level spellcaster. Its spellcasting ability is Intelligence (spell save DC 20, +12 to hit with spell attacks). The lich has the following wizard spells prepared: Cantrips (at will): mage hand, prestidigitation, ray of frost. 1st level (4 slots): detect magic, magic missile, shield, thunderwave. 2nd level (3 slots): detect thoughts, invisibility, acid arrow, mirror image. 3rd level (3 slots): animate dead, counterspell, dispel magic, fireball. 4th level (3 slots): blight, dimension door. 5th level (3 slots): cloudkill, scrying. 6th level (1 slot): disintegrate, globe of invulnerability. 7th level (1 slot): finger of death, plane shift. 8th level (1 slot): dominate monster, power word stun. 9th level (1 slot): power word kill."
+    },
+    {
+      "name": "Turn Resistance",
+      "desc": "The lich has advantage on saving throws against any effect that turns undead."
+    }
+  ],
+  "actions": [
+    {
+      "name": "Paralyzing Touch",
+      "desc": "Melee Spell Attack: +12 to hit, reach 5 ft., one creature. Hit: 10 (3d6) cold damage. The target must succeed on a DC 18 Constitution saving throw or be paralyzed for 1 minute. The target can repeat the saving throw at the end of each of its turns, ending the effect on itself on a success."
+    }
+  ],
+  "legendaryActions": [
+    {
+      "name": "Cantrip",
+      "desc": "The lich casts a cantrip."
+    },
+    {
+      "name": "Paralyzing Touch (Costs 2 Actions)",
+      "desc": "The lich uses its Paralyzing Touch."
+    },
+    {
+      "name": "Frightening Gaze (Costs 2 Actions)",
+      "desc": "The lich fixes its gaze on one creature it can see within 10 feet of it. The target must succeed on a DC 18 Wisdom saving throw against this magic or become frightened for 1 minute."
+    },
+    {
+      "name": "Disrupt Life (Costs 3 Actions)",
+      "desc": "Each non-undead creature within 20 feet of the lich must make a DC 18 Constitution saving throw against this magic, taking 21 (6d6) necrotic damage on a failed save, or half as much on a successful one."
+    }
+  ],
+  "reactions": [],
+  "damageResistances": "cold, lightning, necrotic",
+  "damageImmunities": "poison; bludgeoning, piercing, and slashing from nonmagical attacks",
+  "conditionImmunities": "charmed, exhaustion, frightened, paralyzed, poisoned",
+  "damageVulnerabilities": "",
+  "xp": 33000
+},
+{
+  "name": "Tarrasque",
+  "size": "Gargantuan",
+  "type": "monstrosity (titan)",
+  "alignment": "unaligned",
+  "ac": 25,
+  "acType": "natural armor",
+  "hp": 676,
+  "hpFormula": "33d20 + 330",
+  "speed": "40 ft.",
+  "str": 30,
+  "dex": 11,
+  "con": 30,
+  "int": 3,
+  "wis": 11,
+  "cha": 11,
+  "saves": "Int +5, Wis +9, Cha +9",
+  "skills": "",
+  "senses": "blindsight 120 ft., passive Perception 10",
+  "languages": "",
+  "cr": "30",
+  "crNum": 30,
+  "traits": [
+    {
+      "name": "Legendary Resistance (3/Day)",
+      "desc": "If the tarrasque fails a saving throw, it can choose to succeed instead."
+    },
+    {
+      "name": "Magic Resistance",
+      "desc": "The tarrasque has advantage on saving throws against spells and other magical effects."
+    },
+    {
+      "name": "Reflective Carapace",
+      "desc": "Any time the tarrasque is targeted by a magic missile spell, a line spell, or a spell that requires a ranged attack roll, roll a d6. On a 1 to 5, the tarrasque is unaffected. On a 6, the tarrasque is unaffected, and the effect is reflected back at the caster as though it originated from the tarrasque, turning the caster into the target."
+    },
+    {
+      "name": "Siege Monster",
+      "desc": "The tarrasque deals double damage to objects and structures."
+    }
+  ],
+  "actions": [
+    {
+      "name": "Multiattack",
+      "desc": "The tarrasque can use its Frightful Presence. It then makes five attacks: one with its bite, two with its claws, one with its horns, and one with its tail. It can use its Swallow instead of its bite."
+    },
+    {
+      "name": "Bite",
+      "desc": "Melee Weapon Attack: +19 to hit, reach 10 ft., one target. Hit: 36 (4d12 + 10) piercing damage. If the target is a creature, it is grappled (escape DC 20). Until this grapple ends, the target is restrained, and the tarrasque can't bite another target."
+    },
+    {
+      "name": "Claw",
+      "desc": "Melee Weapon Attack: +19 to hit, reach 15 ft., one target. Hit: 28 (4d8 + 10) slashing damage."
+    },
+    {
+      "name": "Horns",
+      "desc": "Melee Weapon Attack: +19 to hit, reach 10 ft., one target. Hit: 32 (4d10 + 10) piercing damage."
+    },
+    {
+      "name": "Tail",
+      "desc": "Melee Weapon Attack: +19 to hit, reach 20 ft., one target. Hit: 24 (4d6 + 10) bludgeoning damage. If the target is a creature, it must succeed on a DC 20 Strength saving throw or be knocked prone."
+    },
+    {
+      "name": "Frightful Presence",
+      "desc": "Each creature of the tarrasque's choice within 120 feet of it and aware of it must succeed on a DC 17 Wisdom saving throw or become frightened for 1 minute."
+    },
+    {
+      "name": "Swallow",
+      "desc": "The tarrasque makes one bite attack against a Medium or smaller creature it is grappling. If the attack hits, the target takes the bite's damage, the target is swallowed, and the grapple ends."
+    }
+  ],
+  "legendaryActions": [
+    {
+      "name": "Attack",
+      "desc": "The tarrasque makes one claw attack or tail attack."
+    },
+    {
+      "name": "Move",
+      "desc": "The tarrasque moves up to half its speed."
+    },
+    {
+      "name": "Chomp (Costs 2 Actions)",
+      "desc": "The tarrasque makes one bite attack or uses its Swallow."
+    }
+  ],
+  "reactions": [],
+  "damageResistances": "",
+  "damageImmunities": "fire, poison; bludgeoning, piercing, and slashing from nonmagical attacks",
+  "conditionImmunities": "charmed, frightened, paralyzed, poisoned",
+  "damageVulnerabilities": "",
+  "xp": 155000
+},
+{
+  "name": "Wyvern",
+  "size": "Large",
+  "type": "dragon",
+  "alignment": "unaligned",
+  "ac": 13,
+  "acType": "natural armor",
+  "hp": 110,
+  "hpFormula": "13d10 + 39",
+  "speed": "20 ft., fly 80 ft.",
+  "str": 19,
+  "dex": 10,
+  "con": 16,
+  "int": 5,
+  "wis": 12,
+  "cha": 6,
+  "saves": "",
+  "skills": "Perception +4",
+  "senses": "darkvision 60 ft., passive Perception 14",
+  "languages": "",
+  "cr": "6",
+  "crNum": 6,
+  "traits": [],
+  "actions": [
+    {
+      "name": "Multiattack",
+      "desc": "The wyvern makes two attacks: one with its bite and one with its stinger. While flying, it can use its claws in place of one other attack."
+    },
+    {
+      "name": "Bite",
+      "desc": "Melee Weapon Attack: +7 to hit, reach 10 ft., one creature. Hit: 11 (2d6 + 4) piercing damage."
+    },
+    {
+      "name": "Claws",
+      "desc": "Melee Weapon Attack: +7 to hit, reach 5 ft., one target. Hit: 13 (2d8 + 4) slashing damage."
+    },
+    {
+      "name": "Stinger",
+      "desc": "Melee Weapon Attack: +7 to hit, reach 10 ft., one creature. Hit: 11 (2d6 + 4) piercing damage. The target must make a DC 15 Constitution saving throw, taking 24 (7d6) poison damage on a failed save, or half as much damage on a successful one."
+    }
+  ],
+  "legendaryActions": [],
+  "reactions": [],
+  "damageResistances": "",
+  "damageImmunities": "",
+  "conditionImmunities": "",
+  "damageVulnerabilities": "",
+  "xp": 2300
 }
 ];

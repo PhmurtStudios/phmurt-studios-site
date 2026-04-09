@@ -12,11 +12,16 @@
   <meta property="og:title" content="Character Builder · Phmurt Studios" />
   <meta property="og:description" content="Step-by-step D&D 5e character creation with auto-calculations." />
   <meta property="og:image" content="https://phmurtstudios.com/logo.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Character Builder · Phmurt Studios" />
+  <meta name="twitter:description" content="Step-by-step D&D 5e character creation with auto-calculations." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/x-icon" href="favicon.ico" />
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
   <link rel="stylesheet" href="style.css" />
   <script src="theme.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb" crossorigin="anonymous"></script>
@@ -552,6 +557,7 @@
 </head>
 <body data-nav-active="Players" data-footer-copy="Roll Well. Play Weird.">
 
+  <a href="#main-content" class="ps-skip-nav">Skip to content</a>
   <div id="ps-site-shell"></div>
   <div id="ps-page-breadcrumb"></div>
 
@@ -732,58 +738,58 @@
         <div class="cb-panel-sub">The story behind your character</div>
         <div class="cb-form-grid">
           <div class="cb-form-field">
-            <label class="cb-form-label">Character Name</label>
+            <label class="cb-form-label" for="charName">Character Name</label>
             <input class="cb-form-input" type="text" id="charName" placeholder="Enter name..." oninput="updateDetails()" />
           </div>
           <div class="cb-form-field">
-            <label class="cb-form-label">Alignment</label>
+            <label class="cb-form-label" for="charAlignment">Alignment</label>
             <select class="cb-form-input" id="charAlignment" onchange="updateDetails()"><option value="">Select alignment...</option></select>
           </div>
           <div class="cb-form-field">
-            <label class="cb-form-label">Age</label>
+            <label class="cb-form-label" for="charAge">Age</label>
             <input class="cb-form-input" type="text" id="charAge" placeholder="e.g. 25 years" oninput="updateDetails()" />
           </div>
           <div class="cb-form-field">
-            <label class="cb-form-label">Gender / Pronouns</label>
+            <label class="cb-form-label" for="charGender">Gender / Pronouns</label>
             <input class="cb-form-input" type="text" id="charGender" placeholder="e.g. She/Her" oninput="updateDetails()" />
           </div>
           <div class="cb-form-field">
-            <label class="cb-form-label">Height</label>
+            <label class="cb-form-label" for="charHeight">Height</label>
             <input class="cb-form-input" type="text" id="charHeight" placeholder="e.g. 5'10&quot;" oninput="updateDetails()" />
           </div>
           <div class="cb-form-field">
-            <label class="cb-form-label">Weight</label>
+            <label class="cb-form-label" for="charWeight">Weight</label>
             <input class="cb-form-input" type="text" id="charWeight" placeholder="e.g. 160 lbs" oninput="updateDetails()" />
           </div>
           <div class="cb-form-field">
-            <label class="cb-form-label">Eye Color</label>
+            <label class="cb-form-label" for="charEyes">Eye Color</label>
             <input class="cb-form-input" type="text" id="charEyes" oninput="updateDetails()" />
           </div>
           <div class="cb-form-field">
-            <label class="cb-form-label">Hair Color</label>
+            <label class="cb-form-label" for="charHair">Hair Color</label>
             <input class="cb-form-input" type="text" id="charHair" oninput="updateDetails()" />
           </div>
         </div><!-- end cb-form-grid: basic fields -->
 
         <div class="cb-form-field" style="margin-bottom:16px">
-          <label class="cb-form-label">Personality Traits</label>
+          <label class="cb-form-label" for="charPersonality">Personality Traits</label>
           <textarea class="cb-form-input cb-form-textarea" id="charPersonality" placeholder="Describe your character's personality..." oninput="updateDetails()"></textarea>
         </div>
         <div class="cb-form-grid">
           <div class="cb-form-field">
-            <label class="cb-form-label">Ideals</label>
+            <label class="cb-form-label" for="charIdeals">Ideals</label>
             <textarea class="cb-form-input cb-form-textarea" id="charIdeals" placeholder="What does your character believe in?" oninput="updateDetails()"></textarea>
           </div>
           <div class="cb-form-field">
-            <label class="cb-form-label">Bonds</label>
+            <label class="cb-form-label" for="charBonds">Bonds</label>
             <textarea class="cb-form-input cb-form-textarea" id="charBonds" placeholder="What connects your character to the world?" oninput="updateDetails()"></textarea>
           </div>
           <div class="cb-form-field">
-            <label class="cb-form-label">Flaws</label>
+            <label class="cb-form-label" for="charFlaws">Flaws</label>
             <textarea class="cb-form-input cb-form-textarea" id="charFlaws" placeholder="What weaknesses or vices does your character have?" oninput="updateDetails()"></textarea>
           </div>
           <div class="cb-form-field">
-            <label class="cb-form-label">Backstory</label>
+            <label class="cb-form-label" for="charBackstory">Backstory</label>
             <textarea class="cb-form-input cb-form-textarea" id="charBackstory" placeholder="A brief history of your character..." oninput="updateDetails()"></textarea>
           </div>
         </div><!-- end cb-form-grid: ideals/bonds/flaws/backstory -->
@@ -803,7 +809,7 @@
           </div>
           <div id="xp-input-row" style="display:none;">
             <div class="cb-form-field" style="max-width:220px;">
-              <label class="cb-form-label">Starting XP</label>
+              <label class="cb-form-label" for="startingXP">Starting XP</label>
               <input class="cb-form-input" type="number" id="startingXP" min="0" value="0" oninput="C.xp=parseInt(this.value)||0" />
             </div>
           </div>
@@ -4578,14 +4584,9 @@ function canMulticlassInto(clsKey){
   if(prereqs.or){
     var orAb = prereqs.or;
     var mainAb = Object.keys(prereqs).find(function(k){ return k!=='or'; });
-    if(totalScore(mainAb) >= 13 || totalScore(orAb) >= 13) return true;
-    // Check if both fail
-    var allPass = Object.keys(prereqs).every(function(k){
-      if(k==='or') return true;
-      return totalScore(k) >= prereqs[k];
-    });
-    return allPass;
+    return totalScore(mainAb) >= 13 || totalScore(orAb) >= 13;
   }
+  // Handle AND (monk: dex 13 AND wis 13; paladin: str 13 AND cha 13; ranger: dex 13 AND wis 13)
   return Object.keys(prereqs).every(function(k){
     return totalScore(k) >= prereqs[k];
   });

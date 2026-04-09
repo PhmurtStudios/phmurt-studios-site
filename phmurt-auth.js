@@ -319,7 +319,7 @@ var PhmurtDB = (function () {
     /* ── Sign Up ──────────────────────────────────────────────── */
     signUp: function (name, email, password) {
       var ne   = (email || '').trim().toLowerCase();
-      var dnam = (name  || 'Adventurer').trim();
+      var dnam = (name  || 'Adventurer').trim(); if (dnam.length > 50) dnam = dnam.slice(0, 50);
       if (!ne)       return Promise.reject(new Error('Email is required.'));
       if (!password) return Promise.reject(new Error('Password is required.'));
 
@@ -746,7 +746,8 @@ var PhmurtDB = (function () {
               '<input id="pa-up-pass" type="password" autocomplete="new-password" placeholder="Choose a password" style="' + S.input + '" /></div>' +
             '<div style="' + S.field + '"><label style="' + S.label + '">Confirm Password</label>' +
               '<input id="pa-up-pass2" type="password" autocomplete="new-password" placeholder="Repeat your password" style="' + S.input + '" /></div>' +
-            '<div style="' + S.field + 'display:flex;align-items:flex-start;gap:8px;"><input id="pa-up-age-check" type="checkbox" style="margin-top:2px;cursor:pointer;"/><label style="' + S.label + 'margin-bottom:0;cursor:pointer;">I confirm I am at least 13 years of age</label></div>' +
+            '<div style="' + S.field + 'display:flex;align-items:flex-start;gap:8px;"><input id="pa-up-age-check" type="checkbox" style="margin-top:2px;cursor:pointer;"/><label for="pa-up-age-check" style="' + S.label + 'margin-bottom:0;cursor:pointer;">I confirm I am at least 13 years of age</label></div>' +
+            '<div style="' + S.field + 'display:flex;align-items:flex-start;gap:8px;"><input id="pa-up-terms-check" type="checkbox" style="margin-top:2px;cursor:pointer;"/><label for="pa-up-terms-check" style="' + S.label + 'margin-bottom:0;cursor:pointer;">I agree to the <a href=&quot;terms.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot; style=&quot;color:var(--crimson,#d4433a);text-decoration:underline;&quot;>Terms of Service</a> and <a href=&quot;privacy.html&quot; target=&quot;_blank&quot; rel=&quot;noopener&quot; style=&quot;color:var(--crimson,#d4433a);text-decoration:underline;&quot;>Privacy Policy</a></label></div>' +
             '<button id="pa-up-submit" style="' + S.btn + 'opacity:0.6;cursor:not-allowed;" disabled>Create Account</button>' +
             (usingSupabase ? '<p style="' + S.note + '">A confirmation email may be sent to verify your address.</p>' : '') +
           '</div>' +
@@ -787,12 +788,13 @@ var PhmurtDB = (function () {
       document.getElementById('pa-tab-in').addEventListener('click', function () { switchTab('in'); });
       document.getElementById('pa-tab-up').addEventListener('click', function () { switchTab('up'); });
 
-      // Handle age verification checkbox
+      // Handle age verification and terms consent checkboxes
       var ageCheckbox = document.getElementById('pa-up-age-check');
+      var termsCheckbox = document.getElementById('pa-up-terms-check');
       var submitBtn = document.getElementById('pa-up-submit');
-      if (ageCheckbox && submitBtn) {
+      if (ageCheckbox && termsCheckbox && submitBtn) {
         function updateSubmitButton() {
-          if (ageCheckbox.checked) {
+          if (ageCheckbox.checked && termsCheckbox.checked) {
             submitBtn.disabled = false;
             submitBtn.style.opacity = '1';
             submitBtn.style.cursor = 'pointer';
@@ -803,6 +805,7 @@ var PhmurtDB = (function () {
           }
         }
         ageCheckbox.addEventListener('change', updateSubmitButton);
+        termsCheckbox.addEventListener('change', updateSubmitButton);
       }
 
       function closeModal() { modal.remove(); }
@@ -832,12 +835,14 @@ var PhmurtDB = (function () {
         var pass  = document.getElementById('pa-up-pass').value;
         var pass2 = document.getElementById('pa-up-pass2').value;
         var ageCheck = document.getElementById('pa-up-age-check').checked;
+        var termsCheck = document.getElementById('pa-up-terms-check').checked;
         if (!name)           { showErr('Please enter a display name.'); return; }
         if (!email)          { showErr('Please enter your email address.'); return; }
         if (!pass)           { showErr('Please choose a password.'); return; }
         if (pass.length < 12) { showErr('Password must be at least 12 characters.'); return; }
         if (pass !== pass2)  { showErr('Passwords do not match.'); return; }
         if (!ageCheck)       { showErr('You must confirm you are at least 13 years of age.'); return; }
+        if (!termsCheck)     { showErr('You must agree to the Terms of Service and Privacy Policy.'); return; }
         setLoading('pa-up-submit', true);
         PhmurtDB.signUp(name, email, pass)
           .then(function (sess) {
@@ -873,6 +878,38 @@ var PhmurtDB = (function () {
         var el = document.getElementById('pa-in-email');
         if (el) el.focus();
       }, 80);
+    },
+
+    /* ── Account Deletion (GDPR compliance) ────────────────────── */
+    requestAccountDeletion: function () {
+      var sb = _sb();
+      if (!sb || !_session) return Promise.reject(new Error('Not signed in.'));
+      // Mark account for deletion in profiles table; admin or server-side process completes the deletion
+      return sb.from('profiles').update({
+        deletion_requested_at: new Date().toISOString(),
+        is_banned: true
+      }).eq('id', _session.userId)
+        .then(function (r) {
+          if (r.error) throw new Error(r.error.message || 'Deletion request failed.');
+          // Delete user's characters and campaigns client-side
+          return sb.from('characters').delete().eq('owner_id', _session.userId);
+        })
+        .then(function () {
+          return sb.from('campaigns').delete().eq('owner_id', _session.userId);
+        })
+        .then(function () {
+          // Sign out and clear local data
+          localStorage.removeItem('phmurt_auth_session');
+          localStorage.removeItem('phmurt_characters');
+          localStorage.removeItem('phmurt_campaigns');
+          _session = null;
+          _fireChange();
+          return { success: true };
+        })
+        .catch(function (err) {
+          if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Account deletion error:', err.message || err);
+          throw err;
+        });
     },
 
     /* ── Encounter Templates ──────────────────────────────────── */

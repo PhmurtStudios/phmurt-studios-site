@@ -11,7 +11,7 @@ races: {
   dwarf: { name:"Dwarf", asi:{con:2}, speed:25, size:"Medium", languages:["Common","Dwarvish"], traits:[{name:"Darkvision",desc:"60 ft. darkvision."},{name:"Dwarven Resilience",desc:"Advantage on saving throws against poison, resistance against poison damage."},{name:"Stonecunning",desc:"Double proficiency bonus on History checks related to stonework."}],
     subraces:[
       {id:"hill-dwarf", name:"Hill Dwarf", asi:{wis:1}, traits:[{name:"Dwarven Toughness",desc:"Your HP maximum increases by 1 per level."}]},
-      {id:"mountain-dwarf", name:"Mountain Dwarf", asi:{str:2}, traits:[{name:"Dwarven Armor Training",desc:"Proficiency with light and medium armor."}]}
+      {id:"mountain-dwarf", name:"Mountain Dwarf", asi:{str:2}, traits:[{name:"Dwarven Armor Training",desc:"Proficiency with light armor, medium armor, and shields."}]}
     ]
   },
   halfling: { name:"Halfling", asi:{dex:2}, speed:25, size:"Small", languages:["Common","Halfling"], traits:[{name:"Lucky",desc:"When you roll a 1 on a d20, you can reroll and must use the new result."},{name:"Brave",desc:"Advantage on saving throws against being frightened."},{name:"Halfling Nimbleness",desc:"You can move through the space of any creature larger than you."}],
@@ -402,6 +402,18 @@ DND_DATA.spellDescriptions = {
   "Earth Tremor":        {school:"Evocation", castTime:"1 action", range:"10 ft", duration:"Instantaneous", desc:"DEX save or d6 bludgeoning + fall prone. Ground in area becomes difficult terrain."},
   "Dissonant Whispers":  {school:"Enchantment", castTime:"1 action", range:"60 ft", duration:"Instantaneous", desc:"WIS save or 3d6 psychic + use reaction to flee. Half damage, no fleeing on save."},
   "Illusory Script":     {school:"Illusion", castTime:"1 minute", range:"Touch", duration:"10 days", desc:"Write secret message. Others see unintelligible script or a decoy message. Ritual."},
+
+  // 2nd Level Spells
+  "Hold Person":         {school:"Enchantment", castTime:"1 action", range:"60 feet", duration:"Concentration, up to 1 minute", desc:"Choose a humanoid that you can see within range. The target must succeed on a Wisdom saving throw or be paralyzed for the duration. At the end of each of its turns, the target can make another Wisdom saving throw. On a success, the spell ends on the target. At Higher Levels: When you cast this spell using a spell slot of 3rd level or higher, you can target one additional humanoid for each slot level above 2nd."},
+  "Misty Step":          {school:"Conjuration", castTime:"1 bonus action", range:"Self", duration:"Instantaneous", desc:"Briefly surrounded by silvery mist, you teleport up to 30 feet to an unoccupied space that you can see."},
+
+  // 3rd Level Spells
+  "Counterspell":        {school:"Abjuration", castTime:"1 reaction", range:"60 feet", duration:"Instantaneous", desc:"You attempt to interrupt a creature in the process of casting a spell. If the creature is casting a spell of 3rd level or lower, its spell fails and has no effect. If it is casting a spell of 4th level or higher, make an ability check using your spellcasting ability. The DC equals 10 + the spell's level. On a success, the creature's spell fails and has no effect. At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, the interrupted spell has no effect if its level is equal to or less than the level of the spell slot you used."},
+  "Lightning Bolt":      {school:"Evocation", castTime:"1 action", range:"Self (100-foot line)", duration:"Instantaneous", desc:"A stroke of lightning forming a line 100 feet long and 5 feet wide blasts out from you in a direction you choose. Each creature in the line must make a Dexterity saving throw. A creature takes 8d6 lightning damage on a failed save, or half as much on a successful one. At Higher Levels: When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d6 for each slot level above 3rd."},
+  "Revivify":            {school:"Necromancy", castTime:"1 action", range:"Touch", duration:"Instantaneous", desc:"You touch a creature that has died within the last minute. That creature returns to life with 1 hit point. This spell can't return to life a creature that has died of old age, nor can it restore any missing body parts."},
+
+  // 4th Level Spells
+  "Polymorph":           {school:"Transmutation", castTime:"1 action", range:"60 feet", duration:"Concentration, up to 1 hour", desc:"This spell transforms a creature that you can see within range into a new form. An unwilling creature must make a Wisdom saving throw to avoid the effect. The transformation lasts for the duration, or until the target drops to 0 hit points or dies. The new form can be any beast whose challenge rating is equal to or less than the target's (or the target's level, if it doesn't have a challenge rating). The target's game statistics are replaced by the statistics of the chosen beast. The target assumes the hit points of its new form. When it reverts, the creature returns to the number of hit points it had before it transformed."},
 };
 
 // ── ITEM CATEGORIES (for equipment dropdowns) ──
@@ -1555,6 +1567,57 @@ DND_DATA.multiclassPrereqs = {
   sorcerer:  { cha:13 },
   warlock:   { cha:13 },
   wizard:    { int:13 }
+};
+
+// ── MULTICLASS SPELLCASTING WEIGHT ──
+// Weight for calculating multiclass caster level (full casters = 1, half-casters = 0.5, non-casters = 0)
+DND_DATA.spellcastingWeight = {
+  bard: 1, cleric: 1, druid: 1, sorcerer: 1, wizard: 1,
+  paladin: 0.5, ranger: 0.5,
+  fighter: 0, barbarian: 0, monk: 0, rogue: 0, warlock: 0
+};
+
+// ── MULTICLASS SPELL SLOT TABLE ──
+// Indexed by caster level (0-20), each entry is an array of max spell slots per spell level
+DND_DATA.multiclassSlotTable = [
+  [],            // 0
+  [2],           // 1
+  [3],           // 2
+  [4,2],         // 3
+  [4,3],         // 4
+  [4,3,2],       // 5
+  [4,3,3],       // 6
+  [4,3,3,1],     // 7
+  [4,3,3,2],     // 8
+  [4,3,3,3,1],   // 9
+  [4,3,3,3,2],   // 10
+  [4,3,3,3,2,1], // 11
+  [4,3,3,3,2,1], // 12
+  [4,3,3,3,2,1,1], // 13
+  [4,3,3,3,2,1,1], // 14
+  [4,3,3,3,2,1,1,1], // 15
+  [4,3,3,3,2,1,1,1], // 16
+  [4,3,3,3,2,1,1,1,1], // 17
+  [4,3,3,3,3,1,1,1,1], // 18
+  [4,3,3,3,3,2,1,1,1], // 19
+  [4,3,3,3,3,2,2,1,1]  // 20
+];
+
+// ── MULTICLASS PROFICIENCY GAINS ──
+// What proficiencies a character gains when multiclassing into each class
+DND_DATA.multiclassProfGains = {
+  barbarian: { armor: ['Shields'], weapons: ['Simple weapons', 'Martial weapons'] },
+  bard:      { armor: ['Light armor'], weapons: [], skills: 1 },
+  cleric:    { armor: ['Light armor', 'Medium armor', 'Shields'], weapons: [] },
+  druid:     { armor: ['Light armor', 'Medium armor', 'Shields (nonmetal)'], weapons: [] },
+  fighter:   { armor: ['Light armor', 'Medium armor', 'Shields'], weapons: ['Simple weapons', 'Martial weapons'] },
+  monk:      { armor: [], weapons: ['Simple weapons', 'Shortswords'] },
+  paladin:   { armor: ['Light armor', 'Medium armor', 'Shields'], weapons: ['Simple weapons', 'Martial weapons'] },
+  ranger:    { armor: ['Light armor', 'Medium armor', 'Shields'], weapons: ['Simple weapons', 'Martial weapons'], skills: 1 },
+  rogue:     { armor: ['Light armor'], weapons: [], skills: 1, tools: ["Thieves' tools"] },
+  sorcerer:  { armor: [], weapons: [] },
+  warlock:   { armor: ['Light armor'], weapons: ['Simple weapons'] },
+  wizard:    { armor: [], weapons: [] }
 };
 
 // ── ALL D&D LANGUAGES ──

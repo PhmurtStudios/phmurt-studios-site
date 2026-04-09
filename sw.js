@@ -1,4 +1,4 @@
-const CACHE_VERSION = 158;
+const CACHE_VERSION = 160;
 const CACHE_NAME = 'phmurt-v' + CACHE_VERSION;
 const PRECACHE_URLS = [
   '/',
@@ -51,7 +51,22 @@ const PRECACHE_URLS = [
   'compendium.html',
   'privacy.html',
   'terms.html',
-  'ogl.html'
+  'ogl.html',
+  'campaigns.html',
+  'character-builder.html',
+  'character-builder-35.html',
+  'character-sheets.html',
+  'my-characters.html',
+  'sheet-dnd5e.html',
+  'soup-savant.html',
+  'legendary.html',
+  'fantasy_map.html',
+  'map_view.html',
+  '404.html'
+  // admin.html excluded: SECURITY (V-013) — never cache admin page
+  // generators.html excluded: too large for precache (807KB)
+  // reset-password.html excluded: auth flow page
+  // supabase-setup-admin.html excluded: admin setup page
 ];
 
 // Maximum age for cached assets before forced revalidation (4 hours)

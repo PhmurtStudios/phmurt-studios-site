@@ -273,7 +273,7 @@
   function breadcrumbMarkup(items) {
     if (!items || !items.length) return '';
     return `
-      <nav class="ps-breadcrumb" aria-label="Breadcrumb">
+      <nav class="ps-breadcrumb" role="navigation" aria-label="Breadcrumb">
         ${items.map((item, index) => {
           const crumb = item.current || !item.href
             ? `<span class="current">${psEscapeHtml(item.label)}</span>`
@@ -430,6 +430,7 @@
         dd.innerHTML =
           '<div style="font-family:Spectral,serif;font-size:12px;color:var(--text-muted);padding:9px 14px 8px;border-bottom:1px solid var(--border-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;">' + psEscapeHtml(display) + '</div>' +
           '<a href="my-characters.html">My Characters</a>' +
+          '<button id="nav-delete-account-btn" style="color:var(--crimson,#d4433a);">Delete Account</button>' +
           '<button id="nav-signout-btn">Sign Out</button>';
 
         var soBtn = document.getElementById('nav-signout-btn');
@@ -443,6 +444,32 @@
             }
             dd.classList.remove('open');
             if (typeof window.psToast === 'function') window.psToast('Signed out.');
+          });
+        }
+
+        var delBtn = document.getElementById('nav-delete-account-btn');
+        if (delBtn) {
+          delBtn.addEventListener('click', function() {
+            dd.classList.remove('open');
+            if (!confirm('Are you sure you want to delete your account? This action cannot be undone. All your characters, campaigns, and data will be permanently removed.')) return;
+            if (!confirm('This is your final confirmation. Type your intent by clicking OK to permanently delete your account and all associated data.')) return;
+            if (typeof PhmurtDB !== 'undefined' && PhmurtDB.requestAccountDeletion) {
+              PhmurtDB.requestAccountDeletion().then(function() {
+                if (typeof window.psToast === 'function') window.psToast('Account deletion requested. You will receive a confirmation email.');
+                if (typeof PhmurtDB !== 'undefined' && PhmurtDB.signOut) PhmurtDB.signOut();
+              }).catch(function(err) {
+                if (typeof window.psToast === 'function') window.psToast('Deletion request sent. Please contact support if your account is not removed within 48 hours.');
+                if (typeof PhmurtDB !== 'undefined' && PhmurtDB.signOut) PhmurtDB.signOut();
+              });
+            } else {
+              // Legacy fallback: clear all local data
+              localStorage.removeItem('phmurt_auth_session');
+              localStorage.removeItem('phmurt_users_db');
+              localStorage.removeItem('phmurt_characters');
+              localStorage.removeItem('phmurt_campaigns');
+              window.dispatchEvent(new Event('phmurt-auth-change'));
+              if (typeof window.psToast === 'function') window.psToast('Account and local data deleted.');
+            }
           });
         }
       }
@@ -875,7 +902,7 @@
     window.addEventListener('phmurt-auth-change', updateAuthNav);
 
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('sw.js').catch(function() {});
+      navigator.serviceWorker.register('sw.js').catch(function(err) { if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[Phmurt] SW registration failed:', err.message || err); });
     }
 
     // Track this page visit (fire-and-forget)

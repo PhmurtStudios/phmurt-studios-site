@@ -24,9 +24,12 @@
   <link rel="preload" href="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" as="script" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
   <link rel="stylesheet" href="style.css" />
   <script src="theme.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" integrity="sha384-OLBgp1GsljhM2TJ+sbHjaiH9txEUvgdDTAzHv2P24donTt6/529l+9Ua0vFImLlb" crossorigin="anonymous"></script>
   <script src="supabase-config.js"></script>
   <script src="phmurt-auth.js"></script>
   <script src="phmurt-char-sync.js"></script>
@@ -1575,7 +1578,9 @@
     }
   </style>
 </head>
-<body>
+<body data-nav-active="Campaigns" data-footer-copy="Roll Well. Play Weird.">
+
+  <a href="#main-content" class="ps-skip-nav">Skip to content</a>
   <div id="ps-site-shell"></div>
   <div id="campaign-root"><div class="cm-loading-shell"><div class="cm-ls-nav"><div class="cm-ls-title">Campaign</div><div class="cm-ls-sub">Manager</div><div class="cm-ls-items"><div class="cm-ls-item active">Dashboard</div><div class="cm-ls-item">Timeline</div><div class="cm-ls-item">World</div><div class="cm-ls-item">Play</div></div></div><div class="cm-ls-main"><div class="cm-ls-spinner"></div></div></div></div>
 
@@ -6785,5 +6790,7 @@ const root = ReactDOM.createRoot(document.getElementById("campaign-root"));
 root.render(React.createElement(App));
 
   </script>
+
+  <div id="ps-site-footer"></div>
 </body>
 </html>

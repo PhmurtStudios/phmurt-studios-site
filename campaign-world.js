@@ -2505,9 +2505,9 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
 
   const conns = (type,ent) => {
     const c=[];
-    if(type==="region"){ const f=data.factions.find(f=>f.name===ent.ctrl); if(f) c.push({type:"faction",e:f,label:"Controlled by"}); data.npcs.filter(n=>n.loc===ent.name).forEach(n=>c.push({type:"npc",e:n,label:"Located here"})); data.quests.filter(q=>q.region===ent.name).forEach(q=>c.push({type:"quest",e:q,label:"Active quest"})); }
-    else if(type==="faction"){ data.regions.filter(r=>r.ctrl===ent.name).forEach(r=>c.push({type:"region",e:r,label:"Controls"})); data.npcs.filter(n=>n.faction===ent.name).forEach(n=>c.push({type:"npc",e:n,label:"Member"})); data.quests.filter(q=>q.faction===ent.name).forEach(q=>c.push({type:"quest",e:q,label:"Related quest"})); }
-    else if(type==="npc"){ if(ent.faction){const f=data.factions.find(f=>f.name===ent.faction); if(f) c.push({type:"faction",e:f,label:"Member of"});} const r=data.regions.find(r=>r.name===ent.loc); if(r) c.push({type:"region",e:r,label:"Located in"}); }
+    if(type==="region"){ const f=(data.factions || []).find(f=>f.name===ent.ctrl); if(f) c.push({type:"faction",e:f,label:"Controlled by"}); (data.npcs || []).filter(n=>n.loc===ent.name).forEach(n=>c.push({type:"npc",e:n,label:"Located here"})); (data.quests || []).filter(q=>q.region===ent.name).forEach(q=>c.push({type:"quest",e:q,label:"Active quest"})); }
+    else if(type==="faction"){ (data.regions || []).filter(r=>r.ctrl===ent.name).forEach(r=>c.push({type:"region",e:r,label:"Controls"})); (data.npcs || []).filter(n=>n.faction===ent.name).forEach(n=>c.push({type:"npc",e:n,label:"Member"})); (data.quests || []).filter(q=>q.faction===ent.name).forEach(q=>c.push({type:"quest",e:q,label:"Related quest"})); }
+    else if(type==="npc"){ if(ent.faction){const f=(data.factions || []).find(f=>f.name===ent.faction); if(f) c.push({type:"faction",e:f,label:"Member of"});} const r=(data.regions || []).find(r=>r.name===ent.loc); if(r) c.push({type:"region",e:r,label:"Located in"}); }
     return c;
   };
   const tCols = { low: T.green, medium: T.questGold, high: T.orange, extreme: T.crimson };
