@@ -533,13 +533,15 @@ var PhmurtDB = (function () {
       if (sb) {
         var builder = existingId ? (snapshot.builderType || '5e') : (snapshot.cls ? '5e' : '35e');
 
+        // Store builder type inside the data snapshot (not a separate column)
+        snapshot.builderType = builder;
+
         var row = {
           owner_id:     _session.userId,
           name:         name,
           race:         race,
           class:        cls,
           level:        level,
-          builder_type: builder,
           data:         snapshot,
           updated_at:   new Date().toISOString()
         };
