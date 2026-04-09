@@ -3375,7 +3375,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
       <div style={{ display: (tab === "calendar" || tab === "exploration") ? "none" : "flex", flex:1, overflow:"hidden", position:"relative" }}>
         {/* ══════════ FANTASY MAP TAB — Multi-scale continental map ══════════ */}
         {tab==="map" && (
-          <div ref={mapRef} style={{ flex:1, overflow:"hidden", position:"relative", background:"#0c2461", touchAction:"none", WebkitUserSelect:"none", userSelect:"none" }}>
+          <div ref={mapRef} style={{ flex:1, overflow:"hidden", position:"relative", background:"#060e1f", touchAction:"none", WebkitUserSelect:"none", userSelect:"none" }}>
             {/* ── New MapEngine Canvas ── */}
             <canvas ref={mapCanvasRef} style={{ width:"100%", height:"100%", display:"block" }} />
             {/* ── Legacy SVG hidden — kept for non-MapEngine fallback ── */}

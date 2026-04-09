@@ -2295,10 +2295,11 @@
       this._boundListeners = [];    // tracks listeners for cleanup
 
       this.theme = {
-        bg: "#0c2461",
-        sea: "#1e5799",
-        seaDeep: "#0c2461",
-        shoreGlow: "rgba(60,120,200,0.25)",
+        bg: "#060e1f",
+        sea: "#12305a",
+        seaMid: "#0b1e3d",
+        seaDeep: "#050c1a",
+        shoreGlow: "rgba(40,80,140,0.18)",
         landBase: "#1e1e18",
         factionBorderWidth: 3.0,
         factionBorderColor: "rgba(20,18,14,0.45)",
@@ -2637,12 +2638,39 @@
 
     _drawSea(ctx) {
       const g = this.grid;
-      // Deep sea gradient
-      const grad = ctx.createRadialGradient(g.mapW*0.5, g.mapH*0.5, 0, g.mapW*0.5, g.mapH*0.5, g.mapW*0.7);
-      grad.addColorStop(0, this.theme.sea);
-      grad.addColorStop(1, this.theme.seaDeep);
+      const t = this.theme;
+
+      // Multi-stop radial gradient: lighter near land mass center, darker at deep ocean edges
+      const cx = g.mapW * 0.5, cy = g.mapH * 0.5;
+      const outerR = Math.max(g.mapW, g.mapH) * 0.85;
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, outerR);
+      grad.addColorStop(0.0, t.sea);       // Near-shore: muted blue
+      grad.addColorStop(0.35, t.seaMid);   // Mid-ocean: darker
+      grad.addColorStop(0.7, t.seaDeep);   // Deep ocean: very dark navy
+      grad.addColorStop(1.0, t.bg);        // Abyss at edges: near-black
       ctx.fillStyle = grad;
       ctx.fillRect(-200, -200, g.mapW + 400, g.mapH + 400);
+
+      // Subtle depth variation overlay — gives a sense of underwater terrain
+      const rng = this._seaNoiseRng || (this._seaNoiseRng = (() => {
+        let s = 12345;
+        return () => { s = (s * 16807 + 0) % 2147483647; return (s & 0x7fffffff) / 2147483647; };
+      })());
+      ctx.save();
+      const step = 80;
+      for (let x = -200; x < g.mapW + 400; x += step) {
+        for (let y = -200; y < g.mapH + 400; y += step) {
+          const v = rng();
+          if (v > 0.6) {
+            ctx.fillStyle = "rgba(8,16,32," + (0.05 + v * 0.08).toFixed(3) + ")";
+            ctx.fillRect(x, y, step, step);
+          } else if (v < 0.2) {
+            ctx.fillStyle = "rgba(20,50,90," + (0.03 + v * 0.04).toFixed(3) + ")";
+            ctx.fillRect(x, y, step, step);
+          }
+        }
+      }
+      ctx.restore();
     }
 
     _drawCoastlineGlow(ctx) {
@@ -2651,7 +2679,7 @@
         // Multiple glow rings for soft shore effect
         for (let ring = 0; ring < 3; ring++) {
           ctx.save();
-          ctx.shadowColor = `rgba(60,110,180,${0.08 - ring * 0.02})`;
+          ctx.shadowColor = `rgba(30,70,130,${0.06 - ring * 0.015})`;
           ctx.shadowBlur = 20 + ring * 18;
           ctx.fillStyle = "rgba(0,0,0,0)";
           ctx.strokeStyle = `rgba(60,100,140,${0.10 - ring * 0.025})`;
