@@ -653,7 +653,7 @@ var PhmurtDB = (function () {
       var sb = _sb();
       if (sb) {
         return sb.from('characters')
-          .select('id, name, race, class, level, builder_type, created_at, updated_at')
+          .select('id, name, race, class, level, data, created_at, updated_at')
           .eq('owner_id', _session.userId)
           .order('updated_at', { ascending: false })
           .then(function (r) { return r.data || []; })
