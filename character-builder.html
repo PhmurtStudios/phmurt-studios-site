@@ -31,13 +31,13 @@
   <script src="phmurt-char-sync.js"></script>
   <style>
     /* ── BUILDER LAYOUT ── */
-    .cb-wrap { display: grid; grid-template-columns: 280px 1fr; min-height: calc(100vh - 60px); max-width: 1400px; margin: 0 auto; padding: 0 32px; }
+    .cb-wrap { display: grid; grid-template-columns: 280px 1fr; min-height: calc(100vh - 60px); max-width: 1600px; margin: 0 auto; padding: 0 32px; }
     .cb-sidebar { background: var(--bg); border-right: 1px solid var(--border); padding: 24px 0; position: sticky; top: 60px; height: calc(100vh - 60px); overflow-y: auto; }
-    .cb-main { padding: 48px 56px; }
+    .cb-main { padding: 48px 40px; }
 
     /* ── SIDEBAR STEPS ── */
     .cb-step-item { display: flex; align-items: center; gap: 14px; padding: 14px 24px; cursor: pointer; transition: all 0.25s; position: relative; }
-    .cb-step-item::after { content:''; position:absolute; left:37px; top:100%; width:1px; height:0; background:var(--border-mid); z-index:1; }
+    .cb-step-item::after { content:''; position:absolute; left:38px; top:100%; width:1px; height:0; background:var(--border-mid); z-index:1; }
     .cb-step-item:not(:last-of-type)::after { height:100%; }
     .cb-step-item:hover { background: var(--crimson-soft); }
     .cb-step-item.active { background: var(--crimson-soft); }
@@ -99,7 +99,7 @@
     .cb-ability-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 24px; }
     .cb-ability-box { background: var(--bg-card); border: 1px solid var(--border); padding: 18px 10px; text-align: center; position: relative; border-radius: 2px; transition: all 0.2s; }
     .cb-ability-box:hover { border-color: var(--crimson-border); }
-    .cb-ability-box::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background: var(--crimson); border-radius: 2px 2px 0 0; }
+    .cb-ability-box::before { display: none; }
     .cb-ability-name { font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 2px; color:var(--text-muted); text-transform: uppercase; margin-bottom: 8px; }
     .cb-ability-score { font-size: 32px; font-weight: 300; color: var(--white); line-height: 1; margin-bottom: 4px; }
     .cb-ability-mod { font-size: 13px; color: var(--crimson); font-family: 'Cinzel', serif; }
@@ -111,8 +111,8 @@
     .cb-array-val:hover { border-color: var(--crimson); color: var(--white); }
     .cb-array-val.used { opacity: 0.25; cursor: not-allowed; text-decoration: line-through; }
     .cb-array-val.selected { background: var(--crimson); border-color: var(--crimson); color: var(--white); }
-    .cb-ability-box.selecting { border-color: rgba(255,200,50,0.5); cursor: pointer; }
-    .cb-ability-box.selecting::before { background: rgba(255,200,50,0.5); }
+    .cb-ability-box.selecting { border-color: var(--crimson-border); cursor: pointer; }
+    .cb-ability-box.selecting::before { display: none; }
     .cb-pb-display { font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 2px; color:var(--text-muted); margin-bottom: 16px; }
     .cb-pb-display span { color: var(--crimson); font-size: 14px; }
     .cb-score-btns { display: flex; align-items: center; gap: 8px; justify-content: center; margin-top: 6px; }
@@ -120,8 +120,8 @@
     .cb-score-btn:hover { background: var(--crimson); }
 
     /* ── SKILLS ── */
-    .cb-skills-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--border); margin-bottom: 28px; border-radius: 2px; overflow: hidden; }
-    .cb-skill-row { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--border-mid); background: var(--bg-card); transition: background 0.15s; }
+    .cb-skills-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: none; margin-bottom: 28px; border-radius: 0; overflow: hidden; }
+    .cb-skill-row { display: flex; align-items: center; gap: 10px; padding: 10px 16px; border-bottom: 1px solid var(--border-mid); background: transparent; transition: background 0.15s; }
     .cb-skill-row:hover { background: var(--bg-hover); }
     .cb-skill-check { width: 18px; height: 18px; border: 2px solid var(--border); border-radius: 3px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; }
     .cb-skill-check:hover { border-color: var(--crimson); }
@@ -167,20 +167,20 @@
     .cb-form-textarea { resize: vertical; min-height: 100px; }
 
     /* ── FINAL SHEET ── */
-    .cb-sheet { max-width: 900px; }
+    .cb-sheet { max-width: 100%; }
     .cb-sheet-header { display: grid; grid-template-columns: auto 1fr; gap: 28px; align-items: start; margin-bottom: 32px; padding-bottom: 24px; border-bottom: 1px solid rgba(212,67,58,0.25); }
     .cb-sheet-name { font-size: 42px; font-weight: 300; color: var(--white); margin-bottom: 4px; }
     .cb-sheet-class { font-size: 20px; font-style: italic; color:var(--text-muted); }
     .cb-sheet-tags { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
     .cb-sheet-tag { font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 2px; text-transform: uppercase; padding: 4px 10px; border: 1px solid rgba(212,67,58,0.3); color: rgba(212,67,58,0.8); }
     .cb-scores-row { display: grid; grid-template-columns: repeat(6,1fr); gap: 8px; margin-bottom: 24px; }
-    .cb-score-block { background: var(--black-card); border: 1px solid rgba(212,67,58,0.22); padding: 14px 8px; text-align: center; position: relative; }
-    .cb-score-block::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:var(--crimson); }
+    .cb-score-block { background: transparent; border: none; border-bottom: 1px solid rgba(212,67,58,0.22); padding: 14px 8px; text-align: center; position: relative; }
+    .cb-score-block::before { display: none; }
     .cb-score-label { font-family:'Cinzel',serif; font-size:7px; letter-spacing:2px; color:var(--text-faint); text-transform:uppercase; margin-bottom:6px; }
     .cb-score-val { font-size:28px; font-weight:300; color:var(--white); line-height:1; }
     .cb-score-mod { font-family:'Cinzel',serif; font-size:11px; color:var(--crimson); margin-top:4px; }
     .cb-stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
-    .cb-stat-block { background: var(--black-card); border: 1px solid rgba(212,67,58,0.2); padding: 16px; text-align: center; }
+    .cb-stat-block { background: transparent; border: none; border-bottom: 1px solid rgba(212,67,58,0.2); padding: 16px; text-align: center; }
     .cb-stat-val { font-size: 28px; font-weight: 300; color: var(--white); }
     .cb-stat-label { font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 2px; color:var(--text-faint); text-transform: uppercase; margin-top: 4px; }
     .cb-sheet-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
@@ -563,10 +563,12 @@
   <div id="ps-page-breadcrumb"></div>
 
 
-  <div class="edition-label">✦ Select Edition ✦</div>
-  <div class="edition-toggle">
-    <button class="edition-btn active" id="btn-5e" onclick="switchEdition('5e')">D&D 5th Edition</button>
-    <button class="edition-btn" id="btn-35e" onclick="switchEdition('35e')">D&D 3.5 Edition</button>
+  <div id="editionSelector">
+    <div class="edition-label">✦ Select Edition ✦</div>
+    <div class="edition-toggle">
+      <button class="edition-btn active" id="btn-5e" onclick="switchEdition('5e')">D&D 5th Edition</button>
+      <button class="edition-btn" id="btn-35e" onclick="switchEdition('35e')">D&D 3.5 Edition</button>
+    </div>
   </div>
 
   <div id="builder-5e">
@@ -1696,7 +1698,9 @@ function renderRaces(){
     const hbBadge=race.source==='homebrew'?'<span style="font-family:Cinzel,serif;font-size:7px;letter-spacing:1px;text-transform:uppercase;color:#8b6914;margin-left:6px;">✶ HB</span>':'';
     const editBtn=race.source==='homebrew'?'<button data-hbe-edit-type="race" data-hbe-edit-id="'+escapeHtml(id)+'" style="position:absolute;top:6px;right:6px;background:none;border:none;color:#8b6914;cursor:pointer;font-size:11px;" title="Edit">✎</button>':'';
     d.style.position='relative';
-    d.innerHTML=`<div class="cb-card-name">${escapeHtml(race.name)}${hbBadge}</div><div class="cb-card-detail">${escapeHtml(asi)} · ${escapeHtml(race.size)} · ${escapeHtml(race.speed)}ft</div>${editBtn}`;
+    var raceFlavorText = {human:'Versatile and ambitious, found in every corner of the world',elf:'Graceful and long-lived, with a deep bond to magic and nature',dwarf:'Stout and hardy, masters of stone and forge',halfling:'Small and nimble, with a knack for avoiding danger',gnome:'Curious and inventive, brimming with enthusiasm',half_elf:'Blending elven grace with human versatility','half-elf':'Blending elven grace with human versatility',half_orc:'Fierce and enduring, marked by strength and resilience','half-orc':'Fierce and enduring, marked by strength and resilience',tiefling:'Touched by infernal heritage, wielding dark charisma',dragonborn:'Proud and draconic, breathing elemental power'};
+    var raceFlavor = raceFlavorText[id] || (escapeHtml(asi) + ' · ' + escapeHtml(race.size) + ' · ' + escapeHtml(race.speed) + 'ft');
+    d.innerHTML=`<div class="cb-card-name">${escapeHtml(race.name)}${hbBadge}</div><div class="cb-card-detail">${raceFlavor}</div>${editBtn}`;
     c.appendChild(d);
   });
   // Wire edit buttons for homebrew entities
@@ -1786,8 +1790,9 @@ function renderClasses(){
     const hbBadge=cls.source==='homebrew'?'<span style="font-family:Cinzel,serif;font-size:7px;letter-spacing:1px;text-transform:uppercase;color:#8b6914;margin-left:6px;">✶ HB</span>':'';
     const editBtn=cls.source==='homebrew'?'<button data-hbe-edit-type="class" data-hbe-edit-id="'+escapeHtml(id)+'" style="position:absolute;top:6px;right:6px;background:none;border:none;color:#8b6914;cursor:pointer;font-size:11px;" title="Edit">✎</button>':'';
     d.style.position='relative';
-    const sp=cls.spellcastingAbility?` · ${DND_DATA.abilityShort[cls.spellcastingAbility]} Spells`:'';
-    d.innerHTML=`<div class="cb-card-name">${escapeHtml(cls.name)}${hbBadge}</div><div class="cb-card-detail">d${cls.hitDie} Hit Die${sp}</div><div class="cb-card-badge">${cls.primaryAbility.toUpperCase()}</div>${editBtn}`;
+    var classFlavorText = {barbarian:'Primal warrior fueled by rage',bard:'Magical performer and jack-of-all-trades',cleric:'Divine spellcaster and healer',druid:'Nature\'s guardian and shapeshifter',fighter:'Master of martial combat',monk:'Disciplined warrior of body and mind',paladin:'Holy knight sworn to an oath',ranger:'Skilled hunter and wilderness tracker',rogue:'Stealthy expert and cunning striker',sorcerer:'Innate wielder of arcane magic',warlock:'Pact-bound channeler of eldritch power',wizard:'Scholarly master of the arcane arts'};
+    var flavorText = classFlavorText[id] || ('d' + cls.hitDie + ' Hit Die');
+    d.innerHTML=`<div class="cb-card-name">${escapeHtml(cls.name)}${hbBadge}</div><div class="cb-card-detail">${flavorText}</div><div class="cb-card-badge">${cls.primaryAbility.toUpperCase()}</div>${editBtn}`;
     c.appendChild(d);
   });
   // Wire edit buttons for homebrew entities
@@ -1804,7 +1809,7 @@ function selectClass(id){
   document.getElementById('sl-class').textContent=DND_DATA.classes[id].name;
   // Update spell step appearance
   const step7=document.getElementById('step7item');
-  if(step7) step7.style.opacity=DND_DATA.classes[id].spellcastingAbility?'1':'0.4';
+  if(step7) step7.style.display=DND_DATA.classes[id].spellcastingAbility?'':'none';
   renderClassDetail(id); updateMiniSummary();
 }
 function renderClassDetail(id){
@@ -5564,6 +5569,7 @@ async function saveCharacterToDB(){
   if(!session) return; // not signed in — silent skip
 
   const snapshot = {
+    name:             (C.details && C.details.name) || 'Unnamed',
     race:             C.race,
     subrace:          C.subrace,
     cls:              C.cls,
@@ -5748,6 +5754,8 @@ function init(){
     C.weaponChoices = C.weaponChoices || {};
     C.rollLog = [];
     try { localStorage.setItem('phmurt_current_char_id', id); } catch(e) { /* ignore */ }
+    // Hide edition selector when editing existing character
+    if(document.getElementById('editionSelector')) document.getElementById('editionSelector').style.display='none';
     // Re-init scored method display
     renderAbilityGrid();
     renderArrayPool();
@@ -8537,8 +8545,9 @@ function renderRaces35() {
     var d = document.createElement('div');
     d.className = 'cb-card'+(C35.race===id?' selected':'');
     d.onclick = function() { selectRace35(id); };
-    var asi = Object.entries(race.asi).map(function(e) { return DND35_DATA.abilityShort[e[0]]+(e[1]>0?'+':'')+e[1]; }).join(', ')||'No ASI';
-    d.innerHTML = '<div class="cb-card-name">'+escapeHtml(race.name)+'</div><div class="cb-card-detail">'+escapeHtml(asi)+' · '+escapeHtml(race.size)+' · '+escapeHtml(race.speed)+' ft</div>';
+    var raceFlavorText35 = {human:'Versatile and ambitious',dwarf:'Stout and stubborn',elf:'Graceful and long-lived',gnome:'Clever and resourceful',halfElf:'Between two worlds',halfOrc:'Strong and fierce',halfling:'Lucky and nimble'};
+    var flavorText35 = raceFlavorText35[id] || (Object.entries(race.asi).map(function(e) { return DND35_DATA.abilityShort[e[0]]+(e[1]>0?'+':'')+e[1]; }).join(', ')||'No ASI');
+    d.innerHTML = '<div class="cb-card-name">'+escapeHtml(race.name)+'</div><div class="cb-card-detail">'+flavorText35+'</div>';
     c.appendChild(d);
   });
 }
@@ -8574,7 +8583,9 @@ function renderClasses35() {
     d.className = 'cb-card'+(C35.cls===id?' selected':'');
     d.onclick = function() { selectClass35(id); };
     var bab = cls.babProg==='good'?'Good BAB':cls.babProg==='medium'?'Med BAB':'Poor BAB';
-    d.innerHTML = '<div class="cb-card-name">'+escapeHtml(cls.name)+'</div><div class="cb-card-detail">d'+cls.hitDie+' HD · '+bab+' · '+cls.skillPoints+'+INT skills</div><div class="cb-card-badge">'+cls.primaryAbility.toUpperCase()+'</div>';
+    var classFlavorText35 = {barbarian:'Primal warrior fueled by rage',bard:'Magical performer and lore keeper',cleric:'Divine champion and channeler of the gods',druid:"Nature's guardian and wild shapeshifter",fighter:'Versatile master of arms and armor',monk:'Disciplined warrior of body and mind',paladin:'Holy warrior sworn to righteousness',ranger:'Skilled woodsman and deadly hunter',rogue:'Cunning trickster and precision striker',sorcerer:'Innate channeler of arcane energy',warlock:'Pact-bound wielder of dark power',wizard:'Scholarly master of arcane formulas'};
+    var flavorText35 = classFlavorText35[id] || ('d' + cls.hitDie + ' HD · ' + bab);
+    d.innerHTML = '<div class="cb-card-name">'+escapeHtml(cls.name)+'</div><div class="cb-card-detail">'+flavorText35+'</div><div class="cb-card-badge">'+cls.primaryAbility.toUpperCase()+'</div>';
     c.appendChild(d);
   });
 }
@@ -8594,7 +8605,7 @@ function selectClass35(id) {
   });
   document.getElementById('sl35-class').textContent = DND35_DATA.classes[id].name;
   var step8 = document.getElementById('step35-8');
-  if (step8) step8.style.opacity = activeSpellClass35() && DND35_DATA.classes[activeSpellClass35()] && DND35_DATA.classes[activeSpellClass35()].spellcastingAbility ? '1' : '0.4';
+  if (step8) step8.style.display = activeSpellClass35() && DND35_DATA.classes[activeSpellClass35()] && DND35_DATA.classes[activeSpellClass35()].spellcastingAbility ? '' : 'none';
   renderClassDetail35(id); updateMini35();
 }
 function renderClassDetail35(id) {
@@ -9567,7 +9578,7 @@ async function saveChar35() {
   if (btn) { btn.textContent='Saving...'; btn.disabled=true; }
   ensureClasses35();
   var snapshot = {
-    edition:'3.5', race:C35.race, cls:C35.cls, alignment:C35.alignment,
+    edition:'3.5', name:(C35.details && C35.details.name) || 'Unnamed', race:C35.race, cls:C35.cls, alignment:C35.alignment,
     abilities:{...C35.abilities}, scoreMethod:C35.scoreMethod, arrayAssigned:{...C35.arrayAssigned},
     skillRanks:{...C35.skillRanks}, selectedFeats:[...C35.selectedFeats],
     equipChoices:{...C35.equipChoices}, weaponChoices:{...(C35.weaponChoices||{})},

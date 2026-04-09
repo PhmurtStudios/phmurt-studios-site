@@ -30,11 +30,11 @@
   <script src="phmurt-auth.js"></script>
   <script src="builder-data-35.js"></script>
   <style>
-    .cb-wrap { display:grid; grid-template-columns:280px 1fr; min-height:calc(100vh - 60px); max-width:1400px; margin:0 auto; padding:0 32px; }
+    .cb-wrap { display:grid; grid-template-columns:280px 1fr; min-height:calc(100vh - 60px); max-width:1600px; margin:0 auto; padding:0 32px; }
     .cb-sidebar { background:var(--bg); border-right:1px solid var(--border); padding:24px 0; position:sticky; top:60px; height:calc(100vh - 60px); overflow-y:auto; }
-    .cb-main { padding:48px 56px; }
+    .cb-main { padding:48px 40px; }
     .cb-step-item { display:flex; align-items:center; gap:14px; padding:14px 24px; cursor:pointer; transition:all 0.25s; position:relative; }
-    .cb-step-item::after { content:''; position:absolute; left:37px; top:100%; width:1px; height:0; background:var(--border-mid); z-index:1; }
+    .cb-step-item::after { content:''; position:absolute; left:38px; top:100%; width:1px; height:0; background:var(--border-mid); z-index:1; }
     .cb-step-item:not(:last-of-type)::after { height:100%; }
     .cb-step-item:hover { background:var(--crimson-soft); }
     .cb-step-item.active { background:var(--crimson-soft); }
@@ -86,7 +86,7 @@
     .cb-ability-grid { display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:24px; }
     .cb-ability-box { background:var(--bg-card); border:1px solid var(--border); padding:18px 10px; text-align:center; position:relative; cursor:pointer; border-radius:2px; transition:all 0.2s; }
     .cb-ability-box:hover { border-color:var(--crimson-border); }
-    .cb-ability-box::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--crimson); border-radius:2px 2px 0 0; }
+    .cb-ability-box::before { display: none; }
     .cb-ability-name { font-family:'Cinzel',serif; font-size:8px; letter-spacing:2px; color:var(--text-muted); text-transform:uppercase; margin-bottom:8px; }
     .cb-ability-score { font-size:32px; font-weight:300; color:var(--white); line-height:1; margin-bottom:4px; }
     .cb-ability-mod { font-size:13px; color:var(--crimson); font-family:'Cinzel',serif; }
@@ -98,8 +98,8 @@
     .cb-array-val:hover { border-color:var(--crimson); color:var(--white); }
     .cb-array-val.used { opacity:0.25; cursor:not-allowed; text-decoration:line-through; }
     .cb-array-val.selected { background:var(--crimson); border-color:var(--crimson); color:white; }
-    .cb-ability-box.selecting { border-color:rgba(255,200,50,0.5); }
-    .cb-ability-box.selecting::before { background:rgba(255,200,50,0.5); }
+    .cb-ability-box.selecting { border-color:var(--crimson); }
+    .cb-ability-box.selecting::before { display: none; }
     .cb-pb-display { font-family:'Cinzel',serif; font-size:11px; letter-spacing:2px; color:var(--text-muted); margin-bottom:16px; }
     .cb-pb-display span { color:var(--crimson); font-size:14px; }
     .cb-score-btns { display:flex; align-items:center; gap:8px; justify-content:center; margin-top:6px; }
@@ -991,7 +991,7 @@ function selectClass35(id) {
   });
   document.getElementById('sl35-class').textContent = DND35_DATA.classes[id].name;
   var step8 = document.getElementById('step35-8');
-  if (step8) step8.style.opacity = activeSpellClass35() && DND35_DATA.classes[activeSpellClass35()] && DND35_DATA.classes[activeSpellClass35()].spellcastingAbility ? '1' : '0.4';
+  if (step8) step8.style.display = activeSpellClass35() && DND35_DATA.classes[activeSpellClass35()] && DND35_DATA.classes[activeSpellClass35()].spellcastingAbility ? '' : 'none';
   renderClassDetail35(id); updateMini35();
 }
 function renderClassDetail35(id) {
