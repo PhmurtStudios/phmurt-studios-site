@@ -2651,24 +2651,29 @@
       ctx.fillStyle = grad;
       ctx.fillRect(-200, -200, g.mapW + 400, g.mapH + 400);
 
-      // Subtle depth variation overlay — gives a sense of underwater terrain
-      const rng = this._seaNoiseRng || (this._seaNoiseRng = (() => {
+      // Subtle depth variation — soft blurred blobs, not grid squares
+      if (!this._seaNoiseRng) {
         let s = 12345;
-        return () => { s = (s * 16807 + 0) % 2147483647; return (s & 0x7fffffff) / 2147483647; };
-      })());
+        this._seaNoiseRng = () => { s = (s * 16807) % 2147483647; return (s & 0x7fffffff) / 2147483647; };
+      }
+      const rng = this._seaNoiseRng;
       ctx.save();
-      const step = 80;
-      for (let x = -200; x < g.mapW + 400; x += step) {
-        for (let y = -200; y < g.mapH + 400; y += step) {
-          const v = rng();
-          if (v > 0.6) {
-            ctx.fillStyle = "rgba(8,16,32," + (0.05 + v * 0.08).toFixed(3) + ")";
-            ctx.fillRect(x, y, step, step);
-          } else if (v < 0.2) {
-            ctx.fillStyle = "rgba(20,50,90," + (0.03 + v * 0.04).toFixed(3) + ")";
-            ctx.fillRect(x, y, step, step);
-          }
+      const blobCount = 30;
+      for (let i = 0; i < blobCount; i++) {
+        const bx = -200 + rng() * (g.mapW + 400);
+        const by = -200 + rng() * (g.mapH + 400);
+        const br = 150 + rng() * 350;
+        const dark = rng() > 0.5;
+        const blobGrad = ctx.createRadialGradient(bx, by, 0, bx, by, br);
+        if (dark) {
+          blobGrad.addColorStop(0, "rgba(4,8,18,0.06)");
+          blobGrad.addColorStop(1, "rgba(4,8,18,0)");
+        } else {
+          blobGrad.addColorStop(0, "rgba(16,40,80,0.04)");
+          blobGrad.addColorStop(1, "rgba(16,40,80,0)");
         }
+        ctx.fillStyle = blobGrad;
+        ctx.fillRect(bx - br, by - br, br * 2, br * 2);
       }
       ctx.restore();
     }
