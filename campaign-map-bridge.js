@@ -467,33 +467,77 @@
     };
 
     // ========================================================================
-    // FACTIONS
+    // UNIFIED KINGDOMS — each region IS a kingdom (region name = faction name)
     // ========================================================================
-    const factionMap = {}; // Maps engine faction id to our faction object
+    // We build regions and factions together so every region has exactly one
+    // controlling faction whose name matches the region name.  The MapEngine's
+    // faction names are kingdom-style ("Kingdom of Aldenmoor") so they serve
+    // as the single canonical name for both the region and its ruling faction.
+    // ========================================================================
+    const factionMap = {}; // Maps engine faction id -> faction object
+    const regionMap = {};  // Maps engine region id -> region object
+    const regionsByName = {};
     const factionsById = new Map(engine.territory.factions.map(f => [f.id, f]));
 
-    for (const engineFaction of engine.territory.factions) {
-      const factionTemplate = DATA_POOLS.factionTemplates[
-        Math.floor(rng() * DATA_POOLS.factionTemplates.length)
-      ];
+    // Build a lookup: factionId -> array of engine regions it owns
+    const regionsByFaction = {};
+    for (const er of engine.territory.regions) {
+      const fid = er.factionId >= 0 ? er.factionId : -1;
+      if (!regionsByFaction[fid]) regionsByFaction[fid] = [];
+      regionsByFaction[fid].push(er);
+    }
 
+    // Shuffle faction templates so different seeds feel different
+    const shuffledFactionTemplates = [...DATA_POOLS.factionTemplates].sort(() => rng() - 0.5);
+    let fTemplateIdx = 0;
+
+    for (const engineRegion of engine.territory.regions) {
+      const terrain = detectTerrainFromRegion(engineRegion, engine);
+      const state = DATA_POOLS.regionStates[Math.floor(rng() * DATA_POOLS.regionStates.length)];
+      const threat = ['low', 'medium', 'high', 'extreme'][Math.floor(rng() * 4)];
+
+      // Determine the kingdom name: use the engine faction name if this region
+      // has one, otherwise use the engine region name
+      const engineFaction = engineRegion.factionId >= 0
+        ? factionsById.get(engineRegion.factionId)
+        : null;
+
+      // If this faction controls multiple regions, disambiguate by appending
+      // the geographic name.  Single-region factions just use the faction name.
+      let kingdomName;
+      if (engineFaction) {
+        const siblings = regionsByFaction[engineFaction.id] || [];
+        if (siblings.length > 1) {
+          kingdomName = engineFaction.name + ' — ' + (engineRegion.name || 'Territory');
+        } else {
+          kingdomName = engineFaction.name;
+        }
+      } else {
+        kingdomName = engineRegion.name || 'Unclaimed Territory';
+      }
+
+      // Pick a faction template for flavor (govType, desc, etc.)
+      const factionTemplate = shuffledFactionTemplates[fTemplateIdx % shuffledFactionTemplates.length];
+      fTemplateIdx++;
+
+      // --- Create the faction (one per region, name = kingdom name) ---
       const faction = {
-        id: parseInt(engineFaction.id) || data.factions.length + 1,
-        name: engineFaction.name || factionTemplate.type,
+        id: data.factions.length + 1,
+        name: kingdomName,
         attitude: factionTemplate.attitudes[
           Math.floor(rng() * factionTemplate.attitudes.length)
         ],
-        power: Math.floor(rng() * 61) + 30, // 30-90
+        power: Math.floor(rng() * 61) + 30,
         trend: ['rising', 'stable', 'declining'][Math.floor(rng() * 3)],
         desc: factionTemplate.desc,
-        color: engineFaction.fill || factionTemplate.color,
+        color: engineFaction ? (engineFaction.fill || factionTemplate.color) : factionTemplate.color,
         govType: factionTemplate.govType,
         hierarchy: [],
-        resources: [],
+        resources: DATA_POOLS.resourcesByTerrain[terrain],
         allies: [],
         rivals: [],
-        treasury: Math.floor(rng() * 9001) + 1000, // 1000-10000 gp starting treasury
-        income: Math.floor(rng() * 401) + 100, // 100-500 gp/tick base income
+        treasury: Math.floor(rng() * 9001) + 1000,
+        income: Math.floor(rng() * 401) + 100,
       };
 
       // Generate hierarchy
@@ -509,44 +553,26 @@
         npcIdMap[npcName] = npcIdCounter++;
       }
 
-      // Assign resources and allies/rivals (will refine later)
-      const terrainTypes = Object.keys(DATA_POOLS.resourcesByTerrain);
-      const terrain = terrainTypes[Math.floor(rng() * terrainTypes.length)];
-      faction.resources = DATA_POOLS.resourcesByTerrain[terrain];
-
       data.factions.push(faction);
-      factionMap[engineFaction.id] = faction;
-    }
+      if (engineFaction) factionMap[engineFaction.id] = faction;
 
-    // ========================================================================
-    // REGIONS
-    // ========================================================================
-    const regionMap = {}; // Maps engine region id to our region object
-    const regionsByName = {};
-
-    for (const engineRegion of engine.territory.regions) {
-      const terrain = detectTerrainFromRegion(engineRegion, engine);
-      const state = DATA_POOLS.regionStates[Math.floor(rng() * DATA_POOLS.regionStates.length)];
-      const threat = ['low', 'medium', 'high', 'extreme'][Math.floor(rng() * 4)];
-
-      const controllingFaction = engineRegion.factionId && factionMap[engineRegion.factionId]
-        ? factionMap[engineRegion.factionId].name
-        : (data.factions.length > 0 ? data.factions[0].name : 'Unknown');
-
+      // --- Create the region (name = kingdom name = faction name) ---
       const region = {
         id: parseInt(engineRegion.id) || data.regions.length + 1,
-        name: engineRegion.name || `Region ${data.regions.length + 1}`,
-        subtitle: `The ${terrain.charAt(0).toUpperCase() + terrain.slice(1)} Territory`,
+        name: kingdomName,
+        subtitle: engineRegion.name
+          ? `The ${engineRegion.name} Territory`
+          : `The ${terrain.charAt(0).toUpperCase() + terrain.slice(1)} Territory`,
         type: engineRegion.cities?.some(c => c.capital) ? 'kingdom' : 'wilderness',
-        ctrl: controllingFaction,
+        ctrl: kingdomName,
         threat: threat,
         state: state,
         visited: false,
         terrain: terrain,
         cities: engineRegion.cities?.map(c => c.name) || [],
         population: '0',
-        governor: generateNPCName(rng),
-        governorTitle: 'Regional Governor',
+        governor: faction.hierarchy.find(h => h.role === 'ruler')?.name || generateNPCName(rng),
+        governorTitle: faction.hierarchy.find(h => h.role === 'ruler')?.title || 'Ruler',
         climate: DATA_POOLS.climateByTerrain[terrain][
           Math.floor(rng() * DATA_POOLS.climateByTerrain[terrain].length)
         ],
@@ -556,8 +582,8 @@
         subFactions: [],
       };
 
-      // Track governor NPC
-      npcIdMap[region.governor] = npcIdCounter++;
+      // Track governor NPC (reuse the faction ruler — no separate governor)
+      if (!npcIdMap[region.governor]) npcIdMap[region.governor] = npcIdCounter++;
 
       // Add some sub-factions
       const numSubFactions = Math.floor(rng() * 3);
@@ -772,16 +798,14 @@
         const normX = poiWorldW > 0 ? enginePoi.x / poiWorldW : 0.5;
         const normY = poiWorldH > 0 ? enginePoi.y / poiWorldH : 0.5;
 
-        // Find nearest region
+        // Find nearest region by distance in world space
         let nearestRegion = data.regions[0];
         let minDist = Infinity;
-        for (const region of data.regions) {
-          if (!regionMap[region.id]) continue;
-          const engineRegion = engine.territory.regions.find(er => regionMap[er.id] === region);
-          if (!engineRegion) continue;
-          const regLabelX = engineRegion.labelX || 0;
-          const regLabelY = engineRegion.labelY || 0;
-          // Use raw world-space coords for distance (both poi and region are in same space)
+        for (const engineReg of engine.territory.regions) {
+          const region = regionMap[engineReg.id];
+          if (!region) continue;
+          const regLabelX = engineReg.labelX || 0;
+          const regLabelY = engineReg.labelY || 0;
           const dist = Math.hypot(enginePoi.x - regLabelX, enginePoi.y - regLabelY);
           if (dist < minDist) {
             minDist = dist;

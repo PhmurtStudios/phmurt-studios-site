@@ -2224,6 +2224,20 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
   const broadcastRef = useRef(null);
   const realtimeRef = useRef(null);
 
+  // Reset all sub-system state when the map seed changes
+  useEffect(function() {
+    // Clear selection (old region/city/faction no longer exists)
+    setSel(null);
+    setSelType(null);
+    // Stop and reset living world engine
+    setLwActive(false);
+    setLwEvents([]);
+    setLwLog([]);
+    setLwTimeSkipSummary(null);
+    setLwTimeSkipProgress(null);
+    if (window.livingWorld) { window.livingWorld.stop(); }
+  }, [data.atlasMapSeed]);
+
   // Start/stop the Living World engine
   useEffect(() => {
     if (!isLive) return;
@@ -2542,18 +2556,24 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
     // Generate the map
     engine.generate(seedNum);
 
-    // If world data hasn't been generated yet, do it now via bridge
-    if (typeof window.mapEngineToWorldData === "function" && (!data.regions || data.regions.length === 0)) {
+    // Always regenerate world data from the map engine to keep everything in sync
+    if (typeof window.mapEngineToWorldData === "function") {
       const worldData = window.mapEngineToWorldData(engine, seedNum);
       if (worldData) {
         setData(function(d) {
           return Object.assign({}, d, {
+            // Core world data from the map engine
             regions: worldData.regions,
             factions: worldData.factions,
             npcs: worldData.npcs || [],
             cities: worldData.cities || [],
             pois: worldData.pois || [],
             name: worldData.name || d.name,
+            // Clear stale sub-system state that references old names
+            _lwEventLog: [],
+            quests: [],
+            encounters: [],
+            activity: [{ time: "Just now", text: "World map generated (seed " + seedNum + ")" }],
           });
         });
       }
@@ -3015,6 +3035,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
     if(type==="region") setData(d=>({...d,regions:[...d.regions,newE]}));
     if(type==="faction") setData(d=>({...d,factions:[...d.factions,newE]}));
     if(type==="npc") setData(d=>({...d,npcs:[...d.npcs,newE]}));
+    if(type==="poi") setData(d=>({...d,pois:[...d.pois||[],newE]}));
     setAddingEntity(false);
   };
 
@@ -3272,13 +3293,13 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
       <div style={{ display:"flex", alignItems:"center", gap:0, rowGap:6, flexWrap:"wrap", padding:"0 12px 8px", borderBottom:`1px solid ${T.border}`, flexShrink:0, background:T.bgNav }}>
         {(() => {
           const mods = data.modules || {};
-          const coreTabs = ["map","regions","factions","npcs"];
+          const coreTabs = ["map","regions","factions","npcs","pois"];
           const moduleTabs = [
             { id:"calendar", label:"Calendar", module:"calendar" },
             { id:"exploration", label:"Explore", module:"hexcrawl" },
           ];
           const activeTabs = [...coreTabs, ...moduleTabs.filter(mt => mods[mt.module] !== false).map(mt => mt.id)];
-          const labels = {map:"Atlas",calendar:"Calendar",exploration:"Explore"};
+          const labels = {map:"Atlas",regions:"Kingdoms",factions:"Factions",npcs:"NPCs",pois:"Points of Interest",calendar:"Calendar",exploration:"Explore"};
           return activeTabs.map(t => (
             <button key={t} onClick={()=>{setTab(t);if(t!=="map"){setSel(null);setSelType(null);setAtlasProvinceId(null);setEditing(false);setCityPopup(null);setRegionPopup(null);}}} style={{
               padding:"14px clamp(8px, 1.6vw, 18px)", background:"transparent", border:"none", cursor:"pointer",
@@ -3875,33 +3896,10 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       onChange={e => {
                         const seedVal = e.target.value;
                         if (seedVal) {
-                          const seedNum = parseInt(seedVal);
-                          // Generate map via new MapEngine + bridge
-                          if (mapEngineRef.current) {
-                            mapEngineRef.current.generate(seedNum);
-                          }
-                          var worldData = null;
-                          if (typeof window.mapEngineToWorldData === "function" && mapEngineRef.current) {
-                            worldData = window.mapEngineToWorldData(mapEngineRef.current, seedNum);
-                          }
-                          if (!worldData) {
-                            // Fallback to old generation if bridge not available
-                            var atlas = generateAtlasData(seedNum);
-                            worldData = regionsAndFactionsFromMetadata(seedNum);
-                          }
-                          setData(d => ({
-                            ...d,
-                            atlasMapSeed: seedVal,
-                            regions: worldData.regions || d.regions,
-                            factions: worldData.factions || d.factions,
-                            npcs: worldData.npcs || d.npcs,
-                            cities: worldData.cities || [],
-                            pois: worldData.pois || [],
-                            name: worldData.name || d.name,
-                            activity: [{ time: "Just now", text: `Generated world map (seed ${seedVal})` }, ...(d.activity || [])].slice(0, 40),
-                          }));
+                          // Just update the seed — the useEffect will regenerate map + all world data
+                          setData(d => ({ ...d, atlasMapSeed: seedVal }));
                         } else {
-                          setData(d => { const { atlasMapSeed, generatedAtlas, ...rest } = d; return { ...rest, activity: [{ time: "Just now", text: "Reverted to default map" }, ...(d.activity || [])].slice(0, 40) }; });
+                          setData(d => { const { atlasMapSeed, generatedAtlas, ...rest } = d; return { ...rest, regions: [], factions: [], npcs: [], cities: [], pois: [], activity: [{ time: "Just now", text: "Reverted to default map" }] }; });
                         }
                       }}
                       style={{ padding:"4px 8px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(232,186,64,0.25)", borderRadius:"4px", fontFamily:"'Cinzel', serif", fontSize:9, color:T.gold, outline:"none", cursor:"pointer", letterSpacing:"1px" }}
@@ -3913,29 +3911,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     <button onClick={() => {
                       const current = parseInt(data.atlasMapSeed || "0");
                       const next = (current % 100) + 1;
-                      // Generate via new MapEngine + bridge
-                      if (mapEngineRef.current) {
-                        mapEngineRef.current.generate(next);
-                      }
-                      var worldData = null;
-                      if (typeof window.mapEngineToWorldData === "function" && mapEngineRef.current) {
-                        worldData = window.mapEngineToWorldData(mapEngineRef.current, next);
-                      }
-                      if (!worldData) {
-                        var atlas = generateAtlasData(next);
-                        worldData = regionsAndFactionsFromMetadata(next);
-                      }
-                      setData(d => ({
-                        ...d,
-                        atlasMapSeed: String(next),
-                        regions: worldData.regions || d.regions,
-                        factions: worldData.factions || d.factions,
-                        npcs: worldData.npcs || d.npcs,
-                        cities: worldData.cities || [],
-                        pois: worldData.pois || [],
-                        name: worldData.name || d.name,
-                        activity: [{ time: "Just now", text: `Regenerated world map (seed ${next})` }, ...(d.activity || [])].slice(0, 40),
-                      }));
+                      // Just update the seed — the useEffect will regenerate map + all world data
+                      setData(d => ({ ...d, atlasMapSeed: String(next) }));
                     }} style={{ padding:"5px 12px", background:"rgba(30,26,22,0.85)", backdropFilter:"blur(8px)", border:"1px solid rgba(232,186,64,0.35)", borderRadius:"4px", fontFamily:"'Cinzel', serif", fontSize:9, color:T.questGold, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", boxShadow:"0 2px 10px rgba(0,0,0,0.3)", transition:"all 0.2s", whiteSpace:"nowrap" }}
                       onMouseEnter={e => { e.target.style.borderColor = "rgba(232,186,64,0.7)"; e.target.style.color = "#f5d66a"; }}
                       onMouseLeave={e => { e.target.style.borderColor = "rgba(232,186,64,0.35)"; e.target.style.color = "#e8ba40"; }}
@@ -5638,6 +5615,121 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
               );
             })()}
 
+            {/* ── POINTS OF INTEREST TAB ── */}
+            {tab==="pois" && (() => {
+              const pois = data.pois || [];
+              const dangerColors = { 0:"#4ade80", 1:"#86efac", 2:"#fcd34d", 3:"#fb923c", 4:"#f87171", 5:"#dc2626" };
+              const dangerLabels = { 0:"Safe", 1:"Low", 2:"Moderate", 3:"Dangerous", 4:"Deadly", 5:"Catastrophic" };
+              const [poiFilter, setPoiFilter] = React.useState("all");
+              const [poiSearch, setPoiSearch] = React.useState("");
+              const uniqueTypes = [...new Set(pois.map(p => p.type))].sort();
+              const filtered = pois.filter(p => {
+                if (poiFilter !== "all" && p.type !== poiFilter) return false;
+                if (poiSearch && !p.name.toLowerCase().includes(poiSearch.toLowerCase()) && !(p.description||"").toLowerCase().includes(poiSearch.toLowerCase())) return false;
+                return true;
+              });
+              const majorPois = filtered.filter(p => p.major);
+              const minorPois = filtered.filter(p => !p.major);
+
+              return (
+                <div>
+                  <div style={{ marginBottom:24 }}>
+                    <h2 style={{ fontFamily:T.heading, fontSize:24, color:T.text, marginBottom:4, letterSpacing:"0.5px" }}>Points of Interest</h2>
+                    <div style={{ fontSize:12, color:T.textMuted }}>{pois.length} locations discovered across the realm</div>
+                  </div>
+
+                  {/* Filters */}
+                  <div style={{ display:"flex", gap:8, marginBottom:20, flexWrap:"wrap", alignItems:"center" }}>
+                    <input value={poiSearch} onChange={e => setPoiSearch(e.target.value)} placeholder="Search locations..." style={{ flex:"1 1 200px", padding:"8px 12px", background:T.bgInput, border:"1px solid " + T.border, borderRadius:"4px", color:T.text, fontFamily:T.body, fontSize:12, outline:"none" }} />
+                    <select value={poiFilter} onChange={e => setPoiFilter(e.target.value)} style={{ padding:"8px 12px", background:T.bgInput, border:"1px solid " + T.border, borderRadius:"4px", color:T.text, fontFamily:T.body, fontSize:12, outline:"none", cursor:"pointer" }}>
+                      <option value="all">All Types</option>
+                      {uniqueTypes.map(t => <option key={t} value={t}>{t.replace(/_/g," ").replace(/\b\w/g,l=>l.toUpperCase())}</option>)}
+                    </select>
+                  </div>
+
+                  {/* Summary stats */}
+                  <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(120px, 1fr))", gap:12, marginBottom:24 }}>
+                    <div style={{ padding:"12px 16px", background:T.bgCard, border:"1px solid " + T.border, borderRadius:"4px", textAlign:"center" }}>
+                      <div style={{ fontSize:20, color:T.crimson, fontWeight:600, fontFamily:T.ui }}>{pois.length}</div>
+                      <div style={{ fontSize:9, color:T.textMuted, letterSpacing:"1px", textTransform:"uppercase" }}>Total</div>
+                    </div>
+                    <div style={{ padding:"12px 16px", background:T.bgCard, border:"1px solid " + T.border, borderRadius:"4px", textAlign:"center" }}>
+                      <div style={{ fontSize:20, color:T.gold, fontWeight:600, fontFamily:T.ui }}>{pois.filter(p=>p.major).length}</div>
+                      <div style={{ fontSize:9, color:T.textMuted, letterSpacing:"1px", textTransform:"uppercase" }}>Major</div>
+                    </div>
+                    <div style={{ padding:"12px 16px", background:T.bgCard, border:"1px solid " + T.border, borderRadius:"4px", textAlign:"center" }}>
+                      <div style={{ fontSize:20, color:"#f87171", fontWeight:600, fontFamily:T.ui }}>{pois.filter(p=>p.danger>=3).length}</div>
+                      <div style={{ fontSize:9, color:T.textMuted, letterSpacing:"1px", textTransform:"uppercase" }}>Dangerous</div>
+                    </div>
+                  </div>
+
+                  {/* Major POIs section */}
+                  {majorPois.length > 0 && (
+                    <div style={{ marginBottom:32 }}>
+                      <div style={{ fontSize:11, color:T.gold, letterSpacing:"2px", textTransform:"uppercase", fontFamily:T.ui, marginBottom:12, paddingBottom:6, borderBottom:"1px solid rgba(201,168,92,0.2)" }}>Major Landmarks</div>
+                      <div style={{ display:"grid", gap:10 }}>
+                        {majorPois.map(poi => (
+                          <div key={poi.id} onClick={() => { setSel(poi); setSelType("poi"); }} style={{ padding:"16px 20px", background:T.bgCard, border:"1px solid " + T.border, borderRadius:"4px", cursor:"pointer", transition:"all 0.2s", borderLeft:"3px solid " + T.gold }}
+                            onMouseEnter={e => { e.currentTarget.style.background="var(--bg-hover)"; e.currentTarget.style.borderColor=T.gold; }}
+                            onMouseLeave={e => { e.currentTarget.style.background=T.bgCard; e.currentTarget.style.borderColor=T.border; }}
+                          >
+                            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
+                              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                                <span style={{ fontSize:18 }}>{poi.icon || "📍"}</span>
+                                <span style={{ fontSize:14, color:T.text, fontWeight:400 }}>{poi.name}</span>
+                              </div>
+                              <span style={{ fontSize:10, color:dangerColors[poi.danger]||"#aaa", fontFamily:T.ui, letterSpacing:"1px" }}>{dangerLabels[poi.danger]||"Unknown"}</span>
+                            </div>
+                            <div style={{ fontSize:11, color:T.textMuted, lineHeight:1.5, marginBottom:6 }}>{(poi.description||"").slice(0,120)}{(poi.description||"").length>120?"...":""}</div>
+                            <div style={{ display:"flex", gap:12, flexWrap:"wrap" }}>
+                              <span style={{ fontSize:9, color:T.textFaint, letterSpacing:"0.5px" }}>{poi.type ? poi.type.replace(/_/g," ").replace(/\b\w/g,l=>l.toUpperCase()) : "Unknown"}</span>
+                              {poi.region && <span style={{ fontSize:9, color:T.textFaint }}>• {poi.region}</span>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Minor POIs section */}
+                  {minorPois.length > 0 && (
+                    <div style={{ marginBottom:32 }}>
+                      <div style={{ fontSize:11, color:T.textMuted, letterSpacing:"2px", textTransform:"uppercase", fontFamily:T.ui, marginBottom:12, paddingBottom:6, borderBottom:"1px solid " + T.border }}>Local Points of Interest</div>
+                      <div style={{ display:"grid", gap:8 }}>
+                        {minorPois.map(poi => (
+                          <div key={poi.id} onClick={() => { setSel(poi); setSelType("poi"); }} style={{ padding:"12px 16px", background:T.bgCard, border:"1px solid " + T.border, borderRadius:"4px", cursor:"pointer", transition:"all 0.2s" }}
+                            onMouseEnter={e => { e.currentTarget.style.background="var(--bg-hover)"; }}
+                            onMouseLeave={e => { e.currentTarget.style.background=T.bgCard; }}
+                          >
+                            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:4 }}>
+                              <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+                                <span style={{ fontSize:14 }}>{poi.icon || "📍"}</span>
+                                <span style={{ fontSize:13, color:T.text }}>{poi.name}</span>
+                              </div>
+                              <span style={{ fontSize:9, color:dangerColors[poi.danger]||"#aaa", fontFamily:T.ui }}>{dangerLabels[poi.danger]||"?"}</span>
+                            </div>
+                            <div style={{ fontSize:11, color:T.textMuted, lineHeight:1.4 }}>{(poi.description||"").slice(0,100)}{(poi.description||"").length>100?"...":""}</div>
+                            <div style={{ display:"flex", gap:12, marginTop:4, flexWrap:"wrap" }}>
+                              <span style={{ fontSize:9, color:T.textFaint }}>{poi.type ? poi.type.replace(/_/g," ").replace(/\b\w/g,l=>l.toUpperCase()) : "Unknown"}</span>
+                              {poi.region && <span style={{ fontSize:9, color:T.textFaint }}>• {poi.region}</span>}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {filtered.length === 0 && (
+                    <div style={{ textAlign:"center", padding:"60px 20px", color:T.textFaint }}>
+                      <div style={{ fontSize:32, marginBottom:12 }}>🗺</div>
+                      <div style={{ fontSize:14, marginBottom:4 }}>No points of interest found</div>
+                      <div style={{ fontSize:11 }}>{poiSearch || poiFilter !== "all" ? "Try adjusting your filters" : "Generate a world map to populate locations"}</div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
             {/* Party tab moved to Relations view */}
           </div>
         )}
@@ -5668,6 +5760,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16 }}>
                   <div style={{ display:"flex", alignItems:"center", gap:10 }}>
                     {selType==="region" && (() => { const FI = getFantasyIcon(sel.type); return <FI size={28} color={T.crimson} />; })()}
+                    {selType==="poi" && <span style={{ fontSize:24 }}>{sel.icon || "📍"}</span>}
                     <div style={{ fontSize:18, color:T.text, fontWeight:300 }}>{sel.name}</div>
                   </div>
                   <div style={{ display:"flex", gap:6 }}>
@@ -5986,7 +6079,9 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                 {/* POI details — full panel with lore, quests, rewards */}
                 {selType==="poi" && !editing && (() => {
                   const p = sel;
-                  const tCol = p.threat === "extreme" ? "#d04040" : p.threat === "high" ? "#e89430" : p.threat === "medium" ? "#c9a85c" : "#6a8a60";
+                  const dangerLevel = typeof p.danger === "number" ? p.danger : 0;
+                  const dangerLabel = ["Safe","Low","Moderate","Dangerous","Deadly","Catastrophic"][dangerLevel] || "Unknown";
+                  const tCol = dangerLevel >= 4 ? "#d04040" : dangerLevel >= 3 ? "#e89430" : dangerLevel >= 2 ? "#c9a85c" : "#6a8a60";
                   return (
                   <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
                     {/* Back + View on Map */}
@@ -6016,7 +6111,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                         <span style={{ fontSize:10, color:T.textMuted }}>·</span>
                         <span style={{ fontSize:10, color:T.textMuted }}>{p.region}</span>
                         <span style={{ fontSize:10, color:T.textMuted }}>·</span>
-                        <Tag variant={p.threat==="extreme"?"critical":p.threat==="high"?"danger":p.threat==="medium"?"warning":"success"}>{p.threat} threat</Tag>
+                        <Tag variant={dangerLevel>=4?"critical":dangerLevel>=3?"danger":dangerLevel>=2?"warning":"success"}>{dangerLabel}</Tag>
                       </div>
                       <div style={{ fontSize:12, color:T.textDim, lineHeight:1.7, fontStyle:"italic" }}>{p.description}</div>
                     </div>
@@ -6025,6 +6120,13 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       <div style={{ padding:"20px 24px", marginBottom:16, background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px" }}>
                         <div style={{ fontSize:10, color:T.textFaint, letterSpacing:"2px", textTransform:"uppercase", marginBottom:12 }}>Lore & History</div>
                         <div style={{ fontSize:12, color:T.textDim, lineHeight:1.8, fontWeight:300 }}>{p.lore}</div>
+                      </div>
+                    )}
+                    {/* Quest Hook */}
+                    {p.hook && (
+                      <div style={{ padding:"16px 20px", marginBottom:16, background:"rgba(201,168,92,0.06)", border:"1px solid rgba(201,168,92,0.15)", borderRadius:"4px", borderLeft:"3px solid " + T.gold }}>
+                        <div style={{ fontSize:10, color:T.gold, letterSpacing:"2px", textTransform:"uppercase", marginBottom:8 }}>Adventure Hook</div>
+                        <div style={{ fontSize:12, color:T.textDim, lineHeight:1.7, fontStyle:"italic", fontWeight:300 }}>{p.hook}</div>
                       </div>
                     )}
                     {/* Quests */}
@@ -7323,6 +7425,7 @@ function AddEntityModal({ open, onClose, tab, onAdd, data }) {
   useEffect(() => {
     if (tab==="regions") setForm({ name:"", type:"town", ctrl:"", threat:"low", state:"stable", visited:false, terrain:"" });
     else if (tab==="factions") setForm({ name:"", attitude:"neutral", power:50, trend:"stable", desc:"", color:"#a4b5cc" });
+    else if (tab==="pois") setForm({ name:"", type:"ruin", description:"", hook:"", danger:0, major:false, icon:"📍", region:"" });
     else setForm({ name:"", faction:null, loc:"", attitude:"neutral", role:"", alive:true });
   }, [tab, open]);
 
@@ -7346,6 +7449,20 @@ function AddEntityModal({ open, onClose, tab, onAdd, data }) {
           <Textarea value={form.desc||""} onChange={v=>setForm(p=>({...p,desc:v}))} placeholder="Description..." rows={2} />
           <Select value={form.attitude||"neutral"} onChange={v=>setForm(p=>({...p,attitude:v}))} style={{ width:"100%" }}>
             {["allied","friendly","neutral","cautious","hostile"].map(a=><option key={a} value={a}>{a}</option>)}
+          </Select>
+        </>}
+        {tab==="pois" && <>
+          <Select value={form.type||"ruin"} onChange={v=>setForm(p=>({...p,type:v}))} style={{ width:"100%" }}>
+            {["ruin","dungeon","shrine","landmark","cave","tower","grove","battlefield","portal","cataclysm_site"].map(t=><option key={t} value={t}>{t.replace(/_/g," ").replace(/\b\w/g,l=>l.toUpperCase())}</option>)}
+          </Select>
+          <Textarea value={form.description||""} onChange={v=>setForm(p=>({...p,description:v}))} placeholder="Description..." rows={2} />
+          <Input value={form.hook||""} onChange={v=>setForm(p=>({...p,hook:v}))} placeholder="Adventure hook..." />
+          <Select value={form.danger||0} onChange={v=>setForm(p=>({...p,danger:parseInt(v)}))} style={{ width:"100%" }}>
+            {[0,1,2,3,4,5].map(d=><option key={d} value={d}>{["Safe","Low","Moderate","Dangerous","Deadly","Catastrophic"][d]}</option>)}
+          </Select>
+          <Select value={form.region||""} onChange={v=>setForm(p=>({...p,region:v}))} style={{ width:"100%" }}>
+            <option value="">No region</option>
+            {data.regions.map(r=><option key={r.id} value={r.name}>{r.name}</option>)}
           </Select>
         </>}
         {tab==="npcs" && <>
