@@ -3903,7 +3903,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                         } else {
                           setData(d => { const { atlasMapSeed, generatedAtlas, ...rest } = d; return { ...rest, activity: [{ time: "Just now", text: "Reverted to default map" }, ...(d.activity || [])].slice(0, 40) }; });
                         }
-                      }
+                      }}
                       style={{ padding:"4px 8px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(232,186,64,0.25)", borderRadius:"4px", fontFamily:"'Cinzel', serif", fontSize:9, color:T.gold, outline:"none", cursor:"pointer", letterSpacing:"1px" }}
                     >
                       {Array.from({length:100}, (_,i) => i+1).map(s => {
