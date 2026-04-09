@@ -2295,10 +2295,10 @@
       this._boundListeners = [];    // tracks listeners for cleanup
 
       this.theme = {
-        bg: "#08080a",
-        sea: "#0c1018",
-        seaDeep: "#080d14",
-        shoreGlow: "rgba(40,70,100,0.12)",
+        bg: "#0a1628",
+        sea: "#122240",
+        seaDeep: "#0a1628",
+        shoreGlow: "rgba(40,70,100,0.18)",
         landBase: "#1e1e18",
         factionBorderWidth: 3.0,
         factionBorderColor: "rgba(20,18,14,0.45)",

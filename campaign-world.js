@@ -2162,6 +2162,9 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
   const [cityRegionFocus,setCityRegionFocus] = useState(null); // region name to highlight in Cities tab
   const [expandedRegions, setExpandedRegions] = useState({}); // track which regions are expanded in consolidated view
   const [regionDetailCity, setRegionDetailCity] = useState(null); // city selected within a region for detail view
+  // ── POI tab state ──
+  const [poiFilter, setPoiFilter] = useState("all");
+  const [poiSearch, setPoiSearch] = useState("");
   // ── Calendar state ──
   const [calKingdom, setCalKingdom] = useState("all");
   const [calDay, setCalDay] = useState(data.calendarDay || 15);
@@ -2229,6 +2232,9 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
     // Clear selection (old region/city/faction no longer exists)
     setSel(null);
     setSelType(null);
+    // Reset POI filters
+    setPoiFilter("all");
+    setPoiSearch("");
     // Stop and reset living world engine
     setLwActive(false);
     setLwEvents([]);
@@ -2541,7 +2547,16 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
     engine.onRegionClick(function(region, faction) {
       if (region) {
         const d = dataRef.current;
-        const r = (d.regions || []).find(function(reg) { return reg.name === region.name; });
+        // Match by faction name (unified naming: region.name = faction.name in data)
+        // or fall back to geographic region name, or subtitle containing the geographic name
+        const factionName = faction ? faction.name : null;
+        const r = (d.regions || []).find(function(reg) {
+          if (factionName && reg.name === factionName) return true;
+          if (factionName && reg.name.indexOf(factionName) === 0) return true;
+          if (reg.name === region.name) return true;
+          if (reg.subtitle && reg.subtitle.indexOf(region.name) >= 0) return true;
+          return false;
+        });
         if (r) { setSel(r); setSelType("region"); }
       }
     });
@@ -3351,7 +3366,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
       <div style={{ display: (tab === "calendar" || tab === "exploration") ? "none" : "flex", flex:1, overflow:"hidden", position:"relative" }}>
         {/* ══════════ FANTASY MAP TAB — Multi-scale continental map ══════════ */}
         {tab==="map" && (
-          <div ref={mapRef} style={{ flex:1, overflow:"hidden", position:"relative", background:"#1a1814", touchAction:"none", WebkitUserSelect:"none", userSelect:"none" }}>
+          <div ref={mapRef} style={{ flex:1, overflow:"hidden", position:"relative", background:"#0a1628", touchAction:"none", WebkitUserSelect:"none", userSelect:"none" }}>
             {/* ── New MapEngine Canvas ── */}
             <canvas ref={mapCanvasRef} style={{ width:"100%", height:"100%", display:"block" }} />
             {/* ── Legacy SVG hidden — kept for non-MapEngine fallback ── */}
@@ -3841,10 +3856,10 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                   </div>
                   {/* Body */}
                   <div style={{ padding: "12px 18px 16px" }}>
-                    {/* Ruling faction */}
+                    {/* Ruler info */}
                     <div style={{ borderLeft: `2px solid ${fc}66`, paddingLeft: 10, marginBottom: 12 }}>
-                      <div style={{ fontSize: 10, color: fc, marginBottom: 3, fontFamily: "'Cinzel', serif", letterSpacing: "0.8px", fontWeight: 500 }}>Ruled by {t.faction || r?.ctrl || "Unknown"}</div>
-                      {r?.governor && <div style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'Spectral', serif" }}>{r.governorTitle} {r.governor}</div>}
+                      {r?.governor && <div style={{ fontSize: 11, color: "var(--text-dim)", fontFamily: "'Spectral', serif" }}>{r.governorTitle || "Ruler"}: <span style={{ color: fc }}>{r.governor}</span></div>}
+                      {(() => { const cap = (data.cities||[]).find(c => c.region === (r||{}).name && c.isCapital); return cap ? <div style={{ fontSize: 10, color: "var(--text-muted)", marginTop: 3 }}>Capital: <span style={{ color: T.gold }}>{cap.name}</span></div> : null; })()}
                     </div>
                     {/* Climate & Threat */}
                     {r && (
@@ -4593,7 +4608,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                                 {r.visited && <Tag variant="info">visited</Tag>}
                               </div>
                               <div style={{ display:"flex", gap:14, flexWrap:"wrap", fontSize:11, color:T.textMuted }}>
-                                {r.ctrl && <span style={{ color:fc }}>⚑ {r.ctrl}</span>}
+                                {(() => { const cap = regionCities.find(c => c.isCapital); return cap ? <span style={{ color:T.gold }}>⚑ Capital: {cap.name}</span> : null; })()}
                                 {r.state && <span style={{ fontStyle:"italic" }}>{r.state}</span>}
                                 {r.population && <span>Pop. ~{r.population}</span>}
                                 {regionCities.length > 0 && <span>{regionCities.length} settlement{regionCities.length !== 1 ? "s" : ""}</span>}
@@ -5620,8 +5635,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
               const pois = data.pois || [];
               const dangerColors = { 0:"#4ade80", 1:"#86efac", 2:"#fcd34d", 3:"#fb923c", 4:"#f87171", 5:"#dc2626" };
               const dangerLabels = { 0:"Safe", 1:"Low", 2:"Moderate", 3:"Dangerous", 4:"Deadly", 5:"Catastrophic" };
-              const [poiFilter, setPoiFilter] = React.useState("all");
-              const [poiSearch, setPoiSearch] = React.useState("");
+              // poiFilter and poiSearch are declared at component top level
               const uniqueTypes = [...new Set(pois.map(p => p.type))].sort();
               const filtered = pois.filter(p => {
                 if (poiFilter !== "all" && p.type !== poiFilter) return false;
@@ -5878,9 +5892,9 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       {sel.terrain && <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Terrain: <span style={{color:T.textDim}}>{sel.terrain}</span></div>}
                       <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>State: <span style={{color:T.textDim,fontStyle:"italic"}}>{sel.state}</span></div>
                       <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Threat: <Tag variant={sel.threat==="extreme"?"critical":sel.threat==="high"?"danger":sel.threat==="medium"?"warning":"success"}>{sel.threat}</Tag></div>
-                      <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Controlled by: <span style={{color:T.textDim}}>{sel.ctrl || "Unaligned"}</span></div>
+                      {(() => { const cap = (data.cities||[]).find(c => c.region === sel.name && c.isCapital); return cap ? <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Capital: <span style={{color:T.gold}}>{cap.name}</span></div> : null; })()}
                       {sel.population && <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Population: <span style={{color:T.textDim}}>~{sel.population}</span></div>}
-                      {sel.governor && <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>{sel.governorTitle || "Governor"}: <span style={{color:T.gold}}>{sel.governor}</span></div>}
+                      {sel.governor && <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>{sel.governorTitle || "Ruler"}: <span style={{color:T.gold}}>{sel.governor}</span></div>}
                       {sel.cities && sel.cities.length > 0 && <div style={{ fontSize:12, color:T.textMuted }}>Settlements: <span style={{color:T.textDim}}>{[...new Set(sel.cities)].join(", ")}</span></div>}
                     </>}
                     {selType==="faction" && <>
