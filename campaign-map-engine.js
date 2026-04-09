@@ -2295,10 +2295,10 @@
       this._boundListeners = [];    // tracks listeners for cleanup
 
       this.theme = {
-        bg: "#0b1d3a",
-        sea: "#1a3a6b",
-        seaDeep: "#0d2244",
-        shoreGlow: "rgba(50,90,140,0.22)",
+        bg: "#0c2461",
+        sea: "#1e5799",
+        seaDeep: "#0c2461",
+        shoreGlow: "rgba(60,120,200,0.25)",
         landBase: "#1e1e18",
         factionBorderWidth: 3.0,
         factionBorderColor: "rgba(20,18,14,0.45)",
@@ -2651,7 +2651,7 @@
         // Multiple glow rings for soft shore effect
         for (let ring = 0; ring < 3; ring++) {
           ctx.save();
-          ctx.shadowColor = `rgba(50,85,120,${0.06 - ring * 0.015})`;
+          ctx.shadowColor = `rgba(60,110,180,${0.08 - ring * 0.02})`;
           ctx.shadowBlur = 20 + ring * 18;
           ctx.fillStyle = "rgba(0,0,0,0)";
           ctx.strokeStyle = `rgba(60,100,140,${0.10 - ring * 0.025})`;
