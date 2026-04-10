@@ -196,11 +196,11 @@ var PhmurtDB = (function () {
           _fireChange();
         });
       }
-      // No Supabase session — fall back to legacy localStorage session
-      _initLegacy();
+      // No Supabase session — reinforce legacy session (may already be set)
+      if (!_session) _initLegacy();
     }).catch(function (err) {
       if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Supabase init failed:', err ? err.message : 'Unknown error');
-      _initLegacy();
+      if (!_session) _initLegacy();
     });
 
     sb.auth.onAuthStateChange(function (event, sess) {
@@ -215,6 +215,7 @@ var PhmurtDB = (function () {
         _session = null;
         _fireChange();
       }
+      // Ignore INITIAL_SESSION with no session — don't wipe legacy session
     });
   }
 
@@ -229,9 +230,13 @@ var PhmurtDB = (function () {
   var CK_USERS   = 'phmurt_udb';
 
   (function _initSupabase() {
+    // ALWAYS try legacy session first (synchronous, instant).
+    // This guarantees _session is populated before any page script
+    // calls getSession(), regardless of Supabase async timing.
+    _initLegacy();
+
     var sb = _sb();
     if (!sb) {
-      _initLegacy();
       /* CDN may still be loading — wait for it and upgrade to cloud auth */
       if (typeof SUPABASE_URL !== 'undefined' && SUPABASE_URL &&
           typeof SUPABASE_ANON_KEY !== 'undefined' && SUPABASE_ANON_KEY) {
@@ -523,7 +528,15 @@ var PhmurtDB = (function () {
   ══════════════════════════════════════════════════════════════════ */
   return {
 
-    getSession: function () { return _session; },
+    getSession: function () {
+      // Fallback: if _session is null (e.g. async init timing issue),
+      // try loading from legacy localStorage on demand.
+      if (!_session) {
+        var s = _legacyGetSession();
+        if (s) { _session = s; }
+      }
+      return _session;
+    },
     getCsrfNonce: function () { return _csrfNonce; },
     isAdmin:    function () { return !!(_session && _session.isAdmin); },
     db:         function () { return _sb(); },
