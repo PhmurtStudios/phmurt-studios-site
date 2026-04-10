@@ -35,8 +35,8 @@
     var verOk = data.battleIntegrationVersion === VERSION;
     var party = data.party || [];
     var npcs = data.npcs || [];
-    var partyOk = !party.some(function (p) { return p.actorId == null; });
-    var npcsOk = !npcs.some(function (n) { return n.actorId == null; });
+    var partyOk = !party.some(function (p) { return p.actorId === null; });
+    var npcsOk = !npcs.some(function (n) { return n.actorId === null; });
     if (verOk && encountersOk && ledgerOk && partyOk && npcsOk) return data;
 
     return _safeAssign({}, data, {
@@ -44,10 +44,10 @@
       encounters: encountersOk ? data.encounters : [],
       combatLedger: ledgerOk ? data.combatLedger : [],
       party: party.map(function (p) {
-        return p.actorId != null ? p : _safeAssign({}, p, { actorId: "pc-" + String(p.id) });
+        return p.actorId !== null ? p : _safeAssign({}, p, { actorId: "pc-" + String(p.id) });
       }),
       npcs: npcs.map(function (n) {
-        return n.actorId != null ? n : _safeAssign({}, n, { actorId: "npc-" + String(n.id) });
+        return n.actorId !== null ? n : _safeAssign({}, n, { actorId: "npc-" + String(n.id) });
       }),
     });
   }
@@ -68,19 +68,21 @@
   }
 
   function findPartyMember(party, ref) {
-    if (ref == null) return null;
+    if (ref === null || !Array.isArray(party)) return null;
     var s = String(ref);
     for (var i = 0; i < party.length; i++) {
       var p = party[i];
+      if (!p || typeof p !== 'object') continue;
       if (String(p.id) === s) return p;
-      if (p.actorId != null && String(p.actorId) === s) return p;
+      if (p.actorId !== null && String(p.actorId) === s) return p;
     }
     return null;
   }
 
   function findNpc(npcs, npcId) {
+    if (!Array.isArray(npcs)) return null;
     for (var i = 0; i < npcs.length; i++) {
-      if (npcs[i].id === npcId) return npcs[i];
+      if (npcs[i] && npcs[i].id === npcId) return npcs[i];
     }
     return null;
   }
@@ -104,7 +106,7 @@
           out.push({ kind: "pc", member: p });
         });
       } else if (part.type === "partyMember") {
-        var pm = findPartyMember(partyArr, part.refId != null ? part.refId : part.actorId);
+        var pm = findPartyMember(partyArr, part.refId !== null ? part.refId : part.actorId);
         if (pm) out.push({ kind: "pc", member: pm });
       } else if (part.type === "npc") {
         var n = findNpc(npcArr, part.npcId);
@@ -172,7 +174,7 @@
   function summarizeTokensForLedger(tokens) {
     var lines = [];
     (tokens || []).forEach(function (t) {
-      if (t.tokenType === "enemy" && t.hp != null && t.hp <= 0) {
+      if (t.tokenType === "enemy" && t.hp !== null && t.hp <= 0) {
         lines.push(t.name + " defeated");
       }
     });

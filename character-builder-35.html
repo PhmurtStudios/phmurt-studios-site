@@ -1284,7 +1284,7 @@ function renderEquipment35() {
           var wKey = idx+'_'+C35.equipChoices[idx];
           var curW = (C35.weaponChoices&&C35.weaponChoices[wKey])||'';
           weapDrop = '<div style="margin-top:12px;"><div style="font-family:\'Cinzel\',serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);margin-bottom:8px;">Choose Specific Weapon</div>'+
-            '<select style="background:var(--bg-input);border:1px solid rgba(212,67,58,0.3);color:var(--white);font-family:\'Spectral\',serif;font-size:14px;padding:7px 10px;width:100%;" onchange="if(!C35.weaponChoices)C35.weaponChoices={};C35.weaponChoices[\''+wKey+'\']=this.value;renderEquipment35();scheduleSave35();">'+
+            '<select style="background:var(--bg-input);border:1px solid rgba(212,67,58,0.3);color:var(--white);font-family:\'Spectral\',serif;font-size:14px;padding:7px 10px;width:100%;" onchange="if(!C35.weaponChoices)C35.weaponChoices={};C35.weaponChoices[\''+esc35(wKey)+'\']=this.value;renderEquipment35();scheduleSave35();">'+
             '<option value="">Select a weapon...</option>'+
             allW.map(function(w){return '<option value="'+esc35(w.name)+'" '+(curW===w.name?'selected':'')+'>'+esc35(w.name)+' — '+esc35(w.damage)+' '+esc35(w.type)+'</option>';}).join('')+
             '</select>'+(curW?'<div style="font-size:12px;color:var(--text-muted);margin-top:5px;">✓ '+esc35(curW)+'</div>':'')+
@@ -1372,9 +1372,9 @@ function renderSpells35() {
     html += '<div class="cb-spell-section"><div class="cb-spell-header">Cantrips / Orisons — Choose '+cantripCount+'</div><div class="cb-spell-count"><span style="color:'+(ch>=cantripCount?'#5a9a5a':'var(--crimson)')+'">'+ch+'/'+cantripCount+'</span> selected</div><div class="cb-spell-grid">'+
       spList.cantrips.map(function(sp) {
         return '<div class="cb-spell-item'+(C35.selectedCantrips.includes(sp)?' selected':'')+'">'+
-          '<div class="cb-spell-dot" onclick="toggleSpell35(\''+sp.replace(/'/g,"\\'")+'\',\'c\','+cantripCount+')" style="cursor:pointer;"></div>'+
-          '<span style="flex:1;cursor:pointer;" onclick="toggleSpell35(\''+sp.replace(/'/g,"\\'")+'\',\'c\','+cantripCount+')">'+sp+'</span>'+
-          '<span onclick="event.stopPropagation();showSpellInfo35(\''+sp.replace(/'/g,"\\'")+'\');" style="font-family:\'Cinzel\',serif;font-size:10px;color:var(--text-faint);cursor:pointer;padding:0 6px;">ℹ</span>'+
+          '<div class="cb-spell-dot" onclick="toggleSpell35(\''+sp.replace(/'/g,"&apos;")+'\',\'c\','+cantripCount+')" style="cursor:pointer;"></div>'+
+          '<span style="flex:1;cursor:pointer;" onclick="toggleSpell35(\''+sp.replace(/'/g,"&apos;")+'\',\'c\','+cantripCount+')">'+sp+'</span>'+
+          '<span onclick="event.stopPropagation();showSpellInfo35(\''+sp.replace(/'/g,"&apos;")+'\');" style="font-family:\'Cinzel\',serif;font-size:10px;color:var(--text-faint);cursor:pointer;padding:0 6px;">ℹ</span>'+
         '</div>';
       }).join('')+'</div></div>';
   }
@@ -1399,7 +1399,7 @@ function renderSpells35() {
       spList[key].forEach(function(sp) {
         html += '<div class="cb-spell-item" style="opacity:0.7;cursor:default;">'+
           '<span style="flex:1;">'+sp+'</span>'+
-          '<span onclick="event.stopPropagation();showSpellInfo35(\''+sp.replace(/'/g,"\\'")+'\');" style="font-family:\'Cinzel\',serif;font-size:10px;color:var(--text-faint);cursor:pointer;padding:0 6px;">ℹ</span>'+
+          '<span onclick="event.stopPropagation();showSpellInfo35(\''+sp.replace(/'/g,"&apos;")+'\');" style="font-family:\'Cinzel\',serif;font-size:10px;color:var(--text-faint);cursor:pointer;padding:0 6px;">ℹ</span>'+
         '</div>';
       });
       html += '</div></div>';
@@ -1424,9 +1424,9 @@ function renderSpells35() {
       spList[key].forEach(function(sp) {
         var isSel = selected.includes(sp);
         html += '<div class="cb-spell-item'+(isSel?' selected':'')+'">'+
-          '<div class="cb-spell-dot" onclick="toggleSpellLevel35(\''+sp.replace(/'/g,"\\'")+'\','+spLvl+','+knownCount+')" style="cursor:pointer;"></div>'+
-          '<span style="flex:1;cursor:pointer;" onclick="toggleSpellLevel35(\''+sp.replace(/'/g,"\\'")+'\','+spLvl+','+knownCount+')">'+sp+'</span>'+
-          '<span onclick="event.stopPropagation();showSpellInfo35(\''+sp.replace(/'/g,"\\'")+'\');" style="font-family:\'Cinzel\',serif;font-size:10px;color:var(--text-faint);cursor:pointer;padding:0 6px;">ℹ</span>'+
+          '<div class="cb-spell-dot" onclick="toggleSpellLevel35(\''+sp.replace(/'/g,"&apos;")+'\','+spLvl+','+knownCount+')" style="cursor:pointer;"></div>'+
+          '<span style="flex:1;cursor:pointer;" onclick="toggleSpellLevel35(\''+sp.replace(/'/g,"&apos;")+'\','+spLvl+','+knownCount+')">'+sp+'</span>'+
+          '<span onclick="event.stopPropagation();showSpellInfo35(\''+sp.replace(/'/g,"&apos;")+'\');" style="font-family:\'Cinzel\',serif;font-size:10px;color:var(--text-faint);cursor:pointer;padding:0 6px;">ℹ</span>'+
         '</div>';
       });
       html += '</div></div>';
@@ -1924,7 +1924,7 @@ function buildCombatTab35() {
       var crit=w.crit||'×2';
       var atkBonuses = iterativeAttacks.map(function(b){ return b + baseMod; });
       var atkStr = atkBonuses.map(function(b){ return (b>=0?'+':'')+b; }).join('/');
-      return '<div class="cs-attack-card" onclick="rollWeapon35(\''+w.name.replace(/'/g,"\\'")+'\','+atkBonuses[0]+','+dmgMod+',\''+w.damage+'\')">'+
+      return '<div class="cs-attack-card" onclick="rollWeapon35(\''+w.name.replace(/'/g,"&apos;")+'\','+atkBonuses[0]+','+dmgMod+',\''+w.damage+'\')">'+
         '<div><div class="cs-attack-name">'+w.name+'</div><div style="font-size:11px;color:var(--text-faint);font-style:italic;">Crit '+crit+' · '+w.type+(iterativeAttacks.length>1?' · Full: '+atkStr:'')+'</div></div>'+
         '<div class="cs-attack-stats"><span class="cs-attack-atk">ATK '+atkStr+'</span><span class="cs-attack-dmg">'+w.damage+(dmgMod>=0?'+':'')+dmgMod+' '+w.type+'</span></div>'+
         '<span class="cs-attack-hint">▸ Roll</span></div>';
@@ -2012,7 +2012,7 @@ function buildSpellsTab35() {
     html += C35.selectedCantrips.map(function(sp){
       return '<div class="cs-spell-item cs-spell-prepared">'+
         '<div class="cs-spell-item-dot" onclick="rollCheck35(\'Spell\',\''+sp+'\','+(bab35()+sm)+')" style="cursor:pointer;"></div>'+
-        '<span class="cs-spell-name" onclick="showSpellInfo35(\''+sp.replace(/'/g,"\\'")+'\');" style="cursor:pointer;">'+sp+'</span>'+
+        '<span class="cs-spell-name" onclick="showSpellInfo35(\''+sp.replace(/'/g,"&apos;")+'\');" style="cursor:pointer;">'+sp+'</span>'+
         '<span class="cs-spell-atk" onclick="rollCheck35(\'Spell\',\''+sp+'\','+(bab35()+sm)+')" style="cursor:pointer;">▸ Roll</span>'+
       '</div>';
     }).join('')||'<div style="font-size:13px;color:var(--text-faint);font-style:italic;">No cantrips selected.</div>';
@@ -2038,7 +2038,7 @@ function buildSpellsTab35() {
       html += spellsForLvl.map(function(sp){
         return '<div class="cs-spell-item cs-spell-prepared">'+
           '<div class="cs-spell-item-dot" onclick="rollCheck35(\'Spell\',\''+sp+'\','+(bab35()+sm)+')" style="cursor:pointer;"></div>'+
-          '<span class="cs-spell-name" onclick="showSpellInfo35(\''+sp.replace(/'/g,"\\'")+'\');" style="cursor:pointer;">'+sp+'</span>'+
+          '<span class="cs-spell-name" onclick="showSpellInfo35(\''+sp.replace(/'/g,"&apos;")+'\');" style="cursor:pointer;">'+sp+'</span>'+
           '<span class="cs-spell-atk" onclick="rollCheck35(\'Spell\',\''+sp+'\','+(bab35()+sm)+')" style="cursor:pointer;">▸ Roll</span>'+
         '</div>';
       }).join('');

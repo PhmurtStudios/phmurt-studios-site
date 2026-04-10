@@ -728,6 +728,12 @@ function debounce(fn, ms) {
   return (...args) => { clearTimeout(timer); timer = setTimeout(() => fn(...args), ms); };
 }
 
+/** Deep clone helper - uses structuredClone if available (modern browsers), falls back to JSON method */
+function deepClone(obj) {
+  if (typeof structuredClone === 'function') return structuredClone(obj);
+  return JSON.parse(JSON.stringify(obj));
+}
+
 /** Parse D&D CR for sorting (e.g. "1/4", "1/2", "17") — avoids eval(), which CSP blocks. */
 function parseChallengeRating(cr) {
   const s = String(cr ?? "").trim();
@@ -739,6 +745,24 @@ function parseChallengeRating(cr) {
   }
   const n = parseFloat(s);
   return Number.isNaN(n) ? 0 : n;
+}
+
+/** Safely capitalize a string (guards against empty strings) */
+function capitalizeString(str) {
+  if (!str || typeof str !== "string" || str.length === 0) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+/** Check if a weapon is finesse or ranged (for sneak attack eligibility) */
+function isFinessedOrRangedWeapon(weaponName) {
+  if (!weaponName) return true; // Assume eligible if unknown
+  return weaponName.toLowerCase().match(/finesse|dagger|rapier|short sword|hand crossbow|light crossbow|bow|dart|sling|javelin|thrown/) !== null;
+}
+
+/** Check if a weapon is a ranged weapon */
+function isRangedWeapon(weaponName) {
+  if (!weaponName) return false;
+  return (weaponName || "").toLowerCase().match(/bow|crossbow|dart|sling|javelin|thrown/) !== null;
 }
 
 // ── Line-of-sight helpers (outside component for performance) ──
@@ -1439,6 +1463,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   const tokenImagesCache = useRef({});
   const wheelHandlerRef = useRef(null);
   const touchGestureRef = useRef({ active: false, pointer: null });
+  const cleanupPingsRef = useRef(null);
 
   // ── Theme tracking (re-render on dark/light toggle) ──
   const [_themeLight, _setThemeLight] = useState(() => document.documentElement.classList.contains("light-mode"));
@@ -1532,9 +1557,24 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   useEffect(() => {
     if (_combatRestored.current || !setData) return;
     _combatRestored.current = true;
-    // Read saved combat state from campaign data via a temporary ref
+    // Ensure campaign data has integration fields (stable actorIds, encounters, combatLedger)
+    if (typeof window.PhmurtCampaignCombat !== "undefined") {
+      setData(d => {
+        const migrated = window.PhmurtCampaignCombat.migrateCampaignData(d);
+        return migrated;
+      });
+    }
+    // Read saved combat state from campaign data (primary source of truth)
+    // Falls back to window._cmActiveCombatState for initial page load when data hasn't settled yet
     try {
-      const saved = window._cmActiveCombatState?.[activeCampaignId];
+      let saved = null;
+      // Try to read from campaign data first (source of truth for persisted state)
+      if (data?.activeCombat && typeof data.activeCombat === 'object') {
+        saved = data.activeCombat;
+      } else {
+        // Fallback to temporary window storage (used during initial load before data loads)
+        saved = window._cmActiveCombatState?.[activeCampaignId];
+      }
       if (saved && saved.combatLive) {
         if (saved.combatants?.length) setCombatants(saved.combatants);
         if (saved.turn != null) setTurn(saved.turn);
@@ -1552,7 +1592,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         if (saved.gridSize) setGridSize(saved.gridSize);
       }
     } catch (e) { /* ignore restore errors */ }
-  }, [activeCampaignId]);
+  }, [activeCampaignId, data?.activeCombat]);
 
   // Debounced save of combat state to campaign data (2s debounce to avoid excessive writes)
   useEffect(() => {
@@ -1817,13 +1857,14 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       setTimeout(() => {
         setTokens(currentTokens => {
           // Check if all enemies (non-PC) are at 0 HP
+          const combatantIds = new Set(combatants.map(c => c.mapTokenId));
           const livingEnemies = currentTokens.filter(t =>
             t.tokenType !== "pc" && t.color !== "#2e8b57" &&
             (t.hp || 0) > 0 && !t.hidden
           );
           // Only consider tokens that are actually in combat (have combatant entries)
           const combatEnemies = livingEnemies.filter(t =>
-            combatants.some(c => c.mapTokenId === t.id)
+            combatantIds.has(t.id)
           );
           if (combatEnemies.length === 0 && combatants.length > 0) {
             // All enemies defeated — announce victory and end combat
@@ -2094,9 +2135,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       // D&D 5e: Sneak Attack requires finesse or ranged weapons
       const attackerClass = (attacker.class || attacker.cls || "").toLowerCase();
       if (attackerClass.includes("rogue") && !attacker._sneakAttackUsedThisTurn) {
-        // TODO: Add weapon.finesse and weapon.ranged properties to weapon data structure for proper validation
-        const isFinessedOrRanged = !weaponName ||
-          weaponName.toLowerCase().match(/finesse|dagger|rapier|short sword|hand crossbow|light crossbow|bow|dart|sling|javelin|thrown/) !== null;
+        // Validation uses isFinessedOrRangedWeapon() which checks weapon name against known finesse/ranged weapons
+        const isFinessedOrRanged = isFinessedOrRangedWeapon(weaponName);
         if (isFinessedOrRanged) {
           const allies = tokens.filter(t => t.id !== attacker.id && t.id !== target.id && t.tokenType === attacker.tokenType && (t.hp || 0) > 0);
           const sneakCheck = CE.checkSneakAttack(
@@ -2116,8 +2156,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       // ── BG3: Rage damage (Barbarian) ──
       // D&D 5e: Rage damage only applies to melee weapon attacks using Strength
       if (attackerClass.includes("barbarian") && getMergedConditionsForToken(attacker).includes("Raging")) {
-        const isRangedWeapon = weaponName && (weaponName.toLowerCase().match(/bow|crossbow|dart|sling|javelin|thrown/) !== null);
-        const isMeleeAttack = !isRangedWeapon;
+        const isRangedWeaponAttack = isRangedWeapon(weaponName);
+        const isMeleeAttack = !isRangedWeaponAttack;
         if (isMeleeAttack) {
           const rageDmg = CE.getRageDamage(pcStats.lv || 1);
           bonusDamage += rageDmg;
@@ -2133,7 +2173,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       // Floating combat text + weapon-specific animation
       spawnFloatingTextForToken(targetId, "damage", { total: totalDmg, damageType: dtype, isCrit: r0.isCrit });
       flashToken(targetId, "damage");
-      emitPlayModeVfx(attacker, target, { mode: "attack", actionName: weaponName, weaponName: weaponName, damageType: dtype, amount: totalDmg, isCrit: r0.isCrit, isRanged: !!(CE.isRangedWeapon ? CE.isRangedWeapon(weaponName) : (weaponName||"").toLowerCase().match(/bow|crossbow|dart|sling|javelin|thrown/)) });
+      emitPlayModeVfx(attacker, target, { mode: "attack", actionName: weaponName, weaponName: weaponName, damageType: dtype, amount: totalDmg, isCrit: r0.isCrit, isRanged: !!(CE.isRangedWeapon ? CE.isRangedWeapon(weaponName) : isRangedWeapon(weaponName)) });
       // Special class animations
       const cls = (attacker.class || attacker.cls || "").toLowerCase();
       if (bonusLabels.some(l => l.includes("Sneak"))) triggerActionAnim("sneak_attack", attacker, target, "#6b2fa0");
@@ -2144,10 +2184,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       emitPlayModeVfx(attacker, target, { mode: "miss" });
     }
     if (result.results[1]?.type === "onHitSave" && !result.results[1].save?.success && result.results[1].condition) {
-      addTokenCondition(targetId, result.results[1].condition.charAt(0).toUpperCase() + result.results[1].condition.slice(1));
+      addTokenCondition(targetId, capitalizeString(result.results[1].condition));
     }
 
-    // FIX 3: Fighter Extra Attack
+    // ── Fighter Extra Attack (multiattack) ──
     const profile = getCombatProfile(attacker);
     const extraAttackCount = getExtraAttackCount(profile.cls, profile.level);
     if (extraAttackCount > 0) {
@@ -2172,7 +2212,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           applyAttackResultToTarget(targetId, target, extraTotalDmg, extraDtype);
           spawnFloatingTextForToken(targetId, "damage", { total: extraTotalDmg, damageType: extraDtype, isCrit: extraAttack.isCrit });
           flashToken(targetId, "damage");
-          emitPlayModeVfx(attacker, target, { mode: "attack", actionName: weaponName + " (Extra Attack)", weaponName: weaponName, damageType: extraDtype, amount: extraTotalDmg, isCrit: extraAttack.isCrit, isRanged: !!(CE.isRangedWeapon ? CE.isRangedWeapon(weaponName) : (weaponName||"").toLowerCase().match(/bow|crossbow|dart|sling|javelin|thrown/)) });
+          emitPlayModeVfx(attacker, target, { mode: "attack", actionName: weaponName + " (Extra Attack)", weaponName: weaponName, damageType: extraDtype, amount: extraTotalDmg, isCrit: extraAttack.isCrit, isRanged: !!(CE.isRangedWeapon ? CE.isRangedWeapon(weaponName) : isRangedWeapon(weaponName)) });
         } else if (extraAttack) {
           addCombatLogEntry({ type: "miss", attacker: attacker.name, target: target.name, action: weaponName + " (Extra Attack " + (i + 1) + ")", roll: extraAttack.attackRoll });
           spawnFloatingTextForToken(targetId, "miss", {});
@@ -2376,7 +2416,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           // Save VFX
           emitPlayModeVfx(attacker, target, { mode: "save", actionName: seq.action.name, saveSuccess: seq.result.save?.success, amount: seq.result.damage || 0, damageType: seq.parsed?.failDamage?.type || "force" });
           if (seq.result.conditions?.length) {
-            seq.result.conditions.forEach(c => addTokenCondition(targetId, c.charAt(0).toUpperCase() + c.slice(1)));
+            seq.result.conditions.forEach(c => addTokenCondition(targetId, capitalizeString(c)));
           }
         }
       });
@@ -2427,7 +2467,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         triggerActionAnim("miss", target, null, "#888");
       }
       if (result.results[1]?.type === "onHitSave" && !result.results[1].save?.success && result.results[1].condition) {
-        addTokenCondition(targetId, result.results[1].condition.charAt(0).toUpperCase() + result.results[1].condition.slice(1));
+        addTokenCondition(targetId, capitalizeString(result.results[1].condition));
       }
     } else {
       const parsedSave = CE.parseSaveAction(action);
@@ -2474,7 +2514,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         addCombatLogEntry({ type: "save", attacker: attacker.name, target: target.name, action: action.name, success: r.save?.success, damage: r.damage, conditions: r.conditions, dc: saveResult.parsed?.dc, ability: saveResult.parsed?.ability });
         if (r.damage > 0) applyAttackResultToTarget(targetId, target, r.damage, saveResult.parsed?.failDamage?.type || "force");
         if (r.conditions?.length) {
-          r.conditions.forEach(c => addTokenCondition(targetId, c.charAt(0).toUpperCase() + c.slice(1)));
+          r.conditions.forEach(c => addTokenCondition(targetId, capitalizeString(c)));
         }
         // Save action VFX
         emitPlayModeVfx(attacker, target, { mode: "save", actionName: action.name, saveSuccess: r.save?.success, amount: r.damage || 0, damageType: saveResult.parsed?.failDamage?.type || "force" });
@@ -2952,12 +2992,13 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   /* Eagerly load and cache builder snapshots for all linked party members */
   const loadLinkedSnapshots = useCallback(() => {
     if (typeof PhmurtDB === "undefined" || !PhmurtDB.getSession || !PhmurtDB.getSession()) return;
+    let isMounted = true;
     (party || []).forEach(member => {
       if (!member.sourceCharacterId) return;
       const cacheKey = "phmurt_builder_snap_" + member.sourceCharacterId;
       try { if (sessionStorage.getItem(cacheKey)) return; } catch (_) {}
       PhmurtDB.loadCharacter(member.sourceCharacterId).then(snap => {
-        if (!snap) return;
+        if (!isMounted || !snap) return;
         try { sessionStorage.setItem(cacheKey, JSON.stringify(snap)); } catch (_) {}
         /* Also store weapons/spells on the party member for immediate combat access */
         if (setData) {
@@ -2970,11 +3011,12 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             ),
           }));
         }
-      }).catch(function(err) { console.warn('Operation failed:', err && err.message || err); });
+      }).catch(function(err) { if (isMounted) console.warn('Operation failed:', err && err.message || err); });
     });
+    return () => { isMounted = false; };
   }, [party?.length]);
 
-  useEffect(() => { loadLinkedSnapshots(); }, [loadLinkedSnapshots]);
+  useEffect(() => { const cleanup = loadLinkedSnapshots(); return cleanup; }, [loadLinkedSnapshots]);
 
   /* Extract weapon names from a builder snapshot for combat profile */
   const _extractWeaponsFromSnapshot = (snap) => {
@@ -3756,20 +3798,20 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
   // Save current canvas state into a scene snapshot
   const captureSceneState = () => ({
-    tokens: JSON.parse(JSON.stringify(tokens)),
-    drawings: JSON.parse(JSON.stringify(drawings)),
-    fogCells: JSON.parse(JSON.stringify(fogCells)),
-    walls: JSON.parse(JSON.stringify(walls)),
-    terrainCells: JSON.parse(JSON.stringify(terrainCells)),
-    props: JSON.parse(JSON.stringify(props)),
+    tokens: deepClone(tokens),
+    drawings: deepClone(drawings),
+    fogCells: deepClone(fogCells),
+    walls: deepClone(walls),
+    terrainCells: deepClone(terrainCells),
+    props: deepClone(props),
     bgColor, gridSize, showGrid, zoom, pan: {...pan},
-    conditions: JSON.parse(JSON.stringify(conditions)),
-    tokenConditions: JSON.parse(JSON.stringify(tokenConditions)),
-    combatants: JSON.parse(JSON.stringify(combatants)),
-    turnStateByToken: JSON.parse(JSON.stringify(turnStateByToken)),
-    combatTargetByActor: JSON.parse(JSON.stringify(combatTargetByActor)),
-    playModeResolution: JSON.parse(JSON.stringify(playModeResolution)),
-    combatLog: JSON.parse(JSON.stringify(combatLog)),
+    conditions: deepClone(conditions),
+    tokenConditions: deepClone(tokenConditions),
+    combatants: deepClone(combatants),
+    turnStateByToken: deepClone(turnStateByToken),
+    combatTargetByActor: deepClone(combatTargetByActor),
+    playModeResolution: deepClone(playModeResolution),
+    combatLog: deepClone(combatLog),
     combatLive, turn, round,
   });
 
@@ -4163,7 +4205,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       hitTokens.forEach(t => {
         // Roll damage PER TARGET (fresh roll each time) — uses upcast damage
         if ((spell.applyEffect === "damage" || spell.damage) && (upcastDamage || spell.damage)) {
-          const damageRoll = parseDiceExpression((upcastDamage || spell.damage).split(" ")[0]);
+          const dmgExpr = (upcastDamage || spell.damage || "1d6").split(" ")[0] || "1d6";
+          const damageRoll = parseDiceExpression(dmgExpr);
           let dmg = damageRoll.total;
           let saved = false;
 
@@ -4190,8 +4233,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
         // Healing — uses upcast healing
         if (spell.applyEffect === "heal" && (upcastHealing || spell.healing)) {
-          const healExpr = upcastHealing || spell.healing;
-          const healRoll = parseDiceExpression(healExpr.split("+")[0]);
+          const healExpr = upcastHealing || spell.healing || "1d6";
+          const healBaseDice = healExpr.split("+")[0] || "1d6";
+          const healRoll = parseDiceExpression(healBaseDice);
           // Add modifier (+mod = spellcasting mod or default 3)
           const modBonus = healExpr.includes("mod") ? (caster?.spellcastingMod || 3) : 0;
           const healTotal = healRoll.total + modBonus;
@@ -4307,11 +4351,14 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   useEffect(() => {
     if (!activeCampaignId || activeCampaignId === 'example') return;
     if (typeof PhmurtDB === 'undefined') return;
+    let isMounted = true;
     PhmurtDB.getEncounterTemplates(activeCampaignId).then(rows => {
+      if (!isMounted) return;
       if (rows && rows.length > 0) {
         setTemplates(rows.map(r => ({ ...r.data, id: r.id, _fromCloud: true })));
       }
-    }).catch(function(err) { console.warn('Operation failed:', err && err.message || err); });
+    }).catch(function(err) { if (isMounted) console.warn('Operation failed:', err && err.message || err); });
+    return () => { isMounted = false; };
   }, [activeCampaignId]);
   const [templateName, setTemplateName] = useState("");
   const [showTemplateInput, setShowTemplateInput] = useState(false);
@@ -4911,9 +4958,17 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   };
 
   useEffect(() => {
+    let lastMoveTime = 0;
+    const THROTTLE_MS = 16; // ~60fps
     const handlePopupDragMove = (e) => {
       const drag = tokenPopupDragRef.current;
       if (!drag) return;
+
+      // Throttle mousemove updates to prevent excessive re-renders
+      const now = performance.now();
+      if (now - lastMoveTime < THROTTLE_MS) return;
+      lastMoveTime = now;
+
       e.preventDefault();
       const nextPos = clampTurnPopupPosition(
         drag.startX + (e.clientX - drag.startClientX),
@@ -7456,7 +7511,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     const nowPing = Date.now();
     const activePings = pings.filter(p => nowPing - p.time < 3000);
     if (activePings.length !== pings.length) {
-      setTimeout(() => setPings(prev => prev.filter(p => Date.now() - p.time < 3000)), 0);
+      // Auto-cleanup stale pings via useEffect to avoid re-render loops
+      if (cleanupPingsRef.current) clearTimeout(cleanupPingsRef.current);
+      cleanupPingsRef.current = setTimeout(() => setPings(prev => prev.filter(p => Date.now() - p.time < 3000)), 0);
     }
     activePings.forEach(p => {
       const sp = worldToCanvas(p.x, p.y);
@@ -7632,6 +7689,13 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
   useEffect(() => { if (!combatLive && pings.length === 0 && spellLog.length === 0) render(); }, [render, combatLive, pings, spellLog]);
 
+  // Cleanup pending ping cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (cleanupPingsRef.current) clearTimeout(cleanupPingsRef.current);
+    };
+  }, []);
+
   useEffect(() => {
     const resize = () => {
       const canvas = canvasRef.current;
@@ -7757,7 +7821,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
     if (typeof PhmurtRealtime !== 'undefined' && activeCampaignId && activeCampaignId !== 'example') {
       // Load current snapshot first (so player sees state immediately on join)
-      PhmurtRealtime.loadSnapshot(activeCampaignId).then(applyState);
+      PhmurtRealtime.loadSnapshot(activeCampaignId).then(applyState).catch(function(err) {
+        if (isMountedRef.current) console.warn('[BattleSyncHandler] Snapshot load failed:', err && err.message || err);
+      });
       // Then subscribe to live updates
       realtimeHandleRef.current = PhmurtRealtime.joinBattleMap(activeCampaignId, viewRole, applyState);
     } else {
@@ -8092,7 +8158,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             if (newSelections.length >= mtCount) {
               // All targets selected — cast on each
               newSelections.forEach((sel, idx) => {
-                setTimeout(() => {
+                const timeoutId = setTimeout(() => {
                   // Cast individual hits as separate effects
                   const id2 = "spell-" + Date.now() + "-" + idx;
                   const upcastDmg = getUpcastDamage(activeSpell, castLevel);
@@ -8117,7 +8183,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   // Visual effect per hit
                   setSpellEffects(prev => [...prev, { id: id2, x: sel.x, y: sel.y, spell: activeSpell, startTime: Date.now() + idx * 150, casterX: selectedToken?.x || sel.x, casterY: selectedToken?.y || sel.y }]);
                   setTimeout(() => setSpellEffects(prev => prev.filter(e => e.id !== id2)), 4000);
+                  // Cleanup tracked
                 }, idx * 150);
+                if (!spellTimeoutsRef.current) spellTimeoutsRef.current = [];
+                spellTimeoutsRef.current.push(timeoutId);
               });
               // Consume spell slot
               if (activeSpell.level > 0 && selectedToken && selectedToken.spellSlots) {
@@ -9987,9 +10056,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       combatants: combatants.map(c => ({...c})),
       combatTargetByActor: { ...combatTargetByActor },
       tokens: tokens.map(t => ({...t})),
-      turnStateByToken: JSON.parse(JSON.stringify(turnStateByToken)),
-      playModeResolution: playModeResolution ? JSON.parse(JSON.stringify(playModeResolution)) : null,
-      combatLog: JSON.parse(JSON.stringify(combatLog)),
+      turnStateByToken: deepClone(turnStateByToken),
+      playModeResolution: playModeResolution ? deepClone(playModeResolution) : null,
+      combatLog: deepClone(combatLog),
       conditions: {...conditions},
       tokenConditions: {...tokenConditions},
     };
@@ -10045,7 +10114,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     const dc = prompt("DC for saving throw:");
     if (!dc) return;
     const result = parseDiceExpression("1d20");
-    const pass = result.total >= parseInt(dc);
+    const pass = result.total >= parseInt(dc, 10);
     setDiceResult({ value: result.total, type: "save", name: (selectedToken?.name || "Save") + (pass ? " PASS" : " FAIL"), time: Date.now(), crit: result.total === 20, fumble: result.total === 1 });
     setRollHistory(prev => [{ expr: "1d20 vs DC" + dc, rolls: result.rolls, mod: 0, total: result.total, who: (selectedToken?.name || "?") + " save " + (pass ? "PASS" : "FAIL"), time: Date.now() }, ...prev].slice(0, 20));
     setTimeout(() => setDiceResult(null), 3500);
@@ -10081,9 +10150,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
   const macroPerception = () => {
     const mod = prompt("WIS modifier:");
-    const result = parseDiceExpression("1d20+" + (parseInt(mod) || 0));
+    const result = parseDiceExpression("1d20+" + (parseInt(mod, 10) || 0));
     setDiceResult({ value: result.total, type: "perception", name: (selectedToken?.name || "Perception"), time: Date.now(), crit: result.rolls[0] === 20, fumble: result.rolls[0] === 1 });
-    setRollHistory(prev => [{ expr: "1d20+" + (parseInt(mod) || 0), rolls: result.rolls, mod: result.modifier, total: result.total, who: (selectedToken?.name || "?") + " perception", time: Date.now() }, ...prev].slice(0, 20));
+    setRollHistory(prev => [{ expr: "1d20+" + (parseInt(mod, 10) || 0), rolls: result.rolls, mod: result.modifier, total: result.total, who: (selectedToken?.name || "?") + " perception", time: Date.now() }, ...prev].slice(0, 20));
     setTimeout(() => setDiceResult(null), 3000);
   };
 
@@ -11477,7 +11546,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   <div style={{ width:32, height:1, background:bg06, margin:"4px 0" }} />
                   <input type="color" value={drawColor} onChange={e=>setDrawColor(e.target.value)}
                     style={{ width:28, height:28, border:"1px solid "+bd08, background:"none", padding:0, cursor:"pointer", borderRadius:6 }} />
-                  <select value={drawWidth} onChange={e=>setDrawWidth(parseInt(e.target.value))} title="Brush width"
+                  <select value={drawWidth} onChange={e=>setDrawWidth(parseInt(e.target.value, 10))} title="Brush width"
                     style={{ width:tbBtnW, padding:"3px 2px", fontSize:9, fontFamily:T.ui, background:bg04, border:"1px solid "+bd08, color:tx50, borderRadius:6, textAlign:"center", marginTop:2 }}>
                     <option value="2">S</option><option value="3">M</option><option value="6">L</option><option value="10">XL</option>
                   </select>
@@ -12467,7 +12536,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                       <div>
                         <div style={{ fontSize:9, fontFamily:T.ui, color:T.textFaint, letterSpacing:"1px", textTransform:"uppercase", marginBottom:6, fontWeight:500 }}>Spell Slots</div>
                         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(50px, 1fr))", gap:4 }}>
-                          {Object.keys(profile.spellSlots).sort((a,b) => parseInt(a) - parseInt(b)).map(lv => {
+                          {Object.keys(profile.spellSlots).sort((a,b) => parseInt(a, 10) - parseInt(b, 10)).map(lv => {
                             const max = profile.spellSlots[lv];
                             const used = (profile.usedSlots || {})[lv] || 0;
                             const remaining = max - used;
@@ -12542,11 +12611,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     {/* Spell DC + Spellcasting Mod */}
                     <div style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 10px", background:"var(--bg-input)", borderRadius:"6px", border:"1px solid " + T.border }}>
                       <span style={{ fontFamily:T.ui, fontSize:11, color:T.textMuted, letterSpacing:"0.5px", textTransform:"uppercase", fontWeight:500 }}>Save DC</span>
-                      <input type="number" min="8" max="30" value={spellDC} onChange={e => setSpellDC(parseInt(e.target.value) || 15)}
+                      <input type="number" min="8" max="30" value={spellDC} onChange={e => setSpellDC(parseInt(e.target.value, 10) || 15)}
                         style={{ width:44, padding:"4px 6px", fontFamily:T.ui, fontSize:13, background:T.bgCard, border:"1px solid " + T.border, color:T.text, borderRadius:"4px", textAlign:"center", fontWeight:600 }} />
                       {isCaster && <span style={{ fontFamily:T.ui, fontSize:10, color:T.textFaint }}>({SPELLCASTING_ABILITY[tkClass]})</span>}
                       <span style={{ fontFamily:T.ui, fontSize:11, color:T.textMuted, letterSpacing:"0.5px", textTransform:"uppercase", fontWeight:500, marginLeft:"auto" }}>Mod</span>
-                      <input type="number" min="-5" max="10" value={tk?.spellcastingMod || 3} onChange={e => updateToken(tk.id, { spellcastingMod: parseInt(e.target.value) || 0 })}
+                      <input type="number" min="-5" max="10" value={tk?.spellcastingMod || 3} onChange={e => updateToken(tk.id, { spellcastingMod: parseInt(e.target.value, 10) || 0 })}
                         style={{ width:40, padding:"4px 6px", fontFamily:T.ui, fontSize:13, background:T.bgCard, border:"1px solid " + T.border, color:T.text, borderRadius:"4px", textAlign:"center", fontWeight:600 }} />
                     </div>
 

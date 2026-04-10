@@ -1618,16 +1618,16 @@
         + '</select>'
         + '</div>'
         + '<div><label style="display:block;font-family:Cinzel,serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:5px;">Casting Time *</label>'
-        + '<input id="sp-castingtime" type="text" value="' + (existing ? existing.castingTime : '1 action') + '" placeholder="1 action" style="width:100%;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-family:Spectral,Georgia,serif;font-size:14px;padding:8px 10px;box-sizing:border-box;"/>'
+        + '<input id="sp-castingtime" type="text" value="' + escapeAttr(existing ? existing.castingTime : '1 action') + '" placeholder="1 action" style="width:100%;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-family:Spectral,Georgia,serif;font-size:14px;padding:8px 10px;box-sizing:border-box;"/>'
         + '</div>'
         + '</div>'
 
         + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">'
         + '<div><label style="display:block;font-family:Cinzel,serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:5px;">Range *</label>'
-        + '<input id="sp-range" type="text" value="' + (existing ? existing.range : 'Self') + '" placeholder="Self, Touch, 60 feet" style="width:100%;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-family:Spectral,Georgia,serif;font-size:14px;padding:8px 10px;box-sizing:border-box;"/>'
+        + '<input id="sp-range" type="text" value="' + escapeAttr(existing ? existing.range : 'Self') + '" placeholder="Self, Touch, 60 feet" style="width:100%;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-family:Spectral,Georgia,serif;font-size:14px;padding:8px 10px;box-sizing:border-box;"/>'
         + '</div>'
         + '<div><label style="display:block;font-family:Cinzel,serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:5px;">Duration *</label>'
-        + '<input id="sp-duration" type="text" value="' + (existing ? existing.duration : 'Instantaneous') + '" placeholder="Instantaneous" style="width:100%;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-family:Spectral,Georgia,serif;font-size:14px;padding:8px 10px;box-sizing:border-box;"/>'
+        + '<input id="sp-duration" type="text" value="' + escapeAttr(existing ? existing.duration : 'Instantaneous') + '" placeholder="Instantaneous" style="width:100%;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-family:Spectral,Georgia,serif;font-size:14px;padding:8px 10px;box-sizing:border-box;"/>'
         + '</div>'
         + '</div>'
 
@@ -1644,7 +1644,7 @@
       });
 
       html += '</div>'
-        + '<div><input id="sp-material" type="text" value="' + (existing ? (existing.materialComponent || '') : '') + '" placeholder="Material components (if M is checked)" style="width:100%;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-family:Spectral,Georgia,serif;font-size:13px;padding:6px 8px;box-sizing:border-box;"/>'
+        + '<div><input id="sp-material" type="text" value="' + escapeAttr(existing ? (existing.materialComponent || '') : '') + '" placeholder="Material components (if M is checked)" style="width:100%;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-family:Spectral,Georgia,serif;font-size:13px;padding:6px 8px;box-sizing:border-box;"/>'
         + '</div>'
         + '</div>'
 
@@ -1665,12 +1665,12 @@
 
         + '<div style="margin-bottom:12px;">'
         + '<label style="display:block;font-family:Cinzel,serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:5px;">Description *</label>'
-        + '<textarea id="sp-description" rows="4" placeholder="Describe what this spell does..." style="width:100%;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-family:Spectral,Georgia,serif;font-size:13px;padding:8px 10px;box-sizing:border-box;resize:vertical;">' + (existing ? (existing.description || '') : '') + '</textarea>'
+        + '<textarea id="sp-description" rows="4" placeholder="Describe what this spell does..." style="width:100%;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-family:Spectral,Georgia,serif;font-size:13px;padding:8px 10px;box-sizing:border-box;resize:vertical;">' + escapeHtml(existing ? (existing.description || '') : '') + '</textarea>'
         + '</div>'
 
         + '<div style="margin-bottom:12px;">'
         + '<label style="display:block;font-family:Cinzel,serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:5px;">At Higher Levels</label>'
-        + '<textarea id="sp-higher" rows="2" placeholder="What happens when this spell is cast at higher levels?" style="width:100%;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-family:Spectral,Georgia,serif;font-size:13px;padding:8px 10px;box-sizing:border-box;resize:vertical;">' + (existing ? (existing.atHigherLevels || '') : '') + '</textarea>'
+        + '<textarea id="sp-higher" rows="2" placeholder="What happens when this spell is cast at higher levels?" style="width:100%;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-family:Spectral,Georgia,serif;font-size:13px;padding:8px 10px;box-sizing:border-box;resize:vertical;">' + escapeHtml(existing ? (existing.atHigherLevels || '') : '') + '</textarea>'
         + '</div>'
 
         + '<div style="display:flex;gap:8px;margin-bottom:12px;">'
@@ -1690,7 +1690,7 @@
         + '</select>'
         + '</div>'
         + '<div><label style="display:block;font-family:Cinzel,serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:5px;">Damage Dice</label>'
-        + '<input id="sp-damage" type="text" value="' + (existing ? (existing.damage || '') : '') + '" placeholder="e.g. 8d6, 1d4+1" style="width:100%;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-family:Spectral,Georgia,serif;font-size:13px;padding:6px 8px;box-sizing:border-box;"/>'
+        + '<input id="sp-damage" type="text" value="' + escapeAttr(existing ? (existing.damage || '') : '') + '" placeholder="e.g. 8d6, 1d4+1" style="width:100%;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-family:Spectral,Georgia,serif;font-size:13px;padding:6px 8px;box-sizing:border-box;"/>'
         + '</div>'
         + '</div>'
 
@@ -1816,7 +1816,7 @@
 
       // Description
       html += '<div class="hb-form-group"><label class="hb-form-label">Description</label>';
-      html += '<textarea class="hb-form-textarea" id="feat-desc" placeholder="Describe what this feat represents thematically...">' + (existing ? (existing.description || '') : '') + '</textarea></div>';
+      html += '<textarea class="hb-form-textarea" id="feat-desc" placeholder="Describe what this feat represents thematically...">' + escapeHtml(existing ? (existing.description || '') : '') + '</textarea></div>';
 
       // Benefits section
       html += '<div class="hb-form-section">Benefits</div>';
@@ -1985,21 +1985,21 @@
 
       html += '<div class="hb-form-row">';
       html += '<div class="hb-form-group"><label class="hb-form-label">HP</label>';
-      html += '<input type="number" class="hb-form-input" id="mon-hp" placeholder="e.g. 52" value="' + (existing ? (existing.hp || '') : '') + '"></div>';
+      html += '<input type="number" class="hb-form-input" id="mon-hp" placeholder="e.g. 52" value="' + escapeAttr(existing ? (existing.hp || '') : '') + '"></div>';
       html += '<div class="hb-form-group"><label class="hb-form-label">Hit Dice</label>';
-      html += '<input type="text" class="hb-form-input" id="mon-hd" placeholder="e.g. 5d10+10" value="' + (existing ? (existing.hitDice || '') : '') + '"></div>';
+      html += '<input type="text" class="hb-form-input" id="mon-hd" placeholder="e.g. 5d10+10" value="' + escapeAttr(existing ? (existing.hitDice || '') : '') + '"></div>';
       html += '</div>';
 
       // ── Speed ──
       html += '<div class="hb-form-section">Speed (feet per turn)</div>';
       html += '<div class="hb-form-row">';
-      html += '<div class="hb-form-group"><label class="hb-form-label">Walk</label><input type="number" class="hb-form-input" id="mon-speed-walk" placeholder="30" value="' + (existing ? (existing.speed && existing.speed.walk || '30') : '30') + '"></div>';
-      html += '<div class="hb-form-group"><label class="hb-form-label">Fly</label><input type="number" class="hb-form-input" id="mon-speed-fly" placeholder="0" value="' + (existing ? (existing.speed && existing.speed.fly || '0') : '0') + '"></div>';
-      html += '<div class="hb-form-group"><label class="hb-form-label">Swim</label><input type="number" class="hb-form-input" id="mon-speed-swim" placeholder="0" value="' + (existing ? (existing.speed && existing.speed.swim || '0') : '0') + '"></div>';
+      html += '<div class="hb-form-group"><label class="hb-form-label">Walk</label><input type="number" class="hb-form-input" id="mon-speed-walk" placeholder="30" value="' + escapeAttr(existing ? (existing.speed && existing.speed.walk || '30') : '30') + '"></div>';
+      html += '<div class="hb-form-group"><label class="hb-form-label">Fly</label><input type="number" class="hb-form-input" id="mon-speed-fly" placeholder="0" value="' + escapeAttr(existing ? (existing.speed && existing.speed.fly || '0') : '0') + '"></div>';
+      html += '<div class="hb-form-group"><label class="hb-form-label">Swim</label><input type="number" class="hb-form-input" id="mon-speed-swim" placeholder="0" value="' + escapeAttr(existing ? (existing.speed && existing.speed.swim || '0') : '0') + '"></div>';
       html += '</div>';
       html += '<div class="hb-form-row">';
-      html += '<div class="hb-form-group"><label class="hb-form-label">Climb</label><input type="number" class="hb-form-input" id="mon-speed-climb" placeholder="0" value="' + (existing ? (existing.speed && existing.speed.climb || '0') : '0') + '"></div>';
-      html += '<div class="hb-form-group"><label class="hb-form-label">Burrow</label><input type="number" class="hb-form-input" id="mon-speed-burrow" placeholder="0" value="' + (existing ? (existing.speed && existing.speed.burrow || '0') : '0') + '"></div>';
+      html += '<div class="hb-form-group"><label class="hb-form-label">Climb</label><input type="number" class="hb-form-input" id="mon-speed-climb" placeholder="0" value="' + escapeAttr(existing ? (existing.speed && existing.speed.climb || '0') : '0') + '"></div>';
+      html += '<div class="hb-form-group"><label class="hb-form-label">Burrow</label><input type="number" class="hb-form-input" id="mon-speed-burrow" placeholder="0" value="' + escapeAttr(existing ? (existing.speed && existing.speed.burrow || '0') : '0') + '"></div>';
       html += '</div>';
 
       // ── Ability Scores ──
@@ -2046,9 +2046,9 @@
       html += '<div class="hb-form-section">Damage & Condition Immunities</div>';
       html += '<div class="hb-form-row">';
       html += '<div class="hb-form-group"><label class="hb-form-label">Vulnerabilities (comma-separated)</label>';
-      html += '<input type="text" class="hb-form-input" id="mon-vuln" placeholder="e.g. Fire, Cold" value="' + (existing && existing.vulnerabilities ? existing.vulnerabilities.join(', ') : '') + '"></div>';
+      html += '<input type="text" class="hb-form-input" id="mon-vuln" placeholder="e.g. Fire, Cold" value="' + escapeAttr(existing && existing.vulnerabilities ? existing.vulnerabilities.join(', ') : '') + '"></div>';
       html += '<div class="hb-form-group"><label class="hb-form-label">Resistances (comma-separated)</label>';
-      html += '<input type="text" class="hb-form-input" id="mon-resist" placeholder="e.g. Cold, Lightning" value="' + (existing && existing.resistances ? existing.resistances.join(', ') : '') + '"></div>';
+      html += '<input type="text" class="hb-form-input" id="mon-resist" placeholder="e.g. Cold, Lightning" value="' + escapeAttr(existing && existing.resistances ? existing.resistances.join(', ') : '') + '"></div>';
       html += '</div>';
       html += '<div class="hb-form-row">';
       html += '<div class="hb-form-group"><label class="hb-form-label">Immunities (comma-separated)</label>';
@@ -2421,8 +2421,8 @@
 
       var tex = function(id, label, val, ph) {
         return '<div style="margin-bottom:12px;">'
-          + '<label style="display:block;font-family:Cinzel,serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:5px;">' + label + '</label>'
-          + '<textarea id="hb-' + id + '" rows="3" placeholder="' + (ph||'') + '" style="width:100%;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-family:Spectral,Georgia,serif;font-size:14px;padding:8px 10px;box-sizing:border-box;resize:vertical;">' + (val||'') + '</textarea>'
+          + '<label style="display:block;font-family:Cinzel,serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:5px;">' + escapeHtml(label) + '</label>'
+          + '<textarea id="hb-' + id + '" rows="3" placeholder="' + escapeAttr(ph||'') + '" style="width:100%;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-family:Spectral,Georgia,serif;font-size:14px;padding:8px 10px;box-sizing:border-box;resize:vertical;">' + escapeHtml(val||'') + '</textarea>'
           + '</div>';
       };
 
@@ -2451,11 +2451,11 @@
         + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">'
         + '<div>'
         + '<label style="display:block;font-family:Cinzel,serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:5px;">Value</label>'
-        + '<input id="hb-value" type="text" value="' + (existing ? existing.value : '') + '" placeholder="e.g. 500 gp" style="width:100%;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-family:Spectral,Georgia,serif;font-size:14px;padding:8px 10px;box-sizing:border-box;"/>'
+        + '<input id="hb-value" type="text" value="' + escapeAttr(existing ? existing.value : '') + '" placeholder="e.g. 500 gp" style="width:100%;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-family:Spectral,Georgia,serif;font-size:14px;padding:8px 10px;box-sizing:border-box;"/>'
         + '</div>'
         + '<div>'
         + '<label style="display:block;font-family:Cinzel,serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:5px;">Weight (lb)</label>'
-        + '<input id="hb-weight" type="number" step="0.1" min="0" value="' + (existing ? existing.weight : '0') + '" style="width:100%;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-size:14px;padding:8px 10px;box-sizing:border-box;"/>'
+        + '<input id="hb-weight" type="number" step="0.1" min="0" value="' + escapeAttr(existing ? existing.weight : '0') + '" style="width:100%;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-size:14px;padding:8px 10px;box-sizing:border-box;"/>'
         + '</div>'
         + '</div>'
 
@@ -2629,7 +2629,7 @@
 
       var errEl = document.getElementById('hb-error');
       if (result.errors) {
-        errEl.innerHTML = result.errors.join('<br>');
+        errEl.innerHTML = result.errors.map(e => escapeHtml(e)).join('<br>');
         errEl.style.display = '';
         return;
       }
@@ -4014,7 +4014,7 @@
         if (!name) errors.push('Race name is required.');
         var asiRaw = g('asi');
         if (!asiRaw) errors.push('ASI is required.');
-        if (errors.length) { errEl.innerHTML = errors.join('<br>'); errEl.style.display=''; return; }
+        if (errors.length) { errEl.innerHTML = errors.map(e => escapeHtml(e)).join('<br>'); errEl.style.display=''; return; }
 
         // Parse ASI
         var asi = {};
@@ -4079,7 +4079,7 @@
       } else if (type === 'class') {
         var name = g('name');
         if (!name) errors.push('Class name is required.');
-        if (errors.length) { errEl.innerHTML = errors.join('<br>'); errEl.style.display=''; return; }
+        if (errors.length) { errEl.innerHTML = errors.map(e => escapeHtml(e)).join('<br>'); errEl.style.display=''; return; }
 
         var featRaw = g('features');
         var features = featRaw ? featRaw.split('\n').filter(Boolean).map(function(line) {
@@ -4208,7 +4208,7 @@
         var skills = g('skills').split(',').map(function(s){ return s.trim(); }).filter(Boolean);
         if (skills.length < 1) errors.push('At least one skill is required.');
 
-        if (errors.length) { errEl.innerHTML = errors.join('<br>'); errEl.style.display=''; return; }
+        if (errors.length) { errEl.innerHTML = errors.map(e => escapeHtml(e)).join('<br>'); errEl.style.display=''; return; }
 
         var tools = g('tools') ? g('tools').split(',').map(function(s){ return s.trim(); }).filter(Boolean) : [];
         var tags = g('tags') ? g('tags').split(',').map(function(s){return s.trim();}).filter(Boolean) : [];
@@ -4243,7 +4243,7 @@
         }) : [];
         if (!features.length) errors.push('At least one feature is required.');
 
-        if (errors.length) { errEl.innerHTML = errors.join('<br>'); errEl.style.display=''; return; }
+        if (errors.length) { errEl.innerHTML = errors.map(e => escapeHtml(e)).join('<br>'); errEl.style.display=''; return; }
 
         // Parse expanded spells
         var expandedSpells = [];

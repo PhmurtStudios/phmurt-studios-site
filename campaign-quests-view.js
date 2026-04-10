@@ -5,12 +5,16 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
   if (!T.bg) T.bg = "var(--bg)";
   if (!T.bgNav) T.bgNav = "var(--bg-nav)";
   if (!T.bgCard) T.bgCard = "var(--bg-card)";
+  if (!T.bgHover) T.bgHover = "var(--bg-hover)";
   if (!T.text) T.text = "var(--text)";
   if (!T.textMuted) T.textMuted = "var(--text-dim)";
   if (!T.textFaint) T.textFaint = "var(--text-faint)";
   if (!T.crimson) T.crimson = "var(--crimson)";
   if (!T.crimsonBorder) T.crimsonBorder = "var(--crimson-border)";
+  if (!T.crimsonDim) T.crimsonDim = "var(--crimson-dim)";
   if (!T.gold) T.gold = "var(--gold)";
+  if (!T.green) T.green = "var(--green)";
+  if (!T.greenDim) T.greenDim = "var(--green-dim)";
   if (!T.border) T.border = "var(--border)";
   if (!T.heading) T.heading = "'Cinzel', serif";
   if (!T.body) T.body = "'Spectral', serif";
@@ -47,13 +51,14 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
   // Filter quests based on criteria
   const filteredQuests = React.useMemo(() => {
     return quests.filter(q => {
+      if (!q) return false;
       const statusMatch = filters.status === 'all' || q.status === filters.status;
       const typeMatch = filters.type === 'all' || q.type === filters.type;
       const diffMatch = filters.difficulty === 'all' || q.difficulty === filters.difficulty;
       const regionMatch = filters.region === 'all' || q.region === filters.region;
       const searchMatch = !filters.search ||
-        q.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-        q.description.toLowerCase().includes(filters.search.toLowerCase());
+        (q.title && q.title.toLowerCase().includes(filters.search.toLowerCase())) ||
+        (q.description && q.description.toLowerCase().includes(filters.search.toLowerCase()));
 
       return statusMatch && typeMatch && diffMatch && regionMatch && searchMatch;
     });
@@ -78,26 +83,31 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
     return colors[difficulty] || colors.medium;
   };
 
-  // Get faction color
+  // Get faction color with validation
   const getFactionColor = (factionName) => {
-    const faction = factions.find(f => f.name === factionName);
-    return faction?.color || '#888888';
+    if (!factionName) return '#888888';
+    const faction = factions.find(f => f && f.name === factionName);
+    if (!faction || !faction.color) return '#888888';
+    // Validate color is hex format
+    if (!/^#[0-9A-F]{6}$/i.test(faction.color)) return '#888888';
+    return faction.color;
   };
 
   // Get quest giver NPC
   const getQuestGiver = (questId) => {
-    const quest = quests.find(q => q.id === questId);
-    if (!quest?.giver) return null;
-    const giver = npcs.find(n => n.name === quest.giver);
+    const quest = quests.find(q => q && q.id === questId);
+    if (!quest || !quest.giver) return null;
+    const giver = npcs.find(n => n && n.name === quest.giver);
     return giver || null;
   };
 
   // Handle quest status changes
   const updateQuestStatus = React.useCallback((questId, newStatus) => {
+    if (!questId || !newStatus) return;
     setData(d => ({
       ...d,
-      quests: d.quests.map(q =>
-        q.id === questId ? { ...q, status: newStatus } : q
+      quests: (d.quests || []).map(q =>
+        q && q.id === questId ? { ...q, status: newStatus } : q
       )
     }));
   }, [setData]);
@@ -106,8 +116,8 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
   const toggleObjective = React.useCallback((questId, objIndex) => {
     setData(d => ({
       ...d,
-      quests: d.quests.map(q => {
-        if (q.id === questId) {
+      quests: (d.quests || []).map(q => {
+        if (q && q.id === questId && Array.isArray(q.objectives)) {
           if (objIndex < 0 || objIndex >= q.objectives.length) return q;
           const newObjs = [...q.objectives];
           newObjs[objIndex] = { ...newObjs[objIndex], completed: !newObjs[objIndex].completed };
@@ -214,8 +224,8 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
             fontFamily: T.body
           }}
         >
-          {giver && <div>From: {giver.name}</div>}
-          {region && <div>Region: {region.name}</div>}
+          {giver && giver.name && <div>From: {String(giver.name).replace(/[<>]/g, '')}</div>}
+          {region && region.name && <div>Region: {String(region.name).replace(/[<>]/g, '')}</div>}
         </div>
 
         {/* Faction tag */}
@@ -358,9 +368,9 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
                 <div style={{ fontSize: '13px', fontFamily: T.body, color: T.textMuted }}>
                   {quest.rewards.gold > 0 && <div>{quest.rewards.gold} gold pieces</div>}
                   {quest.rewards.xp > 0 && <div>{quest.rewards.xp} experience points</div>}
-                  {quest.rewards.items && quest.rewards.items.length > 0 && (
+                  {quest.rewards.items && Array.isArray(quest.rewards.items) && quest.rewards.items.length > 0 && (
                     <div>
-                      Items: {quest.rewards.items.join(', ')}
+                      Items: {quest.rewards.items.map(item => String(item).replace(/[<>]/g, '')).join(', ')}
                     </div>
                   )}
                 </div>
@@ -374,7 +384,7 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
                   Quest Chain
                 </h4>
                 <div style={{ fontSize: '12px', fontFamily: T.body, color: T.textMuted }}>
-                  Part of: {quest.chain}
+                  Part of: {String(quest.chain).replace(/[<>]/g, '')}
                 </div>
               </div>
             )}
@@ -386,7 +396,7 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
                   Lore
                 </h4>
                 <p style={{ margin: 0, fontSize: '12px', fontFamily: T.body, color: T.textMuted, lineHeight: '1.5' }}>
-                  {quest.lore}
+                  {String(quest.lore).replace(/[<>]/g, '')}
                 </p>
               </div>
             )}

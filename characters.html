@@ -252,7 +252,7 @@
     <div class="ch-auth-gate" id="ch-auth-gate">
       <div style="font-size:42px;margin-bottom:16px;opacity:0.3;">&#9876;</div>
       <p>Sign in to view and manage your characters.</p>
-      <button class="ch-btn ch-btn-primary" onclick="window.PhmurtDB && window.PhmurtDB.openAuth()">Sign In</button>
+      <button class="ch-btn ch-btn-primary" id="ch-auth-gate-btn">Sign In</button>
     </div>
 
     <!-- Signed-in state -->
@@ -323,8 +323,13 @@
             '<div class="ch-empty-icon">&#9876;</div>' +
             '<div class="ch-empty-title">No Characters Yet</div>' +
             '<div class="ch-empty-desc">Your roster is empty. Create your first character and begin your adventure.</div>' +
-            '<button class="ch-btn ch-btn-primary" onclick="document.getElementById(\'ch-create-btn\').click()">+ Create Character</button>' +
+            '<button class="ch-btn ch-btn-primary" id="ch-empty-create-btn">+ Create Character</button>' +
           '</div>';
+        // Attach handler to the new empty state button
+        var emptyBtn = document.getElementById('ch-empty-create-btn');
+        if (emptyBtn) {
+          emptyBtn.addEventListener('click', openCreateModal);
+        }
         return;
       }
 
@@ -355,9 +360,9 @@
             '<span>Level ' + level + '</span>' +
           '</div>' +
           '<div class="ch-card-foot">' +
-            '<a href="' + viewHref + '" class="ch-card-action view" onclick="event.stopPropagation()">View Sheet</a>' +
-            '<a href="' + viewHref + '" class="ch-card-action edit" onclick="event.stopPropagation()">Edit</a>' +
-            '<button class="ch-card-action delete" onclick="event.stopPropagation();deleteChar(\'' + id + '\')">Delete</button>' +
+            '<a href="' + viewHref + '" class="ch-card-action view" data-prevent-propagation="true">View Sheet</a>' +
+            '<a href="' + viewHref + '" class="ch-card-action edit" data-prevent-propagation="true">Edit</a>' +
+            '<button class="ch-card-action delete" data-char-id="' + id + '">Delete</button>' +
           '</div>' +
         '</div>';
       }).join('') + '</div>';
@@ -367,6 +372,21 @@
         card.addEventListener('click', function () {
           var href = card.getAttribute('data-href');
           if (href) window.location.href = href;
+        });
+      });
+
+      /* Action button handlers */
+      list.querySelectorAll('.ch-card-action[data-prevent-propagation]').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+        });
+      });
+
+      list.querySelectorAll('.ch-card-action.delete').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var id = btn.getAttribute('data-char-id');
+          if (id) deleteChar(decodeURIComponent(id));
         });
       });
     }
@@ -462,7 +482,20 @@
 
     /* ── Init ────────────────────────────────────────────────────── */
     document.addEventListener('DOMContentLoaded', function () {
-      document.getElementById('ch-create-btn').addEventListener('click', openCreateModal);
+      var createBtn = document.getElementById('ch-create-btn');
+      if (createBtn) {
+        createBtn.addEventListener('click', openCreateModal);
+      }
+
+      var authGateBtn = document.getElementById('ch-auth-gate-btn');
+      if (authGateBtn) {
+        authGateBtn.addEventListener('click', function () {
+          if (window.PhmurtDB) {
+            window.PhmurtDB.openAuth();
+          }
+        });
+      }
+
       load();
       window.addEventListener('phmurt-auth-change', load);
     });

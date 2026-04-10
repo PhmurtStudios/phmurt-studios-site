@@ -68,6 +68,12 @@
     ];
   }
 
+  // Deep clone helper - uses structuredClone if available, falls back to JSON method
+  function deepClone(obj) {
+    if (typeof structuredClone === 'function') return structuredClone(obj);
+    return JSON.parse(JSON.stringify(obj));
+  }
+
   // ── Seeded RNG (mulberry32) ──
   function lwRng(seed) {
     let t = seed | 0;
@@ -346,7 +352,7 @@
                 });
                 return { ...f, hierarchy: newHierarchy };
               }),
-              npcs: d.npcs.map(n => {
+              npcs: (d.npcs || []).map(n => {
                 if (n.name === ruler.name) return { ...n, alive: false };
                 return n;
               })
@@ -437,7 +443,7 @@
                   });
                   return { ...f, hierarchy: newHierarchy, power: Math.max(0, f.power - 5) };
                 }),
-                npcs: d.npcs.map(n => n.name === ruler.name ? { ...n, alive: false } : n)
+                npcs: (d.npcs || []).map(n => n.name === ruler.name ? { ...n, alive: false } : n)
               };
             }
           };
@@ -486,14 +492,118 @@
                 // Major destabilization — significant power loss
                 return { ...f, hierarchy: newHierarchy, power: Math.max(5, f.power - 20), trend: "declining" };
               }),
-              npcs: d.npcs.map(n => n.name === ruler.name ? { ...n, alive: false } : n),
+              npcs: (d.npcs || []).map(n => n.name === ruler.name ? { ...n, alive: false } : n),
               // All regions under this faction become tense
               regions: d.regions.map(r => r.ctrl === target.name ? { ...r, state: r.state === "stable" ? "tense" : r.state, threat: r.threat === "low" ? "medium" : r.threat } : r),
             }),
             relationMutation: (rel) => {
               // Suspicion worsens relations with the suspected employer
               if (suspectedEmployer) {
-                rel.modifyRelation(target.name, suspectedEmployer.name, 15);
+                rel.modifyRelation(target.name, suspectedEmployer.name, -60);
+              }
+            }
+          };
+        }
+      },
+      {
+        id: "coup_attempt",
+        weight: 2,
+        apply: (data, rng) => {
+          const factions = data.factions.filter(f => f.hierarchy?.length > 1);
+          if (!factions.length) return null;
+          const faction = pick(factions, rng);
+          const ruler = faction.hierarchy.find(h => h.role === "ruler");
+          if (!ruler) return null;
+          const outcomes = [
+            { success: true, text: `A conspiracy within the ${faction.name} has succeeded in overthrowing ${ruler.name}` },
+            { success: false, text: `An assassination plot against ${ruler.name} has been uncovered and the conspirators executed` },
+          ];
+          const outcome = pick(outcomes, rng);
+          return {
+            headline: outcome.success ? `${faction.name} Leadership Overturned` : `Coup Thwarted in ${faction.name}`,
+            detail: `${outcome.text}. The faction's internal stability hangs in the balance as power consolidates or fragments.`,
+            category: "political",
+            icon: "†",
+            importance: "major",
+            mutations: (d) => {
+              if (!outcome.success) {
+                // Failed coup — minor power loss
+                return {
+                  ...d,
+                  factions: d.factions.map(f => f.name === faction.name ? { ...f, power: Math.max(0, f.power - 3) } : f)
+                };
+              }
+              // Successful coup — new ruler
+              return {
+                ...d,
+                factions: d.factions.map(f => {
+                  if (f.name !== faction.name) return f;
+                  const conspiratorRole = rng() > 0.5 ? "heir" : "general";
+                  const conspirator = f.hierarchy.find(h => h.role === conspiratorRole);
+                  if (!conspirator) return f;
+                  const newHierarchy = f.hierarchy.map(h => {
+                    if (h.role === "ruler") return { ...h, name: conspirator.name, title: h.title };
+                    if (h === conspirator) return { ...h, name: generateReplacementName(rng), role: conspiratorRole };
+                    return h;
+                  });
+                  return { ...f, hierarchy: newHierarchy, power: Math.max(0, f.power - 5) };
+                }),
+                npcs: (d.npcs || []).map(n => n.name === ruler.name ? { ...n, alive: false } : n)
+              };
+            }
+          };
+        }
+      },
+      {
+        id: "assassination",
+        weight: 1,
+        apply: (data, rng, relations) => {
+          const factions = data.factions.filter(f => f.hierarchy?.length > 0 && f.power > 20);
+          if (!factions.length) return null;
+          const target = pick(factions, rng);
+          const ruler = target.hierarchy.find(h => h.role === "ruler");
+          if (!ruler) return null;
+          const heir = target.hierarchy.find(h => h.role === "heir");
+          // Determine who hired the assassin
+          const rivals = data.factions.filter(f => f.name !== target.name && (f.rivals?.includes(target.name) || (relations && relations.getRelation(f.name, target.name) > 15)));
+          const suspectedEmployer = rivals.length > 0 ? pick(rivals, rng) : null;
+          const methods = [
+            "poisoned during a state banquet",
+            "struck down by an arrow from the shadows",
+            "found dead in their chambers with a blade between the ribs",
+            "killed by a disguised servant during a private audience",
+            "slain by a poisoned dart while addressing the court"
+          ];
+          const method = pick(methods, rng);
+          const suspectText = suspectedEmployer
+            ? ` Suspicion falls on agents of the ${suspectedEmployer.name}, though nothing can be proven.`
+            : " The assassin's employer remains unknown, fueling paranoid speculation throughout the court.";
+          return {
+            headline: `${ruler.name} of ${target.name} Assassinated!`,
+            detail: `${ruler.name}, ${ruler.title} of the ${target.name}, has been ${method}. The realm is plunged into chaos as ${heir ? heir.name + " scrambles to assume power" : "the succession is thrown into question"}.${suspectText}`,
+            category: "political",
+            icon: "†",
+            importance: "critical",
+            mutations: (d) => ({
+              ...d,
+              factions: d.factions.map(f => {
+                if (f.name !== target.name) return f;
+                const newHierarchy = f.hierarchy.map(h => {
+                  if (h.role === "ruler" && heir) return { ...h, name: heir.name };
+                  if (h.role === "heir") return { ...h, name: generateReplacementName(rng) };
+                  return h;
+                });
+                // Major destabilization — significant power loss
+                return { ...f, hierarchy: newHierarchy, power: Math.max(5, f.power - 20), trend: "declining" };
+              }),
+              npcs: (d.npcs || []).map(n => n.name === ruler.name ? { ...n, alive: false } : n),
+              // All regions under this faction become tense
+              regions: d.regions.map(r => r.ctrl === target.name ? { ...r, state: r.state === "stable" ? "tense" : r.state, threat: r.threat === "low" ? "medium" : r.threat } : r),
+            }),
+            relationMutation: (rel) => {
+              // Suspicion worsens relations with the suspected employer
+              if (suspectedEmployer) {
+                rel.modifyRelation(target.name, suspectedEmployer.name, -60);
               }
             }
           };
@@ -503,7 +613,7 @@
         id: "royal_wedding",
         weight: 2,
         apply: (data, rng) => {
-          const eligible = data.factions.filter(f => !f.allies?.includes(data.factions.find(x => x !== f)?.name) && f.power > 15);
+          const eligible = data.factions.filter(f => f.power > 15 && (!f.allies || f.allies.length === 0));
           if (eligible.length < 2) return null;
           const [a, b] = pickN(eligible, 2, rng);
           const royalty = ["Prince", "Princess", "Duke", "Duchess", "Heir"];
@@ -969,11 +1079,11 @@
 
           // Must be at war or have very hostile relations
           const atWar = relations && relations.isAtWar(strongest.faction.name, weakest.faction.name);
-          const veryHostile = relations && relations.getRelation(strongest.faction.name, weakest.faction.name) > 30;
+          const veryHostile = relations && relations.getRelation(strongest.faction.name, weakest.faction.name) < -30;
           if (!atWar && !veryHostile && rng() > 0.2) return null;
 
           const annexedRegions = data.regions.filter(r => r.ctrl === weakest.faction.name).map(r => r.name);
-          const annexedCities = data.cities.filter(c => annexedRegions.includes(c.region)).map(c => c.name);
+          const annexedCities = (data.cities || []).filter(c => annexedRegions.includes(c.region)).map(c => c.name);
 
           return {
             headline: `${strongest.faction.name} Annexes the ${weakest.faction.name}!`,
@@ -991,7 +1101,7 @@
                 return r;
               }),
               // Transfer all cities
-              cities: d.cities.map(c => {
+              cities: (d.cities || []).map(c => {
                 if (annexedRegions.includes(c.region)) {
                   return { ...c, faction: strongest.faction.name };
                 }
@@ -1008,7 +1118,7 @@
                 return f;
               }),
               // NPCs from the conquered faction lose their faction affiliation
-              npcs: d.npcs.map(n => {
+              npcs: (d.npcs || []).map(n => {
                 if (n.faction === weakest.faction.name) {
                   return { ...n, faction: strongest.faction.name };
                 }
@@ -1057,7 +1167,14 @@
         id: "faction_emergence",
         weight: 1,
         apply: (data, rng) => {
-          const candidates = data.factions.filter(f => f.power > 70 && data.regions.filter(r => r.ctrl === f.name).length >= 3);
+          // Build a map of faction -> region count for O(n) lookup instead of O(n²)
+          const regionCountByFaction = {};
+          for (const r of data.regions) {
+            if (r.ctrl) {
+              regionCountByFaction[r.ctrl] = (regionCountByFaction[r.ctrl] || 0) + 1;
+            }
+          }
+          const candidates = data.factions.filter(f => f.power > 70 && (regionCountByFaction[f.name] || 0) >= 3);
           if (!candidates.length) return null;
           const parent = pick(candidates, rng);
           const parentRegions = data.regions.filter(r => r.ctrl === parent.name);
@@ -1210,8 +1327,8 @@
               mutations: (d) => ({
                 ...d,
                 regions: d.regions.map(r => r.name === target.name ? { ...r, ctrl: aggressor.name, state: "contested", threat: "high" } : r),
-                cities: d.cities.map(c => c.region === target.name ? { ...c, faction: aggressor.name } : c),
-                npcs: d.npcs.map(n => n.faction === oldCtrl && (d.cities.find(c => c.name === n.home)?.region === target.name) ? { ...n, faction: aggressor.name } : n),
+                cities: (d.cities || []).map(c => c.region === target.name ? { ...c, faction: aggressor.name } : c),
+                npcs: (d.npcs || []).map(n => n.faction === oldCtrl && ((d.cities || []).find(c => c.name === n.home)?.region === target.name) ? { ...n, faction: aggressor.name } : n),
                 factions: d.factions.map(f => {
                   if (f.name === aggressor.name) return { ...f, power: Math.min(100, f.power + 8), trend: "rising" };
                   if (f.name === oldCtrl) return { ...f, power: Math.max(0, f.power - 10), trend: "declining" };
@@ -1245,14 +1362,14 @@
             mutations: (d) => ({
               ...d,
               regions: d.regions.map(r => r.name === region.name ? { ...r, ctrl: attacker.name, state: newState, threat: "critical" } : r),
-              cities: d.cities.map(c => {
+              cities: (d.cities || []).map(c => {
                 if (c.region === region.name) {
                   if (isTotalConquest) return { ...c, destroyed: true, faction: attacker.name };
                   return { ...c, faction: attacker.name };
                 }
                 return c;
               }),
-              npcs: d.npcs.map(n => {
+              npcs: (d.npcs || []).map(n => {
                 if (n.faction === region.ctrl && isTotalConquest) return { ...n, alive: false };
                 return n;
               }),
@@ -1276,7 +1393,7 @@
         id: "raid",
         weight: 4,
         apply: (data, rng) => {
-          const targets = data.cities.filter(c => c.region);
+          const targets = (data.cities || []).filter(c => c.region);
           if (!targets.length) return null;
           const city = pick(targets, rng);
           const raiders = ["bandits", "orcs", "goblins", "mercenaries", "pirates", "undead raiders", "barbarian tribes", "gnoll war-packs"];
@@ -1796,7 +1913,7 @@
                 if (!accepted && f.name === defender.name) return { ...f, power: Math.max(0, f.power + 2) }; // Resolve boost
                 return f;
               }),
-              cities: accepted ? d.cities.map(c => c.region === region.name ? { ...c, faction: attacker.name } : c) : d.cities
+              cities: accepted ? (d.cities || []).map(c => c.region === region.name ? { ...c, faction: attacker.name } : c) : (d.cities || [])
             }),
             relationMutation: (rel) => {
               if (accepted && rel) {
@@ -2013,7 +2130,8 @@
         id: "pirate_fleet",
         weight: 2,
         apply: (data, rng) => {
-          const coastal = data.regions.filter(r => r.name && Math.random() > 0.5); // Simplified coastal check
+          // Filter for coastal regions (those adjacent to water) — not randomly
+          const coastal = data.regions.filter(r => r.name && r.terrain?.includes('coast'));
           if (!coastal.length) return null;
           const region = pick(coastal, rng);
           return {
@@ -2246,7 +2364,7 @@
         id: "plague",
         weight: 1,
         apply: (data, rng) => {
-          const cities = data.cities.filter(c => c.name);
+          const cities = (data.cities || []).filter(c => c.name);
           if (!cities.length) return null;
           const city = pick(cities, rng);
           const plagues = ["the Crimson Wasting", "Shadowpox", "the Grey Cough", "Boneshiver Fever", "the Weeping Sickness", "Darkblood Plague"];
@@ -2268,12 +2386,16 @@
         weight: 2,
         apply: (data, rng) => {
           if (!data.plague || !data.plague.outbreaks || data.plague.outbreaks.length === 0) return null;
-          const cities = data.cities.filter(c => c.name);
+          const cities = (data.cities || []).filter(c => c.name);
           if (!cities.length) return null;
           const outbreak = pick(data.plague.outbreaks, rng);
           const sourceCity = cities.find(c => c.name === outbreak.city);
           if (!sourceCity) return null;
-          const neighbors = cities.filter(c => c.region !== sourceCity.region && c.region && Math.random() < 0.6);
+          // Find neighboring cities in other regions, then randomly pick some based on contagion chance
+          const candidateNeighbors = cities.filter(c => c.region !== sourceCity.region && c.region);
+          if (!candidateNeighbors.length) return null;
+          // Apply contagion chance as a secondary filter AFTER finding candidates
+          const neighbors = candidateNeighbors.filter(() => rng() < 0.6);
           if (!neighbors.length) return null;
           const targetCity = pick(neighbors, rng);
           const diseases = ["the Crimson Wasting", "Shadowpox", "the Grey Cough", "Boneshiver Fever"];
@@ -2301,7 +2423,7 @@
         id: "plague_quarantine",
         weight: 2,
         apply: (data, rng) => {
-          const dangerousCities = data.cities.filter(c => c.name && data.regions.some(r => r.name === c.region && r.threat === "high"));
+          const dangerousCities = (data.cities || []).filter(c => c.name && data.regions.some(r => r.name === c.region && r.threat === "high"));
           if (!dangerousCities.length) return null;
           const city = pick(dangerousCities, rng);
           return {
@@ -2329,7 +2451,7 @@
         apply: (data, rng) => {
           if (!data.plague || !data.plague.outbreaks || data.plague.outbreaks.length === 0) return null;
           const outbreak = pick(data.plague.outbreaks, rng);
-          const cities = data.cities.filter(c => c.name && c.region);
+          const cities = (data.cities || []).filter(c => c.name && c.region);
           const healerNames = ["Master Aldris", "Sister Maye", "Physician Corvus", "the Herbalist", "Sage Thalion", "Mother Greywort"];
           return {
             headline: `Cure Discovered for ${outbreak.disease || "the Plague"}`,
@@ -2346,7 +2468,7 @@
                 )
               } : d.plague,
               regions: d.regions.map(r =>
-                data.cities.some(c => c.region === r.name && r.threat === "high")
+                (data.cities || []).some(c => c.region === r.name && r.threat === "high")
                   ? { ...r, threat: "medium" }
                   : r
               )
@@ -2368,17 +2490,20 @@
             category: "social",
             icon: "⊗",
             importance: "major",
-            mutations: (d) => ({
-              ...d,
-              plague: d.plague ? {
-                ...d.plague,
-                outbreaks: (d.plague.outbreaks || []).map(o =>
-                  o.city === outbreak.city
-                    ? { ...o, severity: Math.min(5, o.severity + (Math.random() < 0.5 ? 1 : -1)), mutated: true }
-                    : o
-                )
-              } : d.plague
-            })
+            mutations: (d) => {
+              const mutationRng = rng();
+              return {
+                ...d,
+                plague: d.plague ? {
+                  ...d.plague,
+                  outbreaks: (d.plague.outbreaks || []).map(o =>
+                    o.city === outbreak.city
+                      ? { ...o, severity: Math.min(5, o.severity + (mutationRng < 0.5 ? 1 : -1)), mutated: true }
+                      : o
+                  )
+                } : d.plague
+              };
+            }
           };
         }
       },
@@ -2388,7 +2513,7 @@
         apply: (data, rng) => {
           if (!data.plague || !data.plague.outbreaks || data.plague.outbreaks.length === 0) return null;
           const outbreak = pick(data.plague.outbreaks, rng);
-          const cities = data.cities.filter(c => c.name);
+          const cities = (data.cities || []).filter(c => c.name);
           const healerNames = ["Master Aldris", "Sister Maye", "Physician Corvus", "Sage Thalion", "Mother Greywort", "Brother Keldan"];
           const sourceCity = cities.find(c => c.name === outbreak.city);
           if (!sourceCity) return null;
@@ -2414,7 +2539,7 @@
         id: "plague_rat_migration",
         weight: 2,
         apply: (data, rng) => {
-          const cities = data.cities.filter(c => c.name && c.region);
+          const cities = (data.cities || []).filter(c => c.name && c.region);
           if (cities.length < 2) return null;
           const sourceCity = pick(cities, rng);
           const targetCities = cities.filter(c => c.region !== sourceCity.region).slice(0, 2);
@@ -2452,7 +2577,7 @@
         apply: (data, rng) => {
           if (!data.plague || !data.plague.outbreaks || data.plague.outbreaks.length === 0) return null;
           const outbreak = pick(data.plague.outbreaks, rng);
-          const cities = data.cities.filter(c => c.name && c.region);
+          const cities = (data.cities || []).filter(c => c.name && c.region);
           const affectedCity = cities.find(c => c.name === outbreak.city);
           if (!affectedCity) return null;
           const temples = ["the Temple of the Sun God", "the Shrine of the Healer Goddess", "the Sacred Hall of the Ancients", "the Cathedral of the Starborn"];
@@ -2479,7 +2604,7 @@
         id: "plague_refugee_crisis",
         weight: 2,
         apply: (data, rng) => {
-          const cities = data.cities.filter(c => c.name && c.region);
+          const cities = (data.cities || []).filter(c => c.name && c.region);
           if (cities.length < 2) return null;
           const sourceCity = pick(cities, rng);
           const targetRegion = pick(data.regions.filter(r => r.name !== sourceCity.region), rng);
@@ -2512,7 +2637,7 @@
         id: "plague_profiteering",
         weight: 2,
         apply: (data, rng) => {
-          const cities = data.cities.filter(c => c.name);
+          const cities = (data.cities || []).filter(c => c.name);
           if (!cities.length) return null;
           const city = pick(cities, rng);
           const merchants = ["Merchant Guild", "Black Market Syndicate", "Caravan Masters", "Apothecaries Guild"];
@@ -2554,7 +2679,7 @@
         id: "festival",
         weight: 4,
         apply: (data, rng) => {
-          const cities = data.cities.filter(c => c.name);
+          const cities = (data.cities || []).filter(c => c.name);
           if (!cities.length) return null;
           const city = pick(cities, rng);
           const festivals = [
@@ -2684,7 +2809,7 @@
         id: "great_tournament",
         weight: 2,
         apply: (data, rng) => {
-          const cities = data.cities.filter(c => c.name);
+          const cities = (data.cities || []).filter(c => c.name);
           if (!cities.length) return null;
           const city = pick(cities, rng);
           return {
@@ -2755,7 +2880,7 @@
         id: "artifact_discovered",
         weight: 1,
         apply: (data, rng) => {
-          const cities = data.cities.filter(c => c.name);
+          const cities = (data.cities || []).filter(c => c.name);
           if (!cities.length) return null;
           const city = pick(cities, rng);
           const artifacts = [
@@ -2821,7 +2946,7 @@
         id: "summoning_gone_wrong",
         weight: 2,
         apply: (data, rng) => {
-          const cities = data.cities.filter(c => c.region);
+          const cities = (data.cities || []).filter(c => c.region);
           if (!cities.length) return null;
           const city = pick(cities, rng);
           const creatures = [
@@ -2865,7 +2990,7 @@
         id: "arcane_academy_founded",
         weight: 2,
         apply: (data, rng) => {
-          const cities = data.cities.filter(c => c.region);
+          const cities = (data.cities || []).filter(c => c.region);
           if (!cities.length) return null;
           const city = pick(cities, rng);
           return {
@@ -3095,12 +3220,19 @@
         }
       }
 
+      // AFTER initializing relations from faction data, restore persisted state if available
+      // This allows previous wars, treaties, and relation adjustments to persist across sessions
+      if (data?._lwEngineState) {
+        this.restoreSerializedState(data._lwEngineState);
+      }
+
       // Generate first event quickly (10-20 seconds in)
       const firstDelay = 10000 + Math.floor(this.rng() * 10000);
       this._firstTimeout = setTimeout(() => {
-        this._tick(data);
+        this._tick(this._currentData || data);
         // Then start regular interval
-        this.intervalId = setInterval(() => this._tick(data), this.intervalMs);
+        // NOTE: Pass null to _tick so it uses this._currentData which is kept current via setData()
+        this.intervalId = setInterval(() => this._tick(null), this.intervalMs);
       }, firstDelay);
     }
 
@@ -3203,6 +3335,29 @@
       };
     }
 
+    // Serialize engine state (relations, war data) to be saved in campaign data
+    // Returns object with relationScores, treaties, activeWars, tradeRoutes
+    getSerializedState() {
+      if (!this.relations) {
+        return { relationScores: {}, treaties: {}, activeWars: {}, tradeRoutes: {} };
+      }
+      return {
+        relationScores: { ...this.relations.relationScores },
+        treaties: { ...this.relations.treaties },
+        activeWars: { ...this.relations.activeWars },
+        tradeRoutes: { ...this.relations.tradeRoutes },
+      };
+    }
+
+    // Restore engine state from saved campaign data
+    restoreSerializedState(stateData) {
+      if (!stateData || !this.relations) return;
+      if (stateData.relationScores) this.relations.relationScores = { ...stateData.relationScores };
+      if (stateData.treaties) this.relations.treaties = { ...stateData.treaties };
+      if (stateData.activeWars) this.relations.activeWars = { ...stateData.activeWars };
+      if (stateData.tradeRoutes) this.relations.tradeRoutes = { ...stateData.tradeRoutes };
+    }
+
     // Advance time by N ticks, generating events synchronously
     // Returns { events: [...], finalData: {...} }
     advanceTime(data, ticks) {
@@ -3230,7 +3385,7 @@
       }
 
       const events = [];
-      let currentData = JSON.parse(JSON.stringify(data)); // Deep clone to avoid mutations
+      let currentData = deepClone(data); // Deep clone to avoid mutations
 
       for (let i = 0; i < ticks; i++) {
         this.tickCount++;
@@ -3370,7 +3525,7 @@
               });
               return { ...f, hierarchy: newHierarchy, power: Math.max(0, f.power - 25), trend: "declining" };
             }),
-            npcs: d.npcs.map(n => n.name === ruler.name ? { ...n, alive: false } : n),
+            npcs: (d.npcs || []).map(n => n.name === ruler.name ? { ...n, alive: false } : n),
             regions: d.regions.map(r => r.ctrl === faction.name ? { ...r, state: "tense", threat: r.threat === "low" ? "medium" : "high" } : r),
           }),
         };

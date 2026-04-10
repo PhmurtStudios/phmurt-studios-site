@@ -17,7 +17,10 @@
   try {
     var storedUrl = localStorage.getItem('phmurt_api_base_url');
     if (typeof storedUrl === 'string' && storedUrl.length > 0 && storedUrl.length < 500) {
-      safeDefaults.apiBaseUrl = storedUrl;
+      // Ensure URL is safe (no javascript: or data: schemes)
+      if (storedUrl.indexOf('://') !== -1 && storedUrl.indexOf('javascript:') === -1 && storedUrl.indexOf('data:') === -1) {
+        safeDefaults.apiBaseUrl = storedUrl;
+      }
     }
   } catch(e) { /* ignore */ }
 

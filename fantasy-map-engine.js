@@ -364,29 +364,35 @@ function fmGenerateMoisture(cols, rows, heightmap, waterLevel, mountainLevel) {
     }
   }
 
-  // Base moisture from distance to water
+  // Base moisture from distance to water using BFS (much faster than O(n^4))
+  const queue = [];
+
+  // Initialize queue with all water cells
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
       const h = heightmap[r][c];
-
       if (h <= waterLevel) {
-        // Water cells get full moisture
         moisture[r][c] = 1.0;
-      } else {
-        // Find distance to nearest water
-        let minDist = Infinity;
-        for (let rr = 0; rr < rows; rr++) {
-          for (let cc = 0; cc < cols; cc++) {
-            if (heightmap[rr][cc] <= waterLevel) {
-              const dist = Math.sqrt((r - rr) ** 2 + (c - cc) ** 2);
-              minDist = Math.min(minDist, dist);
-            }
-          }
-        }
+        queue.push({r, c, dist: 0});
+      }
+    }
+  }
 
-        // Moisture decreases with distance from water (max ~40 cells away)
-        const maxDist = 40;
-        moisture[r][c] = Math.max(0, 1 - (minDist / maxDist));
+  // BFS to find distance to nearest water
+  const maxDist = 40;
+  let qIdx = 0;
+  while (qIdx < queue.length) {
+    const {r, c, dist} = queue[qIdx++];
+
+    // Check 4 neighbors
+    const neighbors = [[r-1,c], [r+1,c], [r,c-1], [r,c+1]];
+    for (let [nr, nc] of neighbors) {
+      if (nr >= 0 && nr < rows && nc >= 0 && nc < cols && moisture[nr][nc] === 0) {
+        const newDist = dist + 1;
+        if (newDist <= maxDist) {
+          moisture[nr][nc] = Math.max(0, 1 - (newDist / maxDist));
+          queue.push({r: nr, c: nc, dist: newDist});
+        }
       }
     }
   }
@@ -1444,6 +1450,11 @@ function fmGenerateSettlements() {
 
     // 1. Capital at seed cell
     const seedCell = kingdom.seedCell;
+    if (!seedCell || seedCell.row === undefined || seedCell.col === undefined) continue;
+    const seedIdx = seedCell.row * cols + seedCell.col;
+    const seedCellData = FMap.grid.cells[seedIdx];
+    if (!seedCellData) continue;
+
     const capital = {
       id: `settlement_${settlementId++}`,
       name: fmNameGen.city(culture),
@@ -1454,8 +1465,8 @@ function fmGenerateSettlements() {
       col: seedCell.col,
       x: 0,
       y: 0,
-      isCoastal: FMap.grid.cells[seedCell.row * cols + seedCell.col].isCoast,
-      isRiver: FMap.grid.cells[seedCell.row * cols + seedCell.col].isRiver,
+      isCoastal: seedCellData.isCoast,
+      isRiver: seedCellData.isRiver,
       ruler: kingdom.ruler,
       traits: ['capital'],
       buildings: getBuildings({population: fmRandInt(10000, 80000)}),
@@ -1684,6 +1695,8 @@ function fmGenerateRoads() {
 
     const startCell = FMap.grid.cells[fromSettlement.row * cols + fromSettlement.col];
     const endCell = FMap.grid.cells[toSettlement.row * cols + toSettlement.col];
+
+    if (!startCell || !endCell) return null;
 
     const path = fmAStarPath(startCell, endCell, cols, rows);
 
@@ -2205,25 +2218,16 @@ function fmNameFeatures() {
 // ============================================================================
 
 function fmBuildWorld() {
-  console.log('Building political layer...');
-
   fmGenerateKingdoms();
-  console.log(`Generated ${FMap.world.kingdoms.length} kingdoms`);
 
   fmGenerateSettlements();
   FMap.world.cities = FMap.world.settlements;  // Sync for render/interaction code
-  console.log(`Generated ${FMap.world.settlements.length} settlements`);
 
   fmGenerateRoads();
-  console.log(`Generated ${FMap.world.roads.length} roads`);
 
   fmGeneratePOIs();
-  console.log(`Generated ${FMap.world.pois.length} points of interest`);
 
   fmNameFeatures();
-  console.log('Named geographic features');
-
-  console.log('World build complete!');
 }
 
 // ============================================================================
@@ -6260,7 +6264,8 @@ function fmRenderCityMap(cityObj) {
     FMap.canvas = document.getElementById('fantasyMapCanvas') || document.getElementById('mapCanvas');
     if (!FMap.canvas) return;
   }
-  var ctx = FMap.canvas.getContext('2d');
+  FMap.ctx = FMap.canvas.getContext('2d');
+  var ctx = FMap.ctx;
 
   // Clear canvas
   ctx.fillStyle = '#90b880';
@@ -6595,8 +6600,14 @@ function fmSetupInteraction() {
     document.body.appendChild(tooltip);
   }
 
-  // Mouse move handler
-  FMap.canvas.addEventListener('mousemove', (e) => {
+  // Mouse move handler with throttling to prevent excessive tooltip updates
+  let lastMouseMoveTime = 0;
+  const MOUSE_MOVE_THROTTLE_MS = 50; // Update tooltip max 20 times/sec
+  const handleCanvasMouseMove = (e) => {
+    const now = performance.now();
+    if (now - lastMouseMoveTime < MOUSE_MOVE_THROTTLE_MS) return;
+    lastMouseMoveTime = now;
+
     const rect = FMap.canvas.getBoundingClientRect();
     const mouseX = e.clientX - rect.left;
     const mouseY = e.clientY - rect.top;
@@ -6702,7 +6713,8 @@ function fmSetupInteraction() {
     } else {
       tooltip.style.display = 'none';
     }
-  });
+  };
+  FMap.canvas.addEventListener('mousemove', handleCanvasMouseMove);
 
   // Click handler
   FMap.canvas.addEventListener('click', (e) => {
@@ -6744,8 +6756,14 @@ function fmSetupInteraction() {
     }
   });
 
-  // Canvas resize listener
+  // Canvas resize listener with throttling to avoid excessive redraws
+  let lastResizeTime = 0;
+  const RESIZE_THROTTLE_MS = 200;
   window.addEventListener('resize', () => {
+    const now = performance.now();
+    if (now - lastResizeTime < RESIZE_THROTTLE_MS) return;
+    lastResizeTime = now;
+
     if (FMap.level === 'world') {
       fmRenderWorldMap();
     } else if (FMap.level === 'kingdom') {
@@ -6844,11 +6862,15 @@ function fmShowContextMenu(x, y, entityType, entityData) {
   document.body.appendChild(menu);
 
   // Close menu on outside click
-  const closeMenu = () => {
-    menu.remove();
-    document.removeEventListener('click', closeMenu);
+  const closeMenu = (e) => {
+    // Only close if click is outside the menu
+    if (!menu.contains(e.target)) {
+      menu.remove();
+      document.removeEventListener('click', closeMenu);
+    }
   };
-  setTimeout(() => document.addEventListener('click', closeMenu), 100);
+  // Add listener immediately to catch outside clicks
+  document.addEventListener('click', closeMenu);
 }
 
 // ============================================================================
@@ -7100,10 +7122,12 @@ function fmShowEditPanel(entityId, currentName) {
   setTimeout(() => {
     const saveBtn = modal.querySelector('.fmSaveEditBtn');
     if (saveBtn) {
-      saveBtn.addEventListener('click', function() {
+      const handleSave = function() {
         fmSaveEntityEdit(entityId);
         this.closest('.mapModal').remove();
-      });
+        saveBtn.removeEventListener('click', handleSave);
+      };
+      saveBtn.addEventListener('click', handleSave);
     }
   }, 0);
 }
@@ -7125,15 +7149,23 @@ function fmShowNotePanel(entityId) {
   setTimeout(() => {
     const saveBtn = modal.querySelector('.fmSaveNoteBtn');
     if (saveBtn) {
-      saveBtn.addEventListener('click', function() {
+      const handleSaveNote = function() {
         fmSaveEntityNote(entityId);
         this.closest('.mapModal').remove();
-      });
+        saveBtn.removeEventListener('click', handleSaveNote);
+      };
+      saveBtn.addEventListener('click', handleSaveNote);
     }
   }, 0);
 }
 
 function fmAddUserPOI(row, col) {
+  // Validate coordinates
+  if (typeof row !== 'number' || typeof col !== 'number' || !isFinite(row) || !isFinite(col)) {
+    console.error('Invalid POI coordinates:', row, col);
+    return;
+  }
+
   const modal = fmCreateModal('Add POI', `
     <label style="display:block; margin-bottom:8px;">
       <strong>Name:</strong><br/>
@@ -7156,11 +7188,35 @@ function fmAddUserPOI(row, col) {
       <strong>Description:</strong><br/>
       <textarea id="poiDescInput" placeholder="Description..." style="width:100%; height:80px; padding:6px; box-sizing:border-box; margin-top:4px; resize:vertical;"></textarea>
     </label>
-    <button onclick="fmSaveUserPOI(${row}, ${col}); this.closest('.mapModal').remove();" style="padding:8px 16px; background:var(--accent); color:#fff; border:none; border-radius:4px; cursor:pointer; margin-right:8px;">Add POI</button>
-    <button onclick="this.closest('.mapModal').remove();" style="padding:8px 16px; background:#999; color:#fff; border:none; border-radius:4px; cursor:pointer;">Cancel</button>
+    <button id="fmAddPOIBtn" style="padding:8px 16px; background:var(--accent); color:#fff; border:none; border-radius:4px; cursor:pointer; margin-right:8px;">Add POI</button>
+    <button id="fmAddPOICancel" style="padding:8px 16px; background:#999; color:#fff; border:none; border-radius:4px; cursor:pointer;">Cancel</button>
   `);
 
-  setTimeout(() => document.getElementById('poiNameInput').focus(), 100);
+  // Attach event listeners instead of inline onclick
+  setTimeout(() => {
+    const addBtn = document.getElementById('fmAddPOIBtn');
+    const cancelBtn = document.getElementById('fmAddPOICancel');
+    const nameInput = document.getElementById('poiNameInput');
+
+    if (nameInput) nameInput.focus();
+
+    if (addBtn) {
+      const handleAddPOI = () => {
+        fmSaveUserPOI(row, col);
+        modal.closest ? modal.closest('.mapModal').remove() : modal.parentElement && modal.parentElement.remove();
+        addBtn.removeEventListener('click', handleAddPOI);
+      };
+      addBtn.addEventListener('click', handleAddPOI);
+    }
+
+    if (cancelBtn) {
+      const handleCancel = () => {
+        modal.parentElement && modal.parentElement.remove();
+        cancelBtn.removeEventListener('click', handleCancel);
+      };
+      cancelBtn.addEventListener('click', handleCancel);
+    }
+  }, 0);
 }
 
 function fmCreateModal(title, content) {
@@ -7197,10 +7253,16 @@ function fmCreateModal(title, content) {
     box-shadow: 0 8px 24px rgba(0,0,0,0.3);
   `;
 
-  modal.innerHTML = `
-    <h2 style="margin-top:0; color:var(--accent);">${fmEscapeHtml(title)}</h2>
-    ${content}
-  `;
+  // Create title safely using textContent (not innerHTML)
+  const titleEl = document.createElement('h2');
+  titleEl.style.cssText = 'margin-top:0; color:var(--accent);';
+  titleEl.textContent = title;
+  modal.appendChild(titleEl);
+
+  // Create content wrapper and inject HTML safely
+  const contentEl = document.createElement('div');
+  contentEl.innerHTML = content; // Content is generated by trusted code, but contains escaped data
+  modal.appendChild(contentEl);
 
   backdrop.appendChild(modal);
   document.body.appendChild(backdrop);
@@ -7538,7 +7600,36 @@ var worldMapData = null;
 
 function showOtherMapGen(type) {
   // Legacy function - show other map generation options if needed
-  console.log('Map generation type:', type);
+}
+
+/**
+ * Clean up all FMap state and canvas references when switching contexts.
+ * Call this to prevent memory leaks when destroying the fantasy map.
+ */
+function fmCleanup() {
+  if (FMap.canvas) {
+    FMap.canvas.removeEventListener('mousemove', window._fmCanvasMoveHandler);
+    FMap.canvas.removeEventListener('click', window._fmCanvasClickHandler);
+    FMap.canvas.removeEventListener('contextmenu', window._fmCanvasContextHandler);
+  }
+  FMap.ctx = null;
+  FMap.canvas = null;
+  FMap.grid = {
+    cols: 200,
+    rows: 150,
+    cells: [],
+    heightmap: [],
+    moisture: [],
+    temperature: []
+  };
+  FMap.view = {
+    currentKingdom: null,
+    currentCity: null,
+    hoveredEntity: null,
+    selectedEntity: null,
+    pan: { x: 0, y: 0 },
+    zoom: 1.0
+  };
 }
 
 // === END PART 4: INTERACTION & UI ===

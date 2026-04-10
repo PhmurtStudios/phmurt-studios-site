@@ -17,6 +17,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
     crimson: "var(--crimson)", crimsonDim: "var(--crimson-dim)", crimsonBorder: "var(--crimson-border)", crimsonSoft: "var(--crimson-soft)",
     border: "var(--border)", borderMid: "var(--border-mid)",
     gold: "var(--gold)", goldDim: "var(--gold-dim)", green: "var(--green)", greenDim: "var(--green-dim)",
+    allyGreen: "var(--green)", rivalRed: "var(--crimson)",
     orange: "var(--orange)", orangeDim: "var(--orange-dim)", questGold: "var(--quest-gold)",
     heading: "'Cinzel', serif", body: "'Spectral', serif", ui: "'Cinzel', serif"
   };
@@ -101,12 +102,21 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
     );
   };
 
-  const TierBadge = ({ tier, color }) => React.createElement("span", {
-    style: {
-      fontSize: 9, fontFamily: T.ui, letterSpacing: "0.5px", padding: "2px 8px",
-      borderRadius: 2, color: color, background: color + "15", border: `1px solid ${color}30`
-    }
-  }, tier);
+  // Validate color is safe hex format
+  const isValidColor = (color) => {
+    if (!color || typeof color !== 'string') return false;
+    return /^#[0-9A-F]{6}$|^var\(--[\w-]+\)$/i.test(color);
+  };
+
+  const TierBadge = ({ tier, color }) => {
+    const safeColor = isValidColor(color) ? color : T.text;
+    return React.createElement("span", {
+      style: {
+        fontSize: 9, fontFamily: T.ui, letterSpacing: "0.5px", padding: "2px 8px",
+        borderRadius: 2, color: safeColor, background: safeColor + "15", border: `1px solid ${safeColor}30`
+      }
+    }, String(tier).replace(/[<>]/g, ''));
+  };
 
   // ─────────────────────────────────────────────────────────────────────
   // STANDING TAB — Full overview of party's political standing
@@ -153,8 +163,8 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
               },
                 React.createElement("div", { style: { width: 10, height: 10, borderRadius: "50%", background: f.color || T.gold } }),
                 React.createElement("div", null,
-                  React.createElement("div", { style: { fontSize: 13, color: T.text, fontWeight: 400 } }, f.name),
-                  React.createElement("div", { style: { fontSize: 10, color: T.textFaint, marginTop: 2 } }, f.govType || "Unknown")
+                  React.createElement("div", { style: { fontSize: 13, color: T.text, fontWeight: 400 } }, String(f.name || '').replace(/[<>]/g, '')),
+                  React.createElement("div", { style: { fontSize: 10, color: T.textFaint, marginTop: 2 } }, String(f.govType || 'Unknown').replace(/[<>]/g, ''))
                 ),
                 React.createElement(TierBadge, { tier: f.tier, color: f.tierColor }),
                 React.createElement(RepBar, { score: f.score, color: f.tierColor }),
@@ -174,13 +184,13 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
                       f.trend === "rising" ? "▲ Rising" : f.trend === "declining" ? "▼ Declining" : "— Stable"
                     )
                   ),
-                  f.allies && f.allies.length > 0 && React.createElement("div", null,
+                  f.allies && Array.isArray(f.allies) && f.allies.length > 0 && React.createElement("div", null,
                     React.createElement("div", { style: { fontSize: 8, color: T.textFaint, fontFamily: T.ui, letterSpacing: "1px", textTransform: "uppercase", marginBottom: 3 } }, "Allied With"),
-                    React.createElement("div", { style: { fontSize: 11, color: T.allyGreen } }, f.allies.join(", "))
+                    React.createElement("div", { style: { fontSize: 11, color: T.allyGreen } }, f.allies.map(a => String(a).replace(/[<>]/g, '')).join(", "))
                   ),
-                  f.rivals && f.rivals.length > 0 && React.createElement("div", null,
+                  f.rivals && Array.isArray(f.rivals) && f.rivals.length > 0 && React.createElement("div", null,
                     React.createElement("div", { style: { fontSize: 8, color: T.textFaint, fontFamily: T.ui, letterSpacing: "1px", textTransform: "uppercase", marginBottom: 3 } }, "Rivals"),
-                    React.createElement("div", { style: { fontSize: 11, color: T.rivalRed } }, f.rivals.join(", "))
+                    React.createElement("div", { style: { fontSize: 11, color: T.rivalRed } }, f.rivals.map(r => String(r).replace(/[<>]/g, '')).join(", "))
                   )
                 ),
                 // DM rep adjuster
@@ -214,12 +224,12 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
             }
           },
             React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 6 } },
-              React.createElement("span", { style: { fontSize: 13, color: T.text } }, sf.name),
+              React.createElement("span", { style: { fontSize: 13, color: T.text } }, String(sf.name || '').replace(/[<>]/g, '')),
               React.createElement(TierBadge, { tier: sf.tier, color: sf.tierColor }),
-              React.createElement("span", { style: { fontSize: 9, color: T.textFaint, marginLeft: "auto" } }, sf.score + "/100")
+              React.createElement("span", { style: { fontSize: 9, color: T.textFaint, marginLeft: "auto" } }, (sf.score || 0) + "/100")
             ),
             React.createElement(RepBar, { score: sf.score, color: sf.tierColor }),
-            sf.parentFaction && React.createElement("div", { style: { fontSize: 9, color: T.textFaint, marginTop: 8 } }, "Within: " + sf.parentFaction),
+            sf.parentFaction && React.createElement("div", { style: { fontSize: 9, color: T.textFaint, marginTop: 8 } }, "Within: " + String(sf.parentFaction).replace(/[<>]/g, '')),
             isDM && React.createElement("div", { style: { display: "flex", gap: 4, marginTop: 8, paddingTop: 8, borderTop: `1px solid ${T.border}` } },
               [-5, -1, 1, 5].map(d => React.createElement("button", {
                 key: d,
@@ -249,12 +259,12 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
               },
                 React.createElement("div", { style: { width: 14, height: 14, borderRadius: "50%", background: f.color || T.gold, flexShrink: 0 } }),
                 React.createElement("div", { style: { flex: 1, minWidth: 0 } },
-                  React.createElement("div", { style: { fontSize: 14, color: T.text, fontWeight: 400 } }, f.name),
-                  React.createElement("div", { style: { fontSize: 10, color: T.textFaint, marginTop: 2 } }, [f.govType, f.trend === "rising" ? "▲ Growing" : f.trend === "declining" ? "▼ Weakening" : null].filter(Boolean).join(" · "))
+                  React.createElement("div", { style: { fontSize: 14, color: T.text, fontWeight: 400 } }, String(f.name || '').replace(/[<>]/g, '')),
+                  React.createElement("div", { style: { fontSize: 10, color: T.textFaint, marginTop: 2 } }, [String(f.govType || '').replace(/[<>]/g, ''), f.trend === "rising" ? "▲ Growing" : f.trend === "declining" ? "▼ Weakening" : null].filter(Boolean).join(" · "))
                 ),
                 React.createElement(TierBadge, { tier: f.tier, color: f.tierColor }),
                 React.createElement("div", { style: { width: 120 } }, React.createElement(RepBar, { score: f.score, color: f.tierColor })),
-                React.createElement("span", { style: { fontSize: 10, color: T.gold, fontFamily: T.ui } }, "Power " + (f.power || "?"))
+                React.createElement("span", { style: { fontSize: 10, color: T.gold, fontFamily: T.ui } }, "Power " + String(f.power || '?').replace(/[<>]/g, ''))
               ))
             )
           : React.createElement("div", { style: { padding: 20, textAlign: "center", fontSize: 12, color: T.textFaint, fontStyle: "italic" } }, "No allied factions yet. Build relationships through quests and diplomacy.")
@@ -271,8 +281,8 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
               },
                 React.createElement("div", { style: { width: 30, height: 30, borderRadius: "50%", background: n.factionColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: T.bg, fontFamily: T.heading, fontWeight: 600, flexShrink: 0 } }, n.name.charAt(0)),
                 React.createElement("div", { style: { flex: 1, minWidth: 0 } },
-                  React.createElement("div", { style: { fontSize: 12, color: T.text } }, n.name),
-                  React.createElement("div", { style: { fontSize: 10, color: T.textFaint, marginTop: 1 } }, [n.role, n.faction, n.loc].filter(Boolean).join(" · "))
+                  React.createElement("div", { style: { fontSize: 12, color: T.text } }, String(n.name || '').replace(/[<>]/g, '')),
+                  React.createElement("div", { style: { fontSize: 10, color: T.textFaint, marginTop: 1 } }, [String(n.role || '').replace(/[<>]/g, ''), String(n.faction || '').replace(/[<>]/g, ''), String(n.loc || '').replace(/[<>]/g, '')].filter(Boolean).join(" · "))
                 ),
                 React.createElement(TierBadge, { tier: n.tier, color: n.tierColor })
               ))

@@ -254,12 +254,16 @@
       this.regionResources = assignRegionResources(this.regions, 42);
 
       // Initialize markets with base prices and random modifiers
+      // Build lookup map for TRADE_GOODS to avoid .find() in inner loop
+      const goodsById = new Map();
+      TRADE_GOODS.forEach(g => goodsById.set(g.id, g));
+
       const rng = mulberry32(42);
       this.regions.forEach(region => {
         const regionMarket = new Map();
         const goods = this.regionResources.get(region.id) || [];
         goods.forEach(goodId => {
-          const good = TRADE_GOODS.find(g => g.id === goodId);
+          const good = goodsById.get(goodId);
           if (good) {
             const modifier = 0.8 + rng() * 0.4; // 80-120% of base
             regionMarket.set(goodId, Math.round(good.basePrice * modifier));
@@ -281,9 +285,12 @@
       this.supply = new Map(); // regionId -> goodId -> amount (0-100)
       this.regions.forEach(region => {
         const supplyMap = new Map();
-        this.regionResources.get(region.id).forEach(goodId => {
-          supplyMap.set(goodId, 50); // Start at 50 (balanced)
-        });
+        const regionGoods = this.regionResources.get(region.id);
+        if (regionGoods) {
+          regionGoods.forEach(goodId => {
+            supplyMap.set(goodId, 50); // Start at 50 (balanced)
+          });
+        }
         this.supply.set(region.id, supplyMap);
       });
 
@@ -313,6 +320,7 @@
       this.markets.forEach((regionMarket, regionId) => {
         regionMarket.forEach((price, goodId) => {
           const good = TRADE_GOODS.find(g => g.id === goodId);
+          if (!good) return; // Skip if good definition not found
           const supply = this.supply.get(regionId)?.get(goodId) || 50;
 
           // Price changes: high supply = lower prices, low supply = higher prices
@@ -350,12 +358,14 @@
 
         // Calculate profit from goods
         let routeProfit = 0;
-        route.goods.forEach(goodId => {
-          const fromPrice = this.markets.get(route.from)?.get(goodId) || 1;
-          const toPrice = this.markets.get(route.to)?.get(goodId) || 1;
-          const margin = Math.max(0, toPrice - fromPrice);
-          routeProfit += margin * 3; // Trade volume multiplier
-        });
+        if (route.goods && Array.isArray(route.goods)) {
+          route.goods.forEach(goodId => {
+            const fromPrice = this.markets.get(route.from)?.get(goodId) || 1;
+            const toPrice = this.markets.get(route.to)?.get(goodId) || 1;
+            const margin = Math.max(0, toPrice - fromPrice);
+            routeProfit += margin * 3; // Trade volume multiplier
+          });
+        }
 
         routeProfit = Math.round(routeProfit * profitMult);
 
@@ -367,24 +377,26 @@
       });
 
       // ─ Phase 4: Faction spending (military or development) ─
-      data.factions.forEach(faction => {
-        if (!faction.id) return;
-        const treasury = this.treasuries.get(faction.id) || 0;
-        if (treasury < 10) return;
+      if (data.factions && Array.isArray(data.factions)) {
+        data.factions.forEach(faction => {
+          if (!faction.id) return;
+          const treasury = this.treasuries.get(faction.id) || 0;
+          if (treasury < 10) return;
 
-        // Check if faction is at war
-        const isAtWar = data.regions?.some(r => r.ctrl === faction.id && r.state === "contested");
+          // Check if faction is at war
+          const isAtWar = data.regions?.some(r => r.ctrl === faction.id && r.state === "contested");
 
-        if (isAtWar) {
-          // Spend on military: 15-25% of treasury per tick
-          const spend = Math.round(treasury * (0.15 + rng() * 0.1));
-          this.treasuries.set(faction.id, treasury - spend);
-        } else {
-          // Spend on development: 5-10% per tick
-          const spend = Math.round(treasury * (0.05 + rng() * 0.05));
-          this.treasuries.set(faction.id, treasury - spend);
-        }
-      });
+          if (isAtWar) {
+            // Spend on military: 15-25% of treasury per tick
+            const spend = Math.round(treasury * (0.15 + rng() * 0.1));
+            this.treasuries.set(faction.id, treasury - spend);
+          } else {
+            // Spend on development: 5-10% per tick
+            const spend = Math.round(treasury * (0.05 + rng() * 0.05));
+            this.treasuries.set(faction.id, treasury - spend);
+          }
+        });
+      }
 
       // ─ Phase 5: Generate economic events ─
       const eventOptions = ECONOMY_EVENTS.map(ev => ({ item: ev, weight: ev.weight || 1 }));
@@ -430,11 +442,13 @@
       const goods = [];
       regionMarket.forEach((price, goodId) => {
         const good = TRADE_GOODS.find(g => g.id === goodId);
-        goods.push({
-          ...good,
-          currentPrice: price,
-          supply: this.supply.get(region.id)?.get(goodId) || 50
-        });
+        if (good) {
+          goods.push({
+            ...good,
+            currentPrice: price,
+            supply: this.supply.get(region.id)?.get(goodId) || 50
+          });
+        }
       });
 
       return { region: regionName, goods };
@@ -485,11 +499,13 @@
 
       // Calculate profit
       let profit = 0;
-      goods.forEach(goodId => {
-        const fromPrice = this.markets.get(fromRegionId)?.get(goodId) || 1;
-        const toPrice = this.markets.get(toRegionId)?.get(goodId) || 1;
-        profit += Math.max(0, toPrice - fromPrice);
-      });
+      if (goods && Array.isArray(goods)) {
+        goods.forEach(goodId => {
+          const fromPrice = this.markets.get(fromRegionId)?.get(goodId) || 1;
+          const toPrice = this.markets.get(toRegionId)?.get(goodId) || 1;
+          profit += Math.max(0, toPrice - fromPrice);
+        });
+      }
 
       this.tradeRoutes.push({
         from: fromRegionId,
@@ -549,18 +565,25 @@
         if (route.active) activeRoutes++;
       });
 
-      // Calculate average prices by category
-      const categoryPrices = {};
+      // Calculate average prices by category (optimized: iterate markets once, collect prices)
+      const pricesByGood = new Map(); // good.id -> { prices: [], category }
       TRADE_GOODS.forEach(good => {
-        const prices = [];
-        this.markets.forEach(regionMarket => {
-          const price = regionMarket.get(good.id);
-          if (price) prices.push(price);
+        pricesByGood.set(good.id, { prices: [], category: good.category, name: good.name });
+      });
+
+      this.markets.forEach(regionMarket => {
+        regionMarket.forEach((price, goodId) => {
+          const goodData = pricesByGood.get(goodId);
+          if (goodData) goodData.prices.push(price);
         });
+      });
+
+      const categoryPrices = {};
+      pricesByGood.forEach(({ prices, category, name }) => {
         if (prices.length > 0) {
           const avg = Math.round(prices.reduce((a, b) => a + b) / prices.length);
-          if (!categoryPrices[good.category]) categoryPrices[good.category] = [];
-          categoryPrices[good.category].push({ good: good.name, avg });
+          if (!categoryPrices[category]) categoryPrices[category] = [];
+          categoryPrices[category].push({ good: name, avg });
         }
       });
 
@@ -815,7 +838,11 @@
           importance: "major",
           mutations: d => d,
           economyMutation: (eco) => {
-            const resources = eco.regionResources.get(region.id) || [];
+            let resources = eco.regionResources.get(region.id);
+            if (!resources) {
+              resources = [];
+              eco.regionResources.set(region.id, resources);
+            }
             if (!resources.includes(newGood.id)) {
               resources.push(newGood.id);
             }
@@ -923,7 +950,8 @@
         const region = data.regions[Math.floor(rng() * data.regions.length)];
         if (!region) return null;
 
-        const grainPrice = economy.markets.get(region.id)?.get("grain") || TRADE_GOODS.find(g => g.id === "grain").basePrice;
+        const grainGood = TRADE_GOODS.find(g => g.id === "grain");
+        const grainPrice = economy.markets.get(region.id)?.get("grain") || (grainGood?.basePrice || 2);
         const faminePrices = Math.round(grainPrice * 3.5);
 
         return {

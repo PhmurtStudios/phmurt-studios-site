@@ -190,8 +190,9 @@
 
   function ProphecyCard({ prophecy, onEdit, onDelete, canEdit, deityName, viewRole }) {
     const [expanded, setExpanded] = useState(false);
-    const metTriggers = prophecy.triggers.filter(t => t.met).length;
-    const totalTriggers = prophecy.triggers.length;
+    const triggers = prophecy?.triggers || [];
+    const metTriggers = triggers.filter(t => t.met).length;
+    const totalTriggers = triggers.length;
     const progressPercent = totalTriggers > 0 ? (metTriggers / totalTriggers) * 100 : 0;
 
     const getStatusColor = () => {
@@ -211,7 +212,7 @@
       }
     };
 
-    const shouldShowTriggers = viewRole === 'dm' || prophecy.visibility !== 'dm_only';
+    const shouldShowTriggers = viewRole === 'dm' || (prophecy?.visibility || 'public') !== 'dm_only';
 
     return (
       <div style={{
@@ -271,7 +272,7 @@
                   {deityName}
                 </span>
               )}
-              {prophecy.visibility !== 'public' && (
+              {(prophecy?.visibility || 'public') !== 'public' && (
                 <span style={{
                   fontSize: '10px',
                   color: 'var(--text-muted)',
@@ -279,8 +280,8 @@
                   alignItems: 'center',
                   gap: '3px'
                 }}>
-                  {prophecy.visibility === 'dm_only' ? <EyeOff size={10} /> : <Eye size={10} />}
-                  {prophecy.visibility === 'dm_only' ? 'DM Only' : 'Partial'}
+                  {(prophecy?.visibility || 'public') === 'dm_only' ? <EyeOff size={10} /> : <Eye size={10} />}
+                  {(prophecy?.visibility || 'public') === 'dm_only' ? 'DM Only' : 'Partial'}
                 </span>
               )}
             </div>
@@ -311,7 +312,7 @@
               </div>
             )}
 
-            {prophecy.signs && prophecy.signs.length > 0 && (
+            {(prophecy?.signs || []).length > 0 && (
               <div style={{
                 padding: '8px',
                 backgroundColor: `${T.orange}10`,
@@ -322,7 +323,7 @@
                 <div style={{ fontSize: '10px', color: T.orange, fontWeight: 'bold', marginBottom: '4px' }}>
                   SIGNS APPEARED:
                 </div>
-                {prophecy.signs.map((sign, idx) => (
+                {(prophecy?.signs || []).map((sign, idx) => (
                   <div key={idx} style={{ fontSize: '11px', color: T.text, marginBottom: '2px' }}>
                     • {sign.text} (Turn {sign.triggeredAt})
                   </div>
@@ -374,7 +375,7 @@
               </div>
             )}
 
-            {shouldShowTriggers && prophecy.triggers && prophecy.triggers.length > 0 && (
+            {shouldShowTriggers && triggers.length > 0 && (
               <div style={{ marginBottom: '12px' }}>
                 <div style={{
                   fontSize: '8px',
@@ -384,10 +385,10 @@
                   textTransform: 'uppercase',
                   marginBottom: '8px'
                 }}>
-                  Trigger Conditions ({prophecy.triggerMode})
+                  Trigger Conditions ({prophecy?.triggerMode || 'all'})
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {prophecy.triggers.map((trigger, idx) => (
+                  {triggers.map((trigger, idx) => (
                     <TriggerDisplay
                       key={idx}
                       trigger={trigger}
@@ -542,11 +543,17 @@
       const randomNpc = npcs[Math.floor(Math.random() * npcs.length)];
       const randomCity = cities[Math.floor(Math.random() * cities.length)];
 
+      // Safely handle null/undefined selections with fallback values
+      const regionName = (randomRegion && randomRegion.name) || 'a distant region';
+      const factionName = (randomFaction && randomFaction.name) || 'a mysterious faction';
+      const npcName = (randomNpc && randomNpc.name) || 'an unknown figure';
+      const cityName = (randomCity && randomCity.name) || 'a forgotten city';
+
       const generatedText = template
-        .replace('{region}', randomRegion.name)
-        .replace('{faction}', randomFaction.name)
-        .replace('{npc}', randomNpc.name)
-        .replace('{city}', randomCity.name);
+        .replace('{region}', regionName)
+        .replace('{faction}', factionName)
+        .replace('{npc}', npcName)
+        .replace('{city}', cityName);
 
       setText(generatedText);
     };

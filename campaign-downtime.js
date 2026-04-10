@@ -273,10 +273,11 @@
       let outcome = 'success';
       let narrativeKey = 'success';
 
-      if (roll < activity.outcomeProbabilities.greatSuccess) {
+      const probs = activity.outcomeProbabilities || { greatSuccess: 0.15, success: 0.65, complication: 0.20 };
+      if (roll < probs.greatSuccess) {
         outcome = 'great_success';
         narrativeKey = 'greatSuccess';
-      } else if (roll < activity.outcomeProbabilities.greatSuccess + activity.outcomeProbabilities.success) {
+      } else if (roll < probs.greatSuccess + probs.success) {
         outcome = 'success';
         narrativeKey = 'success';
       } else {
@@ -312,8 +313,10 @@
         const gold = Math.floor(rng() * (goldMax - goldMin + 1)) + goldMin;
         if (gold > 0) rewards.push({ type: 'gold', value: Math.ceil(gold * 1.5) });
 
-        const idx = Math.floor(rng() * activity.rewards.length);
-        rewards.push({ type: 'special', value: activity.rewards[idx] });
+        if (activity.rewards && activity.rewards.length > 0) {
+          const idx = Math.floor(rng() * activity.rewards.length);
+          rewards.push({ type: 'special', value: activity.rewards[idx] });
+        }
       } else if (outcome === 'success') {
         const goldMin = activity.goldReward.min;
         const goldMax = activity.goldReward.max;
@@ -379,7 +382,7 @@
 
       const key = outcome === 'great_success' ? 'greatSuccess' : outcome;
       const options = narratives[key] || narratives.success;
-      let narrative = options[Math.floor(rng() * options.length)];
+      let narrative = (options && options.length > 0) ? options[Math.floor(rng() * options.length)] : 'An activity was completed.';
 
       // Enhance narrative with NPC/world data if available
       if (worldData && worldData.npcs && worldData.npcs.length > 0) {
@@ -477,9 +480,14 @@
 
     static deserialize(json) {
       const engine = new DowntimeEngine();
-      const data = JSON.parse(json);
-      engine.assignments = data.assignments || [];
-      engine.log = data.log || [];
+      try {
+        const data = JSON.parse(json);
+        engine.assignments = data.assignments || [];
+        engine.log = data.log || [];
+      } catch (e) {
+        console.warn('Failed to deserialize DowntimeEngine:', e);
+        // Return engine with default empty state
+      }
       return engine;
     }
   }
@@ -503,7 +511,14 @@
     updateQuest(questId, updates) {
       const quest = this.quests.find(q => q.id === questId);
       if (!quest) throw new Error(`Quest ${questId} not found`);
-      Object.assign(quest, updates);
+      // Protect against prototype pollution
+      if (updates) {
+        Object.keys(updates).forEach(key => {
+          if (key !== '__proto__' && key !== 'constructor' && key !== 'prototype') {
+            quest[key] = updates[key];
+          }
+        });
+      }
       return quest;
     }
 
@@ -578,9 +593,14 @@
 
     static deserialize(json) {
       const board = new QuestBoard();
-      const data = JSON.parse(json);
-      board.quests = data.quests || [];
-      board.nextId = data.nextId || 1;
+      try {
+        const data = JSON.parse(json);
+        board.quests = data.quests || [];
+        board.nextId = data.nextId || 1;
+      } catch (e) {
+        console.warn('Failed to deserialize QuestBoard:', e);
+        // Return board with default empty state
+      }
       return board;
     }
   }
@@ -1000,8 +1020,9 @@
       // Update skill mastery
       const masteryKey = `${active.characterName}:${active.activityId}`;
       const currentMastery = downtimeData.skillMastery?.[masteryKey] || { successes: 0, level: 'Novice' };
+      const updatedMastery = { ...currentMastery };
       if (outcome !== 'complication') {
-        currentMastery.successes++;
+        updatedMastery.successes++;
       }
 
       setData({
@@ -1010,7 +1031,7 @@
           ...downtimeData,
           activeActivities: downtimeData.activeActivities.filter(a => a.id !== activeActivityId),
           history: [...downtimeData.history, historyEntry],
-          skillMastery: { ...downtimeData.skillMastery, [masteryKey]: currentMastery }
+          skillMastery: { ...downtimeData.skillMastery, [masteryKey]: updatedMastery }
         }
       });
 

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   <meta name="referrer" content="strict-origin" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://*.stripe.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://*.stripe.com; frame-ancestors 'none'; base-uri 'self'; form-action 'none'; object-src 'none';" />
   <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), usb=(), payment=(), serial=(), bluetooth=()" />
   <title>Pricing · Phmurt Studios</title>
   <meta name="description" content="Compare Phmurt Studios Free and Pro plans. Unlock unlimited characters, campaigns, generators, and advanced DM tools." />
@@ -372,22 +372,37 @@
         sw.setAttribute('aria-checked', 'true');
         lblM.classList.remove('active');
         lblY.classList.add('active');
-        priceEl.innerHTML = '$49.99 <span class="period">/ year</span>';
+        // SECURITY: Clear and rebuild to prevent duplicate spans
+        while (priceEl.firstChild) { priceEl.removeChild(priceEl.firstChild); }
+        priceEl.appendChild(document.createTextNode('$49.99 '));
+        var span = document.createElement('span');
+        span.className = 'period';
+        span.textContent = '/ year';
+        priceEl.appendChild(span);
         noteEl.textContent = 'That\'s ~$4.17/mo — save $10 vs monthly';
       } else {
         sw.classList.remove('yearly');
         sw.setAttribute('aria-checked', 'false');
         lblM.classList.add('active');
         lblY.classList.remove('active');
-        priceEl.innerHTML = '$4.99 <span class="period">/ month</span>';
-        noteEl.innerHTML = '&nbsp;';
+        // SECURITY: Clear and rebuild to prevent duplicate spans
+        while (priceEl.firstChild) { priceEl.removeChild(priceEl.firstChild); }
+        priceEl.appendChild(document.createTextNode('$4.99 '));
+        var span = document.createElement('span');
+        span.className = 'period';
+        span.textContent = '/ month';
+        priceEl.appendChild(span);
+        noteEl.textContent = '';
       }
     }
 
     /* ── Auto-select plan from query param (e.g. ?plan=yearly) ─────── */
     try {
       var urlParams = new URLSearchParams(window.location.search);
-      if (urlParams.get('plan') === 'yearly') { yearly = true; updatePricing(); }
+      var planParam = urlParams.get('plan');
+      // SECURITY: Validate plan parameter is in allowed set
+      if (planParam === 'yearly') { yearly = true; updatePricing(); }
+      else if (planParam === 'monthly') { yearly = false; updatePricing(); }
     } catch (e) { /* URLSearchParams not supported — ignore */ }
 
     sw.addEventListener('click', function () { yearly = !yearly; updatePricing(); });
@@ -396,7 +411,9 @@
     });
 
     /* ── Subscribe button ─────────────────────────────────────────── */
+    var isCheckoutInProgress = false; // SECURITY: Prevent double-clicks during checkout
     ctaEl.addEventListener('click', function () {
+      if (isCheckoutInProgress) return;
       if (typeof PhmurtDB === 'undefined') {
         alert('Please sign in first to subscribe.');
         return;
@@ -408,13 +425,19 @@
       }
       if (sess.isSubscribed) {
         PhmurtDB.manageSubscription(window.location.href).catch(function (err) {
-          alert('Could not open billing portal: ' + (err.message || 'Unknown error'));
+          // SECURITY: Don't expose internal error messages to user
+          console.error('Billing portal error:', err);
+          alert('Could not open billing portal. Please try again.');
         });
         return;
       }
+      isCheckoutInProgress = true;
       var plan = yearly ? 'yearly' : 'monthly';
       PhmurtDB.startSubscription(window.location.href, plan).catch(function (err) {
-        alert('Could not start checkout: ' + (err.message || 'Unknown error'));
+        isCheckoutInProgress = false;
+        // SECURITY: Don't expose internal error messages to user
+        console.error('Checkout error:', err);
+        alert('Could not start checkout. Please try again.');
       });
     });
 
@@ -441,18 +464,28 @@
     /* ── Auto-trigger checkout if user arrived from upgrade modal ──── */
     try {
       var _autoCheckout = new URLSearchParams(window.location.search).get('plan');
+      // SECURITY: Only auto-checkout if plan is valid
       if (_autoCheckout === 'monthly' || _autoCheckout === 'yearly') {
         // Wait for auth to be ready, then auto-trigger checkout
         var _autoTriggered = false;
         function _tryAutoCheckout() {
           if (_autoTriggered) return;
+          if (isCheckoutInProgress) return; // SECURITY: Don't trigger if already in progress
           if (typeof PhmurtDB === 'undefined') return;
           var s = PhmurtDB.getSession();
           if (!s || !s.userId) return; // Not signed in yet — wait
           _autoTriggered = true;
           // Clean the URL so refreshing doesn't re-trigger
           try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
-          ctaEl.click();
+          // Dispatch event instead of click to avoid double-triggering
+          isCheckoutInProgress = true;
+          // SECURITY: Validate plan before passing to API
+          var plan = (_autoCheckout === 'yearly') ? 'yearly' : 'monthly';
+          PhmurtDB.startSubscription(window.location.href, plan).catch(function (err) {
+            isCheckoutInProgress = false;
+            console.error('Auto-checkout failed:', err);
+            alert('Checkout failed. Please try again.');
+          });
         }
         window.addEventListener('phmurt-auth-change', _tryAutoCheckout);
         setTimeout(_tryAutoCheckout, 1000);
@@ -461,8 +494,22 @@
 
     /* ── FAQ accordion ────────────────────────────────────────────── */
     document.querySelectorAll('.faq-q').forEach(function (q) {
-      q.addEventListener('click', function () {
+      // SECURITY: Ensure proper keyboard accessibility
+      q.setAttribute('role', 'button');
+      if (!q.getAttribute('tabindex')) {
+        q.setAttribute('tabindex', '0');
+      }
+
+      function toggleFaq() {
         q.classList.toggle('open');
+      }
+
+      q.addEventListener('click', toggleFaq);
+      q.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggleFaq();
+        }
       });
     });
   })();

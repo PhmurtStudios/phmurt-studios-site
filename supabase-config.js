@@ -20,7 +20,6 @@ var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 
 /* SECURITY (V-020): Gate debug logging behind flag. Set to true only for development. */
 Object.defineProperty(window, 'PHMURT_DEBUG', { value: false, writable: false, configurable: false });
-var PHMURT_DEBUG = window.PHMURT_DEBUG;
 
 /* ── Admin email verification ────────────────────────────────────
    DEPRECATED: Admin email list has been moved to server-side verification.
@@ -51,10 +50,10 @@ var phmurtSupabase = null;
           storageKey:         'phmurt_sb_auth'
         }
       });
-      if (PHMURT_DEBUG) console.info('[Phmurt] Supabase client ready.');
+      if (window.PHMURT_DEBUG) console.info('[Phmurt] Supabase client ready.');
       window.dispatchEvent(new Event('phmurt-supabase-ready'));
     } catch (e) {
-      if (PHMURT_DEBUG) console.warn('[Phmurt] Supabase init failed – running in offline mode.', e);
+      if (window.PHMURT_DEBUG) console.warn('[Phmurt] Supabase init failed – running in offline mode.', e);
     }
   }
 
@@ -64,11 +63,12 @@ var phmurtSupabase = null;
   } else {
     /* Dynamically inject the CDN — works on any page without manual <script> tags */
     var s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+    s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0';
     s.crossOrigin = 'anonymous';
+    // SECURITY: Update this hash when upgrading the version. Verify at https://www.jsdelivr.com/
     s.integrity = 'sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG';
     s.onload  = _createClient;
-    s.onerror = function () { if (PHMURT_DEBUG) console.warn('[Phmurt] Supabase CDN failed to load – offline mode.'); };
+    s.onerror = function () { if (window.PHMURT_DEBUG) console.warn('[Phmurt] Supabase CDN failed to load – offline mode.'); };
     document.head.appendChild(s);
   }
 })();

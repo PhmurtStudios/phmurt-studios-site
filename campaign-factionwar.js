@@ -467,10 +467,11 @@ function calcIncome(state, factionId) {
     if (!region) return;
     const stateMod = STATE_MODS[region.state] || STATE_MODS.stable;
     const mult = stateMod.income;
-    income.gold += Math.floor(region.baseYield.gold * mult);
-    income.food += Math.floor(region.baseYield.food * mult);
-    income.iron += Math.floor(region.baseYield.iron * mult);
-    income.mana += Math.floor(region.baseYield.mana * mult);
+    const baseYield = region.baseYield || { gold: 0, food: 0, iron: 0, mana: 0 };
+    income.gold += Math.floor(baseYield.gold * mult);
+    income.food += Math.floor(baseYield.food * mult);
+    income.iron += Math.floor(baseYield.iron * mult);
+    income.mana += Math.floor(baseYield.mana * mult);
 
     // Building bonuses
     (region.buildings || []).forEach(bId => {
@@ -982,6 +983,7 @@ function processTurn(state) {
         if (!diplo?.warDeclared) continue;
 
         const region = newState.regions[rid];
+        if (!region) continue; // Skip if region not found
         // Determine attacker (the one who moved into the territory)
         const aIsHome = region.controllerId === a.factionId;
         const attacker = aIsHome ? b : a;
@@ -996,8 +998,8 @@ function processTurn(state) {
         if (realDef) { realDef.units = defender.units; realDef.morale = defender.morale; realDef.experience = defender.experience; }
 
         // Remove armies with no units
-        newState.factions[attacker.factionId].armies = newState.factions[attacker.factionId].armies.filter(a => a.units.length > 0);
-        newState.factions[defender.factionId].armies = newState.factions[defender.factionId].armies.filter(a => a.units.length > 0);
+        newState.factions[attacker.factionId].armies = newState.factions[attacker.factionId].armies.filter(army => army.units.length > 0);
+        newState.factions[defender.factionId].armies = newState.factions[defender.factionId].armies.filter(army => army.units.length > 0);
 
         // Territory changes
         if (result.attackerWins && region.controllerId === defender.factionId) {
@@ -1040,6 +1042,7 @@ function processTurn(state) {
     const f = newState.factions[fid];
     Object.keys(f.buildQueue).forEach(rid => {
       const entry = f.buildQueue[rid];
+      if (!entry) return; // Skip if no build queue entry for this region
       entry.turnsLeft--;
       if (entry.turnsLeft <= 0) {
         const region = newState.regions[rid];
@@ -1071,7 +1074,7 @@ function processTurn(state) {
         army.morale = Math.min(100, army.morale + 5 + (cmdBonus.morale > 0 ? 2 : 0));
         army.supply = Math.min(100, army.supply + supplyRate);
         // Hospital healing — restore 5% troops
-        if (hasHospital) {
+        if (hasHospital && army.units && Array.isArray(army.units)) {
           army.units.forEach(u => {
             const ut = UNIT_TYPES[u.type];
             if (ut) u.count = Math.min(u.count + Math.ceil(u.count * 0.05), u.count + 10); // cap +10 per turn
@@ -1082,12 +1085,16 @@ function processTurn(state) {
         army.supply = Math.max(0, army.supply - drain);
         if (army.supply <= 20) {
           army.morale = Math.max(0, army.morale - 5);
-          army.units.forEach(u => u.count = Math.max(1, Math.floor(u.count * 0.95)));
+          if (army.units && Array.isArray(army.units)) {
+            army.units.forEach(u => u.count = Math.max(1, Math.floor(u.count * 0.95)));
+          }
         }
         if (army.supply <= 0) {
           // Critical starvation
           army.morale = Math.max(0, army.morale - 10);
-          army.units.forEach(u => u.count = Math.max(1, Math.floor(u.count * 0.88)));
+          if (army.units && Array.isArray(army.units)) {
+            army.units.forEach(u => u.count = Math.max(1, Math.floor(u.count * 0.88)));
+          }
           turnEvents.push({ faction:f.name, text:`${army.name} starving in hostile territory!`, icon:"💀", severity:"warning" });
         }
       }
@@ -1100,7 +1107,7 @@ function processTurn(state) {
       if (sm.growth > 0) r.population = Math.floor(r.population * (1 + sm.growth * 0.01));
     });
     // Remove empty armies
-    f.armies = f.armies.filter(a => a.units.length > 0 && a.units.some(u => u.count > 0));
+    f.armies = f.armies.filter(a => a.units && a.units.length > 0 && a.units.some(u => u.count > 0));
     // Check elimination
     if (f.territories.length === 0 && f.armies.length === 0) {
       f.eliminated = true;

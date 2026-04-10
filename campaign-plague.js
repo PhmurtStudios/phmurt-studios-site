@@ -340,7 +340,7 @@
           d.plague.outbreaks.splice(existingIdx, 1);
         } else {
           d.plague.outbreaks.push({
-            id: Math.random().toString(36).substr(2, 9),
+            id: Math.random().toString(36).slice(2, 11),
             location,
             diseaseId,
             infectedCount: 1,
@@ -365,7 +365,7 @@
         if (!d.plague.patients) d.plague.patients = [];
 
         d.plague.patients.push({
-          id: Math.random().toString(36).substr(2, 9),
+          id: Math.random().toString(36).slice(2, 11),
           name,
           diseaseId,
           currentStage: 1,
@@ -383,9 +383,13 @@
     const updatePatientStage = useCallback((patientId, stage) => {
       setData(prev => {
         const d = { ...prev };
-        const patient = d.plague.patients.find(p => p.id === patientId);
-        if (patient) {
-          patient.currentStage = Math.min(Math.max(stage, 1), 4);
+        if (!d.plague?.patients) return d;
+        const patientIdx = d.plague.patients.findIndex(p => p.id === patientId);
+        if (patientIdx >= 0) {
+          d.plague.patients[patientIdx] = {
+            ...d.plague.patients[patientIdx],
+            currentStage: Math.min(Math.max(stage, 1), 4)
+          };
         }
         return d;
       });
@@ -395,10 +399,14 @@
     const updatePatientSave = useCallback((patientId, type) => {
       setData(prev => {
         const d = { ...prev };
-        const patient = d.plague.patients.find(p => p.id === patientId);
-        if (patient) {
-          if (type === 'success') patient.successSaves++;
-          else patient.failedSaves++;
+        if (!d.plague?.patients) return d;
+        const patientIdx = d.plague.patients.findIndex(p => p.id === patientId);
+        if (patientIdx >= 0) {
+          d.plague.patients[patientIdx] = {
+            ...d.plague.patients[patientIdx],
+            successSaves: type === 'success' ? d.plague.patients[patientIdx].successSaves + 1 : d.plague.patients[patientIdx].successSaves,
+            failedSaves: type === 'failure' ? d.plague.patients[patientIdx].failedSaves + 1 : d.plague.patients[patientIdx].failedSaves
+          };
         }
         return d;
       });
@@ -408,12 +416,16 @@
     const addTreatment = useCallback((patientId, treatment) => {
       setData(prev => {
         const d = { ...prev };
-        const patient = d.plague.patients.find(p => p.id === patientId);
-        if (patient) {
-          patient.treatments.push({
-            type: treatment,
-            date: new Date().toISOString()
-          });
+        if (!d.plague?.patients) return d;
+        const patientIdx = d.plague.patients.findIndex(p => p.id === patientId);
+        if (patientIdx >= 0) {
+          d.plague.patients[patientIdx] = {
+            ...d.plague.patients[patientIdx],
+            treatments: [
+              ...d.plague.patients[patientIdx].treatments,
+              { type: treatment, date: new Date().toISOString() }
+            ]
+          };
         }
         return d;
       });
@@ -426,14 +438,17 @@
         if (!d.plague) d.plague = {};
 
         // Process each outbreak
-        (d.plague.outbreaks || []).forEach(outbreak => {
+        d.plague.outbreaks = (d.plague.outbreaks || []).map(outbreak => {
           const rate = calculateSpreadRate(outbreak);
           const newInfected = Math.floor(outbreak.infectedCount * rate);
-          outbreak.infectedCount = Math.min(
-            outbreak.infectedCount + newInfected,
-            outbreak.population
-          );
-          outbreak.daysSince++;
+          const updated = {
+            ...outbreak,
+            infectedCount: Math.min(
+              outbreak.infectedCount + newInfected,
+              outbreak.population
+            ),
+            daysSince: outbreak.daysSince + 1
+          };
 
           // Random mutation
           if (Math.random() < 0.05) {
@@ -444,18 +459,23 @@
               severity: Math.random() > 0.5 ? 'increased' : 'decreased',
               date: new Date().toISOString()
             });
-            outbreak.dailyRate += (Math.random() - 0.5) * 0.05;
+            updated.dailyRate = outbreak.dailyRate + (Math.random() - 0.5) * 0.05;
           }
+
+          return updated;
         });
 
         // Progress patient stages
-        (d.plague.patients || []).forEach(patient => {
+        d.plague.patients = (d.plague.patients || []).map(patient => {
           if (patient.status === 'infected' && Math.random() < 0.2) {
-            patient.currentStage = Math.min(patient.currentStage + 1, 4);
-            if (patient.currentStage === 4 && Math.random() < 0.3) {
-              patient.status = 'deceased';
-            }
+            const newStage = Math.min(patient.currentStage + 1, 4);
+            return {
+              ...patient,
+              currentStage: newStage,
+              status: newStage === 4 && Math.random() < 0.3 ? 'deceased' : patient.status
+            };
           }
+          return patient;
         });
 
         return d;
@@ -734,9 +754,10 @@
 
     const PatientsTab = () => (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {plague.patients && plague.patients.map(patient => {
+        {plague.patients && plague.patients.length > 0 && plague.patients.map(patient => {
           const disease = allDiseases[patient.diseaseId];
-          const stage = disease?.stages[patient.currentStage - 1];
+          const stageIdx = Math.max(0, Math.min(patient.currentStage - 1, (disease?.stages?.length || 1) - 1));
+          const stage = disease?.stages?.[stageIdx];
           const isCritical = patient.currentStage === 4;
 
           return (
@@ -792,9 +813,9 @@
                 </div>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                   <div style={{ display: 'flex', gap: '2px' }}>
-                    {Array(patient.successSaves).fill(null).map((_, i) => (
+                    {Array(patient.successSaves).fill(null).map((_, idx) => (
                       <div
-                        key={`s${i}`}
+                        key={`s${patient.id}-${idx}`}
                         style={{
                           width: '16px',
                           height: '16px',
@@ -803,9 +824,9 @@
                         }}
                       />
                     ))}
-                    {Array(patient.failedSaves).fill(null).map((_, i) => (
+                    {Array(patient.failedSaves).fill(null).map((_, idx) => (
                       <div
-                        key={`f${i}`}
+                        key={`f${patient.id}-${idx}`}
                         style={{
                           width: '16px',
                           height: '16px',
@@ -881,9 +902,9 @@
                   Treatments Applied
                 </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
-                  {patient.treatments.map((t, i) => (
+                  {patient.treatments.map((t, idx) => (
                     <div
-                      key={i}
+                      key={`${patient.id}-${t.type}-${idx}`}
                       style={{
                         background: 'var(--bg)',
                         padding: '4px 8px',
@@ -1114,9 +1135,9 @@
           }}>
             <h3 style={{ margin: '0 0 12px 0', color: 'var(--crimson)' }}>Recent Mutations</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {plague.mutations.slice(-5).reverse().map((mut, i) => (
+              {plague.mutations.slice(-5).reverse().map((mut, idx) => (
                 <div
-                  key={i}
+                  key={`${mut.outbreak}-${mut.date}-${idx}`}
                   style={{
                     background: 'var(--bg)',
                     padding: '8px',

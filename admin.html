@@ -2,7 +2,7 @@
 <html lang="en" data-nav-active="about" data-footer-copy="Roll Well. Play Weird.">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <meta http-equiv="X-Content-Type-Options" content="nosniff" />
 <meta name="referrer" content="strict-origin" />
 <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), usb=(), payment=(), serial=(), bluetooth=()">
@@ -266,6 +266,8 @@
                 navigator.clipboard.writeText(hash).then(function () {
                   val.textContent = '✓ Copied!';
                   setTimeout(function () { val.textContent = hash; }, 2000);
+                }).catch(function(err) {
+                  console.warn('Clipboard copy failed:', err);
                 });
               });
               document.getElementById('ag-hash-continue').addEventListener('click', function () {
@@ -808,12 +810,17 @@ function loadAdminDashboard() {
     .then(function(jsx) {
       var js = Babel.transform(jsx, { presets: ['react'] }).code;
       var script = document.createElement('script');
-      script.textContent = '(function(){' + js + '})();';  
+      script.textContent = '(function(){' + js + '})();';
       document.head.appendChild(script);
     })
     .catch(function(err) {
       console.error('[Admin] Failed to load dashboard:', err);
-      document.getElementById('admin-root').innerHTML = '<p style="color:red;padding:40px">Failed to load admin dashboard. Please refresh.</p>';
+      var errorEl = document.getElementById('admin-root');
+      if (errorEl) {
+        errorEl.textContent = 'Failed to load admin dashboard. Please refresh.';
+        errorEl.style.color = 'red';
+        errorEl.style.padding = '40px';
+      }
     });
 }
 </script>

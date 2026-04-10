@@ -215,28 +215,30 @@
       if (item.children) {
         const isActive = item.label === activeLabel;
         const childLinks = item.children.map(c =>
-          `<a href="${psEscapeHtml(c.href)}" class="ps-dropdown-link">${psEscapeHtml(c.label)}</a>`
+          // SECURITY: Properly escape href and content
+          `<a href="${psEscapeHtml(String(c.href || ''))}" class="ps-dropdown-link">${psEscapeHtml(String(c.label || ''))}</a>`
         ).join('');
         return `<div class="ps-nav-dropdown${isActive ? ' active' : ''}">
-          <button class="ps-nav-dropdown-btn${isActive ? ' active' : ''}" type="button">${psEscapeHtml(item.label)} <span class="ps-nav-caret">▾</span></button>
+          <button class="ps-nav-dropdown-btn${isActive ? ' active' : ''}" type="button">${psEscapeHtml(String(item.label || ''))} <span class="ps-nav-caret">▾</span></button>
           <div class="ps-dropdown-panel">${childLinks}</div>
         </div>`;
       }
-      return `<a href="${psEscapeHtml(item.href)}"${item.label === activeLabel ? ' class="active"' : ''}>${psEscapeHtml(item.label)}</a>`;
+      return `<a href="${psEscapeHtml(String(item.href || ''))}"${item.label === activeLabel ? ' class="active"' : ''}>${psEscapeHtml(String(item.label || ''))}</a>`;
     }).join('');
 
     // Mobile nav uses flat list with group headers
     let mobileLinks = '';
     SHELL.nav.forEach((item, index) => {
       if (item.children) {
-        mobileLinks += `<div class="ps-mobile-group-label">${psEscapeHtml(item.label)}</div>`;
+        mobileLinks += `<div class="ps-mobile-group-label">${psEscapeHtml(String(item.label || ''))}</div>`;
         item.children.forEach(c => {
-          mobileLinks += `<a href="${psEscapeHtml(c.href)}">${psEscapeHtml(c.label)}</a>`;
+          // SECURITY: Properly escape href and content
+          mobileLinks += `<a href="${psEscapeHtml(String(c.href || ''))}">${psEscapeHtml(String(c.label || ''))}</a>`;
         });
         mobileLinks += '<div class="ps-mobile-divider"></div>';
       } else {
         if (index > 0) mobileLinks += '<div class="ps-mobile-divider"></div>';
-        mobileLinks += `<a href="${psEscapeHtml(item.href)}"${item.label === activeLabel ? ' class="active"' : ''}>${psEscapeHtml(item.label)}</a>`;
+        mobileLinks += `<a href="${psEscapeHtml(String(item.href || ''))}"${item.label === activeLabel ? ' class="active"' : ''}>${psEscapeHtml(String(item.label || ''))}</a>`;
       }
     });
 
@@ -278,9 +280,12 @@
     return `
       <nav class="ps-breadcrumb" role="navigation" aria-label="Breadcrumb">
         ${items.map((item, index) => {
-          const crumb = item.current || !item.href
-            ? `<span class="current">${psEscapeHtml(item.label)}</span>`
-            : `<a href="${psEscapeHtml(item.href)}">${psEscapeHtml(item.label)}</a>`;
+          // SECURITY: Ensure item has required properties before use
+          const label = psEscapeHtml(String((item && item.label) || ''));
+          const href = String((item && item.href) || '');
+          const crumb = (item && (item.current || !item.href))
+            ? `<span class="current">${label}</span>`
+            : `<a href="${psEscapeHtml(href)}">${label}</a>`;
           const sep = index < items.length - 1 ? '<span class="sep">/</span>' : '';
           return crumb + sep;
         }).join('')}
@@ -293,9 +298,9 @@
       <footer class="ps-footer" role="contentinfo">
         <div class="ps-footer-logo">
           <img src="logo.png" alt="Phmurt Studios" />
-          <span class="ps-footer-name">${psEscapeHtml(SHELL.footerName)}</span>
+          <span class="ps-footer-name">${psEscapeHtml(String(SHELL.footerName || ''))}</span>
         </div>
-        <div class="ps-footer-copy">${getFooterCopy()}</div>
+        <div class="ps-footer-copy">${psEscapeHtml(String(getFooterCopy() || ''))}</div>
         <div class="ps-footer-legal" style="margin-top:0.5rem;font-size:0.85rem;opacity:0.7;text-align:center;">
           <a href="privacy.html" style="color:inherit;text-decoration:underline;">Privacy Policy</a>
           <span style="margin:0 0.5rem;">|</span>
@@ -410,7 +415,9 @@
 
     var session = _getAuthSession();
 
-    var isAdmin = !!(session && session.isAdmin === true);
+    // SECURITY (V-026): Use verified admin status from PhmurtDB session,
+    // not from potentially untrusted localStorage
+    var isAdmin = _shellIsAdmin();
 
     // ── Show/hide Admin nav links (desktop + mobile) ────────────
     var adminLink       = document.getElementById('nav-admin-link');
@@ -420,7 +427,8 @@
 
     if (session && session.userId) {
       // ── Signed in ──────────────────────────────────────────────
-      var display = (session.displayName || session.name || session.email || 'Account').trim();
+      // SECURITY: Validate display string to prevent injection
+      var display = String((session.displayName || session.name || session.email || 'Account')).trim().slice(0, 100);
       btn.textContent = display.length > 16
         ? display.split(' ').map(function(w){ return w[0]; }).join('').toUpperCase().slice(0,2)
         : display;
@@ -430,9 +438,11 @@
       btn.style.color       = 'var(--text)';
 
       if (dd) {
-        var isPro = !!(session.isSubscribed || session.subscriptionTier === 'pro');
+        // SECURITY: Validate subscription fields before use
+        var isPro = !!(session.isSubscribed === true || session.subscriptionTier === 'pro');
+        var cancelStatus = session.subscriptionCancelAt ? 'Canceling' : 'Active';
         var tierBadge = isPro
-          ? '<div style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-bottom:1px solid var(--border-mid);"><span style="font-family:Cinzel,serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:#f5ede0;background:var(--crimson);padding:2px 8px;border-radius:3px;">PRO</span><span style="font-size:10px;color:var(--text-faint);">' + (session.subscriptionCancelAt ? 'Canceling' : 'Active') + '</span></div>'
+          ? '<div style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-bottom:1px solid var(--border-mid);"><span style="font-family:Cinzel,serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:#f5ede0;background:var(--crimson);padding:2px 8px;border-radius:3px;">PRO</span><span style="font-size:10px;color:var(--text-faint);">' + psEscapeHtml(cancelStatus) + '</span></div>'
           : '<div style="padding:6px 14px;border-bottom:1px solid var(--border-mid);"><a href="pricing.html" style="font-family:Cinzel,serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--crimson);text-decoration:none;">✦ Upgrade to Pro</a></div>';
         var manageBtn = isPro
           ? '<button id="nav-manage-sub-btn">Manage Subscription</button>'
@@ -756,17 +766,21 @@
 
 
   window.psToast = function(message, duration) {
-    duration = duration || 3000;
+    // SECURITY: Validate message and duration inputs
+    message = String(message || '').slice(0, 500);
+    duration = Math.max(1000, Math.min(10000, Number(duration) || 3000));
     const existing = document.getElementById('ps-toast');
-    if (existing) existing.remove();
+    if (existing) {
+      try { existing.remove(); } catch (e) {}
+    }
     const toast = document.createElement('div');
     toast.id = 'ps-toast';
     toast.textContent = message;
     document.body.appendChild(toast);
-    requestAnimationFrame(function() { toast.classList.add('visible'); });
+    requestAnimationFrame(function() { if (toast) toast.classList.add('visible'); });
     setTimeout(function() {
-      toast.classList.remove('visible');
-      setTimeout(function() { toast.remove(); }, 300);
+      if (toast) toast.classList.remove('visible');
+      setTimeout(function() { try { toast.remove(); } catch (e) {} }, 300);
     }, duration);
   };
 
@@ -784,13 +798,18 @@
   var _lastVisitTime = 0;
 
   // Generate or retrieve a session ID for anonymous visitor tracking
+  // SECURITY (V-043): Validate sessionStorage data structure and limit ID length
   function _getSessionId() {
     try {
       var key = 'phmurt_visitor_sid';
       var existing = sessionStorage.getItem(key);
-      if (existing) return existing;
+      if (existing && typeof existing === 'string' && existing.length > 0 && existing.length < 256) {
+        return existing;
+      }
       // Simple random ID — unique per browser tab session
       var sid = 'v_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+      // Ensure ID doesn't grow unbounded
+      sid = sid.slice(0, 50);
       sessionStorage.setItem(key, sid);
       return sid;
     } catch(e) { return null; }
@@ -805,6 +824,8 @@
       var page = window.location.pathname || '/';
       // Normalize: strip trailing slash except for root, lowercase
       if (page.length > 1 && page.charAt(page.length - 1) === '/') page = page.slice(0, -1);
+      // SECURITY (V-044): Validate page string to prevent injection
+      page = String(page).slice(0, 512);
 
       // Debounce: skip if same page logged within 5 seconds
       var now = Date.now();
@@ -816,8 +837,13 @@
       var userId = null;
       try {
         var raw = localStorage.getItem('phmurt_auth_session');
-        var sess = raw ? JSON.parse(raw) : null;
-        if (sess && sess.userId) userId = sess.userId;
+        if (raw && typeof raw === 'string') {
+          var sess = JSON.parse(raw);
+          // SECURITY (V-045): Validate session object structure
+          if (sess && typeof sess === 'object' && sess.userId && typeof sess.userId === 'string') {
+            userId = String(sess.userId).slice(0, 100);
+          }
+        }
       } catch(e) {}
 
       // Build visit record with full context
@@ -830,7 +856,7 @@
       };
 
       sb.from('site_visits').insert(record).then(function() {}).catch(function() {});
-    } catch(e) {}
+    } catch(e) { /* Silently fail */ }
   }
 
   // ── Dice Roller ──
@@ -863,17 +889,25 @@
       var dice = [4, 6, 8, 10, 12, 20, 100];
       var diceHtml = dice.map(function(d) {
         var sel = d === PhmurtDice._selectedDie ? ' ps-die-selected' : '';
-        return '<button class="ps-die-btn' + sel + '" onclick="event.stopPropagation();PhmurtDice.selectDie(' + d + ')">d' + d + '</button>';
+        // SECURITY (V-041): Use data-die attribute instead of inline onclick, validate die value
+        var dieNum = Math.floor(Number(d)) || 20;
+        return '<button class="ps-die-btn' + sel + '" data-die="' + dieNum + '">d' + dieNum + '</button>';
       }).join('');
 
       var historyHtml = '';
       if (PhmurtDice._history.length) {
         historyHtml = '<div class="ps-dice-history">';
         PhmurtDice._history.slice(-5).reverse().forEach(function(h) {
+          // SECURITY: Validate history entry structure before use
+          if (!h || typeof h !== 'object') return;
           var cls = '';
-          if (h.max === h.total && h.count === 1) cls = ' nat20';
-          if (h.total === h.count) cls = ' nat1';
-          historyHtml += '<div class="ps-dice-hist-row"><span class="ps-dice-hist-label">' + h.count + 'd' + h.die + '</span><span class="ps-dice-hist-val' + cls + '">' + h.total + (h.rolls.length > 1 ? ' <span class="ps-dice-hist-detail">(' + h.rolls.join('+') + ')</span>' : '') + '</span></div>';
+          var total = Number(h.total) || 0;
+          var count = Number(h.count) || 1;
+          var die = Number(h.die) || 20;
+          if (h.max === total && count === 1) cls = ' nat20';
+          if (total === count) cls = ' nat1';
+          var rollStr = Array.isArray(h.rolls) ? h.rolls.map(function(r) { return String(Number(r) || 0); }).join('+') : '';
+          historyHtml += '<div class="ps-dice-hist-row"><span class="ps-dice-hist-label">' + count + 'd' + die + '</span><span class="ps-dice-hist-val' + cls + '">' + total + (h.rolls && h.rolls.length > 1 ? ' <span class="ps-dice-hist-detail">(' + rollStr + ')</span>' : '') + '</span></div>';
         });
         historyHtml += '</div>';
       }
@@ -883,14 +917,42 @@
           '<div class="ps-dice-panel-title">Dice Roller</div>' +
           '<div class="ps-dice-selector">' + diceHtml + '</div>' +
           '<div class="ps-dice-count-row">' +
-            '<button class="ps-dice-count-btn" onclick="event.stopPropagation();PhmurtDice.adjustCount(-1)">-</button>' +
+            '<button class="ps-dice-count-btn" data-adjust="-1">-</button>' +
             '<span class="ps-dice-count-display">' + PhmurtDice._count + 'd' + PhmurtDice._selectedDie + '</span>' +
-            '<button class="ps-dice-count-btn" onclick="event.stopPropagation();PhmurtDice.adjustCount(1)">+</button>' +
+            '<button class="ps-dice-count-btn" data-adjust="1">+</button>' +
           '</div>' +
-          '<button class="ps-dice-roll-btn" onclick="event.stopPropagation();PhmurtDice.roll()">Roll</button>' +
+          '<button class="ps-dice-roll-btn">Roll</button>' +
           '<div id="diceResult"></div>' +
           historyHtml +
         '</div>';
+
+      // Wire up button handlers after rendering
+      var self = PhmurtDice;
+      popup.querySelectorAll('.ps-die-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          // SECURITY: Validate die value before using
+          var die = parseInt(btn.dataset.die, 10);
+          if (isNaN(die) || die < 1 || die > 100) die = 20;
+          self.selectDie(die);
+        });
+      });
+      popup.querySelectorAll('.ps-dice-count-btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          // SECURITY: Validate delta value before using
+          var delta = parseInt(btn.dataset.adjust, 10);
+          if (isNaN(delta) || Math.abs(delta) > 1) delta = 0;
+          self.adjustCount(delta);
+        });
+      });
+      var rollBtn = popup.querySelector('.ps-dice-roll-btn');
+      if (rollBtn) {
+        rollBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          self.roll();
+        });
+      }
     },
 
     selectDie: function(d) {
@@ -904,8 +966,8 @@
     },
 
     roll: function() {
-      var die = PhmurtDice._selectedDie;
-      var count = PhmurtDice._count;
+      var die = Math.max(1, Math.min(100, Math.floor(Number(PhmurtDice._selectedDie)) || 20));
+      var count = Math.max(1, Math.min(10, Math.floor(Number(PhmurtDice._count)) || 1));
       var rolls = [];
       for (var i = 0; i < count; i++) {
         rolls.push(Math.floor(Math.random() * die) + 1);
@@ -913,25 +975,39 @@
       var total = rolls.reduce(function(a, b) { return a + b; }, 0);
 
       PhmurtDice._history.push({ die: die, count: count, rolls: rolls, total: total, max: die });
-      if (PhmurtDice._history.length > 20) PhmurtDice._history.shift();
+      // Prevent unbounded memory growth
+      if (PhmurtDice._history.length > 20) {
+        PhmurtDice._history = PhmurtDice._history.slice(-20);
+      }
 
       // Animate button
-      var btn = document.querySelector('.ps-dice-btn');
+      var popup = document.getElementById('dicePopup');
+      var btn = popup ? popup.querySelector('.ps-dice-btn') : null;
       if (btn) {
         btn.classList.add('rolling');
-        setTimeout(function() { btn.classList.remove('rolling'); }, 500);
+        setTimeout(function() { if (btn) btn.classList.remove('rolling'); }, 500);
       }
 
       PhmurtDice._renderPanel();
 
       // Flash the result
+      // SECURITY (V-042): Use safer DOM manipulation instead of innerHTML
       var resultEl = document.getElementById('diceResult');
       if (resultEl) {
+        resultEl.textContent = '';
         var cls = '';
         if (total === die * count) cls = ' nat20';
         if (total === count) cls = ' nat1';
-        resultEl.innerHTML = '<div class="ps-dice-result-num' + cls + '">' + total + '</div>' +
-          (rolls.length > 1 ? '<div class="ps-dice-result-breakdown">' + rolls.join(' + ') + '</div>' : '');
+        var numDiv = document.createElement('div');
+        numDiv.className = 'ps-dice-result-num' + cls;
+        numDiv.textContent = String(Math.max(0, total));
+        resultEl.appendChild(numDiv);
+        if (Array.isArray(rolls) && rolls.length > 1) {
+          var breakdownDiv = document.createElement('div');
+          breakdownDiv.className = 'ps-dice-result-breakdown';
+          breakdownDiv.textContent = rolls.map(function(r) { return String(Math.max(0, Number(r) || 0)); }).join(' + ');
+          resultEl.appendChild(breakdownDiv);
+        }
       }
     },
 

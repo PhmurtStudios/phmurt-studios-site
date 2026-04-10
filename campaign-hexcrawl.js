@@ -376,25 +376,23 @@
       const featureCount = Math.floor(rng() * 3);
       for (let i = 0; i < featureCount; i++) {
         const feat = HEX_FEATURES[Math.floor(rng() * HEX_FEATURES.length)];
-        features.push({ ...feat });
+        if (feat) features.push({ ...feat });
       }
 
       // Enhance features with world POIs if available
-      if (this.worldData && this.worldData.pois && this.worldData.pois.length > 0 && rng() < 0.15) {
-        const poiInRegion = this.worldData.pois.find(poi => {
-          // POI appears if we're in or near its region (will be properly tagged after grid generation)
-          return rng() < 0.4; // 40% chance to include a nearby POI as feature
-        });
+      if (this.worldData && this.worldData.pois && Array.isArray(this.worldData.pois) && this.worldData.pois.length > 0 && rng() < 0.15) {
+        const poiIndex = Math.floor(rng() * this.worldData.pois.length);
+        const poiInRegion = this.worldData.pois[poiIndex];
 
-        if (poiInRegion) {
+        if (poiInRegion && poiInRegion.type && poiInRegion.name) {
           features.push({
-            id: 'poi_' + poiInRegion.type,
-            name: poiInRegion.name,
+            id: 'poi_' + (poiInRegion.type || 'unknown'),
+            name: poiInRegion.name || 'Point of Interest',
             icon: '◉',
-            description: poiInRegion.description || `Notable ${poiInRegion.type}`,
+            description: poiInRegion.description || `Notable ${poiInRegion.type || 'location'}`,
             mechanicalEffect: 'poi_location',
             isPOI: true,
-            poiType: poiInRegion.type
+            poiType: poiInRegion.type || 'unknown'
           });
         }
       }
@@ -681,24 +679,26 @@
      * Enrich encounter with faction-specific context
      */
     _enrichEncounterWithFactionContext(encounter, hex) {
-      if (!hex.factionName || !this.worldData) {
+      if (!hex || !hex.factionName || !this.worldData) {
         return encounter;
       }
 
       const enrichedEncounter = { ...encounter };
-      const faction = this.worldData.factions ? this.worldData.factions.find(f => f.name === hex.factionName) : null;
+      const faction = this.worldData.factions && Array.isArray(this.worldData.factions) ?
+        this.worldData.factions.find(f => f && f.name === hex.factionName) : null;
 
       // Modify encounter names based on faction presence
-      if (encounter.id === 'bandit_ambush' && faction) {
+      if (encounter.id === 'bandit_ambush' && faction && faction.name) {
         enrichedEncounter.name = `${faction.name} Deserters`;
         enrichedEncounter.description = `Armed deserters from ${faction.name} demand toll`;
       } else if (encounter.id === 'traveling_merchants') {
-        const city = this.worldData.cities ? this.worldData.cities.find(c => c.region === hex.regionName) : null;
-        if (city) {
+        const city = this.worldData.cities && Array.isArray(this.worldData.cities) ?
+          this.worldData.cities.find(c => c && c.region === hex.regionName) : null;
+        if (city && city.name) {
           enrichedEncounter.name = `Traders from ${city.name}`;
           enrichedEncounter.description = `Merchant convoy heading to/from ${city.name}`;
         }
-      } else if (encounter.id === 'goblin_patrol' && faction) {
+      } else if (encounter.id === 'goblin_patrol' && faction && faction.name) {
         enrichedEncounter.name = `${faction.name} Patrol`;
         enrichedEncounter.description = `Patrol of ${faction.name} scouts`;
       }
@@ -720,29 +720,33 @@
      * Add world-specific context to travel events
      */
     _contextualizeEvent(event, hex) {
-      if (!hex || !this.worldData) {
-        return event;
+      if (!event || !hex || !this.worldData) {
+        return event || {};
       }
 
       const contextualEvent = { ...event };
 
       // Enhance event descriptions with NPC or location references
-      if (event.id === 'friendly_traveler' && this.worldData.npcs && this.worldData.npcs.length > 0) {
-        const regionNPCs = this.worldData.npcs.filter(npc => npc.region === hex.regionName);
+      if (event.id === 'friendly_traveler' && this.worldData.npcs && Array.isArray(this.worldData.npcs) && this.worldData.npcs.length > 0) {
+        const regionNPCs = this.worldData.npcs.filter(npc => npc && npc.region === hex.regionName);
         if (regionNPCs.length > 0) {
           const npc = regionNPCs[Math.floor(Math.random() * regionNPCs.length)];
-          contextualEvent.description = `${npc.name} (${npc.role}) offers shelter and tales`;
-          contextualEvent.npcRef = npc.name;
+          if (npc && npc.name && npc.role) {
+            contextualEvent.description = `${npc.name} (${npc.role}) offers shelter and tales`;
+            contextualEvent.npcRef = npc.name;
+          }
         }
       }
 
       // Reference world locations in waymarker events
-      if (event.id === 'ancient_waymarker' && this.worldData.cities && this.worldData.cities.length > 0) {
-        const nearbyCities = this.worldData.cities.filter(c => c.region === hex.regionName);
+      if (event.id === 'ancient_waymarker' && this.worldData.cities && Array.isArray(this.worldData.cities) && this.worldData.cities.length > 0) {
+        const nearbyCities = this.worldData.cities.filter(c => c && c.region === hex.regionName);
         if (nearbyCities.length > 0) {
           const city = nearbyCities[0];
-          contextualEvent.description = `Stone marker points toward ${city.name}`;
-          contextualEvent.markerTarget = city.name;
+          if (city && city.name) {
+            contextualEvent.description = `Stone marker points toward ${city.name}`;
+            contextualEvent.markerTarget = city.name;
+          }
         }
       }
 
@@ -771,12 +775,26 @@
      * Deserialize exploration state
      */
     deserialize(data) {
-      this.partyPosition = data.partyPosition;
-      this.movement = data.movement;
-      this.exploredHexes = new Set(data.exploredHexes);
-      this.revealedHexes = new Set(data.revealedHexes);
-      this.encounterHistory = data.encounterHistory;
-      this.travelEventHistory = data.travelEventHistory;
+      if (!data) return this;
+
+      if (data.partyPosition && typeof data.partyPosition === 'object') {
+        this.partyPosition = data.partyPosition;
+      }
+      if (typeof data.movement === 'number') {
+        this.movement = data.movement;
+      }
+      if (Array.isArray(data.exploredHexes)) {
+        this.exploredHexes = new Set(data.exploredHexes);
+      }
+      if (Array.isArray(data.revealedHexes)) {
+        this.revealedHexes = new Set(data.revealedHexes);
+      }
+      if (Array.isArray(data.encounterHistory)) {
+        this.encounterHistory = data.encounterHistory;
+      }
+      if (Array.isArray(data.travelEventHistory)) {
+        this.travelEventHistory = data.travelEventHistory;
+      }
 
       this.exploredHexes.forEach(key => {
         const hex = this.hexGrid.get(key);

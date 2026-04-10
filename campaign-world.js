@@ -2273,13 +2273,23 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
       };
       engine.onStateUpdate = (mutator) => {
         setData(d => {
-          const mutated = mutator(d);
-          const updated = ensureDataConsistency(mutated);
-          engine.setData(updated);
-          return updated;
+          try {
+            const mutated = mutator(d);
+            const updated = ensureDataConsistency(mutated);
+            // Save living-world engine state (relations, wars, treaties) to campaign data
+            const engineState = engine.getSerializedState();
+            const withEngineState = { ...updated, _lwEngineState: engineState };
+            engine.setData(withEngineState);
+            return withEngineState;
+          } catch (err) {
+            console.error('[LivingWorld] Error applying state mutations:', err);
+            // Return data unchanged to prevent state corruption
+            return d;
+          }
         });
       };
       engine.start(data, { intervalMs: lwSpeed * 1000 });
+      // Note: engine.start() now automatically restores persisted state from data._lwEngineState
     } else {
       engine.stop();
     }
@@ -2346,54 +2356,62 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
 
     const role = viewRole || 'dm';
 
-    PhmurtRealtime.joinBattleMap(data.id, role, (incomingState) => {
-      // Player receives DM state updates via Supabase Realtime
-      if (role === 'player' && incomingState) {
-        setData(d => {
-          const merged = { ...d };
-          // Merge incoming fields (DM pushes world state to players)
-          if (incomingState.regions) merged.regions = incomingState.regions;
-          if (incomingState.factions) merged.factions = incomingState.factions;
-          if (incomingState.cities) {
-            // Preserve local shop/tavern data, merge rest
-            merged.cities = incomingState.cities.map(ic => {
-              const local = (d.cities || []).find(c => c.id === ic.id);
-              return local ? { ...local, ...ic, shops: local.shops, tavern: local.tavern } : ic;
-            });
-          }
-          if (incomingState.npcs) {
-            // Strip secrets for player view
-            merged.npcs = incomingState.npcs.map(n => ({ ...n, secret: undefined }));
-          }
-          if (incomingState.pois) merged.pois = incomingState.pois;
-          if (incomingState._lwEvents) {
-            // Merge Living World events with deduplication
-            setLwEvents(prev => {
-              const combined = [...(incomingState._lwEvents || []), ...prev];
-              const seen = new Set();
-              const deduplicated = combined.filter(evt => {
-                // Use event ID or timestamp as unique key
-                const key = evt.id || evt.timestamp || String(Date.now()) + Math.random();
-                if (seen.has(key)) return false;
-                seen.add(key);
-                return true;
+    // Store the handle returned by joinBattleMap for proper cleanup
+    const handle = PhmurtRealtime.joinBattleMap(data.id, role, (incomingState) => {
+      try {
+        // Player receives DM state updates via Supabase Realtime
+        if (role === 'player' && incomingState) {
+          setData(d => {
+            const merged = { ...d };
+            // Merge incoming fields (DM pushes world state to players)
+            if (incomingState.regions) merged.regions = incomingState.regions;
+            if (incomingState.factions) merged.factions = incomingState.factions;
+            if (incomingState.cities) {
+              // Preserve local shop/tavern data, merge rest
+              merged.cities = incomingState.cities.map(ic => {
+                const local = (d.cities || []).find(c => c.id === ic.id);
+                return local ? { ...local, ...ic, shops: local.shops, tavern: local.tavern } : ic;
               });
-              return deduplicated.slice(0, 30);
-            });
-            setLwLog(prev => [...(incomingState._lwEvents || []), ...prev]);
-          }
-          // Persist DM's full event history locally
-          if (incomingState._lwEventLog && incomingState._lwEventLog.length) {
-            merged._lwEventLog = incomingState._lwEventLog;
-          }
-          return merged;
-        });
+            }
+            if (incomingState.npcs) {
+              // Strip secrets for player view
+              merged.npcs = incomingState.npcs.map(n => ({ ...n, secret: undefined }));
+            }
+            if (incomingState.pois) merged.pois = incomingState.pois;
+            if (incomingState._lwEvents) {
+              // Merge Living World events with deduplication
+              setLwEvents(prev => {
+                const combined = [...(incomingState._lwEvents || []), ...prev];
+                const seen = new Set();
+                const deduplicated = combined.filter(evt => {
+                  // Use event ID or timestamp as unique key
+                  const key = evt.id || evt.timestamp || String(Date.now()) + Math.random();
+                  if (seen.has(key)) return false;
+                  seen.add(key);
+                  return true;
+                });
+                return deduplicated.slice(0, 30);
+              });
+              setLwLog(prev => [...(incomingState._lwEvents || []), ...prev]);
+            }
+            // Persist DM's full event history locally
+            if (incomingState._lwEventLog && incomingState._lwEventLog.length) {
+              merged._lwEventLog = incomingState._lwEventLog;
+            }
+            return merged;
+          });
+        }
+      } catch (err) {
+        console.error('[PhmurtRealtime] Error processing state update:', err);
       }
     });
-    realtimeRef.current = PhmurtRealtime;
+    realtimeRef.current = handle;
 
     return () => {
-      if (PhmurtRealtime.leave) PhmurtRealtime.leave();
+      // Use the handle's leave() method to properly unsubscribe
+      if (handle && typeof handle.leave === 'function') {
+        handle.leave();
+      }
       realtimeRef.current = null;
     };
   }, [data.id, viewRole, isLive]);
@@ -2472,9 +2490,19 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
   }, [mapZoom]);
 
   useEffect(() => {
-    const onResize = () => setIsMapCompact(window.innerWidth < 860);
+    let resizeTimer = null;
+    const onResize = () => {
+      // Debounce resize handler to avoid excessive state updates
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        setIsMapCompact(window.innerWidth < 860);
+      }, 150);
+    };
     window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
+    return () => {
+      window.removeEventListener("resize", onResize);
+      clearTimeout(resizeTimer);
+    };
   }, []);
 
   // Auto-fit atlas map to show the entire map within the viewport
@@ -2496,12 +2524,19 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
   // Re-fit when seed changes
   useEffect(() => { fitAtlasToView(); }, [data.atlasMapSeed]);
 
-  // Re-fit on window resize
+  // Re-fit on window resize with debouncing
   useEffect(() => {
     if (!data.atlasMapSeed) return;
-    const handle = () => fitAtlasToView();
+    let resizeTimer = null;
+    const handle = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => fitAtlasToView(), 150);
+    };
     window.addEventListener("resize", handle);
-    return () => window.removeEventListener("resize", handle);
+    return () => {
+      window.removeEventListener("resize", handle);
+      clearTimeout(resizeTimer);
+    };
   }, [fitAtlasToView]);
 
   // Auto-generate world data if seed is set but regions/factions/npcs are empty
@@ -2562,8 +2597,18 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
       });
     }
 
-    // Clean up offscreen engine
+    // Clean up offscreen engine and canvas to prevent memory leaks
     if (engine.renderer) engine.renderer.destroy();
+    // Also clean up the engine reference itself
+    engine.grid = null;
+    engine.territory = null;
+    engine.borders = null;
+    engine.roads = null;
+    // Clear canvas data explicitly to free GPU memory
+    const offscreenCtx = offscreen.getContext("2d");
+    if (offscreenCtx) {
+      offscreenCtx.clearRect(0, 0, offscreen.width, offscreen.height);
+    }
   }, [data.atlasMapSeed]);
 
   // ── MapEngine: create/destroy VISUAL instance when canvas mounts or seed changes ──
@@ -2614,20 +2659,104 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
   // ── MapEngine: resize canvas when container resizes ──
   useEffect(() => {
     if (tab !== "map" || !mapCanvasRef.current || !mapEngineRef.current) return;
-    const ro = new ResizeObserver(function() {
-      if (mapEngineRef.current && mapEngineRef.current.renderer) {
-        mapEngineRef.current.renderer.render();
-      }
-    });
+
+    let ro = null;
+    let debounceTimer = null;
+
+    // Debounce render calls to avoid excessive redraws during rapid resizes
+    const scheduleRender = function() {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(function() {
+        if (mapEngineRef.current && mapEngineRef.current.renderer) {
+          mapEngineRef.current.renderer.render();
+        }
+      }, 100);
+    };
+
+    ro = new ResizeObserver(scheduleRender);
     if (mapRef.current) ro.observe(mapRef.current);
-    return function() { ro.disconnect(); };
+
+    return function() {
+      if (ro) ro.disconnect();
+      if (debounceTimer) clearTimeout(debounceTimer);
+    };
   }, [tab, data.atlasMapSeed]);
+
+  // Build lookup maps once to avoid O(n²) patterns in conns()
+  const factionByName = useMemo(() => {
+    const map = {};
+    (data.factions || []).forEach(f => map[f.name] = f);
+    return map;
+  }, [data.factions]);
+
+  const regionByName = useMemo(() => {
+    const map = {};
+    (data.regions || []).forEach(r => map[r.name] = r);
+    return map;
+  }, [data.regions]);
+
+  const npcsByLocation = useMemo(() => {
+    const map = {};
+    (data.npcs || []).forEach(n => {
+      if (!map[n.loc]) map[n.loc] = [];
+      map[n.loc].push(n);
+    });
+    return map;
+  }, [data.npcs]);
+
+  const npcsByFaction = useMemo(() => {
+    const map = {};
+    (data.npcs || []).forEach(n => {
+      if (!map[n.faction]) map[n.faction] = [];
+      map[n.faction].push(n);
+    });
+    return map;
+  }, [data.npcs]);
+
+  const regionsByController = useMemo(() => {
+    const map = {};
+    (data.regions || []).forEach(r => {
+      if (!map[r.ctrl]) map[r.ctrl] = [];
+      map[r.ctrl].push(r);
+    });
+    return map;
+  }, [data.regions]);
+
+  const questsByRegion = useMemo(() => {
+    const map = {};
+    (data.quests || []).forEach(q => {
+      if (!map[q.region]) map[q.region] = [];
+      map[q.region].push(q);
+    });
+    return map;
+  }, [data.quests]);
+
+  const questsByFaction = useMemo(() => {
+    const map = {};
+    (data.quests || []).forEach(q => {
+      if (!map[q.faction]) map[q.faction] = [];
+      map[q.faction].push(q);
+    });
+    return map;
+  }, [data.quests]);
 
   const conns = (type,ent) => {
     const c=[];
-    if(type==="region"){ const f=(data.factions || []).find(f=>f.name===ent.ctrl); if(f) c.push({type:"faction",e:f,label:"Controlled by"}); (data.npcs || []).filter(n=>n.loc===ent.name).forEach(n=>c.push({type:"npc",e:n,label:"Located here"})); (data.quests || []).filter(q=>q.region===ent.name).forEach(q=>c.push({type:"quest",e:q,label:"Active quest"})); }
-    else if(type==="faction"){ (data.regions || []).filter(r=>r.ctrl===ent.name).forEach(r=>c.push({type:"region",e:r,label:"Controls"})); (data.npcs || []).filter(n=>n.faction===ent.name).forEach(n=>c.push({type:"npc",e:n,label:"Member"})); (data.quests || []).filter(q=>q.faction===ent.name).forEach(q=>c.push({type:"quest",e:q,label:"Related quest"})); }
-    else if(type==="npc"){ if(ent.faction){const f=(data.factions || []).find(f=>f.name===ent.faction); if(f) c.push({type:"faction",e:f,label:"Member of"});} const r=(data.regions || []).find(r=>r.name===ent.loc); if(r) c.push({type:"region",e:r,label:"Located in"}); }
+    if(type==="region"){
+      const f = factionByName[ent.ctrl];
+      if(f) c.push({type:"faction",e:f,label:"Controlled by"});
+      (npcsByLocation[ent.name] || []).forEach(n=>c.push({type:"npc",e:n,label:"Located here"}));
+      (questsByRegion[ent.name] || []).forEach(q=>c.push({type:"quest",e:q,label:"Active quest"}));
+    }
+    else if(type==="faction"){
+      (regionsByController[ent.name] || []).forEach(r=>c.push({type:"region",e:r,label:"Controls"}));
+      (npcsByFaction[ent.name] || []).forEach(n=>c.push({type:"npc",e:n,label:"Member"}));
+      (questsByFaction[ent.name] || []).forEach(q=>c.push({type:"quest",e:q,label:"Related quest"}));
+    }
+    else if(type==="npc"){
+      if(ent.faction){const f=factionByName[ent.faction]; if(f) c.push({type:"faction",e:f,label:"Member of"});}
+      const r=regionByName[ent.loc]; if(r) c.push({type:"region",e:r,label:"Located in"});
+    }
     return c;
   };
   const tCols = { low: T.green, medium: T.questGold, high: T.orange, extreme: T.crimson };
@@ -3298,6 +3427,10 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
       };
       // Batch major events into the timeline
       withLog.timeline = _lwBatchToTimeline(d.timeline || [], result.events, skipLabel);
+      // Persist living-world engine state (relations, wars, treaties) after time skip
+      if (window.livingWorld) {
+        withLog._lwEngineState = window.livingWorld.getSerializedState();
+      }
       return withLog;
     });
 
@@ -3762,7 +3895,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
               const rect = mapRef.current?.getBoundingClientRect();
               const popX = ((c.origX != null ? c.origX : c.mapX) * MAP_W * mapZoom + mapPan.x);
               const popY = ((c.origY != null ? c.origY : c.mapY) * MAP_H * mapZoom + mapPan.y);
-              const fc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || "T.gold"; })();
+              const fc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || T.gold; })();
               const cityNpcs = (data.npcs || []).filter(n => c.npcs.includes(n.id));
               return (
                 <div style={{
@@ -3836,11 +3969,11 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
             {!mapEngineRef.current && regionPopup && (() => {
               const t = regionPopup.territory;
               const r = regionPopup.region;
-              const fc = (() => { const f = (data.factions || []).find(f => f.name === t.faction); return f?.color || "T.gold"; })();
+              const fc = (() => { const f = (data.factions || []).find(f => f.name === t.faction); return f?.color || T.gold; })();
               const popX = (t.labelX || t.cityX || 3000) * mapZoom + mapPan.x;
               const popY = (t.labelY || t.cityY || 2250) * mapZoom + mapPan.y;
-              const threatColors = { low: "#6a9955", medium: "T.gold", high: "#d97b3c", extreme: "#d4433a" };
-              const threatCol = threatColors[r?.threat] || "T.gold";
+              const threatColors = { low: "#6a9955", medium: T.gold, high: "#d97b3c", extreme: "#d4433a" };
+              const threatCol = threatColors[r?.threat] || T.gold;
               const typeIcons = { capital: "♔", kingdom: "⚔", city: "⏣", town: "⌂", wilderness: "⚍", dungeon: "☠", route: "⟿" };
               const typeIcon = typeIcons[r?.type] || "\u{1F30D}";
               return (
@@ -3939,7 +4072,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       setData(d => ({ ...d, atlasMapSeed: String(next) }));
                     }} style={{ padding:"5px 12px", background:"rgba(30,26,22,0.85)", backdropFilter:"blur(8px)", border:"1px solid rgba(212,67,58,0.35)", borderRadius:"4px", fontFamily:T.ui, fontSize:9, color:T.questGold, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", boxShadow:"0 2px 10px rgba(0,0,0,0.3)", transition:"all 0.2s", whiteSpace:"nowrap" }}
                       onMouseEnter={e => { e.target.style.borderColor = "rgba(212,67,58,0.7)"; e.target.style.color = "#f5d66a"; }}
-                      onMouseLeave={e => { e.target.style.borderColor = "rgba(212,67,58,0.35)"; e.target.style.color = "T.gold"; }}
+                      onMouseLeave={e => { e.target.style.borderColor = "rgba(212,67,58,0.35)"; e.target.style.color = T.gold; }}
                       title="Generate a new world with the next seed"
                     >Regenerate</button>
                   </div>
@@ -4299,7 +4432,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:2, flexShrink:0 }}>
                         <span style={{
                           fontSize:8, padding:"2px 6px", borderRadius:"2px", letterSpacing:"0.8px", textTransform:"uppercase",
-                          color: evt.importance === "major" ? "T.gold" : evt.importance === "minor" ? "#6a8070" : "#9a9080",
+                          color: evt.importance === "major" ? T.gold : evt.importance === "minor" ? "#6a8070" : "#9a9080",
                           border: `1px solid ${evt.importance === "major" ? "rgba(212,67,58,0.3)" : "rgba(120,110,88,0.3)"}`,
                         }}>{evt.importance}</span>
                         <span style={{ fontSize:8, color:T.textMuted, letterSpacing:"0.5px", textTransform:"uppercase" }}>{evt.category}</span>
@@ -4436,7 +4569,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
               // If a city detail is selected within regions view, show full city detail
               if (regionDetailCity) {
                 const c = cities.find(ct => ct.id === regionDetailCity.id) || regionDetailCity;
-                const fc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || "T.gold"; })();
+                const fc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || T.gold; })();
                 const cityNpcs = (data.npcs || []).filter(n => (c.npcs || []).includes(n.id));
                 return (
                   <div style={{ display:"flex", flexDirection:"column", gap:0, maxWidth:900 }}>
@@ -4566,7 +4699,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                               padding:"12px 16px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px",
                               borderLeft:"3px solid T.gold", display:"flex", alignItems:"center", gap:12,
                             }}>
-                              <Scroll size={14} color="T.gold" style={{ flexShrink:0 }}/>
+                              <Scroll size={14} color={T.gold} style={{ flexShrink:0 }}/>
                               <span style={{ fontSize:12, color:T.textMuted, lineHeight:1.5, fontStyle:"italic" }}>{q}</span>
                             </div>
                           ))}
@@ -4586,7 +4719,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     const regionNpcs = (data.npcs || []).filter(n => n.loc === r.name);
                     const regionCities = cities.filter(c => c.region === r.name);
                     const factionObj = (data.factions || []).find(f => f.name === r.ctrl);
-                    const fc = factionObj?.color || "T.gold";
+                    const fc = factionObj?.color || T.gold;
                     regionCities.sort((a, b) => (b.isCapital ? 1 : 0) - (a.isCapital ? 1 : 0) || (b.popNum || 0) - (a.popNum || 0));
 
                     return (
@@ -4650,7 +4783,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                                 </div>
                                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
                                   {regionCities.map(c => {
-                                    const cityFc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || "T.gold"; })();
+                                    const cityFc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || T.gold; })();
                                     return (
                                       <div key={c.id} onClick={(e) => { e.stopPropagation(); setRegionDetailCity(c); }} style={{
                                         padding:"12px 16px", background:T.bgCard,
@@ -4830,7 +4963,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                               // Sort by devotion, get top deities
                               const sortedDeities = Object.entries(deityDevotionMap)
                                 .sort((a, b) => b[1].devotion - a[1].devotion);
-                              const alignColors = { "LG":"#4a90d9", "NG":"#5ee09a", "CG":"#7bc67b", "LN":"T.gold", "N":"#9a9080", "CN":"T.gold", "LE":"#d44a3a", "NE":"#a83232", "CE":"#8b2020" };
+                              const alignColors = { "LG":"#4a90d9", "NG":"#5ee09a", "CG":"#7bc67b", "LN":T.gold, "N":"#9a9080", "CN":T.gold, "LE":"#d44a3a", "NE":"#a83232", "CE":"#8b2020" };
 
                               return (
                                 <div style={{ padding:"16px 22px", borderBottom:`1px solid ${T.border}` }}>
@@ -5082,7 +5215,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       {/* Region header */}
                       <div style={{
                         padding: "12px 18px",
-                        background: `linear-gradient(135deg, ${(ruler?.color || "T.gold")}12 0%, transparent 60%)`,
+                        background: `linear-gradient(135deg, ${(ruler?.color || T.gold)}12 0%, transparent 60%)`,
                         borderBottom: `1px solid ${T.border}`,
                         display: "flex", alignItems: "center", gap: 10,
                       }}>
@@ -5185,7 +5318,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
 
               const factionColor = (fname) => {
                 const f = (data.factions || []).find(f => f.name === fname);
-                return f?.color || "T.gold";
+                return f?.color || T.gold;
               };
 
               /* ── role → icon + color mapping ── */
@@ -5344,7 +5477,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
               if (selectedCity) {
                 // ── CITY DETAIL VIEW ──
                 const c = cities.find(ct => ct.id === selectedCity.id) || selectedCity;
-                const fc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || "T.gold"; })();
+                const fc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || T.gold; })();
                 const cityNpcs = (data.npcs || []).filter(n => (c.npcs || []).includes(n.id));
                 return (
                   <div style={{ display: "flex", flexDirection: "column", gap: 0, maxWidth: 900 }}>
@@ -5493,7 +5626,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                               padding: "12px 16px", background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: "4px",
                               borderLeft: `3px solid T.gold`, display: "flex", alignItems: "center", gap: 12,
                             }}>
-                              <Scroll size={14} color="T.gold" style={{ flexShrink: 0 }} />
+                              <Scroll size={14} color={T.gold} style={{ flexShrink: 0 }} />
                               <span style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.5, fontStyle: "italic" }}>{q}</span>
                             </div>
                           ))}
@@ -5521,7 +5654,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                   )}
                   {sortedRegionEntries.map(([regionName, regionCities]) => {
                     const region = (data.regions || []).find(r => r.name === regionName);
-                    const fc = (() => { const f = (data.factions || []).find(f => f.name === region?.ctrl); return f?.color || "T.gold"; })();
+                    const fc = (() => { const f = (data.factions || []).find(f => f.name === region?.ctrl); return f?.color || T.gold; })();
                     const isFocused = cityRegionFocus === regionName;
                     const capital = regionCities.find(c => c.isCapital);
                     // Faction object for extra info
@@ -5594,7 +5727,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                         <div style={{ padding: "12px 16px", background: "rgba(0,0,0,0.04)" }}>
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                             {regionCities.map(c => {
-                              const cityFc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || "T.gold"; })();
+                              const cityFc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || T.gold; })();
                               return (
                                 <div key={c.id} onClick={() => { setSel(c); setSelType("city"); setCityRegionFocus(c.region); }} style={{
                                   padding: "14px 18px", background: T.bgCard,
@@ -6124,7 +6257,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                   const p = sel;
                   const dangerLevel = typeof p.danger === "number" ? p.danger : 0;
                   const dangerLabel = ["Safe","Low","Moderate","Dangerous","Deadly","Catastrophic"][dangerLevel] || "Unknown";
-                  const tCol = dangerLevel >= 4 ? "#d04040" : dangerLevel >= 3 ? "#e89430" : dangerLevel >= 2 ? "T.gold" : "#6a8a60";
+                  const tCol = dangerLevel >= 4 ? "#d04040" : dangerLevel >= 3 ? "#e89430" : dangerLevel >= 2 ? T.gold : "#6a8a60";
                   return (
                   <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
                     {/* Back + View on Map */}
@@ -7284,7 +7417,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       const bh = bldg.h * townCH;
                       const isHov = hovBldg === bi;
                       const isSel = selBldg === bi;
-                      const typeColor = bldg.type === "shop" ? "T.gold" : bldg.type === "tavern" ? "#c88040" : bldg.type === "special" ? "#a06848" : bldg.type === "poi" ? "#4a7a90" : "#888";
+                      const typeColor = bldg.type === "shop" ? T.gold : bldg.type === "tavern" ? "#c88040" : bldg.type === "special" ? "#a06848" : bldg.type === "poi" ? "#4a7a90" : "#888";
                       return (
                         <div key={bi}
                           style={{
@@ -7322,7 +7455,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                 const bldg = buildings[selBldg];
                 if (!bldg) return null;
                 const bd = getBuildingDetail(bldg);
-                const typeColor = bldg.type === "shop" ? "T.gold" : bldg.type === "tavern" ? "#c88040" : bldg.type === "special" ? "#a06848" : bldg.type === "poi" ? "#4a7a90" : "#888";
+                const typeColor = bldg.type === "shop" ? T.gold : bldg.type === "tavern" ? "#c88040" : bldg.type === "special" ? "#a06848" : bldg.type === "poi" ? "#4a7a90" : "#888";
                 return (
                   <div style={{
                     width: 320, flexShrink: 0, background: "rgba(32,28,22,0.98)",

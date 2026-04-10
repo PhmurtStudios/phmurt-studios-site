@@ -1011,6 +1011,28 @@
           <div id="cs-features-full"></div>
           <div id="cs-proficiencies-list" style="margin-top:28px;"></div>
           <div id="cs-languages-list" style="margin-top:28px;"></div>
+          <!-- INTEGRATION (V-008): Combat Resistances & Immunities section -->
+          <div id="cs-combat-traits" style="margin-top:28px;padding:20px;background:var(--bg-card);border:1px solid var(--border);border-radius:2px;">
+            <div class="cs-action-title" style="margin-bottom:16px;">Resistances & Immunities</div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;font-size:13px;">
+              <div>
+                <label style="display:block;font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Damage Resistances</label>
+                <input type="text" id="cs-damage-resistances" placeholder="e.g. Fire, Cold" style="width:100%;padding:8px;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:inherit;border-radius:2px;" />
+              </div>
+              <div>
+                <label style="display:block;font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Damage Immunities</label>
+                <input type="text" id="cs-damage-immunities" placeholder="e.g. Fire, Poison" style="width:100%;padding:8px;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:inherit;border-radius:2px;" />
+              </div>
+              <div>
+                <label style="display:block;font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Damage Vulnerabilities</label>
+                <input type="text" id="cs-damage-vulnerabilities" placeholder="e.g. Piercing" style="width:100%;padding:8px;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:inherit;border-radius:2px;" />
+              </div>
+              <div>
+                <label style="display:block;font-family:'Cinzel',serif;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Condition Immunities</label>
+                <input type="text" id="cs-condition-immunities" placeholder="e.g. Charmed, Frightened" style="width:100%;padding:8px;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:inherit;border-radius:2px;" />
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- NOTES TAB -->
@@ -1282,6 +1304,10 @@ function escapeHtml(str) {
   if (str == null) return '';
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
+function escapeAttr(str) {
+  if (str == null) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
 function renderEscapedErrors(lines) {
   if (!Array.isArray(lines)) return "";
   return lines.map(function (line) { return escapeHtml(line); }).join('<br>');
@@ -1318,12 +1344,13 @@ function renderLevelUpChoice(){
     var clsData = DND_DATA.classes[entry.cls];
     if(!clsData) return;
     var maxLv = entry.level >= 20 ? ' (max)' : '';
-    clsOptions += '<div onclick="' + (entry.level >= 20 ? '' : 'luChooseExistingClass(\'' + entry.cls + '\')') + '"'
+    var onclickAttr = entry.level >= 20 ? '' : 'luChooseExistingClass(\'' + escapeAttr(entry.cls) + '\')';
+    clsOptions += '<div onclick="' + onclickAttr + '"'
       + ' style="padding:14px 18px;border:1px solid var(--border);background:var(--bg-card);margin-bottom:6px;cursor:'
       + (entry.level >= 20 ? 'not-allowed' : 'pointer') + ';opacity:' + (entry.level >= 20 ? '0.4' : '1') + ';">'
       + '<div style="font-family:\'Cinzel\',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text);">'
-      + clsData.name + ' ' + entry.level + ' → ' + (entry.level + 1) + maxLv + '</div>'
-      + '<div style="font-size:12px;color:var(--text-faint);margin-top:3px;">Continue as ' + clsData.name + '</div>'
+      + escapeHtml(clsData.name) + ' ' + entry.level + ' → ' + (entry.level + 1) + maxLv + '</div>'
+      + '<div style="font-size:12px;color:var(--text-faint);margin-top:3px;">Continue as ' + escapeHtml(clsData.name) + '</div>'
       + '</div>';
   });
 
@@ -1340,14 +1367,14 @@ function renderLevelUpChoice(){
     eligible.forEach(function(k){
       var clsData = DND_DATA.classes[k];
       var prereqStr = _luPrereqStr(k);
-      mcHtml += '<div onclick="luChooseNewClass(\'' + k + '\')"'
+      mcHtml += '<div onclick="luChooseNewClass(\'' + escapeAttr(k) + '\')"'
         + ' style="padding:14px 18px;border:1px solid var(--border);background:var(--bg-card);margin-bottom:6px;cursor:pointer;">'
         + '<div style="display:flex;justify-content:space-between;align-items:baseline;">'
         + '<div style="font-family:\'Cinzel\',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text);">'
-        + clsData.name + ' 1</div>'
+        + escapeHtml(clsData.name) + ' 1</div>'
         + '<div style="font-family:\'Cinzel\',serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:#2e8b57;border:1px solid #2e8b57;padding:1px 6px;">Eligible</div>'
         + '</div>'
-        + '<div style="font-size:12px;color:var(--text-faint);margin-top:4px;">Requires: ' + prereqStr + '</div>'
+        + '<div style="font-size:12px;color:var(--text-faint);margin-top:4px;">Requires: ' + escapeHtml(prereqStr) + '</div>'
         + '</div>';
     });
   }
@@ -1359,11 +1386,11 @@ function renderLevelUpChoice(){
       mcHtml += '<div style="padding:14px 18px;border:1px solid var(--border);background:var(--bg-card);margin-bottom:4px;opacity:0.45;cursor:not-allowed;">'
         + '<div style="display:flex;justify-content:space-between;align-items:baseline;">'
         + '<div style="font-family:\'Cinzel\',serif;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);">'
-        + clsData.name + ' 1</div>'
+        + escapeHtml(clsData.name) + ' 1</div>'
         + '<div style="font-family:\'Cinzel\',serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:var(--crimson);border:1px solid var(--crimson-border);padding:1px 6px;">Locked</div>'
         + '</div>'
-        + '<div style="font-size:12px;color:var(--text-faint);margin-top:4px;">Requires: ' + prereqStr + '</div>'
-        + (missingStr ? '<div style="font-size:11px;color:var(--crimson);margin-top:3px;font-style:italic;">Missing: ' + missingStr + '</div>' : '')
+        + '<div style="font-size:12px;color:var(--text-faint);margin-top:4px;">Requires: ' + escapeHtml(prereqStr) + '</div>'
+        + (missingStr ? '<div style="font-size:11px;color:var(--crimson);margin-top:3px;font-style:italic;">Missing: ' + escapeHtml(missingStr) + '</div>' : '')
         + '</div>';
     });
   }
@@ -1587,6 +1614,8 @@ const C = {
   details:{}, level:1, rollLog:[], currentHP:null,
   levelingMethod:'milestone', xp:0, hpRolls:[], asiChoices:[],
   toughBonus:0, featData:{},
+  // INTEGRATION (V-007): Initialize combat resistances and immunities
+  ac: null, damageResistances:[], damageImmunities:[], damageVulnerabilities:[], conditionImmunities:[],
   // classes: [{cls:'fighter',level:5},{cls:'wizard',level:3}]
   // Populated on first level-up or when character is built.
   // C.cls and C.level always reflect primary class and total level.
@@ -1725,7 +1754,7 @@ function renderRaces(){
     d.onclick=()=>selectRace(id);
     const asi=Object.entries(race.asi).map(([k,v])=>DND_DATA.abilityShort[k]+' +'+v).join(', ');
     const hbBadge=race.source==='homebrew'?'<span style="font-family:Cinzel,serif;font-size:7px;letter-spacing:1px;text-transform:uppercase;color:#8b6914;margin-left:6px;">✶ HB</span>':'';
-    const editBtn=race.source==='homebrew'?'<button data-hbe-edit-type="race" data-hbe-edit-id="'+escapeHtml(id)+'" style="position:absolute;top:6px;right:6px;background:none;border:none;color:#8b6914;cursor:pointer;font-size:11px;" title="Edit">✎</button>':'';
+    const editBtn=race.source==='homebrew'?'<button data-hbe-edit-type="race" data-hbe-edit-id="'+escapeAttr(id)+'" style="position:absolute;top:6px;right:6px;background:none;border:none;color:#8b6914;cursor:pointer;font-size:11px;" title="Edit">✎</button>':'';
     d.style.position='relative';
     var raceFlavorText = {human:'Versatile and ambitious, found in every corner of the world',elf:'Graceful and long-lived, with a deep bond to magic and nature',dwarf:'Stout and hardy, masters of stone and forge',halfling:'Small and nimble, with a knack for avoiding danger',gnome:'Curious and inventive, brimming with enthusiasm',halfelf:'Blending elven grace with human versatility',half_elf:'Blending elven grace with human versatility','half-elf':'Blending elven grace with human versatility',halforc:'Fierce and enduring, marked by strength and resilience',half_orc:'Fierce and enduring, marked by strength and resilience','half-orc':'Fierce and enduring, marked by strength and resilience',tiefling:'Touched by infernal heritage, wielding dark charisma',dragonborn:'Proud and draconic, breathing elemental power'};
     var raceFlavor = raceFlavorText[id] || (escapeHtml(asi) + ' · ' + escapeHtml(race.size) + ' · ' + escapeHtml(race.speed) + 'ft');
@@ -1817,7 +1846,7 @@ function renderClasses(){
     d.setAttribute('data-cls-id', id);
     d.onclick=()=>selectClass(id);
     const hbBadge=cls.source==='homebrew'?'<span style="font-family:Cinzel,serif;font-size:7px;letter-spacing:1px;text-transform:uppercase;color:#8b6914;margin-left:6px;">✶ HB</span>':'';
-    const editBtn=cls.source==='homebrew'?'<button data-hbe-edit-type="class" data-hbe-edit-id="'+escapeHtml(id)+'" style="position:absolute;top:6px;right:6px;background:none;border:none;color:#8b6914;cursor:pointer;font-size:11px;" title="Edit">✎</button>':'';
+    const editBtn=cls.source==='homebrew'?'<button data-hbe-edit-type="class" data-hbe-edit-id="'+escapeAttr(id)+'" style="position:absolute;top:6px;right:6px;background:none;border:none;color:#8b6914;cursor:pointer;font-size:11px;" title="Edit">✎</button>':'';
     d.style.position='relative';
     var classFlavorText = {barbarian:'Primal warrior fueled by rage',bard:'Magical performer and jack-of-all-trades',cleric:'Divine spellcaster and healer',druid:'Nature\'s guardian and shapeshifter',fighter:'Master of martial combat',monk:'Disciplined warrior of body and mind',paladin:'Holy knight sworn to an oath',ranger:'Skilled hunter and wilderness tracker',rogue:'Stealthy expert and cunning striker',sorcerer:'Innate wielder of arcane magic',warlock:'Pact-bound channeler of eldritch power',wizard:'Scholarly master of the arcane arts'};
     var flavorText = classFlavorText[id] || ('d' + cls.hitDie + ' Hit Die');
@@ -1867,7 +1896,7 @@ function renderBackgrounds(){
     d.setAttribute('data-bg-id', id);
     d.onclick=()=>selectBackground(id);
     const hbBadge=bg.source==='homebrew'?'<span style="font-family:Cinzel,serif;font-size:7px;letter-spacing:1px;text-transform:uppercase;color:#8b6914;margin-left:6px;">✶ HB</span>':'';
-    const editBtn=bg.source==='homebrew'?'<button data-hbe-edit-type="background" data-hbe-edit-id="'+escapeHtml(id)+'" style="position:absolute;top:6px;right:6px;background:none;border:none;color:#8b6914;cursor:pointer;font-size:11px;" title="Edit">✎</button>':'';
+    const editBtn=bg.source==='homebrew'?'<button data-hbe-edit-type="background" data-hbe-edit-id="'+escapeAttr(id)+'" style="position:absolute;top:6px;right:6px;background:none;border:none;color:#8b6914;cursor:pointer;font-size:11px;" title="Edit">✎</button>':'';
     d.style.position='relative';
     d.innerHTML=`<div class="cb-card-name">${escapeHtml(bg.name)}${hbBadge}</div><div class="cb-card-detail">${escapeHtml(bg.skills.join(', '))}</div>${editBtn}`;
     c.appendChild(d);
@@ -2125,9 +2154,9 @@ function renderSkills(){
     else if(isChosen) tag=`<span style="font-size:8px;letter-spacing:1px;color:var(--crimson);font-family:'Cinzel',serif;margin-left:4px;">CLASS</span>`;
     else if(canPick) tag=`<span style="font-size:9px;color:var(--text-faint);font-style:italic;margin-left:4px;">available</span>`;
     var skillDesc = DND_DATA.skillDescriptions && DND_DATA.skillDescriptions[skill.name] ? DND_DATA.skillDescriptions[skill.name] : '';
-    row.innerHTML=`<div class="cb-skill-check ${isProf?'checked':''} ${!canPick&&!isBg?'locked':''}" onclick="toggleSkill('${key}','${isBg}','${canPick}',${canChoose})"></div>
+    row.innerHTML=`<div class="cb-skill-check ${isProf?'checked':''} ${!canPick&&!isBg?'locked':''}" onclick="toggleSkill('${escapeAttr(key)}','${escapeAttr(String(isBg))}','${escapeAttr(String(canPick))}',${canChoose})"></div>
       <span class="cb-skill-ability">${DND_DATA.abilityShort[skill.ability]}</span>
-      <span class="cb-skill-name">${skill.name}${skillDesc?`<span class="cb-info-tip" data-tip="${escapeHtml(skillDesc)}">ⓘ</span>`:''}${tag}</span>
+      <span class="cb-skill-name">${escapeHtml(skill.name)}${skillDesc?`<span class="cb-info-tip" data-tip="${escapeHtml(skillDesc)}">ⓘ</span>`:''}${tag}</span>
       <span class="cb-skill-bonus">${bonus}</span>`;
     grid.appendChild(row);
   });
@@ -2198,7 +2227,7 @@ function renderEquipment(){
           const curW=C.weaponChoices[wKey]||'';
           weapDrop=`<div style="margin-top:12px;">
             <div style="font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--text-faint);margin-bottom:8px;">Choose Specific Weapon</div>
-            <select style="background:var(--bg-card);border:1px solid var(--crimson-border);color:var(--text);font-family:'Spectral',serif;font-size:14px;padding:7px 10px;width:100%;" onchange="C.weaponChoices['${wKey}']=this.value;renderEquipment();">
+            <select style="background:var(--bg-card);border:1px solid var(--crimson-border);color:var(--text);font-family:'Spectral',serif;font-size:14px;padding:7px 10px;width:100%;" onchange="C.weaponChoices['${escapeAttr(wKey)}']=this.value;renderEquipment();">
               <option value="">Select a weapon...</option>
               ${wpns.map(w=>{const n=typeof w==='object'?w.name:w;const d=typeof w==='object'?` — ${escapeHtml(w.damage)} ${escapeHtml(w.type)}${w.props&&w.props!=='—'?' ('+escapeHtml(w.props)+')':''}`:'';
 return `<option value="${escapeHtml(n)}" ${curW===n?'selected':''}>${escapeHtml(n)}${d}</option>`;}).join('')}
@@ -2252,7 +2281,7 @@ function renderSpells(){
   const spellList=DND_DATA.spells[C.cls];
   if(!spellList){
     var hbClsName = cls.name || 'This class';
-    container.innerHTML='<div class="cb-detail" style="text-align:center;padding:56px 32px;"><div style="font-size:40px;margin-bottom:16px;opacity:.2;">⸎</div><div class="cb-detail-title">'+escapeHtml(hbClsName)+': Spellcasting</div><div class="cb-detail-sub" style="margin-top:10px;">Spell list not configured. Edit this homebrew class to assign a spell list.</div><button data-hb-edit-type="class" data-hb-edit-id="'+escapeHtml(C.cls)+'" style="margin-top:20px;font-family:Cinzel,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:9px 20px;background:transparent;border:1px solid #8b6914;color:#8b6914;cursor:pointer;">✎ Edit Homebrew Class</button></div>';
+    container.innerHTML='<div class="cb-detail" style="text-align:center;padding:56px 32px;"><div style="font-size:40px;margin-bottom:16px;opacity:.2;">⸎</div><div class="cb-detail-title">'+escapeHtml(hbClsName)+': Spellcasting</div><div class="cb-detail-sub" style="margin-top:10px;">Spell list not configured. Edit this homebrew class to assign a spell list.</div><button data-hb-edit-type="class" data-hb-edit-id="'+escapeAttr(C.cls)+'" style="margin-top:20px;font-family:Cinzel,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:9px 20px;background:transparent;border:1px solid #8b6914;color:#8b6914;cursor:pointer;">✎ Edit Homebrew Class</button></div>';
     var editBtn = container.querySelector('[data-hb-edit-type]');
     if (editBtn) editBtn.addEventListener('click', function(){ editHBEntity(this.dataset.hbEditType, this.dataset.hbEditId); });
     return;
@@ -2276,23 +2305,23 @@ function renderSpells(){
     const ch=C.selectedCantrips.length;
     html+=`<div class="cb-spell-section"><div class="cb-spell-header">Cantrips: Choose ${cantripCount}</div>
       <div class="cb-spell-count"><span style="color:${ch>=cantripCount?'#5a9a5a':'var(--crimson)'}">${ch}/${cantripCount}</span> selected</div>
-      <div class="cb-spell-grid">${spellList.cantrips.map(sp=>`
+      <div class="cb-spell-grid">${spellList.cantrips.map(sp=>{const escapedSp=sp.replace(/'/g,"\\'");return`
           <div class="cb-spell-item ${C.selectedCantrips.includes(sp)?'selected':''}">
-            <div class="cb-spell-dot" onclick="toggleSpell('${sp}','c',${cantripCount})" style="cursor:pointer;flex-shrink:0;"></div>
-            <span style="flex:1;cursor:pointer;" onclick="toggleSpell('${sp}','c',${cantripCount})">${sp}</span>
-            <span onclick="event.stopPropagation();showSpellInfo('${sp}')" style="font-family:'Cinzel',serif;font-size:10px;color:var(--text-faint);cursor:pointer;padding:0 6px;flex-shrink:0;" title="View description">ℹ</span>
-          </div>`).join('')}</div></div>`;
+            <div class="cb-spell-dot" onclick="toggleSpell('${escapedSp}','c',${cantripCount})" style="cursor:pointer;flex-shrink:0;"></div>
+            <span style="flex:1;cursor:pointer;" onclick="toggleSpell('${escapedSp}','c',${cantripCount})">${sp}</span>
+            <span onclick="event.stopPropagation();showSpellInfo('${escapedSp}')" style="font-family:'Cinzel',serif;font-size:10px;color:var(--text-faint);cursor:pointer;padding:0 6px;flex-shrink:0;" title="View description">ℹ</span>
+          </div>`;}).join('')}</div></div>`;
   }
   if(spellList.level1&&spellCount>0){
     const ch=C.selectedSpells.length;
     html+=`<div class="cb-spell-section"><div class="cb-spell-header">1st-Level Spells: Choose ${spellCount}</div>
       <div class="cb-spell-count"><span style="color:${ch>=spellCount?'#5a9a5a':'var(--crimson)'}">${ch}/${spellCount}</span> selected</div>
-      <div class="cb-spell-grid">${spellList.level1.map(sp=>`
+      <div class="cb-spell-grid">${spellList.level1.map(sp=>{const escapedSp=sp.replace(/'/g,"\\'");return`
           <div class="cb-spell-item ${C.selectedSpells.includes(sp)?'selected':''}">
-            <div class="cb-spell-dot" onclick="toggleSpell('${sp}','s',${spellCount})" style="cursor:pointer;flex-shrink:0;"></div>
-            <span style="flex:1;cursor:pointer;" onclick="toggleSpell('${sp}','s',${spellCount})">${sp}</span>
-            <span onclick="event.stopPropagation();showSpellInfo('${sp}')" style="font-family:'Cinzel',serif;font-size:10px;color:var(--text-faint);cursor:pointer;padding:0 6px;flex-shrink:0;" title="View description">ℹ</span>
-          </div>`).join('')}</div></div>`;
+            <div class="cb-spell-dot" onclick="toggleSpell('${escapedSp}','s',${spellCount})" style="cursor:pointer;flex-shrink:0;"></div>
+            <span style="flex:1;cursor:pointer;" onclick="toggleSpell('${escapedSp}','s',${spellCount})">${sp}</span>
+            <span onclick="event.stopPropagation();showSpellInfo('${escapedSp}')" style="font-family:'Cinzel',serif;font-size:10px;color:var(--text-faint);cursor:pointer;padding:0 6px;flex-shrink:0;" title="View description">ℹ</span>
+          </div>`;}).join('')}</div></div>`;
   }
   if(C.cls==='cleric'||C.cls==='druid')
     html+=`<div class="cb-alert"><strong>Prepared Caster</strong>: You prepare ${Math.max(1,sm+1)} spells per long rest from the full list. No selection needed now.</div>`;
@@ -2695,7 +2724,8 @@ function buildSpellCards(){
   const atkB=pb2+sm; const dc=8+pb2+sm;
   let html='';
   [...C.selectedCantrips,...C.selectedSpells].forEach(sp=>{
-    html+=`<div class="cb-weapon-card" onclick="rollCheck('Spell','${sp}',${atkB})" title="Click to roll spell attack">
+    const escapedSp=sp.replace(/'/g,"\\'");
+    html+=`<div class="cb-weapon-card" onclick="rollCheck('Spell','${escapedSp}',${atkB})" title="Click to roll spell attack">
       <div class="cb-weapon-top"><span class="cb-weapon-name">${sp}</span><span class="cb-weapon-hint">▸ Atk</span></div>
       <div class="cb-weapon-stats"><span class="cb-weapon-atk">ATK +${atkB}</span><span class="cb-weapon-dmg">DC ${dc}</span></div>
     </div>`;
@@ -2725,6 +2755,8 @@ function buildFinalSheet(){
   if((cls.armorProf||[]).some(a=>a.includes('Shield'))) ac+=2;
   if(C.cls==='barbarian') ac=10+dexM+mod(totalScore('con'));
   if(C.cls==='monk') ac=10+dexM+mod(totalScore('wis'));
+  // INTEGRATION (V-011): Store AC in C object for persistence
+  C.ac = ac;
   const speed=subrace&&subrace.speed?subrace.speed:(race.speed||30);
   const bgKeys=bg?bg.skills.map(s=>skKey(s)):[];
   const allProf=[...bgKeys,...C.selectedSkills];
@@ -2879,9 +2911,9 @@ function buildAbilityTrackers(){
             <span class="cs-use-recharge">${rechargeLabel}</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-            <button onclick="adjustPool('${u.name}',-1)" style="width:24px;height:24px;background:var(--crimson-soft);border:1px solid var(--crimson-border);color:var(--crimson);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">−</button>
+            <button onclick="adjustPool('${u.name.replace(/'/g,"&#39;")}',-1)" style="width:24px;height:24px;background:var(--crimson-soft);border:1px solid var(--crimson-border);color:var(--crimson);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">−</button>
             <span id="pool-${u.name.replace(/\s/g,'_')}" style="font-family:'Cinzel',serif;font-size:18px;color:var(--text);min-width:36px;text-align:center;">${max-(abilityUsed[u.name]||0)}</span>
-            <button onclick="adjustPool('${u.name}',1)" style="width:24px;height:24px;background:var(--crimson-soft);border:1px solid var(--crimson-border);color:var(--crimson);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">+</button>
+            <button onclick="adjustPool('${u.name.replace(/'/g,"&#39;") }',1)" style="width:24px;height:24px;background:var(--crimson-soft);border:1px solid var(--crimson-border);color:var(--crimson);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">+</button>
             <span style="font-family:'Cinzel',serif;font-size:10px;color:var(--text-faint);">/ ${max} remaining</span>
           </div>
           <div class="cs-feature-card-desc">${u.desc}</div>
@@ -2889,7 +2921,7 @@ function buildAbilityTrackers(){
       }
       const pips=Array.from({length:max},(_,i)=>{
         const isUsed=i<used;
-        return `<div class="cs-use-pip ${isUsed?'used':'available'}" onclick="toggleUse('${u.name}',${i},${max})" title="${isUsed?'Click to restore':'Click to use'}"></div>`;
+        return `<div class="cs-use-pip ${isUsed?'used':'available'}" onclick="toggleUse('${u.name.replace(/'/g,"&#39;") }',${i},${max})" title="${isUsed?'Click to restore':'Click to use'}"></div>`;
       }).join('');
       return `<div class="cs-feature-card" style="margin-bottom:8px;">
         <div class="cs-feature-card-top">
@@ -3009,8 +3041,9 @@ function buildActionsTab(){
     html+='<div class="cs-action-section"><div class="cs-action-title">Class Abilities</div>';
     html+=actionUses.map(u=>{
       const max=resolveUses(u.uses); const used=abilityUsed[u.name]||0;
+      const safeName=u.name.replace(/'/g,"\\'");
       const pips=u.isPool?`<span style="font-family:'Cinzel',serif;font-size:14px;color:var(--text);">${max-used}/${max}</span>`:
-        Array.from({length:max},(_,i)=>`<div class="cs-use-pip ${i<used?'used':'available'}" onclick="toggleUse('${u.name}',${i},${max})"></div>`).join('');
+        Array.from({length:max},(_,i)=>`<div class="cs-use-pip ${i<used?'used':'available'}" onclick="toggleUse('${safeName}',${i},${max})"></div>`).join('');
       return `<div class="cs-feature-card">
         <div class="cs-feature-card-top">
           <span class="cs-feature-card-name">${u.name}</span>
@@ -3096,7 +3129,7 @@ function buildSpellsTab(){
     else if(isSave) badge=`<span style="font-family:'Cinzel',serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:#8b7a2e;border:1px solid #8b7a2e;padding:2px 6px;margin-left:8px;">${d.save.toUpperCase()} SAVE</span>`;
     return `<div class="cs-spell-item cs-spell-prepared" style="flex-direction:column;align-items:flex-start;padding:10px 14px;gap:4px;">
       <div style="display:flex;align-items:center;width:100%;">
-        <span class="cs-spell-name" onclick="showSpellInfo('${sp.replace(/'/g,"\'")}','${level||0}')" style="cursor:pointer;flex:1;" title="Click for details">${sp}</span>
+        <span class="cs-spell-name" onclick="showSpellInfo('${sp.replace(/'/g,"&#39;")}','${level||0}')" style="cursor:pointer;flex:1;" title="Click for details">${sp}</span>
         ${badge}
       </div>
       <div style="font-size:11px;color:var(--text-faint);">${school?school+' · ':''}${castTime} · ${range} · ${duration}</div>
@@ -3227,13 +3260,13 @@ function renderInventory(){
       if(rarity && rarity !== 'common') html += ' <span style="font-family:Cinzel,serif;font-size:7px;letter-spacing:1px;text-transform:uppercase;color:'+rc+';">' + rarity + '</span>';
       html += '</div>';
       html += '<div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">';
-      if(equippable) html += '<button onclick="toggleEquipped('+i+')" style="font-family:Cinzel,serif;font-size:7px;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;background:'+(item.equipped?'var(--crimson)':'transparent')+';border:1px solid '+(item.equipped?'var(--crimson)':'var(--border)')+';color:'+(item.equipped?'#f5f0e8':'var(--text-faint)')+';cursor:pointer;">'+(item.equipped?'Equipped':'Equip')+'</button>';
-      html += '<input type="number" value="'+item.qty+'" min="0" onchange="inventoryItems['+i+'].qty=Math.max(0,parseInt(this.value)||0);scheduleSave();" style="width:44px;text-align:center;background:var(--bg);border:1px solid var(--border);color:var(--text);font-size:13px;padding:3px;"/>';
+      if(equippable) html += '<button onclick="toggleEquipped('+escapeAttr(String(i))+');" style="font-family:Cinzel,serif;font-size:7px;letter-spacing:1px;text-transform:uppercase;padding:3px 8px;background:'+(item.equipped?'var(--crimson)':'transparent')+';border:1px solid '+(item.equipped?'var(--crimson)':'var(--border)')+';color:'+(item.equipped?'#f5f0e8':'var(--text-faint)')+';cursor:pointer;">'+(item.equipped?'Equipped':'Equip')+'</button>';
+      html += '<input type="number" value="'+item.qty+'" min="0" onchange="inventoryItems['+escapeAttr(String(i))+'].qty=Math.max(0,parseInt(this.value)||0);scheduleSave();" style="width:44px;text-align:center;background:var(--bg);border:1px solid var(--border);color:var(--text);font-size:13px;padding:3px;"/>';
             if(db) {
-        if(db.desc) html += '<button onclick="showItemInfoByIndex('+i+')" title="Details" style="background:none;border:none;color:var(--text-faint);cursor:pointer;font-size:15px;padding:2px;">ℹ</button>';
-        if(db.source === 'homebrew') html += '<button data-hb-edit-inv="'+i+'" title="Edit homebrew item" style="background:none;border:none;color:#8b6914;cursor:pointer;font-size:13px;padding:2px;">✎</button>';
+        if(db.desc) html += '<button onclick="showItemInfoByIndex('+escapeAttr(String(i))+');" title="Details" style="background:none;border:none;color:var(--text-faint);cursor:pointer;font-size:15px;padding:2px;">ℹ</button>';
+        if(db.source === 'homebrew') html += '<button data-hb-edit-inv="'+escapeAttr(String(i))+'" title="Edit homebrew item" style="background:none;border:none;color:#8b6914;cursor:pointer;font-size:13px;padding:2px;">✎</button>';
       }
-      html += '<button onclick="removeInventoryItem('+i+')" title="Remove" style="background:none;border:none;color:var(--text-faint);cursor:pointer;font-size:18px;line-height:1;padding:2px;">×</button>';
+      html += '<button onclick="removeInventoryItem('+escapeAttr(String(i))+');" title="Remove" style="background:none;border:none;color:var(--text-faint);cursor:pointer;font-size:18px;line-height:1;padding:2px;">×</button>';
       html += '</div></div>';
 
       if(db){
@@ -3245,7 +3278,7 @@ function renderInventory(){
         if(props.length) html += '<div style="font-size:11px;color:var(--text-faint);margin-top:4px;">' + props.join(' · ') + '</div>';
       }
 
-            html += '<input type="text" data-inv="'+i+'" placeholder="Notes\u2026" oninput="inventoryItems[+this.dataset.inv].notes=this.value;scheduleSave();" style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-dim);font-size:12px;padding:3px 0;margin-top:6px;outline:none;box-sizing:border-box;font-family:Spectral,Georgia,serif;"/>';
+            html += '<input type="text" data-inv="'+escapeAttr(String(i))+'" placeholder="Notes\u2026" oninput="inventoryItems[+this.dataset.inv].notes=this.value;scheduleSave();" style="width:100%;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--text-dim);font-size:12px;padding:3px 0;margin-top:6px;outline:none;box-sizing:border-box;font-family:Spectral,Georgia,serif;"/>';
       html += '</div>';
     });
     html += '</div>';
@@ -3416,6 +3449,40 @@ function buildFeaturesTab(){
 
   document.getElementById('cs-languages-list').innerHTML=`<div class="cs-action-title">Languages</div>
     <div class="cs-prof-list">${(race.languages||[]).join(', ')}</div>`;
+
+  // INTEGRATION (V-009): Load resistances/immunities from C object
+  const damageResEl = document.getElementById('cs-damage-resistances');
+  const damageImmEl = document.getElementById('cs-damage-immunities');
+  const damageVulnEl = document.getElementById('cs-damage-vulnerabilities');
+  const condImmEl = document.getElementById('cs-condition-immunities');
+  if (damageResEl) {
+    damageResEl.value = (C.damageResistances || []).join(', ');
+    damageResEl.addEventListener('change', function() {
+      C.damageResistances = this.value.split(',').map(v => v.trim()).filter(Boolean);
+      scheduleSave();
+    });
+  }
+  if (damageImmEl) {
+    damageImmEl.value = (C.damageImmunities || []).join(', ');
+    damageImmEl.addEventListener('change', function() {
+      C.damageImmunities = this.value.split(',').map(v => v.trim()).filter(Boolean);
+      scheduleSave();
+    });
+  }
+  if (damageVulnEl) {
+    damageVulnEl.value = (C.damageVulnerabilities || []).join(', ');
+    damageVulnEl.addEventListener('change', function() {
+      C.damageVulnerabilities = this.value.split(',').map(v => v.trim()).filter(Boolean);
+      scheduleSave();
+    });
+  }
+  if (condImmEl) {
+    condImmEl.value = (C.conditionImmunities || []).join(', ');
+    condImmEl.addEventListener('change', function() {
+      C.conditionImmunities = this.value.split(',').map(v => v.trim()).filter(Boolean);
+      scheduleSave();
+    });
+  }
 }
 
 // ── NOTES TAB ──
@@ -3749,7 +3816,7 @@ function luRenderSpellPicker() {
               + 'border:1px solid ' + (isPicked ? 'var(--crimson)' : 'var(--border)') + ';border-right:none;'
               + 'background:' + (isPicked ? 'var(--crimson)' : 'var(--bg-card)') + ';'
               + 'color:' + (isPicked ? '#f5f0e8' : 'var(--text-muted)') + ';">' + sp + '</div>'
-              + '<button onclick="showSpellInfo(\'' + sp.replace(/'/g,"\\'") + '\',0)" title="Spell details"'
+              + '<button onclick="showSpellInfo(\'' + sp.replace(/'/g,"&apos;") + '\',0)" title="Spell details"'
               + ' style="padding:5px 7px;background:' + (isPicked?'var(--crimson)':'var(--bg-card)') + ';border:1px solid ' + (isPicked?'var(--crimson)':'var(--border)') + ';'
               + 'color:' + (isPicked?'rgba(245,240,232,0.7)':'var(--text-faint)') + ';cursor:pointer;font-size:11px;line-height:1;">ℹ</button>'
               + '</div>';
@@ -3790,12 +3857,12 @@ function luRenderSpellPicker() {
         var desc     = (DND_DATA.spellDescriptions && DND_DATA.spellDescriptions[sp]) || {};
         var tooltip  = (desc.school ? desc.school : '') + (desc.castTime ? ' \u00b7 ' + desc.castTime : '') + (desc.range ? ' \u00b7 ' + desc.range : '') + (desc.desc ? '\n' + desc.desc : '');
         html += '<div style="display:inline-flex;align-items:center;gap:0;margin-bottom:0;">'
-              + '<div onclick="luToggleSpell(\'' + sp.replace(/'/g, "\\'") + '\',false)"'
+              + '<div onclick="luToggleSpell(\'' + sp.replace(/'/g, "&apos;") + '\',false)"'
               + ' style="padding:7px 13px;font-family:\'Cinzel\',serif;font-size:8px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;'
               + 'border:1px solid ' + (isPicked ? 'var(--crimson)' : 'var(--border)') + ';border-right:none;'
               + 'background:' + (isPicked ? 'var(--crimson)' : 'var(--bg-card)') + ';'
               + 'color:' + (isPicked ? '#f5f0e8' : 'var(--text-muted)') + ';">' + sp + '</div>'
-              + '<button onclick="showSpellInfo(\'' + sp.replace(/'/g,"\\'") + '\',\'' + sp.level + '\')" title="Spell details"'
+              + '<button onclick="showSpellInfo(\'' + sp.replace(/'/g,"&apos;") + '\',\'' + sp.level + '\')" title="Spell details"'
               + ' style="padding:5px 7px;background:' + (isPicked?'var(--crimson)':'var(--bg-card)') + ';border:1px solid ' + (isPicked?'var(--crimson)':'var(--border)') + ';'
               + 'color:' + (isPicked?'rgba(245,240,232,0.7)':'var(--text-faint)') + ';cursor:pointer;font-size:11px;line-height:1;">ℹ</button>'
               + '</div>';
@@ -5518,7 +5585,7 @@ function buildCatalogFilters(){
   var btns = '<button onclick="setCatalogFilter(String())" style="'+aStyle+'background:'+(allActive?'var(--crimson)':'transparent')+';border:1px solid '+(allActive?'var(--crimson)':'var(--border)')+';color:'+(allActive?'#f5f0e8':'var(--text-muted)')+';">All</button>';
   Object.keys(cats).forEach(function(k){
     var active = (_catalogFilter === k);
-    btns += '<button onclick="setCatalogFilter(this.dataset.cat)" data-cat="'+k+'" style="'+aStyle+'background:'+(active?'var(--crimson)':'transparent')+';border:1px solid '+(active?'var(--crimson)':'var(--border)')+';color:'+(active?'#f5f0e8':'var(--text-muted)')+';">'+cats[k]+'</button>';
+    btns += '<button onclick="setCatalogFilter(this.dataset.cat)" data-cat="'+escapeAttr(k)+'" style="'+aStyle+'background:'+(active?'var(--crimson)':'transparent')+';border:1px solid '+(active?'var(--crimson)':'var(--border)')+';color:'+(active?'#f5f0e8':'var(--text-muted)')+';">'+escapeHtml(cats[k])+'</button>';
   });
   // Homebrew tab
   var hbCount = homebrewCount();
@@ -5569,8 +5636,8 @@ function renderHomebrewCatalog(el, items) {
     if(item.desc) html += '<div style="font-size:11px;color:var(--text-dim);margin-top:3px;line-height:1.5;">' + item.desc.substring(0,140) + (item.desc.length>140?'…':'') + '</div>';
     html += '</div>';
     html += '<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">';
-    html += '<button data-item-id="' + item.id + '" class="catalog-add-btn" style="font-family:Cinzel,serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;background:var(--crimson);border:none;color:#f5f0e8;cursor:pointer;">Add</button>';
-    html += '<button data-hb-edit="' + item.id + '" style="font-family:Cinzel,serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;background:transparent;border:1px solid var(--border);color:var(--text-muted);cursor:pointer;">Edit</button>';
+    html += '<button data-item-id="' + escapeAttr(item.id) + '" class="catalog-add-btn" style="font-family:Cinzel,serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;background:var(--crimson);border:none;color:#f5f0e8;cursor:pointer;">Add</button>';
+    html += '<button data-hb-edit="' + escapeAttr(item.id) + '" style="font-family:Cinzel,serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;background:transparent;border:1px solid var(--border);color:var(--text-muted);cursor:pointer;">Edit</button>';
     html += '</div>';
     html += '</div>';
   });
@@ -5732,6 +5799,7 @@ async function saveCharacterToDB(){
   if(!session) return; // not signed in — silent skip
 
   const snapshot = {
+    edition:          '5e',
     name:             (C.details && C.details.name) || 'Unnamed',
     race:             C.race,
     subrace:          C.subrace,
@@ -5765,6 +5833,12 @@ async function saveCharacterToDB(){
       pp: parseInt(document.getElementById('coin-pp')?.value)||0,
     },
     subclasses:       JSON.parse(JSON.stringify(C.subclasses||{})),
+    // INTEGRATION (V-001): Include combat-critical fields for sync with campaigns
+    ac:               C.ac || (10 + Math.floor((C.abilities.dex - 10) / 2)),
+    damageResistances:    [...(C.damageResistances || [])],
+    damageImmunities:     [...(C.damageImmunities || [])],
+    damageVulnerabilities: [...(C.damageVulnerabilities || [])],
+    conditionImmunities:  [...(C.conditionImmunities || [])],
   };
 
   // SECURITY: Safely read localStorage
@@ -5910,6 +5984,13 @@ function init(){
     }
     const data=await PhmurtDB.loadCharacter(id);
     if(!data) return;
+    // SECURITY (V-041): Validate edition to prevent cross-edition load
+    // 5e builder should only load 5e characters (edition undefined or '5e')
+    if(data.edition && data.edition !== '5e' && data.edition !== undefined) {
+      console.error('[CharBuilder] Cannot load character: edition is ' + data.edition + ' but this is a 5e builder');
+      alert('This character was created in D&D ' + data.edition + '. Please use the appropriate builder.');
+      return;
+    }
     // Clear local autosave so it doesn't conflict with the loaded character
     try { localStorage.removeItem('phmurt_builder_5e'); } catch(e) {}
     try { localStorage.removeItem('phmurt_builder_35e'); } catch(e) {}
@@ -5917,7 +5998,9 @@ function init(){
     const fields=['race','subrace','cls','background','abilities','scoreMethod',
                   'arrayAssigned','selectedSkills','equipChoices','weaponChoices',
                   'selectedCantrips','selectedSpells','details','level',
-                  'levelingMethod','xp','hpRolls','asiChoices','toughBonus','hasTough','featData','classes','subclasses'];
+                  'levelingMethod','xp','hpRolls','asiChoices','toughBonus','hasTough','featData','classes','subclasses',
+                  // INTEGRATION (V-010): Restore combat-critical fields for proper sync
+                  'ac','damageResistances','damageImmunities','damageVulnerabilities','conditionImmunities'];
     fields.forEach(k=>{ if(data[k]!==undefined) C[k]=data[k]; });
     // Restore inventory
     if(data.inventoryItems) inventoryItems = data.inventoryItems;

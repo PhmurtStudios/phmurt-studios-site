@@ -207,7 +207,7 @@ window.CombatFlowUI = (() => {
    * @param {Object} result     - Attack result from resolveAttack()
    */
   function spawnDamageText(x, y, result) {
-    if (!result) return;
+    if (!result || typeof result !== 'object') return;
 
     if (result.miss || result.fumble) {
       spawnFloatingText({
@@ -220,7 +220,7 @@ window.CombatFlowUI = (() => {
       return;
     }
 
-    if (result.isCrit) {
+    if (!!result.isCrit) {
       spawnFloatingText({
         x, y: y - 18,
         text: "CRITICAL!",
@@ -356,9 +356,11 @@ window.CombatFlowUI = (() => {
    */
   function renderFloatingTexts(ctx, zoom, now) {
     if (_activeTexts.length === 0) return;
+    if (!ctx || typeof ctx !== 'object') return;
 
-    const expired = [];
-    const invZoom = 1 / Math.max(zoom, 0.01);
+    const expired = new Set();
+    const safeZoom = Math.max(0.01, Math.min(100, zoom || 1));
+    const invZoom = 1 / safeZoom;
 
     ctx.save();
 
@@ -368,7 +370,7 @@ window.CombatFlowUI = (() => {
 
       const activeAge = age - p.delay;
       if (activeAge >= p.lifetime) {
-        expired.push(p.id);
+        expired.add(p.id);
         return;
       }
 
@@ -423,8 +425,8 @@ window.CombatFlowUI = (() => {
     ctx.restore();
 
     // Prune expired
-    if (expired.length > 0) {
-      _activeTexts = _activeTexts.filter((p) => !expired.includes(p.id));
+    if (expired.size > 0) {
+      _activeTexts = _activeTexts.filter((p) => !expired.has(p.id));
     }
   }
 
@@ -467,11 +469,12 @@ window.CombatFlowUI = (() => {
    * @returns {Object} Structured display result
    */
   function formatAttackResult(opts) {
+    if (!opts || typeof opts !== 'object') return { lines: [], details: [] };
     const lines = [];
     const details = [];
 
     // Attack roll line
-    if (opts.attackRoll) {
+    if (opts.attackRoll && typeof opts.attackRoll === 'object') {
       const r = opts.attackRoll;
       let rollStr = "";
       if (r.mode === "advantage") {
@@ -652,7 +655,7 @@ window.CombatFlowUI = (() => {
                 bold: true,
               });
             }
-            if (d.section === "conditions") {
+            if (d.section === "conditions" && d.conditions && d.conditions.length) {
               d.conditions.forEach((c) => {
                 formatted.sublines.push({
                   text: (c.applied ? "Applied: " : "Removed: ") + c.name,
@@ -888,8 +891,10 @@ window.CombatFlowUI = (() => {
    * Get the display initiative order with DM/player filtering.
    */
   function getDisplayInitiative(combatants, tokens, viewRole) {
+    if (!Array.isArray(combatants) || !Array.isArray(tokens)) return [];
     return combatants.map((c) => {
-      const tok = tokens.find((t) => t.id === c.mapTokenId);
+      if (!c || typeof c !== 'object') return null;
+      const tok = tokens.find((t) => t && t.id === c.mapTokenId);
       if (!tok) return { ...c, visible: false };
 
       if (viewRole === "player" && tok.hidden) {

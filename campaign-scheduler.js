@@ -135,6 +135,10 @@
         return [];
       }
 
+      minPlayers = Math.max(1, Math.min(minPlayers, this.players.size));
+      durationHours = Math.max(1, Math.min(durationHours, 24));
+      daysAhead = Math.max(1, Math.min(daysAhead, 365));
+
       const slots = [];
       const now = new Date();
 
@@ -147,7 +151,7 @@
         const dateStr = slotDate.toISOString().split('T')[0];
 
         // Try hourly slots throughout the day
-        for (let hour = 0; hour < 24 - durationHours + 1; hour++) {
+        for (let hour = 0; hour <= 24 - durationHours; hour++) {
           const startTime = hour;
           const endTime = hour + durationHours;
 
@@ -418,14 +422,16 @@
         const data = JSON.parse(jsonString);
 
         this.players.clear();
-        if (data.players) {
+        if (data.players && Array.isArray(data.players)) {
           for (const player of data.players) {
-            this.players.set(player.name || player.id, player);
+            if (player && (player.name || player.id)) {
+              this.players.set(player.name || player.id, player);
+            }
           }
         }
 
-        this.sessions = data.sessions || [];
-        this._sessionCounter = data._sessionCounter || 0;
+        this.sessions = Array.isArray(data.sessions) ? data.sessions : [];
+        this._sessionCounter = Math.max(0, parseInt(data._sessionCounter) || 0);
         this._createdAt = data._createdAt || new Date().toISOString();
       } catch (e) {
         throw new Error(`Deserialization failed: ${e.message}`);

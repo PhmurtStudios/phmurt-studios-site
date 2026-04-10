@@ -528,7 +528,7 @@
                 >
                   <option value="">Select from world locations or enter custom</option>
                   {(data.cities || []).map(c => (
-                    <option key={`city-${c.name}`} value={c.name + " (" + (c.region || "Unknown") + ")"}>
+                    <option key={`city-${c.name}`} value={`${c.name} (${c.region || "Unknown"})`}>
                       {c.name} — {c.region || "Unknown"} (City)
                     </option>
                   ))}

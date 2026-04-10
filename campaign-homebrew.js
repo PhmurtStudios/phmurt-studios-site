@@ -1008,9 +1008,16 @@
      */
     import(jsonString) {
       try {
+        if (!jsonString || typeof jsonString !== 'string') {
+          throw new Error('Import string must be non-empty');
+        }
+
         const item = JSON.parse(jsonString);
-        if (!item._type || !item._id) {
-          throw new Error('Invalid homebrew format');
+        if (!item || typeof item !== 'object') {
+          throw new Error('Invalid homebrew format: not an object');
+        }
+        if (!item._type || !this.items.has(item._type)) {
+          throw new Error('Invalid homebrew format: unknown type');
         }
 
         // Assign new ID to avoid conflicts
@@ -1160,40 +1167,61 @@
      */
     deserialize(jsonString) {
       try {
+        if (!jsonString || typeof jsonString !== 'string') {
+          throw new Error('Input must be a non-empty string');
+        }
+
         const data = JSON.parse(jsonString);
+        if (!data || typeof data !== 'object') {
+          throw new Error('Deserialized data must be an object');
+        }
 
-        if (data.monsters) {
+        if (Array.isArray(data.monsters)) {
           for (const m of data.monsters) {
-            this.items.get('monsters').set(m._id, m);
+            if (m && typeof m === 'object' && m._id) {
+              this.items.get('monsters').set(m._id, m);
+            }
           }
         }
-        if (data.items) {
+        if (Array.isArray(data.items)) {
           for (const i of data.items) {
-            this.items.get('items').set(i._id, i);
+            if (i && typeof i === 'object' && i._id) {
+              this.items.get('items').set(i._id, i);
+            }
           }
         }
-        if (data.spells) {
+        if (Array.isArray(data.spells)) {
           for (const s of data.spells) {
-            this.items.get('spells').set(s._id, s);
+            if (s && typeof s === 'object' && s._id) {
+              this.items.get('spells').set(s._id, s);
+            }
           }
         }
-        if (data.npcs) {
+        if (Array.isArray(data.npcs)) {
           for (const n of data.npcs) {
-            this.items.get('npcs').set(n._id, n);
+            if (n && typeof n === 'object' && n._id) {
+              this.items.get('npcs').set(n._id, n);
+            }
           }
         }
-        if (data.classFeatures) {
+        if (Array.isArray(data.classFeatures)) {
           for (const cf of data.classFeatures) {
-            this.items.get('classFeatures').set(cf._id, cf);
+            if (cf && typeof cf === 'object' && cf._id) {
+              this.items.get('classFeatures').set(cf._id, cf);
+            }
           }
         }
-        if (data.feats) {
+        if (Array.isArray(data.feats)) {
           for (const f of data.feats) {
-            this.items.get('feats').set(f._id, f);
+            if (f && typeof f === 'object' && f._id) {
+              this.items.get('feats').set(f._id, f);
+            }
           }
         }
 
-        this._idCounters = data._idCounters || this._idCounters;
+        if (data._idCounters && typeof data._idCounters === 'object') {
+          this._idCounters = data._idCounters;
+        }
       } catch (e) {
         throw new Error(`Deserialization failed: ${e.message}`);
       }
@@ -1208,13 +1236,20 @@
      * @private
      */
     _validate(type, item) {
-      if (!item.name || item.name.trim().length === 0) {
-        throw new Error('Item must have a name');
+      if (!item || typeof item !== 'object') {
+        throw new Error('Item must be an object');
+      }
+
+      if (!item.name || (typeof item.name === 'string' && item.name.trim().length === 0)) {
+        throw new Error('Item must have a non-empty name');
       }
 
       if (type === 'monsters') {
         if (item.cr === undefined || item.cr === null) {
           throw new Error('Monster must have a CR');
+        }
+        if (typeof item.cr !== 'number' || item.cr < 0) {
+          throw new Error('Monster CR must be a non-negative number');
         }
       }
 
@@ -1222,7 +1257,7 @@
         if (item.level === undefined || item.level === null) {
           throw new Error('Spell must have a level (0-9)');
         }
-        if (item.level < 0 || item.level > 9) {
+        if (typeof item.level !== 'number' || item.level < 0 || item.level > 9) {
           throw new Error('Spell level must be 0-9');
         }
       }
@@ -1233,15 +1268,20 @@
      * @private
      */
     _averageDamage(damageStr) {
-      if (!damageStr) return 0;
+      if (!damageStr || typeof damageStr !== 'string') return 0;
 
       // Parse "1d8+3" format
-      const match = damageStr.match(/(\d+)d(\d+)(?:\+(\d+))?/);
+      const match = damageStr.match(/^(\d+)d(\d+)(?:\+(\d+))?$/);
       if (!match) return 0;
 
-      const dice = parseInt(match[1]);
-      const sides = parseInt(match[2]);
-      const bonus = parseInt(match[3] || 0);
+      const dice = parseInt(match[1], 10);
+      const sides = parseInt(match[2], 10);
+      const bonus = parseInt(match[3] || 0, 10);
+
+      // Validate parsed values
+      if (isNaN(dice) || isNaN(sides) || isNaN(bonus) || dice <= 0 || sides <= 0) {
+        return 0;
+      }
 
       // Average of a die is (sides + 1) / 2
       return dice * ((sides + 1) / 2) + bonus;

@@ -9,6 +9,20 @@
 window.CombatEngine = (() => {
   "use strict";
 
+  // ─── UTILITIES ─────────────────────────────────────────────────────────────
+
+  /** Sanitize text to prevent XSS in display names */
+  const sanitizeName = (name) => {
+    if (!name || typeof name !== 'string') return '';
+    return String(name)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+      .slice(0, 256);
+  };
+
   // ─── DICE SYSTEM ───────────────────────────────────────────────────────────
 
   /** Roll a single die (e.g., d20 → 1-20) */
@@ -24,8 +38,8 @@ window.CombatEngine = (() => {
     // Handle "Xd" expressions like "3x1d4+1" (magic missile style)
     if (expr.includes("x")) {
       const parts = expr.split("x");
-      const count = parseInt(parts[0]) || 1;
-      const subExpr = parts[1];
+      const count = Math.min(1000, Math.max(1, parseInt(parts[0]) || 1));
+      const subExpr = parts[1] || "1d4";
       const results = [];
       let grandTotal = 0;
       for (let i = 0; i < count; i++) {
@@ -55,7 +69,7 @@ window.CombatEngine = (() => {
     }
 
     const count = parseInt(match[1]) || 1;
-    const sides = parseInt(match[2]);
+    const sides = parseInt(match[2]) || 1;
     const keepRule = match[3] || "";
     const modifier = match[4] ? parseInt(match[4].replace(/\s/g, "")) : 0;
 
@@ -64,10 +78,10 @@ window.CombatEngine = (() => {
 
     let keptRolls = [...rolls];
     if (keepRule.startsWith("kh")) {
-      const keep = parseInt(keepRule.slice(2));
+      const keep = Math.max(1, parseInt(keepRule.slice(2)) || 1);
       keptRolls = [...rolls].sort((a, b) => b - a).slice(0, keep);
     } else if (keepRule.startsWith("kl")) {
-      const keep = parseInt(keepRule.slice(2));
+      const keep = Math.max(1, parseInt(keepRule.slice(2)) || 1);
       keptRolls = [...rolls].sort((a, b) => a - b).slice(0, keep);
     }
 
@@ -227,7 +241,7 @@ window.CombatEngine = (() => {
     const knocksProne = /knocked\s+prone/i.test(desc);
 
     return {
-      name: action.name,
+      name: sanitizeName(action.name),
       attackType,      // "melee" or "ranged"
       weaponOrSpell,   // "weapon" or "spell"
       toHit,
@@ -319,7 +333,7 @@ window.CombatEngine = (() => {
     else if (/psychic/i.test(desc)) breathType = "psychic";
 
     return {
-      name: action.name,
+      name: sanitizeName(action.name),
       type: "save",
       dc,
       ability,
@@ -345,8 +359,8 @@ window.CombatEngine = (() => {
 
     const attacks = [];
     const actionMap = {};
-    for (const a of allActions) {
-      if (a.name.toLowerCase() !== "multiattack") {
+    for (const a of (allActions || [])) {
+      if (a && a.name && a.name.toLowerCase() !== "multiattack") {
         actionMap[a.name.toLowerCase()] = a;
       }
     }
@@ -359,19 +373,19 @@ window.CombatEngine = (() => {
       const count = numWords[m[1]] || parseInt(m[1]) || 1;
       const name = m[2].trim().replace(/\s+attacks?$/, "");
       // Find matching action
-      const action = actionMap[name] || Object.values(actionMap).find(a => a.name.toLowerCase().includes(name));
+      const action = actionMap[name] || Object.values(actionMap).find(a => a && a.name && a.name.toLowerCase().includes(name));
       if (action) {
         for (let i = 0; i < count; i++) attacks.push(action);
       }
     }
 
     // Fallback: if we couldn't parse, look for "makes X attacks"
-    if (attacks.length === 0) {
+    if (attacks.length === 0 && allActions) {
       const simpleMatch = desc.match(/makes?\s+(\w+)\s+(?:melee\s+)?attacks?/);
       if (simpleMatch) {
         const count = numWords[simpleMatch[1]] || parseInt(simpleMatch[1]) || 2;
         // Find first attack action
-        const firstAttack = allActions.find(a => a.name !== "Multiattack" && /attack:/i.test(a.desc));
+        const firstAttack = (allActions || []).find(a => a && a.name && a.name !== "Multiattack" && a.desc && /attack:/i.test(a.desc));
         if (firstAttack) {
           for (let i = 0; i < count; i++) attacks.push(firstAttack);
         }
@@ -379,11 +393,11 @@ window.CombatEngine = (() => {
     }
 
     // Check for "can use its Frightful Presence"
-    if (/can\s+use\s+its?\s+/i.test(multiattackAction.desc)) {
+    if (multiattackAction && /can\s+use\s+its?\s+/i.test(multiattackAction.desc)) {
       const useMatch = multiattackAction.desc.match(/can\s+use\s+its?\s+([\w\s]+?)(?:\.\s*It\s+|,\s*)/i);
       if (useMatch) {
         const specialName = useMatch[1].trim().toLowerCase();
-        const specialAction = actionMap[specialName] || Object.values(actionMap).find(a => a.name.toLowerCase().includes(specialName));
+        const specialAction = actionMap[specialName] || Object.values(actionMap).find(a => a && a.name && a.name.toLowerCase().includes(specialName));
         if (specialAction) attacks.unshift(specialAction); // Use it first
       }
     }
@@ -402,6 +416,7 @@ window.CombatEngine = (() => {
 
   /** Get save modifier for a monster, accounting for proficient saves */
   const getSaveModifier = (monster, ability) => {
+    if (!monster || typeof monster !== 'object') return 0;
     const shortAbility = abilityShort[ability] || ability.toLowerCase().slice(0, 3);
     const score = monster[shortAbility] || 10;
     const baseMod = abilityMod(score);
@@ -420,7 +435,13 @@ window.CombatEngine = (() => {
 
   /** Get proficiency bonus from CR */
   const profBonusFromCR = (cr) => {
-    const crNum = typeof cr === "string" ? (cr.includes("/") ? parseInt(cr.split("/")[0]) / parseInt(cr.split("/")[1]) : parseFloat(cr)) : cr;
+    let crNum = typeof cr === "string" ? parseFloat(cr) : cr;
+    if (typeof cr === "string" && cr.includes("/")) {
+      const parts = cr.split("/");
+      const num = parseInt(parts[0]) || 1;
+      const denom = parseInt(parts[1]) || 1;
+      crNum = denom !== 0 ? num / denom : 1;
+    }
     if (crNum < 5) return 2;
     if (crNum < 9) return 3;
     if (crNum < 13) return 4;
@@ -587,12 +608,13 @@ window.CombatEngine = (() => {
     const opts = options || {};
     const parsed = parseAttackAction(action);
     if (!parsed) return { results: [], totalDamage: 0, parsed: null };
+    if (!target || typeof target !== 'object') return { results: [], totalDamage: 0, parsed };
 
     const results = [];
     let totalDamage = 0;
 
     let advMode = "normal";
-    const attackerConds = (attacker.conditions || []).map((c) => String(c).toLowerCase());
+    const attackerConds = ((attacker && attacker.conditions) || []).map((c) => String(c).toLowerCase());
     const targetConds = (target.conditions || []).map((c) => String(c).toLowerCase());
     if (targetConds.includes("prone") && parsed.attackType === "melee") advMode = "advantage";
     if (targetConds.includes("stunned") || targetConds.includes("paralyzed") || targetConds.includes("unconscious")) advMode = "advantage";
@@ -715,6 +737,7 @@ window.CombatEngine = (() => {
 
     const results = [];
     for (const target of targets) {
+      if (!target || typeof target !== 'object') continue;
       const targetConds = (target.conditions || []).map((c) => String(c).toLowerCase());
       const condImmune = parseConditionImmunities(target.conditionImmunities || "");
       const dmgRel = getDamageRelations(target);
@@ -723,8 +746,8 @@ window.CombatEngine = (() => {
       if (targetAutoFailsStrDexSave(targetConds) && (parsed.ability === "Strength" || parsed.ability === "Dexterity")) {
         saveResult = { success: false, autoFail: true, total: -999, dc: parsed.dc, details: "auto-fail" };
       } else {
-        const coverSaveBonus = ((options || {}).dexSaveBonus || 0) && parsed.ability === "Dexterity"
-          ? Number((options || {}).dexSaveBonus) || 0
+        const coverSaveBonus = (parsed.ability === "Dexterity" && (options && options.dexSaveBonus))
+          ? Number(options.dexSaveBonus) || 0
           : 0;
         const saveMod = getSaveModifier(target, parsed.ability) + coverSaveBonus;
         let saveAdv = "normal";
@@ -786,7 +809,8 @@ window.CombatEngine = (() => {
    *  combatOptions forwarded to executeAttack / executeSaveAction
    */
   const executeMultiattack = (attacker, target, monster, combatOptions) => {
-    const multiAction = (monster.actions || []).find((a) => a.name.toLowerCase() === "multiattack");
+    if (!monster || typeof monster !== 'object') return { attackSequence: [], totalDamage: 0 };
+    const multiAction = (monster.actions || []).find((a) => a && a.name && a.name.toLowerCase() === "multiattack");
     if (!multiAction) return { attackSequence: [], totalDamage: 0 };
 
     const attackActions = parseMultiattack(multiAction, monster.actions);
@@ -830,11 +854,12 @@ window.CombatEngine = (() => {
    */
   const executePcWeaponAttack = (pc, target, weaponName, options) => {
     const opts = options || {};
+    if (!pc || typeof pc !== 'object') return { results: [], totalDamage: 0, parsed: null, error: "Invalid attacker" };
     const w = WEAPONS[weaponName];
     if (!w) return { results: [], totalDamage: 0, parsed: null, error: "Unknown weapon: " + weaponName };
 
-    const str = pc.str != null ? pc.str : 10;
-    const dex = pc.dex != null ? pc.dex : 10;
+    const str = (pc.str != null) ? pc.str : 10;
+    const dex = (pc.dex != null) ? pc.dex : 10;
     const strMod = abilityMod(str);
     const dexMod = abilityMod(dex);
     const useMod = w.properties.includes("finesse") ? Math.max(strMod, dexMod) : (w.melee ? strMod : dexMod);
@@ -1135,12 +1160,12 @@ window.CombatEngine = (() => {
   const calculateDistance = (x1, y1, x2, y2, gridSize = 40) => {
     const dx = Math.abs(Math.round((x2 - x1) / gridSize));
     const dy = Math.abs(Math.round((y2 - y1) / gridSize));
-    // Standard D&D: each square = 5ft. Diagonal alternates 5/10.
+    // Standard D&D: each square = 5ft. Diagonal = 5ft per diagonal pair + straight distance
     const min = Math.min(dx, dy);
     const max = Math.max(dx, dy);
-    const diag5 = Math.ceil(min / 2);
-    const diag10 = Math.floor(min / 2);
-    return (max - min) * 5 + diag5 * 5 + diag10 * 10;
+    const straight = max - min;
+    // min diagonal moves at 5ft each, straight remainder at 5ft each
+    return min * 5 + straight * 5;
   };
 
   /** Check if a target is within reach/range */
@@ -1221,12 +1246,15 @@ window.CombatEngine = (() => {
    */
   const checkFlanking = (attacker, target, allies, gridSize = 40) => {
     if (!target || !attacker || !allies || allies.length === 0) return false;
+    if (typeof target.x !== 'number' || typeof target.y !== 'number') return false;
+    if (typeof attacker.x !== 'number' || typeof attacker.y !== 'number') return false;
     const tx = target.x, ty = target.y;
     const ax = attacker.x, ay = attacker.y;
     // Attacker must be in melee range (5ft)
     if (calculateDistance(ax, ay, tx, ty, gridSize) > 5) return false;
 
     for (const ally of allies) {
+      if (!ally || typeof ally.x !== 'number' || typeof ally.y !== 'number') continue;
       if (calculateDistance(ally.x, ally.y, tx, ty, gridSize) > 5) continue;
       // Check if attacker and ally are on roughly opposite sides
       const dx1 = ax - tx, dy1 = ay - ty;
@@ -1244,6 +1272,7 @@ window.CombatEngine = (() => {
   // Lower ground imposes disadvantage on ranged attacks.
 
   const getHeightAdvantage = (attacker, target) => {
+    if (!attacker || !target || typeof attacker !== 'object' || typeof target !== 'object') return "normal";
     const aHeight = attacker.elevation || 0;
     const tHeight = target.elevation || 0;
     const diff = aHeight - tHeight;
@@ -1267,6 +1296,7 @@ window.CombatEngine = (() => {
 
   /** Check if sneak attack conditions are met */
   const checkSneakAttack = (attacker, target, hasAdvantage, nearbyAllies, weaponName) => {
+    if (!attacker || typeof attacker !== 'object') return { eligible: false };
     if (!attacker.class && !attacker.cls) return { eligible: false };
     const cls = (attacker.class || attacker.cls || "").toLowerCase();
     if (!cls.includes("rogue")) return { eligible: false };
@@ -1277,6 +1307,7 @@ window.CombatEngine = (() => {
 
     // Advantage OR ally within 5ft of target
     const allyNearTarget = (nearbyAllies || []).some(a =>
+      a && typeof a === 'object' && target && typeof target === 'object' &&
       calculateDistance(a.x, a.y, target.x, target.y) <= 5
     );
 
@@ -1299,7 +1330,8 @@ window.CombatEngine = (() => {
   // 2d8 + 1d8 per slot above 1st (max 5d8). +1d8 vs undead/fiend.
 
   const calculateSmiteDamage = (slotLevel, targetIsUndeadOrFiend = false) => {
-    const baseDice = Math.min(5, 1 + slotLevel); // 2d8 at 1st, up to 5d8 at 4th+
+    const level = Math.max(1, slotLevel || 1);
+    const baseDice = Math.min(5, 1 + level); // 2d8 at 1st, up to 5d8 at 4th+
     const bonusDice = targetIsUndeadOrFiend ? 1 : 0;
     const totalDice = baseDice + bonusDice;
     const expr = totalDice + "d8";
@@ -1381,9 +1413,9 @@ window.CombatEngine = (() => {
   /** Roll terrain effect for a creature entering or starting turn in hazardous terrain */
   const resolveTerrainEffect = (creature, terrainType) => {
     const effect = TERRAIN_COMBAT_EFFECTS[terrainType];
-    if (!effect) return null;
+    if (!effect || !creature) return null;
 
-    const result = { terrain: terrainType, ...effect, creature: creature.name || "Creature" };
+    const result = { terrain: terrainType, ...effect, creature: (creature && creature.name) || "Creature" };
 
     if (effect.save) {
       const ability = effect.save;
@@ -1482,6 +1514,7 @@ window.CombatEngine = (() => {
 
   /** Resolve a common spell cast */
   const resolveSpellCast = (caster, spell, targets, slotLevel) => {
+    if (!caster || typeof caster !== 'object') return { error: "Invalid caster" };
     const spellData = typeof spell === "string" ? COMMON_SPELLS[spell] : spell;
     if (!spellData) return { error: "Unknown spell" };
 
@@ -1512,10 +1545,11 @@ window.CombatEngine = (() => {
     // Healing spells
     if (spellData.healing) {
       for (const target of (targets || [])) {
+        if (!target || typeof target !== 'object') continue;
         const heal = rollDice(spellData.healing);
         const spellMod = abilityMod(caster.wis || caster.cha || caster.int || 10);
         results.push({
-          target: target.name,
+          target: target.name || "Target",
           targetId: target.id,
           healing: heal.total + spellMod + upcastBonus,
           roll: heal,
@@ -1531,17 +1565,27 @@ window.CombatEngine = (() => {
       const toHit = spellMod + prof;
 
       for (const target of (targets || [])) {
+        if (!target || typeof target !== 'object') continue;
         const atkRoll = makeAttackRoll(toHit, target.ac || 10);
         if (atkRoll.hit) {
           const dmg = rollDice(baseDamage);
-          const totalDmg = dmg.total + upcastBonus + (atkRoll.isCrit ? rollDice(baseDamage.replace(/\d+x/, "")).total : 0);
+          let critBonus = 0;
+          if (atkRoll.isCrit) {
+            // For spell crits, double the dice rolls (e.g., 1d10 → 2d10)
+            const baseCritExpr = baseDamage.replace(/(\d+)d(\d+)/g, (match, count, sides) => {
+              return (parseInt(count) * 2) + "d" + sides;
+            });
+            const critRoll = rollDice(baseCritExpr);
+            critBonus = critRoll.total - dmg.total; // Add only the bonus (don't double-count base roll)
+          }
+          const totalDmg = dmg.total + upcastBonus + critBonus;
           results.push({
-            target: target.name, targetId: target.id,
+            target: target.name || "Target", targetId: target.id,
             hit: true, isCrit: atkRoll.isCrit, attackRoll: atkRoll,
             damage: totalDmg, damageType: spellData.type, roll: dmg,
           });
         } else {
-          results.push({ target: target.name, targetId: target.id, hit: false, attackRoll: atkRoll, damage: 0 });
+          results.push({ target: target.name || "Target", targetId: target.id, hit: false, attackRoll: atkRoll, damage: 0 });
         }
       }
       return { type: "attack", results, spell: spellData };
@@ -1554,6 +1598,7 @@ window.CombatEngine = (() => {
       const dc = 8 + spellMod + prof;
 
       for (const target of (targets || [])) {
+        if (!target || typeof target !== 'object') continue;
         const saveMod = getSaveModifier(target, spellData.save);
         const save = makeSavingThrow(dc, saveMod);
         let damage = 0;
@@ -1562,7 +1607,7 @@ window.CombatEngine = (() => {
           damage = save.success && spellData.halfOnSave ? Math.floor((dmg.total + upcastBonus) / 2) : (!save.success ? dmg.total + upcastBonus : 0);
         }
         results.push({
-          target: target.name, targetId: target.id,
+          target: target.name || "Target", targetId: target.id,
           save, damage, damageType: spellData.type || "",
           condition: !save.success ? (spellData.condition || null) : null,
         });

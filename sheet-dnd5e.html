@@ -747,6 +747,16 @@
     ];
 
     // ── Init ─────────────────────────────────────────────────────────────
+    function escapeAttr(text) {
+      if (text == null) return '';
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+    }
+
     function getMod(score) {
       return Math.floor((parseInt(score) - 10) / 2);
     }
@@ -869,7 +879,7 @@
       tbody.innerHTML = '';
       (data._attacks || []).forEach(atk => {
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td><input type="text" value="${atk[0]||''}" placeholder="Longsword" /></td><td><input type="text" value="${atk[1]||''}" placeholder="+5" style="width:70px;" /></td><td><input type="text" value="${atk[2]||''}" placeholder="1d8+3 slashing" /></td>`;
+        tr.innerHTML = `<td><input type="text" value="${escapeAttr(atk[0]||'')}" placeholder="Longsword" /></td><td><input type="text" value="${escapeAttr(atk[1]||'')}" placeholder="+5" style="width:70px;" /></td><td><input type="text" value="${escapeAttr(atk[2]||'')}" placeholder="1d8+3 slashing" /></td>`;
         tbody.appendChild(tr);
       });
       if (!tbody.rows.length) for (let i = 0; i < 3; i++) addAttackRow();

@@ -2354,6 +2354,16 @@
         (typeof cancelAnimationFrame !== "undefined" ? cancelAnimationFrame : clearTimeout)(this._rafId);
         this._rafId = null;
       }
+      // Clean up canvas context and references to prevent memory leaks
+      this.ctx = null;
+      this.canvas = null;
+      this.hoveredRegion = null;
+      this.selectedRegion = null;
+      this.hoveredFaction = null;
+      this.hoveredPOI = null;
+      this.selectedPOI = null;
+      this.hoveredCity = null;
+      this.selectedCity = null;
     }
 
     _setupInteraction() {
@@ -2591,6 +2601,8 @@
 
     render() {
       const ctx = this.ctx, canvas = this.canvas;
+      // Prevent rendering if already destroyed
+      if (!ctx || !canvas) return;
       const dpr = window.devicePixelRatio || 1;
       const dw = canvas.clientWidth, dh = canvas.clientHeight;
       if (canvas.width !== dw * dpr || canvas.height !== dh * dpr) {

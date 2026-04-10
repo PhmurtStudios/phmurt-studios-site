@@ -1425,26 +1425,29 @@
 
   ReligionEngine.prototype.holyWar = function(deityIdA, deityIdB) {
     var self = this;
-    var templesA = this.temples.filter(function(t) { return t.deityId === deityIdA; });
-    var templesB = this.temples.filter(function(t) { return t.deityId === deityIdB; });
+    var templesA = this.temples.filter(function(t) { return t && t.deityId === deityIdA; });
+    var templesB = this.temples.filter(function(t) { return t && t.deityId === deityIdB; });
 
     if (templesA.length === 0 || templesB.length === 0) return null;
 
     var sharedCities = {};
     var cityRegions = {};
     templesA.forEach(function(t) {
-      sharedCities[t.city] = (sharedCities[t.city] || 0) + 1;
-      if (t.region) cityRegions[t.city] = t.region;
+      if (t && t.city) {
+        sharedCities[t.city] = (sharedCities[t.city] || 0) + 1;
+        if (t.region) cityRegions[t.city] = t.region;
+      }
     });
 
     var conflictCities = [];
     templesB.forEach(function(t) {
-      if (sharedCities[t.city]) {
+      if (t && t.city && sharedCities[t.city]) {
+        var templeBCount = (sharedCities[t.city] || 0) + 1;
         conflictCities.push({
           name: t.city,
           region: t.region || cityRegions[t.city] || 'Unknown',
-          templesTompleA: sharedCities[t.city],
-          templesTompleB: (sharedCities[t.city] = (sharedCities[t.city] || 0) + 1)
+          templesA: sharedCities[t.city],
+          templesB: templeBCount
         });
       }
     });
@@ -1584,17 +1587,18 @@
     if (!regionName || !Array.isArray(this.temples)) return null;
 
     // Filter temples by region name instead of city name
-    var regionTemples = this.temples.filter(function(t) { return t.region === regionName; });
+    var regionTemples = this.temples.filter(function(t) { return t && t.region === regionName; });
     if (regionTemples.length === 0) return null;
 
     var deityTotals = {};
     regionTemples.forEach(function(temple) {
+      if (!temple || !temple.deityId) return;
       if (!deityTotals[temple.deityId]) {
         deityTotals[temple.deityId] = { devotion: 0, temples: 0, cities: [] };
       }
-      deityTotals[temple.deityId].devotion += temple.devotion;
+      deityTotals[temple.deityId].devotion += temple.devotion || 0;
       deityTotals[temple.deityId].temples += 1;
-      if (deityTotals[temple.deityId].cities.indexOf(temple.city) === -1) {
+      if (temple.city && deityTotals[temple.deityId].cities.indexOf(temple.city) === -1) {
         deityTotals[temple.deityId].cities.push(temple.city);
       }
     });
@@ -1602,18 +1606,20 @@
     var dominant = null;
     var maxDevotion = 0;
     Object.keys(deityTotals).forEach(function(deityId) {
-      if (deityTotals[deityId].devotion > maxDevotion) {
+      if (deityTotals[deityId] && deityTotals[deityId].devotion > maxDevotion) {
         maxDevotion = deityTotals[deityId].devotion;
         dominant = deityId;
       }
     });
+
+    var dominantDeity = dominant ? this.getDeityByName(dominant) : null;
 
     return {
       region: regionName,
       dominant: dominant,
       temples: regionTemples,
       deityTotals: deityTotals,
-      dominantName: dominant ? this.getDeityByName(dominant).name : 'Unknown'
+      dominantName: dominantDeity ? dominantDeity.name : 'Unknown'
     };
   };
 
@@ -1632,21 +1638,22 @@
 
     if (Array.isArray(this.temples)) {
       this.temples.forEach(function(temple) {
+        if (!temple || !temple.deityId) return;
         var levelData = TEMPLE_LEVELS[temple.level || 'temple'];
         var baseGen = levelData ? levelData.devotionGen : 5;
         var season = calendar ? calendar.getSeason() : null;
         var seasonId = season ? season.id : null;
         var seasonBonus = 0;
 
-        temple.devotion = Math.min(100, temple.devotion + baseGen + seasonBonus);
+        temple.devotion = Math.min(100, (temple.devotion || 0) + baseGen + seasonBonus);
 
         // Generate events for temples with significant devotion changes
         if (temple.devotion >= 80) {
           var deity = self.getDeityByName(temple.deityId);
-          var description = 'The temple of ' + (deity ? deity.name : temple.deityId) +
-            ' in ' + temple.city + ' received a blessing';
+          var description = 'The temple of ' + sanitizeString(deity ? deity.name : temple.deityId) +
+            ' in ' + sanitizeString(temple.city) + ' received a blessing';
           if (temple.priestNpc) {
-            description += ', witnessed by ' + temple.priestNpc;
+            description += ', witnessed by ' + sanitizeString(temple.priestNpc);
           }
           description += '.';
 
@@ -1696,6 +1703,12 @@
     return events;
   };
 
+  // Helper: Sanitize string for safe concatenation
+  var sanitizeString = function(str) {
+    if (!str || typeof str !== 'string') return '';
+    return str.replace(/[<>]/g, '');
+  };
+
   ReligionEngine.prototype.triggerDivineIntervention = function(deityId, targetRegion) {
     var self = this;
     var deity = this.getDeityByName(deityId);
@@ -1714,16 +1727,16 @@
     var npcName = null;
     if (targetTemples.length > 0) {
       var temple = targetTemples[Math.floor(Math.random() * targetTemples.length)];
-      city = temple.city || city;
-      npcName = temple.priestNpc;
+      city = sanitizeString(temple.city) || city;
+      npcName = sanitizeString(temple.priestNpc);
     }
 
     // Build event description
-    var description = 'A direct manifestation of ' + deity.name + '\'s divine will in ' + city;
+    var description = 'A direct manifestation of ' + sanitizeString(deity.name) + '\'s divine will in ' + sanitizeString(city);
     if (npcName) {
       description += ', perceived by the devoted ' + npcName;
     }
-    description += '! The ' + type + ' ripples through ' + targetRegion + '.';
+    description += '! The ' + type + ' ripples through ' + sanitizeString(targetRegion) + '.';
 
     return {
       deity: deity.name,

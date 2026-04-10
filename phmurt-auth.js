@@ -4,8 +4,31 @@
    Powered by Supabase when configured (supabase-config.js filled in).
    Falls back to local-storage + cookie auth when offline / unconfigured.
 
+   CRITICAL SECURITY NOTE — Client-Side Session is a Cache Only:
+   ────────────────────────────────────────────────────────────────
+   The session object returned by getSession() includes subscription status
+   (isSubscribed, subscriptionTier, subscriptionExpires). This is a CLIENT-SIDE
+   CACHE populated from the profiles table. It is NOT authoritative.
+
+   For pro feature access:
+   1. Use session.isSubscribed for UI/UX only (enable buttons, show modals)
+   2. Server-side RLS policies must ALWAYS verify:
+      - subscription_tier == 'pro'
+      - subscription_status == 'active'
+      - subscription_expires_at > now()
+      - is_banned == false
+   3. Webhook (stripe-webhook/index.ts) is the source of truth for status
+
+   A subscription can be:
+   - Canceled/banned after local session loads (webhook propagates the change)
+   - In flight during checkout (webhook may not have fired yet)
+   - Expired server-side while session is still cached client-side
+
+   Never grant pro features based on session.isSubscribed without
+   server-side verification.
+
    Public API (PhmurtDB):
-     .getSession()                        → session | null  (sync)
+     .getSession()                        → session | null  (sync; cache only for subscriptions)
      .isAdmin()                           → bool
      .signUp(name, email, password)       → Promise<session>
      .signIn(email, password)             → Promise<session>
@@ -52,12 +75,16 @@ var PhmurtDB = (function () {
   }
 
   function _makeSession(user, profile) {
+    // SECURITY: Validate user object has required fields
+    if (!user || !user.id) return null;
     var name = (profile && profile.name)
       || (user.user_metadata && user.user_metadata.name)
       || (user.email || 'Adventurer').split('@')[0];
     var tier = (profile && profile.subscription_tier) || 'free';
     var subStatus = (profile && profile.subscription_status) || null;
-    // Check if subscription is still valid (not expired)
+    // SECURITY: Check if subscription is still valid (not expired)
+    // NOTE: This is a client-side check only. Server must always verify subscription status
+    // before granting pro features. Never trust client-side isSubscribed flag alone.
     var subExpires = profile && profile.subscription_expires_at ? new Date(profile.subscription_expires_at) : null;
     var isSubscribed = tier === 'pro' && subStatus === 'active' && (!subExpires || subExpires > new Date());
     return {
@@ -124,6 +151,9 @@ var PhmurtDB = (function () {
     if (_session.isAdmin || _session.isSuperuser) return Promise.resolve({ blocked: false });
 
     return _fetchLimits().then(function (limits) {
+      // NOTE: Uses cached session.isSubscribed. Server-side database triggers are the real enforcement.
+      // If a subscription was recently canceled, the webhook may not have fired yet, so this might
+      // allow a save that the server will reject. That's OK — server RLS is authoritative.
       var limitKey = _session.isSubscribed ? paidKey : freeKey;
       var maxCount = limits[limitKey];
       if (maxCount === undefined || maxCount === null) maxCount = _session.isSubscribed ? -1 : 3;
@@ -194,8 +224,14 @@ var PhmurtDB = (function () {
       var sess = r.data && r.data.session;
       if (sess && sess.user) {
         return _fetchProfile(sess.user.id).then(function (profile) {
-          _session = _makeSession(sess.user, profile);
-          _fireChange();
+          // SECURITY: Ensure profile exists before passing to _makeSession
+          if (sess.user) {
+            var session = _makeSession(sess.user, profile || null);
+            if (session) {
+              _session = session;
+              _fireChange();
+            }
+          }
         });
       }
       // No Supabase session — reinforce legacy session (may already be set)
@@ -208,8 +244,13 @@ var PhmurtDB = (function () {
     sb.auth.onAuthStateChange(function (event, sess) {
       if (sess && sess.user) {
         _fetchProfile(sess.user.id).then(function (profile) {
-          _session = _makeSession(sess.user, profile);
-          _fireChange();
+          var session = _makeSession(sess.user, profile);
+          if (session) {
+            _session = session;
+            _fireChange();
+          }
+        }).catch(function (err) {
+          if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] onAuthStateChange profile fetch failed:', err ? err.message : 'Unknown error');
         });
       } else if (event === 'SIGNED_OUT') {
         // Only clear session on explicit sign-out, not on initial load
@@ -427,6 +468,8 @@ var PhmurtDB = (function () {
       var overlay = document.createElement('div');
       overlay.id = 'phmurt-reauth-overlay';
       overlay.className = 'phmurt-upgrade-overlay';
+      // SECURITY (V-050): Escape userEmail to prevent XSS
+      function _esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
       overlay.innerHTML =
         '<div class="phmurt-upgrade-modal">' +
           '<div class="upgrade-glow"></div>' +
@@ -434,7 +477,7 @@ var PhmurtDB = (function () {
             '<button class="upgrade-close" id="phmurt-reauth-close">&times;</button>' +
             '<div class="upgrade-icon">&#128274;</div>' +
             '<h2 class="upgrade-title">Sign In to Subscribe</h2>' +
-            '<p class="upgrade-text">We need to verify your identity for <strong>' + (userEmail || 'your account') + '</strong> before processing payment.</p>' +
+            '<p class="upgrade-text">We need to verify your identity for <strong>' + _esc(userEmail || 'your account') + '</strong> before processing payment.</p>' +
             '<input type="password" id="phmurt-reauth-pw" placeholder="Password" ' +
               'style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(212,67,58,0.2);border-radius:4px;color:#f5ede0;font-family:Spectral,serif;font-size:14px;margin-bottom:16px;text-align:center;outline:none;" />' +
             '<p id="phmurt-reauth-err" style="color:#ef4444;font-size:12px;margin:0 0 12px;display:none;"></p>' +
@@ -453,6 +496,11 @@ var PhmurtDB = (function () {
       var pwInput = document.getElementById('phmurt-reauth-pw');
       var errEl = document.getElementById('phmurt-reauth-err');
       var submitBtn = document.getElementById('phmurt-reauth-submit');
+      // SECURITY (V-046): Validate elements exist before using them
+      if (!pwInput || !errEl || !submitBtn) {
+        overlay.remove();
+        return reject(new Error('Modal elements not found'));
+      }
 
       function cleanup() { overlay.remove(); }
 
@@ -520,7 +568,9 @@ var PhmurtDB = (function () {
             // Now we have a Supabase session — update internal state
             var user = r.data.user;
             return _fetchProfile(user.id).then(function (profile) {
-              _session = _makeSession(user, profile);
+              var session = _makeSession(user, profile);
+              if (!session) throw new Error('Failed to create session.');
+              _session = session;
               _fireChange();
               // Get the new token and proceed to checkout
               return sb.auth.getSession();
@@ -603,7 +653,9 @@ var PhmurtDB = (function () {
             options: { emailRedirectTo: redirectUrl }
           }).then(function (r) {
             if (r.error) throw new Error(r.error.message);
-            magicMsg.textContent = 'Check your email! Click the link we sent to ' + userEmail + ', then you\'ll be taken to checkout.';
+            // SECURITY: Escape userEmail to prevent XSS injection
+          var escapedEmail = String(userEmail || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+          magicMsg.textContent = 'Check your email! Click the link we sent to ' + escapedEmail + ', then you\'ll be taken to checkout.';
             magicMsg.style.color = '#5ee09a';
             magicMsg.style.display = 'block';
             magicBtn.textContent = 'Email Sent';
@@ -618,7 +670,10 @@ var PhmurtDB = (function () {
       }
 
       // Focus the password field after a brief delay
-      setTimeout(function () { pwInput.focus(); }, 100);
+      // SECURITY: Check element exists before focusing
+      if (pwInput) {
+        setTimeout(function () { pwInput.focus(); }, 100);
+      }
     });
   }
 
@@ -665,6 +720,7 @@ var PhmurtDB = (function () {
               is_admin: false
             }, { onConflict: 'id' }).then(function () {
               var sess = _makeSession(user, { name: dnam, is_admin: false });
+              if (!sess) throw new Error('Failed to create session.');
               _session = sess;
               _fireChange();
               return sess;
@@ -720,6 +776,7 @@ var PhmurtDB = (function () {
                 throw new Error('This account has been suspended.');
               }
               var sess = _makeSession(user, profile);
+              if (!sess) throw new Error('Failed to create session from user and profile.');
               _session = sess;
               _fireChange();
               return sess;
@@ -774,7 +831,24 @@ var PhmurtDB = (function () {
 
       var sb = _sb();
       if (sb) {
-        var builder = existingId ? (snapshot.builderType || '5e') : (snapshot.cls ? '5e' : '35e');
+        // SECURITY (V-040): Determine edition from snapshot.edition first, then snapshot.builderType, then fallback
+        // to heuristic checking for edition-specific fields
+        var builder = '5e';
+        if (snapshot && snapshot.edition === '3.5') {
+          builder = '35e';
+        } else if (existingId && snapshot && snapshot.builderType) {
+          builder = snapshot.builderType;
+        } else if (!existingId && snapshot) {
+          // For new characters, prefer edition field, then check for 3.5e-specific fields
+          if (snapshot.edition === '3.5') {
+            builder = '35e';
+          } else if (snapshot.alignment && !snapshot.background) {
+            // 3.5e has alignment field, 5e doesn't (in initial create)
+            builder = '35e';
+          } else {
+            builder = '5e';
+          }
+        }
 
         var row = {
           owner_id:     _session.userId,
@@ -791,7 +865,10 @@ var PhmurtDB = (function () {
         // A character is "new" if there's no existingId, or if the ID is a legacy
         // numeric localStorage ID (not a UUID). UUIDs contain hyphens/letters.
         var isNewCharacter = !existingId;
+        var safeId = existingId ? String(existingId).trim() : null;
+
         if (isNewCharacter) {
+          // Create new character with limit check
           return _checkLimit('characters', 'free_max_characters', 'paid_max_characters').then(function (limitResult) {
             if (limitResult.blocked) {
               return { success: false, error: limitResult.message, limitReached: true };
@@ -805,47 +882,31 @@ var PhmurtDB = (function () {
           });
         }
 
-        if (existingId) {
-          // SECURITY (V-016): Validate existingId is non-empty string before using in query
-          var safeId = String(existingId).trim();
-          if (!safeId) return Promise.resolve({ success: false, error: 'Invalid character ID.' });
-          return sb.from('characters').update(row)
-            .eq('id', safeId).eq('owner_id', _session.userId)
-            .select('id').single()
-            .then(function (r) {
-              if (r.error) throw r.error;
-              return { success: true, id: r.data.id };
-            })
-            .catch(function (e) {
-              // If update failed, log the reason then try insert
-              console.warn('[PhmurtDB] Update failed for character ' + safeId + ':', e.message || e);
-              return _checkLimit('characters', 'free_max_characters', 'paid_max_characters').then(function (limitResult) {
-                if (limitResult.blocked) {
-                  return { success: false, error: limitResult.message, limitReached: true };
-                }
-                return sb.from('characters').insert(row).select('id').single()
-                  .then(function (r2) {
-                    if (r2.error) return { success: false, error: r2.error.message || 'Insert failed after update miss.' };
-                    if (!r2.data) return { success: false, error: 'No data returned from insert.' };
-                    return { success: true, id: r2.data.id };
-                  })
-                  .catch(function (e2) { return { success: false, error: e2.message || 'Fallback insert failed.' }; });
-              });
+        // Update existing character
+        if (!safeId) return Promise.resolve({ success: false, error: 'Invalid character ID.' });
+        return sb.from('characters').update(row)
+          .eq('id', safeId).eq('owner_id', _session.userId)
+          .select('id').single()
+          .then(function (r) {
+            if (r.error) throw r.error;
+            return { success: true, id: r.data.id };
+          })
+          .catch(function (e) {
+            // If update failed, log the reason then try insert (for legacy ID migration)
+            console.warn('[PhmurtDB] Update failed for character ' + safeId + ':', e.message || e);
+            return _checkLimit('characters', 'free_max_characters', 'paid_max_characters').then(function (limitResult) {
+              if (limitResult.blocked) {
+                return { success: false, error: limitResult.message, limitReached: true };
+              }
+              return sb.from('characters').insert(row).select('id').single()
+                .then(function (r2) {
+                  if (r2.error) return { success: false, error: r2.error.message || 'Insert failed after update miss.' };
+                  if (!r2.data) return { success: false, error: 'No data returned from insert.' };
+                  return { success: true, id: r2.data.id };
+                })
+                .catch(function (e2) { return { success: false, error: e2.message || 'Fallback insert failed.' }; });
             });
-        } else {
-          // Insert new (with limit check)
-          return _checkLimit('characters', 'free_max_characters', 'paid_max_characters').then(function (limitResult) {
-            if (limitResult.blocked) {
-              return { success: false, error: limitResult.message, limitReached: true };
-            }
-            return sb.from('characters').insert(row).select('id').single()
-              .then(function (r) {
-                if (r.error) throw r.error;
-                return { success: true, id: r.data.id };
-              })
-              .catch(function (e) { return { success: false, error: e.message }; });
           });
-        }
       }
 
       // Legacy localStorage
@@ -1173,8 +1234,11 @@ var PhmurtDB = (function () {
         }
       }
 
-      document.getElementById('pa-tab-in').addEventListener('click', function () { switchTab('in'); });
-      document.getElementById('pa-tab-up').addEventListener('click', function () { switchTab('up'); });
+      // SECURITY (V-047): Null-check before addEventListener to prevent crashes
+      var tabIn = document.getElementById('pa-tab-in');
+      var tabUp = document.getElementById('pa-tab-up');
+      if (tabIn) tabIn.addEventListener('click', function () { switchTab('in'); });
+      if (tabUp) tabUp.addEventListener('click', function () { switchTab('up'); });
 
       // Handle age verification and terms consent checkboxes
       var ageCheckbox = document.getElementById('pa-up-age-check');
@@ -1197,42 +1261,60 @@ var PhmurtDB = (function () {
       }
 
       function closeModal() { modal.remove(); }
-      document.getElementById('pa-close').addEventListener('click', closeModal);
+      // SECURITY (V-048): Null-check elements before adding listeners
+      var closeBtn = document.getElementById('pa-close');
+      if (closeBtn) closeBtn.addEventListener('click', closeModal);
       modal.addEventListener('click', function (e) { if (e.target === modal) closeModal(); });
       modal.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
 
-      document.getElementById('pa-in-submit').addEventListener('click', function () {
-        showErr('');
-        var email = document.getElementById('pa-in-email').value.trim();
-        var pass  = document.getElementById('pa-in-pass').value;
-        if (!email) { showErr('Please enter your email address.'); return; }
-        if (!pass)  { showErr('Please enter your password.'); return; }
-        setLoading('pa-in-submit', true);
-        PhmurtDB.signIn(email, pass)
-          .then(function () { closeModal(); })
-          .catch(function (err) {
-            showErr(err.message || 'Sign in failed. Please try again.');
-            setLoading('pa-in-submit', false);
-          });
-      });
+      var signInSubmit = document.getElementById('pa-in-submit');
+      if (signInSubmit) {
+        signInSubmit.addEventListener('click', function () {
+          showErr('');
+          var emailInput = document.getElementById('pa-in-email');
+          var passInput = document.getElementById('pa-in-pass');
+          if (!emailInput || !passInput) return;
+          var email = emailInput.value.trim();
+          var pass  = passInput.value;
+          if (!email) { showErr('Please enter your email address.'); return; }
+          if (!pass)  { showErr('Please enter your password.'); return; }
+          setLoading('pa-in-submit', true);
+          PhmurtDB.signIn(email, pass)
+            .then(function () { closeModal(); })
+            .catch(function (err) {
+              showErr(err.message || 'Sign in failed. Please try again.');
+              setLoading('pa-in-submit', false);
+            });
+        });
+      }
 
-      document.getElementById('pa-up-submit').addEventListener('click', function () {
-        showErr('');
-        var name  = document.getElementById('pa-up-name').value.trim();
-        var email = document.getElementById('pa-up-email').value.trim();
-        var pass  = document.getElementById('pa-up-pass').value;
-        var pass2 = document.getElementById('pa-up-pass2').value;
-        var ageCheck = document.getElementById('pa-up-age-check').checked;
-        var termsCheck = document.getElementById('pa-up-terms-check').checked;
-        if (!name)           { showErr('Please enter a display name.'); return; }
-        if (!email)          { showErr('Please enter your email address.'); return; }
-        if (!pass)           { showErr('Please choose a password.'); return; }
-        if (pass.length < 12) { showErr('Password must be at least 12 characters.'); return; }
-        if (pass !== pass2)  { showErr('Passwords do not match.'); return; }
-        if (!ageCheck)       { showErr('You must confirm you are at least 13 years of age.'); return; }
-        if (!termsCheck)     { showErr('You must agree to the Terms of Service and Privacy Policy.'); return; }
-        setLoading('pa-up-submit', true);
-        PhmurtDB.signUp(name, email, pass)
+      var signUpSubmit = document.getElementById('pa-up-submit');
+      if (signUpSubmit) {
+        signUpSubmit.addEventListener('click', function () {
+          showErr('');
+          var nameInput = document.getElementById('pa-up-name');
+          var emailInput = document.getElementById('pa-up-email');
+          var passInput = document.getElementById('pa-up-pass');
+          var pass2Input = document.getElementById('pa-up-pass2');
+          if (!nameInput || !emailInput || !passInput || !pass2Input) return;
+          var name  = nameInput.value.trim();
+          var email = emailInput.value.trim();
+          var pass  = passInput.value;
+          var pass2 = pass2Input.value;
+          var ageCheckElem = document.getElementById('pa-up-age-check');
+          var termsCheckElem = document.getElementById('pa-up-terms-check');
+          if (!ageCheckElem || !termsCheckElem) return;
+          var ageCheck = ageCheckElem.checked;
+          var termsCheck = termsCheckElem.checked;
+          if (!name)           { showErr('Please enter a display name.'); return; }
+          if (!email)          { showErr('Please enter your email address.'); return; }
+          if (!pass)           { showErr('Please choose a password.'); return; }
+          if (pass.length < 12) { showErr('Password must be at least 12 characters.'); return; }
+          if (pass !== pass2)  { showErr('Passwords do not match.'); return; }
+          if (!ageCheck)       { showErr('You must confirm you are at least 13 years of age.'); return; }
+          if (!termsCheck)     { showErr('You must agree to the Terms of Service and Privacy Policy.'); return; }
+          setLoading('pa-up-submit', true);
+          PhmurtDB.signUp(name, email, pass)
           .then(function (sess) {
             if (_sb()) {
               showErr('');
@@ -1253,13 +1335,19 @@ var PhmurtDB = (function () {
             showErr(err.message || 'Account creation failed. Please try again.');
             setLoading('pa-up-submit', false);
           });
-      });
+        });
+      }
 
       modal.addEventListener('keydown', function (e) {
         if (e.key !== 'Enter') return;
         var inP = document.getElementById('pa-panel-in');
-        if (inP && inP.style.display !== 'none') document.getElementById('pa-in-submit').click();
-        else document.getElementById('pa-up-submit').click();
+        if (inP && inP.style.display !== 'none') {
+          var inSubmitBtn = document.getElementById('pa-in-submit');
+          if (inSubmitBtn) inSubmitBtn.click();
+        } else {
+          var upSubmitBtn = document.getElementById('pa-up-submit');
+          if (upSubmitBtn) upSubmitBtn.click();
+        }
       });
 
       setTimeout(function () {
@@ -1290,6 +1378,12 @@ var PhmurtDB = (function () {
           localStorage.removeItem('phmurt_auth_session');
           localStorage.removeItem('phmurt_characters');
           localStorage.removeItem('phmurt_campaigns');
+          // SECURITY: Also clear user-specific localStorage keys
+          if (_session && _session.userId) {
+            localStorage.removeItem('phmurt_characters_' + _session.userId);
+            localStorage.removeItem('phmurt_campaigns_' + _session.userId);
+            localStorage.removeItem('phmurt_sync_blob_' + _session.userId);
+          }
           _session = null;
           _fireChange();
           return { success: true };
@@ -1311,7 +1405,8 @@ var PhmurtDB = (function () {
         data:        template,
         updated_at:  new Date().toISOString()
       };
-      if (template.id && template.id.startsWith && !template.id.startsWith('tpl-')) {
+      // SECURITY: Validate template.id exists and is a string before using it
+      if (template.id && typeof template.id === 'string' && !template.id.startsWith('tpl-')) {
         // Existing DB record
         return sb.from('encounter_templates').update(record).eq('id', template.id)
           .then(function (r) { return { success: !r.error, error: r.error && r.error.message }; });
@@ -1377,7 +1472,7 @@ var PhmurtDB = (function () {
       if (!sb) return Promise.resolve(false);
       return sb.from('campaign_invites').delete().eq('id', inviteId)
         .then(function (r) { return !r.error; })
-        .catch(function() { return false; });
+        .catch(function () { return false; });
     },
 
     /* ── Campaign Members ─────────────────────────────────────── */
@@ -1444,7 +1539,10 @@ var PhmurtDB = (function () {
       var sb = _sb();
       if (!sb || !_session) return Promise.resolve(null);
       if (!file || !file.name) return Promise.resolve({ error: 'No file provided' });
-      var path = _session.userId + '/' + entityId + '.' + (file.name.split('.').pop() || 'jpg').replace(/\.\./g, '_');
+      // SECURITY: Sanitize file extension to prevent path traversal and double extensions
+      var ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/\.\./g, '_').replace(/[^a-z0-9]/g, '');
+      if (!ext) ext = 'jpg';
+      var path = _session.userId + '/' + entityId + '.' + ext;
       return sb.storage.from('portraits').upload(path, file, { upsert: true })
         .then(function (r) {
           if (r.error) { if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtDB] Portrait upload failed:', r.error.message); return null; }
@@ -1603,11 +1701,15 @@ var PhmurtDB = (function () {
       return window.PhmurtDB.startSubscription(returnUrl || window.location.href, 'monthly');
     },
 
-    /* Check if a feature is available on the user's current tier */
+    /* Check if a feature is available on the user's current tier
+       NOTE: This is a client-side check for UI behavior only. Server-side RLS
+       and database triggers are the real security boundary. Never trust this
+       for access control to pro features. */
     isFeatureAvailable: function (featureName) {
       // Admins/superusers always have access
       if (_session && (_session.isAdmin || _session.isSuperuser)) return true;
-      // Pro users have access to everything
+      // Pro users have access to everything — but note: server must verify subscription
+      // status before granting actual access via RLS and API checks
       if (_session && _session.isSubscribed) return true;
       // Free users: check against the free-tier feature list (from DB cache or defaults)
       var defaults = ['character-builder', 'character-sheet', 'dice-roller', 'basic-campaign', 'learn', 'gallery'];
@@ -1774,6 +1876,8 @@ window.addEventListener('storage', function (e) {
 
   // ── Fetch settings and announcements ──────────────────────────────
   function fetchSettingsAndAnnouncements() {
+    var sb = _sb();
+    if (!sb) return; // Supabase not configured yet
     Promise.all([
       sb.from('site_settings').select('key, value, data_type').then(function (r) { return r.data || []; }).catch(function () { return []; }),
       sb.from('site_announcements').select('*').eq('is_active', true).order('created_at', { ascending: false }).then(function (r) { return r.data || []; }).catch(function () { return []; }),
@@ -1800,13 +1904,18 @@ window.addEventListener('storage', function (e) {
         box.innerHTML = '<h1>Under Maintenance</h1>';
         var msg = flags.maintenance_message || 'We\'re performing scheduled maintenance. The site will be back shortly!';
         var msgP = document.createElement('p');
+        // SECURITY (V-033): Use textContent instead of innerHTML to safely display message
         msgP.textContent = msg;
         box.appendChild(msgP);
         if (flags.maintenance_eta && flags.maintenance_eta !== 'null') {
           try {
             var eta = new Date(flags.maintenance_eta);
             if (!isNaN(eta.getTime())) {
-              box.innerHTML += '<div class="phmurt-maintenance-eta">Estimated return: ' + eta.toLocaleString() + '</div>';
+              // SECURITY: Use textContent to prevent HTML injection in ETA display
+              var etaDiv = document.createElement('div');
+              etaDiv.className = 'phmurt-maintenance-eta';
+              etaDiv.textContent = 'Estimated return: ' + eta.toLocaleString();
+              box.appendChild(etaDiv);
             }
           } catch (e) {}
         }
@@ -1915,37 +2024,76 @@ window.addEventListener('storage', function (e) {
   }
 
   function showDisabledPage(title, message) {
+    // SECURITY (V-032): Escape title and message to prevent XSS
+    function _esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
     var overlay = document.createElement('div');
     overlay.className = 'phmurt-disabled-overlay';
-    overlay.innerHTML = '<div class="phmurt-disabled-box"><h1>' + title + '</h1><p>' + message + '</p><p style="margin-top:16px;"><a href="index.html">Return to Home</a></p></div>';
+    overlay.innerHTML = '<div class="phmurt-disabled-box"><h1>' + _esc(title) + '</h1><p>' + _esc(message) + '</p><p style="margin-top:16px;"><a href="index.html">Return to Home</a></p></div>';
     document.body.appendChild(overlay);
   }
 
   // ── Subscription success handler ────────────────────────────────
+  // SECURITY (V-031): Avoid inline onclick; use addEventListener instead
+  // SECURITY: Webhook processing may be delayed, so we retry profile fetch with backoff
   function checkSubscriptionSuccess() {
     var params = new URLSearchParams(window.location.search);
     if (params.get('subscription') === 'success') {
       // Show success toast/banner
       var banner = document.createElement('div');
       banner.className = 'phmurt-announce-bar success';
-      banner.innerHTML = '<span class="phmurt-announce-title">Welcome to Phmurt Studios Pro!</span><span>Your subscription is now active. Enjoy unlimited characters and campaigns!</span><button class="phmurt-announce-close" onclick="this.parentElement.remove()">&times;</button>';
+      banner.innerHTML = '<span class="phmurt-announce-title">Welcome to Phmurt Studios Pro!</span><span>Your subscription is now active. Enjoy unlimited characters and campaigns!</span><button class="phmurt-announce-close">&times;</button>';
       document.body.insertBefore(banner, document.body.firstChild);
+      // Add close handler via addEventListener instead of inline onclick
+      var closeBtn = banner.querySelector('.phmurt-announce-close');
+      if (closeBtn) {
+        closeBtn.addEventListener('click', function () { banner.remove(); });
+      }
       // Clean URL
       var url = new URL(window.location.href);
       url.searchParams.delete('subscription');
       window.history.replaceState({}, '', url.toString());
-      // Refresh session to pick up new subscription status
-      if (typeof PhmurtDB !== 'undefined' && sb) {
-        sb.auth.getSession().then(function (r) {
-          if (r.data && r.data.session && r.data.session.user) {
-            sb.from('profiles').select('*').eq('id', r.data.session.user.id).maybeSingle()
-              .then(function (pr) {
-                if (pr.data) {
-                  window.dispatchEvent(new Event('phmurt-auth-change'));
-                }
-              });
+      // Refresh session to pick up new subscription status with retry logic
+      // The webhook may be processing, so we retry fetching the profile
+      if (typeof PhmurtDB !== 'undefined') {
+        var sb = _sb();
+        if (sb) {
+          function _tryRefreshProfile(attempt) {
+            if (attempt > 5) {
+              if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Max retries for profile refresh after subscription success');
+              return; // Give up after 5 attempts (max ~25 seconds)
+            }
+            sb.auth.getSession().then(function (r) {
+              if (r.data && r.data.session && r.data.session.user) {
+                sb.from('profiles').select('*').eq('id', r.data.session.user.id).maybeSingle()
+                  .then(function (pr) {
+                    // SECURITY: Check profile exists and has subscription status before use
+                    if (pr && pr.data) {
+                      var session = _makeSession(r.data.session.user, pr.data);
+                      if (session) {
+                        // Only update session if subscription status changed
+                        if (!_session || (_session && session.isSubscribed !== _session.isSubscribed)) {
+                          _session = session;
+                          _fireChange();
+                        }
+                      }
+                    } else if (attempt < 5) {
+                      // Profile not ready yet, retry with exponential backoff
+                      var delay = Math.min(5000, 1000 * Math.pow(1.5, attempt));
+                      setTimeout(function () { _tryRefreshProfile(attempt + 1); }, delay);
+                    }
+                  })
+                  .catch(function (e) {
+                    if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Profile fetch attempt', attempt, 'failed:', e.message || e);
+                    if (attempt < 5) {
+                      var delay = Math.min(5000, 1000 * Math.pow(1.5, attempt));
+                      setTimeout(function () { _tryRefreshProfile(attempt + 1); }, delay);
+                    }
+                  });
+              }
+            });
           }
-        });
+          _tryRefreshProfile(0);
+        }
       }
     }
   }
@@ -2029,8 +2177,9 @@ window.addEventListener('storage', function (e) {
       }
       // No JWT — show inline password form (user interaction clears the timeout)
       clearTimeout(_checkoutTimeout);
+      // SECURITY (V-049): Avoid inline onclick; use event listeners instead
       bodyEl.innerHTML =
-        '<button class="upgrade-close" onclick="this.closest(\'.phmurt-upgrade-overlay\').remove()">&times;</button>' +
+        '<button class="upgrade-close">&times;</button>' +
         '<div class="upgrade-icon">&#128274;</div>' +
         '<h2 class="upgrade-title">Confirm Identity</h2>' +
         '<p class="upgrade-text">Enter your password to continue to checkout.</p>' +
@@ -2044,6 +2193,13 @@ window.addEventListener('storage', function (e) {
       var errEl = bodyEl.querySelector('.phmurt-inline-err');
       var submitBtn = bodyEl.querySelector('.phmurt-inline-submit');
       var resetArea = bodyEl.querySelector('.phmurt-inline-reset-area');
+      var closeBtn = bodyEl.querySelector('.upgrade-close');
+      // Wire up close button handler
+      if (closeBtn) {
+        closeBtn.addEventListener('click', function() {
+          overlay.remove();
+        });
+      }
 
       function doSubmit() {
         var pw = (pwInput.value || '').trim();
@@ -2083,7 +2239,9 @@ window.addEventListener('storage', function (e) {
           .then(function (r) {
             var user = r.data.user;
             return _fetchProfile(user.id).then(function (profile) {
-              _session = _makeSession(user, profile);
+              var session = _makeSession(user, profile);
+              if (!session) throw new Error('Failed to create session.');
+              _session = session;
               _fireChange();
               return sb.auth.getSession();
             });
@@ -2160,6 +2318,7 @@ window.addEventListener('storage', function (e) {
   }
 
   // ── Upgrade prompt (shown when save fails due to limit) ────────
+  // SECURITY (V-029): Message is properly escaped to prevent XSS
   window.addEventListener('phmurt-limit-reached', function (e) {
     var detail = e.detail || {};
     if (document.querySelector('.phmurt-upgrade-overlay')) return; // Already showing
@@ -2167,6 +2326,8 @@ window.addEventListener('storage', function (e) {
     overlay.className = 'phmurt-upgrade-overlay';
     var msg = detail.message || 'You\'ve reached the free plan limit.';
     var table = detail.table === 'characters' ? 'characters' : detail.table === 'campaigns' ? 'campaigns' : 'items';
+    // Escape message to prevent XSS
+    var escapedMsg = psEscapeHtml(msg);
     overlay.innerHTML =
       '<div class="phmurt-upgrade-modal">' +
         '<div class="upgrade-glow"></div>' +
@@ -2174,7 +2335,7 @@ window.addEventListener('storage', function (e) {
           '<button class="upgrade-close" id="phmurt-upgrade-close">&times;</button>' +
           '<div class="upgrade-icon">&#9876;</div>' +
           '<h2 class="upgrade-title">Limit Reached</h2>' +
-          '<p class="upgrade-text">' + msg.replace(/</g, '&lt;') + '<br>Upgrade to <strong>Phmurt Studios Pro</strong> for unlimited ' + table + ', generators, advanced campaign tools, and more.</p>' +
+          '<p class="upgrade-text">' + escapedMsg + '<br>Upgrade to <strong>Phmurt Studios Pro</strong> for unlimited ' + psEscapeHtml(table) + ', generators, advanced campaign tools, and more.</p>' +
           '<div class="phmurt-upgrade-btns">' +
             '<a class="upgrade-btn" href="pricing.html?plan=monthly" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">$4.99 / month</a>' +
             '<a class="upgrade-btn yearly" href="pricing.html?plan=yearly" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">$49.99 / year</a>' +
@@ -2187,9 +2348,12 @@ window.addEventListener('storage', function (e) {
         '</div>' +
       '</div>';
     document.body.appendChild(overlay);
-    // Close handlers
-    document.getElementById('phmurt-upgrade-close').addEventListener('click', function () { overlay.remove(); });
-    overlay.addEventListener('click', function (ev) { if (ev.target === overlay) overlay.remove(); });
+    // Close handlers - SECURITY (V-030): Properly clean up event listeners
+    var closeBtn = document.getElementById('phmurt-upgrade-close');
+    var closeHandler = function () { overlay.remove(); };
+    var bgClickHandler = function (ev) { if (ev.target === overlay) overlay.remove(); };
+    if (closeBtn) closeBtn.addEventListener('click', closeHandler);
+    overlay.addEventListener('click', bgClickHandler);
   });
 
   // ── Global Feature Gate ─────────────────────────────────────────
@@ -2197,6 +2361,7 @@ window.addEventListener('storage', function (e) {
   // if the user may proceed; returns false and shows an upgrade
   // modal if they're on the free tier.  Usage:
   //   if (!PhmurtGate('generators')) return;
+  // SECURITY: Feature label is escaped to prevent XSS
   // ────────────────────────────────────────────────────────────────
   window.PhmurtGate = function (featureName) {
     if (typeof PhmurtDB === 'undefined') return true; // Offline/no-auth fallback
@@ -2211,6 +2376,8 @@ window.addEventListener('storage', function (e) {
     overlay.className = 'phmurt-upgrade-overlay';
 
     var featureLabel = featureName.replace(/-/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+    // SECURITY (V-027): Escape featureLabel to prevent XSS injection
+    var escapedFeatureLabel = psEscapeHtml(featureLabel);
 
     overlay.innerHTML =
       '<div class="phmurt-upgrade-modal">' +
@@ -2219,12 +2386,12 @@ window.addEventListener('storage', function (e) {
           '<button class="upgrade-close" id="phmurt-gate-close">&times;</button>' +
           '<div class="upgrade-icon">&#9876;</div>' +
           '<h2 class="upgrade-title">Upgrade to Pro</h2>' +
-          '<p class="upgrade-text"><strong>' + featureLabel + '</strong> is a Pro feature. Unlock it — plus unlimited characters, campaigns, and every generator.</p>' +
+          '<p class="upgrade-text"><strong>' + escapedFeatureLabel + '</strong> is a Pro feature. Unlock it — plus unlimited characters, campaigns, and every generator.</p>' +
           '<div class="phmurt-upgrade-btns">' +
-            '<a class="upgrade-btn" href="pricing.html?plan=monthly" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">' + tierCfg.pro.price.monthly + '</a>' +
-            '<a class="upgrade-btn yearly" href="pricing.html?plan=yearly" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">' + tierCfg.pro.price.yearly + '</a>' +
+            '<a class="upgrade-btn" href="pricing.html?plan=monthly" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">' + psEscapeHtml(String(tierCfg.pro.price.monthly || '')) + '</a>' +
+            '<a class="upgrade-btn yearly" href="pricing.html?plan=yearly" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">' + psEscapeHtml(String(tierCfg.pro.price.yearly || '')) + '</a>' +
           '</div>' +
-          '<span class="upgrade-save">' + tierCfg.pro.price.yearlySavings + ' with yearly!</span>' +
+          '<span class="upgrade-save">' + psEscapeHtml(String(tierCfg.pro.price.yearlySavings || '')) + ' with yearly!</span>' +
         '</div>' +
         '<div class="upgrade-divider"></div>' +
         '<div class="upgrade-footer">' +
@@ -2234,9 +2401,22 @@ window.addEventListener('storage', function (e) {
 
     document.body.appendChild(overlay);
 
-    // Close
-    document.getElementById('phmurt-gate-close').addEventListener('click', function () { overlay.remove(); });
-    overlay.addEventListener('click', function (ev) { if (ev.target === overlay) overlay.remove(); });
+    // Close - SECURITY (V-028): Properly handle event listeners to prevent leaks
+    var closeBtn = document.getElementById('phmurt-gate-close');
+    var closeHandler = function () { overlay.remove(); };
+    var bgClickHandler = function (ev) { if (ev.target === overlay) overlay.remove(); };
+    if (closeBtn) closeBtn.addEventListener('click', closeHandler);
+    overlay.addEventListener('click', bgClickHandler);
+
+    // Clean up listeners when modal is removed
+    var observer = new MutationObserver(function() {
+      if (!document.body.contains(overlay)) {
+        if (closeBtn) closeBtn.removeEventListener('click', closeHandler);
+        overlay.removeEventListener('click', bgClickHandler);
+        observer.disconnect();
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
 
     return false;
   };

@@ -42,12 +42,18 @@ var PhmurtRealtime = (function () {
   function joinBattleMap(campaignId, role, onState) {
     if (!campaignId) return { leave: function () {} };
 
+    // SECURITY: Validate onState callback
+    if (typeof onState !== 'function') {
+      return { leave: function () {} };
+    }
+
     var sb = _sb();
 
     if (sb) {
       /* ── Supabase Broadcast (real cross-device sync) ── */
       // Sanitize campaignId to prevent channel name injection
-      var safeCampaignId = String(campaignId).replace(/[^a-zA-Z0-9_\-]/g, '');
+      var safeCampaignId = String(campaignId).replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 100);
+      if (!safeCampaignId) return { leave: function () {} };
       var channelName = 'battle-map:' + safeCampaignId;
 
       // Clean up existing channel for this campaign if any
@@ -60,23 +66,36 @@ var PhmurtRealtime = (function () {
       });
 
       channel.on('broadcast', { event: 'state' }, function (msg) {
-        if (msg && msg.payload && typeof onState === 'function') {
-          onState(msg.payload);
+        // SECURITY: Validate message structure before calling callback
+        if (msg && typeof msg === 'object' && msg.payload && typeof onState === 'function') {
+          try {
+            onState(msg.payload);
+          } catch (e) {
+            console.warn('[PhmurtRealtime] onState callback error:', e);
+          }
         }
       });
 
       // Also listen for DB snapshot updates (for late joiners via Realtime Postgres)
       if (role === 'player') {
-        var safeFilterCampaignId = String(campaignId).replace(/[^a-zA-Z0-9_\-]/g, '');
-        channel.on(
-          'postgres_changes',
-          { event: 'UPDATE', schema: 'public', table: 'battle_map_snapshots', filter: 'campaign_id=eq.' + safeFilterCampaignId },
-          function (payload) {
-            if (payload.new && payload.new.state && typeof onState === 'function') {
-              onState(payload.new.state);
+        var safeFilterCampaignId = String(campaignId).replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 100);
+        if (safeFilterCampaignId) {
+          channel.on(
+            'postgres_changes',
+            { event: 'UPDATE', schema: 'public', table: 'battle_map_snapshots', filter: 'campaign_id=eq.' + safeFilterCampaignId },
+            function (payload) {
+              // SECURITY: Validate postgres change payload before using
+              if (payload && typeof payload === 'object' && payload.new && typeof payload.new === 'object' &&
+                  payload.new.state && typeof onState === 'function') {
+                try {
+                  onState(payload.new.state);
+                } catch (e) {
+                  console.warn('[PhmurtRealtime] postgres_changes onState callback error:', e);
+                }
+              }
             }
-          }
-        );
+          );
+        }
       }
 
       channel.subscribe(function (status) {
@@ -134,9 +153,13 @@ var PhmurtRealtime = (function () {
     }, 150);
 
     // Save DB snapshot every 5 seconds (so late-joiners can load state)
+    // SECURITY: Clear pending snapshot timers to avoid stacking multiple saves
     clearTimeout(_snapTimers[campaignId]);
     _snapTimers[campaignId] = setTimeout(function () {
-      saveSnapshot(campaignId, state);
+      // Ensure callback still has valid state reference
+      if (campaignId && state) {
+        saveSnapshot(campaignId, state);
+      }
     }, 5000);
   }
 
@@ -157,34 +180,49 @@ var PhmurtRealtime = (function () {
       }
     }
 
+    // SECURITY: Validate state object before sending
+    if (!state || typeof state !== 'object') {
+      console.warn('[PhmurtRealtime] Snapshot save blocked — invalid state');
+      return Promise.resolve(null);
+    }
+
     return sb.rpc('upsert_battle_map', {
-      p_campaign_id: campaignId,
+      p_campaign_id: String(campaignId).slice(0, 100),
       p_state: state
     }).then(function (r) {
-      if (r.error) console.warn('[PhmurtRealtime] Snapshot save failed:', r.error.message);
+      if (r && r.error) {
+        console.warn('[PhmurtRealtime] Snapshot save failed:', (r.error && r.error.message) || r.error);
+      }
     }).catch(function (e) {
       console.warn('[PhmurtRealtime] Snapshot save error:', e);
     });
   }
 
   /* ── Load snapshot from DB (for players joining) ─────────────── */
+  // SECURITY (V-035): Validate campaignId is not null/undefined before using
   function loadSnapshot(campaignId) {
     var sb = _sb();
-    if (!sb || !campaignId) {
-      // Try localStorage
+    if (!campaignId) {
+      return Promise.resolve(null);
+    }
+
+    if (!sb) {
+      // Try localStorage fallback
       try {
-        var raw = localStorage.getItem(SYNC_KEY + ':' + campaignId);
+        var raw = localStorage.getItem(SYNC_KEY + ':' + String(campaignId));
         return Promise.resolve(raw ? JSON.parse(raw) : null);
       } catch (e) { return Promise.resolve(null); }
     }
 
     return sb.from('battle_map_snapshots')
       .select('state, updated_at')
-      .eq('campaign_id', campaignId)
+      .eq('campaign_id', String(campaignId))
       .maybeSingle()
       .then(function (r) {
-        if (r.error || !r.data) return null;
-        return r.data.state;
+        // SECURITY: Validate response structure before using
+        if (!r || typeof r !== 'object') return null;
+        if (r.error || !r.data || typeof r.data !== 'object') return null;
+        return (r.data.state && typeof r.data.state === 'object') ? r.data.state : null;
       })
       .catch(function (e) {
         console.warn('[PhmurtRealtime] Snapshot load error:', e);
@@ -193,6 +231,7 @@ var PhmurtRealtime = (function () {
   }
 
   /* ── localStorage polling fallback ────────────────────────────── */
+  // SECURITY (V-034): Ensure intervals are always cleaned up to prevent memory leaks
   function _startLocalStoragePoll(campaignId, role, onState) {
     if (role === 'dm') {
       return { leave: function () {} };
@@ -200,21 +239,33 @@ var PhmurtRealtime = (function () {
     var lsKey = SYNC_KEY + ':' + campaignId;
     var _lastSeen = null;
     var _interval = null;
+    var _isActive = true;
 
     _interval = setInterval(function () {
+      if (!_isActive) return;
       try {
         var raw = localStorage.getItem(lsKey);
-        if (raw && raw !== _lastSeen) {
+        if (raw && typeof raw === 'string' && raw !== _lastSeen) {
           _lastSeen = raw;
-          var state = JSON.parse(raw);
-          if (typeof onState === 'function') onState(state);
+          try {
+            var state = JSON.parse(raw);
+            if (typeof onState === 'function' && _isActive) {
+              onState(state);
+            }
+          } catch (parseError) {
+            console.warn('[PhmurtRealtime] localStorage poll JSON parse error:', parseError);
+          }
         }
-      } catch (e) {}
+      } catch (e) { /* localStorage access error */ }
     }, 250);
 
     return {
       leave: function () {
-        if (_interval) clearInterval(_interval);
+        _isActive = false;
+        if (_interval) {
+          clearInterval(_interval);
+          _interval = null;
+        }
       }
     };
   }

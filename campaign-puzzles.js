@@ -361,10 +361,10 @@
     return (
       <div style={{ padding: '12px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${width}, 1fr)`, gap: '4px', padding: '8px', background: T.bg || 'var(--bg)', borderRadius: '4px' }}>
-          {grid.map((cell, idx) => (
+          {grid.map((cell, cellIdx) => (
             <div
-              key={idx}
-              onClick={() => toggleCell(idx)}
+              key={`grid-${cellIdx}-${cell}`}
+              onClick={() => toggleCell(cellIdx)}
               style={{
                 width: size,
                 height: size,
@@ -381,7 +381,7 @@
                 transition: 'all 0.2s'
               }}
             >
-              {labels[idx] || ''}
+              {labels[cellIdx] || ''}
             </div>
           ))}
         </div>
@@ -428,8 +428,8 @@
             )}
           </div>
           <div style={{ display: 'flex', gap: '4px' }}>
-            {Array(puzzle.difficulty).fill(0).map((_, i) => (
-              <Star key={i} size={12} fill={T.gold} color={T.gold} />
+            {Array(puzzle.difficulty).fill(0).map((_, starIdx) => (
+              <Star key={`star-${puzzle.id}-${starIdx}`} size={12} fill={T.gold} color={T.gold} />
             ))}
           </div>
         </div>
@@ -568,10 +568,10 @@
           <div style={{ marginBottom: '16px' }}>
             <h4 style={{ margin: '0 0 8px 0', color: T.gold, fontFamily: T.heading }}>Hints ({hintsRevealed}/3)</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {puzzle.hints.map((hint, i) => (
-                <div key={i} style={{ opacity: i < hintsRevealed ? 1 : 0.5 }}>
+              {puzzle.hints.map((hint, hintIdx) => (
+                <div key={`hint-${puzzle.id}-${hintIdx}`} style={{ opacity: hintIdx < hintsRevealed ? 1 : 0.5 }}>
                   <p style={{ margin: '0 0 4px 0', fontSize: '11px', color: T.textDim, fontWeight: 'bold' }}>
-                    Hint {i + 1}: {i < hintsRevealed ? hint : '(locked)'}
+                    Hint {hintIdx + 1}: {hintIdx < hintsRevealed ? hint : '(locked)'}
                   </p>
                 </div>
               ))}
@@ -820,12 +820,12 @@
 
             <div>
               <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 'bold', color: T.text }}>Hints (3 levels)</label>
-              {form.hints.map((hint, i) => (
+              {form.hints.map((hint, hintIdx) => (
                 <input
-                  key={i}
+                  key={`form-hint-${hintIdx}`}
                   value={hint}
-                  onChange={(e) => handleHintChange(i, e.target.value)}
-                  placeholder={`Hint ${i + 1}: ${i === 0 ? 'vague' : i === 1 ? 'moderate' : 'obvious'}`}
+                  onChange={(e) => handleHintChange(hintIdx, e.target.value)}
+                  placeholder={`Hint ${hintIdx + 1}: ${hintIdx === 0 ? 'vague' : hintIdx === 1 ? 'moderate' : 'obvious'}`}
                   style={{
                     width: '100%',
                     padding: '6px 8px',
@@ -835,7 +835,7 @@
                     color: T.text,
                     boxSizing: 'border-box',
                     fontSize: '12px',
-                    marginBottom: i < 2 ? '6px' : '0'
+                    marginBottom: hintIdx < 2 ? '6px' : '0'
                   }}
                 />
               ))}
@@ -860,8 +860,8 @@
                     }}
                   >
                     <option value="">None</option>
-                    {data && data.regions && data.regions.map((region, i) => (
-                      <option key={i} value={region.name}>{region.name}</option>
+                    {data && data.regions && data.regions.map((region, regionIdx) => (
+                      <option key={`region-${region.name}`} value={region.name}>{region.name}</option>
                     ))}
                   </select>
                 </div>
@@ -881,8 +881,8 @@
                     }}
                   >
                     <option value="">None</option>
-                    {data && data.npcs && data.npcs.map((npc, i) => (
-                      <option key={i} value={npc.name}>{npc.name}</option>
+                    {data && data.npcs && data.npcs.map((npc, npcIdx) => (
+                      <option key={`npc-${npc.name}`} value={npc.name}>{npc.name}</option>
                     ))}
                   </select>
                 </div>
@@ -903,11 +903,11 @@
                   }}
                 >
                   <option value="">None</option>
-                  {data && data.cities && data.cities.map((city, i) => (
-                    <option key={`city-${i}`} value={city.name}>{city.name} (City)</option>
+                  {data && data.cities && data.cities.map((city) => (
+                    <option key={`city-${city.name}`} value={city.name}>{city.name} (City)</option>
                   ))}
-                  {data && data.pois && data.pois.map((poi, i) => (
-                    <option key={`poi-${i}`} value={poi.name}>{poi.name} (POI)</option>
+                  {data && data.pois && data.pois.map((poi) => (
+                    <option key={`poi-${poi.name}`} value={poi.name}>{poi.name} (POI)</option>
                   ))}
                 </select>
               </div>

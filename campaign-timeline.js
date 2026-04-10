@@ -44,8 +44,9 @@ function inferEventImportance(ev) {
 }
 
 function timelineEventHeadline(ev) {
-  if (ev.headline && String(ev.headline).trim()) return String(ev.headline).trim();
-  const t = (ev.text || "").trim();
+  const sanitize = (s) => String(s || '').replace(/[<>]/g, '');
+  if (ev.headline && String(ev.headline).trim()) return sanitize(ev.headline).trim();
+  const t = sanitize(ev.text).trim();
   if (!t) return "Untitled event";
   const max = 58;
   if (t.length <= max) return t;
@@ -78,10 +79,19 @@ function TimelineView({ data, setData, onNav, viewRole }) {
   const activeFilterTally = (filterType !== "all" ? 1 : 0) + (filterCharacter ? 1 : 0) + (filterLocation ? 1 : 0);
 
   useEffect(() => {
-    const w = () => setNarrow(window.innerWidth < 920);
-    w();
+    let resizeTimer = null;
+    const w = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        setNarrow(window.innerWidth < 920);
+      }, 150);
+    };
+    w(); // Initial check
     window.addEventListener("resize", w);
-    return () => window.removeEventListener("resize", w);
+    return () => {
+      window.removeEventListener("resize", w);
+      clearTimeout(resizeTimer);
+    };
   }, []);
 
   const characterOptions = useMemo(() => {
@@ -110,11 +120,28 @@ function TimelineView({ data, setData, onNav, viewRole }) {
   };
 
   const addSession = () => {
-    if(!newSession.title) return;
-    const n = data.sessionsPlayed + 1;
-    setData(d=>({...d, sessionsPlayed:n, timeline:[{id:uid(),n,title:newSession.title,date:newSession.date,summary:newSession.summary,events:[],changes:[],notes:"",dmOnly:newSession.dmOnly},...d.timeline],
-      activity:[{time:"Just now",text:`Session ${n}: ${newSession.title}`},...d.activity].slice(0,20)}));
-    setNewSession({ title:"", date:new Date().toISOString().split('T')[0], summary:"", dmOnly:false });
+    if (!newSession.title || !newSession.title.trim()) return;
+    const n = (data.sessionsPlayed || 0) + 1;
+    setData(d => ({
+      ...d,
+      sessionsPlayed: n,
+      timeline: [{
+        id: uid(),
+        n: n,
+        title: newSession.title,
+        date: newSession.date,
+        summary: newSession.summary,
+        events: [],
+        changes: [],
+        notes: "",
+        dmOnly: newSession.dmOnly
+      }, ...(Array.isArray(d.timeline) ? d.timeline : [])],
+      activity: [{
+        time: "Just now",
+        text: `Session ${n}: ${newSession.title}`
+      }, ...(Array.isArray(d.activity) ? d.activity : [])].slice(0, 20)
+    }));
+    setNewSession({ title: "", date: new Date().toISOString().split('T')[0], summary: "", dmOnly: false });
     setAddingSession(false);
   };
   const addEvent = (sessionId) => {
@@ -133,13 +160,38 @@ function TimelineView({ data, setData, onNav, viewRole }) {
       headline: headline || undefined,
       linkedNames: linkedNames.length ? linkedNames : undefined,
     };
-    Object.keys(payload).forEach(k => { if (payload[k] === undefined) delete payload[k]; });
-    setData(d=>({...d,timeline:d.timeline.map(s=>s.id===sessionId?{...s,events:[...s.events,payload]}:s)}));
+    // Remove undefined values instead of deleting to avoid mutation issues
+    const cleanPayload = Object.keys(payload).reduce((acc, k) => {
+      if (payload[k] !== undefined) {
+        acc[k] = payload[k];
+      }
+      return acc;
+    }, {});
+    setData(d => {
+      if (!Array.isArray(d.timeline)) return d;
+      return {
+        ...d,
+        timeline: d.timeline.map(s =>
+          s && s.id === sessionId
+            ? { ...s, events: Array.isArray(s.events) ? [...s.events, cleanPayload] : [cleanPayload] }
+            : s
+        )
+      };
+    });
     setNewEvent({ type:"encounter", text:"", outcome:"", dmOnly:false, location:"", importance:"standard", scope:"", headline:"", linkedNames:"" });
     setAddingEvent(null);
   };
   const saveNotes = (sessionId, notes) => {
-    setData(d=>({...d,timeline:d.timeline.map(s=>s.id===sessionId?{...s,notes}:s)}));
+    if (!sessionId) return;
+    setData(d => {
+      if (!Array.isArray(d.timeline)) return d;
+      return {
+        ...d,
+        timeline: d.timeline.map(s =>
+          s && s.id === sessionId ? { ...s, notes } : s
+        )
+      };
+    });
   };
 
   const eventPassesFilters = (ev) => {
@@ -303,7 +355,8 @@ function TimelineView({ data, setData, onNav, viewRole }) {
           }}/>
         )}
 
-        {data.timeline.map((s, timelineIdx) => {
+        {(Array.isArray(data.timeline) ? data.timeline : []).map((s, timelineIdx) => {
+          if (!s || !s.id) return null;
           const isOpen = open.has(s.id);
           if (!sessionMatchesFilters(s)) return null;
           const isLatest = s.id === latestSessionId;
@@ -365,9 +418,9 @@ function TimelineView({ data, setData, onNav, viewRole }) {
                       fontSize: compactLayout ? 15 : isLatest ? 19 : 17,
                       color:T.text, fontWeight: isLatest ? 500 : 400,
                       marginBottom:4, lineHeight:1.3, letterSpacing:"0.01em",
-                    }}>{s.title}</div>
+                    }}>{String(s.title || '').replace(/[<>]/g, '')}</div>
                     <div style={{ fontSize:11, color:T.textMuted, fontWeight:300, display:"flex", alignItems:"center", gap:6, flexWrap:"wrap", fontFamily:T.body }}>
-                      <Calendar size={11} color={T.textFaint}/> {s.date}
+                      <Calendar size={11} color={T.textFaint}/> {String(s.date || '').replace(/[<>]/g, '')}
                       <span style={{ color:T.border }}>|</span>
                       <span>{s.events?.length||0} events</span>
                     </div>
@@ -381,7 +434,7 @@ function TimelineView({ data, setData, onNav, viewRole }) {
                   <p style={{
                     fontSize: compactLayout ? 12 : 13, color:T.textDim, lineHeight:1.65, margin:"12px 0 14px", fontWeight:300,
                     borderTop:`1px solid ${T.borderMid}`, paddingTop:12,
-                  }}>{s.summary}</p>
+                  }}>{String(s.summary || '').replace(/[<>]/g, '')}</p>
 
                   {/* Events */}
                   {s.events?.length > 0 && (
@@ -464,21 +517,21 @@ function TimelineView({ data, setData, onNav, viewRole }) {
                                 )}
                                 {evOpen && (
                                   <div style={{ marginTop:10, paddingTop:10, borderTop:`1px solid ${T.borderMid}`, animation:"fadeIn 0.2s ease" }}>
-                                    <p style={{ fontSize:13, color:T.textDim, lineHeight:1.65, fontWeight:300, margin:0 }}>{ev.text}</p>
+                                    <p style={{ fontSize:13, color:T.textDim, lineHeight:1.65, fontWeight:300, margin:0 }}>{String(ev.text || '').replace(/[<>]/g, '')}</p>
                                     {ev.outcome && (
                                       <div style={{ fontSize:12, color:T.textMuted, marginTop:10, fontWeight:300, fontStyle:"italic" }}>
-                                        {ev.outcome}
+                                        {String(ev.outcome || '').replace(/[<>]/g, '')}
                                       </div>
                                     )}
                                     <div style={{ fontSize:10, color:T.textFaint, marginTop:10, display:"flex", flexWrap:"wrap", gap:8, alignItems:"center" }}>
-                                      {ScopeIc && <span style={{ display:"inline-flex", alignItems:"center", gap:3 }}><ScopeIc size={10}/> {ev.scope}</span>}
-                                      {ev.location && <span style={{ display:"inline-flex", alignItems:"center", gap:3 }}><MapPin size={10} color={col}/> {ev.location}</span>}
+                                      {ScopeIc && <span style={{ display:"inline-flex", alignItems:"center", gap:3 }}><ScopeIc size={10}/> {String(ev.scope || '').replace(/[<>]/g, '')}</span>}
+                                      {ev.location && <span style={{ display:"inline-flex", alignItems:"center", gap:3 }}><MapPin size={10} color={col}/> {String(ev.location || '').replace(/[<>]/g, '')}</span>}
                                       {major && <span style={{ fontFamily:T.ui, letterSpacing:"0.08em", textTransform:"uppercase" }}>Key beat</span>}
                                     </div>
                                     {(ev.linkedNames||[]).length > 0 && (
                                       <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginTop:8 }}>
                                         {(ev.linkedNames||[]).map(name => (
-                                          <span key={name} style={{ fontSize:10, padding:"2px 6px", borderRadius:2, background:T.bgInput, border:`1px solid ${T.borderMid}`, color:T.textMuted }}>{name}</span>
+                                          <span key={name} style={{ fontSize:10, padding:"2px 6px", borderRadius:2, background:T.bgInput, border:`1px solid ${T.borderMid}`, color:T.textMuted }}>{String(name || '').replace(/[<>]/g, '')}</span>
                                         ))}
                                       </div>
                                     )}

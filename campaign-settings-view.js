@@ -64,30 +64,61 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
   };
 
   const handleExport = () => {
-    const json = JSON.stringify(data, null, 2);
-    const blob = new Blob([json], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `campaign-${data.campaignName || "export"}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+    try {
+      const json = JSON.stringify(data, null, 2);
+      const blob = new Blob([json], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `campaign-${(data.campaignName || "export").replace(/[^\w\s-]/g, '')}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      if (typeof window.psToast === 'function') {
+        window.psToast('Failed to export campaign');
+      } else {
+        console.error('Export failed:', err);
+      }
+    }
   };
 
   const handleImport = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    // Validate file size
+    if (file.size > 10 * 1024 * 1024) {
+      if (typeof window.psToast === 'function') {
+        window.psToast('File too large (max 10MB)');
+      }
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
+        if (!event.target || !event.target.result) {
+          throw new Error('No data read');
+        }
         const imported = JSON.parse(event.target.result);
+        if (typeof imported !== 'object' || imported === null) {
+          throw new Error('Invalid JSON structure');
+        }
         setData(d => ({ ...d, ...imported }));
       } catch (err) {
+        const errorMsg = err && err.message ? err.message : 'Unknown error';
         if (typeof window.psToast === 'function') {
-          window.psToast('Invalid JSON data');
+          window.psToast('Failed to import: ' + errorMsg);
         } else {
-          console.warn('Failed to parse JSON: ' + err.message);
+          console.warn('Failed to parse JSON: ' + errorMsg);
         }
+      }
+    };
+    reader.onerror = () => {
+      if (typeof window.psToast === 'function') {
+        window.psToast('Failed to read file');
       }
     };
     reader.readAsText(file);
@@ -356,22 +387,22 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
                     <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", marginBottom: "0.25rem" }}>
                       <span style={{ fontSize: "1.25rem" }}>{system.icon}</span>
                       <h3 style={{ color: T.text, fontSize: "1.05rem", margin: 0, fontWeight: "600" }}>
-                        {system.name}
+                        {String(system.name || '').replace(/[<>]/g, '')}
                       </h3>
                     </div>
                     <p style={{ color: T.textMuted, fontSize: "0.9rem", margin: "0.5rem 0 0 0" }}>
-                      {system.desc}
+                      {String(system.desc || '').replace(/[<>]/g, '')}
                     </p>
 
                     {requiredSystem && (
                       <div style={{ color: T.textFaint, fontSize: "0.85rem", marginTop: "0.5rem", fontStyle: "italic" }}>
-                        Requires: <span style={{ color: T.crimson }}>{systems.find(s => s.key === requiredSystem)?.name}</span>
+                        Requires: <span style={{ color: T.crimson }}>{String(systems.find(s => s.key === requiredSystem)?.name || '').replace(/[<>]/g, '')}</span>
                       </div>
                     )}
 
                     {isDisabled && requiredSystem && (
                       <div style={{ color: T.crimson, fontSize: "0.85rem", marginTop: "0.5rem", fontWeight: "500" }}>
-                        ⚠ Enable {systems.find(s => s.key === requiredSystem)?.name} first
+                        ⚠ Enable {String(systems.find(s => s.key === requiredSystem)?.name || '').replace(/[<>]/g, '')} first
                       </div>
                     )}
                   </div>

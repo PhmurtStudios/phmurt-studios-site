@@ -12,9 +12,11 @@
       https://dashboard.stripe.com/settings/billing/portal
    ═══════════════════════════════════════════════════════════════════ */
 
-var STRIPE_PUBLISHABLE_KEY = 'pk_test_51TK9OH2Me6B5yZKdIoLLRqD1r4L1BauSA1syGGJkZOvo7duRYKPL8oxmK9qchFUP7vwLw9vTpgSgi9iNoJG1H4zz00YXbsyDXP';
-var STRIPE_PRICE_ID_MONTHLY = 'price_1TK9Vk2Me6B5yZKdxakmjGlV';
-var STRIPE_PRICE_ID_YEARLY  = 'price_1TK9Vk2Me6B5yZKdggyhlKun';
+// SECURITY: Load from window.PHMURT_CONFIG set by server
+// Never commit real keys to source control
+var STRIPE_PUBLISHABLE_KEY = (typeof window !== 'undefined' && window.PHMURT_CONFIG && window.PHMURT_CONFIG.stripe_pk && typeof window.PHMURT_CONFIG.stripe_pk === 'string') ? window.PHMURT_CONFIG.stripe_pk : '';
+var STRIPE_PRICE_ID_MONTHLY = (typeof window !== 'undefined' && window.PHMURT_CONFIG && window.PHMURT_CONFIG.stripe_price_monthly && typeof window.PHMURT_CONFIG.stripe_price_monthly === 'string') ? window.PHMURT_CONFIG.stripe_price_monthly : '';
+var STRIPE_PRICE_ID_YEARLY  = (typeof window !== 'undefined' && window.PHMURT_CONFIG && window.PHMURT_CONFIG.stripe_price_yearly && typeof window.PHMURT_CONFIG.stripe_price_yearly === 'string') ? window.PHMURT_CONFIG.stripe_price_yearly : '';
 
 /* Legacy alias — checkout function reads the specific monthly/yearly IDs */
 var STRIPE_PRICE_ID = '';                 // (unused, kept for compat)
@@ -29,6 +31,15 @@ var STRIPE_CHECKOUT_FUNCTION_URL = '';
 
 (function () {
   if (!STRIPE_CHECKOUT_FUNCTION_URL && typeof SUPABASE_URL !== 'undefined' && SUPABASE_URL) {
-    STRIPE_CHECKOUT_FUNCTION_URL = SUPABASE_URL + '/functions/v1/stripe-checkout';
+    // Validate URL format before concatenating
+    try {
+      var parsedUrl = new URL(SUPABASE_URL);
+      // Ensure URL ends without trailing slash before concatenation
+      var baseUrl = SUPABASE_URL.replace(/\/$/, '');
+      STRIPE_CHECKOUT_FUNCTION_URL = baseUrl + '/functions/v1/stripe-checkout';
+    } catch (e) {
+      // Invalid URL, leave STRIPE_CHECKOUT_FUNCTION_URL empty
+      if (window.PHMURT_DEBUG) console.warn('[Stripe] Invalid SUPABASE_URL format:', e);
+    }
   }
 })();

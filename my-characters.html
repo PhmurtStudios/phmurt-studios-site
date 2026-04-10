@@ -51,7 +51,7 @@
     <!-- Signed-out state -->
     <div id="mc-signed-out" style="text-align:center;padding:60px 0;">
       <p style="font-family:Spectral;font-size:18px;color:var(--text-dim);margin-bottom:32px;">Sign in to view and manage your saved characters.</p>
-      <button class="ps-btn ps-btn-primary" onclick="window.PhmurtDB && window.PhmurtDB.openAuth()">Sign In</button>
+      <button class="ps-btn ps-btn-primary" id="mc-auth-btn">Sign In</button>
     </div>
 
     <!-- Signed-in state -->
@@ -60,7 +60,7 @@
         <h2 style="font-family:Cinzel;color:var(--text);font-size:20px;margin:0;">Your Characters</h2>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <a href="campaigns.html?tab=dashboard" class="ps-btn ps-btn-primary" style="font-size:14px;background:transparent;border:1px solid var(--border);color:var(--text-muted);">Open Campaign Manager</a>
-          <a href="character-builder.html" class="ps-btn ps-btn-primary" style="font-size:14px;" onclick="try{localStorage.removeItem('phmurt_current_char_id');localStorage.removeItem('phmurt_builder_5e');localStorage.removeItem('phmurt_builder_35e');}catch(e){}">+ New Character</a>
+          <button class="ps-btn ps-btn-primary" id="mc-new-char" style="font-size:14px;">+ New Character</button>
         </div>
       </div>
       <div id="mc-character-list"></div>
@@ -102,11 +102,21 @@
       signedIn.style.display  = 'block';
 
       if (!_mcChars.length) {
-        list.innerHTML = '<div style="text-align:center;padding:48px 0;font-family:Spectral;font-style:italic;color:var(--text-dim);">No characters yet. <a href="character-builder.html" style="color:var(--crimson);">Create your first one →</a></div>';
+        var emptyDiv = document.createElement('div');
+        emptyDiv.style.cssText = 'text-align:center;padding:48px 0;font-family:Spectral;font-style:italic;color:var(--text-dim);';
+        emptyDiv.textContent = 'No characters yet. ';
+        var link = document.createElement('a');
+        link.href = 'character-builder.html';
+        link.style.color = 'var(--crimson)';
+        link.textContent = 'Create your first one →';
+        emptyDiv.appendChild(link);
+        list.innerHTML = '';
+        list.appendChild(emptyDiv);
         return;
       }
 
-      list.innerHTML = _mcChars.map(function (c) {
+      list.innerHTML = '';
+      _mcChars.forEach(function (c) {
         var id      = encodeURIComponent(c.id !== undefined ? c.id : '');
         var name    = _escHtml(c.name  || 'Unnamed Character');
         var race    = _escHtml(c.race  || '');
@@ -114,17 +124,44 @@
         var level   = c.level ? '· Level ' + c.level : '';
         var builder = c.builder_type || '5e';
         var editHref = (builder === '35e' ? 'character-builder-35.html' : 'character-builder.html') + '?load=' + id;
-        return '<div class="ps-sheet-card" style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;">' +
-          '<div>' +
-            '<div class="ps-sheet-title" style="margin-bottom:4px;">' + name + '</div>' +
-            '<div class="ps-sheet-system">' + race + (race && cls ? ' ' : '') + cls + ' ' + level + '</div>' +
-          '</div>' +
-          '<div style="display:flex;gap:8px;">' +
-            '<a href="' + editHref + '" class="ps-btn ps-btn-primary" style="font-size:13px;">Edit</a>' +
-            '<button onclick="deleteCharacter(\'' + id + '\')" style="font-size:13px;padding:6px 14px;border:1px solid var(--border);background:transparent;color:var(--text-dim);border-radius:4px;cursor:pointer;">Delete</button>' +
-          '</div>' +
-        '</div>';
-      }).join('');
+
+        var card = document.createElement('div');
+        card.className = 'ps-sheet-card';
+        card.style.cssText = 'margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;';
+
+        var infoDiv = document.createElement('div');
+        var titleDiv = document.createElement('div');
+        titleDiv.className = 'ps-sheet-title';
+        titleDiv.style.marginBottom = '4px';
+        titleDiv.textContent = name;
+        infoDiv.appendChild(titleDiv);
+
+        var sysDiv = document.createElement('div');
+        sysDiv.className = 'ps-sheet-system';
+        sysDiv.textContent = race + (race && cls ? ' ' : '') + cls + ' ' + level;
+        infoDiv.appendChild(sysDiv);
+        card.appendChild(infoDiv);
+
+        var actionsDiv = document.createElement('div');
+        actionsDiv.style.cssText = 'display:flex;gap:8px;';
+
+        var editLink = document.createElement('a');
+        editLink.href = editHref;
+        editLink.className = 'ps-btn ps-btn-primary';
+        editLink.style.fontSize = '13px';
+        editLink.textContent = 'Edit';
+        actionsDiv.appendChild(editLink);
+
+        var delBtn = document.createElement('button');
+        delBtn.className = 'mc-delete-char';
+        delBtn.setAttribute('data-char-id', id);
+        delBtn.style.cssText = 'font-size:13px;padding:6px 14px;border:1px solid var(--border);background:transparent;color:var(--text-dim);border-radius:4px;cursor:pointer;';
+        delBtn.textContent = 'Delete';
+        actionsDiv.appendChild(delBtn);
+
+        card.appendChild(actionsDiv);
+        list.appendChild(card);
+      });
     }
 
     function loadAndRender() {
@@ -164,6 +201,48 @@
     document.addEventListener('DOMContentLoaded', function () {
       loadAndRender();
       window.addEventListener('phmurt-auth-change', loadAndRender);
+
+      // Auth button handler
+      var authBtn = document.getElementById('mc-auth-btn');
+      if (authBtn) {
+        authBtn.addEventListener('click', function () {
+          if (window.PhmurtDB) {
+            window.PhmurtDB.openAuth();
+          }
+        });
+      }
+
+      // New character button handler
+      var newCharBtn = document.getElementById('mc-new-char');
+      if (newCharBtn) {
+        newCharBtn.addEventListener('click', function (e) {
+          e.preventDefault();
+          try { localStorage.removeItem('phmurt_current_char_id'); } catch(e) {}
+          try { localStorage.removeItem('phmurt_builder_5e'); } catch(e) {}
+          try { localStorage.removeItem('phmurt_builder_35e'); } catch(e) {}
+          window.location.href = 'character-builder.html';
+        });
+      }
+
+      // Observe list changes and reattach handlers
+      var observer = new MutationObserver(function() {
+        attachDeleteHandlers();
+      });
+      observer.observe(document.getElementById('mc-character-list') || document.body, { childList: true, subtree: true });
+
+      function attachDeleteHandlers() {
+        document.querySelectorAll('.mc-delete-char').forEach(function(btn) {
+          if (!btn._handlersAttached) {
+            btn.addEventListener('click', function(e) {
+              e.preventDefault();
+              var id = btn.getAttribute('data-char-id');
+              if (id) deleteCharacter(decodeURIComponent(id));
+            });
+            btn._handlersAttached = true;
+          }
+        });
+      }
+      attachDeleteHandlers();
     });
   </script>
   <script src="phmurt-shell.js"></script>

@@ -1,6 +1,5 @@
 (function() {
   'use strict';
-  console.log('[Intrigue] Module loading v156 — full rewrite');
 
   const { useState, useEffect, useCallback, useRef, useMemo, Fragment } = React;
   const LR = window.LucideReact || {};
@@ -90,30 +89,36 @@
      WORLD INTEGRATION HELPERS
   ═══════════════════════════════════════════════════════════ */
   function getWorldDistricts(data) {
-    var cities = (data && data.cities) || [];
-    var regions = (data && data.regions) || [];
-    if (cities.length > 0) return cities.map(function(c) { return c.name; });
-    if (regions.length > 0) return regions.map(function(r) { return r.name; });
+    var cities = (data && Array.isArray(data.cities) && data.cities.length > 0) ? data.cities : [];
+    var regions = (data && Array.isArray(data.regions) && data.regions.length > 0) ? data.regions : [];
+    if (cities.length > 0) {
+      return cities.filter(function(c) { return c && c.name; }).map(function(c) { return c.name; });
+    }
+    if (regions.length > 0) {
+      return regions.filter(function(r) { return r && r.name; }).map(function(r) { return r.name; });
+    }
     return DISTRICTS; // fallback to hardcoded
   }
 
   function getWorldNPCAgents(data) {
-    if (!data || !data.npcs || data.npcs.length === 0) return [];
+    if (!data || !Array.isArray(data.npcs) || data.npcs.length === 0) return [];
     var relevantRoles = ['spy', 'thief', 'noble', 'merchant', 'guard'];
     var filtered = data.npcs.filter(function(npc) {
+      if (!npc || typeof npc !== 'object') return false;
       var role = (npc.role || '').toLowerCase();
       return relevantRoles.some(function(r) { return role.includes(r); });
     });
     // If no exact matches, just take first few NPCs
-    var npcList = filtered.length > 0 ? filtered : data.npcs.slice(0, 3);
+    var npcList = filtered.length > 0 ? filtered : data.npcs.slice(0, 3).filter(function(n) { return n && typeof n === 'object'; });
     return npcList.map(function(npc) {
+      if (!npc) return null;
       return makeAgent({
         name: npc.name || 'Unknown',
         title: npc.role || '',
         location: npc.region || '',
         influence: Math.floor(Math.random() * 3) + 1,
       });
-    });
+    }).filter(function(a) { return a !== null; });
   }
 
   /* ═══════════════════════════════════════════════════════════
@@ -148,6 +153,10 @@
   });
 
   const initializeIntrigueData = function(data) {
+    if (!data || typeof data !== 'object') {
+      data = {};
+    }
+
     var defaultBranches = [
       makeBranch({ id: 'crown', name: 'The Crown', description: 'Royal Court manipulation', motto: 'The throne remembers', colorHue: 45, powerLevel: 75,
         sage: makeAgent({ id: 'sage_crown', rank: 'sage', name: 'The Courtier', title: 'Royal Advisor', influence: 4, location: 'Palace' }),
@@ -217,12 +226,13 @@
 
     // Generate branches from world factions if available
     var branches = defaultBranches;
-    var worldFactions = (data && data.factions) || [];
+    var worldFactions = (data && Array.isArray(data.factions) && data.factions.length > 0) ? data.factions : [];
     if (worldFactions.length > 0) {
-      branches = worldFactions.map(function(f, idx) {
-        var colorHue = f.color ? parseInt(f.color.replace('#', ''), 16) % 360 : (idx * 60) % 360;
+      branches = worldFactions.filter(function(f) { return f && typeof f === 'object'; }).map(function(f, idx) {
+        var colorHue = f.color ? (parseInt((f.color || '').replace('#', ''), 16) % 360) : (idx * 60) % 360;
+        if (isNaN(colorHue)) colorHue = (idx * 60) % 360;
         return makeBranch({
-          name: f.name || 'Unknown Faction',
+          name: f.name || ('Unknown Faction ' + idx),
           description: f.govType ? 'Faction of ' + f.govType + ' alignment' : 'Mystery faction',
           colorHue: colorHue,
           powerLevel: 50 + Math.floor(Math.random() * 30),
@@ -472,13 +482,24 @@
   }
 
   function findAgentName(intrigue, agentId, isDM) {
-    if (!agentId) return '?';
-    if (intrigue.shadowLeader.id === agentId) return isDM || intrigue.shadowLeader.revealed ? intrigue.shadowLeader.name : '???';
+    if (!agentId || !intrigue) return '?';
+    if (intrigue.shadowLeader && intrigue.shadowLeader.id === agentId) {
+      return isDM || intrigue.shadowLeader.revealed ? (intrigue.shadowLeader.name || 'Unknown') : '???';
+    }
+    if (!Array.isArray(intrigue.branches)) return '???';
+
     for (var i = 0; i < intrigue.branches.length; i++) {
       var b = intrigue.branches[i];
-      if (b.sage.id === agentId) return isDM || b.sage.revealed ? b.sage.name : '???';
-      for (var j = 0; j < b.agents.length; j++) {
-        if (b.agents[j].id === agentId) return isDM || b.agents[j].revealed ? b.agents[j].name : '???';
+      if (!b) continue;
+      if (b.sage && b.sage.id === agentId) {
+        return isDM || b.sage.revealed ? (b.sage.name || 'Unknown') : '???';
+      }
+      if (Array.isArray(b.agents)) {
+        for (var j = 0; j < b.agents.length; j++) {
+          if (b.agents[j] && b.agents[j].id === agentId) {
+            return isDM || b.agents[j].revealed ? (b.agents[j].name || 'Unknown') : '???';
+          }
+        }
       }
     }
     return '???';
@@ -615,8 +636,8 @@
     }, [intrigue, update, newBranchName, newBranchDesc]);
 
     var removeBranch = useCallback(function(bid) {
-      if (!confirm('Remove this entire faction?')) return;
-      update({ branches: intrigue.branches.filter(function(b) { return b.id !== bid; }) });
+      if (typeof window === 'undefined' || !window.confirm('Remove this entire faction?')) return;
+      update({ branches: intrigue.branches.filter(function(b) { return b && b.id !== bid; }) });
       if (view === bid) setView('web');
     }, [intrigue, update, view]);
 
@@ -1383,5 +1404,4 @@
 
   /* ── Register ── */
   window.CourtIntrigueView = CourtIntrigueView;
-  console.log('[Intrigue] Module registered OK, CourtIntrigueView:', typeof window.CourtIntrigueView);
 })();

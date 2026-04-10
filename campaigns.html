@@ -4708,6 +4708,8 @@ function PlayerCard({ member, onEdit, onUploadSheet, isDm }) {
                   if (!snap) return;
                   const fields = typeof PhmurtCharSync !== "undefined" ? PhmurtCharSync.extractPartyFields(snap, { id: member.sourceCharacterId }) : null;
                   if (fields) onEdit({ ...member, ...fields, _syncDigest: fields._digest || "", _lastSyncAt: Date.now() });
+                }).catch(err => {
+                  console.warn('Failed to load character for sync:', err);
                 });
               }} secondary small><RefreshCw size={10}/> Re-sync</CrimsonBtn>
             )}

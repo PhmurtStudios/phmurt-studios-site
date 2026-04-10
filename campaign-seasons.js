@@ -184,6 +184,12 @@ window.CampaignSeasons = (function(){
     Sandstorm: { icon: '∿', visibility: 'poor', hazard: true, effects: ['movement_slow', 'ranged_disadvantage', 'sand_damage'] }
   };
 
+  // Helper: Sanitize string for safe concatenation
+  const sanitizeString = function(str) {
+    if (!str || typeof str !== 'string') return '';
+    return str.replace(/[<>]/g, '');
+  };
+
   // ═══════════════════════════════════════════════════════════════════════════
   // CALENDAR TRACKER CLASS
   // ═══════════════════════════════════════════════════════════════════════════
@@ -352,16 +358,20 @@ window.CampaignSeasons = (function(){
   };
 
   WeatherEngine.prototype.advanceDay = function(regions, calendar, worldData) {
+    if (!Array.isArray(regions) || !calendar) return [];
     var results = [];
     var season = calendar.getSeason();
     var seasonId = season ? season.id : 'verdance';
 
     regions.forEach(function(region) {
+      if (!region || !region.id) return;
       var climateType = this._determineClimate(region);
       this._initRegionWeather(region.id, climateType, region);
 
       var weatherData = this.regionWeather.get(region.id);
-      weatherData.durationRemaining--;
+      if (!weatherData) return;
+
+      weatherData.durationRemaining = (weatherData.durationRemaining || 1) - 1;
 
       if (weatherData.durationRemaining <= 0) {
         var newWeather = this._rollWeather(weatherData.current, climateType, seasonId);
@@ -370,22 +380,26 @@ window.CampaignSeasons = (function(){
         weatherData.durationRemaining = weatherData.duration;
       }
 
-      var histKey = region.id + '_' + calendar.getDateString();
-      if (!this.weatherHistory.has(histKey)) {
-        this.weatherHistory.set(histKey, {
-          weather: weatherData.current,
-          date: calendar.getDateString(),
-          regionId: region.id,
-          regionName: region.name
-        });
+      var dateStr = calendar.getDateString();
+      if (dateStr) {
+        var histKey = region.id + '_' + dateStr;
+        if (!this.weatherHistory.has(histKey)) {
+          this.weatherHistory.set(histKey, {
+            weather: weatherData.current,
+            date: dateStr,
+            regionId: region.id,
+            regionName: region.name || 'Unknown'
+          });
+        }
       }
 
+      var state = WEATHER_STATES[weatherData.current];
       results.push({
         regionId: region.id,
-        regionName: region.name,
+        regionName: region.name || 'Unknown',
         weather: weatherData.current,
-        icon: WEATHER_STATES[weatherData.current] ? WEATHER_STATES[weatherData.current].icon : '?',
-        hazard: WEATHER_STATES[weatherData.current] ? WEATHER_STATES[weatherData.current].hazard : false
+        icon: state ? state.icon : '?',
+        hazard: state ? state.hazard : false
       });
     }, this);
 
@@ -508,11 +522,11 @@ window.CampaignSeasons = (function(){
       // Add location references to narrative
       if (cities.length > 0 && i === 0) {
         var city = cities[Math.floor(Math.random() * cities.length)];
-        narrative += ' around ' + city.name;
+        narrative += ' around ' + sanitizeString(city.name);
       }
       if (pois.length > 0 && i === days - 1) {
         var poi = pois[Math.floor(Math.random() * pois.length)];
-        narrative += ' (affecting ' + poi.name + ')';
+        narrative += ' (affecting ' + sanitizeString(poi.name) + ')';
       }
 
       forecast.push({
@@ -648,7 +662,7 @@ window.CampaignSeasons = (function(){
         if (data.npcs && Array.isArray(data.npcs)) {
           data.npcs.forEach(function(npc) {
             if (npc.role && npc.role.toLowerCase().includes('merchant')) {
-              effects.npcReactions.push('The merchant ' + npc.name + ' warns of scarce supplies this Frostfall.');
+              effects.npcReactions.push('The merchant ' + sanitizeString(npc.name) + ' warns of scarce supplies this Frostfall.');
             }
           });
         }
@@ -683,7 +697,7 @@ window.CampaignSeasons = (function(){
         if (data.npcs && Array.isArray(data.npcs)) {
           data.npcs.forEach(function(npc) {
             if (npc.traits && Array.isArray(npc.traits) && npc.traits.some(function(t) { return t.toLowerCase().includes('farmer'); })) {
-              effects.npcReactions.push(npc.name + ' frets about the crops withering in the relentless Solstice heat.');
+              effects.npcReactions.push(sanitizeString(npc.name) + ' frets about the crops withering in the relentless Solstice heat.');
             }
           });
         }
@@ -743,8 +757,8 @@ window.CampaignSeasons = (function(){
   };
 
   SeasonalEffectsManager.prototype.triggerSeasonalEvent = function(eventId, calendar, worldData) {
+    if (!eventId || !SEASONAL_EVENTS[eventId]) return null;
     var eventTemplate = SEASONAL_EVENTS[eventId];
-    if (!eventTemplate) return null;
 
     var event = {
       id: eventId,
@@ -755,8 +769,8 @@ window.CampaignSeasons = (function(){
       icon: eventTemplate.icon,
       importance: eventTemplate.importance,
       triggeredAt: Date.now(),
-      mutations: eventTemplate.mutations,
-      calendarEffect: eventTemplate.calendarEffect,
+      mutations: Object.assign({}, eventTemplate.mutations || {}),
+      calendarEffect: Object.assign({}, eventTemplate.calendarEffect || {}),
       worldContext: {
         celebratingCities: [],
         affectedFactions: [],
@@ -765,37 +779,50 @@ window.CampaignSeasons = (function(){
     };
 
     // Populate with world-specific details if worldData provided
-    if (worldData) {
+    if (worldData && typeof worldData === 'object') {
       // Find cities that would celebrate or be affected by this event
-      if (worldData.cities && Array.isArray(worldData.cities)) {
+      if (worldData.cities && Array.isArray(worldData.cities) && worldData.cities.length > 0) {
         var celebratingCount = Math.min(2, Math.max(1, Math.floor(worldData.cities.length / 3)));
-        for (var i = 0; i < celebratingCount && i < worldData.cities.length; i++) {
+        var usedCities = new Set();
+        for (var i = 0; i < celebratingCount && usedCities.size < worldData.cities.length; i++) {
           var cityIdx = Math.floor(Math.random() * worldData.cities.length);
-          event.worldContext.celebratingCities.push(worldData.cities[cityIdx].name);
+          if (worldData.cities[cityIdx] && worldData.cities[cityIdx].name && !usedCities.has(cityIdx)) {
+            event.worldContext.celebratingCities.push(sanitizeString(worldData.cities[cityIdx].name));
+            usedCities.add(cityIdx);
+          }
         }
       }
 
       // Find factions that benefit or are affected
-      if (worldData.factions && Array.isArray(worldData.factions)) {
+      if (worldData.factions && Array.isArray(worldData.factions) && worldData.factions.length > 0) {
         var affectedCount = Math.min(2, Math.max(1, Math.floor(worldData.factions.length / 2)));
-        for (var j = 0; j < affectedCount && j < worldData.factions.length; j++) {
+        var usedFactions = new Set();
+        for (var j = 0; j < affectedCount && usedFactions.size < worldData.factions.length; j++) {
           var factionIdx = Math.floor(Math.random() * worldData.factions.length);
-          event.worldContext.affectedFactions.push(worldData.factions[factionIdx].name);
+          if (worldData.factions[factionIdx] && worldData.factions[factionIdx].name && !usedFactions.has(factionIdx)) {
+            event.worldContext.affectedFactions.push(sanitizeString(worldData.factions[factionIdx].name));
+            usedFactions.add(factionIdx);
+          }
         }
       }
 
       // Find NPCs involved
-      if (worldData.npcs && Array.isArray(worldData.npcs)) {
+      if (worldData.npcs && Array.isArray(worldData.npcs) && worldData.npcs.length > 0) {
         var involvedCount = Math.min(1, Math.max(0, Math.floor(worldData.npcs.length / 4)));
-        for (var k = 0; k < involvedCount && k < worldData.npcs.length; k++) {
+        var usedNpcs = new Set();
+        for (var k = 0; k < involvedCount && usedNpcs.size < worldData.npcs.length; k++) {
           var npcIdx = Math.floor(Math.random() * worldData.npcs.length);
-          event.worldContext.involvedNPCs.push(worldData.npcs[npcIdx].name);
+          if (worldData.npcs[npcIdx] && worldData.npcs[npcIdx].name && !usedNpcs.has(npcIdx)) {
+            event.worldContext.involvedNPCs.push(sanitizeString(worldData.npcs[npcIdx].name));
+            usedNpcs.add(npcIdx);
+          }
         }
       }
 
       // Enhance detail with world context
       if (event.worldContext.celebratingCities.length > 0) {
-        event.detail += ' ' + event.worldContext.celebratingCities.join(' and ') + ' join in celebration.';
+        var cityList = event.worldContext.celebratingCities.join(' and ');
+        event.detail += ' ' + cityList + ' join in celebration.';
       }
     }
 

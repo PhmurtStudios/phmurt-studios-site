@@ -486,7 +486,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
                       setCurrentPlayerAvail(updated);
                     },
                     style: {
-                      backgroundColor: currentPlayerAvail[dayIdx]?.includes(hour) ? T.crimsonSoft : T.bgCard,
+                      backgroundColor: currentPlayerAvail[dayIdx] && currentPlayerAvail[dayIdx].includes(hour) ? T.crimsonDim : T.bgCard,
                       cursor: 'pointer',
                       transition: 'all 0.2s',
                       opacity: 0.8
@@ -580,7 +580,15 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
         ),
 
         React.createElement('button', {
-          onClick: () => { /* highlight best times */ },
+          onClick: () => {
+            const best = findBestTimes();
+            if (best.length > 0) {
+              const slot = best[0];
+              const day = days[slot.dayIdx];
+              setSelectedDate(day.date);
+              setSelectedTimeRange({ start: slot.hour, end: slot.hour + 4 });
+            }
+          },
           style: {
             marginTop: '15px',
             padding: '8px 16px',
@@ -636,14 +644,14 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
               }
             },
               React.createElement('div', { style: { fontWeight: 'bold', color: T.gold, marginBottom: '4px' } },
-                member.profiles?.name || 'Unknown'
+                String(member.profiles?.name || 'Unknown').replace(/[<>]/g, '')
               ),
               React.createElement('div', { style: { color: T.textMuted, fontSize: '10px', marginBottom: '6px' } },
-                character ? `${character.name} (${character.class})` : 'No character'
+                character ? `${String(character.name || '').replace(/[<>]/g, '')} (${String(character.class || '').replace(/[<>]/g, '')})` : 'No character'
               ),
               React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', marginBottom: '6px' } },
-                React.createElement('span', { style: { color: T.textFaint } }, `${stats.attended}/${stats.total} attended`),
-                React.createElement('span', { style: { color: T.gold, fontWeight: 'bold' } }, `${stats.percentage}%`)
+                React.createElement('span', { style: { color: T.textFaint } }, `${stats.attended || 0}/${stats.total || 0} attended`),
+                React.createElement('span', { style: { color: T.gold, fontWeight: 'bold' } }, `${stats.percentage || 0}%`)
               ),
               React.createElement('div', {
                 style: {
@@ -657,14 +665,14 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
                 React.createElement('div', {
                   style: {
                     height: '100%',
-                    width: `${stats.percentage}%`,
+                    width: `${Math.max(0, Math.min(100, stats.percentage || 0))}%`,
                     background: T.crimson,
                     transition: 'width 0.3s'
                   }
                 })
               ),
               React.createElement('div', { style: { color: T.textFaint, fontSize: '9px', marginTop: '4px' } },
-                `Last: ${stats.lastAttended}`
+                `Last: ${String(stats.lastAttended || 'Never').replace(/[<>]/g, '')}`
               )
             );
           })

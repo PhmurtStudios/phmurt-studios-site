@@ -104,7 +104,8 @@ const cardBase = {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 function StatBlockPreview({ monster }) {
-  const abilities = monster.abilities || [10,10,10,10,10,10];
+  if (!monster || typeof monster !== 'object') return null;
+  const abilities = Array.isArray(monster.abilities) ? monster.abilities : [10,10,10,10,10,10];
   return (
     <div style={{
       fontFamily: "'Spectral', serif", fontSize: "13px", lineHeight: "1.6",
@@ -192,12 +193,13 @@ function StatBlockPreview({ monster }) {
    ═══════════════════════════════════════════════════════════════════════════ */
 
 function MonsterCard({ monster, onExpand }) {
-  const cr = monster.cr || 0;
+  if (!monster || !monster.name) return null;
+  const cr = typeof monster.cr === 'number' ? monster.cr : 0;
   const crColor = CRColors[cr] || "#666";
   return (
     <div onClick={onExpand} style={{ ...cardBase, borderLeft: "3px solid " + crColor }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "10px" }}>
-        <h3 style={{ margin: 0, color: T.gold, fontFamily: T.heading, fontSize: "15px", lineHeight: "1.3" }}>{monster.name}</h3>
+        <h3 style={{ margin: 0, color: T.gold, fontFamily: T.heading, fontSize: "15px", lineHeight: "1.3" }}>{String(monster.name)}</h3>
         <div style={{
           backgroundColor: crColor, color: T.bg , padding: "3px 10px",
           borderRadius: "12px", fontSize: "11px", fontWeight: "bold",
@@ -223,11 +225,12 @@ function MonsterCard({ monster, onExpand }) {
 }
 
 function ItemCard({ item, onExpand }) {
+  if (!item || !item.name) return null;
   const rarityColor = RarityColors[item.rarity] || "#666";
   return (
     <div onClick={onExpand} style={{ ...cardBase, borderLeft: "3px solid " + rarityColor }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "10px" }}>
-        <h3 style={{ margin: 0, color: T.gold, fontFamily: T.heading, fontSize: "15px", lineHeight: "1.3" }}>{item.name}</h3>
+        <h3 style={{ margin: 0, color: T.gold, fontFamily: T.heading, fontSize: "15px", lineHeight: "1.3" }}>{String(item.name)}</h3>
         <div style={{
           backgroundColor: rarityColor, color: T.bg , padding: "3px 10px",
           borderRadius: "12px", fontSize: "11px", fontWeight: "bold",
@@ -249,11 +252,12 @@ function ItemCard({ item, onExpand }) {
 }
 
 function SpellCard({ spell, onExpand }) {
+  if (!spell || !spell.name) return null;
   const schoolColor = SchoolColors[spell.school] || "#666";
   return (
     <div onClick={onExpand} style={{ ...cardBase, borderLeft: "3px solid " + schoolColor }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "10px" }}>
-        <h3 style={{ margin: 0, color: T.gold, fontFamily: T.heading, fontSize: "15px", lineHeight: "1.3" }}>{spell.name}</h3>
+        <h3 style={{ margin: 0, color: T.gold, fontFamily: T.heading, fontSize: "15px", lineHeight: "1.3" }}>{String(spell.name)}</h3>
         <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
           {spell.concentration && <span style={{ fontSize: "10px", color: T.crimson, fontWeight: "bold", fontFamily: T.ui }}>CONC</span>}
           {spell.ritual && <span style={{ fontSize: "10px", color: "#6ba85c", fontWeight: "bold", fontFamily: T.ui }}>RIT</span>}
@@ -280,10 +284,11 @@ function SpellCard({ spell, onExpand }) {
 }
 
 function NPCCard({ npc, onExpand }) {
+  if (!npc || !npc.name) return null;
   return (
     <div onClick={onExpand} style={{ ...cardBase, borderLeft: "3px solid " + T.gold }}>
       <div style={{ marginBottom: "10px" }}>
-        <h3 style={{ margin: 0, color: T.gold, fontFamily: T.heading, fontSize: "15px" }}>{npc.name}</h3>
+        <h3 style={{ margin: 0, color: T.gold, fontFamily: T.heading, fontSize: "15px" }}>{String(npc.name)}</h3>
       </div>
       <div style={{ fontSize: "12px", color: T.textMuted, marginBottom: "6px", fontStyle: "italic" }}>
         {npc.race || "Human"} {npc.class ? npc.class + " " : ""}{npc.level ? "(Level " + npc.level + ")" : ""}
@@ -297,10 +302,11 @@ function NPCCard({ npc, onExpand }) {
 }
 
 function ClassFeatureCard({ feature, onExpand }) {
+  if (!feature || !feature.name) return null;
   return (
     <div onClick={onExpand} style={{ ...cardBase, borderLeft: "3px solid " + T.crimson }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "10px" }}>
-        <h3 style={{ margin: 0, color: T.gold, fontFamily: T.heading, fontSize: "15px", lineHeight: "1.3" }}>{feature.name}</h3>
+        <h3 style={{ margin: 0, color: T.gold, fontFamily: T.heading, fontSize: "15px", lineHeight: "1.3" }}>{String(feature.name)}</h3>
         {feature.level && (
           <div style={{
             backgroundColor: T.crimson, color: T.bg , padding: "3px 10px",
@@ -319,11 +325,12 @@ function ClassFeatureCard({ feature, onExpand }) {
 }
 
 function FeatCard({ feat, onExpand }) {
+  if (!feat || !feat.name) return null;
   const catColor = FeatCatColors[feat.category] || "#666";
   return (
     <div onClick={onExpand} style={{ ...cardBase, borderLeft: "3px solid " + catColor }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "10px" }}>
-        <h3 style={{ margin: 0, color: T.gold, fontFamily: T.heading, fontSize: "15px", lineHeight: "1.3" }}>{feat.name}</h3>
+        <h3 style={{ margin: 0, color: T.gold, fontFamily: T.heading, fontSize: "15px", lineHeight: "1.3" }}>{String(feat.name)}</h3>
         <div style={{
           backgroundColor: catColor, color: T.bg , padding: "3px 10px",
           borderRadius: "12px", fontSize: "11px", fontWeight: "bold",
@@ -370,6 +377,7 @@ function ModalShell({ title, children, onClose }) {
 }
 
 function TemplatePickerGrid({ templates, onSelect }) {
+  if (!templates || typeof templates !== 'object') return null;
   const entries = Object.entries(templates);
   if (!entries.length) return null;
   return (

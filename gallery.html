@@ -881,6 +881,16 @@
 
     let filteredCharacters = [...CHARACTERS];
 
+    function escapeHtml(text) {
+      if (text == null) return '';
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
     function calculateAbilityBar(score) {
       // Scale 8-18 to 0-100%
       return Math.max(0, Math.min(100, ((score - 8) / 10) * 100));
@@ -898,8 +908,8 @@
           const barFill = calculateAbilityBar(value);
           return `
             <div class="ability">
-              <div class="ability-label">${key}</div>
-              <span class="ability-score">${value}</span>
+              <div class="ability-label">${escapeHtml(key)}</div>
+              <span class="ability-score">${escapeHtml(value)}</span>
               <div class="ability-bar">
                 <div class="ability-bar-fill" style="width: ${barFill}%"></div>
               </div>
@@ -908,30 +918,30 @@
         }).join('');
 
         const featuresList = char.features
-          .map(f => `<li>${f}</li>`)
+          .map(f => `<li>${escapeHtml(f)}</li>`)
           .join('');
 
         const equipmentList = char.equipment
-          .map(e => `<li>${e}</li>`)
+          .map(e => `<li>${escapeHtml(e)}</li>`)
           .join('');
 
         const card = document.createElement('div');
         card.className = `character-card ${cardClass}`;
         card.innerHTML = `
           <div class="card-header">
-            <div class="card-class-icon">${char.icon}</div>
+            <div class="card-class-icon">${escapeHtml(char.icon)}</div>
             <div class="card-name-section">
-              <h3>${char.name}</h3>
+              <h3>${escapeHtml(char.name)}</h3>
             </div>
           </div>
 
-          <p class="card-flavor">"${char.flavor}"</p>
+          <p class="card-flavor">"${escapeHtml(char.flavor)}"</p>
 
           <div class="card-meta">
-            <span class="card-meta-tag">${char.class}</span>
-            <span class="card-meta-tag">${char.race}</span>
-            <span class="card-meta-tag">Level ${char.level}</span>
-            <span class="card-meta-tag">${char.subclass}</span>
+            <span class="card-meta-tag">${escapeHtml(char.class)}</span>
+            <span class="card-meta-tag">${escapeHtml(char.race)}</span>
+            <span class="card-meta-tag">Level ${escapeHtml(char.level)}</span>
+            <span class="card-meta-tag">${escapeHtml(char.subclass)}</span>
           </div>
 
           <div class="card-abilities">

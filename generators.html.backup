@@ -1510,6 +1510,8 @@
     }
 
   </style>
+</head>
+<body data-nav-active="DM Tools" data-footer-copy="Roll Well. Play Weird.">
   <div id="ps-site-shell"></div>
   <div id="ps-page-breadcrumb"></div>
 
@@ -2784,21 +2786,8 @@
         .replace(/'/g, '&#39;');
     }
 
-    // SECURITY NOTE (V-011): Escape strings for use in JavaScript event handlers (onclick attributes)
-    // This escapes both single and double quotes, preventing injection through onclick="func('${value}')"
-    function escapeJsString(str) {
-      if (str == null) return '';
-      return String(str)
-        .replace(/\\/g, '\\\\')
-        .replace(/'/g, "\\'")
-        .replace(/"/g, '\\"')
-        .replace(/\n/g, '\\n')
-        .replace(/\r/g, '\\r');
-    }
-
     // SECURITY NOTE (V-010): All user-input data must be escaped with escapeHtml()
     // before being used in innerHTML assignments or inline event handler attributes (e.g., onclick).
-    // For onclick attributes specifically, use escapeJsString() to prevent JavaScript injection.
     // The DATA arrays below contain hardcoded strings, so they are safe.
     // However, any future integration with user-submitted content MUST escape that data.
 
@@ -3293,8 +3282,6 @@
           btn.textContent = originalText;
           btn.classList.remove('copied');
         }, 2000);
-      }).catch((err) => {
-        console.error('Clipboard copy failed:', err);
       });
     }
 
@@ -3329,8 +3316,6 @@
       navigator.clipboard.writeText(text).then(function() {
         btn.textContent = 'Copied!';
         setTimeout(function() { btn.textContent = 'Copy to Clipboard'; }, 2000);
-      }).catch(function(err) {
-        console.error('Clipboard copy failed:', err);
       });
     }
 
@@ -3400,9 +3385,6 @@
     function copyToClipboard(text) {
       navigator.clipboard.writeText(text).then(() => {
         psToast('Copied to clipboard!', 2000);
-      }).catch((err) => {
-        console.error('Clipboard copy failed:', err);
-        psToast('Failed to copy to clipboard', 2000);
       });
     }
 
@@ -3715,8 +3697,8 @@
           </div>
 
           <div class="gen-result-actions">
-            <button class="gen-result-btn" onclick="copyToClipboard('Merchant ${escapeJsString(merchant.name)} - ${escapeJsString(merchant.occupation)}')">Copy</button>
-            <button class="gen-result-btn" onclick="pinToNotes('Merchant', '${escapeJsString(merchant.name)}')">Pin</button>
+            <button class="gen-result-btn" onclick="copyToClipboard('Merchant ${escapeHtml(merchant.name)} - ${escapeHtml(merchant.occupation)}')">Copy</button>
+            <button class="gen-result-btn" onclick="pinToNotes('Merchant', '${escapeHtml(merchant.name)}')">Pin</button>
           </div>
         </div>
       `;
@@ -3867,8 +3849,8 @@
           </div>
 
           <div class="gen-result-actions">
-            <button class="gen-result-btn" onclick="copyToClipboard('${escapeJsString(tavern.name)} - ${escapeJsString(tavern.type)}. Barkeep: ${escapeJsString(barkeep.name)}. ${escapeJsString(tavern.priceLevel)} prices.')">Copy</button>
-            <button class="gen-result-btn" onclick="pinToNotes('Tavern', '${escapeJsString(tavern.name)}')">Pin</button>
+            <button class="gen-result-btn" onclick="copyToClipboard('${escapeHtml(tavern.name)} - ${escapeHtml(tavern.type)}. Barkeep: ${escapeHtml(barkeep.name)}. ${escapeHtml(tavern.priceLevel)} prices.')">Copy</button>
+            <button class="gen-result-btn" onclick="pinToNotes('Tavern', '${escapeHtml(tavern.name)}')">Pin</button>
             <button class="gen-result-btn" onclick="exportTavernToCampaign()">Add to Campaign</button>
           </div>
         </div>
@@ -3995,8 +3977,8 @@
           </div>
 
           <div class="gen-result-actions">
-            <button class="gen-result-btn" onclick="copyToClipboard('${escapeJsString(dungeonName)} - ${escapeJsString(selectedType)}. Boss: ${escapeJsString(boss.name)}. Theme: ${escapeJsString(theme)}.')">Copy</button>
-            <button class="gen-result-btn" onclick="pinToNotes('Dungeon', '${escapeJsString(dungeonName)}')">Pin</button>
+            <button class="gen-result-btn" onclick="copyToClipboard('${escapeHtml(dungeonName)} - ${escapeHtml(selectedType)}. Boss: ${escapeHtml(boss.name)}. Theme: ${escapeHtml(theme)}.')">Copy</button>
+            <button class="gen-result-btn" onclick="pinToNotes('Dungeon', '${escapeHtml(dungeonName)}')">Pin</button>
             <button class="gen-result-btn" onclick="exportDungeonToCampaign()">Add to Campaign</button>
           </div>
         </div>
@@ -4381,7 +4363,7 @@
           </div>
 
           <div class="gen-result-actions">
-            <button class="gen-result-btn" onclick="copyToClipboard('Encounter in ${escapeJsString(selectedEnv)}. ${escapeJsString(difficulty)} difficulty. ${monsters.map(m => escapeJsString(m.name)).join(', ')}')">Copy</button>
+            <button class="gen-result-btn" onclick="copyToClipboard('Encounter in ${escapeHtml(selectedEnv)}. ${escapeHtml(difficulty)} difficulty. ${monsters.map(m => escapeHtml(m.name)).join(', ')}')">Copy</button>
             <button class="gen-result-btn" onclick="pinToNotes('Encounter', selectedEnv)">Pin</button>
             <button class="gen-result-btn" onclick="exportEncounterToCampaign()">Add to Campaign</button>
           </div>
@@ -4516,7 +4498,7 @@
           <div class="gen-result-value" style="font-size: 18px; font-weight: bold; color: var(--crimson);">${totalGPValue.toFixed(0)} GP</div>
         </div>
         <div class="gen-result-actions">
-          <button class="gen-result-btn" onclick="copyToClipboard('Treasure worth ~${totalGPValue.toFixed(0)} GP. Container: ${escapeJsString(container)}')">Copy</button>
+          <button class="gen-result-btn" onclick="copyToClipboard('Treasure worth ~${totalGPValue.toFixed(0)} GP. Container: ${escapeHtml(container)}')">Copy</button>
           <button class="gen-result-btn" onclick="pinToNotes('Treasure', 'Hoard')">Pin</button>
           <button class="gen-result-btn" onclick="exportTreasureToCampaign()">Add to Campaign</button>
         </div>
@@ -4650,7 +4632,7 @@
           </div>
 
           <div class="gen-result-actions">
-            <button class="gen-result-btn" onclick="copyToClipboard('${escapeJsString(selectedGenre)}: ${escapeJsString(hook.hook)} | ${escapeJsString(patron)} | Reward: ${escapeJsString(rewardBase)} GP')">Copy</button>
+            <button class="gen-result-btn" onclick="copyToClipboard('${escapeHtml(selectedGenre)}: ${escapeHtml(hook.hook)} | ${escapeHtml(patron)} | Reward: ${escapeHtml(rewardBase)} GP')">Copy</button>
             <button class="gen-result-btn" onclick="pinToNotes('Hook', selectedGenre)">Pin</button>
             <button class="gen-result-btn" onclick="exportPlotHookToCampaign()">Add to Campaign</button>
           </div>
@@ -4817,7 +4799,7 @@
           </div>
 
           <div class="gen-result-actions">
-            <button class="gen-result-btn" onclick="copyToClipboard('${escapeJsString(weather.condition)}, ${escapeJsString(weather.temperature)}, wind ${escapeJsString(weather.wind)} mph')">Copy</button>
+            <button class="gen-result-btn" onclick="copyToClipboard('${escapeHtml(weather.condition)}, ${escapeHtml(weather.temperature)}, wind ${escapeHtml(weather.wind)} mph')">Copy</button>
             <button class="gen-result-btn" onclick="pinToNotes('Weather', 'Forecast')">Pin</button>
           </div>
         </div>
@@ -4955,7 +4937,7 @@
             <div class="gen-result-value"><em>${dmTip}</em></div>
           </div>
           <div class="gen-result-actions">
-            <button class="gen-result-btn" onclick="copyToClipboard('Wild Magic (${escapeJsString(roll)}): ${escapeJsString(effect)} (${escapeJsString(severity)}, ${escapeJsString(duration)})')">Copy</button>
+            <button class="gen-result-btn" onclick="copyToClipboard('Wild Magic (${escapeHtml(roll)}): ${escapeHtml(effect)} (${escapeHtml(severity)}, ${escapeHtml(duration)})')">Copy</button>
           </div>
         </div>
       `;
@@ -5339,8 +5321,8 @@
           ` : ''}
 
           <div class="gen-action-bar">
-            <button class="gen-action-btn" onclick="copyToClipboard('${escapeJsString(spell.name)}')">Copy Name</button>
-            <button class="gen-action-btn" onclick="saveToNotes('${escapeJsString(spell.name)}: ${escapeJsString(spell.level)} ${escapeJsString(spell.school)}')">Save to Notes</button>
+            <button class="gen-action-btn" onclick="copyToClipboard('${escapeHtml(spell.name).replace(/'/g, "\\'")}')">Copy Name</button>
+            <button class="gen-action-btn" onclick="saveToNotes('${escapeHtml(spell.name).replace(/'/g, "\\'")}: ${escapeHtml(spell.level)} ${escapeHtml(spell.school)}')">Save to Notes</button>
             <button class="gen-action-btn" onclick="exportSpellToCampaign()">Add to Campaign</button>
           </div>
         </div>
@@ -6942,9 +6924,6 @@
       if (navigator.clipboard) {
         navigator.clipboard.writeText(text).then(() => {
           alert('Stat block copied to clipboard');
-        }).catch((err) => {
-          console.error('Clipboard copy failed:', err);
-          alert('Failed to copy stat block to clipboard');
         });
       } else {
         const textarea = document.createElement('textarea');

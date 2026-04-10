@@ -71,19 +71,29 @@ const PRECACHE_URLS = [
   // supabase-setup-admin.html excluded: admin setup page
 ];
 
-// Maximum age for cached assets before forced revalidation (4 hours)
-const MAX_CACHE_AGE = 4 * 60 * 60 * 1000;
+// NOTE: MAX_CACHE_AGE was previously defined but is no longer used.
+// Cache invalidation is now handled via CACHE_VERSION updates.
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return Promise.all(
         PRECACHE_URLS.map((url) => {
-          return cache.add(url).catch(() => {
-            // Ignore errors for optional files
+          // SECURITY: Validate URL before caching to prevent malicious URIs
+          if (typeof url !== 'string' || url.length === 0 || url.length > 1024) {
+            console.warn('[SW] Skipping invalid precache URL:', url);
+            return Promise.resolve();
+          }
+          return cache.add(url).catch((err) => {
+            // Log errors for critical files only (don't fail install, but log for debugging)
+            if (['index.html', 'phmurt-auth.js', 'phmurt-shell.js'].includes(url)) {
+              console.warn('[SW] Failed to precache critical asset:', url, err);
+            }
           });
         })
       );
+    }).catch((err) => {
+      console.error('[SW] Cache open failed during install:', err);
     })
   );
   self.skipWaiting();
@@ -96,10 +106,14 @@ self.addEventListener('activate', (event) => {
         cacheNames.map((cacheName) => {
           // Delete all caches that don't match current version
           if (cacheName !== CACHE_NAME) {
-            return caches.delete(cacheName);
+            return caches.delete(cacheName).catch((err) => {
+              console.error('[SW] Failed to delete cache during activation:', cacheName, err);
+            });
           }
         })
       );
+    }).catch((err) => {
+      console.error('[SW] Cache cleanup failed during activation:', err);
     })
   );
   self.clients.claim();
@@ -107,21 +121,31 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-  const url = new URL(request.url);
+  try {
+    const url = new URL(request.url);
 
-  // Only handle GET requests from same origin
-  if (request.method !== 'GET') return;
-  if (url.protocol === 'chrome-extension:') return;
-  if (url.origin !== self.location.origin) return;
-  // SECURITY (V-013): Never cache admin pages
-  if (url.pathname === '/admin.html' || url.pathname.startsWith('/admin')) {
-    return event.respondWith(fetch(event.request));
+    // Only handle GET requests from same origin
+    if (request.method !== 'GET') return;
+    if (url.protocol === 'chrome-extension:') return;
+    if (url.origin !== self.location.origin) return;
+  } catch (e) {
+    // SECURITY: Invalid URL parsing - don't cache
+    return;
+  }
+  // SECURITY (V-013): Never cache admin pages or sensitive auth pages
+  if (url.pathname === '/admin.html' || url.pathname.startsWith('/admin') ||
+      url.pathname === '/reset-password.html' || url.pathname === '/supabase-setup-admin.html') {
+    return event.respondWith(fetch(event.request).catch(() => {
+      return new Response('Offline - page not available', { status: 503 });
+    }));
   }
   // Avoid caching API-like data requests; keep them network-only.
-  if ((request.headers.get('accept') || '').includes('application/json')) return;
+  const acceptHeader = request.headers ? (request.headers.get('accept') || '') : '';
+  if (typeof acceptHeader === 'string' && acceptHeader.includes('application/json')) return;
 
   // Network-first for HTML pages (always get fresh content)
-  if (request.mode === 'navigate' || (request.headers.get('accept') || '').includes('text/html')) {
+  const acceptHTML = request.headers ? (request.headers.get('accept') || '') : '';
+  if (request.mode === 'navigate' || (typeof acceptHTML === 'string' && acceptHTML.includes('text/html'))) {
     event.respondWith(
       fetch(request)
         .then((response) => {
@@ -129,15 +153,25 @@ self.addEventListener('fetch', (event) => {
             throw new Error('Bad network response');
           }
           const responseToCache = response.clone();
+          // Cache update happens independently, don't block response on cache write
           caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseToCache);
+            cache.put(request, responseToCache).catch((err) => {
+              console.error('[SW] Failed to cache HTML response:', err);
+            });
+          }).catch((err) => {
+            console.error('[SW] Failed to open cache for HTML:', err);
           });
           return response;
         })
         .catch(() => {
           return caches.match(request).then((response) => {
             if (response) return response;
-            return caches.match('index.html');
+            // Return cached index.html, or 404 fallback if that fails too
+            return caches.match('index.html').then((indexResponse) => {
+              return indexResponse || new Response('Offline - page not available', { status: 503 });
+            }).catch(() => {
+              return new Response('Offline - page not available', { status: 503 });
+            });
           });
         })
     );
@@ -145,7 +179,7 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Network-first for JS/CSS assets (always get fresh code, fall back to cache offline)
-  const dest = request.destination || '';
+  const dest = String(request.destination || '').slice(0, 50);
   const isCodeAsset = dest === 'style' || dest === 'script';
   if (isCodeAsset) {
     event.respondWith(
@@ -153,14 +187,21 @@ self.addEventListener('fetch', (event) => {
         .then((response) => {
           if (response && response.status === 200 && response.type === 'basic') {
             const responseToCache = response.clone();
+            // Cache update happens independently, don't block response on cache write
             caches.open(CACHE_NAME).then((cache) => {
-              cache.put(request, responseToCache);
+              cache.put(request, responseToCache).catch((err) => {
+                console.error('[SW] Failed to cache asset:', (request && request.url) || 'unknown', err);
+              });
+            }).catch((err) => {
+              console.error('[SW] Failed to open cache for asset:', err);
             });
           }
           return response;
         })
         .catch(() => {
-          return caches.match(request);
+          return caches.match(request).catch(() => {
+            return new Response('Asset not available offline', { status: 503 });
+          });
         })
     );
     return;
@@ -172,28 +213,63 @@ self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.match(request).then((cachedResponse) => {
+        // SECURITY: Always return cached response if available, revalidate in background
         const fetchPromise = fetch(request).then((networkResponse) => {
           if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
-            cache.put(request, networkResponse.clone());
+            cache.put(request, networkResponse.clone()).catch(() => {
+              /* cache.put failed - log and continue */
+            });
           }
           return networkResponse;
         }).catch(() => {
-          return cachedResponse;
+          // Network failed - return cached version if available
+          return cachedResponse || new Response('Media not available offline', { status: 503 });
         });
+        // Return cached if available, otherwise wait for network
         return cachedResponse || fetchPromise;
+      }).catch(() => {
+        return new Response('Media not available offline', { status: 503 });
       });
+    }).catch((err) => {
+      console.error('[SW] Cache open failed for media:', err);
+      return new Response('Media not available offline', { status: 503 });
     })
   );
 });
 
 // Listen for messages from the page to force cache refresh
+// Messages should come from window.postMessage (same origin by browser enforcement)
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
-  if (event.data && event.data.type === 'CLEAR_CACHE') {
-    event.waitUntil(
-      caches.keys().then((cacheNames) => Promise.all(cacheNames.map((name) => caches.delete(name))))
-    );
+  // Validate message data type
+  if (!event || !event.data || typeof event.data !== 'object') return;
+
+  try {
+    // SECURITY: Validate message type before processing
+    const msgType = String(event.data.type || '').slice(0, 50);
+    if (msgType === 'SKIP_WAITING') {
+      self.skipWaiting();
+    } else if (msgType === 'CLEAR_CACHE') {
+      event.waitUntil(
+        caches.keys().then((cacheNames) => {
+          if (!Array.isArray(cacheNames)) {
+            console.error('[SW] cacheNames is not an array');
+            return Promise.resolve();
+          }
+          return Promise.all(cacheNames.map((name) => {
+            if (typeof name !== 'string') {
+              console.warn('[SW] Invalid cache name type:', typeof name);
+              return Promise.resolve();
+            }
+            return caches.delete(name).catch((err) => {
+              console.error('[SW] Failed to delete cache:', name, err);
+            });
+          }));
+        }).catch((err) => {
+          console.error('[SW] Failed to clear caches:', err);
+        })
+      );
+    }
+  } catch (err) {
+    console.error('[SW] Error processing message:', err);
   }
 });
