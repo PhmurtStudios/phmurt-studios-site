@@ -2096,8 +2096,8 @@ window.addEventListener('storage', function (e) {
           '<h2 class="upgrade-title">Limit Reached</h2>' +
           '<p class="upgrade-text">' + msg.replace(/</g, '&lt;') + '<br>Upgrade to <strong>Phmurt Studios Pro</strong> for unlimited ' + table + ', generators, advanced campaign tools, and more.</p>' +
           '<div class="phmurt-upgrade-btns">' +
-            '<button class="upgrade-btn" id="phmurt-upgrade-monthly">$4.99 / month</button>' +
-            '<button class="upgrade-btn yearly" id="phmurt-upgrade-yearly">$49.99 / year</button>' +
+            '<a class="upgrade-btn" href="pricing.html?plan=monthly" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">$4.99 / month</a>' +
+            '<a class="upgrade-btn yearly" href="pricing.html?plan=yearly" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">$49.99 / year</a>' +
           '</div>' +
           '<span class="upgrade-save">Save $10 with yearly!</span>' +
         '</div>' +
@@ -2110,28 +2110,6 @@ window.addEventListener('storage', function (e) {
     // Close handlers
     document.getElementById('phmurt-upgrade-close').addEventListener('click', function () { overlay.remove(); });
     overlay.addEventListener('click', function (ev) { if (ev.target === overlay) overlay.remove(); });
-    // Subscribe handlers — direct checkout, fallback to pricing page
-    function _doUpgradeCheckout(btn, plan) {
-      btn.disabled = true;
-      btn.textContent = 'Redirecting…';
-      try {
-        if (typeof PhmurtDB !== 'undefined' && PhmurtDB.getSession() && PhmurtDB.getSession().userId) {
-          PhmurtDB.startSubscription(window.location.href, plan).catch(function () {
-            window.location.href = 'pricing.html?plan=' + plan;
-          });
-          // Safety fallback if redirect doesn't happen within 10s
-          setTimeout(function () { window.location.href = 'pricing.html?plan=' + plan; }, 10000);
-        } else {
-          window.location.href = 'pricing.html?plan=' + plan;
-        }
-      } catch (e) {
-        window.location.href = 'pricing.html?plan=' + plan;
-      }
-    }
-    var monthlyBtn = document.getElementById('phmurt-upgrade-monthly');
-    var yearlyBtn = document.getElementById('phmurt-upgrade-yearly');
-    if (monthlyBtn) monthlyBtn.addEventListener('click', function () { _doUpgradeCheckout(monthlyBtn, 'monthly'); });
-    if (yearlyBtn) yearlyBtn.addEventListener('click', function () { _doUpgradeCheckout(yearlyBtn, 'yearly'); });
   });
 
   // ── Global Feature Gate ─────────────────────────────────────────
@@ -2163,8 +2141,8 @@ window.addEventListener('storage', function (e) {
           '<h2 class="upgrade-title">Upgrade to Pro</h2>' +
           '<p class="upgrade-text"><strong>' + featureLabel + '</strong> is a Pro feature. Unlock it — plus unlimited characters, campaigns, and every generator.</p>' +
           '<div class="phmurt-upgrade-btns">' +
-            '<button class="phmurt-gate-btn upgrade-btn" data-plan="monthly">' + tierCfg.pro.price.monthly + '</button>' +
-            '<button class="phmurt-gate-btn upgrade-btn yearly" data-plan="yearly">' + tierCfg.pro.price.yearly + '</button>' +
+            '<a class="upgrade-btn" href="pricing.html?plan=monthly" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">' + tierCfg.pro.price.monthly + '</a>' +
+            '<a class="upgrade-btn yearly" href="pricing.html?plan=yearly" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">' + tierCfg.pro.price.yearly + '</a>' +
           '</div>' +
           '<span class="upgrade-save">' + tierCfg.pro.price.yearlySavings + ' with yearly!</span>' +
         '</div>' +
@@ -2179,27 +2157,6 @@ window.addEventListener('storage', function (e) {
     // Close
     document.getElementById('phmurt-gate-close').addEventListener('click', function () { overlay.remove(); });
     overlay.addEventListener('click', function (ev) { if (ev.target === overlay) overlay.remove(); });
-
-    // Subscribe buttons — direct checkout, fallback to pricing page
-    overlay.querySelectorAll('.phmurt-gate-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var plan = btn.getAttribute('data-plan') || 'monthly';
-        btn.disabled = true;
-        btn.textContent = 'Redirecting…';
-        try {
-          if (typeof PhmurtDB !== 'undefined' && PhmurtDB.getSession() && PhmurtDB.getSession().userId) {
-            PhmurtDB.startSubscription(window.location.href, plan).catch(function () {
-              window.location.href = 'pricing.html?plan=' + plan;
-            });
-            setTimeout(function () { window.location.href = 'pricing.html?plan=' + plan; }, 10000);
-          } else {
-            window.location.href = 'pricing.html?plan=' + plan;
-          }
-        } catch (e) {
-          window.location.href = 'pricing.html?plan=' + plan;
-        }
-      });
-    });
 
     return false;
   };
