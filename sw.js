@@ -1,4 +1,4 @@
-const CACHE_VERSION = 167;
+const CACHE_VERSION = 168;
 const CACHE_NAME = 'phmurt-v' + CACHE_VERSION;
 const PRECACHE_URLS = [
   '/',
@@ -143,26 +143,42 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Stale-while-revalidate for assets (CSS, JS, images)
-  // Serves cached version immediately, fetches fresh copy in background
+  // Network-first for JS/CSS assets (always get fresh code, fall back to cache offline)
   const dest = request.destination || '';
-  const isStaticAsset = dest === 'style' || dest === 'script' || dest === 'image' || dest === 'font';
-  if (!isStaticAsset) return;
+  const isCodeAsset = dest === 'style' || dest === 'script';
+  if (isCodeAsset) {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.status === 200 && response.type === 'basic') {
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          return caches.match(request);
+        })
+    );
+    return;
+  }
+
+  // Stale-while-revalidate for images/fonts (less critical to be fresh)
+  const isMediaAsset = dest === 'image' || dest === 'font';
+  if (!isMediaAsset) return;
   event.respondWith(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.match(request).then((cachedResponse) => {
         const fetchPromise = fetch(request).then((networkResponse) => {
-          // Only cache valid same-origin responses
           if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
             cache.put(request, networkResponse.clone());
           }
           return networkResponse;
         }).catch(() => {
-          // Network failed, cached version (if any) is already being returned
           return cachedResponse;
         });
-
-        // Return cached version immediately, or wait for network
         return cachedResponse || fetchPromise;
       });
     })

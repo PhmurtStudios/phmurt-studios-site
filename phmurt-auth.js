@@ -461,9 +461,43 @@ var PhmurtDB = (function () {
         submitBtn.disabled = true;
 
         var email = _session ? _session.email : '';
-        sb.auth.signInWithPassword({ email: email, password: pw })
+        var displayName = _session ? (_session.name || _session.displayName || 'Adventurer') : 'Adventurer';
+
+        // Try sign-in first; if the user has no Supabase account yet,
+        // auto-create one so legacy-only users can subscribe seamlessly.
+        function signInOrSignUp() {
+          return sb.auth.signInWithPassword({ email: email, password: pw })
+            .then(function (r) {
+              if (r.error) throw new Error(r.error.message);
+              return r;
+            })
+            .catch(function (signInErr) {
+              // "Invalid login credentials" means no Supabase account exists —
+              // create one now to migrate this legacy user.
+              if (signInErr.message && signInErr.message.indexOf('Invalid login credentials') !== -1) {
+                submitBtn.textContent = 'Creating cloud account…';
+                return sb.auth.signUp({
+                  email: email,
+                  password: pw,
+                  options: { data: { name: displayName } }
+                }).then(function (sr) {
+                  if (sr.error) throw new Error(sr.error.message);
+                  // If email confirmation is required, the user object may exist
+                  // but session may be null. Try signing in again.
+                  if (sr.data && sr.data.session) return sr;
+                  return sb.auth.signInWithPassword({ email: email, password: pw })
+                    .then(function (r2) {
+                      if (r2.error) throw new Error(r2.error.message);
+                      return r2;
+                    });
+                });
+              }
+              throw signInErr;
+            });
+        }
+
+        signInOrSignUp()
           .then(function (r) {
-            if (r.error) throw new Error(r.error.message);
             // Now we have a Supabase session — update internal state
             var user = r.data.user;
             return _fetchProfile(user.id).then(function (profile) {
