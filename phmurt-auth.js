@@ -1653,12 +1653,11 @@ var PhmurtDB = (function () {
       return sb.auth.getSession().then(function (r) {
         var token = r.data && r.data.session && r.data.session.access_token;
         if (!token) {
-          // Legacy session without Supabase JWT — try client-side Stripe checkout first
-          return _clientSideCheckout().catch(function (csErr) {
-            // Client-side checkout failed — fall back to re-auth prompt with magic link
-            console.warn('Client-side checkout unavailable, falling back to sign-in:', csErr.message);
-            return _showReauthPrompt(sb, returnUrl, interval);
-          });
+          // Legacy session without Supabase JWT — prompt re-authentication
+          // to get a fresh JWT for the secure edge-function checkout path.
+          // (Client-side redirectToCheckout with lineItems is deprecated by Stripe
+          //  and may hang indefinitely, so we skip it and go straight to re-auth.)
+          return _showReauthPrompt(sb, returnUrl, interval);
         }
 
         // Try checkout; on failure try refreshing session, then re-auth as last resort
@@ -1667,17 +1666,12 @@ var PhmurtDB = (function () {
           return sb.auth.refreshSession().then(function (ref) {
             var newToken = ref.data && ref.data.session && ref.data.session.access_token;
             if (!newToken) {
-              // Try client-side checkout before falling back to re-auth
-              return _clientSideCheckout().catch(function () {
-                return _showReauthPrompt(sb, returnUrl, interval);
-              });
+              return _showReauthPrompt(sb, returnUrl, interval);
             }
             return _invokeCheckout(sb);
           }).catch(function (retryErr) {
             if (retryErr.message && retryErr.message.indexOf('Unexpected') !== -1) throw retryErr;
-            return _clientSideCheckout().catch(function () {
-              return _showReauthPrompt(sb, returnUrl, interval);
-            });
+            return _showReauthPrompt(sb, returnUrl, interval);
           });
         });
       });
