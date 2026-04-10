@@ -473,8 +473,8 @@ var PhmurtDB = (function () {
               return r;
             })
             .catch(function (signInErr) {
-              // "Invalid login credentials" means no Supabase account exists —
-              // create one now to migrate this legacy user.
+              // "Invalid login credentials" can mean wrong password OR no account.
+              // Try signUp — if it fails with "already registered", the password was wrong.
               if (signInErr.message && signInErr.message.indexOf('Invalid login credentials') !== -1) {
                 submitBtn.textContent = 'Creating cloud account…';
                 return sb.auth.signUp({
@@ -482,7 +482,15 @@ var PhmurtDB = (function () {
                   password: pw,
                   options: { data: { name: displayName } }
                 }).then(function (sr) {
-                  if (sr.error) throw new Error(sr.error.message);
+                  if (sr.error) {
+                    // Account already exists — the password was simply wrong.
+                    if (sr.error.message && sr.error.message.indexOf('already registered') !== -1) {
+                      var resetErr = new Error('Incorrect password. If you forgot it, use the reset link below.');
+                      resetErr._showReset = true;
+                      throw resetErr;
+                    }
+                    throw new Error(sr.error.message);
+                  }
                   // If email confirmation is required, the user object may exist
                   // but session may be null. Try signing in again.
                   if (sr.data && sr.data.session) return sr;
@@ -548,6 +556,22 @@ var PhmurtDB = (function () {
             submitBtn.disabled = false;
             errEl.textContent = err.message || 'Sign-in failed. Please try again.';
             errEl.style.display = 'block';
+            // Show password reset link when password is wrong
+            if (err._showReset && !document.getElementById('phmurt-reauth-reset')) {
+              var resetLink = document.createElement('a');
+              resetLink.id = 'phmurt-reauth-reset';
+              resetLink.href = '#';
+              resetLink.textContent = 'Reset password';
+              resetLink.style.cssText = 'color:#d4433a;font-size:12px;display:block;margin-top:8px;text-decoration:underline;cursor:pointer;';
+              resetLink.addEventListener('click', function (ev) {
+                ev.preventDefault();
+                resetLink.textContent = 'Sending reset email…';
+                sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/reset-password.html' })
+                  .then(function () { resetLink.textContent = 'Reset email sent! Check your inbox.'; resetLink.style.color = '#5ee09a'; })
+                  .catch(function (re) { resetLink.textContent = 'Could not send reset email: ' + (re.message || 'Unknown error'); });
+              });
+              errEl.parentNode.insertBefore(resetLink, errEl.nextSibling);
+            }
           });
       }
 
