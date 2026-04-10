@@ -1,4 +1,4 @@
-const CACHE_VERSION = 172;
+const CACHE_VERSION = 173;
 const CACHE_NAME = 'phmurt-v' + CACHE_VERSION;
 const PRECACHE_URLS = [
   '/',
@@ -9,6 +9,7 @@ const PRECACHE_URLS = [
   'phmurt-realtime.js',
   'phmurt-char-sync.js',
   'supabase-config.js',
+  'stripe-config.js',
   'site-config.js',
   'theme.js',
   'builder-data.js',
@@ -112,8 +113,8 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   if (url.protocol === 'chrome-extension:') return;
   if (url.origin !== self.location.origin) return;
-  // SECURITY (V-013): Never cache admin page
-  if (url.pathname.includes('admin')) {
+  // SECURITY (V-013): Never cache admin pages
+  if (url.pathname === '/admin.html' || url.pathname.startsWith('/admin')) {
     return event.respondWith(fetch(event.request));
   }
   // Avoid caching API-like data requests; keep them network-only.

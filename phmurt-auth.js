@@ -533,7 +533,10 @@ var PhmurtDB = (function () {
                 interval: (interval === 'yearly') ? 'yearly' : 'monthly',
               }),
             })
-            .then(function (resp) { return resp.json(); })
+            .then(function (resp) {
+              if (!resp.ok) throw new Error('Payment server returned status ' + resp.status);
+              return resp.json();
+            })
             .then(function (data) {
               if (data.error) throw new Error(data.error);
               if (data.url) {
@@ -547,6 +550,8 @@ var PhmurtDB = (function () {
                   if (urlErr.message === 'Unexpected redirect URL.') throw urlErr;
                   throw new Error('Invalid response from payment server.');
                 }
+              } else {
+                throw new Error('No checkout URL returned from server.');
               }
               resolve(data);
             });
@@ -572,6 +577,8 @@ var PhmurtDB = (function () {
               });
               errEl.parentNode.insertBefore(resetLink, errEl.nextSibling);
             }
+            // Do NOT reject here — let the user retry by entering password again.
+            // The modal stays open so they can try again or click close to cancel.
           });
       }
 
@@ -1461,7 +1468,10 @@ var PhmurtDB = (function () {
             interval: (interval === 'yearly') ? 'yearly' : 'monthly',
           }),
         })
-        .then(function (resp) { return resp.json(); })
+        .then(function (resp) {
+          if (!resp.ok) throw new Error('Payment server returned status ' + resp.status);
+          return resp.json();
+        })
         .then(function (data) {
           if (data.error) throw new Error(data.error);
           // SECURITY: Validate the redirect URL is an HTTPS Stripe URL (prevents javascript:/data: URI attacks)
@@ -1476,6 +1486,8 @@ var PhmurtDB = (function () {
               if (urlErr.message === 'Unexpected redirect URL.') throw urlErr;
               throw new Error('Invalid response from payment server.');
             }
+          } else {
+            throw new Error('No checkout URL returned from server.');
           }
           return data;
         });
@@ -1651,6 +1663,9 @@ window.addEventListener('storage', function (e) {
   ].join('\n');
   document.head.appendChild(style);
 
+  // Pre-initialize flags so pages checking window.phmurtFlags don't get undefined
+  window.phmurtFlags = window.phmurtFlags || {};
+
   // ── Map pages to feature flag keys ────────────────────────────────
   var pageFlags = {
     '/character-builder.html':     'feature_character_builder',
@@ -1693,7 +1708,9 @@ window.addEventListener('storage', function (e) {
         box.className = 'phmurt-maintenance-box';
         box.innerHTML = '<h1>Under Maintenance</h1>';
         var msg = flags.maintenance_message || 'We\'re performing scheduled maintenance. The site will be back shortly!';
-        box.innerHTML += '<p>' + msg.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>';
+        var msgP = document.createElement('p');
+        msgP.textContent = msg;
+        box.appendChild(msgP);
         if (flags.maintenance_eta && flags.maintenance_eta !== 'null') {
           try {
             var eta = new Date(flags.maintenance_eta);
@@ -1906,8 +1923,7 @@ window.addEventListener('storage', function (e) {
         bodyEl.innerHTML =
           '<div class="upgrade-icon" style="font-size:24px;">&#9203;</div>' +
           '<h2 class="upgrade-title">Redirecting to Checkout…</h2>';
-        _doStripeCheckout(token, plan, overlay);
-        return;
+        return _doStripeCheckout(token, plan, overlay);
       }
       // No JWT — show inline password form
       bodyEl.innerHTML =
@@ -1973,7 +1989,7 @@ window.addEventListener('storage', function (e) {
             var token = r.data && r.data.session && r.data.session.access_token;
             if (!token) throw new Error('Authentication failed. Please try again.');
             submitBtn.textContent = 'Redirecting to checkout…';
-            _doStripeCheckout(token, plan, overlay);
+            return _doStripeCheckout(token, plan, overlay);
           })
           .catch(function (err) {
             submitBtn.textContent = 'Continue to Checkout';
@@ -2000,6 +2016,13 @@ window.addEventListener('storage', function (e) {
       submitBtn.addEventListener('click', doSubmit);
       pwInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSubmit(); });
       setTimeout(function () { pwInput.focus(); }, 100);
+    }).catch(function (err) {
+      // Session check failed — show error and allow retry
+      bodyEl.innerHTML =
+        '<button class="upgrade-close" onclick="this.closest(\'.phmurt-upgrade-overlay\').remove()">&times;</button>' +
+        '<div class="upgrade-icon">&#9888;</div>' +
+        '<h2 class="upgrade-title">Connection Error</h2>' +
+        '<p class="upgrade-text">Could not verify your session. Please try again or visit the <a href="pricing.html" style="color:#d4433a;">pricing page</a> to subscribe.</p>';
     });
   }
 
@@ -2008,14 +2031,20 @@ window.addEventListener('storage', function (e) {
     var checkoutUrl = (typeof STRIPE_CHECKOUT_FUNCTION_URL !== 'undefined' && STRIPE_CHECKOUT_FUNCTION_URL)
       ? STRIPE_CHECKOUT_FUNCTION_URL
       : (typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL + '/functions/v1/stripe-checkout' : null);
-    if (!checkoutUrl) { alert('Stripe checkout not configured.'); return; }
+    if (!checkoutUrl) {
+      alert('Stripe checkout not configured.');
+      return Promise.reject(new Error('Stripe checkout not configured.'));
+    }
 
-    fetch(checkoutUrl, {
+    return fetch(checkoutUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
       body: JSON.stringify({ return_url: window.location.href, interval: (plan === 'yearly') ? 'yearly' : 'monthly' })
     })
-    .then(function (resp) { return resp.json(); })
+    .then(function (resp) {
+      if (!resp.ok) throw new Error('Payment server returned status ' + resp.status);
+      return resp.json();
+    })
     .then(function (data) {
       if (data.error) throw new Error(data.error);
       if (data.url) {
@@ -2029,11 +2058,14 @@ window.addEventListener('storage', function (e) {
           if (urlErr.message === 'Unexpected redirect URL.') throw urlErr;
           throw new Error('Invalid response from payment server.');
         }
+      } else {
+        throw new Error('No checkout URL returned from server.');
       }
     })
     .catch(function (err) {
       if (overlay) overlay.remove();
       alert('Could not start checkout: ' + (err.message || 'Unknown error'));
+      throw err; // Re-throw so callers can handle it
     });
   }
 

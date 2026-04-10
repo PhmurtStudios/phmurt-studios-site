@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   <meta name="referrer" content="strict-origin" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://*.stripe.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
   <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), usb=(), payment=(), serial=(), bluetooth=()" />
   <title>Pricing · Phmurt Studios</title>
   <meta name="description" content="Compare Phmurt Studios Free and Pro plans. Unlock unlimited characters, campaigns, generators, and advanced DM tools." />
@@ -29,7 +29,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous" integrity="sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG"></script>
   <script src="supabase-config.js"></script>
   <script src="stripe-config.js"></script>
-  <script src="phmurt-auth.js?v=172"></script>
+  <script src="phmurt-auth.js?v=173"></script>
 
   <style>
     /* ── Pricing page layout ─────────────────────────────────────── */
@@ -369,12 +369,14 @@
     function updatePricing() {
       if (yearly) {
         sw.classList.add('yearly');
+        sw.setAttribute('aria-checked', 'true');
         lblM.classList.remove('active');
         lblY.classList.add('active');
         priceEl.innerHTML = '$49.99 <span class="period">/ year</span>';
         noteEl.textContent = 'That\'s ~$4.17/mo — save $10 vs monthly';
       } else {
         sw.classList.remove('yearly');
+        sw.setAttribute('aria-checked', 'false');
         lblM.classList.add('active');
         lblY.classList.remove('active');
         priceEl.innerHTML = '$4.99 <span class="period">/ month</span>';
