@@ -1,22 +1,24 @@
 /* ═══════════════════════════════════════════════════════════════════
    STRIPE CONFIG — Phmurt Studios Pro Subscription
    ═══════════════════════════════════════════════════════════════════
-   Fill in these values from your Stripe Dashboard:
-   1. Go to https://dashboard.stripe.com
-   2. Get your Publishable Key from Developers → API Keys
-   3. Create a Product called "Phmurt Studios Pro"
-   4. Add TWO prices to that product:
-      - $5/month  (recurring monthly)  → copy the Price ID
-      - $50/year  (recurring yearly)   → copy the Price ID
-   5. Set up a Customer Portal at
-      https://dashboard.stripe.com/settings/billing/portal
+   SECURITY NOTE: These are Stripe PUBLISHABLE keys and price IDs.
+   They are designed by Stripe to be safe for client-side use.
+   The SECRET key (sk_...) must NEVER appear here — it belongs
+   only in Supabase Edge Function environment secrets.
+
+   To switch to live mode:
+   1. Replace pk_test_... with pk_live_... from Stripe Dashboard
+   2. Replace price IDs with your live product's price IDs
+   3. Update STRIPE_SECRET_KEY in Supabase Edge Function secrets
+   4. Create a new webhook endpoint in Stripe live mode
    ═══════════════════════════════════════════════════════════════════ */
 
-// SECURITY: Load from window.PHMURT_CONFIG set by server
-// Never commit real keys to source control
-var STRIPE_PUBLISHABLE_KEY = (typeof window !== 'undefined' && window.PHMURT_CONFIG && window.PHMURT_CONFIG.stripe_pk && typeof window.PHMURT_CONFIG.stripe_pk === 'string') ? window.PHMURT_CONFIG.stripe_pk : '';
-var STRIPE_PRICE_ID_MONTHLY = (typeof window !== 'undefined' && window.PHMURT_CONFIG && window.PHMURT_CONFIG.stripe_price_monthly && typeof window.PHMURT_CONFIG.stripe_price_monthly === 'string') ? window.PHMURT_CONFIG.stripe_price_monthly : '';
-var STRIPE_PRICE_ID_YEARLY  = (typeof window !== 'undefined' && window.PHMURT_CONFIG && window.PHMURT_CONFIG.stripe_price_yearly && typeof window.PHMURT_CONFIG.stripe_price_yearly === 'string') ? window.PHMURT_CONFIG.stripe_price_yearly : '';
+/* ── Publishable key (safe for client-side) ──────────────────────── */
+var STRIPE_PUBLISHABLE_KEY = 'pk_test_51TK9OH2Me6B5yZKdIoLLRqD1r4LlBauSA1syGGJkZOvo7duRYKPL8oxmK9qchFUP7vwLw9vTpgSgi9iNoJG1H4zz00YXbsyDXP';
+
+/* ── Price IDs (public, identify your Stripe product prices) ─────── */
+var STRIPE_PRICE_ID_MONTHLY = 'price_1TK9Vk2Me6B5yZKdxakmjGlV';   // $4.99/month
+var STRIPE_PRICE_ID_YEARLY  = 'price_1TK9Vk2Me6B5yZKdggyhlKun';   // $49.99/year
 
 /* Legacy alias — checkout function reads the specific monthly/yearly IDs */
 var STRIPE_PRICE_ID = '';                 // (unused, kept for compat)

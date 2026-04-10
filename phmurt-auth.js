@@ -1876,7 +1876,7 @@ window.addEventListener('storage', function (e) {
 
   // ── Fetch settings and announcements ──────────────────────────────
   function fetchSettingsAndAnnouncements() {
-    var sb = _sb();
+    var sb = (typeof phmurtSupabase !== 'undefined' && phmurtSupabase) ? phmurtSupabase : null;
     if (!sb) return; // Supabase not configured yet
     Promise.all([
       sb.from('site_settings').select('key, value, data_type').then(function (r) { return r.data || []; }).catch(function () { return []; }),
@@ -2055,7 +2055,7 @@ window.addEventListener('storage', function (e) {
       // Refresh session to pick up new subscription status with retry logic
       // The webhook may be processing, so we retry fetching the profile
       if (typeof PhmurtDB !== 'undefined') {
-        var sb = _sb();
+        var sb = (typeof phmurtSupabase !== 'undefined' && phmurtSupabase) ? phmurtSupabase : null;
         if (sb) {
           function _tryRefreshProfile(attempt) {
             if (attempt > 5) {
@@ -2149,7 +2149,7 @@ window.addEventListener('storage', function (e) {
 
   // ── Inline checkout: replaces upgrade modal body with password form ──
   function _inlineCheckout(overlay, bodyEl, plan) {
-    var sb = _sb();
+    var sb = (typeof phmurtSupabase !== 'undefined' && phmurtSupabase) ? phmurtSupabase : null;
     var sess = PhmurtDB ? PhmurtDB.getSession() : null;
 
     // If Supabase isn't available or user isn't fully signed in, go to pricing page
@@ -2286,7 +2286,7 @@ window.addEventListener('storage', function (e) {
 
   // ── Stripe checkout redirect helper ──
   function _doStripeCheckout(token, plan, overlay) {
-    var sb = _sb();
+    var sb = (typeof phmurtSupabase !== 'undefined' && phmurtSupabase) ? phmurtSupabase : null;
     if (!sb) {
       alert('Supabase not configured.');
       return Promise.reject(new Error('Supabase not configured.'));
