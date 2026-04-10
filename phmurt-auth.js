@@ -1922,19 +1922,13 @@ window.addEventListener('storage', function (e) {
     // Close handlers
     document.getElementById('phmurt-upgrade-close').addEventListener('click', function () { overlay.remove(); });
     overlay.addEventListener('click', function (ev) { if (ev.target === overlay) overlay.remove(); });
-    // Subscribe handlers
-    function _handleSubscribe(plan) {
-      if (typeof PhmurtDB === 'undefined') return;
-      overlay.style.display = 'none'; // Hide upgrade modal while reauth/checkout runs
-      PhmurtDB.startSubscription(null, plan).catch(function (err) {
-        overlay.style.display = ''; // Restore upgrade modal on error
-        if (err.message !== 'Cancelled.') {
-          alert('Could not start subscription: ' + (err.message || 'Unknown error'));
-        }
-      });
-    }
-    document.getElementById('phmurt-upgrade-monthly').addEventListener('click', function () { _handleSubscribe('monthly'); });
-    document.getElementById('phmurt-upgrade-yearly').addEventListener('click', function () { _handleSubscribe('yearly'); });
+    // Subscribe handlers — redirect to pricing page for checkout
+    document.getElementById('phmurt-upgrade-monthly').addEventListener('click', function () {
+      window.location.href = 'pricing.html';
+    });
+    document.getElementById('phmurt-upgrade-yearly').addEventListener('click', function () {
+      window.location.href = 'pricing.html';
+    });
   });
 
   // ── Global Feature Gate ─────────────────────────────────────────
@@ -1983,17 +1977,10 @@ window.addEventListener('storage', function (e) {
     document.getElementById('phmurt-gate-close').addEventListener('click', function () { overlay.remove(); });
     overlay.addEventListener('click', function (ev) { if (ev.target === overlay) overlay.remove(); });
 
-    // Subscribe buttons
+    // Subscribe buttons — redirect to pricing page for checkout
     overlay.querySelectorAll('.phmurt-gate-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        var plan = btn.getAttribute('data-plan');
-        overlay.style.display = 'none';
-        PhmurtDB.startSubscription(null, plan).catch(function (err) {
-          overlay.style.display = '';
-          if (err.message !== 'Cancelled.') {
-            alert('Could not start checkout: ' + (err.message || 'Unknown error'));
-          }
-        });
+        window.location.href = 'pricing.html';
       });
     });
 
