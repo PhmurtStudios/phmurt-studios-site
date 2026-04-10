@@ -394,7 +394,7 @@
         return;
       }
       var sess = PhmurtDB.getSession();
-      if (!sess || !sess.user) {
+      if (!sess || !sess.userId) {
         window.dispatchEvent(new CustomEvent('phmurt-show-auth', { detail: { tab: 'login' } }));
         return;
       }
@@ -420,7 +420,7 @@
         freeCtaEl.textContent = 'Current: Pro';
         freeCtaEl.className = 'plan-cta free-cta';
         freeCtaEl.removeAttribute('href');
-      } else if (sess && sess.user) {
+      } else if (sess && sess.userId) {
         freeCtaEl.textContent = 'Current Plan';
         freeCtaEl.className = 'plan-cta active-cta';
         freeCtaEl.removeAttribute('href');
