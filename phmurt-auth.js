@@ -549,14 +549,27 @@ var PhmurtDB = (function () {
                     }
                     throw new Error(sr.error.message);
                   }
-                  // If email confirmation is required, the user object may exist
-                  // but session may be null. Try signing in again.
-                  if (sr.data && sr.data.session) return sr;
-                  return sb.auth.signInWithPassword({ email: email, password: pw })
-                    .then(function (r2) {
-                      if (r2.error) throw new Error(r2.error.message);
-                      return r2;
-                    });
+                  // Ensure a profiles row exists for the new user.
+                  // The DB trigger handle_new_user() may create it, but
+                  // we upsert as a safety net in case the trigger is missing.
+                  var newUser = sr.data && sr.data.user;
+                  var upsertPromise = (newUser && newUser.id)
+                    ? sb.from('profiles').upsert({
+                        id: newUser.id, name: displayName, email: email,
+                        is_admin: false
+                      }, { onConflict: 'id' }).then(function () { /* ok */ })
+                        .catch(function () { /* best effort — trigger may handle it */ })
+                    : Promise.resolve();
+                  return upsertPromise.then(function () {
+                    // If email confirmation is required, the user object may exist
+                    // but session may be null. Try signing in again.
+                    if (sr.data && sr.data.session) return sr;
+                    return sb.auth.signInWithPassword({ email: email, password: pw })
+                      .then(function (r2) {
+                        if (r2.error) throw new Error(r2.error.message);
+                        return r2;
+                      });
+                  });
                 });
               }
               throw signInErr;
@@ -587,7 +600,21 @@ var PhmurtDB = (function () {
                 interval: (interval === 'yearly') ? 'yearly' : 'monthly',
               },
             }).then(function (result) {
-              if (result.error) throw new Error(result.error.message || 'Checkout request failed.');
+              if (result.error) {
+                // Extract the actual error message from the edge function response
+                // sb.functions.invoke wraps non-2xx in a generic message; the real
+                // error body is accessible via result.error.context (Response object).
+                var ctx = result.error.context;
+                if (ctx && typeof ctx.json === 'function') {
+                  return ctx.json().then(function (body) {
+                    throw new Error(body && body.error ? body.error : (result.error.message || 'Checkout request failed.'));
+                  }).catch(function (parseErr) {
+                    if (parseErr.message && parseErr.message !== 'Checkout request failed.' && parseErr.message !== result.error.message) throw parseErr;
+                    throw new Error(result.error.message || 'Checkout request failed.');
+                  });
+                }
+                throw new Error(result.error.message || 'Checkout request failed.');
+              }
               var data = result.data;
               if (!data || !data.url) throw new Error(data && data.error ? data.error : 'No checkout URL returned from server.');
               try {
@@ -1584,8 +1611,22 @@ var PhmurtDB = (function () {
           },
         }).then(function (result) {
           if (result.error) {
+            // Extract actual error from edge function response body
+            var ctx = result.error.context;
+            if (ctx && typeof ctx.json === 'function') {
+              return ctx.json().then(function (body) {
+                var err = new Error(body && body.error ? body.error : (result.error.message || 'Checkout request failed.'));
+                err.status = ctx.status;
+                throw err;
+              }).catch(function (parseErr) {
+                if (parseErr.status) throw parseErr; // re-throw if already our error
+                var err = new Error(result.error.message || 'Checkout request failed.');
+                err.status = ctx && ctx.status;
+                throw err;
+              });
+            }
             var err = new Error(result.error.message || 'Checkout request failed.');
-            err.status = result.error.context && result.error.context.status;
+            err.status = ctx && ctx.status;
             throw err;
           }
           var data = result.data;
