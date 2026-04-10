@@ -492,7 +492,26 @@
     );
   }
 
-  function ProphecyEditor({ prophecy, deities, onSave, onCancel, viewRole }) {
+  // Prophecy templates for random generation
+  const PROPHECY_TEMPLATES = [
+    "When the {faction} falls and {region} burns, {npc} shall rise from the ashes",
+    "The throne of {city} shall crumble when {npc} speaks the forgotten name",
+    "Three moons shall wax and wane before {npc} claims {region} as their own",
+    "The {faction} will feast upon {city}'s spoils, but {npc} walks a darker path",
+    "Where {region} trembles, {npc} shall plant the seeds of {faction}'s downfall",
+    "A child of {city} shall betray their own blood when {npc} returns",
+    "The stars align when {faction} breaks their sacred oath in {region}",
+    "In {city}'s darkest hour, {npc} becomes either savior or destroyer",
+    "{faction} will achieve dominion, but {npc} holds the final key to its fate",
+    "When {region} drowns in blood, {npc} shall inherit what remains",
+    "The prophecy echoes: {city} shall fall, {npc} shall rise, {faction} shall rule no more",
+    "Death comes for {npc}, but not before {region} learns {faction}'s greatest secret",
+    "{npc} cannot escape their destiny, nor can {city} escape the coming storm",
+    "The sands shift in {region}, and {faction} will discover what {npc} has hidden",
+    "When the bells of {city} toll for the last time, {npc} shall smile"
+  ];
+
+  function ProphecyEditor({ prophecy, deities, onSave, onCancel, viewRole, worldData = {} }) {
     const [text, setText] = useState(prophecy?.text || '');
     const [interpretation, setInterpretation] = useState(prophecy?.interpretation || '');
     const [status, setStatus] = useState(prophecy?.status || 'active');
@@ -504,6 +523,33 @@
     const [consequences, setConsequences] = useState(prophecy?.consequences || '');
     const [triggers, setTriggers] = useState(prophecy?.triggers || []);
     const [newTrigger, setNewTrigger] = useState({ type: 'custom', description: '' });
+
+    // Helper function to generate random prophecy
+    const generateRandomProphecy = () => {
+      const regions = (worldData.regions || []);
+      const factions = (worldData.factions || []);
+      const npcs = (worldData.npcs || []);
+      const cities = (worldData.cities || []);
+
+      if (regions.length === 0 || factions.length === 0 || npcs.length === 0 || cities.length === 0) {
+        alert('World data not fully loaded. Please ensure regions, factions, NPCs, and cities are defined.');
+        return;
+      }
+
+      const template = PROPHECY_TEMPLATES[Math.floor(Math.random() * PROPHECY_TEMPLATES.length)];
+      const randomRegion = regions[Math.floor(Math.random() * regions.length)];
+      const randomFaction = factions[Math.floor(Math.random() * factions.length)];
+      const randomNpc = npcs[Math.floor(Math.random() * npcs.length)];
+      const randomCity = cities[Math.floor(Math.random() * cities.length)];
+
+      const generatedText = template
+        .replace('{region}', randomRegion.name)
+        .replace('{faction}', randomFaction.name)
+        .replace('{npc}', randomNpc.name)
+        .replace('{city}', randomCity.name);
+
+      setText(generatedText);
+    };
 
     const handleAddTrigger = () => {
       if (newTrigger.type === 'custom' && !newTrigger.description) return;
@@ -578,6 +624,27 @@
               boxSizing: 'border-box'
             }}
           />
+          <button
+            onClick={generateRandomProphecy}
+            style={{
+              marginTop: '8px',
+              width: '100%',
+              padding: '8px',
+              backgroundColor: 'var(--gold)',
+              color: 'var(--bg)',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer',
+              fontSize: '11px',
+              fontWeight: 'bold',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '6px'
+            }}
+          >
+            <Sparkles size={14} /> Generate Random Prophecy
+          </button>
         </div>
 
         {viewRole === 'dm' && (
@@ -918,6 +985,170 @@
               />
             )}
 
+            {newTrigger.type === 'faction_power' && (
+              <div style={{ marginBottom: '8px' }}>
+                <select
+                  value={newTrigger.description}
+                  onChange={(e) => setNewTrigger({ ...newTrigger, description: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '6px',
+                    backgroundColor: 'var(--bg)',
+                    color: 'var(--text)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    marginBottom: '4px',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <option value="">Select faction...</option>
+                  {(worldData.factions || []).map(f => (
+                    <option key={f.name} value={f.name}>{f.name}</option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  value={newTrigger.description}
+                  onChange={(e) => setNewTrigger({ ...newTrigger, description: e.target.value })}
+                  placeholder="Or enter faction name manually..."
+                  style={{
+                    width: '100%',
+                    padding: '6px',
+                    backgroundColor: 'var(--bg)',
+                    color: 'var(--text)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+            )}
+
+            {newTrigger.type === 'npc_dead' && (
+              <div style={{ marginBottom: '8px' }}>
+                <select
+                  value={newTrigger.description}
+                  onChange={(e) => setNewTrigger({ ...newTrigger, description: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '6px',
+                    backgroundColor: 'var(--bg)',
+                    color: 'var(--text)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    marginBottom: '4px',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <option value="">Select NPC...</option>
+                  {(worldData.npcs || []).map(n => (
+                    <option key={n.name} value={n.name}>{n.name}</option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  value={newTrigger.description}
+                  onChange={(e) => setNewTrigger({ ...newTrigger, description: e.target.value })}
+                  placeholder="Or enter NPC name manually..."
+                  style={{
+                    width: '100%',
+                    padding: '6px',
+                    backgroundColor: 'var(--bg)',
+                    color: 'var(--text)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+            )}
+
+            {newTrigger.type === 'region_state' && (
+              <div style={{ marginBottom: '8px' }}>
+                <select
+                  value={newTrigger.description}
+                  onChange={(e) => setNewTrigger({ ...newTrigger, description: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '6px',
+                    backgroundColor: 'var(--bg)',
+                    color: 'var(--text)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    marginBottom: '4px',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <option value="">Select region...</option>
+                  {(worldData.regions || []).map(r => (
+                    <option key={r.name} value={r.name}>{r.name}</option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  value={newTrigger.description}
+                  onChange={(e) => setNewTrigger({ ...newTrigger, description: e.target.value })}
+                  placeholder="Or enter region name manually..."
+                  style={{
+                    width: '100%',
+                    padding: '6px',
+                    backgroundColor: 'var(--bg)',
+                    color: 'var(--text)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+            )}
+
+            {newTrigger.type === 'war_declared' && (
+              <div style={{ marginBottom: '8px' }}>
+                <select
+                  value={newTrigger.description}
+                  onChange={(e) => setNewTrigger({ ...newTrigger, description: e.target.value })}
+                  style={{
+                    width: '100%',
+                    padding: '6px',
+                    backgroundColor: 'var(--bg)',
+                    color: 'var(--text)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    marginBottom: '4px',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  <option value="">Select faction...</option>
+                  {(worldData.factions || []).map(f => (
+                    <option key={f.name} value={f.name}>{f.name}</option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  value={newTrigger.description}
+                  onChange={(e) => setNewTrigger({ ...newTrigger, description: e.target.value })}
+                  placeholder="Or enter faction name manually..."
+                  style={{
+                    width: '100%',
+                    padding: '6px',
+                    backgroundColor: 'var(--bg)',
+                    color: 'var(--text)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '4px',
+                    fontSize: '11px',
+                    boxSizing: 'border-box'
+                  }}
+                />
+              </div>
+            )}
+
             <button
               onClick={handleAddTrigger}
               style={{
@@ -982,7 +1213,7 @@
     );
   }
 
-  function DeityCard({ deity, onFavorChange, onGrantBlessing, onInflictCurse, canEdit }) {
+  function DeityCard({ deity, onFavorChange, onGrantBlessing, onInflictCurse, canEdit, deityRegions = [] }) {
     const [expanded, setExpanded] = useState(false);
     const blessings = BLESSINGS_BY_DOMAIN[deity.domain] || [];
     const curses = CURSES_BY_DOMAIN[deity.domain] || [];
@@ -1107,6 +1338,27 @@
             }}>
               {deity.description}
             </div>
+
+            {deityRegions.length > 0 && (
+              <div style={{
+                fontSize: '9px',
+                color: 'var(--text-dim)',
+                marginBottom: '12px',
+                padding: '8px',
+                backgroundColor: 'rgba(251, 146, 60, 0.05)',
+                border: '1px solid var(--border)',
+                borderRadius: '3px'
+              }}>
+                <div style={{ fontWeight: 'bold', marginBottom: '4px', color: 'var(--gold)' }}>
+                  Worshipped in:
+                </div>
+                {deityRegions.map(region => (
+                  <div key={region.name} style={{ marginBottom: '2px' }}>
+                    {region.name}
+                  </div>
+                ))}
+              </div>
+            )}
 
             {canEdit && (
               <div style={{ marginBottom: '12px' }}>
@@ -1309,6 +1561,33 @@
 
     const canEdit = viewRole === 'dm';
 
+    // Helper function to get regions that worship a deity (deterministic based on deity name hash)
+    const getDeityRegions = (deityName) => {
+      const regions = (data.regions || []);
+      if (regions.length === 0) return [];
+
+      // Create a simple hash from deity name for deterministic selection
+      let hash = 0;
+      for (let i = 0; i < deityName.length; i++) {
+        hash = ((hash << 5) - hash) + deityName.charCodeAt(i);
+        hash = hash & hash; // Convert to 32bit integer
+      }
+
+      // Deterministically pick 1-2 regions based on hash
+      const abs = Math.abs(hash);
+      const count = (abs % 2) + 1;
+      const selectedRegions = [];
+
+      for (let i = 0; i < count && selectedRegions.length < regions.length; i++) {
+        const idx = (abs + i * 7) % regions.length;
+        if (!selectedRegions.find(r => r.name === regions[idx].name)) {
+          selectedRegions.push(regions[idx]);
+        }
+      }
+
+      return selectedRegions;
+    };
+
     const religionState = useMemo(() => {
       if (!data.religionState) {
         return initializeReligionState();
@@ -1502,6 +1781,7 @@
                       onGrantBlessing={handleGrantBlessing}
                       onInflictCurse={handleInflictCurse}
                       canEdit={canEdit}
+                      deityRegions={getDeityRegions(deity.name)}
                     />
                   ))}
                 </div>
@@ -1564,6 +1844,7 @@
               onSave={handleCreateProphecy}
               onCancel={() => setCreatingProphecy(false)}
               viewRole={viewRole}
+              worldData={data}
             />
           )}
 
@@ -1574,6 +1855,7 @@
               onSave={handleUpdateProphecy}
               onCancel={() => setEditingProphecy(null)}
               viewRole={viewRole}
+              worldData={data}
             />
           )}
 

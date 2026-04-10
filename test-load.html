@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html><head><title>Test</title></head>
+<body>
+<canvas id="mapCanvas" width="800" height="600"></canvas>
+<script src="campaign-map-engine.js"></script>
+<script>
+try {
+  const canvas = document.getElementById('mapCanvas');
+  const engine = new MapEngine(canvas, { regionCount: 12, factionCount: 5, growthJitter: 0.4 });
+  engine.generate(42);
+  document.title = 'SUCCESS';
+} catch(e) {
+  document.title = 'ERROR: ' + e.message;
+  console.error(e);
+}
+</script>
+</body></html>

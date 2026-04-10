@@ -250,6 +250,21 @@
       this.notes = new Map();
       this.travelEventHistory = [];
       this.encounterHistory = [];
+      this.worldData = null;
+    }
+
+    /**
+     * Store world atlas data for contextual integration
+     */
+    setWorldData(worldData) {
+      this.worldData = worldData || {
+        regions: [],
+        factions: [],
+        npcs: [],
+        cities: [],
+        pois: []
+      };
+      return this;
     }
 
     /**
@@ -289,7 +304,55 @@
         }
       }
 
+      // Post-process hexes to tag with world regions and factions
+      this._tagHexesWithWorldData(qStart, rStart, qEnd, rEnd);
+
       return hexes;
+    }
+
+    /**
+     * Tag hexes with closest world region and controlling faction
+     */
+    _tagHexesWithWorldData(qStart, rStart, qEnd, rEnd) {
+      if (!this.worldData || !this.worldData.regions || this.worldData.regions.length === 0) {
+        return;
+      }
+
+      for (const [key, hex] of this.hexGrid) {
+        // Find closest region based on hex position
+        let closestRegion = null;
+        let closestDistance = Infinity;
+
+        for (const region of this.worldData.regions) {
+          const regionMapX = region.mapX || 50;
+          const regionMapY = region.mapY || 50;
+          const regionQ = Math.floor(regionMapX / 2);
+          const regionR = Math.floor(regionMapY / 2);
+
+          const dist = this._estimateDistance(hex.q, hex.r, regionQ, regionR);
+          if (dist < closestDistance) {
+            closestDistance = dist;
+            closestRegion = region;
+          }
+        }
+
+        if (closestRegion) {
+          hex.regionName = closestRegion.name;
+          hex.regionTerrain = closestRegion.terrain;
+
+          // Find controlling faction for this region
+          if (this.worldData.factions && this.worldData.factions.length > 0) {
+            const controllingFaction = this.worldData.factions.find(
+              f => f.region === closestRegion.name ||
+                   (f.alignment === closestRegion.alignment && f.govType === closestRegion.government)
+            );
+            if (controllingFaction) {
+              hex.factionName = controllingFaction.name;
+              hex.factionColor = controllingFaction.color;
+            }
+          }
+        }
+      }
     }
 
     _generateHex(q, r, noiseVal, seed) {
@@ -316,6 +379,26 @@
         features.push({ ...feat });
       }
 
+      // Enhance features with world POIs if available
+      if (this.worldData && this.worldData.pois && this.worldData.pois.length > 0 && rng() < 0.15) {
+        const poiInRegion = this.worldData.pois.find(poi => {
+          // POI appears if we're in or near its region (will be properly tagged after grid generation)
+          return rng() < 0.4; // 40% chance to include a nearby POI as feature
+        });
+
+        if (poiInRegion) {
+          features.push({
+            id: 'poi_' + poiInRegion.type,
+            name: poiInRegion.name,
+            icon: '◉',
+            description: poiInRegion.description || `Notable ${poiInRegion.type}`,
+            mechanicalEffect: 'poi_location',
+            isPOI: true,
+            poiType: poiInRegion.type
+          });
+        }
+      }
+
       const dangerLevel = Math.ceil(rng() * 5);
 
       return {
@@ -329,7 +412,10 @@
         encounters: [],
         loot: [],
         notes: '',
-        dangerLevel
+        dangerLevel,
+        regionName: null,
+        factionName: null,
+        factionColor: null
       };
     }
 
@@ -458,7 +544,7 @@
     }
 
     /**
-     * Navigate to target city - return pathfinding result
+     * Navigate to target city - return pathfinding result with arrival events
      */
     navigate(targetCity) {
       const currentQ = this.partyPosition.q;
@@ -470,14 +556,75 @@
       const avgTravelCost = 1.8;
       const estimatedDays = Math.ceil(distance * avgTravelCost / this.maxMovement);
 
-      return {
+      const navigationResult = {
         target: targetCity.name,
         currentPosition: this.partyPosition,
         targetPosition: { q: targetQ, r: targetR },
         estimatedDistance: distance,
         estimatedDays,
-        route: []
+        route: [],
+        arrivalEvents: []
       };
+
+      // Add arrival events if target is a world city
+      if (this.worldData && this.worldData.cities) {
+        const matchingCity = this.worldData.cities.find(c => c.name === targetCity.name);
+        if (matchingCity) {
+          navigationResult.arrivalEvents = this._generateArrivalEvents(matchingCity);
+        }
+      }
+
+      return navigationResult;
+    }
+
+    /**
+     * Generate arrival events describing city features and controlling faction
+     */
+    _generateArrivalEvents(city) {
+      const events = [];
+
+      // Add city description
+      events.push({
+        type: 'city_arrival',
+        message: `You arrive at ${city.name}`,
+        cityName: city.name
+      });
+
+      // Add features description
+      if (city.features && city.features.length > 0) {
+        const featuresDesc = city.features.slice(0, 3).join(', ');
+        events.push({
+          type: 'city_features',
+          message: `Notable features: ${featuresDesc}`,
+          features: city.features
+        });
+      }
+
+      // Add population information
+      if (city.population) {
+        events.push({
+          type: 'city_population',
+          message: `Population: approximately ${city.population}`,
+          population: city.population
+        });
+      }
+
+      // Add controlling faction information
+      if (this.worldData && this.worldData.factions && city.region) {
+        const controllingFaction = this.worldData.factions.find(
+          f => f.region === city.region || f.name === city.faction
+        );
+        if (controllingFaction) {
+          events.push({
+            type: 'city_faction',
+            message: `${city.name} is controlled by ${controllingFaction.name}`,
+            faction: controllingFaction.name,
+            alignment: controllingFaction.alignment
+          });
+        }
+      }
+
+      return events;
     }
 
     _estimateDistance(q1, r1, q2, r2) {
@@ -520,19 +667,86 @@
 
       if (matching.length === 0) return null;
 
-      const encounter = matching[Math.floor(Math.random() * matching.length)];
+      let encounter = matching[Math.floor(Math.random() * matching.length)];
+
+      // Enrich encounter with faction context if available
+      encounter = this._enrichEncounterWithFactionContext(encounter, hex);
+
       this.encounterHistory.push({ ...encounter, hex: `${hex.q},${hex.r}` });
 
       return encounter;
     }
 
     /**
+     * Enrich encounter with faction-specific context
+     */
+    _enrichEncounterWithFactionContext(encounter, hex) {
+      if (!hex.factionName || !this.worldData) {
+        return encounter;
+      }
+
+      const enrichedEncounter = { ...encounter };
+      const faction = this.worldData.factions ? this.worldData.factions.find(f => f.name === hex.factionName) : null;
+
+      // Modify encounter names based on faction presence
+      if (encounter.id === 'bandit_ambush' && faction) {
+        enrichedEncounter.name = `${faction.name} Deserters`;
+        enrichedEncounter.description = `Armed deserters from ${faction.name} demand toll`;
+      } else if (encounter.id === 'traveling_merchants') {
+        const city = this.worldData.cities ? this.worldData.cities.find(c => c.region === hex.regionName) : null;
+        if (city) {
+          enrichedEncounter.name = `Traders from ${city.name}`;
+          enrichedEncounter.description = `Merchant convoy heading to/from ${city.name}`;
+        }
+      } else if (encounter.id === 'goblin_patrol' && faction) {
+        enrichedEncounter.name = `${faction.name} Patrol`;
+        enrichedEncounter.description = `Patrol of ${faction.name} scouts`;
+      }
+
+      return enrichedEncounter;
+    }
+
+    /**
      * Roll travel event
      */
-    rollTravelEvent() {
+    rollTravelEvent(currentHex = null) {
       const event = TRAVEL_EVENTS[Math.floor(Math.random() * TRAVEL_EVENTS.length)];
-      this.travelEventHistory.push(event);
-      return event;
+      const contextualizedEvent = this._contextualizeEvent(event, currentHex);
+      this.travelEventHistory.push(contextualizedEvent);
+      return contextualizedEvent;
+    }
+
+    /**
+     * Add world-specific context to travel events
+     */
+    _contextualizeEvent(event, hex) {
+      if (!hex || !this.worldData) {
+        return event;
+      }
+
+      const contextualEvent = { ...event };
+
+      // Enhance event descriptions with NPC or location references
+      if (event.id === 'friendly_traveler' && this.worldData.npcs && this.worldData.npcs.length > 0) {
+        const regionNPCs = this.worldData.npcs.filter(npc => npc.region === hex.regionName);
+        if (regionNPCs.length > 0) {
+          const npc = regionNPCs[Math.floor(Math.random() * regionNPCs.length)];
+          contextualEvent.description = `${npc.name} (${npc.role}) offers shelter and tales`;
+          contextualEvent.npcRef = npc.name;
+        }
+      }
+
+      // Reference world locations in waymarker events
+      if (event.id === 'ancient_waymarker' && this.worldData.cities && this.worldData.cities.length > 0) {
+        const nearbyCities = this.worldData.cities.filter(c => c.region === hex.regionName);
+        if (nearbyCities.length > 0) {
+          const city = nearbyCities[0];
+          contextualEvent.description = `Stone marker points toward ${city.name}`;
+          contextualEvent.markerTarget = city.name;
+        }
+      }
+
+      return contextualEvent;
     }
 
     /**

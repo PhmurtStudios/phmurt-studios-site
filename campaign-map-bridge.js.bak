@@ -53,9 +53,6 @@
       'Kingsley','Lionsgate','Marshwood','Nethervane','Pendrake','Sunforge','Tidewater','Windhollow',
       'Aldervale','Copperhelm','Darkmoor','Edgewood','Hartwell','Moorehead','Pyreforge','Stormforge',
       'Ravenshaw','Sablewood','Trueblood','Voidhart','Woodhaven','Balefrost','Graveston','Hearthfire',
-      'Ironside','Jarrett','Kingsford','Lyonheart','Mountbatten','Northcote','Oakstern','Pinewood',
-      'Queensbury','Rosewood','Stonebrook','Thorne','Underwood','Vellvine','Westbrook','Yarnworth',
-      'Zealwind','Aylesbury','Bracewood','Chesterfield','Danewood','Eversdale','Ferrenhold','Gladstone',
     ],
     npcRoles: {
       ruler: ['King', 'Queen', 'Emperor', 'Empress', 'Prince', 'Princess', 'Warlord', 'High Chieftain'],
@@ -80,7 +77,6 @@
       'secretive', 'sharp-tongued', 'single-minded', 'shrewd', 'skeptical', 'sly', 'spirited',
       'steady', 'stoic', 'suspicious', 'tactical', 'talkative', 'temperate', 'thoughtful', 'treacherous',
       'trusting', 'unpredictable', 'unyielding', 'valiant', 'vengeful', 'vivacious', 'volatile', 'wary',
-      'audacious', 'benevolent', 'devious', 'austere', 'ferocious', 'gracious', 'intense', 'jubilant', 'keen-minded', 'luminous',
     ],
     secrets: [
       'harbors a forbidden love',
@@ -98,22 +94,11 @@
       'is a spy or double agent',
       'made a deal with a devil',
       'betrayed someone close to them',
-      'hides a shameful lineage or past',
-      'blackmailed into serving a crime lord',
-      'murdered an innocent under false pretenses',
-      'is slowly losing their mind to madness',
-      'owes a life debt to a dangerous enemy',
-      'hides a forbidden magical ability',
-      'orchestrated a false investigation',
-      'has enslaved someone in secret',
-      'stole an inheritance from a sibling',
-      'conducts midnight rituals in a hidden location',
     ],
     shopTypes: [
       'Adventurer\'s Supply', 'Blacksmith', 'Alchemist', 'Armory', 'Tavern & Lodging',
       'General Store', 'Weaponsmith', 'Jeweler', 'Curiosities', 'Rare Books',
       'Herbalist', 'Provisioner', 'Leatherworker', 'Artificer\'s Workshop', 'Apothecary',
-      'Enchanted Goods', 'Tannery', 'Glassblower', 'Moneychanger', 'Poison Merchant',
     ],
     shopPrefixes: [
       'The', 'Old', 'Silver', 'Golden', 'Iron', 'Rusty', 'Crimson', 'Azure', 'Verdant',
@@ -181,7 +166,6 @@
       'rooms available', 'hot meals', 'ale and mead', 'wine selection', 'stables',
       'entertainment', 'musicians', 'storytellers', 'gambling', 'information broker',
       'equipment repair', 'laundry service', 'hot baths', 'healing potions', 'message board',
-      'private meeting rooms', 'exotic beverages', 'fortune telling', 'cartography services',
     ],
     questHooks: [
       'A merchant seeks protection on a trade route.',
@@ -199,24 +183,12 @@
       'Strange disappearances have the town on edge.',
       'A rival faction is making aggressive moves.',
       'An old enemy has resurfaced.',
-      'A child of prophecy has been born.',
-      'A faction seeks to assassinate a key leader.',
-      'Strange celestial phenomena have appeared in the sky.',
-      'A powerful artifact has been discovered.',
-      'An entire village has gone silent.',
-      'Time and fate seem to be unraveling.',
-      'A great darkness spreads from the north.',
-      'A renowned scholar has vanished without a trace.',
-      'The dead have begun to rise from their graves.',
-      'A rival town poses an economic threat.',
     ],
     cityFeatures: [
       'ancient fortress', 'marble library', 'great cathedral', 'bustling market', 'shadowy district',
       'tower district', 'warehouse district', 'garden district', 'merchant quarter', 'noble quarter',
       'smithies and forges', 'mills and granaries', 'docks and wharves', 'arena or colosseum',
       'university or academy', 'monastery or temple', 'catacombs beneath', 'city walls',
-      'old bridge over a river', 'stone aqueduct system', 'grand theater or amphitheater', 'slums and tenements',
-      'underground sewers', 'mystical observatory', 'plague house abandoned', 'hidden temple district',
     ],
     factionTemplates: [
       {
@@ -343,14 +315,6 @@
       'An elder dragon made this region its lair.',
       'This land was birthed from primal chaos.',
       'A god once walked these fields.',
-      'This land remembers wars forgotten by history.',
-      'Spirits of the fallen still wander here restlessly.',
-      'An ancient pact was broken in these lands.',
-      'The very soil is stained with old bloodshed.',
-      'A civilization of great power fell to ruin here.',
-      'Whispers of lost magic linger in the air.',
-      'The bones of titans rest beneath the surface.',
-      'This place was once the heart of an empire.',
     ],
     climateByTerrain: {
       plains: [
@@ -412,7 +376,6 @@
     },
     regionStates: [
       'stable', 'tense', 'rebuilding', 'corrupted', 'prosperous', 'dangerous', 'contested',
-      'isolated', 'peaceful', 'war-torn', 'oppressed',
     ],
   };
 
@@ -960,144 +923,6 @@
         if (!faction.rivals.includes(rival.name) && !faction.allies.includes(rival.name)) {
           faction.rivals.push(rival.name);
         }
-      }
-    }
-
-    // ========================================================================
-    // POST-PROCESSING: Interconnect all generated data
-    // ========================================================================
-
-    // 1. Cities should reference their notable NPCs by name
-    for (const city of data.cities) {
-      const cityNPCs = data.npcs.filter(npc => npc.id && city.npcs.includes(npc.id));
-      const notableNPCNames = cityNPCs
-        .sort(() => rng() - 0.5)
-        .slice(0, Math.ceil(cityNPCs.length / 2)) // Take half the NPCs
-        .map(npc => npc.name);
-      city.notableNPCs = notableNPCNames;
-    }
-
-    // 2. NPCs should have meaningful connections to POIs
-    // For each NPC in a region, add 1-2 known POIs from the same region
-    for (const npc of data.npcs) {
-      const npcRegion = data.regions.find(r =>
-        data.cities.find(c => c.name === npc.loc && c.region === r.name)
-      ) || data.regions.find(r => npc.faction === r.ctrl);
-
-      if (npcRegion) {
-        const regionPOIs = data.pois.filter(poi => poi.region === npcRegion.name);
-        if (regionPOIs.length > 0) {
-          const numPOIs = Math.min(
-            Math.floor(rng() * 2) + 1, // 1-2 POIs
-            regionPOIs.length
-          );
-          const knownPOINames = regionPOIs
-            .sort(() => rng() - 0.5)
-            .slice(0, numPOIs)
-            .map(poi => poi.name);
-          npc.knownPOIs = knownPOINames;
-        }
-      }
-    }
-
-    // 3. Regions should track their faction relationships as region-level connections
-    // Add alliedRegions and rivalRegions based on the ruling faction's allies and rivals
-    for (const region of data.regions) {
-      const rulingFaction = data.factions.find(f => f.name === region.name && !f.isSubFaction);
-      if (rulingFaction) {
-        region.alliedRegions = [];
-        region.rivalRegions = [];
-
-        // Find regions controlled by allied factions
-        for (const allyName of rulingFaction.allies) {
-          const allyRegion = data.regions.find(r => r.name === allyName);
-          if (allyRegion) {
-            region.alliedRegions.push(allyRegion.name);
-          }
-        }
-
-        // Find regions controlled by rival factions
-        for (const rivalName of rulingFaction.rivals) {
-          const rivalRegion = data.regions.find(r => r.name === rivalName);
-          if (rivalRegion) {
-            region.rivalRegions.push(rivalRegion.name);
-          }
-        }
-      }
-    }
-
-    // 4. Quest hooks in cities should be personalized with real names
-    // Do a post-processing pass to replace generic placeholders with actual NPC/city/POI names
-    for (const city of data.cities) {
-      for (let i = 0; i < city.questHooks.length; i++) {
-        let hook = city.questHooks[i];
-
-        // Replace [NPC] with a random city NPC name
-        if (hook.includes('[NPC]')) {
-          const cityNPCs = data.npcs.filter(npc => npc.id && city.npcs.includes(npc.id));
-          if (cityNPCs.length > 0) {
-            const randomNPC = cityNPCs[Math.floor(rng() * cityNPCs.length)];
-            hook = hook.replace(/\[NPC\]/g, randomNPC.name);
-          }
-        }
-
-        // Replace [CITY] with the current city name
-        if (hook.includes('[CITY]')) {
-          hook = hook.replace(/\[CITY\]/g, city.name);
-        }
-
-        // Replace [REGION] with the current region name
-        if (hook.includes('[REGION]')) {
-          hook = hook.replace(/\[REGION\]/g, city.region);
-        }
-
-        // Replace [POI] with a random POI from the region
-        if (hook.includes('[POI]')) {
-          const region = data.regions.find(r => r.name === city.region);
-          if (region) {
-            const regionPOIs = data.pois.filter(poi => poi.region === region.name);
-            if (regionPOIs.length > 0) {
-              const randomPOI = regionPOIs[Math.floor(rng() * regionPOIs.length)];
-              hook = hook.replace(/\[POI\]/g, randomPOI.name);
-            }
-          }
-        }
-
-        city.questHooks[i] = hook;
-      }
-
-      // Also update the tavern rumor with personalization
-      if (city.tavern && city.tavern.rumor) {
-        let rumor = city.tavern.rumor;
-
-        if (rumor.includes('[NPC]')) {
-          const cityNPCs = data.npcs.filter(npc => npc.id && city.npcs.includes(npc.id));
-          if (cityNPCs.length > 0) {
-            const randomNPC = cityNPCs[Math.floor(rng() * cityNPCs.length)];
-            rumor = rumor.replace(/\[NPC\]/g, randomNPC.name);
-          }
-        }
-
-        if (rumor.includes('[CITY]')) {
-          rumor = rumor.replace(/\[CITY\]/g, city.name);
-        }
-
-        if (rumor.includes('[REGION]')) {
-          rumor = rumor.replace(/\[REGION\]/g, city.region);
-        }
-
-        if (rumor.includes('[POI]')) {
-          const region = data.regions.find(r => r.name === city.region);
-          if (region) {
-            const regionPOIs = data.pois.filter(poi => poi.region === region.name);
-            if (regionPOIs.length > 0) {
-              const randomPOI = regionPOIs[Math.floor(rng() * regionPOIs.length)];
-              rumor = rumor.replace(/\[POI\]/g, randomPOI.name);
-            }
-          }
-        }
-
-        city.tavern.rumor = rumor;
       }
     }
 

@@ -1211,16 +1211,18 @@
       id: 'temple-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
       deityId: deityId,
       city: city || 'Unknown',
+      region: 'Unknown',  // Will be set by assignTemples
       level: level || 'temple',
       devotion: 30,
       priests: Math.floor(Math.random() * (levelData ? levelData.maxPriests / 2 : 15)) + 3,
       influence: levelData ? levelData.influenceRadius : 15,
       founded: Date.now(),
-      upgraded: false
+      upgraded: false,
+      priestNpc: null  // Will be set by assignTemples if available
     };
   }
 
-  function assignTemples(cities, factions, seed) {
+  function assignTemples(cities, factions, seed, worldData) {
     if (!Array.isArray(cities) || !Array.isArray(factions)) return [];
 
     var temples = [];
@@ -1229,10 +1231,31 @@
       return x - Math.floor(x);
     };
 
+    // Build NPC lookup by region for priest assignment
+    var npcsByRegion = {};
+    var npcs = (worldData && worldData.npcs) || [];
+    npcs.forEach(function(npc) {
+      if (npc && npc.region) {
+        if (!npcsByRegion[npc.region]) npcsByRegion[npc.region] = [];
+        npcsByRegion[npc.region].push(npc);
+      }
+    });
+
+    // Build region lookup from world data
+    var regionData = {};
+    var regions = (worldData && worldData.regions) || [];
+    regions.forEach(function(region) {
+      if (region && region.name) {
+        regionData[region.name] = region;
+      }
+    });
+
     cities.forEach(function(city, idx) {
       var isCapital = city.capital === true;
       var templeCnt = isCapital ? 3 : Math.floor(rng(seed + idx * 7) * 3) + 1;
       var assignedDeities = [];
+      var cityRegion = city.region || 'Unknown';
+      var regionInfo = regionData[cityRegion];
 
       for (var i = 0; i < templeCnt; i++) {
         var deityPool = PANTHEON.greater.concat(PANTHEON.intermediate, PANTHEON.lesser);
@@ -1248,7 +1271,28 @@
         else if (levelRng > 0.7) level = 'temple';
         else if (levelRng > 0.4) level = 'chapel';
 
-        temples.push(createTemple(deity.id, level, city.name));
+        var temple = createTemple(deity.id, level, city.name);
+        temple.region = cityRegion;
+
+        // Find a priest NPC in this region if available
+        var regionNpcs = npcsByRegion[cityRegion] || [];
+        var priestNpc = null;
+        for (var n = 0; n < regionNpcs.length; n++) {
+          var npc = regionNpcs[n];
+          if (npc && npc.role) {
+            var roleStr = npc.role.toLowerCase();
+            if (roleStr.indexOf('cleric') !== -1 || roleStr.indexOf('priest') !== -1 ||
+                roleStr.indexOf('acolyte') !== -1 || roleStr.indexOf('healer') !== -1) {
+              priestNpc = npc.name;
+              break;
+            }
+          }
+        }
+        if (priestNpc) {
+          temple.priestNpc = priestNpc;
+        }
+
+        temples.push(temple);
       }
     });
 
@@ -1273,14 +1317,59 @@
     var self = this;
     if (!Array.isArray(factions)) return;
 
+    // Build region terrain lookup
+    var regionTerrain = {};
+    var regions = (this.data && this.data.regions) || [];
+    regions.forEach(function(region) {
+      if (region && region.name) {
+        regionTerrain[region.name] = region.terrain || '';
+      }
+    });
+
     factions.forEach(function(faction) {
       if (!faction || !faction.name) return;
       var favorMap = new Map();
 
       PANTHEON.greater.concat(PANTHEON.intermediate, PANTHEON.lesser).forEach(function(deity) {
-        var alignmentMatch = faction.alignment && deity.alignment ?
-          faction.alignment.charAt(0) === deity.alignment.charAt(0) ? 5 : -5 : 0;
-        favorMap.set(deity.id, alignmentMatch);
+        var favor = 0;
+
+        // Alignment match
+        if (faction.alignment && deity.alignment) {
+          favor += faction.alignment.charAt(0) === deity.alignment.charAt(0) ? 5 : -5;
+        }
+
+        // Region-deity terrain affinity (if faction has region)
+        if (faction.region && regionTerrain[faction.region]) {
+          var terrain = regionTerrain[faction.region].toLowerCase();
+          var domains = deity.domains || [];
+
+          // Arctic/frozen regions favor cold/nature deities
+          if (terrain.indexOf('arctic') !== -1 || terrain.indexOf('frozen') !== -1 || terrain.indexOf('snow') !== -1) {
+            if (domains.indexOf('Nature') !== -1 || domains.indexOf('Tempest') !== -1) favor += 3;
+          }
+
+          // Forest/verdant regions favor nature deities
+          if (terrain.indexOf('forest') !== -1 || terrain.indexOf('verdant') !== -1 || terrain.indexOf('woodland') !== -1) {
+            if (domains.indexOf('Nature') !== -1 || domains.indexOf('Life') !== -1) favor += 3;
+          }
+
+          // Coastal regions favor sea/storm deities
+          if (terrain.indexOf('coast') !== -1 || terrain.indexOf('sea') !== -1 || terrain.indexOf('ocean') !== -1) {
+            if (domains.indexOf('Tempest') !== -1 || domains.indexOf('Life') !== -1) favor += 3;
+          }
+
+          // Mountain regions favor forge/strength deities
+          if (terrain.indexOf('mountain') !== -1 || terrain.indexOf('highland') !== -1) {
+            if (domains.indexOf('Forge') !== -1 || domains.indexOf('Strength') !== -1) favor += 3;
+          }
+
+          // Desert regions favor sun/trickery deities
+          if (terrain.indexOf('desert') !== -1 || terrain.indexOf('arid') !== -1) {
+            if (domains.indexOf('Light') !== -1 || domains.indexOf('Trickery') !== -1) favor += 3;
+          }
+        }
+
+        favorMap.set(deity.id, favor);
       });
 
       self.divineFavor.set(faction.name, favorMap);
@@ -1288,7 +1377,7 @@
   };
 
   ReligionEngine.prototype.assignTemplesToCampaign = function(cities, factions, seed) {
-    this.temples = assignTemples(cities, factions, seed || Date.now());
+    this.temples = assignTemples(cities, factions, seed || Date.now(), this.data);
     return this.temples;
   };
 
@@ -1335,25 +1424,49 @@
   };
 
   ReligionEngine.prototype.holyWar = function(deityIdA, deityIdB) {
+    var self = this;
     var templesA = this.temples.filter(function(t) { return t.deityId === deityIdA; });
     var templesB = this.temples.filter(function(t) { return t.deityId === deityIdB; });
 
     if (templesA.length === 0 || templesB.length === 0) return null;
 
     var sharedCities = {};
-    templesA.forEach(function(t) { sharedCities[t.city] = (sharedCities[t.city] || 0) + 1; });
+    var cityRegions = {};
+    templesA.forEach(function(t) {
+      sharedCities[t.city] = (sharedCities[t.city] || 0) + 1;
+      if (t.region) cityRegions[t.city] = t.region;
+    });
 
     var conflictCities = [];
     templesB.forEach(function(t) {
-      if (sharedCities[t.city]) conflictCities.push(t.city);
+      if (sharedCities[t.city]) {
+        conflictCities.push({
+          name: t.city,
+          region: t.region || cityRegions[t.city] || 'Unknown',
+          templesTompleA: sharedCities[t.city],
+          templesTompleB: (sharedCities[t.city] = (sharedCities[t.city] || 0) + 1)
+        });
+      }
     });
+
+    var deityA = this.getDeityByName(deityIdA);
+    var deityB = this.getDeityByName(deityIdB);
+    var description = 'Holy war between ' + (deityA ? deityA.name : deityIdA) + ' and ' +
+      (deityB ? deityB.name : deityIdB);
+    if (conflictCities.length > 0) {
+      description += ' in ' + conflictCities.map(function(c) { return c.name; }).join(', ');
+    }
+    description += '.';
 
     return {
       success: true,
       deityA: deityIdA,
       deityB: deityIdB,
+      deityAName: deityA ? deityA.name : deityIdA,
+      deityBName: deityB ? deityB.name : deityIdB,
       conflictCities: conflictCities,
-      severity: conflictCities.length > 3 ? 'major' : conflictCities.length > 1 ? 'moderate' : 'minor'
+      severity: conflictCities.length > 3 ? 'major' : conflictCities.length > 1 ? 'moderate' : 'minor',
+      description: description
     };
   };
 
@@ -1470,16 +1583,20 @@
   ReligionEngine.prototype.getRegionReligion = function(regionName) {
     if (!regionName || !Array.isArray(this.temples)) return null;
 
-    var regionTemples = this.temples.filter(function(t) { return t.city === regionName; });
+    // Filter temples by region name instead of city name
+    var regionTemples = this.temples.filter(function(t) { return t.region === regionName; });
     if (regionTemples.length === 0) return null;
 
     var deityTotals = {};
     regionTemples.forEach(function(temple) {
       if (!deityTotals[temple.deityId]) {
-        deityTotals[temple.deityId] = { devotion: 0, temples: 0 };
+        deityTotals[temple.deityId] = { devotion: 0, temples: 0, cities: [] };
       }
       deityTotals[temple.deityId].devotion += temple.devotion;
       deityTotals[temple.deityId].temples += 1;
+      if (deityTotals[temple.deityId].cities.indexOf(temple.city) === -1) {
+        deityTotals[temple.deityId].cities.push(temple.city);
+      }
     });
 
     var dominant = null;
@@ -1495,13 +1612,23 @@
       region: regionName,
       dominant: dominant,
       temples: regionTemples,
-      deityTotals: deityTotals
+      deityTotals: deityTotals,
+      dominantName: dominant ? this.getDeityByName(dominant).name : 'Unknown'
     };
   };
 
   ReligionEngine.prototype.tick = function(data, calendar) {
     var self = this;
     var events = [];
+
+    // Build city lookup for event enrichment
+    var cityData = {};
+    var cities = (this.data && this.data.cities) || [];
+    cities.forEach(function(city) {
+      if (city && city.name) {
+        cityData[city.name] = city;
+      }
+    });
 
     if (Array.isArray(this.temples)) {
       this.temples.forEach(function(temple) {
@@ -1512,24 +1639,54 @@
         var seasonBonus = 0;
 
         temple.devotion = Math.min(100, temple.devotion + baseGen + seasonBonus);
+
+        // Generate events for temples with significant devotion changes
+        if (temple.devotion >= 80) {
+          var deity = self.getDeityByName(temple.deityId);
+          var description = 'The temple of ' + (deity ? deity.name : temple.deityId) +
+            ' in ' + temple.city + ' received a blessing';
+          if (temple.priestNpc) {
+            description += ', witnessed by ' + temple.priestNpc;
+          }
+          description += '.';
+
+          events.push({
+            type: 'divine_blessing',
+            deity: temple.deityId,
+            city: temple.city,
+            region: temple.region,
+            temple: temple.id,
+            priestNpc: temple.priestNpc,
+            favor: temple.devotion,
+            description: description
+          });
+        }
       });
     }
 
     this.divineFavor.forEach(function(favorMap, factionName) {
       favorMap.forEach(function(favor, deityId) {
         if (favor > 70) {
+          var deity = self.getDeityByName(deityId);
+          var description = 'Divine blessing granted by ' + (deity ? deity.name : deityId) +
+            ' to the ' + factionName + ' faction';
           events.push({
             type: 'divine_blessing',
             deity: deityId,
             faction: factionName,
-            favor: favor
+            favor: favor,
+            description: description
           });
         } else if (favor < -70) {
+          var deity = self.getDeityByName(deityId);
+          var description = 'Divine wrath from ' + (deity ? deity.name : deityId) +
+            ' against the ' + factionName + ' faction';
           events.push({
             type: 'divine_wrath',
             deity: deityId,
             faction: factionName,
-            favor: favor
+            favor: favor,
+            description: description
           });
         }
       });
@@ -1540,27 +1697,43 @@
   };
 
   ReligionEngine.prototype.triggerDivineIntervention = function(deityId, targetRegion) {
-    var deity = null;
-    var allDeities = PANTHEON.greater.concat(PANTHEON.intermediate, PANTHEON.lesser);
-
-    for (var i = 0; i < allDeities.length; i++) {
-      if (allDeities[i].id === deityId) {
-        deity = allDeities[i];
-        break;
-      }
-    }
+    var self = this;
+    var deity = this.getDeityByName(deityId);
 
     if (!deity) return null;
 
     var interventionTypes = ['blessing', 'curse', 'manifestation', 'miracle'];
     var type = interventionTypes[Math.floor(Math.random() * interventionTypes.length)];
 
+    // Find temples in the target region for richer context
+    var targetTemples = this.temples.filter(function(t) {
+      return t.region === targetRegion && t.deityId === deityId;
+    });
+
+    var city = 'the region';
+    var npcName = null;
+    if (targetTemples.length > 0) {
+      var temple = targetTemples[Math.floor(Math.random() * targetTemples.length)];
+      city = temple.city || city;
+      npcName = temple.priestNpc;
+    }
+
+    // Build event description
+    var description = 'A direct manifestation of ' + deity.name + '\'s divine will in ' + city;
+    if (npcName) {
+      description += ', perceived by the devoted ' + npcName;
+    }
+    description += '! The ' + type + ' ripples through ' + targetRegion + '.';
+
     return {
       deity: deity.name,
+      deityId: deityId,
       type: type,
       region: targetRegion,
+      city: city,
+      priestNpc: npcName,
       power: 'legendary',
-      description: 'A direct manifestation of ' + deity.name + '\'s divine will!',
+      description: description,
       timestamp: Date.now()
     };
   };

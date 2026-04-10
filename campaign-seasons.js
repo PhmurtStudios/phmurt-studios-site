@@ -295,7 +295,7 @@ window.CampaignSeasons = (function(){
     this.weatherHistory = new Map();
   }
 
-  WeatherEngine.prototype._initRegionWeather = function(regionId, climate) {
+  WeatherEngine.prototype._initRegionWeather = function(regionId, climate, worldRegion) {
     if (!this.regionWeather.has(regionId)) {
       var climateData = CLIMATE_TYPES[climate] || CLIMATE_TYPES.temperate;
       var initialWeather = climateData.baseWeathers[Math.floor(this.rng() * climateData.baseWeathers.length)];
@@ -303,7 +303,8 @@ window.CampaignSeasons = (function(){
         current: initialWeather,
         climate: climate,
         duration: 1 + Math.floor(this.rng() * 5),
-        durationRemaining: 1
+        durationRemaining: 1,
+        worldRegion: worldRegion || null
       });
     }
   };
@@ -350,14 +351,14 @@ window.CampaignSeasons = (function(){
     return current;
   };
 
-  WeatherEngine.prototype.advanceDay = function(regions, calendar) {
+  WeatherEngine.prototype.advanceDay = function(regions, calendar, worldData) {
     var results = [];
     var season = calendar.getSeason();
     var seasonId = season ? season.id : 'verdance';
 
     regions.forEach(function(region) {
       var climateType = this._determineClimate(region);
-      this._initRegionWeather(region.id, climateType);
+      this._initRegionWeather(region.id, climateType, region);
 
       var weatherData = this.regionWeather.get(region.id);
       weatherData.durationRemaining--;
@@ -389,6 +390,39 @@ window.CampaignSeasons = (function(){
     }, this);
 
     return results;
+  };
+
+  WeatherEngine.prototype.getWeatherReport = function(regionName, worldData) {
+    if (!worldData) return 'Weather report unavailable.';
+
+    var region = null;
+    var cities = [];
+
+    // Find the region by name
+    if (worldData.regions && Array.isArray(worldData.regions)) {
+      region = worldData.regions.find(function(r) { return r.name === regionName; });
+    }
+
+    if (!region) return 'Unable to locate region: ' + regionName;
+
+    // Find cities in this region
+    if (worldData.cities && Array.isArray(worldData.cities)) {
+      cities = worldData.cities.filter(function(c) { return c.region === regionName; });
+    }
+
+    var weatherData = this.regionWeather.get(region.id);
+    if (!weatherData) return 'No weather data for ' + regionName;
+
+    var weather = weatherData.current;
+    var narrative = 'A ' + weather.toLowerCase() + ' sweeps across ' + regionName;
+
+    if (cities.length > 0) {
+      var cityName = cities[Math.floor(Math.random() * cities.length)].name;
+      narrative += ', flooding the streets of ' + cityName;
+    }
+
+    narrative += '.';
+    return narrative;
   };
 
   WeatherEngine.prototype.getCurrentWeather = function(regionId) {
@@ -441,14 +475,85 @@ window.CampaignSeasons = (function(){
     return forecast;
   };
 
+  WeatherEngine.prototype.getRegionForecast = function(regionName, worldData, days) {
+    days = Math.min(Math.max(1, days || 3), 14);
+    if (!worldData || !worldData.regions) return [];
+
+    var region = worldData.regions.find(function(r) { return r.name === regionName; });
+    if (!region) return [];
+
+    var regionId = region.id;
+    var current = this.regionWeather.get(regionId);
+    if (!current) return [];
+
+    var cities = [];
+    var pois = [];
+
+    if (worldData.cities && Array.isArray(worldData.cities)) {
+      cities = worldData.cities.filter(function(c) { return c.region === regionName; });
+    }
+
+    if (worldData.pois && Array.isArray(worldData.pois)) {
+      pois = worldData.pois.filter(function(p) { return p.region === regionName; });
+    }
+
+    var forecast = [];
+    var testWeather = current.current;
+    var climate = current.climate;
+
+    for (var i = 0; i < days; i++) {
+      var state = WEATHER_STATES[testWeather];
+      var narrative = 'Day ' + (i + 1) + ': ' + testWeather + ' expected';
+
+      // Add location references to narrative
+      if (cities.length > 0 && i === 0) {
+        var city = cities[Math.floor(Math.random() * cities.length)];
+        narrative += ' around ' + city.name;
+      }
+      if (pois.length > 0 && i === days - 1) {
+        var poi = pois[Math.floor(Math.random() * pois.length)];
+        narrative += ' (affecting ' + poi.name + ')';
+      }
+
+      forecast.push({
+        day: i + 1,
+        weather: testWeather,
+        narrative: narrative,
+        icon: state ? state.icon : '?',
+        confidence: Math.max(50, 100 - (i * 8)) + '%',
+        hazard: state ? state.hazard : false
+      });
+
+      // Rough simulation for forecast
+      if (i < days - 1) {
+        var rand = this.rng();
+        if (rand < 0.4) {
+          // Keep same weather
+        } else {
+          var climateData = CLIMATE_TYPES[climate] || CLIMATE_TYPES.temperate;
+          testWeather = climateData.baseWeathers[Math.floor(this.rng() * climateData.baseWeathers.length)];
+        }
+      }
+    }
+
+    return forecast;
+  };
+
   WeatherEngine.prototype._determineClimate = function(region) {
-    if (!region.type) return 'temperate';
-    var t = region.type.toLowerCase();
-    if (t.includes('arctic') || t.includes('frozen')) return 'arctic';
-    if (t.includes('desert') || t.includes('arid')) return 'arid';
-    if (t.includes('tropical') || t.includes('jungle')) return 'tropical';
-    if (t.includes('coast') || t.includes('sea')) return 'coastal';
-    if (t.includes('mountain')) return 'mountain';
+    // Use terrain field if available for more accurate climate determination
+    var terrainStr = region.terrain || region.type || '';
+    if (!terrainStr) return 'temperate';
+
+    var t = terrainStr.toLowerCase();
+
+    // Terrain-based mapping
+    if (t.includes('tundra') || t.includes('glacier') || t.includes('arctic') || t.includes('frozen')) return 'arctic';
+    if (t.includes('desert') || t.includes('badlands') || t.includes('arid')) return 'arid';
+    if (t.includes('swamp') || t.includes('marsh') || t.includes('forest')) return 'temperate';
+    if (t.includes('coast') || t.includes('archipelago') || t.includes('sea')) return 'coastal';
+    if (t.includes('mountain') || t.includes('highland') || t.includes('peak')) return 'mountain';
+    if (t.includes('jungle') || t.includes('rainforest') || t.includes('tropical')) return 'tropical';
+
     return 'temperate';
   };
 
@@ -512,7 +617,9 @@ window.CampaignSeasons = (function(){
     var effects = {
       factionModifiers: {},
       priceModifiers: {},
-      mechanics: {}
+      mechanics: {},
+      cityEffects: {},
+      npcReactions: []
     };
 
     if (!season) return effects;
@@ -522,11 +629,30 @@ window.CampaignSeasons = (function(){
         // Northern regions suffer
         if (data.regions) {
           data.regions.forEach(function(r) {
-            if (r.type && r.type.toLowerCase().includes('north')) {
+            if (r.terrain && (r.terrain.toLowerCase().includes('north') || r.terrain.toLowerCase().includes('tundra') || r.terrain.toLowerCase().includes('glacier'))) {
               effects.factionModifiers[r.id] = (effects.factionModifiers[r.id] || 0) - 10;
             }
           });
         }
+
+        // Port cities suffer more in winter
+        if (data.cities && Array.isArray(data.cities)) {
+          data.cities.forEach(function(c) {
+            if (c.features && Array.isArray(c.features) && c.features.some(function(f) { return f.toLowerCase().includes('port'); })) {
+              effects.cityEffects[c.name] = { trade_penalty: 0.7, movement_penalty: 0.15 };
+            }
+          });
+        }
+
+        // NPC reactions
+        if (data.npcs && Array.isArray(data.npcs)) {
+          data.npcs.forEach(function(npc) {
+            if (npc.role && npc.role.toLowerCase().includes('merchant')) {
+              effects.npcReactions.push('The merchant ' + npc.name + ' warns of scarce supplies this Frostfall.');
+            }
+          });
+        }
+
         effects.priceModifiers.food = 1.5;
         effects.mechanics.movementPenalty = 0.1;
         break;
@@ -535,11 +661,33 @@ window.CampaignSeasons = (function(){
         // Southern/arid regions suffer heat
         if (data.regions) {
           data.regions.forEach(function(r) {
-            if (r.type && (r.type.toLowerCase().includes('south') || r.type.toLowerCase().includes('desert'))) {
+            if (r.terrain && (r.terrain.toLowerCase().includes('south') || r.terrain.toLowerCase().includes('desert') || r.terrain.toLowerCase().includes('badlands'))) {
               effects.priceModifiers[r.id] = (effects.priceModifiers[r.id] || 1) * 1.3;
             }
           });
         }
+
+        // Desert/arid cities heavily affected
+        if (data.cities && Array.isArray(data.cities)) {
+          data.cities.forEach(function(c) {
+            if (c.region) {
+              var cityRegion = data.regions ? data.regions.find(function(r) { return r.name === c.region; }) : null;
+              if (cityRegion && cityRegion.terrain && (cityRegion.terrain.toLowerCase().includes('desert') || cityRegion.terrain.toLowerCase().includes('arid'))) {
+                effects.cityEffects[c.name] = { water_scarcity: true, population_morale: -15 };
+              }
+            }
+          });
+        }
+
+        // NPC reactions to heat
+        if (data.npcs && Array.isArray(data.npcs)) {
+          data.npcs.forEach(function(npc) {
+            if (npc.traits && Array.isArray(npc.traits) && npc.traits.some(function(t) { return t.toLowerCase().includes('farmer'); })) {
+              effects.npcReactions.push(npc.name + ' frets about the crops withering in the relentless Solstice heat.');
+            }
+          });
+        }
+
         effects.mechanics.fireSpellDamageBump = 1;
         effects.mechanics.heatExhaustion = true;
         break;
@@ -548,29 +696,53 @@ window.CampaignSeasons = (function(){
         // Spring flooding, new growth bonuses
         effects.mechanics.floodingRisk = true;
         effects.mechanics.cropGrowth = 1.2;
+
+        // Specific faction bonuses
         if (data.factions) {
           data.factions.forEach(function(f) {
             effects.factionModifiers[f.name] = (effects.factionModifiers[f.name] || 0) + 5;
           });
         }
+
+        // Riverside/coast cities at flood risk
+        if (data.cities && Array.isArray(data.cities)) {
+          data.cities.forEach(function(c) {
+            if (c.features && Array.isArray(c.features) && (c.features.some(function(f) { return f.toLowerCase().includes('river'); }) || c.features.some(function(f) { return f.toLowerCase().includes('coast'); }))) {
+              effects.cityEffects[c.name] = { flooding_risk: 0.4, supply_disruption: true };
+            }
+          });
+        }
+
         break;
 
       case 'harvest':
         // Harvest bonuses
         effects.mechanics.cropYield = 1.3;
         effects.mechanics.tradeBump = 1.25;
+
+        // All factions benefit
         if (data.factions) {
           data.factions.forEach(function(f) {
             effects.factionModifiers[f.name] = (effects.factionModifiers[f.name] || 0) + 15;
           });
         }
+
+        // Trade hub cities thrive
+        if (data.cities && Array.isArray(data.cities)) {
+          data.cities.forEach(function(c) {
+            if (c.features && Array.isArray(c.features) && c.features.some(function(f) { return f.toLowerCase().includes('market') || f.toLowerCase().includes('trade'); })) {
+              effects.cityEffects[c.name] = { trade_surge: 1.4, population_happiness: 20 };
+            }
+          });
+        }
+
         break;
     }
 
     return effects;
   };
 
-  SeasonalEffectsManager.prototype.triggerSeasonalEvent = function(eventId, calendar) {
+  SeasonalEffectsManager.prototype.triggerSeasonalEvent = function(eventId, calendar, worldData) {
     var eventTemplate = SEASONAL_EVENTS[eventId];
     if (!eventTemplate) return null;
 
@@ -584,8 +756,48 @@ window.CampaignSeasons = (function(){
       importance: eventTemplate.importance,
       triggeredAt: Date.now(),
       mutations: eventTemplate.mutations,
-      calendarEffect: eventTemplate.calendarEffect
+      calendarEffect: eventTemplate.calendarEffect,
+      worldContext: {
+        celebratingCities: [],
+        affectedFactions: [],
+        involvedNPCs: []
+      }
     };
+
+    // Populate with world-specific details if worldData provided
+    if (worldData) {
+      // Find cities that would celebrate or be affected by this event
+      if (worldData.cities && Array.isArray(worldData.cities)) {
+        var celebratingCount = Math.min(2, Math.max(1, Math.floor(worldData.cities.length / 3)));
+        for (var i = 0; i < celebratingCount && i < worldData.cities.length; i++) {
+          var cityIdx = Math.floor(Math.random() * worldData.cities.length);
+          event.worldContext.celebratingCities.push(worldData.cities[cityIdx].name);
+        }
+      }
+
+      // Find factions that benefit or are affected
+      if (worldData.factions && Array.isArray(worldData.factions)) {
+        var affectedCount = Math.min(2, Math.max(1, Math.floor(worldData.factions.length / 2)));
+        for (var j = 0; j < affectedCount && j < worldData.factions.length; j++) {
+          var factionIdx = Math.floor(Math.random() * worldData.factions.length);
+          event.worldContext.affectedFactions.push(worldData.factions[factionIdx].name);
+        }
+      }
+
+      // Find NPCs involved
+      if (worldData.npcs && Array.isArray(worldData.npcs)) {
+        var involvedCount = Math.min(1, Math.max(0, Math.floor(worldData.npcs.length / 4)));
+        for (var k = 0; k < involvedCount && k < worldData.npcs.length; k++) {
+          var npcIdx = Math.floor(Math.random() * worldData.npcs.length);
+          event.worldContext.involvedNPCs.push(worldData.npcs[npcIdx].name);
+        }
+      }
+
+      // Enhance detail with world context
+      if (event.worldContext.celebratingCities.length > 0) {
+        event.detail += ' ' + event.worldContext.celebratingCities.join(' and ') + ' join in celebration.';
+      }
+    }
 
     this.activeEvents.push(event);
     this.eventHistory.push(event);

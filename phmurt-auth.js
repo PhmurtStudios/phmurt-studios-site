@@ -574,14 +574,19 @@ var PhmurtDB = (function () {
               return { success: true, id: r.data.id };
             })
             .catch(function (e) {
-              // If not found, check limit then insert fresh
+              // If update failed, log the reason then try insert
+              console.warn('[PhmurtDB] Update failed for character ' + safeId + ':', e.message || e);
               return _checkLimit('characters', 'free_max_characters', 'paid_max_characters').then(function (limitResult) {
                 if (limitResult.blocked) {
                   return { success: false, error: limitResult.message, limitReached: true };
                 }
                 return sb.from('characters').insert(row).select('id').single()
-                  .then(function (r2) { if (r2.error || !r2.data) return { success: false }; return { success: true, id: r2.data.id }; })
-                  .catch(function (e2) { return { success: false, error: e2.message }; });
+                  .then(function (r2) {
+                    if (r2.error) return { success: false, error: r2.error.message || 'Insert failed after update miss.' };
+                    if (!r2.data) return { success: false, error: 'No data returned from insert.' };
+                    return { success: true, id: r2.data.id };
+                  })
+                  .catch(function (e2) { return { success: false, error: e2.message || 'Fallback insert failed.' }; });
               });
             });
         } else {
@@ -722,8 +727,18 @@ var PhmurtDB = (function () {
           });
         }
 
-        return sb.from('campaigns').upsert(campRow, { onConflict: 'id' })
-          .then(function (r) { return !r.error; })
+        // SECURITY FIX: Use scoped update instead of upsert to prevent
+        // overwriting another user's campaign if IDs collide.
+        return sb.from('campaigns').update(campRow)
+          .eq('id', campaign.id)
+          .eq('owner_id', _session.userId)
+          .then(function (r) {
+            if (r.error) {
+              console.warn('[Auth] Campaign update failed:', r.error.message);
+              _legacySaveCampLocal(campaign);
+            }
+            return true;
+          })
           .catch(function () {
             // Fallback: save to localStorage on cloud failure
             _legacySaveCampLocal(campaign);

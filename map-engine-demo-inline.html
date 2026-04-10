@@ -1,4 +1,258 @@
-/**
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Map Engine — Territory Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Spectral:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #08080a;
+    --bg-card: #141420;
+    --bg-hover: #201e2a;
+    --text: #f2e8d6;
+    --text-dim: #cfc0a8;
+    --text-muted: #9a8870;
+    --crimson: #d4433a;
+    --crimson-dim: #a82a20;
+    --gold: #c9a85c;
+    --border: rgba(255,255,255,0.11);
+  }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Spectral', Georgia, serif;
+    overflow: hidden;
+  }
+
+  #app {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    grid-template-rows: 56px 1fr;
+    height: 100vh;
+  }
+
+  /* --- Top Bar --- */
+  .top-bar {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 24px;
+    background: #06060a;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .top-bar h1 {
+    font-family: 'Cinzel', serif;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+
+  .top-bar .seed-controls {
+    display: flex; align-items: center; gap: 10px; margin-left: auto;
+  }
+
+  .top-bar label {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+  }
+
+  .top-bar input[type="number"] {
+    width: 80px; padding: 6px 10px;
+    background: var(--bg-card); color: var(--text);
+    border: 1px solid var(--border); border-radius: 3px;
+    font-family: 'Spectral', serif; font-size: 14px;
+  }
+
+  .btn {
+    padding: 7px 18px;
+    background: var(--crimson);
+    color: var(--text);
+    border: none; border-radius: 3px;
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .btn:hover { background: var(--crimson-dim); }
+  .btn.gold { background: var(--gold); color: #08080a; }
+  .btn.gold:hover { background: #b8973d; }
+  .btn.subtle {
+    background: var(--bg-hover); color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+  .btn.subtle:hover { background: var(--bg-card); }
+
+  /* --- Canvas Area --- */
+  .canvas-wrap {
+    position: relative;
+    overflow: hidden;
+    background: #08080a;
+  }
+
+  #mapCanvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: grab;
+  }
+
+  /* --- Side Panel --- */
+  .side-panel {
+    background: var(--bg-card);
+    border-left: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 20px;
+  }
+
+  .panel-section {
+    margin-bottom: 24px;
+  }
+
+  .panel-section h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 10px;
+    font-weight: 500;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 13px;
+  }
+  .info-row .label { color: var(--text-muted); }
+  .info-row .value { color: var(--text); font-weight: 500; }
+
+  .faction-list {
+    display: flex; flex-direction: column; gap: 8px;
+  }
+
+  .faction-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 10px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .faction-item:hover { background: var(--bg-hover); }
+  .faction-item.selected { border-color: var(--gold); }
+
+  .faction-swatch {
+    width: 16px; height: 16px;
+    border-radius: 2px;
+    border: 1px solid rgba(255,255,255,0.2);
+    flex-shrink: 0;
+  }
+
+  .faction-name {
+    font-family: 'Cinzel', serif;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .faction-regions {
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  /* Event Actions */
+  .action-group {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+
+  .action-group .btn { width: 100%; text-align: center; }
+
+  /* Selected info */
+  .selected-info {
+    padding: 12px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+  }
+  .selected-info .title {
+    font-family: 'Cinzel', serif;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+  .selected-info .detail {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.6;
+  }
+
+  /* Event log */
+  .event-log {
+    max-height: 200px;
+    overflow-y: auto;
+    display: flex; flex-direction: column; gap: 4px;
+  }
+  .event-log .event {
+    font-size: 11px;
+    color: var(--text-dim);
+    padding: 4px 8px;
+    background: var(--bg);
+    border-radius: 2px;
+    border-left: 2px solid var(--crimson);
+  }
+  .event-log .event.alliance { border-left-color: var(--gold); }
+  .event-log .event.secede { border-left-color: #5ee09a; }
+</style>
+</head>
+<body>
+
+<div id="app">
+  <div class="top-bar">
+    <h1>Territory Engine</h1>
+    <div class="seed-controls">
+      <label>Seed</label>
+      <input type="number" id="seedInput" value="42" min="1" max="99999">
+      <button class="btn" id="generateBtn">Generate</button>
+      <button class="btn subtle" id="randomBtn">Random</button>
+    </div>
+  </div>
+
+  <div class="canvas-wrap">
+    <canvas id="mapCanvas"></canvas>
+  </div>
+
+  <div class="side-panel" id="sidePanel">
+    <!-- Populated by JS -->
+  </div>
+</div>
+
+<script>/**
  * campaign-map-engine.js
  * Dynamic Fantasy Map Engine — Territory & Faction System
  *
@@ -2295,11 +2549,10 @@
       this._boundListeners = [];    // tracks listeners for cleanup
 
       this.theme = {
-        bg: "#060e1f",
-        sea: "#12305a",
-        seaMid: "#0b1e3d",
-        seaDeep: "#050c1a",
-        shoreGlow: "rgba(40,80,140,0.18)",
+        bg: "#08080a",
+        sea: "#0c1018",
+        seaDeep: "#080d14",
+        shoreGlow: "rgba(40,70,100,0.12)",
         landBase: "#1e1e18",
         factionBorderWidth: 3.0,
         factionBorderColor: "rgba(20,18,14,0.45)",
@@ -2638,44 +2891,12 @@
 
     _drawSea(ctx) {
       const g = this.grid;
-      const t = this.theme;
-
-      // Multi-stop radial gradient: lighter near land mass center, darker at deep ocean edges
-      const cx = g.mapW * 0.5, cy = g.mapH * 0.5;
-      const outerR = Math.max(g.mapW, g.mapH) * 0.85;
-      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, outerR);
-      grad.addColorStop(0.0, t.sea);       // Near-shore: muted blue
-      grad.addColorStop(0.35, t.seaMid);   // Mid-ocean: darker
-      grad.addColorStop(0.7, t.seaDeep);   // Deep ocean: very dark navy
-      grad.addColorStop(1.0, t.bg);        // Abyss at edges: near-black
+      // Deep sea gradient
+      const grad = ctx.createRadialGradient(g.mapW*0.5, g.mapH*0.5, 0, g.mapW*0.5, g.mapH*0.5, g.mapW*0.7);
+      grad.addColorStop(0, this.theme.sea);
+      grad.addColorStop(1, this.theme.seaDeep);
       ctx.fillStyle = grad;
       ctx.fillRect(-200, -200, g.mapW + 400, g.mapH + 400);
-
-      // Subtle depth variation — soft blurred blobs, not grid squares
-      if (!this._seaNoiseRng) {
-        let s = 12345;
-        this._seaNoiseRng = () => { s = (s * 16807) % 2147483647; return (s & 0x7fffffff) / 2147483647; };
-      }
-      const rng = this._seaNoiseRng;
-      ctx.save();
-      const blobCount = 30;
-      for (let i = 0; i < blobCount; i++) {
-        const bx = -200 + rng() * (g.mapW + 400);
-        const by = -200 + rng() * (g.mapH + 400);
-        const br = 150 + rng() * 350;
-        const dark = rng() > 0.5;
-        const blobGrad = ctx.createRadialGradient(bx, by, 0, bx, by, br);
-        if (dark) {
-          blobGrad.addColorStop(0, "rgba(4,8,18,0.06)");
-          blobGrad.addColorStop(1, "rgba(4,8,18,0)");
-        } else {
-          blobGrad.addColorStop(0, "rgba(16,40,80,0.04)");
-          blobGrad.addColorStop(1, "rgba(16,40,80,0)");
-        }
-        ctx.fillStyle = blobGrad;
-        ctx.fillRect(bx - br, by - br, br * 2, br * 2);
-      }
-      ctx.restore();
     }
 
     _drawCoastlineGlow(ctx) {
@@ -2684,7 +2905,7 @@
         // Multiple glow rings for soft shore effect
         for (let ring = 0; ring < 3; ring++) {
           ctx.save();
-          ctx.shadowColor = `rgba(30,70,130,${0.06 - ring * 0.015})`;
+          ctx.shadowColor = `rgba(50,85,120,${0.06 - ring * 0.015})`;
           ctx.shadowBlur = 20 + ring * 18;
           ctx.fillStyle = "rgba(0,0,0,0)";
           ctx.strokeStyle = `rgba(60,100,140,${0.10 - ring * 0.025})`;
@@ -2704,42 +2925,6 @@
       ctx.fillStyle = this.theme.landBase;
       // The clip is already set to coastline, so a large rect fills only land
       ctx.fillRect(-200, -200, this.grid.mapW + 400, this.grid.mapH + 400);
-
-      // Give unowned land (small islands, unclaimed territory) a visible earthy tone
-      // so they don't blend into the ocean
-      const grid = this.grid, step = grid.step;
-      const bleed = Math.ceil(step * 1.1);
-      ctx.fillStyle = "rgba(90,80,60,0.35)";
-      ctx.beginPath();
-      for (let idx = 0; idx < grid.total; idx++) {
-        if (grid.land[idx] && grid.faction[idx] < 0) {
-          const x = grid.col(idx) * step - bleed;
-          const y = grid.row(idx) * step - bleed;
-          ctx.rect(x, y, step + bleed * 2, step + bleed * 2);
-        }
-      }
-      ctx.fill();
-
-      // Add subtle texture strokes to unowned land
-      ctx.save();
-      ctx.strokeStyle = "rgba(120,105,75,0.12)";
-      ctx.lineWidth = 1;
-      let noiseSeed = 54321;
-      const nrng = () => { noiseSeed = (noiseSeed * 16807) % 2147483647; return (noiseSeed & 0x7fffffff) / 2147483647; };
-      for (let idx = 0; idx < grid.total; idx++) {
-        if (grid.land[idx] && grid.faction[idx] < 0) {
-          const cx = grid.cx(idx), cy = grid.cy(idx);
-          if (nrng() < 0.3) {
-            const len = step * (0.3 + nrng() * 0.6);
-            const angle = nrng() * Math.PI;
-            ctx.beginPath();
-            ctx.moveTo(cx - Math.cos(angle) * len, cy - Math.sin(angle) * len);
-            ctx.lineTo(cx + Math.cos(angle) * len, cy + Math.sin(angle) * len);
-            ctx.stroke();
-          }
-        }
-      }
-      ctx.restore();
     }
 
     /**
@@ -3141,57 +3326,75 @@
           : 0.12;
         ctx.textAlign = "center"; ctx.textBaseline = "middle";
 
-        // Sort regions by territory size descending — largest placed first
-        const regionOrder = regions.slice().filter(r => r.cells.size > 0)
-          .sort((a, b) => b.cells.size - a.cells.size);
+        // Sort factions by territory size descending — largest placed first
+        const factionOrder = factions.slice().filter(f => f.regions.size > 0)
+          .sort((a, b) => {
+            let sA = 0, sB = 0;
+            for (const rId of a.regions) sA += regions[rId].cells.size;
+            for (const rId of b.regions) sB += regions[rId].cells.size;
+            return sB - sA;
+          });
 
-        for (const region of regionOrder) {
+        for (const faction of factionOrder) {
           // Collect all cell positions and compute bounding box
           let sx = 0, sy = 0, cellCount = 0;
           let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-          for (const idx of region.cells) {
-            const cx = grid.cx(idx), cy = grid.cy(idx);
-            sx += cx; sy += cy; cellCount++;
-            if (cx < minX) minX = cx; if (cx > maxX) maxX = cx;
-            if (cy < minY) minY = cy; if (cy > maxY) maxY = cy;
+          for (const rId of faction.regions) {
+            const reg = regions[rId];
+            for (const idx of reg.cells) {
+              const cx = grid.cx(idx), cy = grid.cy(idx);
+              sx += cx; sy += cy; cellCount++;
+              if (cx < minX) minX = cx; if (cx > maxX) maxX = cx;
+              if (cy < minY) minY = cy; if (cy > maxY) maxY = cy;
+            }
           }
           if (cellCount === 0) continue;
           const centX = sx / cellCount, centY = sy / cellCount;
           const terW = maxX - minX, terH = maxY - minY;
 
-          const text = region.name.toUpperCase();
+          // Capitals belonging to this faction
+          const myCaps = capitalPts.filter(c => c.fid === faction.id);
+
+          const text = faction.name.toUpperCase();
 
           // Size font purely from territory width — zoom-independent in world space
           const targetFill = 0.85;
           const targetW = terW * targetFill;
+          // Use a fixed reference size to measure text width, then scale proportionally
           const refSize = 50;
-          const ls = Math.max(2, terW * 0.003);
+          const ls = Math.max(2, terW * 0.003); // letter-spacing proportional to territory
           ctx.font = `700 ${refSize}px ${lf}`;
           try { ctx.letterSpacing = `${ls}px`; } catch(e) {}
           const refW = ctx.measureText(text).width;
+          // Scale font so text width matches target
           let ffs = refW > 0 ? clamp(refSize * (targetW / refW), 12, terH * 0.5) : refSize;
           ctx.font = `700 ${ffs}px ${lf}`;
+          let tw = ctx.measureText(text).width;
+          const th = ffs * 1.2;
 
-          // Count how many boundary-check points lie inside the region
-          const boxInsideRatio = (bx, by, bw, bh, rid) => {
+          // Count how many boundary-check points lie inside the faction
+          const boxInsideRatio = (bx, by, bw, bh, fid) => {
             let total = 0, inside = 0;
+            // 5 columns × 3 rows = 15 sample points
             for (let xf = -0.5; xf <= 0.5; xf += 0.25) {
               for (let yf = -0.5; yf <= 0.5; yf += 0.5) {
                 total++;
                 const ci = grid.cellAt(bx + bw * xf, by + bh * yf);
-                if (ci >= 0 && grid.owner[ci] === rid) inside++;
+                if (ci >= 0 && grid.faction[ci] === fid) inside++;
               }
             }
             return inside / total;
           };
 
-          // Build exclusion zones around cities
+          // Build exclusion zones around cities (world-space, zoom-independent)
           const cityZones = [];
           const capR = grid.step * 2.5;
           const townR = grid.step * 1.2;
-          for (const city of region.cities) {
-            const r = city.capital ? capR : townR;
-            cityZones.push({ x: city.x, y: city.y, r, x1: city.x - r, y1: city.y - r * 1.3, x2: city.x + r, y2: city.y + r * 1.3 });
+          for (const region of regions) {
+            for (const city of region.cities) {
+              const r = city.capital ? capR : townR;
+              cityZones.push({ x: city.x, y: city.y, r, x1: city.x - r, y1: city.y - r * 1.3, x2: city.x + r, y2: city.y + r * 1.3 });
+            }
           }
           const hitsCity = (x1, y1, x2, y2) => {
             for (const z of cityZones) {
@@ -3203,6 +3406,7 @@
           ctx.fillStyle = hexToRgba("#f2e8d6", alpha);
           let placed_ok = false;
 
+          // Progressively shrink font; always require ALL points inside territory
           const scaleSteps = [1.0, 0.85, 0.70, 0.55, 0.45, 0.35, 0.25];
 
           for (let ai = 0; ai < scaleSteps.length && !placed_ok; ai++) {
@@ -3211,6 +3415,7 @@
             const curTW = ctx.measureText(text).width;
             const curTH = curFFS * 1.2;
 
+            // Use finer sampling for smaller territories or later attempts
             const sampleDiv = ai < 3 ? 10 : 15;
             const sampleStep = Math.max(grid.step, Math.min(terW, terH) / sampleDiv);
 
@@ -3218,14 +3423,15 @@
             for (let py = minY + sampleStep * 0.5; py < maxY; py += sampleStep) {
               for (let px = minX + sampleStep * 0.5; px < maxX; px += sampleStep) {
                 const ci = grid.cellAt(px, py);
-                if (ci < 0 || grid.owner[ci] !== region.id) continue;
+                if (ci < 0 || grid.faction[ci] !== faction.id) continue;
 
-                const ratio = boxInsideRatio(px, py, curTW, curTH, region.id);
-                if (ratio < 1.0) continue;
+                const ratio = boxInsideRatio(px, py, curTW, curTH, faction.id);
+                if (ratio < 1.0) continue; // ALL points must be inside
 
                 const x1 = px - curTW * 0.5, y1 = py - curTH * 0.5;
                 const x2 = x1 + curTW, y2 = y1 + curTH;
 
+                // Only avoid cities in early attempts; later attempts skip this check
                 if (ai < 4 && hitsCity(x1, y1, x2, y2)) continue;
                 if (!this._labelFits(kingdomBoxes, x1, y1, x2, y2, pad)) continue;
 
@@ -3246,21 +3452,26 @@
             }
           }
 
-          // Last resort: place at the deepest interior point
+          // Last resort: place at the deepest interior point of the territory
           if (!placed_ok) {
             const fallFFS = Math.max(8, ffs * 0.2);
             ctx.font = `700 ${fallFFS}px ${lf}`;
 
+            // Find the cell farthest from any faction border (deepest interior)
             let bestIdx = -1, bestInterior = -1;
-            for (const idx of region.cells) {
-              let interior = 0;
-              for (const nIdx of grid.neighbors4(idx)) {
-                if (grid.owner[nIdx] === region.id) interior++;
+            for (const rId of faction.regions) {
+              for (const idx of regions[rId].cells) {
+                // Check 4 neighbors — count how many are same faction
+                let interior = 0;
+                for (const nIdx of grid.neighbors4(idx)) {
+                  if (grid.faction[nIdx] === faction.id) interior++;
+                }
+                // Prefer cells closer to centroid as tiebreaker
+                const cx = grid.cx(idx), cy = grid.cy(idx);
+                const cDist = Math.sqrt((cx - centX) ** 2 + (cy - centY) ** 2);
+                const score = interior * 10000 - cDist;
+                if (score > bestInterior) { bestInterior = score; bestIdx = idx; }
               }
-              const cx = grid.cx(idx), cy = grid.cy(idx);
-              const cDist = Math.sqrt((cx - centX) ** 2 + (cy - centY) ** 2);
-              const score = interior * 10000 - cDist;
-              if (score > bestInterior) { bestInterior = score; bestIdx = idx; }
             }
 
             if (bestIdx >= 0) {
@@ -4881,3 +5092,212 @@
   global.MapEngine._internals = { MapGrid, TerritorySystem, BorderSystem, RoadSystem, MapRenderer, ContinentGenerator, ValueNoise, FACTION_PALETTE, DEFAULTS };
 
 })(typeof window !== "undefined" ? window : this);
+</script>
+<script>
+(function() {
+  'use strict';
+
+  const canvas = document.getElementById('mapCanvas');
+  const seedInput = document.getElementById('seedInput');
+  const generateBtn = document.getElementById('generateBtn');
+  const randomBtn = document.getElementById('randomBtn');
+  const sidePanel = document.getElementById('sidePanel');
+
+  // Create engine
+  const engine = new MapEngine(canvas, {
+    regionCount: 12,
+    factionCount: 5,
+    growthJitter: 0.4,
+  });
+
+  // Event log
+  const events = [];
+
+  function logEvent(type, msg) {
+    events.unshift({ type, msg, time: new Date().toLocaleTimeString() });
+    if (events.length > 50) events.pop();
+    updatePanel();
+  }
+
+  // Generate initial map
+  function doGenerate(seed) {
+    engine.generate(seed);
+    // Re-attach callbacks (renderer is recreated each generate)
+    engine.onRegionClick((region, faction) => {
+      selectedRegionInfo = { region, faction };
+      updatePanel();
+    });
+    engine.onRegionHover(() => {});
+    selectedRegionInfo = null;
+    selectedFactionId = null;
+    events.length = 0;
+    logEvent('generate', `Map generated with seed ${seed}`);
+    updatePanel();
+  }
+
+  generateBtn.addEventListener('click', () => {
+    doGenerate(parseInt(seedInput.value) || 1);
+  });
+
+  randomBtn.addEventListener('click', () => {
+    const seed = (Math.random() * 99999) | 0;
+    seedInput.value = seed;
+    doGenerate(seed);
+  });
+
+  // State
+  let selectedFactionId = null;
+  let selectedRegionInfo = null;
+
+  // Interaction callbacks
+  engine.onRegionClick((region, faction) => {
+    selectedRegionInfo = { region, faction };
+    updatePanel();
+  });
+
+  engine.onRegionHover((region, faction) => {
+    // Could update a tooltip
+  });
+
+  // Engine events
+  engine.on('conquer', (e) => {
+    logEvent('conquer', `${e.faction.name} conquered ${e.region.name}`);
+  });
+  engine.on('alliance', (e) => {
+    logEvent('alliance', `${e.absorber.name} formed alliance`);
+  });
+  engine.on('secede', (e) => {
+    logEvent('secede', `${e.region.name} seceded → ${e.newFaction.name}`);
+  });
+
+  // --- Side Panel Rendering ---
+
+  function updatePanel() {
+    const factions = engine.getFactions();
+    const regions = engine.getRegions();
+
+    let html = '';
+
+    // Selected region info
+    if (selectedRegionInfo) {
+      const { region, faction } = selectedRegionInfo;
+      html += `
+        <div class="panel-section">
+          <h2>Selected</h2>
+          <div class="selected-info">
+            <div class="title">${region.name}</div>
+            <div class="detail">
+              Faction: ${faction ? faction.name : 'None'}<br>
+              Cities: ${region.cities.length}<br>
+              Cells: ${region.cells.size.toLocaleString()}
+            </div>
+          </div>
+        </div>
+      `;
+
+      // Actions for selected region
+      html += `
+        <div class="panel-section">
+          <h2>Actions</h2>
+          <div class="action-group">
+      `;
+
+      // Conquer options: list other factions
+      for (const f of factions) {
+        if (f.regions.size === 0) continue;
+        if (faction && f.id === faction.id) continue;
+        html += `<button class="btn subtle" onclick="doConquer(${f.id}, ${region.id})">
+          ${f.name} conquers this
+        </button>`;
+      }
+
+      html += `<button class="btn gold" onclick="doSecede(${region.id})">
+        Declare independence
+      </button>`;
+
+      html += `</div></div>`;
+    }
+
+    // Factions
+    html += `<div class="panel-section"><h2>Factions</h2><div class="faction-list">`;
+    for (const f of factions) {
+      if (f.regions.size === 0) continue;
+      const selected = selectedFactionId === f.id ? ' selected' : '';
+      html += `
+        <div class="faction-item${selected}" onclick="selectFaction(${f.id})">
+          <div class="faction-swatch" style="background:${f.fill}"></div>
+          <div class="faction-name">${f.name}</div>
+          <div class="faction-regions">${f.regions.size}r</div>
+        </div>
+      `;
+    }
+    html += `</div></div>`;
+
+    // Alliance action (if two factions selected)
+    if (selectedFactionId !== null) {
+      const otherFactions = factions.filter(f => f.id !== selectedFactionId && f.regions.size > 0);
+      if (otherFactions.length > 0) {
+        html += `<div class="panel-section"><h2>Alliance</h2><div class="action-group">`;
+        for (const f of otherFactions) {
+          html += `<button class="btn subtle" onclick="doAlliance(${selectedFactionId}, ${f.id})">
+            Absorb ${f.name}
+          </button>`;
+        }
+        html += `</div></div>`;
+      }
+    }
+
+    // Stats
+    html += `
+      <div class="panel-section">
+        <h2>Map Stats</h2>
+        <div class="info-row"><span class="label">Seed</span><span class="value">${engine.getSeed()}</span></div>
+        <div class="info-row"><span class="label">Regions</span><span class="value">${regions.length}</span></div>
+        <div class="info-row"><span class="label">Active factions</span><span class="value">${factions.filter(f=>f.regions.size>0).length}</span></div>
+        <div class="info-row"><span class="label">Total cities</span><span class="value">${regions.reduce((s,r)=>s+r.cities.length,0)}</span></div>
+      </div>
+    `;
+
+    // Event log
+    html += `<div class="panel-section"><h2>Event Log</h2><div class="event-log">`;
+    for (const ev of events) {
+      html += `<div class="event ${ev.type}">${ev.time} — ${ev.msg}</div>`;
+    }
+    if (events.length === 0) {
+      html += `<div class="event">No events yet</div>`;
+    }
+    html += `</div></div>`;
+
+    sidePanel.innerHTML = html;
+  }
+
+  // Global action handlers (called from onclick in rendered HTML)
+  window.doConquer = function(factionId, regionId) {
+    engine.conquer(factionId, regionId);
+  };
+
+  window.doSecede = function(regionId) {
+    engine.secede(regionId);
+  };
+
+  window.doAlliance = function(absorberId, absorbedId) {
+    engine.alliance(absorberId, absorbedId);
+    selectedFactionId = null;
+    updatePanel();
+  };
+
+  window.selectFaction = function(factionId) {
+    selectedFactionId = selectedFactionId === factionId ? null : factionId;
+    updatePanel();
+  };
+
+  // Handle resize
+  window.addEventListener('resize', () => engine.renderer.resize());
+
+  // Go
+  doGenerate(42);
+
+})();
+</script>
+</body>
+</html>

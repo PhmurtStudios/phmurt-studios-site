@@ -145,6 +145,18 @@ var PhmurtRealtime = (function () {
     var sb = _sb();
     if (!sb || !campaignId) return Promise.resolve(null);
 
+    // SECURITY: Validate that the current user has an active session
+    // before allowing snapshot writes. The RPC should also enforce
+    // ownership via RLS, but we add client-side guard too.
+    var auth = typeof PhmurtAuth !== 'undefined' ? PhmurtAuth : null;
+    if (auth && typeof auth.getSession === 'function') {
+      var sess = auth.getSession();
+      if (!sess || !sess.userId) {
+        console.warn('[PhmurtRealtime] Snapshot save blocked — no active session');
+        return Promise.resolve(null);
+      }
+    }
+
     return sb.rpc('upsert_battle_map', {
       p_campaign_id: campaignId,
       p_state: state

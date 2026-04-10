@@ -303,7 +303,7 @@
       return result;
     }
 
-    _generateRewards(activity, outcome, rng) {
+    _generateRewards(activity, outcome, rng, currentCity = null, worldData = null) {
       const rewards = [];
 
       if (outcome === 'great_success') {
@@ -319,6 +319,25 @@
         const goldMax = activity.goldReward.max;
         const gold = Math.floor(rng() * (goldMax - goldMin + 1)) + goldMin;
         if (gold > 0) rewards.push({ type: 'gold', value: gold });
+      }
+
+      // Add faction reputation bonus for successful outcomes
+      if ((outcome === 'success' || outcome === 'great_success') &&
+          worldData && worldData.factions && worldData.factions.length > 0 &&
+          currentCity && worldData.cities) {
+        const city = worldData.cities.find(c => c.name === currentCity);
+        if (city) {
+          // Get factions in this region
+          const cityFactions = worldData.factions.filter(f => {
+            const factionRegion = f.region && f.region.toLowerCase() === city.region?.toLowerCase();
+            return factionRegion;
+          });
+
+          if (cityFactions.length > 0 && rng() > 0.5) {
+            const faction = cityFactions[Math.floor(rng() * cityFactions.length)];
+            rewards.push({ type: 'reputation', value: `+1 reputation with ${faction.name}` });
+          }
+        }
       }
 
       return rewards;
@@ -339,7 +358,7 @@
       return consequences;
     }
 
-    _generateNarrative(activity, outcome, character, rng) {
+    _generateNarrative(activity, outcome, character, rng, worldData = null) {
       const narratives = {
         greatSuccess: [
           `${character} excelled at ${activity.name.toLowerCase()}, exceeding all expectations.`,
@@ -360,15 +379,77 @@
 
       const key = outcome === 'great_success' ? 'greatSuccess' : outcome;
       const options = narratives[key] || narratives.success;
-      return options[Math.floor(rng() * options.length)];
+      let narrative = options[Math.floor(rng() * options.length)];
+
+      // Enhance narrative with NPC/world data if available
+      if (worldData && worldData.npcs && worldData.npcs.length > 0) {
+        const activityLower = activity.id.toLowerCase();
+        let npcToMention = null;
+
+        if (activityLower.includes('train') || activityLower === 'training') {
+          const trainers = worldData.npcs.filter(n => n.role &&
+            (n.role.toLowerCase().includes('trainer') || n.role.toLowerCase().includes('master')));
+          if (trainers.length > 0) {
+            npcToMention = trainers[Math.floor(rng() * trainers.length)];
+          }
+        } else if (activityLower.includes('craft')) {
+          const crafters = worldData.npcs.filter(n => n.role &&
+            (n.role.toLowerCase().includes('crafter') || n.role.toLowerCase().includes('smith')));
+          if (crafters.length > 0) {
+            npcToMention = crafters[Math.floor(rng() * crafters.length)];
+          }
+        }
+
+        if (npcToMention) {
+          const suffix = key === 'greatSuccess'
+            ? ` Trained under ${npcToMention.name}.`
+            : ` Worked with ${npcToMention.name}.`;
+          narrative = narrative + suffix;
+        }
+      }
+
+      return narrative;
     }
 
-    getAvailableActivities(character, currentCity) {
+    getAvailableActivities(character, currentCity, worldData = null) {
       return DOWNTIME_ACTIVITIES.filter(activity => {
         const classOk = activity.requirements.class.length === 0 ||
                        activity.requirements.class.includes(character.class);
         const levelOk = character.level >= activity.requirements.level;
-        // location check would require city data integration
+
+        // Location-based filtering with world data
+        if (worldData && worldData.cities && currentCity) {
+          const locationType = activity.requirements.location;
+          const city = worldData.cities.find(c => c.name === currentCity);
+
+          if (city && locationType !== 'city') {
+            // Check if city has required location feature
+            const hasFeature = city.features && city.features.some(feature => {
+              const featureLower = feature.toLowerCase();
+              const locLower = locationType.toLowerCase();
+              // Match library/academy with research/training
+              if (locLower === 'library' || locLower === 'academy') {
+                return featureLower.includes('library') || featureLower.includes('academy');
+              }
+              // Match workshop with crafting
+              if (locLower === 'workshop') {
+                return featureLower.includes('workshop') || featureLower.includes('smith');
+              }
+              // Match temple with shrine for priestly activities
+              if (locLower === 'temple') {
+                return featureLower.includes('temple') || featureLower.includes('shrine');
+              }
+              // Match tavern
+              if (locLower === 'tavern') {
+                return featureLower.includes('tavern') || featureLower.includes('inn');
+              }
+              return featureLower.includes(locLower);
+            });
+
+            if (!hasFeature) return false;
+          }
+        }
+
         return classOk && levelOk;
       });
     }
@@ -502,6 +583,46 @@
       board.nextId = data.nextId || 1;
       return board;
     }
+  }
+
+  // ============================================================================
+  // QUEST CONTEXTUALIZER - Integrates world atlas data into quests
+  // ============================================================================
+
+  function contextualizeQuest(template, data, rng) {
+    if (!data || !data.npcs || !data.cities || !data.factions) {
+      return template; // Return uncontextualized template if world data unavailable
+    }
+
+    // Helper to pick a random item from array
+    const pickRandom = (arr) => arr && arr.length > 0 ? arr[Math.floor(rng() * arr.length)] : null;
+
+    // Create a contextualized copy of the template
+    const contextualized = { ...template };
+
+    // Generate base title and description
+    let titleBase = template.generateTitle(rng);
+    let descBase = template.generateDescription(data, rng);
+
+    // Contextualize with NPC, city, and faction names
+    const npc = pickRandom(data.npcs);
+    const city = pickRandom(data.cities);
+    const faction = pickRandom(data.factions);
+
+    if (npc) {
+      descBase = descBase.replace(/the merchant|the official|the patron|an official/gi, npc.name);
+    }
+    if (city) {
+      descBase = descBase.replace(/the city|the town|this city|this town/gi, city.name);
+    }
+    if (faction) {
+      descBase = descBase.replace(/the authorities|the faction|the organization/gi, faction.name);
+    }
+
+    contextualized.generateTitle = () => titleBase;
+    contextualized.generateDescription = () => descBase;
+
+    return contextualized;
   }
 
   // ============================================================================
@@ -753,6 +874,7 @@
     const [showActivityModal, setShowActivityModal] = useState(false);
     const [showResolveModal, setShowResolveModal] = useState(false);
     const [selectedActivityId, setSelectedActivityId] = useState(null);
+    const [selectedCity, setSelectedCity] = useState('any');
     const [expandedCharacter, setExpandedCharacter] = useState(null);
     const [activeTab, setActiveTab] = useState('dashboard'); // dashboard, history, skills, stats
 
@@ -818,7 +940,8 @@
         daysElapsed: 0,
         startDate: new Date().toISOString(),
         status: 'active',
-        goldCost: activity.goldCost
+        goldCost: activity.goldCost,
+        city: selectedCity && selectedCity !== 'any' ? selectedCity : null
       };
 
       setData({
@@ -832,7 +955,8 @@
       setShowActivityModal(false);
       setSelectedActivityId(null);
       setSelectedCharacter(null);
-    }, [selectedCharacter, selectedActivityId, data, downtimeData, setData]);
+      setSelectedCity('any');
+    }, [selectedCharacter, selectedActivityId, selectedCity, data, downtimeData, setData]);
 
     // Handle activity resolution
     const handleResolveActivity = useCallback((activeActivityId) => {
@@ -1446,6 +1570,7 @@
                     setShowActivityModal(false);
                     setSelectedCharacter(null);
                     setSelectedActivityId(null);
+                    setSelectedCity('any');
                   }}
                   style={{
                     background: 'none',
@@ -1484,6 +1609,33 @@
 
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px', color: T.textDim }}>
+                    Location
+                  </label>
+                  <select
+                    value={selectedCity || 'any'}
+                    onChange={(e) => setSelectedCity(e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      border: `1px solid ${T.border}`,
+                      borderRadius: '4px',
+                      fontSize: '14px',
+                      boxSizing: 'border-box',
+                      backgroundColor: T.bgInput || 'var(--bg-input)',
+                      color: T.text
+                    }}
+                  >
+                    <option value="any">Any City</option>
+                    {data.cities && data.cities.map(city => (
+                      <option key={city.name} value={city.name}>
+                        {city.name} ({city.region})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', marginBottom: '4px', color: T.textDim }}>
                     Activity
                   </label>
                   <select
@@ -1501,11 +1653,39 @@
                     }}
                   >
                     <option value="">Select an activity...</option>
-                    {DOWNTIME_ACTIVITIES.map(activity => (
-                      <option key={activity.id} value={activity.id}>
-                        {activity.name} ({activity.durationDays} days, {activity.goldCost}gp)
-                      </option>
-                    ))}
+                    {DOWNTIME_ACTIVITIES.map(activity => {
+                      // Check if activity is available in selected city
+                      let isAvailable = true;
+                      if (selectedCity && selectedCity !== 'any' && data.cities) {
+                        const city = data.cities.find(c => c.name === selectedCity);
+                        if (city && activity.requirements.location !== 'city') {
+                          const locType = activity.requirements.location;
+                          isAvailable = city.features && city.features.some(feature => {
+                            const featureLower = feature.toLowerCase();
+                            const locLower = locType.toLowerCase();
+                            if (locLower === 'library' || locLower === 'academy') {
+                              return featureLower.includes('library') || featureLower.includes('academy');
+                            }
+                            if (locLower === 'workshop') {
+                              return featureLower.includes('workshop') || featureLower.includes('smith');
+                            }
+                            if (locLower === 'temple') {
+                              return featureLower.includes('temple') || featureLower.includes('shrine');
+                            }
+                            if (locLower === 'tavern') {
+                              return featureLower.includes('tavern') || featureLower.includes('inn');
+                            }
+                            return featureLower.includes(locLower);
+                          });
+                        }
+                      }
+                      return (
+                        <option key={activity.id} value={activity.id} disabled={!isAvailable}>
+                          {activity.name} ({activity.durationDays} days, {activity.goldCost}gp)
+                          {!isAvailable ? ' - Not available in this city' : ''}
+                        </option>
+                      );
+                    })}
                   </select>
                 </div>
 
@@ -1555,6 +1735,7 @@
                       setShowActivityModal(false);
                       setSelectedCharacter(null);
                       setSelectedActivityId(null);
+                      setSelectedCity('any');
                     }}
                     style={{
                       flex: 1,
@@ -1587,6 +1768,7 @@
   window.DOWNTIME_ACTIVITIES = DOWNTIME_ACTIVITIES;
   window.QuestBoard = QuestBoard;
   window.QUEST_TEMPLATES = QUEST_TEMPLATES;
+  window.contextualizeQuest = contextualizeQuest;
   window.DowntimeView = DowntimeView;
 
 })();

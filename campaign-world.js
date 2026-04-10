@@ -3375,7 +3375,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
       <div style={{ display: (tab === "calendar" || tab === "exploration") ? "none" : "flex", flex:1, overflow:"hidden", position:"relative" }}>
         {/* ══════════ FANTASY MAP TAB — Multi-scale continental map ══════════ */}
         {tab==="map" && (
-          <div ref={mapRef} style={{ flex:1, overflow:"hidden", position:"relative", background:"#060e1f", touchAction:"none", WebkitUserSelect:"none", userSelect:"none" }}>
+          <div ref={mapRef} style={{ flex:1, overflow:"hidden", position:"relative", background:T.bg, touchAction:"none", WebkitUserSelect:"none", userSelect:"none" }}>
             {/* ── New MapEngine Canvas ── */}
             <canvas ref={mapCanvasRef} style={{ width:"100%", height:"100%", display:"block" }} />
             {/* ── Legacy SVG hidden — kept for non-MapEngine fallback ── */}
@@ -3792,7 +3792,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     </div>
                     {c.features && c.features.length > 0 && (
                       <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 12 }}>
-                        {c.features.map((f, fi) => <span key={fi} style={{ fontSize: 8, color: "#c9a85c", background: "rgba(201,168,92,0.08)", border: "1px solid rgba(201,168,92,0.22)", padding: "3px 8px", borderRadius: "3px", letterSpacing: "0.5px", fontFamily: "'Cinzel', serif", textTransform: "uppercase" }}>{f}</span>)}
+                        {c.features.map((f, fi) => <span key={fi} style={{ fontSize: 8, color: T.gold, background: "rgba(201,168,92,0.08)", border: "1px solid rgba(201,168,92,0.22)", padding: "3px 8px", borderRadius: "3px", letterSpacing: "0.5px", fontFamily: "'Cinzel', serif", textTransform: "uppercase" }}>{f}</span>)}
                       </div>
                     )}
                     <div style={{ display: "flex", gap: 12, marginBottom: 6, fontSize: 10, color: "var(--text-muted)", fontFamily: "'Spectral', serif" }}>
@@ -3801,7 +3801,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       <span>Tavern: {c.tavern.name}</span>
                     </div>
                     {c.questHooks && c.questHooks.length > 0 && (
-                      <div style={{ fontSize: 10, color: "#e8ba40", fontStyle: "italic", marginBottom: 12, lineHeight: 1.5, fontFamily: "'Spectral', serif", padding: "6px 10px", background: "rgba(232,186,64,0.06)", borderRadius: "3px", border: "1px solid rgba(232,186,64,0.12)" }}>Quest: {c.questHooks[0]}</div>
+                      <div style={{ fontSize: 10, color: T.questGold, fontStyle: "italic", marginBottom: 12, lineHeight: 1.5, fontFamily: "'Spectral', serif", padding: "6px 10px", background: "rgba(232,186,64,0.06)", borderRadius: "3px", border: "1px solid rgba(232,186,64,0.12)" }}>Quest: {c.questHooks[0]}</div>
                     )}
                     <div style={{ display: "flex", gap: 6 }}>
                       <button
@@ -3967,8 +3967,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     borderRadius:"4px", cursor:"pointer", transition:"all 0.3s",
                   }}
                 >
-                  <span style={{ width:8, height:8, borderRadius:"50%", background: lwActive ? "#4ade80" : "#666", boxShadow: lwActive ? "0 0 8px rgba(74,222,128,0.6)" : "none", transition:"all 0.3s" }} />
-                  <span style={{ fontFamily:"'Cinzel', serif", fontSize:10, color: lwActive ? "#4ade80" : "#c9a85c", letterSpacing:"1.5px", textTransform:"uppercase" }}>
+                  <span style={{ width:8, height:8, borderRadius:"50%", background: lwActive ? T.green : T.textFaint, boxShadow: lwActive ? "0 0 8px rgba(74,222,128,0.6)" : "none", transition:"all 0.3s" }} />
+                  <span style={{ fontFamily:"'Cinzel', serif", fontSize:10, color: lwActive ? T.green : T.gold, letterSpacing:"1.5px", textTransform:"uppercase" }}>
                     {lwActive ? "World Live" : "Living World"}
                   </span>
                 </button>
@@ -3992,7 +3992,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       ⏭ Skip Forward
                     </button>
                     <button onClick={() => { setLwPartyActionsOpen(v => !v); setLwTimeSkipOpen(false); }}
-                      style={{ padding:"3px 10px", background: lwPartyActionsOpen ? "rgba(201,100,60,0.2)" : "rgba(30,26,22,0.9)", border: lwPartyActionsOpen ? "1px solid rgba(201,100,60,0.4)" : "1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:"'Cinzel', serif", fontSize:8, color: lwPartyActionsOpen ? "#e8a060" : "#c9a85c", cursor:"pointer", letterSpacing:"1px" }}>
+                      style={{ padding:"3px 10px", background: lwPartyActionsOpen ? "rgba(201,100,60,0.2)" : "rgba(30,26,22,0.9)", border: lwPartyActionsOpen ? "1px solid rgba(201,100,60,0.4)" : "1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:"'Cinzel', serif", fontSize:8, color: lwPartyActionsOpen ? T.orange : T.gold, cursor:"pointer", letterSpacing:"1px" }}>
                       ⚔ Party Actions
                     </button>
                   </div>
@@ -4064,10 +4064,10 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                 maxHeight:"60vh", display:"flex", flexDirection:"column",
               }}>
                 <div style={{ padding:"12px 16px", borderBottom:"1px solid rgba(201,100,60,0.15)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                  <div style={{ fontSize:11, color:"#e8a060", fontFamily:"'Cinzel', serif", letterSpacing:"1px" }}>Party Actions</div>
-                  <button onClick={() => setLwPartyActionsOpen(false)} style={{ background:"none", border:"none", color:"#8a8070", cursor:"pointer", fontSize:14, padding:"0 4px" }}>×</button>
+                  <div style={{ fontSize:11, color:T.orange, fontFamily:"'Cinzel', serif", letterSpacing:"1px" }}>Party Actions</div>
+                  <button onClick={() => setLwPartyActionsOpen(false)} style={{ background:"none", border:"none", color:T.textMuted, cursor:"pointer", fontSize:14, padding:"0 4px" }}>×</button>
                 </div>
-                <div style={{ padding:"8px 12px", fontSize:9, color:"#6a6050", lineHeight:1.5, borderBottom:"1px solid rgba(201,100,60,0.1)" }}>
+                <div style={{ padding:"8px 12px", fontSize:9, color:T.textMuted, lineHeight:1.5, borderBottom:"1px solid rgba(201,100,60,0.1)" }}>
                   These actions represent what the adventuring party does in the world. Results are not guaranteed — the world reacts dynamically.
                 </div>
                 <div style={{ flex:1, overflowY:"auto", padding:"8px 0" }}>
@@ -4086,8 +4086,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       >
                         <span style={{ fontSize:18, lineHeight:1, flexShrink:0 }}>{action.icon}</span>
                         <div>
-                          <div style={{ fontSize:10, color:"#e8a060", fontFamily:"'Cinzel', serif", letterSpacing:"0.5px", marginBottom:2 }}>{action.label}</div>
-                          <div style={{ fontSize:9, color:"#7a7060", lineHeight:1.4 }}>{action.description}</div>
+                          <div style={{ fontSize:10, color:T.orange, fontFamily:"'Cinzel', serif", letterSpacing:"0.5px", marginBottom:2 }}>{action.label}</div>
+                          <div style={{ fontSize:9, color:T.textMuted, lineHeight:1.4 }}>{action.description}</div>
                         </div>
                       </button>
                     ))
@@ -4103,13 +4103,13 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       return (
                         <div>
                           <div style={{ padding:"8px 16px", display:"flex", alignItems:"center", gap:8, borderBottom:"1px solid rgba(201,100,60,0.1)" }}>
-                            <button onClick={() => setLwActionTarget(null)} style={{ background:"none", border:"none", color:"#8a8070", cursor:"pointer", fontSize:10, fontFamily:"'Cinzel', serif" }}>← Back</button>
+                            <button onClick={() => setLwActionTarget(null)} style={{ background:"none", border:"none", color:T.textMuted, cursor:"pointer", fontSize:10, fontFamily:"'Cinzel', serif" }}>← Back</button>
                             <span style={{ fontSize:14 }}>{action.icon}</span>
-                            <span style={{ fontSize:10, color:"#e8a060", fontFamily:"'Cinzel', serif", letterSpacing:"0.5px" }}>{action.label}</span>
+                            <span style={{ fontSize:10, color:T.orange, fontFamily:"'Cinzel', serif", letterSpacing:"0.5px" }}>{action.label}</span>
                           </div>
                           {!readyToExecute && (
                             <div style={{ padding:"8px 16px" }}>
-                              <div style={{ fontSize:9, color:"#7a7060", marginBottom:8 }}>
+                              <div style={{ fontSize:9, color:T.textMuted, marginBottom:8 }}>
                                 {!lwActionTarget.targetFaction ? "Select target faction:" : needsSecondFaction ? "Select second faction:" : ""}
                               </div>
                               {(data.factions || []).filter(f => {
@@ -4132,18 +4132,18 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                                   onMouseEnter={e => e.currentTarget.style.background = "rgba(201,100,60,0.08)"}
                                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                                 >
-                                  <span style={{ width:10, height:10, borderRadius:"50%", background: f.color || "#666", flexShrink:0, border:"1px solid rgba(255,255,255,0.2)" }} />
+                                  <span style={{ width:10, height:10, borderRadius:"50%", background: f.color || T.textFaint, flexShrink:0, border:"1px solid rgba(255,255,255,0.2)" }} />
                                   <span style={{ fontSize:10, color:T.gold, fontFamily:"'Cinzel', serif" }}>{f.name}</span>
-                                  <span style={{ fontSize:8, color:"#5a5040", marginLeft:"auto" }}>Power: {f.power}</span>
+                                  <span style={{ fontSize:8, color:T.textMuted, marginLeft:"auto" }}>Power: {f.power}</span>
                                 </button>
                               ))}
                             </div>
                           )}
                           {readyToExecute && (
                             <div style={{ padding:"16px" }}>
-                              <div style={{ fontSize:9, color:"#7a7060", marginBottom:8, lineHeight:1.5 }}>
-                                {action.label} targeting <span style={{ color:"#e8a060" }}>{lwActionTarget.targetFaction}</span>
-                                {lwActionTarget.allyFaction && <> and <span style={{ color:"#e8a060" }}>{lwActionTarget.allyFaction}</span></>}
+                              <div style={{ fontSize:9, color:T.textMuted, marginBottom:8, lineHeight:1.5 }}>
+                                {action.label} targeting <span style={{ color:T.orange }}>{lwActionTarget.targetFaction}</span>
+                                {lwActionTarget.allyFaction && <> and <span style={{ color:T.orange }}>{lwActionTarget.allyFaction}</span></>}
                               </div>
                               <button
                                 onClick={() => {
@@ -4159,7 +4159,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                                 }}
                                 style={{
                                   width:"100%", padding:"10px 16px", background:"rgba(201,100,60,0.2)", border:"1px solid rgba(201,100,60,0.4)",
-                                  borderRadius:"4px", color:"#e8a060", cursor:"pointer", fontFamily:"'Cinzel', serif", fontSize:10,
+                                  borderRadius:"4px", color:T.orange, cursor:"pointer", fontFamily:"'Cinzel', serif", fontSize:10,
                                   letterSpacing:"1px", textTransform:"uppercase", transition:"all 0.2s",
                                 }}
                                 onMouseEnter={e => e.target.style.background = "rgba(201,100,60,0.35)"}
@@ -4187,7 +4187,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                   background:"rgba(20,18,14,0.98)", border:"2px solid rgba(201,168,92,0.5)", borderRadius:"8px",
                   padding:"32px", textAlign:"center", minWidth:300
                 }}>
-                  <div style={{ fontSize:14, color:"#f0e8d0", marginBottom:20, letterSpacing:"1px" }}>
+                  <div style={{ fontSize:14, color:T.text, marginBottom:20, letterSpacing:"1px" }}>
                     Traversing the timeline...
                   </div>
                   <div style={{
@@ -4217,7 +4217,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                   background:"rgba(20,18,14,0.98)", border:"2px solid rgba(201,168,92,0.4)", borderRadius:"8px",
                   padding:"24px", maxWidth:500, maxHeight:"70vh", overflow:"hidden", display:"flex", flexDirection:"column"
                 }}>
-                  <div style={{ fontSize:14, color:"#f0e8d0", marginBottom:16, letterSpacing:"1px", textAlign:"center" }}>
+                  <div style={{ fontSize:14, color:T.text, marginBottom:16, letterSpacing:"1px", textAlign:"center" }}>
                     Time has passed... {lwTimeSkipSummary.length} events transpired
                   </div>
                   <div style={{
@@ -4232,13 +4232,13 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       }}>
                         <span style={{ fontSize:18, flexShrink:0, lineHeight:1 }}>{evt.icon}</span>
                         <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:11, color:"#f0e8d0", fontWeight:500, marginBottom:4 }}>{evt.headline}</div>
-                          <div style={{ fontSize:9, color:"#8a8070", lineHeight:1.4 }}>{evt.detail}</div>
+                          <div style={{ fontSize:11, color:T.text, fontWeight:500, marginBottom:4 }}>{evt.headline}</div>
+                          <div style={{ fontSize:9, color:T.textMuted, lineHeight:1.4 }}>{evt.detail}</div>
                         </div>
                       </div>
                     ))}
                     {lwTimeSkipSummary.length > 0 && lwTimeSkipSummary.filter(e => e.importance === "major").length === 0 && (
-                      <div style={{ fontSize:10, color:"#8a8070", fontStyle:"italic", textAlign:"center", padding:"20px 0" }}>
+                      <div style={{ fontSize:10, color:T.textMuted, fontStyle:"italic", textAlign:"center", padding:"20px 0" }}>
                         No major events. The world remained quiet.
                       </div>
                     )}
@@ -4293,8 +4293,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     }}>
                       <span style={{ fontSize:20, lineHeight:1, flexShrink:0 }}>{evt.icon}</span>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:12, fontWeight:500, color: i === 0 ? "#f0e8d0" : "#b8ae94", fontFamily:"'Cinzel', serif", letterSpacing:"0.3px" }}>{evt.headline}</div>
-                        <div style={{ fontSize:10, color:"#8a8070", lineHeight:1.5, marginTop:3, overflow:"hidden", textOverflow:"ellipsis", display:"-webkit-box", WebkitLineClamp: i === 0 ? 3 : 1, WebkitBoxOrient:"vertical" }}>{evt.detail}</div>
+                        <div style={{ fontSize:12, fontWeight:500, color: i === 0 ? T.text : T.textMuted, fontFamily:"'Cinzel', serif", letterSpacing:"0.3px" }}>{evt.headline}</div>
+                        <div style={{ fontSize:10, color:T.textMuted, lineHeight:1.5, marginTop:3, overflow:"hidden", textOverflow:"ellipsis", display:"-webkit-box", WebkitLineClamp: i === 0 ? 3 : 1, WebkitBoxOrient:"vertical" }}>{evt.detail}</div>
                       </div>
                       <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:2, flexShrink:0 }}>
                         <span style={{
@@ -4302,7 +4302,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                           color: evt.importance === "major" ? "#e8ba40" : evt.importance === "minor" ? "#6a8070" : "#9a9080",
                           border: `1px solid ${evt.importance === "major" ? "rgba(232,186,64,0.3)" : "rgba(120,110,88,0.3)"}`,
                         }}>{evt.importance}</span>
-                        <span style={{ fontSize:8, color:"#5a5040", letterSpacing:"0.5px", textTransform:"uppercase" }}>{evt.category}</span>
+                        <span style={{ fontSize:8, color:T.textMuted, letterSpacing:"0.5px", textTransform:"uppercase" }}>{evt.category}</span>
                       </div>
                     </div>
                   ))}
@@ -4320,14 +4320,14 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
               }}>
                 <div style={{ padding:"16px 20px", borderBottom:"1px solid rgba(201,168,92,0.15)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                   <div>
-                    <div style={{ fontSize:14, color:"#f0e8d0", fontFamily:"'Cinzel', serif", letterSpacing:"1px" }}>World Events</div>
-                    <div style={{ fontSize:9, color:"#8a8070", marginTop:2 }}>{lwLog.length} events this session</div>
+                    <div style={{ fontSize:14, color:T.text, fontFamily:"'Cinzel', serif", letterSpacing:"1px" }}>World Events</div>
+                    <div style={{ fontSize:9, color:T.textMuted, marginTop:2 }}>{lwLog.length} events this session</div>
                   </div>
-                  <button onClick={() => setLwShowLog(false)} style={{ background:"none", border:"none", color:"#8a8070", cursor:"pointer", fontSize:18, padding:"2px 6px" }}>×</button>
+                  <button onClick={() => setLwShowLog(false)} style={{ background:"none", border:"none", color:T.textMuted, cursor:"pointer", fontSize:18, padding:"2px 6px" }}>×</button>
                 </div>
                 <div style={{ flex:1, overflowY:"auto", padding:"12px 16px" }}>
                   {lwLog.length === 0 && (
-                    <div style={{ padding:20, textAlign:"center", color:"#5a5040", fontStyle:"italic", fontSize:11 }}>
+                    <div style={{ padding:20, textAlign:"center", color:T.textMuted, fontStyle:"italic", fontSize:11 }}>
                       No events yet. The world is quiet... for now.
                     </div>
                   )}
@@ -4346,13 +4346,13 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     }}>
                       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
                         <span style={{ fontSize:16 }}>{evt.icon}</span>
-                        <span style={{ fontSize:11, fontWeight:500, color:"#f0e8d0", fontFamily:"'Cinzel', serif", flex:1 }}>{evt.headline}</span>
-                        <span style={{ fontSize:8, color:"#5a5040" }}>#{evt.tickNumber}</span>
+                        <span style={{ fontSize:11, fontWeight:500, color:T.text, fontFamily:"'Cinzel', serif", flex:1 }}>{evt.headline}</span>
+                        <span style={{ fontSize:8, color:T.textMuted }}>#{evt.tickNumber}</span>
                       </div>
-                      <div style={{ fontSize:10, color:"#8a8070", lineHeight:1.5 }}>{evt.detail}</div>
+                      <div style={{ fontSize:10, color:T.textMuted, lineHeight:1.5 }}>{evt.detail}</div>
                       <div style={{ display:"flex", gap:6, marginTop:6 }}>
-                        <span style={{ fontSize:8, color:"#6a6050", letterSpacing:"0.5px", textTransform:"uppercase" }}>{evt.category}</span>
-                        <span style={{ fontSize:8, color: evt.importance === "major" ? "#e8ba40" : "#6a6050", letterSpacing:"0.5px", textTransform:"uppercase" }}>{evt.importance}</span>
+                        <span style={{ fontSize:8, color:T.textMuted, letterSpacing:"0.5px", textTransform:"uppercase" }}>{evt.category}</span>
+                        <span style={{ fontSize:8, color: evt.importance === "major" ? T.questGold : T.textMuted, letterSpacing:"0.5px", textTransform:"uppercase" }}>{evt.importance}</span>
                       </div>
                     </div>
                   ))}
@@ -4398,14 +4398,14 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
               }}>
                 <MapPin size={14} color="#4a6b52" />
                 <div style={{ minWidth:0 }}>
-                  <div style={{ fontFamily:"'Cinzel', serif", fontSize:10, letterSpacing:"1.4px", textTransform:"uppercase", color:"#3d4a38", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                  <div style={{ fontFamily:"'Cinzel', serif", fontSize:10, letterSpacing:"1.4px", textTransform:"uppercase", color:T.textMuted, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
                     {activeRoute
                       ? `${activeRoute.from.name} -> ${activeRoute.to.name}`
                       : (routeDraft.fromId || routeDraft.toId)
                         ? `${worldNodesById[routeDraft.fromId]?.name || "Choose start"} -> ${worldNodesById[routeDraft.toId]?.name || "Choose destination"}`
                         : `${worldMapState.lastRoute?.from || "Route"} -> ${worldMapState.lastRoute?.to || "destination"}`}
                   </div>
-                  <div style={{ fontSize:11, color:"#6b5f4c", fontFamily:T.body, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                  <div style={{ fontSize:11, color:T.textMuted, fontFamily:T.body, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
                     {(activeRoute && !activeRoute.blocked)
                       ? `${activeRoute.miles} miles - ${activeRoute.etaDays} days - ${activeRoute.threat} risk`
                       : activeRoute?.blocked
@@ -4466,7 +4466,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     }}>
                       <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
                         <span style={{ fontSize:22, fontWeight:400, color:T.text, fontFamily:"'Cinzel', serif", letterSpacing:"0.5px" }}>{c.name}</span>
-                        <span style={{ fontSize:9, color:c.isCapital?"#c9a85c":"#9a9080", border:`1px solid ${c.isCapital?"rgba(201,168,92,0.3)":"rgba(154,144,128,0.3)"}`, padding:"2px 8px", borderRadius:"2px", letterSpacing:"1px" }}>{c.isCapital?"CAPITAL":"SETTLEMENT"}</span>
+                        <span style={{ fontSize:9, color:c.isCapital?T.gold:T.textMuted, border:`1px solid ${c.isCapital?"rgba(201,168,92,0.3)":"rgba(154,144,128,0.3)"}`, padding:"2px 8px", borderRadius:"2px", letterSpacing:"1px" }}>{c.isCapital?"CAPITAL":"SETTLEMENT"}</span>
                       </div>
                       <div style={{ fontSize:12, color:T.textMuted, marginBottom:8 }}>{c.region} · {c.faction} · Pop. {c.population}</div>
                       <div style={{ fontSize:12, color:T.textDim, lineHeight:1.6 }}>{c.description}</div>
@@ -4524,7 +4524,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                                   <tr key={ii} style={{ borderTop:`1px solid ${T.border}`, opacity:item.inStock?1:0.4 }}>
                                     <td style={{ padding:"8px 16px", color:T.text }}>{item.name}</td>
                                     <td style={{ padding:"8px 12px", textAlign:"center" }}>
-                                      <span style={{ fontSize:10, color:item.rarity==="rare"?"#8b50f0":item.rarity==="uncommon"?"#2e8b57":T.textFaint, fontStyle:"italic" }}>{item.rarity}</span>
+                                      <span style={{ fontSize:10, color:item.rarity==="rare"?"#8b50f0":item.rarity==="uncommon"?T.green:T.textFaint, fontStyle:"italic" }}>{item.rarity}</span>
                                     </td>
                                     <td style={{ padding:"8px 12px", textAlign:"right", color:T.gold, fontFamily:T.ui }}>{item.price}</td>
                                     <td style={{ padding:"8px 12px", textAlign:"center", color:item.inStock?T.textMuted:T.crimson, fontSize:11 }}>{item.inStock?("×"+item.qty):"Out"}</td>
@@ -4666,7 +4666,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                                             ? <span style={{ fontSize:16, color:cityFc }}>★</span>
                                             : <span style={{ fontSize:14, color:T.textFaint }}>◆</span>}
                                           <span style={{ fontSize:14, fontWeight:c.isCapital?500:300, color:T.text }}>{c.name}</span>
-                                          <span style={{ fontSize:8, color:c.isCapital?cityFc:"#9a9080", border:`1px solid ${c.isCapital?cityFc+"44":"rgba(154,144,128,0.3)"}`, padding:"1px 5px", borderRadius:"2px", letterSpacing:"0.5px" }}>{c.isCapital?"CAPITAL":"SETTLEMENT"}</span>
+                                          <span style={{ fontSize:8, color:c.isCapital?cityFc:T.textMuted, border:`1px solid ${c.isCapital?cityFc+"44":"rgba(154,144,128,0.3)"}`, padding:"1px 5px", borderRadius:"2px", letterSpacing:"0.5px" }}>{c.isCapital?"CAPITAL":"SETTLEMENT"}</span>
                                         </div>
                                         <div style={{ fontSize:10, color:T.textFaint, marginBottom:7 }}>Pop. {c.population}</div>
                                         <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginBottom:7 }}>
@@ -5028,7 +5028,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                         {(f.hierarchy || leaders.map(l => ({ title: l.role, name: l.name }))).map((h, hi) => (
                           <div key={hi} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3, paddingLeft: hi === 0 ? 0 : hi * 8 }}>
                             <div style={{ width: 5, height: 5, borderRadius: "50%", background: hi === 0 ? f.color : T.textFaint, opacity: hi === 0 ? 1 : 0.5, flexShrink: 0 }}/>
-                            <span style={{ fontSize: 11, color: hi === 0 ? "#c9a85c" : T.textMuted, fontWeight: hi === 0 ? 400 : 300 }}>{h.title}:</span>
+                            <span style={{ fontSize: 11, color: hi === 0 ? T.gold : T.textMuted, fontWeight: hi === 0 ? 400 : 300 }}>{h.title}:</span>
                             <span style={{ fontSize: 11, color: T.text, fontWeight: 300 }}>{h.name}</span>
                           </div>
                         ))}
@@ -5039,7 +5039,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     {!isCompact && f.resources && f.resources.length > 0 && (
                       <div style={{ marginTop: 8, display: "flex", gap: 4, flexWrap: "wrap" }}>
                         {f.resources.map((res, ri) => (
-                          <span key={ri} style={{ padding: "2px 8px", background: "rgba(201,168,92,0.08)", border: "1px solid rgba(201,168,92,0.18)", borderRadius: "3px", fontSize: 10, color: "#c9a85c", letterSpacing: "0.5px" }}>{res}</span>
+                          <span key={ri} style={{ padding: "2px 8px", background: "rgba(201,168,92,0.08)", border: "1px solid rgba(201,168,92,0.18)", borderRadius: "3px", fontSize: 10, color: T.gold, letterSpacing: "0.5px" }}>{res}</span>
                         ))}
                       </div>
                     )}
@@ -5228,7 +5228,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
                           <span style={{ fontSize: 15, fontWeight: 300, color: T.text }}>{n.name}</span>
                           {n.level && <span style={{ fontSize: 10, color: T.textFaint, fontFamily: T.ui }}>Lv{n.level}</span>}
-                          {n.isLeader && <span style={{ fontSize: 9, color: "#c9a85c", border: "1px solid rgba(201,168,92,0.3)", padding: "1px 5px", borderRadius: "2px", letterSpacing: "0.5px" }}>LEADER</span>}
+                          {n.isLeader && <span style={{ fontSize: 9, color: T.gold, border: "1px solid rgba(201,168,92,0.3)", padding: "1px 5px", borderRadius: "2px", letterSpacing: "0.5px" }}>LEADER</span>}
                         </div>
                         <div style={{ fontSize: 12, color: T.textFaint, marginBottom: 6, fontStyle: "italic", fontWeight: 300 }}>{n.role}{n.loc ? ` — ${n.loc}` : ""}</div>
                         <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 4 }}>
@@ -5377,13 +5377,13 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
                         <span style={{ fontSize: 22, fontWeight: 400, color: T.text, fontFamily: "'Cinzel', serif", letterSpacing: "0.5px" }}>{c.name}</span>
-                        <span style={{ fontSize: 9, color: c.isCapital ? "#c9a85c" : "#9a9080", border: `1px solid ${c.isCapital ? "rgba(201,168,92,0.3)" : "rgba(154,144,128,0.3)"}`, padding: "2px 8px", borderRadius: "2px", letterSpacing: "1px" }}>{(() => { const m = window.TOWN_METADATA?.[c.name]; return m ? (m.isCapital ? "CAPITAL" : m.population >= 4000 ? "CITY" : m.population >= 1500 ? "TOWN" : "VILLAGE") : (c.isCapital ? "CAPITAL" : "SETTLEMENT"); })()}</span>
+                        <span style={{ fontSize: 9, color: c.isCapital ? T.gold : T.textMuted, border: `1px solid ${c.isCapital ? "rgba(201,168,92,0.3)" : "rgba(154,144,128,0.3)"}`, padding: "2px 8px", borderRadius: "2px", letterSpacing: "1px" }}>{(() => { const m = window.TOWN_METADATA?.[c.name]; return m ? (m.isCapital ? "CAPITAL" : m.population >= 4000 ? "CITY" : m.population >= 1500 ? "TOWN" : "VILLAGE") : (c.isCapital ? "CAPITAL" : "SETTLEMENT"); })()}</span>
                       </div>
                       <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 8 }}>{c.region} · {c.faction} · Pop. {c.population}</div>
                       <div style={{ fontSize: 12, color: T.textDim, lineHeight: 1.6 }}>{c.description}</div>
                       {c.features && c.features.length > 0 && (
                         <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 12 }}>
-                          {c.features.map((f, fi) => <span key={fi} style={{ fontSize: 10, color: "#c9a85c", border: "1px solid rgba(201,168,92,0.2)", padding: "3px 9px", borderRadius: "2px" }}>{f}</span>)}
+                          {c.features.map((f, fi) => <span key={fi} style={{ fontSize: 10, color: T.gold, border: "1px solid rgba(201,168,92,0.2)", padding: "3px 9px", borderRadius: "2px" }}>{f}</span>)}
                         </div>
                       )}
                     </div>
@@ -5399,12 +5399,12 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                         {c.tavern.services.map((s, si) => (
                           <div key={si} style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", background: "rgba(0,0,0,0.12)", borderRadius: "3px", fontSize: 11 }}>
                             <span style={{ color: T.textMuted }}>{s.name}</span>
-                            <span style={{ color: "#c9a85c", fontFamily: T.ui }}>{s.price}</span>
+                            <span style={{ color: T.gold, fontFamily: T.ui }}>{s.price}</span>
                           </div>
                         ))}
                       </div>
                       {c.tavern.rumor && (
-                        <div style={{ fontSize: 11, color: "#e8ba40", fontStyle: "italic", padding: "8px 12px", background: "rgba(232,186,64,0.06)", border: "1px solid rgba(232,186,64,0.15)", borderRadius: "3px" }}>
+                        <div style={{ fontSize: 11, color: T.questGold, fontStyle: "italic", padding: "8px 12px", background: "rgba(232,186,64,0.06)", border: "1px solid rgba(232,186,64,0.15)", borderRadius: "3px" }}>
                           Rumor: "{c.tavern.rumor}"
                         </div>
                       )}
@@ -5438,9 +5438,9 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                                     <tr key={ii} style={{ borderTop: `1px solid ${T.border}`, opacity: item.inStock ? 1 : 0.4 }}>
                                       <td style={{ padding: "8px 16px", color: T.text }}>{item.name}</td>
                                       <td style={{ padding: "8px 12px", textAlign: "center" }}>
-                                        <span style={{ fontSize: 10, color: item.rarity === "rare" ? "#8b50f0" : item.rarity === "uncommon" ? "#2e8b57" : T.textFaint, fontStyle: "italic" }}>{item.rarity}</span>
+                                        <span style={{ fontSize: 10, color: item.rarity === "rare" ? "#8b50f0" : item.rarity === "uncommon" ? T.green : T.textFaint, fontStyle: "italic" }}>{item.rarity}</span>
                                       </td>
-                                      <td style={{ padding: "8px 12px", textAlign: "right", color: "#c9a85c", fontFamily: T.ui }}>{item.price}</td>
+                                      <td style={{ padding: "8px 12px", textAlign: "right", color: T.gold, fontFamily: T.ui }}>{item.price}</td>
                                       <td style={{ padding: "8px 12px", textAlign: "center", color: item.inStock ? T.textMuted : T.crimson, fontSize: 11 }}>{item.inStock ? `×${item.qty}` : "Out"}</td>
                                     </tr>
                                   ))}
@@ -5610,7 +5610,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                                       ? <span style={{ fontSize: 16, color: cityFc }}>★</span>
                                       : <span style={{ fontSize: 14, color: T.textFaint }}>◆</span>}
                                     <span style={{ fontSize: 14, fontWeight: c.isCapital ? 500 : 300, color: T.text }}>{c.name}</span>
-                                    <span style={{ fontSize: 8, color: c.isCapital ? cityFc : "#9a9080", border: `1px solid ${c.isCapital ? cityFc + "44" : "rgba(154,144,128,0.3)"}`, padding: "1px 5px", borderRadius: "2px", letterSpacing: "0.5px" }}>{(() => { const m = window.TOWN_METADATA?.[c.name]; return m ? (m.isCapital ? "CAPITAL" : m.population >= 4000 ? "CITY" : m.population >= 1500 ? "TOWN" : "VILLAGE") : (c.isCapital ? "CAPITAL" : "SETTLEMENT"); })()}</span>
+                                    <span style={{ fontSize: 8, color: c.isCapital ? cityFc : T.textMuted, border: `1px solid ${c.isCapital ? cityFc + "44" : "rgba(154,144,128,0.3)"}`, padding: "1px 5px", borderRadius: "2px", letterSpacing: "0.5px" }}>{(() => { const m = window.TOWN_METADATA?.[c.name]; return m ? (m.isCapital ? "CAPITAL" : m.population >= 4000 ? "CITY" : m.population >= 1500 ? "TOWN" : "VILLAGE") : (c.isCapital ? "CAPITAL" : "SETTLEMENT"); })()}</span>
                                   </div>
                                   <div style={{ fontSize: 10, color: T.textFaint, marginBottom: 7 }}>Pop. {c.population}</div>
                                   <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 7 }}>
@@ -5624,7 +5624,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                                     <span>{(c.npcs || []).length} NPCs</span>
                                     <span>{(c.questHooks || []).length} quests</span>
                                     {townImagesReady && window.TOWN_IMAGES && window.TOWN_IMAGES[c.name] && (
-                                      <span onClick={(e) => { e.stopPropagation(); setTownView(c.name); setTownSelBldg(null); setTownHovBldg(null); setTownZoom(0); setTownPan({x:0,y:0}); }} style={{ marginLeft: "auto", color: "#c9a85c", cursor: "pointer", letterSpacing: "0.5px", fontWeight: 500 }}>⬡ Map</span>
+                                      <span onClick={(e) => { e.stopPropagation(); setTownView(c.name); setTownSelBldg(null); setTownHovBldg(null); setTownZoom(0); setTownPan({x:0,y:0}); }} style={{ marginLeft: "auto", color: T.gold, cursor: "pointer", letterSpacing: "0.5px", fontWeight: 500 }}>⬡ Map</span>
                                     )}
                                   </div>
                                 </div>
@@ -5693,7 +5693,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       <div style={{ fontSize:9, color:T.textMuted, letterSpacing:"1px", textTransform:"uppercase" }}>Regions</div>
                     </div>
                     <div style={{ padding:"12px 16px", background:T.bgCard, border:"1px solid " + T.border, borderRadius:"4px", textAlign:"center" }}>
-                      <div style={{ fontSize:20, color:"#f87171", fontWeight:600, fontFamily:T.ui }}>{pois.filter(p=>p.danger>=3).length}</div>
+                      <div style={{ fontSize:20, color:T.crimson, fontWeight:600, fontFamily:T.ui }}>{pois.filter(p=>p.danger>=3).length}</div>
                       <div style={{ fontSize:9, color:T.textMuted, letterSpacing:"1px", textTransform:"uppercase" }}>Dangerous</div>
                     </div>
                   </div>
@@ -5936,7 +5936,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                           <div style={{ fontSize:10, color:T.textFaint, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:6 }}>Leadership</div>
                           {sel.hierarchy.map((h, hi) => (
                             <div key={hi} style={{ fontSize:12, color:T.textMuted, marginBottom:3, paddingLeft: hi * 8 }}>
-                              <span style={{ color: hi === 0 ? "#c9a85c" : T.textDim }}>{h.title}:</span> {h.name}
+                              <span style={{ color: hi === 0 ? T.gold : T.textDim }}>{h.title}:</span> {h.name}
                             </div>
                           ))}
                         </div>
@@ -7233,7 +7233,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                   textTransform: "uppercase", cursor: "pointer",
                 }}><ArrowLeft size={12} /> Back to Atlas</button>
                 <div>
-                  <div style={{ fontSize: 18, fontWeight: 400, color: "#f0e8d0", fontFamily: "'Cinzel', serif", letterSpacing: "1px" }}>{townView}</div>
+                  <div style={{ fontSize: 18, fontWeight: 400, color: T.text, fontFamily: "'Cinzel', serif", letterSpacing: "1px" }}>{townView}</div>
                   <div style={{ fontSize: 10, color: T.textFaint, marginTop: 2 }}>
                     {townMeta ? (townMeta.isCapital ? "Capital" : townMeta.population >= 4000 ? "City" : townMeta.population >= 1500 ? "Town" : "Village") : "Settlement"} · Pop. ~{(townMeta?.population || 0).toLocaleString()}
                     {cityObj ? ` · ${cityObj.region}` : ""}
@@ -7306,7 +7306,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                               background: "rgba(32,28,22,0.95)", border: `1px solid ${typeColor}44`, borderRadius: "4px",
                               padding: "6px 12px", whiteSpace: "nowrap", pointerEvents: "none", zIndex: 20,
                             }}>
-                              <div style={{ fontSize: 11, color: "#f0e8d0", fontFamily: "'Cinzel', serif" }}>{bldg.name}</div>
+                              <div style={{ fontSize: 11, color: T.text, fontFamily: "'Cinzel', serif" }}>{bldg.name}</div>
                               <div style={{ fontSize: 9, color: typeColor, textTransform: "uppercase", letterSpacing: "1px" }}>{bldg.type}</div>
                             </div>
                           )}
@@ -7333,7 +7333,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       <span style={{ fontSize: 9, color: typeColor, textTransform: "uppercase", letterSpacing: "2px", border: `1px solid ${typeColor}33`, padding: "3px 8px", borderRadius: "2px" }}>{bldg.type}</span>
                       <button onClick={() => setSelBldg(null)} style={{ background: "none", border: "none", color: T.textFaint, cursor: "pointer", fontSize: 16 }}>×</button>
                     </div>
-                    <div style={{ fontSize: 18, fontWeight: 400, color: "#f0e8d0", fontFamily: "'Cinzel', serif", letterSpacing: "0.5px" }}>{bldg.name}</div>
+                    <div style={{ fontSize: 18, fontWeight: 400, color: T.text, fontFamily: "'Cinzel', serif", letterSpacing: "0.5px" }}>{bldg.name}</div>
 
                     {bd.detailType === "shop" && bd.detail && (
                       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -7348,7 +7348,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                                 background: "rgba(0,0,0,0.15)", borderRadius: "3px", marginBottom: 4, fontSize: 11,
                               }}>
                                 <span style={{ color: T.textMuted }}>{item.name}</span>
-                                <span style={{ color: "#c9a85c", fontFamily: T.ui }}>{item.price}</span>
+                                <span style={{ color: T.gold, fontFamily: T.ui }}>{item.price}</span>
                               </div>
                             ))}
                           </div>
@@ -7358,7 +7358,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
 
                     {bd.detailType === "tavern" && bd.detail && (
                       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                        <div style={{ fontSize: 14, color: "#f0e8d0", fontFamily: "'Spectral', serif" }}>{bd.detail.name}</div>
+                        <div style={{ fontSize: 14, color: T.text, fontFamily: "'Spectral', serif" }}>{bd.detail.name}</div>
                         <div style={{ fontSize: 11, color: T.textMuted }}>Innkeeper: <span style={{ color: T.text }}>{bd.detail.innkeeper}</span></div>
                         {bd.detail.innkeeperPersonality && <div style={{ fontSize: 11, color: T.textFaint, fontStyle: "italic" }}>{bd.detail.innkeeperPersonality}</div>}
                         {bd.detail.services && bd.detail.services.length > 0 && (
@@ -7370,13 +7370,13 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                                 background: "rgba(0,0,0,0.15)", borderRadius: "3px", marginBottom: 4, fontSize: 11,
                               }}>
                                 <span style={{ color: T.textMuted }}>{s.name}</span>
-                                <span style={{ color: "#c9a85c", fontFamily: T.ui }}>{s.price}</span>
+                                <span style={{ color: T.gold, fontFamily: T.ui }}>{s.price}</span>
                               </div>
                             ))}
                           </div>
                         )}
                         {bd.detail.rumor && (
-                          <div style={{ fontSize: 11, color: "#e8ba40", fontStyle: "italic", padding: "8px 12px", background: "rgba(232,186,64,0.06)", border: "1px solid rgba(232,186,64,0.15)", borderRadius: "3px", lineHeight: 1.5 }}>
+                          <div style={{ fontSize: 11, color: T.questGold, fontStyle: "italic", padding: "8px 12px", background: "rgba(232,186,64,0.06)", border: "1px solid rgba(232,186,64,0.15)", borderRadius: "3px", lineHeight: 1.5 }}>
                             Rumor: "{bd.detail.rumor}"
                           </div>
                         )}

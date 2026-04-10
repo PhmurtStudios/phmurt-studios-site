@@ -271,6 +271,33 @@
     { name: 'Servant Suspicious', severity: 'low' }
   ];
 
+  function enrichComplication(complication, data) {
+    let enriched = {...complication};
+
+    if (!data) return enriched;
+
+    const factions = data.factions || [];
+    const npcs = data.npcs || [];
+
+    if (enriched.name.includes('Rival') && factions.length > 0) {
+      const rivalFaction = factions[Math.floor(Math.random() * factions.length)];
+      enriched.name = enriched.name.replace('Rival Thieves', `The ${rivalFaction.name}`);
+      enriched.worldContext = `Faction: ${rivalFaction.name}`;
+    }
+
+    if ((enriched.name.includes('Assassin') || enriched.name.includes('Agent')) && factions.length > 0) {
+      const sourceFaction = factions[Math.floor(Math.random() * factions.length)];
+      enriched.worldContext = `From: ${sourceFaction.name}`;
+    }
+
+    if (enriched.name.includes('Informant') && npcs.length > 0) {
+      const informant = npcs[Math.floor(Math.random() * npcs.length)];
+      enriched.worldContext = `NPC: ${informant.name}`;
+    }
+
+    return enriched;
+  }
+
   const CREW_ROLES = [
     { name: 'Mastermind', skills: ['Insight', 'Deception', 'Investigation'], tools: ['Maps', 'Scrolls', 'Contacts'] },
     { name: 'Infiltrator', skills: ['Stealth', 'Sleight of Hand', 'Acrobatics'], tools: ['Lock picks', 'Rope', 'Disguises'] },
@@ -493,12 +520,31 @@
           <div style={styles.grid}>
             <div>
               <div style={styles.label}>Target Location</div>
-              <input
-                style={styles.input}
-                value={newHeist.location}
-                onChange={(e) => setNewHeist({...newHeist, location: e.target.value})}
-                placeholder="The King's Fortress"
-              />
+              <div style={{display: 'flex', gap: '8px', flexDirection: 'column'}}>
+                <select
+                  style={styles.input}
+                  value={newHeist.location}
+                  onChange={(e) => setNewHeist({...newHeist, location: e.target.value})}
+                >
+                  <option value="">Select from world locations or enter custom</option>
+                  {(data.cities || []).map(c => (
+                    <option key={`city-${c.name}`} value={c.name + " (" + (c.region || "Unknown") + ")"}>
+                      {c.name} — {c.region || "Unknown"} (City)
+                    </option>
+                  ))}
+                  {(data.pois || []).filter(p => ["dungeon","ruin","temple","tower","stronghold","mine"].includes((p.type||"").toLowerCase())).map(p => (
+                    <option key={`poi-${p.name}`} value={p.name}>
+                      {p.name} ({p.type || "Location"})
+                    </option>
+                  ))}
+                </select>
+                <input
+                  style={styles.input}
+                  value={newHeist.location}
+                  onChange={(e) => setNewHeist({...newHeist, location: e.target.value})}
+                  placeholder="Or enter custom location"
+                />
+              </div>
             </div>
             <div>
               <div style={styles.label}>Location Type</div>
@@ -629,6 +675,25 @@
   function HeistListView({ data, setData, onSelectHeist }) {
     const heists = data.heists || {};
 
+    const getWorldContext = (heistLocation) => {
+      if (!data || !data.cities) return null;
+      const matchingCity = data.cities.find(c =>
+        heistLocation && (
+          heistLocation.includes(c.name) ||
+          heistLocation === c.name
+        )
+      );
+      if (matchingCity) {
+        return {
+          region: matchingCity.region,
+          faction: data.factions && data.factions.find(f =>
+            matchingCity.controllingFaction && f.name === matchingCity.controllingFaction
+          )
+        };
+      }
+      return null;
+    };
+
     const deleteHeist = (id) => {
       if (!confirm('Delete this heist? This cannot be undone.')) return;
       const updated = { ...data };
@@ -644,7 +709,9 @@
             <p>No heists yet. Create one to get started!</p>
           </div>
         ) : (
-          Object.values(heists).map(heist => (
+          Object.values(heists).map(heist => {
+            const worldCtx = getWorldContext(heist.location);
+            return (
             <div key={heist.id} style={styles.card}>
               <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'start', gap: '16px'}}>
                 <div style={{flex: 1}}>
@@ -655,6 +722,20 @@
                     <MapPin size={14} style={{display: 'inline', marginRight: '4px'}} />
                     {heist.location} — {heist.type}
                   </p>
+                  {worldCtx && (
+                    <div style={{display: 'flex', gap: '8px', marginTop: '6px', flexWrap: 'wrap'}}>
+                      {worldCtx.region && (
+                        <div style={{...styles.difficultyBadge(1), backgroundColor: T.ui, fontSize: '12px', padding: '4px 8px'}}>
+                          Region: {worldCtx.region}
+                        </div>
+                      )}
+                      {worldCtx.faction && (
+                        <div style={{...styles.difficultyBadge(1), backgroundColor: worldCtx.faction.color || T.ui, fontSize: '12px', padding: '4px 8px'}}>
+                          {worldCtx.faction.name}
+                        </div>
+                      )}
+                    </div>
+                  )}
                   <p style={{margin: '4px 0', fontSize: '14px'}}>
                     {heist.description}
                   </p>
@@ -686,7 +767,8 @@
                 </div>
               </div>
             </div>
-          ))
+            );
+          })
         )}
       </div>
     );
@@ -847,7 +929,9 @@
     );
   }
 
-  function CrewPlanning({ heist, setHeist }) {
+  function CrewPlanning({ heist, setHeist, data }) {
+    const [crewDropdownOpen, setCrewDropdownOpen] = useState({});
+
     const assignCrew = (role, members) => {
       const updated = {...heist};
       updated.crew = {...updated.crew, [role]: members};
@@ -859,6 +943,12 @@
       const roles = Object.keys(crew).length;
       return Math.min(100, roles * 12.5);
     };
+
+    const getNPCNames = () => {
+      return (data && data.npcs || []).map(npc => npc.name);
+    };
+
+    const npcNames = getNPCNames();
 
     return (
       <div style={styles.section}>
@@ -891,12 +981,52 @@
                   </p>
                 </div>
               </div>
-              <input
-                style={{...styles.input, width: '100%'}}
-                placeholder="Assign party member(s) to this role"
-                value={(heist.crew && heist.crew[role.name]) || ''}
-                onChange={(e) => assignCrew(role.name, e.target.value)}
-              />
+              <div style={{position: 'relative'}}>
+                <input
+                  style={{...styles.input, width: '100%'}}
+                  placeholder="Assign party member(s) - type to search NPCs"
+                  value={(heist.crew && heist.crew[role.name]) || ''}
+                  onChange={(e) => assignCrew(role.name, e.target.value)}
+                  onFocus={() => setCrewDropdownOpen({...crewDropdownOpen, [role.name]: true})}
+                  onBlur={() => setTimeout(() => setCrewDropdownOpen({...crewDropdownOpen, [role.name]: false}), 200)}
+                />
+                {crewDropdownOpen[role.name] && npcNames.length > 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    backgroundColor: T.bgCard,
+                    border: `1px solid ${T.border}`,
+                    borderRadius: '4px',
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    zIndex: 10,
+                    marginTop: '4px'
+                  }}>
+                    {npcNames.map(npcName => (
+                      <div
+                        key={npcName}
+                        style={{
+                          padding: '8px 12px',
+                          cursor: 'pointer',
+                          borderBottom: `1px solid ${T.border}`,
+                          fontSize: '14px',
+                          color: T.text
+                        }}
+                        onClick={() => {
+                          assignCrew(role.name, npcName);
+                          setCrewDropdownOpen({...crewDropdownOpen, [role.name]: false});
+                        }}
+                        onMouseEnter={(e) => e.target.style.backgroundColor = T.ui}
+                        onMouseLeave={(e) => e.target.style.backgroundColor = 'transparent'}
+                      >
+                        {npcName}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           ))}
         </div>
@@ -972,14 +1102,15 @@
     );
   }
 
-  function ComplicationManager({ heist, setHeist }) {
+  function ComplicationManager({ heist, setHeist, data }) {
     const drawComplication = () => {
       const random = COMPLICATIONS[Math.floor(Math.random() * COMPLICATIONS.length)];
+      const enriched = enrichComplication(random, data);
       const updated = {...heist};
       if (!updated.complications) updated.complications = [];
       updated.complications.push({
         id: Date.now(),
-        ...random,
+        ...enriched,
         resolved: false
       });
       setHeist(updated);
@@ -1034,6 +1165,11 @@
                     <span style={{fontSize: '12px', textTransform: 'capitalize', color: T.textDim}}>
                       Severity: {comp.severity}
                     </span>
+                    {comp.worldContext && (
+                      <p style={{margin: '4px 0 0 0', fontSize: '12px', color: T.gold}}>
+                        {comp.worldContext}
+                      </p>
+                    )}
                   </div>
                   <div style={{display: 'flex', gap: '8px'}}>
                     <button
@@ -1152,6 +1288,27 @@
       setData(newData);
     };
 
+    const getWorldContext = (heistLocation) => {
+      if (!data || !data.cities) return null;
+      const matchingCity = data.cities.find(c =>
+        heistLocation && (
+          heistLocation.includes(c.name) ||
+          heistLocation === c.name
+        )
+      );
+      if (matchingCity) {
+        return {
+          region: matchingCity.region,
+          faction: data.factions && data.factions.find(f =>
+            matchingCity.controllingFaction && f.name === matchingCity.controllingFaction
+          )
+        };
+      }
+      return null;
+    };
+
+    const worldCtx = getWorldContext(heist.location);
+
     return (
       <div style={styles.content}>
         <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
@@ -1168,6 +1325,20 @@
             <div>
               <div style={styles.label}>Location</div>
               <p style={{margin: 0}}>{heist.location} ({heist.type})</p>
+              {worldCtx && (
+                <div style={{display: 'flex', gap: '8px', marginTop: '6px', flexWrap: 'wrap'}}>
+                  {worldCtx.region && (
+                    <div style={{...styles.difficultyBadge(1), backgroundColor: T.ui, fontSize: '11px', padding: '3px 6px'}}>
+                      Region: {worldCtx.region}
+                    </div>
+                  )}
+                  {worldCtx.faction && (
+                    <div style={{...styles.difficultyBadge(1), backgroundColor: worldCtx.faction.color || T.ui, fontSize: '11px', padding: '3px 6px'}}>
+                      {worldCtx.faction.name}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
             <div>
               <div style={styles.label}>Difficulty</div>
@@ -1193,8 +1364,8 @@
         <HeatSystem heist={heist} setHeist={setHeist} />
         <PhaseTracking heist={heist} setHeist={setHeist} />
         <BlueprintEditor heist={heist} setHeist={setHeist} />
-        <CrewPlanning heist={heist} setHeist={setHeist} />
-        <ComplicationManager heist={heist} setHeist={setHeist} />
+        <CrewPlanning heist={heist} setHeist={setHeist} data={data} />
+        <ComplicationManager heist={heist} setHeist={setHeist} data={data} />
       </div>
     );
   }

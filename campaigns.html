@@ -37,8 +37,8 @@
   <script src="phmurt-realtime.js"></script>
   <script src="phmurt-shell.js"></script>
   <!-- New procedural map engine + data bridge (v2 = region-name labels + blue ocean) -->
-  <script src="campaign-map-engine.js?v=4"></script>
-  <script src="campaign-map-bridge.js?v=3"></script>
+  <script src="campaign-map-engine.js?v=5"></script>
+  <script src="campaign-map-bridge.js?v=5"></script>
   <script src="campaign-combat-integration.js"></script>
   <!-- Play-tab assets: combat engine, VFX, SRD monsters — deferred for fast initial load -->
   <script src="combat-engine.js" defer></script>
@@ -48,10 +48,10 @@
   <script src="combat-flow-ui.js" defer></script>
   <!-- New campaign systems — deferred for fast initial load -->
   <script src="campaign-economy.js" defer></script>
-  <script src="campaign-seasons.js" defer></script>
-  <script src="campaign-religion.js" defer></script>
-  <script src="campaign-hexcrawl.js" defer></script>
-  <script src="campaign-downtime.js" defer></script>
+  <script src="campaign-seasons.js?v=6" defer></script>
+  <script src="campaign-religion.js?v=6" defer></script>
+  <script src="campaign-hexcrawl.js?v=6" defer></script>
+  <script src="campaign-downtime.js?v=6" defer></script>
   <script src="campaign-homebrew.js" defer></script>
   <script src="campaign-scheduler.js" defer></script>
   <style>
@@ -159,7 +159,7 @@
       font: 700 9px/1 'Cinzel', serif;
       letter-spacing: 1.4px;
       text-transform: uppercase;
-      color: #ffd54f;
+      color: var(--gold);
       white-space: nowrap;
       flex-shrink: 0;
     }
@@ -230,7 +230,7 @@
       white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
       max-width: 64px;
     }
-    .cm-init-chip.is-active .cm-init-name { color: #ffd54f; }
+    .cm-init-chip.is-active .cm-init-name { color: var(--gold); }
     .cm-init-meta {
       font: 400 7px/1 'Spectral', serif;
       letter-spacing: 0.3px;
@@ -288,7 +288,7 @@
       width: 32px; height: 32px;
       border-radius: 50%; overflow: hidden;
       display: flex; align-items: center; justify-content: center;
-      color: #fff; font: 700 11px 'Cinzel', serif;
+      color: var(--text); font: 700 11px 'Cinzel', serif;
       border: 2px solid rgba(255,213,79,0.5);
       box-shadow: 0 0 12px rgba(255,213,79,0.15);
       flex-shrink: 0;
@@ -1057,7 +1057,7 @@
       border: 1px solid rgba(239,83,80,0.2);
     }
     .cm-roll-result-verdict.is-crit {
-      color: #ffd54f;
+      color: var(--gold);
       background: rgba(255,213,79,0.12);
       border: 1px solid rgba(255,213,79,0.25);
       animation: cm-crit-pulse 0.6s ease-in-out 2;
@@ -1702,26 +1702,26 @@ const getHpColor = (hp, maxHp) => {
 };
 
 const DND_CONDITIONS = [
-  { name: "Blinded", color: "#888", icon: "B" },
+  { name: "Blinded", color: "#a0a0a0", icon: "B" },
   { name: "Charmed", color: "#ff69b4", icon: "C" },
-  { name: "Deafened", color: "#999", icon: "D" },
+  { name: "Deafened", color: "#a8a8a8", icon: "D" },
   { name: "Frightened", color: "#e8940a", icon: "F" },
   { name: "Grappled", color: "#8b6914", icon: "G" },
   { name: "Hidden", color: "#6fa8dc", icon: "Hn" },
-  { name: "Incapacitated", color: "#666", icon: "I" },
+  { name: "Incapacitated", color: "#8c8c8c", icon: "I" },
   { name: "Invisible", color: "#aaccff", icon: "Iv" },
   { name: "Paralyzed", color: "#ffcc00", icon: "P" },
-  { name: "Petrified", color: "#808080", icon: "Pe" },
+  { name: "Petrified", color: "#909090", icon: "Pe" },
   { name: "Poisoned", color: "#4caf50", icon: "Po" },
   { name: "Prone", color: "#8d6e63", icon: "Pr" },
   { name: "Restrained", color: "#795548", icon: "R" },
   { name: "Stunned", color: "#ffc107", icon: "S" },
-  { name: "Unconscious", color: "#444", icon: "U" },
-  { name: "Dead", color: "#111", icon: "X" },
+  { name: "Unconscious", color: "#7d7d7d", icon: "U" },
+  { name: "Dead", color: "#767676", icon: "X" },
   { name: "Concentrating", color: "#7c4dff", icon: "Co" },
   { name: "Exhaustion", color: "#ef5350", icon: "Ex" },
   { name: "Hasted", color: "#00bcd4", icon: "H" },
-  { name: "Blessed", color: "#ffd54f", icon: "Bl" },
+  { name: "Blessed", color: "#f9d88c", icon: "Bl" },
   { name: "Hexed", color: "#9c27b0", icon: "Hx" },
   { name: "Raging", color: "#d32f2f", icon: "Ra" },
 ];
@@ -2831,7 +2831,7 @@ const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, sel
       {/* Round & Turn Label */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, padding: "0 4px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontFamily: T.ui, fontSize: 9, letterSpacing: "2px", color: "#ffd54f", textTransform: "uppercase", fontWeight: 600 }}>
+          <span style={{ fontFamily: T.ui, fontSize: 9, letterSpacing: "2px", color: T.gold, textTransform: "uppercase", fontWeight: 600 }}>
             Round {round}
           </span>
           <span style={{ fontFamily: T.ui, fontSize: 9, letterSpacing: "1.5px", color: T.textFaint, textTransform: "uppercase" }}>
@@ -2848,7 +2848,7 @@ const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, sel
             END TURN
           </button>
           {onToggleLog && (
-            <button onClick={onToggleLog} style={{ background: logOpen ? "rgba(255,213,79,0.12)" : "var(--bg-hover-subtle)", border: "1px solid " + (logOpen ? "rgba(255,213,79,0.3)" : "var(--border-mid)"), borderRadius: 6, padding: "3px 10px", cursor: "pointer", color: logOpen ? "#ffd54f" : T.textFaint, fontFamily: T.ui, fontSize: 9, letterSpacing: "1px" }}
+            <button onClick={onToggleLog} style={{ background: logOpen ? "rgba(255,213,79,0.12)" : "var(--bg-hover-subtle)", border: "1px solid " + (logOpen ? "rgba(255,213,79,0.3)" : "var(--border-mid)"), borderRadius: 6, padding: "3px 10px", cursor: "pointer", color: logOpen ? T.gold : T.textFaint, fontFamily: T.ui, fontSize: 9, letterSpacing: "1px" }}
               onMouseEnter={e => e.currentTarget.style.opacity = "0.85"} onMouseLeave={e => e.currentTarget.style.opacity = "1"}>
               LOG
             </button>
@@ -2911,7 +2911,7 @@ const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, sel
                   width: isActive ? 32 : 24, height: isActive ? 32 : 24,
                   borderRadius: "50%", background: tk.color || "#666",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: isActive ? 11 : 8, fontFamily: T.ui, color: "#fff", fontWeight: 700,
+                  fontSize: isActive ? 11 : 8, fontFamily: T.ui, color: T.text, fontWeight: 700,
                   border: isDead ? "2px solid #f06858" : (isPC ? "2px solid rgba(46,139,87,0.6)" : "2px solid var(--border)"),
                   position: "relative", overflow: "hidden",
                 }}>
@@ -2936,7 +2936,7 @@ const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, sel
                 {/* Initiative roll badge */}
                 <div title={"Initiative: " + c.init + (c.initRoll ? (" (d20: " + c.initRoll + " + " + ((c.init || 0) - (c.initRoll || 0)) + ")") : "")}
                   style={{
-                    fontFamily: "monospace", fontSize: isActive ? 9 : 7, color: isActive ? "#ffd54f" : T.textFaint,
+                    fontFamily: "monospace", fontSize: isActive ? 9 : 7, color: isActive ? T.gold : T.textFaint,
                     letterSpacing: "0.5px", fontWeight: isActive ? 700 : 400,
                     background: isActive ? "rgba(255,213,79,0.1)" : "transparent",
                     padding: isActive ? "1px 4px" : 0, borderRadius: 3,
@@ -2947,7 +2947,7 @@ const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, sel
                 {isActive && !isDead && (
                   <div style={{ display: "flex", gap: 3, marginTop: 1 }}>
                     <div title="Action" style={{ width: 5, height: 5, borderRadius: "50%", background: actionUsed ? "var(--border-mid)" : "var(--crimson)", border: "1px solid " + (actionUsed ? "var(--border)" : "var(--crimson-border)") }} />
-                    <div title="Bonus" style={{ width: 5, height: 5, borderRadius: "50%", background: bonusUsed ? "var(--border-mid)" : "#ffd54f", border: "1px solid " + (bonusUsed ? "var(--border)" : "rgba(255,213,79,0.5)") }} />
+                    <div title="Bonus" style={{ width: 5, height: 5, borderRadius: "50%", background: bonusUsed ? "var(--border-mid)" : T.gold, border: "1px solid " + (bonusUsed ? "var(--border)" : "rgba(255,213,79,0.5)") }} />
                   </div>
                 )}
               </div>
@@ -3003,7 +3003,7 @@ const TurnBanner = ({ announcement }) => {
       )}
       <div style={{
         fontSize: 28, fontWeight: 800, letterSpacing: 2,
-        color: "#fff", textShadow: "0 0 40px " + glowColor + ", 0 2px 8px rgba(0,0,0,0.8)",
+        color: T.text, textShadow: "0 0 40px " + glowColor + ", 0 2px 8px rgba(0,0,0,0.8)",
         padding: "12px 48px",
         background: "linear-gradient(90deg, transparent, rgba(12,8,4,0.85) 20%, rgba(12,8,4,0.85) 80%, transparent)",
         borderTop: "2px solid " + accentColor + "66",
@@ -4638,14 +4638,14 @@ function PlayerCard({ member, onEdit, onUploadSheet, isDm }) {
       {/* Compact header — always visible */}
       <div onClick={()=>setExpanded(!expanded)} style={{ padding:"16px 20px", cursor:"pointer", display:"flex", alignItems:"center", gap:12 }}>
         <div style={{ width:36, height:36, borderRadius:"50%", background: isLinked ? "rgba(16,185,129,0.08)" : T.crimsonSoft, border:`1px solid ${isLinked ? "rgba(16,185,129,0.3)" : T.crimsonBorder}`, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, position:"relative" }}>
-          <span style={{ fontFamily:T.ui, fontSize:12, color: isLinked ? "#10b981" : T.crimson, fontWeight:500 }}>{member.name.charAt(0)}</span>
-          {isLinked && <span title="Linked to Character Builder" style={{ position:"absolute", bottom:-2, right:-2, width:10, height:10, borderRadius:"50%", background:"#10b981", border:"2px solid " + T.bgCard, boxShadow:"0 0 4px rgba(16,185,129,0.4)" }}/>}
+          <span style={{ fontFamily:T.ui, fontSize:12, color: isLinked ? T.green : T.crimson, fontWeight:500 }}>{member.name.charAt(0)}</span>
+          {isLinked && <span title="Linked to Character Builder" style={{ position:"absolute", bottom:-2, right:-2, width:10, height:10, borderRadius:"50%", background:T.green, border:"2px solid " + T.bgCard, boxShadow:"0 0 4px rgba(16,185,129,0.4)" }}/>}
         </div>
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ display:"flex", alignItems:"center", gap:8 }}>
             <span style={{ fontSize:15, color:T.text, fontWeight:300 }}>{member.name}</span>
             <Tag variant="muted">Lv{member.lv} {member.cls}</Tag>
-            {isLinked && <span style={{ fontSize:9, color:"#10b981", fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase", opacity:0.8 }}>{syncLabel || "Linked"}</span>}
+            {isLinked && <span style={{ fontSize:9, color:T.green, fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase", opacity:0.8 }}>{syncLabel || "Linked"}</span>}
           </div>
           <div style={{ fontSize:11, color:T.textFaint, fontWeight:300, marginTop:2 }}>
             {member.player}{member.race ? ` — ${member.race}` : ""}
@@ -4677,12 +4677,12 @@ function PlayerCard({ member, onEdit, onUploadSheet, isDm }) {
           {/* Sync status bar for linked characters */}
           {isLinked && (
             <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:12, padding:"8px 12px", background:"rgba(16,185,129,0.05)", borderRadius:"3px", border:"1px solid rgba(16,185,129,0.15)" }}>
-              <span style={{ width:6, height:6, borderRadius:"50%", background:"#10b981", flexShrink:0 }}/>
-              <span style={{ fontSize:11, color:"#10b981", fontFamily:T.ui, letterSpacing:"0.5px", flex:1 }}>
+              <span style={{ width:6, height:6, borderRadius:"50%", background:T.green, flexShrink:0 }}/>
+              <span style={{ fontSize:11, color:T.green, fontFamily:T.ui, letterSpacing:"0.5px", flex:1 }}>
                 Linked to Character Builder {syncLabel ? `\u00b7 ${syncLabel}` : ""}
               </span>
               {builderHref && (
-                <a href={builderHref} target="_blank" rel="noreferrer" style={{ fontSize:10, color:"#10b981", textDecoration:"underline", opacity:0.8 }}>Edit in Builder</a>
+                <a href={builderHref} target="_blank" rel="noreferrer" style={{ fontSize:10, color:T.green, textDecoration:"underline", opacity:0.8 }}>Edit in Builder</a>
               )}
             </div>
           )}
@@ -5460,10 +5460,10 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
             {[
               { label:"NPC Gen", icon:Users, accent: T.moveBlue, url:`generators.html?export=campaign&campaignId=${activeCampaignId}` },
               { label:"Encounter", icon:Swords, accent: T.green, url:`generators.html?export=campaign&campaignId=${activeCampaignId}&type=encounter` },
-              { label:"Treasure", icon:Package, accent:"#c9a84c", url:`generators.html?export=campaign&campaignId=${activeCampaignId}&type=treasure` },
+              { label:"Treasure", icon:Package, accent:T.gold, url:`generators.html?export=campaign&campaignId=${activeCampaignId}&type=treasure` },
               { label:"Compendium", icon:BookOpen, accent:"#c792ea", url:"compendium.html" },
               { label:"Grimoire", icon:Wand2, accent:"#f2917c", url:"grimoire.html" },
-              { label:"Character", icon:FileText, accent:"#ffd54f", url:"character-builder.html" },
+              { label:"Character", icon:FileText, accent:T.gold, url:"character-builder.html" },
             ].map((tool, i) => {
               const ToolIcon = tool.icon;
               return (
@@ -5527,7 +5527,7 @@ window.__CM = {
 /* Tab module loading state */
 const _tabModuleState = { dashboard: true, timeline: false, world: false, play: false };
 const _tabModulePromises = {};
-const _MODULE_VERSION = 158; // Bump to force re-fetch past service worker cache
+const _MODULE_VERSION = 160; // Bump to force re-fetch past service worker cache
 
 /**
  * Lazy-load a tab module: fetch JSX, transpile with Babel, execute.
@@ -5743,7 +5743,7 @@ function QuickNotesPanel({ data, setData, onClose }) {
                     <div style={{ display:"flex", gap:4, padding:"4px 8px", borderBottom:"1px solid " + col.border + "44" }}>
                       {NOTE_COLORS.map((c, i) => (
                         <button key={i} onClick={(e) => { e.stopPropagation(); updateNoteColor(note.id, i); }}
-                          style={{ width:18, height:18, borderRadius:"50%", background:c.border, border: i === (note.color||0) ? "2px solid #fff" : "2px solid transparent", cursor:"pointer" }}/>
+                          style={{ width:18, height:18, borderRadius:"50%", background:c.border, border: i === (note.color||0) ? `2px solid ${T.text}` : "2px solid transparent", cursor:"pointer" }}/>
                       ))}
                     </div>
                   )}
@@ -6532,9 +6532,9 @@ function App() {
                     <button onClick={() => { navigator.clipboard.writeText(inv.code); }} title="Copy code"
                       style={{ background:"rgba(94,224,154,0.08)", border:"1px solid rgba(94,224,154,0.2)", borderRadius:6, padding:"5px 10px", cursor:"pointer", color: T.green, fontFamily:T.ui, fontSize:8, letterSpacing:"0.5px" }}>Copy Code</button>
                     <button onClick={() => { navigator.clipboard.writeText(getInviteLink(inv.code)); }} title="Copy link"
-                      style={{ background:"rgba(201,168,76,0.08)", border:"1px solid rgba(201,168,76,0.2)", borderRadius:6, padding:"5px 10px", cursor:"pointer", color:"#c9a84c", fontFamily:T.ui, fontSize:8, letterSpacing:"0.5px" }}>Copy Link</button>
+                      style={{ background:"rgba(201,168,76,0.08)", border:"1px solid rgba(201,168,76,0.2)", borderRadius:6, padding:"5px 10px", cursor:"pointer", color:T.gold, fontFamily:T.ui, fontSize:8, letterSpacing:"0.5px" }}>Copy Link</button>
                     {inv.id && <button onClick={() => handleDeleteInvite(inv.id)} title="Delete"
-                      style={{ background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.15)", borderRadius:6, padding:"5px 8px", cursor:"pointer", color:"#ef4444", fontSize:10 }}><X size={10}/></button>}
+                      style={{ background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.15)", borderRadius:6, padding:"5px 8px", cursor:"pointer", color:T.crimson, fontSize:10 }}><X size={10}/></button>}
                   </div>
                 ))}
               </div>
@@ -6591,10 +6591,10 @@ function App() {
               padding:"24px", borderBottom:"1px solid rgba(201,168,92,0.15)",
               background:"rgba(201,168,92,0.05)"
             }}>
-              <h2 style={{ fontFamily:T.heading, fontSize:22, color:"#f0e8d0", margin:0, letterSpacing:"1px" }}>
+              <h2 style={{ fontFamily:T.heading, fontSize:22, color:T.text, margin:0, letterSpacing:"1px" }}>
                 Create New Campaign
               </h2>
-              <p style={{ fontFamily:T.body, fontSize:13, color:"#b8ae94", margin:"8px 0 0 0" }}>
+              <p style={{ fontFamily:T.body, fontSize:13, color:T.textMuted, margin:"8px 0 0 0" }}>
                 Choose a campaign type to get started
               </p>
             </div>
@@ -6603,7 +6603,7 @@ function App() {
             <div style={{ padding:"24px" }}>
               {/* Name Input */}
               <div style={{ marginBottom:24 }}>
-                <label style={{ display:"block", fontFamily:T.heading, fontSize:12, color:"#c9a85c", letterSpacing:"1px", textTransform:"uppercase", marginBottom:8 }}>
+                <label style={{ display:"block", fontFamily:T.heading, fontSize:12, color:T.gold, letterSpacing:"1px", textTransform:"uppercase", marginBottom:8 }}>
                   Campaign Name
                 </label>
                 <input
@@ -6615,7 +6615,7 @@ function App() {
                   style={{
                     width:"100%", padding:"12px 14px", fontFamily:T.body, fontSize:14,
                     background:"rgba(255,255,255,0.03)", border:"1px solid rgba(201,168,92,0.2)",
-                    borderRadius:"6px", color:"#f0e8d0", outline:"none",
+                    borderRadius:"6px", color:T.text, outline:"none",
                     boxSizing:"border-box"
                   }}
                   autoFocus
@@ -6624,7 +6624,7 @@ function App() {
 
               {/* Type Selection */}
               <div style={{ marginBottom:24 }}>
-                <label style={{ display:"block", fontFamily:T.heading, fontSize:12, color:"#c9a85c", letterSpacing:"1px", textTransform:"uppercase", marginBottom:12 }}>
+                <label style={{ display:"block", fontFamily:T.heading, fontSize:12, color:T.gold, letterSpacing:"1px", textTransform:"uppercase", marginBottom:12 }}>
                   Campaign Type
                 </label>
                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12 }}>
@@ -6641,13 +6641,13 @@ function App() {
                     onMouseLeave={e => { e.currentTarget.style.background = createType === "traditional" ? "rgba(201,168,92,0.08)" : "rgba(255,255,255,0.02)"; e.currentTarget.style.transform = "scale(1)"; }}
                   >
                     <div style={{ fontSize:28, marginBottom:8 }}>⸎</div>
-                    <h3 style={{ fontFamily:T.heading, fontSize:13, color:"#f0e8d0", margin:"0 0 8px 0", letterSpacing:"0.5px" }}>
+                    <h3 style={{ fontFamily:T.heading, fontSize:13, color:T.text, margin:"0 0 8px 0", letterSpacing:"0.5px" }}>
                       Traditional Campaign
                     </h3>
-                    <p style={{ fontFamily:T.body, fontSize:11, color:"#b8ae94", margin:"0 0 12px 0", lineHeight:"1.5" }}>
+                    <p style={{ fontFamily:T.body, fontSize:11, color:T.textMuted, margin:"0 0 12px 0", lineHeight:"1.5" }}>
                       A classic tabletop companion. Build your world, track your party, manage quests and factions.
                     </p>
-                    <div style={{ fontSize:10, color:"#8a8070", lineHeight:"1.6" }}>
+                    <div style={{ fontSize:10, color:T.textFaint, lineHeight:"1.6" }}>
                       <div>• Atlas & Maps</div>
                       <div>• Factions & Regions</div>
                       <div>• NPCs & Cities</div>
@@ -6670,13 +6670,13 @@ function App() {
                     onMouseLeave={e => { e.currentTarget.style.background = createType === "live" ? "rgba(94,224,154,0.08)" : "rgba(255,255,255,0.02)"; e.currentTarget.style.transform = "scale(1)"; }}
                   >
                     <div style={{ fontSize:28, marginBottom:8 }}>↯</div>
-                    <h3 style={{ fontFamily:T.heading, fontSize:13, color:"#f0e8d0", margin:"0 0 8px 0", letterSpacing:"0.5px" }}>
+                    <h3 style={{ fontFamily:T.heading, fontSize:13, color:T.text, margin:"0 0 8px 0", letterSpacing:"0.5px" }}>
                       Live Campaign
                     </h3>
-                    <p style={{ fontFamily:T.body, fontSize:11, color:"#b8ae94", margin:"0 0 12px 0", lineHeight:"1.5" }}>
+                    <p style={{ fontFamily:T.body, fontSize:11, color:T.textMuted, margin:"0 0 12px 0", lineHeight:"1.5" }}>
                       A living, breathing world. Kingdoms wage wars, forge alliances, and collapse in real-time.
                     </p>
-                    <div style={{ fontSize:10, color:"#8a8070", lineHeight:"1.6" }}>
+                    <div style={{ fontSize:10, color:T.textFaint, lineHeight:"1.6" }}>
                       <div>• Everything in Traditional</div>
                       <div>• Living World Engine</div>
                       <div>• Real-Time Kingdom Diplomacy</div>
@@ -6691,10 +6691,10 @@ function App() {
               {/* Module Toggles for Live Campaigns */}
               {createType === "live" && (
                 <div style={{ marginBottom:24, animation:"lwSlideIn 0.3s ease" }}>
-                  <label style={{ display:"block", fontFamily:T.heading, fontSize:12, color:"#c9a85c", letterSpacing:"1px", textTransform:"uppercase", marginBottom:12 }}>
+                  <label style={{ display:"block", fontFamily:T.heading, fontSize:12, color:T.gold, letterSpacing:"1px", textTransform:"uppercase", marginBottom:12 }}>
                     Living World Systems
                   </label>
-                  <p style={{ fontFamily:T.body, fontSize:11, color:"#8a8070", marginBottom:16, lineHeight:"1.5" }}>
+                  <p style={{ fontFamily:T.body, fontSize:11, color:T.textFaint, marginBottom:16, lineHeight:"1.5" }}>
                     Choose which advanced systems to enable. These can be changed later in Settings.
                   </p>
                   <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:8 }}>
@@ -6727,10 +6727,10 @@ function App() {
                             {enabled ? "✓" : ""}
                           </div>
                           <div style={{ flex:1 }}>
-                            <div style={{ fontSize:11, color: enabled ? "#f0e8d0" : "#b8ae94", fontWeight:400, display:"flex", alignItems:"center", gap:6 }}>
+                            <div style={{ fontSize:11, color: enabled ? T.text : T.textMuted, fontWeight:400, display:"flex", alignItems:"center", gap:6 }}>
                               <span>{mod.icon}</span> {mod.label}
                             </div>
-                            <div style={{ fontSize:9, color:"#6a6050", marginTop:2, lineHeight:"1.4" }}>{mod.desc}</div>
+                            <div style={{ fontSize:9, color:T.textFaint, marginTop:2, lineHeight:"1.4" }}>{mod.desc}</div>
                           </div>
                         </div>
                       );

@@ -87,6 +87,36 @@
   ];
 
   /* ═══════════════════════════════════════════════════════════
+     WORLD INTEGRATION HELPERS
+  ═══════════════════════════════════════════════════════════ */
+  function getWorldDistricts(data) {
+    var cities = (data && data.cities) || [];
+    var regions = (data && data.regions) || [];
+    if (cities.length > 0) return cities.map(function(c) { return c.name; });
+    if (regions.length > 0) return regions.map(function(r) { return r.name; });
+    return DISTRICTS; // fallback to hardcoded
+  }
+
+  function getWorldNPCAgents(data) {
+    if (!data || !data.npcs || data.npcs.length === 0) return [];
+    var relevantRoles = ['spy', 'thief', 'noble', 'merchant', 'guard'];
+    var filtered = data.npcs.filter(function(npc) {
+      var role = (npc.role || '').toLowerCase();
+      return relevantRoles.some(function(r) { return role.includes(r); });
+    });
+    // If no exact matches, just take first few NPCs
+    var npcList = filtered.length > 0 ? filtered : data.npcs.slice(0, 3);
+    return npcList.map(function(npc) {
+      return makeAgent({
+        name: npc.name || 'Unknown',
+        title: npc.role || '',
+        location: npc.region || '',
+        influence: Math.floor(Math.random() * 3) + 1,
+      });
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════
      DATA FACTORIES
   ═══════════════════════════════════════════════════════════ */
   const uid = () => 'i_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
@@ -117,13 +147,8 @@
     ...o,
   });
 
-  const initializeIntrigueData = () => ({
-    shadowLeader: makeAgent({
-      id: 'leader', name: 'The Shadow Leader', rank: 'leader',
-      title: 'True Power Behind the Throne', influence: 5,
-      location: 'Unknown', notes: 'The ultimate architect of this conspiracy',
-    }),
-    branches: [
+  const initializeIntrigueData = function(data) {
+    var defaultBranches = [
       makeBranch({ id: 'crown', name: 'The Crown', description: 'Royal Court manipulation', motto: 'The throne remembers', colorHue: 45, powerLevel: 75,
         sage: makeAgent({ id: 'sage_crown', rank: 'sage', name: 'The Courtier', title: 'Royal Advisor', influence: 4, location: 'Palace' }),
         agents: [
@@ -188,16 +213,47 @@
         ],
         territories: ['Slums & Underworld'],
       }),
-    ],
-    connections: [
-      makeConnection({ type: 'rivalry', fromAgent: 'sage_sword', toAgent: 'sage_mask', fromFaction: 'sword', toFaction: 'mask', notes: 'The General despises the criminal underworld' }),
-      makeConnection({ type: 'alliance', fromAgent: 'sage_coin', toAgent: 'sage_mask', fromFaction: 'coin', toFaction: 'mask', notes: 'Secret trade deal — the Coin launders for the Mask' }),
-      makeConnection({ type: 'spy', fromAgent: 'a_e1', toAgent: 'a_c1', fromFaction: 'eye', toFaction: 'crown', notes: 'Whisper has ears in the Chancellor\'s office' }),
-      makeConnection({ type: 'blackmail', fromAgent: 'a_k1', toAgent: 'a_w1', fromFaction: 'mask', toFaction: 'whisper', notes: 'Blackthorn knows the Bishop\'s secret' }),
-      makeConnection({ type: 'family', fromAgent: 'a_c2', toAgent: 'a_w2', fromFaction: 'crown', toFaction: 'whisper', notes: 'Sisters, separated in childhood' }),
-    ],
-    globalEvents: [{ id: uid(), date: 'Day 1', text: 'The conspiracy begins...', branchId: null }],
-  });
+    ];
+
+    // Generate branches from world factions if available
+    var branches = defaultBranches;
+    var worldFactions = (data && data.factions) || [];
+    if (worldFactions.length > 0) {
+      branches = worldFactions.map(function(f, idx) {
+        var colorHue = f.color ? parseInt(f.color.replace('#', ''), 16) % 360 : (idx * 60) % 360;
+        return makeBranch({
+          name: f.name || 'Unknown Faction',
+          description: f.govType ? 'Faction of ' + f.govType + ' alignment' : 'Mystery faction',
+          colorHue: colorHue,
+          powerLevel: 50 + Math.floor(Math.random() * 30),
+          sage: makeAgent({
+            rank: 'sage',
+            name: (f.name || 'Unknown') + ' Leader',
+            title: f.govType || 'Leader',
+            influence: 4,
+          }),
+          agents: getWorldNPCAgents(data).slice(0, 2),
+        });
+      });
+    }
+
+    return {
+      shadowLeader: makeAgent({
+        id: 'leader', name: 'The Shadow Leader', rank: 'leader',
+        title: 'True Power Behind the Throne', influence: 5,
+        location: 'Unknown', notes: 'The ultimate architect of this conspiracy',
+      }),
+      branches: branches,
+      connections: [
+        makeConnection({ type: 'rivalry', fromAgent: 'sage_sword', toAgent: 'sage_mask', fromFaction: 'sword', toFaction: 'mask', notes: 'The General despises the criminal underworld' }),
+        makeConnection({ type: 'alliance', fromAgent: 'sage_coin', toAgent: 'sage_mask', fromFaction: 'coin', toFaction: 'mask', notes: 'Secret trade deal — the Coin launders for the Mask' }),
+        makeConnection({ type: 'spy', fromAgent: 'a_e1', toAgent: 'a_c1', fromFaction: 'eye', toFaction: 'crown', notes: 'Whisper has ears in the Chancellor\'s office' }),
+        makeConnection({ type: 'blackmail', fromAgent: 'a_k1', toAgent: 'a_w1', fromFaction: 'mask', toFaction: 'whisper', notes: 'Blackthorn knows the Bishop\'s secret' }),
+        makeConnection({ type: 'family', fromAgent: 'a_c2', toAgent: 'a_w2', fromFaction: 'crown', toFaction: 'whisper', notes: 'Sisters, separated in childhood' }),
+      ],
+      globalEvents: [{ id: uid(), date: 'Day 1', text: 'The conspiracy begins...', branchId: null }],
+    };
+  };
 
   /* ═══════════════════════════════════════════════════════════
      HELPERS
@@ -336,9 +392,10 @@
   /* ═══════════════════════════════════════════════════════════
      SCHEME CARD
   ═══════════════════════════════════════════════════════════ */
-  function SchemeCard({ scheme, hue, isDM, onUpdate, onRemove }) {
+  function SchemeCard({ scheme, hue, isDM, onUpdate, onRemove, data }) {
     var st = SCHEME_TYPES.find(function(t) { return t.id === scheme.type; }) || SCHEME_TYPES[0];
     var progressColor = scheme.progress >= 80 ? '#ef5350' : scheme.progress >= 50 ? '#ffa726' : '#66bb6a';
+    var districts = getWorldDistricts(data);
     return (
       <div style={{
         padding: '10px 12px', borderRadius: 6, marginBottom: 6,
@@ -369,7 +426,20 @@
             onChange={function(e) { onUpdate({ progress: Number(e.target.value) }); }}
             style={{ width: '100%', accentColor: st.color, marginTop: 4, height: 4 }} />
         )}
-        {scheme.targetDistrict && (
+        {isDM && (
+          <div style={{ marginTop: 6 }}>
+            <div style={{ fontSize: 9, color: fnt, fontStyle: 'italic', marginBottom: 2 }}>Target District:</div>
+            <select value={scheme.targetDistrict || ''} onChange={function(e) { onUpdate({ targetDistrict: e.target.value || null }); }}
+              style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid ' + bdr, color: txt,
+                fontSize: 10, padding: '3px 6px', borderRadius: 3, fontFamily: ui }} >
+              <option value="">No target</option>
+              {districts.map(function(d) {
+                return <option key={d} value={d}>{d}</option>;
+              })}
+            </select>
+          </div>
+        )}
+        {!isDM && scheme.targetDistrict && (
           <div style={{ fontSize: 10, color: fnt, marginTop: 4, display: 'flex', alignItems: 'center', gap: 3 }}>
             {I(MapPin, 9)} Target: {scheme.targetDistrict}
           </div>
@@ -417,9 +487,10 @@
   /* ═══════════════════════════════════════════════════════════
      INFLUENCE MAP (territory control visualization)
   ═══════════════════════════════════════════════════════════ */
-  function InfluenceMap({ intrigue, isDM }) {
+  function InfluenceMap({ intrigue, isDM, data }) {
+    var districts = getWorldDistricts(data);
     var districtMap = {};
-    DISTRICTS.forEach(function(d) { districtMap[d] = []; });
+    districts.forEach(function(d) { districtMap[d] = []; });
     intrigue.branches.forEach(function(b) {
       (b.territories || []).forEach(function(t) {
         if (districtMap[t]) districtMap[t].push(b);
@@ -428,7 +499,7 @@
 
     return (
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 6 }}>
-        {DISTRICTS.map(function(dist) {
+        {districts.map(function(dist) {
           var factions = districtMap[dist] || [];
           var contested = factions.length > 1;
           var owner = factions[0];
@@ -483,12 +554,12 @@
     var containerRef = useRef(null);
     var _k = useState({ w: 800, h: 550 }), sz = _k[0], setSz = _k[1];
 
-    var intrigue = data.intrigue || initializeIntrigueData();
+    var intrigue = data.intrigue || initializeIntrigueData(data);
     var isDM = viewRole === 'DM' || viewRole === 'dm';
 
     useEffect(function() {
       if (!data.intrigue) {
-        setData(function(prev) { return Object.assign({}, prev, { intrigue: initializeIntrigueData() }); });
+        setData(function(prev) { return Object.assign({}, prev, { intrigue: initializeIntrigueData(data) }); });
       }
     }, []);
 
@@ -850,7 +921,7 @@
                             {schemes.map(function(s) {
                               return <SchemeCard key={s.id} scheme={s} hue={b.colorHue} isDM={isDM}
                                 onUpdate={function(p) { updateScheme(b.id, s.id, p); }}
-                                onRemove={function() { removeScheme(b.id, s.id); }} />;
+                                onRemove={function() { removeScheme(b.id, s.id); }} data={data} />;
                             })}
                           </div>
                         );
@@ -894,13 +965,14 @@
               <div style={{ fontSize: 10, fontWeight: 700, color: fnt, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 10, fontFamily: ui }}>
                 Territorial Influence
               </div>
-              <InfluenceMap intrigue={intrigue} isDM={isDM} />
+              <InfluenceMap intrigue={intrigue} isDM={isDM} data={data} />
 
               <div style={{ marginTop: 20 }}>
                 <div style={{ fontSize: 10, fontWeight: 700, color: fnt, textTransform: 'uppercase', letterSpacing: '1.5px', marginBottom: 8, fontFamily: ui }}>
                   Faction Territories
                 </div>
                 {intrigue.branches.map(function(b) {
+                  var worldDistricts = getWorldDistricts(data);
                   return (
                     <div key={b.id} style={{ marginBottom: 8, padding: '8px 12px', borderRadius: 4,
                       background: hBg(b.colorHue, 0.4), border: '1px solid ' + hC(b.colorHue, 0.1) }}>
@@ -925,7 +997,7 @@
                           }} style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid ' + bdr, color: dim,
                             fontSize: 10, padding: '3px 6px', borderRadius: 3, fontFamily: ui }}>
                             <option value="">+ Add territory...</option>
-                            {DISTRICTS.filter(function(d) { return !(b.territories||[]).includes(d); }).map(function(d) {
+                            {worldDistricts.filter(function(d) { return !(b.territories||[]).includes(d); }).map(function(d) {
                               return <option key={d} value={d}>{d}</option>;
                             })}
                           </select>
@@ -1015,7 +1087,7 @@
                     {(activeBranch.schemes || []).map(function(s) {
                       return <SchemeCard key={s.id} scheme={s} hue={activeBranch.colorHue} isDM={isDM}
                         onUpdate={function(p) { updateScheme(activeBranch.id, s.id, p); }}
-                        onRemove={function() { removeScheme(activeBranch.id, s.id); }} />;
+                        onRemove={function() { removeScheme(activeBranch.id, s.id); }} data={data} />;
                     })}
                     {isDM && (
                       <Btn small onClick={function() {
@@ -1031,7 +1103,7 @@
                 <div className="intrigue-scroll" style={{
                   width: 320, borderLeft: '1px solid ' + bdr, overflowY: 'auto',
                   background: 'rgba(0,0,0,0.2)', animation: 'intrigueSlideIn 0.2s ease', flexShrink: 0 }}>
-                  {renderAgentPanel(editAgent, isDM, intrigue, update, updateAgent, findBranch, setEditAgent, newClue, setNewClue, activeBranch, removeAgent)}
+                  {renderAgentPanel(editAgent, isDM, intrigue, update, updateAgent, findBranch, setEditAgent, newClue, setNewClue, activeBranch, removeAgent, data)}
                 </div>
               )}
             </Fragment>
@@ -1042,7 +1114,7 @@
             <div className="intrigue-scroll" style={{
               width: 320, borderLeft: '1px solid ' + bdr, overflowY: 'auto',
               background: 'rgba(0,0,0,0.2)', animation: 'intrigueSlideIn 0.2s ease', flexShrink: 0 }}>
-              {renderAgentPanel(editAgent, isDM, intrigue, update, updateAgent, findBranch, setEditAgent, newClue, setNewClue, null, removeAgent)}
+              {renderAgentPanel(editAgent, isDM, intrigue, update, updateAgent, findBranch, setEditAgent, newClue, setNewClue, null, removeAgent, data)}
             </div>
           )}
         </div>
@@ -1074,7 +1146,7 @@
   /* ═══════════════════════════════════════════════════════════
      AGENT DETAIL PANEL (shared between views)
   ═══════════════════════════════════════════════════════════ */
-  function renderAgentPanel(agent, isDM, intrigue, update, updateAgent, findBranch, setEditAgent, newClue, setNewClue, activeBranch, removeAgent) {
+  function renderAgentPanel(agent, isDM, intrigue, update, updateAgent, findBranch, setEditAgent, newClue, setNewClue, activeBranch, removeAgent, data) {
     var branch = findBranch(agent.id);
     var bid = branch ? branch.id : null;
 
@@ -1116,7 +1188,31 @@
         )}
 
         <Lbl>Location</Lbl>
-        {isDM ? <Inp value={agent.location} onChange={function(v) { doUpdate({ location: v }); }} placeholder="Location..." />
+        {isDM ? (function() {
+          var locationOptions = [].concat(
+            ((data && data.cities) || []).map(function(c) { return c.name; }),
+            ((data && data.pois) || []).map(function(p) { return p.name + ' (' + p.type + ')'; })
+          );
+          var hasOptions = locationOptions.length > 0;
+          if (hasOptions) {
+            return React.createElement(
+              Fragment,
+              null,
+              React.createElement('select',
+                { value: agent.location, onChange: function(e) { doUpdate({ location: e.target.value }); },
+                  style: { width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid ' + bdr, color: txt,
+                    padding: '5px 8px', borderRadius: 4, fontSize: 12, fontFamily: ui, marginBottom: 6 } },
+                React.createElement('option', { value: '' }, 'Select location...'),
+                locationOptions.map(function(loc) {
+                  return React.createElement('option', { key: loc, value: loc }, loc);
+                })
+              ),
+              React.createElement('div', { style: { fontSize: 10, color: dim, fontStyle: 'italic', marginBottom: 4 } }, 'Or enter custom:'),
+              React.createElement(Inp, { value: agent.location, onChange: function(v) { doUpdate({ location: v }); }, placeholder: 'Custom location...' })
+            );
+          }
+          return React.createElement(Inp, { value: agent.location, onChange: function(v) { doUpdate({ location: v }); }, placeholder: 'Location...' });
+        })()
           : <div style={{ fontSize: 12, color: txt }}>{(agent.revealed ? agent.location : '') || 'Unknown'}</div>}
 
         <Lbl>Influence</Lbl>

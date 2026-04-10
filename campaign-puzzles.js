@@ -3,8 +3,83 @@
   const T = window.__PHMURT_THEME || {};
   try { if (window.T) Object.assign(T, window.T); } catch(e) {}
 
-  const { Key, Lock, Unlock, Eye, EyeOff, Plus, Edit2, Trash2, Check, X, ChevronDown, ChevronUp, Search, Star, AlertTriangle, Lightbulb, Layers, Grid, Hash, Shuffle, RotateCcw, Copy, BookOpen, Target } = window.LucideReact || {};
+  const { Key, Lock, Unlock, Eye, EyeOff, Plus, Edit2, Trash2, Check, X, ChevronDown, ChevronUp, Search, Star, AlertTriangle, Lightbulb, Layers, Grid, Hash, Shuffle, RotateCcw, Copy, BookOpen, Target, MapPin } = window.LucideReact || {};
   const LightbulbIcon = Lightbulb || Star;
+
+  // Deterministic hash for puzzle ID to select world data
+  function hashPuzzleId(id) {
+    let hash = 0;
+    for (let i = 0; i < id.length; i++) {
+      const char = id.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
+    }
+    return Math.abs(hash);
+  }
+
+  // Contextualize puzzle with world data
+  function contextualizePuzzle(puzzle, data) {
+    if (!data || (!data.regions && !data.cities && !data.npcs && !data.pois)) {
+      return puzzle;
+    }
+
+    const seed = hashPuzzleId(puzzle.id);
+    let contextualized = { ...puzzle };
+
+    // Patterns to replace
+    const patterns = [
+      {
+        pattern: /A sphinx blocks your path/i,
+        replacement: (data) => {
+          if (data.cities && data.cities.length > 0) {
+            const city = data.cities[seed % data.cities.length];
+            return `A sphinx blocks the road to ${city.name}`;
+          }
+          return null;
+        }
+      },
+      {
+        pattern: /An ancient door/i,
+        replacement: (data) => {
+          if (data.pois && data.pois.length > 0) {
+            const poi = data.pois[seed % data.pois.length];
+            return `An ancient door in the ruins of ${poi.name}`;
+          }
+          return null;
+        }
+      },
+      {
+        pattern: /A mysterious figure/i,
+        replacement: (data) => {
+          if (data.npcs && data.npcs.length > 0) {
+            const npc = data.npcs[seed % data.npcs.length];
+            return `${npc.name}, a mysterious ${npc.role || 'figure'}`;
+          }
+          return null;
+        }
+      }
+    ];
+
+    // Apply replacements to setup and description
+    patterns.forEach(({ pattern, replacement }) => {
+      const replaced = replacement(data);
+      if (replaced) {
+        contextualized.setup = contextualized.setup.replace(pattern, replaced);
+        contextualized.description = contextualized.description.replace(pattern, replaced);
+      }
+    });
+
+    // Mark as contextualized with metadata
+    contextualized._contextualized = true;
+    if (data.regions && data.regions.length > 0) {
+      contextualized._region = data.regions[seed % data.regions.length].name;
+    }
+    if (data.npcs && data.npcs.length > 0) {
+      contextualized._givenBy = data.npcs[seed % data.npcs.length].name;
+    }
+
+    return contextualized;
+  }
 
   const PUZZLE_TEMPLATES = [
     {
@@ -337,6 +412,20 @@
             <p style={{ margin: '0 0 4px 0', fontSize: '12px', color: T.textDim }}>
               {puzzle.type.charAt(0).toUpperCase() + puzzle.type.slice(1)} • Difficulty {puzzle.difficulty}/5
             </p>
+            {puzzle._contextualized && (
+              <div style={{ display: 'flex', gap: '8px', marginTop: '6px', fontSize: '11px', color: T.green || 'var(--green)' }}>
+                {puzzle._region && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                    {MapPin && <MapPin size={12} />} {puzzle._region}
+                  </span>
+                )}
+                {puzzle._givenBy && (
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                    By: {puzzle._givenBy}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
           <div style={{ display: 'flex', gap: '4px' }}>
             {Array(puzzle.difficulty).fill(0).map((_, i) => (
@@ -553,7 +642,7 @@
     );
   }
 
-  function PuzzleCreator({ onSave, onCancel }) {
+  function PuzzleCreator({ onSave, onCancel, data }) {
     const [form, setForm] = useState({
       name: '',
       type: 'riddle',
@@ -561,7 +650,10 @@
       description: '',
       setup: '',
       solution: '',
-      hints: ['', '', '']
+      hints: ['', '', ''],
+      associatedRegion: '',
+      associatedNpc: '',
+      location: ''
     });
 
     const handleChange = (field, value) => {
@@ -749,6 +841,78 @@
               ))}
             </div>
 
+            <div style={{ padding: '12px', background: T.bg || 'var(--bg)', borderRadius: '4px', border: `1px dashed ${T.border}`, marginTop: '8px' }}>
+              <p style={{ margin: '0 0 12px 0', fontSize: '11px', fontWeight: 'bold', color: T.textDim }}>WORLD CONTEXT (Optional)</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 'bold', color: T.text }}>Associated Region</label>
+                  <select
+                    value={form.associatedRegion}
+                    onChange={(e) => handleChange('associatedRegion', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      background: T.bgCard || 'var(--bgCard)',
+                      border: `1px solid ${T.border}`,
+                      borderRadius: '4px',
+                      color: T.text,
+                      fontSize: '13px'
+                    }}
+                  >
+                    <option value="">None</option>
+                    {data && data.regions && data.regions.map((region, i) => (
+                      <option key={i} value={region.name}>{region.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 'bold', color: T.text }}>Associated NPC</label>
+                  <select
+                    value={form.associatedNpc}
+                    onChange={(e) => handleChange('associatedNpc', e.target.value)}
+                    style={{
+                      width: '100%',
+                      padding: '8px',
+                      background: T.bgCard || 'var(--bgCard)',
+                      border: `1px solid ${T.border}`,
+                      borderRadius: '4px',
+                      color: T.text,
+                      fontSize: '13px'
+                    }}
+                  >
+                    <option value="">None</option>
+                    {data && data.npcs && data.npcs.map((npc, i) => (
+                      <option key={i} value={npc.name}>{npc.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div style={{ marginTop: '12px' }}>
+                <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 'bold', color: T.text }}>Location</label>
+                <select
+                  value={form.location}
+                  onChange={(e) => handleChange('location', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '8px',
+                    background: T.bgCard || 'var(--bgCard)',
+                    border: `1px solid ${T.border}`,
+                    borderRadius: '4px',
+                    color: T.text,
+                    fontSize: '13px'
+                  }}
+                >
+                  <option value="">None</option>
+                  {data && data.cities && data.cities.map((city, i) => (
+                    <option key={`city-${i}`} value={city.name}>{city.name} (City)</option>
+                  ))}
+                  {data && data.pois && data.pois.map((poi, i) => (
+                    <option key={`poi-${i}`} value={poi.name}>{poi.name} (POI)</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
               <button
                 onClick={() => {
@@ -828,6 +992,7 @@
     const [showCreator, setShowCreator] = useState(false);
     const [filterType, setFilterType] = useState('all');
     const [filterDifficulty, setFilterDifficulty] = useState('all');
+    const [filterRegion, setFilterRegion] = useState('all');
     const [searchTerm, setSearchTerm] = useState('');
 
     const allTemplates = useMemo(() => {
@@ -838,14 +1003,17 @@
       return allTemplates.filter(p => {
         if (filterType !== 'all' && p.type !== filterType) return false;
         if (filterDifficulty !== 'all' && p.difficulty !== parseInt(filterDifficulty)) return false;
+        if (filterRegion !== 'all' && p._region !== filterRegion) return false;
         if (searchTerm && !p.name.toLowerCase().includes(searchTerm.toLowerCase()) && !p.description.toLowerCase().includes(searchTerm.toLowerCase())) return false;
         return true;
       });
-    }, [allTemplates, filterType, filterDifficulty, searchTerm]);
+    }, [allTemplates, filterType, filterDifficulty, filterRegion, searchTerm]);
 
     const handleAddPuzzle = (puzzle) => {
+      // Contextualize puzzle with world data if available
+      const contextualized = contextualizePuzzle(puzzle, data);
       const newSessionPuzzle = {
-        ...puzzle,
+        ...contextualized,
         id: `session-${Date.now()}`,
         solved: false,
         hintsRevealed: 0,
@@ -1006,6 +1174,29 @@
                     <option value="5">5 - Expert</option>
                   </select>
                 </div>
+                {data && data.regions && data.regions.length > 0 && (
+                  <div>
+                    <label style={{ display: 'block', marginBottom: '4px', fontSize: '11px', fontWeight: 'bold', color: T.textDim }}>REGION</label>
+                    <select
+                      value={filterRegion}
+                      onChange={(e) => setFilterRegion(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '6px 8px',
+                        background: T.bg || 'var(--bg)',
+                        border: `1px solid ${T.border}`,
+                        borderRadius: '4px',
+                        color: T.text,
+                        fontSize: '12px'
+                      }}
+                    >
+                      <option value="all">All Regions</option>
+                      {data.regions.map((region, i) => (
+                        <option key={i} value={region.name}>{region.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button
@@ -1179,6 +1370,7 @@
 
         {showCreator && (
           <PuzzleCreator
+            data={data}
             onSave={handleSaveCustom}
             onCancel={() => setShowCreator(false)}
           />
