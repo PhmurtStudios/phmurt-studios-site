@@ -1275,6 +1275,16 @@ var PhmurtDB = (function () {
       });
     },
 
+    /* Check character limit without saving — returns { blocked, limit, current } */
+    checkCharacterLimit: function () {
+      return _checkLimit('characters', 'free_max_characters', 'paid_max_characters');
+    },
+
+    /* Check campaign limit without saving — returns { blocked, limit, current } */
+    checkCampaignLimit: function () {
+      return _checkLimit('campaigns', 'free_max_campaigns', 'paid_max_campaigns');
+    },
+
     /* Opens Stripe Customer Portal so user can manage/cancel subscription */
     manageSubscription: function (returnUrl) {
       if (!_session) return Promise.reject(new Error('Not signed in.'));
@@ -1406,18 +1416,24 @@ window.addEventListener('storage', function (e) {
   // ── Shared CSS injection ──────────────────────────────────────────
   var style = document.createElement('style');
   style.textContent = [
-    /* Subscription upgrade banner */
-    '.phmurt-upgrade-banner{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(135deg,#1a1510 0%,#2a2015 100%);border-top:2px solid rgba(212,67,58,0.4);padding:18px 24px;z-index:99997;display:flex;align-items:center;justify-content:center;gap:20px;font-family:Spectral,serif;animation:phmurt-slide-up 0.3s ease;flex-wrap:wrap;}',
-    '.phmurt-upgrade-banner .upgrade-text{color:#f5ede0;font-size:14px;text-align:center;}',
-    '.phmurt-upgrade-banner .upgrade-text strong{color:var(--crimson);}',
-    '.phmurt-upgrade-btns{display:flex;gap:10px;align-items:center;}',
-    '.phmurt-upgrade-banner .upgrade-btn{padding:10px 20px;background:var(--crimson);color:#1a1510;border:none;font-family:Cinzel,serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;border-radius:4px;font-weight:600;transition:background 0.15s;}',
-    '.phmurt-upgrade-banner .upgrade-btn:hover{background:#d4b55a;}',
-    '.phmurt-upgrade-banner .upgrade-btn.yearly{background:transparent;border:1.5px solid var(--crimson);color:var(--crimson);}',
-    '.phmurt-upgrade-banner .upgrade-btn.yearly:hover{background:rgba(212,67,58,0.1);}',
-    '.phmurt-upgrade-banner .upgrade-save{font-size:10px;color:#5ee09a;font-weight:600;letter-spacing:0.5px;}',
-    '.phmurt-upgrade-banner .upgrade-close{background:none;border:none;color:#8c7d6e;cursor:pointer;font-size:18px;padding:4px 8px;}',
-    '@keyframes phmurt-slide-up{from{transform:translateY(100%)}to{transform:translateY(0)}}',
+    /* Subscription upgrade modal */
+    '.phmurt-upgrade-overlay{position:fixed;inset:0;z-index:99997;display:flex;align-items:center;justify-content:center;background:rgba(10,8,5,0.75);animation:phmurt-fade-in 0.2s ease;}',
+    '.phmurt-upgrade-modal{background:linear-gradient(135deg,#1a1510 0%,#2a2015 100%);border:1px solid rgba(212,67,58,0.3);border-radius:8px;padding:36px 32px 28px;max-width:420px;width:90%;position:relative;box-shadow:0 8px 40px rgba(0,0,0,0.6);text-align:center;}',
+    '.phmurt-upgrade-modal .upgrade-icon{font-size:36px;margin-bottom:10px;}',
+    '.phmurt-upgrade-modal .upgrade-title{font-family:Cinzel,serif;font-size:18px;letter-spacing:2px;color:var(--crimson,#d4433a);margin:0 0 8px;}',
+    '.phmurt-upgrade-modal .upgrade-text{color:#b8a88a;font-family:Spectral,serif;font-size:14px;line-height:1.6;margin:0 0 22px;}',
+    '.phmurt-upgrade-modal .upgrade-text strong{color:#f5ede0;}',
+    '.phmurt-upgrade-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}',
+    '.phmurt-upgrade-modal .upgrade-btn{padding:12px 22px;background:var(--crimson,#d4433a);color:#1a1510;border:none;font-family:Cinzel,serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;border-radius:4px;font-weight:600;transition:all 0.15s;flex:1;min-width:130px;}',
+    '.phmurt-upgrade-modal .upgrade-btn:hover{background:var(--gold,#c9a84c);color:#1a1510;}',
+    '.phmurt-upgrade-modal .upgrade-btn.yearly{background:transparent;border:1.5px solid var(--crimson,#d4433a);color:var(--crimson,#d4433a);}',
+    '.phmurt-upgrade-modal .upgrade-btn.yearly:hover{background:rgba(212,67,58,0.12);}',
+    '.phmurt-upgrade-modal .upgrade-save{font-size:10px;color:#5ee09a;font-weight:600;letter-spacing:0.5px;margin-top:6px;display:block;}',
+    '.phmurt-upgrade-modal .upgrade-compare{display:inline-block;margin-top:14px;color:#8c7d6e;font-family:Spectral,serif;font-size:13px;text-decoration:underline;cursor:pointer;}',
+    '.phmurt-upgrade-modal .upgrade-compare:hover{color:#b8a88a;}',
+    '.phmurt-upgrade-modal .upgrade-close{position:absolute;top:12px;right:14px;background:none;border:none;color:#8c7d6e;cursor:pointer;font-size:20px;padding:4px 8px;line-height:1;}',
+    '.phmurt-upgrade-modal .upgrade-close:hover{color:#f5ede0;}',
+    '@keyframes phmurt-fade-in{from{opacity:0}to{opacity:1}}',
     '.phmurt-maintenance-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,12,8,0.97);z-index:99999;display:flex;align-items:center;justify-content:center;text-align:center;font-family:Spectral,serif;color:#f5ede0;}',
     '.phmurt-maintenance-box{max-width:500px;padding:48px;border:1px solid rgba(212,67,58,0.2);border-radius:12px;background:rgba(30,25,18,0.95);}',
     '.phmurt-maintenance-box h1{font-family:Cinzel,serif;font-size:24px;color:var(--crimson);margin-bottom:16px;letter-spacing:2px;}',
@@ -1633,19 +1649,29 @@ window.addEventListener('storage', function (e) {
   // ── Upgrade prompt (shown when save fails due to limit) ────────
   window.addEventListener('phmurt-limit-reached', function (e) {
     var detail = e.detail || {};
-    if (document.querySelector('.phmurt-upgrade-banner')) return; // Already showing
-    var banner = document.createElement('div');
-    banner.className = 'phmurt-upgrade-banner';
+    if (document.querySelector('.phmurt-upgrade-overlay')) return; // Already showing
+    var overlay = document.createElement('div');
+    overlay.className = 'phmurt-upgrade-overlay';
     var msg = detail.message || 'You\'ve reached the free plan limit.';
-    banner.innerHTML =
-      '<div class="upgrade-text"><strong>Phmurt Studios Pro</strong> — ' + msg.replace(/</g, '&lt;') + '</div>' +
-      '<div class="phmurt-upgrade-btns">' +
-        '<button class="upgrade-btn" id="phmurt-upgrade-monthly">$4.99 / month</button>' +
-        '<button class="upgrade-btn yearly" id="phmurt-upgrade-yearly">$49.99 / year</button>' +
-        '<span class="upgrade-save">Save $10!</span>' +
-      '</div>' +
-      '<button class="upgrade-close" onclick="this.parentElement.remove()">&times;</button>';
-    document.body.appendChild(banner);
+    var table = detail.table === 'characters' ? 'characters' : detail.table === 'campaigns' ? 'campaigns' : 'items';
+    overlay.innerHTML =
+      '<div class="phmurt-upgrade-modal">' +
+        '<button class="upgrade-close" id="phmurt-upgrade-close">&times;</button>' +
+        '<div class="upgrade-icon">&#9876;</div>' +
+        '<h2 class="upgrade-title">Limit Reached</h2>' +
+        '<p class="upgrade-text">' + msg.replace(/</g, '&lt;') + '<br>Upgrade to <strong>Phmurt Studios Pro</strong> for unlimited ' + table + ', generators, advanced campaign tools, and more.</p>' +
+        '<div class="phmurt-upgrade-btns">' +
+          '<button class="upgrade-btn" id="phmurt-upgrade-monthly">$4.99 / month</button>' +
+          '<button class="upgrade-btn yearly" id="phmurt-upgrade-yearly">$49.99 / year</button>' +
+        '</div>' +
+        '<span class="upgrade-save">Save $10 with yearly!</span>' +
+        '<a class="upgrade-compare" href="pricing.html">Compare plans</a>' +
+      '</div>';
+    document.body.appendChild(overlay);
+    // Close handlers
+    document.getElementById('phmurt-upgrade-close').addEventListener('click', function () { overlay.remove(); });
+    overlay.addEventListener('click', function (ev) { if (ev.target === overlay) overlay.remove(); });
+    // Subscribe handlers
     document.getElementById('phmurt-upgrade-monthly').addEventListener('click', function () {
       if (typeof PhmurtDB !== 'undefined') {
         PhmurtDB.startSubscription(null, 'monthly').catch(function (err) {
@@ -1678,21 +1704,22 @@ window.addEventListener('storage', function (e) {
     var tierCfg = PhmurtDB.getTierConfig();
     var overlay = document.createElement('div');
     overlay.id = 'phmurt-gate-modal';
-    overlay.style.cssText = 'position:fixed;inset:0;z-index:90000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.65);animation:phmurt-fade-in .2s ease';
+    overlay.className = 'phmurt-upgrade-overlay';
 
     var featureLabel = featureName.replace(/-/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
 
     overlay.innerHTML =
-      '<div style="background:var(--bg-card,#1e1e2e);border:1px solid var(--border-color,#333);border-radius:12px;max-width:440px;width:92%;padding:32px 28px 24px;position:relative;box-shadow:0 8px 32px rgba(0,0,0,.5);text-align:center">' +
-        '<button id="phmurt-gate-close" style="position:absolute;top:12px;right:16px;background:none;border:none;color:var(--text-secondary,#aaa);font-size:22px;cursor:pointer;line-height:1">&times;</button>' +
-        '<div style="font-size:32px;margin-bottom:8px">&#9889;</div>' +
-        '<h2 style="margin:0 0 8px;font-size:1.25rem;color:var(--text-primary,#eee)">Upgrade to Pro</h2>' +
-        '<p style="color:var(--text-secondary,#aaa);margin:0 0 18px;font-size:.95rem"><strong>' + featureLabel + '</strong> is a Pro feature. Unlock it — plus unlimited characters, campaigns, and every generator.</p>' +
-        '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">' +
-          '<button class="phmurt-gate-btn" data-plan="monthly" style="flex:1;min-width:120px;padding:12px 18px;border-radius:8px;border:1px solid var(--accent,#7c3aed);background:transparent;color:var(--accent,#7c3aed);font-weight:600;cursor:pointer;font-size:.95rem">' + tierCfg.pro.price.monthly + '</button>' +
-          '<button class="phmurt-gate-btn" data-plan="yearly" style="flex:1;min-width:120px;padding:12px 18px;border-radius:8px;border:none;background:var(--accent,#7c3aed);color:#fff;font-weight:600;cursor:pointer;font-size:.95rem">' + tierCfg.pro.price.yearly + ' <span style="font-size:.8rem;opacity:.85">(' + tierCfg.pro.price.yearlySavings + ')</span></button>' +
+      '<div class="phmurt-upgrade-modal">' +
+        '<button class="upgrade-close" id="phmurt-gate-close">&times;</button>' +
+        '<div class="upgrade-icon">&#9876;</div>' +
+        '<h2 class="upgrade-title">Upgrade to Pro</h2>' +
+        '<p class="upgrade-text"><strong>' + featureLabel + '</strong> is a Pro feature. Unlock it — plus unlimited characters, campaigns, and every generator.</p>' +
+        '<div class="phmurt-upgrade-btns">' +
+          '<button class="phmurt-gate-btn upgrade-btn" data-plan="monthly">' + tierCfg.pro.price.monthly + '</button>' +
+          '<button class="phmurt-gate-btn upgrade-btn yearly" data-plan="yearly">' + tierCfg.pro.price.yearly + '</button>' +
         '</div>' +
-        '<a href="pricing.html" style="display:inline-block;margin-top:14px;color:var(--text-secondary,#aaa);font-size:.85rem;text-decoration:underline">Compare plans</a>' +
+        '<span class="upgrade-save">' + tierCfg.pro.price.yearlySavings + ' with yearly!</span>' +
+        '<a class="upgrade-compare" href="pricing.html">Compare plans</a>' +
       '</div>';
 
     document.body.appendChild(overlay);

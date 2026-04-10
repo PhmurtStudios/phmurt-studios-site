@@ -5700,6 +5700,21 @@ function scheduleSave(){
 }
 
 function startNewCharacter(){
+  // Check limit BEFORE reloading — show upgrade modal immediately if at cap
+  if(typeof PhmurtDB !== 'undefined' && PhmurtDB.getSession()){
+    PhmurtDB.checkCharacterLimit().then(function(result){
+      if(result && result.blocked){
+        // The phmurt-limit-reached event is already fired by _checkLimit,
+        // which triggers the upgrade modal — nothing else to do
+        return;
+      }
+      _doNewCharacter();
+    }).catch(function(){ _doNewCharacter(); });
+  } else {
+    _doNewCharacter();
+  }
+}
+function _doNewCharacter(){
   // Clear the current character ID so the next save creates a NEW record
   try { localStorage.removeItem('phmurt_current_char_id'); } catch(e) {}
   // Clear the local autosave so the page doesn't restore old choices
