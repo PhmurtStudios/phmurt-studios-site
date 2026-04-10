@@ -2110,12 +2110,28 @@ window.addEventListener('storage', function (e) {
     // Close handlers
     document.getElementById('phmurt-upgrade-close').addEventListener('click', function () { overlay.remove(); });
     overlay.addEventListener('click', function (ev) { if (ev.target === overlay) overlay.remove(); });
-    // Subscribe handlers — inline checkout flow
-    function _doUpgradeCheckout(plan) {
-      _inlineCheckout(overlay, overlay.querySelector('.upgrade-body'), plan);
+    // Subscribe handlers — direct checkout, fallback to pricing page
+    function _doUpgradeCheckout(btn, plan) {
+      btn.disabled = true;
+      btn.textContent = 'Redirecting…';
+      try {
+        if (typeof PhmurtDB !== 'undefined' && PhmurtDB.getSession() && PhmurtDB.getSession().userId) {
+          PhmurtDB.startSubscription(window.location.href, plan).catch(function () {
+            window.location.href = 'pricing.html?plan=' + plan;
+          });
+          // Safety fallback if redirect doesn't happen within 10s
+          setTimeout(function () { window.location.href = 'pricing.html?plan=' + plan; }, 10000);
+        } else {
+          window.location.href = 'pricing.html?plan=' + plan;
+        }
+      } catch (e) {
+        window.location.href = 'pricing.html?plan=' + plan;
+      }
     }
-    document.getElementById('phmurt-upgrade-monthly').addEventListener('click', function () { _doUpgradeCheckout('monthly'); });
-    document.getElementById('phmurt-upgrade-yearly').addEventListener('click', function () { _doUpgradeCheckout('yearly'); });
+    var monthlyBtn = document.getElementById('phmurt-upgrade-monthly');
+    var yearlyBtn = document.getElementById('phmurt-upgrade-yearly');
+    if (monthlyBtn) monthlyBtn.addEventListener('click', function () { _doUpgradeCheckout(monthlyBtn, 'monthly'); });
+    if (yearlyBtn) yearlyBtn.addEventListener('click', function () { _doUpgradeCheckout(yearlyBtn, 'yearly'); });
   });
 
   // ── Global Feature Gate ─────────────────────────────────────────
@@ -2164,11 +2180,24 @@ window.addEventListener('storage', function (e) {
     document.getElementById('phmurt-gate-close').addEventListener('click', function () { overlay.remove(); });
     overlay.addEventListener('click', function (ev) { if (ev.target === overlay) overlay.remove(); });
 
-    // Subscribe buttons — inline checkout flow
+    // Subscribe buttons — direct checkout, fallback to pricing page
     overlay.querySelectorAll('.phmurt-gate-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        var plan = btn.getAttribute('data-plan');
-        _inlineCheckout(overlay, overlay.querySelector('.upgrade-body'), plan);
+        var plan = btn.getAttribute('data-plan') || 'monthly';
+        btn.disabled = true;
+        btn.textContent = 'Redirecting…';
+        try {
+          if (typeof PhmurtDB !== 'undefined' && PhmurtDB.getSession() && PhmurtDB.getSession().userId) {
+            PhmurtDB.startSubscription(window.location.href, plan).catch(function () {
+              window.location.href = 'pricing.html?plan=' + plan;
+            });
+            setTimeout(function () { window.location.href = 'pricing.html?plan=' + plan; }, 10000);
+          } else {
+            window.location.href = 'pricing.html?plan=' + plan;
+          }
+        } catch (e) {
+          window.location.href = 'pricing.html?plan=' + plan;
+        }
       });
     });
 
