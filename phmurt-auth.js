@@ -62,6 +62,7 @@ var PhmurtDB = (function () {
     var isSubscribed = tier === 'pro' && subStatus === 'active' && (!subExpires || subExpires > new Date());
     return {
       userId:              user.id,
+      user:                user.id,   // Alias so sess.user works (e.g. pricing.html)
       name:                name,
       email:               user.email || '',
       displayName:         name,
@@ -568,6 +569,10 @@ var PhmurtDB = (function () {
       if (!_session) {
         var s = _legacyGetSession();
         if (s) { _session = s; }
+      }
+      // Ensure .user alias exists (legacy sessions may lack it)
+      if (_session && !_session.user && _session.userId) {
+        _session.user = _session.userId;
       }
       return _session;
     },
