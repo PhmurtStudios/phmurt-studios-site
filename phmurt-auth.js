@@ -196,7 +196,8 @@ var PhmurtDB = (function () {
           _fireChange();
         });
       }
-      _fireChange();
+      // No Supabase session — keep any existing legacy session intact
+      if (!_session) _fireChange();
     }).catch(function (err) {
       if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Supabase init failed:', err ? err.message : 'Unknown error');
       _initLegacy();
@@ -208,7 +209,9 @@ var PhmurtDB = (function () {
           _session = _makeSession(sess.user, profile);
           _fireChange();
         });
-      } else {
+      } else if (event === 'SIGNED_OUT') {
+        // Only clear session on explicit sign-out, not on initial load
+        // with no Supabase session (which would wipe the legacy session)
         _session = null;
         _fireChange();
       }
@@ -399,6 +402,120 @@ var PhmurtDB = (function () {
       camps = camps.filter(function (c) { return c.id !== id; });
       _legacySaveCamps(camps);
     } catch (e) {}
+  }
+
+  /* ── Re-authentication prompt for legacy sessions ────────────────
+     When a user has a legacy localStorage session but no Supabase JWT,
+     we show a password prompt inline so they can subscribe without
+     having to sign out first.
+  ─────────────────────────────────────────────────────────────────── */
+  function _showReauthPrompt(sb, returnUrl, interval) {
+    return new Promise(function (resolve, reject) {
+      // Remove any existing reauth modal
+      var old = document.getElementById('phmurt-reauth-overlay');
+      if (old) old.remove();
+
+      var overlay = document.createElement('div');
+      overlay.id = 'phmurt-reauth-overlay';
+      overlay.className = 'phmurt-upgrade-overlay';
+      overlay.innerHTML =
+        '<div class="phmurt-upgrade-modal">' +
+          '<div class="upgrade-glow"></div>' +
+          '<div class="upgrade-body">' +
+            '<button class="upgrade-close" id="phmurt-reauth-close">&times;</button>' +
+            '<div class="upgrade-icon">&#128274;</div>' +
+            '<h2 class="upgrade-title">Confirm Identity</h2>' +
+            '<p class="upgrade-text">Enter your password to continue to checkout.</p>' +
+            '<input type="password" id="phmurt-reauth-pw" placeholder="Password" ' +
+              'style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(212,67,58,0.2);border-radius:4px;color:#f5ede0;font-family:Spectral,serif;font-size:14px;margin-bottom:16px;text-align:center;outline:none;" />' +
+            '<p id="phmurt-reauth-err" style="color:#ef4444;font-size:12px;margin:0 0 12px;display:none;"></p>' +
+            '<button class="upgrade-btn" id="phmurt-reauth-submit" style="width:100%;">Continue to Checkout</button>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(overlay);
+
+      var pwInput = document.getElementById('phmurt-reauth-pw');
+      var errEl = document.getElementById('phmurt-reauth-err');
+      var submitBtn = document.getElementById('phmurt-reauth-submit');
+
+      function cleanup() { overlay.remove(); }
+
+      document.getElementById('phmurt-reauth-close').addEventListener('click', function () {
+        cleanup();
+        reject(new Error('Cancelled.'));
+      });
+      overlay.addEventListener('click', function (ev) {
+        if (ev.target === overlay) { cleanup(); reject(new Error('Cancelled.')); }
+      });
+
+      function doReauth() {
+        var pw = pwInput.value;
+        if (!pw) { errEl.textContent = 'Password is required.'; errEl.style.display = 'block'; return; }
+        errEl.style.display = 'none';
+        submitBtn.textContent = 'Signing in…';
+        submitBtn.disabled = true;
+
+        var email = _session ? _session.email : '';
+        sb.auth.signInWithPassword({ email: email, password: pw })
+          .then(function (r) {
+            if (r.error) throw new Error(r.error.message);
+            // Now we have a Supabase session — update internal state
+            var user = r.data.user;
+            return _fetchProfile(user.id).then(function (profile) {
+              _session = _makeSession(user, profile);
+              _fireChange();
+              // Get the new token and proceed to checkout
+              return sb.auth.getSession();
+            });
+          })
+          .then(function (r) {
+            var token = r.data && r.data.session && r.data.session.access_token;
+            if (!token) throw new Error('Authentication failed. Please try again.');
+            cleanup();
+            // Now proceed with the actual checkout
+            var checkoutUrl = (typeof STRIPE_CHECKOUT_FUNCTION_URL !== 'undefined' && STRIPE_CHECKOUT_FUNCTION_URL)
+              ? STRIPE_CHECKOUT_FUNCTION_URL
+              : (typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL + '/functions/v1/stripe-checkout' : null);
+
+            return fetch(checkoutUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+              body: JSON.stringify({
+                return_url: returnUrl || window.location.href,
+                interval: (interval === 'yearly') ? 'yearly' : 'monthly',
+              }),
+            })
+            .then(function (resp) { return resp.json(); })
+            .then(function (data) {
+              if (data.error) throw new Error(data.error);
+              if (data.url) {
+                try {
+                  var parsed = new URL(data.url);
+                  if (parsed.protocol !== 'https:' || (parsed.hostname.indexOf('stripe.com') === -1 && parsed.hostname.indexOf('phmurtstudios.com') === -1)) {
+                    throw new Error('Unexpected redirect URL.');
+                  }
+                  window.location.href = data.url;
+                } catch (urlErr) {
+                  if (urlErr.message === 'Unexpected redirect URL.') throw urlErr;
+                  throw new Error('Invalid response from payment server.');
+                }
+              }
+              resolve(data);
+            });
+          })
+          .catch(function (err) {
+            submitBtn.textContent = 'Continue to Checkout';
+            submitBtn.disabled = false;
+            errEl.textContent = err.message || 'Sign-in failed. Please try again.';
+            errEl.style.display = 'block';
+          });
+      }
+
+      submitBtn.addEventListener('click', doReauth);
+      pwInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') doReauth(); });
+      // Focus the password field after a brief delay
+      setTimeout(function () { pwInput.focus(); }, 100);
+    });
   }
 
   /* ══════════════════════════════════════════════════════════════════
@@ -1238,7 +1355,7 @@ var PhmurtDB = (function () {
     },
 
     startSubscription: function (returnUrl, interval) {
-      if (!_session) return Promise.reject(new Error('Not signed in.'));
+      if (!_session) return Promise.reject(new Error('Please sign in to subscribe.'));
       var sb = _sb();
       if (!sb) return Promise.reject(new Error('Supabase not configured.'));
 
@@ -1248,9 +1365,13 @@ var PhmurtDB = (function () {
 
       if (!checkoutUrl) return Promise.reject(new Error('Stripe checkout not configured.'));
 
+      var _self = this;
       return sb.auth.getSession().then(function (r) {
         var token = r.data && r.data.session && r.data.session.access_token;
-        if (!token) throw new Error('Your session needs to be refreshed. Please sign out and sign back in to subscribe.');
+        if (!token) {
+          // Legacy session without Supabase JWT — show re-auth prompt
+          return _showReauthPrompt(sb, returnUrl, interval);
+        }
 
         return fetch(checkoutUrl, {
           method: 'POST',
