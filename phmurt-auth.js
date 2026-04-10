@@ -1891,6 +1891,152 @@ window.addEventListener('storage', function (e) {
   ].join('\n');
   document.head.appendChild(upgradeStyle);
 
+  // ── Inline checkout: replaces upgrade modal body with password form ──
+  function _inlineCheckout(overlay, bodyEl, plan) {
+    var sb = _sb();
+    if (!sb) { window.location.href = 'pricing.html'; return; }
+    var sess = PhmurtDB.getSession();
+    if (!sess || !sess.email) { window.location.href = 'pricing.html'; return; }
+
+    // Check if we already have a JWT — skip password if so
+    sb.auth.getSession().then(function (r) {
+      var token = r.data && r.data.session && r.data.session.access_token;
+      if (token) {
+        // Already authenticated — go straight to Stripe
+        bodyEl.innerHTML =
+          '<div class="upgrade-icon" style="font-size:24px;">&#9203;</div>' +
+          '<h2 class="upgrade-title">Redirecting to Checkout…</h2>';
+        _doStripeCheckout(token, plan, overlay);
+        return;
+      }
+      // No JWT — show inline password form
+      bodyEl.innerHTML =
+        '<button class="upgrade-close" onclick="this.closest(\'.phmurt-upgrade-overlay\').remove()">&times;</button>' +
+        '<div class="upgrade-icon">&#128274;</div>' +
+        '<h2 class="upgrade-title">Confirm Identity</h2>' +
+        '<p class="upgrade-text">Enter your password to continue to checkout.</p>' +
+        '<input type="password" class="phmurt-inline-pw" placeholder="Password" ' +
+          'style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(212,67,58,0.2);border-radius:4px;color:#f5ede0;font-family:Spectral,serif;font-size:14px;margin-bottom:8px;text-align:center;outline:none;" />' +
+        '<p class="phmurt-inline-err" style="color:#ef4444;font-size:12px;margin:0 0 8px;display:none;"></p>' +
+        '<div class="phmurt-inline-reset-area"></div>' +
+        '<button class="upgrade-btn phmurt-inline-submit" style="width:100%;">Continue to Checkout</button>';
+
+      var pwInput = bodyEl.querySelector('.phmurt-inline-pw');
+      var errEl = bodyEl.querySelector('.phmurt-inline-err');
+      var submitBtn = bodyEl.querySelector('.phmurt-inline-submit');
+      var resetArea = bodyEl.querySelector('.phmurt-inline-reset-area');
+
+      function doSubmit() {
+        var pw = pwInput.value;
+        if (!pw) { errEl.textContent = 'Password is required.'; errEl.style.display = 'block'; return; }
+        errEl.style.display = 'none';
+        submitBtn.textContent = 'Signing in…';
+        submitBtn.disabled = true;
+
+        var email = sess.email;
+        var displayName = sess.name || sess.displayName || 'Adventurer';
+
+        sb.auth.signInWithPassword({ email: email, password: pw })
+          .then(function (r) {
+            if (r.error) throw new Error(r.error.message);
+            return r;
+          })
+          .catch(function (signInErr) {
+            if (signInErr.message && signInErr.message.indexOf('Invalid login credentials') !== -1) {
+              submitBtn.textContent = 'Creating cloud account…';
+              return sb.auth.signUp({ email: email, password: pw, options: { data: { name: displayName } } })
+                .then(function (sr) {
+                  if (sr.error) {
+                    if (sr.error.message && sr.error.message.indexOf('already registered') !== -1) {
+                      var e2 = new Error('Incorrect password.');
+                      e2._showReset = true;
+                      throw e2;
+                    }
+                    throw new Error(sr.error.message);
+                  }
+                  if (sr.data && sr.data.session) return sr;
+                  return sb.auth.signInWithPassword({ email: email, password: pw })
+                    .then(function (r2) { if (r2.error) throw new Error(r2.error.message); return r2; });
+                });
+            }
+            throw signInErr;
+          })
+          .then(function (r) {
+            var user = r.data.user;
+            return _fetchProfile(user.id).then(function (profile) {
+              _session = _makeSession(user, profile);
+              _fireChange();
+              return sb.auth.getSession();
+            });
+          })
+          .then(function (r) {
+            var token = r.data && r.data.session && r.data.session.access_token;
+            if (!token) throw new Error('Authentication failed. Please try again.');
+            submitBtn.textContent = 'Redirecting to checkout…';
+            _doStripeCheckout(token, plan, overlay);
+          })
+          .catch(function (err) {
+            submitBtn.textContent = 'Continue to Checkout';
+            submitBtn.disabled = false;
+            errEl.textContent = err.message || 'Sign-in failed.';
+            errEl.style.display = 'block';
+            if (err._showReset && !resetArea.querySelector('a')) {
+              var a = document.createElement('a');
+              a.href = '#';
+              a.textContent = 'Reset password';
+              a.style.cssText = 'color:#d4433a;font-size:12px;display:block;margin:6px 0 8px;text-decoration:underline;cursor:pointer;';
+              a.addEventListener('click', function (ev) {
+                ev.preventDefault();
+                a.textContent = 'Sending reset email…';
+                sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/reset-password.html' })
+                  .then(function () { a.textContent = 'Reset email sent! Check your inbox.'; a.style.color = '#5ee09a'; })
+                  .catch(function (re) { a.textContent = 'Error: ' + (re.message || 'Unknown'); });
+              });
+              resetArea.appendChild(a);
+            }
+          });
+      }
+
+      submitBtn.addEventListener('click', doSubmit);
+      pwInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSubmit(); });
+      setTimeout(function () { pwInput.focus(); }, 100);
+    });
+  }
+
+  // ── Stripe checkout redirect helper ──
+  function _doStripeCheckout(token, plan, overlay) {
+    var checkoutUrl = (typeof STRIPE_CHECKOUT_FUNCTION_URL !== 'undefined' && STRIPE_CHECKOUT_FUNCTION_URL)
+      ? STRIPE_CHECKOUT_FUNCTION_URL
+      : (typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL + '/functions/v1/stripe-checkout' : null);
+    if (!checkoutUrl) { alert('Stripe checkout not configured.'); return; }
+
+    fetch(checkoutUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ return_url: window.location.href, interval: (plan === 'yearly') ? 'yearly' : 'monthly' })
+    })
+    .then(function (resp) { return resp.json(); })
+    .then(function (data) {
+      if (data.error) throw new Error(data.error);
+      if (data.url) {
+        try {
+          var parsed = new URL(data.url);
+          if (parsed.protocol !== 'https:' || (parsed.hostname.indexOf('stripe.com') === -1 && parsed.hostname.indexOf('phmurtstudios.com') === -1)) {
+            throw new Error('Unexpected redirect URL.');
+          }
+          window.location.href = data.url;
+        } catch (urlErr) {
+          if (urlErr.message === 'Unexpected redirect URL.') throw urlErr;
+          throw new Error('Invalid response from payment server.');
+        }
+      }
+    })
+    .catch(function (err) {
+      if (overlay) overlay.remove();
+      alert('Could not start checkout: ' + (err.message || 'Unknown error'));
+    });
+  }
+
   // ── Upgrade prompt (shown when save fails due to limit) ────────
   window.addEventListener('phmurt-limit-reached', function (e) {
     var detail = e.detail || {};
@@ -1922,13 +2068,12 @@ window.addEventListener('storage', function (e) {
     // Close handlers
     document.getElementById('phmurt-upgrade-close').addEventListener('click', function () { overlay.remove(); });
     overlay.addEventListener('click', function (ev) { if (ev.target === overlay) overlay.remove(); });
-    // Subscribe handlers — redirect to pricing page for checkout
-    document.getElementById('phmurt-upgrade-monthly').addEventListener('click', function () {
-      window.location.href = 'pricing.html';
-    });
-    document.getElementById('phmurt-upgrade-yearly').addEventListener('click', function () {
-      window.location.href = 'pricing.html';
-    });
+    // Subscribe handlers — inline checkout flow
+    function _doUpgradeCheckout(plan) {
+      _inlineCheckout(overlay, overlay.querySelector('.upgrade-body'), plan);
+    }
+    document.getElementById('phmurt-upgrade-monthly').addEventListener('click', function () { _doUpgradeCheckout('monthly'); });
+    document.getElementById('phmurt-upgrade-yearly').addEventListener('click', function () { _doUpgradeCheckout('yearly'); });
   });
 
   // ── Global Feature Gate ─────────────────────────────────────────
@@ -1977,10 +2122,11 @@ window.addEventListener('storage', function (e) {
     document.getElementById('phmurt-gate-close').addEventListener('click', function () { overlay.remove(); });
     overlay.addEventListener('click', function (ev) { if (ev.target === overlay) overlay.remove(); });
 
-    // Subscribe buttons — redirect to pricing page for checkout
+    // Subscribe buttons — inline checkout flow
     overlay.querySelectorAll('.phmurt-gate-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
-        window.location.href = 'pricing.html';
+        var plan = btn.getAttribute('data-plan');
+        _inlineCheckout(overlay, overlay.querySelector('.upgrade-body'), plan);
       });
     });
 
