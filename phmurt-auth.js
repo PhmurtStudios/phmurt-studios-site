@@ -215,6 +215,16 @@ var PhmurtDB = (function () {
     });
   }
 
+  /* ══════════════════════════════════════════════════════════════════
+     LEGACY LOCAL-STORAGE FALLBACK
+     NOTE: These vars MUST be declared before _initSupabase runs,
+     because _initLegacy() reads LS_SESSION via _legacyGetSession().
+  ══════════════════════════════════════════════════════════════════ */
+  var LS_SESSION = 'phmurt_auth_session';
+  var LS_USERS   = 'phmurt_users_db';
+  var CK_SESSION = 'phmurt_sess';
+  var CK_USERS   = 'phmurt_udb';
+
   (function _initSupabase() {
     var sb = _sb();
     if (!sb) {
@@ -232,14 +242,6 @@ var PhmurtDB = (function () {
     }
     _runSupabaseInit(sb);
   })();
-
-  /* ══════════════════════════════════════════════════════════════════
-     LEGACY LOCAL-STORAGE FALLBACK
-  ══════════════════════════════════════════════════════════════════ */
-  var LS_SESSION = 'phmurt_auth_session';
-  var LS_USERS   = 'phmurt_users_db';
-  var CK_SESSION = 'phmurt_sess';
-  var CK_USERS   = 'phmurt_udb';
 
   function _setCk(n, v, d) {
     try {
@@ -1248,7 +1250,7 @@ var PhmurtDB = (function () {
 
       return sb.auth.getSession().then(function (r) {
         var token = r.data && r.data.session && r.data.session.access_token;
-        if (!token) throw new Error('No active session.');
+        if (!token) throw new Error('Your session needs to be refreshed. Please sign out and sign back in to subscribe.');
 
         return fetch(checkoutUrl, {
           method: 'POST',
