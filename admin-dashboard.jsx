@@ -156,13 +156,14 @@ function Modal({ title, children, onClose, footer }) {
 // ═══════════════════════════════
 function DashboardPage({ onNavigate }) {
   const { data: stats, loading, error } = useAdminQuery(async (db) => {
-    const today = new Date(); today.setHours(0,0,0,0);
+    // Use UTC midnight so "today" is consistent regardless of admin's local timezone
+    const todayUTC = new Date().toISOString().slice(0, 10) + 'T00:00:00.000Z';
     // Use regular GET with count instead of HEAD requests (HEAD returns 503 on some Supabase tiers)
     const [users, chars, camps, visits, recent] = await Promise.all([
       db.from('profiles').select('id', { count: 'exact' }).limit(0),
       db.from('characters').select('id', { count: 'exact' }).limit(0),
       Promise.resolve(db.from('campaigns').select('id', { count: 'exact' }).limit(0)).catch(() => ({ count: null, error: null })),
-      db.from('site_visits').select('id', { count: 'exact' }).limit(0).gte('visited_at', today.toISOString()),
+      db.from('site_visits').select('id', { count: 'exact' }).limit(0).gte('visited_at', todayUTC),
       db.from('profiles').select('id, name, email, created_at, is_admin, is_banned').order('created_at', { ascending: false }).limit(5),
     ]);
     if (users.error) throw users.error;
@@ -976,13 +977,14 @@ function TrafficPage() {
   const [showOnlySuspicious, setShowOnlySuspicious] = useState(false);
 
   const { data: visits, loading, error, refetch } = useAdminQuery(async (db) => {
-    const cutoff = new Date(Date.now() - (rangeDays * 24 * 60 * 60 * 1000)).toISOString();
+    // Fetch 2x the time range so we can compute trend vs previous window
+    const doubleCutoff = new Date(Date.now() - (rangeDays * 2 * 24 * 60 * 60 * 1000)).toISOString();
     const { data, error } = await db
       .from('site_visits')
-      .select('id, page, visited_at, user_id')
-      .gte('visited_at', cutoff)
+      .select('id, page, visited_at, user_id, session_id, user_agent, referrer')
+      .gte('visited_at', doubleCutoff)
       .order('visited_at', { ascending: false })
-      .limit(rangeDays >= 60 ? 5000 : 3000);
+      .limit(rangeDays >= 60 ? 10000 : 6000);
     if (error) throw error;
     return data || [];
   }, [rangeDays]);
@@ -1010,19 +1012,31 @@ function TrafficPage() {
 
   const stats = useMemo(() => {
     if (!visits) return {
-      byPage: {}, byDay: {}, byHour: {}, total: 0, uniqueUsers: 0, anonymous: 0,
-      suspiciousCount: 0, suspiciousByPath: {}, previousWindowTotal: 0, peakHour: null,
+      byPage: {}, byDay: {}, byHour: {}, total: 0, uniqueUsers: 0, uniqueVisitors: 0,
+      anonymous: 0, suspiciousCount: 0, suspiciousByPath: {}, previousWindowTotal: 0, peakHour: null,
     };
     const byPage = {}, byDay = {}, byHour = {}, suspiciousByPath = {};
     const userSet = new Set();
+    const sessionSet = new Set();
     const now = Date.now();
     const currentWindowMs = rangeDays * 24 * 60 * 60 * 1000;
-    const prevStart = now - (currentWindowMs * 2);
     const currStart = now - currentWindowMs;
+    let currentWindowTotal = 0;
     let previousWindowTotal = 0;
     let anonymous = 0;
     let suspiciousCount = 0;
+
     visits.forEach(v => {
+      const ts = Date.parse(v.visited_at || 0);
+      const inCurrentWindow = !isNaN(ts) && ts >= currStart;
+
+      // Count previous window visits for trend comparison
+      if (!isNaN(ts) && !inCurrentWindow) {
+        previousWindowTotal += 1;
+        return; // Don't include previous window visits in current stats
+      }
+
+      currentWindowTotal += 1;
       const p = normalizePath(v.page || '/');
       byPage[p] = (byPage[p] || 0) + 1;
       const d = (v.visited_at || '').slice(0, 10);
@@ -1031,20 +1045,22 @@ function TrafficPage() {
       if (hr) byHour[hr] = (byHour[hr] || 0) + 1;
       if (v.user_id) userSet.add(v.user_id);
       else anonymous += 1;
+      // Track unique visitors by session_id (works for both logged-in and anonymous)
+      if (v.session_id) sessionSet.add(v.session_id);
+      else if (v.user_id) sessionSet.add('u_' + v.user_id);
       if (isSuspiciousPath(p)) {
         suspiciousCount += 1;
         suspiciousByPath[p] = (suspiciousByPath[p] || 0) + 1;
       }
-      const ts = Date.parse(v.visited_at || 0);
-      if (!isNaN(ts) && ts >= prevStart && ts < currStart) previousWindowTotal += 1;
     });
     const peakHour = Object.entries(byHour).sort((a, b) => b[1] - a[1])[0] || null;
     return {
       byPage,
       byDay,
       byHour,
-      total: visits.length,
+      total: currentWindowTotal,
       uniqueUsers: userSet.size,
+      uniqueVisitors: sessionSet.size,
       anonymous: anonymous,
       suspiciousCount,
       suspiciousByPath,
@@ -1075,12 +1091,15 @@ function TrafficPage() {
       if (/^[=\-+@]/.test(s)) s = "'" + s; // Prevent CSV formula injection when opened in spreadsheets.
       return '"' + s.replace(/"/g, '""') + '"';
     }
-    const rows = [['id', 'page', 'visited_at', 'user_id']]
+    const rows = [['id', 'page', 'visited_at', 'user_id', 'session_id', 'user_agent', 'referrer']]
       .concat((visits || []).map(v => [
         csvSafe(v.id || ''),
         csvSafe(v.page || '/'),
         csvSafe(v.visited_at || ''),
         csvSafe(v.user_id || ''),
+        csvSafe(v.session_id || ''),
+        csvSafe(v.user_agent || ''),
+        csvSafe(v.referrer || ''),
       ]));
     const csv = rows.map(r => r.join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
@@ -1125,6 +1144,11 @@ function TrafficPage() {
 
       {!loading && !error && (
         <>
+          {visits && visits.length >= (rangeDays >= 60 ? 10000 : 6000) && (
+            <div style={{background:'rgba(212,67,58,0.08)',border:'1px solid rgba(212,67,58,0.25)',padding:'10px 16px',marginBottom:'16px',borderRadius:'6px',fontSize:'12px',color:'var(--text-muted)'}}>
+              <strong style={{color:'var(--danger)'}}>Data truncated:</strong> The query limit was reached. Stats below may be incomplete. Try selecting a shorter time range for accurate results.
+            </div>
+          )}
           <div className="stat-grid" style={{marginBottom:'24px'}}>
             <div className="stat-card">
               <div className="stat-label">Visits Tracked</div>
@@ -1142,9 +1166,9 @@ function TrafficPage() {
               <div className="stat-sub">Page loads since midnight</div>
             </div>
             <div className="stat-card">
-              <div className="stat-label">Logged Users</div>
-              <div className="stat-value">{stats.uniqueUsers}</div>
-              <div className="stat-sub">{stats.anonymous} anonymous visits</div>
+              <div className="stat-label">Unique Visitors</div>
+              <div className="stat-value">{stats.uniqueVisitors}</div>
+              <div className="stat-sub">{stats.uniqueUsers} logged in, {stats.anonymous} anonymous page loads</div>
             </div>
             <div className="stat-card">
               <div className="stat-label">Trend vs Prior Window</div>
@@ -1632,6 +1656,9 @@ create table if not exists public.site_visits (
   id         bigserial primary key,
   page       text,
   user_id    uuid,
+  session_id text,
+  user_agent text,
+  referrer   text,
   visited_at timestamptz default now()
 );
 alter table public.site_visits enable row level security;
@@ -1885,7 +1912,7 @@ function EngagementPage() {
       db.from('profiles').select('id, created_at').order('created_at', { ascending: false }).limit(2000).then(r => r.data || []).catch(() => []),
       db.from('characters').select('id, owner_id, created_at').order('created_at', { ascending: false }).limit(2000).then(r => r.data || []).catch(() => []),
       Promise.resolve(db.from('campaigns').select('id, owner_id, data, system, created_at').order('created_at', { ascending: false }).limit(1000)).then(r => r.data || []).catch(() => []),
-      db.from('site_visits').select('user_id, page, visited_at').gte('visited_at', cutoff).order('visited_at', { ascending: false }).limit(5000).then(r => r.data || []).catch(() => []),
+      db.from('site_visits').select('user_id, session_id, page, visited_at').gte('visited_at', cutoff).order('visited_at', { ascending: false }).limit(10000).then(r => r.data || []).catch(() => []),
     ]);
     return { profiles, chars, camps, visits };
   }, [rangeDays]);
@@ -1900,11 +1927,14 @@ function EngagementPage() {
     const signupsByDay = {};
     profiles.forEach(p => { const d = (p.created_at || '').slice(0, 10); if (d) signupsByDay[d] = (signupsByDay[d] || 0) + 1; });
 
-    // Active users (visited in range)
+    // Active users (visited in range) — count both logged-in users and unique sessions
     const activeUserIds = new Set();
+    const activeSessionIds = new Set();
     const visitsByPage = {};
     visits.forEach(v => {
       if (v.user_id) activeUserIds.add(v.user_id);
+      if (v.session_id) activeSessionIds.add(v.session_id);
+      else if (v.user_id) activeSessionIds.add('u_' + v.user_id);
       const p = v.page || '/';
       visitsByPage[p] = (visitsByPage[p] || 0) + 1;
     });
@@ -1954,7 +1984,7 @@ function EngagementPage() {
     const maxSignup = Math.max(1, ...recentSignups.map(([, v]) => v));
 
     return {
-      totalUsers, activeUsers: activeUserIds.size, churned,
+      totalUsers, activeUsers: activeUserIds.size, uniqueVisitors: activeSessionIds.size, churned,
       withChar, withCamp, withBoth,
       cohortList, systemCounts, avgPartySize,
       featurePages, recentSignups, maxSignup,
@@ -1980,7 +2010,8 @@ function EngagementPage() {
       {!loading && !error && stats && (<>
         <div className="stat-grid" style={{marginBottom:'20px'}}>
           <div className="stat-card"><div className="stat-label">Total Users</div><div className="stat-value">{stats.totalUsers}</div></div>
-          <div className="stat-card"><div className="stat-label">Active ({rangeDays}d)</div><div className="stat-value" style={{color:'#5ee09a'}}>{stats.activeUsers}</div></div>
+          <div className="stat-card"><div className="stat-label">Active Users ({rangeDays}d)</div><div className="stat-value" style={{color:'#5ee09a'}}>{stats.activeUsers}</div><div className="stat-sub">Logged-in users who visited</div></div>
+          <div className="stat-card"><div className="stat-label">Unique Visitors ({rangeDays}d)</div><div className="stat-value">{stats.uniqueVisitors}</div><div className="stat-sub">All visitors incl. anonymous</div></div>
           <div className="stat-card"><div className="stat-label">Churned</div><div className="stat-value" style={{color:'var(--text-muted)'}}>{stats.churned}</div></div>
           <div className="stat-card"><div className="stat-label">Avg Party Size</div><div className="stat-value">{stats.avgPartySize}</div></div>
         </div>

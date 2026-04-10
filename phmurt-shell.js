@@ -642,13 +642,13 @@
         animation: slideUp 0.3s ease-out;
       " id="cookie-banner-content">
         <span id="cookie-banner-title" style="flex: 1; min-width: 300px;">
-          This site uses cookies and local storage for authentication, preferences, and functionality. See our <a href="privacy.html" style="color: #d4a574; text-decoration: underline; cursor: pointer;">Privacy Policy</a> for details.
+          This site uses cookies and local storage for authentication, preferences, and functionality. See our <a href="privacy.html" style="color: var(--crimson); text-decoration: underline; cursor: pointer;">Privacy Policy</a> for details.
         </span>
         <div style="display: flex; gap: 12px; flex-wrap: wrap; min-width: fit-content;">
           <button id="cookie-accept-btn" style="
-            background-color: #8b6f47;
+            background-color: var(--crimson-dim);
             color: white;
-            border: 1px solid #a08560;
+            border: 1px solid var(--crimson-border);
             padding: 8px 20px;
             border-radius: 4px;
             font-family: Spectral, serif;
@@ -658,8 +658,8 @@
           " type="button">Accept</button>
           <button id="cookie-decline-btn" style="
             background-color: transparent;
-            color: #d4a574;
-            border: 1px solid #d4a574;
+            color: var(--crimson);
+            border: 1px solid var(--crimson);
             padding: 8px 20px;
             border-radius: 4px;
             font-family: Spectral, serif;
@@ -681,11 +681,11 @@
           }
         }
         #cookie-accept-btn:hover {
-          background-color: #9d8559;
+          background-color: var(--crimson);
         }
         #cookie-decline-btn:hover {
-          background-color: rgba(212, 165, 116, 0.1);
-          border-color: #e8b88a;
+          background-color: rgba(212, 67, 58, 0.1);
+          border-color: #d45a4d;
         }
       </style>
     `;
@@ -749,19 +749,63 @@
   /* ── Page visit tracking ─────────────────────────────────────────────
      Logs the current page to the Supabase `site_visits` table.
      Fires after DOMContentLoaded so supabase-config.js has run.
-     Silently skips if Supabase is not configured.                    ── */
+     Silently skips if Supabase is not configured.
+
+     Tracks: full page path, user_id, anonymous session_id,
+     user_agent, and referrer for proper analytics.
+
+     Debounces: skips if the same page was logged within 5 seconds
+     (prevents refresh-spam and bot inflation).                       ── */
+  var _lastVisitPage = null;
+  var _lastVisitTime = 0;
+
+  // Generate or retrieve a session ID for anonymous visitor tracking
+  function _getSessionId() {
+    try {
+      var key = 'phmurt_visitor_sid';
+      var existing = sessionStorage.getItem(key);
+      if (existing) return existing;
+      // Simple random ID — unique per browser tab session
+      var sid = 'v_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+      sessionStorage.setItem(key, sid);
+      return sid;
+    } catch(e) { return null; }
+  }
+
   function trackPageVisit() {
     try {
       var sb = (typeof phmurtSupabase !== 'undefined') ? phmurtSupabase : null;
       if (!sb) return;
-      var page = window.location.pathname.split('/').pop() || 'index.html';
+
+      // Full pathname (preserves directory context: /tools/dice.html not just dice.html)
+      var page = window.location.pathname || '/';
+      // Normalize: strip trailing slash except for root, lowercase
+      if (page.length > 1 && page.charAt(page.length - 1) === '/') page = page.slice(0, -1);
+
+      // Debounce: skip if same page logged within 5 seconds
+      var now = Date.now();
+      if (page === _lastVisitPage && (now - _lastVisitTime) < 5000) return;
+      _lastVisitPage = page;
+      _lastVisitTime = now;
+
+      // Get logged-in user ID
       var userId = null;
       try {
         var raw = localStorage.getItem('phmurt_auth_session');
         var sess = raw ? JSON.parse(raw) : null;
         if (sess && sess.userId) userId = sess.userId;
       } catch(e) {}
-      sb.from('site_visits').insert({ page: page, user_id: userId || null }).then(function() {}).catch(function() {});
+
+      // Build visit record with full context
+      var record = {
+        page:       page,
+        user_id:    userId || null,
+        session_id: _getSessionId(),
+        user_agent: (navigator.userAgent || '').slice(0, 512),
+        referrer:   (document.referrer || '').slice(0, 1024)
+      };
+
+      sb.from('site_visits').insert(record).then(function() {}).catch(function() {});
     } catch(e) {}
   }
 
