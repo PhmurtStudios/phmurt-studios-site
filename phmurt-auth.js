@@ -579,7 +579,7 @@ var PhmurtDB = (function () {
           .then(function (r) {
             var token = r.data && r.data.session && r.data.session.access_token;
             if (!token) throw new Error('Authentication failed. Please try again.');
-            cleanup();
+            submitBtn.textContent = 'Starting checkout…';
             // Now proceed with the actual checkout via Supabase functions.invoke
             return sb.functions.invoke('stripe-checkout', {
               body: {
@@ -595,6 +595,7 @@ var PhmurtDB = (function () {
                 if (parsed.protocol !== 'https:' || (parsed.hostname.indexOf('stripe.com') === -1 && parsed.hostname.indexOf('phmurtstudios.com') === -1)) {
                   throw new Error('Unexpected redirect URL.');
                 }
+                cleanup();
                 window.location.href = data.url;
               } catch (urlErr) {
                 if (urlErr.message === 'Unexpected redirect URL.') throw urlErr;
