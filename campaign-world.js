@@ -3909,7 +3909,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
 
             {/* Zoom level indicator + Atlas import button */}
             <div style={{ position:"absolute", top:12, right:12, display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6, zIndex:10 }}>
-              <div style={{ padding:"6px 14px", background:"rgba(8,8,10,0.82)", border:"1px solid var(--border)", borderRadius:"4px", fontFamily:"'Cinzel', serif", fontSize:8, color:"var(--text-muted)", letterSpacing:"2.5px", textTransform:"uppercase", boxShadow:"0 4px 20px rgba(0,0,0,0.4)", backdropFilter:"blur(8px)", pointerEvents:"none" }}>
+              <div style={{ padding:"6px 14px", background:"rgba(8,8,10,0.82)", border:"1px solid var(--border)", borderRadius:"4px", fontFamily:T.ui, fontSize:8, color:"var(--text-muted)", letterSpacing:"2.5px", textTransform:"uppercase", boxShadow:"0 4px 20px rgba(0,0,0,0.4)", backdropFilter:"blur(8px)", pointerEvents:"none" }}>
                 {zoomLevel} view
               </div>
               {isDM && (
@@ -3926,7 +3926,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                           setData(d => { const { atlasMapSeed, generatedAtlas, ...rest } = d; return { ...rest, regions: [], factions: [], npcs: [], cities: [], pois: [], activity: [{ time: "Just now", text: "Reverted to default map" }] }; });
                         }
                       }}
-                      style={{ padding:"4px 8px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(232,186,64,0.25)", borderRadius:"4px", fontFamily:"'Cinzel', serif", fontSize:9, color:T.gold, outline:"none", cursor:"pointer", letterSpacing:"1px" }}
+                      style={{ padding:"4px 8px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(232,186,64,0.25)", borderRadius:"4px", fontFamily:T.ui, fontSize:9, color:T.gold, outline:"none", cursor:"pointer", letterSpacing:"1px" }}
                     >
                       {Array.from({length:100}, (_,i) => i+1).map(s => {
                         return <option key={s} value={s}>{`World Seed ${s}`}</option>;
@@ -3937,7 +3937,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       const next = (current % 100) + 1;
                       // Just update the seed — the useEffect will regenerate map + all world data
                       setData(d => ({ ...d, atlasMapSeed: String(next) }));
-                    }} style={{ padding:"5px 12px", background:"rgba(30,26,22,0.85)", backdropFilter:"blur(8px)", border:"1px solid rgba(232,186,64,0.35)", borderRadius:"4px", fontFamily:"'Cinzel', serif", fontSize:9, color:T.questGold, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", boxShadow:"0 2px 10px rgba(0,0,0,0.3)", transition:"all 0.2s", whiteSpace:"nowrap" }}
+                    }} style={{ padding:"5px 12px", background:"rgba(30,26,22,0.85)", backdropFilter:"blur(8px)", border:"1px solid rgba(232,186,64,0.35)", borderRadius:"4px", fontFamily:T.ui, fontSize:9, color:T.questGold, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", boxShadow:"0 2px 10px rgba(0,0,0,0.3)", transition:"all 0.2s", whiteSpace:"nowrap" }}
                       onMouseEnter={e => { e.target.style.borderColor = "rgba(232,186,64,0.7)"; e.target.style.color = "#f5d66a"; }}
                       onMouseLeave={e => { e.target.style.borderColor = "rgba(232,186,64,0.35)"; e.target.style.color = "#e8ba40"; }}
                       title="Generate a new world with the next seed"
@@ -3968,14 +3968,14 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                   }}
                 >
                   <span style={{ width:8, height:8, borderRadius:"50%", background: lwActive ? T.green : T.textFaint, boxShadow: lwActive ? "0 0 8px rgba(74,222,128,0.6)" : "none", transition:"all 0.3s" }} />
-                  <span style={{ fontFamily:"'Cinzel', serif", fontSize:10, color: lwActive ? T.green : T.gold, letterSpacing:"1.5px", textTransform:"uppercase" }}>
+                  <span style={{ fontFamily:T.ui, fontSize:10, color: lwActive ? T.green : T.gold, letterSpacing:"1.5px", textTransform:"uppercase" }}>
                     {lwActive ? "World Live" : "Living World"}
                   </span>
                 </button>
                 {lwActive && (
                   <div style={{ display:"flex", gap:4 }}>
                     <select value={lwSpeed} onChange={e => { setLwSpeed(Number(e.target.value)); if (lwActive) { setLwActive(false); setTimeout(() => setLwActive(true), 100); } }}
-                      style={{ padding:"3px 6px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:"'Cinzel', serif", fontSize:8, color:T.gold, outline:"none", cursor:"pointer" }}>
+                      style={{ padding:"3px 6px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:T.ui, fontSize:8, color:T.gold, outline:"none", cursor:"pointer" }}>
                       <option value={30}>Fast (30s)</option>
                       <option value={60}>Normal (60s)</option>
                       <option value={90}>Slow (90s)</option>
@@ -3984,15 +3984,15 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       <option value={600}>Very Slow (10m)</option>
                     </select>
                     <button onClick={() => setLwShowLog(v => !v)}
-                      style={{ padding:"3px 10px", background: lwShowLog ? "rgba(201,168,92,0.2)" : "rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:"'Cinzel', serif", fontSize:8, color:T.gold, cursor:"pointer", letterSpacing:"1px" }}>
+                      style={{ padding:"3px 10px", background: lwShowLog ? "rgba(201,168,92,0.2)" : "rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:T.ui, fontSize:8, color:T.gold, cursor:"pointer", letterSpacing:"1px" }}>
                       {lwShowLog ? "Hide Log" : "Event Log"} ({lwLog.length})
                     </button>
                     <button onClick={() => setLwTimeSkipOpen(v => !v)}
-                      style={{ padding:"3px 10px", background: lwTimeSkipOpen ? "rgba(201,168,92,0.2)" : "rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:"'Cinzel', serif", fontSize:8, color:T.gold, cursor:"pointer", letterSpacing:"1px" }}>
+                      style={{ padding:"3px 10px", background: lwTimeSkipOpen ? "rgba(201,168,92,0.2)" : "rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:T.ui, fontSize:8, color:T.gold, cursor:"pointer", letterSpacing:"1px" }}>
                       ⏭ Skip Forward
                     </button>
                     <button onClick={() => { setLwPartyActionsOpen(v => !v); setLwTimeSkipOpen(false); }}
-                      style={{ padding:"3px 10px", background: lwPartyActionsOpen ? "rgba(201,100,60,0.2)" : "rgba(30,26,22,0.9)", border: lwPartyActionsOpen ? "1px solid rgba(201,100,60,0.4)" : "1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:"'Cinzel', serif", fontSize:8, color: lwPartyActionsOpen ? T.orange : T.gold, cursor:"pointer", letterSpacing:"1px" }}>
+                      style={{ padding:"3px 10px", background: lwPartyActionsOpen ? "rgba(201,100,60,0.2)" : "rgba(30,26,22,0.9)", border: lwPartyActionsOpen ? "1px solid rgba(201,100,60,0.4)" : "1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:T.ui, fontSize:8, color: lwPartyActionsOpen ? T.orange : T.gold, cursor:"pointer", letterSpacing:"1px" }}>
                       ⚔ Party Actions
                     </button>
                   </div>
@@ -4006,7 +4006,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                 position:"absolute", top:140, left:12, background:"rgba(20,18,14,0.98)", border:"1px solid rgba(201,168,92,0.25)",
                 borderRadius:"6px", zIndex:30, minWidth:140, boxShadow:"0 8px 24px rgba(0,0,0,0.6)"
               }}>
-                <div style={{ padding:"8px 0", fontSize:9, fontFamily:"'Cinzel', serif", color:T.gold, letterSpacing:"1px" }}>
+                <div style={{ padding:"8px 0", fontSize:9, fontFamily:T.ui, color:T.gold, letterSpacing:"1px" }}>
                   {[
                     { label: "1 Week", events: 3 },
                     { label: "1 Month", events: 12 },
@@ -4021,7 +4021,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       style={{
                         display:"block", width:"100%", padding:"8px 12px", textAlign:"left",
                         background:"transparent", border:"none", color:T.gold, cursor:"pointer",
-                        fontFamily:"'Cinzel', serif", fontSize:9, letterSpacing:"0.5px",
+                        fontFamily:T.ui, fontSize:9, letterSpacing:"0.5px",
                         borderBottom:"1px solid rgba(201,168,92,0.1)", transition:"all 0.2s"
                       }}
                       onMouseEnter={e => e.target.style.background = "rgba(201,168,92,0.15)"}
@@ -4034,7 +4034,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     <input type="number" min="1" max="365" defaultValue="7" id="customSkipEvents"
                       style={{
                         flex:1, padding:"3px 6px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.2)",
-                        borderRadius:"3px", color:T.gold, fontFamily:"'Cinzel', serif", fontSize:8, outline:"none"
+                        borderRadius:"3px", color:T.gold, fontFamily:T.ui, fontSize:8, outline:"none"
                       }} />
                     <button onClick={() => {
                       const num = parseInt(document.getElementById("customSkipEvents")?.value || "7");
@@ -4045,7 +4045,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     }}
                       style={{
                         padding:"3px 8px", background:"rgba(201,168,92,0.2)", border:"1px solid rgba(201,168,92,0.4)",
-                        borderRadius:"3px", color:T.gold, cursor:"pointer", fontFamily:"'Cinzel', serif", fontSize:7,
+                        borderRadius:"3px", color:T.gold, cursor:"pointer", fontFamily:T.ui, fontSize:7,
                         letterSpacing:"0.5px", textTransform:"uppercase"
                       }}
                     >
@@ -4064,7 +4064,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                 maxHeight:"60vh", display:"flex", flexDirection:"column",
               }}>
                 <div style={{ padding:"12px 16px", borderBottom:"1px solid rgba(201,100,60,0.15)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-                  <div style={{ fontSize:11, color:T.orange, fontFamily:"'Cinzel', serif", letterSpacing:"1px" }}>Party Actions</div>
+                  <div style={{ fontSize:11, color:T.orange, fontFamily:T.ui, letterSpacing:"1px" }}>Party Actions</div>
                   <button onClick={() => setLwPartyActionsOpen(false)} style={{ background:"none", border:"none", color:T.textMuted, cursor:"pointer", fontSize:14, padding:"0 4px" }}>×</button>
                 </div>
                 <div style={{ padding:"8px 12px", fontSize:9, color:T.textMuted, lineHeight:1.5, borderBottom:"1px solid rgba(201,100,60,0.1)" }}>
@@ -4086,7 +4086,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       >
                         <span style={{ fontSize:18, lineHeight:1, flexShrink:0 }}>{action.icon}</span>
                         <div>
-                          <div style={{ fontSize:10, color:T.orange, fontFamily:"'Cinzel', serif", letterSpacing:"0.5px", marginBottom:2 }}>{action.label}</div>
+                          <div style={{ fontSize:10, color:T.orange, fontFamily:T.ui, letterSpacing:"0.5px", marginBottom:2 }}>{action.label}</div>
                           <div style={{ fontSize:9, color:T.textMuted, lineHeight:1.4 }}>{action.description}</div>
                         </div>
                       </button>
@@ -4103,9 +4103,9 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       return (
                         <div>
                           <div style={{ padding:"8px 16px", display:"flex", alignItems:"center", gap:8, borderBottom:"1px solid rgba(201,100,60,0.1)" }}>
-                            <button onClick={() => setLwActionTarget(null)} style={{ background:"none", border:"none", color:T.textMuted, cursor:"pointer", fontSize:10, fontFamily:"'Cinzel', serif" }}>← Back</button>
+                            <button onClick={() => setLwActionTarget(null)} style={{ background:"none", border:"none", color:T.textMuted, cursor:"pointer", fontSize:10, fontFamily:T.ui }}>← Back</button>
                             <span style={{ fontSize:14 }}>{action.icon}</span>
-                            <span style={{ fontSize:10, color:T.orange, fontFamily:"'Cinzel', serif", letterSpacing:"0.5px" }}>{action.label}</span>
+                            <span style={{ fontSize:10, color:T.orange, fontFamily:T.ui, letterSpacing:"0.5px" }}>{action.label}</span>
                           </div>
                           {!readyToExecute && (
                             <div style={{ padding:"8px 16px" }}>
@@ -4133,7 +4133,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                                   onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                                 >
                                   <span style={{ width:10, height:10, borderRadius:"50%", background: f.color || T.textFaint, flexShrink:0, border:"1px solid rgba(255,255,255,0.2)" }} />
-                                  <span style={{ fontSize:10, color:T.gold, fontFamily:"'Cinzel', serif" }}>{f.name}</span>
+                                  <span style={{ fontSize:10, color:T.gold, fontFamily:T.ui }}>{f.name}</span>
                                   <span style={{ fontSize:8, color:T.textMuted, marginLeft:"auto" }}>Power: {f.power}</span>
                                 </button>
                               ))}
@@ -4159,7 +4159,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                                 }}
                                 style={{
                                   width:"100%", padding:"10px 16px", background:"rgba(201,100,60,0.2)", border:"1px solid rgba(201,100,60,0.4)",
-                                  borderRadius:"4px", color:T.orange, cursor:"pointer", fontFamily:"'Cinzel', serif", fontSize:10,
+                                  borderRadius:"4px", color:T.orange, cursor:"pointer", fontFamily:T.ui, fontSize:10,
                                   letterSpacing:"1px", textTransform:"uppercase", transition:"all 0.2s",
                                 }}
                                 onMouseEnter={e => e.target.style.background = "rgba(201,100,60,0.35)"}
@@ -4181,7 +4181,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
             {isLive && lwTimeSkipProgress && (
               <div style={{
                 position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"center", justifyContent:"center",
-                zIndex:40, fontFamily:"'Cinzel', serif"
+                zIndex:40, fontFamily:T.ui
               }}>
                 <div style={{
                   background:"rgba(20,18,14,0.98)", border:"2px solid rgba(201,168,92,0.5)", borderRadius:"8px",
@@ -4211,7 +4211,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
             {isLive && lwTimeSkipSummary && (
               <div style={{
                 position:"fixed", inset:0, background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"center", justifyContent:"center",
-                zIndex:40, fontFamily:"'Cinzel', serif", padding:20
+                zIndex:40, fontFamily:T.ui, padding:20
               }}>
                 <div style={{
                   background:"rgba(20,18,14,0.98)", border:"2px solid rgba(201,168,92,0.4)", borderRadius:"8px",
@@ -4250,7 +4250,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     }}
                       style={{
                         padding:"8px 16px", background:"rgba(201,168,92,0.2)", border:"1px solid rgba(201,168,92,0.4)",
-                        borderRadius:"4px", color:T.gold, cursor:"pointer", fontFamily:"'Cinzel', serif", fontSize:9,
+                        borderRadius:"4px", color:T.gold, cursor:"pointer", fontFamily:T.ui, fontSize:9,
                         letterSpacing:"1px", textTransform:"uppercase", transition:"all 0.2s"
                       }}
                       onMouseEnter={e => e.target.style.background = "rgba(201,168,92,0.35)"}
@@ -4261,7 +4261,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     <button onClick={() => setLwTimeSkipSummary(null)}
                       style={{
                         padding:"8px 16px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.25)",
-                        borderRadius:"4px", color:T.gold, cursor:"pointer", fontFamily:"'Cinzel', serif", fontSize:9,
+                        borderRadius:"4px", color:T.gold, cursor:"pointer", fontFamily:T.ui, fontSize:9,
                         letterSpacing:"1px", textTransform:"uppercase", transition:"all 0.2s"
                       }}
                       onMouseEnter={e => e.target.style.background = "rgba(201,168,92,0.1)"}
@@ -4293,7 +4293,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     }}>
                       <span style={{ fontSize:20, lineHeight:1, flexShrink:0 }}>{evt.icon}</span>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:12, fontWeight:500, color: i === 0 ? T.text : T.textMuted, fontFamily:"'Cinzel', serif", letterSpacing:"0.3px" }}>{evt.headline}</div>
+                        <div style={{ fontSize:12, fontWeight:500, color: i === 0 ? T.text : T.textMuted, fontFamily:T.ui, letterSpacing:"0.3px" }}>{evt.headline}</div>
                         <div style={{ fontSize:10, color:T.textMuted, lineHeight:1.5, marginTop:3, overflow:"hidden", textOverflow:"ellipsis", display:"-webkit-box", WebkitLineClamp: i === 0 ? 3 : 1, WebkitBoxOrient:"vertical" }}>{evt.detail}</div>
                       </div>
                       <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:2, flexShrink:0 }}>
@@ -4320,7 +4320,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
               }}>
                 <div style={{ padding:"16px 20px", borderBottom:"1px solid rgba(201,168,92,0.15)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                   <div>
-                    <div style={{ fontSize:14, color:T.text, fontFamily:"'Cinzel', serif", letterSpacing:"1px" }}>World Events</div>
+                    <div style={{ fontSize:14, color:T.text, fontFamily:T.ui, letterSpacing:"1px" }}>World Events</div>
                     <div style={{ fontSize:9, color:T.textMuted, marginTop:2 }}>{lwLog.length} events this session</div>
                   </div>
                   <button onClick={() => setLwShowLog(false)} style={{ background:"none", border:"none", color:T.textMuted, cursor:"pointer", fontSize:18, padding:"2px 6px" }}>×</button>
@@ -4346,7 +4346,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     }}>
                       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:4 }}>
                         <span style={{ fontSize:16 }}>{evt.icon}</span>
-                        <span style={{ fontSize:11, fontWeight:500, color:T.text, fontFamily:"'Cinzel', serif", flex:1 }}>{evt.headline}</span>
+                        <span style={{ fontSize:11, fontWeight:500, color:T.text, fontFamily:T.ui, flex:1 }}>{evt.headline}</span>
                         <span style={{ fontSize:8, color:T.textMuted }}>#{evt.tickNumber}</span>
                       </div>
                       <div style={{ fontSize:10, color:T.textMuted, lineHeight:1.5 }}>{evt.detail}</div>
@@ -4398,7 +4398,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
               }}>
                 <MapPin size={14} color="#4a6b52" />
                 <div style={{ minWidth:0 }}>
-                  <div style={{ fontFamily:"'Cinzel', serif", fontSize:10, letterSpacing:"1.4px", textTransform:"uppercase", color:T.textMuted, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                  <div style={{ fontFamily:T.ui, fontSize:10, letterSpacing:"1.4px", textTransform:"uppercase", color:T.textMuted, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
                     {activeRoute
                       ? `${activeRoute.from.name} -> ${activeRoute.to.name}`
                       : (routeDraft.fromId || routeDraft.toId)
@@ -4465,7 +4465,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       borderLeft:`4px solid ${fc}`, borderRadius:"4px", border:`1px solid ${T.border}`,
                     }}>
                       <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
-                        <span style={{ fontSize:22, fontWeight:400, color:T.text, fontFamily:"'Cinzel', serif", letterSpacing:"0.5px" }}>{c.name}</span>
+                        <span style={{ fontSize:22, fontWeight:400, color:T.text, fontFamily:T.ui, letterSpacing:"0.5px" }}>{c.name}</span>
                         <span style={{ fontSize:9, color:c.isCapital?T.gold:T.textMuted, border:`1px solid ${c.isCapital?"rgba(201,168,92,0.3)":"rgba(154,144,128,0.3)"}`, padding:"2px 8px", borderRadius:"2px", letterSpacing:"1px" }}>{c.isCapital?"CAPITAL":"SETTLEMENT"}</span>
                       </div>
                       <div style={{ fontSize:12, color:T.textMuted, marginBottom:8 }}>{c.region} · {c.faction} · Pop. {c.population}</div>
@@ -4480,7 +4480,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     <div style={{ padding:"20px 24px", marginBottom:16, background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px" }}>
                       <div style={{ fontSize:10, color:T.textFaint, letterSpacing:"2px", textTransform:"uppercase", marginBottom:12 }}>Tavern & Inn</div>
                       <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:10 }}>
-                        <span style={{ fontSize:16, fontWeight:400, color:T.text, fontFamily:"'Spectral', serif" }}>{c.tavern.name}</span>
+                        <span style={{ fontSize:16, fontWeight:400, color:T.text, fontFamily:T.body }}>{c.tavern.name}</span>
                         <span style={{ fontSize:11, color:T.textFaint }}>— Innkeeper: {c.tavern.innkeeper} ({c.tavern.innkeeperPersonality})</span>
                       </div>
                       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:8, marginBottom:12 }}>
@@ -4524,7 +4524,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                                   <tr key={ii} style={{ borderTop:`1px solid ${T.border}`, opacity:item.inStock?1:0.4 }}>
                                     <td style={{ padding:"8px 16px", color:T.text }}>{item.name}</td>
                                     <td style={{ padding:"8px 12px", textAlign:"center" }}>
-                                      <span style={{ fontSize:10, color:item.rarity==="rare"?"#8b50f0":item.rarity==="uncommon"?T.green:T.textFaint, fontStyle:"italic" }}>{item.rarity}</span>
+                                      <span style={{ fontSize:10, color:item.rarity==="rare"?T.gold:item.rarity==="uncommon"?T.green:T.textFaint, fontStyle:"italic" }}>{item.rarity}</span>
                                     </td>
                                     <td style={{ padding:"8px 12px", textAlign:"right", color:T.gold, fontFamily:T.ui }}>{item.price}</td>
                                     <td style={{ padding:"8px 12px", textAlign:"center", color:item.inStock?T.textMuted:T.crimson, fontSize:11 }}>{item.inStock?("×"+item.qty):"Out"}</td>
@@ -4607,7 +4607,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                             </div>
                             <div style={{ flex:1 }}>
                               <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:2 }}>
-                                <span style={{ fontSize:18, fontWeight:400, color:T.text, fontFamily:"'Cinzel', serif", letterSpacing:"0.5px" }}>{r.name}</span>
+                                <span style={{ fontSize:18, fontWeight:400, color:T.text, fontFamily:T.ui, letterSpacing:"0.5px" }}>{r.name}</span>
                                 {r.type && <span style={{ fontSize:9, color:fc, border:`1px solid ${fc}44`, padding:"2px 8px", borderRadius:"2px", letterSpacing:"1.2px", textTransform:"uppercase" }}>{r.type}</span>}
                               </div>
                               {r.subtitle && <div style={{ fontSize:11, color:T.textFaint, fontStyle:"italic", marginBottom:6, fontWeight:300 }}>{r.subtitle}</div>}
@@ -4632,7 +4632,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                               </div>
                               <button onClick={(e) => { e.stopPropagation(); setTab("map"); setCityRegionFocus(r.name); }} style={{
                                 padding:"4px 10px", background:`${fc}18`, border:`1px solid ${fc}44`, borderRadius:"3px",
-                                color:fc, fontFamily:"'Cinzel', serif", fontSize:8, letterSpacing:"1px",
+                                color:fc, fontFamily:T.ui, fontSize:8, letterSpacing:"1px",
                                 textTransform:"uppercase", cursor:"pointer",
                               }}>◎ Map</button>
                             </div>
@@ -5065,7 +5065,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                   {/* Stats banner */}
                   <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                     {[
-                      { label: "Major Powers", val: majorFactions.length, color: "#c9a85c" },
+                      { label: "Major Powers", val: majorFactions.length, color: T.gold },
                       { label: "Organizations", val: subFactions.length, color: "#6a0dad" },
                       { label: "Total Factions", val: allFactions.length, color: T.crimson },
                     ].map((s, i) => (
@@ -5190,7 +5190,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
 
               /* ── role → icon + color mapping ── */
               const RANK_ICON_MAP = {
-                ruler:    { Icon: Crown,    color: "#c9a85c" },
+                ruler:    { Icon: Crown,    color: T.gold },
                 heir:     { Icon: Crown,    color: "#a08944" },
                 general:  { Icon: Swords,   color: "#dc143c" },
                 advisor:  { Icon: Eye,      color: "#58aaff" },
@@ -5243,7 +5243,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                           </div>
                         )}
                         {isDM && n.secret && (
-                          <div style={{ fontSize: 10, color: "#8b50f0", marginTop: 6, fontStyle: "italic", opacity: 0.8 }}>
+                          <div style={{ fontSize: 10, color: T.gold, marginTop: 6, fontStyle: "italic", opacity: 0.8 }}>
                             Secret: {n.secret}
                           </div>
                         )}
@@ -5363,7 +5363,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       {townImagesReady && window.TOWN_IMAGES && window.TOWN_IMAGES[c.name] && (
                         <button onClick={() => { setTownView(c.name); setTownSelBldg(null); setTownHovBldg(null); setTownZoom(0); setTownPan({x:0,y:0}); }} style={{
                           display: "flex", alignItems: "center", gap: 6, padding: "8px 14px",
-                          background: "linear-gradient(135deg, rgba(201,168,92,0.15), transparent)", border: `1px solid rgba(201,168,92,0.4)`, borderRadius: "3px", color: "#c9a85c",
+                          background: "linear-gradient(135deg, rgba(201,168,92,0.15), transparent)", border: `1px solid rgba(201,168,92,0.4)`, borderRadius: "3px", color: T.gold,
                           fontFamily: T.ui, fontSize: 10, letterSpacing: "1.5px", textTransform: "uppercase", cursor: "pointer",
                         }}>⬡ Explore Town</button>
                       )}
@@ -5438,7 +5438,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                                     <tr key={ii} style={{ borderTop: `1px solid ${T.border}`, opacity: item.inStock ? 1 : 0.4 }}>
                                       <td style={{ padding: "8px 16px", color: T.text }}>{item.name}</td>
                                       <td style={{ padding: "8px 12px", textAlign: "center" }}>
-                                        <span style={{ fontSize: 10, color: item.rarity === "rare" ? "#8b50f0" : item.rarity === "uncommon" ? T.green : T.textFaint, fontStyle: "italic" }}>{item.rarity}</span>
+                                        <span style={{ fontSize: 10, color: item.rarity === "rare" ? T.gold : item.rarity === "uncommon" ? T.green : T.textFaint, fontStyle: "italic" }}>{item.rarity}</span>
                                       </td>
                                       <td style={{ padding: "8px 12px", textAlign: "right", color: T.gold, fontFamily: T.ui }}>{item.price}</td>
                                       <td style={{ padding: "8px 12px", textAlign: "center", color: item.inStock ? T.textMuted : T.crimson, fontSize: 11 }}>{item.inStock ? `×${item.qty}` : "Out"}</td>
@@ -5963,7 +5963,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       {sel.faction && <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Faction: <span style={{color:T.textDim}}>{sel.faction}</span></div>}
                       <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Status: <span style={{color: sel.alive ? T.green : T.crimson}}>{sel.alive?"Alive":"Deceased"}</span></div>
                       {sel.traits && sel.traits.length > 0 && <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Traits: <span style={{color:T.textDim, fontStyle:"italic"}}>{sel.traits.join(", ")}</span></div>}
-                      {isDM && sel.secret && <div style={{ fontSize:12, color:"#8b50f0", marginTop:6, fontStyle:"italic" }}>Secret: {sel.secret}</div>}
+                      {isDM && sel.secret && <div style={{ fontSize:12, color:T.gold, marginTop:6, fontStyle:"italic" }}>Secret: {sel.secret}</div>}
                     </>}
                   </div>
                 ))}
@@ -6147,7 +6147,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       borderLeft:`4px solid ${tCol}`, borderRadius:"4px", border:`1px solid ${T.border}`,
                     }}>
                       <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
-                        <span style={{ fontSize:22, fontWeight:400, color:T.text, fontFamily:"'Cinzel', serif", letterSpacing:"0.5px" }}>{p.name}</span>
+                        <span style={{ fontSize:22, fontWeight:400, color:T.text, fontFamily:T.ui, letterSpacing:"0.5px" }}>{p.name}</span>
                       </div>
                       <div style={{ display:"flex", gap:8, alignItems:"center", marginBottom:10 }}>
                         <span style={{ fontSize:10, color:tCol, border:`1px solid ${tCol}44`, padding:"2px 8px", borderRadius:"2px", letterSpacing:"1px", textTransform:"uppercase" }}>{p.type}</span>
@@ -6180,7 +6180,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                           {p.quests.map((q, qi) => (
                             <div key={qi} style={{ padding:"16px 20px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px" }}>
                               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-                                <span style={{ fontSize:14, fontWeight:400, color:T.text, fontFamily:"'Spectral', serif" }}>{q.title}</span>
+                                <span style={{ fontSize:14, fontWeight:400, color:T.text, fontFamily:T.body }}>{q.title}</span>
                                 <span style={{ fontSize:9, color:tCol, border:`1px solid ${tCol}33`, padding:"2px 8px", borderRadius:"2px", letterSpacing:"0.5px" }}>{q.difficulty}</span>
                               </div>
                               <div style={{ fontSize:11, color:T.textDim, lineHeight:1.7, marginBottom:10 }}>{q.desc}</div>
@@ -6194,7 +6194,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     {p.reward && (
                       <div style={{ padding:"14px 20px", background:"rgba(201,168,92,0.06)", border:"1px solid rgba(201,168,92,0.18)", borderRadius:"4px", marginBottom:16 }}>
                         <div style={{ fontSize:10, color:T.gold, letterSpacing:"1px", marginBottom:4 }}>POTENTIAL REWARD</div>
-                        <div style={{ fontSize:13, color:T.text, fontFamily:"'Spectral', serif" }}>{p.reward}</div>
+                        <div style={{ fontSize:13, color:T.text, fontFamily:T.body }}>{p.reward}</div>
                       </div>
                     )}
                   </div>
@@ -6920,7 +6920,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                           {/* Terrain icon */}
                           <text x={h.x} y={h.y - 2} textAnchor="middle" fontSize={isExplored ? 20 : 12} style={{ pointerEvents:"none", opacity: isExplored ? 1 : 0.3 }}>{isExplored ? h.icon : "?"}</text>
                           {/* Label */}
-                          <text x={h.x} y={h.y + 18} textAnchor="middle" fontSize={6.5} fill={isExplored ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.15)"} style={{ pointerEvents:"none", fontFamily:"'Cinzel', serif", letterSpacing:"0.5px", textTransform:"uppercase" }}>
+                          <text x={h.x} y={h.y + 18} textAnchor="middle" fontSize={6.5} fill={isExplored ? "rgba(255,255,255,0.55)" : "rgba(255,255,255,0.15)"} style={{ pointerEvents:"none", fontFamily:T.ui, letterSpacing:"0.5px", textTransform:"uppercase" }}>
                             {i === 0 ? hexOrigin.slice(0, 9) : i === hexCount - 1 ? hexDest.slice(0, 9) : isExplored ? h.terrain.replace("_"," ").slice(0, 9) : "???"}
                           </text>
                           {/* Party marker */}
@@ -7009,7 +7009,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                                 const enc = { id: "enc-hex-" + Date.now(), name: `${currentHex.danger} — Ambush (spotted)`, location: `${hexOrigin} → ${hexDest} route`, notes: `Failed stealth DC ${dc}. Party surprised! CR ${currentHex.dangerCR}`, participants: [{ type:"partyAll" }] };
                                 setData(d => ({ ...d, encounters: [...(d.encounters || []), enc], activity: [{ time:"Just now", text:`Ambush: ${currentHex.danger} (failed sneak)` }, ...(d.activity || [])].slice(0, 20) }));
                               }
-                            }} style={{ padding:"6px 12px", background:"rgba(100,100,200,0.1)", border:`1px solid rgba(100,100,200,0.2)`, borderRadius:3, color:"#8888dd", fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer" }}>
+                            }} style={{ padding:"6px 12px", background:"rgba(0,0,0,0.08)", border:`1px solid ${T.border}`, borderRadius:3, color:T.textMuted, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer" }}>
                               ⊘ Sneak
                             </button>
                             <button onClick={() => {
@@ -7253,7 +7253,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                 {cityObj && (
                   <button onClick={() => { setTownView(null); setTab("cities"); setSel(cityObj); setSelType("city"); }} style={{
                     padding: "6px 14px", background: "rgba(201,168,92,0.12)", border: "1px solid rgba(201,168,92,0.35)",
-                    borderRadius: "3px", color: "#c9a85c", fontFamily: T.ui, fontSize: 10,
+                    borderRadius: "3px", color: T.gold, fontFamily: T.ui, fontSize: 10,
                     letterSpacing: "1.5px", textTransform: "uppercase", cursor: "pointer",
                   }}>City Details</button>
                 )}

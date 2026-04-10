@@ -78,10 +78,10 @@ const pillBtn = (active) => ({
   padding: "6px 14px", borderRadius: "20px", cursor: "pointer", fontSize: "12px",
   fontFamily: T.ui, border: active ? "1px solid " + T.gold : "1px solid " + T.border,
   backgroundColor: active ? T.gold : "transparent",
-  color: active ? "#000" : T.textMuted, transition: "all 0.2s", whiteSpace: "nowrap"
+  color: active ? T.bg : T.textMuted, transition: "all 0.2s", whiteSpace: "nowrap"
 });
 const primaryBtn = {
-  padding: "10px 18px", backgroundColor: T.crimson, color: "#fff", border: "none",
+  padding: "10px 18px", backgroundColor: T.crimson, color: T.bg, border: "none",
   borderRadius: "6px", cursor: "pointer", fontFamily: T.heading, fontSize: "13px",
   letterSpacing: "0.03em", transition: "opacity 0.2s"
 };
@@ -199,7 +199,7 @@ function MonsterCard({ monster, onExpand }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "10px" }}>
         <h3 style={{ margin: 0, color: T.gold, fontFamily: T.heading, fontSize: "15px", lineHeight: "1.3" }}>{monster.name}</h3>
         <div style={{
-          backgroundColor: crColor, color: "#fff", padding: "3px 10px",
+          backgroundColor: crColor, color: T.bg , padding: "3px 10px",
           borderRadius: "12px", fontSize: "11px", fontWeight: "bold",
           fontFamily: T.ui, whiteSpace: "nowrap", marginLeft: "8px"
         }}>CR {cr}</div>
@@ -229,7 +229,7 @@ function ItemCard({ item, onExpand }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "10px" }}>
         <h3 style={{ margin: 0, color: T.gold, fontFamily: T.heading, fontSize: "15px", lineHeight: "1.3" }}>{item.name}</h3>
         <div style={{
-          backgroundColor: rarityColor, color: "#fff", padding: "3px 10px",
+          backgroundColor: rarityColor, color: T.bg , padding: "3px 10px",
           borderRadius: "12px", fontSize: "11px", fontWeight: "bold",
           fontFamily: T.ui, whiteSpace: "nowrap", marginLeft: "8px"
         }}>{(item.rarity || "common").replace("_", " ").toUpperCase()}</div>
@@ -259,7 +259,7 @@ function SpellCard({ spell, onExpand }) {
           {spell.ritual && <span style={{ fontSize: "10px", color: "#6ba85c", fontWeight: "bold", fontFamily: T.ui }}>RIT</span>}
           <div style={{
             width: "30px", height: "30px", borderRadius: "50%", backgroundColor: schoolColor,
-            color: "#fff", display: "flex", alignItems: "center", justifyContent: "center",
+            color: T.bg, display: "flex", alignItems: "center", justifyContent: "center",
             fontSize: "13px", fontWeight: "bold", fontFamily: T.heading
           }}>{spell.level || 0}</div>
         </div>
@@ -303,7 +303,7 @@ function ClassFeatureCard({ feature, onExpand }) {
         <h3 style={{ margin: 0, color: T.gold, fontFamily: T.heading, fontSize: "15px", lineHeight: "1.3" }}>{feature.name}</h3>
         {feature.level && (
           <div style={{
-            backgroundColor: T.crimson, color: "#fff", padding: "3px 10px",
+            backgroundColor: T.crimson, color: T.bg , padding: "3px 10px",
             borderRadius: "12px", fontSize: "11px", fontWeight: "bold", fontFamily: T.ui
           }}>Lvl {feature.level}</div>
         )}
@@ -325,7 +325,7 @@ function FeatCard({ feat, onExpand }) {
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "10px" }}>
         <h3 style={{ margin: 0, color: T.gold, fontFamily: T.heading, fontSize: "15px", lineHeight: "1.3" }}>{feat.name}</h3>
         <div style={{
-          backgroundColor: catColor, color: "#fff", padding: "3px 10px",
+          backgroundColor: catColor, color: T.bg , padding: "3px 10px",
           borderRadius: "12px", fontSize: "11px", fontWeight: "bold",
           fontFamily: T.ui, whiteSpace: "nowrap", marginLeft: "8px"
         }}>{(feat.category || "general").toUpperCase()}</div>
@@ -348,13 +348,13 @@ function ModalShell({ title, children, onClose }) {
   return (
     <div style={{
       position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
-      backgroundColor: "rgba(0,0,0,0.75)", display: "flex", alignItems: "center",
+      backgroundColor: T.bgNav, display: "flex", alignItems: "center",
       justifyContent: "center", zIndex: 1000, padding: "20px", boxSizing: "border-box"
     }}>
       <div style={{
         backgroundColor: T.bgCard, border: "2px solid " + T.gold, borderRadius: "12px",
         padding: "24px", maxHeight: "90vh", overflowY: "auto", maxWidth: "720px", width: "100%",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.5)"
+        boxShadow: "0 20px 60px " + T.bgNav
       }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", borderBottom: "1px solid " + T.border, paddingBottom: "12px" }}>
           <h2 style={{ color: T.gold, fontFamily: T.heading, margin: 0, fontSize: "22px" }}>{title}</h2>
@@ -577,7 +577,7 @@ function ItemCreator({ templates, onSave, onClose, initialData }) {
         <textarea value={form.lore} onChange={e => setForm({ ...form, lore: e.target.value })} style={{ ...inputStyle, minHeight: "60px", resize: "vertical" }} />
       </div>
       <div style={{
-        marginBottom: "16px", padding: "14px", backgroundColor: "rgba(212,67,58,0.08)",
+        marginBottom: "16px", padding: "14px", backgroundColor: T.crimsonDim,
         borderRadius: "8px", borderLeft: "3px solid " + T.crimson
       }}>
         <label style={{ color: T.text, fontSize: "13px", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
@@ -772,7 +772,7 @@ function NPCCreator({ templates, onSave, onClose, initialData }) {
         <div><label style={labelStyle}>Spells (comma-separated)</label><input type="text" value={form.spells} onChange={e => setForm({ ...form, spells: e.target.value })} style={inputStyle} /></div>
       </div>
       <div style={{
-        marginBottom: "16px", padding: "14px", backgroundColor: "rgba(212,67,58,0.08)",
+        marginBottom: "16px", padding: "14px", backgroundColor: T.crimsonDim,
         borderRadius: "8px", borderLeft: "3px solid " + T.gold
       }}>
         <label style={{ ...labelStyle, color: T.gold }}>Secret Motivation (DM Only)</label>
@@ -954,7 +954,7 @@ function ItemDetail({ item }) {
         </div>
       )}
       {item.cursed && (
-        <div style={{ marginTop: "12px", padding: "12px", backgroundColor: "rgba(212,67,58,0.1)", borderRadius: "6px", borderLeft: "3px solid " + T.crimson }}>
+        <div style={{ marginTop: "12px", padding: "12px", backgroundColor: T.crimsonDim, borderRadius: "6px", borderLeft: "3px solid " + T.crimson }}>
           <strong style={{ color: T.crimson }}>Curse:</strong> <span style={{ fontSize: "13px" }}>{item.curseEffect}</span>
         </div>
       )}
@@ -1026,7 +1026,7 @@ function NPCDetail({ npc, viewRole }) {
       {npc.equipment && <div style={{ fontSize: "13px", marginTop: "10px" }}><strong style={{ color: T.crimson }}>Equipment:</strong> {npc.equipment}</div>}
       {npc.spells && <div style={{ fontSize: "13px", marginTop: "6px" }}><strong style={{ color: T.crimson }}>Spells:</strong> {npc.spells}</div>}
       {viewRole === "dm" && npc.motivation && (
-        <div style={{ marginTop: "16px", padding: "12px", backgroundColor: "rgba(212,67,58,0.08)", borderRadius: "6px", borderLeft: "3px solid " + T.crimson }}>
+        <div style={{ marginTop: "16px", padding: "12px", backgroundColor: T.crimsonDim, borderRadius: "6px", borderLeft: "3px solid " + T.crimson }}>
           <strong style={{ color: T.crimson, fontSize: "12px" }}>Secret Motivation (DM Only):</strong>
           <div style={{ fontSize: "13px", marginTop: "4px" }}>{npc.motivation}</div>
         </div>
@@ -1072,7 +1072,7 @@ function FeatDetail({ feat }) {
         </div>
       </div>
       {feat.prerequisite && feat.prerequisite !== "None" && (
-        <div style={{ fontSize: "13px", marginBottom: "12px", padding: "8px 12px", backgroundColor: "rgba(212,67,58,0.08)", borderRadius: "6px" }}>
+        <div style={{ fontSize: "13px", marginBottom: "12px", padding: "8px 12px", backgroundColor: T.crimsonDim, borderRadius: "6px" }}>
           <strong style={{ color: T.crimson }}>Prerequisite:</strong> {feat.prerequisite}
         </div>
       )}

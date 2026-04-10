@@ -92,10 +92,10 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
 
   const RepBar = ({ score, color, showLabel }) => {
     return React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 8 } },
-      React.createElement("div", { style: { flex: 1, height: 6, background: "rgba(0,0,0,0.25)", borderRadius: 3, overflow: "hidden", position: "relative" } },
+      React.createElement("div", { style: { flex: 1, height: 6, background: T.bgHover, borderRadius: 3, overflow: "hidden", position: "relative" } },
         React.createElement("div", { style: { position: "absolute", left: 0, top: 0, height: "100%", width: score + "%", background: color, borderRadius: 3, transition: "width 0.4s ease" } }),
         // Tick marks at 20, 40, 60, 80
-        [20, 40, 60, 80].map(t => React.createElement("div", { key: t, style: { position: "absolute", left: t + "%", top: 0, width: 1, height: "100%", background: "rgba(255,255,255,0.08)" } }))
+        [20, 40, 60, 80].map(t => React.createElement("div", { key: t, style: { position: "absolute", left: t + "%", top: 0, width: 1, height: "100%", background: T.textFaint } }))
       ),
       React.createElement("span", { style: { fontSize: 11, color: color, fontFamily: T.ui, minWidth: 26, textAlign: "right", fontWeight: 500 } }, score)
     );
@@ -146,7 +146,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
                 style: {
                   display: "grid", gridTemplateColumns: "14px 1fr 70px 160px 24px", alignItems: "center", gap: 14,
                   padding: "12px 16px", borderRadius: 3, cursor: "pointer",
-                  background: isExpanded ? "rgba(212,67,58,0.04)" : i % 2 === 0 ? "transparent" : "rgba(0,0,0,0.06)",
+                  background: isExpanded ? T.crimsonDim : i % 2 === 0 ? "transparent" : T.bgHover,
                   borderLeft: `3px solid ${f.color || T.gold}`,
                   transition: "background 0.15s"
                 }
@@ -191,7 +191,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
                     onClick: (e) => { e.stopPropagation(); updateRep(f.name, f.score + d); },
                     style: {
                       padding: "4px 8px", fontSize: 10, fontFamily: T.ui, border: `1px solid ${T.border}`,
-                      background: d > 0 ? "rgba(46,204,113,0.08)" : "rgba(231,76,60,0.08)",
+                      background: d > 0 ? T.greenDim : T.crimsonDim,
                       color: d > 0 ? T.green : T.crimson, borderRadius: 2, cursor: "pointer"
                     }
                   }, (d > 0 ? "+" : "") + d))
@@ -209,7 +209,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
           orgFiltered.map(sf => React.createElement("div", {
             key: sf.id,
             style: {
-              padding: "14px 16px", background: "rgba(0,0,0,0.06)", border: `1px solid ${T.border}`,
+              padding: "14px 16px", background: T.bgHover, border: `1px solid ${T.border}`,
               borderRadius: 4, borderLeft: `3px solid ${sf.color}`
             }
           },
@@ -224,7 +224,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
               [-5, -1, 1, 5].map(d => React.createElement("button", {
                 key: d,
                 onClick: () => updateRep(sf.name, sf.score + d),
-                style: { padding: "3px 6px", fontSize: 9, border: `1px solid ${T.border}`, background: d > 0 ? "rgba(46,204,113,0.06)" : "rgba(231,76,60,0.06)", color: d > 0 ? T.green : T.crimson, borderRadius: 2, cursor: "pointer" }
+                style: { padding: "3px 6px", fontSize: 9, border: `1px solid ${T.border}`, background: d > 0 ? T.greenDim : T.crimsonDim, color: d > 0 ? T.green : T.crimson, borderRadius: 2, cursor: "pointer" }
               }, (d > 0 ? "+" : "") + d))
             )
           ))
@@ -245,7 +245,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
           ? React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } },
               allies.map(f => React.createElement("div", {
                 key: f.id,
-                style: { display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", borderRadius: 4, borderLeft: `4px solid ${f.color}`, background: "rgba(46,204,113,0.03)", border: `1px solid rgba(46,204,113,0.12)` }
+                style: { display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", borderRadius: 4, borderLeft: `4px solid ${f.color}`, background: T.greenDim, border: `1px solid ${T.border}` }
               },
                 React.createElement("div", { style: { width: 14, height: 14, borderRadius: "50%", background: f.color || T.gold, flexShrink: 0 } }),
                 React.createElement("div", { style: { flex: 1, minWidth: 0 } },
@@ -267,7 +267,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
           ? React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10 } },
               allyNPCs.map(n => React.createElement("div", {
                 key: n.id,
-                style: { display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: "rgba(0,0,0,0.04)", border: `1px solid ${T.border}`, borderRadius: 4, borderLeft: `3px solid ${n.factionColor}` }
+                style: { display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: T.bgHover, border: `1px solid ${T.border}`, borderRadius: 4, borderLeft: `3px solid ${n.factionColor}` }
               },
                 React.createElement("div", { style: { width: 30, height: 30, borderRadius: "50%", background: n.factionColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: T.bg, fontFamily: T.heading, fontWeight: 600, flexShrink: 0 } }, n.name.charAt(0)),
                 React.createElement("div", { style: { flex: 1, minWidth: 0 } },
@@ -294,7 +294,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
           ? React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 10 } },
               enemies.sort((a, b) => a.score - b.score).map(f => React.createElement("div", {
                 key: f.id,
-                style: { display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", borderRadius: 4, borderLeft: `4px solid ${f.color}`, background: "rgba(212,67,58,0.03)", border: `1px solid rgba(212,67,58,0.1)` }
+                style: { display: "flex", alignItems: "center", gap: 14, padding: "14px 18px", borderRadius: 4, borderLeft: `4px solid ${f.color}`, background: T.crimsonDim, border: `1px solid ${T.border}` }
               },
                 React.createElement("div", { style: { width: 14, height: 14, borderRadius: "50%", background: f.color || T.crimson, flexShrink: 0 } }),
                 React.createElement("div", { style: { flex: 1, minWidth: 0 } },
@@ -316,7 +316,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
           ? React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 10 } },
               enemyNPCs.sort((a, b) => a.score - b.score).map(n => React.createElement("div", {
                 key: n.id,
-                style: { display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: "rgba(212,67,58,0.03)", border: `1px solid rgba(212,67,58,0.08)`, borderRadius: 4, borderLeft: `3px solid ${n.factionColor}` }
+                style: { display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: T.crimsonDim, border: `1px solid ${T.border}`, borderRadius: 4, borderLeft: `3px solid ${n.factionColor}` }
               },
                 React.createElement("div", { style: { width: 30, height: 30, borderRadius: "50%", background: n.factionColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: T.bg, fontFamily: T.heading, fontWeight: 600, flexShrink: 0 } }, n.name.charAt(0)),
                 React.createElement("div", { style: { flex: 1, minWidth: 0 } },
@@ -364,7 +364,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
           [-5, -1, 1, 5].map(d => React.createElement("button", {
             key: d,
             onClick: (e) => { e.stopPropagation(); updateRep(n.name, n.score + d); },
-            style: { padding: "3px 6px", fontSize: 9, border: `1px solid ${T.border}`, background: d > 0 ? "rgba(46,204,113,0.06)" : "rgba(231,76,60,0.06)", color: d > 0 ? T.green : T.crimson, borderRadius: 2, cursor: "pointer" }
+            style: { padding: "3px 6px", fontSize: 9, border: `1px solid ${T.border}`, background: d > 0 ? T.greenDim : T.crimsonDim, color: d > 0 ? T.green : T.crimson, borderRadius: 2, cursor: "pointer" }
           }, (d > 0 ? "+" : "") + d))
         )
       )
@@ -428,7 +428,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
     return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 20 } },
 
       // Kingdom Affiliation
-      React.createElement("div", { style: { background: T.bgCard, padding: 24, border: `1px solid ${T.border}`, borderRadius: 4, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" } },
+      React.createElement("div", { style: { background: T.bgCard, padding: 24, border: `1px solid ${T.border}`, borderRadius: 4, boxShadow: "0 2px 8px " + T.border } },
         React.createElement("div", { style: { fontSize: 10, color: T.textFaint, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 12 } }, "Kingdom Affiliation"),
         React.createElement(Select, { value: data.partyKingdom || "", onChange: v => setData(d => ({ ...d, partyKingdom: v })), style: { width: "100%", marginBottom: 12 } },
           React.createElement("option", { value: "" }, "No Affiliation (Independent)"),
@@ -442,7 +442,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
       ),
 
       // Social Standing
-      React.createElement("div", { style: { background: T.bgCard, padding: 24, border: `1px solid ${T.border}`, borderRadius: 4, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" } },
+      React.createElement("div", { style: { background: T.bgCard, padding: 24, border: `1px solid ${T.border}`, borderRadius: 4, boxShadow: "0 2px 8px " + T.border } },
         React.createElement("div", { style: { fontSize: 10, color: T.textFaint, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 12 } }, "Party Social Standing"),
         React.createElement(Select, { value: data.partyRank || "commoner", onChange: v => setData(d => ({ ...d, partyRank: v })), style: { width: "100%", marginBottom: 12 } },
           SOCIAL_RANKS.map(r => React.createElement("option", { key: r.value, value: r.value }, r.label))
@@ -454,7 +454,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
       ),
 
       // Party Reputation by Faction
-      React.createElement("div", { style: { background: T.bgCard, padding: 24, border: `1px solid ${T.border}`, borderRadius: 4, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" } },
+      React.createElement("div", { style: { background: T.bgCard, padding: 24, border: `1px solid ${T.border}`, borderRadius: 4, boxShadow: "0 2px 8px " + T.border } },
         React.createElement("div", { style: { fontSize: 10, color: T.textFaint, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 12 } }, "Party Reputation by Faction"),
         factions.length === 0
           ? React.createElement("div", { style: { fontSize: 12, color: T.textFaint, fontStyle: "italic" } }, "No factions exist yet. Generate a world first.")
@@ -477,7 +477,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
       ),
 
       // Faction Diplomacy Matrix
-      React.createElement("div", { style: { background: T.bgCard, padding: 24, border: `1px solid ${T.border}`, borderRadius: 4, boxShadow: "0 2px 8px rgba(0,0,0,0.08)" } },
+      React.createElement("div", { style: { background: T.bgCard, padding: 24, border: `1px solid ${T.border}`, borderRadius: 4, boxShadow: "0 2px 8px " + T.border } },
         React.createElement("div", { style: { fontSize: 10, color: T.textFaint, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 12 } }, "Faction Diplomacy"),
         React.createElement("div", { style: { fontSize: 11, color: T.textMuted, marginBottom: 12 } }, "Faction-to-faction relationships. Click to view details."),
         factions.length < 2
@@ -617,7 +617,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
                 return React.createElement("div", {
                   key: evt.id,
                   style: {
-                    padding: "10px 14px", background: i % 2 === 0 ? "transparent" : "rgba(0,0,0,0.06)",
+                    padding: "10px 14px", background: i % 2 === 0 ? "transparent" : T.bgHover,
                     borderLeft: `3px solid ${isPositive ? T.green : T.crimson}`, borderRadius: 2
                   }
                 },
@@ -687,7 +687,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
 
             return React.createElement("div", {
               key: f.id,
-              style: { padding: "16px", background: "rgba(0,0,0,0.06)", border: `1px solid ${T.border}`, borderRadius: 4, borderLeft: `3px solid ${f.color}` }
+              style: { padding: "16px", background: T.bgHover, border: `1px solid ${T.border}`, borderRadius: 4, borderLeft: `3px solid ${f.color}` }
             },
               React.createElement("div", { style: { fontSize: 13, color: T.text, fontWeight: 500, marginBottom: 10 } }, f.name),
               React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 } },
@@ -698,7 +698,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
                       return React.createElement("div", {
                         key: i,
                         style: {
-                          padding: "8px 10px", borderRadius: 2, background: unlocked ? f.color + "20" : "rgba(0,0,0,0.1)",
+                          padding: "8px 10px", borderRadius: 2, background: unlocked ? f.color + "20" : T.bgHover,
                           borderLeft: `2px solid ${unlocked ? f.color : T.border}`
                         }
                       },
@@ -713,7 +713,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
                 React.createElement("div", { style: { fontSize: 9, color: T.textFaint, marginBottom: 4 } }, "Next: " + nextTier.threshold + " (" + progressToNext + "%)"),
                 React.createElement("div", {
                   style: {
-                    height: 6, background: "rgba(0,0,0,0.25)", borderRadius: 3, overflow: "hidden"
+                    height: 6, background: T.bgHover, borderRadius: 3, overflow: "hidden"
                   }
                 },
                   React.createElement("div", { style: { height: "100%", width: progressToNext + "%", background: f.color, transition: "width 0.3s" } })
@@ -734,7 +734,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
 
             return React.createElement("div", {
               key: f.id,
-              style: { padding: "14px", background: "rgba(0,0,0,0.06)", border: `1px solid ${T.border}`, borderRadius: 4 }
+              style: { padding: "14px", background: T.bgHover, border: `1px solid ${T.border}`, borderRadius: 4 }
             },
               React.createElement("div", { style: { fontSize: 12, color: T.text, fontWeight: 500, marginBottom: 10 } }, f.name),
               React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, marginBottom: 10 } },
@@ -755,7 +755,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
                   })),
                   style: {
                     flex: 1, padding: "4px 6px", fontSize: 9, fontFamily: T.ui, border: rate === delta ? `1px solid ${T.gold}` : `1px solid ${T.border}`,
-                    background: rate === delta ? "rgba(212,175,55,0.2)" : "transparent", color: rate === delta ? T.gold : T.textFaint,
+                    background: rate === delta ? T.goldDim : "transparent", color: rate === delta ? T.gold : T.textFaint,
                     borderRadius: 2, cursor: "pointer", fontWeight: rate === delta ? 600 : 400
                   }
                 }, delta))
@@ -778,7 +778,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
 
             return React.createElement("div", {
               key: f.id,
-              style: { padding: "14px", background: "rgba(0,0,0,0.06)", border: `1px solid ${T.border}`, borderRadius: 4, borderLeft: `3px solid ${f.color}` }
+              style: { padding: "14px", background: T.bgHover, border: `1px solid ${T.border}`, borderRadius: 4, borderLeft: `3px solid ${f.color}` }
             },
               React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, marginBottom: 10 } },
                 React.createElement("span", { style: { fontSize: 12, color: T.text, fontWeight: 500 } }, f.name),
@@ -791,7 +791,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
                   onClick: () => updateFavor(f.name, delta),
                   style: {
                     flex: 1, padding: "6px 4px", fontSize: 9, fontFamily: T.ui, border: `1px solid ${T.border}`,
-                    background: delta > 0 ? "rgba(46,204,113,0.08)" : "rgba(231,76,60,0.08)",
+                    background: delta > 0 ? T.greenDim : T.crimsonDim,
                     color: delta > 0 ? T.green : T.crimson, borderRadius: 2, cursor: "pointer"
                   }
                 }, (delta > 0 ? "+" : "") + delta))
@@ -840,7 +840,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
           style: {
             padding: "6px 14px", fontSize: 10, fontFamily: T.ui, letterSpacing: "1px", textTransform: "uppercase",
             border: viewMode === t.key ? `1px solid ${T.crimson}` : `1px solid ${T.border}`,
-            background: viewMode === t.key ? "rgba(212,67,58,0.12)" : "transparent",
+            background: viewMode === t.key ? T.crimsonDim : "transparent",
             color: viewMode === t.key ? T.crimson : T.textFaint,
             borderRadius: 3, cursor: "pointer", transition: "all 0.15s"
           }

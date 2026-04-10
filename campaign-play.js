@@ -1076,46 +1076,46 @@ const getClassFeaturesUpToLevel = (className, level) => {
 const DND_SPELLS = [
   // CANTRIPS (Level 0)
   { name:"Acid Splash", level:0, school:"Evocation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"1d6 acid", damageType:"acid", save:"", effect:"acid", color:"#76ff03", healing:"", concentration:false, ritual:false, conditions:[], description:"A flick of acid at target creature", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
-  { name:"Blade Ward", level:0, school:"Abjuration", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"You have resistance to bludgeoning, piercing, slashing", classes:["Bard","Sorcerer","Warlock","Wizard"], applyEffect:"buff" },
+  { name:"Blade Ward", level:0, school:"Abjuration", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:T.blue || "#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"You have resistance to bludgeoning, piercing, slashing", classes:["Bard","Sorcerer","Warlock","Wizard"], applyEffect:"buff" },
   { name:"Chill Touch", level:0, school:"Necromancy", castTime:"1 action", range:120, shape:"single", radius:0, damage:"1d8 necrotic", damageType:"necrotic", save:"", effect:"necrotic", color:"#7c3aed", healing:"", concentration:false, ritual:false, conditions:["Disadvantage"], description:"A ghostly hand chills the target", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
-  { name:"Dancing Lights", level:0, school:"Evocation", castTime:"1 action", range:120, shape:"sphere", radius:10, damage:"", damageType:"", save:"", effect:"conjuration", color:"#ffd54f", healing:"", concentration:true, ritual:false, conditions:[], description:"You create up to 4 torch-sized lights", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
+  { name:"Dancing Lights", level:0, school:"Evocation", castTime:"1 action", range:120, shape:"sphere", radius:10, damage:"", damageType:"", save:"", effect:"conjuration", color:T.gold, healing:"", concentration:true, ritual:false, conditions:[], description:"You create up to 4 torch-sized lights", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
   { name:"Fire Bolt", level:0, school:"Evocation", castTime:"1 action", range:120, shape:"single", radius:0, damage:"1d10 fire", damageType:"fire", save:"", effect:"explosion", color:"#ff6030", healing:"", concentration:false, ritual:false, conditions:[], description:"You hurl a mote of fire at a target", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
-  { name:"Light", level:0, school:"Evocation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"radiant", color:"#ffd54f", healing:"", concentration:false, ritual:false, conditions:[], description:"An object sheds bright light in 20ft radius", classes:["Bard","Cleric","Sorcerer","Wizard"], applyEffect:"utility" },
-  { name:"Mage Hand", level:0, school:"Transmutation", castTime:"1 action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:false, ritual:true, conditions:[], description:"You create a spectral hand to move objects", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
-  { name:"Mending", level:0, school:"Transmutation", castTime:"1 minute", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:false, ritual:true, conditions:[], description:"You mend a single break in nonmagical object", classes:["Bard","Cleric","Druid","Sorcerer","Wizard"], applyEffect:"utility" },
-  { name:"Minor Illusion", level:0, school:"Illusion", castTime:"1 action", range:30, shape:"sphere", radius:5, damage:"", damageType:"", save:"", effect:"enchantment", color:"#e040fb", healing:"", concentration:false, ritual:false, conditions:[], description:"You create a sound or image illusion", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
+  { name:"Light", level:0, school:"Evocation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"radiant", color:T.gold, healing:"", concentration:false, ritual:false, conditions:[], description:"An object sheds bright light in 20ft radius", classes:["Bard","Cleric","Sorcerer","Wizard"], applyEffect:"utility" },
+  { name:"Mage Hand", level:0, school:"Transmutation", castTime:"1 action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:T.purple || "#b574ff", healing:"", concentration:false, ritual:true, conditions:[], description:"You create a spectral hand to move objects", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
+  { name:"Mending", level:0, school:"Transmutation", castTime:"1 minute", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:T.purple || "#b574ff", healing:"", concentration:false, ritual:true, conditions:[], description:"You mend a single break in nonmagical object", classes:["Bard","Cleric","Druid","Sorcerer","Wizard"], applyEffect:"utility" },
+  { name:"Minor Illusion", level:0, school:"Illusion", castTime:"1 action", range:30, shape:"sphere", radius:5, damage:"", damageType:"", save:"", effect:"enchantment", color:T.purple || "#e040fb", healing:"", concentration:false, ritual:false, conditions:[], description:"You create a sound or image illusion", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
   { name:"Poison Spray", level:0, school:"Evocation", castTime:"1 action", range:10, shape:"single", radius:0, damage:"1d12 poison", damageType:"poison", save:"CON", effect:"poison", color:"#4caf50", healing:"", concentration:false, ritual:false, conditions:[], description:"Poisonous gas clouds erupt from your hand", classes:["Druid","Sorcerer","Wizard"], applyEffect:"damage" },
-  { name:"Prestidigitation", level:0, school:"Transmutation", castTime:"1 action", range:10, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:false, ritual:false, conditions:[], description:"Minor magical tricks to accomplish mundane tasks", classes:["Bard","Cleric","Sorcerer","Wizard"], applyEffect:"utility" },
+  { name:"Prestidigitation", level:0, school:"Transmutation", castTime:"1 action", range:10, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:T.purple || "#b574ff", healing:"", concentration:false, ritual:false, conditions:[], description:"Minor magical tricks to accomplish mundane tasks", classes:["Bard","Cleric","Sorcerer","Wizard"], applyEffect:"utility" },
   { name:"Ray of Frost", level:0, school:"Evocation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"1d8 cold", damageType:"cold", save:"", effect:"freeze", color:"#b3e5fc", healing:"", concentration:false, ritual:false, conditions:[], description:"A thin icy beam shoots from your finger", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
-  { name:"Sacred Flame", level:0, school:"Evocation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"1d8 radiant", damageType:"radiant", save:"DEX", effect:"radiant", color:"#ffd54f", healing:"", concentration:false, ritual:false, conditions:[], description:"Radiant flame descends on a visible creature", classes:["Cleric"], applyEffect:"damage" },
+  { name:"Sacred Flame", level:0, school:"Evocation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"1d8 radiant", damageType:"radiant", save:"DEX", effect:"radiant", color:T.gold, healing:"", concentration:false, ritual:false, conditions:[], description:"Radiant flame descends on a visible creature", classes:["Cleric"], applyEffect:"damage" },
   { name:"Shocking Grasp", level:0, school:"Evocation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"1d8 lightning", damageType:"lightning", save:"", effect:"bolt", color:"#5edfff", healing:"", concentration:false, ritual:false, conditions:["Disadvantage"], description:"Lightning springs from your hand to touch one creature", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
-  { name:"Spare the Dying", level:0, school:"Necromancy", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"heal", color:"#5ee09a", healing:"", concentration:false, ritual:false, conditions:[], description:"You stabilize a dying creature", classes:["Cleric","Wizard"], applyEffect:"utility" },
-  { name:"Eldritch Blast", level:0, school:"Evocation", castTime:"1 action", range:120, shape:"single", radius:0, damage:"1d10 force", damageType:"force", save:"", effect:"bolt", color:"#b574ff", healing:"", concentration:false, ritual:false, conditions:[], description:"A beam of crackling energy springs from your finger", classes:["Warlock"], applyEffect:"damage" },
-  { name:"Vicious Mockery", level:0, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"1d4 psychic", damageType:"psychic", save:"WIS", effect:"enchantment", color:"#e040fb", healing:"", concentration:false, ritual:false, conditions:[], description:"You hurl insults at a creature you see", classes:["Bard"], applyEffect:"damage" },
+  { name:"Spare the Dying", level:0, school:"Necromancy", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"heal", color:T.green, healing:"", concentration:false, ritual:false, conditions:[], description:"You stabilize a dying creature", classes:["Cleric","Wizard"], applyEffect:"utility" },
+  { name:"Eldritch Blast", level:0, school:"Evocation", castTime:"1 action", range:120, shape:"single", radius:0, damage:"1d10 force", damageType:"force", save:"", effect:"bolt", color:T.purple || "#b574ff", healing:"", concentration:false, ritual:false, conditions:[], description:"A beam of crackling energy springs from your finger", classes:["Warlock"], applyEffect:"damage" },
+  { name:"Vicious Mockery", level:0, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"1d4 psychic", damageType:"psychic", save:"WIS", effect:"enchantment", color:T.purple || "#e040fb", healing:"", concentration:false, ritual:false, conditions:[], description:"You hurl insults at a creature you see", classes:["Bard"], applyEffect:"damage" },
   // LEVEL 1
-  { name:"Alarm", level:1, school:"Abjuration", castTime:"1 minute", range:30, shape:"sphere", radius:20, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:false, ritual:true, conditions:[], description:"Set an alarm that triggers when entered", classes:["Artificer","Bard","Ranger","Wizard"], applyEffect:"utility" },
-  { name:"Armor of Agathys", level:1, school:"Abjuration", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Ghostly armor grants 5 temp HP per level", classes:["Warlock"], applyEffect:"buff" },
-  { name:"Bane", level:1, school:"Enchantment", castTime:"1 action", range:30, shape:"sphere", radius:30, damage:"", damageType:"", save:"CHA", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Cursed"], description:"Up to 3 creatures within range must make CHA saves or subtract d4 from attack rolls and saving throws", classes:["Bard","Cleric"], applyEffect:"debuff" },
-  { name:"Bless", level:1, school:"Enchantment", castTime:"1 action", range:30, shape:"sphere", radius:30, damage:"", damageType:"", save:"", effect:"enchantment", color:"#ffd54f", healing:"", concentration:true, ritual:false, conditions:["Blessed"], description:"Up to 3 creatures within range add d4 to attack rolls and saving throws for the duration", classes:["Cleric","Paladin"], applyEffect:"buff" },
+  { name:"Alarm", level:1, school:"Abjuration", castTime:"1 minute", range:30, shape:"sphere", radius:20, damage:"", damageType:"", save:"", effect:"shield", color:T.blue || "#58aaff", healing:"", concentration:false, ritual:true, conditions:[], description:"Set an alarm that triggers when entered", classes:["Artificer","Bard","Ranger","Wizard"], applyEffect:"utility" },
+  { name:"Armor of Agathys", level:1, school:"Abjuration", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:T.blue || "#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Ghostly armor grants 5 temp HP per level", classes:["Warlock"], applyEffect:"buff" },
+  { name:"Bane", level:1, school:"Enchantment", castTime:"1 action", range:30, shape:"sphere", radius:30, damage:"", damageType:"", save:"CHA", effect:"enchantment", color:T.purple || "#e040fb", healing:"", concentration:true, ritual:false, conditions:["Cursed"], description:"Up to 3 creatures within range must make CHA saves or subtract d4 from attack rolls and saving throws", classes:["Bard","Cleric"], applyEffect:"debuff" },
+  { name:"Bless", level:1, school:"Enchantment", castTime:"1 action", range:30, shape:"sphere", radius:30, damage:"", damageType:"", save:"", effect:"enchantment", color:T.gold, healing:"", concentration:true, ritual:false, conditions:["Blessed"], description:"Up to 3 creatures within range add d4 to attack rolls and saving throws for the duration", classes:["Cleric","Paladin"], applyEffect:"buff" },
   { name:"Burning Hands", level:1, school:"Evocation", castTime:"1 action", range:0, shape:"cone", radius:15, damage:"3d6 fire", damageType:"fire", save:"DEX", effect:"explosion", color:"#ff6030", healing:"", concentration:false, ritual:false, conditions:[], description:"Flames spread from your hands in a cone", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
-  { name:"Command", level:1, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:"#e040fb", healing:"", concentration:false, ritual:false, conditions:["Charmed"], description:"You speak a 1-word command a creature obeys", classes:["Cleric","Paladin"], applyEffect:"control" },
-  { name:"Cure Wounds", level:1, school:"Evocation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"heal", color:"#5ee09a", healing:"1d8+mod", concentration:false, ritual:false, conditions:[], description:"Touch heals 1d8 + mod hit points", classes:["Artificer","Bard","Cleric","Druid","Paladin","Ranger"], applyEffect:"heal" },
-  { name:"Detect Magic", level:1, school:"Divination", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"radiant", color:"#ffd54f", healing:"", concentration:true, ritual:true, conditions:[], description:"Sense magical auras within 30 feet", classes:["Artificer","Bard","Cleric","Druid","Paladin","Ranger","Sorcerer","Wizard"], applyEffect:"utility" },
-  { name:"Disguise Self", level:1, school:"Illusion", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:"#e040fb", healing:"", concentration:false, ritual:false, conditions:[], description:"You appear as a different humanoid", classes:["Artificer","Bard","Sorcerer","Wizard"], applyEffect:"utility" },
-  { name:"Faerie Fire", level:1, school:"Evocation", castTime:"1 action", range:60, shape:"sphere", radius:20, damage:"", damageType:"", save:"DEX", effect:"radiant", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:[], description:"Creatures in area are highlighted with light", classes:["Artificer","Bard","Druid"], applyEffect:"buff" },
+  { name:"Command", level:1, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:T.purple || "#e040fb", healing:"", concentration:false, ritual:false, conditions:["Charmed"], description:"You speak a 1-word command a creature obeys", classes:["Cleric","Paladin"], applyEffect:"control" },
+  { name:"Cure Wounds", level:1, school:"Evocation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"heal", color:T.green, healing:"1d8+mod", concentration:false, ritual:false, conditions:[], description:"Touch heals 1d8 + mod hit points", classes:["Artificer","Bard","Cleric","Druid","Paladin","Ranger"], applyEffect:"heal" },
+  { name:"Detect Magic", level:1, school:"Divination", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"radiant", color:T.gold, healing:"", concentration:true, ritual:true, conditions:[], description:"Sense magical auras within 30 feet", classes:["Artificer","Bard","Cleric","Druid","Paladin","Ranger","Sorcerer","Wizard"], applyEffect:"utility" },
+  { name:"Disguise Self", level:1, school:"Illusion", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:T.purple || "#e040fb", healing:"", concentration:false, ritual:false, conditions:[], description:"You appear as a different humanoid", classes:["Artificer","Bard","Sorcerer","Wizard"], applyEffect:"utility" },
+  { name:"Faerie Fire", level:1, school:"Evocation", castTime:"1 action", range:60, shape:"sphere", radius:20, damage:"", damageType:"", save:"DEX", effect:"radiant", color:T.purple || "#e040fb", healing:"", concentration:true, ritual:false, conditions:[], description:"Creatures in area are highlighted with light", classes:["Artificer","Bard","Druid"], applyEffect:"buff" },
   { name:"False Life", level:1, school:"Necromancy", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"necrotic", color:"#7c3aed", healing:"", concentration:false, ritual:false, conditions:[], description:"You gain 1d4 + 4 temporary hit points", classes:["Artificer","Sorcerer","Wizard"], applyEffect:"buff" },
-  { name:"Feather Fall", level:1, school:"Transmutation", castTime:"1 reaction", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:false, ritual:false, conditions:[], description:"Up to 5 willing creatures fall slowly", classes:["Artificer","Bard","Sorcerer","Wizard"], applyEffect:"utility" },
+  { name:"Feather Fall", level:1, school:"Transmutation", castTime:"1 reaction", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:T.purple || "#b574ff", healing:"", concentration:false, ritual:false, conditions:[], description:"Up to 5 willing creatures fall slowly", classes:["Artificer","Bard","Sorcerer","Wizard"], applyEffect:"utility" },
   { name:"Grease", level:1, school:"Conjuration", castTime:"1 action", range:60, shape:"cube", radius:10, damage:"", damageType:"", save:"STR", effect:"conjuration", color:"#a4e89c", healing:"", concentration:false, ritual:false, conditions:["Prone"], description:"Slick grease makes an area difficult terrain", classes:["Artificer","Bard","Sorcerer","Wizard"], applyEffect:"control" },
-  { name:"Healing Word", level:1, school:"Evocation", castTime:"1 bonus action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"heal", color:"#5ee09a", healing:"1d4+mod", concentration:false, ritual:false, conditions:[], description:"A bonus action heal from range", classes:["Bard","Cleric","Druid"], applyEffect:"heal" },
-  { name:"Identify", level:1, school:"Divination", castTime:"1 minute", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"radiant", color:"#ffd54f", healing:"", concentration:false, ritual:true, conditions:[], description:"Learn magical properties of an object", classes:["Artificer","Bard","Cleric","Wizard"], applyEffect:"utility" },
-  { name:"Illusory Script", level:1, school:"Illusion", castTime:"1 minute", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:"#e040fb", healing:"", concentration:false, ritual:true, conditions:[], description:"Write magical script only you can read", classes:["Bard","Wizard"], applyEffect:"utility" },
-  { name:"Mage Armor", level:1, school:"Abjuration", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Touch gains AC 13 + DEX", classes:["Sorcerer","Wizard"], applyEffect:"buff" },
-  { name:"Magic Missile", level:1, school:"Evocation", castTime:"1 action", range:120, shape:"single", radius:0, damage:"3x1d4+1 force", damageType:"force", save:"", effect:"bolt", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Three darts hit targets for 1d4+1 each", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
-  { name:"Protection from Evil and Good", level:1, school:"Abjuration", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:true, ritual:false, conditions:[], description:"Protect a creature from specific creature types", classes:["Artificer","Cleric","Paladin","Wizard"], applyEffect:"buff" },
+  { name:"Healing Word", level:1, school:"Evocation", castTime:"1 bonus action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"heal", color:T.green, healing:"1d4+mod", concentration:false, ritual:false, conditions:[], description:"A bonus action heal from range", classes:["Bard","Cleric","Druid"], applyEffect:"heal" },
+  { name:"Identify", level:1, school:"Divination", castTime:"1 minute", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"radiant", color:T.gold, healing:"", concentration:false, ritual:true, conditions:[], description:"Learn magical properties of an object", classes:["Artificer","Bard","Cleric","Wizard"], applyEffect:"utility" },
+  { name:"Illusory Script", level:1, school:"Illusion", castTime:"1 minute", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:T.purple || "#e040fb", healing:"", concentration:false, ritual:true, conditions:[], description:"Write magical script only you can read", classes:["Bard","Wizard"], applyEffect:"utility" },
+  { name:"Mage Armor", level:1, school:"Abjuration", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:T.blue || "#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Touch gains AC 13 + DEX", classes:["Sorcerer","Wizard"], applyEffect:"buff" },
+  { name:"Magic Missile", level:1, school:"Evocation", castTime:"1 action", range:120, shape:"single", radius:0, damage:"3x1d4+1 force", damageType:"force", save:"", effect:"bolt", color:T.blue || "#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Three darts hit targets for 1d4+1 each", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
+  { name:"Protection from Evil and Good", level:1, school:"Abjuration", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:T.blue || "#58aaff", healing:"", concentration:true, ritual:false, conditions:[], description:"Protect a creature from specific creature types", classes:["Artificer","Cleric","Paladin","Wizard"], applyEffect:"buff" },
   { name:"Ray of Sickness", level:1, school:"Evocation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"3d8 poison", damageType:"poison", save:"CON", effect:"poison", color:"#4caf50", healing:"", concentration:false, ritual:false, conditions:["Poisoned"], description:"Ray of poisonous magic", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
-  { name:"Sanctuary", level:1, school:"Abjuration", castTime:"1 bonus action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"shield", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"A target can't be attacked without ending spell", classes:["Cleric"], applyEffect:"buff" },
-  { name:"Shield", level:1, school:"Abjuration", castTime:"1 reaction", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"+5 AC including against triggering attack", classes:["Sorcerer","Wizard"], applyEffect:"buff" },
-  { name:"Tasha's Hideous Laughter", level:1, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Incapacitated"], description:"Target falls prone from laughter", classes:["Bard","Wizard"], applyEffect:"control" },
+  { name:"Sanctuary", level:1, school:"Abjuration", castTime:"1 bonus action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"shield", color:T.blue || "#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"A target can't be attacked without ending spell", classes:["Cleric"], applyEffect:"buff" },
+  { name:"Shield", level:1, school:"Abjuration", castTime:"1 reaction", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:T.blue || "#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"+5 AC including against triggering attack", classes:["Sorcerer","Wizard"], applyEffect:"buff" },
+  { name:"Tasha's Hideous Laughter", level:1, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:T.purple || "#e040fb", healing:"", concentration:true, ritual:false, conditions:["Incapacitated"], description:"Target falls prone from laughter", classes:["Bard","Wizard"], applyEffect:"control" },
   { name:"Thunderwave", level:1, school:"Evocation", castTime:"1 action", range:0, shape:"sphere", radius:15, damage:"2d8 thunder", damageType:"thunder", save:"CON", effect:"shockwave", color:"#90caf9", healing:"", concentration:false, ritual:false, conditions:["Prone"], description:"Thunder erupts from you in all directions", classes:["Bard","Druid","Sorcerer","Wizard"], applyEffect:"damage" },
   { name:"Unseen Servant", level:1, school:"Conjuration", castTime:"1 minute", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"conjuration", color:"#a4e89c", healing:"", concentration:false, ritual:true, conditions:[], description:"Invisible force obeys your commands", classes:["Artificer","Bard","Sorcerer","Wizard"], applyEffect:"utility" },
   { name:"Witch Bolt", level:1, school:"Evocation", castTime:"1 action", range:120, shape:"single", radius:0, damage:"1d12 lightning", damageType:"lightning", save:"", effect:"bolt", color:"#5edfff", healing:"", concentration:true, ritual:false, conditions:[], description:"Lightning chains to target, can use bonus to damage", classes:["Sorcerer","Warlock","Wizard"], applyEffect:"damage" },
@@ -1125,107 +1125,107 @@ const DND_SPELLS = [
   { name:"Blindness/Deafness", level:2, school:"Necromancy", castTime:"1 action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"CON", effect:"darkness", color:"#7c3aed", healing:"", concentration:true, ritual:false, conditions:["Blinded","Deafened"], description:"Target goes blind or deaf", classes:["Cleric","Sorcerer","Wizard"], applyEffect:"debuff" },
   { name:"Cloud of Daggers", level:2, school:"Conjuration", castTime:"1 action", range:60, shape:"cube", radius:5, damage:"4d4 slashing", damageType:"slashing", save:"", effect:"force", color:"#a4e89c", healing:"", concentration:true, ritual:false, conditions:[], description:"Daggers fill cube, deal damage", classes:["Bard","Sorcerer","Wizard"], applyEffect:"damage" },
   { name:"Darkness", level:2, school:"Evocation", castTime:"1 action", range:60, shape:"sphere", radius:15, damage:"", damageType:"", save:"", effect:"darkness", color:"#1a1a2e", healing:"", concentration:true, ritual:false, conditions:["Blinded"], description:"Magical darkness fills 30-ft sphere", classes:["Sorcerer","Warlock","Wizard"], applyEffect:"control" },
-  { name:"Detect Thoughts", level:2, school:"Divination", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"WIS", effect:"psychic", color:"#ffd54f", healing:"", concentration:true, ritual:false, conditions:[], description:"Read surface thoughts of one creature", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
-  { name:"Enhance Ability", level:2, school:"Transmutation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:["Blessed"], description:"Grant advantage on ability checks with one ability", classes:["Artificer","Bard","Cleric","Druid","Sorcerer","Wizard"], applyEffect:"buff" },
+  { name:"Detect Thoughts", level:2, school:"Divination", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"WIS", effect:"psychic", color:T.gold, healing:"", concentration:true, ritual:false, conditions:[], description:"Read surface thoughts of one creature", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
+  { name:"Enhance Ability", level:2, school:"Transmutation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:T.purple || "#b574ff", healing:"", concentration:true, ritual:false, conditions:["Blessed"], description:"Grant advantage on ability checks with one ability", classes:["Artificer","Bard","Cleric","Druid","Sorcerer","Wizard"], applyEffect:"buff" },
   { name:"Flaming Sphere", level:2, school:"Conjuration", castTime:"1 action", range:60, shape:"sphere", radius:5, damage:"2d6 fire", damageType:"fire", save:"DEX", effect:"explosion", color:"#ff6030", healing:"", concentration:true, ritual:false, conditions:[], description:"Rolling sphere deals fire damage", classes:["Druid","Sorcerer","Wizard"], applyEffect:"damage" },
   { name:"Gust of Wind", level:2, school:"Evocation", castTime:"1 action", range:0, shape:"line", radius:0, length:60, damage:"", damageType:"", save:"STR", effect:"shockwave", color:"#90caf9", healing:"", concentration:true, ritual:false, conditions:["Prone"], description:"60-ft line of wind pushes creatures and objects", classes:["Druid","Sorcerer","Wizard"], applyEffect:"control" },
   { name:"Heat Metal", level:2, school:"Transmutation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"2d8 fire", damageType:"fire", save:"", effect:"bolt", color:"#ff6030", healing:"", concentration:true, ritual:false, conditions:[], description:"Metal worn/carried burns target", classes:["Artificer","Bard","Cleric","Druid"], applyEffect:"damage" },
-  { name:"Hold Person", level:2, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Paralyzed"], description:"Humanoid is paralyzed if it fails save", classes:["Bard","Cleric","Druid","Sorcerer","Wizard"], applyEffect:"control" },
-  { name:"Invisibility", level:2, school:"Illusion", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Invisible"], description:"Target becomes invisible", classes:["Artificer","Bard","Sorcerer","Wizard"], applyEffect:"utility" },
-  { name:"Knock", level:2, school:"Transmutation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:false, ritual:false, conditions:[], description:"Open one lock/door within range", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
-  { name:"Levitate", level:2, school:"Transmutation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"CON", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Target levitates up to 20 ft above ground", classes:["Sorcerer","Wizard"], applyEffect:"utility" },
-  { name:"Magic Mouth", level:2, school:"Illusion", castTime:"1 minute", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:"#e040fb", healing:"", concentration:false, ritual:true, conditions:[], description:"Magical mouth delivers a message", classes:["Bard","Wizard"], applyEffect:"utility" },
-  { name:"Mirror Image", level:2, school:"Illusion", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:[], description:"3 illusory duplicates distract attackers", classes:["Sorcerer","Wizard"], applyEffect:"buff" },
+  { name:"Hold Person", level:2, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:T.purple || "#e040fb", healing:"", concentration:true, ritual:false, conditions:["Paralyzed"], description:"Humanoid is paralyzed if it fails save", classes:["Bard","Cleric","Druid","Sorcerer","Wizard"], applyEffect:"control" },
+  { name:"Invisibility", level:2, school:"Illusion", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:T.purple || "#e040fb", healing:"", concentration:true, ritual:false, conditions:["Invisible"], description:"Target becomes invisible", classes:["Artificer","Bard","Sorcerer","Wizard"], applyEffect:"utility" },
+  { name:"Knock", level:2, school:"Transmutation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:T.purple || "#b574ff", healing:"", concentration:false, ritual:false, conditions:[], description:"Open one lock/door within range", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
+  { name:"Levitate", level:2, school:"Transmutation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"CON", effect:"transmutation", color:T.purple || "#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Target levitates up to 20 ft above ground", classes:["Sorcerer","Wizard"], applyEffect:"utility" },
+  { name:"Magic Mouth", level:2, school:"Illusion", castTime:"1 minute", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:T.purple || "#e040fb", healing:"", concentration:false, ritual:true, conditions:[], description:"Magical mouth delivers a message", classes:["Bard","Wizard"], applyEffect:"utility" },
+  { name:"Mirror Image", level:2, school:"Illusion", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:T.purple || "#e040fb", healing:"", concentration:true, ritual:false, conditions:[], description:"3 illusory duplicates distract attackers", classes:["Sorcerer","Wizard"], applyEffect:"buff" },
   { name:"Misty Step", level:2, school:"Conjuration", castTime:"1 bonus action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"conjuration", color:"#a4e89c", healing:"", concentration:false, ritual:false, conditions:[], description:"Teleport up to 30 feet to unoccupied space", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
-  { name:"Pass Without Trace", level:2, school:"Abjuration", castTime:"1 minute", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"darkness", color:"#58aaff", healing:"", concentration:true, ritual:false, conditions:[], description:"10 creatures can't be tracked", classes:["Artificer","Bard","Druid","Ranger"], applyEffect:"utility" },
-  { name:"Phantasmal Force", level:2, school:"Illusion", castTime:"1 action", range:60, shape:"single", radius:0, damage:"1d6 psychic", damageType:"psychic", save:"INT", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:[], description:"Creature sees illusion, takes psychic damage", classes:["Wizard"], applyEffect:"damage" },
-  { name:"Rope Trick", level:2, school:"Transmutation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:false, ritual:false, conditions:[], description:"Rope becomes extra-dimensional shelter", classes:["Wizard"], applyEffect:"utility" },
+  { name:"Pass Without Trace", level:2, school:"Abjuration", castTime:"1 minute", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"darkness", color:T.blue || "#58aaff", healing:"", concentration:true, ritual:false, conditions:[], description:"10 creatures can't be tracked", classes:["Artificer","Bard","Druid","Ranger"], applyEffect:"utility" },
+  { name:"Phantasmal Force", level:2, school:"Illusion", castTime:"1 action", range:60, shape:"single", radius:0, damage:"1d6 psychic", damageType:"psychic", save:"INT", effect:"enchantment", color:T.purple || "#e040fb", healing:"", concentration:true, ritual:false, conditions:[], description:"Creature sees illusion, takes psychic damage", classes:["Wizard"], applyEffect:"damage" },
+  { name:"Rope Trick", level:2, school:"Transmutation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:T.purple || "#b574ff", healing:"", concentration:false, ritual:false, conditions:[], description:"Rope becomes extra-dimensional shelter", classes:["Wizard"], applyEffect:"utility" },
   { name:"Scorching Ray", level:2, school:"Evocation", castTime:"1 action", range:120, shape:"single", radius:0, damage:"2d6 fire", damageType:"fire", save:"", effect:"explosion", color:"#ff6030", healing:"", concentration:false, ritual:false, conditions:[], description:"3 rays of fire, each deals 2d6", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
-  { name:"See Invisibility", level:2, school:"Divination", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"radiant", color:"#ffd54f", healing:"", concentration:true, ritual:false, conditions:[], description:"See invisible creatures and objects", classes:["Artificer","Bard","Sorcerer","Wizard"], applyEffect:"utility" },
+  { name:"See Invisibility", level:2, school:"Divination", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"radiant", color:T.gold, healing:"", concentration:true, ritual:false, conditions:[], description:"See invisible creatures and objects", classes:["Artificer","Bard","Sorcerer","Wizard"], applyEffect:"utility" },
   { name:"Shatter", level:2, school:"Evocation", castTime:"1 action", range:60, shape:"sphere", radius:10, damage:"3d8 thunder", damageType:"thunder", save:"CON", effect:"shockwave", color:"#90caf9", healing:"", concentration:false, ritual:false, conditions:[], description:"Thunder shatters nonmagical objects in sphere", classes:["Bard","Sorcerer","Wizard"], applyEffect:"damage" },
-  { name:"Spider Climb", level:2, school:"Transmutation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Target can walk on any surface", classes:["Artificer","Sorcerer","Wizard"], applyEffect:"buff" },
-  { name:"Suggestion", level:2, school:"Enchantment", castTime:"1 action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Charmed"], description:"You suggest a reasonable action", classes:["Bard","Sorcerer","Warlock","Wizard"], applyEffect:"control" },
+  { name:"Spider Climb", level:2, school:"Transmutation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:T.purple || "#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Target can walk on any surface", classes:["Artificer","Sorcerer","Wizard"], applyEffect:"buff" },
+  { name:"Suggestion", level:2, school:"Enchantment", castTime:"1 action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:T.purple || "#e040fb", healing:"", concentration:true, ritual:false, conditions:["Charmed"], description:"You suggest a reasonable action", classes:["Bard","Sorcerer","Warlock","Wizard"], applyEffect:"control" },
   { name:"Web", level:2, school:"Conjuration", castTime:"1 action", range:60, shape:"cube", radius:20, damage:"", damageType:"", save:"DEX", effect:"conjuration", color:"#a4e89c", healing:"", concentration:true, ritual:false, conditions:["Restrained"], description:"Sticky webs fill a cube", classes:["Sorcerer","Wizard"], applyEffect:"control" },
   // LEVEL 3
   { name:"Animate Dead", level:3, school:"Necromancy", castTime:"1 minute", range:10, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"necrotic", color:"#7c3aed", healing:"", concentration:false, ritual:false, conditions:[], description:"Animate a corpse as undead servant", classes:["Cleric","Wizard"], applyEffect:"summon" },
   { name:"Bestow Curse", level:3, school:"Necromancy", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"WIS", effect:"necrotic", color:"#7c3aed", healing:"", concentration:true, ritual:false, conditions:["Cursed"], description:"Curse a creature with various effects", classes:["Bard","Cleric","Wizard"], applyEffect:"debuff" },
-  { name:"Blink", level:3, school:"Transmutation", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:false, ritual:false, conditions:["Invisible"], description:"You vanish and reappear randomly", classes:["Sorcerer","Wizard"], applyEffect:"utility" },
-  { name:"Clairvoyance", level:3, school:"Divination", castTime:"10 minutes", range:1, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"psychic", color:"#ffd54f", healing:"", concentration:true, ritual:false, conditions:[], description:"See through one object you know", classes:["Bard","Cleric","Sorcerer","Wizard"], applyEffect:"utility" },
-  { name:"Counterspell", level:3, school:"Abjuration", castTime:"1 reaction", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Interrupt a spell being cast", classes:["Sorcerer","Wizard"], applyEffect:"utility" },
-  { name:"Dispel Magic", level:3, school:"Abjuration", castTime:"1 action", range:120, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"End one spell on target", classes:["Artificer","Bard","Cleric","Druid","Paladin","Sorcerer","Wizard"], applyEffect:"utility" },
+  { name:"Blink", level:3, school:"Transmutation", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:T.purple || "#b574ff", healing:"", concentration:false, ritual:false, conditions:["Invisible"], description:"You vanish and reappear randomly", classes:["Sorcerer","Wizard"], applyEffect:"utility" },
+  { name:"Clairvoyance", level:3, school:"Divination", castTime:"10 minutes", range:1, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"psychic", color:T.gold, healing:"", concentration:true, ritual:false, conditions:[], description:"See through one object you know", classes:["Bard","Cleric","Sorcerer","Wizard"], applyEffect:"utility" },
+  { name:"Counterspell", level:3, school:"Abjuration", castTime:"1 reaction", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:T.blue || "#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Interrupt a spell being cast", classes:["Sorcerer","Wizard"], applyEffect:"utility" },
+  { name:"Dispel Magic", level:3, school:"Abjuration", castTime:"1 action", range:120, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:T.blue || "#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"End one spell on target", classes:["Artificer","Bard","Cleric","Druid","Paladin","Sorcerer","Wizard"], applyEffect:"utility" },
   { name:"Fireball", level:3, school:"Evocation", castTime:"1 action", range:150, shape:"sphere", radius:20, damage:"8d6 fire", damageType:"fire", save:"DEX", effect:"explosion", color:"#ff6030", healing:"", concentration:false, ritual:false, conditions:[], description:"Ball of fire fills 20-ft sphere", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
-  { name:"Fly", level:3, school:"Transmutation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Grant flight speed to creature", classes:["Artificer","Sorcerer","Wizard"], applyEffect:"buff" },
-  { name:"Gaseous Form", level:3, school:"Transmutation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Target becomes cloud of gas", classes:["Sorcerer","Wizard"], applyEffect:"utility" },
-  { name:"Glyph of Warding", level:3, school:"Abjuration", castTime:"1 hour", range:0, shape:"touch", radius:0, damage:"5d8", damageType:"fire", save:"DEX", effect:"explosion", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Inscribe protective glyph", classes:["Artificer","Bard","Cleric","Wizard"], applyEffect:"damage" },
-  { name:"Haste", level:3, school:"Transmutation", castTime:"1 action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:["Hasted"], description:"Target gains extra action, speed, AC", classes:["Sorcerer","Wizard"], applyEffect:"buff" },
-  { name:"Hypnotic Pattern", level:3, school:"Illusion", castTime:"1 action", range:120, shape:"cube", radius:30, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Incapacitated"], description:"Creatures see hypnotic pattern, become incapacitated", classes:["Bard","Sorcerer","Warlock","Wizard"], applyEffect:"control" },
-  { name:"Intellect Fortress", level:3, school:"Abjuration", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:true, ritual:false, conditions:[], description:"Protect against psychic damage and charm", classes:["Artificer","Bard","Sorcerer","Wizard"], applyEffect:"buff" },
-  { name:"Invisibility (Greater)", level:4, school:"Illusion", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Invisible"], description:"Target stays invisible while attacking", classes:["Bard","Sorcerer","Wizard"], applyEffect:"buff" },
-  { name:"Leomund's Tiny Hut", level:3, school:"Evocation", castTime:"1 minute", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:false, ritual:true, conditions:[], description:"Create a magical shelter for 9 creatures", classes:["Bard","Wizard"], applyEffect:"utility" },
+  { name:"Fly", level:3, school:"Transmutation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:T.purple || "#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Grant flight speed to creature", classes:["Artificer","Sorcerer","Wizard"], applyEffect:"buff" },
+  { name:"Gaseous Form", level:3, school:"Transmutation", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:T.purple || "#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Target becomes cloud of gas", classes:["Sorcerer","Wizard"], applyEffect:"utility" },
+  { name:"Glyph of Warding", level:3, school:"Abjuration", castTime:"1 hour", range:0, shape:"touch", radius:0, damage:"5d8", damageType:"fire", save:"DEX", effect:"explosion", color:T.blue || "#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Inscribe protective glyph", classes:["Artificer","Bard","Cleric","Wizard"], applyEffect:"damage" },
+  { name:"Haste", level:3, school:"Transmutation", castTime:"1 action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:T.purple || "#b574ff", healing:"", concentration:true, ritual:false, conditions:["Hasted"], description:"Target gains extra action, speed, AC", classes:["Sorcerer","Wizard"], applyEffect:"buff" },
+  { name:"Hypnotic Pattern", level:3, school:"Illusion", castTime:"1 action", range:120, shape:"cube", radius:30, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:T.purple || "#e040fb", healing:"", concentration:true, ritual:false, conditions:["Incapacitated"], description:"Creatures see hypnotic pattern, become incapacitated", classes:["Bard","Sorcerer","Warlock","Wizard"], applyEffect:"control" },
+  { name:"Intellect Fortress", level:3, school:"Abjuration", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:T.blue || "#58aaff", healing:"", concentration:true, ritual:false, conditions:[], description:"Protect against psychic damage and charm", classes:["Artificer","Bard","Sorcerer","Wizard"], applyEffect:"buff" },
+  { name:"Invisibility (Greater)", level:4, school:"Illusion", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"enchantment", color:T.purple || "#e040fb", healing:"", concentration:true, ritual:false, conditions:["Invisible"], description:"Target stays invisible while attacking", classes:["Bard","Sorcerer","Wizard"], applyEffect:"buff" },
+  { name:"Leomund's Tiny Hut", level:3, school:"Evocation", castTime:"1 minute", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:T.blue || "#58aaff", healing:"", concentration:false, ritual:true, conditions:[], description:"Create a magical shelter for 9 creatures", classes:["Bard","Wizard"], applyEffect:"utility" },
   { name:"Lightning Bolt", level:3, school:"Evocation", castTime:"1 action", range:100, shape:"line", radius:5, length:100, damage:"8d6 lightning", damageType:"lightning", save:"DEX", effect:"bolt", color:"#5edfff", healing:"", concentration:false, ritual:false, conditions:[], description:"100-ft line of lightning", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
-  { name:"Major Image", level:3, school:"Illusion", castTime:"1 action", range:120, shape:"cube", radius:20, damage:"", damageType:"", save:"INT", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:[], description:"Create an illusion that moves and acts", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
-  { name:"Phantom Steed", level:3, school:"Illusion", castTime:"1 minute", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"conjuration", color:"#e040fb", healing:"", concentration:false, ritual:true, conditions:[], description:"Create a spectral mount", classes:["Wizard"], applyEffect:"utility" },
+  { name:"Major Image", level:3, school:"Illusion", castTime:"1 action", range:120, shape:"cube", radius:20, damage:"", damageType:"", save:"INT", effect:"enchantment", color:T.purple || "#e040fb", healing:"", concentration:true, ritual:false, conditions:[], description:"Create an illusion that moves and acts", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
+  { name:"Phantom Steed", level:3, school:"Illusion", castTime:"1 minute", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"conjuration", color:T.purple || "#e040fb", healing:"", concentration:false, ritual:true, conditions:[], description:"Create a spectral mount", classes:["Wizard"], applyEffect:"utility" },
   { name:"Sleet Storm", level:3, school:"Evocation", castTime:"1 action", range:150, shape:"sphere", radius:20, damage:"3d8 cold", damageType:"cold", save:"DEX", effect:"freeze", color:"#b3e5fc", healing:"", concentration:true, ritual:false, conditions:["Prone"], description:"Sleet fills sphere, difficult terrain", classes:["Druid","Sorcerer","Wizard"], applyEffect:"damage" },
-  { name:"Slow", level:3, school:"Transmutation", castTime:"1 action", range:120, shape:"sphere", radius:20, damage:"", damageType:"", save:"WIS", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Creatures move slower, have disadvantage", classes:["Sorcerer","Wizard"], applyEffect:"debuff" },
+  { name:"Slow", level:3, school:"Transmutation", castTime:"1 action", range:120, shape:"sphere", radius:20, damage:"", damageType:"", save:"WIS", effect:"transmutation", color:T.purple || "#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Creatures move slower, have disadvantage", classes:["Sorcerer","Wizard"], applyEffect:"debuff" },
   { name:"Stinking Cloud", level:3, school:"Conjuration", castTime:"1 action", range:90, shape:"sphere", radius:20, damage:"", damageType:"", save:"CON", effect:"poison", color:"#4caf50", healing:"", concentration:true, ritual:false, conditions:["Poisoned"], description:"Noxious cloud nauseates creatures", classes:["Bard","Sorcerer","Wizard"], applyEffect:"control" },
   { name:"Summon Lesser Demons", level:3, school:"Conjuration", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"conjuration", color:"#a4e89c", healing:"", concentration:true, ritual:false, conditions:[], description:"Summon demons to fight for you", classes:["Warlock","Wizard"], applyEffect:"summon" },
   { name:"Tidal Wave", level:3, school:"Evocation", castTime:"1 action", range:120, shape:"cube", radius:30, damage:"4d8 bludgeoning", damageType:"bludgeoning", save:"STR", effect:"shockwave", color:"#90caf9", healing:"", concentration:false, ritual:false, conditions:["Prone"], description:"Wave of water knocks creatures around", classes:["Druid","Sorcerer","Wizard"], applyEffect:"damage" },
   { name:"Vampiric Touch", level:3, school:"Necromancy", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"3d6 necrotic", damageType:"necrotic", save:"", effect:"necrotic", color:"#7c3aed", healing:"3d6", concentration:true, ritual:false, conditions:[], description:"Drain life from target, heal yourself", classes:["Wizard"], applyEffect:"damage" },
   // LEVEL 4
   { name:"Blight", level:4, school:"Necromancy", castTime:"1 action", range:30, shape:"single", radius:0, damage:"8d8 necrotic", damageType:"necrotic", save:"CON", effect:"necrotic", color:"#7c3aed", healing:"", concentration:false, ritual:false, conditions:[], description:"Wither a creature or plant", classes:["Druid","Sorcerer","Wizard"], applyEffect:"damage" },
-  { name:"Charm Monster", level:4, school:"Enchantment", castTime:"1 action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Charmed"], description:"Charm a creature", classes:["Bard","Sorcerer","Warlock","Wizard"], applyEffect:"control" },
-  { name:"Confusion", level:4, school:"Enchantment", castTime:"1 action", range:90, shape:"sphere", radius:10, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Incapacitated"], description:"Creatures in area become confused", classes:["Bard","Druid","Sorcerer","Wizard"], applyEffect:"control" },
+  { name:"Charm Monster", level:4, school:"Enchantment", castTime:"1 action", range:30, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:T.purple || "#e040fb", healing:"", concentration:true, ritual:false, conditions:["Charmed"], description:"Charm a creature", classes:["Bard","Sorcerer","Warlock","Wizard"], applyEffect:"control" },
+  { name:"Confusion", level:4, school:"Enchantment", castTime:"1 action", range:90, shape:"sphere", radius:10, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:T.purple || "#e040fb", healing:"", concentration:true, ritual:false, conditions:["Incapacitated"], description:"Creatures in area become confused", classes:["Bard","Druid","Sorcerer","Wizard"], applyEffect:"control" },
   { name:"Dimension Door", level:4, school:"Conjuration", castTime:"1 action", range:500, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"conjuration", color:"#a4e89c", healing:"", concentration:false, ritual:false, conditions:[], description:"Teleport yourself and ally up to 500 ft", classes:["Artificer","Bard","Sorcerer","Warlock","Wizard"], applyEffect:"utility" },
   { name:"Fire Shield", level:4, school:"Evocation", castTime:"1 action", range:0, shape:"self", radius:0, damage:"2d8 fire", damageType:"fire", save:"", effect:"shield", color:"#ff6030", healing:"", concentration:true, ritual:false, conditions:[], description:"Flaming aura harms those who strike you", classes:["Sorcerer","Wizard"], applyEffect:"buff" },
-  { name:"Hallucinatory Terrain", level:4, school:"Illusion", castTime:"10 minutes", range:300, shape:"cube", radius:150, damage:"", damageType:"", save:"INT", effect:"enchantment", color:"#e040fb", healing:"", concentration:false, ritual:true, conditions:[], description:"Hide terrain with illusion", classes:["Bard","Druid","Wizard"], applyEffect:"utility" },
+  { name:"Hallucinatory Terrain", level:4, school:"Illusion", castTime:"10 minutes", range:300, shape:"cube", radius:150, damage:"", damageType:"", save:"INT", effect:"enchantment", color:T.purple || "#e040fb", healing:"", concentration:false, ritual:true, conditions:[], description:"Hide terrain with illusion", classes:["Bard","Druid","Wizard"], applyEffect:"utility" },
   { name:"Ice Storm", level:4, school:"Evocation", castTime:"1 action", range:300, shape:"sphere", radius:20, damage:"2d8+4d6 cold", damageType:"cold", save:"DEX", effect:"freeze", color:"#b3e5fc", healing:"", concentration:false, ritual:false, conditions:["Prone"], description:"Hail and sleet fills 20-ft sphere", classes:["Druid","Sorcerer","Wizard"], applyEffect:"damage" },
-  { name:"Polymorph", level:4, school:"Transmutation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Transform creature into beast", classes:["Bard","Druid","Sorcerer","Wizard"], applyEffect:"utility" },
-  { name:"Sickening Radiance", level:4, school:"Evocation", castTime:"1 action", range:120, shape:"sphere", radius:30, damage:"2d8 radiant", damageType:"radiant", save:"CON", effect:"poison", color:"#ffd54f", healing:"", concentration:true, ritual:false, conditions:["Poisoned"], description:"Radiation sickens creatures in sphere", classes:["Wizard"], applyEffect:"damage" },
-  { name:"Stoneskin", level:4, school:"Abjuration", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:true, ritual:false, conditions:[], description:"Target gains resistance to physical damage", classes:["Artificer","Druid","Sorcerer","Wizard"], applyEffect:"buff" },
+  { name:"Polymorph", level:4, school:"Transmutation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"transmutation", color:T.purple || "#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Transform creature into beast", classes:["Bard","Druid","Sorcerer","Wizard"], applyEffect:"utility" },
+  { name:"Sickening Radiance", level:4, school:"Evocation", castTime:"1 action", range:120, shape:"sphere", radius:30, damage:"2d8 radiant", damageType:"radiant", save:"CON", effect:"poison", color:T.gold, healing:"", concentration:true, ritual:false, conditions:["Poisoned"], description:"Radiation sickens creatures in sphere", classes:["Wizard"], applyEffect:"damage" },
+  { name:"Stoneskin", level:4, school:"Abjuration", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:T.blue || "#58aaff", healing:"", concentration:true, ritual:false, conditions:[], description:"Target gains resistance to physical damage", classes:["Artificer","Druid","Sorcerer","Wizard"], applyEffect:"buff" },
   // LEVEL 5+
-  { name:"Animate Objects", level:5, school:"Transmutation", castTime:"1 action", range:120, shape:"sphere", radius:60, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Objects within range spring to life at your command, attacking your enemies with slam attacks", classes:["Bard","Sorcerer","Wizard"], applyEffect:"summon" },
+  { name:"Animate Objects", level:5, school:"Transmutation", castTime:"1 action", range:120, shape:"sphere", radius:60, damage:"", damageType:"", save:"", effect:"transmutation", color:T.purple || "#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Objects within range spring to life at your command, attacking your enemies with slam attacks", classes:["Bard","Sorcerer","Wizard"], applyEffect:"summon" },
   { name:"Cloudkill", level:5, school:"Conjuration", castTime:"1 action", range:120, shape:"sphere", radius:20, damage:"5d8 poison", damageType:"poison", save:"CON", effect:"poison", color:"#4caf50", healing:"", concentration:true, ritual:false, conditions:["Poisoned"], description:"Poisonous cloud expands and kills", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
   { name:"Cone of Cold", level:5, school:"Evocation", castTime:"1 action", range:0, shape:"cone", radius:60, damage:"8d8 cold", damageType:"cold", save:"CON", effect:"freeze", color:"#b3e5fc", healing:"", concentration:false, ritual:false, conditions:[], description:"60-ft cone of freezing", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
-  { name:"Hold Monster", level:5, school:"Enchantment", castTime:"1 action", range:90, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Paralyzed"], description:"Paralyze any creature", classes:["Bard","Sorcerer","Wizard"], applyEffect:"control" },
-  { name:"Telekinesis", level:5, school:"Transmutation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Move objects or creatures with mind", classes:["Sorcerer","Wizard"], applyEffect:"utility" },
-  { name:"Wall of Force", level:5, school:"Evocation", castTime:"1 action", range:120, shape:"cube", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:true, ritual:false, conditions:[], description:"Create invisible protective wall", classes:["Wizard"], applyEffect:"buff" },
+  { name:"Hold Monster", level:5, school:"Enchantment", castTime:"1 action", range:90, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:T.purple || "#e040fb", healing:"", concentration:true, ritual:false, conditions:["Paralyzed"], description:"Paralyze any creature", classes:["Bard","Sorcerer","Wizard"], applyEffect:"control" },
+  { name:"Telekinesis", level:5, school:"Transmutation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:T.purple || "#b574ff", healing:"", concentration:true, ritual:false, conditions:[], description:"Move objects or creatures with mind", classes:["Sorcerer","Wizard"], applyEffect:"utility" },
+  { name:"Wall of Force", level:5, school:"Evocation", castTime:"1 action", range:120, shape:"cube", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:T.blue || "#58aaff", healing:"", concentration:true, ritual:false, conditions:[], description:"Create invisible protective wall", classes:["Wizard"], applyEffect:"buff" },
   { name:"Chain Lightning", level:6, school:"Evocation", castTime:"1 action", range:150, shape:"single", radius:0, damage:"10d6 lightning", damageType:"lightning", save:"DEX", effect:"bolt", color:"#5edfff", healing:"", concentration:false, ritual:false, conditions:[], description:"Lightning arcs to multiple targets", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
   { name:"Circle of Death", level:6, school:"Necromancy", castTime:"1 action", range:150, shape:"sphere", radius:60, damage:"8d6 necrotic", damageType:"necrotic", save:"CON", effect:"necrotic", color:"#7c3aed", healing:"", concentration:false, ritual:false, conditions:[], description:"Death energy fills sphere", classes:["Sorcerer","Warlock","Wizard"], applyEffect:"damage" },
-  { name:"Disintegrate", level:6, school:"Evocation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"10d6+40 force", damageType:"force", save:"DEX", effect:"force", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Utterly destroy target", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
-  { name:"Tenser's Transformation", level:6, school:"Transmutation", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:["Hasted"], description:"Transform yourself into warrior", classes:["Wizard"], applyEffect:"buff" },
+  { name:"Disintegrate", level:6, school:"Evocation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"10d6+40 force", damageType:"force", save:"DEX", effect:"force", color:T.blue || "#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Utterly destroy target", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
+  { name:"Tenser's Transformation", level:6, school:"Transmutation", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:T.purple || "#b574ff", healing:"", concentration:true, ritual:false, conditions:["Hasted"], description:"Transform yourself into warrior", classes:["Wizard"], applyEffect:"buff" },
   // LEVEL 7
   { name:"Delayed Blast Fireball", level:7, school:"Evocation", castTime:"1 action", range:150, shape:"sphere", radius:20, damage:"12d6", damageType:"fire", save:"DEX", effect:"explosion", color:"#ff6030", healing:"", concentration:true, ritual:false, conditions:[], description:"Fireball you can delay up to 1 minute, growing stronger", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
   { name:"Etherealness", level:7, school:"Transmutation", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"conjuration", color:"#a4e89c", healing:"", concentration:false, ritual:false, conditions:["Invisible"], description:"Step into the Ethereal Plane", classes:["Bard","Cleric","Sorcerer","Wizard"], applyEffect:"utility" },
   { name:"Finger of Death", level:7, school:"Necromancy", castTime:"1 action", range:60, shape:"single", radius:0, damage:"7d8+30", damageType:"necrotic", save:"CON", effect:"necrotic", color:"#7c3aed", healing:"", concentration:false, ritual:false, conditions:[], description:"Slay with a word; corpse rises as zombie", classes:["Sorcerer","Warlock","Wizard"], applyEffect:"damage" },
   { name:"Fire Storm", level:7, school:"Evocation", castTime:"1 action", range:150, shape:"sphere", radius:20, damage:"7d10", damageType:"fire", save:"DEX", effect:"explosion", color:"#ff6030", healing:"", concentration:false, ritual:false, conditions:[], description:"Fire rains down in multiple areas", classes:["Cleric","Druid","Sorcerer"], applyEffect:"damage" },
-  { name:"Forcecage", level:7, school:"Evocation", castTime:"1 action", range:100, shape:"cube", radius:10, damage:"", damageType:"", save:"CHA", effect:"force", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:["Restrained"], description:"Immobile invisible cage traps creatures", classes:["Bard","Warlock","Wizard"], applyEffect:"control" },
-  { name:"Mordenkainen's Sword", level:7, school:"Evocation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"3d10", damageType:"force", save:"", effect:"force", color:"#58aaff", healing:"", concentration:true, ritual:false, conditions:[], description:"Floating sword attacks each turn", classes:["Bard","Wizard"], applyEffect:"damage" },
+  { name:"Forcecage", level:7, school:"Evocation", castTime:"1 action", range:100, shape:"cube", radius:10, damage:"", damageType:"", save:"CHA", effect:"force", color:T.blue || "#58aaff", healing:"", concentration:false, ritual:false, conditions:["Restrained"], description:"Immobile invisible cage traps creatures", classes:["Bard","Warlock","Wizard"], applyEffect:"control" },
+  { name:"Mordenkainen's Sword", level:7, school:"Evocation", castTime:"1 action", range:60, shape:"single", radius:0, damage:"3d10", damageType:"force", save:"", effect:"force", color:T.blue || "#58aaff", healing:"", concentration:true, ritual:false, conditions:[], description:"Floating sword attacks each turn", classes:["Bard","Wizard"], applyEffect:"damage" },
   { name:"Plane Shift", level:7, school:"Conjuration", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"CHA", effect:"conjuration", color:"#a4e89c", healing:"", concentration:false, ritual:false, conditions:[], description:"Transport willing creatures to another plane", classes:["Cleric","Druid","Sorcerer","Wizard"], applyEffect:"utility" },
-  { name:"Prismatic Spray", level:7, school:"Evocation", castTime:"1 action", range:0, shape:"cone", radius:60, damage:"10d6", damageType:"radiant", save:"DEX", effect:"radiant", color:"#e040fb", healing:"", concentration:false, ritual:false, conditions:["Blinded"], description:"Seven multicolored rays with random effects", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
-  { name:"Regenerate", level:7, school:"Transmutation", castTime:"1 minute", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"heal", color:"#5ee09a", healing:"4d8+15", concentration:false, ritual:false, conditions:[], description:"Target regains 4d8+15 HP and regenerates limbs", classes:["Bard","Cleric","Druid"], applyEffect:"heal" },
-  { name:"Resurrection", level:7, school:"Necromancy", castTime:"1 hour", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"heal", color:"#5ee09a", healing:"", concentration:false, ritual:false, conditions:[], description:"Bring a creature dead up to 100 years back to life", classes:["Bard","Cleric"], applyEffect:"utility" },
-  { name:"Reverse Gravity", level:7, school:"Transmutation", castTime:"1 action", range:100, shape:"cylinder", radius:50, damage:"", damageType:"", save:"DEX", effect:"transmutation", color:"#b574ff", healing:"", concentration:true, ritual:false, conditions:["Prone"], description:"Gravity reverses in a cylinder, creatures fall upward", classes:["Druid","Sorcerer","Wizard"], applyEffect:"control" },
+  { name:"Prismatic Spray", level:7, school:"Evocation", castTime:"1 action", range:0, shape:"cone", radius:60, damage:"10d6", damageType:"radiant", save:"DEX", effect:"radiant", color:T.purple || "#e040fb", healing:"", concentration:false, ritual:false, conditions:["Blinded"], description:"Seven multicolored rays with random effects", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
+  { name:"Regenerate", level:7, school:"Transmutation", castTime:"1 minute", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"heal", color:T.green, healing:"4d8+15", concentration:false, ritual:false, conditions:[], description:"Target regains 4d8+15 HP and regenerates limbs", classes:["Bard","Cleric","Druid"], applyEffect:"heal" },
+  { name:"Resurrection", level:7, school:"Necromancy", castTime:"1 hour", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"heal", color:T.green, healing:"", concentration:false, ritual:false, conditions:[], description:"Bring a creature dead up to 100 years back to life", classes:["Bard","Cleric"], applyEffect:"utility" },
+  { name:"Reverse Gravity", level:7, school:"Transmutation", castTime:"1 action", range:100, shape:"cylinder", radius:50, damage:"", damageType:"", save:"DEX", effect:"transmutation", color:T.purple || "#b574ff", healing:"", concentration:true, ritual:false, conditions:["Prone"], description:"Gravity reverses in a cylinder, creatures fall upward", classes:["Druid","Sorcerer","Wizard"], applyEffect:"control" },
   { name:"Symbol", level:7, school:"Abjuration", castTime:"1 minute", range:0, shape:"touch", radius:0, damage:"10d10", damageType:"necrotic", save:"CON", effect:"necrotic", color:"#7c3aed", healing:"", concentration:false, ritual:false, conditions:[], description:"Inscribe a glyph that triggers various effects", classes:["Bard","Cleric","Wizard"], applyEffect:"damage" },
   { name:"Teleport", level:7, school:"Conjuration", castTime:"1 action", range:10, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"conjuration", color:"#a4e89c", healing:"", concentration:false, ritual:false, conditions:[], description:"Teleport up to 8 willing creatures anywhere on same plane", classes:["Bard","Sorcerer","Wizard"], applyEffect:"utility" },
   // LEVEL 8
   { name:"Abi-Dalzim's Horrid Wilting", level:8, school:"Necromancy", castTime:"1 action", range:150, shape:"sphere", radius:30, damage:"12d8", damageType:"necrotic", save:"CON", effect:"necrotic", color:"#7c3aed", healing:"", concentration:false, ritual:false, conditions:[], description:"Drain moisture from creatures in 30-ft sphere", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
-  { name:"Antimagic Field", level:8, school:"Abjuration", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:true, ritual:false, conditions:[], description:"10-ft sphere suppresses all magic", classes:["Cleric","Wizard"], applyEffect:"utility" },
+  { name:"Antimagic Field", level:8, school:"Abjuration", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:T.blue || "#58aaff", healing:"", concentration:true, ritual:false, conditions:[], description:"10-ft sphere suppresses all magic", classes:["Cleric","Wizard"], applyEffect:"utility" },
   { name:"Clone", level:8, school:"Necromancy", castTime:"1 hour", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"necrotic", color:"#7c3aed", healing:"", concentration:false, ritual:false, conditions:[], description:"Create a duplicate body to revive into", classes:["Wizard"], applyEffect:"utility" },
   { name:"Control Weather", level:8, school:"Transmutation", castTime:"10 minutes", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"shockwave", color:"#90caf9", healing:"", concentration:true, ritual:false, conditions:[], description:"Control weather in a 5-mile radius", classes:["Cleric","Druid","Wizard"], applyEffect:"utility" },
-  { name:"Dominate Monster", level:8, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:"#e040fb", healing:"", concentration:true, ritual:false, conditions:["Charmed"], description:"Take total control of any creature", classes:["Bard","Sorcerer","Warlock","Wizard"], applyEffect:"control" },
+  { name:"Dominate Monster", level:8, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"WIS", effect:"enchantment", color:T.purple || "#e040fb", healing:"", concentration:true, ritual:false, conditions:["Charmed"], description:"Take total control of any creature", classes:["Bard","Sorcerer","Warlock","Wizard"], applyEffect:"control" },
   { name:"Earthquake", level:8, school:"Evocation", castTime:"1 action", range:500, shape:"sphere", radius:100, damage:"", damageType:"bludgeoning", save:"DEX", effect:"shockwave", color:"#90caf9", healing:"", concentration:true, ritual:false, conditions:["Prone"], description:"Earth shakes violently in a 100-ft radius", classes:["Cleric","Druid","Sorcerer"], applyEffect:"control" },
   { name:"Feeblemind", level:8, school:"Enchantment", castTime:"1 action", range:150, shape:"single", radius:0, damage:"4d6", damageType:"psychic", save:"INT", effect:"psychic", color:"#c77dff", healing:"", concentration:false, ritual:false, conditions:["Stunned"], description:"Shatter a creature's intellect and personality", classes:["Bard","Druid","Warlock","Wizard"], applyEffect:"damage" },
-  { name:"Holy Aura", level:8, school:"Abjuration", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"radiant", color:"#ffd54f", healing:"", concentration:true, ritual:false, conditions:["Blessed"], description:"Divine light protects allies within 30 ft", classes:["Cleric"], applyEffect:"buff" },
+  { name:"Holy Aura", level:8, school:"Abjuration", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"radiant", color:T.gold, healing:"", concentration:true, ritual:false, conditions:["Blessed"], description:"Divine light protects allies within 30 ft", classes:["Cleric"], applyEffect:"buff" },
   { name:"Incendiary Cloud", level:8, school:"Conjuration", castTime:"1 action", range:150, shape:"sphere", radius:20, damage:"10d8", damageType:"fire", save:"DEX", effect:"explosion", color:"#ff6030", healing:"", concentration:true, ritual:false, conditions:[], description:"Cloud of fire damages creatures each turn", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
   { name:"Maze", level:8, school:"Conjuration", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"INT", effect:"conjuration", color:"#a4e89c", healing:"", concentration:true, ritual:false, conditions:["Incapacitated"], description:"Banish creature into extradimensional maze", classes:["Wizard"], applyEffect:"control" },
-  { name:"Mind Blank", level:8, school:"Abjuration", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:"#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Target is immune to psychic damage and divination", classes:["Bard","Wizard"], applyEffect:"buff" },
-  { name:"Power Word Stun", level:8, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"psychic", color:"#e040fb", healing:"", concentration:false, ritual:false, conditions:["Stunned"], description:"Stun a creature with 150 HP or fewer", classes:["Bard","Sorcerer","Warlock","Wizard"], applyEffect:"control" },
-  { name:"Sunburst", level:8, school:"Evocation", castTime:"1 action", range:150, shape:"sphere", radius:60, damage:"12d6", damageType:"radiant", save:"CON", effect:"radiant", color:"#ffd54f", healing:"", concentration:false, ritual:false, conditions:["Blinded"], description:"Brilliant sunlight deals radiant damage and blinds", classes:["Cleric","Druid","Sorcerer","Wizard"], applyEffect:"damage" },
+  { name:"Mind Blank", level:8, school:"Abjuration", castTime:"1 action", range:0, shape:"touch", radius:0, damage:"", damageType:"", save:"", effect:"shield", color:T.blue || "#58aaff", healing:"", concentration:false, ritual:false, conditions:[], description:"Target is immune to psychic damage and divination", classes:["Bard","Wizard"], applyEffect:"buff" },
+  { name:"Power Word Stun", level:8, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"psychic", color:T.purple || "#e040fb", healing:"", concentration:false, ritual:false, conditions:["Stunned"], description:"Stun a creature with 150 HP or fewer", classes:["Bard","Sorcerer","Warlock","Wizard"], applyEffect:"control" },
+  { name:"Sunburst", level:8, school:"Evocation", castTime:"1 action", range:150, shape:"sphere", radius:60, damage:"12d6", damageType:"radiant", save:"CON", effect:"radiant", color:T.gold, healing:"", concentration:false, ritual:false, conditions:["Blinded"], description:"Brilliant sunlight deals radiant damage and blinds", classes:["Cleric","Druid","Sorcerer","Wizard"], applyEffect:"damage" },
   { name:"Telepathy", level:8, school:"Evocation", castTime:"1 action", range:0, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"psychic", color:"#c77dff", healing:"", concentration:false, ritual:false, conditions:[], description:"Create telepathic link with a creature", classes:["Wizard"], applyEffect:"utility" },
   { name:"Tsunami", level:8, school:"Conjuration", castTime:"1 minute", range:1, shape:"line", radius:10, length:300, damage:"6d10", damageType:"bludgeoning", save:"STR", effect:"shockwave", color:"#90caf9", healing:"", concentration:true, ritual:false, conditions:["Prone"], description:"A massive wall of water 300 ft long crashes forward, dealing bludgeoning damage and knocking creatures prone", classes:["Druid"], applyEffect:"damage" },
   { name:"Meteor Swarm", level:9, school:"Evocation", castTime:"1 action", range:1000, shape:"sphere", radius:40, damage:"40d6 fire", damageType:"fire", save:"DEX", effect:"explosion", color:"#ff6030", healing:"", concentration:false, ritual:false, conditions:[], description:"Meteors rain from sky", classes:["Sorcerer","Wizard"], applyEffect:"damage" },
-  { name:"Power Word Kill", level:9, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"necrotic", color:"#e040fb", healing:"", concentration:false, ritual:false, conditions:["Unconscious"], description:"Instantly slay target with 100 or fewer HP", classes:["Sorcerer","Wizard"], applyEffect:"control" },
-  { name:"Time Stop", level:9, school:"Transmutation", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#b574ff", healing:"", concentration:false, ritual:false, conditions:[], description:"Stop time for up to 3 rounds", classes:["Wizard"], applyEffect:"utility" },
+  { name:"Power Word Kill", level:9, school:"Enchantment", castTime:"1 action", range:60, shape:"single", radius:0, damage:"", damageType:"", save:"", effect:"necrotic", color:T.purple || "#e040fb", healing:"", concentration:false, ritual:false, conditions:["Unconscious"], description:"Instantly slay target with 100 or fewer HP", classes:["Sorcerer","Wizard"], applyEffect:"control" },
+  { name:"Time Stop", level:9, school:"Transmutation", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:T.purple || "#b574ff", healing:"", concentration:false, ritual:false, conditions:[], description:"Stop time for up to 3 rounds", classes:["Wizard"], applyEffect:"utility" },
   { name:"Wish", level:9, school:"Conjuration", castTime:"1 action", range:0, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"conjuration", color:"#a4e89c", healing:"", concentration:false, ritual:false, conditions:[], description:"Alter reality at DM's discretion", classes:["Sorcerer","Wizard"], applyEffect:"utility" },
     // ── Additional Spells (comprehensive SRD expansion) ──
   { name:"Thaumaturgy", level:0, school:"Transmutation", castTime:"1 action", range:30, shape:"self", radius:0, damage:"", damageType:"", save:"", effect:"transmutation", color:"#8B00FF", healing:"", concentration:false, ritual:false, conditions:[], description:"You manifest a minor wonder, a sign of supernatural power.", classes:["Cleric"], applyEffect:"utility" },
@@ -10260,10 +10260,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   boxShadow:"0 4px 16px rgba(0,0,0,0.3)",
                 }}>
                   <div style={{ width:8, height:8, borderRadius:"50%", background: guidance.color, boxShadow:"0 0 8px " + guidance.color + "88" }} />
-                  <div style={{ fontFamily:"'Cinzel', serif", fontSize:11, color: guidance.color, fontWeight:700, letterSpacing:"1px", textTransform:"uppercase" }}>
+                  <div style={{ fontFamily:T.ui, fontSize:11, color: guidance.color, fontWeight:700, letterSpacing:"1px", textTransform:"uppercase" }}>
                     {guidance.hint}
                   </div>
-                  <div style={{ fontFamily:"'Spectral', serif", fontSize:10, color:"var(--text-muted, #999)", fontWeight:500 }}>
+                  <div style={{ fontFamily:T.body, fontSize:10, color:T.textMuted, fontWeight:500 }}>
                     {guidance.msg}
                   </div>
                 </div>
@@ -10292,11 +10292,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   <div style={{ fontFamily:"'Cinzel', serif", fontSize:14, fontWeight:800, color:accentColor, letterSpacing:"2px", textTransform:"uppercase" }}>
                     {cardLabel}
                   </div>
-                  <div style={{ width:1, height:20, background:"rgba(255,255,255,0.12)" }} />
-                  <div style={{ fontFamily:"'Spectral', serif", fontSize:12, color:"#ccc", fontWeight:500 }}>
+                  <div style={{ width:1, height:20, background:bd08 }} />
+                  <div style={{ fontFamily:T.body, fontSize:12, color:T.text, fontWeight:500 }}>
                     Click a target ({rangeFt}ft range)
                   </div>
-                  <div style={{ fontFamily:"'Spectral', serif", fontSize:10, color:"rgba(255,255,255,0.4)" }}>
+                  <div style={{ fontFamily:T.body, fontSize:10, color:T.textDim, fontWeight:400 }}>
                     Right-click or ESC to cancel
                   </div>
                 </div>
@@ -10317,22 +10317,22 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   display:"flex", flexDirection:"column", alignItems:"center", gap:12,
                   maxWidth:360, textAlign:"center",
                 }}>
-                  <div style={{ fontFamily:"'Cinzel', serif", fontSize:14, fontWeight:800, color:"#b574ff", letterSpacing:"2px", textTransform:"uppercase" }}>
+                  <div style={{ fontFamily:T.ui, fontSize:14, fontWeight:800, color:T.purple || "#b574ff", letterSpacing:"2px", textTransform:"uppercase" }}>
                     Opportunity Attack!
                   </div>
-                  <div style={{ fontFamily:"'Spectral', serif", fontSize:13, color:"#ddd", lineHeight:1.5 }}>
+                  <div style={{ fontFamily:T.body, fontSize:13, color:T.text, lineHeight:1.5 }}>
                     {rpMov.name} is leaving {rpAtk.name}'s reach.
                   </div>
-                  <div style={{ fontFamily:"'Spectral', serif", fontSize:11, color:"rgba(255,255,255,0.5)" }}>
+                  <div style={{ fontFamily:T.body, fontSize:11, color:T.textMuted }}>
                     Use {rpAtk.name}'s reaction for an opportunity attack?
                   </div>
                   <div style={{ display:"flex", gap:12, marginTop:4 }}>
                     <button type="button" onClick={() => { if (reactionPromptResolveRef.current) reactionPromptResolveRef.current(true); setReactionPrompt(null); }}
-                      style={{ padding:"8px 20px", borderRadius:8, background:"rgba(181,116,255,0.2)", border:"1px solid rgba(181,116,255,0.5)", color:"#b574ff", fontFamily:"'Cinzel', serif", fontSize:12, fontWeight:700, letterSpacing:"1px", cursor:"pointer" }}>
+                      style={{ padding:"8px 20px", borderRadius:8, background:lm("rgba(181,116,255,0.2)", "rgba(181,116,255,0.15)"), border:"1px solid "+(T.purple || "rgba(181,116,255,0.5)"), color:T.purple || "#b574ff", fontFamily:T.ui, fontSize:12, fontWeight:700, letterSpacing:"1px", cursor:"pointer" }}>
                       ATTACK
                     </button>
                     <button type="button" onClick={() => { if (reactionPromptResolveRef.current) reactionPromptResolveRef.current(false); setReactionPrompt(null); }}
-                      style={{ padding:"8px 20px", borderRadius:8, background:"rgba(255,255,255,0.05)", border:"1px solid rgba(255,255,255,0.12)", color:"#888", fontFamily:"'Cinzel', serif", fontSize:12, fontWeight:700, letterSpacing:"1px", cursor:"pointer" }}>
+                      style={{ padding:"8px 20px", borderRadius:8, background:bg03, border:"1px solid "+bd08, color:T.textMuted, fontFamily:T.ui, fontSize:12, fontWeight:700, letterSpacing:"1px", cursor:"pointer" }}>
                       PASS
                     </button>
                   </div>
@@ -10483,10 +10483,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                         ? ("Fog: " + fogMode)
                         : (showGrid ? "Grid On" : "Grid Off");
               const hudChips = activeCombatantToken && combatLive && activeEconomy ? [
-                { label:"Move", value:activeMoveFt + " ft", color:"#58aaff", active:activeMoveFt > 0, icon:Compass },
-                { label:"Action", value:activeEconomy.actionUsed ? "Spent" : "Ready", color:"#dc143c", active:!activeEconomy.actionUsed, icon:Swords },
-                { label:"Bonus", value:activeEconomy.bonusActionUsed ? "Spent" : "Ready", color:"#ffd54f", active:!activeEconomy.bonusActionUsed, icon:Star },
-                { label:"Reaction", value:activeEconomy.reactionSpent ? "Spent" : "Ready", color:"#b574ff", active:!activeEconomy.reactionSpent, icon:RefreshCw },
+                { label:"Move", value:activeMoveFt + " ft", color:T.blue || "#58aaff", active:activeMoveFt > 0, icon:Compass },
+                { label:"Action", value:activeEconomy.actionUsed ? "Spent" : "Ready", color:T.crimson, active:!activeEconomy.actionUsed, icon:Swords },
+                { label:"Bonus", value:activeEconomy.bonusActionUsed ? "Spent" : "Ready", color:T.gold, active:!activeEconomy.bonusActionUsed, icon:Star },
+                { label:"Reaction", value:activeEconomy.reactionSpent ? "Spent" : "Ready", color:T.purple || "#b574ff", active:!activeEconomy.reactionSpent, icon:RefreshCw },
               ] : [];
               return (
                 <div style={{ position:"absolute", top:12, left:72, right: sidebarOpen ? 392 : 16, zIndex:26, background: lm("linear-gradient(135deg, rgba(10,10,16,0.96), rgba(10,10,18,0.88))", "linear-gradient(135deg, rgba(247,240,222,0.97), rgba(240,232,214,0.94))"), backdropFilter:"blur(16px)", border: lm("1px solid rgba(255,255,255,0.08)", "1px solid rgba(0,0,0,0.1)"), borderRadius:16, padding:"10px 12px", boxShadow: lm("0 18px 48px rgba(0,0,8,0.55)", "0 18px 48px rgba(0,0,0,0.12)") }}>
@@ -10494,18 +10494,18 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     <div style={{ minWidth:0 }}>
                       <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
                         <span style={{ fontFamily:T.ui, fontSize:11, letterSpacing:"1.8px", color:tx, textTransform:"uppercase", fontWeight:600 }}>{battleSceneLabel}</span>
-                        <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:"#58aaff", textTransform:"uppercase", border:"1px solid rgba(88,170,255,0.25)", borderRadius:"999px", padding:"2px 8px", background:"rgba(88,170,255,0.08)" }}>{modeLabel}</span>
-                        <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:viewRole === "dm" ? "#ffd54f" : "#58aaff", textTransform:"uppercase", border:"1px solid "+bd08, borderRadius:"999px", padding:"2px 8px", background:bg03 }}>{viewRole === "dm" ? "DM View" : "Player View"}</span>
+                        <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.blue || "#58aaff", textTransform:"uppercase", border:"1px solid "+lm("rgba(88,170,255,0.25)", "rgba(88,170,255,0.2)"), borderRadius:"999px", padding:"2px 8px", background:lm("rgba(88,170,255,0.08)", "rgba(88,170,255,0.06)") }}>{modeLabel}</span>
+                        <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:viewRole === "dm" ? T.gold : (T.blue || "#58aaff"), textTransform:"uppercase", border:"1px solid "+bd08, borderRadius:"999px", padding:"2px 8px", background:bg03 }}>{viewRole === "dm" ? "DM View" : "Player View"}</span>
                       </div>
                       <div style={{ marginTop:7, display:"flex", flexWrap:"wrap", gap:8, alignItems:"center" }}>
-                        <div style={{ fontFamily:T.ui, fontSize:10, color:"#ffd54f", letterSpacing:"1px", textTransform:"uppercase" }}>
+                        <div style={{ fontFamily:T.ui, fontSize:10, color:T.gold, letterSpacing:"1px", textTransform:"uppercase" }}>
                           {combatLive ? ("Round " + round + " · Turn " + (turn + 1) + "/" + Math.max(1, combatants.length)) : "Setup Phase"}
                         </div>
                         <div style={{ fontFamily:T.body, fontSize:13, color:T.text, fontWeight:500 }}>
                           {activeCombatantToken ? ("Acting: " + activeCombatantToken.name + " · " + activeOwner + (activeRow ? " · Init " + activeRow.init : "")) : "Start an encounter to enter initiative."}
                         </div>
                         {activeConds.includes("Concentrating") && (
-                          <span style={{ fontFamily:T.ui, fontSize:8, color:"#ffd54f", letterSpacing:"0.9px", textTransform:"uppercase", padding:"2px 7px", borderRadius:"999px", border:"1px solid rgba(232,148,10,0.3)", background:"rgba(232,148,10,0.08)" }}>Concentrating</span>
+                          <span style={{ fontFamily:T.ui, fontSize:8, color:T.gold, letterSpacing:"0.9px", textTransform:"uppercase", padding:"2px 7px", borderRadius:"999px", border:"1px solid "+lm("rgba(232,148,10,0.3)", "rgba(232,148,10,0.2)"), background:lm("rgba(232,148,10,0.08)", "rgba(232,148,10,0.06)") }}>Concentrating</span>
                         )}
                       </div>
                     </div>
@@ -10517,7 +10517,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                             <RefreshCw size={12} /> Undo
                           </button>
                           <button onClick={nextTurn}
-                            style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"8px 12px", border:"1px solid rgba(212,67,58,0.25)", borderRadius:10, background:"rgba(212,67,58,0.1)", color:"var(--crimson)", fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer" }}>
+                            style={{ display:"inline-flex", alignItems:"center", gap:4, padding:"8px 12px", border:"1px solid "+lm("rgba(212,67,58,0.25)", "rgba(212,67,58,0.2)"), borderRadius:10, background:lm("rgba(212,67,58,0.1)", "rgba(212,67,58,0.08)"), color:T.crimson, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer" }}>
                             <SkipForward size={12} /> Next Turn
                           </button>
                         </React.Fragment>
@@ -10561,7 +10561,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                 <div style={{ position:"absolute", left:80, top:108, width:320, maxHeight:"calc(100% - 224px)", zIndex:24, background: lm("rgba(10,10,16,0.96)", "rgba(247,240,222,0.97)"), backdropFilter:"blur(16px)", border: lm("1px solid rgba(255,255,255,0.08)", "1px solid rgba(0,0,0,0.1)"), borderRadius:16, boxShadow: lm("0 18px 44px rgba(0,0,8,0.55)", "0 18px 44px rgba(0,0,0,0.12)"), overflow:"hidden", display:"flex", flexDirection:"column" }}>
                   <div style={{ padding:"12px 14px", borderBottom:"1px solid "+bd08, background:"linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01))" }}>
                     <div style={{ display:"flex", alignItems:"center", gap:12 }}>
-                      <div style={{ width:48, height:48, borderRadius:"50%", background:battleFocusToken.color, border:"2px solid " + (battleFocusToken.id === activeCombatantId ? "#ffd54f" : "rgba(255,255,255,0.12)"), overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", color:"#fff", fontFamily:T.ui, fontSize:14, fontWeight:700, boxShadow:battleFocusToken.id === activeCombatantId ? "0 0 18px rgba(255,213,79,0.3)" : "none", flexShrink:0 }}>
+                      <div style={{ width:48, height:48, borderRadius:"50%", background:battleFocusToken.color, border:"2px solid " + (battleFocusToken.id === activeCombatantId ? "#ffd54f" : "rgba(255,255,255,0.12)"), overflow:"hidden", display:"flex", alignItems:"center", justifyContent:"center", color:T.text, fontFamily:T.ui, fontSize:14, fontWeight:700, boxShadow:battleFocusToken.id === activeCombatantId ? "0 0 18px rgba(255,213,79,0.3)" : "none", flexShrink:0 }}>
                         {battleFocusToken.imageSrc ? <img src={battleFocusToken.imageSrc} style={{ width:"100%", height:"100%", objectFit:"cover" }} /> : (battleFocusToken.label || battleFocusToken.name.substring(0,2)).toUpperCase()}
                       </div>
                       <div style={{ minWidth:0, flex:1 }}>
@@ -10587,10 +10587,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   <div style={{ padding:"12px 14px", overflowY:"auto" }}>
                     <div style={{ display:"grid", gridTemplateColumns:"repeat(4, minmax(0,1fr))", gap:6 }}>
                       {[
-                        { label:"Move", value:leftPanelMoveFt + " ft", color:"#58aaff", active:leftPanelMoveFt > 0 },
-                        { label:"Action", value:leftPanelTurnState.actionUsed ? "Spent" : "Ready", color:"#dc143c", active:!leftPanelTurnState.actionUsed },
-                        { label:"Bonus", value:leftPanelTurnState.bonusActionUsed ? "Spent" : "Ready", color:"#ffd54f", active:!leftPanelTurnState.bonusActionUsed },
-                        { label:"React", value:leftPanelTurnState.reactionSpent ? "Spent" : "Ready", color:"#b574ff", active:!leftPanelTurnState.reactionSpent },
+                        { label:"Move", value:leftPanelMoveFt + " ft", color:T.blue || "#58aaff", active:leftPanelMoveFt > 0 },
+                        { label:"Action", value:leftPanelTurnState.actionUsed ? "Spent" : "Ready", color:T.crimson, active:!leftPanelTurnState.actionUsed },
+                        { label:"Bonus", value:leftPanelTurnState.bonusActionUsed ? "Spent" : "Ready", color:T.gold, active:!leftPanelTurnState.bonusActionUsed },
+                        { label:"React", value:leftPanelTurnState.reactionSpent ? "Spent" : "Ready", color:T.purple || "#b574ff", active:!leftPanelTurnState.reactionSpent },
                       ].map((chip) => (
                         <div key={"left-chip-"+chip.label} style={{ padding:"8px 7px", borderRadius:12, background:chip.active ? lm("rgba(255,255,255,0.04)", "rgba(0,0,0,0.04)") : subtleBg2, border:"1px solid " + (chip.active ? chip.color + "44" : subtleBorder) }}>
                           <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"0.8px", color:T.textFaint, textTransform:"uppercase" }}>{chip.label}</div>
@@ -10601,7 +10601,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
                     {battleFocusTarget && (
                       <div style={{ marginTop:10, padding:"9px 10px", borderRadius:12, background:"rgba(255,213,79,0.04)", border:"1px solid rgba(255,213,79,0.16)" }}>
-                        <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:"#ffd54f", textTransform:"uppercase", marginBottom:4 }}>Focus Target</div>
+                        <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.gold, textTransform:"uppercase", marginBottom:4 }}>Focus Target</div>
                         <div style={{ fontFamily:T.body, fontSize:12, color:T.text }}>{battleFocusTarget.name} · {distBetween(battleFocusToken, battleFocusTarget)} ft · {hpStateLabel(battleFocusTarget.hp, battleFocusTarget.maxHp)}</div>
                       </div>
                     )}
@@ -10703,18 +10703,18 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             })()}
 
             {/* Zoom indicator */}
-            <div style={{ position:"absolute", bottom:12, left: cockpitModeActive ? 18 : 80, background:"rgba(0,0,0,0.55)", backdropFilter:"blur(4px)", padding:"5px 12px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"rgba(255,255,255,0.7)", letterSpacing:"1.5px", pointerEvents:"none", border:"1px solid "+bd08, zIndex:8 }}>
+            <div style={{ position:"absolute", bottom:12, left: cockpitModeActive ? 18 : 80, background:"rgba(0,0,0,0.55)", backdropFilter:"blur(4px)", padding:"5px 12px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:T.textMuted, letterSpacing:"1.5px", pointerEvents:"none", border:"1px solid "+bd08, zIndex:8 }}>
               {Math.round(zoom*100)}%
             </div>
 
             {/* Mode indicators (stacked top-left) */}
             {!cockpitModeActive && pingMode && (
-              <div style={{ position:"absolute", top:14, left:80, background:"rgba(88,170,255,0.85)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:tx, letterSpacing:"1.5px", pointerEvents:"none", zIndex:10, border:"1px solid rgba(88,170,255,0.4)", boxShadow:"0 2px 10px rgba(88,170,255,0.25)" }}>
+              <div style={{ position:"absolute", top:14, left:80, background:lm("rgba(88,170,255,0.85)", "rgba(88,170,255,0.75)"), backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:tx, letterSpacing:"1.5px", pointerEvents:"none", zIndex:10, border:"1px solid "+lm("rgba(88,170,255,0.4)", "rgba(88,170,255,0.3)"), boxShadow:"0 2px 10px "+lm("rgba(88,170,255,0.25)", "rgba(88,170,255,0.15)") }}>
                 PING MODE (click to ping, Esc to cancel)
               </div>
             )}
             {!cockpitModeActive && movementMode && !pingMode && !activeSpell && (
-              <div style={{ position:"absolute", top:14, left:80, background:"rgba(46,139,87,0.85)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"#fff", letterSpacing:"1.5px", pointerEvents:"none", zIndex:10, border:"1px solid rgba(46,139,87,0.4)", boxShadow:"0 2px 10px rgba(46,139,87,0.25)" }}>
+              <div style={{ position:"absolute", top:14, left:80, background:lm("rgba(46,139,87,0.85)", "rgba(46,139,87,0.75)"), backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:T.text, letterSpacing:"1.5px", pointerEvents:"none", zIndex:10, border:"1px solid "+lm("rgba(46,139,87,0.4)", "rgba(46,139,87,0.3)"), boxShadow:"0 2px 10px "+lm("rgba(46,139,87,0.25)", "rgba(46,139,87,0.15)") }}>
                 MOVEMENT MODE (M to toggle, Esc to cancel)
               </div>
             )}
@@ -10727,7 +10727,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               const icon = isSpell ? "\u2728 " : isMelee ? "\u2694 " : "\uD83C\uDFF9 ";
               const label = activeWeapon.card?.label || activeWeapon.card?.name || "Ability";
               return (
-                <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%, -50%)", background:bannerColor, backdropFilter:"blur(8px)", padding:"14px 32px", borderRadius:"12px", fontFamily:T.ui, fontSize:14, fontWeight:700, color:"#fff", letterSpacing:"2px", pointerEvents:"none", zIndex:55, border:"2px solid " + borderColor, boxShadow:"0 8px 40px " + glowColor + ", 0 0 80px " + glowColor.replace("0.5","0.15"), display:"flex", alignItems:"center", gap:12, textTransform:"uppercase", textShadow:"0 2px 8px rgba(0,0,0,0.5)" }}>
+                <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%, -50%)", background:bannerColor, backdropFilter:"blur(8px)", padding:"14px 32px", borderRadius:"12px", fontFamily:T.ui, fontSize:14, fontWeight:700, color:T.text, letterSpacing:"2px", pointerEvents:"none", zIndex:55, border:"2px solid " + borderColor, boxShadow:"0 8px 40px " + glowColor + ", 0 0 80px " + glowColor.replace("0.5","0.15"), display:"flex", alignItems:"center", gap:12, textTransform:"uppercase", textShadow:"0 2px 8px rgba(0,0,0,0.5)" }}>
                   <span style={{ width:10, height:10, borderRadius:"50%", background:"#fff", boxShadow:"0 0 12px " + glowColor }} />
                   {icon + label} — Click Target
                   <span style={{ fontSize:10, fontWeight:400, opacity:0.7, letterSpacing:"1px" }}>Esc to cancel</span>
@@ -10735,7 +10735,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               );
             })()}
             {!cockpitModeActive && activeSpell && (
-              <div style={{ position:"absolute", top:14, left:80, background:"rgba(181,116,255,0.88)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"#fff", letterSpacing:"1.5px", pointerEvents:"none", zIndex:10, border:"1px solid rgba(181,116,255,0.5)", boxShadow:"0 2px 10px rgba(181,116,255,0.3)", display:"flex", alignItems:"center", gap:8 }}>
+              <div style={{ position:"absolute", top:14, left:80, background:lm("rgba(181,116,255,0.88)", "rgba(181,116,255,0.78)"), backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:T.text, letterSpacing:"1.5px", pointerEvents:"none", zIndex:10, border:"1px solid "+lm("rgba(181,116,255,0.5)", "rgba(181,116,255,0.4)"), boxShadow:"0 2px 10px "+lm("rgba(181,116,255,0.3)", "rgba(181,116,255,0.2)"), display:"flex", alignItems:"center", gap:8 }}>
                 <span style={{ width:7, height:7, borderRadius:"50%", background:activeSpell.color, boxShadow:"0 0 6px " + activeSpell.color }} />
                 SPELL: {activeSpell.name.toUpperCase()}{castLevel && castLevel > activeSpell.level ? " (LV" + castLevel + ")" : ""}{MULTI_TARGET_SPELLS[activeSpell.name] ? " — " + multiTargetSelections.length + "/" + getMultiTargetCount(activeSpell, castLevel, selectedToken?.level||1) + " targets" : ""} — click to {MULTI_TARGET_SPELLS[activeSpell.name] ? "select targets" : "cast"} · right-click/Esc to cancel · Space+drag or scroll to pan/zoom
               </div>
@@ -10743,7 +10743,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
             {/* Player view badge */}
             {!cockpitModeActive && viewRole === "player" && (
-              <div style={{ position:"absolute", top:10, right:10, background:"rgba(88,170,255,0.85)", backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:"#fff", letterSpacing:"1.5px", pointerEvents:"none", border:"1px solid rgba(88,170,255,0.4)", boxShadow:"0 2px 10px rgba(88,170,255,0.25)" }}>
+              <div style={{ position:"absolute", top:10, right:10, background:lm("rgba(88,170,255,0.85)", "rgba(88,170,255,0.75)"), backdropFilter:"blur(4px)", padding:"6px 14px", borderRadius:"6px", fontFamily:T.ui, fontSize:9, color:T.text, letterSpacing:"1.5px", pointerEvents:"none", border:"1px solid "+lm("rgba(88,170,255,0.4)", "rgba(88,170,255,0.3)"), boxShadow:"0 2px 10px "+lm("rgba(88,170,255,0.25)", "rgba(88,170,255,0.15)") }}>
                 PLAYER VIEW
               </div>
             )}
@@ -10751,10 +10751,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             {/* Dice result popup */}
             {diceResult && (
               <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", background: diceResult.crit ? "rgba(46,139,87,0.95)" : diceResult.fumble ? "rgba(212,67,58,0.95)" : panelBg, padding:"16px 28px", borderRadius:"8px", zIndex:200, textAlign:"center", border: diceResult.crit ? "2px solid #5ee09a" : diceResult.fumble ? "2px solid #e8605a" : "1px solid " + subtleBorder, pointerEvents:"none", boxShadow:"0 4px 20px rgba(0,0,6,0.50)" }}>
-                <div style={{ fontSize:10, fontFamily:T.ui, color:"rgba(255,255,255,0.6)", letterSpacing:"2px", textTransform:"uppercase", marginBottom:4 }}>{diceResult.name ? diceResult.name + (diceResult.type === "attack" ? " attacks" : diceResult.type === "initiative" ? " initiative" : diceResult.type === "save" ? "" : diceResult.type === "perception" ? " perception" : "") : "d20"}</div>
+                <div style={{ fontSize:10, fontFamily:T.ui, color:T.textMuted, letterSpacing:"2px", textTransform:"uppercase", marginBottom:4 }}>{diceResult.name ? diceResult.name + (diceResult.type === "attack" ? " attacks" : diceResult.type === "initiative" ? " initiative" : diceResult.type === "save" ? "" : diceResult.type === "perception" ? " perception" : "") : "d20"}</div>
                 <div style={{ fontSize:36, fontFamily:T.ui, color:tx, fontWeight:700 }}>{diceResult.value}</div>
-                {diceResult.crit && <div style={{ fontSize:10, fontFamily:T.ui, color:"#5ee09a", letterSpacing:"2px", marginTop:2 }}>NAT 20!</div>}
-                {diceResult.fumble && <div style={{ fontSize:10, fontFamily:T.ui, color:"#f06858", letterSpacing:"2px", marginTop:2 }}>NAT 1!</div>}
+                {diceResult.crit && <div style={{ fontSize:10, fontFamily:T.ui, color:T.green, letterSpacing:"2px", marginTop:2 }}>NAT 20!</div>}
+                {diceResult.fumble && <div style={{ fontSize:10, fontFamily:T.ui, color:T.crimson, letterSpacing:"2px", marginTop:2 }}>NAT 1!</div>}
               </div>
             )}
 
@@ -10808,8 +10808,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   </button>
                   <div style={{ height:1, background:T.border, margin:"2px 0" }} />
                   <button onClick={() => { removeProp(pk.id); setContextMenu(null); }}
-                    onMouseEnter={e => e.currentTarget.style.background="rgba(212,67,58,0.08)"} onMouseLeave={e => e.currentTarget.style.background="none"}
-                    style={{...menuBtnStyle, color:"#f06858"}}>
+                    onMouseEnter={e => e.currentTarget.style.background=lm("rgba(212,67,58,0.08)", "rgba(212,67,58,0.06)")} onMouseLeave={e => e.currentTarget.style.background="none"}
+                    style={{...menuBtnStyle, color:T.crimson}}>
                     Remove Prop
                   </button>
                 </div>
@@ -10863,7 +10863,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   {/* Header */}
                   <div onMouseDown={beginTurnPopupDrag} style={{ padding:"12px 14px 10px", borderBottom:"1px solid " + T.border, display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:10, cursor:"grab", background:"linear-gradient(90deg, rgba(212,67,58,0.08), " + lm("rgba(255,255,255,0.02)", "rgba(0,0,0,0.01)") + ")" }}>
                     <div style={{ display:"flex", alignItems:"center", gap:8, minWidth:0 }}>
-                      <div style={{ width:32, height:32, borderRadius:"50%", background:tk.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontFamily:T.ui, color:"#fff", fontWeight:700, border:"2px solid rgba(255,220,30,0.4)" }}>
+                      <div style={{ width:32, height:32, borderRadius:"50%", background:tk.color, display:"flex", alignItems:"center", justifyContent:"center", fontSize:12, fontFamily:T.ui, color:T.text, fontWeight:700, border:"2px solid "+lm("rgba(255,220,30,0.4)", "rgba(255,220,30,0.3)") }}>
                         {(tk.label || tk.name.substring(0,2)).toUpperCase()}
                       </div>
                       <div style={{ minWidth:0 }}>
@@ -10872,7 +10872,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                           <span style={{ textTransform:"capitalize" }}>{tk.size || "medium"}</span>
                           <span>{tk.speed || 30} ft</span>
                           <span>{currentRow ? ("Init " + currentRow.init) : "Not in initiative"}</span>
-                          {combatLive && <span style={{ color:isCurrentActor ? "#ffd54f" : T.textFaint }}>{isCurrentActor ? "Current Turn" : "Out of Turn"}</span>}
+                          {combatLive && <span style={{ color:isCurrentActor ? T.gold : T.textFaint }}>{isCurrentActor ? "Current Turn" : "Out of Turn"}</span>}
                           <span>Owner: {viewRole === "dm" ? actorOwner : "You"}</span>
                           {tk.ac && <span>· AC {tk.ac}</span>}
                         </div>
@@ -10902,7 +10902,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                         {[-10,-5,-1,1,5,10].map(d => (
                           <button key={d} onClick={() => adjustTokenHp(tk.id, d)}
                             onMouseEnter={e => e.currentTarget.style.filter="brightness(1.3)"} onMouseLeave={e => e.currentTarget.style.filter="none"}
-                            style={{ flex:1, padding:"4px 0", background:d<0?"rgba(212,67,58,0.08)":"rgba(46,139,87,0.08)", border:"1px solid "+(d<0?"rgba(212,67,58,0.2)":"rgba(46,139,87,0.2)"), borderRadius:"4px", color:d<0?"#f06858":"#5ee09a", fontFamily:T.ui, fontSize:10, fontWeight:600, cursor:"pointer", transition:"all 0.12s" }}>
+                            style={{ flex:1, padding:"4px 0", background:d<0?lm("rgba(212,67,58,0.08)","rgba(212,67,58,0.06)"):lm("rgba(46,139,87,0.08)","rgba(46,139,87,0.06)"), border:"1px solid "+(d<0?lm("rgba(212,67,58,0.2)","rgba(212,67,58,0.15)"):lm("rgba(46,139,87,0.2)","rgba(46,139,87,0.15)")), borderRadius:"4px", color:d<0?T.crimson:T.green, fontFamily:T.ui, fontSize:10, fontWeight:600, cursor:"pointer", transition:"all 0.12s" }}>
                             {d>0?"+":""}{d}
                           </button>
                         ))}
@@ -10913,25 +10913,25 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   {(popupDeathLabel || popupLegendaryMax > 0 || popupActionLockReason) && (
                     <div style={{ padding:"8px 14px", borderBottom:"1px solid " + T.border, background:lm("rgba(255,255,255,0.015)", "rgba(0,0,0,0.02)"), display:"flex", flexDirection:"column", gap:6 }}>
                       {popupDeathLabel && (
-                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:8, padding:"6px 8px", borderRadius:"8px", background: popupDeathState.dead ? "rgba(212,67,58,0.08)" : "rgba(255,213,79,0.06)", border:"1px solid " + (popupDeathState.dead ? "rgba(212,67,58,0.2)" : "rgba(255,213,79,0.18)") }}>
-                          <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color: popupDeathState.dead ? "#f06858" : "#ffd54f", textTransform:"uppercase" }}>{popupDeathState.dead ? "Death State" : "Death Saves"}</span>
+                        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", gap:8, padding:"6px 8px", borderRadius:"8px", background: popupDeathState.dead ? lm("rgba(212,67,58,0.08)","rgba(212,67,58,0.06)") : lm("rgba(255,213,79,0.06)","rgba(255,213,79,0.04)"), border:"1px solid " + (popupDeathState.dead ? lm("rgba(212,67,58,0.2)","rgba(212,67,58,0.15)") : lm("rgba(255,213,79,0.18)","rgba(255,213,79,0.12)")) }}>
+                          <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color: popupDeathState.dead ? T.crimson : T.gold, textTransform:"uppercase" }}>{popupDeathState.dead ? "Death State" : "Death Saves"}</span>
                           <span style={{ fontFamily:T.body, fontSize:10, color:T.text }}>{popupDeathLabel}</span>
                         </div>
                       )}
                       {popupLegendaryMax > 0 && viewRole === "dm" && (
                         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
-                          <div style={{ padding:"6px 8px", borderRadius:"8px", background:"rgba(255,213,79,0.06)", border:"1px solid rgba(255,213,79,0.18)" }}>
+                          <div style={{ padding:"6px 8px", borderRadius:"8px", background:lm("rgba(255,213,79,0.06)","rgba(255,213,79,0.04)"), border:"1px solid "+lm("rgba(255,213,79,0.18)","rgba(255,213,79,0.12)") }}>
                             <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"0.8px", color:T.textFaint, textTransform:"uppercase" }}>Legendary</div>
-                            <div style={{ fontFamily:T.ui, fontSize:10, color:"#ffd54f", marginTop:2 }}>{popupLegendaryRemaining}/{popupLegendaryMax} ready</div>
+                            <div style={{ fontFamily:T.ui, fontSize:10, color:T.gold, marginTop:2 }}>{popupLegendaryRemaining}/{popupLegendaryMax} ready</div>
                           </div>
-                          <div style={{ padding:"6px 8px", borderRadius:"8px", background:"rgba(181,116,255,0.06)", border:"1px solid rgba(181,116,255,0.18)" }}>
+                          <div style={{ padding:"6px 8px", borderRadius:"8px", background:lm("rgba(181,116,255,0.06)","rgba(181,116,255,0.04)"), border:"1px solid "+lm("rgba(181,116,255,0.18)","rgba(181,116,255,0.12)") }}>
                             <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"0.8px", color:T.textFaint, textTransform:"uppercase" }}>Lair Timing</div>
-                            <div style={{ fontFamily:T.ui, fontSize:10, color:"#b574ff", marginTop:2 }}>{popupLairState || "None"}</div>
+                            <div style={{ fontFamily:T.ui, fontSize:10, color:T.purple || "#b574ff", marginTop:2 }}>{popupLairState || "None"}</div>
                           </div>
                         </div>
                       )}
                       {popupActionLockReason && !popupDeathLabel && (
-                        <div style={{ fontFamily:T.body, fontSize:10, color:"#ffd54f", lineHeight:1.45, padding:"6px 8px", borderRadius:"8px", background:"rgba(255,213,79,0.05)", border:"1px solid rgba(255,213,79,0.14)" }}>
+                        <div style={{ fontFamily:T.body, fontSize:10, color:T.gold, lineHeight:1.45, padding:"6px 8px", borderRadius:"8px", background:lm("rgba(255,213,79,0.05)","rgba(255,213,79,0.03)"), border:"1px solid "+lm("rgba(255,213,79,0.14)","rgba(255,213,79,0.1)") }}>
                           {popupActionLockReason}
                         </div>
                       )}
@@ -10940,13 +10940,13 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
                   {combatLive && isCurrentActor && turnState && (
                     <div style={{ padding:"8px 14px", borderBottom:"1px solid " + T.border, background:lm("rgba(255,255,255,0.02)", "rgba(0,0,0,0.01)") }}>
-                      <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:"#5ee09a", textTransform:"uppercase", marginBottom:6 }}>Action Economy</div>
+                      <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.green, textTransform:"uppercase", marginBottom:6 }}>Action Economy</div>
                       <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:4 }}>
                         {[
-                          { label:"Move", value:moveBudgetFt + " ft", active:moveBudgetFt > 0, color:"#58aaff" },
-                          { label:"Action", value:turnState.actionUsed ? "Used" : "Ready", active:!turnState.actionUsed, color:"#5ee09a" },
-                          { label:"Bonus", value:turnState.bonusActionUsed ? "Used" : "Ready", active:!turnState.bonusActionUsed, color:"#ffd54f" },
-                          { label:"Reaction", value:turnState.reactionSpent ? "Spent" : "Ready", active:!turnState.reactionSpent, color:"#b574ff" },
+                          { label:"Move", value:moveBudgetFt + " ft", active:moveBudgetFt > 0, color:T.blue || "#58aaff" },
+                          { label:"Action", value:turnState.actionUsed ? "Used" : "Ready", active:!turnState.actionUsed, color:T.green },
+                          { label:"Bonus", value:turnState.bonusActionUsed ? "Used" : "Ready", active:!turnState.bonusActionUsed, color:T.gold },
+                          { label:"Reaction", value:turnState.reactionSpent ? "Spent" : "Ready", active:!turnState.reactionSpent, color:T.purple || "#b574ff" },
                         ].map((chip) => (
                           <div key={chip.label} style={{ padding:"5px 7px", borderRadius:"6px", background:chip.active ? lm("rgba(255,255,255,0.05)", "rgba(0,0,0,0.04)") : subtleBg2, border:"1px solid " + (chip.active ? chip.color + "44" : subtleBorder) }}>
                             <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"0.8px", color:T.textFaint, textTransform:"uppercase" }}>{chip.label}</div>
@@ -10958,10 +10958,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   )}
 
                   {hostileTargets.length > 0 && (
-                    <div style={{ padding:"8px 14px", borderBottom:"1px solid " + T.border, background:"rgba(255,213,79,0.04)" }}>
-                      <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:"#ffd54f", textTransform:"uppercase", marginBottom:5 }}>Focus Target</div>
+                    <div style={{ padding:"8px 14px", borderBottom:"1px solid " + T.border, background:lm("rgba(255,213,79,0.04)","rgba(255,213,79,0.02)") }}>
+                      <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.gold, textTransform:"uppercase", marginBottom:5 }}>Focus Target</div>
                       <select value={focusTarget?.id || ""} onChange={(e) => { setFocusedCombatTarget(tk.id, e.target.value); openCombatSidebar("tracker"); }} onClick={(e) => e.stopPropagation()}
-                        style={{ width:"100%", padding:"6px 8px", fontSize:10, background:"rgba(0,0,0,0.14)", border:"1px solid rgba(255,213,79,0.25)", color:T.text, borderRadius:"6px", outline:"none" }}>
+                        style={{ width:"100%", padding:"6px 8px", fontSize:10, background:subtleBg2, border:"1px solid "+lm("rgba(255,213,79,0.25)","rgba(255,213,79,0.18)"), color:T.text, borderRadius:"6px", outline:"none" }}>
                         {hostileTargets.map((targetToken) => (
                           <option key={"popup-target-" + tk.id + "-" + targetToken.id} value={targetToken.id}>
                             {targetToken.name} - {hpStateLabel(targetToken.hp, targetToken.maxHp)} - {distBetween(tk, targetToken)} ft
@@ -10971,7 +10971,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                       {focusTarget && (() => {
                         const focusLane = getLineCoverProfile(tk, focusTarget);
                         return (
-                          <div style={{ marginTop:5, fontFamily:T.ui, fontSize:8, letterSpacing:"0.7px", textTransform:"uppercase", color: focusLane.hasLineOfSight ? "#58aaff" : "#f06858" }}>
+                          <div style={{ marginTop:5, fontFamily:T.ui, fontSize:8, letterSpacing:"0.7px", textTransform:"uppercase", color: focusLane.hasLineOfSight ? (T.blue || "#58aaff") : T.crimson }}>
                             {focusLane.hasLineOfSight ? "Line of sight clear" : "Line of sight blocked"}
                             {focusLane.coverACBonus > 0 ? " | " + (focusLane.coverLabel || "Cover") + " +" + focusLane.coverACBonus : ""}
                           </div>
@@ -10984,9 +10984,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   <div style={{ padding:"10px", overflowY:"auto", display:"flex", flexDirection:"column", gap:10, flex:"1 1 auto", minHeight:0 }}>
                     {!combatLive && viewRole === "dm" && (
                       <button onClick={() => { rollTokenIntoInitiative(tk); dismissTurnPopup(); }}
-                        onMouseEnter={e => { e.currentTarget.style.background="rgba(255,213,79,0.08)"; e.currentTarget.style.transform="translateY(-1px)"; }}
-                        onMouseLeave={e => { e.currentTarget.style.background="none"; e.currentTarget.style.transform="none"; }}
-                        style={{...popupBtnStyle, color:"#ffd54f", border:"1px solid rgba(255,213,79,0.2)", background:"rgba(255,213,79,0.04)"}}>
+                        onMouseEnter={e => { e.currentTarget.style.background=lm("rgba(255,213,79,0.08)","rgba(255,213,79,0.06)"); e.currentTarget.style.transform="translateY(-1px)"; }}
+                        onMouseLeave={e => { e.currentTarget.style.background=lm("rgba(255,213,79,0.04)","rgba(255,213,79,0.02)"); e.currentTarget.style.transform="none"; }}
+                        style={{...popupBtnStyle, color:T.gold, border:"1px solid "+lm("rgba(255,213,79,0.2)","rgba(255,213,79,0.15)"), background:lm("rgba(255,213,79,0.04)","rgba(255,213,79,0.02)")}}>
                         <Star size={14} style={{ marginTop:1, flexShrink:0 }}/>
                         <div style={{ flex:1 }}>
                           <div style={{ fontSize:12, fontWeight:600 }}>{currentRow ? "Reroll Initiative" : "Roll Initiative"}</div>
@@ -10995,9 +10995,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                       </button>
                     )}
 
-                    <div style={{ border:"1px solid rgba(88,170,255,0.18)", borderRadius:"14px", background:"rgba(88,170,255,0.04)", padding:8 }}>
+                    <div style={{ border:"1px solid "+lm("rgba(88,170,255,0.18)","rgba(88,170,255,0.12)"), borderRadius:"14px", background:lm("rgba(88,170,255,0.04)","rgba(88,170,255,0.02)"), padding:8 }}>
                       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-                        <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:"#58aaff", textTransform:"uppercase" }}>Movement</div>
+                        <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.blue || "#58aaff", textTransform:"uppercase" }}>Movement</div>
                         <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"0.8px", color:T.textFaint }}>{moveBudgetFt} ft left</div>
                       </div>
                       <button onClick={() => {
@@ -11083,7 +11083,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                       <button onClick={() => setShowConditionMenu(!showConditionMenu)}
                         onMouseEnter={e => { e.currentTarget.style.background="rgba(232,148,10,0.08)"; e.currentTarget.style.transform="translateY(-1px)"; }}
                         onMouseLeave={e => { e.currentTarget.style.background="none"; e.currentTarget.style.transform="none"; }}
-                        style={{...popupBtnStyle, color:"#e8940a", justifyContent:"space-between", border:"1px solid rgba(232,148,10,0.18)", background:bg02}}>
+                        style={{...popupBtnStyle, color:T.gold, justifyContent:"space-between", border:"1px solid rgba(232,148,10,0.18)", background:bg02}}>
                         <span style={{ display:"flex", alignItems:"center", gap:8 }}><AlertTriangle size={14}/> <span style={{ fontSize:12, fontWeight:600 }}>Conditions</span></span>
                         <ChevronRight size={11} style={{ transform: showConditionMenu ? "rotate(90deg)" : "none", transition:"transform 0.15s" }}/>
                       </button>
@@ -11114,7 +11114,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                       <button onClick={() => { nextTurn(); dismissTurnPopup(); openCombatSidebar("tracker"); }}
                         onMouseEnter={e => { e.currentTarget.style.background="rgba(94,224,154,0.08)"; e.currentTarget.style.transform="translateY(-1px)"; }}
                         onMouseLeave={e => { e.currentTarget.style.background="rgba(94,224,154,0.04)"; e.currentTarget.style.transform="none"; }}
-                        style={{...popupBtnStyle, color:"#5ee09a", border:"1px solid rgba(94,224,154,0.24)", background:"rgba(94,224,154,0.04)"}}>
+                        style={{...popupBtnStyle, color:T.green, border:"1px solid rgba(94,224,154,0.24)", background:"rgba(94,224,154,0.04)"}}>
                         <SkipForward size={14} style={{ marginTop:1, flexShrink:0 }}/>
                         <div style={{ flex:1 }}>
                           <div style={{ fontSize:12, fontWeight:600, color:T.text }}>End Turn</div>
@@ -11140,7 +11140,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                         </button>
                         <button onClick={() => { removeToken(tk.id); dismissTurnPopup(); }}
                           onMouseEnter={e => e.currentTarget.style.background="rgba(212,67,58,0.06)"} onMouseLeave={e => e.currentTarget.style.background="none"}
-                          style={{...popupBtnStyle, color:"#f06858"}}>
+                          style={{...popupBtnStyle, color:T.crimson}}>
                           <Trash2 size={13} style={{ marginTop:1 }}/>
                           <span style={{ fontSize:12, fontWeight:600 }}>Remove</span>
                         </button>
@@ -11176,7 +11176,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             {!cockpitModeActive && showScenePanel && viewRole === "dm" && (
               <div style={{ position:"absolute", left:70, top:12, zIndex:25, width:280, maxHeight:"calc(100% - 24px)", background:panelBgSolid, backdropFilter:"blur(16px)", border:"1px solid var(--crimson-border)", borderRadius:"12px", boxShadow:"0 8px 32px rgba(0,0,6,0.6)", display:"flex", flexDirection:"column", overflow:"hidden" }}>
                 <div style={{ padding:"12px 14px", borderBottom:"1px solid " + T.border, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                  <span style={{ fontFamily:T.ui, fontSize:11, letterSpacing:"2px", color:"#5ee09a", textTransform:"uppercase", fontWeight:600 }}>Maps & Scenes</span>
+                  <span style={{ fontFamily:T.ui, fontSize:11, letterSpacing:"2px", color:T.green, textTransform:"uppercase", fontWeight:600 }}>Maps & Scenes</span>
                   <button onClick={() => setShowScenePanel(false)} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:2 }}><X size={14}/></button>
                 </div>
 
@@ -11187,7 +11187,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     if (name) createMap(name);
                   }}
                     onMouseEnter={e => e.currentTarget.style.background="rgba(46,139,87,0.1)"} onMouseLeave={e => e.currentTarget.style.background="rgba(0,0,0,0.1)"}
-                    style={{ width:"100%", padding:"10px 12px", background:"rgba(0,0,0,0.1)", border:"1px dashed rgba(46,139,87,0.3)", borderRadius:"8px", color:"#5ee09a", fontFamily:T.ui, fontSize:11, letterSpacing:"0.5px", cursor:"pointer", marginBottom:8, transition:"all 0.15s", display:"flex", alignItems:"center", gap:6, justifyContent:"center" }}>
+                    style={{ width:"100%", padding:"10px 12px", background:"rgba(0,0,0,0.1)", border:"1px dashed rgba(46,139,87,0.3)", borderRadius:"8px", color:T.green, fontFamily:T.ui, fontSize:11, letterSpacing:"0.5px", cursor:"pointer", marginBottom:8, transition:"all 0.15s", display:"flex", alignItems:"center", gap:6, justifyContent:"center" }}>
                     <Plus size={12}/> New Map
                   </button>
 
@@ -11225,7 +11225,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                                 style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:2 }} title="Upload scene bg"><Image size={10}/></button>
                               {activeMapId === map.id && !activeSceneId && (
                                 <button onClick={e => { e.stopPropagation(); setEditingRegionMarker({ sceneId: scene.id, label: scene.name }); setShowScenePanel(false); }}
-                                  style={{ background:"none", border:"none", cursor:"pointer", color:"#58aaff", padding:2 }} title="Place marker on map"><MapPin size={10}/></button>
+                                  style={{ background:"none", border:"none", cursor:"pointer", color:T.blue || "#58aaff", padding:2 }} title="Place marker on map"><MapPin size={10}/></button>
                               )}
                               <button onClick={e => { e.stopPropagation(); if (confirm("Delete scene '" + scene.name + "'?")) deleteScene(map.id, scene.id); }}
                                 style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:2 }} title="Delete scene"><X size={10}/></button>
@@ -11261,7 +11261,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                             }));
                           }}
                             onMouseEnter={e => e.currentTarget.style.background="rgba(94,224,154,0.1)"} onMouseLeave={e => e.currentTarget.style.background="rgba(94,224,154,0.04)"}
-                            style={{ width:"100%", padding:"6px 0", marginTop:4, background:"rgba(94,224,154,0.04)", border:"1px solid rgba(94,224,154,0.1)", borderRadius:6, cursor:"pointer", fontFamily:T.ui, fontSize:9, letterSpacing:"0.5px", color:"#5ee09a", display:"flex", alignItems:"center", justifyContent:"center", gap:4, transition:"all 0.12s" }}>
+                            style={{ width:"100%", padding:"6px 0", marginTop:4, background:"rgba(94,224,154,0.04)", border:"1px solid rgba(94,224,154,0.1)", borderRadius:6, cursor:"pointer", fontFamily:T.ui, fontSize:9, letterSpacing:"0.5px", color:T.green, display:"flex", alignItems:"center", justifyContent:"center", gap:4, transition:"all 0.12s" }}>
                             <Save size={10}/> Save Current Scene
                           </button>
                         )}
@@ -11284,7 +11284,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     </div>
                     <button onClick={() => propImgInputRef.current?.click()}
                       onMouseEnter={e => e.currentTarget.style.background="rgba(88,170,255,0.08)"} onMouseLeave={e => e.currentTarget.style.background="rgba(0,0,0,0.1)"}
-                      style={{ width:"100%", padding:"8px 12px", background:"rgba(0,0,0,0.1)", border:"1px dashed rgba(88,170,255,0.3)", borderRadius:"6px", color:"#58aaff", fontFamily:T.ui, fontSize:10, letterSpacing:"0.5px", cursor:"pointer", transition:"all 0.15s", display:"flex", alignItems:"center", gap:6, justifyContent:"center" }}>
+                      style={{ width:"100%", padding:"8px 12px", background:"rgba(0,0,0,0.1)", border:"1px dashed rgba(88,170,255,0.3)", borderRadius:"6px", color:T.blue || "#58aaff", fontFamily:T.ui, fontSize:10, letterSpacing:"0.5px", cursor:"pointer", transition:"all 0.15s", display:"flex", alignItems:"center", gap:6, justifyContent:"center" }}>
                       <Upload size={11}/> Upload Prop Image
                     </button>
                     {props.length > 0 && (
@@ -11320,11 +11320,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                       <div style={{ marginTop:12, padding:"8px 12px", background:"rgba(46,139,87,0.08)", border:"1px solid rgba(46,139,87,0.2)", borderRadius:"6px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                         <div>
                           <div style={{ fontSize:9, fontFamily:T.ui, color:T.textFaint, letterSpacing:"1px", textTransform:"uppercase" }}>Active Scene</div>
-                          <div style={{ fontSize:12, fontFamily:T.ui, color:"#5ee09a", fontWeight:500 }}>{as2.name}</div>
+                          <div style={{ fontSize:12, fontFamily:T.ui, color:T.green, fontWeight:500 }}>{as2.name}</div>
                         </div>
                         <button onClick={() => switchToMapOverview(activeMapId)}
                           onMouseEnter={e => e.currentTarget.style.background="rgba(46,139,87,0.15)"} onMouseLeave={e => e.currentTarget.style.background="rgba(46,139,87,0.06)"}
-                          style={{ padding:"5px 10px", background:"rgba(46,139,87,0.06)", border:"1px solid rgba(46,139,87,0.2)", borderRadius:"4px", color:"#5ee09a", fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"all 0.12s" }}>
+                          style={{ padding:"5px 10px", background:"rgba(46,139,87,0.06)", border:"1px solid rgba(46,139,87,0.2)", borderRadius:"4px", color:T.green, fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"all 0.12s" }}>
                           Back to Map
                         </button>
                       </div>
@@ -11381,7 +11381,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             {editingRegionMarker && (
               <div style={{ position:"absolute", top:12, left:"50%", transform:"translateX(-50%)", zIndex:60, padding:"10px 20px", background:"rgba(88,170,255,0.15)", border:"1px solid rgba(88,170,255,0.4)", borderRadius:"8px", backdropFilter:"blur(8px)", display:"flex", alignItems:"center", gap:10, boxShadow:"0 4px 16px rgba(0,0,6,0.4)" }}>
                 <MapPin size={14} color="#58aaff" />
-                <span style={{ fontFamily:T.ui, fontSize:12, color:"#58aaff", letterSpacing:"0.3px" }}>Click on the map to place marker for "{editingRegionMarker.label}"</span>
+                <span style={{ fontFamily:T.ui, fontSize:12, color:T.blue || "#58aaff", letterSpacing:"0.3px" }}>Click on the map to place marker for "{editingRegionMarker.label}"</span>
                 <button onClick={() => setEditingRegionMarker(null)} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, marginLeft:8 }}><X size={14}/></button>
               </div>
             )}
@@ -11709,7 +11709,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             {combatLive ? "Round " + round : "Encounter"}
           </span>
           {combatLive && (
-            <span style={{ padding:"2px 8px", borderRadius:999, fontSize:9, fontFamily:T.ui, background:"rgba(94,224,154,0.08)", border:"1px solid rgba(94,224,154,0.2)", color:"#5ee09a", fontWeight:500 }}>Turn {turn+1}/{Math.max(1, combatants.filter(c => !shouldSkipCombatantRow(c)).length)}</span>
+            <span style={{ padding:"2px 8px", borderRadius:999, fontSize:9, fontFamily:T.ui, background:"rgba(94,224,154,0.08)", border:"1px solid rgba(94,224,154,0.2)", color:T.green, fontWeight:500 }}>Turn {turn+1}/{Math.max(1, combatants.filter(c => !shouldSkipCombatantRow(c)).length)}</span>
           )}
         </div>
         {combatLive && (
@@ -11721,7 +11721,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             <button onClick={nextTurn} title="Next Turn"
               onMouseEnter={e => e.currentTarget.style.background="rgba(94,224,154,0.15)"}
               onMouseLeave={e => e.currentTarget.style.background="rgba(94,224,154,0.08)"}
-              style={{ padding:"5px 12px", background:"rgba(94,224,154,0.08)", border:"1px solid rgba(94,224,154,0.2)", borderRadius:6, cursor:"pointer", color:"#5ee09a", fontFamily:T.ui, fontSize:9, letterSpacing:"0.8px", fontWeight:600, display:"flex", alignItems:"center", gap:4, transition:"background 0.12s" }}><SkipForward size={10}/> Next</button>
+              style={{ padding:"5px 12px", background:"rgba(94,224,154,0.08)", border:"1px solid rgba(94,224,154,0.2)", borderRadius:6, cursor:"pointer", color:T.green, fontFamily:T.ui, fontSize:9, letterSpacing:"0.8px", fontWeight:600, display:"flex", alignItems:"center", gap:4, transition:"background 0.12s" }}><SkipForward size={10}/> Next</button>
             <button onClick={endCombat} title="End Combat"
               onMouseEnter={e => e.currentTarget.style.background="rgba(239,68,68,0.12)"}
               onMouseLeave={e => e.currentTarget.style.background=bg02}
@@ -11745,7 +11745,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             onMouseEnter={e => { if (combatTab !== tab.id) e.currentTarget.style.color=tx60; }}
             onMouseLeave={e => { if (combatTab !== tab.id) e.currentTarget.style.color=tx30; }}
             style={{ flex:1, padding:"10px 4px", background:"transparent", border:"none", borderBottom: combatTab === tab.id ? "2px solid #c9a84c" : "2px solid transparent", cursor:"pointer", fontFamily:T.ui, fontSize:9, letterSpacing:"1.2px", textTransform:"uppercase", color: combatTab === tab.id ? "#c9a84c" : tx30, transition:"all 0.12s", fontWeight: combatTab === tab.id ? 600 : 400 }}>{tab.label}
-            {tab.id === "log" && combatLog.length > 0 && <span style={{ marginLeft:4, padding:"1px 5px", borderRadius:999, background:"rgba(201,168,76,0.1)", fontSize:7, color:"#c9a84c" }}>{combatLog.length}</span>}
+            {tab.id === "log" && combatLog.length > 0 && <span style={{ marginLeft:4, padding:"1px 5px", borderRadius:999, background:"rgba(201,168,76,0.1)", fontSize:7, color:T.gold }}>{combatLog.length}</span>}
           </button>
         ))}
       </div>
@@ -11785,7 +11785,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     <button onClick={e => { e.stopPropagation(); addMonsterToMap(m); }}
                       onMouseEnter={e => e.currentTarget.style.background="rgba(94,224,154,0.12)"}
                       onMouseLeave={e => e.currentTarget.style.background="rgba(94,224,154,0.06)"}
-                      style={{ padding:"3px 8px", background:"rgba(94,224,154,0.06)", border:"1px solid rgba(94,224,154,0.15)", borderRadius:4, cursor:"pointer", color:"#5ee09a", fontFamily:T.ui, fontSize:7, letterSpacing:"0.5px", transition:"background 0.12s" }}>+ Add</button>
+                      style={{ padding:"3px 8px", background:"rgba(94,224,154,0.06)", border:"1px solid rgba(94,224,154,0.15)", borderRadius:4, cursor:"pointer", color:T.green, fontFamily:T.ui, fontSize:7, letterSpacing:"0.5px", transition:"background 0.12s" }}>+ Add</button>
                   </div>
                 </div>
                 <div style={{ fontSize:9, fontFamily:T.ui, color:tx25, marginTop:3, display:"flex", gap:6 }}>
@@ -11824,7 +11824,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     )}
                     {m.legendaryActions && m.legendaryActions.length > 0 && (
                       <div style={{ marginTop:4, borderTop:"1px solid "+bd06, paddingTop:4 }}>
-                        <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"1px", color:"#ffd54f", textTransform:"uppercase", marginBottom:3 }}>Legendary Actions</div>
+                        <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"1px", color:T.gold, textTransform:"uppercase", marginBottom:3 }}>Legendary Actions</div>
                         {m.legendaryActions.map((a,i) => <div key={i} style={{ marginBottom:2 }}><strong>{a.name}:</strong> {a.desc.slice(0, 100)}{a.desc.length > 100 ? "..." : ""}</div>)}
                       </div>
                     )}
@@ -11857,7 +11857,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               {(combatLog[0] || playModeResolution) && (
                 <div style={{ border:"1px solid "+bd08, borderRadius:12, background:"linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015))", padding:"10px 11px", marginBottom:4 }}>
                   <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:8 }}>
-                    <span style={{ fontFamily:T.ui, fontSize:8, color:"#58aaff", letterSpacing:"1px", textTransform:"uppercase" }}>Latest Event</span>
+                    <span style={{ fontFamily:T.ui, fontSize:8, color:T.blue || "#58aaff", letterSpacing:"1px", textTransform:"uppercase" }}>Latest Event</span>
                     <span style={{ fontFamily:T.ui, fontSize:7, color:T.textFaint, letterSpacing:"0.8px", textTransform:"uppercase" }}>
                       Round {round}
                     </span>
@@ -11876,7 +11876,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     <div style={{ display:"flex", gap:4, flexWrap:"wrap", marginTop:8 }}>
                       {getMergedConditionsForToken(activeCombatantToken).slice(0, 5).map((cond, ci) => (
                         <span key={"rail-cond-" + cond + "-" + ci}
-                          style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"0.8px", textTransform:"uppercase", padding:"2px 6px", borderRadius:"999px", background:"rgba(232,148,10,0.08)", border:"1px solid rgba(232,148,10,0.18)", color:"#ffd54f" }}>
+                          style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"0.8px", textTransform:"uppercase", padding:"2px 6px", borderRadius:"999px", background:"rgba(232,148,10,0.08)", border:"1px solid rgba(232,148,10,0.18)", color:T.gold }}>
                           {cond}
                         </span>
                       ))}
@@ -11952,12 +11952,12 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                       </div>
                       <div style={{ display:"flex", gap:2, flexWrap:"wrap", marginTop:5, paddingLeft:24, alignItems:"center" }}>
                         {isDying && (
-                          <span style={{ display:"inline-flex", alignItems:"center", gap:1, background:"rgba(255,213,79,0.08)", border:"1px solid rgba(255,213,79,0.18)", padding:"1px 5px", borderRadius:"999px", fontSize:6, fontFamily:T.ui, letterSpacing:"0.3px", color:"#ffd54f", textTransform:"uppercase" }}>
+                          <span style={{ display:"inline-flex", alignItems:"center", gap:1, background:"rgba(255,213,79,0.08)", border:"1px solid rgba(255,213,79,0.18)", padding:"1px 5px", borderRadius:"999px", fontSize:6, fontFamily:T.ui, letterSpacing:"0.3px", color:T.gold, textTransform:"uppercase" }}>
                             {deathState.successes}S / {deathState.failures}F
                           </span>
                         )}
                         {monsterData?.legendaryActions?.length > 0 && viewRole === "dm" && !isDefeated && (
-                          <span style={{ display:"inline-flex", alignItems:"center", gap:1, background:"rgba(255,213,79,0.05)", border:"1px solid rgba(255,213,79,0.18)", padding:"1px 5px", borderRadius:"999px", fontSize:6, fontFamily:T.ui, letterSpacing:"0.3px", color:"#ffd54f", textTransform:"uppercase" }}>
+                          <span style={{ display:"inline-flex", alignItems:"center", gap:1, background:"rgba(255,213,79,0.05)", border:"1px solid rgba(255,213,79,0.18)", padding:"1px 5px", borderRadius:"999px", fontSize:6, fontFamily:T.ui, letterSpacing:"0.3px", color:T.gold, textTransform:"uppercase" }}>
                             LA {getLegendaryActionRemaining(linkedToken)}/{getLegendaryActionMax(linkedToken)}{Number(linkedToken?.lairActionRoundUsed || 0) === round ? " | Lair spent" : (canUseLairSurgeForToken(linkedToken) ? " | Lair ready" : " | Lair closed")}
                           </span>
                         )}
@@ -11976,7 +11976,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                         <div style={{ marginTop:6, paddingLeft:24 }}>
                           {hostileTargets.length > 0 && (
                             <div style={{ marginBottom:6, padding:"6px 7px", border:"1px solid rgba(255,213,79,0.22)", borderRadius:"4px", background:"rgba(255,213,79,0.05)" }}>
-                              <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"1px", color:"#ffd54f", textTransform:"uppercase", marginBottom:4 }}>Focus Target</div>
+                              <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"1px", color:T.gold, textTransform:"uppercase", marginBottom:4 }}>Focus Target</div>
                               <select value={focusTarget?.id || ""} onChange={e => { e.stopPropagation(); setFocusedCombatTarget(c.mapTokenId, e.target.value); }} onClick={e => e.stopPropagation()}
                                 style={{ width:"100%", padding:"4px 6px", fontSize:8, background:subtleBg2, border:"1px solid " + subtleBorder, color:T.text, borderRadius:"4px" }}>
                                 {hostileTargets.map((targetToken) => (
@@ -12010,7 +12010,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                           </div>
                           {monsterData.legendaryActions && monsterData.legendaryActions.length > 0 && (
                             <React.Fragment>
-                              <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"1px", color:"#ffd54f", textTransform:"uppercase", marginBottom:3, marginTop:5 }}>Legendary</div>
+                              <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"1px", color:T.gold, textTransform:"uppercase", marginBottom:3, marginTop:5 }}>Legendary</div>
                               <div style={{ display:"flex", flexWrap:"wrap", gap:3 }}>
                                 {monsterData.legendaryActions.map((action, ai) => (
                                   <button key={ai}
@@ -12025,7 +12025,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                                     }}
                                     onMouseEnter={e => e.currentTarget.style.background="rgba(255,213,79,0.12)"}
                                     onMouseLeave={e => e.currentTarget.style.background="rgba(255,213,79,0.04)"}
-                                    style={{ padding:"3px 8px", background:"rgba(255,213,79,0.04)", border:"1px solid rgba(255,213,79,0.2)", borderRadius:"3px", cursor:"pointer", color:"#ffd54f", fontFamily:T.ui, fontSize:8, letterSpacing:"0.3px", transition:"all 0.12s" }}>
+                                    style={{ padding:"3px 8px", background:"rgba(255,213,79,0.04)", border:"1px solid rgba(255,213,79,0.2)", borderRadius:"3px", cursor:"pointer", color:T.gold, fontFamily:T.ui, fontSize:8, letterSpacing:"0.3px", transition:"all 0.12s" }}>
                                     {action.name}
                                   </button>
                                 ))}
@@ -12062,7 +12062,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                         const selectedWeapon = profileWeapons.includes(pcWeaponPick) ? pcWeaponPick : (profileWeapons[0] || pcWeaponPick);
                         return (
                           <div style={{ marginTop:8, paddingLeft:24, borderTop:"1px solid "+bd06, paddingTop:8 }}>
-                            <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:"#5ee09a", textTransform:"uppercase", marginBottom:6 }}>Your Turn</div>
+                            <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.green, textTransform:"uppercase", marginBottom:6 }}>Your Turn</div>
                             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:4, marginBottom:8 }}>
                               <div style={{ fontSize:9, color:T.textMuted }}>Movement: <span style={{ color:T.text }}>{ts.movementRemaining} ft remaining</span></div>
                               <div style={{ fontSize:9, color:T.textMuted }}>Action: <span style={{ color:T.text }}>{ts.actionUsed ? "used" : "not used"}</span></div>
@@ -12137,8 +12137,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                                           <div>Cost: {card.cost}</div>
                                         </div>
                                       )}
-                                      {card.disabledReason && <div style={{ fontSize:8, color:"#ff9e9e", marginTop:3 }}>{card.disabledReason}</div>}
-                                      {!card.disabledReason && card.concentrationWarn && <div style={{ fontSize:8, color:"#ffd27a", marginTop:3 }}>{card.concentrationWarn}</div>}
+                                      {card.disabledReason && <div style={{ fontSize:8, color:T.crimson, marginTop:3 }}>{card.disabledReason}</div>}
+                                      {!card.disabledReason && card.concentrationWarn && <div style={{ fontSize:8, color:T.gold, marginTop:3 }}>{card.concentrationWarn}</div>}
                                     </button>
                                   ))}
                                 </div>
@@ -12147,7 +12147,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
                             {suggested.length > 0 && (
                               <div style={{ marginTop:8, border:"1px solid rgba(88,170,255,0.25)", borderRadius:"6px", padding:"7px", background:"rgba(88,170,255,0.08)" }}>
-                                <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:"#58aaff", textTransform:"uppercase", marginBottom:4 }}>Suggested Options</div>
+                                <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.blue || "#58aaff", textTransform:"uppercase", marginBottom:4 }}>Suggested Options</div>
                                 {suggested.map((s) => (
                                   <div key={"s-" + s.id} style={{ fontSize:9, color:T.text, marginBottom:2 }}>{s.panel === "Spell" && /heal|restore/i.test(s.effect) ? "Best support: " : s.panel === "Attack" ? "Best damage: " : "Class combo: "}{s.name}{nearest ? (" on " + nearest.name) : ""}</div>
                                 ))}
@@ -12168,7 +12168,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
                             {playModeResolution && (
                               <div style={{ marginTop:8, border:"1px solid rgba(94,224,154,0.2)", borderRadius:"6px", padding:"8px", background:"rgba(46,139,87,0.08)" }}>
-                                <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:"#5ee09a", textTransform:"uppercase", marginBottom:4 }}>Resolution: {playModeResolution.title}</div>
+                                <div style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.green, textTransform:"uppercase", marginBottom:4 }}>Resolution: {playModeResolution.title}</div>
                                 {playModeResolution.lines.map((ln, ix) => <div key={"res-"+ix} style={{ fontSize:9, color:T.textMuted, marginBottom:2 }}>{ln}</div>)}
                               </div>
                             )}
@@ -12214,7 +12214,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   </div>
                   {entry.action && <div style={{ fontSize:8, color:T.textFaint, marginTop:1 }}>{entry.action}{entry.damage ? ` — ${entry.damage} dmg` : ""}{entry.roll ? ` (${entry.roll.chosen}+${entry.roll.modifier}=${entry.roll.total} vs AC)` : ""}</div>}
                   {entry.dc && <div style={{ fontSize:8, color:T.textFaint, marginTop:1 }}>DC {entry.dc} {entry.ability} save{entry.damage ? ` — ${entry.damage} dmg` : ""}</div>}
-                  {entry.conditions && entry.conditions.length > 0 && <div style={{ fontSize:8, color:"#e040fb", marginTop:1 }}>Conditions: {entry.conditions.join(", ")}</div>}
+                  {entry.conditions && entry.conditions.length > 0 && <div style={{ fontSize:8, color:T.purple || "#e040fb", marginTop:1 }}>Conditions: {entry.conditions.join(", ")}</div>}
                 </div>
               ))}
             </React.Fragment>
@@ -12366,7 +12366,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                         <div key={ab.key} style={{ background:"rgba(0,0,0,0.2)", border:"1px solid " + T.border, borderRadius:"6px", padding:"8px 6px", textAlign:"center" }}>
                           <div style={{ fontSize:20, fontFamily:T.body, color:T.text, fontWeight:600, lineHeight:1 }}>{ab.val}</div>
                           <div style={{ fontSize:8, fontFamily:T.ui, color:T.textFaint, letterSpacing:"0.6px", textTransform:"uppercase", marginTop:3, marginBottom:2, fontWeight:500 }}>{ab.label}</div>
-                          <div style={{ fontSize:11, fontFamily:T.ui, color:"#ffd54f", fontWeight:600 }}>{modString(abilityMods[ab.key])}</div>
+                          <div style={{ fontSize:11, fontFamily:T.ui, color:T.gold, fontWeight:600 }}>{modString(abilityMods[ab.key])}</div>
                         </div>
                       ))}
                     </div>
@@ -12375,9 +12375,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     <div style={{ display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:6, padding:"8px", background:subtleBg2, borderRadius:"6px", border:"1px solid " + T.border }}>
                       {[
                         { label:"Prof", val:profile.proficiencyBonus, color:"#a78bfa" },
-                        { label:"Init", val:modString(abilityMods.dex), color:"#5ee09a" },
+                        { label:"Init", val:modString(abilityMods.dex), color:T.green },
                         { label:"PP", val:10 + abilityMods.wis + (profile.proficiencyBonus || 0), color:"#ffa726" },
-                        { label:"Save DC", val:8 + profile.proficiencyBonus + (abilityMods.wis || 0), color:"#58aaff" },
+                        { label:"Save DC", val:8 + profile.proficiencyBonus + (abilityMods.wis || 0), color:T.blue || "#58aaff" },
                       ].map((stat, i) => (
                         <div key={i} style={{ textAlign:"center" }}>
                           <div style={{ fontSize:10, fontFamily:T.ui, color:T.textFaint, letterSpacing:"0.5px", textTransform:"uppercase", marginBottom:2, fontWeight:500 }}>{stat.label}</div>
@@ -12563,11 +12563,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                               <div key={"slot-"+lv} style={{ display:"flex", alignItems:"center", gap:3, padding:"3px 6px", background:"rgba(0,0,0,0.1)", borderRadius:"4px", border:"1px solid " + T.border }}>
                                 <span style={{ fontFamily:T.ui, fontSize:10, color:T.textMuted, fontWeight:600, minWidth:14 }}>{lv===1?"1st":lv===2?"2nd":lv===3?"3rd":lv+"th"}</span>
                                 <span onClick={() => { if (tk) { const newUsed = {...usedSlots, [lv]: Math.min(max, used+1)}; updateToken(tk.id, {usedSlots:newUsed}); } }}
-                                  style={{ cursor:"pointer", width:16, height:16, display:"flex", alignItems:"center", justifyContent:"center", borderRadius:"3px", background:"rgba(212,67,58,0.15)", color:"#f06858", fontSize:11, fontWeight:700, fontFamily:T.ui }}>-</span>
+                                  style={{ cursor:"pointer", width:16, height:16, display:"flex", alignItems:"center", justifyContent:"center", borderRadius:"3px", background:"rgba(212,67,58,0.15)", color:T.crimson, fontSize:11, fontWeight:700, fontFamily:T.ui }}>-</span>
                                 <span style={{ fontFamily:T.ui, fontSize:12, fontWeight:600, color:remaining > 0 ? "#5ee09a" : "#f06858", minWidth:16, textAlign:"center" }}>{remaining}</span>
                                 <span style={{ fontFamily:T.ui, fontSize:10, color:T.textFaint }}>/{max}</span>
                                 <span onClick={() => { if (tk) { const newUsed = {...usedSlots, [lv]: Math.max(0, used-1)}; updateToken(tk.id, {usedSlots:newUsed}); } }}
-                                  style={{ cursor:"pointer", width:16, height:16, display:"flex", alignItems:"center", justifyContent:"center", borderRadius:"3px", background:"rgba(46,139,87,0.15)", color:"#5ee09a", fontSize:11, fontWeight:700, fontFamily:T.ui }}>+</span>
+                                  style={{ cursor:"pointer", width:16, height:16, display:"flex", alignItems:"center", justifyContent:"center", borderRadius:"3px", background:"rgba(46,139,87,0.15)", color:T.green, fontSize:11, fontWeight:700, fontFamily:T.ui }}>+</span>
                               </div>
                             );
                           })}
@@ -12579,7 +12579,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     {activeSpell && multiTargetSelections.length > 0 && (
                       <div style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", background:"rgba(88,170,255,0.1)", border:"1px solid rgba(88,170,255,0.3)", borderRadius:"8px" }}>
                         <Target size={14} color="#58aaff" />
-                        <span style={{ flex:1, fontFamily:T.ui, fontSize:12, color:"#58aaff", fontWeight:500 }}>
+                        <span style={{ flex:1, fontFamily:T.ui, fontSize:12, color:T.blue || "#58aaff", fontWeight:500 }}>
                           Targets: {multiTargetSelections.length}/{getMultiTargetCount(activeSpell, castLevel, tk?.level || 1)} selected
                         </span>
                         <span onClick={() => setMultiTargetSelections(prev => prev.slice(0, -1))} style={{ cursor:"pointer", fontSize:10, color:T.textFaint, fontFamily:T.ui }}>Undo</span>
@@ -12589,7 +12589,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     {activeSpell && !multiTargetSelections.length && (
                       <div style={{ display:"flex", alignItems:"center", gap:8, padding:"8px 12px", background:"rgba(181,116,255,0.1)", border:"1px solid rgba(181,116,255,0.3)", borderRadius:"8px" }}>
                         <span style={{ width:10, height:10, borderRadius:"50%", background:activeSpell.color, boxShadow:"0 0 8px " + activeSpell.color }} />
-                        <span style={{ flex:1, fontFamily:T.ui, fontSize:12, color:"#b574ff", letterSpacing:"0.5px", fontWeight:500 }}>Targeting: {activeSpell.name}{castLevel && castLevel > activeSpell.level ? " (Lv"+castLevel+")" : ""}</span>
+                        <span style={{ flex:1, fontFamily:T.ui, fontSize:12, color:T.purple || "#b574ff", letterSpacing:"0.5px", fontWeight:500 }}>Targeting: {activeSpell.name}{castLevel && castLevel > activeSpell.level ? " (Lv"+castLevel+")" : ""}</span>
                         <span onClick={() => { setActiveSpell(null); spellTargetRef.current = null; setMultiTargetSelections([]); setCastLevel(null); }} style={{ cursor:"pointer", color:T.textFaint, padding:4, display:"flex" }}><X size={14}/></span>
                       </div>
                     )}
@@ -12618,8 +12618,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                               <span>{selectedSpellInfo.school}</span>
                               <span>·</span>
                               <span>{selectedSpellInfo.level === 0 ? "Cantrip" : "Level " + selectedSpellInfo.level}</span>
-                              {selectedSpellInfo.ritual && <span style={{ color:"#58aaff" }}>· Ritual</span>}
-                              {selectedSpellInfo.concentration && <span style={{ color:"#ffd54f" }}>· Concentration</span>}
+                              {selectedSpellInfo.ritual && <span style={{ color:T.blue || "#58aaff" }}>· Ritual</span>}
+                              {selectedSpellInfo.concentration && <span style={{ color:T.gold }}>· Concentration</span>}
                             </div>
                           </div>
                           <button onClick={() => setSelectedSpellInfo(null)} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:4 }}><X size={14}/></button>
@@ -12639,7 +12639,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                             setCastLevel(sp.level);
                             setSelectedSpellInfo(null);
                           }}
-                          style={{ marginTop:12, width:"100%", padding:"10px", background:"rgba(181,116,255,0.12)", border:"1px solid rgba(181,116,255,0.4)", borderRadius:"8px", color:"#b574ff", fontFamily:T.ui, fontSize:11, fontWeight:600, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", transition:"all 0.15s" }}
+                          style={{ marginTop:12, width:"100%", padding:"10px", background:"rgba(181,116,255,0.12)", border:"1px solid rgba(181,116,255,0.4)", borderRadius:"8px", color:T.purple || "#b574ff", fontFamily:T.ui, fontSize:11, fontWeight:600, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", transition:"all 0.15s" }}
                           onMouseEnter={e => e.currentTarget.style.background = "rgba(181,116,255,0.2)"}
                           onMouseLeave={e => e.currentTarget.style.background = "rgba(181,116,255,0.12)"}>
                             CAST {selectedSpellInfo.name.toUpperCase()}
@@ -12652,7 +12652,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                             setCastLevel(0);
                             setSelectedSpellInfo(null);
                           }}
-                          style={{ marginTop:12, width:"100%", padding:"10px", background:"rgba(94,224,154,0.1)", border:"1px solid rgba(94,224,154,0.35)", borderRadius:"8px", color:"#5ee09a", fontFamily:T.ui, fontSize:11, fontWeight:600, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", transition:"all 0.15s" }}
+                          style={{ marginTop:12, width:"100%", padding:"10px", background:"rgba(94,224,154,0.1)", border:"1px solid rgba(94,224,154,0.35)", borderRadius:"8px", color:T.green, fontFamily:T.ui, fontSize:11, fontWeight:600, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer", transition:"all 0.15s" }}
                           onMouseEnter={e => e.currentTarget.style.background = "rgba(94,224,154,0.18)"}
                           onMouseLeave={e => e.currentTarget.style.background = "rgba(94,224,154,0.1)"}>
                             CAST CANTRIP
@@ -12790,12 +12790,12 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                           <button onClick={() => setTokens(p => p.map(t => t.id === selectedTokenId ? {...t, hp: t.maxHp || t.hp} : t))}
                             onMouseEnter={e => e.currentTarget.style.background="rgba(94,224,154,0.12)"}
                             onMouseLeave={e => e.currentTarget.style.background="rgba(94,224,154,0.05)"}
-                            style={{ padding:"5px 8px", background:"rgba(94,224,154,0.05)", border:"1px solid rgba(94,224,154,0.12)", borderRadius:6, color:"#5ee09a", fontFamily:T.ui, fontSize:8, fontWeight:600, cursor:"pointer", transition:"background 0.12s", letterSpacing:"0.5px" }}>FULL</button>
+                            style={{ padding:"5px 8px", background:"rgba(94,224,154,0.05)", border:"1px solid rgba(94,224,154,0.12)", borderRadius:6, color:T.green, fontFamily:T.ui, fontSize:8, fontWeight:600, cursor:"pointer", transition:"background 0.12s", letterSpacing:"0.5px" }}>FULL</button>
                           {[1, 5, 10].map(d => (
                             <button key={d} onClick={() => setTokens(p => p.map(t => t.id === selectedTokenId ? {...t, hp: Math.min(t.maxHp || 999, (t.hp || 0) + d)} : t))}
                               onMouseEnter={e => e.currentTarget.style.background="rgba(94,224,154,0.12)"}
                               onMouseLeave={e => e.currentTarget.style.background="rgba(94,224,154,0.05)"}
-                              style={{ flex:1, padding:"5px 0", background:"rgba(94,224,154,0.05)", border:"1px solid rgba(94,224,154,0.12)", borderRadius:6, color:"#5ee09a", fontFamily:T.ui, fontSize:10, fontWeight:600, cursor:"pointer", transition:"background 0.12s" }}>+{d}</button>
+                              style={{ flex:1, padding:"5px 0", background:"rgba(94,224,154,0.05)", border:"1px solid rgba(94,224,154,0.12)", borderRadius:6, color:T.green, fontFamily:T.ui, fontSize:10, fontWeight:600, cursor:"pointer", transition:"background 0.12s" }}>+{d}</button>
                           ))}
                         </div>
 
@@ -13064,13 +13064,13 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   <button onClick={() => propImgInputRef.current?.click()}
                     onMouseEnter={e => e.currentTarget.style.background="rgba(88,170,255,0.1)"}
                     onMouseLeave={e => e.currentTarget.style.background="rgba(88,170,255,0.05)"}
-                    style={{ flex:1, padding:"6px 8px", background:"rgba(88,170,255,0.05)", border:"1px solid rgba(88,170,255,0.12)", borderRadius:6, color:"#58aaff", fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"background 0.12s", display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
+                    style={{ flex:1, padding:"6px 8px", background:"rgba(88,170,255,0.05)", border:"1px solid rgba(88,170,255,0.12)", borderRadius:6, color:T.blue || "#58aaff", fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"background 0.12s", display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
                     <Upload size={10}/> Add Prop
                   </button>
                   <button onClick={() => { if (mapImgInputRef.current) { mapImgInputRef.current.dataset.mapId = activeMapId || ""; mapImgInputRef.current.click(); } }}
                     onMouseEnter={e => e.currentTarget.style.background="rgba(201,168,76,0.1)"}
                     onMouseLeave={e => e.currentTarget.style.background="rgba(201,168,76,0.05)"}
-                    style={{ flex:1, padding:"6px 8px", background:"rgba(201,168,76,0.05)", border:"1px solid rgba(201,168,76,0.12)", borderRadius:6, color:"#c9a84c", fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"background 0.12s", display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
+                    style={{ flex:1, padding:"6px 8px", background:"rgba(201,168,76,0.05)", border:"1px solid rgba(201,168,76,0.12)", borderRadius:6, color:T.gold, fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"background 0.12s", display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
                     <Image size={10}/> Map Image
                   </button>
                 </div>
@@ -13095,7 +13095,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   <button onClick={() => { setZoom(1); setPan({x:0,y:0}); }}
                     onMouseEnter={e => e.currentTarget.style.background="rgba(201,168,76,0.1)"}
                     onMouseLeave={e => e.currentTarget.style.background="rgba(201,168,76,0.04)"}
-                    style={{ flex:1, padding:"6px 8px", background:"rgba(201,168,76,0.04)", border:"1px solid rgba(201,168,76,0.1)", borderRadius:6, color:"#c9a84c", fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"background 0.12s", display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
+                    style={{ flex:1, padding:"6px 8px", background:"rgba(201,168,76,0.04)", border:"1px solid rgba(201,168,76,0.1)", borderRadius:6, color:T.gold, fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"background 0.12s", display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
                     <Compass size={10}/> Reset
                   </button>
                   <button onClick={() => setZoom(z => Math.min(5, z + 0.25))}
@@ -13198,7 +13198,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     <button onClick={() => setTokens(p => p.map(t => ({...t, hidden: false})))}
                       onMouseEnter={e => e.currentTarget.style.background="rgba(94,224,154,0.1)"}
                       onMouseLeave={e => e.currentTarget.style.background="rgba(94,224,154,0.04)"}
-                      style={{ flex:1, padding:"5px 8px", background:"rgba(94,224,154,0.04)", border:"1px solid rgba(94,224,154,0.1)", borderRadius:6, color:"#5ee09a", fontFamily:T.ui, fontSize:8, cursor:"pointer", transition:"background 0.12s", display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
+                      style={{ flex:1, padding:"5px 8px", background:"rgba(94,224,154,0.04)", border:"1px solid rgba(94,224,154,0.1)", borderRadius:6, color:T.green, fontFamily:T.ui, fontSize:8, cursor:"pointer", transition:"background 0.12s", display:"flex", alignItems:"center", justifyContent:"center", gap:4 }}>
                       <Eye size={9}/> Show All
                     </button>
                   </div>
@@ -13253,7 +13253,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                 <button onClick={() => { setZoom(1); setPan({x:0,y:0}); }}
                   onMouseEnter={e => e.currentTarget.style.background="rgba(201,168,76,0.1)"}
                   onMouseLeave={e => e.currentTarget.style.background="rgba(201,168,76,0.04)"}
-                  style={{ width:"100%", padding:"7px 10px", background:"rgba(201,168,76,0.04)", border:"1px solid rgba(201,168,76,0.12)", borderRadius:6, color:"#c9a84c", fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"background 0.12s", letterSpacing:"0.5px", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+                  style={{ width:"100%", padding:"7px 10px", background:"rgba(201,168,76,0.04)", border:"1px solid rgba(201,168,76,0.12)", borderRadius:6, color:T.gold, fontFamily:T.ui, fontSize:9, cursor:"pointer", transition:"background 0.12s", letterSpacing:"0.5px", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
                   <Compass size={11}/> Reset View
                 </button>
               </div>

@@ -399,10 +399,10 @@
           padding: '12px',
           cursor: 'pointer',
           transition: 'all 0.3s',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+          boxShadow: `0 2px 4px ${T.bgNav}`
         }}
-        onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 4px 8px rgba(0,0,0,0.4)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)'; }}
+        onMouseEnter={(e) => { e.currentTarget.style.boxShadow = `0 4px 8px ${T.bgNav}`; }}
+        onMouseLeave={(e) => { e.currentTarget.style.boxShadow = `0 2px 4px ${T.bgNav}`; }}
       >
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
           <div style={{ flex: 1 }}>
@@ -506,7 +506,7 @@
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
+          background: T.bgNav,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -523,7 +523,7 @@
             maxHeight: '90vh',
             overflow: 'auto',
             border: `2px solid ${T.gold}`,
-            boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
+            boxShadow: `0 10px 40px ${T.bgNav}`
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -674,7 +674,7 @@
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(0,0,0,0.5)',
+          background: T.bgNav,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -691,7 +691,7 @@
             maxHeight: '90vh',
             overflow: 'auto',
             border: `2px solid ${T.gold}`,
-            boxShadow: '0 10px 40px rgba(0,0,0,0.5)'
+            boxShadow: `0 10px 40px ${T.bgNav}`
           }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -1269,7 +1269,7 @@
                       border: `1px solid ${T.border}`,
                       borderRadius: '6px',
                       padding: '12px',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.2)'
+                      boxShadow: `0 2px 4px ${T.bgNav}`
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>

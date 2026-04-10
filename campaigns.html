@@ -37,8 +37,8 @@
   <script src="phmurt-realtime.js"></script>
   <script src="phmurt-shell.js"></script>
   <!-- New procedural map engine + data bridge (v2 = region-name labels + blue ocean) -->
-  <script src="campaign-map-engine.js?v=5"></script>
-  <script src="campaign-map-bridge.js?v=5"></script>
+  <script src="campaign-map-engine.js?v=7"></script>
+  <script src="campaign-map-bridge.js?v=7"></script>
   <script src="campaign-combat-integration.js"></script>
   <!-- Play-tab assets: combat engine, VFX, SRD monsters — deferred for fast initial load -->
   <script src="combat-engine.js" defer></script>
@@ -48,10 +48,10 @@
   <script src="combat-flow-ui.js" defer></script>
   <!-- New campaign systems — deferred for fast initial load -->
   <script src="campaign-economy.js" defer></script>
-  <script src="campaign-seasons.js?v=6" defer></script>
-  <script src="campaign-religion.js?v=6" defer></script>
-  <script src="campaign-hexcrawl.js?v=6" defer></script>
-  <script src="campaign-downtime.js?v=6" defer></script>
+  <script src="campaign-seasons.js?v=7" defer></script>
+  <script src="campaign-religion.js?v=7" defer></script>
+  <script src="campaign-hexcrawl.js?v=7" defer></script>
+  <script src="campaign-downtime.js?v=7" defer></script>
   <script src="campaign-homebrew.js" defer></script>
   <script src="campaign-scheduler.js" defer></script>
   <style>
@@ -111,6 +111,9 @@
     @keyframes lwPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
     /* Hide the default page hero when React loads */
     .ps-page-hero.cm-hero { display: none; }
+
+    /* Hide footer on campaign manager (full-screen app) */
+    #ps-site-footer { display: none; }
 
     /* ═══ COMBAT SHELL — fullscreen overlay, children opt-in to pointer events ═══ */
     .cm-combat-shell {
@@ -2214,7 +2217,7 @@ const CombatTopBar = ({ combatLive, round, turn, combatants, tokens, canControlT
             return (
               <div key={roll.id} style={{
                 display:"flex", alignItems:"center", gap:6, padding:"4px 10px",
-                background:"var(--action-card-bg, rgba(255,255,255,0.03))",
+                background:T.bgInput,
                 border:"1px solid " + color + "55",
                 borderLeft:"3px solid " + color,
                 borderRadius:6, opacity: opacity, flexShrink:0,
@@ -2222,11 +2225,11 @@ const CombatTopBar = ({ combatLive, round, turn, combatants, tokens, canControlT
               }}>
                 <span style={{ fontSize:12 }}>{rollTypeIcon(roll.type)}</span>
                 <div style={{ minWidth:0 }}>
-                  <div style={{ fontFamily:"'Cinzel', serif", fontSize:10, fontWeight:700, color: color, whiteSpace:"nowrap", letterSpacing:"0.5px" }}>
+                  <div style={{ fontFamily:T.heading, fontSize:10, fontWeight:700, color: color, whiteSpace:"nowrap", letterSpacing:"0.5px" }}>
                     {roll.msg}
                   </div>
                   {roll.detail && (
-                    <div style={{ fontFamily:"'Spectral', serif", fontSize:8, color:"var(--text-muted, #9a8870)", whiteSpace:"nowrap", marginTop:1 }}>
+                    <div style={{ fontFamily:T.body, fontSize:8, color:T.textMuted, whiteSpace:"nowrap", marginTop:1 }}>
                       {roll.detail}
                     </div>
                   )}
@@ -2659,10 +2662,10 @@ const EnhancedActionPanel = ({ visible, token, turnState, viewRole, onSelectActi
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         <span style={{ fontSize: 11, fontWeight: 700, width: 18, height: 18, lineHeight: "18px", textAlign: "center", borderRadius: 4, color: costColor(card.actionType), background: "color-mix(in srgb, " + costColor(card.actionType) + " 15%, transparent)" }}>{costLabel(card.actionType)}</span>
         <span className="cm-action-card-label" style={{ flex: 1 }}>{card.label}</span>
-        {card.data?.spell?.level > 0 && <span style={{ fontSize: 9, color: "var(--text-faint)", fontFamily: "monospace" }}>L{card.data.spell.level}</span>}
-        {card.range && card.range !== "Self" && !card.data?.spell && <span style={{ fontSize: 9, color: "var(--text-faint)" }}>{card.range}</span>}
+        {card.data?.spell?.level > 0 && <span style={{ fontSize: 9, color: T.textFaint, fontFamily: "monospace" }}>L{card.data.spell.level}</span>}
+        {card.range && card.range !== "Self" && !card.data?.spell && <span style={{ fontSize: 9, color: T.textFaint }}>{card.range}</span>}
       </div>
-      <span style={{ fontSize: 12, color: "var(--text-muted, #94a3b8)", fontStyle: "italic", marginTop: 3, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{card.effect}</span>
+      <span style={{ fontSize: 12, color: T.textMuted, fontStyle: "italic", marginTop: 3, display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{card.effect}</span>
     </button>
   );
 
@@ -2699,19 +2702,19 @@ const EnhancedActionPanel = ({ visible, token, turnState, viewRole, onSelectActi
                     transition: "all 0.15s ease",
                   }}>
                   <span style={{ fontFamily:T.ui, fontSize:8, fontWeight:700, letterSpacing:"1px", color: step.ready ? step.color : "var(--text-faint)" }}>{step.label}</span>
-                  <span style={{ fontFamily:"'Spectral',serif", fontSize:7, color:"var(--text-faint)" }}>{step.sub}</span>
+                  <span style={{ fontFamily:T.body, fontSize:7, color:T.textFaint }}>{step.sub}</span>
                 </button>
                 {i < arr.length - 1 && (
-                  <span style={{ color:"var(--text-faint)", fontSize:8, margin:"0 1px" }}>{"\u203A"}</span>
+                  <span style={{ color:T.textFaint, fontSize:8, margin:"0 1px" }}>{"\u203A"}</span>
                 )}
               </React.Fragment>
             ))}
           </div>
         </div>
         <button type="button" className="cm-action-card"
-          style={{ "--action-color": "var(--action-color-endturn, #5ee09a)", padding: "6px 16px", minWidth: "auto", borderRadius: 8 }}
+          style={{ "--action-color": T.green, padding: "6px 16px", minWidth: "auto", borderRadius: 8 }}
           onClick={onEndTurn} title="End Turn (E)">
-          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--action-color-endturn, #5ee09a)", letterSpacing: "1px" }}>END TURN</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: T.green, letterSpacing: "1px" }}>END TURN</span>
         </button>
       </div>
 
@@ -2745,7 +2748,7 @@ const EnhancedActionPanel = ({ visible, token, turnState, viewRole, onSelectActi
       <div className="cm-action-grid">
         {getActiveCards().map(card => renderCard(card))}
         {getActiveCards().length === 0 && (
-          <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: 16, color: "var(--text-faint, #475569)", fontSize: 11, fontStyle: "italic" }}>
+          <div style={{ gridColumn: "1 / -1", textAlign: "center", padding: 16, color: T.textFaint, fontSize: 11, fontStyle: "italic" }}>
             {emptyMessages[activeTab] || "No actions available."}
           </div>
         )}
@@ -2759,11 +2762,11 @@ const EnhancedActionPanel = ({ visible, token, turnState, viewRole, onSelectActi
           padding: "10px 14px", maxWidth: 340, minWidth: 220, zIndex: 50, backdropFilter: "blur(12px)",
           boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
         }}>
-          <div style={{ fontSize: 13, color: "var(--text, #e2e8f0)", fontWeight: 500, marginBottom: 4 }}>{hoveredCard.label}</div>
-          {hoveredCard.cost && <div style={{ fontSize: 10, color: "var(--text-faint, #94a3b8)", marginBottom: 4 }}>{hoveredCard.cost}</div>}
-          <div style={{ fontSize: 11, color: "var(--text-muted, #cbd5e1)", lineHeight: 1.5 }}>{hoveredCard.effect}</div>
+          <div style={{ fontSize: 13, color: T.text, fontWeight: 500, marginBottom: 4 }}>{hoveredCard.label}</div>
+          {hoveredCard.cost && <div style={{ fontSize: 10, color: T.textFaint, marginBottom: 4 }}>{hoveredCard.cost}</div>}
+          <div style={{ fontSize: 11, color: T.textMuted, lineHeight: 1.5 }}>{hoveredCard.effect}</div>
           {hoveredCard.helper && hoveredCard.helper !== hoveredCard.effect && (
-            <div style={{ fontSize: 10, color: "var(--text-faint, #64748b)", marginTop: 4, fontStyle: "italic" }}>{hoveredCard.helper}</div>
+            <div style={{ fontSize: 10, color: T.textFaint, marginTop: 4, fontStyle: "italic" }}>{hoveredCard.helper}</div>
           )}
         </div>
       )}
@@ -2909,10 +2912,10 @@ const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, sel
                 {/* Token circle */}
                 <div style={{
                   width: isActive ? 32 : 24, height: isActive ? 32 : 24,
-                  borderRadius: "50%", background: tk.color || "#666",
+                  borderRadius: "50%", background: tk.color || T.textMuted,
                   display: "flex", alignItems: "center", justifyContent: "center",
                   fontSize: isActive ? 11 : 8, fontFamily: T.ui, color: T.text, fontWeight: 700,
-                  border: isDead ? "2px solid #f06858" : (isPC ? "2px solid rgba(46,139,87,0.6)" : "2px solid var(--border)"),
+                  border: isDead ? `2px solid ${T.crimson}` : (isPC ? `2px solid ${T.green}99` : `2px solid ${T.border}`),
                   position: "relative", overflow: "hidden",
                 }}>
                   {isDead ? <X size={isActive ? 14 : 10} color={T.rollMiss} /> : (tk.label || tk.name.substring(0, 2)).toUpperCase()}
@@ -2929,7 +2932,7 @@ const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, sel
                 </div>
                 {/* HP micro-bar */}
                 {!isDead && tk.maxHp > 0 && (
-                  <div style={{ width: "90%", height: 2, background: "var(--border-mid)", borderRadius: 1, overflow: "hidden" }}>
+                  <div style={{ width: "90%", height: 2, background: T.borderMid, borderRadius: 1, overflow: "hidden" }}>
                     <div style={{ width: hpPct + "%", height: "100%", background: hpCol, borderRadius: 1 }} />
                   </div>
                 )}
@@ -2946,7 +2949,7 @@ const InitiativeBar = ({ combatants, tokens, turn, round, activeCombatantId, sel
                 {/* Action economy dots for active combatant */}
                 {isActive && !isDead && (
                   <div style={{ display: "flex", gap: 3, marginTop: 1 }}>
-                    <div title="Action" style={{ width: 5, height: 5, borderRadius: "50%", background: actionUsed ? "var(--border-mid)" : "var(--crimson)", border: "1px solid " + (actionUsed ? "var(--border)" : "var(--crimson-border)") }} />
+                    <div title="Action" style={{ width: 5, height: 5, borderRadius: "50%", background: actionUsed ? T.borderMid : T.crimson, border: "1px solid " + (actionUsed ? T.border : T.crimsonBorder) }} />
                     <div title="Bonus" style={{ width: 5, height: 5, borderRadius: "50%", background: bonusUsed ? "var(--border-mid)" : T.gold, border: "1px solid " + (bonusUsed ? "var(--border)" : "rgba(255,213,79,0.5)") }} />
                   </div>
                 )}
@@ -3059,16 +3062,16 @@ const CombatRollDisplay = ({ combatRollLog }) => {
             boxShadow: "0 0 60px " + splashColor + "44, 0 0 120px " + splashColor + "22, inset 0 0 30px " + splashColor + "11",
             position:"relative",
           }}>
-            <div style={{ fontFamily:"'Cinzel', serif", fontSize: 48, fontWeight:900, color: splashColor, lineHeight:1, textShadow: "0 0 20px " + splashColor + "88, 0 2px 4px rgba(0,0,0,0.5)" }}>
+            <div style={{ fontFamily:T.heading, fontSize: 48, fontWeight:900, color: splashColor, lineHeight:1, textShadow: "0 0 20px " + splashColor + "88, 0 2px 4px rgba(0,0,0,0.5)" }}>
               {splashTotal}
             </div>
-            <div style={{ fontSize: 10, color: splashColor, letterSpacing:"1.5px", fontFamily:"'Cinzel', serif", fontWeight:700, opacity: 0.8 }}>
+            <div style={{ fontSize: 10, color: splashColor, letterSpacing:"1.5px", fontFamily:T.heading, fontWeight:700, opacity: 0.8 }}>
               vs AC {splashAC}
             </div>
           </div>
           {/* Result label under D20 */}
           <div style={{
-            fontFamily:"'Cinzel', serif", fontSize: 22, fontWeight:900,
+            fontFamily:T.heading, fontSize: 22, fontWeight:900,
             color: splashColor, letterSpacing:"3px", textTransform:"uppercase",
             textShadow: "0 0 20px " + splashColor + "66, 0 2px 8px rgba(0,0,0,0.8)",
           }}>
@@ -3115,27 +3118,27 @@ const CombatRollDisplay = ({ combatRollLog }) => {
                   display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center",
                   flexShrink:0,
                 }}>
-                  <div style={{ fontFamily:"'Cinzel', serif", fontSize:22, fontWeight:900, color, lineHeight:1 }}>{rollTotal}</div>
-                  <div style={{ fontSize:7, color:"var(--text-faint)", letterSpacing:"0.5px" }}>vs AC {targetAC}</div>
+                  <div style={{ fontFamily:T.heading, fontSize:22, fontWeight:900, color, lineHeight:1 }}>{rollTotal}</div>
+                  <div style={{ fontSize:7, color:T.textFaint, letterSpacing:"0.5px" }}>vs AC {targetAC}</div>
                 </div>
               )}
               {!rollTotal && <span style={{ fontSize:28, flexShrink:0 }}>{isCrit ? "\u2728" : isHit ? "\u2694\uFE0F" : isMiss ? "\u274C" : "\u2728"}</span>}
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-                  <span style={{ fontFamily:"'Cinzel', serif", fontSize:13, fontWeight:800, color, letterSpacing:"1px", textTransform:"uppercase" }}>
+                  <span style={{ fontFamily:T.heading, fontSize:13, fontWeight:800, color, letterSpacing:"1px", textTransform:"uppercase" }}>
                     {resultLabel}
                   </span>
                 </div>
-                <div style={{ fontFamily:"'Cinzel', serif", fontSize:10, color:"var(--text-dim, #ccc)", fontWeight:600, marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                <div style={{ fontFamily:T.heading, fontSize:10, color:T.textDim, fontWeight:600, marginTop:1, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                   {roll.msg.replace(/ HIT!| MISS| CRITICAL!/, "")}
                 </div>
                 {rollExpr && (
-                  <div style={{ fontFamily:"'Spectral', serif", fontSize:10, color:"var(--text-muted)", marginTop:2, opacity:0.8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                  <div style={{ fontFamily:T.body, fontSize:10, color:T.textMuted, marginTop:2, opacity:0.8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                     {rollExpr}
                   </div>
                 )}
                 {dmgText && (
-                  <div style={{ fontFamily:"'Spectral', serif", fontSize:12, color: isHit || isCrit ? T.green : T.textMuted, marginTop:2, fontWeight:700 }}>
+                  <div style={{ fontFamily:T.body, fontSize:12, color: isHit || isCrit ? T.green : T.textMuted, marginTop:2, fontWeight:700 }}>
                     {dmgText}
                   </div>
                 )}
@@ -4289,7 +4292,7 @@ function DiceRoller() {
                 {r.count>1?`${r.count}`:""}{r.die===100?"d%":`d${r.die}`}{r.mod!==0?(r.mod>0?`+${r.mod}`:r.mod):""}
                 {r.count>1 && <span style={{ color:T.textFaint, marginLeft:4 }}>[{r.rolls.join(", ")}]</span>}
               </span>
-              <span style={{ fontWeight:500, color: r.crit?"#f5d020":r.fumble?"#ef5350":T.text, textShadow: r.crit?"0 0 12px rgba(245,208,32,0.6)":r.fumble?"0 0 12px rgba(239,83,80,0.6)":"none" }}>
+              <span style={{ fontWeight:500, color: r.crit?T.gold:r.fumble?T.crimson:T.text, textShadow: r.crit?`0 0 12px ${T.goldDim}`:r.fumble?`0 0 12px ${T.crimsonDim}`:"none" }}>
                 {r.total} {r.crit?"NAT 20!":r.fumble?"NAT 1":""}
               </span>
             </div>
@@ -4383,7 +4386,7 @@ function InitiativeTracker({ party }) {
               <span style={{ fontFamily:T.ui, fontSize:8, color:T.textFaint, letterSpacing:"1px" }}>AC {c.ac}</span>
               <div style={{ display:"flex", alignItems:"center", gap:2 }}>
                 <button onClick={()=>adjHp(c.id,-5)} style={{ background:"none", border:"none", cursor:"pointer", color:T.crimson, fontSize:14, padding:"2px 4px" }}>−</button>
-                <span style={{ fontSize:11, fontFamily:T.body, fontWeight:500, minWidth:42, textAlign:"center", color:c.hp<c.maxHp*0.3?T.crimson:c.hp<c.maxHp*0.6?"#e8940a":T.textDim }}>{c.hp}/{c.maxHp}</span>
+                <span style={{ fontSize:11, fontFamily:T.body, fontWeight:500, minWidth:42, textAlign:"center", color:c.hp<c.maxHp*0.3?T.crimson:c.hp<c.maxHp*0.6?T.orange:T.textDim }}>{c.hp}/{c.maxHp}</span>
                 <button onClick={()=>adjHp(c.id,5)} style={{ background:"none", border:"none", cursor:"pointer", color: T.green, fontSize:14, padding:"2px 4px" }}>+</button>
               </div>
               {c.type==="enemy" && <button onClick={()=>remove(c.id)} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:"2px" }}><X size={10}/></button>}
@@ -4654,7 +4657,7 @@ function PlayerCard({ member, onEdit, onUploadSheet, isDm }) {
         <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
           {member.status!=="healthy" && <Tag variant={member.status==="wounded"||member.status==="dead"?"danger":"warning"}>{member.status}</Tag>}
           <div style={{ textAlign:"right" }}>
-            <div style={{ fontSize:11, color:member.hp<member.maxHp*0.3?T.crimson:member.hp<member.maxHp*0.6?"#e8940a":T.textDim, fontWeight:500 }}>{member.hp}/{member.maxHp}</div>
+            <div style={{ fontSize:11, color:member.hp<member.maxHp*0.3?T.crimson:member.hp<member.maxHp*0.6?T.orange:T.textDim, fontWeight:500 }}>{member.hp}/{member.maxHp}</div>
             <div style={{ width:60 }}><HpBar val={member.hp} max={member.maxHp} color={getHpColor(member.hp, member.maxHp)}/></div>
           </div>
           <span style={{ fontFamily:T.ui, fontSize:8, color:T.textFaint, letterSpacing:"1px" }}>AC {member.ac}</span>
@@ -5527,7 +5530,7 @@ window.__CM = {
 /* Tab module loading state */
 const _tabModuleState = { dashboard: true, timeline: false, world: false, play: false };
 const _tabModulePromises = {};
-const _MODULE_VERSION = 160; // Bump to force re-fetch past service worker cache
+const _MODULE_VERSION = 161; // Bump to force re-fetch past service worker cache
 
 /**
  * Lazy-load a tab module: fetch JSX, transpile with Babel, execute.
@@ -5682,7 +5685,7 @@ function QuickNotesPanel({ data, setData, onClose }) {
   }, [dragging, handleMouseMove, handleMouseUp]);
 
   return (
-    <div style={{ position:"fixed", top:0, right:0, width:420, height:"100vh", background:"var(--bg-nav)", borderLeft:"2px solid var(--crimson-border)", zIndex:9999, display:"flex", flexDirection:"column", boxShadow:"-8px 0 32px rgba(0,0,0,0.5)" }}
+    <div style={{ position:"fixed", top:0, right:0, width:420, height:"100vh", background:T.bgNav, borderLeft:`2px solid ${T.crimsonBorder}`, zIndex:9999, display:"flex", flexDirection:"column", boxShadow:"-8px 0 32px rgba(0,0,0,0.5)" }}
       onClick={(e) => { if (e.target === e.currentTarget) { /* noop */ } }}>
       {/* Header */}
       <div style={{ padding:"14px 16px", borderBottom:"1px solid " + T.border, display:"flex", alignItems:"center", justifyContent:"space-between" }}>
@@ -5712,7 +5715,7 @@ function QuickNotesPanel({ data, setData, onClose }) {
               <Plus size={10}/> ADD NOTE
             </button>
           </div>
-          <div ref={canvasRef} style={{ flex:1, position:"relative", overflow:"auto", background:"var(--bg)", margin:"0 8px 8px", borderRadius:6, border:"1px solid " + T.border, backgroundImage:"radial-gradient(circle, rgba(201,168,76,0.04) 1px, transparent 1px)", backgroundSize:"24px 24px" }}>
+          <div ref={canvasRef} style={{ flex:1, position:"relative", overflow:"auto", background:T.bg, margin:"0 8px 8px", borderRadius:6, border:"1px solid " + T.border, backgroundImage:"radial-gradient(circle, rgba(201,168,76,0.04) 1px, transparent 1px)", backgroundSize:"24px 24px" }}>
             {notes.length === 0 && (
               <div style={{ position:"absolute", top:"50%", left:"50%", transform:"translate(-50%,-50%)", textAlign:"center", color:T.textFaint, fontFamily:T.body, fontSize:13 }}>
                 <StickyNote size={28} style={{ opacity:0.3, marginBottom:8 }}/><br/>
@@ -6264,16 +6267,16 @@ function App() {
   // ── Authentication Gate ──
   if (!authSession) {
     return (
-      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100vh", background:"var(--bg)", color:"var(--text)", fontFamily:"'Cinzel', serif", textAlign:"center", padding:"2rem" }}>
+      <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100vh", background:T.bg, color:T.text, fontFamily:T.heading, textAlign:"center", padding:"2rem" }}>
         <div style={{ marginBottom:"2rem" }}>
-          <Shield size={48} style={{ color:"var(--gold)", marginBottom:"1rem" }} />
-          <h1 style={{ fontSize:"1.8rem", color:"var(--gold)", marginBottom:"0.5rem", fontFamily:"'Cinzel', serif" }}>Campaign Manager</h1>
-          <p style={{ color:"var(--text-dim)", fontSize:"0.9rem", maxWidth:"400px", lineHeight:"1.6" }}>
+          <Shield size={48} style={{ color:T.gold, marginBottom:"1rem" }} />
+          <h1 style={{ fontSize:"1.8rem", color:T.gold, marginBottom:"0.5rem", fontFamily:T.heading }}>Campaign Manager</h1>
+          <p style={{ color:T.textDim, fontSize:"0.9rem", maxWidth:"400px", lineHeight:"1.6" }}>
             Sign in to access your campaigns. All your campaign data is saved securely to your account.
           </p>
         </div>
         <button onClick={() => { if (window.PhmurtDB && window.PhmurtDB.openAuth) window.PhmurtDB.openAuth(); }}
-          style={{ padding:"12px 32px", background:"var(--gold)", color:"var(--bg)", border:"none", borderRadius:"4px", fontSize:"1rem", fontFamily:"'Cinzel', serif", cursor:"pointer", letterSpacing:"1px", fontWeight:"600" }}>
+          style={{ padding:"12px 32px", background:T.gold, color:T.bg, border:"none", borderRadius:"4px", fontSize:"1rem", fontFamily:T.heading, cursor:"pointer", letterSpacing:"1px", fontWeight:"600" }}>
           Sign In to Continue
         </button>
       </div>
@@ -6282,14 +6285,14 @@ function App() {
 
   if (loading) {
     return (
-      <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100%", background:"var(--bg)", color:T.textFaint, fontFamily:T.ui, fontSize:14, letterSpacing:"2px" }}>
+      <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100%", background:T.bg, color:T.textFaint, fontFamily:T.ui, fontSize:14, letterSpacing:"2px" }}>
         Loading...
       </div>
     );
   }
 
   return (
-    <div style={{ display:"flex", height:"100%", background:"var(--bg)", overflow:"hidden" }}>
+    <div style={{ display:"flex", height:"100%", background:T.bg, overflow:"hidden" }}>
       {/* Left Navigation Rail */}
       <div style={{
         width: sidebarCollapsed ? 52 : 200,
@@ -6413,7 +6416,7 @@ function App() {
               </button>
             )}
             <button onClick={() => setShowJoinModal(true)}
-              style={{ width:"100%", padding:"7px 8px", marginTop:4, background:"rgba(201,168,76,0.06)", border:"1px solid rgba(201,168,76,0.15)", borderRadius:"4px", cursor:"pointer", color:"#c9a84c", fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+              style={{ width:"100%", padding:"7px 8px", marginTop:4, background:"rgba(201,168,92,0.06)", border:"1px solid rgba(201,168,92,0.15)", borderRadius:"4px", cursor:"pointer", color:T.gold, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
               <Plus size={10}/> Join Campaign
             </button>
           </div>
@@ -6568,7 +6571,7 @@ function App() {
                 style={{ flex:1, padding:"10px 14px", fontFamily:"monospace", fontSize:15, background:"rgba(255,255,255,0.02)", border:"1px solid " + T.border, borderRadius:8, color:T.text, letterSpacing:"1px", outline:"none" }} />
               <CrimsonBtn onClick={handleJoinByCode}>Join</CrimsonBtn>
             </div>
-            {joinError && <div style={{ padding:"8px 12px", background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.2)", borderRadius:6, color:"#ef4444", fontFamily:T.body, fontSize:12, marginBottom:8 }}>{joinError}</div>}
+            {joinError && <div style={{ padding:"8px 12px", background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.2)", borderRadius:6, color:T.crimson, fontFamily:T.body, fontSize:12, marginBottom:8 }}>{joinError}</div>}
             {joinSuccess && <div style={{ padding:"8px 12px", background:"rgba(94,224,154,0.06)", border:"1px solid rgba(94,224,154,0.2)", borderRadius:6, color: T.green, fontFamily:T.body, fontSize:12, marginBottom:8 }}>{joinSuccess}</div>}
           </div>
         </Modal>

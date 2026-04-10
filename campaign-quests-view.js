@@ -159,7 +159,7 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
             top: '12px',
             right: '12px',
             backgroundColor: difficultyColor(quest.difficulty),
-            color: '#fff',
+            color: T.bg,
             padding: '4px 10px',
             borderRadius: '4px',
             fontSize: '11px',
@@ -191,7 +191,7 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
             {quest.urgency && (
               <span
                 style={{
-                  backgroundColor: 'rgba(212,67,58,0.3)',
+                  backgroundColor: T.crimsonDim,
                   color: T.crimson,
                   padding: '2px 8px',
                   borderRadius: '3px',
@@ -284,10 +284,10 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
         <div
           style={{
             display: 'inline-block',
-            backgroundColor: quest.status === 'completed' ? '#5db36f33' :
-                           quest.status === 'failed' ? '#d4433a33' :
-                           quest.status === 'active' ? T.crimsonBorder : '#7a7a7a33',
-            color: quest.status === 'completed' ? '#5db36f' :
+            backgroundColor: quest.status === 'completed' ? T.greenDim :
+                           quest.status === 'failed' ? T.crimsonDim :
+                           quest.status === 'active' ? T.crimsonBorder : T.bgHover,
+            color: quest.status === 'completed' ? T.green :
                    quest.status === 'failed' ? T.crimson :
                    quest.status === 'active' ? T.crimson : T.textMuted,
             padding: '4px 10px',
@@ -399,7 +399,7 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
                   style={{
                     padding: '8px 16px',
                     backgroundColor: T.crimson,
-                    color: '#fff',
+                    color: T.bg,
                     border: 'none',
                     borderRadius: '4px',
                     cursor: 'pointer',
@@ -416,8 +416,8 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
                   onClick={() => updateQuestStatus(quest.id, 'completed')}
                   style={{
                     padding: '8px 16px',
-                    backgroundColor: '#5db36f',
-                    color: '#fff',
+                    backgroundColor: T.green,
+                    color: T.bg,
                     border: 'none',
                     borderRadius: '4px',
                     cursor: 'pointer',
@@ -493,7 +493,7 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
               <div
                 key={member.name}
                 style={{
-                  backgroundColor: 'rgba(18,14,10,0.5)',
+                  backgroundColor: T.bgHover,
                   border: `1px solid ${T.border}`,
                   borderRadius: '6px',
                   padding: '12px'

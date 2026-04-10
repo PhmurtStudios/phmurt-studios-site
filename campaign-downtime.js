@@ -1124,7 +1124,7 @@
                       backgroundColor: T.bgCard,
                       border: `2px solid ${T.gold}`,
                       borderRadius: '8px',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      boxShadow: `0 2px 8px ${T.bgNav}`,
                       transition: 'all 0.2s ease'
                     }}
                   >
@@ -1294,7 +1294,7 @@
                       {activity?.icon && (
                         <span style={{
                           padding: '2px 6px',
-                          backgroundColor: 'rgba(0,0,0,0.05)',
+                          backgroundColor: T.bgHover,
                           borderRadius: '3px',
                           fontSize: '11px'
                         }}>
@@ -1547,7 +1547,7 @@
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            backgroundColor: T.bgNav,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -1561,7 +1561,7 @@
               width: '90%',
               maxHeight: '80vh',
               overflowY: 'auto',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.2)'
+              boxShadow: `0 4px 16px ${T.bgNav}`
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
                 <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: T.text }}>Start New Activity</h2>
@@ -1720,7 +1720,7 @@
                       flex: 1,
                       padding: '10px',
                       backgroundColor: selectedCharacter && selectedActivityId ? (T.gold) : (T.bgHover),
-                      color: 'white',
+                      color: T.text,
                       border: 'none',
                       borderRadius: '4px',
                       cursor: selectedCharacter && selectedActivityId ? 'pointer' : 'not-allowed',

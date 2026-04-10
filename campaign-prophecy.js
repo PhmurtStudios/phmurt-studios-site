@@ -159,8 +159,8 @@
         alignItems: 'center',
         gap: '8px',
         padding: '8px',
-        backgroundColor: trigger.met ? 'rgba(34, 197, 94, 0.1)' : 'rgba(120, 113, 108, 0.1)',
-        border: `1px solid ${trigger.met ? 'var(--green)' : 'var(--text-dim)'}`,
+        backgroundColor: trigger.met ? `${T.greenDim}20` : `${T.textDim}10`,
+        border: `1px solid ${trigger.met ? T.green : T.textDim}`,
         borderRadius: '4px',
         fontSize: '12px'
       }}>
@@ -263,10 +263,10 @@
               {deityName && (
                 <span style={{
                   fontSize: '10px',
-                  color: 'var(--text-dim)',
+                  color: T.textDim,
                   padding: '2px 6px',
                   borderRadius: '3px',
-                  backgroundColor: 'rgba(120, 113, 108, 0.1)'
+                  backgroundColor: `${T.textDim}10`
                 }}>
                   {deityName}
                 </span>
@@ -314,16 +314,16 @@
             {prophecy.signs && prophecy.signs.length > 0 && (
               <div style={{
                 padding: '8px',
-                backgroundColor: 'rgba(251, 146, 60, 0.1)',
-                border: '1px solid var(--orange)',
+                backgroundColor: `${T.orange}10`,
+                border: `1px solid ${T.orange}`,
                 borderRadius: '4px',
                 marginBottom: '8px'
               }}>
-                <div style={{ fontSize: '10px', color: 'var(--orange)', fontWeight: 'bold', marginBottom: '4px' }}>
+                <div style={{ fontSize: '10px', color: T.orange, fontWeight: 'bold', marginBottom: '4px' }}>
                   SIGNS APPEARED:
                 </div>
                 {prophecy.signs.map((sign, idx) => (
-                  <div key={idx} style={{ fontSize: '11px', color: 'var(--text)', marginBottom: '2px' }}>
+                  <div key={idx} style={{ fontSize: '11px', color: T.text, marginBottom: '2px' }}>
                     • {sign.text} (Turn {sign.triggeredAt})
                   </div>
                 ))}
@@ -364,7 +364,7 @@
                 <div style={{
                   fontSize: '12px',
                   color: 'var(--text)',
-                  backgroundColor: 'rgba(220, 38, 38, 0.05)',
+                  backgroundColor: `${T.crimsonDim}05`,
                   padding: '8px',
                   borderRadius: '4px',
                   borderLeft: '2px solid var(--crimson)'
@@ -435,7 +435,7 @@
                 <div style={{
                   fontSize: '12px',
                   color: 'var(--text)',
-                  backgroundColor: 'rgba(251, 146, 60, 0.05)',
+                  backgroundColor: `${T.orangeDim}05`,
                   padding: '8px',
                   borderRadius: '4px'
                 }}>
@@ -470,7 +470,7 @@
                   style={{
                     flex: 1,
                     padding: '6px 10px',
-                    backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                    backgroundColor: `${T.crimsonDim}10`,
                     color: 'var(--crimson)',
                     border: '1px solid var(--crimson)',
                     borderRadius: '4px',
@@ -1291,7 +1291,7 @@
             <div style={{
               width: '100%',
               padding: '4px',
-              backgroundColor: 'rgba(34, 197, 94, 0.1)',
+              backgroundColor: `${T.greenDim}10`,
               border: '1px solid var(--green)',
               borderRadius: '3px',
               fontSize: '9px',
@@ -1307,7 +1307,7 @@
             <div style={{
               width: '100%',
               padding: '4px',
-              backgroundColor: 'rgba(220, 38, 38, 0.1)',
+              backgroundColor: `${T.crimsonDim}10`,
               border: '1px solid var(--crimson)',
               borderRadius: '3px',
               fontSize: '9px',
@@ -1345,7 +1345,7 @@
                 color: 'var(--text-dim)',
                 marginBottom: '12px',
                 padding: '8px',
-                backgroundColor: 'rgba(251, 146, 60, 0.05)',
+                backgroundColor: `${T.orangeDim}05`,
                 border: '1px solid var(--border)',
                 borderRadius: '3px'
               }}>
@@ -1377,7 +1377,7 @@
                     onClick={() => onFavorChange(deity.id, -25)}
                     style={{
                       padding: '6px',
-                      backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                      backgroundColor: `${T.crimsonDim}10`,
                       color: 'var(--crimson)',
                       border: '1px solid var(--crimson)',
                       borderRadius: '3px',
@@ -1392,7 +1392,7 @@
                     onClick={() => onFavorChange(deity.id, -5)}
                     style={{
                       padding: '6px',
-                      backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                      backgroundColor: `${T.crimsonDim}10`,
                       color: 'var(--crimson)',
                       border: '1px solid var(--crimson)',
                       borderRadius: '3px',
@@ -1407,7 +1407,7 @@
                     onClick={() => onFavorChange(deity.id, 5)}
                     style={{
                       padding: '6px',
-                      backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                      backgroundColor: `${T.greenDim}10`,
                       color: 'var(--green)',
                       border: '1px solid var(--green)',
                       borderRadius: '3px',
@@ -1422,7 +1422,7 @@
                     onClick={() => onFavorChange(deity.id, 25)}
                     style={{
                       padding: '6px',
-                      backgroundColor: 'rgba(34, 197, 94, 0.1)',
+                      backgroundColor: `${T.greenDim}10`,
                       color: 'var(--green)',
                       border: '1px solid var(--green)',
                       borderRadius: '3px',
@@ -1455,7 +1455,7 @@
                     style={{
                       fontSize: '10px',
                       color: 'var(--text)',
-                      backgroundColor: 'rgba(34, 197, 94, 0.05)',
+                      backgroundColor: `${T.greenDim}05`,
                       padding: '6px',
                       borderRadius: '3px',
                       marginBottom: '4px',
@@ -1511,7 +1511,7 @@
                     style={{
                       fontSize: '10px',
                       color: 'var(--text)',
-                      backgroundColor: 'rgba(220, 38, 38, 0.05)',
+                      backgroundColor: `${T.crimsonDim}05`,
                       padding: '6px',
                       borderRadius: '3px',
                       marginBottom: '4px',
@@ -1886,7 +1886,7 @@
                 <div style={{
                   marginTop: '12px',
                   padding: '12px',
-                  backgroundColor: 'rgba(251, 146, 60, 0.05)',
+                  backgroundColor: `${T.orangeDim}05`,
                   border: '1px solid var(--orange)',
                   borderRadius: '4px',
                   fontSize: '12px',
@@ -1933,7 +1933,7 @@
                 <div style={{
                   marginTop: '12px',
                   padding: '12px',
-                  backgroundColor: 'rgba(34, 197, 94, 0.05)',
+                  backgroundColor: `${T.greenDim}05`,
                   border: '1px solid var(--green)',
                   borderRadius: '4px',
                   fontSize: '12px',

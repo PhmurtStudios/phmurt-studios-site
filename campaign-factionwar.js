@@ -1157,10 +1157,10 @@ function WarBtn({ children, onClick, active, danger, small, disabled, style:s })
     onClick: disabled ? undefined : onClick,
     style: {
       padding: small ? "4px 8px" : "7px 14px",
-      background: danger ? "rgba(212,67,58,0.12)" : active ? "rgba(201,168,76,0.1)" : "rgba(255,255,255,0.03)",
-      border: "1px solid " + (danger ? "rgba(212,67,58,0.3)" : active ? "rgba(201,168,76,0.25)" : "var(--border)"),
+      background: danger ? T.crimsonDim : active ? T.goldDim : T.bgHover,
+      border: "1px solid " + (danger ? T.crimsonDim : active ? T.goldDim : T.border),
       borderRadius: 4, cursor: disabled ? "default" : "pointer",
-      color: danger ? "var(--crimson)" : active ? "var(--gold)" : "var(--text-muted)",
+      color: danger ? T.crimson : active ? T.gold : T.textMuted,
       fontFamily: T.ui, fontSize: small ? 9 : 10, letterSpacing: "1px", textTransform: "uppercase",
       display: "inline-flex", alignItems: "center", gap: 5, transition: "all 0.15s",
       opacity: disabled ? 0.4 : 1, ...s,
@@ -1169,10 +1169,10 @@ function WarBtn({ children, onClick, active, danger, small, disabled, style:s })
 }
 
 function StatBox({ label, value, icon, color, small }) {
-  return React.createElement("div", { style: { background:"var(--bg-card)", border:"1px solid var(--border)", borderRadius:4, padding: small ? "6px 8px" : "10px 12px", textAlign:"center", minWidth: small ? 60 : 80 } },
+  return React.createElement("div", { style: { background:T.bgCard, border:"1px solid " + T.border, borderRadius:4, padding: small ? "6px 8px" : "10px 12px", textAlign:"center", minWidth: small ? 60 : 80 } },
     icon && React.createElement("div", { style: { fontSize: small ? 14 : 18, marginBottom:2 } }, icon),
-    React.createElement("div", { style: { fontFamily:T.ui, fontSize: small ? 12 : 16, color: color || "var(--text)", fontWeight:600 } }, value),
-    React.createElement("div", { style: { fontFamily:T.ui, fontSize: small ? 7 : 8, letterSpacing:"1px", textTransform:"uppercase", color:"var(--text-faint)", marginTop:2 } }, label),
+    React.createElement("div", { style: { fontFamily:T.ui, fontSize: small ? 12 : 16, color: color || T.text, fontWeight:600 } }, value),
+    React.createElement("div", { style: { fontFamily:T.ui, fontSize: small ? 7 : 8, letterSpacing:"1px", textTransform:"uppercase", color:T.textFaint, marginTop:2 } }, label),
   );
 }
 
@@ -1204,7 +1204,7 @@ function StrategicMap({ state, selectedRegion, onSelectRegion, selectedFaction }
 
   return React.createElement("div", {
     ref: canvasRef,
-    style: { flex:1, position:"relative", overflow:"auto", background:"var(--bg)", backgroundImage:"radial-gradient(circle, rgba(201,168,76,0.02) 1px, transparent 1px)", backgroundSize:"32px 32px" },
+    style: { flex:1, position:"relative", overflow:"auto", background:T.bg, backgroundImage:"radial-gradient(circle, " + T.goldDim + " 1px, transparent 1px)", backgroundSize:"32px 32px" },
   },
     React.createElement("svg", { width:mapW, height:mapH, style:{ display:"block" } },
       // Connection lines
@@ -1217,7 +1217,7 @@ function StrategicMap({ state, selectedRegion, onSelectRegion, selectedFaction }
           return React.createElement("line", {
             key: rid + "-" + toId,
             x1: from.x, y1: from.y, x2: to.x, y2: to.y,
-            stroke: "rgba(201,168,76,0.1)", strokeWidth: 1, strokeDasharray: "4,4",
+            stroke: T.goldDim, strokeWidth: 1, strokeDasharray: "4,4",
           });
         });
       }),
@@ -1236,7 +1236,7 @@ function StrategicMap({ state, selectedRegion, onSelectRegion, selectedFaction }
       // Arrow marker def
       React.createElement("defs", null,
         React.createElement("marker", { id:"arrow", markerWidth:8, markerHeight:6, refX:8, refY:3, orient:"auto" },
-          React.createElement("path", { d:"M0,0 L8,3 L0,6 Z", fill:"var(--gold)" })
+          React.createElement("path", { d:"M0,0 L8,3 L0,6 Z", fill:T.gold })
         )
       ),
       // Region nodes
@@ -1244,7 +1244,7 @@ function StrategicMap({ state, selectedRegion, onSelectRegion, selectedFaction }
         const isSelected = selectedRegion === r.id;
         const isHovered = hoveredRegion === r.id;
         const faction = Object.values(factions).find(f => f.id === r.controllerId);
-        const color = faction ? faction.color : "rgba(255,255,255,0.1)";
+        const color = faction ? faction.color : T.textFaint;
         const radius = r.type === "capital" ? 28 : r.type === "city" ? 22 : r.type === "town" ? 18 : 14;
         const armies = armyCounts[r.id] || [];
         const hasArmies = armies.length > 0;
@@ -1321,10 +1321,10 @@ function FactionPanel({ faction, state, onAction }) {
         React.createElement("div", { style: { fontFamily:T.ui, fontSize:8, letterSpacing:"1.5px", color:"var(--text-faint)", textTransform:"uppercase" } }, profile.name, faction.eliminated ? " — ELIMINATED" : ""),
       ),
     ),
-    faction.eliminated && React.createElement("div", { style: { padding:"8px", background:"rgba(212,67,58,0.1)", border:"1px solid rgba(212,67,58,0.2)", borderRadius:4, color:"var(--crimson)", fontFamily:T.body, fontSize:12, marginBottom:12 } }, "This faction has been eliminated from the war."),
+    faction.eliminated && React.createElement("div", { style: { padding:"8px", background:T.crimsonDim, border:"1px solid " + T.crimsonDim, borderRadius:4, color:T.crimson, fontFamily:T.body, fontSize:12, marginBottom:12 } }, "This faction has been eliminated from the war."),
 
     // Resources
-    React.createElement("div", { style: { fontFamily:T.ui, fontSize:8, letterSpacing:"2px", color:"var(--crimson)", marginBottom:6, textTransform:"uppercase" } }, "Resources"),
+    React.createElement("div", { style: { fontFamily:T.ui, fontSize:8, letterSpacing:"2px", color:T.crimson, marginBottom:6, textTransform:"uppercase" } }, "Resources"),
     React.createElement("div", { style: { display:"grid", gridTemplateColumns:"repeat(4, 1fr)", gap:4, marginBottom:12 } },
       React.createElement(StatBox, { label:"Gold", value:faction.gold, icon:"💰", small:true }),
       React.createElement(StatBox, { label:"Food", value:faction.resources.food, icon:"🍞", small:true }),
@@ -1377,20 +1377,20 @@ function FactionPanel({ faction, state, onAction }) {
         );
       }),
     // Diplomacy summary
-    React.createElement("div", { style: { fontFamily:T.ui, fontSize:8, letterSpacing:"2px", color:"var(--crimson)", margin:"12px 0 6px", textTransform:"uppercase" } }, "Diplomacy"),
+    React.createElement("div", { style: { fontFamily:T.ui, fontSize:8, letterSpacing:"2px", color:T.crimson, margin:"12px 0 6px", textTransform:"uppercase" } }, "Diplomacy"),
     Object.keys(faction.diplomacy).map(otherId => {
       const d = faction.diplomacy[otherId];
       const other = state.factions[otherId];
       if (!other) return null;
-      const relColor = d.relation > 30 ? "var(--green)" : d.relation < -30 ? "var(--crimson)" : "var(--gold)";
-      return React.createElement("div", { key:otherId, style: { display:"flex", justifyContent:"space-between", alignItems:"center", padding:"4px 0", borderBottom:"1px solid var(--border)", fontSize:11 } },
+      const relColor = d.relation > 30 ? T.green : d.relation < -30 ? T.crimson : T.gold;
+      return React.createElement("div", { key:otherId, style: { display:"flex", justifyContent:"space-between", alignItems:"center", padding:"4px 0", borderBottom:"1px solid " + T.border, fontSize:11 } },
         React.createElement("div", { style: { display:"flex", alignItems:"center", gap:6 } },
           React.createElement("div", { style: { width:8, height:8, borderRadius:"50%", background:other.color } }),
-          React.createElement("span", { style: { fontFamily:T.body, color:"var(--text-muted)" } }, other.name),
+          React.createElement("span", { style: { fontFamily:T.body, color:T.textMuted } }, other.name),
         ),
         React.createElement("div", { style: { display:"flex", alignItems:"center", gap:6 } },
-          d.warDeclared && React.createElement("span", { style: { fontSize:8, background:"rgba(212,67,58,0.15)", color:"var(--crimson)", padding:"1px 5px", borderRadius:3, fontFamily:T.ui, letterSpacing:"1px" } }, "AT WAR"),
-          d.treaties.includes("alliance") && React.createElement("span", { style: { fontSize:8, background:"rgba(94,224,154,0.1)", color:"var(--green)", padding:"1px 5px", borderRadius:3, fontFamily:T.ui, letterSpacing:"1px" } }, "ALLIED"),
+          d.warDeclared && React.createElement("span", { style: { fontSize:8, background:T.crimsonDim, color:T.crimson, padding:"1px 5px", borderRadius:3, fontFamily:T.ui, letterSpacing:"1px" } }, "AT WAR"),
+          d.treaties.includes("alliance") && React.createElement("span", { style: { fontSize:8, background:T.greenDim, color:T.green, padding:"1px 5px", borderRadius:3, fontFamily:T.ui, letterSpacing:"1px" } }, "ALLIED"),
           React.createElement("span", { style: { fontFamily:T.ui, fontSize:10, color:relColor, fontWeight:600, minWidth:30, textAlign:"right" } }, d.relation > 0 ? "+" + d.relation : d.relation),
         ),
       );
@@ -1403,16 +1403,16 @@ function EventLog({ events, maxShow }) {
   const visible = events.slice(-(maxShow || 50)).reverse();
   return React.createElement("div", { style: { overflow:"auto", flex:1 } },
     visible.length === 0
-      ? React.createElement("div", { style: { padding:20, textAlign:"center", color:"var(--text-faint)", fontFamily:T.body, fontSize:12 } }, "No events yet. Start the simulation.")
+      ? React.createElement("div", { style: { padding:20, textAlign:"center", color:T.textFaint, fontFamily:T.body, fontSize:12 } }, "No events yet. Start the simulation.")
       : visible.map((e, i) => React.createElement("div", {
           key: i,
           style: {
-            padding:"6px 10px", borderBottom:"1px solid var(--border)", fontSize:11,
-            background: e.severity === "critical" ? "rgba(212,67,58,0.04)" : e.severity === "major" ? "rgba(201,168,76,0.04)" : "transparent",
+            padding:"6px 10px", borderBottom:"1px solid " + T.border, fontSize:11,
+            background: e.severity === "critical" ? T.crimsonDim : e.severity === "major" ? T.goldDim : "transparent",
           }
         },
         React.createElement("div", { style: { display:"flex", justifyContent:"space-between" } },
-          React.createElement("span", { style: { fontFamily:T.body, color:"var(--text-dim)" } }, e.icon || "📜", " ", e.text),
+          React.createElement("span", { style: { fontFamily:T.body, color:T.textDim } }, e.icon || "📜", " ", e.text),
           React.createElement("span", { style: { fontFamily:T.ui, fontSize:8, color:"var(--text-faint)" } }, "T", e.turn),
         ),
         React.createElement("div", { style: { fontSize:9, color:"var(--text-faint)", fontFamily:T.ui, letterSpacing:"0.5px" } }, e.faction),
@@ -1422,17 +1422,17 @@ function EventLog({ events, maxShow }) {
 
 // ── Region Detail Panel ──
 function RegionDetail({ region, state, factions }) {
-  if (!region) return React.createElement("div", { style: { padding:20, textAlign:"center", color:"var(--text-faint)", fontFamily:T.body, fontSize:12 } }, "Click a region on the map to view details.");
+  if (!region) return React.createElement("div", { style: { padding:20, textAlign:"center", color:T.textFaint, fontFamily:T.body, fontSize:12 } }, "Click a region on the map to view details.");
   const controller = Object.values(factions).find(f => f.id === region.controllerId);
   const terrain = TERRAIN_MODS[region.terrain] || {};
   const yields = region.baseYield || {};
   const stateMod = STATE_MODS[region.state] || STATE_MODS.stable;
 
   return React.createElement("div", { style: { padding:"12px", overflow:"auto" } },
-    React.createElement("div", { style: { fontFamily:T.heading, fontSize:16, color:"var(--text)", marginBottom:2 } }, region.name),
+    React.createElement("div", { style: { fontFamily:T.heading, fontSize:16, color:T.text, marginBottom:2 } }, region.name),
     React.createElement("div", { style: { display:"flex", gap:8, marginBottom:12, fontSize:10, fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase" } },
-      React.createElement("span", { style: { color:"var(--text-faint)" } }, region.terrain),
-      React.createElement("span", { style: { color:"var(--text-faint)" } }, "•"),
+      React.createElement("span", { style: { color:T.textFaint } }, region.terrain),
+      React.createElement("span", { style: { color:T.textFaint } }, "•"),
       React.createElement("span", { style: { color: controller?.color || "var(--text-faint)" } }, region.controllerName),
       React.createElement("span", { style: { color:"var(--text-faint)" } }, "•"),
       React.createElement("span", { style: { color: region.state === "stable" || region.state === "prosperous" ? "var(--green)" : region.state === "conquered" || region.state === "destroyed" ? "var(--crimson)" : "var(--gold)" } }, region.state),
@@ -1537,9 +1537,9 @@ function FactionWarView({ data, setData, viewRole }) {
     // ── Top Bar ──
     React.createElement("div", { style: { padding:"10px 16px", borderBottom:"1px solid var(--border)", display:"flex", alignItems:"center", justifyContent:"space-between", flexShrink:0 } },
       React.createElement("div", { style: { display:"flex", alignItems:"center", gap:12 } },
-        React.createElement("div", { style: { fontFamily:T.heading, fontSize:16, color:"var(--text)", letterSpacing:"1px" } }, "Faction War"),
-        React.createElement("div", { style: { fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", color:"var(--crimson)", textTransform:"uppercase" } }, "Turn ", warState.turn),
-        React.createElement("div", { style: { fontFamily:T.ui, fontSize:8, color:"var(--text-faint)", letterSpacing:"1px" } }, activeFactions.length, " factions · ", totalBattles, " battles"),
+        React.createElement("div", { style: { fontFamily:T.heading, fontSize:16, color:T.text, letterSpacing:"1px" } }, "Faction War"),
+        React.createElement("div", { style: { fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", color:T.crimson, textTransform:"uppercase" } }, "Turn ", warState.turn),
+        React.createElement("div", { style: { fontFamily:T.ui, fontSize:8, color:T.textFaint, letterSpacing:"1px" } }, activeFactions.length, " factions · ", totalBattles, " battles"),
       ),
       React.createElement("div", { style: { display:"flex", gap:4, alignItems:"center" } },
         React.createElement(WarBtn, { onClick: advanceTurn, disabled: autoPlay, small: true }, React.createElement(SkipForward, {size:10}), " Next Turn"),
@@ -1547,7 +1547,7 @@ function FactionWarView({ data, setData, viewRole }) {
         autoPlay && React.createElement("div", { style: { display:"flex", gap:2 } },
           [1,2,3].map(s => React.createElement("button", {
             key:s, onClick: () => setSpeed(s),
-            style: { width:22, height:22, background: warState.speed === s ? "rgba(201,168,76,0.15)" : "transparent", border:"1px solid " + (warState.speed === s ? "rgba(201,168,76,0.3)" : "var(--border)"), borderRadius:3, cursor:"pointer", color: warState.speed === s ? "var(--gold)" : "var(--text-faint)", fontSize:9, fontFamily:T.ui }
+            style: { width:22, height:22, background: warState.speed === s ? T.goldDim : "transparent", border:"1px solid " + (warState.speed === s ? T.goldDim : T.border), borderRadius:3, cursor:"pointer", color: warState.speed === s ? T.gold : T.textFaint, fontSize:9, fontFamily:T.ui }
           }, s, "×"))
         ),
         React.createElement(WarBtn, { onClick: resetWar, danger: true, small: true }, React.createElement(RefreshCw, {size:10}), " Reset"),
@@ -1557,8 +1557,8 @@ function FactionWarView({ data, setData, viewRole }) {
     // ── Main Layout ──
     React.createElement("div", { style: { display:"flex", flex:1, overflow:"hidden" } },
       // Left: Faction list
-      React.createElement("div", { style: { width:180, minWidth:180, borderRight:"1px solid var(--border)", overflow:"auto", flexShrink:0 } },
-        React.createElement("div", { style: { padding:"10px 12px", fontFamily:T.ui, fontSize:8, letterSpacing:"2px", color:"var(--crimson)", textTransform:"uppercase", borderBottom:"1px solid var(--border)" } }, "Factions"),
+      React.createElement("div", { style: { width:180, minWidth:180, borderRight:"1px solid " + T.border, overflow:"auto", flexShrink:0 } },
+        React.createElement("div", { style: { padding:"10px 12px", fontFamily:T.ui, fontSize:8, letterSpacing:"2px", color:T.crimson, textTransform:"uppercase", borderBottom:"1px solid " + T.border } }, "Factions"),
         Object.values(warState.factions).map(f => {
           const isSelected = selectedFaction === f.id;
           const totalTroops = f.armies.reduce((s, a) => s + a.units.reduce((s2, u) => s2 + u.count, 0), 0);
@@ -1566,17 +1566,17 @@ function FactionWarView({ data, setData, viewRole }) {
             key: f.id,
             onClick: () => { setSelectedFaction(f.id); setRightPanel("faction"); },
             style: {
-              padding:"8px 12px", cursor:"pointer", borderBottom:"1px solid var(--border)",
-              background: isSelected ? "rgba(212,67,58,0.05)" : "transparent",
-              borderLeft: isSelected ? "3px solid var(--crimson)" : "3px solid transparent",
+              padding:"8px 12px", cursor:"pointer", borderBottom:"1px solid " + T.border,
+              background: isSelected ? T.crimsonDim : "transparent",
+              borderLeft: isSelected ? "3px solid " + T.crimson : "3px solid transparent",
               opacity: f.eliminated ? 0.4 : 1,
             }
           },
             React.createElement("div", { style: { display:"flex", alignItems:"center", gap:6, marginBottom:2 } },
               React.createElement("div", { style: { width:8, height:8, borderRadius:"50%", background:f.color } }),
-              React.createElement("span", { style: { fontFamily:T.ui, fontSize:10, color: isSelected ? "var(--crimson)" : "var(--text-muted)", letterSpacing:"0.5px" } }, f.name),
+              React.createElement("span", { style: { fontFamily:T.ui, fontSize:10, color: isSelected ? T.crimson : T.textMuted, letterSpacing:"0.5px" } }, f.name),
             ),
-            React.createElement("div", { style: { display:"flex", gap:8, fontSize:9, color:"var(--text-faint)", fontFamily:T.body } },
+            React.createElement("div", { style: { display:"flex", gap:8, fontSize:9, color:T.textFaint, fontFamily:T.body } },
               React.createElement("span", null, "🗺️", f.territories.length),
               React.createElement("span", null, "⚔️", totalTroops),
               React.createElement("span", null, "💰", f.gold),
@@ -1594,15 +1594,15 @@ function FactionWarView({ data, setData, viewRole }) {
       }),
 
       // Right: Detail Panel
-      React.createElement("div", { style: { width:300, minWidth:300, borderLeft:"1px solid var(--border)", display:"flex", flexDirection:"column", flexShrink:0 } },
+      React.createElement("div", { style: { width:300, minWidth:300, borderLeft:"1px solid " + T.border, display:"flex", flexDirection:"column", flexShrink:0 } },
         // Panel tabs
-        React.createElement("div", { style: { display:"flex", borderBottom:"1px solid var(--border)" } },
+        React.createElement("div", { style: { display:"flex", borderBottom:"1px solid " + T.border } },
           ["faction","region","events","battles"].map(tab => React.createElement("button", {
             key:tab, onClick: () => setRightPanel(tab),
             style: {
-              flex:1, padding:"8px 4px", background: rightPanel === tab ? "rgba(212,67,58,0.06)" : "transparent",
-              border:"none", borderBottom: rightPanel === tab ? "2px solid var(--crimson)" : "2px solid transparent",
-              cursor:"pointer", color: rightPanel === tab ? "var(--crimson)" : "var(--text-faint)",
+              flex:1, padding:"8px 4px", background: rightPanel === tab ? T.crimsonDim : "transparent",
+              border:"none", borderBottom: rightPanel === tab ? "2px solid " + T.crimson : "2px solid transparent",
+              cursor:"pointer", color: rightPanel === tab ? T.crimson : T.textFaint,
               fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase",
             }
           }, tab)),

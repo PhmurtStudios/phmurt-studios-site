@@ -49,35 +49,35 @@
      CONSTANTS & STATUS SYSTEM
   ═══════════════════════════════════════════════════════════ */
   const STATUS = {
-    hidden:     { label: 'Hidden',     bg: 'rgba(120,120,170,0.7)', text: '#b0b0e0', icon: EyeOff },
-    suspected:  { label: 'Suspected',  bg: 'rgba(255,200,0,0.6)',   text: '#ffe066', icon: Search },
-    revealed:   { label: 'Revealed',   bg: 'rgba(76,175,80,0.6)',   text: '#81c784', icon: Eye },
-    eliminated: { label: 'Eliminated', bg: 'rgba(220,60,50,0.6)',   text: '#ef5350', icon: Skull },
-    turned:     { label: 'Turned',     bg: 'rgba(130,80,220,0.6)',  text: '#b39ddb', icon: RotateCcw },
-    fled:       { label: 'Fled',       bg: 'rgba(100,100,100,0.5)', text: '#999',    icon: ArrowLeft },
+    hidden:     { label: 'Hidden',     bg: T.bgHover, text: T.text, icon: EyeOff },
+    suspected:  { label: 'Suspected',  bg: T.gold, text: T.bg, icon: Search },
+    revealed:   { label: 'Revealed',   bg: T.green, text: T.bg, icon: Eye },
+    eliminated: { label: 'Eliminated', bg: T.crimson, text: T.bg, icon: Skull },
+    turned:     { label: 'Turned',     bg: T.orange, text: T.bg, icon: RotateCcw },
+    fled:       { label: 'Fled',       bg: T.textDim, text: T.bg, icon: ArrowLeft },
   };
   const STATUS_KEYS = Object.keys(STATUS);
   const RANK_LABELS = { leader: 'Arch-Conspirator', sage: 'Inner Circle', agent: 'Operative', asset: 'Asset' };
 
   const SCHEME_TYPES = [
-    { id: 'assassination', label: 'Assassination', icon: Skull, color: '#ef5350' },
-    { id: 'blackmail',     label: 'Blackmail',     icon: Lock,  color: '#ab47bc' },
-    { id: 'infiltration',  label: 'Infiltration',  icon: EyeOff, color: '#42a5f5' },
-    { id: 'sabotage',      label: 'Sabotage',      icon: Flame, color: '#ff7043' },
-    { id: 'recruitment',   label: 'Recruitment',   icon: UserPlus, color: '#66bb6a' },
-    { id: 'heist',         label: 'Heist',         icon: Target, color: '#ffd740' },
-    { id: 'propaganda',    label: 'Propaganda',    icon: BookOpen, color: '#26c6da' },
-    { id: 'alliance',      label: 'Alliance',      icon: Link2, color: '#ec407a' },
+    { id: 'assassination', label: 'Assassination', icon: Skull, color: T.crimson },
+    { id: 'blackmail',     label: 'Blackmail',     icon: Lock,  color: T.textMuted },
+    { id: 'infiltration',  label: 'Infiltration',  icon: EyeOff, color: T.text },
+    { id: 'sabotage',      label: 'Sabotage',      icon: Flame, color: T.orange },
+    { id: 'recruitment',   label: 'Recruitment',   icon: UserPlus, color: T.green },
+    { id: 'heist',         label: 'Heist',         icon: Target, color: T.gold },
+    { id: 'propaganda',    label: 'Propaganda',    icon: BookOpen, color: T.text },
+    { id: 'alliance',      label: 'Alliance',      icon: Link2, color: T.pink || T.crimson },
   ];
 
   const CONNECTION_TYPES = [
-    { id: 'alliance',  label: 'Secret Alliance',  color: '#66bb6a', dash: '' },
-    { id: 'rivalry',   label: 'Bitter Rivalry',    color: '#ef5350', dash: '6 3' },
-    { id: 'debt',      label: 'Owes a Debt',       color: '#ffd740', dash: '2 4' },
-    { id: 'spy',       label: 'Planted Spy',       color: '#42a5f5', dash: '8 2 2 2' },
-    { id: 'family',    label: 'Blood Relation',    color: '#ab47bc', dash: '' },
-    { id: 'romance',   label: 'Secret Lovers',     color: '#ec407a', dash: '4 2' },
-    { id: 'blackmail', label: 'Being Blackmailed', color: '#ff7043', dash: '3 3' },
+    { id: 'alliance',  label: 'Secret Alliance',  color: T.green, dash: '' },
+    { id: 'rivalry',   label: 'Bitter Rivalry',    color: T.crimson, dash: '6 3' },
+    { id: 'debt',      label: 'Owes a Debt',       color: T.gold, dash: '2 4' },
+    { id: 'spy',       label: 'Planted Spy',       color: T.text, dash: '8 2 2 2' },
+    { id: 'family',    label: 'Blood Relation',    color: T.textMuted, dash: '' },
+    { id: 'romance',   label: 'Secret Lovers',     color: T.orange, dash: '4 2' },
+    { id: 'blackmail', label: 'Being Blackmailed', color: T.orange, dash: '3 3' },
   ];
 
   const DISTRICTS = [
@@ -299,7 +299,7 @@
   function PowerBar({ value, hue, height }) {
     return (
       <div style={{ display: 'flex', alignItems: 'center', gap: 6, width: '100%' }}>
-        <div style={{ flex: 1, height: height || 5, borderRadius: 3, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+        <div style={{ flex: 1, height: height || 5, borderRadius: 3, background: `${T.text}06`, overflow: 'hidden' }}>
           <div style={{ height: '100%', borderRadius: 3, width: Math.min(100, value) + '%',
             background: 'linear-gradient(90deg, ' + hC(hue, 0.6) + ', ' + hC(hue, 1) + ')',
             transition: 'width 0.5s ease', boxShadow: '0 0 8px ' + hC(hue, 0.3) }} />
@@ -314,7 +314,7 @@
     return React.createElement(Tag, {
       value: value || '', onChange: function(e) { onChange(e.target.value); },
       placeholder: placeholder || '',
-      style: Object.assign({ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid ' + bdr,
+      style: Object.assign({ width: '100%', background: `${T.bg}30`, border: '1px solid ' + bdr,
         color: txt, padding: '5px 8px', borderRadius: 4, fontFamily: bd, fontSize: 12,
         resize: multiline ? 'vertical' : 'none', minHeight: multiline ? 50 : 'auto', outline: 'none' }, s || {})
     });
@@ -368,7 +368,7 @@
           </circle>
         )}
         {selected && <circle cx={x} cy={y} r={r+4} fill="none" stroke={color} strokeWidth={2.5} strokeOpacity={0.6} />}
-        <circle cx={x} cy={y} r={r} fill={filled ? color : 'rgba(0,0,0,0.7)'} stroke={color}
+        <circle cx={x} cy={y} r={r} fill={filled ? color : `${T.bg}b3`} stroke={color}
           strokeWidth={filled ? 0.5 : 1.5} />
         {!filled && (
           <text x={x} y={y+1} textAnchor="middle" dominantBaseline="middle"
@@ -394,12 +394,12 @@
   ═══════════════════════════════════════════════════════════ */
   function SchemeCard({ scheme, hue, isDM, onUpdate, onRemove, data }) {
     var st = SCHEME_TYPES.find(function(t) { return t.id === scheme.type; }) || SCHEME_TYPES[0];
-    var progressColor = scheme.progress >= 80 ? '#ef5350' : scheme.progress >= 50 ? '#ffa726' : '#66bb6a';
+    var progressColor = scheme.progress >= 80 ? T.crimson : scheme.progress >= 50 ? T.orange : T.green;
     var districts = getWorldDistricts(data);
     return (
       <div style={{
         padding: '10px 12px', borderRadius: 6, marginBottom: 6,
-        background: 'rgba(0,0,0,0.25)', border: '1px solid ' + hC(hue, 0.1),
+        background: `${T.bg}40`, border: '1px solid ' + hC(hue, 0.1),
         borderLeft: '3px solid ' + st.color,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
@@ -413,7 +413,7 @@
         {scheme.description && <div style={{ fontSize: 11, color: dim, marginBottom: 6 }}>{scheme.description}</div>}
         {/* Progress bar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <div style={{ flex: 1, height: 6, borderRadius: 3, background: 'rgba(255,255,255,0.06)', overflow: 'hidden' }}>
+          <div style={{ flex: 1, height: 6, borderRadius: 3, background: `${T.text}06`, overflow: 'hidden' }}>
             <div style={{ height: '100%', width: scheme.progress + '%', borderRadius: 3,
               background: 'linear-gradient(90deg, ' + st.color + '88, ' + st.color + ')',
               transition: 'width 0.3s ease',
@@ -430,7 +430,7 @@
           <div style={{ marginTop: 6 }}>
             <div style={{ fontSize: 9, color: fnt, fontStyle: 'italic', marginBottom: 2 }}>Target District:</div>
             <select value={scheme.targetDistrict || ''} onChange={function(e) { onUpdate({ targetDistrict: e.target.value || null }); }}
-              style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid ' + bdr, color: txt,
+              style={{ width: '100%', background: `${T.bg}30`, border: '1px solid ' + bdr, color: txt,
                 fontSize: 10, padding: '3px 6px', borderRadius: 3, fontFamily: ui }} >
               <option value="">No target</option>
               {districts.map(function(d) {
@@ -458,7 +458,7 @@
     return (
       <div style={{
         padding: '6px 10px', borderRadius: 4, marginBottom: 4,
-        background: 'rgba(0,0,0,0.2)', borderLeft: '3px solid ' + ct.color,
+        background: `${T.bg}20`, borderLeft: '3px solid ' + ct.color,
         display: 'flex', alignItems: 'center', gap: 8,
       }}>
         <span style={{ fontSize: 10, color: ct.color, fontWeight: 700, fontFamily: ui, textTransform: 'uppercase', letterSpacing: '0.5px', minWidth: 70 }}>{ct.label}</span>
@@ -503,8 +503,8 @@
           var factions = districtMap[dist] || [];
           var contested = factions.length > 1;
           var owner = factions[0];
-          var bgColor = owner ? hC(owner.colorHue, 0.08) : 'rgba(255,255,255,0.02)';
-          var borderColor = owner ? hC(owner.colorHue, contested ? 0.4 : 0.2) : 'rgba(255,255,255,0.05)';
+          var bgColor = owner ? hC(owner.colorHue, 0.08) : `${T.text}02`;
+          var borderColor = owner ? hC(owner.colorHue, contested ? 0.4 : 0.2) : `${T.text}05`;
           return (
             <div key={dist} style={{
               padding: '8px 10px', borderRadius: 4,
@@ -512,7 +512,7 @@
               position: 'relative', overflow: 'hidden',
             }}>
               {contested && <div style={{
-                position: 'absolute', top: 3, right: 5, fontSize: 8, color: '#ef5350',
+                position: 'absolute', top: 3, right: 5, fontSize: 8, color: T.crimson,
                 fontWeight: 700, fontFamily: ui, textTransform: 'uppercase', letterSpacing: '0.5px',
                 animation: 'intriguePulse 2s infinite',
               }}>Contested</div>}
@@ -760,12 +760,12 @@
           .web-node:hover circle { filter: brightness(1.4); }\
           .intrigue-scroll::-webkit-scrollbar { width: 5px; }\
           .intrigue-scroll::-webkit-scrollbar-track { background: transparent; }\
-          .intrigue-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }\
+          .intrigue-scroll::-webkit-scrollbar-thumb { background: ${T.text}15; border-radius: 3px; }\
         '}</style>
 
         {/* HEADER */}
         <div style={{ padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10,
-          borderBottom: '1px solid ' + bdr, background: 'rgba(0,0,0,0.25)', flexShrink: 0 }}>
+          borderBottom: '1px solid ' + bdr, background: `${T.bg}40`, flexShrink: 0 }}>
           {activeBranch && (
             <span onClick={function() { setView('web'); setEditAgent(null); }}
               style={{ color: gld, cursor: 'pointer', display: 'flex', padding: 2 }}>{I(ArrowLeft, 16)}</span>
@@ -783,13 +783,13 @@
 
           {/* View tabs */}
           {!activeBranch && (
-            <div style={{ display: 'flex', gap: 2, background: 'rgba(0,0,0,0.3)', borderRadius: 4, padding: 2 }}>
+            <div style={{ display: 'flex', gap: 2, background: `${T.bg}30`, borderRadius: 4, padding: 2 }}>
               {[{ id: 'web', label: 'Web', ic: Network }, { id: 'territories', label: 'Influence', ic: Globe }].map(function(t) {
                 return (
                   <span key={t.id} onClick={function() { setView(t.id); }}
                     style={{ padding: '4px 10px', borderRadius: 3, cursor: 'pointer', fontSize: 10,
                       fontWeight: 600, fontFamily: ui, color: view === t.id ? gld : fnt,
-                      background: view === t.id ? 'rgba(255,215,0,0.1)' : 'transparent',
+                      background: view === t.id ? `${T.gold}15` : 'transparent',
                       display: 'flex', alignItems: 'center', gap: 4, transition: 'all 0.15s' }}>
                     {I(t.ic, 11)} {t.label}
                   </span>
@@ -812,7 +812,7 @@
                 <svg ref={svgRef} width={sz.w} height={sz.h} style={{ position: 'absolute', top: 0, left: 0 }}>
                   <defs>
                     <radialGradient id="igBg" cx="50%" cy="50%" r="50%">
-                      <stop offset="0%" stopColor="rgba(255,215,0,0.03)" />
+                      <stop offset="0%" stopColor={`${T.gold}08`} />
                       <stop offset="100%" stopColor="transparent" />
                     </radialGradient>
                   </defs>
@@ -821,7 +821,7 @@
                   {/* Concentric rings */}
                   {[webData.r1, webData.r2].map(function(r, i) {
                     return r ? <circle key={i} cx={webData.cx} cy={webData.cy} r={r} fill="none"
-                      stroke="rgba(255,215,0,0.035)" strokeWidth={1} strokeDasharray="3 8" /> : null;
+                      stroke={`${T.gold}09`} strokeWidth={1} strokeDasharray="3 8" /> : null;
                   })}
 
                   {/* All lines */}
@@ -873,20 +873,20 @@
               {/* Side panel: connections / schemes / events */}
               <div className="intrigue-scroll" style={{
                 width: editAgent ? 0 : 280, borderLeft: editAgent ? 'none' : '1px solid ' + bdr,
-                overflowY: 'auto', background: 'rgba(0,0,0,0.15)', flexShrink: 0,
+                overflowY: 'auto', background: `${T.bg}25`, flexShrink: 0,
                 transition: 'width 0.2s',
                 display: editAgent ? 'none' : 'block',
               }}>
                 <div style={{ padding: 12 }}>
                   {/* Tabs */}
-                  <div style={{ display: 'flex', gap: 2, marginBottom: 10, background: 'rgba(0,0,0,0.2)', borderRadius: 4, padding: 2 }}>
+                  <div style={{ display: 'flex', gap: 2, marginBottom: 10, background: `${T.bg}20`, borderRadius: 4, padding: 2 }}>
                     {[{ id: 'connections', label: 'Links' }, { id: 'schemes', label: 'Schemes' }, { id: 'events', label: 'Events' }].map(function(t) {
                       return (
                         <span key={t.id} onClick={function() { setSideTab(t.id); }}
                           style={{ flex: 1, padding: '4px 6px', borderRadius: 3, cursor: 'pointer',
                             fontSize: 10, fontWeight: 600, fontFamily: ui, textAlign: 'center',
                             color: sideTab === t.id ? gld : fnt,
-                            background: sideTab === t.id ? 'rgba(255,215,0,0.1)' : 'transparent' }}>
+                            background: sideTab === t.id ? `${T.gold}15` : 'transparent' }}>
                           {t.label}
                         </span>
                       );
@@ -938,8 +938,8 @@
                         return (
                           <div key={evt.id} style={{
                             padding: '5px 8px', marginBottom: 3, borderRadius: 3,
-                            background: 'rgba(0,0,0,0.2)', fontSize: 11, color: dim,
-                            borderLeft: '2px solid ' + (brnch ? hC(brnch.colorHue, 0.4) : 'rgba(255,215,0,0.2)'),
+                            background: `${T.bg}20`, fontSize: 11, color: dim,
+                            borderLeft: '2px solid ' + (brnch ? hC(brnch.colorHue, 0.4) : `${T.gold}20`),
                           }}>
                             <span style={{ color: fnt, fontSize: 9, marginRight: 4 }}>{evt.date}</span>
                             {evt.text}
@@ -994,7 +994,7 @@
                             var terrs = (b.territories || []).concat([e.target.value]);
                             updateBranch(b.id, { territories: terrs });
                             e.target.value = '';
-                          }} style={{ background: 'rgba(0,0,0,0.3)', border: '1px solid ' + bdr, color: dim,
+                          }} style={{ background: `${T.bg}30`, border: '1px solid ' + bdr, color: dim,
                             fontSize: 10, padding: '3px 6px', borderRadius: 3, fontFamily: ui }}>
                             <option value="">+ Add territory...</option>
                             {worldDistricts.filter(function(d) { return !(b.territories||[]).includes(d); }).map(function(d) {
@@ -1071,7 +1071,7 @@
 
                 {/* Bottom: schemes + power + events */}
                 <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: '10px 16px',
-                  background: 'linear-gradient(transparent, rgba(0,0,0,0.8))', pointerEvents: 'none' }}>
+                  background: `linear-gradient(transparent, ${T.bg}cc)`, pointerEvents: 'none' }}>
                   <div style={{ pointerEvents: 'auto' }}>
                     <div style={{ display: 'flex', gap: 12, alignItems: 'flex-end', marginBottom: 8 }}>
                       <div style={{ flex: 1 }}>
@@ -1080,7 +1080,7 @@
                           onChange={function(e) { updateBranch(activeBranch.id, { powerLevel: Number(e.target.value) }); }}
                           style={{ width: '100%', accentColor: hC(activeBranch.colorHue), marginTop: 2, height: 3 }} />}
                       </div>
-                      {isDM && <Btn small color="#ef5350" outline onClick={function() { removeBranch(activeBranch.id); }}>{I(Trash2, 10)}</Btn>}
+                      {isDM && <Btn small color={T.crimson} outline onClick={function() { removeBranch(activeBranch.id); }}>{I(Trash2, 10)}</Btn>}
                     </div>
 
                     {/* Active schemes */}
@@ -1102,7 +1102,7 @@
               {editAgent && (
                 <div className="intrigue-scroll" style={{
                   width: 320, borderLeft: '1px solid ' + bdr, overflowY: 'auto',
-                  background: 'rgba(0,0,0,0.2)', animation: 'intrigueSlideIn 0.2s ease', flexShrink: 0 }}>
+                  background: `${T.bg}20`, animation: 'intrigueSlideIn 0.2s ease', flexShrink: 0 }}>
                   {renderAgentPanel(editAgent, isDM, intrigue, update, updateAgent, findBranch, setEditAgent, newClue, setNewClue, activeBranch, removeAgent, data)}
                 </div>
               )}
@@ -1113,7 +1113,7 @@
           {(view === 'web' || view === 'territories') && editAgent && (
             <div className="intrigue-scroll" style={{
               width: 320, borderLeft: '1px solid ' + bdr, overflowY: 'auto',
-              background: 'rgba(0,0,0,0.2)', animation: 'intrigueSlideIn 0.2s ease', flexShrink: 0 }}>
+              background: `${T.bg}20`, animation: 'intrigueSlideIn 0.2s ease', flexShrink: 0 }}>
               {renderAgentPanel(editAgent, isDM, intrigue, update, updateAgent, findBranch, setEditAgent, newClue, setNewClue, null, removeAgent, data)}
             </div>
           )}
@@ -1129,10 +1129,10 @@
             <Inp value={newBranchDesc} onChange={setNewBranchDesc} placeholder="Brief description..." />
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
               <button onClick={addBranch} disabled={!newBranchName.trim()} style={{
-                flex: 1, padding: '8px 14px', background: gld, color: '#000', border: 'none', borderRadius: 4,
+                flex: 1, padding: '8px 14px', background: T.gold, color: T.bg, border: 'none', borderRadius: 4,
                 cursor: 'pointer', fontFamily: ui, fontSize: 12, fontWeight: 700, opacity: newBranchName.trim() ? 1 : 0.4 }}>Create</button>
               <button onClick={function() { setShowAddBranch(false); }} style={{
-                padding: '8px 14px', background: 'transparent', color: dim, border: '1px solid ' + bdr,
+                padding: '8px 14px', background: 'transparent', color: T.textDim, border: '1px solid ' + T.border,
                 borderRadius: 4, cursor: 'pointer', fontFamily: ui, fontSize: 12 }}>Cancel</button>
             </div>
           </div>
@@ -1200,7 +1200,7 @@
               null,
               React.createElement('select',
                 { value: agent.location, onChange: function(e) { doUpdate({ location: e.target.value }); },
-                  style: { width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid ' + bdr, color: txt,
+                  style: { width: '100%', background: `${T.bg}30`, border: '1px solid ' + bdr, color: txt,
                     padding: '5px 8px', borderRadius: 4, fontSize: 12, fontFamily: ui, marginBottom: 6 } },
                 React.createElement('option', { value: '' }, 'Select location...'),
                 locationOptions.map(function(loc) {
@@ -1234,7 +1234,7 @@
                   }} style={{
                     padding: '2px 7px', borderRadius: 8, border: 'none', cursor: 'pointer',
                     fontSize: 9, fontWeight: 600, fontFamily: ui,
-                    background: agent.status === k ? STATUS[k].bg : 'rgba(255,255,255,0.04)',
+                    background: agent.status === k ? STATUS[k].bg : `${T.text}0a`,
                     color: agent.status === k ? STATUS[k].text : fnt }}>
                     {STATUS[k].label}
                   </button>
@@ -1254,7 +1254,7 @@
               var otherName = findAgentName(intrigue, other, isDM);
               return (
                 <div key={c.id} style={{ padding: '4px 8px', marginBottom: 3, borderRadius: 3,
-                  background: 'rgba(0,0,0,0.2)', borderLeft: '2px solid ' + ct.color,
+                  background: `${T.bg}20`, borderLeft: '2px solid ' + ct.color,
                   fontSize: 11, color: dim, display: 'flex', alignItems: 'center', gap: 4 }}>
                   <span style={{ color: ct.color, fontWeight: 600, fontSize: 9, fontFamily: ui, textTransform: 'uppercase' }}>{ct.label}</span>
                   <span style={{ color: txt }}>{otherName}</span>
@@ -1265,7 +1265,7 @@
         )}
 
         <Lbl>Clues ({(agent.clues || []).length})</Lbl>
-        <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 4, padding: 6, borderLeft: '2px solid ' + gld }}>
+        <div style={{ background: `${T.bg}20`, borderRadius: 4, padding: 6, borderLeft: '2px solid ' + T.gold }}>
           {(agent.clues || []).length === 0 && <div style={{ fontSize: 10, color: fnt, fontStyle: 'italic' }}>No clues yet.</div>}
           {(agent.clues || []).map(function(c, i) {
             return <div key={i} style={{ fontSize: 10, color: dim, padding: '2px 0' }}>
@@ -1295,9 +1295,9 @@
           <Fragment>
             <Lbl>Actions</Lbl>
             <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-              {!agent.revealed && <Btn small color="#81c784" onClick={function() { doUpdate({ revealed: true, status: 'revealed' }); }}>{I(Eye, 10)} Reveal</Btn>}
+              {!agent.revealed && <Btn small color={T.green} onClick={function() { doUpdate({ revealed: true, status: 'revealed' }); }}>{I(Eye, 10)} Reveal</Btn>}
               {agent.rank === 'agent' && activeBranch && (
-                <Btn small color="#ef5350" outline onClick={function() {
+                <Btn small color={T.crimson} outline onClick={function() {
                   if (confirm('Remove agent?')) removeAgent(activeBranch.id, agent.id);
                 }}>{I(Trash2, 10)} Remove</Btn>
               )}
@@ -1313,10 +1313,10 @@
   ═══════════════════════════════════════════════════════════ */
   function renderModal(onClose, content) {
     return (
-      <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999,
+      <div style={{ position: 'fixed', inset: 0, background: `${T.bg}b3`, zIndex: 9999,
         display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={onClose}>
         <div onClick={function(e) { e.stopPropagation(); }} style={{
-          background: T.bgCard || '#1a1a2e', border: '1px solid ' + bdr, borderRadius: 8,
+          background: T.bgCard, border: '1px solid ' + T.border, borderRadius: 8,
           padding: 20, width: 400, maxWidth: '90vw' }}>
           {content}
         </div>
@@ -1339,16 +1339,16 @@
       <div>
         <div style={{ fontFamily: hd, fontSize: 16, color: gld, marginBottom: 14 }}>Add Cross-Faction Connection</div>
         <Lbl>Type</Lbl>
-        <select id="conn-type" defaultValue="alliance" style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid ' + bdr, color: txt, padding: '5px 8px', borderRadius: 4, fontSize: 12 }}>
+        <select id="conn-type" defaultValue="alliance" style={{ width: '100%', background: T.bgInput, border: '1px solid ' + T.border, color: txt, padding: '5px 8px', borderRadius: 4, fontSize: 12 }}>
           {CONNECTION_TYPES.map(function(ct) { return <option key={ct.id} value={ct.id}>{ct.label}</option>; })}
         </select>
         <Lbl>From Agent</Lbl>
-        <select id="conn-from" defaultValue="" style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid ' + bdr, color: txt, padding: '5px 8px', borderRadius: 4, fontSize: 12 }}>
+        <select id="conn-from" defaultValue="" style={{ width: '100%', background: T.bgInput, border: '1px solid ' + T.border, color: txt, padding: '5px 8px', borderRadius: 4, fontSize: 12 }}>
           <option value="">Select...</option>
           {allAgents.map(function(a) { return <option key={a.id} value={a.id}>{a.name} ({a.faction})</option>; })}
         </select>
         <Lbl>To Agent</Lbl>
-        <select id="conn-to" defaultValue="" style={{ width: '100%', background: 'rgba(0,0,0,0.3)', border: '1px solid ' + bdr, color: txt, padding: '5px 8px', borderRadius: 4, fontSize: 12 }}>
+        <select id="conn-to" defaultValue="" style={{ width: '100%', background: T.bgInput, border: '1px solid ' + T.border, color: txt, padding: '5px 8px', borderRadius: 4, fontSize: 12 }}>
           <option value="">Select...</option>
           {allAgents.map(function(a) { return <option key={a.id} value={a.id}>{a.name} ({a.faction})</option>; })}
         </select>
@@ -1371,10 +1371,10 @@
             }));
             onClose();
           }} style={{
-            flex: 1, padding: '8px 14px', background: gld, color: '#000', border: 'none', borderRadius: 4,
+            flex: 1, padding: '8px 14px', background: T.gold, color: T.bg, border: 'none', borderRadius: 4,
             cursor: 'pointer', fontFamily: ui, fontSize: 12, fontWeight: 700 }}>Add Connection</button>
           <button onClick={onClose} style={{
-            padding: '8px 14px', background: 'transparent', color: dim, border: '1px solid ' + bdr,
+            padding: '8px 14px', background: 'transparent', color: T.textDim, border: '1px solid ' + T.border,
             borderRadius: 4, cursor: 'pointer', fontFamily: ui, fontSize: 12 }}>Cancel</button>
         </div>
       </div>

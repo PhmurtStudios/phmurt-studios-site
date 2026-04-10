@@ -1,11 +1,14 @@
 window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, viewRole, campaignMembers }) {
-  const T = {
-    bg: "#0c0804", bgNav: "#100c08", bgCard: "rgba(18,14,10,0.97)",
-    text: "#e8dcc8", textMuted: "#a89878", textFaint: "#6a6050",
-    crimson: "#d4433a", crimsonBorder: "rgba(212,67,58,0.15)",
-    gold: "#c9a85c", border: "rgba(212,67,58,0.08)",
+  const T = window.__PHMURT_THEME || {
+    bg: "var(--bg)", bgNav: "var(--bg-nav)", bgCard: "var(--bg-card)", bgHover: "var(--bg-hover)",
+    bgMid: "var(--bg-mid)", bgInput: "var(--bg-input)", text: "var(--text)", textDim: "var(--text-dim)",
+    textMuted: "var(--text-muted)", textFaint: "var(--text-faint)", crimson: "var(--crimson)",
+    crimsonDim: "var(--crimson-dim)", crimsonBorder: "var(--crimson-border)", border: "var(--border)",
+    borderMid: "var(--border-mid)", gold: "var(--gold)", goldDim: "var(--gold-dim)",
+    green: "var(--green)", greenDim: "var(--green-dim)",
     heading: "'Cinzel', serif", body: "'Spectral', serif", ui: "'Cinzel', serif"
   };
+  try { if (window.T) Object.assign(T, window.T); } catch(e) {}
 
   const [showScheduleModal, setShowScheduleModal] = React.useState(false);
   const [showAvailEditor, setShowAvailEditor] = React.useState(false);
@@ -63,8 +66,8 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
     const ratio = playersAvail / totalPlayers;
 
     if (ratio === 1) return T.gold;
-    if (ratio >= 0.66) return '#7cb342';
-    if (ratio > 0) return '#fbc02d';
+    if (ratio >= 0.66) return T.green;
+    if (ratio > 0) return T.gold;
     return T.textFaint;
   };
 
@@ -201,7 +204,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
           border: `2px solid ${T.crimson}`,
           borderRadius: '8px',
           padding: '20px',
-          boxShadow: '0 0 20px rgba(212,67,58,0.2)'
+          boxShadow: "0 0 20px " + T.crimsonDim
         }
       },
         React.createElement('div', { style: { fontSize: '12px', color: T.gold, fontWeight: 'bold', marginBottom: '8px' } }, 'NEXT SESSION'),
@@ -251,7 +254,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
           style: {
             width: '100%',
             padding: '8px',
-            backgroundColor: 'rgba(0,0,0,0.3)',
+            backgroundColor: T.bgHover,
             border: `1px solid ${T.border}`,
             borderRadius: '4px',
             color: T.text,
@@ -295,7 +298,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
         style: {
           padding: '12px 16px',
           backgroundColor: T.crimson,
-          color: '#fff',
+          color: T.bg,
           border: 'none',
           borderRadius: '6px',
           fontFamily: T.ui,
@@ -305,7 +308,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
           marginTop: 'auto',
           transition: 'all 0.3s'
         },
-        onMouseEnter: (e) => e.target.style.backgroundColor = '#e85450',
+        onMouseEnter: (e) => e.target.style.backgroundColor = T.crimson,
         onMouseLeave: (e) => e.target.style.backgroundColor = T.crimson
       }, '+ SCHEDULE SESSION'),
 
@@ -334,7 +337,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
             React.createElement('div', {
               key: session.id,
               style: {
-                backgroundColor: 'rgba(0,0,0,0.5)',
+                backgroundColor: T.bgNav,
                 border: `1px solid ${T.textFaint}`,
                 borderRadius: '4px',
                 padding: '10px',
@@ -384,7 +387,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
               onClick: () => applyPreset(label.toLowerCase().replace(/\s/g, '_')),
               style: {
                 padding: '6px 12px',
-                backgroundColor: 'rgba(212,67,58,0.2)',
+                backgroundColor: T.crimsonDim,
                 border: `1px solid ${T.crimson}`,
                 color: T.gold,
                 borderRadius: '4px',
@@ -395,7 +398,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
                 transition: 'all 0.3s'
               },
               onMouseEnter: (e) => e.target.style.backgroundColor = T.crimsonBorder,
-              onMouseLeave: (e) => e.target.style.backgroundColor = 'rgba(212,67,58,0.2)'
+              onMouseLeave: (e) => e.target.style.backgroundColor = T.crimsonDim
             }, label)
           )
         ),
@@ -419,7 +422,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
         // Availability Editor
         showAvailEditor && React.createElement('div', {
           style: {
-            backgroundColor: 'rgba(0,0,0,0.3)',
+            backgroundColor: T.bgHover,
             borderRadius: '6px',
             padding: '15px',
             marginBottom: '15px',
@@ -626,7 +629,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
               key: member.user_id,
               style: {
                 padding: '10px',
-                backgroundColor: 'rgba(0,0,0,0.3)',
+                backgroundColor: T.bgHover,
                 borderRadius: '6px',
                 marginBottom: '8px',
                 fontSize: '11px'
@@ -646,7 +649,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
                 style: {
                   width: '100%',
                   height: '6px',
-                  backgroundColor: 'rgba(0,0,0,0.5)',
+                  backgroundColor: T.bgNav,
                   borderRadius: '3px',
                   overflow: 'hidden'
                 }
@@ -721,7 +724,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.7)',
+        backgroundColor: T.bgNav,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -759,7 +762,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
             style: {
               width: '100%',
               padding: '8px',
-              backgroundColor: 'rgba(0,0,0,0.3)',
+              backgroundColor: T.bgHover,
               border: `1px solid ${T.border}`,
               borderRadius: '4px',
               color: T.text,
@@ -777,7 +780,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
               style: {
                 width: '100%',
                 padding: '8px',
-                backgroundColor: 'rgba(0,0,0,0.3)',
+                backgroundColor: T.bgHover,
                 border: `1px solid ${T.border}`,
                 borderRadius: '4px',
                 color: T.text,
@@ -795,7 +798,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
               style: {
                 width: '100%',
                 padding: '8px',
-                backgroundColor: 'rgba(0,0,0,0.3)',
+                backgroundColor: T.bgHover,
                 border: `1px solid ${T.border}`,
                 borderRadius: '4px',
                 color: T.text,
@@ -813,7 +816,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
             style: {
               width: '100%',
               padding: '8px',
-              backgroundColor: 'rgba(0,0,0,0.3)',
+              backgroundColor: T.bgHover,
               border: `1px solid ${T.border}`,
               borderRadius: '4px',
               color: T.text,
@@ -831,7 +834,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
               flex: 1,
               padding: '10px',
               backgroundColor: T.crimson,
-              color: '#fff',
+              color: T.bg,
               border: 'none',
               borderRadius: '4px',
               fontFamily: T.ui,

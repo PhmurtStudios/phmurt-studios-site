@@ -22,6 +22,52 @@
 (function() {
   "use strict";
 
+  // ── Theme System Integration ──
+  // Get the global theme object (window.__PHMURT_THEME)
+  function getTheme() {
+    return window.__PHMURT_THEME || {
+      bg: "#1a1a1a",
+      bgCard: "#2a2a2a",
+      bgHover: "#3a3a3a",
+      bgInput: "#1f1f1f",
+      bgMid: "#242424",
+      bgNav: "#161616",
+      text: "#ffffff",
+      textDim: "#cccccc",
+      textMuted: "#999999",
+      textFaint: "#666666",
+      border: "#444444",
+      borderMid: "#333333",
+      gold: "#d4a766",
+      goldDim: "#a68041",
+      crimson: "#d4433a",
+      crimsonDim: "#a03b2a",
+      green: "#4a9d6f",
+      greenDim: "#3a7d5a",
+      orange: "#e8944a",
+      orangeDim: "#c87a3a",
+      ui: "'Cinzel', serif",
+      heading: "'Cinzel', serif",
+      body: "'Spectral', Georgia, serif"
+    };
+  }
+
+  // Get theme-aware faction colors
+  // Uses theme's accent colors (gold, crimson, green, orange) and variations
+  function getThemeAwareFactionColors() {
+    const T = getTheme();
+    return [
+      T.gold,
+      T.crimson,
+      T.green,
+      T.orange,
+      T.goldDim,
+      T.crimsonDim,
+      T.greenDim,
+      T.orangeDim
+    ];
+  }
+
   // ── Seeded RNG (mulberry32) ──
   function lwRng(seed) {
     let t = seed | 0;
@@ -1030,7 +1076,7 @@
             power: 30 + Math.floor(rng() * 20),
             trend: "rising",
             desc: "A newly independent state that has broken away from its parent faction.",
-            color: pick(["#8b6d4a", "#4a6d8b", "#6d8b4a", "#8b4a6d", "#4a8b6d", "#6d4a8b", "#7a5c3c", "#3c5c7a"], rng),
+            color: pick(getThemeAwareFactionColors(), rng),
             govType: newGovType,
             hierarchy: [{ title: newRulerTitle, name: generateReplacementName(rng), role: "ruler" }],
             resources: [],

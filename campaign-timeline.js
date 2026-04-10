@@ -310,7 +310,7 @@ function TimelineView({ data, setData, onNav, viewRole }) {
           const sessionPad = compactLayout ? 14 : 18;
           const onLeft = timelineIdx % 2 === 0;
           const dotMm = compactLayout ? 14 : 18;
-          const dotAccent = isLatest ? T.crimson : "#c9a84c";
+          const dotAccent = isLatest ? T.crimson : T.gold;
           const timelineDot = (
             <div style={{ display:"flex", flexDirection:"column", alignItems:"center", paddingTop: compactLayout ? 14 : 18 }}>
               <div style={{
@@ -333,11 +333,11 @@ function TimelineView({ data, setData, onNav, viewRole }) {
                 border:`1px solid ${isLatest ? T.crimsonBorder : T.borderMid}`,
                 borderLeft: isLatest ? `3px solid ${T.crimson}` : `1px solid ${T.borderMid}`,
                 background: isLatest
-                  ? `linear-gradient(135deg, ${T.bgCard} 0%, rgba(212,67,58,0.03) 100%)`
+                  ? `linear-gradient(135deg, ${T.bgCard} 0%, ${T.crimsonDim} 100%)`
                   : (timelineIdx % 2 === 0 ? T.bgCard : T.bgMid),
                 boxShadow: hoverSession===s.id
-                  ? `0 6px 20px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.1)`
-                  : "0 1px 3px rgba(0,0,0,0.06)",
+                  ? `0 6px 20px ${T.text}, 0 1px 3px ${T.text}`
+                  : "0 1px 3px " + T.bgHover,
                 transform: hoverSession===s.id ? "translateY(-1px)" : "none",
                 borderRadius: 6,
               }}
@@ -434,7 +434,7 @@ function TimelineView({ data, setData, onNav, viewRole }) {
                                 borderRadius: 5,
                                 border:`1px solid ${evHover ? `${col}30` : T.borderMid}`,
                                 borderLeft:`3px solid ${col}`,
-                                boxShadow: evHover ? `0 3px 10px rgba(0,0,0,0.1), inset 0 0 0 1px ${col}10` : "0 1px 2px rgba(0,0,0,0.04)",
+                                boxShadow: evHover ? `0 3px 10px ${T.text}, inset 0 0 0 1px ${col}10` : "0 1px 2px " + T.bgHover,
                                 opacity: minor ? 0.92 : (ev.dmOnly ? 0.75 : 1),
                                 cursor:"pointer",
                                 transition:"all 0.2s ease",
