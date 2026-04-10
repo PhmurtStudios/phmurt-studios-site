@@ -1427,30 +1427,9 @@ window.addEventListener('storage', function (e) {
   var currentPage = window.location.pathname || '/';
   if (currentPage.indexOf('admin') !== -1) return;
 
-  // ── Shared CSS injection ──────────────────────────────────────────
+  // ── Shared CSS injection (maintenance, announcements, disabled page) ──
   var style = document.createElement('style');
   style.textContent = [
-    /* Subscription upgrade modal */
-    '.phmurt-upgrade-overlay{position:fixed;inset:0;z-index:99997;display:flex;align-items:center;justify-content:center;background:rgba(6,4,2,0.82);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);animation:phmurt-fade-in 0.25s ease;}',
-    '.phmurt-upgrade-modal{background:#13100c;border:1px solid rgba(212,67,58,0.25);border-radius:12px;padding:0;max-width:400px;width:90%;position:relative;box-shadow:0 0 60px rgba(212,67,58,0.08),0 12px 48px rgba(0,0,0,0.7);text-align:center;overflow:hidden;}',
-    '.phmurt-upgrade-modal .upgrade-glow{height:3px;background:linear-gradient(90deg,transparent,rgba(212,67,58,0.6),transparent);margin-bottom:0;}',
-    '.phmurt-upgrade-modal .upgrade-body{padding:32px 28px 26px;}',
-    '.phmurt-upgrade-modal .upgrade-icon{font-size:28px;margin-bottom:14px;opacity:0.5;}',
-    '.phmurt-upgrade-modal .upgrade-title{font-family:Cinzel,serif;font-size:15px;letter-spacing:3px;text-transform:uppercase;color:var(--crimson,#d4433a);margin:0 0 14px;font-weight:400;}',
-    '.phmurt-upgrade-modal .upgrade-text{color:#8c7d6e;font-family:Spectral,serif;font-size:14px;line-height:1.7;margin:0 0 24px;}',
-    '.phmurt-upgrade-modal .upgrade-text strong{color:#d4c4a8;}',
-    '.phmurt-upgrade-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:8px;}',
-    '.phmurt-upgrade-modal .upgrade-btn{padding:13px 22px;background:var(--crimson,#d4433a);color:#f5ede0;border:none;font-family:Cinzel,serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border-radius:4px;font-weight:600;transition:all 0.2s;flex:1;min-width:130px;box-shadow:0 2px 12px rgba(212,67,58,0.25);}',
-    '.phmurt-upgrade-modal .upgrade-btn:hover{background:#e04a3f;box-shadow:0 4px 20px rgba(212,67,58,0.4);}',
-    '.phmurt-upgrade-modal .upgrade-btn.yearly{background:transparent;border:1px solid rgba(212,67,58,0.35);color:var(--crimson,#d4433a);box-shadow:none;}',
-    '.phmurt-upgrade-modal .upgrade-btn.yearly:hover{background:rgba(212,67,58,0.08);border-color:rgba(212,67,58,0.5);}',
-    '.phmurt-upgrade-modal .upgrade-save{font-family:Spectral,serif;font-size:11px;color:rgba(94,224,154,0.7);font-weight:400;font-style:italic;letter-spacing:0.3px;margin-top:4px;display:block;}',
-    '.phmurt-upgrade-modal .upgrade-divider{height:1px;background:rgba(212,67,58,0.1);margin:20px 0 0;}',
-    '.phmurt-upgrade-modal .upgrade-footer{padding:14px 28px;background:rgba(255,255,255,0.015);}',
-    '.phmurt-upgrade-modal .upgrade-compare{color:#5a5046;font-family:Cinzel,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;text-decoration:none;transition:color 0.15s;}',
-    '.phmurt-upgrade-modal .upgrade-compare:hover{color:var(--crimson,#d4433a);}',
-    '.phmurt-upgrade-modal .upgrade-close{position:absolute;top:14px;right:16px;background:none;border:none;color:#3a332b;cursor:pointer;font-size:18px;padding:4px 8px;line-height:1;z-index:1;transition:color 0.15s;}',
-    '.phmurt-upgrade-modal .upgrade-close:hover{color:#8c7d6e;}',
     '@keyframes phmurt-fade-in{from{opacity:0}to{opacity:1}}',
     '.phmurt-maintenance-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,12,8,0.97);z-index:99999;display:flex;align-items:center;justify-content:center;text-align:center;font-family:Spectral,serif;color:#f5ede0;}',
     '.phmurt-maintenance-box{max-width:500px;padding:48px;border:1px solid rgba(212,67,58,0.2);border-radius:12px;background:rgba(30,25,18,0.95);}',
@@ -1664,6 +1643,55 @@ window.addEventListener('storage', function (e) {
     }
   }
 
+  // Wait for DOM and Supabase to be ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      fetchSettingsAndAnnouncements();
+      checkSubscriptionSuccess();
+    });
+  } else {
+    fetchSettingsAndAnnouncements();
+    checkSubscriptionSuccess();
+  }
+})();
+
+/* ═══════════════════════════════════════════════════════════════════
+   UPGRADE MODALS & FEATURE GATING
+   ═══════════════════════════════════════════════════════════════════
+   These run OUTSIDE the Supabase-dependent IIFE so they always
+   initialise — even when the Supabase CDN loads asynchronously.
+   ═══════════════════════════════════════════════════════════════════ */
+(function () {
+  // Skip on admin page
+  var currentPage = window.location.pathname || '/';
+  if (currentPage.indexOf('admin') !== -1) return;
+
+  // ── Inject modal CSS (always needed) ──────────────────────────────
+  var upgradeStyle = document.createElement('style');
+  upgradeStyle.textContent = [
+    '.phmurt-upgrade-overlay{position:fixed;inset:0;z-index:99997;display:flex;align-items:center;justify-content:center;background:rgba(6,4,2,0.82);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);animation:phmurt-fade-in 0.25s ease;}',
+    '.phmurt-upgrade-modal{background:#13100c;border:1px solid rgba(212,67,58,0.25);border-radius:12px;padding:0;max-width:400px;width:90%;position:relative;box-shadow:0 0 60px rgba(212,67,58,0.08),0 12px 48px rgba(0,0,0,0.7);text-align:center;overflow:hidden;}',
+    '.phmurt-upgrade-modal .upgrade-glow{height:3px;background:linear-gradient(90deg,transparent,rgba(212,67,58,0.6),transparent);margin-bottom:0;}',
+    '.phmurt-upgrade-modal .upgrade-body{padding:32px 28px 26px;}',
+    '.phmurt-upgrade-modal .upgrade-icon{font-size:28px;margin-bottom:14px;opacity:0.5;}',
+    '.phmurt-upgrade-modal .upgrade-title{font-family:Cinzel,serif;font-size:15px;letter-spacing:3px;text-transform:uppercase;color:var(--crimson,#d4433a);margin:0 0 14px;font-weight:400;}',
+    '.phmurt-upgrade-modal .upgrade-text{color:#8c7d6e;font-family:Spectral,serif;font-size:14px;line-height:1.7;margin:0 0 24px;}',
+    '.phmurt-upgrade-modal .upgrade-text strong{color:#d4c4a8;}',
+    '.phmurt-upgrade-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:8px;}',
+    '.phmurt-upgrade-modal .upgrade-btn{padding:13px 22px;background:var(--crimson,#d4433a);color:#f5ede0;border:none;font-family:Cinzel,serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;border-radius:4px;font-weight:600;transition:all 0.2s;flex:1;min-width:130px;box-shadow:0 2px 12px rgba(212,67,58,0.25);}',
+    '.phmurt-upgrade-modal .upgrade-btn:hover{background:#e04a3f;box-shadow:0 4px 20px rgba(212,67,58,0.4);}',
+    '.phmurt-upgrade-modal .upgrade-btn.yearly{background:transparent;border:1px solid rgba(212,67,58,0.35);color:var(--crimson,#d4433a);box-shadow:none;}',
+    '.phmurt-upgrade-modal .upgrade-btn.yearly:hover{background:rgba(212,67,58,0.08);border-color:rgba(212,67,58,0.5);}',
+    '.phmurt-upgrade-modal .upgrade-save{font-family:Spectral,serif;font-size:11px;color:rgba(94,224,154,0.7);font-weight:400;font-style:italic;letter-spacing:0.3px;margin-top:4px;display:block;}',
+    '.phmurt-upgrade-modal .upgrade-divider{height:1px;background:rgba(212,67,58,0.1);margin:20px 0 0;}',
+    '.phmurt-upgrade-modal .upgrade-footer{padding:14px 28px;background:rgba(255,255,255,0.015);}',
+    '.phmurt-upgrade-modal .upgrade-compare{color:#5a5046;font-family:Cinzel,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;text-decoration:none;transition:color 0.15s;}',
+    '.phmurt-upgrade-modal .upgrade-compare:hover{color:var(--crimson,#d4433a);}',
+    '.phmurt-upgrade-modal .upgrade-close{position:absolute;top:14px;right:16px;background:none;border:none;color:#3a332b;cursor:pointer;font-size:18px;padding:4px 8px;line-height:1;z-index:1;transition:color 0.15s;}',
+    '.phmurt-upgrade-modal .upgrade-close:hover{color:#8c7d6e;}',
+  ].join('\n');
+  document.head.appendChild(upgradeStyle);
+
   // ── Upgrade prompt (shown when save fails due to limit) ────────
   window.addEventListener('phmurt-limit-reached', function (e) {
     var detail = e.detail || {};
@@ -1772,24 +1800,11 @@ window.addEventListener('storage', function (e) {
   };
 
   // ── Auto-gate pages with data-phmurt-feature attribute ──────────
-  // Any page can add <body data-phmurt-feature="generators"> and the
-  // gate will fire automatically on load if the user is on free tier.
   function _autoGatePage() {
     var feature = document.body && document.body.getAttribute('data-phmurt-feature');
     if (feature && !window.PhmurtGate(feature)) {
       // Feature was blocked — the modal is already showing
     }
-  }
-
-  // Wait for DOM and Supabase to be ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () {
-      fetchSettingsAndAnnouncements();
-      checkSubscriptionSuccess();
-    });
-  } else {
-    fetchSettingsAndAnnouncements();
-    checkSubscriptionSuccess();
   }
 
   // Auto-gate runs after auth state resolves
