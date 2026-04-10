@@ -196,8 +196,8 @@ var PhmurtDB = (function () {
           _fireChange();
         });
       }
-      // No Supabase session — keep any existing legacy session intact
-      if (!_session) _fireChange();
+      // No Supabase session — fall back to legacy localStorage session
+      _initLegacy();
     }).catch(function (err) {
       if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Supabase init failed:', err ? err.message : 'Unknown error');
       _initLegacy();
@@ -1847,20 +1847,18 @@ window.addEventListener('storage', function (e) {
     document.getElementById('phmurt-upgrade-close').addEventListener('click', function () { overlay.remove(); });
     overlay.addEventListener('click', function (ev) { if (ev.target === overlay) overlay.remove(); });
     // Subscribe handlers
-    document.getElementById('phmurt-upgrade-monthly').addEventListener('click', function () {
-      if (typeof PhmurtDB !== 'undefined') {
-        PhmurtDB.startSubscription(null, 'monthly').catch(function (err) {
+    function _handleSubscribe(plan) {
+      if (typeof PhmurtDB === 'undefined') return;
+      overlay.style.display = 'none'; // Hide upgrade modal while reauth/checkout runs
+      PhmurtDB.startSubscription(null, plan).catch(function (err) {
+        overlay.style.display = ''; // Restore upgrade modal on error
+        if (err.message !== 'Cancelled.') {
           alert('Could not start subscription: ' + (err.message || 'Unknown error'));
-        });
-      }
-    });
-    document.getElementById('phmurt-upgrade-yearly').addEventListener('click', function () {
-      if (typeof PhmurtDB !== 'undefined') {
-        PhmurtDB.startSubscription(null, 'yearly').catch(function (err) {
-          alert('Could not start subscription: ' + (err.message || 'Unknown error'));
-        });
-      }
-    });
+        }
+      });
+    }
+    document.getElementById('phmurt-upgrade-monthly').addEventListener('click', function () { _handleSubscribe('monthly'); });
+    document.getElementById('phmurt-upgrade-yearly').addEventListener('click', function () { _handleSubscribe('yearly'); });
   });
 
   // ── Global Feature Gate ─────────────────────────────────────────
@@ -1913,8 +1911,12 @@ window.addEventListener('storage', function (e) {
     overlay.querySelectorAll('.phmurt-gate-btn').forEach(function (btn) {
       btn.addEventListener('click', function () {
         var plan = btn.getAttribute('data-plan');
+        overlay.style.display = 'none';
         PhmurtDB.startSubscription(null, plan).catch(function (err) {
-          alert('Could not start checkout: ' + (err.message || 'Unknown error'));
+          overlay.style.display = '';
+          if (err.message !== 'Cancelled.') {
+            alert('Could not start checkout: ' + (err.message || 'Unknown error'));
+          }
         });
       });
     });
