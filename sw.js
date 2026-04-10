@@ -1,4 +1,4 @@
-const CACHE_VERSION = 173;
+const CACHE_VERSION = 174;
 const CACHE_NAME = 'phmurt-v' + CACHE_VERSION;
 const PRECACHE_URLS = [
   '/',
