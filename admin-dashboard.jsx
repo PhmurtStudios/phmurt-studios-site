@@ -70,6 +70,7 @@ const Icons = {
   Trash: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>,
   ClipboardList: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/></svg>,
   Tool: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>,
+  Crown: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M2 20h20l-2-12-5 5-3-7-3 7-5-5z"/><line x1="2" y1="20" x2="22" y2="20"/></svg>,
 };
 
 // ═══════════════════════════════
@@ -2544,6 +2545,264 @@ function DataExportPage({ addToast }) {
 // ═══════════════════════════════
 // FEATURE FLAGS & MAINTENANCE MODE PAGE
 // ═══════════════════════════════
+// ═══════════════════════════════
+// TIER MANAGEMENT PAGE
+// ═══════════════════════════════
+function TierManagementPage({ addToast }) {
+  const [saving, setSaving] = useState(false);
+  const [editingList, setEditingList] = useState(null); // 'free_features'|'free_locked'|'pro_features'|'free_feature_keys'
+  const [editListValue, setEditListValue] = useState('');
+
+  // All tier-related site_settings keys
+  const tierKeys = [
+    'free_max_characters', 'free_max_campaigns',
+    'paid_max_characters', 'paid_max_campaigns',
+    'pro_price_monthly', 'pro_price_yearly', 'pro_price_yearly_savings',
+    'free_tier_features', 'free_tier_locked', 'pro_tier_features',
+    'free_feature_keys',
+  ];
+
+  const { data: settings, loading, error, refetch } = useAdminQuery(async (db) => {
+    const { data, error } = await db
+      .from('site_settings')
+      .select('*')
+      .in('key', tierKeys);
+    if (error) throw error;
+    // Build map
+    const map = {};
+    (data || []).forEach(s => {
+      try { map[s.key] = JSON.parse(s.value); } catch { map[s.key] = s.value; }
+    });
+    return map;
+  });
+
+  const s = settings || {};
+
+  // Defaults for display
+  const freeMaxChars = s.free_max_characters ?? 3;
+  const freeMaxCamps = s.free_max_campaigns ?? 1;
+  const paidMaxChars = s.paid_max_characters ?? -1;
+  const paidMaxCamps = s.paid_max_campaigns ?? -1;
+  const priceMonthly = s.pro_price_monthly ?? '$4.99/mo';
+  const priceYearly = s.pro_price_yearly ?? '$49.99/yr';
+  const yearlySavings = s.pro_price_yearly_savings ?? 'Save $10';
+  const freeFeatures = s.free_tier_features || ['Character Builder (5e & 3.5e)','Interactive Character Sheets','Dice Roller','Learn to Play Guides','Art Gallery','Basic Campaign Management'];
+  const freeLocked = s.free_tier_locked || ['Unlimited Characters & Campaigns','Generators (Names, Loot, Encounters, Quests)','Advanced Campaign Tabs (Heist, Intrigue, Prophecy, Puzzles)','Downtime & Religion Systems','Hexcrawl & World Atlas','Economy & Faction War Engines','Battle Map & Living World','Priority Support'];
+  const proFeatures = s.pro_tier_features || ['Everything in Free, plus:','Unlimited Characters & Campaigns','All Generators','All Campaign Systems','All World-Building Tools','Priority Support'];
+  const freeFeatureKeys = s.free_feature_keys || ['character-builder','character-sheet','dice-roller','basic-campaign','learn','gallery'];
+
+  async function updateSetting(key, value) {
+    setSaving(true);
+    try {
+      const { data: sess } = await sb.auth.getSession();
+      const { error } = await sb.from('site_settings').upsert({
+        key,
+        value: JSON.stringify(value),
+        updated_by: sess?.session?.user?.id || null,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'key' });
+      if (error) throw error;
+      logAuditEvent('update_tier_setting', 'setting', key, { new_value: value });
+      addToast(`Updated ${key.replace(/_/g, ' ')}`, 'success');
+      refetch();
+    } catch (e) {
+      addToast('Failed: ' + (e.message || 'Unknown error'), 'error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function startEditList(key, currentValue) {
+    setEditingList(key);
+    setEditListValue(Array.isArray(currentValue) ? currentValue.join('\n') : '');
+  }
+
+  function saveEditList(key) {
+    const items = editListValue.split('\n').map(s => s.trim()).filter(Boolean);
+    updateSetting(key, items);
+    setEditingList(null);
+  }
+
+  // Number input with inline save
+  function NumberField({ label, description, settingKey, value, unit }) {
+    const [val, setVal] = useState(String(value));
+    const [dirty, setDirty] = useState(false);
+    useEffect(() => { setVal(String(value)); setDirty(false); }, [value]);
+    return (
+      <div style={{padding:'16px 20px',borderBottom:'1px solid var(--border-mid)'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <div>
+            <div style={{fontSize:'13px',fontWeight:600}}>{label}</div>
+            <div style={{fontSize:'11px',color:'var(--text-muted)',marginTop:'2px'}}>{description}</div>
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+            <input
+              type="number"
+              value={val}
+              onChange={e => { setVal(e.target.value); setDirty(true); }}
+              onKeyDown={e => { if (e.key === 'Enter' && dirty) { updateSetting(settingKey, Number(val)); setDirty(false); } }}
+              style={{width:'80px',padding:'6px 10px',background:'var(--bg-card)',border:'1px solid var(--accent-border)',borderRadius:'4px',color:'var(--text)',fontSize:'13px',textAlign:'center'}}
+            />
+            {unit && <span style={{fontSize:'11px',color:'var(--text-muted)'}}>{unit}</span>}
+            {dirty && <button className="btn btn-sm btn-primary" onClick={() => { updateSetting(settingKey, Number(val)); setDirty(false); }} disabled={saving}>Save</button>}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Text input with inline save
+  function TextField({ label, description, settingKey, value }) {
+    const [val, setVal] = useState(value);
+    const [dirty, setDirty] = useState(false);
+    useEffect(() => { setVal(value); setDirty(false); }, [value]);
+    return (
+      <div style={{padding:'16px 20px',borderBottom:'1px solid var(--border-mid)'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+          <div style={{flex:1,marginRight:'16px'}}>
+            <div style={{fontSize:'13px',fontWeight:600}}>{label}</div>
+            <div style={{fontSize:'11px',color:'var(--text-muted)',marginTop:'2px'}}>{description}</div>
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+            <input
+              type="text"
+              value={val}
+              onChange={e => { setVal(e.target.value); setDirty(true); }}
+              onKeyDown={e => { if (e.key === 'Enter' && dirty) { updateSetting(settingKey, val); setDirty(false); } }}
+              style={{width:'160px',padding:'6px 10px',background:'var(--bg-card)',border:'1px solid var(--accent-border)',borderRadius:'4px',color:'var(--text)',fontSize:'13px'}}
+            />
+            {dirty && <button className="btn btn-sm btn-primary" onClick={() => { updateSetting(settingKey, val); setDirty(false); }} disabled={saving}>Save</button>}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // List editor component
+  function ListSection({ title, description, settingKey, items }) {
+    const isEditing = editingList === settingKey;
+    return (
+      <div style={{marginBottom:'16px'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px',padding:'0 4px'}}>
+          <div>
+            <div style={{fontSize:'13px',fontWeight:600}}>{title}</div>
+            <div style={{fontSize:'11px',color:'var(--text-muted)',marginTop:'2px'}}>{description}</div>
+          </div>
+          <button className="btn btn-sm" onClick={() => isEditing ? saveEditList(settingKey) : startEditList(settingKey, items)} disabled={saving}>
+            {isEditing ? <><Icons.Check /> Save</> : 'Edit'}
+          </button>
+        </div>
+        {isEditing ? (
+          <textarea
+            value={editListValue}
+            onChange={e => setEditListValue(e.target.value)}
+            rows={Math.max(4, items.length + 1)}
+            style={{width:'100%',padding:'10px 12px',background:'var(--bg-card)',border:'1px solid var(--accent-border)',borderRadius:'6px',color:'var(--text)',fontSize:'12px',lineHeight:1.8,fontFamily:'Spectral, serif',resize:'vertical'}}
+            placeholder="One item per line"
+          />
+        ) : (
+          <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid var(--border-mid)',borderRadius:'6px',padding:'10px 14px'}}>
+            {items.map((item, i) => (
+              <div key={i} style={{padding:'4px 0',fontSize:'12px',color:'var(--text-dim)',display:'flex',alignItems:'center',gap:'8px'}}>
+                <span style={{color:'var(--crimson, #d4433a)',fontSize:'8px'}}>&#9670;</span> {item}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  if (loading) return <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)'}}>Loading…</div>;
+  if (error) return <div style={{padding:'40px',color:'var(--danger)'}}>{error}</div>;
+
+  return (
+    <div>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px'}}>
+        <h1 style={{fontFamily:'Cinzel, serif',fontSize:'20px',fontWeight:600,letterSpacing:'1px'}}>Tier Management</h1>
+        <button className="btn" onClick={refetch}><Icons.Refresh /> Refresh</button>
+      </div>
+
+      {/* Overview Cards */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px',marginBottom:'24px'}}>
+        <div className="stat-card" style={{borderLeft:'3px solid var(--text-muted)'}}>
+          <div className="stat-label">Free Tier</div>
+          <div className="stat-value" style={{fontSize:'18px'}}>{freeMaxChars} chars / {freeMaxCamps} camp</div>
+          <div className="stat-sub">{freeFeatures.length} features included</div>
+        </div>
+        <div className="stat-card" style={{borderLeft:'3px solid var(--crimson, #d4433a)'}}>
+          <div className="stat-label">Pro Tier</div>
+          <div className="stat-value" style={{fontSize:'18px'}}>{paidMaxChars < 0 ? 'Unlimited' : paidMaxChars}</div>
+          <div className="stat-sub">{priceMonthly} · {priceYearly}</div>
+        </div>
+      </div>
+
+      {/* Limits Section */}
+      <div className="card" style={{marginBottom:'20px'}}>
+        <div className="card-header" style={{display:'flex',alignItems:'center',gap:'10px'}}>
+          <div style={{color:'#f59e0b'}}><Icons.Shield /></div>
+          <h2 style={{color:'#f59e0b'}}>Limits</h2>
+        </div>
+        <div className="card-body" style={{padding:0}}>
+          <div style={{padding:'10px 20px 6px',fontSize:'11px',fontFamily:'Cinzel,serif',letterSpacing:'1px',textTransform:'uppercase',color:'var(--text-muted)',borderBottom:'1px solid var(--border-mid)'}}>Free Tier</div>
+          <NumberField label="Max Characters" description="Maximum characters a free user can create (-1 = unlimited)" settingKey="free_max_characters" value={freeMaxChars} />
+          <NumberField label="Max Campaigns" description="Maximum campaigns a free user can create (-1 = unlimited)" settingKey="free_max_campaigns" value={freeMaxCamps} />
+          <div style={{padding:'10px 20px 6px',fontSize:'11px',fontFamily:'Cinzel,serif',letterSpacing:'1px',textTransform:'uppercase',color:'var(--text-muted)',borderBottom:'1px solid var(--border-mid)'}}>Pro Tier</div>
+          <NumberField label="Max Characters" description="Maximum characters a Pro user can create (-1 = unlimited)" settingKey="paid_max_characters" value={paidMaxChars} />
+          <NumberField label="Max Campaigns" description="Maximum campaigns a Pro user can create (-1 = unlimited)" settingKey="paid_max_campaigns" value={paidMaxCamps} />
+        </div>
+      </div>
+
+      {/* Pricing Section */}
+      <div className="card" style={{marginBottom:'20px'}}>
+        <div className="card-header" style={{display:'flex',alignItems:'center',gap:'10px'}}>
+          <div style={{color:'#5ee09a'}}><Icons.Shield /></div>
+          <h2 style={{color:'#5ee09a'}}>Pricing Display</h2>
+        </div>
+        <div className="card-body" style={{padding:0}}>
+          <TextField label="Monthly Price" description="Displayed on upgrade modals and pricing page (e.g. $4.99/mo)" settingKey="pro_price_monthly" value={priceMonthly} />
+          <TextField label="Yearly Price" description="Displayed on upgrade modals and pricing page (e.g. $49.99/yr)" settingKey="pro_price_yearly" value={priceYearly} />
+          <TextField label="Yearly Savings Label" description="Savings message shown below pricing buttons (e.g. Save $10)" settingKey="pro_price_yearly_savings" value={yearlySavings} />
+        </div>
+        <div style={{padding:'12px 20px',background:'rgba(255,255,255,0.015)',borderTop:'1px solid var(--border-mid)',fontSize:'11px',color:'var(--text-faint)'}}>
+          These are display values only. Actual charge amounts are set in your Stripe dashboard.
+        </div>
+      </div>
+
+      {/* Free Tier Features */}
+      <div className="card" style={{marginBottom:'20px'}}>
+        <div className="card-header" style={{display:'flex',alignItems:'center',gap:'10px'}}>
+          <div style={{color:'var(--text-muted)'}}><Icons.Sliders /></div>
+          <h2>Free Tier</h2>
+        </div>
+        <div className="card-body">
+          <ListSection title="Included Features" description="Feature list shown on the pricing page for the Free tier" settingKey="free_tier_features" items={freeFeatures} />
+          <ListSection title="Locked Features" description="Features shown as locked/unavailable to free users (upsell list)" settingKey="free_tier_locked" items={freeLocked} />
+          <ListSection title="Feature Gate Keys" description="Internal feature keys that free users can access (used by PhmurtGate). Add keys like 'generators' to unlock them for free users." settingKey="free_feature_keys" items={freeFeatureKeys} />
+        </div>
+      </div>
+
+      {/* Pro Tier Features */}
+      <div className="card" style={{marginBottom:'20px'}}>
+        <div className="card-header" style={{display:'flex',alignItems:'center',gap:'10px'}}>
+          <div style={{color:'var(--crimson, #d4433a)'}}><Icons.Crown /></div>
+          <h2 style={{color:'var(--crimson, #d4433a)'}}>Pro Tier</h2>
+        </div>
+        <div className="card-body">
+          <ListSection title="Pro Features" description="Feature list shown on the pricing page for the Pro tier" settingKey="pro_tier_features" items={proFeatures} />
+        </div>
+      </div>
+
+      {/* Info box */}
+      <div className="card">
+        <div className="card-body" style={{fontSize:'12px',color:'var(--text-muted)',lineHeight:1.7}}>
+          <strong style={{color:'var(--text-dim)'}}>How it works:</strong> Limits are enforced in real-time — when a user saves, phmurt-auth.js reads these values from the database. Feature gate keys control which features are accessible to free users via <code style={{background:'rgba(255,255,255,0.06)',padding:'1px 5px',borderRadius:'3px',fontSize:'11px'}}>PhmurtGate(featureName)</code>. Feature and locked lists are display-only for the pricing page and upgrade modals. Changes take effect on the next page load.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function FeatureFlagsPage({ addToast, viewer }) {
   const [editingKey, setEditingKey] = useState(null);
   const [editValue, setEditValue] = useState('');
@@ -3211,6 +3470,7 @@ function AdminApp() {
     { id: 'errors',         label: 'Error Log',        icon: Icons.X },
     { section: 'Revenue' },
     { id: 'subscriptions',  label: 'Subscriptions',    icon: Icons.Shield },
+    { id: 'tiers',           label: 'Tier Management',  icon: Icons.Crown },
     { section: 'Admin Tools' },
     { id: 'audit',          label: 'Audit Log',        icon: Icons.ClipboardList },
     { id: 'announcements',  label: 'Announcements',    icon: Icons.Bell },
@@ -3232,6 +3492,7 @@ function AdminApp() {
       case 'engagement':    return <EngagementPage />;
       case 'errors':        return <ErrorLogPage />;
       case 'subscriptions': return <SubscriptionsPage addToast={addToast} />;
+      case 'tiers':          return <TierManagementPage addToast={addToast} />;
       case 'audit':         return <AuditLogPage />;
       case 'announcements': return <AnnouncementsPage addToast={addToast} />;
       case 'flags':         return <FeatureFlagsPage addToast={addToast} viewer={viewer} />;
