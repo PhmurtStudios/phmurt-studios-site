@@ -66,6 +66,7 @@ var phmurtSupabase = null;
     var s = document.createElement('script');
     s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
     s.crossOrigin = 'anonymous';
+    s.integrity = 'sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG';
     s.onload  = _createClient;
     s.onerror = function () { if (PHMURT_DEBUG) console.warn('[Phmurt] Supabase CDN failed to load – offline mode.'); };
     document.head.appendChild(s);
