@@ -57,6 +57,7 @@ const PRECACHE_URLS = [
   'character-builder-35.html',
   'character-sheets.html',
   'my-characters.html',
+  'characters.html',
   'sheet-dnd5e.html',
   'soup-savant.html',
   'legendary.html',

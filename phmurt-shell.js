@@ -38,7 +38,6 @@
       { label: 'Players', children: [
         { href: 'learn.html', label: 'Learn to Play' },
         { href: 'gallery.html', label: 'Character Gallery' },
-        { href: 'character-builder.html', label: 'Character Builder' },
         { href: 'character-sheets.html', label: 'Character Sheets' }
       ]},
       { label: 'DM Tools', children: [
@@ -46,7 +45,7 @@
         { href: 'campaigns.html', label: 'Campaign Manager' }
       ]},
       { href: 'about.html', label: 'About' },
-      { href: 'my-characters.html', label: 'My Characters' }
+      { href: 'characters.html', label: 'Characters' }
       // Admin link is injected dynamically by updateAuthNav()
     ],
     // flat list for mobile menu and backwards compat
@@ -57,11 +56,10 @@
       ['learn.html', 'Learn'],
       ['gallery.html', 'Gallery'],
       ['generators.html', 'Generators'],
-      ['character-builder.html', 'Builder'],
       ['character-sheets.html', 'Sheets'],
       ['campaigns.html', 'Campaigns'],
       ['about.html', 'About'],
-      ['my-characters.html', 'My Characters']
+      ['characters.html', 'Characters']
       // Admin link is injected dynamically by updateAuthNav()
     ],
     footerName: 'Phmurt Studios',
@@ -132,6 +130,10 @@
       { href: 'index.html', label: 'Home' },
       { label: 'My Characters', current: true }
     ],
+    'characters.html': [
+      { href: 'index.html', label: 'Home' },
+      { label: 'Characters', current: true }
+    ],
     'reset-password.html': [
       { href: 'index.html', label: 'Home' },
       { label: 'Reset Password', current: true }
@@ -178,7 +180,8 @@
       'generators.html': 'DM Tools',
       'campaigns.html': 'DM Tools',
       'about.html': 'About',
-      'my-characters.html': 'My Characters',
+      'my-characters.html': 'Characters',
+      'characters.html': 'Characters',
       'reset-password.html': null
     };
     return map[pageName] ?? null;
@@ -437,7 +440,7 @@
         dd.innerHTML =
           '<div style="font-family:Spectral,serif;font-size:12px;color:var(--text-muted);padding:9px 14px 8px;border-bottom:1px solid var(--border-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;">' + psEscapeHtml(display) + '</div>' +
           tierBadge +
-          '<a href="my-characters.html">My Characters</a>' +
+          '<a href="characters.html">Characters</a>' +
           manageBtn +
           '<button id="nav-delete-account-btn" style="color:var(--crimson,#d4433a);">Delete Account</button>' +
           '<button id="nav-signout-btn">Sign Out</button>';
@@ -519,7 +522,7 @@
         window.PhmurtDB.openAuth();
         return;
       }
-      window.location.href = 'my-characters.html';
+      window.location.href = 'characters.html';
     });
   }
 

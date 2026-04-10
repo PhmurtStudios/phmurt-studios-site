@@ -499,10 +499,11 @@
             </div>
             <div class="cs-header-actions">
               <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
+                <a href="characters.html" class="cs-save-btn" style="background:transparent;color:var(--text-muted);border:1px solid var(--border);text-decoration:none;display:inline-flex;align-items:center;">← Characters</a>
                 <button class="cs-save-btn" id="cs35-save-btn" onclick="saveChar35()">Save Character ↑</button>
                 <button class="cs-save-btn" style="background:transparent;color:var(--crimson);border:1px solid var(--crimson-border);" onclick="window.print()">Print / PDF</button>
                 <button class="cs-save-btn" style="background:transparent;color:var(--text-muted);border:1px solid var(--border);" onclick="backToDetails35()">← Edit Details</button>
-                <button class="cs-save-btn" style="background:transparent;color:var(--text-muted);border:1px solid var(--border);" onclick="location.reload()">New Character</button>
+                <button class="cs-save-btn" style="background:transparent;color:var(--text-muted);border:1px solid var(--border);" onclick="try{localStorage.removeItem('phmurt_current_char35_id');localStorage.removeItem('phmurt_builder_35e');}catch(e){}location.reload()">New Character</button>
                 <button class="cs-save-btn" id="levelUpBtn35" style="background:linear-gradient(135deg,rgba(212,67,58,0.3),rgba(212,67,58,0.1));color:var(--crimson);border:1px solid var(--crimson);" onclick="openLevelUpModal35()">Level Up ▲</button>
               </div>
               <div id="cs35-save-status" class="cs-save-status"></div>
