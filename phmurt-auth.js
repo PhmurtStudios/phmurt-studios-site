@@ -422,6 +422,8 @@ var PhmurtDB = (function () {
       var old = document.getElementById('phmurt-reauth-overlay');
       if (old) old.remove();
 
+      var userEmail = _session ? _session.email : '';
+
       var overlay = document.createElement('div');
       overlay.id = 'phmurt-reauth-overlay';
       overlay.className = 'phmurt-upgrade-overlay';
@@ -431,12 +433,19 @@ var PhmurtDB = (function () {
           '<div class="upgrade-body">' +
             '<button class="upgrade-close" id="phmurt-reauth-close">&times;</button>' +
             '<div class="upgrade-icon">&#128274;</div>' +
-            '<h2 class="upgrade-title">Confirm Identity</h2>' +
-            '<p class="upgrade-text">Enter your password to continue to checkout.</p>' +
+            '<h2 class="upgrade-title">Sign In to Subscribe</h2>' +
+            '<p class="upgrade-text">We need to verify your identity for <strong>' + (userEmail || 'your account') + '</strong> before processing payment.</p>' +
             '<input type="password" id="phmurt-reauth-pw" placeholder="Password" ' +
               'style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(212,67,58,0.2);border-radius:4px;color:#f5ede0;font-family:Spectral,serif;font-size:14px;margin-bottom:16px;text-align:center;outline:none;" />' +
             '<p id="phmurt-reauth-err" style="color:#ef4444;font-size:12px;margin:0 0 12px;display:none;"></p>' +
             '<button class="upgrade-btn" id="phmurt-reauth-submit" style="width:100%;">Continue to Checkout</button>' +
+            '<div style="display:flex;align-items:center;gap:12px;margin:18px 0 14px;">' +
+              '<div style="flex:1;height:1px;background:rgba(212,67,58,0.15);"></div>' +
+              '<span style="color:#5a5046;font-family:Spectral,serif;font-size:12px;">or</span>' +
+              '<div style="flex:1;height:1px;background:rgba(212,67,58,0.15);"></div>' +
+            '</div>' +
+            '<button id="phmurt-reauth-magic" style="width:100%;padding:12px 14px;background:transparent;border:1px solid rgba(212,67,58,0.25);border-radius:4px;color:#d4c4a8;font-family:Cinzel,serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;">Email Me a Sign-In Link</button>' +
+            '<p id="phmurt-reauth-magic-msg" style="color:#5ee09a;font-size:12px;margin:8px 0 0;display:none;"></p>' +
           '</div>' +
         '</div>';
       document.body.appendChild(overlay);
@@ -456,7 +465,7 @@ var PhmurtDB = (function () {
       });
 
       function doReauth() {
-        var pw = pwInput.value;
+        var pw = (pwInput.value || '').trim();
         if (!pw) { errEl.textContent = 'Password is required.'; errEl.style.display = 'block'; return; }
         errEl.style.display = 'none';
         submitBtn.textContent = 'Signing in…';
@@ -572,6 +581,42 @@ var PhmurtDB = (function () {
 
       submitBtn.addEventListener('click', doReauth);
       pwInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') doReauth(); });
+
+      // Magic link sign-in button
+      var magicBtn = document.getElementById('phmurt-reauth-magic');
+      var magicMsg = document.getElementById('phmurt-reauth-magic-msg');
+      if (magicBtn) {
+        magicBtn.addEventListener('click', function () {
+          if (!userEmail) {
+            magicMsg.textContent = 'No email address found. Please use the password option.';
+            magicMsg.style.color = '#ef4444';
+            magicMsg.style.display = 'block';
+            return;
+          }
+          magicBtn.textContent = 'Sending…';
+          magicBtn.disabled = true;
+          var redirectUrl = (returnUrl || window.location.href).split('?')[0];
+          if (interval === 'yearly') redirectUrl += '?plan=yearly';
+          else redirectUrl += '?plan=monthly';
+          sb.auth.signInWithOtp({
+            email: userEmail,
+            options: { emailRedirectTo: redirectUrl }
+          }).then(function (r) {
+            if (r.error) throw new Error(r.error.message);
+            magicMsg.textContent = 'Check your email! Click the link we sent to ' + userEmail + ', then you\'ll be taken to checkout.';
+            magicMsg.style.color = '#5ee09a';
+            magicMsg.style.display = 'block';
+            magicBtn.textContent = 'Email Sent';
+          }).catch(function (e) {
+            magicMsg.textContent = e.message || 'Could not send sign-in link. Please try the password option.';
+            magicMsg.style.color = '#ef4444';
+            magicMsg.style.display = 'block';
+            magicBtn.textContent = 'Email Me a Sign-In Link';
+            magicBtn.disabled = false;
+          });
+        });
+      }
+
       // Focus the password field after a brief delay
       setTimeout(function () { pwInput.focus(); }, 100);
     });
@@ -1461,12 +1506,61 @@ var PhmurtDB = (function () {
         });
       }
 
+      // Helper: client-side Stripe checkout (no JWT needed)
+      // Loads Stripe.js and redirects directly to Stripe's hosted checkout page
+      function _clientSideCheckout() {
+        var priceId = (interval === 'yearly') ? STRIPE_PRICE_ID_YEARLY : STRIPE_PRICE_ID_MONTHLY;
+        if (!priceId || typeof STRIPE_PUBLISHABLE_KEY === 'undefined' || !STRIPE_PUBLISHABLE_KEY) {
+          return Promise.reject(new Error('Stripe not configured.'));
+        }
+        // Load Stripe.js if not already loaded (singleton guard prevents duplicate loads)
+        function loadStripeJs() {
+          if (window.Stripe) return Promise.resolve(window.Stripe);
+          if (window._stripeLoadPromise) return window._stripeLoadPromise;
+          window._stripeLoadPromise = new Promise(function (resolve, reject) {
+            var script = document.createElement('script');
+            script.src = 'https://js.stripe.com/v3/';
+            script.onload = function () { resolve(window.Stripe); };
+            script.onerror = function () { window._stripeLoadPromise = null; reject(new Error('Could not load payment system.')); };
+            document.head.appendChild(script);
+          });
+          return window._stripeLoadPromise;
+        }
+        // SECURITY: Validate returnUrl before using it
+        var baseUrl = 'https://phmurtstudios.com'; // safe default
+        try {
+          var candidate = (returnUrl || window.location.href).split('?')[0];
+          var parsed = new URL(candidate);
+          if (parsed.protocol === 'https:' && (parsed.hostname === 'phmurtstudios.com' || parsed.hostname === 'www.phmurtstudios.com')) {
+            baseUrl = candidate;
+          }
+        } catch (e) { /* use default */ }
+        return loadStripeJs().then(function (StripeFactory) {
+          var stripe = StripeFactory(STRIPE_PUBLISHABLE_KEY);
+          return stripe.redirectToCheckout({
+            lineItems: [{ price: priceId, quantity: 1 }],
+            mode: 'subscription',
+            successUrl: baseUrl + '?subscription=success',
+            cancelUrl: baseUrl + '?subscription=canceled',
+            customerEmail: _session.email || '',
+            clientReferenceId: _session.userId || _session.id || ''
+          });
+        }).then(function (result) {
+          // redirectToCheckout returns only if there was an error (success = browser redirect)
+          if (result && result.error) throw new Error(result.error.message);
+        });
+      }
+
       var _self = this;
       return sb.auth.getSession().then(function (r) {
         var token = r.data && r.data.session && r.data.session.access_token;
         if (!token) {
-          // Legacy session without Supabase JWT — show re-auth prompt
-          return _showReauthPrompt(sb, returnUrl, interval);
+          // Legacy session without Supabase JWT — try client-side Stripe checkout first
+          return _clientSideCheckout().catch(function (csErr) {
+            // Client-side checkout failed — fall back to re-auth prompt with magic link
+            console.warn('Client-side checkout unavailable, falling back to sign-in:', csErr.message);
+            return _showReauthPrompt(sb, returnUrl, interval);
+          });
         }
 
         // Try checkout; on failure try refreshing session, then re-auth as last resort
@@ -1475,13 +1569,17 @@ var PhmurtDB = (function () {
           return sb.auth.refreshSession().then(function (ref) {
             var newToken = ref.data && ref.data.session && ref.data.session.access_token;
             if (!newToken) {
-              return _showReauthPrompt(sb, returnUrl, interval);
+              // Try client-side checkout before falling back to re-auth
+              return _clientSideCheckout().catch(function () {
+                return _showReauthPrompt(sb, returnUrl, interval);
+              });
             }
             return _invokeCheckout(sb);
           }).catch(function (retryErr) {
-            // If the error is from the retry invoke, throw it; otherwise fall back to re-auth
             if (retryErr.message && retryErr.message.indexOf('Unexpected') !== -1) throw retryErr;
-            return _showReauthPrompt(sb, returnUrl, interval);
+            return _clientSideCheckout().catch(function () {
+              return _showReauthPrompt(sb, returnUrl, interval);
+            });
           });
         });
       });
@@ -1948,7 +2046,7 @@ window.addEventListener('storage', function (e) {
       var resetArea = bodyEl.querySelector('.phmurt-inline-reset-area');
 
       function doSubmit() {
-        var pw = pwInput.value;
+        var pw = (pwInput.value || '').trim();
         if (!pw) { errEl.textContent = 'Password is required.'; errEl.style.display = 'block'; return; }
         errEl.style.display = 'none';
         submitBtn.textContent = 'Signing in…';
