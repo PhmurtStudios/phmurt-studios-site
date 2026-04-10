@@ -521,38 +521,25 @@ var PhmurtDB = (function () {
             var token = r.data && r.data.session && r.data.session.access_token;
             if (!token) throw new Error('Authentication failed. Please try again.');
             cleanup();
-            // Now proceed with the actual checkout
-            var checkoutUrl = (typeof STRIPE_CHECKOUT_FUNCTION_URL !== 'undefined' && STRIPE_CHECKOUT_FUNCTION_URL)
-              ? STRIPE_CHECKOUT_FUNCTION_URL
-              : (typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL + '/functions/v1/stripe-checkout' : null);
-
-            return fetch(checkoutUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-              body: JSON.stringify({
+            // Now proceed with the actual checkout via Supabase functions.invoke
+            return sb.functions.invoke('stripe-checkout', {
+              body: {
                 return_url: returnUrl || window.location.href,
                 interval: (interval === 'yearly') ? 'yearly' : 'monthly',
-              }),
-            })
-            .then(function (resp) {
-              if (!resp.ok) throw new Error('Payment server returned status ' + resp.status);
-              return resp.json();
-            })
-            .then(function (data) {
-              if (data.error) throw new Error(data.error);
-              if (data.url) {
-                try {
-                  var parsed = new URL(data.url);
-                  if (parsed.protocol !== 'https:' || (parsed.hostname.indexOf('stripe.com') === -1 && parsed.hostname.indexOf('phmurtstudios.com') === -1)) {
-                    throw new Error('Unexpected redirect URL.');
-                  }
-                  window.location.href = data.url;
-                } catch (urlErr) {
-                  if (urlErr.message === 'Unexpected redirect URL.') throw urlErr;
-                  throw new Error('Invalid response from payment server.');
+              },
+            }).then(function (result) {
+              if (result.error) throw new Error(result.error.message || 'Checkout request failed.');
+              var data = result.data;
+              if (!data || !data.url) throw new Error(data && data.error ? data.error : 'No checkout URL returned from server.');
+              try {
+                var parsed = new URL(data.url);
+                if (parsed.protocol !== 'https:' || (parsed.hostname.indexOf('stripe.com') === -1 && parsed.hostname.indexOf('phmurtstudios.com') === -1)) {
+                  throw new Error('Unexpected redirect URL.');
                 }
-              } else {
-                throw new Error('No checkout URL returned from server.');
+                window.location.href = data.url;
+              } catch (urlErr) {
+                if (urlErr.message === 'Unexpected redirect URL.') throw urlErr;
+                throw new Error('Invalid response from payment server.');
               }
               resolve(data);
             });
@@ -1443,11 +1430,36 @@ var PhmurtDB = (function () {
       var sb = _sb();
       if (!sb) return Promise.reject(new Error('Supabase not configured.'));
 
-      var checkoutUrl = (typeof STRIPE_CHECKOUT_FUNCTION_URL !== 'undefined' && STRIPE_CHECKOUT_FUNCTION_URL)
-        ? STRIPE_CHECKOUT_FUNCTION_URL
-        : (typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL + '/functions/v1/stripe-checkout' : null);
-
-      if (!checkoutUrl) return Promise.reject(new Error('Stripe checkout not configured.'));
+      // Helper: call the checkout edge function via the Supabase client
+      // (handles apikey, auth headers, and gateway validation correctly)
+      function _invokeCheckout(supabaseClient) {
+        return supabaseClient.functions.invoke('stripe-checkout', {
+          body: {
+            return_url: returnUrl || window.location.href,
+            interval: (interval === 'yearly') ? 'yearly' : 'monthly',
+          },
+        }).then(function (result) {
+          if (result.error) {
+            var err = new Error(result.error.message || 'Checkout request failed.');
+            err.status = result.error.context && result.error.context.status;
+            throw err;
+          }
+          var data = result.data;
+          if (!data || !data.url) throw new Error(data && data.error ? data.error : 'No checkout URL returned from server.');
+          // SECURITY: Validate the redirect URL
+          try {
+            var parsed = new URL(data.url);
+            if (parsed.protocol !== 'https:' || (parsed.hostname.indexOf('stripe.com') === -1 && parsed.hostname.indexOf('phmurtstudios.com') === -1)) {
+              throw new Error('Unexpected redirect URL.');
+            }
+            window.location.href = data.url;
+          } catch (urlErr) {
+            if (urlErr.message === 'Unexpected redirect URL.') throw urlErr;
+            throw new Error('Invalid response from payment server.');
+          }
+          return data;
+        });
+      }
 
       var _self = this;
       return sb.auth.getSession().then(function (r) {
@@ -1457,40 +1469,20 @@ var PhmurtDB = (function () {
           return _showReauthPrompt(sb, returnUrl, interval);
         }
 
-        return fetch(checkoutUrl, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + token,
-          },
-          body: JSON.stringify({
-            return_url: returnUrl || window.location.href,
-            // SECURITY: Whitelist interval values — server also validates, but defense in depth
-            interval: (interval === 'yearly') ? 'yearly' : 'monthly',
-          }),
-        })
-        .then(function (resp) {
-          if (!resp.ok) throw new Error('Payment server returned status ' + resp.status);
-          return resp.json();
-        })
-        .then(function (data) {
-          if (data.error) throw new Error(data.error);
-          // SECURITY: Validate the redirect URL is an HTTPS Stripe URL (prevents javascript:/data: URI attacks)
-          if (data.url) {
-            try {
-              var parsed = new URL(data.url);
-              if (parsed.protocol !== 'https:' || (parsed.hostname.indexOf('stripe.com') === -1 && parsed.hostname.indexOf('phmurtstudios.com') === -1)) {
-                throw new Error('Unexpected redirect URL.');
-              }
-              window.location.href = data.url;
-            } catch (urlErr) {
-              if (urlErr.message === 'Unexpected redirect URL.') throw urlErr;
-              throw new Error('Invalid response from payment server.');
+        // Try checkout; on failure try refreshing session, then re-auth as last resort
+        return _invokeCheckout(sb).catch(function (err) {
+          // Token may be expired — try refreshing the session
+          return sb.auth.refreshSession().then(function (ref) {
+            var newToken = ref.data && ref.data.session && ref.data.session.access_token;
+            if (!newToken) {
+              return _showReauthPrompt(sb, returnUrl, interval);
             }
-          } else {
-            throw new Error('No checkout URL returned from server.');
-          }
-          return data;
+            return _invokeCheckout(sb);
+          }).catch(function (retryErr) {
+            // If the error is from the retry invoke, throw it; otherwise fall back to re-auth
+            if (retryErr.message && retryErr.message.indexOf('Unexpected') !== -1) throw retryErr;
+            return _showReauthPrompt(sb, returnUrl, interval);
+          });
         });
       });
     },
@@ -2038,44 +2030,34 @@ window.addEventListener('storage', function (e) {
 
   // ── Stripe checkout redirect helper ──
   function _doStripeCheckout(token, plan, overlay) {
-    var checkoutUrl = (typeof STRIPE_CHECKOUT_FUNCTION_URL !== 'undefined' && STRIPE_CHECKOUT_FUNCTION_URL)
-      ? STRIPE_CHECKOUT_FUNCTION_URL
-      : (typeof SUPABASE_URL !== 'undefined' ? SUPABASE_URL + '/functions/v1/stripe-checkout' : null);
-    if (!checkoutUrl) {
-      alert('Stripe checkout not configured.');
-      return Promise.reject(new Error('Stripe checkout not configured.'));
+    var sb = _sb();
+    if (!sb) {
+      alert('Supabase not configured.');
+      return Promise.reject(new Error('Supabase not configured.'));
     }
 
-    return fetch(checkoutUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ return_url: window.location.href, interval: (plan === 'yearly') ? 'yearly' : 'monthly' })
+    return sb.functions.invoke('stripe-checkout', {
+      body: { return_url: window.location.href, interval: (plan === 'yearly') ? 'yearly' : 'monthly' }
     })
-    .then(function (resp) {
-      if (!resp.ok) throw new Error('Payment server returned status ' + resp.status);
-      return resp.json();
-    })
-    .then(function (data) {
-      if (data.error) throw new Error(data.error);
-      if (data.url) {
-        try {
-          var parsed = new URL(data.url);
-          if (parsed.protocol !== 'https:' || (parsed.hostname.indexOf('stripe.com') === -1 && parsed.hostname.indexOf('phmurtstudios.com') === -1)) {
-            throw new Error('Unexpected redirect URL.');
-          }
-          window.location.href = data.url;
-        } catch (urlErr) {
-          if (urlErr.message === 'Unexpected redirect URL.') throw urlErr;
-          throw new Error('Invalid response from payment server.');
+    .then(function (result) {
+      if (result.error) throw new Error(result.error.message || 'Checkout request failed.');
+      var data = result.data;
+      if (!data || !data.url) throw new Error(data && data.error ? data.error : 'No checkout URL returned from server.');
+      try {
+        var parsed = new URL(data.url);
+        if (parsed.protocol !== 'https:' || (parsed.hostname.indexOf('stripe.com') === -1 && parsed.hostname.indexOf('phmurtstudios.com') === -1)) {
+          throw new Error('Unexpected redirect URL.');
         }
-      } else {
-        throw new Error('No checkout URL returned from server.');
+        window.location.href = data.url;
+      } catch (urlErr) {
+        if (urlErr.message === 'Unexpected redirect URL.') throw urlErr;
+        throw new Error('Invalid response from payment server.');
       }
     })
     .catch(function (err) {
       if (overlay) overlay.remove();
       alert('Could not start checkout: ' + (err.message || 'Unknown error'));
-      throw err; // Re-throw so callers can handle it
+      throw err;
     });
   }
 
