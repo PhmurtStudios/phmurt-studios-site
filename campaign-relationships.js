@@ -754,8 +754,8 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
                     }
                   })),
                   style: {
-                    flex: 1, padding: "4px 6px", fontSize: 9, fontFamily: T.ui, border: rate === delta ? `1px solid ${T.gold}` : `1px solid ${T.border}`,
-                    background: rate === delta ? T.goldDim : "transparent", color: rate === delta ? T.gold : T.textFaint,
+                    flex: 1, padding: "4px 6px", fontSize: 9, fontFamily: T.ui, border: rate === delta ? `1px solid ${T.crimson}` : `1px solid ${T.border}`,
+                    background: rate === delta ? T.crimsonDim : "transparent", color: rate === delta ? T.crimson : T.textFaint,
                     borderRadius: 2, cursor: "pointer", fontWeight: rate === delta ? 600 : 400
                   }
                 }, delta))

@@ -30,9 +30,10 @@
   <script src="fantasy-map-engine.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous" integrity="sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG"></script>
   <script src="supabase-config.js"></script>
+  <script src="stripe-config.js"></script>
   <script src="phmurt-auth.js"></script>
 </head>
-<body>
+<body data-phmurt-feature="generators">
   <a href="#main-content" class="ps-skip-nav">Skip to content</a>
   <style>
     /* ═══════════════════════════════ GENERATORS PAGE STYLES ═══════════════════════════════ */
@@ -9678,7 +9679,7 @@ const SIZE_CONFIG = {
 };
 
 const WARD_TYPES = {
-    market:        { color: '#d4a574', label: 'Market Square',       density: 0.35 },
+    market:        { color: 'var(--crimson)', label: 'Market Square',       density: 0.35 },
     residential:   { color: '#c9b08a', label: 'Residential',         density: 0.40 },
     noble:         { color: '#e8d5a8', label: 'Noble Quarter',       density: 0.28 },
     slums:         { color: '#8b7d6b', label: 'Slums',               density: 0.45 },
@@ -9810,7 +9811,7 @@ function cityGen_generateName() {
 
 const COLOR_PALETTE = {
     background:     '#f5ead0',
-    buildingBase:   '#d4a574',
+    buildingBase:   'var(--crimson)',
     buildingOutline:'#3d2817',
     wallDark:       '#2c3e50',
     riverColor:     '#6a9fb5',
@@ -11482,7 +11483,7 @@ function cityGen_drawCastle(ctx, castle) {
         ctx.lineWidth = 1;
         ctx.strokeRect(-ib.width / 2, -ib.height / 2, ib.width, ib.height);
         // Roof detail line
-        ctx.strokeStyle = '#8b6f47';
+        ctx.strokeStyle = 'var(--crimson-dim)';
         ctx.lineWidth = 0.8;
         ctx.beginPath();
         ctx.moveTo(-ib.width / 2, -ib.height / 2 + 2);
@@ -11675,7 +11676,7 @@ function cityGen_drawMarketSquare(ctx, plaza) {
     ctx.globalAlpha = 1.0;
 
     // Market stalls
-    ctx.fillStyle = '#d4a574';
+    ctx.fillStyle = 'var(--crimson)';
     for (var s = 0; s < plaza.stalls.length; s++) {
         var stall = plaza.stalls[s];
         ctx.fillRect(stall.x - stall.width / 2, stall.y - stall.height / 2, stall.width, stall.height);
@@ -11716,7 +11717,7 @@ function cityGen_drawBakery(ctx, x, y, size) {
     ctx.ellipse(x, y + size * 0.05, size * 0.38, size * 0.28, 0, 0, Math.PI * 2);
     ctx.fill();
     // Score lines on top
-    ctx.strokeStyle = '#8b6f47';
+    ctx.strokeStyle = 'var(--crimson-dim)';
     ctx.lineWidth = 0.8;
     ctx.beginPath();
     ctx.moveTo(x - size * 0.15, y - size * 0.1);
@@ -11787,7 +11788,7 @@ function cityGen_drawJeweler(ctx, x, y, size) {
 }
 
 function cityGen_drawTanner(ctx, x, y, size) {
-    ctx.fillStyle = '#8b6f47';
+    ctx.fillStyle = 'var(--crimson-dim)';
     ctx.fillRect(x - size / 2, y - size / 2, size, size);
     ctx.fillStyle = '#5d4a3d';
     for (var i = 0; i < 3; i++) {
@@ -11805,7 +11806,7 @@ function cityGen_drawAlchemist(ctx, x, y, size) {
     // Neck
     ctx.fillRect(x - size * 0.08, y - size * 0.35, size * 0.16, size * 0.35);
     // Cork
-    ctx.fillStyle = '#8b6f47';
+    ctx.fillStyle = 'var(--crimson-dim)';
     ctx.fillRect(x - size * 0.1, y - size * 0.42, size * 0.2, size * 0.1);
     // Liquid highlight
     ctx.fillStyle = '#9d8ae0';
@@ -11857,7 +11858,7 @@ function cityGen_drawClothier(ctx, x, y, size) {
 }
 
 function cityGen_drawCooper(ctx, x, y, size) {
-    ctx.fillStyle = '#8b6f47';
+    ctx.fillStyle = 'var(--crimson-dim)';
     ctx.beginPath();
     ctx.ellipse(x, y, size / 2, size / 2.2, 0, 0, Math.PI * 2);
     ctx.fill();
@@ -11878,7 +11879,7 @@ function cityGen_drawChandler(ctx, x, y, size) {
     ctx.lineTo(x - size / 4, y + size / 2);
     ctx.closePath();
     ctx.fill();
-    ctx.fillStyle = '#d4a574';
+    ctx.fillStyle = 'var(--crimson)';
     ctx.beginPath();
     ctx.arc(x, y - size / 2, size / 6, 0, Math.PI * 2);
     ctx.fill();
@@ -12007,7 +12008,7 @@ function cityGen_drawCastleLandmark(ctx, x, y, size) {
 }
 
 function cityGen_drawMarket(ctx, x, y, size) {
-    ctx.fillStyle = '#d4a574';
+    ctx.fillStyle = 'var(--crimson)';
     ctx.fillRect(x - size / 2, y - size / 2, size, size);
     ctx.strokeStyle = '#8b7355';
     ctx.lineWidth = 1;
@@ -12054,7 +12055,7 @@ function cityGen_drawShop(ctx, x, y, size) {
 
 function cityGen_drawStables(ctx, x, y, size) {
     // Barn/stable with pitched roof
-    ctx.fillStyle = '#8b6f47';
+    ctx.fillStyle = 'var(--crimson-dim)';
     ctx.fillRect(x - size * 0.4, y - size * 0.15, size * 0.8, size * 0.45);
     // Pitched roof
     ctx.fillStyle = '#6b4f27';
@@ -12120,7 +12121,7 @@ function cityGen_drawWell(ctx, x, y, size) {
 
 function cityGen_drawGuildhall(ctx, x, y, size) {
     // Large building with banner
-    ctx.fillStyle = '#8b6f47';
+    ctx.fillStyle = 'var(--crimson-dim)';
     ctx.fillRect(x - size * 0.4, y - size * 0.2, size * 0.8, size * 0.5);
     ctx.fillStyle = '#6b4f27';
     ctx.beginPath();
@@ -12365,7 +12366,7 @@ function cityGen_drawInn(ctx, x, y, size) {
     // Building with hanging sign
     ctx.fillStyle = '#b89068';
     ctx.fillRect(x - size * 0.35, y - size * 0.15, size * 0.7, size * 0.5);
-    ctx.fillStyle = '#8b6f47';
+    ctx.fillStyle = 'var(--crimson-dim)';
     ctx.beginPath();
     ctx.moveTo(x - size * 0.4, y - size * 0.15);
     ctx.lineTo(x, y - size * 0.4);
@@ -12379,7 +12380,7 @@ function cityGen_drawInn(ctx, x, y, size) {
     ctx.moveTo(x + size * 0.35, y - size * 0.05);
     ctx.lineTo(x + size * 0.5, y - size * 0.05);
     ctx.stroke();
-    ctx.fillStyle = '#d4a574';
+    ctx.fillStyle = 'var(--crimson)';
     ctx.fillRect(x + size * 0.38, y - size * 0.02, size * 0.15, size * 0.12);
     // Door
     ctx.fillStyle = '#5a3f20';
@@ -13692,7 +13693,7 @@ function cityGen_showShopModal(landmark) {
             html += '<tr style="' + rowBg + 'border-bottom:1px solid rgba(200,184,152,0.3);">';
             html += '<td style="padding:6px 8px;font-weight:bold;white-space:nowrap;">' + item.name + '</td>';
             html += '<td style="padding:6px 8px;color:#5a4a3a;font-size:12px;">' + item.desc + '</td>';
-            html += '<td style="padding:6px 8px;text-align:right;white-space:nowrap;color:#8b6f47;font-weight:bold;">' + item.price + '</td>';
+            html += '<td style="padding:6px 8px;text-align:right;white-space:nowrap;color:var(--crimson-dim);font-weight:bold;">' + item.price + '</td>';
             html += '</tr>';
         }
         html += '</table></div>';
@@ -14345,7 +14346,7 @@ function cityGen_render(canvas, data) {
                 ctx.rotate(deco.rotation || 0);
                 var ds = deco.size;
                 if (deco.type === 'crate') {
-                    ctx.fillStyle = '#8b6f47';
+                    ctx.fillStyle = 'var(--crimson-dim)';
                     ctx.fillRect(-ds, -ds, ds * 2, ds * 2);
                     ctx.strokeStyle = '#5d4a3d';
                     ctx.lineWidth = 0.5;
@@ -15221,7 +15222,7 @@ function downloadCityMap() {
       ctx.strokeRect(x, y, w, h);
 
       // Tavern sign (hanging circle)
-      ctx.strokeStyle = '#8b6f47';
+      ctx.strokeStyle = 'var(--crimson-dim)';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(x - 12, y + 8, 5, 0, Math.PI * 2);
@@ -15256,12 +15257,12 @@ function downloadCityMap() {
       ctx.fill();
 
       // Walls
-      ctx.strokeStyle = '#8b6f47';
+      ctx.strokeStyle = 'var(--crimson-dim)';
       ctx.lineWidth = 1.5;
       ctx.strokeRect(x, y, w, h);
 
       // Mill wheel on side
-      ctx.strokeStyle = '#8b6f47';
+      ctx.strokeStyle = 'var(--crimson-dim)';
       ctx.lineWidth = 2.5;
       ctx.beginPath();
       ctx.arc(x + w + 15, y + h / 2, 16, 0, Math.PI * 2);
@@ -15349,7 +15350,7 @@ function downloadCityMap() {
       ctx.fillRect(x, y, w, h);
 
       // Roof with peaked gables
-      ctx.fillStyle = '#8b6f47';
+      ctx.fillStyle = 'var(--crimson-dim)';
       ctx.beginPath();
       ctx.moveTo(x, y);
       ctx.lineTo(x + w / 2, y - 12);
@@ -15358,7 +15359,7 @@ function downloadCityMap() {
       ctx.fill();
 
       // Walls
-      ctx.strokeStyle = '#8b6f47';
+      ctx.strokeStyle = 'var(--crimson-dim)';
       ctx.lineWidth = 1.5;
       ctx.strokeRect(x, y, w, h);
 
@@ -15407,7 +15408,7 @@ function downloadCityMap() {
       ctx.fillRect(x, y, w, h);
 
       // Sign
-      ctx.strokeStyle = '#8b6f47';
+      ctx.strokeStyle = 'var(--crimson-dim)';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(x - 15, y + 10, 8, 0, Math.PI * 2);
@@ -15427,11 +15428,11 @@ function downloadCityMap() {
     }
 
     function drawMill(ctx, x, y, w, h) {
-      ctx.fillStyle = '#d4a574';
+      ctx.fillStyle = 'var(--crimson)';
       ctx.fillRect(x, y, w, h);
 
       // Wheel
-      ctx.strokeStyle = '#8b6f47';
+      ctx.strokeStyle = 'var(--crimson-dim)';
       ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.arc(x + w + 15, y + h / 2, 18, 0, Math.PI * 2);
@@ -16059,17 +16060,17 @@ function downloadCityMap() {
 
     function getRoomColor(buildingType, roomIndex, totalRooms) {
       if (buildingType === 'mansion') {
-        if (roomIndex === 0) return '#d4a574'; if (roomIndex === 1) return '#c9a580'; if (roomIndex < 4) return '#d9ac7c'; if (roomIndex < 7) return '#deb887'; return '#e0c9aa';
+        if (roomIndex === 0) return 'var(--crimson)'; if (roomIndex === 1) return '#c9a580'; if (roomIndex < 4) return '#d9ac7c'; if (roomIndex < 7) return '#deb887'; return '#e0c9aa';
       } else if (buildingType === 'temple') {
-        if (roomIndex === 0) return '#c9a580'; if (roomIndex === 1) return '#d4a574'; if (roomIndex < 4) return '#deb887'; return '#e0c9aa';
+        if (roomIndex === 0) return '#c9a580'; if (roomIndex === 1) return 'var(--crimson)'; if (roomIndex < 4) return '#deb887'; return '#e0c9aa';
       } else if (buildingType === 'tavern') {
         if (roomIndex === 0) return '#8b7355'; if (roomIndex === 1) return '#a0826d'; if (roomIndex < 4) return '#b5967d'; return '#c9a884';
       } else if (buildingType === 'shop') {
-        if (roomIndex === 0) return '#d4a574'; if (roomIndex === 1) return '#c9a080'; if (roomIndex === 2) return '#deb887'; return '#e0c9aa';
+        if (roomIndex === 0) return 'var(--crimson)'; if (roomIndex === 1) return '#c9a080'; if (roomIndex === 2) return '#deb887'; return '#e0c9aa';
       } else if (buildingType === 'wizard-tower') {
         if (roomIndex === 0) return '#9b7bbf'; if (roomIndex === 1) return '#b598d1'; if (roomIndex === 2) return '#9975c4'; return '#a68bc9';
       }
-      return '#d4a574';
+      return 'var(--crimson)';
     }
 
     function getRoomName(buildingType, index) {

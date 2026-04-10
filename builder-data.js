@@ -1574,7 +1574,7 @@ DND_DATA.multiclassPrereqs = {
 DND_DATA.spellcastingWeight = {
   bard: 1, cleric: 1, druid: 1, sorcerer: 1, wizard: 1,
   paladin: 0.5, ranger: 0.5,
-  fighter: 0, barbarian: 0, monk: 0, rogue: 0, warlock: 0
+  fighter: 0, barbarian: 0, monk: 0, rogue: 0, warlock: 'pact'
 };
 
 // ── MULTICLASS SPELL SLOT TABLE ──

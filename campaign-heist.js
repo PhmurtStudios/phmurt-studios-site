@@ -61,7 +61,7 @@
       transition: 'all 0.2s'
     },
     tabActive: {
-      backgroundColor: T.gold,
+      backgroundColor: T.crimson,
       color: T.bg,
       fontWeight: 'bold'
     },
@@ -81,8 +81,8 @@
     button: {
       padding: '8px 16px',
       borderRadius: '4px',
-      border: `1px solid ${T.gold}`,
-      backgroundColor: T.gold,
+      border: `1px solid ${T.crimson}`,
+      backgroundColor: T.crimson,
       color: T.bg,
       cursor: 'pointer',
       fontWeight: '600',
@@ -167,11 +167,11 @@
     phaseNode: (complete, active) => ({
       padding: '8px 12px',
       borderRadius: '4px',
-      backgroundColor: complete ? (T.gold) : (active ? (T.goldDim) : (T.bgCard)),
+      backgroundColor: complete ? (T.crimson) : (active ? (T.crimsonDim) : (T.bgCard)),
       color: complete || active ? T.bg : (T.textDim),
       fontSize: '12px',
       fontWeight: '600',
-      border: `1px solid ${active ? (T.gold) : (T.border)}`
+      border: `1px solid ${active ? (T.crimson) : (T.border)}`
     }),
     section: {
       marginBottom: '24px'
@@ -198,8 +198,8 @@
     },
     roomTile: (selected) => ({
       padding: '12px',
-      backgroundColor: selected ? (T.gold) : (T.bgCard),
-      border: `2px solid ${selected ? (T.gold) : (T.border)}`,
+      backgroundColor: selected ? (T.crimson) : (T.bgCard),
+      border: `2px solid ${selected ? (T.crimson) : (T.border)}`,
       borderRadius: '6px',
       cursor: 'pointer',
       fontSize: '12px',
@@ -559,7 +559,7 @@
           </div>
 
           <button
-            style={{...styles.button, backgroundColor: T.goldDim}}
+            style={{...styles.button, backgroundColor: T.crimsonDim}}
             onClick={() => {
               const generatedBlueprint = generateBlueprint(newHeist.name, newHeist.type);
               setNewHeist({...newHeist, blueprint: generatedBlueprint});
@@ -620,7 +620,7 @@
                   width: '20px',
                   height: '20px',
                   borderRadius: '50%',
-                  backgroundColor: i <= newHeist.difficulty ? (T.gold) : (T.border),
+                  backgroundColor: i <= newHeist.difficulty ? (T.crimson) : (T.border),
                   display: 'inline-flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -743,7 +743,7 @@
                     <div style={styles.difficultyBadge(heist.difficulty)}>
                       {'★'.repeat(heist.difficulty)}{'○'.repeat(5-heist.difficulty)} {heist.difficulty}/5
                     </div>
-                    <div style={{...styles.difficultyBadge(1), backgroundColor: T.goldDim}}>
+                    <div style={{...styles.difficultyBadge(1), backgroundColor: T.crimsonDim}}>
                       <Coins size={14} /> {heist.reward}
                     </div>
                     <div style={{...styles.difficultyBadge(1), backgroundColor: 'hsl(0, 80%, 50%)'}}>

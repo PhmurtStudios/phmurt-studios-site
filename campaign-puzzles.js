@@ -368,7 +368,7 @@
               style={{
                 width: size,
                 height: size,
-                background: cell ? (T.gold) : (T.bgCard),
+                background: cell ? (T.crimson) : (T.bgCard),
                 border: `1px solid ${T.border}`,
                 cursor: 'pointer',
                 borderRadius: '2px',
@@ -442,7 +442,7 @@
             style={{
               flex: 1,
               padding: '6px 8px',
-              background: T.gold,
+              background: T.crimson,
               color: T.bg || 'var(--bg)',
               border: 'none',
               borderRadius: '4px',
@@ -582,7 +582,7 @@
               style={{
                 marginTop: '8px',
                 padding: '6px 12px',
-                background: hintsRevealed >= 3 ? T.textDim : (T.gold),
+                background: hintsRevealed >= 3 ? T.textDim : (T.crimson),
                 color: T.bg || 'var(--bg)',
                 border: 'none',
                 borderRadius: '4px',
@@ -609,7 +609,7 @@
               style={{
                 flex: 1,
                 padding: '10px 16px',
-                background: T.gold,
+                background: T.crimson,
                 color: T.bg || 'var(--bg)',
                 border: 'none',
                 borderRadius: '4px',
@@ -923,7 +923,7 @@
                 style={{
                   flex: 1,
                   padding: '10px 16px',
-                  background: T.gold,
+                  background: T.crimson,
                   color: T.bg || 'var(--bg)',
                   border: 'none',
                   borderRadius: '4px',
@@ -1086,7 +1086,7 @@
               onClick={() => setTab(t)}
               style={{
                 padding: '8px 12px',
-                background: tab === t ? (T.gold) : (T.bgCard),
+                background: tab === t ? (T.crimson) : (T.bgCard),
                 color: tab === t ? (T.bg || 'var(--bg)') : (T.text),
                 border: tab === t ? 'none' : `1px solid ${T.border}`,
                 borderRadius: '4px',
@@ -1204,7 +1204,7 @@
                   style={{
                     flex: 1,
                     padding: '8px 12px',
-                    background: T.gold,
+                    background: T.crimson,
                     color: T.bg || 'var(--bg)',
                     border: 'none',
                     borderRadius: '4px',
@@ -1311,7 +1311,7 @@
                           style={{
                             flex: 1,
                             padding: '6px 8px',
-                            background: T.gold,
+                            background: T.crimson,
                             color: T.bg || 'var(--bg)',
                             border: 'none',
                             borderRadius: '4px',

@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta name="referrer" content="strict-origin" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), usb=(), payment=(), serial=(), bluetooth=()" />
+  <title>Pricing · Phmurt Studios</title>
+  <meta name="description" content="Compare Phmurt Studios Free and Pro plans. Unlock unlimited characters, campaigns, generators, and advanced DM tools." />
+  <meta property="og:title" content="Pricing · Phmurt Studios" />
+  <meta property="og:description" content="Compare Phmurt Studios Free and Pro plans. Unlock unlimited characters, campaigns, generators, and advanced DM tools." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://phmurtstudios.com/pricing.html" />
+  <meta property="og:image" content="https://phmurtstudios.com/logo.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Pricing · Phmurt Studios" />
+  <meta name="twitter:description" content="Compare Phmurt Studios Free and Pro plans." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="theme.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous" integrity="sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG"></script>
+  <script src="supabase-config.js"></script>
+  <script src="stripe-config.js"></script>
+  <script src="phmurt-auth.js"></script>
+
+  <style>
+    /* ── Pricing page layout ─────────────────────────────────────── */
+    .pricing-hero {
+      text-align: center;
+      padding: 80px 24px 40px;
+    }
+    .pricing-hero h1 {
+      font-family: 'Cinzel', serif;
+      font-size: 2.4rem;
+      margin: 0 0 12px;
+      color: var(--gold, #c9a84c);
+    }
+    .pricing-hero p {
+      color: var(--text-secondary, #aaa);
+      font-size: 1.1rem;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    /* ── Billing toggle ──────────────────────────────────────────── */
+    .billing-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin: 28px 0 8px;
+      font-size: .95rem;
+    }
+    .billing-toggle span { color: var(--text-secondary, #aaa); }
+    .billing-toggle span.active { color: var(--text-primary, #eee); font-weight: 600; }
+    .billing-switch {
+      width: 48px; height: 26px;
+      background: var(--border, #333);
+      border-radius: 13px;
+      position: relative;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .billing-switch.yearly { background: var(--accent, #7c3aed); }
+    .billing-switch::after {
+      content: '';
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: #fff;
+      position: absolute;
+      top: 3px; left: 3px;
+      transition: transform .2s;
+    }
+    .billing-switch.yearly::after { transform: translateX(22px); }
+    .billing-save {
+      background: var(--accent, #7c3aed);
+      color: #fff;
+      font-size: .75rem;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+
+    /* ── Plan cards ──────────────────────────────────────────────── */
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 28px;
+      max-width: 780px;
+      margin: 32px auto 64px;
+      padding: 0 24px;
+    }
+    .plan-card {
+      background: var(--bg-card, #1e1e2e);
+      border: 1px solid var(--crimson-border, #333);
+      border-radius: 8px;
+      padding: 36px 28px 32px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+    .plan-card.pro {
+      border-color: var(--accent, #7c3aed);
+      box-shadow: 0 0 20px rgba(124, 58, 237, .15);
+    }
+    .plan-card.pro::before {
+      content: 'MOST POPULAR';
+      position: absolute;
+      top: -12px; left: 50%;
+      transform: translateX(-50%);
+      background: var(--accent, #7c3aed);
+      color: #fff;
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      padding: 3px 14px;
+      border-radius: 10px;
+    }
+    .plan-name {
+      font-family: 'Cinzel', serif;
+      font-size: 1.3rem;
+      margin: 0 0 6px;
+      color: var(--text-primary, #eee);
+    }
+    .plan-desc {
+      color: var(--text-secondary, #aaa);
+      font-size: .9rem;
+      margin: 0 0 20px;
+      line-height: 1.45;
+    }
+    .plan-price {
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: var(--text-primary, #eee);
+      margin: 0 0 2px;
+    }
+    .plan-price .period {
+      font-size: .9rem;
+      font-weight: 400;
+      color: var(--text-secondary, #aaa);
+    }
+    .plan-price-note {
+      color: var(--text-secondary, #aaa);
+      font-size: .8rem;
+      margin: 0 0 24px;
+      min-height: 18px;
+    }
+    .plan-cta {
+      display: block;
+      width: 100%;
+      padding: 14px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      border: none;
+      margin-bottom: 24px;
+      text-decoration: none;
+    }
+    .plan-cta.free-cta {
+      background: transparent;
+      border: 1px solid var(--border, #444);
+      color: var(--text-primary, #eee);
+    }
+    .plan-cta.pro-cta {
+      background: var(--accent, #7c3aed);
+      color: #fff;
+    }
+    .plan-cta.pro-cta:hover { opacity: .9; }
+    .plan-cta.active-cta {
+      background: transparent;
+      border: 1px solid var(--accent, #7c3aed);
+      color: var(--accent, #7c3aed);
+      cursor: default;
+    }
+
+    /* Feature list */
+    .plan-features {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      flex: 1;
+    }
+    .plan-features li {
+      padding: 7px 0;
+      font-size: .9rem;
+      color: var(--text-primary, #ddd);
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      line-height: 1.4;
+    }
+    .plan-features li::before {
+      content: '✓';
+      color: #22c55e;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .plan-features li.locked {
+      color: var(--text-secondary, #666);
+    }
+    .plan-features li.locked::before {
+      content: '—';
+      color: var(--text-secondary, #555);
+    }
+
+    /* ── FAQ section ─────────────────────────────────────────────── */
+    .pricing-faq {
+      max-width: 640px;
+      margin: 0 auto 80px;
+      padding: 0 24px;
+    }
+    .pricing-faq h2 {
+      font-family: 'Cinzel', serif;
+      text-align: center;
+      margin: 0 0 28px;
+      color: var(--text-primary, #eee);
+    }
+    .faq-item {
+      border-bottom: 1px solid var(--border, #333);
+      padding: 18px 0;
+    }
+    .faq-q {
+      font-weight: 600;
+      color: var(--text-primary, #eee);
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .faq-q::after { content: '+'; font-size: 1.2rem; color: var(--text-secondary, #888); }
+    .faq-q.open::after { content: '−'; }
+    .faq-a {
+      color: var(--text-secondary, #aaa);
+      font-size: .9rem;
+      line-height: 1.6;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height .25s ease, margin .25s ease;
+      margin-top: 0;
+    }
+    .faq-q.open + .faq-a { max-height: 400px; margin-top: 12px; }
+
+    @media (max-width: 700px) {
+      .pricing-hero h1 { font-size: 1.8rem; }
+      .pricing-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body data-nav-active="" data-footer-copy="Roll Well. Play Weird." data-breadcrumb="Home|index.html;Pricing">
+
+  <a href="#main-content" class="ps-skip-nav">Skip to content</a>
+  <div id="ps-site-shell"></div>
+  <div id="ps-page-breadcrumb"></div>
+
+  <!-- ── Hero ──────────────────────────────────────────────────────── -->
+  <section class="pricing-hero" id="main-content">
+    <h1>Choose Your Path</h1>
+    <p>Every adventurer starts somewhere. Upgrade to Pro when you're ready for the full arsenal.</p>
+
+    <div class="billing-toggle">
+      <span class="active" id="lbl-monthly">Monthly</span>
+      <div class="billing-switch" id="billing-switch" role="switch" aria-checked="false" tabindex="0"></div>
+      <span id="lbl-yearly">Yearly</span>
+      <span class="billing-save">Save $10</span>
+    </div>
+  </section>
+
+  <!-- ── Plan cards ────────────────────────────────────────────────── -->
+  <section class="pricing-grid">
+
+    <!-- Free plan -->
+    <div class="plan-card">
+      <h2 class="plan-name">Free</h2>
+      <p class="plan-desc">Everything you need to build a character and run a campaign.</p>
+      <div class="plan-price">$0 <span class="period">/ forever</span></div>
+      <p class="plan-price-note">&nbsp;</p>
+      <a href="character-builder.html" class="plan-cta free-cta" id="free-cta">Get Started</a>
+      <ul class="plan-features">
+        <li>Up to 3 characters</li>
+        <li>1 campaign</li>
+        <li>Character Builder (5e &amp; 3.5e)</li>
+        <li>Interactive Character Sheets</li>
+        <li>Dice Roller</li>
+        <li>Learn to Play Guides</li>
+        <li>Character Gallery</li>
+        <li>Basic Campaign Management</li>
+        <li class="locked">Unlimited Characters &amp; Campaigns</li>
+        <li class="locked">Random Generators</li>
+        <li class="locked">Advanced Campaign Tabs</li>
+        <li class="locked">World-Building Tools</li>
+        <li class="locked">Priority Support</li>
+      </ul>
+    </div>
+
+    <!-- Pro plan -->
+    <div class="plan-card pro">
+      <h2 class="plan-name">Phmurt Studios Pro</h2>
+      <p class="plan-desc">Unlimited power for serious players and DMs.</p>
+      <div class="plan-price" id="pro-price">$4.99 <span class="period">/ month</span></div>
+      <p class="plan-price-note" id="pro-note">&nbsp;</p>
+      <button class="plan-cta pro-cta" id="pro-cta">Subscribe Now</button>
+      <ul class="plan-features">
+        <li>Unlimited characters</li>
+        <li>Unlimited campaigns</li>
+        <li>Everything in Free</li>
+        <li>Name, Loot, Encounter &amp; Quest Generators</li>
+        <li>Advanced Campaign Tabs (Heist, Intrigue, Prophecy, Puzzles)</li>
+        <li>Downtime &amp; Religion Systems</li>
+        <li>Hexcrawl &amp; World Atlas</li>
+        <li>Economy &amp; Faction War Engines</li>
+        <li>Battle Map &amp; Living World</li>
+        <li>Priority Support</li>
+      </ul>
+    </div>
+
+  </section>
+
+  <!-- ── FAQ ───────────────────────────────────────────────────────── -->
+  <section class="pricing-faq">
+    <h2>Frequently Asked Questions</h2>
+
+    <div class="faq-item">
+      <div class="faq-q">Can I try Pro features before subscribing?</div>
+      <div class="faq-a">The free tier gives you full access to the character builder, character sheets, dice roller, and basic campaign management so you can get a feel for the platform before upgrading.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Can I cancel anytime?</div>
+      <div class="faq-a">Yes — cancel from your account menu at any time. You'll keep Pro access through the end of your billing period, then revert to the free tier. No cancellation fees.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">What happens to my characters if I cancel?</div>
+      <div class="faq-a">Your characters and campaigns are never deleted. On the free tier you can still view and edit your first 3 characters and 1 campaign. The rest stay safe in your account and become accessible again if you re-subscribe.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Is my payment secure?</div>
+      <div class="faq-a">All payments are handled by Stripe. Phmurt Studios never sees or stores your card details.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Can I switch between monthly and yearly?</div>
+      <div class="faq-a">Yes — manage your billing cycle from your subscription settings. Switch at any time and we'll prorate the difference.</div>
+    </div>
+  </section>
+
+  <div id="ps-site-footer"></div>
+  <script src="phmurt-shell.js"></script>
+
+  <script>
+  (function () {
+    /* ── Billing toggle logic ─────────────────────────────────────── */
+    var yearly = false;
+    var sw = document.getElementById('billing-switch');
+    var lblM = document.getElementById('lbl-monthly');
+    var lblY = document.getElementById('lbl-yearly');
+    var priceEl = document.getElementById('pro-price');
+    var noteEl = document.getElementById('pro-note');
+    var ctaEl = document.getElementById('pro-cta');
+    var freeCtaEl = document.getElementById('free-cta');
+
+    function updatePricing() {
+      if (yearly) {
+        sw.classList.add('yearly');
+        lblM.classList.remove('active');
+        lblY.classList.add('active');
+        priceEl.innerHTML = '$49.99 <span class="period">/ year</span>';
+        noteEl.textContent = 'That\'s ~$4.17/mo — save $10 vs monthly';
+      } else {
+        sw.classList.remove('yearly');
+        lblM.classList.add('active');
+        lblY.classList.remove('active');
+        priceEl.innerHTML = '$4.99 <span class="period">/ month</span>';
+        noteEl.innerHTML = '&nbsp;';
+      }
+    }
+
+    sw.addEventListener('click', function () { yearly = !yearly; updatePricing(); });
+    sw.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); yearly = !yearly; updatePricing(); }
+    });
+
+    /* ── Subscribe button ─────────────────────────────────────────── */
+    ctaEl.addEventListener('click', function () {
+      if (typeof PhmurtDB === 'undefined') {
+        alert('Please sign in first to subscribe.');
+        return;
+      }
+      var sess = PhmurtDB.getSession();
+      if (!sess || !sess.user) {
+        window.dispatchEvent(new CustomEvent('phmurt-show-auth', { detail: { tab: 'login' } }));
+        return;
+      }
+      if (sess.isSubscribed) {
+        PhmurtDB.manageSubscription(window.location.href).catch(function (err) {
+          alert('Could not open billing portal: ' + (err.message || 'Unknown error'));
+        });
+        return;
+      }
+      var plan = yearly ? 'yearly' : 'monthly';
+      PhmurtDB.startSubscription(window.location.href, plan).catch(function (err) {
+        alert('Could not start checkout: ' + (err.message || 'Unknown error'));
+      });
+    });
+
+    /* ── Adjust CTAs if user is already subscribed ────────────────── */
+    function updateForAuth() {
+      if (typeof PhmurtDB === 'undefined') return;
+      var sess = PhmurtDB.getSession();
+      if (sess && sess.isSubscribed) {
+        ctaEl.textContent = 'Manage Subscription';
+        ctaEl.className = 'plan-cta active-cta';
+        freeCtaEl.textContent = 'Current: Pro';
+        freeCtaEl.className = 'plan-cta free-cta';
+        freeCtaEl.removeAttribute('href');
+      } else if (sess && sess.user) {
+        freeCtaEl.textContent = 'Current Plan';
+        freeCtaEl.className = 'plan-cta active-cta';
+        freeCtaEl.removeAttribute('href');
+      }
+    }
+    window.addEventListener('phmurt-auth-change', updateForAuth);
+    /* Run once in case auth already resolved */
+    setTimeout(updateForAuth, 500);
+
+    /* ── FAQ accordion ────────────────────────────────────────────── */
+    document.querySelectorAll('.faq-q').forEach(function (q) {
+      q.addEventListener('click', function () {
+        q.classList.toggle('open');
+      });
+    });
+  })();
+  </script>
+</body>
+</html>

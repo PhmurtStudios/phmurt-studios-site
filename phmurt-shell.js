@@ -427,9 +427,18 @@
       btn.style.color       = 'var(--text)';
 
       if (dd) {
+        var isPro = !!(session.isSubscribed || session.subscriptionTier === 'pro');
+        var tierBadge = isPro
+          ? '<div style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-bottom:1px solid var(--border-mid);"><span style="font-family:Cinzel,serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:#f5ede0;background:var(--crimson);padding:2px 8px;border-radius:3px;">PRO</span><span style="font-size:10px;color:var(--text-faint);">' + (session.subscriptionCancelAt ? 'Canceling' : 'Active') + '</span></div>'
+          : '<div style="padding:6px 14px;border-bottom:1px solid var(--border-mid);"><a href="pricing.html" style="font-family:Cinzel,serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--crimson);text-decoration:none;">✦ Upgrade to Pro</a></div>';
+        var manageBtn = isPro
+          ? '<button id="nav-manage-sub-btn">Manage Subscription</button>'
+          : '';
         dd.innerHTML =
           '<div style="font-family:Spectral,serif;font-size:12px;color:var(--text-muted);padding:9px 14px 8px;border-bottom:1px solid var(--border-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px;">' + psEscapeHtml(display) + '</div>' +
+          tierBadge +
           '<a href="my-characters.html">My Characters</a>' +
+          manageBtn +
           '<button id="nav-delete-account-btn" style="color:var(--crimson,#d4433a);">Delete Account</button>' +
           '<button id="nav-signout-btn">Sign Out</button>';
 
@@ -469,6 +478,18 @@
               localStorage.removeItem('phmurt_campaigns');
               window.dispatchEvent(new Event('phmurt-auth-change'));
               if (typeof window.psToast === 'function') window.psToast('Account and local data deleted.');
+            }
+          });
+        }
+
+        var manageSubBtn = document.getElementById('nav-manage-sub-btn');
+        if (manageSubBtn) {
+          manageSubBtn.addEventListener('click', function() {
+            dd.classList.remove('open');
+            if (typeof PhmurtDB !== 'undefined' && PhmurtDB.manageSubscription) {
+              PhmurtDB.manageSubscription().catch(function(err) {
+                if (typeof window.psToast === 'function') window.psToast(err.message || 'Could not open subscription portal.');
+              });
             }
           });
         }

@@ -230,7 +230,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
                 width: '32px',
                 height: '32px',
                 borderRadius: '50%',
-                backgroundColor: T.gold,
+                backgroundColor: T.crimson,
                 color: T.bg,
                 display: 'flex',
                 alignItems: 'center',
@@ -407,7 +407,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
           onClick: () => setShowAvailEditor(!showAvailEditor),
           style: {
             padding: '8px 12px',
-            backgroundColor: T.gold,
+            backgroundColor: T.crimson,
             color: T.bg,
             border: 'none',
             borderRadius: '4px',
@@ -486,7 +486,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
                       setCurrentPlayerAvail(updated);
                     },
                     style: {
-                      backgroundColor: currentPlayerAvail[dayIdx]?.includes(hour) ? T.gold : T.bgCard,
+                      backgroundColor: currentPlayerAvail[dayIdx]?.includes(hour) ? T.crimsonSoft : T.bgCard,
                       cursor: 'pointer',
                       transition: 'all 0.2s',
                       opacity: 0.8
@@ -502,7 +502,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
             onClick: handleSaveAvailability,
             style: {
               padding: '8px 16px',
-              backgroundColor: T.gold,
+              backgroundColor: T.crimson,
               color: T.bg,
               border: 'none',
               borderRadius: '4px',
@@ -584,7 +584,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
           style: {
             marginTop: '15px',
             padding: '8px 16px',
-            backgroundColor: T.gold,
+            backgroundColor: T.crimson,
             color: T.bg,
             border: 'none',
             borderRadius: '4px',
@@ -658,7 +658,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
                   style: {
                     height: '100%',
                     width: `${stats.percentage}%`,
-                    background: `linear-gradient(90deg, ${T.crimson}, ${T.gold})`,
+                    background: T.crimson,
                     transition: 'width 0.3s'
                   }
                 })

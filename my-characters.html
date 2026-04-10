@@ -59,7 +59,7 @@
         <h2 style="font-family:Cinzel;color:var(--text);font-size:20px;margin:0;">Your Characters</h2>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <a href="campaigns.html?tab=dashboard" class="ps-btn ps-btn-primary" style="font-size:14px;background:transparent;border:1px solid var(--border);color:var(--text-muted);">Open Campaign Manager</a>
-          <a href="character-builder.html" class="ps-btn ps-btn-primary" style="font-size:14px;">+ New Character</a>
+          <a href="character-builder.html" class="ps-btn ps-btn-primary" style="font-size:14px;" onclick="try{localStorage.removeItem('phmurt_current_char_id');localStorage.removeItem('phmurt_builder_5e');localStorage.removeItem('phmurt_builder_35e');}catch(e){}">+ New Character</a>
         </div>
       </div>
       <div id="mc-character-list"></div>

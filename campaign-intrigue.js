@@ -1129,7 +1129,7 @@
             <Inp value={newBranchDesc} onChange={setNewBranchDesc} placeholder="Brief description..." />
             <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
               <button onClick={addBranch} disabled={!newBranchName.trim()} style={{
-                flex: 1, padding: '8px 14px', background: T.gold, color: T.bg, border: 'none', borderRadius: 4,
+                flex: 1, padding: '8px 14px', background: T.crimson, color: T.bg, border: 'none', borderRadius: 4,
                 cursor: 'pointer', fontFamily: ui, fontSize: 12, fontWeight: 700, opacity: newBranchName.trim() ? 1 : 0.4 }}>Create</button>
               <button onClick={function() { setShowAddBranch(false); }} style={{
                 padding: '8px 14px', background: 'transparent', color: T.textDim, border: '1px solid ' + T.border,
@@ -1371,7 +1371,7 @@
             }));
             onClose();
           }} style={{
-            flex: 1, padding: '8px 14px', background: T.gold, color: T.bg, border: 'none', borderRadius: 4,
+            flex: 1, padding: '8px 14px', background: T.crimson, color: T.bg, border: 'none', borderRadius: 4,
             cursor: 'pointer', fontFamily: ui, fontSize: 12, fontWeight: 700 }}>Add Connection</button>
           <button onClick={onClose} style={{
             padding: '8px 14px', background: 'transparent', color: T.textDim, border: '1px solid ' + T.border,

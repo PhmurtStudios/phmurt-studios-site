@@ -71,7 +71,7 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
     const colors = {
       trivial: '#7a7a7a',
       easy: '#5db36f',
-      medium: '#c9a85c',
+      medium: 'var(--crimson)',
       hard: '#ff9f3d',
       legendary: '#a855e8'
     };
@@ -548,7 +548,7 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
               style={{
                 marginTop: 'auto',
                 padding: '10px 16px',
-                backgroundColor: T.gold,
+                backgroundColor: T.crimson,
                 color: T.bg,
                 border: 'none',
                 borderRadius: '4px',
@@ -726,7 +726,7 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
               onClick={generateQuests}
               style={{
                 padding: '8px 16px',
-                backgroundColor: T.gold,
+                backgroundColor: T.crimson,
                 color: T.bg,
                 border: 'none',
                 borderRadius: '4px',

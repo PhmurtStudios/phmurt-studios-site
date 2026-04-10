@@ -1157,10 +1157,10 @@ function WarBtn({ children, onClick, active, danger, small, disabled, style:s })
     onClick: disabled ? undefined : onClick,
     style: {
       padding: small ? "4px 8px" : "7px 14px",
-      background: danger ? T.crimsonDim : active ? T.goldDim : T.bgHover,
-      border: "1px solid " + (danger ? T.crimsonDim : active ? T.goldDim : T.border),
+      background: danger ? T.crimsonDim : active ? T.crimsonDim : T.bgHover,
+      border: "1px solid " + (danger ? T.crimsonDim : active ? T.crimsonDim : T.border),
       borderRadius: 4, cursor: disabled ? "default" : "pointer",
-      color: danger ? T.crimson : active ? T.gold : T.textMuted,
+      color: danger ? T.crimson : active ? T.crimson : T.textMuted,
       fontFamily: T.ui, fontSize: small ? 9 : 10, letterSpacing: "1px", textTransform: "uppercase",
       display: "inline-flex", alignItems: "center", gap: 5, transition: "all 0.15s",
       opacity: disabled ? 0.4 : 1, ...s,
@@ -1408,7 +1408,7 @@ function EventLog({ events, maxShow }) {
           key: i,
           style: {
             padding:"6px 10px", borderBottom:"1px solid " + T.border, fontSize:11,
-            background: e.severity === "critical" ? T.crimsonDim : e.severity === "major" ? T.goldDim : "transparent",
+            background: e.severity === "critical" ? T.crimsonDim : e.severity === "major" ? T.crimsonDim : "transparent",
           }
         },
         React.createElement("div", { style: { display:"flex", justifyContent:"space-between" } },
@@ -1547,7 +1547,7 @@ function FactionWarView({ data, setData, viewRole }) {
         autoPlay && React.createElement("div", { style: { display:"flex", gap:2 } },
           [1,2,3].map(s => React.createElement("button", {
             key:s, onClick: () => setSpeed(s),
-            style: { width:22, height:22, background: warState.speed === s ? T.goldDim : "transparent", border:"1px solid " + (warState.speed === s ? T.goldDim : T.border), borderRadius:3, cursor:"pointer", color: warState.speed === s ? T.gold : T.textFaint, fontSize:9, fontFamily:T.ui }
+            style: { width:22, height:22, background: warState.speed === s ? T.crimsonDim : "transparent", border:"1px solid " + (warState.speed === s ? T.crimsonDim : T.border), borderRadius:3, cursor:"pointer", color: warState.speed === s ? T.crimson : T.textFaint, fontSize:9, fontFamily:T.ui }
           }, s, "×"))
         ),
         React.createElement(WarBtn, { onClick: resetWar, danger: true, small: true }, React.createElement(RefreshCw, {size:10}), " Reset"),

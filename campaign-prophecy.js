@@ -630,7 +630,7 @@
               marginTop: '8px',
               width: '100%',
               padding: '8px',
-              backgroundColor: 'var(--gold)',
+              backgroundColor: 'var(--crimson)',
               color: 'var(--bg)',
               border: 'none',
               borderRadius: '4px',
@@ -1154,7 +1154,7 @@
               style={{
                 width: '100%',
                 padding: '8px',
-                backgroundColor: 'var(--gold)',
+                backgroundColor: 'var(--crimson)',
                 color: 'var(--bg)',
                 border: 'none',
                 borderRadius: '4px',
@@ -1178,7 +1178,7 @@
             style={{
               flex: 1,
               padding: '10px',
-              backgroundColor: 'var(--gold)',
+              backgroundColor: 'var(--crimson)',
               color: 'var(--bg)',
               border: 'none',
               borderRadius: '4px',
@@ -1678,7 +1678,7 @@
               style={{
                 flex: 1,
                 padding: '8px',
-                backgroundColor: activeTab === 'prophecies' ? 'var(--gold)' : 'var(--bg-mid)',
+                backgroundColor: activeTab === 'prophecies' ? 'var(--crimson)' : 'var(--bg-mid)',
                 color: activeTab === 'prophecies' ? 'var(--bg)' : 'var(--text)',
                 border: 'none',
                 borderRadius: '4px',
@@ -1694,7 +1694,7 @@
               style={{
                 flex: 1,
                 padding: '8px',
-                backgroundColor: activeTab === 'pantheon' ? 'var(--gold)' : 'var(--bg-mid)',
+                backgroundColor: activeTab === 'pantheon' ? 'var(--crimson)' : 'var(--bg-mid)',
                 color: activeTab === 'pantheon' ? 'var(--bg)' : 'var(--text)',
                 border: 'none',
                 borderRadius: '4px',
@@ -1716,7 +1716,7 @@
                     style={{
                       width: '100%',
                       padding: '10px',
-                      backgroundColor: 'var(--gold)',
+                      backgroundColor: 'var(--crimson)',
                       color: 'var(--bg)',
                       border: 'none',
                       borderRadius: '4px',

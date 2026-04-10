@@ -596,7 +596,7 @@ function generateRegionsAndFactions(atlas) {
     { suffix: "Wardens",   attitudes: ["friendly","neutral"], descs: ["Guardians of the natural world and sacred groves","Druidic protectors of the old ways"], colors: ["#2e8b57","#45a876"] },
     { suffix: "Syndicate", attitudes: ["neutral","hostile"],  descs: ["A powerful trade consortium with shadowy connections","A ruthless guild controlling commerce and information"], colors: ["#d4a017","#e8940a"] },
     { suffix: "Covenant",  attitudes: ["hostile","neutral"],  descs: ["A fanatical cult pursuing dark power","A shadowy brotherhood with sinister aims"], colors: ["#5c2d82","#7b3fa0"] },
-    { suffix: "Crown",     attitudes: ["neutral","friendly"], descs: ["The remnants of an ancient monarchy","A noble house clinging to fading glory"], colors: ["#c9a85c","#b8963f"] },
+    { suffix: "Crown",     attitudes: ["neutral","friendly"], descs: ["The remnants of an ancient monarchy","A noble house clinging to fading glory"], colors: ["T.gold","#b8963f"] },
   ];
 
   const factionCount = Math.min(Math.max(3, provinces.length - 1), 5);
@@ -1265,7 +1265,7 @@ function regionsAndFactionsFromMetadata(seedNum) {
     { suffix: "Wardens",     attitudes: ["friendly","neutral"], descs: ["Guardians of the natural world and sacred groves, sworn to protect the wilds","Druidic protectors of the old ways whose roots run deeper than any kingdom"], colors: ["#2e8b57","#45a876"], govType: "druidic" },
     { suffix: "Syndicate",   attitudes: ["neutral","hostile"],  descs: ["A powerful trade consortium with shadowy connections in every port and palace","A ruthless guild controlling commerce and information, answering only to coin"], colors: ["#d4a017","#e8940a"], govType: "guild" },
     { suffix: "Covenant",    attitudes: ["hostile","neutral"],  descs: ["A fanatical cult pursuing dark power, their rituals whispered of in hushed tones","A shadowy brotherhood with sinister aims, bound by blood oaths and ancient rites"], colors: ["#5c2d82","#7b3fa0"], govType: "cult" },
-    { suffix: "Crown",       attitudes: ["neutral","friendly"], descs: ["The remnants of an ancient monarchy clinging to fading glory and old traditions","A noble house whose bloodline stretches back to the founding of the realm"], colors: ["#c9a85c","#b8963f"], govType: "monarchy" },
+    { suffix: "Crown",       attitudes: ["neutral","friendly"], descs: ["The remnants of an ancient monarchy clinging to fading glory and old traditions","A noble house whose bloodline stretches back to the founding of the realm"], colors: ["T.gold","#b8963f"], govType: "monarchy" },
     { suffix: "Imperium",    attitudes: ["hostile","neutral"],  descs: ["A vast military machine that swallows nations whole, leaving only obedience in its wake","An ancient empire reborn, demanding tribute and fealty from all neighboring lands"], colors: ["#8b0000","#b22222"], govType: "empire" },
     { suffix: "League",      attitudes: ["friendly","neutral"], descs: ["A loose confederation of city-states bound by trade agreements and mutual interest","An economic alliance whose wealth rivals that of any kingdom"], colors: ["#2874a6","#5dade2"], govType: "republic" },
     { suffix: "Brotherhood", attitudes: ["neutral","hostile"],  descs: ["A secretive fraternity with agents embedded in every court and guild hall","A sworn order of warriors and spies dedicated to a hidden cause"], colors: ["#34495e","#5d6d7e"], govType: "military junta" },
@@ -1275,7 +1275,7 @@ function regionsAndFactionsFromMetadata(seedNum) {
     { suffix: "Tribunal",    attitudes: ["neutral","cautious"], descs: ["A council of judges and magistrates who enforce law with cold impartiality","A governing body of elected officials who rule through codified decree"], colors: ["#708090","#778899"], govType: "oligarchy" },
     { suffix: "Pact",        attitudes: ["hostile","cautious"], descs: ["A blood-bound alliance of warlocks and demon-touched outcasts seeking power at any cost","A cabal of those who have made deals with entities beyond mortal understanding"], colors: ["#4a0028","#800040"], govType: "cult" },
     { suffix: "Assembly",    attitudes: ["friendly","allied"],  descs: ["A democratic council where every citizen has a voice and a vote","A parliament of elected representatives from across the allied territories"], colors: ["#27ae60","#2ecc71"], govType: "republic" },
-    { suffix: "Dynasty",     attitudes: ["neutral","friendly"], descs: ["A ruling family whose wealth and influence spans generations and continents","A hereditary monarchy renowned for its cunning diplomacy and vast treasury"], colors: ["#d4a574","#c19a6b"], govType: "monarchy" },
+    { suffix: "Dynasty",     attitudes: ["neutral","friendly"], descs: ["A ruling family whose wealth and influence spans generations and continents","A hereditary monarchy renowned for its cunning diplomacy and vast treasury"], colors: ["T.gold","#c19a6b"], govType: "monarchy" },
     { suffix: "Enclave",     attitudes: ["neutral","cautious"], descs: ["An isolationist community of scholars and artisans who guard their secrets jealously","A hidden sanctuary where forbidden knowledge is preserved far from prying eyes"], colors: ["#4682b4","#5f9ea0"], govType: "council" },
     { suffix: "Compact",     attitudes: ["friendly","neutral"], descs: ["An alliance forged in desperation against a common threat, now struggling to hold together","A treaty organization of smaller nations banding together for survival"], colors: ["#556b2f","#6b8e23"], govType: "republic" },
     { suffix: "Cabal",       attitudes: ["hostile","neutral"],  descs: ["A shadow network of assassins and information brokers who sell loyalty to the highest bidder","A hidden organization that manipulates events from behind the scenes through fear and coin"], colors: ["#2c2c2c","#484848"], govType: "guild" },
@@ -3619,7 +3619,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       )}
                       {false && r.activeQuests?.length > 0 && mapZoom > 1.15 && (
                         <g transform={`translate(${r.mx-(isBig?30:22)},${r.my-(isBig?24:18)})`}>
-                          <circle r="8" fill="rgba(255,213,79,0.14)" stroke="#ffd54f" strokeWidth="0.8"/>
+                          <circle r="8" fill="rgba(212,67,58,0.14)" stroke="#ffd54f" strokeWidth="0.8"/>
                           <text x="0" y="3" textAnchor="middle" fill="#ffd54f" fontFamily="'Cinzel', serif" fontSize="7" fontWeight="700">{r.activeQuests.length}</text>
                         </g>
                       )}
@@ -3762,7 +3762,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
               const rect = mapRef.current?.getBoundingClientRect();
               const popX = ((c.origX != null ? c.origX : c.mapX) * MAP_W * mapZoom + mapPan.x);
               const popY = ((c.origY != null ? c.origY : c.mapY) * MAP_H * mapZoom + mapPan.y);
-              const fc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || "#c9a85c"; })();
+              const fc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || "T.gold"; })();
               const cityNpcs = (data.npcs || []).filter(n => c.npcs.includes(n.id));
               return (
                 <div style={{
@@ -3792,7 +3792,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     </div>
                     {c.features && c.features.length > 0 && (
                       <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 12 }}>
-                        {c.features.map((f, fi) => <span key={fi} style={{ fontSize: 8, color: T.gold, background: "rgba(201,168,92,0.08)", border: "1px solid rgba(201,168,92,0.22)", padding: "3px 8px", borderRadius: "3px", letterSpacing: "0.5px", fontFamily: "'Cinzel', serif", textTransform: "uppercase" }}>{f}</span>)}
+                        {c.features.map((f, fi) => <span key={fi} style={{ fontSize: 8, color: T.gold, background: "rgba(212,67,58,0.08)", border: "1px solid rgba(212,67,58,0.22)", padding: "3px 8px", borderRadius: "3px", letterSpacing: "0.5px", fontFamily: "'Cinzel', serif", textTransform: "uppercase" }}>{f}</span>)}
                       </div>
                     )}
                     <div style={{ display: "flex", gap: 12, marginBottom: 6, fontSize: 10, color: "var(--text-muted)", fontFamily: "'Spectral', serif" }}>
@@ -3801,7 +3801,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       <span>Tavern: {c.tavern.name}</span>
                     </div>
                     {c.questHooks && c.questHooks.length > 0 && (
-                      <div style={{ fontSize: 10, color: T.questGold, fontStyle: "italic", marginBottom: 12, lineHeight: 1.5, fontFamily: "'Spectral', serif", padding: "6px 10px", background: "rgba(232,186,64,0.06)", borderRadius: "3px", border: "1px solid rgba(232,186,64,0.12)" }}>Quest: {c.questHooks[0]}</div>
+                      <div style={{ fontSize: 10, color: T.questGold, fontStyle: "italic", marginBottom: 12, lineHeight: 1.5, fontFamily: "'Spectral', serif", padding: "6px 10px", background: "rgba(212,67,58,0.06)", borderRadius: "3px", border: "1px solid rgba(212,67,58,0.12)" }}>Quest: {c.questHooks[0]}</div>
                     )}
                     <div style={{ display: "flex", gap: 6 }}>
                       <button
@@ -3836,11 +3836,11 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
             {!mapEngineRef.current && regionPopup && (() => {
               const t = regionPopup.territory;
               const r = regionPopup.region;
-              const fc = (() => { const f = (data.factions || []).find(f => f.name === t.faction); return f?.color || "#c9a85c"; })();
+              const fc = (() => { const f = (data.factions || []).find(f => f.name === t.faction); return f?.color || "T.gold"; })();
               const popX = (t.labelX || t.cityX || 3000) * mapZoom + mapPan.x;
               const popY = (t.labelY || t.cityY || 2250) * mapZoom + mapPan.y;
-              const threatColors = { low: "#6a9955", medium: "#c9a85c", high: "#d97b3c", extreme: "#d4433a" };
-              const threatCol = threatColors[r?.threat] || "#c9a85c";
+              const threatColors = { low: "#6a9955", medium: "T.gold", high: "#d97b3c", extreme: "#d4433a" };
+              const threatCol = threatColors[r?.threat] || "T.gold";
               const typeIcons = { capital: "♔", kingdom: "⚔", city: "⏣", town: "⌂", wilderness: "⚍", dungeon: "☠", route: "⟿" };
               const typeIcon = typeIcons[r?.type] || "\u{1F30D}";
               return (
@@ -3880,7 +3880,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     )}
                     {/* Lore snippet */}
                     {r?.lore && (
-                      <div style={{ fontSize: 11, color: "var(--text-dim)", lineHeight: 1.55, fontFamily: "'Spectral', serif", fontStyle: "italic", marginBottom: 12, padding: "8px 10px", background: "rgba(201,168,92,0.04)", borderRadius: "3px", border: "1px solid rgba(201,168,92,0.10)" }}>
+                      <div style={{ fontSize: 11, color: "var(--text-dim)", lineHeight: 1.55, fontFamily: "'Spectral', serif", fontStyle: "italic", marginBottom: 12, padding: "8px 10px", background: "rgba(212,67,58,0.04)", borderRadius: "3px", border: "1px solid rgba(212,67,58,0.10)" }}>
                         {r.lore}
                       </div>
                     )}
@@ -3926,7 +3926,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                           setData(d => { const { atlasMapSeed, generatedAtlas, ...rest } = d; return { ...rest, regions: [], factions: [], npcs: [], cities: [], pois: [], activity: [{ time: "Just now", text: "Reverted to default map" }] }; });
                         }
                       }}
-                      style={{ padding:"4px 8px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(232,186,64,0.25)", borderRadius:"4px", fontFamily:T.ui, fontSize:9, color:T.gold, outline:"none", cursor:"pointer", letterSpacing:"1px" }}
+                      style={{ padding:"4px 8px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(212,67,58,0.25)", borderRadius:"4px", fontFamily:T.ui, fontSize:9, color:T.gold, outline:"none", cursor:"pointer", letterSpacing:"1px" }}
                     >
                       {Array.from({length:100}, (_,i) => i+1).map(s => {
                         return <option key={s} value={s}>{`World Seed ${s}`}</option>;
@@ -3937,9 +3937,9 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       const next = (current % 100) + 1;
                       // Just update the seed — the useEffect will regenerate map + all world data
                       setData(d => ({ ...d, atlasMapSeed: String(next) }));
-                    }} style={{ padding:"5px 12px", background:"rgba(30,26,22,0.85)", backdropFilter:"blur(8px)", border:"1px solid rgba(232,186,64,0.35)", borderRadius:"4px", fontFamily:T.ui, fontSize:9, color:T.questGold, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", boxShadow:"0 2px 10px rgba(0,0,0,0.3)", transition:"all 0.2s", whiteSpace:"nowrap" }}
-                      onMouseEnter={e => { e.target.style.borderColor = "rgba(232,186,64,0.7)"; e.target.style.color = "#f5d66a"; }}
-                      onMouseLeave={e => { e.target.style.borderColor = "rgba(232,186,64,0.35)"; e.target.style.color = "#e8ba40"; }}
+                    }} style={{ padding:"5px 12px", background:"rgba(30,26,22,0.85)", backdropFilter:"blur(8px)", border:"1px solid rgba(212,67,58,0.35)", borderRadius:"4px", fontFamily:T.ui, fontSize:9, color:T.questGold, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer", boxShadow:"0 2px 10px rgba(0,0,0,0.3)", transition:"all 0.2s", whiteSpace:"nowrap" }}
+                      onMouseEnter={e => { e.target.style.borderColor = "rgba(212,67,58,0.7)"; e.target.style.color = "#f5d66a"; }}
+                      onMouseLeave={e => { e.target.style.borderColor = "rgba(212,67,58,0.35)"; e.target.style.color = "T.gold"; }}
                       title="Generate a new world with the next seed"
                     >Regenerate</button>
                   </div>
@@ -3963,7 +3963,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                   style={{
                     display:"flex", alignItems:"center", gap:8, padding:"8px 16px",
                     background: lwActive ? "rgba(46,180,92,0.2)" : "rgba(30,26,22,0.9)",
-                    border: lwActive ? "1px solid rgba(46,180,92,0.5)" : "1px solid rgba(201,168,92,0.25)",
+                    border: lwActive ? "1px solid rgba(46,180,92,0.5)" : "1px solid rgba(212,67,58,0.25)",
                     borderRadius:"4px", cursor:"pointer", transition:"all 0.3s",
                   }}
                 >
@@ -3975,7 +3975,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                 {lwActive && (
                   <div style={{ display:"flex", gap:4 }}>
                     <select value={lwSpeed} onChange={e => { setLwSpeed(Number(e.target.value)); if (lwActive) { setLwActive(false); setTimeout(() => setLwActive(true), 100); } }}
-                      style={{ padding:"3px 6px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:T.ui, fontSize:8, color:T.gold, outline:"none", cursor:"pointer" }}>
+                      style={{ padding:"3px 6px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(212,67,58,0.2)", borderRadius:"3px", fontFamily:T.ui, fontSize:8, color:T.gold, outline:"none", cursor:"pointer" }}>
                       <option value={30}>Fast (30s)</option>
                       <option value={60}>Normal (60s)</option>
                       <option value={90}>Slow (90s)</option>
@@ -3984,15 +3984,15 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       <option value={600}>Very Slow (10m)</option>
                     </select>
                     <button onClick={() => setLwShowLog(v => !v)}
-                      style={{ padding:"3px 10px", background: lwShowLog ? "rgba(201,168,92,0.2)" : "rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:T.ui, fontSize:8, color:T.gold, cursor:"pointer", letterSpacing:"1px" }}>
+                      style={{ padding:"3px 10px", background: lwShowLog ? "rgba(212,67,58,0.2)" : "rgba(30,26,22,0.9)", border:"1px solid rgba(212,67,58,0.2)", borderRadius:"3px", fontFamily:T.ui, fontSize:8, color:T.gold, cursor:"pointer", letterSpacing:"1px" }}>
                       {lwShowLog ? "Hide Log" : "Event Log"} ({lwLog.length})
                     </button>
                     <button onClick={() => setLwTimeSkipOpen(v => !v)}
-                      style={{ padding:"3px 10px", background: lwTimeSkipOpen ? "rgba(201,168,92,0.2)" : "rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:T.ui, fontSize:8, color:T.gold, cursor:"pointer", letterSpacing:"1px" }}>
+                      style={{ padding:"3px 10px", background: lwTimeSkipOpen ? "rgba(212,67,58,0.2)" : "rgba(30,26,22,0.9)", border:"1px solid rgba(212,67,58,0.2)", borderRadius:"3px", fontFamily:T.ui, fontSize:8, color:T.gold, cursor:"pointer", letterSpacing:"1px" }}>
                       ⏭ Skip Forward
                     </button>
                     <button onClick={() => { setLwPartyActionsOpen(v => !v); setLwTimeSkipOpen(false); }}
-                      style={{ padding:"3px 10px", background: lwPartyActionsOpen ? "rgba(201,100,60,0.2)" : "rgba(30,26,22,0.9)", border: lwPartyActionsOpen ? "1px solid rgba(201,100,60,0.4)" : "1px solid rgba(201,168,92,0.2)", borderRadius:"3px", fontFamily:T.ui, fontSize:8, color: lwPartyActionsOpen ? T.orange : T.gold, cursor:"pointer", letterSpacing:"1px" }}>
+                      style={{ padding:"3px 10px", background: lwPartyActionsOpen ? "rgba(201,100,60,0.2)" : "rgba(30,26,22,0.9)", border: lwPartyActionsOpen ? "1px solid rgba(201,100,60,0.4)" : "1px solid rgba(212,67,58,0.2)", borderRadius:"3px", fontFamily:T.ui, fontSize:8, color: lwPartyActionsOpen ? T.orange : T.gold, cursor:"pointer", letterSpacing:"1px" }}>
                       ⚔ Party Actions
                     </button>
                   </div>
@@ -4003,7 +4003,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
             {/* ── Time Skip Dropdown Menu ── */}
             {isLive && isDM && data.factions?.length > 0 && lwTimeSkipOpen && (
               <div style={{
-                position:"absolute", top:140, left:12, background:"rgba(20,18,14,0.98)", border:"1px solid rgba(201,168,92,0.25)",
+                position:"absolute", top:140, left:12, background:"rgba(20,18,14,0.98)", border:"1px solid rgba(212,67,58,0.25)",
                 borderRadius:"6px", zIndex:30, minWidth:140, boxShadow:"0 8px 24px rgba(0,0,0,0.6)"
               }}>
                 <div style={{ padding:"8px 0", fontSize:9, fontFamily:T.ui, color:T.gold, letterSpacing:"1px" }}>
@@ -4022,18 +4022,18 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                         display:"block", width:"100%", padding:"8px 12px", textAlign:"left",
                         background:"transparent", border:"none", color:T.gold, cursor:"pointer",
                         fontFamily:T.ui, fontSize:9, letterSpacing:"0.5px",
-                        borderBottom:"1px solid rgba(201,168,92,0.1)", transition:"all 0.2s"
+                        borderBottom:"1px solid rgba(212,67,58,0.1)", transition:"all 0.2s"
                       }}
-                      onMouseEnter={e => e.target.style.background = "rgba(201,168,92,0.15)"}
+                      onMouseEnter={e => e.target.style.background = "rgba(212,67,58,0.15)"}
                       onMouseLeave={e => e.target.style.background = "transparent"}
                     >
                       {opt.label}
                     </button>
                   ))}
-                  <div style={{ padding:"6px 12px", borderTop:"1px solid rgba(201,168,92,0.1)", display:"flex", gap:6, alignItems:"center" }}>
+                  <div style={{ padding:"6px 12px", borderTop:"1px solid rgba(212,67,58,0.1)", display:"flex", gap:6, alignItems:"center" }}>
                     <input type="number" min="1" max="365" defaultValue="7" id="customSkipEvents"
                       style={{
-                        flex:1, padding:"3px 6px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.2)",
+                        flex:1, padding:"3px 6px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(212,67,58,0.2)",
                         borderRadius:"3px", color:T.gold, fontFamily:T.ui, fontSize:8, outline:"none"
                       }} />
                     <button onClick={() => {
@@ -4044,7 +4044,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       }
                     }}
                       style={{
-                        padding:"3px 8px", background:"rgba(201,168,92,0.2)", border:"1px solid rgba(201,168,92,0.4)",
+                        padding:"3px 8px", background:"rgba(212,67,58,0.2)", border:"1px solid rgba(212,67,58,0.4)",
                         borderRadius:"3px", color:T.gold, cursor:"pointer", fontFamily:T.ui, fontSize:7,
                         letterSpacing:"0.5px", textTransform:"uppercase"
                       }}
@@ -4184,18 +4184,18 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                 zIndex:40, fontFamily:T.ui
               }}>
                 <div style={{
-                  background:"rgba(20,18,14,0.98)", border:"2px solid rgba(201,168,92,0.5)", borderRadius:"8px",
+                  background:"rgba(20,18,14,0.98)", border:"2px solid rgba(212,67,58,0.5)", borderRadius:"8px",
                   padding:"32px", textAlign:"center", minWidth:300
                 }}>
                   <div style={{ fontSize:14, color:T.text, marginBottom:20, letterSpacing:"1px" }}>
                     Traversing the timeline...
                   </div>
                   <div style={{
-                    width:"100%", height:24, background:"rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.3)",
+                    width:"100%", height:24, background:"rgba(30,26,22,0.9)", border:"1px solid rgba(212,67,58,0.3)",
                     borderRadius:"4px", overflow:"hidden", position:"relative"
                   }}>
                     <div style={{
-                      height:"100%", background:"linear-gradient(90deg, rgba(201,168,92,0.4), rgba(201,168,92,0.8))",
+                      height:"100%", background:"linear-gradient(90deg, rgba(212,67,58,0.4), rgba(212,67,58,0.8))",
                       width:`${(lwTimeSkipProgress.current / lwTimeSkipProgress.total) * 100}%`,
                       transition:"width 0.1s linear"
                     }} />
@@ -4214,7 +4214,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                 zIndex:40, fontFamily:T.ui, padding:20
               }}>
                 <div style={{
-                  background:"rgba(20,18,14,0.98)", border:"2px solid rgba(201,168,92,0.4)", borderRadius:"8px",
+                  background:"rgba(20,18,14,0.98)", border:"2px solid rgba(212,67,58,0.4)", borderRadius:"8px",
                   padding:"24px", maxWidth:500, maxHeight:"70vh", overflow:"hidden", display:"flex", flexDirection:"column"
                 }}>
                   <div style={{ fontSize:14, color:T.text, marginBottom:16, letterSpacing:"1px", textAlign:"center" }}>
@@ -4222,13 +4222,13 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                   </div>
                   <div style={{
                     flex:1, overflowY:"auto", marginBottom:16, paddingRight:12,
-                    borderTop:"1px solid rgba(201,168,92,0.2)", borderBottom:"1px solid rgba(201,168,92,0.2)",
+                    borderTop:"1px solid rgba(212,67,58,0.2)", borderBottom:"1px solid rgba(212,67,58,0.2)",
                     paddingTop:12, paddingBottom:12
                   }}>
                     {lwTimeSkipSummary.filter(e => e.importance === "major").map((evt, i) => (
                       <div key={i} style={{
                         display:"flex", gap:10, marginBottom:12, alignItems:"flex-start",
-                        paddingBottom:12, borderBottom:"1px solid rgba(201,168,92,0.1)"
+                        paddingBottom:12, borderBottom:"1px solid rgba(212,67,58,0.1)"
                       }}>
                         <span style={{ fontSize:18, flexShrink:0, lineHeight:1 }}>{evt.icon}</span>
                         <div style={{ flex:1, minWidth:0 }}>
@@ -4249,22 +4249,22 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       setLwShowLog(true);
                     }}
                       style={{
-                        padding:"8px 16px", background:"rgba(201,168,92,0.2)", border:"1px solid rgba(201,168,92,0.4)",
+                        padding:"8px 16px", background:"rgba(212,67,58,0.2)", border:"1px solid rgba(212,67,58,0.4)",
                         borderRadius:"4px", color:T.gold, cursor:"pointer", fontFamily:T.ui, fontSize:9,
                         letterSpacing:"1px", textTransform:"uppercase", transition:"all 0.2s"
                       }}
-                      onMouseEnter={e => e.target.style.background = "rgba(201,168,92,0.35)"}
-                      onMouseLeave={e => e.target.style.background = "rgba(201,168,92,0.2)"}
+                      onMouseEnter={e => e.target.style.background = "rgba(212,67,58,0.35)"}
+                      onMouseLeave={e => e.target.style.background = "rgba(212,67,58,0.2)"}
                     >
                       View Full Log
                     </button>
                     <button onClick={() => setLwTimeSkipSummary(null)}
                       style={{
-                        padding:"8px 16px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(201,168,92,0.25)",
+                        padding:"8px 16px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(212,67,58,0.25)",
                         borderRadius:"4px", color:T.gold, cursor:"pointer", fontFamily:T.ui, fontSize:9,
                         letterSpacing:"1px", textTransform:"uppercase", transition:"all 0.2s"
                       }}
-                      onMouseEnter={e => e.target.style.background = "rgba(201,168,92,0.1)"}
+                      onMouseEnter={e => e.target.style.background = "rgba(212,67,58,0.1)"}
                       onMouseLeave={e => e.target.style.background = "rgba(30,26,22,0.9)"}
                     >
                       Dismiss
@@ -4285,8 +4285,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                   {lwEvents.slice(0, 3).map((evt, i) => (
                     <div key={evt.timestamp + "-" + i} style={{
                       display:"flex", alignItems:"flex-start", gap:12, padding:"10px 16px",
-                      background: i === 0 ? "rgba(201,168,92,0.12)" : "rgba(32,28,22,0.8)",
-                      border: `1px solid ${i === 0 ? "rgba(201,168,92,0.35)" : "rgba(80,70,55,0.3)"}`,
+                      background: i === 0 ? "rgba(212,67,58,0.12)" : "rgba(32,28,22,0.8)",
+                      border: `1px solid ${i === 0 ? "rgba(212,67,58,0.35)" : "rgba(80,70,55,0.3)"}`,
                       borderRadius:"6px", transition:"all 0.5s ease",
                       opacity: i === 0 ? 1 : 0.7,
                       animation: i === 0 ? "lwSlideIn 0.5s ease" : "none",
@@ -4299,8 +4299,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:2, flexShrink:0 }}>
                         <span style={{
                           fontSize:8, padding:"2px 6px", borderRadius:"2px", letterSpacing:"0.8px", textTransform:"uppercase",
-                          color: evt.importance === "major" ? "#e8ba40" : evt.importance === "minor" ? "#6a8070" : "#9a9080",
-                          border: `1px solid ${evt.importance === "major" ? "rgba(232,186,64,0.3)" : "rgba(120,110,88,0.3)"}`,
+                          color: evt.importance === "major" ? "T.gold" : evt.importance === "minor" ? "#6a8070" : "#9a9080",
+                          border: `1px solid ${evt.importance === "major" ? "rgba(212,67,58,0.3)" : "rgba(120,110,88,0.3)"}`,
                         }}>{evt.importance}</span>
                         <span style={{ fontSize:8, color:T.textMuted, letterSpacing:"0.5px", textTransform:"uppercase" }}>{evt.category}</span>
                       </div>
@@ -4314,11 +4314,11 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
             {isLive && lwShowLog && (
               <div style={{
                 position:"absolute", top:0, left:0, bottom:0, width:380, zIndex:30,
-                background:"rgba(20,18,14,0.98)", borderRight:"1px solid rgba(201,168,92,0.2)",
+                background:"rgba(20,18,14,0.98)", borderRight:"1px solid rgba(212,67,58,0.2)",
                 display:"flex", flexDirection:"column", overflow:"hidden",
                 boxShadow:"4px 0 24px rgba(0,0,0,0.4)",
               }}>
-                <div style={{ padding:"16px 20px", borderBottom:"1px solid rgba(201,168,92,0.15)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                <div style={{ padding:"16px 20px", borderBottom:"1px solid rgba(212,67,58,0.15)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
                   <div>
                     <div style={{ fontSize:14, color:T.text, fontFamily:T.ui, letterSpacing:"1px" }}>World Events</div>
                     <div style={{ fontSize:9, color:T.textMuted, marginTop:2 }}>{lwLog.length} events this session</div>
@@ -4369,7 +4369,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
               <div style={{ position:"absolute", bottom:12, left:12, width:200, height:150, background:T.bgCard, border:`1px solid ${T.crimsonBorder}`, borderRadius:"3px", overflow:"hidden", opacity:0.88 }}>
                 <svg width="200" height="150" viewBox={`0 0 ${MAP_W} ${MAP_H}`}>
                   <rect width={MAP_W} height={MAP_H} fill="#0b1118" opacity="0.72"/>
-                  <path d={atlasLandPath} fill="#1b1815" stroke="rgba(232,186,64,0.16)" strokeWidth="18"/>
+                  <path d={atlasLandPath} fill="#1b1815" stroke="rgba(212,67,58,0.16)" strokeWidth="18"/>
                   {atlasIslands.map((isle, i) => <path key={`mm-isle-${i}`} d={isle.path} fill="#171716" opacity="0.82"/>)}
                   {/* Territory fills */}
                   {atlasTerritories.map((t,i) => <path key={`mt-${i}`} d={t.path} fill={t.color} opacity="0.16"/>)}
@@ -4436,7 +4436,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
               // If a city detail is selected within regions view, show full city detail
               if (regionDetailCity) {
                 const c = cities.find(ct => ct.id === regionDetailCity.id) || regionDetailCity;
-                const fc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || "#c9a85c"; })();
+                const fc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || "T.gold"; })();
                 const cityNpcs = (data.npcs || []).filter(n => (c.npcs || []).includes(n.id));
                 return (
                   <div style={{ display:"flex", flexDirection:"column", gap:0, maxWidth:900 }}>
@@ -4454,7 +4454,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       {townImagesReady && window.TOWN_IMAGES && window.TOWN_IMAGES[c.name] && (
                         <button onClick={() => { setTownView(c.name); setTownSelBldg(null); setTownHovBldg(null); setTownZoom(0); setTownPan({x:0,y:0}); }} style={{
                           display:"flex", alignItems:"center", gap:6, padding:"8px 14px",
-                          background:"linear-gradient(135deg, rgba(201,168,92,0.15), transparent)", border:"1px solid rgba(201,168,92,0.4)", borderRadius:"3px", color:T.gold,
+                          background:"linear-gradient(135deg, rgba(212,67,58,0.15), transparent)", border:"1px solid rgba(212,67,58,0.4)", borderRadius:"3px", color:T.gold,
                           fontFamily:T.ui, fontSize:10, letterSpacing:"1.5px", textTransform:"uppercase", cursor:"pointer",
                         }}>Explore Town</button>
                       )}
@@ -4466,13 +4466,13 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     }}>
                       <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:8 }}>
                         <span style={{ fontSize:22, fontWeight:400, color:T.text, fontFamily:T.ui, letterSpacing:"0.5px" }}>{c.name}</span>
-                        <span style={{ fontSize:9, color:c.isCapital?T.gold:T.textMuted, border:`1px solid ${c.isCapital?"rgba(201,168,92,0.3)":"rgba(154,144,128,0.3)"}`, padding:"2px 8px", borderRadius:"2px", letterSpacing:"1px" }}>{c.isCapital?"CAPITAL":"SETTLEMENT"}</span>
+                        <span style={{ fontSize:9, color:c.isCapital?T.gold:T.textMuted, border:`1px solid ${c.isCapital?"rgba(212,67,58,0.3)":"rgba(154,144,128,0.3)"}`, padding:"2px 8px", borderRadius:"2px", letterSpacing:"1px" }}>{c.isCapital?"CAPITAL":"SETTLEMENT"}</span>
                       </div>
                       <div style={{ fontSize:12, color:T.textMuted, marginBottom:8 }}>{c.region} · {c.faction} · Pop. {c.population}</div>
                       <div style={{ fontSize:12, color:T.textDim, lineHeight:1.6 }}>{c.description}</div>
                       {c.features && c.features.length > 0 && (
                         <div style={{ display:"flex", gap:5, flexWrap:"wrap", marginTop:12 }}>
-                          {c.features.map((f, fi) => <span key={fi} style={{ fontSize:10, color:T.gold, border:"1px solid rgba(201,168,92,0.2)", padding:"3px 9px", borderRadius:"2px" }}>{f}</span>)}
+                          {c.features.map((f, fi) => <span key={fi} style={{ fontSize:10, color:T.gold, border:"1px solid rgba(212,67,58,0.2)", padding:"3px 9px", borderRadius:"2px" }}>{f}</span>)}
                         </div>
                       )}
                     </div>
@@ -4492,7 +4492,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                         ))}
                       </div>
                       {c.tavern.rumor && (
-                        <div style={{ fontSize:11, color:T.questGold, fontStyle:"italic", padding:"8px 12px", background:"rgba(232,186,64,0.06)", border:"1px solid rgba(232,186,64,0.15)", borderRadius:"3px" }}>
+                        <div style={{ fontSize:11, color:T.questGold, fontStyle:"italic", padding:"8px 12px", background:"rgba(212,67,58,0.06)", border:"1px solid rgba(212,67,58,0.15)", borderRadius:"3px" }}>
                           Rumor: "{c.tavern.rumor}"
                         </div>
                       )}
@@ -4564,9 +4564,9 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                           {c.questHooks.map((q, qi) => (
                             <div key={qi} style={{
                               padding:"12px 16px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px",
-                              borderLeft:"3px solid #e8ba40", display:"flex", alignItems:"center", gap:12,
+                              borderLeft:"3px solid T.gold", display:"flex", alignItems:"center", gap:12,
                             }}>
-                              <Scroll size={14} color="#e8ba40" style={{ flexShrink:0 }}/>
+                              <Scroll size={14} color="T.gold" style={{ flexShrink:0 }}/>
                               <span style={{ fontSize:12, color:T.textMuted, lineHeight:1.5, fontStyle:"italic" }}>{q}</span>
                             </div>
                           ))}
@@ -4586,7 +4586,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     const regionNpcs = (data.npcs || []).filter(n => n.loc === r.name);
                     const regionCities = cities.filter(c => c.region === r.name);
                     const factionObj = (data.factions || []).find(f => f.name === r.ctrl);
-                    const fc = factionObj?.color || "#c9a85c";
+                    const fc = factionObj?.color || "T.gold";
                     regionCities.sort((a, b) => (b.isCapital ? 1 : 0) - (a.isCapital ? 1 : 0) || (b.popNum || 0) - (a.popNum || 0));
 
                     return (
@@ -4650,7 +4650,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                                 </div>
                                 <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
                                   {regionCities.map(c => {
-                                    const cityFc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || "#c9a85c"; })();
+                                    const cityFc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || "T.gold"; })();
                                     return (
                                       <div key={c.id} onClick={(e) => { e.stopPropagation(); setRegionDetailCity(c); }} style={{
                                         padding:"12px 16px", background:T.bgCard,
@@ -4714,14 +4714,14 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                                   <div style={{ fontSize:9, color:T.textFaint, fontFamily:T.ui, letterSpacing:"1.5px", textTransform:"uppercase", marginBottom:8 }}>◫ Natural Resources</div>
                                   <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
                                     {r.resources.map((res, ri) => (
-                                      <span key={ri} style={{ fontSize:10, color:T.gold, background:"rgba(201,168,92,0.06)", padding:"4px 10px", borderRadius:"3px", border:"1px solid rgba(201,168,92,0.15)" }}>{res}</span>
+                                      <span key={ri} style={{ fontSize:10, color:T.gold, background:"rgba(212,67,58,0.06)", padding:"4px 10px", borderRadius:"3px", border:"1px solid rgba(212,67,58,0.15)" }}>{res}</span>
                                     ))}
                                   </div>
                                 </div>
                               )}
                               {/* Lore */}
                               {r.lore && (
-                                <div style={{ marginTop:14, padding:"10px 14px", background:"rgba(232,186,64,0.04)", border:"1px solid rgba(232,186,64,0.12)", borderRadius:"3px", borderLeft:"3px solid rgba(232,186,64,0.3)" }}>
+                                <div style={{ marginTop:14, padding:"10px 14px", background:"rgba(212,67,58,0.04)", border:"1px solid rgba(212,67,58,0.12)", borderRadius:"3px", borderLeft:"3px solid rgba(212,67,58,0.3)" }}>
                                   <div style={{ fontSize:9, color:T.questGold, fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase", marginBottom:4 }}>⸎ Local Lore</div>
                                   <div style={{ fontSize:11, color:T.textDim, fontStyle:"italic", lineHeight:1.5 }}>{r.lore}</div>
                                 </div>
@@ -4830,7 +4830,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                               // Sort by devotion, get top deities
                               const sortedDeities = Object.entries(deityDevotionMap)
                                 .sort((a, b) => b[1].devotion - a[1].devotion);
-                              const alignColors = { "LG":"#4a90d9", "NG":"#5ee09a", "CG":"#7bc67b", "LN":"#c9a85c", "N":"#9a9080", "CN":"#e8ba40", "LE":"#d44a3a", "NE":"#a83232", "CE":"#8b2020" };
+                              const alignColors = { "LG":"#4a90d9", "NG":"#5ee09a", "CG":"#7bc67b", "LN":"T.gold", "N":"#9a9080", "CN":"T.gold", "LE":"#d44a3a", "NE":"#a83232", "CE":"#8b2020" };
 
                               return (
                                 <div style={{ padding:"16px 22px", borderBottom:`1px solid ${T.border}` }}>
@@ -5039,7 +5039,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     {!isCompact && f.resources && f.resources.length > 0 && (
                       <div style={{ marginTop: 8, display: "flex", gap: 4, flexWrap: "wrap" }}>
                         {f.resources.map((res, ri) => (
-                          <span key={ri} style={{ padding: "2px 8px", background: "rgba(201,168,92,0.08)", border: "1px solid rgba(201,168,92,0.18)", borderRadius: "3px", fontSize: 10, color: T.gold, letterSpacing: "0.5px" }}>{res}</span>
+                          <span key={ri} style={{ padding: "2px 8px", background: "rgba(212,67,58,0.08)", border: "1px solid rgba(212,67,58,0.18)", borderRadius: "3px", fontSize: 10, color: T.gold, letterSpacing: "0.5px" }}>{res}</span>
                         ))}
                       </div>
                     )}
@@ -5082,7 +5082,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       {/* Region header */}
                       <div style={{
                         padding: "12px 18px",
-                        background: `linear-gradient(135deg, ${(ruler?.color || "#c9a85c")}12 0%, transparent 60%)`,
+                        background: `linear-gradient(135deg, ${(ruler?.color || "T.gold")}12 0%, transparent 60%)`,
                         borderBottom: `1px solid ${T.border}`,
                         display: "flex", alignItems: "center", gap: 10,
                       }}>
@@ -5185,7 +5185,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
 
               const factionColor = (fname) => {
                 const f = (data.factions || []).find(f => f.name === fname);
-                return f?.color || "#c9a85c";
+                return f?.color || "T.gold";
               };
 
               /* ── role → icon + color mapping ── */
@@ -5228,7 +5228,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 2 }}>
                           <span style={{ fontSize: 15, fontWeight: 300, color: T.text }}>{n.name}</span>
                           {n.level && <span style={{ fontSize: 10, color: T.textFaint, fontFamily: T.ui }}>Lv{n.level}</span>}
-                          {n.isLeader && <span style={{ fontSize: 9, color: T.gold, border: "1px solid rgba(201,168,92,0.3)", padding: "1px 5px", borderRadius: "2px", letterSpacing: "0.5px" }}>LEADER</span>}
+                          {n.isLeader && <span style={{ fontSize: 9, color: T.gold, border: "1px solid rgba(212,67,58,0.3)", padding: "1px 5px", borderRadius: "2px", letterSpacing: "0.5px" }}>LEADER</span>}
                         </div>
                         <div style={{ fontSize: 12, color: T.textFaint, marginBottom: 6, fontStyle: "italic", fontWeight: 300 }}>{n.role}{n.loc ? ` — ${n.loc}` : ""}</div>
                         <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginBottom: 4 }}>
@@ -5344,7 +5344,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
               if (selectedCity) {
                 // ── CITY DETAIL VIEW ──
                 const c = cities.find(ct => ct.id === selectedCity.id) || selectedCity;
-                const fc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || "#c9a85c"; })();
+                const fc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || "T.gold"; })();
                 const cityNpcs = (data.npcs || []).filter(n => (c.npcs || []).includes(n.id));
                 return (
                   <div style={{ display: "flex", flexDirection: "column", gap: 0, maxWidth: 900 }}>
@@ -5363,7 +5363,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       {townImagesReady && window.TOWN_IMAGES && window.TOWN_IMAGES[c.name] && (
                         <button onClick={() => { setTownView(c.name); setTownSelBldg(null); setTownHovBldg(null); setTownZoom(0); setTownPan({x:0,y:0}); }} style={{
                           display: "flex", alignItems: "center", gap: 6, padding: "8px 14px",
-                          background: "linear-gradient(135deg, rgba(201,168,92,0.15), transparent)", border: `1px solid rgba(201,168,92,0.4)`, borderRadius: "3px", color: T.gold,
+                          background: "linear-gradient(135deg, rgba(212,67,58,0.15), transparent)", border: `1px solid rgba(212,67,58,0.4)`, borderRadius: "3px", color: T.gold,
                           fontFamily: T.ui, fontSize: 10, letterSpacing: "1.5px", textTransform: "uppercase", cursor: "pointer",
                         }}>⬡ Explore Town</button>
                       )}
@@ -5377,13 +5377,13 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
                         <span style={{ fontSize: 22, fontWeight: 400, color: T.text, fontFamily: "'Cinzel', serif", letterSpacing: "0.5px" }}>{c.name}</span>
-                        <span style={{ fontSize: 9, color: c.isCapital ? T.gold : T.textMuted, border: `1px solid ${c.isCapital ? "rgba(201,168,92,0.3)" : "rgba(154,144,128,0.3)"}`, padding: "2px 8px", borderRadius: "2px", letterSpacing: "1px" }}>{(() => { const m = window.TOWN_METADATA?.[c.name]; return m ? (m.isCapital ? "CAPITAL" : m.population >= 4000 ? "CITY" : m.population >= 1500 ? "TOWN" : "VILLAGE") : (c.isCapital ? "CAPITAL" : "SETTLEMENT"); })()}</span>
+                        <span style={{ fontSize: 9, color: c.isCapital ? T.gold : T.textMuted, border: `1px solid ${c.isCapital ? "rgba(212,67,58,0.3)" : "rgba(154,144,128,0.3)"}`, padding: "2px 8px", borderRadius: "2px", letterSpacing: "1px" }}>{(() => { const m = window.TOWN_METADATA?.[c.name]; return m ? (m.isCapital ? "CAPITAL" : m.population >= 4000 ? "CITY" : m.population >= 1500 ? "TOWN" : "VILLAGE") : (c.isCapital ? "CAPITAL" : "SETTLEMENT"); })()}</span>
                       </div>
                       <div style={{ fontSize: 12, color: T.textMuted, marginBottom: 8 }}>{c.region} · {c.faction} · Pop. {c.population}</div>
                       <div style={{ fontSize: 12, color: T.textDim, lineHeight: 1.6 }}>{c.description}</div>
                       {c.features && c.features.length > 0 && (
                         <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 12 }}>
-                          {c.features.map((f, fi) => <span key={fi} style={{ fontSize: 10, color: T.gold, border: "1px solid rgba(201,168,92,0.2)", padding: "3px 9px", borderRadius: "2px" }}>{f}</span>)}
+                          {c.features.map((f, fi) => <span key={fi} style={{ fontSize: 10, color: T.gold, border: "1px solid rgba(212,67,58,0.2)", padding: "3px 9px", borderRadius: "2px" }}>{f}</span>)}
                         </div>
                       )}
                     </div>
@@ -5404,7 +5404,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                         ))}
                       </div>
                       {c.tavern.rumor && (
-                        <div style={{ fontSize: 11, color: T.questGold, fontStyle: "italic", padding: "8px 12px", background: "rgba(232,186,64,0.06)", border: "1px solid rgba(232,186,64,0.15)", borderRadius: "3px" }}>
+                        <div style={{ fontSize: 11, color: T.questGold, fontStyle: "italic", padding: "8px 12px", background: "rgba(212,67,58,0.06)", border: "1px solid rgba(212,67,58,0.15)", borderRadius: "3px" }}>
                           Rumor: "{c.tavern.rumor}"
                         </div>
                       )}
@@ -5491,9 +5491,9 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                           {c.questHooks.map((q, qi) => (
                             <div key={qi} style={{
                               padding: "12px 16px", background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: "4px",
-                              borderLeft: `3px solid #e8ba40`, display: "flex", alignItems: "center", gap: 12,
+                              borderLeft: `3px solid T.gold`, display: "flex", alignItems: "center", gap: 12,
                             }}>
-                              <Scroll size={14} color="#e8ba40" style={{ flexShrink: 0 }} />
+                              <Scroll size={14} color="T.gold" style={{ flexShrink: 0 }} />
                               <span style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.5, fontStyle: "italic" }}>{q}</span>
                             </div>
                           ))}
@@ -5521,7 +5521,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                   )}
                   {sortedRegionEntries.map(([regionName, regionCities]) => {
                     const region = (data.regions || []).find(r => r.name === regionName);
-                    const fc = (() => { const f = (data.factions || []).find(f => f.name === region?.ctrl); return f?.color || "#c9a85c"; })();
+                    const fc = (() => { const f = (data.factions || []).find(f => f.name === region?.ctrl); return f?.color || "T.gold"; })();
                     const isFocused = cityRegionFocus === regionName;
                     const capital = regionCities.find(c => c.isCapital);
                     // Faction object for extra info
@@ -5594,7 +5594,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                         <div style={{ padding: "12px 16px", background: "rgba(0,0,0,0.04)" }}>
                           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                             {regionCities.map(c => {
-                              const cityFc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || "#c9a85c"; })();
+                              const cityFc = (() => { const f = (data.factions || []).find(f => f.name === c.faction); return f?.color || "T.gold"; })();
                               return (
                                 <div key={c.id} onClick={() => { setSel(c); setSelType("city"); setCityRegionFocus(c.region); }} style={{
                                   padding: "14px 18px", background: T.bgCard,
@@ -5703,7 +5703,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     const regionPois = regionGroups[regionName].sort((a,b) => (b.major?1:0) - (a.major?1:0) || (b.danger||0) - (a.danger||0));
                     return (
                       <div key={regionName} style={{ marginBottom:28 }}>
-                        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12, paddingBottom:6, borderBottom:"1px solid rgba(201,168,92,0.2)" }}>
+                        <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12, paddingBottom:6, borderBottom:"1px solid rgba(212,67,58,0.2)" }}>
                           <span style={{ fontSize:11, color:T.gold, letterSpacing:"2px", textTransform:"uppercase", fontFamily:T.ui }}>{regionName}</span>
                           <span style={{ fontSize:10, color:T.textFaint, fontFamily:T.ui }}>({regionPois.length})</span>
                         </div>
@@ -5943,7 +5943,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       )}
                       {sel.resources && sel.resources.length > 0 && (
                         <div style={{ marginTop:8, display:"flex", gap:4, flexWrap:"wrap" }}>
-                          {sel.resources.map((r, ri) => <span key={ri} style={{ padding:"2px 6px", background:"rgba(201,168,92,0.08)", border:"1px solid rgba(201,168,92,0.18)", borderRadius:"3px", fontSize:10, color:T.gold }}>{r}</span>)}
+                          {sel.resources.map((r, ri) => <span key={ri} style={{ padding:"2px 6px", background:"rgba(212,67,58,0.08)", border:"1px solid rgba(212,67,58,0.18)", borderRadius:"3px", fontSize:10, color:T.gold }}>{r}</span>)}
                         </div>
                       )}
                       {(sel.allies?.length > 0 || sel.rivals?.length > 0) && (
@@ -5957,7 +5957,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       <div style={{ display:"flex", alignItems:"center", gap:8, marginBottom:6 }}>
                         <span style={{ fontSize:12, color:T.textMuted }}>Role: <span style={{color:T.textDim}}>{sel.role}</span></span>
                         {sel.level && <span style={{ fontSize:10, color:T.textFaint }}>Lv{sel.level}</span>}
-                        {sel.isLeader && <span style={{ fontSize:9, color:T.gold, border:"1px solid rgba(201,168,92,0.3)", padding:"1px 5px", borderRadius:"2px" }}>LEADER</span>}
+                        {sel.isLeader && <span style={{ fontSize:9, color:T.gold, border:"1px solid rgba(212,67,58,0.3)", padding:"1px 5px", borderRadius:"2px" }}>LEADER</span>}
                       </div>
                       <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Location: <span style={{color:T.textDim}}>{sel.loc}</span></div>
                       {sel.faction && <div style={{ fontSize:12, color:T.textMuted, marginBottom:6 }}>Faction: <span style={{color:T.textDim}}>{sel.faction}</span></div>}
@@ -6124,7 +6124,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                   const p = sel;
                   const dangerLevel = typeof p.danger === "number" ? p.danger : 0;
                   const dangerLabel = ["Safe","Low","Moderate","Dangerous","Deadly","Catastrophic"][dangerLevel] || "Unknown";
-                  const tCol = dangerLevel >= 4 ? "#d04040" : dangerLevel >= 3 ? "#e89430" : dangerLevel >= 2 ? "#c9a85c" : "#6a8a60";
+                  const tCol = dangerLevel >= 4 ? "#d04040" : dangerLevel >= 3 ? "#e89430" : dangerLevel >= 2 ? "T.gold" : "#6a8a60";
                   return (
                   <div style={{ display:"flex", flexDirection:"column", gap:0 }}>
                     {/* Back + View on Map */}
@@ -6167,7 +6167,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     )}
                     {/* Quest Hook */}
                     {p.hook && (
-                      <div style={{ padding:"16px 20px", marginBottom:16, background:"rgba(201,168,92,0.06)", border:"1px solid rgba(201,168,92,0.15)", borderRadius:"4px", borderLeft:"3px solid " + T.gold }}>
+                      <div style={{ padding:"16px 20px", marginBottom:16, background:"rgba(212,67,58,0.06)", border:"1px solid rgba(212,67,58,0.15)", borderRadius:"4px", borderLeft:"3px solid " + T.gold }}>
                         <div style={{ fontSize:10, color:T.gold, letterSpacing:"2px", textTransform:"uppercase", marginBottom:8 }}>Adventure Hook</div>
                         <div style={{ fontSize:12, color:T.textDim, lineHeight:1.7, fontStyle:"italic", fontWeight:300 }}>{p.hook}</div>
                       </div>
@@ -6192,7 +6192,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     )}
                     {/* Reward */}
                     {p.reward && (
-                      <div style={{ padding:"14px 20px", background:"rgba(201,168,92,0.06)", border:"1px solid rgba(201,168,92,0.18)", borderRadius:"4px", marginBottom:16 }}>
+                      <div style={{ padding:"14px 20px", background:"rgba(212,67,58,0.06)", border:"1px solid rgba(212,67,58,0.18)", borderRadius:"4px", marginBottom:16 }}>
                         <div style={{ fontSize:10, color:T.gold, letterSpacing:"1px", marginBottom:4 }}>POTENTIAL REWARD</div>
                         <div style={{ fontSize:13, color:T.text, fontFamily:T.body }}>{p.reward}</div>
                       </div>
@@ -6928,7 +6928,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                           {/* Danger indicator */}
                           {h.danger && isExplored && <><circle cx={h.x + HEX_R * 0.55} cy={h.y - HEX_R * 0.45} r={6} fill="rgba(212,67,58,0.85)" /><text x={h.x + HEX_R * 0.55} y={h.y - HEX_R * 0.45 + 3} textAnchor="middle" fontSize={7} fill="#fff" style={{pointerEvents:"none"}}>!</text></>}
                           {/* Feature indicator */}
-                          {h.feature && isExplored && <><circle cx={h.x - HEX_R * 0.55} cy={h.y - HEX_R * 0.45} r={6} fill="rgba(201,168,92,0.85)" /><text x={h.x - HEX_R * 0.55} y={h.y - HEX_R * 0.45 + 3} textAnchor="middle" fontSize={7} fill="#fff" style={{pointerEvents:"none"}}>★</text></>}
+                          {h.feature && isExplored && <><circle cx={h.x - HEX_R * 0.55} cy={h.y - HEX_R * 0.45} r={6} fill="rgba(212,67,58,0.85)" /><text x={h.x - HEX_R * 0.55} y={h.y - HEX_R * 0.45 + 3} textAnchor="middle" fontSize={7} fill="#fff" style={{pointerEvents:"none"}}>★</text></>}
                           {/* Move cost badge */}
                           {isExplored && h.moveCost > 1 && <><rect x={h.x - 8} y={h.y + 22} width={16} height={10} rx={2} fill="rgba(0,0,0,0.5)" /><text x={h.x} y={h.y + 30} textAnchor="middle" fontSize={6} fill="rgba(255,200,100,0.8)" style={{pointerEvents:"none"}}>{h.moveCost}d</text></>}
                           {/* Safe rest indicator */}
@@ -6942,7 +6942,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     <g transform={`translate(${svgW - 110}, ${svgH - 50})`}>
                       <rect x={0} y={0} width={100} height={45} rx={3} fill="rgba(0,0,0,0.4)" />
                       <circle cx={12} cy={12} r={4} fill="rgba(212,67,58,0.85)" /><text x={20} y={15} fontSize={5.5} fill="rgba(255,255,255,0.5)" style={{fontFamily:"'Cinzel',serif"}}>Danger</text>
-                      <circle cx={12} cy={24} r={4} fill="rgba(201,168,92,0.85)" /><text x={20} y={27} fontSize={5.5} fill="rgba(255,255,255,0.5)" style={{fontFamily:"'Cinzel',serif"}}>Feature</text>
+                      <circle cx={12} cy={24} r={4} fill="rgba(212,67,58,0.85)" /><text x={20} y={27} fontSize={5.5} fill="rgba(255,255,255,0.5)" style={{fontFamily:"'Cinzel',serif"}}>Feature</text>
                       <circle cx={12} cy={36} r={4} fill="rgba(94,224,154,0.6)" /><text x={20} y={39} fontSize={5.5} fill="rgba(255,255,255,0.5)" style={{fontFamily:"'Cinzel',serif"}}>Safe Rest</text>
                     </g>
                   </svg>
@@ -6975,7 +6975,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                         </div>
                       </div>
                       {currentHex.description && <div style={{ fontSize:10, color:T.textDim, fontStyle:"italic", lineHeight:1.5, marginBottom:10, paddingBottom:8, borderBottom:`1px solid ${T.border}` }}>{currentHex.description}</div>}
-                      {currentHex.feature && <div style={{ fontSize:10, color:T.gold, marginBottom:6, padding:"6px 8px", background:"rgba(201,168,92,0.06)", borderRadius:3, border:"1px solid rgba(201,168,92,0.12)" }}>★ Feature: {currentHex.feature}</div>}
+                      {currentHex.feature && <div style={{ fontSize:10, color:T.gold, marginBottom:6, padding:"6px 8px", background:"rgba(212,67,58,0.06)", borderRadius:3, border:"1px solid rgba(212,67,58,0.12)" }}>★ Feature: {currentHex.feature}</div>}
                       {currentHex.danger && (
                         <div style={{ padding:"8px 10px", background:"rgba(212,67,58,0.06)", borderRadius:3, border:"1px solid rgba(212,67,58,0.12)", marginBottom:6 }}>
                           <div style={{ fontSize:10, color:T.crimson, marginBottom:6 }}>⚠ {currentHex.danger} (CR {currentHex.dangerCR})</div>
@@ -6997,7 +6997,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                                 const enc = { id: "enc-hex-" + Date.now(), name: `${currentHex.danger} — Failed Negotiation`, location: `${hexOrigin} → ${hexDest} route`, notes: `Failed negotiate DC ${dc}. Terrain: ${currentHex.terrain}, CR ${currentHex.dangerCR}`, participants: [{ type:"partyAll" }] };
                                 setData(d => ({ ...d, encounters: [...(d.encounters || []), enc], activity: [{ time:"Just now", text:`Encounter: ${currentHex.danger} (failed negotiate)` }, ...(d.activity || [])].slice(0, 20) }));
                               }
-                            }} style={{ padding:"6px 12px", background:"rgba(201,168,92,0.1)", border:`1px solid rgba(201,168,92,0.2)`, borderRadius:3, color:T.gold, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer" }}>
+                            }} style={{ padding:"6px 12px", background:"rgba(212,67,58,0.1)", border:`1px solid rgba(212,67,58,0.2)`, borderRadius:3, color:T.gold, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", cursor:"pointer" }}>
                               ⚖ Negotiate
                             </button>
                             <button onClick={() => {
@@ -7146,7 +7146,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                           </div>
                         </div>
                         {detailHex.feature && (
-                          <div style={{ padding:"10px 12px", background:"rgba(201,168,92,0.06)", border:"1px solid rgba(201,168,92,0.15)", borderRadius:"3px" }}>
+                          <div style={{ padding:"10px 12px", background:"rgba(212,67,58,0.06)", border:"1px solid rgba(212,67,58,0.15)", borderRadius:"3px" }}>
                             <div style={{ fontSize:9, color:T.gold, fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase", marginBottom:4 }}>Feature</div>
                             <div style={{ fontSize:11, color:T.textMuted, textTransform:"capitalize" }}>{detailHex.feature}</div>
                           </div>
@@ -7223,7 +7223,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
             <div style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
               padding: "12px 24px", background: "rgba(32,28,22,0.95)",
-              borderBottom: "1px solid rgba(201,168,92,0.2)", flexShrink: 0,
+              borderBottom: "1px solid rgba(212,67,58,0.2)", flexShrink: 0,
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                 <button onClick={() => { setTownView(null); }} style={{
@@ -7252,7 +7252,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                 }}>+</button>
                 {cityObj && (
                   <button onClick={() => { setTownView(null); setTab("cities"); setSel(cityObj); setSelType("city"); }} style={{
-                    padding: "6px 14px", background: "rgba(201,168,92,0.12)", border: "1px solid rgba(201,168,92,0.35)",
+                    padding: "6px 14px", background: "rgba(212,67,58,0.12)", border: "1px solid rgba(212,67,58,0.35)",
                     borderRadius: "3px", color: T.gold, fontFamily: T.ui, fontSize: 10,
                     letterSpacing: "1.5px", textTransform: "uppercase", cursor: "pointer",
                   }}>City Details</button>
@@ -7284,7 +7284,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       const bh = bldg.h * townCH;
                       const isHov = hovBldg === bi;
                       const isSel = selBldg === bi;
-                      const typeColor = bldg.type === "shop" ? "#c9a85c" : bldg.type === "tavern" ? "#c88040" : bldg.type === "special" ? "#a06848" : bldg.type === "poi" ? "#4a7a90" : "#888";
+                      const typeColor = bldg.type === "shop" ? "T.gold" : bldg.type === "tavern" ? "#c88040" : bldg.type === "special" ? "#a06848" : bldg.type === "poi" ? "#4a7a90" : "#888";
                       return (
                         <div key={bi}
                           style={{
@@ -7322,7 +7322,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                 const bldg = buildings[selBldg];
                 if (!bldg) return null;
                 const bd = getBuildingDetail(bldg);
-                const typeColor = bldg.type === "shop" ? "#c9a85c" : bldg.type === "tavern" ? "#c88040" : bldg.type === "special" ? "#a06848" : bldg.type === "poi" ? "#4a7a90" : "#888";
+                const typeColor = bldg.type === "shop" ? "T.gold" : bldg.type === "tavern" ? "#c88040" : bldg.type === "special" ? "#a06848" : bldg.type === "poi" ? "#4a7a90" : "#888";
                 return (
                   <div style={{
                     width: 320, flexShrink: 0, background: "rgba(32,28,22,0.98)",
@@ -7376,7 +7376,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                           </div>
                         )}
                         {bd.detail.rumor && (
-                          <div style={{ fontSize: 11, color: T.questGold, fontStyle: "italic", padding: "8px 12px", background: "rgba(232,186,64,0.06)", border: "1px solid rgba(232,186,64,0.15)", borderRadius: "3px", lineHeight: 1.5 }}>
+                          <div style={{ fontSize: 11, color: T.questGold, fontStyle: "italic", padding: "8px 12px", background: "rgba(212,67,58,0.06)", border: "1px solid rgba(212,67,58,0.15)", borderRadius: "3px", lineHeight: 1.5 }}>
                             Rumor: "{bd.detail.rumor}"
                           </div>
                         )}

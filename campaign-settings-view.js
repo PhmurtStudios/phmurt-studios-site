@@ -330,7 +330,7 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
                     style={{
                       width: "40px",
                       height: "24px",
-                      background: isEnabled ? T.gold : T.border,
+                      background: isEnabled ? T.crimson : T.border,
                       borderRadius: "12px",
                       cursor: isDisabled ? "not-allowed" : "pointer",
                       display: "flex",
@@ -460,7 +460,7 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
                               style={{
                                 width: "40px",
                                 height: "24px",
-                                background: data.modules[config.key] ? T.gold : T.border,
+                                background: data.modules[config.key] ? T.crimson : T.border,
                                 borderRadius: "12px",
                                 cursor: "pointer",
                                 display: "flex",
@@ -515,7 +515,7 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
                 style={{
                   width: "40px",
                   height: "24px",
-                  background: data.modules[visibility.key] ? T.gold : T.border,
+                  background: data.modules[visibility.key] ? T.crimson : T.border,
                   borderRadius: "12px",
                   cursor: "pointer",
                   display: "flex",
@@ -572,7 +572,7 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
             onClick={handleExport}
             style={{
               padding: "0.75rem 1rem",
-              background: T.gold,
+              background: T.crimson,
               color: T.bg,
               border: "none",
               borderRadius: "4px",
@@ -592,7 +592,7 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
             <button
               style={{
                 padding: "0.75rem 1rem",
-                background: T.gold,
+                background: T.crimson,
                 color: T.bg,
                 border: "none",
                 borderRadius: "4px",

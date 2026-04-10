@@ -76,8 +76,8 @@ const sectionHead = {
 };
 const pillBtn = (active) => ({
   padding: "6px 14px", borderRadius: "20px", cursor: "pointer", fontSize: "12px",
-  fontFamily: T.ui, border: active ? "1px solid " + T.gold : "1px solid " + T.border,
-  backgroundColor: active ? T.gold : "transparent",
+  fontFamily: T.ui, border: active ? "1px solid " + T.crimson : "1px solid " + T.border,
+  backgroundColor: active ? T.crimson : "transparent",
   color: active ? T.bg : T.textMuted, transition: "all 0.2s", whiteSpace: "nowrap"
 });
 const primaryBtn = {

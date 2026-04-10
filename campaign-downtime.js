@@ -1066,7 +1066,7 @@
               alignItems: 'center',
               gap: '6px',
               padding: '8px 16px',
-              backgroundColor: T.gold,
+              backgroundColor: T.crimson,
               color: 'white',
               border: 'none',
               borderRadius: '4px',
@@ -1087,7 +1087,7 @@
               onClick={() => setActiveTab(tab)}
               style={{
                 padding: '10px 20px',
-                backgroundColor: activeTab === tab ? (T.gold) : 'transparent',
+                backgroundColor: activeTab === tab ? (T.crimson) : 'transparent',
                 color: activeTab === tab ? 'white' : (T.text),
                 border: activeTab === tab ? 'none' : '1px solid transparent',
                 borderBottom: activeTab === tab ? 'none' : '2px solid transparent',
@@ -1170,7 +1170,7 @@
                         <div style={{
                           width: `${Math.min(progress, 100)}%`,
                           height: '100%',
-                          backgroundColor: T.gold,
+                          backgroundColor: T.crimson,
                           transition: 'width 0.3s ease'
                         }} />
                       </div>
@@ -1192,7 +1192,7 @@
                         style={{
                           flex: 1,
                           padding: '6px',
-                          backgroundColor: T.gold,
+                          backgroundColor: T.crimson,
                           color: 'white',
                           border: 'none',
                           borderRadius: '3px',
@@ -1719,7 +1719,7 @@
                     style={{
                       flex: 1,
                       padding: '10px',
-                      backgroundColor: selectedCharacter && selectedActivityId ? (T.gold) : (T.bgHover),
+                      backgroundColor: selectedCharacter && selectedActivityId ? (T.crimson) : (T.bgHover),
                       color: T.text,
                       border: 'none',
                       borderRadius: '4px',

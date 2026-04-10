@@ -25,7 +25,7 @@ window.VFX = (() => {
     acid:        { primary: "#76ff03", secondary: "#c6ff00", glow: "rgba(118,255,3,0.4)", particles: ["#76ff03","#c6ff00","#69f0ae","#b9f6ca","#fff"] },
     poison:      { primary: "#4caf50", secondary: "#81c784", glow: "rgba(76,175,80,0.4)", particles: ["#4caf50","#81c784","#a5d6a7","#c8e6c9","#e8f5e9"] },
     necrotic:    { primary: "#7c3aed", secondary: "#9c27b0", glow: "rgba(124,58,237,0.4)", particles: ["#7c3aed","#9c27b0","#ce93d8","#e1bee7","#4a0072"] },
-    radiant:     { primary: "#ffd54f", secondary: "#fff9c4", glow: "rgba(255,213,79,0.5)", particles: ["#ffd54f","#fff9c4","#fff","#ffecb3","#ffe082"] },
+    radiant:     { primary: "#ffd54f", secondary: "#fff9c4", glow: "rgba(212,67,58,0.5)", particles: ["#ffd54f","#fff9c4","#fff","#ffecb3","#ffe082"] },
     force:       { primary: "#b574ff", secondary: "#e1bee7", glow: "rgba(181,116,255,0.4)", particles: ["#b574ff","#e1bee7","#ce93d8","#f3e5f5","#fff"] },
     psychic:     { primary: "#e040fb", secondary: "#f48fb1", glow: "rgba(224,64,251,0.4)", particles: ["#e040fb","#f48fb1","#ce93d8","#f3e5f5","#fff"] },
     thunder:     { primary: "#90caf9", secondary: "#bbdefb", glow: "rgba(144,202,249,0.5)", particles: ["#90caf9","#bbdefb","#e3f2fd","#fff","#64b5f6"] },

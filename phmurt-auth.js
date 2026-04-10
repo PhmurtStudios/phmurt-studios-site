@@ -1273,7 +1273,65 @@ var PhmurtDB = (function () {
           return data;
         });
       });
-    }
+    },
+
+    /* Opens Stripe Customer Portal so user can manage/cancel subscription */
+    manageSubscription: function (returnUrl) {
+      if (!_session) return Promise.reject(new Error('Not signed in.'));
+      if (!_session.isSubscribed) return Promise.reject(new Error('No active subscription.'));
+      // Re-use the checkout endpoint — it auto-redirects to portal for existing subscribers
+      return window.PhmurtDB.startSubscription(returnUrl || window.location.href, 'monthly');
+    },
+
+    /* Check if a feature is available on the user's current tier */
+    isFeatureAvailable: function (featureName) {
+      // Admins/superusers always have access
+      if (_session && (_session.isAdmin || _session.isSuperuser)) return true;
+      // Pro users have access to everything
+      if (_session && _session.isSubscribed) return true;
+      // Free users: check against the free-tier feature list
+      var freeFeatures = [
+        'character-builder', 'character-sheet', 'dice-roller',
+        'basic-campaign', 'learn', 'gallery',
+      ];
+      return freeFeatures.indexOf(featureName) !== -1;
+    },
+
+    /* Returns the full tier config for UI rendering */
+    getTierConfig: function () {
+      return {
+        free: {
+          name: 'Free',
+          maxCharacters: 3,
+          maxCampaigns: 1,
+          features: [
+            'Character Builder (5e & 3.5e)',
+            'Interactive Character Sheets',
+            'Dice Roller',
+            'Learn to Play Guides',
+            'Art Gallery',
+            'Basic Campaign Management',
+          ],
+          locked: [
+            'Unlimited Characters & Campaigns',
+            'Generators (Names, Loot, Encounters, Quests)',
+            'Advanced Campaign Tabs (Heist, Intrigue, Prophecy, Puzzles)',
+            'Downtime & Religion Systems',
+            'Hexcrawl & World Atlas',
+            'Economy & Faction War Engines',
+            'Battle Map & Living World',
+            'Priority Support',
+          ],
+        },
+        pro: {
+          name: 'Phmurt Studios Pro',
+          price: { monthly: '$4.99/mo', yearly: '$49.99/yr', yearlySavings: 'Save $10' },
+          maxCharacters: -1,
+          maxCampaigns: -1,
+          features: ['Everything in Free, plus:', 'Unlimited Characters & Campaigns', 'All Generators', 'All Campaign Systems', 'All World-Building Tools', 'Priority Support'],
+        },
+      };
+    },
   };
 
 })();
@@ -1349,22 +1407,22 @@ window.addEventListener('storage', function (e) {
   var style = document.createElement('style');
   style.textContent = [
     /* Subscription upgrade banner */
-    '.phmurt-upgrade-banner{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(135deg,#1a1510 0%,#2a2015 100%);border-top:2px solid rgba(201,168,76,0.4);padding:18px 24px;z-index:99997;display:flex;align-items:center;justify-content:center;gap:20px;font-family:Spectral,serif;animation:phmurt-slide-up 0.3s ease;flex-wrap:wrap;}',
+    '.phmurt-upgrade-banner{position:fixed;bottom:0;left:0;right:0;background:linear-gradient(135deg,#1a1510 0%,#2a2015 100%);border-top:2px solid rgba(212,67,58,0.4);padding:18px 24px;z-index:99997;display:flex;align-items:center;justify-content:center;gap:20px;font-family:Spectral,serif;animation:phmurt-slide-up 0.3s ease;flex-wrap:wrap;}',
     '.phmurt-upgrade-banner .upgrade-text{color:#f5ede0;font-size:14px;text-align:center;}',
-    '.phmurt-upgrade-banner .upgrade-text strong{color:#c9a84c;}',
+    '.phmurt-upgrade-banner .upgrade-text strong{color:var(--crimson);}',
     '.phmurt-upgrade-btns{display:flex;gap:10px;align-items:center;}',
-    '.phmurt-upgrade-banner .upgrade-btn{padding:10px 20px;background:#c9a84c;color:#1a1510;border:none;font-family:Cinzel,serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;border-radius:4px;font-weight:600;transition:background 0.15s;}',
+    '.phmurt-upgrade-banner .upgrade-btn{padding:10px 20px;background:var(--crimson);color:#1a1510;border:none;font-family:Cinzel,serif;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;border-radius:4px;font-weight:600;transition:background 0.15s;}',
     '.phmurt-upgrade-banner .upgrade-btn:hover{background:#d4b55a;}',
-    '.phmurt-upgrade-banner .upgrade-btn.yearly{background:transparent;border:1.5px solid #c9a84c;color:#c9a84c;}',
-    '.phmurt-upgrade-banner .upgrade-btn.yearly:hover{background:rgba(201,168,76,0.1);}',
+    '.phmurt-upgrade-banner .upgrade-btn.yearly{background:transparent;border:1.5px solid var(--crimson);color:var(--crimson);}',
+    '.phmurt-upgrade-banner .upgrade-btn.yearly:hover{background:rgba(212,67,58,0.1);}',
     '.phmurt-upgrade-banner .upgrade-save{font-size:10px;color:#5ee09a;font-weight:600;letter-spacing:0.5px;}',
     '.phmurt-upgrade-banner .upgrade-close{background:none;border:none;color:#8c7d6e;cursor:pointer;font-size:18px;padding:4px 8px;}',
     '@keyframes phmurt-slide-up{from{transform:translateY(100%)}to{transform:translateY(0)}}',
     '.phmurt-maintenance-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15,12,8,0.97);z-index:99999;display:flex;align-items:center;justify-content:center;text-align:center;font-family:Spectral,serif;color:#f5ede0;}',
-    '.phmurt-maintenance-box{max-width:500px;padding:48px;border:1px solid rgba(201,168,76,0.2);border-radius:12px;background:rgba(30,25,18,0.95);}',
-    '.phmurt-maintenance-box h1{font-family:Cinzel,serif;font-size:24px;color:#c9a84c;margin-bottom:16px;letter-spacing:2px;}',
+    '.phmurt-maintenance-box{max-width:500px;padding:48px;border:1px solid rgba(212,67,58,0.2);border-radius:12px;background:rgba(30,25,18,0.95);}',
+    '.phmurt-maintenance-box h1{font-family:Cinzel,serif;font-size:24px;color:var(--crimson);margin-bottom:16px;letter-spacing:2px;}',
     '.phmurt-maintenance-box p{font-size:15px;line-height:1.7;color:#b8a88a;margin-bottom:12px;}',
-    '.phmurt-maintenance-eta{font-size:13px;color:#c9a84c;margin-top:16px;padding:8px 16px;background:rgba(201,168,76,0.08);border-radius:6px;display:inline-block;}',
+    '.phmurt-maintenance-eta{font-size:13px;color:var(--crimson);margin-top:16px;padding:8px 16px;background:rgba(212,67,58,0.08);border-radius:6px;display:inline-block;}',
     '.phmurt-announce-bar{padding:10px 20px;font-family:Spectral,serif;font-size:13px;text-align:center;position:relative;z-index:9998;display:flex;align-items:center;justify-content:center;gap:12px;}',
     '.phmurt-announce-bar.info{background:#1a3a5c;color:#a8d4ff;border-bottom:1px solid #2a5080;}',
     '.phmurt-announce-bar.warning{background:#3d2e0a;color:#f5d06e;border-bottom:1px solid #5c4a15;}',
@@ -1377,7 +1435,7 @@ window.addEventListener('storage', function (e) {
     '.phmurt-disabled-box{max-width:450px;padding:40px;border:1px solid rgba(88,170,255,0.2);border-radius:12px;background:rgba(30,25,18,0.95);}',
     '.phmurt-disabled-box h1{font-family:Cinzel,serif;font-size:20px;color:#58aaff;margin-bottom:12px;letter-spacing:1px;}',
     '.phmurt-disabled-box p{font-size:14px;line-height:1.6;color:#b8a88a;}',
-    '.phmurt-disabled-box a{color:#c9a84c;text-decoration:none;}',
+    '.phmurt-disabled-box a{color:var(--crimson);text-decoration:none;}',
   ].join('\n');
   document.head.appendChild(style);
 
@@ -1582,8 +1640,8 @@ window.addEventListener('storage', function (e) {
     banner.innerHTML =
       '<div class="upgrade-text"><strong>Phmurt Studios Pro</strong> — ' + msg.replace(/</g, '&lt;') + '</div>' +
       '<div class="phmurt-upgrade-btns">' +
-        '<button class="upgrade-btn" id="phmurt-upgrade-monthly">$5 / month</button>' +
-        '<button class="upgrade-btn yearly" id="phmurt-upgrade-yearly">$50 / year</button>' +
+        '<button class="upgrade-btn" id="phmurt-upgrade-monthly">$4.99 / month</button>' +
+        '<button class="upgrade-btn yearly" id="phmurt-upgrade-yearly">$49.99 / year</button>' +
         '<span class="upgrade-save">Save $10!</span>' +
       '</div>' +
       '<button class="upgrade-close" onclick="this.parentElement.remove()">&times;</button>';
@@ -1604,6 +1662,68 @@ window.addEventListener('storage', function (e) {
     });
   });
 
+  // ── Global Feature Gate ─────────────────────────────────────────
+  // Call window.PhmurtGate(featureName) from any page. Returns true
+  // if the user may proceed; returns false and shows an upgrade
+  // modal if they're on the free tier.  Usage:
+  //   if (!PhmurtGate('generators')) return;
+  // ────────────────────────────────────────────────────────────────
+  window.PhmurtGate = function (featureName) {
+    if (typeof PhmurtDB === 'undefined') return true; // Offline/no-auth fallback
+    if (PhmurtDB.isFeatureAvailable(featureName)) return true;
+
+    // ── Build & show upgrade modal ──────────────────────────────
+    if (document.getElementById('phmurt-gate-modal')) return false; // Already showing
+
+    var tierCfg = PhmurtDB.getTierConfig();
+    var overlay = document.createElement('div');
+    overlay.id = 'phmurt-gate-modal';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:90000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.65);animation:phmurt-fade-in .2s ease';
+
+    var featureLabel = featureName.replace(/-/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
+
+    overlay.innerHTML =
+      '<div style="background:var(--bg-card,#1e1e2e);border:1px solid var(--border-color,#333);border-radius:12px;max-width:440px;width:92%;padding:32px 28px 24px;position:relative;box-shadow:0 8px 32px rgba(0,0,0,.5);text-align:center">' +
+        '<button id="phmurt-gate-close" style="position:absolute;top:12px;right:16px;background:none;border:none;color:var(--text-secondary,#aaa);font-size:22px;cursor:pointer;line-height:1">&times;</button>' +
+        '<div style="font-size:32px;margin-bottom:8px">&#9889;</div>' +
+        '<h2 style="margin:0 0 8px;font-size:1.25rem;color:var(--text-primary,#eee)">Upgrade to Pro</h2>' +
+        '<p style="color:var(--text-secondary,#aaa);margin:0 0 18px;font-size:.95rem"><strong>' + featureLabel + '</strong> is a Pro feature. Unlock it — plus unlimited characters, campaigns, and every generator.</p>' +
+        '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">' +
+          '<button class="phmurt-gate-btn" data-plan="monthly" style="flex:1;min-width:120px;padding:12px 18px;border-radius:8px;border:1px solid var(--accent,#7c3aed);background:transparent;color:var(--accent,#7c3aed);font-weight:600;cursor:pointer;font-size:.95rem">' + tierCfg.pro.price.monthly + '</button>' +
+          '<button class="phmurt-gate-btn" data-plan="yearly" style="flex:1;min-width:120px;padding:12px 18px;border-radius:8px;border:none;background:var(--accent,#7c3aed);color:#fff;font-weight:600;cursor:pointer;font-size:.95rem">' + tierCfg.pro.price.yearly + ' <span style="font-size:.8rem;opacity:.85">(' + tierCfg.pro.price.yearlySavings + ')</span></button>' +
+        '</div>' +
+        '<a href="pricing.html" style="display:inline-block;margin-top:14px;color:var(--text-secondary,#aaa);font-size:.85rem;text-decoration:underline">Compare plans</a>' +
+      '</div>';
+
+    document.body.appendChild(overlay);
+
+    // Close
+    document.getElementById('phmurt-gate-close').addEventListener('click', function () { overlay.remove(); });
+    overlay.addEventListener('click', function (ev) { if (ev.target === overlay) overlay.remove(); });
+
+    // Subscribe buttons
+    overlay.querySelectorAll('.phmurt-gate-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var plan = btn.getAttribute('data-plan');
+        PhmurtDB.startSubscription(null, plan).catch(function (err) {
+          alert('Could not start checkout: ' + (err.message || 'Unknown error'));
+        });
+      });
+    });
+
+    return false;
+  };
+
+  // ── Auto-gate pages with data-phmurt-feature attribute ──────────
+  // Any page can add <body data-phmurt-feature="generators"> and the
+  // gate will fire automatically on load if the user is on free tier.
+  function _autoGatePage() {
+    var feature = document.body && document.body.getAttribute('data-phmurt-feature');
+    if (feature && !window.PhmurtGate(feature)) {
+      // Feature was blocked — the modal is already showing
+    }
+  }
+
   // Wait for DOM and Supabase to be ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
@@ -1614,4 +1734,7 @@ window.addEventListener('storage', function (e) {
     fetchSettingsAndAnnouncements();
     checkSubscriptionSuccess();
   }
+
+  // Auto-gate runs after auth state resolves
+  window.addEventListener('phmurt-auth-change', function () { _autoGatePage(); });
 })();

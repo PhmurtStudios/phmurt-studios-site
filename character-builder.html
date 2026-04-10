@@ -1226,7 +1226,7 @@
                 <button class="cs-save-btn" id="cs35-save-btn" onclick="saveChar35()">Save Character ↑</button>
                 <button class="cs-save-btn" style="background:transparent;color:var(--crimson);border:1px solid var(--crimson-border);" onclick="window.print()">Print / PDF</button>
                 <button class="cs-save-btn" style="background:transparent;color:var(--text-muted);border:1px solid var(--border);" onclick="backToDetails35()">← Edit Details</button>
-                <button class="cs-save-btn" style="background:transparent;color:var(--text-muted);border:1px solid var(--border);" onclick="location.reload()">New Character</button>
+                <button class="cs-save-btn" style="background:transparent;color:var(--text-muted);border:1px solid var(--border);" onclick="startNewCharacter()">New Character</button>
               </div>
               <div id="cs35-save-status" class="cs-save-status"></div>
               <div class="cs-rest-btns">
@@ -1417,22 +1417,36 @@ function _luPrereqStr(clsKey){
 }
 
 function _luPrereqMissingStr(clsKey){
-  var prereq = DND_DATA.multiclassPrereqs && DND_DATA.multiclassPrereqs[clsKey];
-  if(!prereq) return '';
   var abilityNames = DND_DATA.abilityShort || {};
   var missing = [];
-  if(prereq.or){
-    var mainKey = Object.keys(prereq).find(function(p){ return p !== 'or'; });
-    if(totalScore(mainKey) < prereq[mainKey] && totalScore(prereq.or) < 13){
-      missing.push(abilityNames[mainKey] + ' ' + prereq[mainKey] + ' or ' + abilityNames[prereq.or] + ' 13');
-    }
-  } else {
-    Object.keys(prereq).forEach(function(p){
-      if(p !== 'or' && totalScore(p) < prereq[p]){
-        missing.push(abilityNames[p] + ' ' + prereq[p] + ' (have ' + totalScore(p) + ')');
+
+  // Check missing for target class
+  function _checkMissing(key, label){
+    var prereq = DND_DATA.multiclassPrereqs && DND_DATA.multiclassPrereqs[key];
+    if(!prereq) return;
+    if(prereq.or){
+      var mainKey = Object.keys(prereq).find(function(p){ return p !== 'or'; });
+      if(totalScore(mainKey) < prereq[mainKey] && totalScore(prereq.or) < 13){
+        missing.push((label?label+': ':'')+abilityNames[mainKey]+' '+prereq[mainKey]+' or '+abilityNames[prereq.or]+' 13');
       }
-    });
+    } else {
+      Object.keys(prereq).forEach(function(p){
+        if(p !== 'or' && totalScore(p) < prereq[p]){
+          missing.push((label?label+': ':'')+abilityNames[p]+' '+prereq[p]+' (have '+totalScore(p)+')');
+        }
+      });
+    }
   }
+
+  _checkMissing(clsKey, '');
+  // Also check current classes (need to meet their prereqs to multiclass out)
+  ensureClassesArray();
+  C.classes.forEach(function(entry){
+    var clsData = DND_DATA.classes[entry.cls];
+    if(!_meetsClassPrereq(entry.cls)){
+      _checkMissing(entry.cls, clsData ? clsData.name : entry.cls);
+    }
+  });
   return missing.join(', ');
 }
 
@@ -1502,9 +1516,7 @@ function confirmLevelUp(newLevel){
       var featName = window._luState.featChoice;
       luApplyFeatChoices(featName);
       if(featName === 'Tough'){
-        if(!C.toughBonus) C.toughBonus = 0;
-        var tl = totalCharLevel() + 1;
-        C.toughBonus += tl * 2;
+        C.hasTough = true;
       }
       C.asiChoices.push({ level:totalCharLevel()+1, cls:targetCls, feat:featName, featChoiceData: Object.assign({}, window._luState.featChoiceData||{}) });
     } else {
@@ -2750,7 +2762,14 @@ function buildFinalSheet(){
   document.getElementById('cs-ac').textContent=ac;
   document.getElementById('cs-init').textContent=(dexM>=0?'+':'')+dexM;
   document.getElementById('cs-speed').textContent=speed+' ft';
-  document.getElementById('cs-hd').textContent='d'+cls.hitDie;
+  if(isMulticlass()){
+    document.getElementById('cs-hd').textContent = C.classes.map(function(e){
+      var cd = DND_DATA.classes[e.cls];
+      return e.level+'d'+(cd?cd.hitDie:8);
+    }).join(' + ');
+  } else {
+    document.getElementById('cs-hd').textContent='d'+cls.hitDie;
+  }
   document.getElementById('cs-pb').textContent='+'+pb2;
   const percMod=mod(totalScore('wis'))+(allProf.includes('perception')?pb2:0);
   document.getElementById('cs-passive').textContent=10+percMod;
@@ -3535,7 +3554,8 @@ function calcMaxHP(){
       hp += conM;
     }
   });
-  if(C.toughBonus) hp += C.toughBonus;
+  // Tough feat: +2 HP per character level (computed dynamically so it scales with future levels)
+  if(C.hasTough || C.toughBonus) hp += totalCharLevel() * 2;
   return Math.max(1, hp);
 }
 
@@ -4649,31 +4669,55 @@ function classString(){
   }).join(' / ');
 }
 
-// Check multiclass prereqs for a given class
-function canMulticlassInto(clsKey){
+// Check if a single class prereq is met
+function _meetsClassPrereq(clsKey){
   var prereqs = DND_DATA.multiclassPrereqs && DND_DATA.multiclassPrereqs[clsKey];
   if(!prereqs) return true;
-  // Handle OR (fighter: str 13 OR dex 13)
   if(prereqs.or){
     var orAb = prereqs.or;
     var mainAb = Object.keys(prereqs).find(function(k){ return k!=='or'; });
     return totalScore(mainAb) >= 13 || totalScore(orAb) >= 13;
   }
-  // Handle AND (monk: dex 13 AND wis 13; paladin: str 13 AND cha 13; ranger: dex 13 AND wis 13)
   return Object.keys(prereqs).every(function(k){
     return totalScore(k) >= prereqs[k];
   });
 }
 
+// Check multiclass prereqs for a given class (5e PHB p.163)
+// Must meet prereqs of ALL current classes AND the target class
+function canMulticlassInto(clsKey){
+  // Check target class prereqs
+  if(!_meetsClassPrereq(clsKey)) return false;
+  // Check all current class prereqs (must meet them to multiclass OUT)
+  ensureClassesArray();
+  return C.classes.every(function(entry){
+    return _meetsClassPrereq(entry.cls);
+  });
+}
+
+// Get effective spellcasting weight for a class entry, accounting for 1/3 caster subclasses
+function _getSpellcastingWeight(clsKey){
+  var weights = DND_DATA.spellcastingWeight || {};
+  var baseWeight = weights[clsKey];
+  // Check for 1/3 caster subclasses (Eldritch Knight, Arcane Trickster)
+  if(baseWeight === 0 && C.subclasses){
+    var sc = C.subclasses[clsKey];
+    if((clsKey === 'fighter' && sc === 'eldritch-knight') ||
+       (clsKey === 'rogue'   && sc === 'arcane-trickster')){
+      return 1/3;
+    }
+  }
+  return baseWeight;
+}
+
 // Compute multiclass spell slots
 function calcMulticlassSlots(){
   ensureClassesArray();
-  var weights = DND_DATA.spellcastingWeight || {};
   var casterLevel = 0;
   var warlockSlots = null;
 
   C.classes.forEach(function(e){
-    var w = weights[e.cls];
+    var w = _getSpellcastingWeight(e.cls);
     if(w === 'pact'){
       // Warlock pact magic handled separately
       var rawSlots = DND_DATA.spellSlots && DND_DATA.spellSlots.warlock;
@@ -4684,7 +4728,7 @@ function calcMulticlassSlots(){
   });
 
   var table = DND_DATA.multiclassSlotTable || [];
-  var combinedSlots = casterLevel > 0 ? (table[Math.min(casterLevel,20)-1] || null) : null;
+  var combinedSlots = casterLevel > 0 ? (table[Math.min(casterLevel,20)] || null) : null;
 
   return {combined: combinedSlots, warlock: warlockSlots, casterLevel: casterLevel};
 }
@@ -4704,8 +4748,9 @@ function renderLevelUpBody(newLevel){
   var avgHp = Math.floor(hitDie/2)+1;
   var conM = mod(totalScore('con'));
   var conStr = conM >= 0 ? '+'+conM : ''+conM;
-  var pb = DND_DATA.profBonus[newLevel] || 2;
-  var pbOld = DND_DATA.profBonus[C.level] || 2;
+  var totalLvNow = totalCharLevel();
+  var pb = DND_DATA.profBonus[totalLvNow + 1] || 2;
+  var pbOld = DND_DATA.profBonus[totalLvNow] || 2;
   var pbChanged = pb !== pbOld;
   var hasASI = features.some(function(f){ return f.isASI; });
   var nonASI = features.filter(function(f){ return !f.isASI; });
@@ -4713,12 +4758,36 @@ function renderLevelUpBody(newLevel){
   // Spell slot summary for casters
   var spellInfo = '';
   if(cls.spellcastingAbility){
-    var rawSlots = DND_DATA.spellSlots && DND_DATA.spellSlots[C.cls];
-    var newSlots = rawSlots ? (rawSlots[newLevel-1] || null) : null;
+    var newSlots = null;
+    if(isMulticlass() || window._luMulticlassIsNew){
+      // For multiclass characters, preview the combined multiclass slots after this level-up
+      var previewCasterLevel = 0;
+      var previewHasWarlock = false;
+      // Build a preview of classes array with the new level applied
+      var previewClasses = C.classes.map(function(e){ return {cls:e.cls, level:e.level}; });
+      if(window._luMulticlassIsNew){
+        previewClasses.push({cls: window._luMulticlassTarget, level: 1});
+      } else {
+        var target = window._luMulticlassTarget || C.cls;
+        previewClasses.forEach(function(e){
+          if(e.cls === target) e.level = newLevel;
+        });
+      }
+      previewClasses.forEach(function(e){
+        var w = _getSpellcastingWeight(e.cls);
+        if(w === 'pact') previewHasWarlock = true;
+        else if(w > 0) previewCasterLevel += Math.floor(e.level * w);
+      });
+      var table = DND_DATA.multiclassSlotTable || [];
+      newSlots = previewCasterLevel > 0 ? (table[Math.min(previewCasterLevel,20)] || null) : null;
+    } else {
+      var rawSlots = DND_DATA.spellSlots && DND_DATA.spellSlots[C.cls];
+      newSlots = rawSlots ? (rawSlots[newLevel-1] || null) : null;
+    }
     if(newSlots){
       var slotNames = ['1st','2nd','3rd','4th','5th','6th','7th','8th','9th'];
       var slotStr = newSlots.map(function(n,i){ return n + ' ' + slotNames[i]; }).filter(function(s){ return parseInt(s)>0; }).join(', ');
-      spellInfo = '<div style="background:var(--crimson-soft);border:1px solid var(--crimson-border);padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--text-dim);"><strong style="font-family:\'Cinzel\',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--crimson);display:block;margin-bottom:4px;">Spell Slots at Level '+newLevel+'</strong>'+slotStr+'</div>';
+      spellInfo = '<div style="background:var(--crimson-soft);border:1px solid var(--crimson-border);padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--text-dim);"><strong style="font-family:\'Cinzel\',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--crimson);display:block;margin-bottom:4px;">Spell Slots'+(isMulticlass()?' (Multiclass Combined)':'')+' at Level '+(totalCharLevel()+1)+'</strong>'+slotStr+'</div>';
     }
   }
 
@@ -4750,8 +4819,9 @@ function renderLevelUpBody(newLevel){
   html += '<div style="font-size:14px;color:var(--text-dim);margin-bottom:6px;">Roll a d'+hitDie+' or take the average. Your CON modifier <span style="color:var(--crimson);">('+conStr+')</span> is added automatically.</div>';
   html += '<div id="lu-hp-required" style="font-family:\'Cinzel\',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#c97c30;margin-bottom:14px;">&#9650; Choose one to continue</div>';
   html += '<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">';
-  html += '<button onclick="luTakeAverage('+avgHp+','+newLevel+')" id="lu-avg-btn" style="'+hpBtnBase+'">Take Average ('+avgHp+'+CON)</button>';
-  html += '<button onclick="luRollHP('+hitDie+','+newLevel+')" id="lu-roll-btn" style="'+hpBtnBase+'">Roll d'+hitDie+'</button>';
+  var newTotalLevel = totalCharLevel() + 1;
+  html += '<button onclick="luTakeAverage('+avgHp+','+newTotalLevel+')" id="lu-avg-btn" style="'+hpBtnBase+'">Take Average ('+avgHp+'+CON)</button>';
+  html += '<button onclick="luRollHP('+hitDie+','+newTotalLevel+')" id="lu-roll-btn" style="'+hpBtnBase+'">Roll d'+hitDie+'</button>';
   html += '</div>';
   html += '<div id="lu-hp-result" style="margin-top:12px;font-family:\'Cinzel\',serif;font-size:15px;color:var(--text);min-height:22px;"></div>';
   html += '</div>';
@@ -4882,8 +4952,8 @@ function luSetASIMode(mode){
   luCheckConfirm();
 }
 
-function luTakeAverage(avg, newLevel){
-  C.hpRolls[newLevel-1] = avg;
+function luTakeAverage(avg, newTotalLevel){
+  C.hpRolls[newTotalLevel-1] = avg;
   // Highlight chosen, dim unchosen
   var avgBtn  = document.getElementById('lu-avg-btn');
   var rollBtn = document.getElementById('lu-roll-btn');
@@ -4899,9 +4969,9 @@ function luTakeAverage(avg, newLevel){
   luCheckConfirm();
 }
 
-function luRollHP(hitDie, newLevel){
+function luRollHP(hitDie, newTotalLevel){
   var roll = Math.ceil(Math.random()*hitDie);
-  C.hpRolls[newLevel-1] = roll;
+  C.hpRolls[newTotalLevel-1] = roll;
   // Highlight chosen, dim unchosen
   var avgBtn  = document.getElementById('lu-avg-btn');
   var rollBtn = document.getElementById('lu-roll-btn');
@@ -5629,6 +5699,15 @@ function scheduleSave(){
   _saveTimer = setTimeout(()=>{ saveCharacterToDB(); }, 1500);
 }
 
+function startNewCharacter(){
+  // Clear the current character ID so the next save creates a NEW record
+  try { localStorage.removeItem('phmurt_current_char_id'); } catch(e) {}
+  // Clear the local autosave so the page doesn't restore old choices
+  try { localStorage.removeItem('phmurt_builder_5e'); } catch(e) {}
+  try { localStorage.removeItem('phmurt_builder_35e'); } catch(e) {}
+  location.reload();
+}
+
 async function saveCharacterToDB(){
   const status = document.getElementById('cs-save-status');
   if(typeof PhmurtDB==='undefined') return;
@@ -5657,6 +5736,7 @@ async function saveCharacterToDB(){
     hpRolls:          [...(C.hpRolls||[])],
     asiChoices:       [...(C.asiChoices||[])],
     toughBonus:       C.toughBonus||0,
+    hasTough:         C.hasTough||false,
     featData:         C.featData||{},
     classes:          JSON.parse(JSON.stringify(C.classes||[])),
     inventoryItems:   JSON.parse(JSON.stringify(inventoryItems||[])),
@@ -5694,7 +5774,15 @@ async function saveCharacterToDB(){
   } else {
     var errMsg = (r && r.error) ? r.error : 'Unknown error';
     console.error('[CharBuilder] Save failed:', errMsg, r);
-    if(status) status.textContent = 'Save failed: ' + errMsg;
+    if(r && r.limitReached){
+      // Fire the upgrade prompt
+      window.dispatchEvent(new CustomEvent('phmurt-limit-reached', {
+        detail: { message: errMsg, table: 'characters' }
+      }));
+      if(status) status.textContent = 'Character limit reached';
+    } else {
+      if(status) status.textContent = 'Save failed: ' + errMsg;
+    }
     setTimeout(()=>{ if(status) status.textContent=''; }, 5000);
   }
 }
@@ -5805,11 +5893,14 @@ function init(){
     }
     const data=await PhmurtDB.loadCharacter(id);
     if(!data) return;
+    // Clear local autosave so it doesn't conflict with the loaded character
+    try { localStorage.removeItem('phmurt_builder_5e'); } catch(e) {}
+    try { localStorage.removeItem('phmurt_builder_35e'); } catch(e) {}
     // Restore all state fields safely
     const fields=['race','subrace','cls','background','abilities','scoreMethod',
                   'arrayAssigned','selectedSkills','equipChoices','weaponChoices',
                   'selectedCantrips','selectedSpells','details','level',
-                  'levelingMethod','xp','hpRolls','asiChoices','toughBonus','featData','classes','subclasses'];
+                  'levelingMethod','xp','hpRolls','asiChoices','toughBonus','hasTough','featData','classes','subclasses'];
     fields.forEach(k=>{ if(data[k]!==undefined) C[k]=data[k]; });
     // Restore inventory
     if(data.inventoryItems) inventoryItems = data.inventoryItems;
@@ -9681,7 +9772,14 @@ async function saveChar35() {
     setTimeout(function(){if(btn)btn.textContent='Save Character ↑';},2000);
   } else {
     if (btn) { btn.textContent='Save Character ↑'; btn.disabled=false; }
-    if (status) status.textContent=(r&&r.error)||'Save failed.';
+    if (r && r.limitReached) {
+      window.dispatchEvent(new CustomEvent('phmurt-limit-reached', {
+        detail: { message: (r&&r.error)||'Character limit reached', table: 'characters' }
+      }));
+      if (status) status.textContent='Character limit reached';
+    } else {
+      if (status) status.textContent=(r&&r.error)||'Save failed.';
+    }
   }
 }
 
