@@ -140,6 +140,7 @@ var PhmurtDB = (function () {
             var result = {
               blocked: true,
               message: 'You\'ve reached the maximum of ' + maxCount + ' ' + typeLabel + ' on the free plan. Upgrade to Phmurt Studios Pro for unlimited ' + typeLabel + '!',
+              table: table,
               limit: maxCount,
               current: current
             };
@@ -1911,9 +1912,18 @@ window.addEventListener('storage', function (e) {
   // ── Inline checkout: replaces upgrade modal body with password form ──
   function _inlineCheckout(overlay, bodyEl, plan) {
     var sb = _sb();
-    if (!sb) { window.location.href = 'pricing.html'; return; }
-    var sess = PhmurtDB.getSession();
-    if (!sess || !sess.email) { window.location.href = 'pricing.html'; return; }
+    var sess = PhmurtDB ? PhmurtDB.getSession() : null;
+
+    // If Supabase isn't available or user isn't fully signed in, go to pricing page
+    if (!sb || !sess || !sess.email) {
+      window.location.href = 'pricing.html' + (plan ? '?plan=' + plan : '');
+      return;
+    }
+
+    // Safety timeout: if checkout flow hangs for more than 8 seconds, redirect to pricing
+    var _checkoutTimeout = setTimeout(function () {
+      window.location.href = 'pricing.html' + (plan ? '?plan=' + plan : '');
+    }, 8000);
 
     // Check if we already have a JWT — skip password if so
     sb.auth.getSession().then(function (r) {
@@ -1923,9 +1933,12 @@ window.addEventListener('storage', function (e) {
         bodyEl.innerHTML =
           '<div class="upgrade-icon" style="font-size:24px;">&#9203;</div>' +
           '<h2 class="upgrade-title">Redirecting to Checkout…</h2>';
-        return _doStripeCheckout(token, plan, overlay);
+        return _doStripeCheckout(token, plan, overlay).then(function () {
+          clearTimeout(_checkoutTimeout);
+        });
       }
-      // No JWT — show inline password form
+      // No JWT — show inline password form (user interaction clears the timeout)
+      clearTimeout(_checkoutTimeout);
       bodyEl.innerHTML =
         '<button class="upgrade-close" onclick="this.closest(\'.phmurt-upgrade-overlay\').remove()">&times;</button>' +
         '<div class="upgrade-icon">&#128274;</div>' +
@@ -2017,12 +2030,9 @@ window.addEventListener('storage', function (e) {
       pwInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSubmit(); });
       setTimeout(function () { pwInput.focus(); }, 100);
     }).catch(function (err) {
-      // Session check failed — show error and allow retry
-      bodyEl.innerHTML =
-        '<button class="upgrade-close" onclick="this.closest(\'.phmurt-upgrade-overlay\').remove()">&times;</button>' +
-        '<div class="upgrade-icon">&#9888;</div>' +
-        '<h2 class="upgrade-title">Connection Error</h2>' +
-        '<p class="upgrade-text">Could not verify your session. Please try again or visit the <a href="pricing.html" style="color:#d4433a;">pricing page</a> to subscribe.</p>';
+      clearTimeout(_checkoutTimeout);
+      // Session check or checkout failed — redirect to pricing page
+      window.location.href = 'pricing.html' + (plan ? '?plan=' + plan : '');
     });
   }
 

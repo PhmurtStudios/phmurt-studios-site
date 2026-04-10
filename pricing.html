@@ -384,6 +384,12 @@
       }
     }
 
+    /* ── Auto-select plan from query param (e.g. ?plan=yearly) ─────── */
+    try {
+      var urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('plan') === 'yearly') { yearly = true; updatePricing(); }
+    } catch (e) { /* URLSearchParams not supported — ignore */ }
+
     sw.addEventListener('click', function () { yearly = !yearly; updatePricing(); });
     sw.addEventListener('keydown', function (e) {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); yearly = !yearly; updatePricing(); }
@@ -431,6 +437,27 @@
     window.addEventListener('phmurt-auth-change', updateForAuth);
     /* Run once in case auth already resolved */
     setTimeout(updateForAuth, 500);
+
+    /* ── Auto-trigger checkout if user arrived from upgrade modal ──── */
+    try {
+      var _autoCheckout = new URLSearchParams(window.location.search).get('plan');
+      if (_autoCheckout === 'monthly' || _autoCheckout === 'yearly') {
+        // Wait for auth to be ready, then auto-trigger checkout
+        var _autoTriggered = false;
+        function _tryAutoCheckout() {
+          if (_autoTriggered) return;
+          if (typeof PhmurtDB === 'undefined') return;
+          var s = PhmurtDB.getSession();
+          if (!s || !s.userId) return; // Not signed in yet — wait
+          _autoTriggered = true;
+          // Clean the URL so refreshing doesn't re-trigger
+          try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
+          ctaEl.click();
+        }
+        window.addEventListener('phmurt-auth-change', _tryAutoCheckout);
+        setTimeout(_tryAutoCheckout, 1000);
+      }
+    } catch (e) { /* ignore */ }
 
     /* ── FAQ accordion ────────────────────────────────────────────── */
     document.querySelectorAll('.faq-q').forEach(function (q) {
