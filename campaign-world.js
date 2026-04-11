@@ -2282,7 +2282,11 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
             const updated = ensureDataConsistency(mutated);
             // Save living-world engine state (relations, wars, treaties) to campaign data
             const engineState = engine.getSerializedState();
-            const withEngineState = { ...updated, _lwEngineState: engineState };
+            let withEngineState = { ...updated, _lwEngineState: engineState };
+            // Reconcile kingdom territories with world atlas control changes
+            if (window.reconcileKingdomTerritories) {
+              withEngineState = window.reconcileKingdomTerritories(withEngineState);
+            }
             engine.setData(withEngineState);
             return withEngineState;
           } catch (err) {
@@ -3744,16 +3748,38 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     const kingdoms = data.kingdoms || (data.kingdom ? [data.kingdom] : []);
                     return kingdoms.map(k => {
                       const kingdomTerritories = k.atlasRegions || [];
+                      if (kingdomTerritories.length === 0) return null;
+                      const kingdomColor = k.banner?.fg || "#d4af37";
+                      const kingdomBg = k.banner?.bg || "#1a2e20";
+                      // Compute centroid of all kingdom territories for the kingdom label
+                      let cx = 0, cy = 0, count = 0;
+                      kingdomTerritories.forEach(regionName => {
+                        const t = atlasTerritories.find(tt => tt.name === regionName);
+                        if (t && t.labelX) { cx += t.labelX; cy += t.labelY; count++; }
+                      });
+                      if (count > 0) { cx = cx / count; cy = cy / count; }
                       return (
-                        <g key={`kingdom-overlay-${k.id}`} clipPath="url(#atlasLandClip)" opacity={0.15} pointerEvents="none">
+                        <g key={`kingdom-overlay-${k.id}`} clipPath="url(#atlasLandClip)" style={{cursor:"pointer"}}
+                          onClick={(e) => { e.stopPropagation(); if (onNav) onNav("kingdom"); }}>
                           {kingdomTerritories.map(regionName => {
                             const territory = atlasTerritories.find(t => t.name === regionName);
                             if (!territory) return null;
-                            const kingdomColor = k.banner?.bg || "#d4af37";
                             return (
-                              <path key={`kingdom-terr-${k.id}-${regionName}`} d={territory.path} fill={kingdomColor} stroke={kingdomColor} strokeWidth="1.5" strokeOpacity="0.4" fillOpacity="0.08"/>
+                              <g key={`kingdom-terr-${k.id}-${regionName}`}>
+                                <path d={territory.path} fill={kingdomColor} fillOpacity="0.1" stroke="none"/>
+                                <path d={territory.path} fill="none" stroke={kingdomColor} strokeWidth="3" strokeOpacity="0.5" strokeDasharray="12,6" strokeLinejoin="round"/>
+                              </g>
                             );
                           })}
+                          {/* Kingdom banner label at centroid */}
+                          {count > 0 && mapZoom < 1.5 && (
+                            <g>
+                              <rect x={cx - 80} y={cy - 16} width="160" height="28" rx="2" fill={kingdomBg} fillOpacity="0.85" stroke={kingdomColor} strokeWidth="1" strokeOpacity="0.6"/>
+                              <text x={cx} y={cy + 4} textAnchor="middle" fill={kingdomColor} fontFamily="'Spectral', serif" fontSize="16" fontWeight="bold" letterSpacing="1.5" style={{pointerEvents:"none"}}>
+                                {k.name}
+                              </text>
+                            </g>
+                          )}
                         </g>
                       );
                     });
@@ -3802,6 +3828,75 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                           )}
                         </g>
                       ))}
+                    </g>
+                  );
+                })()}
+
+                {/* ═══ LAYER 3.8: Kingdom Army Markers ═══ */}
+                {mapZoom < 2.0 && (() => {
+                  const kingdoms = data.kingdoms || (data.kingdom ? [data.kingdom] : []);
+                  const armyMarkers = [];
+                  kingdoms.forEach(k => {
+                    const armies = k.armies || {};
+                    Object.entries(armies).forEach(([armyId, army]) => {
+                      if (!army.location) return;
+                      // Try to position army: use mapX/mapY if set, otherwise find the region on the atlas
+                      let ax = 0, ay = 0, hasPos = false;
+                      if (army.location.mapX && army.location.mapY) {
+                        ax = army.location.mapX * MAP_W;
+                        ay = army.location.mapY * MAP_H;
+                        hasPos = true;
+                      } else if (army.location.region) {
+                        const regionTerritory = atlasTerritories.find(t => t.name === army.location.region);
+                        if (regionTerritory) {
+                          ax = (regionTerritory.labelX || 0) - 20;
+                          ay = (regionTerritory.labelY || 0) + 30;
+                          hasPos = true;
+                        }
+                      }
+                      if (!hasPos) return;
+                      const unitCount = Object.values(army.units || {}).reduce((s, n) => s + n, 0);
+                      armyMarkers.push({ id: armyId, army, kingdom: k, x: ax, y: ay, unitCount });
+                    });
+                  });
+                  if (armyMarkers.length === 0) return null;
+                  return (
+                    <g clipPath="url(#atlasLandClip)">
+                      {armyMarkers.map(m => {
+                        const color = m.kingdom.banner?.fg || "#d4af37";
+                        const bgColor = m.kingdom.banner?.bg || "#1a1a2e";
+                        const isMarching = m.army.status === "marching";
+                        return (
+                          <g key={`army-${m.id}`}>
+                            {/* Army banner/shield icon */}
+                            <rect x={m.x - 10} y={m.y - 12} width="20" height="24" rx="2" fill={bgColor} stroke={color} strokeWidth="1.5" opacity="0.9"/>
+                            <text x={m.x} y={m.y + 4} textAnchor="middle" fill={color} fontFamily="'Spectral', serif" fontSize="14" fontWeight="bold" style={{pointerEvents:"none"}}>
+                              {isMarching ? "⚔" : "⛨"}
+                            </text>
+                            {/* Unit count badge */}
+                            <circle cx={m.x + 10} cy={m.y - 12} r="8" fill={color} opacity="0.9"/>
+                            <text x={m.x + 10} y={m.y - 9} textAnchor="middle" fill={bgColor} fontFamily="sans-serif" fontSize="8" fontWeight="bold" style={{pointerEvents:"none"}}>
+                              {m.unitCount}
+                            </text>
+                            {/* Army name label */}
+                            {mapZoom < 1.2 && (
+                              <text x={m.x} y={m.y + 22} textAnchor="middle" fill={color} fontFamily="'Spectral', serif" fontSize="9" opacity="0.7" style={{pointerEvents:"none"}}>
+                                {m.army.name}
+                              </text>
+                            )}
+                            {/* March path indicator */}
+                            {isMarching && m.army.targetLocation && m.army.targetLocation.region && (() => {
+                              const target = atlasTerritories.find(t => t.name === m.army.targetLocation.region);
+                              if (!target) return null;
+                              const tx = target.labelX || 0;
+                              const ty = target.labelY || 0;
+                              return (
+                                <line x1={m.x} y1={m.y} x2={tx} y2={ty} stroke={color} strokeWidth="1.5" strokeDasharray="8,6" opacity="0.4"/>
+                              );
+                            })()}
+                          </g>
+                        );
+                      })}
                     </g>
                   );
                 })()}
