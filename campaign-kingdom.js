@@ -2822,43 +2822,48 @@ function getBannerSVG(cfg) {
     var atlasProvinces = (customAtlas && customAtlas.provinces) || CM.ATLAS_PROVINCES || [];
     var atlasLandPath = (customAtlas && customAtlas.landPath) || CM.ATLAS_LAND_PATH || "";
     var atlasIslands = (customAtlas && customAtlas.islands) || CM.ATLAS_ISLANDS || [];
+    var atlasWaterBodies = (customAtlas && customAtlas.waterBodies) || CM.ATLAS_WATER_BODIES || [];
+    var atlasRivers = (customAtlas && customAtlas.rivers) || CM.ATLAS_RIVERS || [];
+    var atlasMountainRanges = (customAtlas && customAtlas.mountainRanges) || CM.ATLAS_MOUNTAIN_RANGES || [];
     var factions = (data && data.factions) || [];
     var cities = (data && data.cities) || [];
     var dataRegions = (data && data.regions) || [];
+    var atlasMapSeed = data && data.atlasMapSeed;
 
-    // Show all cities when a region is selected (cities span the whole world)
+    // Show all cities when a region is selected
     var cityOptions = startRegion ? cities : [];
 
-    // Get faction color for each province
+    // Get faction color for each province (matches world atlas logic)
     var getProvinceFaction = function(prov) {
       var regionNodes = dataRegions.filter(function(r) { return r.atlasProvinceId === prov.id; });
-      var ctrl = null;
+      var capitalNode = null;
       for (var ri = 0; ri < regionNodes.length; ri++) {
-        if (regionNodes[ri].ctrl) { ctrl = regionNodes[ri].ctrl; break; }
+        if (regionNodes[ri].type === "kingdom" || regionNodes[ri].type === "capital" || regionNodes[ri].type === "city") { capitalNode = regionNodes[ri]; break; }
+      }
+      var ctrl = capitalNode ? capitalNode.ctrl : null;
+      if (!ctrl) {
+        for (var rj = 0; rj < regionNodes.length; rj++) { if (regionNodes[rj].ctrl) { ctrl = regionNodes[rj].ctrl; break; } }
       }
       if (!ctrl) return null;
       return factions.find(function(f) { return f.name === ctrl; });
     };
 
-    // Build mini atlas SVG
     var MW = 6000, MH = 4500;
-
-    // Selected province data
     var selectedProv = atlasProvinces.find(function(p) { return p.id === startRegion || p.name === startRegion; });
     var bannerFg = banner.fg || "#c9a032";
     var bannerBg = banner.bg || "#1a2e20";
 
-    return React.createElement("div", { style: { maxWidth:"780px", margin:"30px auto" } },
+    return React.createElement("div", { style: { maxWidth:"860px", margin:"30px auto" } },
       React.createElement("div", { style: { textAlign:"center", marginBottom:"20px" } },
         React.createElement("div", { style: { fontSize:"10px", color:T.gold, fontFamily:T.ui, letterSpacing:"3px", textTransform:"uppercase", marginBottom:"6px", opacity:0.5 } }, "Step 3 of 3"),
         React.createElement("div", { style: { fontSize:"22px", fontWeight:"bold", color:T.gold, fontFamily:T.heading, letterSpacing:"2px" } }, "Claim Your Domain")
       ),
 
-      // Mini Atlas Map
-      React.createElement("div", { style: Object.assign({}, S.card, { padding:"0", overflow:"hidden", position:"relative" }) },
+      // Atlas Map — 1:1 match with World Atlas
+      React.createElement("div", { style: Object.assign({}, S.card, { padding:"0", overflow:"hidden", position:"relative", borderRadius:"4px" }) },
         // Instruction overlay
-        !startRegion && React.createElement("div", { style: { position:"absolute", top:"12px", left:"50%", transform:"translateX(-50%)", zIndex:5, background:T.bgCard+"ee", border:"1px solid "+T.gold+"44", borderRadius:"2px", padding:"6px 16px", fontSize:"11px", color:T.gold, fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase", pointerEvents:"none", whiteSpace:"nowrap" } }, "Click a region to claim it"),
-        // Selected region indicator
+        !startRegion && React.createElement("div", { style: { position:"absolute", top:"12px", left:"50%", transform:"translateX(-50%)", zIndex:5, background:"rgba(30,28,24,0.92)", border:"1px solid "+T.gold+"44", borderRadius:"2px", padding:"6px 16px", fontSize:"11px", color:T.gold, fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase", pointerEvents:"none", whiteSpace:"nowrap" } }, "Click a region to claim it"),
+        // Selected region badge
         selectedProv && React.createElement("div", { style: { position:"absolute", top:"12px", left:"12px", zIndex:5, background:bannerBg+"ee", border:"1px solid "+bannerFg+"66", borderRadius:"2px", padding:"6px 14px", display:"flex", alignItems:"center", gap:"8px" } },
           React.createElement("div", { style: { width:"14px", height:"14px", borderRadius:"2px", background:bannerFg } }),
           React.createElement("span", { style: { fontSize:"12px", color:bannerFg, fontFamily:T.heading, letterSpacing:"0.5px", fontWeight:"bold" } }, selectedProv.name)
@@ -2866,39 +2871,92 @@ function getBannerSVG(cfg) {
 
         React.createElement("svg", {
           viewBox: "0 0 " + MW + " " + MH,
-          style: { width:"100%", height:"auto", display:"block", background:"#2a3040", cursor:"pointer" },
+          style: { width:"100%", height:"auto", display:"block", cursor:"pointer" },
           xmlns: "http://www.w3.org/2000/svg"
         },
-          // Defs — land clip path
+          // Defs — gradients, patterns, clip path (matching world atlas)
           React.createElement("defs", null,
-            React.createElement("clipPath", { id: "miniLandClip" },
+            React.createElement("clipPath", { id: "wizLandClip" },
               React.createElement("path", { d: atlasLandPath }),
               atlasIslands.map(function(isle, idx) {
-                return React.createElement("path", { key: "isle-" + idx, d: isle.path });
+                return React.createElement("path", { key: "wc-" + idx, d: isle.path });
+              })
+            ),
+            React.createElement("radialGradient", { id: "wizLandFill", cx: "48%", cy: "42%", r: "78%" },
+              React.createElement("stop", { offset: "0%", stopColor: "#e6dcc0" }),
+              React.createElement("stop", { offset: "55%", stopColor: "#d8ca9f" }),
+              React.createElement("stop", { offset: "100%", stopColor: "#cbb88a" })
+            ),
+            React.createElement("linearGradient", { id: "wizSeaFill", x1: "0%", y1: "0%", x2: "100%", y2: "100%" },
+              React.createElement("stop", { offset: "0%", stopColor: "#8aa9a2" }),
+              React.createElement("stop", { offset: "48%", stopColor: "#92b0a8" }),
+              React.createElement("stop", { offset: "100%", stopColor: "#7d9b94" })
+            ),
+            React.createElement("pattern", { id: "wizWaterPat", x: 0, y: 0, width: 80, height: 80, patternUnits: "userSpaceOnUse" },
+              React.createElement("path", { d: "M0,40 Q20,35 40,40 Q60,45 80,40", stroke: "#6d8f89", strokeWidth: "0.45", fill: "none", opacity: "0.14" }),
+              React.createElement("path", { d: "M0,55 Q20,50 40,55 Q60,60 80,55", stroke: "#6d8f89", strokeWidth: "0.28", fill: "none", opacity: "0.09" })
+            )
+          ),
+
+          // Ocean
+          React.createElement("rect", { x: 0, y: 0, width: MW, height: MH, fill: "url(#wizSeaFill)" }),
+          React.createElement("rect", { x: 0, y: 0, width: MW, height: MH, fill: "url(#wizWaterPat)", opacity: "0.22" }),
+
+          // Python atlas image background (if exists)
+          atlasMapSeed && React.createElement("image", {
+            href: "atlas-maps/atlas-" + atlasMapSeed + ".webp",
+            x: 0, y: 0, width: MW, height: MH,
+            preserveAspectRatio: "none", style: { pointerEvents: "none", imageRendering: "auto" }
+          }),
+
+          // JS atlas: land mass (only when no image atlas)
+          !atlasMapSeed && React.createElement("g", null,
+            // Land shadow
+            React.createElement("path", { d: atlasLandPath, fill: "rgba(218,204,168,0.22)", stroke: "#6a9088", strokeWidth: "14", opacity: "0.55", strokeLinejoin: "round" }),
+            // Land fill
+            React.createElement("path", { d: atlasLandPath, fill: "url(#wizLandFill)", stroke: "#5a7a73", strokeWidth: "3.2", strokeLinejoin: "round" }),
+            // Islands
+            atlasIslands.map(function(isle, idx) {
+              return React.createElement("g", { key: "wi-" + idx },
+                React.createElement("path", { d: isle.path, fill: isle.fill || "#d4c9a2", opacity: isle.opacity || 0.96, stroke: "#5a7a73", strokeWidth: "2.4", strokeLinejoin: "round" })
+              );
+            }),
+            // Water bodies (lakes)
+            React.createElement("g", { clipPath: "url(#wizLandClip)" },
+              atlasWaterBodies.map(function(body, idx) {
+                return body.shape === "ellipse"
+                  ? React.createElement("ellipse", { key: "wb-" + idx, cx: body.cx, cy: body.cy, rx: body.rx, ry: body.ry, fill: "#8eb4ac", opacity: "0.94", stroke: "#5f8a82", strokeWidth: "2" })
+                  : React.createElement("path", { key: "wb-" + idx, d: body.d, fill: "#8eb4ac", opacity: "0.94", stroke: "#5f8a82", strokeWidth: "2" });
+              }),
+              // Rivers
+              atlasRivers.map(function(riverPath, idx) {
+                return React.createElement("path", { key: "wr-" + idx, d: riverPath, stroke: "#5a7d76", strokeWidth: idx < 3 ? 3.2 : 2, fill: "none", opacity: idx < 3 ? 0.78 : 0.55, strokeLinecap: "round", strokeLinejoin: "round" });
+              })
+            ),
+            // Mountain ridges
+            React.createElement("g", { clipPath: "url(#wizLandClip)" },
+              atlasMountainRanges.map(function(range) {
+                return React.createElement("g", { key: "wmr-" + (range.id || Math.random()) },
+                  React.createElement("path", { d: range.ridge, fill: "none", stroke: "#9a8b62", strokeWidth: "8", opacity: "0.11", strokeLinecap: "round", strokeLinejoin: "round" }),
+                  React.createElement("path", { d: range.ridge, fill: "none", stroke: "#f2ead4", strokeWidth: "1.8", opacity: "0.14", strokeLinecap: "round", strokeLinejoin: "round" })
+                );
               })
             )
           ),
-          // Ocean background
-          React.createElement("rect", { x: 0, y: 0, width: MW, height: MH, fill: "#2a3040" }),
-          // Land mass fill
-          React.createElement("g", { clipPath: "url(#miniLandClip)" },
-            React.createElement("path", { d: atlasLandPath, fill: "#3a3a2a", stroke: "none" }),
-            atlasIslands.map(function(isle, idx) {
-              return React.createElement("path", { key: "land-isle-" + idx, d: isle.path, fill: "#3a3a2a", stroke: "none" });
-            })
-          ),
-          // Province territories — clickable
-          React.createElement("g", { clipPath: "url(#miniLandClip)" },
+
+          // Territory provinces — clickable (renders over both image and JS atlas)
+          React.createElement("g", { clipPath: "url(#wizLandClip)" },
             atlasProvinces.map(function(prov) {
               var isSelected = startRegion === prov.id || startRegion === prov.name;
               var isHovered = hoveredProvince === prov.id;
               var provFaction = getProvinceFaction(prov);
               var provColor = provFaction ? provFaction.color : (prov.fill || "#d6c999");
+              // Match exact world atlas rendering
               var fillColor = isSelected ? bannerFg : provColor;
-              var fillOpacity = isSelected ? 0.35 : (isHovered ? 0.25 : 0.12);
-              var strokeColor = isSelected ? bannerFg : (isHovered ? "#fff" : provColor);
-              var strokeOpacity = isSelected ? 0.8 : (isHovered ? 0.6 : 0.3);
-              var strokeWidth = isSelected ? 4 : (isHovered ? 3 : 2);
+              var fillOpacity = isSelected ? 0.3 : (isHovered ? 0.22 : 0.14);
+              var strokeColor = isSelected ? bannerFg : (isHovered ? "#a89870" : "rgba(180,165,130,0.5)");
+              var strokeOpacity = isSelected ? 0.8 : (isHovered ? 0.6 : 0.4);
+              var strokeWidth = isSelected ? 4 : (isHovered ? 2.8 : 1.8);
 
               return React.createElement("g", {
                 key: "prov-" + prov.id,
@@ -2906,38 +2964,42 @@ function getBannerSVG(cfg) {
                 onClick: function(e) {
                   e.stopPropagation();
                   var provKey = prov.name || prov.id;
-                  if (startRegion === provKey) {
-                    setStartRegion("");
-                    setCapitalCity("");
-                  } else {
-                    setStartRegion(provKey);
-                    setCapitalCity("");
-                  }
+                  if (startRegion === provKey) { setStartRegion(""); setCapitalCity(""); }
+                  else { setStartRegion(provKey); setCapitalCity(""); }
                 },
                 onMouseEnter: function() { setHoveredProvince(prov.id); },
                 onMouseLeave: function() { setHoveredProvince(null); }
               },
-                React.createElement("path", { d: prov.path, fill: fillColor, fillOpacity: fillOpacity, stroke: "none" }),
-                React.createElement("path", { d: prov.path, fill: "none", stroke: strokeColor, strokeWidth: strokeWidth, strokeOpacity: strokeOpacity, strokeLinejoin: "round" })
+                // Territory fill
+                React.createElement("path", { d: prov.path, fill: fillColor, fillOpacity: fillOpacity, stroke: "none", fillRule: "nonzero" }),
+                // Territory border
+                React.createElement("path", { d: prov.path, fill: "none", stroke: strokeColor, strokeWidth: strokeWidth, strokeOpacity: strokeOpacity, strokeLinejoin: "round" }),
+                // Selected territory: extra glow border
+                isSelected && React.createElement("path", { d: prov.path, fill: "none", stroke: bannerFg, strokeWidth: 6, strokeOpacity: 0.3, strokeLinejoin: "round", strokeDasharray: "16,8" })
               );
             })
           ),
-          // Hovered province tooltip (province name near cursor)
-          hoveredProvince && !startRegion && atlasProvinces.filter(function(p) { return p.id === hoveredProvince; }).map(function(p) {
-            return React.createElement("text", {
-              key: "hover-" + p.id, x: p.labelX, y: p.labelY,
-              textAnchor: "middle", fill: "#fff", fontFamily: "'Spectral', serif",
-              fontSize: "120", fontWeight: "bold", opacity: 0.7,
-              style: { pointerEvents: "none", textShadow: "0 2px 8px rgba(0,0,0,0.8)" }
-            }, p.name);
-          }),
-          // Selected province label
-          selectedProv && React.createElement("text", {
-            x: selectedProv.labelX, y: selectedProv.labelY,
-            textAnchor: "middle", fill: bannerFg, fontFamily: "'Spectral', serif",
-            fontSize: "130", fontWeight: "bold", opacity: 0.9,
-            style: { pointerEvents: "none" }
-          }, name)
+
+          // Territory labels — matching world atlas Cinzel font
+          atlasProvinces.map(function(prov) {
+            var isSelected = startRegion === prov.id || startRegion === prov.name;
+            var isHovered = hoveredProvince === prov.id;
+            if (!prov.labelX) return null;
+            var provFaction = getProvinceFaction(prov);
+            var displayName = provFaction ? provFaction.name : (prov.name || "");
+            var fillColor = isSelected ? bannerFg : (isHovered ? "#4a3d28" : "#5a4f38");
+            var textOpacity = isSelected ? 0.95 : (isHovered ? 0.9 : 0.82);
+            return React.createElement("g", { key: "lbl-" + prov.id, style: { pointerEvents: "none" } },
+              React.createElement("text", {
+                x: prov.labelX, y: prov.labelY,
+                textAnchor: "middle", fill: fillColor,
+                stroke: "rgba(252,248,236,0.55)", strokeWidth: "3", paintOrder: "stroke",
+                fontFamily: "'Cinzel', serif", fontSize: "72", fontWeight: "700",
+                letterSpacing: "4", opacity: textOpacity,
+                style: { textTransform: "uppercase" }
+              }, isSelected ? name : displayName)
+            );
+          })
         )
       ),
 
