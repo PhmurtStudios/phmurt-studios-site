@@ -973,14 +973,19 @@ function getBannerSVG(cfg) {
 
 
 
-  // ── Castle Watermark SVG Generator ─────────────────────────────────────
+  // ── Castle Watermark SVG Generator (3 variants: small, medium, large) ──
+  // All elements use a single solid fill color + one opacity for a clean silhouette.
+  // size: 'small' (watchtower), 'medium' (keep+towers), 'large' (full fortress)
   function getCastleSVG(opts) {
     var o = opts || {};
     var color = o.color || '#000000';
-    var opacity = o.opacity != null ? o.opacity : 0.06;
+    var op = o.opacity != null ? o.opacity : 0.06;
+    var size = o.size || 'large';
     var W = 800, H = 500;
     var s = '';
+    var f = ' fill="'+color+'" opacity="'+op+'"';
 
+    // Helper: crenellation path
     function cren(x, y, width, mW, mH, cW) {
       var p = 'M ' + x + ' ' + y, cx = x;
       while (cx < x + width - 1) {
@@ -988,137 +993,151 @@ function getBannerSVG(cfg) {
         p += ' v' + (-mH) + ' h' + m + ' v' + mH; cx += m;
         if (cx < x + width - 1) { var c = Math.min(cW, x + width - cx); p += ' h' + c; cx += c; }
       }
-      return p;
+      return '<path d="' + p + '"' + f + '/>';
     }
-    function roof(cx, ty, hw, rh) { return 'M '+(cx-hw)+' '+ty+' L '+cx+' '+(ty-rh)+' L '+(cx+hw)+' '+ty+' Z'; }
+    // Helper: conical roof
+    function roof(cx, ty, hw, rh) { return '<path d="M '+(cx-hw)+' '+ty+' L '+cx+' '+(ty-rh)+' L '+(cx+hw)+' '+ty+' Z"'+f+'/>'; }
+    // Helper: pennant flag
     function flag(cx, by, ph, fw, fh, side) {
       var ty = by - ph, d = side === 'left' ? -1 : 1;
-      var r = '<line x1="'+cx+'" y1="'+by+'" x2="'+cx+'" y2="'+ty+'" stroke="'+color+'" stroke-width="1.5" opacity="'+(opacity*2.5)+'"/>';
+      var r = '<line x1="'+cx+'" y1="'+by+'" x2="'+cx+'" y2="'+ty+'" stroke="'+color+'" stroke-width="1.5" opacity="'+op+'"/>';
       var fx = cx+d*fw, c1=cx+d*fw*0.6, c2=cx+d*fw*0.4;
-      r += '<path d="M '+cx+' '+ty+' Q '+c1+' '+(ty+fh*0.15)+' '+fx+' '+(ty+fh*0.35)+' L '+(cx+d*fw*0.35)+' '+(ty+fh*0.5)+' Q '+c2+' '+(ty+fh*0.65)+' '+fx+' '+(ty+fh*0.8)+' L '+cx+' '+(ty+fh)+' Z" fill="'+color+'" opacity="'+(opacity*2)+'"/>';
+      r += '<path d="M '+cx+' '+ty+' Q '+c1+' '+(ty+fh*0.15)+' '+fx+' '+(ty+fh*0.35)+' L '+(cx+d*fw*0.35)+' '+(ty+fh*0.5)+' Q '+c2+' '+(ty+fh*0.65)+' '+fx+' '+(ty+fh*0.8)+' L '+cx+' '+(ty+fh)+' Z"'+f+'/>';
       return r;
     }
+    // Helper: arched window cutout
     function aWin(cx, cy, w, h) {
       var hw = w/2;
-      return '<path d="M '+(cx-hw)+' '+cy+' v'+(-h*0.6)+' a '+hw+' '+hw+' 0 0 1 '+w+' 0 v'+(h*0.6)+' Z" fill="'+color+'" opacity="'+(opacity*1.8)+'"/>';
+      return '<path d="M '+(cx-hw)+' '+cy+' v'+(-h*0.6)+' a '+hw+' '+hw+' 0 0 1 '+w+' 0 v'+(h*0.6)+' Z"'+f+'/>';
     }
-    function cWin(cx, cy, w, h) {
-      var hw=w/2, hh=h/2;
-      var r='<rect x="'+(cx-hw)+'" y="'+(cy-h)+'" width="'+w+'" height="'+h+'" fill="'+color+'" opacity="'+(opacity*1.5)+'"/>';
-      r+='<line x1="'+cx+'" y1="'+(cy-h)+'" x2="'+cx+'" y2="'+cy+'" stroke="'+color+'" stroke-width="1" opacity="'+(opacity*3)+'"/>';
-      r+='<line x1="'+(cx-hw)+'" y1="'+(cy-hh)+'" x2="'+(cx+hw)+'" y2="'+(cy-hh)+'" stroke="'+color+'" stroke-width="1" opacity="'+(opacity*3)+'"/>';
-      return r;
-    }
-    function rWin(cx,cy,w,h){return '<rect x="'+(cx-w/2)+'" y="'+(cy-h)+'" width="'+w+'" height="'+h+'" fill="'+color+'" opacity="'+(opacity*1.8)+'"/>';}
-    function slit(x,y){return '<rect x="'+(x-1.5)+'" y="'+y+'" width="3" height="16" rx="1" fill="'+color+'" opacity="'+(opacity*2)+'"/>';}
-    function tree(cx,by,h,w){
-      var ty=by-h;
-      return '<path d="M '+cx+' '+by+' L '+cx+' '+(ty+h*0.4)+'" stroke="'+color+'" stroke-width="3" opacity="'+(opacity*1.5)+'"/>'+
-             '<ellipse cx="'+cx+'" cy="'+(ty+h*0.25)+'" rx="'+(w/2)+'" ry="'+(h*0.35)+'" fill="'+color+'" opacity="'+(opacity*0.8)+'"/>';
+    // Helper: arched gate
+    function gate(cx, gy, gW2, gH) {
+      return '<path d="M '+(cx-gW2)+' '+gy+' v'+(-gH*0.6)+' a '+gW2+' '+gW2+' 0 0 1 '+(gW2*2)+' 0 v'+(gH*0.6)+' Z"'+f+'/>';
     }
 
     s += '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMax meet">';
 
     var gY = H - 40;
     // Ground
-    s += '<rect x="0" y="'+gY+'" width="'+W+'" height="60" fill="'+color+'" opacity="'+(opacity*0.5)+'"/>';
-    s += '<ellipse cx="'+W/2+'" cy="'+(gY+5)+'" rx="'+(W*0.55)+'" ry="30" fill="'+color+'" opacity="'+(opacity*0.3)+'"/>';
+    s += '<ellipse cx="'+W/2+'" cy="'+(gY+5)+'" rx="'+(W*0.45)+'" ry="22"'+f+'/>';
 
-    // ── MAIN KEEP ──
-    var kX=310,kW=180,kH=220,kT=gY-kH;
-    s+='<rect x="'+kX+'" y="'+kT+'" width="'+kW+'" height="'+kH+'" fill="'+color+'" opacity="'+opacity+'"/>';
-    s+='<path d="'+cren(kX,kT,kW,12,14,8)+'" fill="'+color+'" opacity="'+opacity+'"/>';
-    // Stone texture
-    for(var r=0;r<11;r++){var ry=kT+20+r*20;s+='<line x1="'+kX+'" y1="'+ry+'" x2="'+(kX+kW)+'" y2="'+ry+'" stroke="'+color+'" stroke-width="0.5" opacity="'+(opacity*0.6)+'"/>';var bo=(r%2===0)?15:30;for(var bx=kX+bo;bx<kX+kW;bx+=30)s+='<line x1="'+bx+'" y1="'+ry+'" x2="'+bx+'" y2="'+(ry+20)+'" stroke="'+color+'" stroke-width="0.4" opacity="'+(opacity*0.4)+'"/>';}
-    // Grand gate with portcullis
-    var gX=kX+kW/2,gW2=20,gH=60;
-    s+='<path d="M '+(gX-gW2)+' '+gY+' v'+(-gH*0.6)+' a '+gW2+' '+gW2+' 0 0 1 '+(gW2*2)+' 0 v'+(gH*0.6)+' Z" fill="'+color+'" opacity="'+(opacity*1.5)+'"/>';
-    for(var gi=-3;gi<=3;gi++)s+='<line x1="'+(gX+gi*5)+'" y1="'+(gY-gH*0.95)+'" x2="'+(gX+gi*5)+'" y2="'+gY+'" stroke="'+color+'" stroke-width="0.8" opacity="'+(opacity*2)+'"/>';
-    for(var gr=0;gr<5;gr++){var py=gY-8-gr*10;s+='<line x1="'+(gX-gW2+3)+'" y1="'+py+'" x2="'+(gX+gW2-3)+'" y2="'+py+'" stroke="'+color+'" stroke-width="0.6" opacity="'+(opacity*1.5)+'"/>';}
-    // Keep windows
-    s+=aWin(kX+35,kT+80,16,28)+aWin(kX+kW-35,kT+80,16,28)+aWin(kX+kW/2,kT+70,20,35);
-    s+=cWin(kX+30,kT+140,12,18)+cWin(kX+kW/2,kT+135,14,22)+cWin(kX+kW-30,kT+140,12,18);
+    var cx = W / 2; // center x
 
-    // ── CENTRAL TOWER ──
-    var cTX=kX+kW/2-30,cTW=60,cTH=80,cTT=kT-cTH;
-    s+='<rect x="'+cTX+'" y="'+cTT+'" width="'+cTW+'" height="'+cTH+'" fill="'+color+'" opacity="'+opacity+'"/>';
-    s+='<path d="'+cren(cTX,cTT,cTW,8,10,6)+'" fill="'+color+'" opacity="'+opacity+'"/>';
-    s+='<path d="'+roof(cTX+cTW/2,cTT-10,cTW/2+5,50)+'" fill="'+color+'" opacity="'+(opacity*1.1)+'"/>';
-    s+=aWin(cTX+cTW/2,cTT+45,18,30);
-    s+=flag(cTX+cTW/2,cTT-60,30,28,22,'right');
+    if (size === 'small') {
+      // ── SMALL: Single watchtower with a small base wall ──
+      var tw = 60, th = 200, tT = gY - th, tX = cx - tw/2;
+      // Base wall
+      s += '<rect x="'+(cx-80)+'" y="'+(gY-90)+'" width="160" height="90"'+f+'/>';
+      s += cren(cx-80, gY-90, 160, 10, 12, 7);
+      // Main tower
+      s += '<rect x="'+tX+'" y="'+tT+'" width="'+tw+'" height="'+th+'"'+f+'/>';
+      s += cren(tX, tT, tw, 8, 10, 6);
+      s += roof(cx, tT-8, tw/2+10, 50);
+      s += flag(cx, tT-58, 28, 24, 20, 'right');
+      // Windows
+      s += aWin(cx, tT+60, 16, 26);
+      s += aWin(cx, tT+120, 14, 22);
+      // Gate
+      s += gate(cx, gY, 16, 44);
+      // Birds
+      [[cx-120,gY-220],[cx+100,gY-200]].forEach(function(b){s+='<path d="M '+(b[0]-5)+' '+(b[1]+2)+' Q '+b[0]+' '+(b[1]-3)+' '+(b[0]+5)+' '+(b[1]+2)+'" fill="none" stroke="'+color+'" stroke-width="1" opacity="'+op+'"/>';});
 
-    // ── LEFT FRONT TOWER ──
-    var lX=kX-40,lW=50,lH=260,lT=gY-lH;
-    s+='<rect x="'+lX+'" y="'+lT+'" width="'+lW+'" height="'+lH+'" fill="'+color+'" opacity="'+opacity+'"/>';
-    s+='<path d="'+cren(lX,lT,lW,8,10,6)+'" fill="'+color+'" opacity="'+opacity+'"/>';
-    s+='<path d="'+roof(lX+lW/2,lT-8,lW/2+8,45)+'" fill="'+color+'" opacity="'+(opacity*1.1)+'"/>';
-    s+=aWin(lX+lW/2,lT+50,14,24)+rWin(lX+lW/2,lT+100,10,14)+aWin(lX+lW/2,lT+155,12,20)+slit(lX+lW/2,lT+195);
-    s+=flag(lX+lW/2,lT-53,25,22,18,'left');
+    } else if (size === 'medium') {
+      // ── MEDIUM: Keep with two flanking towers ──
+      var kW = 140, kH = 180, kT = gY - kH, kX = cx - kW/2;
+      // Main keep
+      s += '<rect x="'+kX+'" y="'+kT+'" width="'+kW+'" height="'+kH+'"'+f+'/>';
+      s += cren(kX, kT, kW, 11, 13, 7);
+      // Gate
+      s += gate(cx, gY, 18, 52);
+      // Keep windows
+      s += aWin(cx-30, kT+60, 14, 24) + aWin(cx, kT+55, 18, 30) + aWin(cx+30, kT+60, 14, 24);
+      s += aWin(cx-25, kT+115, 12, 18) + aWin(cx+25, kT+115, 12, 18);
+      // Central small turret
+      var ctW = 44, ctT = kT - 55;
+      s += '<rect x="'+(cx-ctW/2)+'" y="'+ctT+'" width="'+ctW+'" height="55"'+f+'/>';
+      s += cren(cx-ctW/2, ctT, ctW, 7, 9, 5);
+      s += roof(cx, ctT-6, ctW/2+6, 40);
+      s += flag(cx, ctT-46, 25, 22, 18, 'right');
+      s += aWin(cx, ctT+30, 14, 22);
+      // Left tower
+      var ltW = 46, ltH = 220, ltT = gY - ltH, ltX = kX - ltW + 5;
+      s += '<rect x="'+ltX+'" y="'+ltT+'" width="'+ltW+'" height="'+ltH+'"'+f+'/>';
+      s += cren(ltX, ltT, ltW, 7, 9, 5);
+      s += roof(ltX+ltW/2, ltT-6, ltW/2+8, 42);
+      s += flag(ltX+ltW/2, ltT-48, 24, 20, 16, 'left');
+      s += aWin(ltX+ltW/2, ltT+50, 12, 20) + aWin(ltX+ltW/2, ltT+120, 10, 16);
+      // Right tower
+      var rtX = kX + kW - 5;
+      s += '<rect x="'+rtX+'" y="'+ltT+'" width="'+ltW+'" height="'+ltH+'"'+f+'/>';
+      s += cren(rtX, ltT, ltW, 7, 9, 5);
+      s += roof(rtX+ltW/2, ltT-6, ltW/2+8, 42);
+      s += flag(rtX+ltW/2, ltT-48, 24, 20, 16, 'right');
+      s += aWin(rtX+ltW/2, ltT+50, 12, 20) + aWin(rtX+ltW/2, ltT+120, 10, 16);
+      // Birds
+      [[cx-150,gY-260],[cx+130,gY-240],[cx,gY-300]].forEach(function(b){s+='<path d="M '+(b[0]-5)+' '+(b[1]+2)+' Q '+b[0]+' '+(b[1]-3)+' '+(b[0]+5)+' '+(b[1]+2)+'" fill="none" stroke="'+color+'" stroke-width="1" opacity="'+op+'"/>';});
 
-    // ── RIGHT FRONT TOWER ──
-    var rX=kX+kW-10,rW=50,rH=260,rT=gY-rH;
-    s+='<rect x="'+rX+'" y="'+rT+'" width="'+rW+'" height="'+rH+'" fill="'+color+'" opacity="'+opacity+'"/>';
-    s+='<path d="'+cren(rX,rT,rW,8,10,6)+'" fill="'+color+'" opacity="'+opacity+'"/>';
-    s+='<path d="'+roof(rX+rW/2,rT-8,rW/2+8,45)+'" fill="'+color+'" opacity="'+(opacity*1.1)+'"/>';
-    s+=aWin(rX+rW/2,rT+50,14,24)+rWin(rX+rW/2,rT+100,10,14)+aWin(rX+rW/2,rT+155,12,20)+slit(rX+rW/2,rT+195);
-    s+=flag(rX+rW/2,rT-53,25,22,18,'right');
-
-    // ── LEFT CURTAIN WALL ──
-    var lwX=lX-100,lwH=140,lwT=gY-lwH;
-    s+='<rect x="'+lwX+'" y="'+lwT+'" width="100" height="'+lwH+'" fill="'+color+'" opacity="'+(opacity*0.85)+'"/>';
-    s+='<path d="'+cren(lwX,lwT,100,10,12,7)+'" fill="'+color+'" opacity="'+(opacity*0.85)+'"/>';
-    s+=cWin(lwX+30,lwT+50,10,14)+cWin(lwX+65,lwT+50,10,14);
-    s+=slit(lwX+15,lwT+80)+slit(lwX+48,lwT+80)+slit(lwX+80,lwT+80);
-
-    // ── RIGHT CURTAIN WALL ──
-    var rwX=rX+rW,rwT=gY-140;
-    s+='<rect x="'+rwX+'" y="'+rwT+'" width="100" height="140" fill="'+color+'" opacity="'+(opacity*0.85)+'"/>';
-    s+='<path d="'+cren(rwX,rwT,100,10,12,7)+'" fill="'+color+'" opacity="'+(opacity*0.85)+'"/>';
-    s+=cWin(rwX+35,rwT+50,10,14)+cWin(rwX+70,rwT+50,10,14);
-    s+=slit(rwX+15,rwT+80)+slit(rwX+50,rwT+80)+slit(rwX+85,rwT+80);
-
-    // ── FAR LEFT TOWER ──
-    var flX=lwX-35,flW=40,flH=180,flT=gY-flH;
-    s+='<rect x="'+flX+'" y="'+flT+'" width="'+flW+'" height="'+flH+'" fill="'+color+'" opacity="'+opacity+'"/>';
-    s+='<path d="'+cren(flX,flT,flW,7,9,5)+'" fill="'+color+'" opacity="'+opacity+'"/>';
-    s+='<path d="'+roof(flX+flW/2,flT-6,flW/2+6,38)+'" fill="'+color+'" opacity="'+(opacity*1.1)+'"/>';
-    s+=aWin(flX+flW/2,flT+45,12,20);
-    s+=flag(flX+flW/2,flT-44,22,18,15,'left');
-
-    // ── FAR RIGHT TOWER ──
-    var frX=rwX+95,frW=40,frH=180,frT=gY-frH;
-    s+='<rect x="'+frX+'" y="'+frT+'" width="'+frW+'" height="'+frH+'" fill="'+color+'" opacity="'+opacity+'"/>';
-    s+='<path d="'+cren(frX,frT,frW,7,9,5)+'" fill="'+color+'" opacity="'+opacity+'"/>';
-    s+='<path d="'+roof(frX+frW/2,frT-6,frW/2+6,38)+'" fill="'+color+'" opacity="'+(opacity*1.1)+'"/>';
-    s+=aWin(frX+frW/2,frT+45,12,20);
-    s+=flag(frX+frW/2,frT-44,22,18,15,'right');
-
-    // ── MOAT & DRAWBRIDGE ──
-    s+='<path d="M '+(kX-80)+' '+(gY+2)+' Q '+W/2+' '+(gY+30)+' '+(kX+kW+80)+' '+(gY+2)+'" fill="none" stroke="'+color+'" stroke-width="2" opacity="'+(opacity*1.5)+'"/>';
-    s+='<path d="M '+(kX-80)+' '+(gY+8)+' Q '+W/2+' '+(gY+35)+' '+(kX+kW+80)+' '+(gY+8)+'" fill="none" stroke="'+color+'" stroke-width="1" opacity="'+opacity+'"/>';
-    var dbW=44,dbX=gX-dbW/2;
-    s+='<rect x="'+dbX+'" y="'+gY+'" width="'+dbW+'" height="6" fill="'+color+'" opacity="'+(opacity*1.2)+'"/>';
-    s+='<line x1="'+(gX-gW2+2)+'" y1="'+(gY-gH*0.5)+'" x2="'+dbX+'" y2="'+gY+'" stroke="'+color+'" stroke-width="1.2" opacity="'+(opacity*2)+'" stroke-dasharray="3 2"/>';
-    s+='<line x1="'+(gX+gW2-2)+'" y1="'+(gY-gH*0.5)+'" x2="'+(dbX+dbW)+'" y2="'+gY+'" stroke="'+color+'" stroke-width="1.2" opacity="'+(opacity*2)+'" stroke-dasharray="3 2"/>';
-
-    // ── DECORATIVE ──
-    // Royal banner on keep
-    var bx=kX+kW/2,by=kT+30;
-    s+='<rect x="'+(bx-8)+'" y="'+by+'" width="16" height="28" fill="'+color+'" opacity="'+(opacity*1.3)+'"/>';
-    s+='<path d="M '+(bx-8)+' '+(by+28)+' L '+bx+' '+(by+36)+' L '+(bx+8)+' '+(by+28)+' Z" fill="'+color+'" opacity="'+(opacity*1.3)+'"/>';
-    // Torch sconces
-    s+='<circle cx="'+(gX-gW2-8)+'" cy="'+(gY-gH*0.4)+'" r="3" fill="'+color+'" opacity="'+(opacity*2)+'"/>';
-    s+='<circle cx="'+(gX+gW2+8)+'" cy="'+(gY-gH*0.4)+'" r="3" fill="'+color+'" opacity="'+(opacity*2)+'"/>';
-    // Machicolations
-    for(var mi=0;mi<9;mi++){var mx=kX+10+mi*20;s+='<path d="M '+mx+' '+kT+' l 3 8 h 8 l 3 -8" fill="none" stroke="'+color+'" stroke-width="0.8" opacity="'+(opacity*1.2)+'"/>';}
-    // Birds
-    [[120,100],[150,85],[650,95],[680,110],[400,60]].forEach(function(b){s+='<path d="M '+(b[0]-6)+' '+(b[1]+2)+' Q '+b[0]+' '+(b[1]-4)+' '+(b[0]+6)+' '+(b[1]+2)+'" fill="none" stroke="'+color+'" stroke-width="1" opacity="'+(opacity*3)+'"/>';});
-    // Clouds
-    s+='<ellipse cx="150" cy="80" rx="60" ry="18" fill="'+color+'" opacity="'+(opacity*0.3)+'"/>';
-    s+='<ellipse cx="180" cy="75" rx="40" ry="14" fill="'+color+'" opacity="'+(opacity*0.25)+'"/>';
-    s+='<ellipse cx="620" cy="70" rx="55" ry="16" fill="'+color+'" opacity="'+(opacity*0.3)+'"/>';
-    // Trees
-    s+=tree(60,gY,90,50)+tree(30,gY,70,40)+tree(740,gY,85,48)+tree(770,gY,65,38);
+    } else {
+      // ── LARGE: Full fortress with keep, towers, curtain walls, corner towers, moat ──
+      var kX2=cx-90, kW2=180, kH2=220, kT2=gY-kH2;
+      // Main keep
+      s += '<rect x="'+kX2+'" y="'+kT2+'" width="'+kW2+'" height="'+kH2+'"'+f+'/>';
+      s += cren(kX2, kT2, kW2, 12, 14, 8);
+      // Gate + portcullis
+      s += gate(cx, gY, 20, 60);
+      // Keep windows
+      s += aWin(cx-35, kT2+80, 16, 28) + aWin(cx, kT2+70, 20, 35) + aWin(cx+35, kT2+80, 16, 28);
+      s += aWin(cx-30, kT2+140, 12, 18) + aWin(cx, kT2+135, 14, 22) + aWin(cx+30, kT2+140, 12, 18);
+      // Central tower
+      var cTW2=60, cTH2=80, cTT2=kT2-cTH2;
+      s += '<rect x="'+(cx-cTW2/2)+'" y="'+cTT2+'" width="'+cTW2+'" height="'+cTH2+'"'+f+'/>';
+      s += cren(cx-cTW2/2, cTT2, cTW2, 8, 10, 6);
+      s += roof(cx, cTT2-10, cTW2/2+5, 50);
+      s += aWin(cx, cTT2+45, 18, 30);
+      s += flag(cx, cTT2-60, 30, 28, 22, 'right');
+      // Left front tower
+      var lX2=kX2-40, lW2=50, lH2=260, lT2=gY-lH2;
+      s += '<rect x="'+lX2+'" y="'+lT2+'" width="'+lW2+'" height="'+lH2+'"'+f+'/>';
+      s += cren(lX2, lT2, lW2, 8, 10, 6);
+      s += roof(lX2+lW2/2, lT2-8, lW2/2+8, 45);
+      s += aWin(lX2+lW2/2, lT2+50, 14, 24) + aWin(lX2+lW2/2, lT2+155, 12, 20);
+      s += flag(lX2+lW2/2, lT2-53, 25, 22, 18, 'left');
+      // Right front tower
+      var rX2=kX2+kW2-10, rW2=50;
+      s += '<rect x="'+rX2+'" y="'+lT2+'" width="'+rW2+'" height="'+lH2+'"'+f+'/>';
+      s += cren(rX2, lT2, rW2, 8, 10, 6);
+      s += roof(rX2+rW2/2, lT2-8, rW2/2+8, 45);
+      s += aWin(rX2+rW2/2, lT2+50, 14, 24) + aWin(rX2+rW2/2, lT2+155, 12, 20);
+      s += flag(rX2+rW2/2, lT2-53, 25, 22, 18, 'right');
+      // Left curtain wall
+      var lwX2=lX2-100, lwH2=140, lwT2=gY-lwH2;
+      s += '<rect x="'+lwX2+'" y="'+lwT2+'" width="100" height="'+lwH2+'"'+f+'/>';
+      s += cren(lwX2, lwT2, 100, 10, 12, 7);
+      // Right curtain wall
+      var rwX2=rX2+rW2, rwT2=gY-140;
+      s += '<rect x="'+rwX2+'" y="'+rwT2+'" width="100" height="140"'+f+'/>';
+      s += cren(rwX2, rwT2, 100, 10, 12, 7);
+      // Far left corner tower
+      var flX2=lwX2-35, flW2=40, flH2=180, flT2=gY-flH2;
+      s += '<rect x="'+flX2+'" y="'+flT2+'" width="'+flW2+'" height="'+flH2+'"'+f+'/>';
+      s += cren(flX2, flT2, flW2, 7, 9, 5);
+      s += roof(flX2+flW2/2, flT2-6, flW2/2+6, 38);
+      s += aWin(flX2+flW2/2, flT2+45, 12, 20);
+      s += flag(flX2+flW2/2, flT2-44, 22, 18, 15, 'left');
+      // Far right corner tower
+      var frX2=rwX2+95, frW2=40;
+      s += '<rect x="'+frX2+'" y="'+flT2+'" width="'+frW2+'" height="'+flH2+'"'+f+'/>';
+      s += cren(frX2, flT2, frW2, 7, 9, 5);
+      s += roof(frX2+frW2/2, flT2-6, frW2/2+6, 38);
+      s += aWin(frX2+frW2/2, flT2+45, 12, 20);
+      s += flag(frX2+frW2/2, flT2-44, 22, 18, 15, 'right');
+      // Moat
+      s += '<path d="M '+(kX2-80)+' '+(gY+2)+' Q '+cx+' '+(gY+30)+' '+(kX2+kW2+80)+' '+(gY+2)+'" fill="none" stroke="'+color+'" stroke-width="2" opacity="'+op+'"/>';
+      // Drawbridge
+      s += '<rect x="'+(cx-22)+'" y="'+gY+'" width="44" height="6"'+f+'/>';
+      // Birds
+      [[cx-280,gY-360],[cx-240,gY-380],[cx+250,gY-350],[cx+280,gY-370],[cx,gY-400]].forEach(function(b){s+='<path d="M '+(b[0]-6)+' '+(b[1]+2)+' Q '+b[0]+' '+(b[1]-4)+' '+(b[0]+6)+' '+(b[1]+2)+'" fill="none" stroke="'+color+'" stroke-width="1" opacity="'+op+'"/>';});
+    }
 
     s += '</svg>';
     return s;
@@ -1139,17 +1158,20 @@ function getBannerSVG(cfg) {
     var accentFg = bannerCfg.fg || T.gold;
     var accentBg = bannerCfg.bg || T.bgCard;
 
-    // Generate castle watermark — use accent color, adapt opacity for light vs dark
+    // Generate castle watermark — scale castle size with kingdom growth stage
     var isDark = (T.bg || '').charAt(1) < '5';
-    var castleSvg = getCastleSVG({ color: accentFg, opacity: isDark ? 0.035 : 0.05 });
+    var stage = getKingdomStage(kingdom);
+    var castleSize = stage >= 3 ? 'large' : stage >= 1 ? 'medium' : 'small';
+    var castleSvg = getCastleSVG({ color: accentFg, opacity: isDark ? 0.035 : 0.05, size: castleSize });
 
-    return React.createElement("div", { style: { position:"relative" } },
-      // ── Castle Watermark (behind everything) ──
+    // ── 3-Column Layout: [Left Banner] [Main Content] [Right Banner] ──
+    return React.createElement("div", { style: { display:"flex", alignItems:"flex-start", gap:"0", margin:"0 -12px" } },
+      // ── Left Banner (structural, takes up real space) ──
+      React.createElement("div", { style: { flexShrink:0, width:"110px", minHeight:"440px", display:"flex", alignItems:"flex-start", justifyContent:"center", paddingTop:"12px", transform:"scaleX(-1)", filter:"drop-shadow(2px 4px 6px rgba(0,0,0,0.4))" }, dangerouslySetInnerHTML: { __html: bannerSvg } }),
+      // ── Center Content Column ──
+      React.createElement("div", { style: { flex:"1", minWidth:0, position:"relative" } },
+      // Castle Watermark (behind center content)
       React.createElement("div", { style: { position:"absolute", top:"60px", left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:"900px", height:"500px", pointerEvents:"none", zIndex:0, opacity:1 }, dangerouslySetInnerHTML: { __html: castleSvg } }),
-      // ── Left Banner (mirrored) ──
-      React.createElement("div", { style: { position:"fixed", top:"70px", left:"12px", width:"140px", height:"440px", opacity:1, pointerEvents:"none", zIndex:100, transform:"scaleX(-1)", filter:"drop-shadow(2px 4px 6px rgba(0,0,0,0.4))" }, dangerouslySetInnerHTML: { __html: bannerSvg } }),
-      // ── Right Banner ──
-      React.createElement("div", { style: { position:"fixed", top:"70px", right:"12px", width:"140px", height:"440px", opacity:1, pointerEvents:"none", zIndex:100, filter:"drop-shadow(-2px 4px 6px rgba(0,0,0,0.4))" }, dangerouslySetInnerHTML: { __html: bannerSvg } }),
 
       // Royal Kingdom Banner Card
       React.createElement("div", { style: Object.assign({}, S.card, { display:"flex", justifyContent:"space-between", alignItems:"center", padding:"28px 32px", marginBottom:"18px", position:"relative", zIndex:1, background:"linear-gradient(135deg, "+accentBg+"18 0%, "+T.bgCard+" 40%, "+T.bgCard+" 60%, "+accentBg+"18 100%)", borderTop:"2px solid "+accentFg+"55", borderBottom:"1px solid "+accentFg+"22" }) },
@@ -1295,6 +1317,9 @@ function getBannerSVG(cfg) {
           })
         )
       )
+      ), // ── end Center Content Column ──
+      // ── Right Banner (structural, takes up real space) ──
+      React.createElement("div", { style: { flexShrink:0, width:"110px", minHeight:"440px", display:"flex", alignItems:"flex-start", justifyContent:"center", paddingTop:"12px", filter:"drop-shadow(-2px 4px 6px rgba(0,0,0,0.4))" }, dangerouslySetInnerHTML: { __html: bannerSvg } })
     );
   }
 
