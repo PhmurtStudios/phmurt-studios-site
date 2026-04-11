@@ -555,8 +555,17 @@
 
       // Sync territory control: ensure all kingdom.atlasRegions have region.ctrl = kingdom.name
       if (result.regions && kingdom.atlasRegions) {
+        // Resolve province names to province IDs for matching against region.atlasProvinceId
+        var CM = window.__CM || {};
+        var atlasProvs = (result.generatedAtlas && result.generatedAtlas.provinces) || CM.ATLAS_PROVINCES || [];
+        var claimedProvIds = {};
+        kingdom.atlasRegions.forEach(function(regName) {
+          var prov = atlasProvs.find(function(p) { return p.name === regName || p.id === regName; });
+          if (prov) claimedProvIds[prov.id] = true;
+        });
         result.regions = result.regions.map(function(r) {
-          if (kingdom.atlasRegions.indexOf(r.name) >= 0) {
+          // Match by atlasProvinceId or by direct name match as fallback
+          if (claimedProvIds[r.atlasProvinceId] || kingdom.atlasRegions.indexOf(r.name) >= 0) {
             return r.ctrl === kingdom.name ? r : Object.assign({}, r, { ctrl: kingdom.name });
           }
           return r;
@@ -631,11 +640,19 @@
     result.kingdoms = result.kingdoms.map(function(k) {
       if (!k.atlasRegions || k.atlasRegions.length === 0) return k;
       // Check each claimed region — if region.ctrl no longer matches, lose that territory
+      var CM = window.__CM || {};
+      var atlasProvs = (result.generatedAtlas && result.generatedAtlas.provinces) || CM.ATLAS_PROVINCES || [];
       var stillOwned = k.atlasRegions.filter(function(regionName) {
-        var region = (result.regions || []).find(function(r) { return r.name === regionName; });
-        // Keep if region not found (might be custom) or if ctrl matches kingdom
-        if (!region) return true;
-        return !region.ctrl || region.ctrl === k.name;
+        // Find the atlas province to get its ID
+        var prov = atlasProvs.find(function(p) { return p.name === regionName || p.id === regionName; });
+        var provId = prov ? prov.id : null;
+        // Find region nodes for this province
+        var regionNodes = (result.regions || []).filter(function(r) {
+          return (provId && r.atlasProvinceId === provId) || r.name === regionName;
+        });
+        // Keep if no region nodes found (might be custom) or if at least one node still controlled
+        if (regionNodes.length === 0) return true;
+        return regionNodes.some(function(r) { return !r.ctrl || r.ctrl === k.name; });
       });
       if (stillOwned.length === k.atlasRegions.length) return k;
       // Territory was lost — update kingdom
@@ -2984,8 +3001,18 @@ function getBannerSVG(cfg) {
         var startRegion = newKingdom._startRegion;
         var capitalCityName = newKingdom._capitalCityName;
         if (startRegion && result.regions) {
-          // Update the atlas region's controller to the kingdom name
+          // Find the atlas province ID that matches the selected region name
+          var CM = window.__CM || {};
+          var atlasProvs = (result.generatedAtlas && result.generatedAtlas.provinces) || CM.ATLAS_PROVINCES || [];
+          var matchedProv = atlasProvs.find(function(p) { return p.name === startRegion; });
+          var matchedProvId = matchedProv ? matchedProv.id : null;
+
+          // Update ALL region nodes in this atlas province to be controlled by the kingdom
           result.regions = result.regions.map(function(r) {
+            if (matchedProvId && r.atlasProvinceId === matchedProvId) {
+              return Object.assign({}, r, { ctrl: newKingdom.name });
+            }
+            // Fallback: also match by region name directly
             if (r.name === startRegion) return Object.assign({}, r, { ctrl: newKingdom.name });
             return r;
           });
@@ -3015,16 +3042,28 @@ function getBannerSVG(cfg) {
           var existingCities = (result.cities || []).slice();
           var existingCity = existingCities.find(function(c) { return c.name === capitalCityName; });
           if (!existingCity) {
-            // Find the atlas region to get coordinates for the city pin
-            var atlasRegion = (result.regions || []).find(function(r) { return r.name === startRegion; });
+            // Get coordinates from the atlas province label position (normalized 0-1)
+            var MAP_W = 6000, MAP_H = 4500;
+            var cityX = 0.5, cityY = 0.5;
+            if (matchedProv && matchedProv.labelX) {
+              cityX = matchedProv.labelX / MAP_W;
+              cityY = matchedProv.labelY / MAP_H;
+            } else {
+              // Fallback: try to find a region node in this province
+              var regionNode = matchedProvId ? (result.regions || []).find(function(r) { return r.atlasProvinceId === matchedProvId; }) : null;
+              if (regionNode) {
+                cityX = regionNode.x || regionNode.mapX || 0.5;
+                cityY = regionNode.y || regionNode.mapY || 0.5;
+              }
+            }
             existingCities.push({
               id: "kingdom-capital-" + newKingdom.id,
               name: capitalCityName,
               region: startRegion,
               population: 500,
               isCapital: true,
-              mapX: atlasRegion ? (atlasRegion.x || atlasRegion.mapX || 0.5) : 0.5,
-              mapY: atlasRegion ? (atlasRegion.y || atlasRegion.mapY || 0.5) : 0.5,
+              mapX: cityX,
+              mapY: cityY,
               ctrl: newKingdom.name
             });
             result.cities = existingCities;
