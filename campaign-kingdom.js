@@ -973,6 +973,157 @@ function getBannerSVG(cfg) {
 
 
 
+  // ── Castle Watermark SVG Generator ─────────────────────────────────────
+  function getCastleSVG(opts) {
+    var o = opts || {};
+    var color = o.color || '#000000';
+    var opacity = o.opacity != null ? o.opacity : 0.06;
+    var W = 800, H = 500;
+    var s = '';
+
+    function cren(x, y, width, mW, mH, cW) {
+      var p = 'M ' + x + ' ' + y, cx = x;
+      while (cx < x + width - 1) {
+        var m = Math.min(mW, x + width - cx);
+        p += ' v' + (-mH) + ' h' + m + ' v' + mH; cx += m;
+        if (cx < x + width - 1) { var c = Math.min(cW, x + width - cx); p += ' h' + c; cx += c; }
+      }
+      return p;
+    }
+    function roof(cx, ty, hw, rh) { return 'M '+(cx-hw)+' '+ty+' L '+cx+' '+(ty-rh)+' L '+(cx+hw)+' '+ty+' Z'; }
+    function flag(cx, by, ph, fw, fh, side) {
+      var ty = by - ph, d = side === 'left' ? -1 : 1;
+      var r = '<line x1="'+cx+'" y1="'+by+'" x2="'+cx+'" y2="'+ty+'" stroke="'+color+'" stroke-width="1.5" opacity="'+(opacity*2.5)+'"/>';
+      var fx = cx+d*fw, c1=cx+d*fw*0.6, c2=cx+d*fw*0.4;
+      r += '<path d="M '+cx+' '+ty+' Q '+c1+' '+(ty+fh*0.15)+' '+fx+' '+(ty+fh*0.35)+' L '+(cx+d*fw*0.35)+' '+(ty+fh*0.5)+' Q '+c2+' '+(ty+fh*0.65)+' '+fx+' '+(ty+fh*0.8)+' L '+cx+' '+(ty+fh)+' Z" fill="'+color+'" opacity="'+(opacity*2)+'"/>';
+      return r;
+    }
+    function aWin(cx, cy, w, h) {
+      var hw = w/2;
+      return '<path d="M '+(cx-hw)+' '+cy+' v'+(-h*0.6)+' a '+hw+' '+hw+' 0 0 1 '+w+' 0 v'+(h*0.6)+' Z" fill="'+color+'" opacity="'+(opacity*1.8)+'"/>';
+    }
+    function cWin(cx, cy, w, h) {
+      var hw=w/2, hh=h/2;
+      var r='<rect x="'+(cx-hw)+'" y="'+(cy-h)+'" width="'+w+'" height="'+h+'" fill="'+color+'" opacity="'+(opacity*1.5)+'"/>';
+      r+='<line x1="'+cx+'" y1="'+(cy-h)+'" x2="'+cx+'" y2="'+cy+'" stroke="'+color+'" stroke-width="1" opacity="'+(opacity*3)+'"/>';
+      r+='<line x1="'+(cx-hw)+'" y1="'+(cy-hh)+'" x2="'+(cx+hw)+'" y2="'+(cy-hh)+'" stroke="'+color+'" stroke-width="1" opacity="'+(opacity*3)+'"/>';
+      return r;
+    }
+    function rWin(cx,cy,w,h){return '<rect x="'+(cx-w/2)+'" y="'+(cy-h)+'" width="'+w+'" height="'+h+'" fill="'+color+'" opacity="'+(opacity*1.8)+'"/>';}
+    function slit(x,y){return '<rect x="'+(x-1.5)+'" y="'+y+'" width="3" height="16" rx="1" fill="'+color+'" opacity="'+(opacity*2)+'"/>';}
+    function tree(cx,by,h,w){
+      var ty=by-h;
+      return '<path d="M '+cx+' '+by+' L '+cx+' '+(ty+h*0.4)+'" stroke="'+color+'" stroke-width="3" opacity="'+(opacity*1.5)+'"/>'+
+             '<ellipse cx="'+cx+'" cy="'+(ty+h*0.25)+'" rx="'+(w/2)+'" ry="'+(h*0.35)+'" fill="'+color+'" opacity="'+(opacity*0.8)+'"/>';
+    }
+
+    s += '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMax meet">';
+
+    var gY = H - 40;
+    // Ground
+    s += '<rect x="0" y="'+gY+'" width="'+W+'" height="60" fill="'+color+'" opacity="'+(opacity*0.5)+'"/>';
+    s += '<ellipse cx="'+W/2+'" cy="'+(gY+5)+'" rx="'+(W*0.55)+'" ry="30" fill="'+color+'" opacity="'+(opacity*0.3)+'"/>';
+
+    // ── MAIN KEEP ──
+    var kX=310,kW=180,kH=220,kT=gY-kH;
+    s+='<rect x="'+kX+'" y="'+kT+'" width="'+kW+'" height="'+kH+'" fill="'+color+'" opacity="'+opacity+'"/>';
+    s+='<path d="'+cren(kX,kT,kW,12,14,8)+'" fill="'+color+'" opacity="'+opacity+'"/>';
+    // Stone texture
+    for(var r=0;r<11;r++){var ry=kT+20+r*20;s+='<line x1="'+kX+'" y1="'+ry+'" x2="'+(kX+kW)+'" y2="'+ry+'" stroke="'+color+'" stroke-width="0.5" opacity="'+(opacity*0.6)+'"/>';var bo=(r%2===0)?15:30;for(var bx=kX+bo;bx<kX+kW;bx+=30)s+='<line x1="'+bx+'" y1="'+ry+'" x2="'+bx+'" y2="'+(ry+20)+'" stroke="'+color+'" stroke-width="0.4" opacity="'+(opacity*0.4)+'"/>';}
+    // Grand gate with portcullis
+    var gX=kX+kW/2,gW2=20,gH=60;
+    s+='<path d="M '+(gX-gW2)+' '+gY+' v'+(-gH*0.6)+' a '+gW2+' '+gW2+' 0 0 1 '+(gW2*2)+' 0 v'+(gH*0.6)+' Z" fill="'+color+'" opacity="'+(opacity*1.5)+'"/>';
+    for(var gi=-3;gi<=3;gi++)s+='<line x1="'+(gX+gi*5)+'" y1="'+(gY-gH*0.95)+'" x2="'+(gX+gi*5)+'" y2="'+gY+'" stroke="'+color+'" stroke-width="0.8" opacity="'+(opacity*2)+'"/>';
+    for(var gr=0;gr<5;gr++){var py=gY-8-gr*10;s+='<line x1="'+(gX-gW2+3)+'" y1="'+py+'" x2="'+(gX+gW2-3)+'" y2="'+py+'" stroke="'+color+'" stroke-width="0.6" opacity="'+(opacity*1.5)+'"/>';}
+    // Keep windows
+    s+=aWin(kX+35,kT+80,16,28)+aWin(kX+kW-35,kT+80,16,28)+aWin(kX+kW/2,kT+70,20,35);
+    s+=cWin(kX+30,kT+140,12,18)+cWin(kX+kW/2,kT+135,14,22)+cWin(kX+kW-30,kT+140,12,18);
+
+    // ── CENTRAL TOWER ──
+    var cTX=kX+kW/2-30,cTW=60,cTH=80,cTT=kT-cTH;
+    s+='<rect x="'+cTX+'" y="'+cTT+'" width="'+cTW+'" height="'+cTH+'" fill="'+color+'" opacity="'+opacity+'"/>';
+    s+='<path d="'+cren(cTX,cTT,cTW,8,10,6)+'" fill="'+color+'" opacity="'+opacity+'"/>';
+    s+='<path d="'+roof(cTX+cTW/2,cTT-10,cTW/2+5,50)+'" fill="'+color+'" opacity="'+(opacity*1.1)+'"/>';
+    s+=aWin(cTX+cTW/2,cTT+45,18,30);
+    s+=flag(cTX+cTW/2,cTT-60,30,28,22,'right');
+
+    // ── LEFT FRONT TOWER ──
+    var lX=kX-40,lW=50,lH=260,lT=gY-lH;
+    s+='<rect x="'+lX+'" y="'+lT+'" width="'+lW+'" height="'+lH+'" fill="'+color+'" opacity="'+opacity+'"/>';
+    s+='<path d="'+cren(lX,lT,lW,8,10,6)+'" fill="'+color+'" opacity="'+opacity+'"/>';
+    s+='<path d="'+roof(lX+lW/2,lT-8,lW/2+8,45)+'" fill="'+color+'" opacity="'+(opacity*1.1)+'"/>';
+    s+=aWin(lX+lW/2,lT+50,14,24)+rWin(lX+lW/2,lT+100,10,14)+aWin(lX+lW/2,lT+155,12,20)+slit(lX+lW/2,lT+195);
+    s+=flag(lX+lW/2,lT-53,25,22,18,'left');
+
+    // ── RIGHT FRONT TOWER ──
+    var rX=kX+kW-10,rW=50,rH=260,rT=gY-rH;
+    s+='<rect x="'+rX+'" y="'+rT+'" width="'+rW+'" height="'+rH+'" fill="'+color+'" opacity="'+opacity+'"/>';
+    s+='<path d="'+cren(rX,rT,rW,8,10,6)+'" fill="'+color+'" opacity="'+opacity+'"/>';
+    s+='<path d="'+roof(rX+rW/2,rT-8,rW/2+8,45)+'" fill="'+color+'" opacity="'+(opacity*1.1)+'"/>';
+    s+=aWin(rX+rW/2,rT+50,14,24)+rWin(rX+rW/2,rT+100,10,14)+aWin(rX+rW/2,rT+155,12,20)+slit(rX+rW/2,rT+195);
+    s+=flag(rX+rW/2,rT-53,25,22,18,'right');
+
+    // ── LEFT CURTAIN WALL ──
+    var lwX=lX-100,lwH=140,lwT=gY-lwH;
+    s+='<rect x="'+lwX+'" y="'+lwT+'" width="100" height="'+lwH+'" fill="'+color+'" opacity="'+(opacity*0.85)+'"/>';
+    s+='<path d="'+cren(lwX,lwT,100,10,12,7)+'" fill="'+color+'" opacity="'+(opacity*0.85)+'"/>';
+    s+=cWin(lwX+30,lwT+50,10,14)+cWin(lwX+65,lwT+50,10,14);
+    s+=slit(lwX+15,lwT+80)+slit(lwX+48,lwT+80)+slit(lwX+80,lwT+80);
+
+    // ── RIGHT CURTAIN WALL ──
+    var rwX=rX+rW,rwT=gY-140;
+    s+='<rect x="'+rwX+'" y="'+rwT+'" width="100" height="140" fill="'+color+'" opacity="'+(opacity*0.85)+'"/>';
+    s+='<path d="'+cren(rwX,rwT,100,10,12,7)+'" fill="'+color+'" opacity="'+(opacity*0.85)+'"/>';
+    s+=cWin(rwX+35,rwT+50,10,14)+cWin(rwX+70,rwT+50,10,14);
+    s+=slit(rwX+15,rwT+80)+slit(rwX+50,rwT+80)+slit(rwX+85,rwT+80);
+
+    // ── FAR LEFT TOWER ──
+    var flX=lwX-35,flW=40,flH=180,flT=gY-flH;
+    s+='<rect x="'+flX+'" y="'+flT+'" width="'+flW+'" height="'+flH+'" fill="'+color+'" opacity="'+opacity+'"/>';
+    s+='<path d="'+cren(flX,flT,flW,7,9,5)+'" fill="'+color+'" opacity="'+opacity+'"/>';
+    s+='<path d="'+roof(flX+flW/2,flT-6,flW/2+6,38)+'" fill="'+color+'" opacity="'+(opacity*1.1)+'"/>';
+    s+=aWin(flX+flW/2,flT+45,12,20);
+    s+=flag(flX+flW/2,flT-44,22,18,15,'left');
+
+    // ── FAR RIGHT TOWER ──
+    var frX=rwX+95,frW=40,frH=180,frT=gY-frH;
+    s+='<rect x="'+frX+'" y="'+frT+'" width="'+frW+'" height="'+frH+'" fill="'+color+'" opacity="'+opacity+'"/>';
+    s+='<path d="'+cren(frX,frT,frW,7,9,5)+'" fill="'+color+'" opacity="'+opacity+'"/>';
+    s+='<path d="'+roof(frX+frW/2,frT-6,frW/2+6,38)+'" fill="'+color+'" opacity="'+(opacity*1.1)+'"/>';
+    s+=aWin(frX+frW/2,frT+45,12,20);
+    s+=flag(frX+frW/2,frT-44,22,18,15,'right');
+
+    // ── MOAT & DRAWBRIDGE ──
+    s+='<path d="M '+(kX-80)+' '+(gY+2)+' Q '+W/2+' '+(gY+30)+' '+(kX+kW+80)+' '+(gY+2)+'" fill="none" stroke="'+color+'" stroke-width="2" opacity="'+(opacity*1.5)+'"/>';
+    s+='<path d="M '+(kX-80)+' '+(gY+8)+' Q '+W/2+' '+(gY+35)+' '+(kX+kW+80)+' '+(gY+8)+'" fill="none" stroke="'+color+'" stroke-width="1" opacity="'+opacity+'"/>';
+    var dbW=44,dbX=gX-dbW/2;
+    s+='<rect x="'+dbX+'" y="'+gY+'" width="'+dbW+'" height="6" fill="'+color+'" opacity="'+(opacity*1.2)+'"/>';
+    s+='<line x1="'+(gX-gW2+2)+'" y1="'+(gY-gH*0.5)+'" x2="'+dbX+'" y2="'+gY+'" stroke="'+color+'" stroke-width="1.2" opacity="'+(opacity*2)+'" stroke-dasharray="3 2"/>';
+    s+='<line x1="'+(gX+gW2-2)+'" y1="'+(gY-gH*0.5)+'" x2="'+(dbX+dbW)+'" y2="'+gY+'" stroke="'+color+'" stroke-width="1.2" opacity="'+(opacity*2)+'" stroke-dasharray="3 2"/>';
+
+    // ── DECORATIVE ──
+    // Royal banner on keep
+    var bx=kX+kW/2,by=kT+30;
+    s+='<rect x="'+(bx-8)+'" y="'+by+'" width="16" height="28" fill="'+color+'" opacity="'+(opacity*1.3)+'"/>';
+    s+='<path d="M '+(bx-8)+' '+(by+28)+' L '+bx+' '+(by+36)+' L '+(bx+8)+' '+(by+28)+' Z" fill="'+color+'" opacity="'+(opacity*1.3)+'"/>';
+    // Torch sconces
+    s+='<circle cx="'+(gX-gW2-8)+'" cy="'+(gY-gH*0.4)+'" r="3" fill="'+color+'" opacity="'+(opacity*2)+'"/>';
+    s+='<circle cx="'+(gX+gW2+8)+'" cy="'+(gY-gH*0.4)+'" r="3" fill="'+color+'" opacity="'+(opacity*2)+'"/>';
+    // Machicolations
+    for(var mi=0;mi<9;mi++){var mx=kX+10+mi*20;s+='<path d="M '+mx+' '+kT+' l 3 8 h 8 l 3 -8" fill="none" stroke="'+color+'" stroke-width="0.8" opacity="'+(opacity*1.2)+'"/>';}
+    // Birds
+    [[120,100],[150,85],[650,95],[680,110],[400,60]].forEach(function(b){s+='<path d="M '+(b[0]-6)+' '+(b[1]+2)+' Q '+b[0]+' '+(b[1]-4)+' '+(b[0]+6)+' '+(b[1]+2)+'" fill="none" stroke="'+color+'" stroke-width="1" opacity="'+(opacity*3)+'"/>';});
+    // Clouds
+    s+='<ellipse cx="150" cy="80" rx="60" ry="18" fill="'+color+'" opacity="'+(opacity*0.3)+'"/>';
+    s+='<ellipse cx="180" cy="75" rx="40" ry="14" fill="'+color+'" opacity="'+(opacity*0.25)+'"/>';
+    s+='<ellipse cx="620" cy="70" rx="55" ry="16" fill="'+color+'" opacity="'+(opacity*0.3)+'"/>';
+    // Trees
+    s+=tree(60,gY,90,50)+tree(30,gY,70,40)+tree(740,gY,85,48)+tree(770,gY,65,38);
+
+    s += '</svg>';
+    return s;
+  }
+
   // ── Kingdom Dashboard ──────────────────────────────────────────────────
   function KingdomDashboard(_ref) {
     var kingdom = _ref.kingdom, stats = _ref.stats, onNavigate = _ref.onNavigate, viewRole = _ref.viewRole;
@@ -988,11 +1139,17 @@ function getBannerSVG(cfg) {
     var accentFg = bannerCfg.fg || T.gold;
     var accentBg = bannerCfg.bg || T.bgCard;
 
+    // Generate castle watermark — use accent color, adapt opacity for light vs dark
+    var isDark = (T.bg || '').charAt(1) < '5';
+    var castleSvg = getCastleSVG({ color: accentFg, opacity: isDark ? 0.035 : 0.05 });
+
     return React.createElement("div", { style: { position:"relative" } },
+      // ── Castle Watermark (behind everything) ──
+      React.createElement("div", { style: { position:"absolute", top:"60px", left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:"900px", height:"500px", pointerEvents:"none", zIndex:0, opacity:1 }, dangerouslySetInnerHTML: { __html: castleSvg } }),
       // ── Left Banner (mirrored) ──
-      React.createElement("div", { style: { position:"absolute", top:"-6px", left:"10px", width:"110px", height:"360px", opacity:0.85, pointerEvents:"none", zIndex:0, transform:"scaleX(-1)" }, dangerouslySetInnerHTML: { __html: bannerSvg } }),
+      React.createElement("div", { style: { position:"fixed", top:"70px", left:"12px", width:"140px", height:"440px", opacity:1, pointerEvents:"none", zIndex:100, transform:"scaleX(-1)", filter:"drop-shadow(2px 4px 6px rgba(0,0,0,0.4))" }, dangerouslySetInnerHTML: { __html: bannerSvg } }),
       // ── Right Banner ──
-      React.createElement("div", { style: { position:"absolute", top:"-6px", right:"10px", width:"110px", height:"360px", opacity:0.85, pointerEvents:"none", zIndex:0 }, dangerouslySetInnerHTML: { __html: bannerSvg } }),
+      React.createElement("div", { style: { position:"fixed", top:"70px", right:"12px", width:"140px", height:"440px", opacity:1, pointerEvents:"none", zIndex:100, filter:"drop-shadow(-2px 4px 6px rgba(0,0,0,0.4))" }, dangerouslySetInnerHTML: { __html: bannerSvg } }),
 
       // Royal Kingdom Banner Card
       React.createElement("div", { style: Object.assign({}, S.card, { display:"flex", justifyContent:"space-between", alignItems:"center", padding:"28px 32px", marginBottom:"18px", position:"relative", zIndex:1, background:"linear-gradient(135deg, "+accentBg+"18 0%, "+T.bgCard+" 40%, "+T.bgCard+" 60%, "+accentBg+"18 100%)", borderTop:"2px solid "+accentFg+"55", borderBottom:"1px solid "+accentFg+"22" }) },
