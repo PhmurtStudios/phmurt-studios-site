@@ -1011,6 +1011,17 @@ function TrafficPage() {
     );
   }, []);
 
+  // Helper: format a Date object as local YYYY-MM-DD
+  const toLocalDate = useCallback((d) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }, []);
+
+  // Helper: get local hour as zero-padded string
+  const toLocalHour = useCallback((d) => String(d.getHours()).padStart(2, '0'), []);
+
   const stats = useMemo(() => {
     if (!visits) return {
       byPage: {}, byDay: {}, byHour: {}, total: 0, uniqueUsers: 0, uniqueVisitors: 0,
@@ -1040,9 +1051,11 @@ function TrafficPage() {
       currentWindowTotal += 1;
       const p = normalizePath(v.page || '/');
       byPage[p] = (byPage[p] || 0) + 1;
-      const d = (v.visited_at || '').slice(0, 10);
+      // Use local timezone for day/hour breakdowns so they match the admin's clock
+      const localDate = !isNaN(ts) ? new Date(ts) : null;
+      const d = localDate ? toLocalDate(localDate) : '';
       if (d) byDay[d] = (byDay[d] || 0) + 1;
-      const hr = (v.visited_at || '').slice(11, 13);
+      const hr = localDate ? toLocalHour(localDate) : '';
       if (hr) byHour[hr] = (byHour[hr] || 0) + 1;
       if (v.user_id) userSet.add(v.user_id);
       else anonymous += 1;
@@ -1068,7 +1081,7 @@ function TrafficPage() {
       previousWindowTotal,
       peakHour,
     };
-  }, [visits, rangeDays, normalizePath, isSuspiciousPath]);
+  }, [visits, rangeDays, normalizePath, isSuspiciousPath, toLocalDate, toLocalHour]);
 
   const topPages = useMemo(() => {
     const q = pageQuery.trim().toLowerCase();
@@ -1081,7 +1094,7 @@ function TrafficPage() {
 
   const recentDays = Object.entries(stats.byDay).sort((a,b) => b[0].localeCompare(a[0])).slice(0, Math.min(rangeDays, 30));
   const maxDay     = Math.max(1, ...recentDays.map(([,v]) => v));
-  const today      = new Date().toISOString().slice(0,10);
+  const today      = toLocalDate(new Date());
   const previous = stats.previousWindowTotal || 0;
   const deltaPct = previous > 0 ? Math.round(((stats.total - previous) / previous) * 100) : null;
   const suspiciousTop = Object.entries(stats.suspiciousByPath).sort((a, b) => b[1] - a[1]).slice(0, 10);
@@ -1221,7 +1234,7 @@ function TrafficPage() {
 
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'16px',marginTop:'16px'}}>
             <div className="card">
-              <div className="card-header"><h2>Hourly Distribution (UTC)</h2></div>
+              <div className="card-header"><h2>Hourly Distribution ({Intl.DateTimeFormat().resolvedOptions().timeZone || 'Local'})</h2></div>
               <div className="card-body" style={{padding:0}}>
                 {Array.from({ length: 24 }).map((_, idx) => {
                   const key = String(idx).padStart(2, '0');
@@ -2550,8 +2563,11 @@ function DataExportPage({ addToast }) {
 // ═══════════════════════════════
 function TierManagementPage({ addToast }) {
   const [saving, setSaving] = useState(false);
-  const [editingList, setEditingList] = useState(null); // 'free_features'|'free_locked'|'pro_features'|'free_feature_keys'
-  const [editListValue, setEditListValue] = useState('');
+  const [addingFeature, setAddingFeature] = useState(false);
+  const [newFeatureKey, setNewFeatureKey] = useState('');
+  const [newFeatureLabel, setNewFeatureLabel] = useState('');
+  const [editingDisplayLists, setEditingDisplayLists] = useState(null); // 'free_tier_features'|'free_tier_locked'|'pro_tier_features'
+  const [editDisplayValue, setEditDisplayValue] = useState('');
 
   // All tier-related site_settings keys
   const tierKeys = [
@@ -2560,6 +2576,7 @@ function TierManagementPage({ addToast }) {
     'pro_price_monthly', 'pro_price_yearly', 'pro_price_yearly_savings',
     'free_tier_features', 'free_tier_locked', 'pro_tier_features',
     'free_feature_keys',
+    'all_feature_definitions', // NEW: master list of all features with keys + labels
   ];
 
   const { data: settings, loading, error, refetch } = useAdminQuery(async (db) => {
@@ -2568,7 +2585,6 @@ function TierManagementPage({ addToast }) {
       .select('*')
       .in('key', tierKeys);
     if (error) throw error;
-    // Build map
     const map = {};
     (data || []).forEach(s => {
       try { map[s.key] = JSON.parse(s.value); } catch { map[s.key] = s.value; }
@@ -2578,7 +2594,7 @@ function TierManagementPage({ addToast }) {
 
   const s = settings || {};
 
-  // Defaults for display
+  // Defaults
   const freeMaxChars = s.free_max_characters ?? 3;
   const freeMaxCamps = s.free_max_campaigns ?? 1;
   const paidMaxChars = s.paid_max_characters ?? -1;
@@ -2586,10 +2602,31 @@ function TierManagementPage({ addToast }) {
   const priceMonthly = s.pro_price_monthly ?? '$4.99/mo';
   const priceYearly = s.pro_price_yearly ?? '$49.99/yr';
   const yearlySavings = s.pro_price_yearly_savings ?? 'Save $10';
-  const freeFeatures = s.free_tier_features || ['Character Builder (5e & 3.5e)','Interactive Character Sheets','Dice Roller','Learn to Play Guides','Art Gallery','Basic Campaign Management'];
-  const freeLocked = s.free_tier_locked || ['Unlimited Characters & Campaigns','Generators (Names, Loot, Encounters, Quests)','Advanced Campaign Tabs (Heist, Intrigue, Prophecy, Puzzles)','Downtime & Religion Systems','Hexcrawl & World Atlas','Economy & Faction War Engines','Battle Map & Living World','Priority Support'];
-  const proFeatures = s.pro_tier_features || ['Everything in Free, plus:','Unlimited Characters & Campaigns','All Generators','All Campaign Systems','All World-Building Tools','Priority Support'];
   const freeFeatureKeys = s.free_feature_keys || ['character-builder','character-sheet','dice-roller','basic-campaign','learn','gallery'];
+  const freeDisplayFeatures = s.free_tier_features || ['Character Builder (5e & 3.5e)','Interactive Character Sheets','Dice Roller','Learn to Play Guides','Art Gallery','Basic Campaign Management'];
+  const freeDisplayLocked = s.free_tier_locked || ['Unlimited Characters & Campaigns','Generators (Names, Loot, Encounters, Quests)','Advanced Campaign Tabs (Heist, Intrigue, Prophecy, Puzzles)','Downtime & Religion Systems','Hexcrawl & World Atlas','Economy & Faction War Engines','Battle Map & Living World','Priority Support'];
+  const proDisplayFeatures = s.pro_tier_features || ['Everything in Free, plus:','Unlimited Characters & Campaigns','All Generators','All Campaign Systems','All World-Building Tools','Priority Support'];
+
+  // Master feature definitions: { key, label } pairs
+  // This is the single source of truth for all features that can be toggled
+  const defaultFeatureDefs = [
+    { key: 'character-builder', label: 'Character Builder (5e & 3.5e)' },
+    { key: 'character-sheet', label: 'Interactive Character Sheets' },
+    { key: 'dice-roller', label: 'Dice Roller' },
+    { key: 'basic-campaign', label: 'Basic Campaign Management' },
+    { key: 'learn', label: 'Learn to Play Guides' },
+    { key: 'gallery', label: 'Art Gallery' },
+    { key: 'generators', label: 'Generators (Names, Loot, Encounters, Quests)' },
+    { key: 'advanced-campaign', label: 'Advanced Campaign Tabs (Heist, Intrigue, Prophecy, Puzzles)' },
+    { key: 'downtime', label: 'Downtime & Religion Systems' },
+    { key: 'hexcrawl', label: 'Hexcrawl & World Atlas' },
+    { key: 'economy', label: 'Economy & Faction War Engines' },
+    { key: 'battle-map', label: 'Battle Map & Living World' },
+    { key: 'crafting', label: 'Crafting System' },
+    { key: 'kingdom', label: 'Kingdom Management' },
+    { key: 'priority-support', label: 'Priority Support' },
+  ];
+  const allFeatures = Array.isArray(s.all_feature_definitions) ? s.all_feature_definitions : defaultFeatureDefs;
 
   async function updateSetting(key, value) {
     setSaving(true);
@@ -2612,15 +2649,47 @@ function TierManagementPage({ addToast }) {
     }
   }
 
-  function startEditList(key, currentValue) {
-    setEditingList(key);
-    setEditListValue(Array.isArray(currentValue) ? currentValue.join('\n') : '');
+  // Toggle a feature between Free (available to all) and Pro Only
+  async function toggleFeatureTier(featureKey) {
+    const isFree = freeFeatureKeys.includes(featureKey);
+    const newFreeKeys = isFree
+      ? freeFeatureKeys.filter(k => k !== featureKey)
+      : [...freeFeatureKeys, featureKey];
+    await updateSetting('free_feature_keys', newFreeKeys);
   }
 
-  function saveEditList(key) {
-    const items = editListValue.split('\n').map(s => s.trim()).filter(Boolean);
-    updateSetting(key, items);
-    setEditingList(null);
+  // Add a new feature to the master list
+  async function addNewFeature() {
+    const key = newFeatureKey.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
+    const label = newFeatureLabel.trim();
+    if (!key || !label) { addToast('Both key and label are required.', 'error'); return; }
+    if (allFeatures.some(f => f.key === key)) { addToast('Feature key already exists.', 'error'); return; }
+    const updated = [...allFeatures, { key, label }];
+    await updateSetting('all_feature_definitions', updated);
+    setNewFeatureKey('');
+    setNewFeatureLabel('');
+    setAddingFeature(false);
+  }
+
+  // Remove a feature from the master list (and from free keys if present)
+  async function removeFeature(featureKey) {
+    const updatedDefs = allFeatures.filter(f => f.key !== featureKey);
+    const updatedFreeKeys = freeFeatureKeys.filter(k => k !== featureKey);
+    setSaving(true);
+    try {
+      const { data: sess } = await sb.auth.getSession();
+      await Promise.all([
+        sb.from('site_settings').upsert({ key: 'all_feature_definitions', value: JSON.stringify(updatedDefs), updated_by: sess?.session?.user?.id || null, updated_at: new Date().toISOString() }, { onConflict: 'key' }),
+        sb.from('site_settings').upsert({ key: 'free_feature_keys', value: JSON.stringify(updatedFreeKeys), updated_by: sess?.session?.user?.id || null, updated_at: new Date().toISOString() }, { onConflict: 'key' }),
+      ]);
+      logAuditEvent('remove_feature', 'setting', featureKey, {});
+      addToast(`Removed feature: ${featureKey}`, 'success');
+      refetch();
+    } catch (e) {
+      addToast('Failed: ' + (e.message || 'Unknown error'), 'error');
+    } finally {
+      setSaving(false);
+    }
   }
 
   // Number input with inline save
@@ -2636,9 +2705,7 @@ function TierManagementPage({ addToast }) {
             <div style={{fontSize:'11px',color:'var(--text-muted)',marginTop:'2px'}}>{description}</div>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-            <input
-              type="number"
-              value={val}
+            <input type="number" value={val}
               onChange={e => { setVal(e.target.value); setDirty(true); }}
               onKeyDown={e => { if (e.key === 'Enter' && dirty) { updateSetting(settingKey, Number(val)); setDirty(false); } }}
               style={{width:'80px',padding:'6px 10px',background:'var(--bg-card)',border:'1px solid var(--accent-border)',borderRadius:'4px',color:'var(--text)',fontSize:'13px',textAlign:'center'}}
@@ -2664,9 +2731,7 @@ function TierManagementPage({ addToast }) {
             <div style={{fontSize:'11px',color:'var(--text-muted)',marginTop:'2px'}}>{description}</div>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-            <input
-              type="text"
-              value={val}
+            <input type="text" value={val}
               onChange={e => { setVal(e.target.value); setDirty(true); }}
               onKeyDown={e => { if (e.key === 'Enter' && dirty) { updateSetting(settingKey, val); setDirty(false); } }}
               style={{width:'160px',padding:'6px 10px',background:'var(--bg-card)',border:'1px solid var(--accent-border)',borderRadius:'4px',color:'var(--text)',fontSize:'13px'}}
@@ -2678,9 +2743,31 @@ function TierManagementPage({ addToast }) {
     );
   }
 
-  // List editor component
-  function ListSection({ title, description, settingKey, items }) {
-    const isEditing = editingList === settingKey;
+  // Toggle switch component
+  function ToggleSwitch({ checked, onChange, disabled }) {
+    return (
+      <button
+        onClick={onChange}
+        disabled={disabled}
+        style={{
+          width: '44px', height: '24px', borderRadius: '12px', border: 'none', cursor: disabled ? 'not-allowed' : 'pointer',
+          background: checked ? '#5ee09a' : 'rgba(255,255,255,0.1)', transition: 'background 0.2s',
+          position: 'relative', flexShrink: 0, opacity: disabled ? 0.5 : 1,
+        }}
+      >
+        <div style={{
+          width: '18px', height: '18px', borderRadius: '50%', background: '#fff',
+          position: 'absolute', top: '3px', transition: 'left 0.2s',
+          left: checked ? '23px' : '3px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.3)',
+        }} />
+      </button>
+    );
+  }
+
+  // Display list editor (for pricing page text)
+  function DisplayListSection({ title, description, settingKey, items }) {
+    const isEditing = editingDisplayLists === settingKey;
     return (
       <div style={{marginBottom:'16px'}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'8px',padding:'0 4px'}}>
@@ -2688,18 +2775,24 @@ function TierManagementPage({ addToast }) {
             <div style={{fontSize:'13px',fontWeight:600}}>{title}</div>
             <div style={{fontSize:'11px',color:'var(--text-muted)',marginTop:'2px'}}>{description}</div>
           </div>
-          <button className="btn btn-sm" onClick={() => isEditing ? saveEditList(settingKey) : startEditList(settingKey, items)} disabled={saving}>
+          <button className="btn btn-sm" onClick={() => {
+            if (isEditing) {
+              const lines = editDisplayValue.split('\n').map(s => s.trim()).filter(Boolean);
+              updateSetting(settingKey, lines);
+              setEditingDisplayLists(null);
+            } else {
+              setEditingDisplayLists(settingKey);
+              setEditDisplayValue(Array.isArray(items) ? items.join('\n') : '');
+            }
+          }} disabled={saving}>
             {isEditing ? <><Icons.Check /> Save</> : 'Edit'}
           </button>
         </div>
         {isEditing ? (
-          <textarea
-            value={editListValue}
-            onChange={e => setEditListValue(e.target.value)}
+          <textarea value={editDisplayValue} onChange={e => setEditDisplayValue(e.target.value)}
             rows={Math.max(4, items.length + 1)}
             style={{width:'100%',padding:'10px 12px',background:'var(--bg-card)',border:'1px solid var(--accent-border)',borderRadius:'6px',color:'var(--text)',fontSize:'12px',lineHeight:1.8,fontFamily:'Spectral, serif',resize:'vertical'}}
-            placeholder="One item per line"
-          />
+            placeholder="One item per line" />
         ) : (
           <div style={{background:'rgba(255,255,255,0.02)',border:'1px solid var(--border-mid)',borderRadius:'6px',padding:'10px 14px'}}>
             {items.map((item, i) => (
@@ -2716,6 +2809,9 @@ function TierManagementPage({ addToast }) {
   if (loading) return <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)'}}>Loading…</div>;
   if (error) return <div style={{padding:'40px',color:'var(--danger)'}}>{error}</div>;
 
+  const freeCount = allFeatures.filter(f => freeFeatureKeys.includes(f.key)).length;
+  const proOnlyCount = allFeatures.length - freeCount;
+
   return (
     <div>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'24px'}}>
@@ -2728,12 +2824,87 @@ function TierManagementPage({ addToast }) {
         <div className="stat-card" style={{borderLeft:'3px solid var(--text-muted)'}}>
           <div className="stat-label">Free Tier</div>
           <div className="stat-value" style={{fontSize:'18px'}}>{freeMaxChars} chars / {freeMaxCamps} camp</div>
-          <div className="stat-sub">{freeFeatures.length} features included</div>
+          <div className="stat-sub">{freeCount} features included</div>
         </div>
         <div className="stat-card" style={{borderLeft:'3px solid var(--crimson, #d4433a)'}}>
           <div className="stat-label">Pro Tier</div>
           <div className="stat-value" style={{fontSize:'18px'}}>{paidMaxChars < 0 ? 'Unlimited' : paidMaxChars}</div>
-          <div className="stat-sub">{priceMonthly} · {priceYearly}</div>
+          <div className="stat-sub">{priceMonthly} · {priceYearly} · {proOnlyCount} exclusive features</div>
+        </div>
+      </div>
+
+      {/* ── Feature Toggles ── */}
+      <div className="card" style={{marginBottom:'20px'}}>
+        <div className="card-header" style={{display:'flex',alignItems:'center',justifyContent:'space-between'}}>
+          <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+            <div style={{color:'var(--crimson, #d4433a)'}}><Icons.Sliders /></div>
+            <h2>Feature Access Control</h2>
+          </div>
+          <button className="btn btn-sm" onClick={() => setAddingFeature(!addingFeature)}>
+            {addingFeature ? 'Cancel' : '+ Add Feature'}
+          </button>
+        </div>
+        <div className="card-body" style={{padding:0}}>
+          {/* Header row */}
+          <div style={{display:'flex',alignItems:'center',padding:'10px 20px',borderBottom:'1px solid var(--border-mid)',background:'rgba(255,255,255,0.015)'}}>
+            <span style={{flex:1,fontSize:'11px',fontFamily:'Cinzel,serif',letterSpacing:'1px',textTransform:'uppercase',color:'var(--text-muted)'}}>Feature</span>
+            <span style={{width:'60px',textAlign:'center',fontSize:'11px',fontFamily:'Cinzel,serif',letterSpacing:'1px',textTransform:'uppercase',color:'var(--text-muted)'}}>Free</span>
+            <span style={{width:'40px'}} />
+          </div>
+
+          {/* Add new feature row */}
+          {addingFeature && (
+            <div style={{display:'flex',alignItems:'center',padding:'12px 20px',borderBottom:'1px solid var(--border-mid)',background:'rgba(94,224,154,0.04)',gap:'12px'}}>
+              <input
+                type="text" placeholder="feature-key" value={newFeatureKey}
+                onChange={e => setNewFeatureKey(e.target.value)}
+                style={{width:'140px',padding:'6px 10px',background:'var(--bg-card)',border:'1px solid var(--accent-border)',borderRadius:'4px',color:'var(--text)',fontSize:'12px',fontFamily:'monospace'}}
+              />
+              <input
+                type="text" placeholder="Display Name" value={newFeatureLabel}
+                onChange={e => setNewFeatureLabel(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') addNewFeature(); }}
+                style={{flex:1,padding:'6px 10px',background:'var(--bg-card)',border:'1px solid var(--accent-border)',borderRadius:'4px',color:'var(--text)',fontSize:'12px'}}
+              />
+              <button className="btn btn-sm btn-primary" onClick={addNewFeature} disabled={saving}>Add</button>
+            </div>
+          )}
+
+          {/* Feature rows */}
+          {allFeatures.map((feature) => {
+            const isFree = freeFeatureKeys.includes(feature.key);
+            return (
+              <div key={feature.key} style={{display:'flex',alignItems:'center',padding:'12px 20px',borderBottom:'1px solid var(--border-mid)',transition:'background 0.15s'}}
+                onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
+                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                <div style={{flex:1,minWidth:0}}>
+                  <div style={{fontSize:'13px',fontWeight:600,color:'var(--text)'}}>{feature.label}</div>
+                  <div style={{fontSize:'11px',color:'var(--text-faint)',fontFamily:'monospace',marginTop:'2px'}}>{feature.key}</div>
+                </div>
+                <div style={{width:'60px',display:'flex',justifyContent:'center'}}>
+                  <ToggleSwitch checked={isFree} onChange={() => toggleFeatureTier(feature.key)} disabled={saving} />
+                </div>
+                <div style={{width:'40px',display:'flex',justifyContent:'center'}}>
+                  {!isFree ? (
+                    <span style={{padding:'2px 8px',borderRadius:'10px',fontSize:'10px',fontWeight:700,letterSpacing:'0.5px',background:'rgba(212,67,58,0.12)',color:'var(--crimson, #d4433a)'}}>PRO</span>
+                  ) : (
+                    <span style={{padding:'2px 8px',borderRadius:'10px',fontSize:'10px',fontWeight:700,letterSpacing:'0.5px',background:'rgba(255,255,255,0.04)',color:'var(--text-muted)'}}>ALL</span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+
+          {allFeatures.length === 0 && (
+            <div style={{padding:'32px',textAlign:'center',color:'var(--text-muted)',fontSize:'13px'}}>
+              No features defined yet. Click "Add Feature" to create your first feature toggle.
+            </div>
+          )}
+        </div>
+        <div style={{padding:'12px 20px',background:'rgba(255,255,255,0.015)',borderTop:'1px solid var(--border-mid)',fontSize:'11px',color:'var(--text-faint)',lineHeight:1.6}}>
+          <strong style={{color:'var(--text-dim)'}}>Toggle ON</strong> = available to Free + Pro users.&nbsp;
+          <strong style={{color:'var(--text-dim)'}}>Toggle OFF</strong> = Pro only (gated by <code style={{background:'rgba(255,255,255,0.06)',padding:'1px 5px',borderRadius:'3px',fontSize:'10px'}}>PhmurtGate()</code>).
+          Changes take effect on next page load.
         </div>
       </div>
 
@@ -2769,34 +2940,26 @@ function TierManagementPage({ addToast }) {
         </div>
       </div>
 
-      {/* Free Tier Features */}
+      {/* Pricing Page Display Lists */}
       <div className="card" style={{marginBottom:'20px'}}>
         <div className="card-header" style={{display:'flex',alignItems:'center',gap:'10px'}}>
-          <div style={{color:'var(--text-muted)'}}><Icons.Sliders /></div>
-          <h2>Free Tier</h2>
+          <div style={{color:'var(--text-muted)'}}><Icons.ClipboardList /></div>
+          <h2>Pricing Page Text</h2>
         </div>
         <div className="card-body">
-          <ListSection title="Included Features" description="Feature list shown on the pricing page for the Free tier" settingKey="free_tier_features" items={freeFeatures} />
-          <ListSection title="Locked Features" description="Features shown as locked/unavailable to free users (upsell list)" settingKey="free_tier_locked" items={freeLocked} />
-          <ListSection title="Feature Gate Keys" description="Internal feature keys that free users can access (used by PhmurtGate). Add keys like 'generators' to unlock them for free users." settingKey="free_feature_keys" items={freeFeatureKeys} />
+          <DisplayListSection title="Free Tier Features (Pricing Page)" description="Text shown on the pricing page under the Free plan" settingKey="free_tier_features" items={freeDisplayFeatures} />
+          <DisplayListSection title="Locked Features (Upsell List)" description="Features shown as locked to free users to encourage upgrading" settingKey="free_tier_locked" items={freeDisplayLocked} />
+          <DisplayListSection title="Pro Tier Features (Pricing Page)" description="Text shown on the pricing page under the Pro plan" settingKey="pro_tier_features" items={proDisplayFeatures} />
         </div>
-      </div>
-
-      {/* Pro Tier Features */}
-      <div className="card" style={{marginBottom:'20px'}}>
-        <div className="card-header" style={{display:'flex',alignItems:'center',gap:'10px'}}>
-          <div style={{color:'var(--crimson, #d4433a)'}}><Icons.Crown /></div>
-          <h2 style={{color:'var(--crimson, #d4433a)'}}>Pro Tier</h2>
-        </div>
-        <div className="card-body">
-          <ListSection title="Pro Features" description="Feature list shown on the pricing page for the Pro tier" settingKey="pro_tier_features" items={proFeatures} />
+        <div style={{padding:'12px 20px',background:'rgba(255,255,255,0.015)',borderTop:'1px solid var(--border-mid)',fontSize:'11px',color:'var(--text-faint)'}}>
+          These lists control what text appears on your public pricing page. They're separate from the feature toggles above, which control actual access.
         </div>
       </div>
 
       {/* Info box */}
       <div className="card">
         <div className="card-body" style={{fontSize:'12px',color:'var(--text-muted)',lineHeight:1.7}}>
-          <strong style={{color:'var(--text-dim)'}}>How it works:</strong> Limits are enforced in real-time — when a user saves, phmurt-auth.js reads these values from the database. Feature gate keys control which features are accessible to free users via <code style={{background:'rgba(255,255,255,0.06)',padding:'1px 5px',borderRadius:'3px',fontSize:'11px'}}>PhmurtGate(featureName)</code>. Feature and locked lists are display-only for the pricing page and upgrade modals. Changes take effect on the next page load.
+          <strong style={{color:'var(--text-dim)'}}>How it works:</strong> The feature toggles above control which features free users can access via <code style={{background:'rgba(255,255,255,0.06)',padding:'1px 5px',borderRadius:'3px',fontSize:'11px'}}>PhmurtGate(featureName)</code>. Pro users always have access to everything. Limits (character/campaign counts) are enforced in real-time by database triggers. The pricing page text lists are display-only and don't affect actual access. Changes take effect on the next page load.
         </div>
       </div>
     </div>
@@ -3182,9 +3345,9 @@ select cron.schedule(
 // ═══════════════════════════════
 function SubscriptionsPage({ addToast }) {
   const { data, loading, error, refetch } = useAdminQuery(async (db) => {
-    const [allProfiles, stripeEvents] = await Promise.all([
+    const [allProfiles, stripeEvents, pricingSettings] = await Promise.all([
       db.from('profiles')
-        .select('id, name, email, subscription_tier, subscription_status, stripe_customer_id, subscription_started_at, subscription_expires_at, subscription_cancel_at, created_at')
+        .select('id, name, email, subscription_tier, subscription_status, subscription_interval, stripe_customer_id, subscription_started_at, subscription_expires_at, subscription_cancel_at, created_at')
         .order('subscription_started_at', { ascending: false, nullsFirst: false })
         .limit(500),
       db.from('stripe_events')
@@ -3193,32 +3356,65 @@ function SubscriptionsPage({ addToast }) {
         .limit(50)
         .then(r => r.data || [])
         .catch(() => []),
+      db.from('site_settings')
+        .select('key, value')
+        .in('key', ['pro_price_monthly', 'pro_price_yearly'])
+        .then(r => {
+          const map = {};
+          (r.data || []).forEach(s => { try { map[s.key] = s.value; } catch { map[s.key] = s.value; } });
+          return map;
+        })
+        .catch(() => ({})),
     ]);
     if (allProfiles.error) throw allProfiles.error;
     const profiles = allProfiles.data || [];
-    const proUsers = profiles.filter(p => p.subscription_tier === 'pro' && p.subscription_status === 'active');
+
+    // Parse actual prices from site_settings (strip non-numeric chars, e.g. "$4.99/mo" → 4.99)
+    const parsePrice = (raw, fallback) => {
+      if (!raw) return fallback;
+      const str = typeof raw === 'string' ? raw : String(raw);
+      const match = str.replace(/['"]/g, '').match(/[\d.]+/);
+      return match ? parseFloat(match[0]) : fallback;
+    };
+    const monthlyPrice = parsePrice(pricingSettings.pro_price_monthly, 5);
+    const yearlyPrice = parsePrice(pricingSettings.pro_price_yearly, 50);
+
+    const proUsers = profiles.filter(p => (p.subscription_tier === 'pro' || p.subscription_tier === 'lifetime' || p.subscription_tier === 'party') && p.subscription_status === 'active');
     const pastDueUsers = profiles.filter(p => p.subscription_status === 'past_due');
     const cancelingUsers = profiles.filter(p => p.subscription_cancel_at && p.subscription_status === 'active');
-    // MRR: yearly subs contribute $50/12 ≈ $4.17/mo, monthly contribute $5/mo
-    // We can approximate by checking subscription_expires_at: if >6 months out, likely yearly
+
+    // Use the subscription_interval column for accurate monthly/yearly detection
+    // Fall back to expiry heuristic only if interval isn't set
     const monthlyPro = proUsers.filter(p => {
+      if (p.subscription_tier === 'lifetime') return false; // Lifetime doesn't contribute to MRR
+      if (p.subscription_interval === 'monthly') return true;
+      if (p.subscription_interval === 'yearly') return false;
+      // Fallback heuristic for legacy rows without subscription_interval
       if (!p.subscription_expires_at) return true;
       const exp = new Date(p.subscription_expires_at);
       const start = p.subscription_started_at ? new Date(p.subscription_started_at) : new Date();
-      return (exp - start) < 180 * 24 * 60 * 60 * 1000; // Less than ~6 months = monthly
+      return (exp - start) < 180 * 24 * 60 * 60 * 1000;
     });
-    const yearlyPro = proUsers.filter(p => !monthlyPro.includes(p));
-    const totalRevenue = (monthlyPro.length * 5) + Math.round(yearlyPro.length * 50 / 12 * 100) / 100;
+    const yearlyPro = proUsers.filter(p => {
+      if (p.subscription_tier === 'lifetime') return false;
+      return !monthlyPro.includes(p);
+    });
+    const lifetimeUsers = proUsers.filter(p => p.subscription_tier === 'lifetime');
+    const totalRevenue = (monthlyPro.length * monthlyPrice) + Math.round(yearlyPro.length * yearlyPrice / 12 * 100) / 100;
     return {
       profiles,
       proUsers,
       pastDueUsers,
       cancelingUsers,
+      lifetimeUsers,
       totalUsers: profiles.length,
       totalPro: proUsers.length,
       monthlyCount: monthlyPro.length,
       yearlyCount: yearlyPro.length,
+      lifetimeCount: lifetimeUsers.length,
       mrr: totalRevenue,
+      monthlyPrice,
+      yearlyPrice,
       stripeEvents,
     };
   });
@@ -3243,14 +3439,25 @@ function SubscriptionsPage({ addToast }) {
   }
 
   if (loading) return <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)'}}>Loading…</div>;
-  if (error) return <div style={{padding:'40px',color:'var(--danger)'}}>{error}</div>;
+  if (error) return (
+    <div style={{padding:'40px'}}>
+      <div style={{color:'var(--danger)',marginBottom:'16px'}}>{error}</div>
+      <div style={{fontSize:'12px',color:'var(--text-muted)',lineHeight:1.7}}>
+        <strong>Troubleshooting:</strong> Make sure subscription columns exist on the profiles table
+        (subscription_tier, subscription_status, subscription_interval, etc.).
+        If you recently set up Stripe, you may need to run the subscription migration SQL first.
+      </div>
+      <button className="btn" style={{marginTop:'12px'}} onClick={refetch}><Icons.Refresh /> Retry</button>
+    </div>
+  );
 
-  const s = data || { profiles: [], proUsers: [], pastDueUsers: [], cancelingUsers: [], totalUsers: 0, totalPro: 0, monthlyCount: 0, yearlyCount: 0, mrr: 0, stripeEvents: [] };
+  const s = data || { profiles: [], proUsers: [], pastDueUsers: [], cancelingUsers: [], lifetimeUsers: [], totalUsers: 0, totalPro: 0, monthlyCount: 0, yearlyCount: 0, lifetimeCount: 0, mrr: 0, monthlyPrice: 5, yearlyPrice: 50, stripeEvents: [] };
 
   const filtered = s.profiles.filter(p => {
-    if (filterTier === 'pro' && p.subscription_tier !== 'pro') return false;
+    if (filterTier === 'pro' && !['pro', 'party', 'lifetime'].includes(p.subscription_tier)) return false;
     if (filterTier === 'free' && p.subscription_tier !== 'free') return false;
     if (filterTier === 'past_due' && p.subscription_status !== 'past_due') return false;
+    if (filterTier === 'lifetime' && p.subscription_tier !== 'lifetime') return false;
     if (search) {
       const q = search.toLowerCase();
       return (p.name || '').toLowerCase().includes(q) || (p.email || '').toLowerCase().includes(q);
@@ -3270,12 +3477,12 @@ function SubscriptionsPage({ addToast }) {
         <div className="stat-card">
           <div className="stat-label">Pro Subscribers</div>
           <div className="stat-value">{s.totalPro}</div>
-          <div className="stat-sub">{s.monthlyCount} monthly · {s.yearlyCount} yearly</div>
+          <div className="stat-sub">{s.monthlyCount} monthly · {s.yearlyCount} yearly{s.lifetimeCount > 0 ? ` · ${s.lifetimeCount} lifetime` : ''}</div>
         </div>
         <div className="stat-card">
           <div className="stat-label">Est. MRR</div>
           <div className="stat-value" style={{color:'#5ee09a'}}>${s.mrr.toFixed(2)}</div>
-          <div className="stat-sub">${s.monthlyCount * 5} monthly + ${Math.round(s.yearlyCount * 50/12)} yearly</div>
+          <div className="stat-sub">${(s.monthlyCount * s.monthlyPrice).toFixed(0)} monthly + ${Math.round(s.yearlyCount * s.yearlyPrice / 12)} yearly</div>
         </div>
         <div className="stat-card">
           <div className="stat-label">Past Due</div>
@@ -3319,7 +3526,7 @@ function SubscriptionsPage({ addToast }) {
           <input placeholder="Search users..." value={search} onChange={e => setSearch(e.target.value)} />
         </div>
         <div className="filter-pills">
-          {['all','pro','free','past_due'].map(f => (
+          {['all','pro','free','lifetime','past_due'].map(f => (
             <span key={f} className={`pill ${filterTier === f ? 'active' : ''}`} onClick={() => setFilterTier(f)}>
               {f === 'all' ? 'All' : f === 'past_due' ? 'Past Due' : f.charAt(0).toUpperCase() + f.slice(1)}
             </span>
@@ -3330,7 +3537,7 @@ function SubscriptionsPage({ addToast }) {
 
       <div className="card" style={{overflow:'hidden',marginBottom:'24px'}}>
         <table className="data-table">
-          <thead><tr><th>User</th><th>Tier</th><th>Status</th><th>Started</th><th>Expires</th><th>Actions</th></tr></thead>
+          <thead><tr><th>User</th><th>Tier</th><th>Status</th><th>Interval</th><th>Started</th><th>Expires</th><th>Actions</th></tr></thead>
           <tbody>
             {filtered.slice(0, 100).map(p => (
               <tr key={p.id}>
@@ -3340,16 +3547,17 @@ function SubscriptionsPage({ addToast }) {
                 </td>
                 <td>
                   <span style={{padding:'2px 10px',borderRadius:'10px',fontSize:'11px',fontWeight:600,
-                    background: p.subscription_tier === 'pro' ? 'rgba(94,224,154,0.12)' : 'rgba(255,255,255,0.04)',
-                    color: p.subscription_tier === 'pro' ? '#5ee09a' : 'var(--text-muted)',
+                    background: p.subscription_tier === 'lifetime' ? 'rgba(168,85,247,0.12)' : p.subscription_tier === 'pro' || p.subscription_tier === 'party' ? 'rgba(94,224,154,0.12)' : 'rgba(255,255,255,0.04)',
+                    color: p.subscription_tier === 'lifetime' ? '#a855f7' : p.subscription_tier === 'pro' || p.subscription_tier === 'party' ? '#5ee09a' : 'var(--text-muted)',
                   }}>
-                    {p.subscription_tier === 'pro' ? 'PRO' : 'FREE'}
+                    {p.subscription_tier === 'lifetime' ? 'LIFETIME' : p.subscription_tier === 'pro' ? 'PRO' : p.subscription_tier === 'party' ? 'PARTY' : 'FREE'}
                   </span>
                 </td>
                 <td style={{fontSize:'12px',color: p.subscription_status === 'active' ? '#5ee09a' : p.subscription_status === 'past_due' ? '#f59e0b' : 'var(--text-muted)'}}>
                   {p.subscription_status || '—'}
                   {p.subscription_cancel_at && <span style={{fontSize:'10px',color:'#ef4444',marginLeft:'4px'}}>(canceling)</span>}
                 </td>
+                <td style={{fontSize:'12px',color:'var(--text-muted)'}}>{p.subscription_interval || '—'}</td>
                 <td style={{fontSize:'12px'}}>{p.subscription_started_at ? formatDate(p.subscription_started_at) : '—'}</td>
                 <td style={{fontSize:'12px'}}>{p.subscription_expires_at ? formatDate(p.subscription_expires_at) : '—'}</td>
                 <td>

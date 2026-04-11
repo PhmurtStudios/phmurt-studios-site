@@ -1455,7 +1455,7 @@ const DND_SPELLS = [
 ];
 
 
-function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null, activeCampaignId = null, onPartyUpdate = null, setData = null, campaignEncounters = [], worldMapCommand = null }) {
+function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null, activeCampaignId = null, onPartyUpdate = null, data = null, setData = null, campaignEncounters = [], worldMapCommand = null }) {
   const canvasRef = useRef(null);
   const wrapRef = useRef(null);
   const fileRef = useRef(null);

@@ -2500,6 +2500,26 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
     return () => clearInterval(check);
   }, []);
 
+  // ── Generate procedural capital city maps when city data is available ──
+  useEffect(() => {
+    if (!data.cities || !data.cities.length) return;
+    if (typeof window.generateAllCapitalMaps !== "function") return;
+    // Build city list with capital flags for the generator
+    var capitals = data.cities.filter(function(c) { return c.isCapital || c.capital; });
+    if (!capitals.length) return;
+    // Only generate if not already done
+    if (window._capitalMapsGenerated) return;
+    window._capitalMapsGenerated = true;
+    var worldSeed = data.id || data.name || "world";
+    try {
+      window.generateAllCapitalMaps(capitals, worldSeed);
+      console.log("[CampaignWorld] Generated procedural maps for " + capitals.length + " capitals");
+      setTownImagesReady(true);
+    } catch(e) {
+      console.error("[CampaignWorld] Capital map generation failed:", e);
+    }
+  }, [data.cities]);
+
   // Update zoom level label
   useEffect(() => {
     if (mapZoom < 0.6) setZoomLevel("continent");

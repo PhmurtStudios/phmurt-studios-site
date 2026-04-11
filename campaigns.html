@@ -27,36 +27,37 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
-  <link rel="stylesheet" href="style.css?v=185" />
-  <script src="theme.js?v=185"></script>
+  <link rel="stylesheet" href="style.css?v=187" />
+  <script src="theme.js?v=187"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous" integrity="sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG"></script>
-  <script src="supabase-config.js?v=185"></script>
-  <script src="stripe-config.js?v=185"></script>
+  <script src="supabase-config.js?v=187"></script>
+  <script src="stripe-config.js?v=187"></script>
   <script src="phmurt-auth.js?v=187"></script>
-  <script src="phmurt-char-sync.js?v=185"></script>
-  <script src="phmurt-realtime.js?v=185"></script>
+  <script src="phmurt-char-sync.js?v=187"></script>
+  <script src="phmurt-realtime.js?v=187"></script>
   <script src="phmurt-shell.js?v=187"></script>
   <!-- New procedural map engine + data bridge (v2 = region-name labels + blue ocean) -->
-  <script src="campaign-map-engine.js?v=185"></script>
-  <script src="campaign-map-bridge.js?v=185"></script>
-  <script src="campaign-combat-integration.js?v=185"></script>
+  <script src="campaign-map-engine.js?v=187"></script>
+  <script src="campaign-map-bridge.js?v=187"></script>
+  <script src="campaign-combat-integration.js?v=187"></script>
   <!-- Play-tab assets: combat engine, VFX, SRD monsters — deferred for fast initial load -->
-  <script src="combat-engine.js?v=185" defer></script>
-  <script src="visual-effects.js?v=185" defer></script>
-  <script src="monster-data.js?v=185" defer></script>
-  <script src="campaign-play-loader.js?v=185" defer></script>
-  <script src="combat-flow-ui.js?v=185" defer></script>
+  <script src="combat-engine.js?v=187" defer></script>
+  <script src="visual-effects.js?v=187" defer></script>
+  <script src="monster-data.js?v=187" defer></script>
+  <script src="campaign-play-loader.js?v=187" defer></script>
+  <script src="combat-flow-ui.js?v=187" defer></script>
   <!-- New campaign systems — deferred for fast initial load -->
-  <script src="campaign-economy.js?v=185" defer></script>
-  <script src="campaign-seasons.js?v=185" defer></script>
-  <script src="campaign-religion.js?v=185" defer></script>
-  <script src="campaign-hexcrawl.js?v=185" defer></script>
-  <script src="campaign-downtime.js?v=185" defer></script>
-  <script src="campaign-homebrew.js?v=185" defer></script>
-  <script src="campaign-scheduler.js?v=185" defer></script>
-  <script src="campaign-kingdom.js?v=185" defer></script>
-  <script src="campaign-crafting.js?v=185" defer></script>
-  <script src="campaign-invites.js?v=185" defer></script>
+  <script src="campaign-economy.js?v=187" defer></script>
+  <script src="campaign-seasons.js?v=187" defer></script>
+  <script src="campaign-religion.js?v=187" defer></script>
+  <script src="campaign-hexcrawl.js?v=187" defer></script>
+  <script src="campaign-downtime.js?v=187" defer></script>
+  <script src="campaign-homebrew.js?v=187" defer></script>
+  <script src="campaign-scheduler.js?v=187" defer></script>
+  <script src="campaign-city-gen.js?v=1" defer></script>
+  <script src="campaign-kingdom.js?v=314" defer></script>
+  <script src="campaign-crafting.js?v=187" defer></script>
+  <script src="campaign-invites.js?v=187" defer></script>
   <style>
     html {
       overflow: hidden !important;
@@ -1762,6 +1763,7 @@ const NEW_CAMPAIGN = (type = "traditional") => ({
     heist: false, // Heist Planner
     intrigue: false, // Court Intrigue (Cult of Kosmos style)
     puzzles: false, // Comprehensive Puzzle system
+    kingdom: false, // Kingdom Builder
     // Player visibility
     playerWorldMap: true, playerFactions: false, playerEconomy: false,
     playerQuests: true, playerRelationships: false,
@@ -5535,7 +5537,7 @@ window.__CM = {
 /* Tab module loading state */
 const _tabModuleState = { dashboard: true, timeline: false, world: false, play: false };
 const _tabModulePromises = {};
-const _MODULE_VERSION = 185; // Bump to force re-fetch past service worker cache
+const _MODULE_VERSION = 187; // Bump to force re-fetch past service worker cache
 
 /**
  * Lazy-load a tab module: fetch JSX, transpile with Babel, execute.
@@ -6073,7 +6075,13 @@ function App() {
   const activeCampaign = campaigns.find(c => c.id === activeCampaignId);
   const data = activeCampaign?.data || NEW_CAMPAIGN();
   const setData = (updater) => {
-    setCampaigns(prev => prev.map(c => c.id === activeCampaignId ? { ...c, data: typeof updater === "function" ? updater(c.data) : updater } : c));
+    setCampaigns(prev => prev.map(c => {
+      if (c.id !== activeCampaignId) return c;
+      const newData = typeof updater === "function" ? updater(c.data) : updater;
+      // Auto-promote example campaigns on first edit so changes persist
+      if (c.isExample) return { ...c, data: newData, isExample: false };
+      return { ...c, data: newData };
+    }));
   };
 
   const handleCreateCampaign = () => {
@@ -6458,6 +6466,7 @@ function App() {
                 setViewRole: setViewRole,
                 activeCampaignId: activeCampaignId,
                 onPartyUpdate: handlePartyUpdate,
+                data: data,
                 setData: setData,
                 campaignEncounters: data.encounters || [],
               })
