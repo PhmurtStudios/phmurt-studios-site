@@ -983,33 +983,40 @@ function getBannerSVG(cfg) {
     var recentEvents = (kingdom.eventLog || []).slice(-5).reverse();
     var bannerSvg = getBannerSVG(kingdom.banner || {});
 
-    return React.createElement("div", null,
-      // Hanging Banner Background
-      React.createElement("div", { style: { position:"absolute", top:"-6px", right:"10px", width:"110px", height:"360px", opacity:1, pointerEvents:"none", zIndex:0 }, dangerouslySetInnerHTML: { __html: bannerSvg } }),
+    // Extract banner accent colors (user-chosen)
+    var bannerCfg = kingdom.banner || {};
+    var accentFg = bannerCfg.fg || T.gold;
+    var accentBg = bannerCfg.bg || T.bgCard;
+
+    return React.createElement("div", { style: { position:"relative" } },
+      // ── Left Banner (mirrored) ──
+      React.createElement("div", { style: { position:"absolute", top:"-6px", left:"10px", width:"110px", height:"360px", opacity:0.85, pointerEvents:"none", zIndex:0, transform:"scaleX(-1)" }, dangerouslySetInnerHTML: { __html: bannerSvg } }),
+      // ── Right Banner ──
+      React.createElement("div", { style: { position:"absolute", top:"-6px", right:"10px", width:"110px", height:"360px", opacity:0.85, pointerEvents:"none", zIndex:0 }, dangerouslySetInnerHTML: { __html: bannerSvg } }),
 
       // Royal Kingdom Banner Card
-      React.createElement("div", { style: Object.assign({}, S.card, S.cardRoyal, { display:"flex", justifyContent:"space-between", alignItems:"center", padding:"28px 32px", marginBottom:"18px", position:"relative", zIndex:1 }) },
+      React.createElement("div", { style: Object.assign({}, S.card, { display:"flex", justifyContent:"space-between", alignItems:"center", padding:"28px 32px", marginBottom:"18px", position:"relative", zIndex:1, background:"linear-gradient(135deg, "+accentBg+"18 0%, "+T.bgCard+" 40%, "+T.bgCard+" 60%, "+accentBg+"18 100%)", borderTop:"2px solid "+accentFg+"55", borderBottom:"1px solid "+accentFg+"22" }) },
         React.createElement("div", null,
-          React.createElement("div", { style: { fontSize:"10px", color:T.gold, fontFamily:T.ui, letterSpacing:"2px", textTransform:"uppercase", marginBottom:"6px", opacity:0.5 } }, "\u2014\u2014 The Realm of \u2014\u2014"),
-          React.createElement("div", { style: { fontSize:"22px", fontWeight:"bold", fontFamily:T.heading, color:T.gold, letterSpacing:"2px", textShadow:"0 1px 4px rgba(0,0,0,0.4)" } }, kingdom.name),
+          React.createElement("div", { style: { fontSize:"10px", color:accentFg, fontFamily:T.ui, letterSpacing:"2px", textTransform:"uppercase", marginBottom:"6px", opacity:0.6 } }, "\u2014\u2014 The Realm of \u2014\u2014"),
+          React.createElement("div", { style: { fontSize:"22px", fontWeight:"bold", fontFamily:T.heading, color:accentFg, letterSpacing:"2px", textShadow:"0 1px 4px rgba(0,0,0,0.4)" } }, kingdom.name),
           React.createElement("div", { style: { fontSize:"11px", color:T.textDim, marginTop:"6px", fontFamily:T.ui, letterSpacing:"0.5px" } },
             "Turn " + kingdom.turn + " \u2E31 Founded " + new Date(kingdom.founded).toLocaleDateString() + " \u2E31 Pop. " + (kingdom.totalPopulation || 0).toLocaleString()
           )
         ),
         React.createElement("div", { style: { display:"flex", alignItems:"center", gap:"12px" } },
           kingdom.stateReligion && React.createElement("div", { style: S.pill("#9b59b6") }, "\u2720 " + kingdom.stateReligion),
-          React.createElement("div", { style: { width:"40px", height:"40px", borderRadius:"50%", border:"2px solid "+T.gold+"44", display:"flex", alignItems:"center", justifyContent:"center", background:T.gold+"08" } },
-            Crown && React.createElement(Crown, { size: 18, color: T.gold })
+          React.createElement("div", { style: { width:"40px", height:"40px", borderRadius:"50%", border:"2px solid "+accentFg+"44", display:"flex", alignItems:"center", justifyContent:"center", background:accentFg+"08" } },
+            Crown && React.createElement(Crown, { size: 18, color: accentFg })
           )
         )
       ),
       // Ornamental divider
-      React.createElement("div", { style: Object.assign({}, S.ornament, { position:"relative", zIndex:1 }) }, "\u2726 \u2727 \u2726"),
+      React.createElement("div", { style: { textAlign:"center", color:accentFg+"55", fontSize:"14px", letterSpacing:"8px", margin:"8px 0", fontFamily:"serif", position:"relative", zIndex:1 } }, "\u2726 \u2727 \u2726"),
 
       React.createElement("div", { style: Object.assign({}, S.statRow, { position:"relative", zIndex:1 }) },
         React.createElement(StatBadge, { label: "Economy", value: stats.economy, color: stats.economy >= 0 ? "#7cb342" : "#c94f3f" }),
         React.createElement(StatBadge, { label: "Loyalty", value: stats.loyalty, color: stats.loyalty >= 0 ? "#7cb342" : "#c94f3f" }),
-        React.createElement(StatBadge, { label: "Treasury", value: kingdom.treasury + " BP", color: T.gold, featured: true }),
+        React.createElement(StatBadge, { label: "Treasury", value: kingdom.treasury + " BP", color: accentFg, featured: true }),
         React.createElement(StatBadge, { label: "Stability", value: stats.stability, color: stats.stability >= 0 ? "#7cb342" : "#c94f3f" }),
         React.createElement(StatBadge, { label: "Unrest", value: kingdom.unrest || 0, color: (kingdom.unrest || 0) > 5 ? "#c94f3f" : (kingdom.unrest || 0) > 0 ? "#e67e22" : "#7cb342" }),
         React.createElement(StatBadge, { label: "Defense", value: stats.totalDefense, color: "#5b7fb5" })
@@ -1017,48 +1024,48 @@ function getBannerSVG(cfg) {
 
       // Treasury Details
       React.createElement("div", { style: Object.assign({}, S.statRow, { gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", position:"relative", zIndex:1 }) },
-        React.createElement("div", { style: S.statBox },
-          React.createElement("div", { style: S.statLabel }, "Income / Turn"),
+        React.createElement("div", { style: Object.assign({}, S.statBox, { borderTopColor: accentFg+"44", background:"linear-gradient(180deg, "+accentBg+"08 0%, "+T.bgCard+" 100%)" }) },
+          React.createElement("div", { style: Object.assign({}, S.statLabel, { color:accentFg }) }, "Income / Turn"),
           React.createElement("div", { style: { fontSize:"16px", fontWeight:"bold", color:"#7cb342", fontFamily:T.heading } }, "+" + stats.income + " BP")
         ),
-        React.createElement("div", { style: S.statBox },
-          React.createElement("div", { style: S.statLabel }, "Consumption"),
+        React.createElement("div", { style: Object.assign({}, S.statBox, { borderTopColor: accentFg+"44", background:"linear-gradient(180deg, "+accentBg+"08 0%, "+T.bgCard+" 100%)" }) },
+          React.createElement("div", { style: Object.assign({}, S.statLabel, { color:accentFg }) }, "Consumption"),
           React.createElement("div", { style: { fontSize:"16px", fontWeight:"bold", color:"#c94f3f", fontFamily:T.heading } }, "-" + stats.consumption + " BP")
         ),
-        React.createElement("div", { style: S.statBox },
-          React.createElement("div", { style: S.statLabel }, "Net / Turn"),
+        React.createElement("div", { style: Object.assign({}, S.statBox, { borderTopColor: accentFg+"44", background:"linear-gradient(180deg, "+accentBg+"08 0%, "+T.bgCard+" 100%)" }) },
+          React.createElement("div", { style: Object.assign({}, S.statLabel, { color:accentFg }) }, "Net / Turn"),
           React.createElement("div", { style: { fontSize:"16px", fontWeight:"bold", color: (stats.income - stats.consumption) >= 0 ? "#7cb342" : "#c94f3f" } },
             (stats.income - stats.consumption >= 0 ? "+" : "") + (stats.income - stats.consumption) + " BP"
           )
         ),
-        React.createElement("div", { style: S.statBox },
-          React.createElement("div", { style: S.statLabel }, "Hexes / Settlements"),
-          React.createElement("div", { style: { fontSize:"16px", fontWeight:"bold", color:T.gold } }, hexCount + " / " + settlementCount)
+        React.createElement("div", { style: Object.assign({}, S.statBox, { borderTopColor: accentFg+"44", background:"linear-gradient(180deg, "+accentBg+"08 0%, "+T.bgCard+" 100%)" }) },
+          React.createElement("div", { style: Object.assign({}, S.statLabel, { color:accentFg }) }, "Hexes / Settlements"),
+          React.createElement("div", { style: { fontSize:"16px", fontWeight:"bold", color:accentFg } }, hexCount + " / " + settlementCount)
         ),
-        React.createElement("div", { style: S.statBox },
-          React.createElement("div", { style: S.statLabel }, "Buildings"),
-          React.createElement("div", { style: { fontSize:"16px", fontWeight:"bold", color:T.gold } }, buildingCount)
+        React.createElement("div", { style: Object.assign({}, S.statBox, { borderTopColor: accentFg+"44", background:"linear-gradient(180deg, "+accentBg+"08 0%, "+T.bgCard+" 100%)" }) },
+          React.createElement("div", { style: Object.assign({}, S.statLabel, { color:accentFg }) }, "Buildings"),
+          React.createElement("div", { style: { fontSize:"16px", fontWeight:"bold", color:accentFg } }, buildingCount)
         ),
-        React.createElement("div", { style: S.statBox },
-          React.createElement("div", { style: S.statLabel }, "Council"),
+        React.createElement("div", { style: Object.assign({}, S.statBox, { borderTopColor: accentFg+"44", background:"linear-gradient(180deg, "+accentBg+"08 0%, "+T.bgCard+" 100%)" }) },
+          React.createElement("div", { style: Object.assign({}, S.statLabel, { color:accentFg }) }, "Council"),
           React.createElement("div", { style: { fontSize:"16px", fontWeight:"bold", color: councilFilled >= 4 ? "#7cb342" : "#e67e22" } }, councilFilled + "/" + Object.keys(COUNCIL_ROLES).length)
         )
       ),
 
       // Ornamental divider between stats and navigation
       React.createElement("div", { style: { textAlign:"center", margin:"20px 0 16px", position:"relative", zIndex:1 } },
-        React.createElement("div", { style: { height:"1px", background:"linear-gradient(90deg, transparent, "+T.gold+"33, transparent)", position:"absolute", top:"50%", left:"0", right:"0" } }),
-        React.createElement("span", { style: { position:"relative", background:T.bg, padding:"0 16px", color:T.gold+"44", fontSize:"12px", letterSpacing:"6px" } }, "\u2726 \u2726 \u2726")
+        React.createElement("div", { style: { height:"1px", background:"linear-gradient(90deg, transparent, "+accentFg+"33, transparent)", position:"absolute", top:"50%", left:"0", right:"0" } }),
+        React.createElement("span", { style: { position:"relative", background:T.bg, padding:"0 16px", color:accentFg+"44", fontSize:"12px", letterSpacing:"6px" } }, "\u2726 \u2726 \u2726")
       ),
 
       // Royal Chambers Navigation
-      React.createElement("div", { style: Object.assign({}, S.sectionHead, { position:"relative", zIndex:1 }) }, Compass && React.createElement(Compass, { size: 16 }), " Royal Chambers"),
+      React.createElement("div", { style: Object.assign({}, S.sectionHead, { position:"relative", zIndex:1, color:accentFg, borderImage:"linear-gradient(90deg, "+accentFg+"66 0%, "+accentFg+"22 70%, transparent 100%) 1" }) }, Compass && React.createElement(Compass, { size: 16 }), " Royal Chambers"),
 
       // Featured Row: Territory and Settlements
-      React.createElement("div", { style: { display:"grid", gridTemplateColumns:"1.8fr 1.2fr", gap:"14px", marginBottom: "14px", position:"relative", zIndex:1 } },
+      React.createElement("div", { style: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:"14px", marginBottom: "14px", position:"relative", zIndex:1 } },
         [
           { id: "territory", label: "Territory", icon: Map, desc: "Claim hexes, build improvements, manage land", color: "#8fbc5e", featured: true },
-          { id: "settlements", label: "Settlements", icon: Building2, desc: "Found towns, construct buildings, grow cities", color: "#d4af37", featured: true }
+          { id: "settlements", label: "Settlements", icon: Building2, desc: "Found towns, construct buildings, grow cities", color: accentFg, featured: true }
         ].map(function(panel) {
           return React.createElement("div", {
             key: panel.id,
@@ -1075,8 +1082,8 @@ function getBannerSVG(cfg) {
               )
             ),
             React.createElement("div", { style: { fontSize: "14px", fontWeight: "bold", color: panel.color, fontFamily: T.heading, letterSpacing: "1px", textTransform: "uppercase" } }, panel.label),
-            React.createElement("div", { style: { fontSize: "11px", color: T.textDim, marginTop: "8px", lineHeight: "1.4" } }, panel.desc),
-            React.createElement("div", { style: { marginTop:"12px", fontSize:"10px", color:panel.color+"88", fontFamily:T.ui, letterSpacing:"1px" } }, "\u25B8 ENTER")
+            React.createElement("div", { style: { fontSize: "11px", color: T.text, marginTop: "8px", lineHeight: "1.4", opacity:0.75 } }, panel.desc),
+            React.createElement("div", { style: { marginTop:"12px", fontSize:"10px", color:panel.color+"aa", fontFamily:T.ui, letterSpacing:"1px" } }, "\u25B8 ENTER")
           );
         })
       ),
@@ -1104,8 +1111,8 @@ function getBannerSVG(cfg) {
               )
             ),
             React.createElement("div", { style: { fontSize: "12px", fontWeight: "bold", color: panel.color, fontFamily: T.heading, letterSpacing: "0.5px", textTransform: "uppercase" } }, panel.label),
-            React.createElement("div", { style: { fontSize: "10px", color: T.textDim, marginTop: "5px", lineHeight: "1.3" } }, panel.desc),
-            React.createElement("div", { style: { marginTop:"8px", fontSize:"9px", color:panel.color+"77", fontFamily:T.ui, letterSpacing:"0.5px" } }, "\u25B8 ENTER")
+            React.createElement("div", { style: { fontSize: "10px", color: T.text, marginTop: "5px", lineHeight: "1.3", opacity:0.7 } }, panel.desc),
+            React.createElement("div", { style: { marginTop:"8px", fontSize:"9px", color:panel.color+"88", fontFamily:T.ui, letterSpacing:"0.5px" } }, "\u25B8 ENTER")
           );
         })
       ),
@@ -1113,19 +1120,19 @@ function getBannerSVG(cfg) {
       // Pending Event Banner
       kingdom.activeEvent && React.createElement("div", { style: Object.assign({}, S.card, { borderTop:"3px solid #e67e22", borderLeft:"none", background:"linear-gradient(180deg, #e67e2208 0%, "+T.bgCard+" 100%)", position:"relative", zIndex:1 }) },
         React.createElement("div", { style: { fontSize:"14px", fontWeight:"bold", color:"#e67e22", marginBottom:"6px", fontFamily:T.heading, letterSpacing:"0.5px" } }, "\u26A0 Pending Event: " + kingdom.activeEvent.name),
-        React.createElement("div", { style: { fontSize:"12px", color:T.textDim, marginBottom:"10px", fontStyle:"italic" } }, kingdom.activeEvent.desc),
+        React.createElement("div", { style: { fontSize:"12px", color:T.text, marginBottom:"10px", fontStyle:"italic", opacity:0.8 } }, kingdom.activeEvent.desc),
         viewRole === "dm" && React.createElement("button", { style: S.btn, onClick: function() { onNavigate("events"); } }, "Resolve Event")
       ),
 
       // Recent Events Chronicle
-      recentEvents.length > 0 && React.createElement("div", { style: { marginTop:"8px", position:"relative", zIndex:1, marginLeft:"12px", paddingLeft:"16px", borderLeft:"3px solid "+T.gold+"22" } },
-        React.createElement("div", { style: Object.assign({}, S.sectionHead, { marginLeft:"-12px", paddingLeft:"0" }) }, Scroll && React.createElement(Scroll, { size: 16 }), " Chronicle of Recent Events"),
+      recentEvents.length > 0 && React.createElement("div", { style: { marginTop:"8px", position:"relative", zIndex:1, marginLeft:"12px", paddingLeft:"16px", borderLeft:"3px solid "+accentFg+"22" } },
+        React.createElement("div", { style: Object.assign({}, S.sectionHead, { marginLeft:"-12px", paddingLeft:"0", color:accentFg, borderImage:"linear-gradient(90deg, "+accentFg+"66 0%, "+accentFg+"22 70%, transparent 100%) 1" }) }, Scroll && React.createElement(Scroll, { size: 16 }), " Chronicle of Recent Events"),
         React.createElement("div", { style: Object.assign({}, S.card, { padding:"0", overflow:"hidden" }) },
           recentEvents.map(function(ev, i) {
             var typeColor = ev.type === "harmful" ? "#c94f3f" : ev.type === "beneficial" ? "#7cb342" : "#5b7fb5";
             return React.createElement("div", { key: i, style: { padding:"10px 16px", borderBottom: i < recentEvents.length - 1 ? "1px solid "+T.border : "none", display:"flex", alignItems:"center", gap:"12px" } },
               React.createElement("div", { style: { width:"6px", height:"6px", borderRadius:"50%", background:typeColor, flexShrink:0, boxShadow:"0 0 6px "+typeColor+"44" } }),
-              React.createElement("span", { style: { color:T.gold, fontWeight:"700", fontSize:"11px", fontFamily:T.ui, letterSpacing:"0.5px", minWidth:"52px" } }, "Turn " + ev.turn),
+              React.createElement("span", { style: { color:accentFg, fontWeight:"700", fontSize:"11px", fontFamily:T.ui, letterSpacing:"0.5px", minWidth:"52px" } }, "Turn " + ev.turn),
               React.createElement("span", { style: { color:typeColor, fontSize:"12px" } }, ev.event)
             );
           })
@@ -1892,92 +1899,84 @@ function getBannerSVG(cfg) {
           React.createElement("button", {
             style: Object.assign({}, S.btn, { width:"100%", justifyContent:"center", padding:"12px 16px", fontSize:"13px", letterSpacing:"1.5px", opacity: name ? 1 : 0.4 }),
             onClick: function() { if (name) setStep(2); }
-          }, "Design Your Banner \u2192")
+          }, "Next Step \u2192")
         ),
         React.createElement("div", { style: { color:T.gold+"33", fontSize:"14px", letterSpacing:"12px", marginTop:"24px" } }, "\u2756\u2756\u2756")
       );
     }
 
-    // Step 2: Banner Designer
-    return React.createElement("div", { style: { maxWidth:"700px", margin:"30px auto" } },
-      React.createElement("div", { style: { textAlign:"center", marginBottom:"20px" } },
+    // Step 2: Banner Designer (clean, minimal layout)
+    return React.createElement("div", { style: { maxWidth:"620px", margin:"30px auto" } },
+      // Header
+      React.createElement("div", { style: { textAlign:"center", marginBottom:"24px" } },
         React.createElement("div", { style: { fontSize:"10px", color:T.gold, fontFamily:T.ui, letterSpacing:"3px", textTransform:"uppercase", marginBottom:"6px", opacity:0.5 } }, "Step 2 of 2"),
-        React.createElement("div", { style: { fontSize:"22px", fontWeight:"bold", color:T.gold, fontFamily:T.heading, letterSpacing:"2px", textShadow:"0 1px 4px rgba(0,0,0,0.4)" } }, "Design Your Banner")
+        React.createElement("div", { style: { fontSize:"22px", fontWeight:"bold", color:T.gold, fontFamily:T.heading, letterSpacing:"2px" } }, "Design Your Banner")
       ),
-      React.createElement("div", { style: { display:"flex", gap:"24px", alignItems:"flex-start" } },
-        // Left: Live Preview
-        React.createElement("div", { style: { flex:"0 0 140px", position:"sticky", top:"20px", textAlign:"center" } },
-          React.createElement("div", { style: { width:"120px", height:"360px", margin:"0 auto" }, dangerouslySetInnerHTML: { __html: previewSvg } }),
-          React.createElement("div", { style: { fontSize:"12px", color:T.gold, fontFamily:T.heading, marginTop:"8px", letterSpacing:"1px" } }, name)
-        ),
-        // Right: Configuration
-        React.createElement("div", { style: Object.assign({}, S.card, S.cardRoyal, { flex:1, padding:"20px" }) },
-          // Shape
-          React.createElement("div", { style: sectionWrap },
-            React.createElement("div", { style: sectionLabel }, "Banner Shape"),
+      // Preview centered
+      React.createElement("div", { style: { textAlign:"center", marginBottom:"24px" } },
+        React.createElement("div", { style: { width:"100px", height:"300px", margin:"0 auto" }, dangerouslySetInnerHTML: { __html: previewSvg } }),
+        React.createElement("div", { style: { fontSize:"13px", color:T.gold, fontFamily:T.heading, marginTop:"8px", letterSpacing:"1px" } }, name)
+      ),
+      // Options card
+      React.createElement("div", { style: Object.assign({}, S.card, S.cardRoyal, { padding:"24px" }) },
+        // Shape + Border side by side
+        React.createElement("div", { style: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:"20px", marginBottom:"20px" } },
+          React.createElement("div", null,
+            React.createElement("div", { style: sectionLabel }, "Shape"),
             React.createElement("div", { style: { display:"flex", flexWrap:"wrap", gap:"6px" } },
               SHAPES.map(function(s) {
                 return React.createElement("div", { key:s.id, style: chip(banner.shape===s.id), onClick: function() { upd("shape",s.id); } }, s.label);
               })
             )
           ),
-          // Border
-          React.createElement("div", { style: sectionWrap },
-            React.createElement("div", { style: sectionLabel }, "Border Style"),
+          React.createElement("div", null,
+            React.createElement("div", { style: sectionLabel }, "Border"),
             React.createElement("div", { style: { display:"flex", flexWrap:"wrap", gap:"6px" } },
               BORDERS.map(function(b) {
                 return React.createElement("div", { key:b.id, style: chip(banner.border===b.id), onClick: function() { upd("border",b.id); } }, b.label);
               })
             )
-          ),
-          // Color Palette
-          React.createElement("div", { style: sectionWrap },
-            React.createElement("div", { style: sectionLabel }, "Colors"),
-            React.createElement("div", { style: { display:"flex", flexWrap:"wrap", gap:"6px" } },
-              PALETTES.map(function(p, i) {
-                var sel = banner.bg===p.bg && banner.fg===p.fg;
-                return React.createElement("div", {
-                  key:i,
-                  style: Object.assign({}, chip(sel), { display:"flex", alignItems:"center", gap:"6px", padding:"5px 10px" }),
-                  onClick: function() { setBanner(function(prev) { return Object.assign({}, prev, { bg:p.bg, fg:p.fg }); }); }
-                },
-                  React.createElement("div", { style: { display:"flex", gap:"2px" } },
-                    React.createElement("div", { style: { width:"12px", height:"12px", borderRadius:"2px", background:p.bg, border:"1px solid #555" } }),
-                    React.createElement("div", { style: { width:"12px", height:"12px", borderRadius:"2px", background:p.fg, border:"1px solid #555" } })
-                  ),
-                  React.createElement("span", null, p.label)
-                );
-              })
-            )
-          ),
-          // Emblem
-          React.createElement("div", { style: sectionWrap },
-            React.createElement("div", { style: sectionLabel }, "Emblem"),
-            React.createElement("div", { style: { display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(58px, 1fr))", gap:"6px" } },
-              EMBLEMS.map(function(e) {
-                var miniSvg = getBannerSVG(Object.assign({}, banner, { emblem:e.id, shape:"straight" }));
-                return React.createElement("div", {
-                  key:e.id,
-                  style: emblemChip(e.id, banner.emblem===e.id),
-                  onClick: function() { upd("emblem",e.id); }
-                },
-                  React.createElement("div", { style: { width:"36px", height:"54px" }, dangerouslySetInnerHTML: { __html: miniSvg } }),
-                  e.label
-                );
-              })
-            )
-          ),
-          // Buttons
-          React.createElement("div", { style: { display:"flex", gap:"10px", marginTop:"20px" } },
-            React.createElement("button", {
-              style: Object.assign({}, S.btn, { padding:"10px 16px", fontSize:"12px", opacity:0.7 }),
-              onClick: function() { setStep(1); }
-            }, "\u2190 Back"),
-            React.createElement("button", {
-              style: Object.assign({}, S.btn, { flex:1, justifyContent:"center", padding:"12px 16px", fontSize:"13px", letterSpacing:"1.5px" }),
-              onClick: function() { onComplete(initKingdom(name, null, banner)); }
-            }, Crown && React.createElement(Crown, { size: 16 }), "Establish Kingdom")
           )
+        ),
+        // Colors - compact color swatches
+        React.createElement("div", { style: { marginBottom:"20px" } },
+          React.createElement("div", { style: sectionLabel }, "Colors"),
+          React.createElement("div", { style: { display:"flex", flexWrap:"wrap", gap:"8px" } },
+            PALETTES.map(function(p, i) {
+              var sel = banner.bg===p.bg && banner.fg===p.fg;
+              return React.createElement("div", {
+                key:i, title:p.label,
+                style: { width:"36px", height:"36px", borderRadius:"4px", cursor:"pointer", border: sel ? "2px solid "+T.gold : "2px solid transparent", padding:"2px", transition:"all 0.15s", background:"transparent" },
+                onClick: function() { setBanner(function(prev) { return Object.assign({}, prev, { bg:p.bg, fg:p.fg }); }); }
+              },
+                React.createElement("div", { style: { width:"100%", height:"100%", borderRadius:"2px", background:"linear-gradient(135deg, "+p.bg+" 50%, "+p.fg+" 50%)" } })
+              );
+            })
+          )
+        ),
+        // Emblem - text chips (no mini SVG renders)
+        React.createElement("div", { style: { marginBottom:"24px" } },
+          React.createElement("div", { style: sectionLabel }, "Emblem"),
+          React.createElement("div", { style: { display:"flex", flexWrap:"wrap", gap:"6px" } },
+            EMBLEMS.map(function(e) {
+              return React.createElement("div", {
+                key:e.id,
+                style: chip(banner.emblem===e.id),
+                onClick: function() { upd("emblem",e.id); }
+              }, e.label);
+            })
+          )
+        ),
+        // Buttons
+        React.createElement("div", { style: { display:"flex", gap:"10px" } },
+          React.createElement("button", {
+            style: Object.assign({}, S.btn, S.btnGold, { padding:"10px 16px", fontSize:"12px" }),
+            onClick: function() { setStep(1); }
+          }, "\u2190 Back"),
+          React.createElement("button", {
+            style: Object.assign({}, S.btn, { flex:1, justifyContent:"center", padding:"12px 16px", fontSize:"13px", letterSpacing:"1.5px" }),
+            onClick: function() { onComplete(initKingdom(name, null, banner)); }
+          }, Crown && React.createElement(Crown, { size: 16 }), "Establish Kingdom")
         )
       )
     );
