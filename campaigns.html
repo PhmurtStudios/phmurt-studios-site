@@ -1799,6 +1799,7 @@ const EXAMPLE_CAMPAIGN = {
     // Example campaign has all systems enabled for demo
     livingWorld: true, economy: true, calendar: true, religion: true,
     hexcrawl: true, questBoard: true, downtime: true, homebrew: true,
+    factionWar: true, prophecy: true, heist: true, intrigue: true, puzzles: true, kingdom: true,
     playerWorldMap: true, playerFactions: true, playerEconomy: false,
     playerQuests: true, playerRelationships: false,
     lwEventFrequency: 60, economyVolatility: "medium",
@@ -5958,6 +5959,14 @@ function App() {
     } else {
       const example = { id: "example-1", data: NEW_CAMPAIGN(), isExample: true };
       example.data.name = "Dragon's Reach";
+      // Enable all advanced modules for the example campaign so users can explore everything
+      Object.assign(example.data.modules, {
+        livingWorld: true, economy: true, calendar: true, religion: true,
+        hexcrawl: true, questBoard: true, downtime: true,
+        factionWar: true, prophecy: true, heist: true, intrigue: true,
+        puzzles: true, kingdom: true,
+        playerWorldMap: true, playerFactions: true, playerQuests: true,
+      });
       example.data.party = [
         { id:"p1", name:"Thorn Ironshield", class:"Fighter", level:5, hp:45, maxHp:45, ac:18, speed:30, color:"#3b82f6", portrait:null, stats:{str:18,dex:12,con:16,int:10,wis:13,cha:8} },
         { id:"p2", name:"Elara Nightwhisper", class:"Wizard", level:5, hp:28, maxHp:28, ac:12, speed:30, color:"#a855f7", portrait:null, stats:{str:8,dex:14,con:12,int:20,wis:15,cha:10} },

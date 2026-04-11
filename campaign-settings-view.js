@@ -198,6 +198,7 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
     // Plague standalone removed — integrated into Living World Atlas events
     { key: "heist", name: "Heist Planner", desc: "Blueprint planning, crew roles, heat system, complication generator", icon: "⚷" },
     { key: "intrigue", name: "Court Intrigue", desc: "Shadow conspiracy web, agent tracking, clue system (Cult of Kosmos style)", icon: "◈" },
+    { key: "kingdom", name: "Kingdom Builder", desc: "Found a kingdom, manage settlements, build structures, levy armies, procedural capital city maps", icon: "♛" },
     { key: "puzzles", name: "Puzzle Workshop", desc: "20+ puzzle templates, cipher wheels, grid puzzles, hint system, interactive components", icon: "⊞" },
     { key: "scheduler", name: "Session Scheduler", desc: "Player availability, session planning", icon: "⊛" }
   ];
