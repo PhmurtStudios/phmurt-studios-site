@@ -854,6 +854,24 @@ var PhmurtDB = (function () {
 
     onAuthStateChange: function (fn) { if (typeof fn === 'function') _listeners.push(fn); },
 
+    /* ── Force-refresh session from database ─────────────────── */
+    /* Call after Stripe checkout return or any external change   */
+    refreshSession: function () {
+      if (!_session || !_session.userId) return Promise.reject(new Error('Not signed in.'));
+      var sb = _sb();
+      if (!sb) return Promise.reject(new Error('Supabase not available.'));
+      return _fetchProfile(_session.userId).then(function (profile) {
+        if (!profile) return _session;
+        var updated = _makeSession(_session, profile);
+        if (updated) {
+          _session = updated;
+          _fireChange();
+          _lsSet(LS_SESSION, updated);
+        }
+        return _session;
+      });
+    },
+
     /* ── Sign Up ──────────────────────────────────────────────── */
     signUp: function (name, email, password) {
       var ne   = (email || '').trim().toLowerCase();

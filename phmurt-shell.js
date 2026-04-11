@@ -1065,6 +1065,34 @@
     PhmurtDice.init();
     window.addEventListener('phmurt-auth-change', updateAuthNav);
 
+    /* ── Handle return from Stripe checkout on any page ────────── */
+    try {
+      var _shellParams = new URLSearchParams(window.location.search);
+      var _subReturn = _shellParams.get('subscription');
+      if (_subReturn === 'success') {
+        if (typeof window.psToast === 'function') window.psToast('Subscription active! Refreshing…');
+        try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
+        (function _shellRefresh(attempt) {
+          if (attempt > 5) return;
+          var delay = attempt === 0 ? 1000 : 5000;
+          setTimeout(function () {
+            if (typeof PhmurtDB !== 'undefined' && PhmurtDB.refreshSession) {
+              PhmurtDB.refreshSession().then(function (sess) {
+                if (sess && sess.isSubscribed) {
+                  window.dispatchEvent(new Event('phmurt-auth-change'));
+                } else {
+                  _shellRefresh(attempt + 1);
+                }
+              }).catch(function () { _shellRefresh(attempt + 1); });
+            }
+          }, delay);
+        })(0);
+      } else if (_subReturn === 'canceled') {
+        if (typeof window.psToast === 'function') window.psToast('Checkout canceled. No charge was made.');
+        try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
+      }
+    } catch (e) {}
+
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(function(err) { if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[Phmurt] SW registration failed:', err.message || err); });
     }

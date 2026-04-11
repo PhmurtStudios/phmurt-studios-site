@@ -563,6 +563,25 @@
       if (subStatus === 'success') {
         showToast('Welcome to Pro! Your subscription is active.', 'success');
         try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
+        // Force-refresh session from database so UI updates to show "Manage Subscription"
+        // Retry a few times with delay — Stripe webhook may not have processed yet
+        (function refreshAfterCheckout(attempt) {
+          if (attempt > 5) return; // give up after ~30s
+          var delay = attempt === 0 ? 1000 : 5000;
+          setTimeout(function () {
+            if (typeof PhmurtDB !== 'undefined' && PhmurtDB.refreshSession) {
+              PhmurtDB.refreshSession().then(function (sess) {
+                if (sess && sess.isSubscribed) {
+                  // Session updated — trigger UI refresh
+                  window.dispatchEvent(new Event('phmurt-auth-change'));
+                } else {
+                  // Webhook may not have processed yet, retry
+                  refreshAfterCheckout(attempt + 1);
+                }
+              }).catch(function () { refreshAfterCheckout(attempt + 1); });
+            }
+          }, delay);
+        })(0);
       } else if (subStatus === 'canceled') {
         showToast('Checkout canceled. No charge was made.', 'info');
         try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
