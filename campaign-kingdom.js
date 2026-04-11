@@ -1572,7 +1572,7 @@ function getBannerSVG(cfg) {
 
   // ── Territory Panel ────────────────────────────────────────────────────
   function TerritoryPanel(_ref) {
-    var kingdom = _ref.kingdom, setKingdom = _ref.setKingdom, viewRole = _ref.viewRole, onBack = _ref.onBack, data = _ref.data;
+    var kingdom = _ref.kingdom, setKingdom = _ref.setKingdom, setData = _ref.setData, viewRole = _ref.viewRole, onBack = _ref.onBack, data = _ref.data;
     var _s1 = useState(false), showClaimForm = _s1[0], setShowClaimForm = _s1[1];
     var _s2 = useState({ regionName: "", terrain: "plains" }), claimForm = _s2[0], setClaimForm = _s2[1];
     var _s3 = useState(null), selectedRegion = _s3[0], setSelectedRegion = _s3[1];
@@ -1587,14 +1587,27 @@ function getBannerSVG(cfg) {
       var terrain = TERRAIN_TYPES[claimForm.terrain];
       if (!terrain || kingdom.treasury < terrain.claimCost) return;
       if (territories[claimForm.regionName]) return; // Already claimed
+      var regionNameToClaim = claimForm.regionName;
       updateKingdom(setKingdom, function(k) {
         k.treasury -= terrain.claimCost;
-        k.territories[claimForm.regionName] = { id: claimForm.regionName, name: claimForm.regionName, terrain: claimForm.terrain, claimedTurn: k.turn, improvements: [], improvementQueue: [] };
+        k.territories[regionNameToClaim] = { id: regionNameToClaim, name: regionNameToClaim, terrain: claimForm.terrain, claimedTurn: k.turn, improvements: [], improvementQueue: [] };
         if (!k.atlasRegions) k.atlasRegions = [];
-        if (!k.atlasRegions.includes(claimForm.regionName)) {
-          k.atlasRegions.push(claimForm.regionName);
+        if (!k.atlasRegions.includes(regionNameToClaim)) {
+          k.atlasRegions.push(regionNameToClaim);
         }
       });
+      // Sync with world atlas: update the region's controller
+      if (setData) {
+        setData(function(prev) {
+          if (!prev.regions) return prev;
+          return Object.assign({}, prev, {
+            regions: prev.regions.map(function(r) {
+              if (r.name === regionNameToClaim) return Object.assign({}, r, { ctrl: kingdom.name });
+              return r;
+            })
+          });
+        });
+      }
       setShowClaimForm(false);
       setClaimForm({ regionName: "", terrain: "plains" });
     };
@@ -2508,11 +2521,13 @@ function getBannerSVG(cfg) {
 
   // ── Kingdom Creation Wizard ────────────────────────────────────────────
   function CreateKingdomWizard(_ref) {
-    var onComplete = _ref.onComplete;
+    var onComplete = _ref.onComplete, data = _ref.data;
     var _s1 = useState(""), name = _s1[0], setName = _s1[1];
     var _s2 = useState(1), step = _s2[0], setStep = _s2[1];
     var _s3 = useState({ shape:"pointed", border:"ornate", emblem:"lion", bg:"#1a2e20", fg:"#c9a032" }),
         banner = _s3[0], setBanner = _s3[1];
+    var _s6 = useState(""), startRegion = _s6[0], setStartRegion = _s6[1];
+    var _s7 = useState(""), capitalCity = _s7[0], setCapitalCity = _s7[1];
 
     var SHAPES = [
       { id:"pointed", label:"Pointed" },
@@ -2599,10 +2614,11 @@ function getBannerSVG(cfg) {
     }
 
     // Step 2: Banner Designer (clean, minimal layout)
+    if (step === 2) {
     return React.createElement("div", { style: { maxWidth:"620px", margin:"30px auto" } },
       // Header
       React.createElement("div", { style: { textAlign:"center", marginBottom:"24px" } },
-        React.createElement("div", { style: { fontSize:"10px", color:T.gold, fontFamily:T.ui, letterSpacing:"3px", textTransform:"uppercase", marginBottom:"6px", opacity:0.5 } }, "Step 2 of 2"),
+        React.createElement("div", { style: { fontSize:"10px", color:T.gold, fontFamily:T.ui, letterSpacing:"3px", textTransform:"uppercase", marginBottom:"6px", opacity:0.5 } }, "Step 2 of 3"),
         React.createElement("div", { style: { fontSize:"22px", fontWeight:"bold", color:T.gold, fontFamily:T.heading, letterSpacing:"2px" } }, "Design Your Banner")
       ),
       // Preview centered
@@ -2668,10 +2684,106 @@ function getBannerSVG(cfg) {
           }, "\u2190 Back"),
           React.createElement("button", {
             style: Object.assign({}, S.btn, { flex:1, justifyContent:"center", padding:"12px 16px", fontSize:"13px", letterSpacing:"1.5px" }),
-            onClick: function() { onComplete(initKingdom(name, null, banner)); }
-          }, Crown && React.createElement(Crown, { size: 16 }), "Establish Kingdom")
+            onClick: function() { setStep(3); }
+          }, "Next Step \u2192")
         )
       )
+    );
+    }
+
+    // Step 3: Choose starting region & capital city
+    var regions = (data && data.regions) || [];
+    var cities = (data && data.cities) || [];
+    // Cities in the selected region
+    var regionCities = startRegion ? cities.filter(function(c) {
+      // Match cities whose region name matches or whose atlasProvince matches
+      return c.region === startRegion || c.atlasProvinceName === startRegion;
+    }) : [];
+    // If no city filtering works, show all cities as fallback
+    var cityOptions = regionCities.length > 0 ? regionCities : (startRegion ? cities : []);
+
+    return React.createElement("div", { style: { maxWidth:"620px", margin:"30px auto" } },
+      React.createElement("div", { style: { textAlign:"center", marginBottom:"24px" } },
+        React.createElement("div", { style: { fontSize:"10px", color:T.gold, fontFamily:T.ui, letterSpacing:"3px", textTransform:"uppercase", marginBottom:"6px", opacity:0.5 } }, "Step 3 of 3"),
+        React.createElement("div", { style: { fontSize:"22px", fontWeight:"bold", color:T.gold, fontFamily:T.heading, letterSpacing:"2px" } }, "Claim Your Domain")
+      ),
+      // Banner preview small
+      React.createElement("div", { style: { textAlign:"center", marginBottom:"20px" } },
+        React.createElement("div", { style: { width:"60px", height:"180px", margin:"0 auto" }, dangerouslySetInnerHTML: { __html: getBannerSVG(banner) } }),
+        React.createElement("div", { style: { fontSize:"13px", color:T.gold, fontFamily:T.heading, marginTop:"6px", letterSpacing:"1px" } }, name)
+      ),
+      React.createElement("div", { style: Object.assign({}, S.card, S.cardRoyal, { padding:"24px" }) },
+        // Starting Region
+        React.createElement("div", { style: { marginBottom:"20px" } },
+          React.createElement("div", { style: sectionLabel }, "Starting Region"),
+          React.createElement("div", { style: { fontSize:"12px", color:T.textDim, marginBottom:"8px" } }, "Choose the atlas region where your kingdom begins. This will become your first territory."),
+          regions.length > 0
+            ? React.createElement("select", {
+                style: Object.assign({}, S.select, { fontSize:"14px", padding:"10px 12px" }),
+                value: startRegion,
+                onChange: function(e) { setStartRegion(e.target.value); setCapitalCity(""); }
+              },
+                React.createElement("option", { value: "" }, "\u2014 Select a region \u2014"),
+                regions.map(function(r) {
+                  return React.createElement("option", { key: r.name || r.id, value: r.name }, r.name + (r.ctrl ? " (controlled by " + r.ctrl + ")" : ""));
+                })
+              )
+            : React.createElement("div", { style: { fontSize:"12px", color:T.textDim, fontStyle:"italic" } }, "No atlas regions found. Generate a world map first in the World Atlas tab.")
+        ),
+        // Capital City
+        React.createElement("div", { style: { marginBottom:"20px" } },
+          React.createElement("div", { style: sectionLabel }, "Capital City"),
+          React.createElement("div", { style: { fontSize:"12px", color:T.textDim, marginBottom:"8px" } }, "Choose which city will serve as your capital, or name a new one."),
+          cities.length > 0
+            ? React.createElement("select", {
+                style: Object.assign({}, S.select, { fontSize:"14px", padding:"10px 12px" }),
+                value: capitalCity,
+                onChange: function(e) { setCapitalCity(e.target.value); }
+              },
+                React.createElement("option", { value: "" }, "\u2014 Select a city \u2014"),
+                cityOptions.map(function(c) {
+                  return React.createElement("option", { key: c.id || c.name, value: c.name }, c.name + (c.population ? " (pop. " + c.population.toLocaleString() + ")" : ""));
+                }),
+                React.createElement("option", { value: "__new__" }, "+ Found a new capital...")
+              )
+            : React.createElement("div", null,
+                React.createElement("div", { style: { fontSize:"12px", color:T.textDim, fontStyle:"italic", marginBottom:"6px" } }, "No cities found. Name your capital:"),
+                React.createElement("input", { style: Object.assign({}, S.input, { fontSize:"14px" }), value: capitalCity, placeholder: "e.g., Thornwall Keep", onChange: function(e) { setCapitalCity(e.target.value); } })
+              ),
+          capitalCity === "__new__" && React.createElement("input", {
+            style: Object.assign({}, S.input, { fontSize:"14px", marginTop:"8px" }),
+            placeholder: "Name your new capital...",
+            onChange: function(e) { setCapitalCity(e.target.value); }
+          })
+        ),
+        // Buttons
+        React.createElement("div", { style: { display:"flex", gap:"10px" } },
+          React.createElement("button", {
+            style: Object.assign({}, S.btn, S.btnGold, { padding:"10px 16px", fontSize:"12px" }),
+            onClick: function() { setStep(2); }
+          }, "\u2190 Back"),
+          React.createElement("button", {
+            style: Object.assign({}, S.btn, { flex:1, justifyContent:"center", padding:"12px 16px", fontSize:"13px", letterSpacing:"1.5px", opacity: (startRegion && capitalCity && capitalCity !== "__new__") ? 1 : 0.4 }),
+            onClick: function() {
+              if (!startRegion || !capitalCity || capitalCity === "__new__") return;
+              var k = initKingdom(name, null, banner);
+              // Set the starting region as claimed territory
+              k.territories[startRegion] = { id: startRegion, name: startRegion, terrain: "plains", claimedTurn: 0, improvements: [], improvementQueue: [] };
+              k.atlasRegions = [startRegion];
+              // Create the capital settlement
+              var capId = Date.now().toString();
+              k.settlements[capId] = { id: capId, name: capitalCity, regionName: startRegion, population: 500, buildings: [], constructionQueue: [], foundedTurn: 0 };
+              k.capitalSettlement = capId;
+              k.totalPopulation = 500;
+              // Pass starting info for the caller to sync with world data
+              k._startRegion = startRegion;
+              k._capitalCityName = capitalCity;
+              onComplete(k);
+            }
+          }, Crown && React.createElement(Crown, { size: 16 }), "Establish Kingdom")
+        )
+      ),
+      React.createElement("div", { style: { color:T.gold+"33", fontSize:"14px", letterSpacing:"12px", marginTop:"24px", textAlign:"center" } }, "\u2756\u2756\u2756")
     );
   }
 
@@ -2713,7 +2825,70 @@ function getBannerSVG(cfg) {
         var mods = Object.assign({}, prev.modules || {}, { kingdom: true });
         var kingdomsList = prev.kingdoms || (prev.kingdom ? [prev.kingdom] : []);
         kingdomsList.push(newKingdom);
-        return Object.assign({}, prev, { kingdoms: kingdomsList, modules: mods });
+        var result = Object.assign({}, prev, { kingdoms: kingdomsList, modules: mods });
+
+        // Sync with world atlas: update region control and create faction
+        var startRegion = newKingdom._startRegion;
+        var capitalCityName = newKingdom._capitalCityName;
+        if (startRegion && result.regions) {
+          // Update the atlas region's controller to the kingdom name
+          result.regions = result.regions.map(function(r) {
+            if (r.name === startRegion) return Object.assign({}, r, { ctrl: newKingdom.name });
+            return r;
+          });
+        }
+
+        // Create a faction entry for the kingdom so the atlas renders its color
+        var factions = (result.factions || []).slice();
+        var existingFaction = factions.find(function(f) { return f.name === newKingdom.name; });
+        if (!existingFaction) {
+          factions.push({
+            id: "kingdom-" + newKingdom.id,
+            name: newKingdom.name,
+            attitude: "neutral",
+            power: 50,
+            trend: "rising",
+            desc: "Player kingdom founded in " + (startRegion || "unknown lands"),
+            color: newKingdom.banner && newKingdom.banner.fg || "#d4af37",
+            allies: [],
+            rivals: [],
+            isPlayerKingdom: true
+          });
+          result.factions = factions;
+        }
+
+        // Create a city entry for the capital on the atlas if it doesn't exist
+        if (capitalCityName && startRegion) {
+          var existingCities = (result.cities || []).slice();
+          var existingCity = existingCities.find(function(c) { return c.name === capitalCityName; });
+          if (!existingCity) {
+            // Find the atlas region to get coordinates for the city pin
+            var atlasRegion = (result.regions || []).find(function(r) { return r.name === startRegion; });
+            existingCities.push({
+              id: "kingdom-capital-" + newKingdom.id,
+              name: capitalCityName,
+              region: startRegion,
+              population: 500,
+              isCapital: true,
+              mapX: atlasRegion ? (atlasRegion.x || atlasRegion.mapX || 0.5) : 0.5,
+              mapY: atlasRegion ? (atlasRegion.y || atlasRegion.mapY || 0.5) : 0.5,
+              ctrl: newKingdom.name
+            });
+            result.cities = existingCities;
+          } else {
+            // Mark the existing city as the capital and under kingdom control
+            result.cities = existingCities.map(function(c) {
+              if (c.name === capitalCityName) return Object.assign({}, c, { ctrl: newKingdom.name, isCapital: true });
+              return c;
+            });
+          }
+        }
+
+        // Clean up temp fields from the kingdom object
+        delete newKingdom._startRegion;
+        delete newKingdom._capitalCityName;
+
+        return result;
       });
     }, [setData]);
 
@@ -2733,7 +2908,7 @@ function getBannerSVG(cfg) {
         ),
         React.createElement("div", { style: S.scrollArea },
           viewRole === "dm"
-            ? React.createElement(CreateKingdomWizard, { onComplete: handleCreate })
+            ? React.createElement(CreateKingdomWizard, { onComplete: handleCreate, data: data })
             : React.createElement("div", { style: S.empty }, "No kingdom founded yet. The DM can establish one from this tab.")
         )
       );
@@ -2773,9 +2948,9 @@ function getBannerSVG(cfg) {
           }),
           viewRole === "dm" && React.createElement("button", { style: Object.assign({}, S.btn, S.btnSmall), onClick: function() { setView("createNew"); } }, Plus && React.createElement(Plus, { size: 14 }), "New")
         ),
-        view === "createNew" && viewRole === "dm" && React.createElement(CreateKingdomWizard, { onComplete: function(newK) { handleCreate(newK); setSelectedKingdomId(newK.id); setView("dashboard"); } }),
+        view === "createNew" && viewRole === "dm" && React.createElement(CreateKingdomWizard, { data: data, onComplete: function(newK) { handleCreate(newK); setSelectedKingdomId(newK.id); setView("dashboard"); } }),
         view === "dashboard" && React.createElement(KingdomDashboard, { kingdom: kingdom, stats: stats, onNavigate: setView, viewRole: viewRole }),
-        view === "territory" && React.createElement(TerritoryPanel, { kingdom: kingdom, setKingdom: setKingdom, viewRole: viewRole, data: data, onBack: function() { setView("dashboard"); } }),
+        view === "territory" && React.createElement(TerritoryPanel, { kingdom: kingdom, setKingdom: setKingdom, setData: setData, viewRole: viewRole, data: data, onBack: function() { setView("dashboard"); } }),
         view === "settlements" && React.createElement(SettlementPanel, { kingdom: kingdom, setKingdom: setKingdom, setData: setData, viewRole: viewRole, onBack: function() { setView("dashboard"); } }),
         view === "governance" && React.createElement(GovernancePanel, { kingdom: kingdom, setKingdom: setKingdom, viewRole: viewRole, data: data, onBack: function() { setView("dashboard"); } }),
         view === "military" && React.createElement(MilitaryPanel, { kingdom: kingdom, setKingdom: setKingdom, viewRole: viewRole, onBack: function() { setView("dashboard"); } }),
