@@ -1158,22 +1158,21 @@ function getBannerSVG(cfg) {
     var accentFg = bannerCfg.fg || T.gold;
     var accentBg = bannerCfg.bg || T.bgCard;
 
-    // Generate castle watermark — scale castle size with kingdom growth stage (always gray)
+    // Generate castle watermark — scale castle size with kingdom growth stage (solid gray)
     var isDark = (T.bg || '').charAt(1) < '5';
     var stage = getKingdomStage(kingdom);
     var castleSize = stage >= 3 ? 'large' : stage >= 1 ? 'medium' : 'small';
-    var castleSvg = getCastleSVG({ color: isDark ? '#aaaaaa' : '#666666', opacity: isDark ? 0.04 : 0.06, size: castleSize });
+    var castleSvg = getCastleSVG({ color: isDark ? '#aaaaaa' : '#555555', opacity: isDark ? 0.12 : 0.15, size: castleSize });
 
-    // Banner-colored radial fade (like home page crimson fade but using player's banner colors)
-    var fadeBg = "radial-gradient(ellipse at 20% 0%, " + accentBg + "30 0%, transparent 55%), radial-gradient(ellipse at 80% 0%, " + accentFg + "18 0%, transparent 50%)";
-
-    // ── 3-Column Layout: [Left Banner] [Main Content] [Right Banner] ──
-    return React.createElement("div", { style: { display:"flex", alignItems:"flex-start", gap:"0", margin:"0 -16px -8px", background:fadeBg, borderRadius:"8px", padding:"8px 0" } },
-      // ── Left Banner (structural, takes up real space) ──
-      React.createElement("div", { style: { flexShrink:0, width:"140px", minHeight:"440px", display:"flex", alignItems:"flex-start", justifyContent:"center", paddingTop:"12px", transform:"scaleX(-1)", filter:"drop-shadow(2px 4px 6px rgba(0,0,0,0.4))" }, dangerouslySetInnerHTML: { __html: bannerSvg } }),
-      // ── Center Content Column ──
-      React.createElement("div", { style: { flex:"1", minWidth:0, position:"relative", padding:"0 4px" } },
-      // Castle Watermark (behind center content)
+    // ── Full-width layout with absolute-positioned banners on sides ──
+    return React.createElement("div", { style: { position:"relative", minHeight:"100%" } },
+      // ── Left Banner (absolute, floats on left edge) ──
+      React.createElement("div", { style: { position:"absolute", top:"12px", left:"0px", width:"130px", height:"420px", pointerEvents:"none", zIndex:10, transform:"scaleX(-1)", filter:"drop-shadow(2px 4px 6px rgba(0,0,0,0.4))" }, dangerouslySetInnerHTML: { __html: bannerSvg } }),
+      // ── Right Banner (absolute, floats on right edge) ──
+      React.createElement("div", { style: { position:"absolute", top:"12px", right:"0px", width:"130px", height:"420px", pointerEvents:"none", zIndex:10, filter:"drop-shadow(-2px 4px 6px rgba(0,0,0,0.4))" }, dangerouslySetInnerHTML: { __html: bannerSvg } }),
+      // ── Full-width Content ──
+      React.createElement("div", { style: { position:"relative", zIndex:1 } },
+      // Castle Watermark (behind content)
       React.createElement("div", { style: { position:"absolute", top:"60px", left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:"900px", height:"500px", pointerEvents:"none", zIndex:0, opacity:1 }, dangerouslySetInnerHTML: { __html: castleSvg } }),
 
       // Royal Kingdom Banner Card
@@ -1320,9 +1319,7 @@ function getBannerSVG(cfg) {
           })
         )
       )
-      ), // ── end Center Content Column ──
-      // ── Right Banner (structural, takes up real space) ──
-      React.createElement("div", { style: { flexShrink:0, width:"140px", minHeight:"440px", display:"flex", alignItems:"flex-start", justifyContent:"center", paddingTop:"12px", filter:"drop-shadow(-2px 4px 6px rgba(0,0,0,0.4))" }, dangerouslySetInnerHTML: { __html: bannerSvg } })
+      ) // ── end Full-width Content ──
     );
   }
 
@@ -2213,6 +2210,12 @@ function getBannerSVG(cfg) {
       );
     }
 
+    // Banner-colored gradient background (like home page crimson fade but using player's banner colors)
+    var bannerCfg = kingdom.banner || {};
+    var kAccentFg = bannerCfg.fg || T.gold;
+    var kAccentBg = bannerCfg.bg || T.bgCard;
+    var kingdomFadeBg = "radial-gradient(ellipse at 20% 0%, " + kAccentBg + " 0%, transparent 55%), radial-gradient(ellipse at 80% 0%, " + kAccentFg + "22 0%, transparent 50%)";
+
     return React.createElement("div", { style: S.page },
       React.createElement("div", { style: S.header },
         React.createElement("div", { style: S.headerInner },
@@ -2226,7 +2229,7 @@ function getBannerSVG(cfg) {
         React.createElement("div", { style: S.headerBorder }),
         React.createElement("div", { style: S.headerAccent })
       ),
-      React.createElement("div", { style: S.scrollArea },
+      React.createElement("div", { style: Object.assign({}, S.scrollArea, { background: kingdomFadeBg }) },
         view === "dashboard" && React.createElement(KingdomDashboard, { kingdom: kingdom, stats: stats, onNavigate: setView, viewRole: viewRole }),
         view === "territory" && React.createElement(TerritoryPanel, { kingdom: kingdom, setKingdom: setKingdom, viewRole: viewRole, onBack: function() { setView("dashboard"); } }),
         view === "settlements" && React.createElement(SettlementPanel, { kingdom: kingdom, setKingdom: setKingdom, viewRole: viewRole, onBack: function() { setView("dashboard"); } }),
