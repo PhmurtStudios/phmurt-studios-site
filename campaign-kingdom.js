@@ -1158,22 +1158,15 @@ function getBannerSVG(cfg) {
     var accentFg = bannerCfg.fg || T.gold;
     var accentBg = bannerCfg.bg || T.bgCard;
 
-    // Generate castle watermark — scale castle size with kingdom growth stage (solid gray)
-    var isDark = (T.bg || '').charAt(1) < '5';
-    var stage = getKingdomStage(kingdom);
-    var castleSize = stage >= 3 ? 'large' : stage >= 1 ? 'medium' : 'small';
-    var castleSvg = getCastleSVG({ color: isDark ? '#aaaaaa' : '#555555', opacity: isDark ? 0.12 : 0.15, size: castleSize });
-
     // ── Full-width layout with absolute-positioned banners on sides ──
     return React.createElement("div", { style: { position:"relative", minHeight:"100%" } },
       // ── Left Banner (absolute, floats on left edge) ──
       React.createElement("div", { style: { position:"absolute", top:"12px", left:"0px", width:"130px", height:"420px", pointerEvents:"none", zIndex:10, transform:"scaleX(-1)", filter:"drop-shadow(2px 4px 6px rgba(0,0,0,0.4))" }, dangerouslySetInnerHTML: { __html: bannerSvg } }),
       // ── Right Banner (absolute, floats on right edge) ──
       React.createElement("div", { style: { position:"absolute", top:"12px", right:"0px", width:"130px", height:"420px", pointerEvents:"none", zIndex:10, filter:"drop-shadow(-2px 4px 6px rgba(0,0,0,0.4))" }, dangerouslySetInnerHTML: { __html: bannerSvg } }),
-      // ── Full-width Content ──
-      React.createElement("div", { style: { position:"relative", zIndex:1 } },
-      // Castle Watermark (behind content)
-      React.createElement("div", { style: { position:"absolute", top:"60px", left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:"900px", height:"500px", pointerEvents:"none", zIndex:0, opacity:1 }, dangerouslySetInnerHTML: { __html: castleSvg } }),
+
+      // ── Top Section: indented to clear banners ──
+      React.createElement("div", { style: { margin:"0 140px", position:"relative", zIndex:1 } },
 
       // Royal Kingdom Banner Card
       React.createElement("div", { style: Object.assign({}, S.card, { display:"flex", justifyContent:"space-between", alignItems:"center", padding:"28px 32px", marginBottom:"18px", position:"relative", zIndex:1, background:"linear-gradient(135deg, "+accentBg+"18 0%, "+T.bgCard+" 40%, "+T.bgCard+" 60%, "+accentBg+"18 100%)", borderTop:"2px solid "+accentFg+"55", borderBottom:"1px solid "+accentFg+"22" }) },
@@ -1237,7 +1230,11 @@ function getBannerSVG(cfg) {
       React.createElement("div", { style: { textAlign:"center", margin:"20px 0 16px", position:"relative", zIndex:1 } },
         React.createElement("div", { style: { height:"1px", background:"linear-gradient(90deg, transparent, "+accentFg+"33, transparent)", position:"absolute", top:"50%", left:"0", right:"0" } }),
         React.createElement("span", { style: { position:"relative", background:T.bg, padding:"0 16px", color:accentFg+"44", fontSize:"12px", letterSpacing:"6px" } }, "\u2726 \u2726 \u2726")
-      ),
+      )
+      ), // ── end Top Section (indented) ──
+
+      // ── Bottom Section: full width, edge to edge ──
+      React.createElement("div", { style: { position:"relative", zIndex:1 } },
 
       // Royal Chambers Navigation
       React.createElement("div", { style: Object.assign({}, S.sectionHead, { position:"relative", zIndex:1, color:accentFg, borderImage:"linear-gradient(90deg, "+accentFg+"66 0%, "+accentFg+"22 70%, transparent 100%) 1" }) }, Compass && React.createElement(Compass, { size: 16 }), " Royal Chambers"),
@@ -1319,7 +1316,7 @@ function getBannerSVG(cfg) {
           })
         )
       )
-      ) // ── end Full-width Content ──
+      ) // ── end Bottom Section (full width) ──
     );
   }
 
