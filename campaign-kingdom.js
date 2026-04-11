@@ -15,7 +15,7 @@
     Settings, Star, Heart, Landmark, Scale, Map, Building2, Wheat,
     Castle, Sparkles, X, ChevronLeft, ArrowRight, Info, Lock, Compass,
     Anchor, Flame, Droplets, Wind, Sun, Moon, Mountain, Trees, Skull,
-    GraduationCap, Gem, Target, Tent, Axe, Bug
+    GraduationCap, Gem, Target, Tent, Axe, Bug, Handshake, Sword, TrendingDown
   } = window.LucideReact || {};
 
   const T = window.__PHMURT_THEME || {
@@ -65,6 +65,99 @@
     volcanic:  { name: "Volcanic",   claimCost: 5, prepCost: 4, farmValue: 0, mineValue: 4, tradeValue: 0, icon: "△", color: "#a83232", desc: "Dangerous but rich in rare minerals" },
     oasis:     { name: "Oasis",      claimCost: 3, prepCost: 1, farmValue: 2, mineValue: 0, tradeValue: 2, icon: "◊",  color: "#4ab89a", desc: "Lush haven amid barren lands" }
   };
+
+  // ── Army Unit Types ────────────────────────────────────────────────────
+  var ARMY_UNITS = {
+    militia:   { name: "Militia",        icon: "🛡️", cost: 2, attack: 1, defense: 2, hp: 3, recruitTurns: 0, desc: "Cheap defensive troops" },
+    infantry:  { name: "Infantry",       icon: "⚔️", cost: 4, attack: 3, defense: 3, hp: 5, recruitTurns: 1, desc: "Solid frontline soldiers" },
+    cavalry:   { name: "Cavalry",        icon: "🐎", cost: 6, attack: 5, defense: 2, hp: 4, recruitTurns: 1, desc: "Fast-striking mounted warriors" },
+    archers:   { name: "Archers",        icon: "🏹", cost: 3, attack: 4, defense: 1, hp: 3, recruitTurns: 1, desc: "Ranged skirmish troops" },
+    knights:   { name: "Knights",        icon: "🗡️", cost: 8, attack: 6, defense: 5, hp: 7, recruitTurns: 2, desc: "Elite heavy cavalry", requires: ["barracks"] },
+    siege:     { name: "Siege Engine",   icon: "🏰", cost: 10, attack: 8, defense: 1, hp: 4, recruitTurns: 3, desc: "Devastating against fortifications", requires: ["smithy"] },
+    mages:     { name: "War Mages",      icon: "✨", cost: 12, attack: 7, defense: 2, hp: 3, recruitTurns: 2, desc: "Arcane artillery unit", requires: ["magicShop"] }
+  };
+
+  // ── Kingdom Crises & Events ────────────────────────────────────────────
+  var KINGDOM_CRISES = [
+    // ─ Disasters ─
+    { id: "plague_crisis",       name: "Plague Outbreak",       type: "harmful", severity: "critical", icon: "☠",
+      desc: "A deadly plague sweeps through your settlements.",
+      choices: [
+        { label: "Quarantine cities", effect: { loyalty: -2, consumption: 1 }, msg: "Plague contained in 2 turns" },
+        { label: "Pray for divine aid", effect: { divineFavor: -20, unrest: 0 }, msg: "50% chance of cure" },
+        { label: "Do nothing", effect: { popGrowth: -200, unrest: 2 }, msg: "Plague spreads unchecked" }
+      ]
+    },
+    { id: "dragon_crisis",       name: "Dragon Attack",         type: "harmful", severity: "critical", icon: "🐉",
+      desc: "A wyrm descends upon your kingdom, demanding tribute.",
+      choices: [
+        { label: "Pay tribute (10 BP)", effect: { treasury: -10 }, msg: "Dragon leaves peacefully" },
+        { label: "Send the army", effect: { treasury: 0, fame: 5 }, msg: "Battle vs CR 15+, if win: treasure +30 BP" },
+        { label: "Negotiate", effect: { treasury: -2, diplomacy: 2 }, msg: "Dragon becomes potential ally" }
+      ]
+    },
+    { id: "rebellion_crisis",    name: "Rebellion",             type: "harmful", severity: "major", icon: "🔥",
+      desc: "Discontented citizens rise up against the crown.",
+      choices: [
+        { label: "Crush the rebellion", effect: { loyalty: -3, unrest: -5, popGrowth: -50 }, msg: "Swift military response" },
+        { label: "Negotiate demands", effect: { treasury: -5, loyalty: 2, unrest: -3 }, msg: "Address grievances" },
+        { label: "Abdicate a council seat", effect: { loyalty: -1, unrest: -8 }, msg: "Lose power but gain stability" }
+      ]
+    },
+    { id: "famine_crisis",       name: "Famine",                type: "harmful", severity: "major", icon: "🌾",
+      desc: "Crop failures threaten your people with starvation.",
+      choices: [
+        { label: "Import food (8 BP)", effect: { treasury: -8, popGrowth: 100 }, msg: "Crisis averted" },
+        { label: "Ration strictly", effect: { loyalty: -3, stability: -1 }, msg: "Slow recovery" },
+        { label: "Raid neighbors", effect: { treasury: 5, infamy: 2, stability: -2 }, msg: "Food gained, relations suffer" }
+      ]
+    },
+    { id: "earthquake_crisis",   name: "Earthquake",            type: "harmful", severity: "major", icon: "⛰️",
+      desc: "The ground trembles and buildings crack.",
+      choices: [
+        { label: "Emergency repairs (12 BP)", effect: { treasury: -12 }, msg: "Buildings saved" },
+        { label: "Evacuate settlements", effect: { popGrowth: -100, treasury: -3 }, msg: "1d3 buildings destroyed" }
+      ]
+    },
+    // ─ Beneficial ─
+    { id: "gold_rush_event",     name: "Gold Rush",             type: "beneficial", severity: "major", icon: "💰",
+      desc: "Rich mineral deposits discovered in your territory!",
+      choices: [
+        { label: "Crown-controlled mining", effect: { treasury: 15, economy: 2 }, msg: "Steady income" },
+        { label: "Open claims", effect: { popGrowth: 500, economy: 4, stability: -1 }, msg: "Rush of settlers" }
+      ]
+    },
+    { id: "marriage_alliance",   name: "Diplomatic Marriage",    type: "beneficial", severity: "major", icon: "👑",
+      desc: "A noble house proposes a political marriage alliance.",
+      choices: [
+        { label: "Accept the alliance", effect: { loyalty: 2, diplomacy: 1 }, msg: "New ally" },
+        { label: "Decline politely", effect: {}, msg: "No effect" }
+      ]
+    },
+    { id: "wandering_hero",      name: "Wandering Hero",        type: "beneficial", severity: "minor", icon: "⚔️",
+      desc: "A legendary adventurer offers their services.",
+      choices: [
+        { label: "Hire as general", effect: { stability: 2, economy: -1 }, msg: "Army attack +2 for 5 turns" },
+        { label: "Hire as councilor", effect: { loyalty: 1, economy: 1 }, msg: "Fill empty council seat" },
+        { label: "Send on quest", effect: { treasury: -5, fame: 3 }, msg: "50% success: treasury +10" }
+      ]
+    },
+    { id: "harvest_event",       name: "Bountiful Harvest",     type: "beneficial", severity: "minor", icon: "🌻",
+      desc: "The harvest exceeds all expectations.",
+      choices: [
+        { label: "Store surplus", effect: { foodSurplus: 100, consumption: -2 }, msg: "Food stored 3 turns" },
+        { label: "Sell surplus", effect: { treasury: 6 }, msg: "Quick profits" },
+        { label: "Feast!", effect: { loyalty: 3, unrest: -2, consumption: 2 }, msg: "Morale boost" }
+      ]
+    },
+    { id: "vision_event",        name: "Religious Vision",      type: "beneficial", severity: "minor", icon: "✨",
+      desc: "A priest reports a divine vision blessing the realm.",
+      choices: [
+        { label: "Build a shrine", effect: { divineFavor: 15, stability: 1, treasury: -4 }, msg: "Faith increases" },
+        { label: "Declare holy day", effect: { loyalty: 2, consumption: 1 }, msg: "One-time boost" }
+      ]
+    }
+  ];
 
   // ── Territory Improvements ─────────────────────────────────────────────
   const HEX_IMPROVEMENTS = {
@@ -372,6 +465,7 @@
 
   function initKingdom(name, rulerName, bannerCfg) {
     return {
+      id: Date.now().toString(),
       name: name || "New Kingdom",
       banner: bannerCfg || { shape: "pointed", border: "ornate", emblem: "lion", bg: "#1a2e20", fg: "#c9a032" },
       founded: Date.now(),
@@ -388,6 +482,9 @@
 
       // Population
       totalPopulation: 100,
+      foodSurplus: 0,
+      housingCapacity: 0,
+      growthRate: 0.02,
 
       // Territory & Settlements
       territories: {},
@@ -410,8 +507,16 @@
       stateReligion: null,
       divineFavor: {},
 
-      // Military (hooks into Faction War)
+      // Military
+      armies: {},
       warFactionId: null,
+
+      // Atlas Integration
+      atlasRegions: [],
+
+      // Diplomacy
+      relations: {},
+      treaties: [],
 
       // History
       eventLog: [],
@@ -420,8 +525,31 @@
     };
   }
 
+  // Check if the capital has been conquered — devastating penalties
+  function getCapitalStatus(kingdom, allKingdoms) {
+    if (!kingdom.capitalSettlement) return "none"; // no capital set
+    var capital = (kingdom.settlements || {})[kingdom.capitalSettlement];
+    if (!capital) return "lost"; // capital settlement doesn't exist (destroyed?)
+
+    // Check if any enemy kingdom at war has claimed the capital's region
+    var capitalHex = capital.hexId ? (kingdom.territories || {})[capital.hexId] : null;
+    var capitalRegion = capitalHex ? capitalHex.atlasRegionName : null;
+
+    if (capitalRegion && allKingdoms) {
+      for (var i = 0; i < allKingdoms.length; i++) {
+        var other = allKingdoms[i];
+        if (other.id === kingdom.id) continue;
+        var rel = (other.relations || {})[kingdom.id];
+        if (rel && rel.type === "war") {
+          if ((other.atlasRegions || []).indexOf(capitalRegion) >= 0) return "conquered";
+        }
+      }
+    }
+    return "secure";
+  }
+
   // ── Calculate derived kingdom stats (PURE — no side effects) ───────────
-  function calcKingdomStats(kingdom) {
+  function calcKingdomStats(kingdom, allKingdoms) {
     var economy = 0, loyalty = 0, stability = 0, consumption = 0;
     var totalDefense = 0;
 
@@ -492,22 +620,88 @@
     var numHexes = Object.keys(territories).length;
     consumption += numHexes;
 
+    // Population & Housing mechanics
+    var housingCapacity = 0;
+    var foodConsumption = 0;
+    Object.keys(settlements).forEach(function(setId) {
+      var s = settlements[setId];
+      var pop = s.population || 100;
+      var size = getSettlementSize(pop);
+      var sizeData = SETTLEMENT_SIZES[size];
+      housingCapacity += sizeData.maxPop;
+      foodConsumption += Math.ceil(pop / 100);
+      (s.buildings || []).forEach(function(b) {
+        var bData = BUILDINGS[b.type];
+        if (bData && bData.popBonus && b.completed) {
+          housingCapacity += bData.popBonus;
+        }
+      });
+    });
+
+    // Food production from farms (each farm feeds 200 people)
+    var foodProduction = 0;
+    Object.keys(territories).forEach(function(hexId) {
+      var hex = territories[hexId];
+      (hex.improvements || []).forEach(function(imp) {
+        if (imp.type === "farm" && imp.completed) foodProduction += 200;
+      });
+    });
+
+    var foodSurplus = Math.max(0, foodProduction - foodConsumption);
+    var foodDeficit = Math.max(0, foodConsumption - foodProduction);
+
     // Unrest penalty — applied to derived stats, NOT mutating kingdom
     var unrest = kingdom.unrest || 0;
     economy -= unrest;
     loyalty -= unrest;
     stability -= unrest;
 
+    // Housing penalty: if population > capacity, unrest increases
+    var totalPop = kingdom.totalPopulation || 100;
+    if (totalPop > housingCapacity) {
+      var overcrowding = Math.floor((totalPop - housingCapacity) / 500);
+      stability -= overcrowding;
+      unrest += overcrowding;
+    }
+
+    // Food deficit penalty
+    if (foodDeficit > 0) {
+      stability -= Math.ceil(foodDeficit / 50);
+      unrest += Math.ceil(foodDeficit / 100);
+    }
+
     // Income: positive economy → treasury gains
     var income = Math.max(0, economy);
 
-    return { economy: economy, loyalty: loyalty, stability: stability, consumption: consumption, income: income, totalDefense: totalDefense, unrest: unrest };
+    // Capital status penalties
+    var capitalStatus = getCapitalStatus(kingdom, allKingdoms);
+    var result = { economy: economy, loyalty: loyalty, stability: stability, consumption: consumption, income: income, totalDefense: totalDefense, unrest: unrest, housingCapacity: housingCapacity, foodProduction: foodProduction, foodConsumption: foodConsumption, foodSurplus: foodSurplus };
+
+    if (capitalStatus === "conquered") {
+      // Devastating: kingdom loses half its effectiveness
+      result.economy = Math.floor(economy * 0.4);
+      result.loyalty = Math.floor(loyalty * 0.3);
+      result.stability = Math.floor(stability * 0.3);
+      // Massive unrest increase
+      result.capitalConquered = true;
+      result.capitalPenalty = "Capital conquered! -60% economy, -70% loyalty/stability, +10 unrest";
+    }
+    if (capitalStatus === "lost") {
+      // No capital set or destroyed
+      result.economy = Math.floor(economy * 0.7);
+      result.loyalty = Math.floor(loyalty * 0.5);
+      result.stability = Math.floor(stability * 0.5);
+      result.capitalLost = true;
+      result.capitalPenalty = "No capital! -30% economy, -50% loyalty/stability";
+    }
+
+    return result;
   }
 
   // ── Process a kingdom turn phase ───────────────────────────────────────
-  function processKingdomTurn(kingdom, phase) {
+  function processKingdomTurn(kingdom, phase, allKingdoms) {
     var k = JSON.parse(JSON.stringify(kingdom));
-    var stats = calcKingdomStats(k);
+    var stats = calcKingdomStats(k, allKingdoms);
     var log = [];
 
     switch (phase) {
@@ -1187,6 +1381,19 @@ function getBannerSVG(cfg) {
       // Ornamental divider
       React.createElement("div", { style: { textAlign:"center", color:accentFg+"55", fontSize:"14px", letterSpacing:"8px", margin:"8px 0", fontFamily:"serif", position:"relative", zIndex:1 } }, "\u2726 \u2727 \u2726"),
 
+      // Capital crisis warning
+      (stats.capitalConquered || stats.capitalLost) && React.createElement("div", {
+        style: Object.assign({}, S.card, {
+          borderTop:"4px solid #c94f3f", background:"linear-gradient(180deg, #c94f3f15 0%, "+T.bgCard+" 100%)",
+          textAlign:"center", padding:"16px", marginBottom:"12px", position:"relative", zIndex:1
+        })
+      },
+        React.createElement("div", { style: { fontSize:"16px", fontWeight:"bold", color:"#c94f3f", fontFamily:T.heading, marginBottom:"6px" } },
+          stats.capitalConquered ? "⚠ CAPITAL CONQUERED" : "⚠ NO CAPITAL"
+        ),
+        React.createElement("div", { style: { fontSize:"12px", color:T.textDim } }, stats.capitalPenalty)
+      ),
+
       React.createElement("div", { style: Object.assign({}, S.statRow, { position:"relative", zIndex:1 }) },
         React.createElement(StatBadge, { label: "Economy", value: stats.economy, color: stats.economy >= 0 ? "#7cb342" : "#c94f3f" }),
         React.createElement(StatBadge, { label: "Loyalty", value: stats.loyalty, color: stats.loyalty >= 0 ? "#7cb342" : "#c94f3f" }),
@@ -1210,6 +1417,16 @@ function getBannerSVG(cfg) {
           React.createElement("div", { style: Object.assign({}, S.statLabel, { color:accentFg }) }, "Net / Turn"),
           React.createElement("div", { style: { fontSize:"16px", fontWeight:"bold", color: (stats.income - stats.consumption) >= 0 ? "#7cb342" : "#c94f3f" } },
             (stats.income - stats.consumption >= 0 ? "+" : "") + (stats.income - stats.consumption) + " BP"
+          )
+        ),
+        React.createElement("div", { style: Object.assign({}, S.statBox, { borderTopColor: accentFg+"44", background:"linear-gradient(180deg, "+accentBg+"08 0%, "+T.bgCard+" 100%)" }) },
+          React.createElement("div", { style: Object.assign({}, S.statLabel, { color:accentFg }) }, "Population"),
+          React.createElement("div", { style: { fontSize:"16px", fontWeight:"bold", color:accentFg } }, (kingdom.totalPopulation || 0).toLocaleString())
+        ),
+        React.createElement("div", { style: Object.assign({}, S.statBox, { borderTopColor: "#8fbc5e"+"44", background:"linear-gradient(180deg, #8fbc5e08 0%, "+T.bgCard+" 100%)" }) },
+          React.createElement("div", { style: Object.assign({}, S.statLabel, { color:"#8fbc5e" }) }, "Food Status"),
+          React.createElement("div", { style: { fontSize:"14px", fontWeight:"bold", color: stats.foodSurplus > 0 ? "#7cb342" : stats.foodProduction < stats.foodConsumption ? "#c94f3f" : T.gold } },
+            stats.foodSurplus > 0 ? "+" + stats.foodSurplus : stats.foodProduction < stats.foodConsumption ? "-" + (stats.foodConsumption - stats.foodProduction) : "Balanced"
           )
         ),
         React.createElement("div", { style: Object.assign({}, S.statBox, { borderTopColor: accentFg+"44", background:"linear-gradient(180deg, "+accentBg+"08 0%, "+T.bgCard+" 100%)" }) },
@@ -1270,8 +1487,10 @@ function getBannerSVG(cfg) {
       React.createElement("div", { style: { display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(160px, 1fr))", gap:"12px", marginBottom: "16px", position:"relative", zIndex:1 } },
         [
           { id: "governance", label: "Governance", icon: Crown, desc: "Council, edicts, laws, and royal decrees", color: "#5b7fb5" },
+          { id: "military", label: "Military", icon: Sword, desc: "Armies, units, and warfare", color: "#c94f3f" },
           { id: "religion", label: "Religion", icon: Star, desc: "State faith, temples, divine favor", color: "#9b59b6" },
-          { id: "events", label: "Event Log", icon: Scroll, desc: "Kingdom history and recent events", color: "#e67e22" },
+          { id: "diplomacy", label: "Diplomacy", icon: Handshake, desc: "Treaties, relations, and diplomacy", color: "#e67e22" },
+          { id: "events", label: "Event Log", icon: Scroll, desc: "Kingdom history and recent events", color: "#5b7fb5" },
           viewRole === "dm" ? { id: "turn", label: "Advance Turn", icon: Zap, desc: "Process the next kingdom turn", color: T.crimson } : null
         ].filter(Boolean).map(function(panel) {
           return React.createElement("div", {
@@ -1326,9 +1545,25 @@ function getBannerSVG(cfg) {
   // The key fix: setKingdom now receives the full prev state and returns full next state.
   // ═══════════════════════════════════════════════════════════════════════════
 
-  // Helper: immutable kingdom update
+  // Helper: immutable kingdom update — works with both single and multi-kingdom data
+  // The _activeKingdomId is set by KingdomView before rendering panels
+  var _activeKingdomId = null;
   function updateKingdom(setKingdom, updater) {
     setKingdom(function(prev) {
+      // Multi-kingdom: update the specific kingdom in the kingdoms array
+      if (prev.kingdoms) {
+        var newList = prev.kingdoms.map(function(k) {
+          // Match by _activeKingdomId, or if only one kingdom just update it
+          if (prev.kingdoms.length === 1 || k.id === _activeKingdomId) {
+            var clone = JSON.parse(JSON.stringify(k));
+            updater(clone);
+            return clone;
+          }
+          return k;
+        });
+        return Object.assign({}, prev, { kingdoms: newList });
+      }
+      // Legacy single-kingdom
       var k = JSON.parse(JSON.stringify(prev.kingdom || prev));
       updater(k);
       if (prev.kingdom !== undefined) return Object.assign({}, prev, { kingdom: k });
@@ -1338,9 +1573,9 @@ function getBannerSVG(cfg) {
 
   // ── Territory Panel ────────────────────────────────────────────────────
   function TerritoryPanel(_ref) {
-    var kingdom = _ref.kingdom, setKingdom = _ref.setKingdom, viewRole = _ref.viewRole, onBack = _ref.onBack;
+    var kingdom = _ref.kingdom, setKingdom = _ref.setKingdom, viewRole = _ref.viewRole, onBack = _ref.onBack, data = _ref.data;
     var _s1 = useState(false), showClaimForm = _s1[0], setShowClaimForm = _s1[1];
-    var _s2 = useState({ name: "", terrain: "plains" }), claimForm = _s2[0], setClaimForm = _s2[1];
+    var _s2 = useState({ name: "", terrain: "plains", regionName: "" }), claimForm = _s2[0], setClaimForm = _s2[1];
     var _s3 = useState(null), selectedHex = _s3[0], setSelectedHex = _s3[1];
     var _s4 = useState(false), showBuildMenu = _s4[0], setShowBuildMenu = _s4[1];
     var _s5 = useState(null), impCategory = _s5[0], setImpCategory = _s5[1];
@@ -1355,10 +1590,13 @@ function getBannerSVG(cfg) {
       var hexId = Date.now().toString();
       updateKingdom(setKingdom, function(k) {
         k.treasury -= terrain.claimCost;
-        k.territories[hexId] = { id: hexId, name: claimForm.name, terrain: claimForm.terrain, claimedTurn: k.turn, improvements: [], improvementQueue: [], prepared: false };
+        k.territories[hexId] = { id: hexId, name: claimForm.name, terrain: claimForm.terrain, claimedTurn: k.turn, improvements: [], improvementQueue: [], prepared: false, atlasRegionName: claimForm.regionName || null };
+        if (claimForm.regionName && k.atlasRegions && !k.atlasRegions.includes(claimForm.regionName)) {
+          k.atlasRegions.push(claimForm.regionName);
+        }
       });
       setShowClaimForm(false);
-      setClaimForm({ name: "", terrain: "plains" });
+      setClaimForm({ name: "", terrain: "plains", regionName: "" });
     };
 
     var handlePrepare = function(hexId) {
@@ -1402,12 +1640,21 @@ function getBannerSVG(cfg) {
         React.createElement("div", { style: S.grid2 },
           React.createElement("div", null,
             React.createElement("label", { style: S.label }, "Hex Name"),
-            React.createElement("input", { style: S.input, value: claimForm.name, placeholder: "e.g., Greenhollow Valley", onChange: function(e) { setClaimForm({ name: e.target.value, terrain: claimForm.terrain }); } })
+            React.createElement("input", { style: S.input, value: claimForm.name, placeholder: "e.g., Greenhollow Valley", onChange: function(e) { setClaimForm({ name: e.target.value, terrain: claimForm.terrain, regionName: claimForm.regionName }); } })
           ),
           React.createElement("div", null,
             React.createElement("label", { style: S.label }, "Terrain"),
-            React.createElement("select", { style: S.select, value: claimForm.terrain, onChange: function(e) { setClaimForm({ name: claimForm.name, terrain: e.target.value }); } },
+            React.createElement("select", { style: S.select, value: claimForm.terrain, onChange: function(e) { setClaimForm({ name: claimForm.name, terrain: e.target.value, regionName: claimForm.regionName }); } },
               Object.entries(TERRAIN_TYPES).map(function(entry) { return React.createElement("option", { key: entry[0], value: entry[0] }, entry[1].icon + " " + entry[1].name + " (" + entry[1].claimCost + " BP)"); })
+            )
+          )
+        ),
+        React.createElement("div", { style: Object.assign({}, S.grid2, { marginTop:"10px" }) },
+          React.createElement("div", null,
+            React.createElement("label", { style: S.label }, "Atlas Region (Optional)"),
+            React.createElement("select", { style: S.select, value: claimForm.regionName, onChange: function(e) { setClaimForm({ name: claimForm.name, terrain: claimForm.terrain, regionName: e.target.value }); } },
+              React.createElement("option", { value: "" }, "— None —"),
+              (data && data.regions || []).map(function(r) { return React.createElement("option", { key: r.name, value: r.name }, r.name); })
             )
           )
         ),
@@ -1518,11 +1765,12 @@ function getBannerSVG(cfg) {
 
   // ── Settlement Panel ───────────────────────────────────────────────────
   function SettlementPanel(_ref) {
-    var kingdom = _ref.kingdom, setKingdom = _ref.setKingdom, viewRole = _ref.viewRole, onBack = _ref.onBack;
+    var kingdom = _ref.kingdom, setKingdom = _ref.setKingdom, setData = _ref.setData, viewRole = _ref.viewRole, onBack = _ref.onBack;
     var _s1 = useState(false), showFoundForm = _s1[0], setShowFoundForm = _s1[1];
     var _s2 = useState({ name: "", hexId: "" }), foundForm = _s2[0], setFoundForm = _s2[1];
     var _s3 = useState(null), selectedSettlement = _s3[0], setSelectedSettlement = _s3[1];
     var _s4 = useState(null), buildCategory = _s4[0], setBuildCategory = _s4[1];
+    var _s5 = useState({}), placementCoords = _s5[0], setPlacementCoords = _s5[1];
 
     var settlements = kingdom.settlements || {};
     var settlementList = Object.entries(settlements).sort(function(a, b) { return (b[1].population || 0) - (a[1].population || 0); });
@@ -1531,11 +1779,52 @@ function getBannerSVG(cfg) {
     var handleFound = function() {
       if (!foundForm.name || !foundForm.hexId) return;
       var id = Date.now().toString();
+      var hexId = foundForm.hexId;
+      var hasPlacement = placementCoords[id];
       updateKingdom(setKingdom, function(k) {
-        k.settlements[id] = { id: id, name: foundForm.name, hexId: foundForm.hexId, population: 100, buildings: [], constructionQueue: [], foundedTurn: k.turn };
+        var s = { id: id, name: foundForm.name, hexId: hexId, population: 100, buildings: [], constructionQueue: [], foundedTurn: k.turn };
+        if (hasPlacement) {
+          s.mapX = placementCoords[id].mapX;
+          s.mapY = placementCoords[id].mapY;
+        }
+        k.settlements[id] = s;
         if (!k.capitalSettlement) k.capitalSettlement = id;
       });
-      setShowFoundForm(false); setFoundForm({ name: "", hexId: "" });
+      setShowFoundForm(false); setFoundForm({ name: "", hexId: "" }); setPlacementCoords({});
+    };
+
+    var startAtlasPlacement = function(settlementId, settlementName) {
+      if (window.setCityPlacementMode) {
+        window.setCityPlacementMode({ name: settlementName, kingdomId: kingdom.id, settlementId: settlementId, mapX: 0.5, mapY: 0.5 });
+        window.onCityPlacementConfirm = function(placement) {
+          setPlacementCoords(function(prev) {
+            var updated = Object.assign({}, prev);
+            updated[settlementId] = { mapX: placement.mapX, mapY: placement.mapY };
+            return updated;
+          });
+          if (!settlements[settlementId]) {
+            // New settlement being founded
+            handleFound();
+          } else {
+            // Existing settlement being placed on map
+            updateKingdom(setKingdom, function(k) {
+              k.settlements[settlementId].mapX = placement.mapX;
+              k.settlements[settlementId].mapY = placement.mapY;
+            });
+            if (setData) {
+              setData(function(prev) {
+                var cityId = 'kingdom-city-' + settlementId;
+                var existingCity = (prev.cities || []).find(function(c) { return c.id === cityId; });
+                if (existingCity) {
+                  var cities = prev.cities.map(function(c) { return c.id === cityId ? Object.assign({}, c, { mapX: placement.mapX, mapY: placement.mapY }) : c; });
+                  return Object.assign({}, prev, { cities: cities });
+                }
+                return prev;
+              });
+            }
+          }
+        };
+      }
     };
 
     var handleBuild = function(settlementId, buildingType) {
@@ -1596,6 +1885,7 @@ function getBannerSVG(cfg) {
             ),
             React.createElement("div", { style: { display:"flex", gap:"8px", marginTop:"10px" } },
               React.createElement("button", { style: S.btn, onClick: handleFound }, "Found Settlement"),
+              setData && React.createElement("button", { style: Object.assign({}, S.btn, { background:"#d4af37", color:"#1a1a2e" }), onClick: function() { startAtlasPlacement("temp-" + Date.now(), foundForm.name); } }, "📍 Place on Atlas"),
               React.createElement("button", { style: Object.assign({}, S.btn, S.btnGold), onClick: function() { setShowFoundForm(false); } }, "Cancel")
             )
           )
@@ -1634,12 +1924,19 @@ function getBannerSVG(cfg) {
             React.createElement("div", { style: { fontSize:"18px", fontWeight:"bold", color:T.gold, fontFamily:T.heading } }, sel.name),
             React.createElement("div", { style: { fontSize:"12px", color:T.textDim } },
               selSizeData.icon + " " + selSizeData.name + " · Pop: " + (sel.population || 0).toLocaleString() + " · " + (sel.buildings || []).length + "/" + selSizeData.maxBuildings + " buildings"
-            )
+            ),
+            sel.mapX && sel.mapY && React.createElement("div", { style: { fontSize:"11px", color:"#d4af37", marginTop:"4px" } }, "📍 Mapped at (" + sel.mapX.toFixed(2) + ", " + sel.mapY.toFixed(2) + ")")
           ),
-          kingdom.capitalSettlement !== selectedSettlement && viewRole === "dm" && React.createElement("button", {
-            style: Object.assign({}, S.btn, S.btnSmall),
-            onClick: function() { updateKingdom(setKingdom, function(k) { k.capitalSettlement = selectedSettlement; }); }
-          }, "Set as Capital")
+          React.createElement("div", { style: { display:"flex", gap:"6px" } },
+            kingdom.capitalSettlement !== selectedSettlement && viewRole === "dm" && React.createElement("button", {
+              style: Object.assign({}, S.btn, S.btnSmall),
+              onClick: function() { updateKingdom(setKingdom, function(k) { k.capitalSettlement = selectedSettlement; }); }
+            }, "Set as Capital"),
+            setData && (!sel.mapX || !sel.mapY) && viewRole === "dm" && React.createElement("button", {
+              style: Object.assign({}, S.btn, S.btnSmall, { background:"#d4af37", color:"#1a1a2e" }),
+              onClick: function() { startAtlasPlacement(selectedSettlement, sel.name); }
+            }, "📍 Place")
+          )
         ),
 
         (sel.buildings || []).length > 0 && React.createElement("div", { style: { marginBottom:"12px" } },
@@ -1918,9 +2215,148 @@ function getBannerSVG(cfg) {
     );
   }
 
+  // ── Military Panel ─────────────────────────────────────────────────────
+  function MilitaryPanel(_ref) {
+    var kingdom = _ref.kingdom, setKingdom = _ref.setKingdom, viewRole = _ref.viewRole, onBack = _ref.onBack;
+    var _s1 = useState(false), showArmyForm = _s1[0], setShowArmyForm = _s1[1];
+    var _s2 = useState({ name: "", units: [] }), armyForm = _s2[0], setArmyForm = _s2[1];
+    var _s3 = useState(null), selectedArmyId = _s3[0], setSelectedArmyId = _s3[1];
+
+    var armies = kingdom.armies || {};
+    var armyList = Object.entries(armies).sort(function(a, b) { return (b[1].units || []).length - (a[1].units || []).length; });
+
+    var handleCreateArmy = function() {
+      if (!armyForm.name || armyForm.units.length === 0) return;
+      var id = Date.now().toString();
+      updateKingdom(setKingdom, function(k) {
+        k.armies[id] = { id: id, name: armyForm.name, units: armyForm.units.slice(), location: { region: "", mapX: 0.5, mapY: 0.5 }, status: "garrison", targetLocation: null, marchTurnsRemaining: 0, damage: 0 };
+      });
+      setShowArmyForm(false); setArmyForm({ name: "", units: [] });
+    };
+
+    var addUnitToArmy = function(armyId, unitType) {
+      var unit = ARMY_UNITS[unitType];
+      if (!unit || kingdom.treasury < unit.cost) return;
+      updateKingdom(setKingdom, function(k) {
+        k.treasury -= unit.cost;
+        if (!k.armies[armyId].units) k.armies[armyId].units = [];
+        k.armies[armyId].units.push({ type: unitType, hp: unit.hp, recruited: k.turn });
+      });
+    };
+
+    var calcArmyStats = function(army) {
+      var totalAttack = 0, totalDefense = 0, totalHp = 0;
+      (army.units || []).forEach(function(u) {
+        var unitData = ARMY_UNITS[u.type];
+        if (unitData) {
+          totalAttack += unitData.attack;
+          totalDefense += unitData.defense;
+          totalHp += unitData.hp;
+        }
+      });
+      return { attack: totalAttack, defense: totalDefense, hp: totalHp, unitCount: (army.units || []).length };
+    };
+
+    var sel = selectedArmyId ? armies[selectedArmyId] : null;
+    var selStats = sel ? calcArmyStats(sel) : null;
+
+    return React.createElement("div", null,
+      React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" } },
+        React.createElement("div", { style: S.sectionHead }, Sword && React.createElement(Sword, { size: 18 }), "Military (" + armyList.length + " armies)"),
+        React.createElement("div", { style: { display:"flex", gap:"8px" } },
+          viewRole === "dm" && React.createElement("button", { style: S.btn, onClick: function() { setShowArmyForm(!showArmyForm); } }, Plus && React.createElement(Plus, { size: 14 }), "Create Army"),
+          React.createElement("button", { style: Object.assign({}, S.btn, S.btnGold), onClick: onBack }, "← Dashboard")
+        )
+      ),
+
+      showArmyForm && React.createElement("div", { style: Object.assign({}, S.card, { borderLeft:"4px solid #c94f3f" }) },
+        React.createElement("div", { style: { fontSize:"14px", fontWeight:"bold", color:"#c94f3f", marginBottom:"10px" } }, "Create New Army"),
+        React.createElement("div", { style: S.grid2 },
+          React.createElement("div", null,
+            React.createElement("label", { style: S.label }, "Army Name"),
+            React.createElement("input", { style: S.input, value: armyForm.name, placeholder: "e.g., Eastern Guard", onChange: function(e) { setArmyForm(Object.assign({}, armyForm, { name: e.target.value })); } })
+          )
+        ),
+        React.createElement("div", { style: { marginTop:"10px" } },
+          React.createElement("div", { style: S.label }, "Add Units (Total cost: " + (armyForm.units || []).reduce(function(sum, u) { return sum + ((ARMY_UNITS[u] && ARMY_UNITS[u].cost) || 0); }, 0) + " BP)"),
+          React.createElement("div", { style: { display:"flex", gap:"6px", flexWrap:"wrap", marginTop:"8px" } },
+            Object.entries(ARMY_UNITS).map(function(entry) {
+              var key = entry[0], unit = entry[1];
+              var count = (armyForm.units || []).filter(function(u) { return u === key; }).length;
+              return React.createElement("button", {
+                key: key,
+                style: Object.assign({}, S.btn, S.btnSmall, { opacity: kingdom.treasury >= unit.cost ? 1 : 0.45 }),
+                onClick: function() { if (kingdom.treasury >= unit.cost) setArmyForm(Object.assign({}, armyForm, { units: (armyForm.units || []).concat([key]) })); }
+              },
+                unit.icon + " " + unit.name + (count > 0 ? " (" + count + ")" : "")
+              );
+            })
+          )
+        ),
+        React.createElement("div", { style: { display:"flex", gap:"8px", marginTop:"10px" } },
+          React.createElement("button", { style: S.btn, onClick: handleCreateArmy, disabled: !armyForm.name || !armyForm.units.length }, "Create"),
+          React.createElement("button", { style: Object.assign({}, S.btn, S.btnGold), onClick: function() { setShowArmyForm(false); } }, "Cancel")
+        )
+      ),
+
+      armyList.length === 0
+        ? React.createElement("div", { style: S.empty }, "No armies raised yet. Create your first army to defend and expand your kingdom!")
+        : React.createElement("div", { style: S.grid4 },
+          armyList.map(function(entry) {
+            var id = entry[0], army = entry[1];
+            var stats = calcArmyStats(army);
+            return React.createElement("div", {
+              key: id,
+              style: Object.assign({}, S.card, S.cardHover, { borderLeft:"4px solid #c94f3f", background: selectedArmyId === id ? T.bgHover : T.bgCard }),
+              onClick: function() { setSelectedArmyId(selectedArmyId === id ? null : id); }
+            },
+              React.createElement("div", { style: { fontSize:"14px", fontWeight:"bold", color:"#c94f3f" } }, army.name),
+              React.createElement("div", { style: { fontSize:"11px", color:T.textDim, marginTop:"4px" } }, stats.unitCount + " units"),
+              React.createElement("div", { style: { display:"flex", gap:"8px", marginTop:"6px" } },
+                React.createElement("span", { style: S.pill("#c94f3f") }, "⚔️ " + stats.attack),
+                React.createElement("span", { style: S.pill("#5b7fb5") }, "🛡️ " + stats.defense)
+              ),
+              React.createElement("div", { style: { fontSize:"10px", color:T.textDim, marginTop:"6px", textTransform:"capitalize" } }, army.status)
+            );
+          })
+        ),
+
+      sel && React.createElement("div", { style: Object.assign({}, S.card, { marginTop:"16px", borderLeft:"4px solid #c94f3f" }) },
+        React.createElement("div", { style: { fontSize:"18px", fontWeight:"bold", color:"#c94f3f", marginBottom:"12px" } }, sel.name),
+        React.createElement("div", { style: { fontSize:"12px", color:T.textDim, marginBottom:"12px" } },
+          "Status: " + sel.status + " · Units: " + selStats.unitCount + " · Attack: " + selStats.attack + " · Defense: " + selStats.defense
+        ),
+        (sel.units || []).length > 0 && React.createElement("div", { style: { marginBottom:"12px" } },
+          React.createElement("div", { style: Object.assign({}, S.label, { marginBottom:"8px" }) }, "Composition"),
+          React.createElement("div", { style: { display:"flex", gap:"6px", flexWrap:"wrap" } },
+            (sel.units || []).map(function(u, idx) {
+              var unitData = ARMY_UNITS[u.type];
+              return React.createElement("span", { key: idx, style: S.badge("#c94f3f") }, unitData.icon + " " + unitData.name);
+            })
+          )
+        ),
+        viewRole === "dm" && React.createElement("div", { style: { marginTop:"12px" } },
+          React.createElement("div", { style: Object.assign({}, S.label, { marginBottom:"8px" }) }, "Recruit More"),
+          React.createElement("div", { style: { display:"flex", gap:"6px", flexWrap:"wrap" } },
+            Object.entries(ARMY_UNITS).map(function(entry) {
+              var key = entry[0], unit = entry[1];
+              return React.createElement("button", {
+                key: key,
+                style: Object.assign({}, S.btn, S.btnSmall, { opacity: kingdom.treasury >= unit.cost ? 1 : 0.45 }),
+                onClick: function() { if (kingdom.treasury >= unit.cost) addUnitToArmy(selectedArmyId, key); }
+              },
+                unit.icon + " " + unit.name + " (" + unit.cost + " BP)"
+              );
+            })
+          )
+        )
+      )
+    );
+  }
+
   // ── Turn Resolution Panel ──────────────────────────────────────────────
   function TurnPanel(_ref) {
-    var kingdom = _ref.kingdom, setKingdom = _ref.setKingdom, viewRole = _ref.viewRole, onBack = _ref.onBack;
+    var kingdom = _ref.kingdom, setKingdom = _ref.setKingdom, viewRole = _ref.viewRole, onBack = _ref.onBack, kingdoms = _ref.kingdoms;
     var _s1 = useState(0), phase = _s1[0], setPhase = _s1[1];
     var _s2 = useState([]), turnLog = _s2[0], setTurnLog = _s2[1];
 
@@ -1933,7 +2369,7 @@ function getBannerSVG(cfg) {
 
     var handleProcess = function() {
       if (phase >= phases.length) return;
-      var result = processKingdomTurn(kingdom, phases[phase].id);
+      var result = processKingdomTurn(kingdom, phases[phase].id, kingdoms);
       setKingdom(function(prev) { return Object.assign({}, prev, { kingdom: result.kingdom }); });
       setTurnLog(function(prev) { return prev.concat([{ phase: phases[phase].name, logs: result.log }]); });
       setPhase(function(p) { return p + 1; });
@@ -1989,6 +2425,100 @@ function getBannerSVG(cfg) {
           );
         })
       )
+    );
+  }
+
+  // ── Diplomacy Panel ─────────────────────────────────────────────────────
+  function DiplomacyPanel(_ref) {
+    var kingdom = _ref.kingdom, setKingdom = _ref.setKingdom, kingdoms = _ref.kingdoms, viewRole = _ref.viewRole, onBack = _ref.onBack;
+    var _s1 = useState(null), selectedKingdomId = _s1[0], setSelectedKingdomId = _s1[1];
+
+    var relations = kingdom.relations || {};
+    var treaties = kingdom.treaties || [];
+
+    var otherKingdoms = (kingdoms || []).filter(function(k) { return k.id !== kingdom.id; });
+
+    var getRelationStatus = function(otherId) {
+      if (!relations[otherId]) return "neutral";
+      return relations[otherId].type || "neutral";
+    };
+
+    var setRelation = function(otherId, type) {
+      updateKingdom(setKingdom, function(k) {
+        if (!k.relations) k.relations = {};
+        if (type === "neutral") {
+          delete k.relations[otherId];
+        } else {
+          k.relations[otherId] = { type: type, since: k.turn };
+        }
+      });
+    };
+
+    var addTreaty = function(otherId, type) {
+      updateKingdom(setKingdom, function(k) {
+        if (!k.treaties) k.treaties = [];
+        k.treaties.push({ id: Date.now().toString(), type: type, withKingdomId: otherId, since: k.turn, terms: "" });
+      });
+    };
+
+    var removeTreaty = function(treatyId) {
+      updateKingdom(setKingdom, function(k) {
+        if (k.treaties) k.treaties = k.treaties.filter(function(t) { return t.id !== treatyId; });
+      });
+    };
+
+    var relationColor = function(status) {
+      switch(status) {
+        case "allied": return "#7cb342";
+        case "war": return "#c94f3f";
+        case "trade": return "#d4af37";
+        case "vassal": return "#9b59b6";
+        default: return T.textDim;
+      }
+    };
+
+    return React.createElement("div", null,
+      React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" } },
+        React.createElement("div", { style: S.sectionHead }, Handshake && React.createElement(Handshake || Users, { size: 18 }), "Diplomacy"),
+        React.createElement("button", { style: Object.assign({}, S.btn, S.btnGold), onClick: onBack }, "← Dashboard")
+      ),
+
+      otherKingdoms.length === 0
+        ? React.createElement("div", { style: S.empty }, "No other kingdoms exist yet. Create rival kingdoms to establish diplomatic relations.")
+        : React.createElement("div", null,
+          React.createElement("div", { style: { marginBottom:"16px" } },
+            React.createElement("div", { style: S.sectionHead }, Shield && React.createElement(Shield, { size: 16 }), "Relations"),
+            React.createElement("div", { style: S.grid2 },
+              otherKingdoms.map(function(other) {
+                var status = getRelationStatus(other.id);
+                return React.createElement("div", { key: other.id, style: Object.assign({}, S.card, { borderLeft:"4px solid "+relationColor(status) }) },
+                  React.createElement("div", { style: { fontSize:"13px", fontWeight:"bold", color:T.gold, marginBottom:"8px" } }, other.name),
+                  React.createElement("div", { style: { fontSize:"11px", color:T.textDim, marginBottom:"10px" } }, "Status: ", React.createElement("span", { style: { color:relationColor(status), fontWeight:"bold", textTransform:"capitalize" } }, status)),
+                  viewRole === "dm" && React.createElement("div", { style: { display:"flex", gap:"6px", flexWrap:"wrap", fontSize:"10px" } },
+                    React.createElement("button", { style: Object.assign({}, S.btn, S.btnSmall, status==="neutral" ? { background:T.textDim+"66" } : {}), onClick: function() { setRelation(other.id, "neutral"); } }, "Neutral"),
+                    React.createElement("button", { style: Object.assign({}, S.btn, S.btnSmall, status==="allied" ? { background:"#7cb342" } : {}), onClick: function() { setRelation(other.id, "allied"); } }, "Allied"),
+                    React.createElement("button", { style: Object.assign({}, S.btn, S.btnSmall, status==="war" ? { background:"#c94f3f" } : {}), onClick: function() { setRelation(other.id, "war"); } }, "War"),
+                    React.createElement("button", { style: Object.assign({}, S.btn, S.btnSmall, status==="trade" ? { background:"#d4af37" } : {}), onClick: function() { setRelation(other.id, "trade"); } }, "Trade")
+                  )
+                );
+              })
+            )
+          ),
+
+          treaties.length > 0 && React.createElement("div", { style: { marginBottom:"16px" } },
+            React.createElement("div", { style: S.sectionHead }, Scroll && React.createElement(Scroll, { size: 16 }), "Active Treaties"),
+            React.createElement("div", { style: S.grid2 },
+              treaties.map(function(treaty) {
+                var otherK = kingdoms.find(function(k) { return k.id === treaty.withKingdomId; });
+                return React.createElement("div", { key: treaty.id, style: Object.assign({}, S.card, { borderLeft:"4px solid "+T.gold }) },
+                  React.createElement("div", { style: { fontSize:"12px", fontWeight:"bold", marginBottom:"4px" } }, treaty.type === "alliance" ? "⚔️ Alliance" : treaty.type === "trade" ? "⚖️ Trade" : treaty.type === "non_aggression" ? "✋ Non-Aggression" : "👑 Vassalage"),
+                  React.createElement("div", { style: { fontSize:"11px", color:T.textDim, marginBottom:"6px" } }, "with ", otherK ? otherK.name : "Unknown"),
+                  viewRole === "dm" && React.createElement("button", { style: Object.assign({}, S.btn, S.btnSmall, { color:"#c94f3f", borderColor:"#c94f3f" }), onClick: function() { removeTreaty(treaty.id); } }, Trash2 && React.createElement(Trash2, { size: 12 }), "Revoke")
+                );
+              })
+            )
+          )
+        )
     );
   }
 
@@ -2168,29 +2698,47 @@ function getBannerSVG(cfg) {
   function KingdomView(_ref) {
     var data = _ref.data, setData = _ref.setData, viewRole = _ref.viewRole;
     var _s1 = useState("dashboard"), view = _s1[0], setView = _s1[1];
-    var kingdom = data.kingdom || null;
+    var _s2 = useState(null), selectedKingdomId = _s2[0], setSelectedKingdomId = _s2[1];
+
+    // Multi-kingdom support: support both old (data.kingdom) and new (data.kingdoms) formats
+    var kingdoms = data.kingdoms || (data.kingdom ? [data.kingdom] : []);
+
+    // Auto-select first kingdom if only one, or use selectedKingdomId
+    var activeKingdomId = useMemo(function() {
+      if (kingdoms.length === 0) return null;
+      if (selectedKingdomId && kingdoms.some(function(k) { return k.id === selectedKingdomId; })) return selectedKingdomId;
+      if (selectedKingdomId === null && kingdoms.length === 1) return kingdoms[0].id;
+      return selectedKingdomId || (kingdoms.length > 0 ? kingdoms[0].id : null);
+    }, [kingdoms, selectedKingdomId]);
+
+    var kingdom = kingdoms.find(function(k) { return k.id === activeKingdomId; }) || null;
 
     var setKingdom = useCallback(function(updater) {
       setData(function(prev) {
         if (typeof updater === "function") return updater(prev);
-        return Object.assign({}, prev, { kingdom: updater });
+        // Direct kingdom object set: update the specific kingdom in the kingdoms array
+        var list = (prev.kingdoms || (prev.kingdom ? [prev.kingdom] : [])).map(function(k) {
+          return k.id === updater.id ? updater : k;
+        });
+        return Object.assign({}, prev, { kingdoms: list });
       });
     }, [setData]);
 
     var handleCreate = useCallback(function(newKingdom) {
       setData(function(prev) {
-        // Set kingdom data and also enable the kingdom module so the tab persists
         var mods = Object.assign({}, prev.modules || {}, { kingdom: true });
-        return Object.assign({}, prev, { kingdom: newKingdom, modules: mods });
+        var kingdomsList = prev.kingdoms || (prev.kingdom ? [prev.kingdom] : []);
+        kingdomsList.push(newKingdom);
+        return Object.assign({}, prev, { kingdoms: kingdomsList, modules: mods });
       });
     }, [setData]);
 
     var stats = useMemo(function() {
       if (!kingdom) return { economy: 0, loyalty: 0, stability: 0, consumption: 0, income: 0, totalDefense: 0, unrest: 0 };
-      return calcKingdomStats(kingdom);
-    }, [kingdom]);
+      return calcKingdomStats(kingdom, kingdoms);
+    }, [kingdom, kingdoms]);
 
-    if (!kingdom) {
+    if (kingdoms.length === 0) {
       return React.createElement("div", { style: S.page },
         React.createElement("div", { style: S.header },
           React.createElement("div", { style: S.headerInner },
@@ -2206,6 +2754,9 @@ function getBannerSVG(cfg) {
         )
       );
     }
+
+    // Set the active kingdom ID so updateKingdom knows which kingdom to update
+    _activeKingdomId = activeKingdomId;
 
     // Banner-colored gradient background (like home page crimson fade but using player's banner colors)
     var bannerCfg = kingdom.banner || {};
@@ -2227,13 +2778,27 @@ function getBannerSVG(cfg) {
         React.createElement("div", { style: S.headerAccent })
       ),
       React.createElement("div", { style: Object.assign({}, S.scrollArea, { background: kingdomFadeBg }) },
+        kingdoms.length > 1 && React.createElement("div", { style: Object.assign({}, S.card, { marginBottom:"16px", display:"flex", gap:"8px", flexWrap:"wrap", alignItems:"center" }) },
+          React.createElement("div", { style: { fontSize:"12px", fontWeight:"bold", color:T.textDim, marginRight:"8px" } }, "Kingdoms:"),
+          kingdoms.map(function(k) {
+            return React.createElement("button", {
+              key: k.id,
+              style: Object.assign({}, S.btn, activeKingdomId === k.id ? { background: k.banner.bg, color: k.banner.fg, borderColor: k.banner.fg } : { opacity: 0.6 }),
+              onClick: function() { setSelectedKingdomId(k.id); setView("dashboard"); }
+            }, k.name);
+          }),
+          viewRole === "dm" && React.createElement("button", { style: Object.assign({}, S.btn, S.btnSmall), onClick: function() { setView("createNew"); } }, Plus && React.createElement(Plus, { size: 14 }), "New")
+        ),
+        view === "createNew" && viewRole === "dm" && React.createElement(CreateKingdomWizard, { onComplete: function(newK) { handleCreate(newK); setSelectedKingdomId(newK.id); setView("dashboard"); } }),
         view === "dashboard" && React.createElement(KingdomDashboard, { kingdom: kingdom, stats: stats, onNavigate: setView, viewRole: viewRole }),
-        view === "territory" && React.createElement(TerritoryPanel, { kingdom: kingdom, setKingdom: setKingdom, viewRole: viewRole, onBack: function() { setView("dashboard"); } }),
-        view === "settlements" && React.createElement(SettlementPanel, { kingdom: kingdom, setKingdom: setKingdom, viewRole: viewRole, onBack: function() { setView("dashboard"); } }),
+        view === "territory" && React.createElement(TerritoryPanel, { kingdom: kingdom, setKingdom: setKingdom, viewRole: viewRole, data: data, onBack: function() { setView("dashboard"); } }),
+        view === "settlements" && React.createElement(SettlementPanel, { kingdom: kingdom, setKingdom: setKingdom, setData: setData, viewRole: viewRole, onBack: function() { setView("dashboard"); } }),
         view === "governance" && React.createElement(GovernancePanel, { kingdom: kingdom, setKingdom: setKingdom, viewRole: viewRole, data: data, onBack: function() { setView("dashboard"); } }),
+        view === "military" && React.createElement(MilitaryPanel, { kingdom: kingdom, setKingdom: setKingdom, viewRole: viewRole, onBack: function() { setView("dashboard"); } }),
         view === "religion" && React.createElement(ReligionPanel, { kingdom: kingdom, setKingdom: setKingdom, viewRole: viewRole, onBack: function() { setView("dashboard"); } }),
         view === "events" && React.createElement(EventLogPanel, { kingdom: kingdom, setKingdom: setKingdom, viewRole: viewRole, onBack: function() { setView("dashboard"); } }),
-        view === "turn" && React.createElement(TurnPanel, { kingdom: kingdom, setKingdom: setKingdom, viewRole: viewRole, onBack: function() { setView("dashboard"); } })
+        view === "turn" && React.createElement(TurnPanel, { kingdom: kingdom, setKingdom: setKingdom, viewRole: viewRole, kingdoms: kingdoms, onBack: function() { setView("dashboard"); } }),
+        view === "diplomacy" && React.createElement(DiplomacyPanel, { kingdom: kingdom, setKingdom: setKingdom, kingdoms: kingdoms, viewRole: viewRole, onBack: function() { setView("dashboard"); } })
       )
     );
   }
@@ -2245,6 +2810,8 @@ function getBannerSVG(cfg) {
   window.KingdomView = KingdomView;
   window.KINGDOM_BUILDINGS = BUILDINGS;
   window.KINGDOM_EVENTS = KINGDOM_EVENTS;
+  window.KINGDOM_CRISES = KINGDOM_CRISES;
+  window.ARMY_UNITS = ARMY_UNITS;
   window.SETTLEMENT_SIZES = SETTLEMENT_SIZES;
   window.COUNCIL_ROLES = COUNCIL_ROLES;
   window.HEX_IMPROVEMENTS = HEX_IMPROVEMENTS;

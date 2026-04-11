@@ -2478,6 +2478,9 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
   dataRef.current = data;
   const mapTouchRef = useRef({ active: false });
   const [zoomLevel, setZoomLevel] = useState("continent"); // continent | kingdom | local | detail
+  const [cityPlacement, setCityPlacement] = useState(null); // { name, kingdomId, settlementId, mapX, mapY, dragging: false }
+  // Export placement mode setter so the kingdom module can trigger it
+  useEffect(() => { window.setCityPlacementMode = setCityPlacement; return () => { delete window.setCityPlacementMode; }; }, []);
 
   // Track when town images become available (loaded on demand)
   const [townImagesReady, setTownImagesReady] = useState(() => !!window.TOWN_IMAGES);
@@ -3040,8 +3043,16 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
   const handleMouseDown = useCallback((e) => {
     if (atlasLocked) return;
     if (e.button !== 0) return;
+    // If in placement mode, place the city on click instead of panning
+    if (cityPlacement) {
+      const rect = mapRef.current.getBoundingClientRect();
+      const worldX = (e.clientX - rect.left - mapPan.x) / mapZoom;
+      const worldY = (e.clientY - rect.top - mapPan.y) / mapZoom;
+      setCityPlacement(prev => ({...prev, mapX: worldX / MAP_W, mapY: worldY / MAP_H}));
+      return;
+    }
     setDragging({ startX: e.clientX, startY: e.clientY, panX: mapPan.x, panY: mapPan.y });
-  }, [mapPan, atlasLocked]);
+  }, [mapPan, atlasLocked, cityPlacement, mapZoom]);
 
   const handleMouseMove = useCallback((e) => {
     if (!dragging) return;
@@ -3548,6 +3559,21 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
         {/* ══════════ FANTASY MAP TAB — Multi-scale continental map ══════════ */}
         {tab==="map" && (
           <div ref={mapRef} style={{ flex:1, overflow:"hidden", position:"relative", background:T.bg, touchAction:"none", WebkitUserSelect:"none", userSelect:"none" }}>
+            {cityPlacement && (
+              <div style={{position:"absolute", top:0, left:0, right:0, zIndex:50, background:"linear-gradient(180deg, rgba(212,175,55,0.95), rgba(180,150,40,0.9))", padding:"10px 20px", display:"flex", justifyContent:"space-between", alignItems:"center", borderBottom:"2px solid #a08020", boxShadow:"0 2px 12px rgba(0,0,0,0.4)"}}>
+                <span style={{color:"#1a1a2e", fontFamily:"'Cinzel', serif", fontWeight:"bold", fontSize:13}}>
+                  Click the map to place "{cityPlacement.name}" — click again to adjust
+                </span>
+                <div style={{display:"flex", gap:8}}>
+                  <button onClick={() => { if (window.onCityPlacementConfirm) window.onCityPlacementConfirm(cityPlacement); setCityPlacement(null); }} style={{padding:"6px 16px", background:"#1a1a2e", color:"#d4af37", border:"1px solid #d4af37", borderRadius:2, fontFamily:"'Cinzel', serif", fontWeight:"bold", fontSize:12, cursor:"pointer", letterSpacing:1}}>
+                    Confirm
+                  </button>
+                  <button onClick={() => setCityPlacement(null)} style={{padding:"6px 16px", background:"transparent", color:"#1a1a2e", border:"1px solid rgba(26,26,46,0.4)", borderRadius:2, fontSize:12, cursor:"pointer"}}>
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
             {/* ── New MapEngine Canvas ── */}
             <canvas ref={mapCanvasRef} style={{ width:"100%", height:"100%", display:"block" }} />
             {/* ── Legacy SVG hidden — kept for non-MapEngine fallback ── */}
@@ -3711,6 +3737,71 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                   </g>
                   );
                 })}
+
+                {/* ═══ LAYER 3.5: Kingdom Territory Overlay ═══ */}
+                {mapZoom < 2.5 && <>
+                  {(() => {
+                    const kingdoms = data.kingdoms || (data.kingdom ? [data.kingdom] : []);
+                    return kingdoms.map(k => {
+                      const kingdomTerritories = k.atlasRegions || [];
+                      return (
+                        <g key={`kingdom-overlay-${k.id}`} clipPath="url(#atlasLandClip)" opacity={0.15} pointerEvents="none">
+                          {kingdomTerritories.map(regionName => {
+                            const territory = atlasTerritories.find(t => t.name === regionName);
+                            if (!territory) return null;
+                            const kingdomColor = k.banner?.bg || "#d4af37";
+                            return (
+                              <path key={`kingdom-terr-${k.id}-${regionName}`} d={territory.path} fill={kingdomColor} stroke={kingdomColor} strokeWidth="1.5" strokeOpacity="0.4" fillOpacity="0.08"/>
+                            );
+                          })}
+                        </g>
+                      );
+                    });
+                  })()}
+                </>}
+
+                {/* ═══ LAYER 3.7: Settlement Pins ═══ */}
+                {mapZoom < 2.0 && (() => {
+                  const kingdoms = data.kingdoms || (data.kingdom ? [data.kingdom] : []);
+                  const settlementPins = [];
+                  kingdoms.forEach(k => {
+                    const settlements = k.settlements || {};
+                    Object.entries(settlements).forEach(([setId, settlement]) => {
+                      if (!settlement.atlasRegionName && !settlement.hexId) return;
+                      const hexId = settlement.hexId;
+                      if (!hexId) return;
+                      const territory = k.territories && k.territories[hexId];
+                      if (!territory) return;
+                      const atlasRegionName = settlement.atlasRegionName || territory.atlasRegionName;
+                      if (!atlasRegionName) return;
+                      const atlasTerritory = atlasTerritories.find(t => t.name === atlasRegionName);
+                      if (!atlasTerritory) return;
+                      settlementPins.push({
+                        id: setId,
+                        settlement: settlement,
+                        kingdom: k,
+                        territory: atlasTerritory,
+                        labelX: (atlasTerritory.labelX || 0) + 15,
+                        labelY: (atlasTerritory.labelY || 0) + 15
+                      });
+                    });
+                  });
+                  return (
+                    <g clipPath="url(#atlasLandClip)">
+                      {settlementPins.map(pin => (
+                        <g key={`settlement-${pin.id}`}>
+                          <circle cx={pin.labelX} cy={pin.labelY} r="4" fill={pin.kingdom.banner?.fg || "#d4af37"} opacity="0.8"/>
+                          <circle cx={pin.labelX} cy={pin.labelY} r="2.5" fill="#fef4f0" opacity="0.9"/>
+                          {mapZoom < 1.2 && (
+                            <text x={pin.labelX + 8} y={pin.labelY + 3} fontFamily="'Spectral', serif" fontSize="10" fill={pin.kingdom.banner?.fg || "#d4af37"} opacity="0.7" style={{pointerEvents:"none"}}>
+                              {pin.settlement.name}
+                            </text>
+                          )}
+                        </g>
+                      ))}
+                    </g>
+                  );
+                })()}
 
                 {/* Mountains */}
                 <g clipPath="url(#atlasLandClip)">
@@ -3925,6 +4016,24 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                   <line x1="200" y1="-6" x2="200" y2="6" stroke="#b0a488" strokeWidth="1.4"/>
                   <text x="100" y="18" textAnchor="middle" fill="#b0a488" fontFamily="'Spectral', serif" fontSize="12" fontStyle="italic" stroke="rgba(14,12,8,0.5)" strokeWidth="2" paintOrder="stroke">100 leagues</text>
                 </g>
+
+                {/* Kingdom City Placement Marker */}
+                {cityPlacement && (() => {
+                  const px = (cityPlacement.mapX || 0.5) * MAP_W;
+                  const py = (cityPlacement.mapY || 0.5) * MAP_H;
+                  const r = Math.max(8, 14 / Math.max(mapZoom, 0.1));
+                  return (
+                    <g style={{cursor:"grab"}}>
+                      <circle cx={px} cy={py} r={r*2.5} fill="#d4af37" opacity="0.15">
+                        <animate attributeName="r" values={`${r*2};${r*3};${r*2}`} dur="2s" repeatCount="indefinite"/>
+                      </circle>
+                      <circle cx={px} cy={py} r={r} fill="#d4af37" stroke="#fff" strokeWidth={Math.max(1, 2/mapZoom)} opacity="0.9"/>
+                      <text x={px} y={py - r - 8/mapZoom} textAnchor="middle" fill="#d4af37" fontSize={Math.max(10, 14/mapZoom)} fontFamily="'Cinzel', serif" fontWeight="bold" stroke="rgba(0,0,0,0.7)" strokeWidth={Math.max(0.5, 1/mapZoom)} paintOrder="stroke">
+                        {cityPlacement.name || "New City"}
+                      </text>
+                    </g>
+                  );
+                })()}
               </g>
             </svg>
 
