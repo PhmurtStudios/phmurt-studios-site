@@ -1158,18 +1158,21 @@ function getBannerSVG(cfg) {
     var accentFg = bannerCfg.fg || T.gold;
     var accentBg = bannerCfg.bg || T.bgCard;
 
-    // Generate castle watermark — scale castle size with kingdom growth stage
+    // Generate castle watermark — scale castle size with kingdom growth stage (always gray)
     var isDark = (T.bg || '').charAt(1) < '5';
     var stage = getKingdomStage(kingdom);
     var castleSize = stage >= 3 ? 'large' : stage >= 1 ? 'medium' : 'small';
-    var castleSvg = getCastleSVG({ color: accentFg, opacity: isDark ? 0.035 : 0.05, size: castleSize });
+    var castleSvg = getCastleSVG({ color: isDark ? '#aaaaaa' : '#666666', opacity: isDark ? 0.04 : 0.06, size: castleSize });
+
+    // Banner-colored radial fade (like home page crimson fade but using player's banner colors)
+    var fadeBg = "radial-gradient(ellipse at 20% 0%, " + accentBg + "30 0%, transparent 55%), radial-gradient(ellipse at 80% 0%, " + accentFg + "18 0%, transparent 50%)";
 
     // ── 3-Column Layout: [Left Banner] [Main Content] [Right Banner] ──
-    return React.createElement("div", { style: { display:"flex", alignItems:"flex-start", gap:"0", margin:"0 -12px" } },
+    return React.createElement("div", { style: { display:"flex", alignItems:"flex-start", gap:"0", margin:"0 -16px -8px", background:fadeBg, borderRadius:"8px", padding:"8px 0" } },
       // ── Left Banner (structural, takes up real space) ──
-      React.createElement("div", { style: { flexShrink:0, width:"110px", minHeight:"440px", display:"flex", alignItems:"flex-start", justifyContent:"center", paddingTop:"12px", transform:"scaleX(-1)", filter:"drop-shadow(2px 4px 6px rgba(0,0,0,0.4))" }, dangerouslySetInnerHTML: { __html: bannerSvg } }),
+      React.createElement("div", { style: { flexShrink:0, width:"140px", minHeight:"440px", display:"flex", alignItems:"flex-start", justifyContent:"center", paddingTop:"12px", transform:"scaleX(-1)", filter:"drop-shadow(2px 4px 6px rgba(0,0,0,0.4))" }, dangerouslySetInnerHTML: { __html: bannerSvg } }),
       // ── Center Content Column ──
-      React.createElement("div", { style: { flex:"1", minWidth:0, position:"relative" } },
+      React.createElement("div", { style: { flex:"1", minWidth:0, position:"relative", padding:"0 4px" } },
       // Castle Watermark (behind center content)
       React.createElement("div", { style: { position:"absolute", top:"60px", left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:"900px", height:"500px", pointerEvents:"none", zIndex:0, opacity:1 }, dangerouslySetInnerHTML: { __html: castleSvg } }),
 
@@ -1319,7 +1322,7 @@ function getBannerSVG(cfg) {
       )
       ), // ── end Center Content Column ──
       // ── Right Banner (structural, takes up real space) ──
-      React.createElement("div", { style: { flexShrink:0, width:"110px", minHeight:"440px", display:"flex", alignItems:"flex-start", justifyContent:"center", paddingTop:"12px", filter:"drop-shadow(-2px 4px 6px rgba(0,0,0,0.4))" }, dangerouslySetInnerHTML: { __html: bannerSvg } })
+      React.createElement("div", { style: { flexShrink:0, width:"140px", minHeight:"440px", display:"flex", alignItems:"flex-start", justifyContent:"center", paddingTop:"12px", filter:"drop-shadow(-2px 4px 6px rgba(0,0,0,0.4))" }, dangerouslySetInnerHTML: { __html: bannerSvg } })
     );
   }
 
