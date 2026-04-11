@@ -3767,14 +3767,17 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                   kingdoms.forEach(k => {
                     const settlements = k.settlements || {};
                     Object.entries(settlements).forEach(([setId, settlement]) => {
-                      if (!settlement.atlasRegionName && !settlement.hexId) return;
-                      const hexId = settlement.hexId;
-                      if (!hexId) return;
-                      const territory = k.territories && k.territories[hexId];
-                      if (!territory) return;
-                      const atlasRegionName = settlement.atlasRegionName || territory.atlasRegionName;
-                      if (!atlasRegionName) return;
-                      const atlasTerritory = atlasTerritories.find(t => t.name === atlasRegionName);
+                      // New model: settlement.regionName is the atlas region directly
+                      const regionName = settlement.regionName || settlement.hexId;
+                      if (!regionName) return;
+                      // Try direct atlas territory lookup by region name
+                      let atlasTerritory = atlasTerritories.find(t => t.name === regionName);
+                      // Fallback: old model via hexId → territory → atlasRegionName
+                      if (!atlasTerritory && settlement.hexId && k.territories) {
+                        const hex = k.territories[settlement.hexId];
+                        const fallbackName = hex && hex.atlasRegionName;
+                        if (fallbackName) atlasTerritory = atlasTerritories.find(t => t.name === fallbackName);
+                      }
                       if (!atlasTerritory) return;
                       settlementPins.push({
                         id: setId,

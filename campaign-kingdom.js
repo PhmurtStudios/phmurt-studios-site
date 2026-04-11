@@ -532,8 +532,7 @@
     if (!capital) return "lost"; // capital settlement doesn't exist (destroyed?)
 
     // Check if any enemy kingdom at war has claimed the capital's region
-    var capitalHex = capital.hexId ? (kingdom.territories || {})[capital.hexId] : null;
-    var capitalRegion = capitalHex ? capitalHex.atlasRegionName : null;
+    var capitalRegion = capital.regionName || null;
 
     if (capitalRegion && allKingdoms) {
       for (var i = 0; i < allKingdoms.length; i++) {
@@ -616,9 +615,9 @@
       totalDefense += (SETTLEMENT_SIZES[size] && SETTLEMENT_SIZES[size].defenseBonus) || 0;
     });
 
-    // Consumption from claimed hexes
-    var numHexes = Object.keys(territories).length;
-    consumption += numHexes;
+    // Consumption from claimed regions
+    var numRegions = Object.keys(territories).length;
+    consumption += numRegions;
 
     // Population & Housing mechanics
     var housingCapacity = 0;
@@ -837,22 +836,22 @@
           settlement.constructionQueue = newQueue;
         });
 
-        // Hex improvements
-        Object.values(k.territories || {}).forEach(function(hex) {
-          var queue = hex.improvementQueue || [];
+        // Region improvements
+        Object.values(k.territories || {}).forEach(function(region) {
+          var queue = region.improvementQueue || [];
           var newQueue = [];
           queue.forEach(function(item) {
             item.turnsRemaining -= 1;
             if (item.turnsRemaining <= 0) {
-              if (!hex.improvements) hex.improvements = [];
-              hex.improvements.push({ type: item.type, completed: true, builtTurn: k.turn });
+              if (!region.improvements) region.improvements = [];
+              region.improvements.push({ type: item.type, completed: true, builtTurn: k.turn });
               anyCompleted = true;
-              log.push("Completed: " + ((HEX_IMPROVEMENTS[item.type] && HEX_IMPROVEMENTS[item.type].name) || item.type) + " at " + hex.name);
+              log.push("Completed: " + ((HEX_IMPROVEMENTS[item.type] && HEX_IMPROVEMENTS[item.type].name) || item.type) + " at " + region.name);
             } else {
               newQueue.push(item);
             }
           });
-          hex.improvementQueue = newQueue;
+          region.improvementQueue = newQueue;
         });
 
         if (!anyCompleted) log.push("No construction completed this turn.");
@@ -939,12 +938,12 @@
   // ── Kingdom Stage Calculator ──────────────────────────────────────────
   function getKingdomStage(kingdom) {
     if (!kingdom) return 0;
-    var hexes = Object.keys(kingdom.territories || {}).length;
+    var regions = Object.keys(kingdom.territories || {}).length;
     var settlements = Object.keys(kingdom.settlements || {}).length;
     var buildings = Object.values(kingdom.settlements || {}).reduce(function(s, set) {
       return s + (set.buildings || []).filter(function(b) { return b.completed; }).length;
     }, 0);
-    var total = hexes + settlements + buildings;
+    var total = regions + settlements + buildings;
     if (total >= 31) return 4;
     if (total >= 16) return 3;
     if (total >= 6) return 2;
@@ -1340,7 +1339,7 @@ function getBannerSVG(cfg) {
   // ── Kingdom Dashboard ──────────────────────────────────────────────────
   function KingdomDashboard(_ref) {
     var kingdom = _ref.kingdom, stats = _ref.stats, onNavigate = _ref.onNavigate, viewRole = _ref.viewRole;
-    var hexCount = Object.keys(kingdom.territories || {}).length;
+    var regionCount = Object.keys(kingdom.territories || {}).length;
     var settlementCount = Object.keys(kingdom.settlements || {}).length;
     var buildingCount = Object.values(kingdom.settlements || {}).reduce(function(s, set) { return s + (set.buildings || []).filter(function(b) { return b.completed; }).length; }, 0);
     var councilFilled = Object.keys(kingdom.council || {}).filter(function(r) { return kingdom.council[r]; }).length;
@@ -1430,8 +1429,8 @@ function getBannerSVG(cfg) {
           )
         ),
         React.createElement("div", { style: Object.assign({}, S.statBox, { borderTopColor: accentFg+"44", background:"linear-gradient(180deg, "+accentBg+"08 0%, "+T.bgCard+" 100%)" }) },
-          React.createElement("div", { style: Object.assign({}, S.statLabel, { color:accentFg }) }, "Hexes / Settlements"),
-          React.createElement("div", { style: { fontSize:"16px", fontWeight:"bold", color:accentFg } }, hexCount + " / " + settlementCount)
+          React.createElement("div", { style: Object.assign({}, S.statLabel, { color:accentFg }) }, "Regions / Settlements"),
+          React.createElement("div", { style: { fontSize:"16px", fontWeight:"bold", color:accentFg } }, regionCount + " / " + settlementCount)
         ),
         React.createElement("div", { style: Object.assign({}, S.statBox, { borderTopColor: accentFg+"44", background:"linear-gradient(180deg, "+accentBg+"08 0%, "+T.bgCard+" 100%)" }) },
           React.createElement("div", { style: Object.assign({}, S.statLabel, { color:accentFg }) }, "Buildings"),
@@ -1459,7 +1458,7 @@ function getBannerSVG(cfg) {
       // Featured Row: Territory and Settlements
       React.createElement("div", { style: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:"14px", marginBottom: "14px", position:"relative", zIndex:1 } },
         [
-          { id: "territory", label: "Territory", icon: Map, desc: "Claim hexes, build improvements, manage land", color: "#8fbc5e", featured: true },
+          { id: "territory", label: "Territory", icon: Map, desc: "Claim regions, build improvements, manage land", color: "#8fbc5e", featured: true },
           { id: "settlements", label: "Settlements", icon: Building2, desc: "Found towns, construct buildings, grow cities", color: accentFg, featured: true }
         ].map(function(panel) {
           return React.createElement("div", {
@@ -1575,86 +1574,74 @@ function getBannerSVG(cfg) {
   function TerritoryPanel(_ref) {
     var kingdom = _ref.kingdom, setKingdom = _ref.setKingdom, viewRole = _ref.viewRole, onBack = _ref.onBack, data = _ref.data;
     var _s1 = useState(false), showClaimForm = _s1[0], setShowClaimForm = _s1[1];
-    var _s2 = useState({ name: "", terrain: "plains", regionName: "" }), claimForm = _s2[0], setClaimForm = _s2[1];
-    var _s3 = useState(null), selectedHex = _s3[0], setSelectedHex = _s3[1];
+    var _s2 = useState({ regionName: "", terrain: "plains" }), claimForm = _s2[0], setClaimForm = _s2[1];
+    var _s3 = useState(null), selectedRegion = _s3[0], setSelectedRegion = _s3[1];
     var _s4 = useState(false), showBuildMenu = _s4[0], setShowBuildMenu = _s4[1];
     var _s5 = useState(null), impCategory = _s5[0], setImpCategory = _s5[1];
 
     var territories = kingdom.territories || {};
-    var hexList = Object.entries(territories).sort(function(a, b) { return a[1].name.localeCompare(b[1].name); });
+    var regionList = Object.entries(territories).sort(function(a, b) { return a[1].name.localeCompare(b[1].name); });
 
     var handleClaim = function() {
-      if (!claimForm.name) return;
+      if (!claimForm.regionName) return;
       var terrain = TERRAIN_TYPES[claimForm.terrain];
       if (!terrain || kingdom.treasury < terrain.claimCost) return;
-      var hexId = Date.now().toString();
+      if (territories[claimForm.regionName]) return; // Already claimed
       updateKingdom(setKingdom, function(k) {
         k.treasury -= terrain.claimCost;
-        k.territories[hexId] = { id: hexId, name: claimForm.name, terrain: claimForm.terrain, claimedTurn: k.turn, improvements: [], improvementQueue: [], prepared: false, atlasRegionName: claimForm.regionName || null };
-        if (claimForm.regionName && k.atlasRegions && !k.atlasRegions.includes(claimForm.regionName)) {
+        k.territories[claimForm.regionName] = { id: claimForm.regionName, name: claimForm.regionName, terrain: claimForm.terrain, claimedTurn: k.turn, improvements: [], improvementQueue: [] };
+        if (!k.atlasRegions) k.atlasRegions = [];
+        if (!k.atlasRegions.includes(claimForm.regionName)) {
           k.atlasRegions.push(claimForm.regionName);
         }
       });
       setShowClaimForm(false);
-      setClaimForm({ name: "", terrain: "plains", regionName: "" });
+      setClaimForm({ regionName: "", terrain: "plains" });
     };
 
-    var handlePrepare = function(hexId) {
-      var hex = territories[hexId];
-      if (!hex || hex.prepared) return;
-      var terrain = TERRAIN_TYPES[hex.terrain];
-      if (!terrain || kingdom.treasury < terrain.prepCost) return;
-      updateKingdom(setKingdom, function(k) { k.treasury -= terrain.prepCost; k.territories[hexId].prepared = true; });
-    };
-
-    var handleBuildImprovement = function(hexId, impType) {
+    var handleBuildImprovement = function(regionName, impType) {
       var imp = HEX_IMPROVEMENTS[impType];
       if (!imp || kingdom.treasury < imp.cost) return;
-      var hex = territories[hexId];
-      if (imp.requires && !imp.requires.includes(hex.terrain)) return;
+      var region = territories[regionName];
+      if (imp.requires && !imp.requires.includes(region.terrain)) return;
       updateKingdom(setKingdom, function(k) {
         k.treasury -= imp.cost;
         if (imp.buildTurns <= 0) {
-          k.territories[hexId].improvements.push({ type: impType, completed: true, builtTurn: k.turn });
+          k.territories[regionName].improvements.push({ type: impType, completed: true, builtTurn: k.turn });
         } else {
-          if (!k.territories[hexId].improvementQueue) k.territories[hexId].improvementQueue = [];
-          k.territories[hexId].improvementQueue.push({ type: impType, turnsRemaining: imp.buildTurns });
+          if (!k.territories[regionName].improvementQueue) k.territories[regionName].improvementQueue = [];
+          k.territories[regionName].improvementQueue.push({ type: impType, turnsRemaining: imp.buildTurns });
         }
       });
       setShowBuildMenu(false);
     };
 
-    var sel = selectedHex ? territories[selectedHex] : null;
+    var sel = selectedRegion ? territories[selectedRegion] : null;
+    var availableRegions = (data && data.regions || []).filter(function(r) { return !territories[r.name]; });
 
     return React.createElement("div", null,
       React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" } },
-        React.createElement("div", { style: S.sectionHead }, Map && React.createElement(Map, { size: 18 }), "Territory (" + hexList.length + " hexes)"),
+        React.createElement("div", { style: S.sectionHead }, Map && React.createElement(Map, { size: 18 }), "Territory (" + regionList.length + " regions)"),
         React.createElement("div", { style: { display:"flex", gap:"8px" } },
-          viewRole === "dm" && React.createElement("button", { style: S.btn, onClick: function() { setShowClaimForm(!showClaimForm); } }, Plus && React.createElement(Plus, { size: 14 }), "Claim Hex"),
+          viewRole === "dm" && React.createElement("button", { style: S.btn, onClick: function() { setShowClaimForm(!showClaimForm); } }, Plus && React.createElement(Plus, { size: 14 }), "Claim Region"),
           React.createElement("button", { style: Object.assign({}, S.btn, S.btnGold), onClick: onBack }, "← Dashboard")
         )
       ),
 
       showClaimForm && React.createElement("div", { style: Object.assign({}, S.card, { borderLeft:"4px solid #8fbc5e" }) },
-        React.createElement("div", { style: { fontSize:"14px", fontWeight:"bold", color:"#8fbc5e", marginBottom:"10px" } }, "Claim New Hex"),
+        React.createElement("div", { style: { fontSize:"14px", fontWeight:"bold", color:"#8fbc5e", marginBottom:"10px" } }, "Claim New Region"),
         React.createElement("div", { style: S.grid2 },
           React.createElement("div", null,
-            React.createElement("label", { style: S.label }, "Hex Name"),
-            React.createElement("input", { style: S.input, value: claimForm.name, placeholder: "e.g., Greenhollow Valley", onChange: function(e) { setClaimForm({ name: e.target.value, terrain: claimForm.terrain, regionName: claimForm.regionName }); } })
+            React.createElement("label", { style: S.label }, "Region"),
+            React.createElement("select", { style: S.select, value: claimForm.regionName, onChange: function(e) { setClaimForm({ regionName: e.target.value, terrain: claimForm.terrain }); } },
+              React.createElement("option", { value: "" }, "— Select atlas region —"),
+              availableRegions.map(function(r) { return React.createElement("option", { key: r.name, value: r.name }, r.name); })
+            )
           ),
           React.createElement("div", null,
             React.createElement("label", { style: S.label }, "Terrain"),
-            React.createElement("select", { style: S.select, value: claimForm.terrain, onChange: function(e) { setClaimForm({ name: claimForm.name, terrain: e.target.value, regionName: claimForm.regionName }); } },
+            React.createElement("select", { style: S.select, value: claimForm.terrain, onChange: function(e) { setClaimForm({ regionName: claimForm.regionName, terrain: e.target.value }); } },
               Object.entries(TERRAIN_TYPES).map(function(entry) { return React.createElement("option", { key: entry[0], value: entry[0] }, entry[1].icon + " " + entry[1].name + " (" + entry[1].claimCost + " BP)"); })
-            )
-          )
-        ),
-        React.createElement("div", { style: Object.assign({}, S.grid2, { marginTop:"10px" }) },
-          React.createElement("div", null,
-            React.createElement("label", { style: S.label }, "Atlas Region (Optional)"),
-            React.createElement("select", { style: S.select, value: claimForm.regionName, onChange: function(e) { setClaimForm({ name: claimForm.name, terrain: claimForm.terrain, regionName: e.target.value }); } },
-              React.createElement("option", { value: "" }, "— None —"),
-              (data && data.regions || []).map(function(r) { return React.createElement("option", { key: r.name, value: r.name }, r.name); })
             )
           )
         ),
@@ -1664,26 +1651,25 @@ function getBannerSVG(cfg) {
         )
       ),
 
-      hexList.length === 0
-        ? React.createElement("div", { style: S.empty }, "No territory claimed yet. Claim your first hex to begin building your kingdom!")
+      regionList.length === 0
+        ? React.createElement("div", { style: S.empty }, "No regions claimed yet. Claim your first region to begin building your kingdom!")
         : React.createElement("div", { style: S.grid4 },
-          hexList.map(function(entry) {
-            var id = entry[0], hex = entry[1];
-            var terrain = TERRAIN_TYPES[hex.terrain] || {};
-            var impCount = (hex.improvements || []).filter(function(i) { return i.completed; }).length;
-            var isBuilding = (hex.improvementQueue || []).length > 0;
+          regionList.map(function(entry) {
+            var regionName = entry[0], region = entry[1];
+            var terrain = TERRAIN_TYPES[region.terrain] || {};
+            var impCount = (region.improvements || []).filter(function(i) { return i.completed; }).length;
+            var isBuilding = (region.improvementQueue || []).length > 0;
             return React.createElement("div", {
-              key: id,
-              style: Object.assign({}, S.card, S.cardHover, { borderLeft:"4px solid "+(terrain.color||T.gold), background: selectedHex === id ? T.bgHover : T.bgCard }),
-              onClick: function() { setSelectedHex(selectedHex === id ? null : id); }
+              key: regionName,
+              style: Object.assign({}, S.card, S.cardHover, { borderLeft:"4px solid "+(terrain.color||T.gold), background: selectedRegion === regionName ? T.bgHover : T.bgCard }),
+              onClick: function() { setSelectedRegion(selectedRegion === regionName ? null : regionName); }
             },
               React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center" } },
-                React.createElement("span", { style: { fontSize:"14px", fontWeight:"bold", color:terrain.color || T.gold } }, hex.name),
+                React.createElement("span", { style: { fontSize:"14px", fontWeight:"bold", color:terrain.color || T.gold } }, region.name),
                 React.createElement("span", { style: { fontSize:"16px" } }, terrain.icon)
               ),
               React.createElement("div", { style: { fontSize:"11px", color:T.textDim, marginTop:"4px" } }, terrain.name + (terrain.desc ? " — " + terrain.desc : "")),
               React.createElement("div", { style: { display:"flex", gap:"6px", marginTop:"6px", flexWrap:"wrap" } },
-                hex.prepared ? React.createElement("span", { style: S.pill("#7cb342") }, "Prepared") : React.createElement("span", { style: S.pill("#e67e22") }, "Unprepared"),
                 impCount > 0 && React.createElement("span", { style: S.pill(T.gold) }, impCount + " imp."),
                 isBuilding && React.createElement("span", { style: S.pill("#3498db") }, "⚒ Building")
               )
@@ -1695,8 +1681,7 @@ function getBannerSVG(cfg) {
         React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"12px" } },
           React.createElement("div", { style: { fontSize:"16px", fontWeight:"bold", color:T.gold, fontFamily:T.heading } }, sel.name + " — " + ((TERRAIN_TYPES[sel.terrain] && TERRAIN_TYPES[sel.terrain].name) || sel.terrain)),
           React.createElement("div", { style: { display:"flex", gap:"6px" } },
-            !sel.prepared && viewRole === "dm" && React.createElement("button", { style: Object.assign({}, S.btn, S.btnSmall), onClick: function() { handlePrepare(selectedHex); } }, "Prepare (" + ((TERRAIN_TYPES[sel.terrain] && TERRAIN_TYPES[sel.terrain].prepCost)||0) + " BP)"),
-            sel.prepared && viewRole === "dm" && React.createElement("button", { style: Object.assign({}, S.btn, S.btnSmall), onClick: function() { setShowBuildMenu(!showBuildMenu); } }, "+ Improvement")
+            viewRole === "dm" && React.createElement("button", { style: Object.assign({}, S.btn, S.btnSmall), onClick: function() { setShowBuildMenu(!showBuildMenu); } }, "+ Improvement")
           )
         ),
 
@@ -1740,7 +1725,7 @@ function getBannerSVG(cfg) {
               return React.createElement("div", {
                 key: key,
                 style: Object.assign({}, S.card, { opacity: ok ? 1 : 0.45, cursor: ok ? "pointer" : "default", padding:"10px" }),
-                onClick: function() { ok && handleBuildImprovement(selectedHex, key); }
+                onClick: function() { ok && handleBuildImprovement(selectedRegion, key); }
               },
                 React.createElement("div", { style: { fontSize:"14px", marginBottom:"4px" } }, imp.icon + " " + imp.name),
                 React.createElement("div", { style: { fontSize:"10px", color:T.textDim } }, imp.desc),
@@ -1767,22 +1752,21 @@ function getBannerSVG(cfg) {
   function SettlementPanel(_ref) {
     var kingdom = _ref.kingdom, setKingdom = _ref.setKingdom, setData = _ref.setData, viewRole = _ref.viewRole, onBack = _ref.onBack;
     var _s1 = useState(false), showFoundForm = _s1[0], setShowFoundForm = _s1[1];
-    var _s2 = useState({ name: "", hexId: "" }), foundForm = _s2[0], setFoundForm = _s2[1];
+    var _s2 = useState({ name: "", regionName: "" }), foundForm = _s2[0], setFoundForm = _s2[1];
     var _s3 = useState(null), selectedSettlement = _s3[0], setSelectedSettlement = _s3[1];
     var _s4 = useState(null), buildCategory = _s4[0], setBuildCategory = _s4[1];
     var _s5 = useState({}), placementCoords = _s5[0], setPlacementCoords = _s5[1];
 
     var settlements = kingdom.settlements || {};
     var settlementList = Object.entries(settlements).sort(function(a, b) { return (b[1].population || 0) - (a[1].population || 0); });
-    var preparedHexes = Object.entries(kingdom.territories || {}).filter(function(e) { return e[1].prepared; });
 
     var handleFound = function() {
-      if (!foundForm.name || !foundForm.hexId) return;
+      if (!foundForm.name || !foundForm.regionName) return;
       var id = Date.now().toString();
-      var hexId = foundForm.hexId;
+      var regionName = foundForm.regionName;
       var hasPlacement = placementCoords[id];
       updateKingdom(setKingdom, function(k) {
-        var s = { id: id, name: foundForm.name, hexId: hexId, population: 100, buildings: [], constructionQueue: [], foundedTurn: k.turn };
+        var s = { id: id, name: foundForm.name, regionName: regionName, population: 100, buildings: [], constructionQueue: [], foundedTurn: k.turn };
         if (hasPlacement) {
           s.mapX = placementCoords[id].mapX;
           s.mapY = placementCoords[id].mapY;
@@ -1790,7 +1774,7 @@ function getBannerSVG(cfg) {
         k.settlements[id] = s;
         if (!k.capitalSettlement) k.capitalSettlement = id;
       });
-      setShowFoundForm(false); setFoundForm({ name: "", hexId: "" }); setPlacementCoords({});
+      setShowFoundForm(false); setFoundForm({ name: "", regionName: "" }); setPlacementCoords({});
     };
 
     var startAtlasPlacement = function(settlementId, settlementName) {
@@ -1867,19 +1851,19 @@ function getBannerSVG(cfg) {
 
       showFoundForm && React.createElement("div", { style: Object.assign({}, S.card, { borderLeft:"4px solid #d4af37" }) },
         React.createElement("div", { style: { fontSize:"14px", fontWeight:"bold", color:"#d4af37", marginBottom:"10px" } }, "Found New Settlement"),
-        preparedHexes.length === 0
-          ? React.createElement("div", { style: { fontSize:"12px", color:T.textDim } }, "You need at least one prepared hex. Go to Territory first.")
+        Object.keys(kingdom.territories || {}).length === 0
+          ? React.createElement("div", { style: { fontSize:"12px", color:T.textDim } }, "You need at least one claimed region. Go to Territory first.")
           : React.createElement(React.Fragment, null,
             React.createElement("div", { style: S.grid2 },
               React.createElement("div", null,
                 React.createElement("label", { style: S.label }, "Name"),
-                React.createElement("input", { style: S.input, value: foundForm.name, placeholder: "e.g., Oakvale", onChange: function(e) { setFoundForm({ name: e.target.value, hexId: foundForm.hexId }); } })
+                React.createElement("input", { style: S.input, value: foundForm.name, placeholder: "e.g., Oakvale", onChange: function(e) { setFoundForm({ name: e.target.value, regionName: foundForm.regionName }); } })
               ),
               React.createElement("div", null,
                 React.createElement("label", { style: S.label }, "Location"),
-                React.createElement("select", { style: S.select, value: foundForm.hexId, onChange: function(e) { setFoundForm({ name: foundForm.name, hexId: e.target.value }); } },
-                  React.createElement("option", { value: "" }, "— Select hex —"),
-                  preparedHexes.map(function(e) { return React.createElement("option", { key: e[0], value: e[0] }, e[1].name + " (" + ((TERRAIN_TYPES[e[1].terrain] && TERRAIN_TYPES[e[1].terrain].name) || "") + ")"); })
+                React.createElement("select", { style: S.select, value: foundForm.regionName, onChange: function(e) { setFoundForm({ name: foundForm.name, regionName: e.target.value }); } },
+                  React.createElement("option", { value: "" }, "— Select region —"),
+                  Object.entries(kingdom.territories || {}).map(function(e) { return React.createElement("option", { key: e[0], value: e[0] }, e[1].name + " (" + ((TERRAIN_TYPES[e[1].terrain] && TERRAIN_TYPES[e[1].terrain].name) || "") + ")"); })
                 )
               )
             ),
@@ -1892,7 +1876,7 @@ function getBannerSVG(cfg) {
       ),
 
       settlementList.length === 0
-        ? React.createElement("div", { style: S.empty }, "No settlements yet. Claim and prepare a hex, then found your first settlement!")
+        ? React.createElement("div", { style: S.empty }, "No settlements yet. Claim a region, then found your first settlement!")
         : React.createElement("div", { style: S.grid4 },
           settlementList.map(function(entry) {
             var id = entry[0], s = entry[1];
