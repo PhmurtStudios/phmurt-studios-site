@@ -1811,9 +1811,10 @@ var PhmurtDB = (function () {
           // SECURITY: Validate the redirect URL with strict hostname matching
           try {
             var parsed = new URL(data.url);
-            // Strict hostname validation using exact match, not indexOf
+            // Strict hostname validation — allow all *.stripe.com subdomains
+            // (checkout.stripe.com for new subs, billing.stripe.com for portal)
             var isValidHost = parsed.hostname === 'stripe.com' ||
-                              parsed.hostname === 'checkout.stripe.com' ||
+                              (parsed.hostname.length > 11 && parsed.hostname.slice(-11) === '.stripe.com') ||
                               parsed.hostname === 'www.phmurtstudios.com' ||
                               parsed.hostname === 'phmurtstudios.com';
             if (parsed.protocol !== 'https:' || !isValidHost) {
