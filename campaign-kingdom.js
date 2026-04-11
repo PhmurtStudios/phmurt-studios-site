@@ -2652,6 +2652,7 @@ function getBannerSVG(cfg) {
         banner = _s3[0], setBanner = _s3[1];
     var _s6 = useState(""), startRegion = _s6[0], setStartRegion = _s6[1];
     var _s7 = useState(""), capitalCity = _s7[0], setCapitalCity = _s7[1];
+    var _s8 = useState(null), hoveredProvince = _s8[0], setHoveredProvince = _s8[1];
 
     var SHAPES = [
       { id:"pointed", label:"Pointed" },
@@ -2839,10 +2840,8 @@ function getBannerSVG(cfg) {
       return factions.find(function(f) { return f.name === ctrl; });
     };
 
-    // Build mini atlas SVG string (no JSX in this module)
+    // Build mini atlas SVG
     var MW = 6000, MH = 4500;
-    var hoveredRef = useState(null);
-    var hoveredProvince = hoveredRef[0], setHoveredProvince = hoveredRef[1];
 
     // Selected province data
     var selectedProv = atlasProvinces.find(function(p) { return p.id === startRegion || p.name === startRegion; });
