@@ -2106,15 +2106,17 @@ window.addEventListener('storage', function (e) {
                     if (pr && pr.data) {
                       var session = _makeSession(r.data.session.user, pr.data);
                       if (session) {
-                        // Only update session if subscription status changed
-                        if (!_session || (_session && session.isSubscribed !== _session.isSubscribed)) {
-                          _session = session;
-                          _fireChange();
+                        _session = session;
+                        _fireChange();
+                        // If subscription isn't active yet, webhook may still be processing — retry
+                        if (!session.isSubscribed && attempt < 5) {
+                          var delay = Math.min(5000, 1500 * Math.pow(1.5, attempt));
+                          setTimeout(function () { _tryRefreshProfile(attempt + 1); }, delay);
                         }
                       }
                     } else if (attempt < 5) {
                       // Profile not ready yet, retry with exponential backoff
-                      var delay = Math.min(5000, 1000 * Math.pow(1.5, attempt));
+                      var delay = Math.min(5000, 1500 * Math.pow(1.5, attempt));
                       setTimeout(function () { _tryRefreshProfile(attempt + 1); }, delay);
                     }
                   })
@@ -2144,6 +2146,14 @@ window.addEventListener('storage', function (e) {
     fetchSettingsAndAnnouncements();
     checkSubscriptionSuccess();
   }
+
+  // If Supabase wasn't ready when checkSubscriptionSuccess first ran, retry once it loads
+  window.addEventListener('phmurt-supabase-ready', function () {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get('subscription') === 'success') {
+      checkSubscriptionSuccess();
+    }
+  }, { once: true });
 })();
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -2373,8 +2383,8 @@ window.addEventListener('storage', function (e) {
           '<h2 class="upgrade-title">Limit Reached</h2>' +
           '<p class="upgrade-text">' + escapedMsg + '<br>Upgrade to <strong>Phmurt Studios Pro</strong> for unlimited ' + psEscapeHtml(table) + ', generators, advanced campaign tools, and more.</p>' +
           '<div class="phmurt-upgrade-btns">' +
-            '<a class="upgrade-btn" href="pricing.html?plan=monthly" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">$5 / month</a>' +
-            '<a class="upgrade-btn yearly" href="pricing.html?plan=yearly" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">$50 / year</a>' +
+            '<button class="upgrade-btn" id="phmurt-upgrade-monthly" style="display:flex;align-items:center;justify-content:center;">$5 / month</button>' +
+            '<button class="upgrade-btn yearly" id="phmurt-upgrade-yearly" style="display:flex;align-items:center;justify-content:center;">$50 / year</button>' +
           '</div>' +
           '<span class="upgrade-save">Save $10 with yearly!</span>' +
         '</div>' +
@@ -2390,6 +2400,20 @@ window.addEventListener('storage', function (e) {
     var bgClickHandler = function (ev) { if (ev.target === overlay) overlay.remove(); };
     if (closeBtn) closeBtn.addEventListener('click', closeHandler);
     overlay.addEventListener('click', bgClickHandler);
+    // Direct checkout from upgrade modal (no pricing.html redirect)
+    function _upgradeCheckout(plan) {
+      if (typeof PhmurtDB === 'undefined') return;
+      var btn = document.getElementById('phmurt-upgrade-' + plan);
+      if (btn) { btn.textContent = 'Connecting\u2026'; btn.disabled = true; }
+      PhmurtDB.startSubscription('https://phmurtstudios.com/', plan).catch(function (err) {
+        if (btn) { btn.textContent = plan === 'yearly' ? '$50 / year' : '$5 / month'; btn.disabled = false; }
+        console.error('Upgrade checkout error:', err);
+      });
+    }
+    var mBtn = document.getElementById('phmurt-upgrade-monthly');
+    var yBtn = document.getElementById('phmurt-upgrade-yearly');
+    if (mBtn) mBtn.addEventListener('click', function () { _upgradeCheckout('monthly'); });
+    if (yBtn) yBtn.addEventListener('click', function () { _upgradeCheckout('yearly'); });
   });
 
   // ── Global Feature Gate ─────────────────────────────────────────
@@ -2424,8 +2448,8 @@ window.addEventListener('storage', function (e) {
           '<h2 class="upgrade-title">Upgrade to Pro</h2>' +
           '<p class="upgrade-text"><strong>' + escapedFeatureLabel + '</strong> is a Pro feature. Unlock it — plus unlimited characters, campaigns, and every generator.</p>' +
           '<div class="phmurt-upgrade-btns">' +
-            '<a class="upgrade-btn" href="pricing.html?plan=monthly" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">' + psEscapeHtml(String(tierCfg.pro.price.monthly || '')) + '</a>' +
-            '<a class="upgrade-btn yearly" href="pricing.html?plan=yearly" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">' + psEscapeHtml(String(tierCfg.pro.price.yearly || '')) + '</a>' +
+            '<button class="upgrade-btn" id="phmurt-gate-monthly" style="cursor:pointer;">' + psEscapeHtml(String(tierCfg.pro.price.monthly || '')) + '</button>' +
+            '<button class="upgrade-btn yearly" id="phmurt-gate-yearly" style="cursor:pointer;">' + psEscapeHtml(String(tierCfg.pro.price.yearly || '')) + '</button>' +
           '</div>' +
           '<span class="upgrade-save">' + psEscapeHtml(String(tierCfg.pro.price.yearlySavings || '')) + ' with yearly!</span>' +
         '</div>' +
@@ -2443,6 +2467,21 @@ window.addEventListener('storage', function (e) {
     var bgClickHandler = function (ev) { if (ev.target === overlay) overlay.remove(); };
     if (closeBtn) closeBtn.addEventListener('click', closeHandler);
     overlay.addEventListener('click', bgClickHandler);
+
+    // Direct checkout buttons — skip pricing.html redirect
+    function _gateCheckout(plan) {
+      if (typeof PhmurtDB === 'undefined') return;
+      var btn = document.getElementById('phmurt-gate-' + plan);
+      if (btn) { btn.textContent = 'Connecting\u2026'; btn.disabled = true; }
+      PhmurtDB.startSubscription('https://phmurtstudios.com/', plan).catch(function (err) {
+        if (btn) { btn.textContent = plan === 'yearly' ? '$50 / year' : '$5 / month'; btn.disabled = false; }
+        console.error('Gate checkout error:', err);
+      });
+    }
+    var monthlyBtn = document.getElementById('phmurt-gate-monthly');
+    var yearlyBtn  = document.getElementById('phmurt-gate-yearly');
+    if (monthlyBtn) monthlyBtn.addEventListener('click', function () { _gateCheckout('monthly'); });
+    if (yearlyBtn)  yearlyBtn.addEventListener('click', function () { _gateCheckout('yearly'); });
 
     // Clean up listeners when modal is removed
     var observer = new MutationObserver(function() {
