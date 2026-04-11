@@ -1786,8 +1786,8 @@ var PhmurtDB = (function () {
         pro: {
           name: 'Phmurt Studios Pro',
           price: {
-            monthly: c.pro_price_monthly || '$4.99/mo',
-            yearly: c.pro_price_yearly || '$49.99/yr',
+            monthly: c.pro_price_monthly || '$5/mo',
+            yearly: c.pro_price_yearly || '$50/yr',
             yearlySavings: c.pro_price_yearly_savings || 'Save $10',
           },
           maxCharacters: c.paid_max_characters != null ? c.paid_max_characters : -1,
@@ -2373,8 +2373,8 @@ window.addEventListener('storage', function (e) {
           '<h2 class="upgrade-title">Limit Reached</h2>' +
           '<p class="upgrade-text">' + escapedMsg + '<br>Upgrade to <strong>Phmurt Studios Pro</strong> for unlimited ' + psEscapeHtml(table) + ', generators, advanced campaign tools, and more.</p>' +
           '<div class="phmurt-upgrade-btns">' +
-            '<a class="upgrade-btn" href="pricing.html?plan=monthly" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">$4.99 / month</a>' +
-            '<a class="upgrade-btn yearly" href="pricing.html?plan=yearly" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">$49.99 / year</a>' +
+            '<a class="upgrade-btn" href="pricing.html?plan=monthly" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">$5 / month</a>' +
+            '<a class="upgrade-btn yearly" href="pricing.html?plan=yearly" style="text-decoration:none;display:flex;align-items:center;justify-content:center;">$50 / year</a>' +
           '</div>' +
           '<span class="upgrade-save">Save $10 with yearly!</span>' +
         '</div>' +

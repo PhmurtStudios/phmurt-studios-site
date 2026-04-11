@@ -29,7 +29,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous" integrity="sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG"></script>
   <script src="supabase-config.js"></script>
   <script src="stripe-config.js"></script>
-  <script src="phmurt-auth.js?v=179"></script>
+  <script src="phmurt-auth.js?v=181"></script>
 
   <style>
     /* ── Pricing page layout ─────────────────────────────────────── */
@@ -306,7 +306,7 @@
     <div class="plan-card pro">
       <h2 class="plan-name">Phmurt Studios Pro</h2>
       <p class="plan-desc">Unlimited power for serious players and DMs.</p>
-      <div class="plan-price" id="pro-price">$4.99 <span class="period">/ month</span></div>
+      <div class="plan-price" id="pro-price">$5 <span class="period">/ month</span></div>
       <p class="plan-price-note" id="pro-note">&nbsp;</p>
       <button class="plan-cta pro-cta" id="pro-cta">Subscribe Now</button>
       <ul class="plan-features">
@@ -374,7 +374,7 @@
         lblY.classList.add('active');
         // SECURITY: Clear and rebuild to prevent duplicate spans
         while (priceEl.firstChild) { priceEl.removeChild(priceEl.firstChild); }
-        priceEl.appendChild(document.createTextNode('$49.99 '));
+        priceEl.appendChild(document.createTextNode('$50 '));
         var span = document.createElement('span');
         span.className = 'period';
         span.textContent = '/ year';
@@ -387,7 +387,7 @@
         lblY.classList.remove('active');
         // SECURITY: Clear and rebuild to prevent duplicate spans
         while (priceEl.firstChild) { priceEl.removeChild(priceEl.firstChild); }
-        priceEl.appendChild(document.createTextNode('$4.99 '));
+        priceEl.appendChild(document.createTextNode('$5 '));
         var span = document.createElement('span');
         span.className = 'period';
         span.textContent = '/ month';
@@ -410,12 +410,49 @@
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); yearly = !yearly; updatePricing(); }
     });
 
+    /* ── Inline toast helper ────────────────────────────────────────── */
+    function showToast(msg, type) {
+      var old = document.getElementById('phmurt-toast');
+      if (old) old.remove();
+      var t = document.createElement('div');
+      t.id = 'phmurt-toast';
+      var bg = type === 'success' ? 'rgba(34,197,94,0.15)' : type === 'error' ? 'rgba(239,68,68,0.15)' : 'rgba(212,67,58,0.10)';
+      var border = type === 'success' ? 'rgba(34,197,94,0.4)' : type === 'error' ? 'rgba(239,68,68,0.4)' : 'rgba(212,67,58,0.25)';
+      var color = type === 'success' ? '#5ee09a' : type === 'error' ? '#ef4444' : '#d4c4a8';
+      t.style.cssText = 'position:fixed;top:24px;left:50%;transform:translateX(-50%);z-index:10001;padding:14px 28px;border-radius:8px;font-family:Spectral,serif;font-size:15px;color:' + color + ';background:' + bg + ';border:1px solid ' + border + ';backdrop-filter:blur(12px);box-shadow:0 4px 24px rgba(0,0,0,0.3);animation:phmurt-toast-in 0.3s ease;max-width:480px;text-align:center;';
+      t.textContent = msg;
+      // Add animation keyframes if not already added
+      if (!document.getElementById('phmurt-toast-style')) {
+        var s = document.createElement('style');
+        s.id = 'phmurt-toast-style';
+        s.textContent = '@keyframes phmurt-toast-in{from{opacity:0;transform:translateX(-50%) translateY(-12px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}';
+        document.head.appendChild(s);
+      }
+      document.body.appendChild(t);
+      setTimeout(function () { t.style.transition = 'opacity 0.4s'; t.style.opacity = '0'; setTimeout(function () { t.remove(); }, 400); }, 5000);
+    }
+
+    /* ── Handle return from Stripe ───────────────────────────────── */
+    try {
+      var returnParams = new URLSearchParams(window.location.search);
+      var subStatus = returnParams.get('subscription');
+      if (subStatus === 'success') {
+        showToast('Welcome to Pro! Your subscription is active.', 'success');
+        try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
+      } else if (subStatus === 'canceled') {
+        showToast('Checkout canceled. No charge was made.', 'info');
+        try { history.replaceState(null, '', window.location.pathname); } catch (e) {}
+      }
+    } catch (e) {}
+
     /* ── Subscribe button ─────────────────────────────────────────── */
     var isCheckoutInProgress = false; // SECURITY: Prevent double-clicks during checkout
+    var originalCtaText = ctaEl.textContent;
+
     ctaEl.addEventListener('click', function () {
       if (isCheckoutInProgress) return;
       if (typeof PhmurtDB === 'undefined') {
-        alert('Please sign in first to subscribe.');
+        showToast('Please sign in first to subscribe.', 'error');
         return;
       }
       var sess = PhmurtDB.getSession();
@@ -424,20 +461,28 @@
         return;
       }
       if (sess.isSubscribed) {
+        ctaEl.textContent = 'Opening\u2026';
+        ctaEl.disabled = true;
         PhmurtDB.manageSubscription(window.location.href).catch(function (err) {
-          // SECURITY: Don't expose internal error messages to user
           console.error('Billing portal error:', err);
-          alert('Could not open billing portal. Please try again.');
+          showToast('Could not open billing portal. Please try again.', 'error');
+          ctaEl.textContent = 'Manage Subscription';
+          ctaEl.disabled = false;
         });
         return;
       }
       isCheckoutInProgress = true;
+      ctaEl.textContent = 'Connecting\u2026';
+      ctaEl.disabled = true;
       var plan = yearly ? 'yearly' : 'monthly';
       PhmurtDB.startSubscription(window.location.href, plan).catch(function (err) {
         isCheckoutInProgress = false;
-        // SECURITY: Don't expose internal error messages to user
+        ctaEl.textContent = originalCtaText;
+        ctaEl.disabled = false;
         console.error('Checkout error:', err);
-        alert('Could not start checkout. Please try again.');
+        // Show the actual error from the edge function if available, otherwise generic
+        var msg = (err && err.message && err.message !== 'Checkout request failed.') ? err.message : 'Could not start checkout. Please try again.';
+        showToast(msg, 'error');
       });
     });
 
@@ -483,8 +528,11 @@
           var plan = (_autoCheckout === 'yearly') ? 'yearly' : 'monthly';
           PhmurtDB.startSubscription(window.location.href, plan).catch(function (err) {
             isCheckoutInProgress = false;
+            ctaEl.textContent = originalCtaText;
+            ctaEl.disabled = false;
             console.error('Auto-checkout failed:', err);
-            alert('Checkout failed. Please try again.');
+            var msg = (err && err.message && err.message !== 'Checkout request failed.') ? err.message : 'Checkout failed. Please try again.';
+            showToast(msg, 'error');
           });
         }
         window.addEventListener('phmurt-auth-change', _tryAutoCheckout);

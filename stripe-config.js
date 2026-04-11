@@ -14,11 +14,11 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 /* ── Publishable key (safe for client-side) ──────────────────────── */
-var STRIPE_PUBLISHABLE_KEY = 'pk_test_51TK9OH2Me6B5yZKdIoLLRqD1r4LlBauSA1syGGJkZOvo7duRYKPL8oxmK9qchFUP7vwLw9vTpgSgi9iNoJG1H4zz00YXbsyDXP';
+var STRIPE_PUBLISHABLE_KEY = 'pk_live_51TK9O7Rt76j4bhQkBUE3nWdoEBVTTFk3fju0s4Rhpgn5YSEmAE7VDVq00XPATlGSRdo6EigeV8WFDwjpj25qXiZs00sC7Y1OlD';
 
 /* ── Price IDs (public, identify your Stripe product prices) ─────── */
-var STRIPE_PRICE_ID_MONTHLY = 'price_1TK9Vk2Me6B5yZKdxakmjGlV';   // $4.99/month
-var STRIPE_PRICE_ID_YEARLY  = 'price_1TK9Vk2Me6B5yZKdggyhlKun';   // $49.99/year
+var STRIPE_PRICE_ID_MONTHLY = 'price_1TKp4PRt76j4bhQkqeFk4X9e';   // $5.00/month
+var STRIPE_PRICE_ID_YEARLY  = 'price_1TKp4QRt76j4bhQk3Dw7NRmP';   // $50.00/year
 
 /* Legacy alias — checkout function reads the specific monthly/yearly IDs */
 var STRIPE_PRICE_ID = '';                 // (unused, kept for compat)
