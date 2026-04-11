@@ -756,6 +756,80 @@ var PhmurtDB = (function () {
     });
   }
 
+  /* ── Cross-tab session sync ──────────────────────────────────────── */
+  window.addEventListener('storage', function (e) {
+    if (e.key === 'phmurt_auth_session' || e.key === 'phmurt_sb_auth') {
+      // CRITICAL FIX (V-055): Re-validate _session from localStorage, don't just fire event.
+      // If another tab signs out, _session remains in memory as stale data.
+      // Must reload from storage to catch sign-outs.
+      if (e.newValue === null) {
+        // Session was deleted in another tab — clear it here too
+        _session = null;
+      } else {
+        // Try to reload from storage (legacy or Supabase)
+        var stored = _lsGet(LS_SESSION);
+        if (stored && stored.userId) {
+          _session = stored;
+        } else {
+          _session = null;
+        }
+      }
+      window.dispatchEvent(new Event('phmurt-auth-change'));
+    }
+  });
+
+  /* ── Periodic subscription status validation ──────────────────────
+     CRITICAL FIX (V-058): Validate subscription status periodically (5 min)
+     to catch webhook-based changes (cancellations, downgrades) that update
+     the database but not the client-side session cache. Without this, users
+     see stale subscription status after their Stripe subscription is canceled.
+     ─────────────────────────────────────────────────────────────────── */
+  (function() {
+    var _lastValidationTime = 0;
+    var _VALIDATION_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+    setInterval(function() {
+      var now = Date.now();
+      if (now - _lastValidationTime < _VALIDATION_INTERVAL) return;
+      _lastValidationTime = now;
+
+      if (!_session || !_session.userId) return; // Not signed in
+      var sb = (typeof phmurtSupabase !== 'undefined' && phmurtSupabase) ? phmurtSupabase : null;
+      if (!sb) return; // Supabase not available
+
+      // Fetch latest profile from server
+      sb.from('profiles').select('subscription_tier, subscription_status, subscription_expires_at, subscription_cancel_at, is_banned')
+        .eq('id', _session.userId).maybeSingle()
+        .then(function(r) {
+          if (!r.data) return; // User profile missing
+          var profile = r.data;
+
+          // Detect subscription changes and update session
+          var oldTier = _session.tier;
+          var newTier = profile.subscription_tier || 'free';
+          var oldStatus = _session.isSubscribed;
+          var newStatus = (newTier === 'pro' || newTier === 'party' || newTier === 'lifetime')
+            && profile.subscription_status === 'active'
+            && (newTier === 'lifetime' || !profile.subscription_expires_at || new Date(profile.subscription_expires_at) > new Date());
+
+          if (oldTier !== newTier || oldStatus !== newStatus || (profile.is_banned && !_session.isBanned)) {
+            // Subscription status changed server-side, update client session
+            _session = _makeSession(_session, profile);
+            _fireChange();
+            _lsSet(LS_SESSION, _session);
+            if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) {
+              console.info('[PhmurtAuth] Subscription status refreshed from server:', { oldTier: oldTier, newTier: newTier, oldStatus: oldStatus, newStatus: newStatus });
+            }
+          }
+        })
+        .catch(function(err) {
+          if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) {
+            console.warn('[PhmurtAuth] Periodic subscription validation failed:', err && err.message);
+          }
+        });
+    }, 1 * 60 * 1000); // Check every minute (but only validate every 5 min due to throttle)
+  })();
+
   /* ══════════════════════════════════════════════════════════════════
      PUBLIC API
   ══════════════════════════════════════════════════════════════════ */
@@ -1891,80 +1965,6 @@ var PhmurtDB = (function () {
     },
   };
 
-})();
-
-/* ── Cross-tab session sync ──────────────────────────────────────── */
-window.addEventListener('storage', function (e) {
-  if (e.key === 'phmurt_auth_session' || e.key === 'phmurt_sb_auth') {
-    // CRITICAL FIX (V-055): Re-validate _session from localStorage, don't just fire event.
-    // If another tab signs out, _session remains in memory as stale data.
-    // Must reload from storage to catch sign-outs.
-    if (e.newValue === null) {
-      // Session was deleted in another tab — clear it here too
-      _session = null;
-    } else {
-      // Try to reload from storage (legacy or Supabase)
-      var stored = _lsGet(LS_SESSION);
-      if (stored && stored.userId) {
-        _session = stored;
-      } else {
-        _session = null;
-      }
-    }
-    window.dispatchEvent(new Event('phmurt-auth-change'));
-  }
-});
-
-/* ── Periodic subscription status validation ──────────────────────
-   CRITICAL FIX (V-058): Validate subscription status periodically (5 min)
-   to catch webhook-based changes (cancellations, downgrades) that update
-   the database but not the client-side session cache. Without this, users
-   see stale subscription status after their Stripe subscription is canceled.
-   ─────────────────────────────────────────────────────────────────── */
-(function() {
-  var _lastValidationTime = 0;
-  var _VALIDATION_INTERVAL = 5 * 60 * 1000; // 5 minutes
-
-  setInterval(function() {
-    var now = Date.now();
-    if (now - _lastValidationTime < _VALIDATION_INTERVAL) return;
-    _lastValidationTime = now;
-
-    if (!_session || !_session.userId) return; // Not signed in
-    var sb = (typeof phmurtSupabase !== 'undefined' && phmurtSupabase) ? phmurtSupabase : null;
-    if (!sb) return; // Supabase not available
-
-    // Fetch latest profile from server
-    sb.from('profiles').select('subscription_tier, subscription_status, subscription_expires_at, subscription_cancel_at, is_banned')
-      .eq('id', _session.userId).maybeSingle()
-      .then(function(r) {
-        if (!r.data) return; // User profile missing
-        var profile = r.data;
-
-        // Detect subscription changes and update session
-        var oldTier = _session.tier;
-        var newTier = profile.subscription_tier || 'free';
-        var oldStatus = _session.isSubscribed;
-        var newStatus = (newTier === 'pro' || newTier === 'party' || newTier === 'lifetime')
-          && profile.subscription_status === 'active'
-          && (newTier === 'lifetime' || !profile.subscription_expires_at || new Date(profile.subscription_expires_at) > new Date());
-
-        if (oldTier !== newTier || oldStatus !== newStatus || (profile.is_banned && !_session.isBanned)) {
-          // Subscription status changed server-side, update client session
-          _session = _makeSession(_session, profile);
-          _fireChange();
-          _lsSet(LS_SESSION, _session);
-          if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) {
-            console.info('[PhmurtAuth] Subscription status refreshed from server:', { oldTier, newTier, oldStatus, newStatus });
-          }
-        }
-      })
-      .catch(function(err) {
-        if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) {
-          console.warn('[PhmurtAuth] Periodic subscription validation failed:', err && err.message);
-        }
-      });
-  }, 1 * 60 * 1000); // Check every minute (but only validate every 5 min due to throttle)
 })();
 
 /* ── Client-side error reporter ─────────────────────────────────── */
