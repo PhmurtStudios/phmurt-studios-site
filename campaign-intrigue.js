@@ -124,7 +124,15 @@
   /* ═══════════════════════════════════════════════════════════
      DATA FACTORIES
   ═══════════════════════════════════════════════════════════ */
-  const uid = () => 'i_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+  const uid = () => {
+    var arr = new Uint8Array(8);
+    if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+      crypto.getRandomValues(arr);
+    } else {
+      for (var i = 0; i < arr.length; i++) arr[i] = Math.floor(Math.random() * 256);
+    }
+    return 'i_' + Array.from(arr, function(x) { return ('0' + x.toString(16)).slice(-2); }).join('');
+  };
 
   const makeAgent = (o) => ({
     id: uid(), name: 'Unknown Agent', title: '', rank: 'agent',
@@ -415,12 +423,12 @@
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
           {I(st.icon, 13)}
           <span style={{ fontSize: 11, fontWeight: 700, color: st.color, fontFamily: ui, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{st.label}</span>
-          <span style={{ flex: 1, fontSize: 12, color: txt, fontFamily: hd, marginLeft: 4 }}>{scheme.name}</span>
+          <span style={{ flex: 1, fontSize: 12, color: txt, fontFamily: hd, marginLeft: 4 }}>{String(scheme.name || '').slice(0, 128)}</span>
           {isDM && onRemove && (
             <span onClick={onRemove} style={{ cursor: 'pointer', color: fnt, fontSize: 10 }}>{I(Trash2, 11)}</span>
           )}
         </div>
-        {scheme.description && <div style={{ fontSize: 11, color: dim, marginBottom: 6 }}>{scheme.description}</div>}
+        {scheme.description && <div style={{ fontSize: 11, color: dim, marginBottom: 6 }}>{String(scheme.description || '').slice(0, 256)}</div>}
         {/* Progress bar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <div style={{ flex: 1, height: 6, borderRadius: 3, background: `${T.text}06`, overflow: 'hidden' }}>
@@ -475,7 +483,7 @@
         <span style={{ fontSize: 11, color: txt }}>{fromName}</span>
         <span style={{ fontSize: 9, color: fnt }}>{'\u2194'}</span>
         <span style={{ fontSize: 11, color: txt }}>{toName}</span>
-        {conn.notes && <span style={{ fontSize: 10, color: dim, fontStyle: 'italic', flex: 1, textAlign: 'right' }}>{conn.notes.length > 30 ? conn.notes.slice(0,28) + '\u2026' : conn.notes}</span>}
+        {conn.notes && <span style={{ fontSize: 10, color: dim, fontStyle: 'italic', flex: 1, textAlign: 'right' }}>{String(conn.notes || '').length > 30 ? String(conn.notes || '').slice(0,28) + '\u2026' : String(conn.notes || '')}</span>}
         {isDM && onRemove && <span onClick={onRemove} style={{ cursor: 'pointer', color: fnt, marginLeft: 4 }}>{I(X, 10)}</span>}
       </div>
     );
@@ -636,7 +644,8 @@
     }, [intrigue, update, newBranchName, newBranchDesc]);
 
     var removeBranch = useCallback(function(bid) {
-      if (typeof window === 'undefined' || !window.confirm('Remove this entire faction?')) return;
+      var shouldDelete = typeof window !== 'undefined' && typeof window.confirm === 'function' && window.confirm('Remove this entire faction?');
+      if (!shouldDelete) return;
       update({ branches: intrigue.branches.filter(function(b) { return b && b.id !== bid; }) });
       if (view === bid) setView('web');
     }, [intrigue, update, view]);
@@ -670,18 +679,22 @@
     }, [intrigue, update]);
 
     var addEvent = useCallback(function(bid, text) {
-      if (!text.trim()) return;
+      if (!text || typeof text !== 'string' || !text.trim()) return;
       var evt = { id: uid(), date: 'Session ' + ((intrigue.globalEvents || []).length + 1), text: text.trim(), branchId: bid };
       update({ globalEvents: (intrigue.globalEvents || []).concat([evt]) });
     }, [intrigue, update]);
 
     var findAgent2 = useCallback(function(aid) {
       if (!aid) return null;
-      if (intrigue.shadowLeader.id === aid) return intrigue.shadowLeader;
+      if (intrigue.shadowLeader && intrigue.shadowLeader.id === aid) return intrigue.shadowLeader;
       for (var i = 0; i < intrigue.branches.length; i++) {
         var b = intrigue.branches[i];
-        if (b.sage.id === aid) return b.sage;
-        for (var j = 0; j < b.agents.length; j++) { if (b.agents[j].id === aid) return b.agents[j]; }
+        if (b && b.sage && b.sage.id === aid) return b.sage;
+        if (b && Array.isArray(b.agents)) {
+          for (var j = 0; j < b.agents.length; j++) {
+            if (b.agents[j] && b.agents[j].id === aid) return b.agents[j];
+          }
+        }
       }
       return null;
     }, [intrigue]);
@@ -689,18 +702,19 @@
     var findBranch = useCallback(function(aid) {
       for (var i = 0; i < intrigue.branches.length; i++) {
         var b = intrigue.branches[i];
-        if (b.sage.id === aid || b.agents.some(function(a) { return a.id === aid; })) return b;
+        if (b && b.sage && b.sage.id === aid) return b;
+        if (b && Array.isArray(b.agents) && b.agents.some(function(a) { return a && a.id === aid; })) return b;
       }
       return null;
     }, [intrigue]);
 
     /* ── Stats ── */
-    var totalAgents = intrigue.branches.reduce(function(s, b) { return s + 1 + b.agents.length; }, 0) + 1;
-    var totalRevealed = (intrigue.shadowLeader.revealed ? 1 : 0) +
-      intrigue.branches.reduce(function(s, b) {
-        return s + (b.sage.revealed ? 1 : 0) + b.agents.filter(function(a) { return a.revealed; }).length;
+    var totalAgents = (intrigue.branches || []).reduce(function(s, b) { return s + 1 + (b && Array.isArray(b.agents) ? b.agents.length : 0); }, 0) + 1;
+    var totalRevealed = (intrigue.shadowLeader && intrigue.shadowLeader.revealed ? 1 : 0) +
+      (intrigue.branches || []).reduce(function(s, b) {
+        return s + (b && b.sage && b.sage.revealed ? 1 : 0) + (b && Array.isArray(b.agents) ? b.agents.filter(function(a) { return a && a.revealed; }).length : 0);
       }, 0);
-    var totalSchemes = intrigue.branches.reduce(function(s, b) { return s + (b.schemes||[]).length; }, 0);
+    var totalSchemes = (intrigue.branches || []).reduce(function(s, b) { return s + (b && Array.isArray(b.schemes) ? b.schemes.length : 0); }, 0);
 
     var activeBranch = (view !== 'web' && view !== 'territories') ? intrigue.branches.find(function(b) { return b.id === view; }) : null;
 
@@ -794,10 +808,10 @@
           {I(Crown, 18)}
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontFamily: hd, fontSize: 16, fontWeight: 700, color: gld, letterSpacing: '1px' }}>
-              {activeBranch ? activeBranch.name : 'Court Intrigue'}
+              {activeBranch ? String(activeBranch.name || '').slice(0, 128) : 'Court Intrigue'}
             </div>
             <div style={{ fontSize: 10, color: dim, marginTop: 1 }}>
-              {activeBranch ? (activeBranch.motto || activeBranch.description) :
+              {activeBranch ? String((activeBranch.motto || activeBranch.description || '')).slice(0, 256) :
                 totalRevealed + '/' + totalAgents + ' revealed \u00B7 ' + (intrigue.connections||[]).length + ' connections \u00B7 ' + totalSchemes + ' schemes'}
             </div>
           </div>
@@ -885,7 +899,7 @@
                         cursor: 'pointer', whiteSpace: 'nowrap', fontSize: 9, fontWeight: 700,
                         fontFamily: ui, color: hC(n.branch.colorHue), letterSpacing: '0.5px',
                         zIndex: 10, transition: 'all 0.15s' }}>
-                      {n.branch.name} <span style={{ opacity: 0.5 }}>{n.branch.powerLevel}%</span>
+                      {String(n.branch.name || '').slice(0, 64)} <span style={{ opacity: 0.5 }}>{n.branch.powerLevel}%</span>
                     </div>
                   );
                 })}
@@ -963,7 +977,7 @@
                             borderLeft: '2px solid ' + (brnch ? hC(brnch.colorHue, 0.4) : `${T.gold}20`),
                           }}>
                             <span style={{ color: fnt, fontSize: 9, marginRight: 4 }}>{evt.date}</span>
-                            {evt.text}
+                            {String(evt.text).replace(/[<>]/g, function(c) { return c === '<' ? '&lt;' : '&gt;'; })}
                           </div>
                         );
                       })}
@@ -1202,9 +1216,9 @@
         ) : (
           <Fragment>
             <div style={{ fontFamily: hd, fontSize: 15, fontWeight: 700, color: txt, marginBottom: 3 }}>
-              {agent.revealed ? agent.name : 'Unknown ' + (RANK_LABELS[agent.rank] || 'Agent')}
+              {agent.revealed ? String(agent.name || '').slice(0, 256) : 'Unknown ' + (RANK_LABELS[agent.rank] || 'Agent')}
             </div>
-            {agent.revealed && agent.title && <div style={{ fontSize: 11, color: dim, marginBottom: 10 }}>{agent.title}</div>}
+            {agent.revealed && agent.title && <div style={{ fontSize: 11, color: dim, marginBottom: 10 }}>{String(agent.title || '').slice(0, 256)}</div>}
           </Fragment>
         )}
 
@@ -1234,7 +1248,7 @@
           }
           return React.createElement(Inp, { value: agent.location, onChange: function(v) { doUpdate({ location: v }); }, placeholder: 'Location...' });
         })()
-          : <div style={{ fontSize: 12, color: txt }}>{(agent.revealed ? agent.location : '') || 'Unknown'}</div>}
+          : <div style={{ fontSize: 12, color: txt }}>{(agent.revealed ? String(agent.location || '').slice(0, 256) : '') || 'Unknown'}</div>}
 
         <Lbl>Influence</Lbl>
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -1319,7 +1333,8 @@
               {!agent.revealed && <Btn small color={T.green} onClick={function() { doUpdate({ revealed: true, status: 'revealed' }); }}>{I(Eye, 10)} Reveal</Btn>}
               {agent.rank === 'agent' && activeBranch && (
                 <Btn small color={T.crimson} outline onClick={function() {
-                  if (confirm('Remove agent?')) removeAgent(activeBranch.id, agent.id);
+                  var shouldDelete = typeof window !== 'undefined' && typeof window.confirm === 'function' && window.confirm('Remove agent?');
+                  if (shouldDelete) removeAgent(activeBranch.id, agent.id);
                 }}>{I(Trash2, 10)} Remove</Btn>
               )}
             </div>
@@ -1345,8 +1360,12 @@
     );
   }
 
-  function renderAddConnectionModal(intrigue, addConnection, onClose) {
-    // Simple form — just dropdowns
+  function AddConnectionModalContent({ intrigue, addConnection, onClose }) {
+    var _s = useState('alliance'), connType = _s[0], setConnType = _s[1];
+    var _f = useState(''), fromAgent = _f[0], setFromAgent = _f[1];
+    var _t = useState(''), toAgent = _t[0], setToAgent = _t[1];
+    var _n = useState(''), notes = _n[0], setNotes = _n[1];
+
     var allAgents = [];
     allAgents.push({ id: intrigue.shadowLeader.id, name: intrigue.shadowLeader.name, faction: 'Leader' });
     intrigue.branches.forEach(function(b) {
@@ -1354,52 +1373,54 @@
       b.agents.forEach(function(a) { allAgents.push({ id: a.id, name: a.name, faction: b.name }); });
     });
 
-    var formRef = { type: 'alliance', from: '', to: '', notes: '' };
+    var handleAdd = function() {
+      if (!fromAgent || !toAgent) return;
+      var fromBranch = null, toBranch = null;
+      intrigue.branches.forEach(function(b) {
+        if (b.sage.id === fromAgent || b.agents.some(function(a) { return a.id === fromAgent; })) fromBranch = b.id;
+        if (b.sage.id === toAgent || b.agents.some(function(a) { return a.id === toAgent; })) toBranch = b.id;
+      });
+      addConnection(makeConnection({
+        type: connType, fromAgent: fromAgent, toAgent: toAgent,
+        fromFaction: fromBranch || '', toFaction: toBranch || '', revealed: false, notes: notes.trim()
+      }));
+      onClose();
+    };
 
-    return renderModal(onClose,
+    return (
       <div>
         <div style={{ fontFamily: hd, fontSize: 16, color: gld, marginBottom: 14 }}>Add Cross-Faction Connection</div>
         <Lbl>Type</Lbl>
-        <select id="conn-type" defaultValue="alliance" style={{ width: '100%', background: T.bgInput, border: '1px solid ' + T.border, color: txt, padding: '5px 8px', borderRadius: 4, fontSize: 12 }}>
+        <select value={connType} onChange={function(e) { setConnType(e.target.value); }} style={{ width: '100%', background: T.bgInput, border: '1px solid ' + T.border, color: txt, padding: '5px 8px', borderRadius: 4, fontSize: 12 }}>
           {CONNECTION_TYPES.map(function(ct) { return <option key={ct.id} value={ct.id}>{ct.label}</option>; })}
         </select>
         <Lbl>From Agent</Lbl>
-        <select id="conn-from" defaultValue="" style={{ width: '100%', background: T.bgInput, border: '1px solid ' + T.border, color: txt, padding: '5px 8px', borderRadius: 4, fontSize: 12 }}>
+        <select value={fromAgent} onChange={function(e) { setFromAgent(e.target.value); }} style={{ width: '100%', background: T.bgInput, border: '1px solid ' + T.border, color: txt, padding: '5px 8px', borderRadius: 4, fontSize: 12 }}>
           <option value="">Select...</option>
           {allAgents.map(function(a) { return <option key={a.id} value={a.id}>{a.name} ({a.faction})</option>; })}
         </select>
         <Lbl>To Agent</Lbl>
-        <select id="conn-to" defaultValue="" style={{ width: '100%', background: T.bgInput, border: '1px solid ' + T.border, color: txt, padding: '5px 8px', borderRadius: 4, fontSize: 12 }}>
+        <select value={toAgent} onChange={function(e) { setToAgent(e.target.value); }} style={{ width: '100%', background: T.bgInput, border: '1px solid ' + T.border, color: txt, padding: '5px 8px', borderRadius: 4, fontSize: 12 }}>
           <option value="">Select...</option>
           {allAgents.map(function(a) { return <option key={a.id} value={a.id}>{a.name} ({a.faction})</option>; })}
         </select>
         <Lbl>Notes</Lbl>
-        <Inp placeholder="Optional notes..." />
+        <Inp value={notes} onChange={setNotes} placeholder="Optional notes..." />
         <div style={{ display: 'flex', gap: 8, marginTop: 16 }}>
-          <button onClick={function() {
-            var typeEl = document.getElementById('conn-type');
-            var fromEl = document.getElementById('conn-from');
-            var toEl = document.getElementById('conn-to');
-            if (!fromEl.value || !toEl.value) return;
-            var fromBranch = null, toBranch = null;
-            intrigue.branches.forEach(function(b) {
-              if (b.sage.id === fromEl.value || b.agents.some(function(a) { return a.id === fromEl.value; })) fromBranch = b.id;
-              if (b.sage.id === toEl.value || b.agents.some(function(a) { return a.id === toEl.value; })) toBranch = b.id;
-            });
-            addConnection(makeConnection({
-              type: typeEl.value, fromAgent: fromEl.value, toAgent: toEl.value,
-              fromFaction: fromBranch || '', toFaction: toBranch || '', revealed: false,
-            }));
-            onClose();
-          }} style={{
+          <button onClick={handleAdd} disabled={!fromAgent || !toAgent} style={{
             flex: 1, padding: '8px 14px', background: T.crimson, color: T.bg, border: 'none', borderRadius: 4,
-            cursor: 'pointer', fontFamily: ui, fontSize: 12, fontWeight: 700 }}>Add Connection</button>
+            cursor: !fromAgent || !toAgent ? 'default' : 'pointer', fontFamily: ui, fontSize: 12, fontWeight: 700,
+            opacity: !fromAgent || !toAgent ? 0.4 : 1 }}>Add Connection</button>
           <button onClick={onClose} style={{
             padding: '8px 14px', background: 'transparent', color: T.textDim, border: '1px solid ' + T.border,
             borderRadius: 4, cursor: 'pointer', fontFamily: ui, fontSize: 12 }}>Cancel</button>
         </div>
       </div>
     );
+  }
+
+  function renderAddConnectionModal(intrigue, addConnection, onClose) {
+    return renderModal(onClose, React.createElement(AddConnectionModalContent, { intrigue: intrigue, addConnection: addConnection, onClose: onClose }));
   }
 
   /* ── Register ── */

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   <meta name="referrer" content="strict-origin" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co https://unpkg.com https://cdn.jsdelivr.net https://*.stripe.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com https://unpkg.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in wss://*.supabase.co https://unpkg.com https://cdn.jsdelivr.net https://*.stripe.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
   <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), usb=(), payment=(), serial=(), bluetooth=()" />
   <title>Campaign Manager · Phmurt Studios</title>
   <meta name="description" content="Manage your D&D campaigns with our comprehensive campaign manager. Track parties, encounters, sessions, and initiative." />
@@ -27,33 +27,36 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
-  <link rel="stylesheet" href="style.css" />
-  <script src="theme.js"></script>
+  <link rel="stylesheet" href="style.css?v=185" />
+  <script src="theme.js?v=185"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous" integrity="sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG"></script>
-  <script src="supabase-config.js"></script>
-  <script src="stripe-config.js"></script>
-  <script src="phmurt-auth.js?v=182"></script>
-  <script src="phmurt-char-sync.js"></script>
-  <script src="phmurt-realtime.js"></script>
-  <script src="phmurt-shell.js"></script>
+  <script src="supabase-config.js?v=185"></script>
+  <script src="stripe-config.js?v=185"></script>
+  <script src="phmurt-auth.js?v=185"></script>
+  <script src="phmurt-char-sync.js?v=185"></script>
+  <script src="phmurt-realtime.js?v=185"></script>
+  <script src="phmurt-shell.js?v=185"></script>
   <!-- New procedural map engine + data bridge (v2 = region-name labels + blue ocean) -->
-  <script src="campaign-map-engine.js?v=7"></script>
-  <script src="campaign-map-bridge.js?v=7"></script>
-  <script src="campaign-combat-integration.js"></script>
+  <script src="campaign-map-engine.js?v=185"></script>
+  <script src="campaign-map-bridge.js?v=185"></script>
+  <script src="campaign-combat-integration.js?v=185"></script>
   <!-- Play-tab assets: combat engine, VFX, SRD monsters — deferred for fast initial load -->
-  <script src="combat-engine.js" defer></script>
-  <script src="visual-effects.js" defer></script>
-  <script src="monster-data.js" defer></script>
-  <script src="campaign-play-loader.js" defer></script>
-  <script src="combat-flow-ui.js" defer></script>
+  <script src="combat-engine.js?v=185" defer></script>
+  <script src="visual-effects.js?v=185" defer></script>
+  <script src="monster-data.js?v=185" defer></script>
+  <script src="campaign-play-loader.js?v=185" defer></script>
+  <script src="combat-flow-ui.js?v=185" defer></script>
   <!-- New campaign systems — deferred for fast initial load -->
-  <script src="campaign-economy.js" defer></script>
-  <script src="campaign-seasons.js?v=7" defer></script>
-  <script src="campaign-religion.js?v=7" defer></script>
-  <script src="campaign-hexcrawl.js?v=7" defer></script>
-  <script src="campaign-downtime.js?v=7" defer></script>
-  <script src="campaign-homebrew.js" defer></script>
-  <script src="campaign-scheduler.js" defer></script>
+  <script src="campaign-economy.js?v=185" defer></script>
+  <script src="campaign-seasons.js?v=185" defer></script>
+  <script src="campaign-religion.js?v=185" defer></script>
+  <script src="campaign-hexcrawl.js?v=185" defer></script>
+  <script src="campaign-downtime.js?v=185" defer></script>
+  <script src="campaign-homebrew.js?v=185" defer></script>
+  <script src="campaign-scheduler.js?v=185" defer></script>
+  <script src="campaign-kingdom.js?v=185" defer></script>
+  <script src="campaign-crafting.js?v=185" defer></script>
+  <script src="campaign-invites.js?v=185" defer></script>
   <style>
     html {
       overflow: hidden !important;
@@ -1599,7 +1602,7 @@
   <!-- Bridge: lucide-react UMD expects window.react but React CDN sets window.React -->
   <script>window.react = window.React;</script>
   <!-- Lucide React Icons -->
-  <script src="https://unpkg.com/lucide-react@0.383.0/dist/umd/lucide-react.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/lucide-react@0.383.0/dist/umd/lucide-react.min.js" crossorigin="anonymous" integrity="sha384-tyLMEiLHH0kDE9gHMswJdLv1SqGGlWLFnJng+e8+DdvjRvFuAtOraCLavs+6Bdbr"></script>
 
   <script type="text/babel">
 
@@ -2375,7 +2378,7 @@ const ConfirmFlyout = ({ open, uiMode, token, pendingAction, activeSpell, focusT
         <span className="cm-flyout-title" style={{ color: isAbility ? T.reactionPurple : isMove ? T.moveBlue : T.crimson }}>
           {isMove ? "Movement" : isAbility ? (activeSpell ? activeSpell.name : (action?.name || "Ability")) : (action?.name || "Attack")}
         </span>
-        <button type="button" className="cm-flyout-close" onClick={onCancel}><X size={12} /></button>
+        <button type="button" className="cm-flyout-close" onClick={onCancel} aria-label="Close"><X size={12} /></button>
       </div>
 
       {isMove && (
@@ -3386,7 +3389,7 @@ const Modal = ({ open, onClose, title, children, wide }) => {
       }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"18px 24px", borderBottom:`1px solid ${T.border}` }}>
           <span style={{ fontFamily:T.ui, fontSize:11, letterSpacing:"2px", color:T.crimson, textTransform:"uppercase", fontWeight:500 }}>{title}</span>
-          <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:4 }}><X size={16}/></button>
+          <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:4 }} aria-label="Close"><X size={16}/></button>
         </div>
         <div style={{ padding:24, overflowY:"auto", flex:1 }}>{children}</div>
       </div>
@@ -4685,14 +4688,14 @@ function PlayerCard({ member, onEdit, onUploadSheet, isDm }) {
                 Linked to Character Builder {syncLabel ? `\u00b7 ${syncLabel}` : ""}
               </span>
               {builderHref && (
-                <a href={builderHref} target="_blank" rel="noreferrer" style={{ fontSize:10, color:T.green, textDecoration:"underline", opacity:0.8 }}>Edit in Builder</a>
+                <a href={builderHref} target="_blank" rel="noopener noreferrer" style={{ fontSize:10, color:T.green, textDecoration:"underline", opacity:0.8 }}>Edit in Builder</a>
               )}
             </div>
           )}
           {member.sheetName && (
             <div style={{ display:"flex", alignItems:"center", gap:6, marginBottom:12 }}>
               <FileText size={11} color={T.textFaint}/>
-              <a href={member.sheetUrl} target="_blank" rel="noreferrer" style={{ fontSize:11, color:T.crimson, textDecoration:"none" }}>{member.sheetName}</a>
+              <a href={member.sheetUrl} target="_blank" rel="noopener noreferrer" style={{ fontSize:11, color:T.crimson, textDecoration:"none" }}>{member.sheetName}</a>
             </div>
           )}
           <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
@@ -5532,7 +5535,7 @@ window.__CM = {
 /* Tab module loading state */
 const _tabModuleState = { dashboard: true, timeline: false, world: false, play: false };
 const _tabModulePromises = {};
-const _MODULE_VERSION = 161; // Bump to force re-fetch past service worker cache
+const _MODULE_VERSION = 185; // Bump to force re-fetch past service worker cache
 
 /**
  * Lazy-load a tab module: fetch JSX, transpile with Babel, execute.
@@ -5695,7 +5698,7 @@ function QuickNotesPanel({ data, setData, onClose }) {
           <StickyNote size={16} color={T.gold}/>
           <span style={{ fontFamily:T.heading, fontSize:14, color:T.text, letterSpacing:"1px" }}>DM Quick Notes</span>
         </div>
-        <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:4 }}><X size={16}/></button>
+        <button onClick={onClose} style={{ background:"none", border:"none", cursor:"pointer", color:T.textFaint, padding:4 }} aria-label="Close"><X size={16}/></button>
       </div>
 
       {/* Tab bar */}
@@ -5886,10 +5889,10 @@ function App() {
         setTabsReady(function(prev) { return Object.assign({}, prev, { play: true }); });
 
         // Load remaining tab views in background
-        await loadTabModule("quests-view", "campaign-quests-view.js");
-        await loadTabModule("homebrew-view", "campaign-homebrew-view.js");
-        await loadTabModule("scheduler-view", "campaign-scheduler-view.js");
-        await loadTabModule("settings-view", "campaign-settings-view.js");
+        await loadTabModule("quests", "campaign-quests-view.js");
+        await loadTabModule("homebrew", "campaign-homebrew-view.js");
+        await loadTabModule("scheduler", "campaign-scheduler-view.js");
+        await loadTabModule("settings", "campaign-settings-view.js");
         await loadTabModule("factionwar", "campaign-factionwar.js");
         await loadTabModule("prophecy", "campaign-prophecy.js");
         // Plague standalone tab removed — events integrated into living-world.js
@@ -5897,6 +5900,9 @@ function App() {
         await loadTabModule("intrigue", "campaign-intrigue.js");
         await loadTabModule("downtime", "campaign-downtime.js");
         await loadTabModule("puzzles", "campaign-puzzles.js");
+        await loadTabModule("kingdom", "campaign-kingdom.js");
+        await loadTabModule("crafting", "campaign-crafting.js");
+        await loadTabModule("invites", "campaign-invites.js");
       } catch (e) {
         console.error("[App] Background tab loading error:", e);
       }
@@ -5909,7 +5915,7 @@ function App() {
   // ── If user switches to an unloaded tab, prioritize loading it ──
   useEffect(() => {
     if (activeTab === "dashboard" || tabsReady[activeTab]) return;
-    var urls = { timeline: "campaign-timeline.js", world: "campaign-world.js", play: "campaign-play.js", factionwar: "campaign-factionwar.js", prophecy: "campaign-prophecy.js", heist: "campaign-heist.js", intrigue: "campaign-intrigue.js", downtime: "campaign-downtime.js", puzzles: "campaign-puzzles.js" };
+    var urls = { timeline: "campaign-timeline.js", world: "campaign-world.js", play: "campaign-play.js", factionwar: "campaign-factionwar.js", prophecy: "campaign-prophecy.js", heist: "campaign-heist.js", intrigue: "campaign-intrigue.js", downtime: "campaign-downtime.js", puzzles: "campaign-puzzles.js", kingdom: "campaign-kingdom.js", crafting: "campaign-crafting.js", invites: "campaign-invites.js", quests: "campaign-quests-view.js", homebrew: "campaign-homebrew-view.js", relationships: "campaign-relationships.js", scheduler: "campaign-scheduler-view.js", settings: "campaign-settings-view.js" };
     var preload = activeTab === "world" ? loadTabModule("living-world", "living-world.js") : Promise.resolve();
     preload.then(function() { return loadTabModule(activeTab, urls[activeTab]); }).then(function() {
       setTabsReady(function(prev) { var n = Object.assign({}, prev); n[activeTab] = true; return n; });
@@ -6254,7 +6260,10 @@ function App() {
     { id:"heist", label:"Heist", icon: Lock, roles:["dm"], module:"heist", proOnly:true },
     { id:"intrigue", label:"Intrigue", icon: Crown, roles:["dm"], module:"intrigue", proOnly:true },
     { id:"downtime", label:"Downtime", icon: Package, roles:["dm"], module:"downtime", proOnly:true },
+    { id:"kingdom", label:"Kingdom", icon: Castle, roles:["dm","player"], module:"kingdom", proOnly:true },
+    { id:"crafting", label:"Crafting", icon: Sparkles, roles:["dm","player"], module:"crafting", proOnly:true },
     { id:"puzzles", label:"Puzzles", icon: Dice6, roles:["dm"], module:"puzzles", proOnly:true },
+    { id:"invites", label:"Party", icon: Users, roles:["dm","player"] },
     // Schedule tab removed — scheduler is now built into the Dashboard's Next Session card
     // { id:"scheduler", label:"Schedule", icon: Calendar, roles:["dm","player"], module:"scheduler" },
     { id:"settings", label:"Settings", icon: Settings, roles:["dm"] },
@@ -6507,6 +6516,21 @@ function App() {
           window.PuzzlePageView
             ? React.createElement(window.PuzzlePageView, { data: data, setData: setData, viewRole: viewRole })
             : <TabLoadingSpinner label="Puzzles" />
+        )}
+        {activeTab === "kingdom" && (
+          window.KingdomView
+            ? React.createElement(window.KingdomView, { data: data, setData: setData, viewRole: viewRole })
+            : <TabLoadingSpinner label="Kingdom" />
+        )}
+        {activeTab === "crafting" && (
+          window.CraftingView
+            ? React.createElement(window.CraftingView, { data: data, setData: setData, viewRole: viewRole })
+            : <TabLoadingSpinner label="Crafting" />
+        )}
+        {activeTab === "invites" && (
+          window.CampaignInvitesView
+            ? React.createElement(window.CampaignInvitesView, { data: data, setData: setData, viewRole: viewRole, campaignId: activeCampaignId })
+            : <TabLoadingSpinner label="Party" />
         )}
         {activeTab === "settings" && (
           window.CampaignSettingsView

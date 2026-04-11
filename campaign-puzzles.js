@@ -363,7 +363,7 @@
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${width}, 1fr)`, gap: '4px', padding: '8px', background: T.bg || 'var(--bg)', borderRadius: '4px' }}>
           {grid.map((cell, cellIdx) => (
             <div
-              key={`grid-${cellIdx}-${cell}`}
+              key={`grid-${cellIdx}`}
               onClick={() => toggleCell(cellIdx)}
               style={{
                 width: size,
@@ -745,7 +745,7 @@
                 <label style={{ display: 'block', marginBottom: '4px', fontSize: '12px', fontWeight: 'bold', color: T.text }}>Difficulty</label>
                 <select
                   value={form.difficulty}
-                  onChange={(e) => handleChange('difficulty', parseInt(e.target.value))}
+                  onChange={(e) => handleChange('difficulty', parseInt(e.target.value, 10))}
                   style={{
                     width: '100%',
                     padding: '8px',
@@ -1002,7 +1002,7 @@
     const filteredPuzzles = useMemo(() => {
       return allTemplates.filter(p => {
         if (filterType !== 'all' && p.type !== filterType) return false;
-        if (filterDifficulty !== 'all' && p.difficulty !== parseInt(filterDifficulty)) return false;
+        if (filterDifficulty !== 'all' && p.difficulty !== parseInt(filterDifficulty, 10)) return false;
         if (filterRegion !== 'all' && p._region !== filterRegion) return false;
         if (searchTerm && !p.name.toLowerCase().includes(searchTerm.toLowerCase()) && !p.description.toLowerCase().includes(searchTerm.toLowerCase())) return false;
         return true;
@@ -1191,8 +1191,8 @@
                       }}
                     >
                       <option value="all">All Regions</option>
-                      {data.regions.map((region, i) => (
-                        <option key={i} value={region.name}>{region.name}</option>
+                      {data.regions.map((region) => (
+                        <option key={region.name} value={region.name}>{region.name}</option>
                       ))}
                     </select>
                   </div>

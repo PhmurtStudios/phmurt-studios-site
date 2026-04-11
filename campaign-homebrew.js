@@ -1037,7 +1037,7 @@
      * @returns {number} Challenge rating
      */
     calculateCR(monster) {
-      if (monster.type !== 'monsters') {
+      if (monster._type !== 'monsters') {
         throw new Error('calculateCR only works with monsters');
       }
 
@@ -1079,7 +1079,7 @@
 
       // Level up based on damage
       if (spell.damage) {
-        const dmgDice = parseInt(spell.damage.match(/\d+/)?.[0] || 1);
+        const dmgDice = parseInt(spell.damage.match(/\d+/)?.[0] || 1, 10);
         level = Math.ceil(dmgDice / 2);
       }
 

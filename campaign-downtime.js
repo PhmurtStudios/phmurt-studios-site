@@ -311,7 +311,7 @@
         const goldMin = activity.goldReward.min;
         const goldMax = activity.goldReward.max;
         const gold = Math.floor(rng() * (goldMax - goldMin + 1)) + goldMin;
-        if (gold > 0) rewards.push({ type: 'gold', value: Math.ceil(gold * 1.5) });
+        if (gold !== 0) rewards.push({ type: 'gold', value: gold > 0 ? Math.ceil(gold * 1.5) : gold });
 
         if (activity.rewards && activity.rewards.length > 0) {
           const idx = Math.floor(rng() * activity.rewards.length);
@@ -321,7 +321,7 @@
         const goldMin = activity.goldReward.min;
         const goldMax = activity.goldReward.max;
         const gold = Math.floor(rng() * (goldMax - goldMin + 1)) + goldMin;
-        if (gold > 0) rewards.push({ type: 'gold', value: gold });
+        if (gold !== 0) rewards.push({ type: 'gold', value: gold });
       }
 
       // Add faction reputation bonus for successful outcomes
@@ -350,6 +350,7 @@
       const consequences = [];
 
       if (outcome === 'complication') {
+        if (!activity.risks || activity.risks.length === 0) return consequences;
         const idx = Math.floor(rng() * activity.risks.length);
         consequences.push({
           type: 'complication',
@@ -629,14 +630,14 @@
     const city = pickRandom(data.cities);
     const faction = pickRandom(data.factions);
 
-    if (npc) {
-      descBase = descBase.replace(/the merchant|the official|the patron|an official/gi, npc.name);
+    if (npc && npc.name) {
+      descBase = descBase.replace(/the merchant|the official|the patron|an official/gi, () => npc.name);
     }
-    if (city) {
-      descBase = descBase.replace(/the city|the town|this city|this town/gi, city.name);
+    if (city && city.name) {
+      descBase = descBase.replace(/the city|the town|this city|this town/gi, () => city.name);
     }
-    if (faction) {
-      descBase = descBase.replace(/the authorities|the faction|the organization/gi, faction.name);
+    if (faction && faction.name) {
+      descBase = descBase.replace(/the authorities|the faction|the organization/gi, () => faction.name);
     }
 
     contextualized.generateTitle = () => titleBase;
@@ -998,10 +999,10 @@
       // Generate gold reward
       let goldEarned = 0;
       if (outcome !== 'complication') {
-        const goldMin = Math.max(0, activity.goldReward.min);
+        const goldMin = activity.goldReward.min;
         const goldMax = activity.goldReward.max;
         goldEarned = Math.floor(Math.random() * (goldMax - goldMin + 1)) + goldMin;
-        if (outcome === 'great_success') goldEarned = Math.ceil(goldEarned * 1.5);
+        if (outcome === 'great_success' && goldEarned > 0) goldEarned = Math.ceil(goldEarned * 1.5);
       }
 
       // Create history entry
@@ -1049,7 +1050,8 @@
         activityCounts[h.activityName] = (activityCounts[h.activityName] || 0) + 1;
       });
 
-      const mostPopular = Object.entries(activityCounts).sort((a, b) => b[1] - a[1])[0];
+      const sorted = Object.entries(activityCounts).sort((a, b) => b[1] - a[1]);
+      const mostPopular = sorted.length > 0 ? sorted[0] : null;
 
       return {
         totalGoldEarned,
@@ -1342,7 +1344,9 @@
               </div>
             ) : (
               Object.entries(downtimeData.skillMastery || {}).map(([key, mastery]) => {
-                const [charName, actId] = key.split(':');
+                const parts = key.split(':');
+                if (parts.length < 2) return;
+                const [charName, actId] = parts;
                 const activity = DOWNTIME_ACTIVITIES.find(a => a.id === actId);
                 const masteryInfo = getMasteryLevel(charName, actId);
 

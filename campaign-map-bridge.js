@@ -437,7 +437,7 @@
   function generateTavernName(rng) {
     const prefix = DATA_POOLS.tavernPrefixes[Math.floor(rng() * DATA_POOLS.tavernPrefixes.length)];
     const suffix = DATA_POOLS.tavernSuffixes[Math.floor(rng() * DATA_POOLS.tavernSuffixes.length)];
-    return prefix === 'The' ? `The ${suffix}` : `The ${prefix} ${suffix}`;
+    return prefix === 'The' ? `The ${suffix}` : `${prefix} ${suffix}`;
   }
 
   function generateWorldName(seed) {
@@ -521,7 +521,7 @@
     const factionsById = new Map(engine.territory.factions.map(f => [f.id, f]));
 
     // Shuffle faction templates for flavor variety
-    const shuffledFactionTemplates = [...DATA_POOLS.factionTemplates].sort(() => rng() - 0.5);
+    const shuffledFactionTemplates = shuffleArray(DATA_POOLS.factionTemplates, rng);
     let fTemplateIdx = 0;
 
     for (const engineRegion of engine.territory.regions) {
@@ -581,7 +581,7 @@
 
       // --- Create the region (name matches what's displayed on the map) ---
       const region = {
-        id: parseInt(engineRegion.id) || data.regions.length + 1,
+        id: parseInt(engineRegion.id, 10) || data.regions.length + 1,
         name: kingdomName,
         subtitle: govLabel,
         type: engineRegion.cities?.some(c => c.capital) ? 'kingdom' : 'wilderness',
@@ -594,10 +594,10 @@
         population: '0',
         governor: faction.hierarchy.find(h => h.role === 'ruler')?.name || generateNPCName(rng),
         governorTitle: faction.hierarchy.find(h => h.role === 'ruler')?.title || 'Ruler',
-        climate: DATA_POOLS.climateByTerrain[terrain][
-          Math.floor(rng() * DATA_POOLS.climateByTerrain[terrain].length)
+        climate: (DATA_POOLS.climateByTerrain[terrain] || DATA_POOLS.climateByTerrain.plains)[
+          Math.floor(rng() * (DATA_POOLS.climateByTerrain[terrain] || DATA_POOLS.climateByTerrain.plains).length)
         ],
-        resources: DATA_POOLS.resourcesByTerrain[terrain],
+        resources: DATA_POOLS.resourcesByTerrain[terrain] || DATA_POOLS.resourcesByTerrain.plains,
         dangers: [DATA_POOLS.dangerDescriptions[threat]],
         lore: DATA_POOLS.loreSnippets[Math.floor(rng() * DATA_POOLS.loreSnippets.length)],
         subFactions: [],
@@ -607,7 +607,7 @@
       if (!npcIdMap[region.governor]) npcIdMap[region.governor] = npcIdCounter++;
 
       // Generate sub-faction organizations that operate within this region
-      const shuffledSubTemplates = [...DATA_POOLS.subFactionTemplates].sort(() => rng() - 0.5);
+      const shuffledSubTemplates = shuffleArray(DATA_POOLS.subFactionTemplates, rng);
       const numSubFactions = 1 + Math.floor(rng() * 3); // 1-3 orgs per region
       const usedSubSuffixes = new Set();
       for (let si = 0; si < numSubFactions && si < shuffledSubTemplates.length; si++) {
@@ -671,6 +671,7 @@
     // CITIES
     // ========================================================================
     let cityId = 1;
+    let shopId = 1;
     const cityMap = {};
 
     for (const engineRegion of engine.territory.regions) {
@@ -697,8 +698,7 @@
           origY: normY,
           terrain: region.terrain,
           threat: region.threat,
-          features: DATA_POOLS.cityFeatures
-            .sort(() => rng() - 0.5)
+          features: shuffleArray(DATA_POOLS.cityFeatures, rng)
             .slice(0, Math.floor(rng() * 3) + 2),
           shops: [],
           tavern: {},
@@ -716,7 +716,7 @@
           npcIdMap[shopOwner] = npcIdCounter++;
 
           const shop = {
-            id: i,
+            id: shopId++,
             name: shopName,
             type: shopType,
             owner: shopOwner,
@@ -757,8 +757,7 @@
           name: tavernName,
           innkeeper: innkeeper,
           innkeeperPersonality: DATA_POOLS.traits[Math.floor(rng() * DATA_POOLS.traits.length)],
-          services: DATA_POOLS.innServices
-            .sort(() => rng() - 0.5)
+          services: shuffleArray(DATA_POOLS.innServices, rng)
             .slice(0, Math.floor(rng() * 4) + 2),
           rumor: DATA_POOLS.questHooks[Math.floor(rng() * DATA_POOLS.questHooks.length)],
         };
@@ -824,6 +823,7 @@
     }
 
     // Add faction hierarchy NPCs
+    const addedNpcIds = new Set(data.npcs.map(n => n.id));
     for (const faction of data.factions) {
       for (const member of faction.hierarchy) {
         if (!npcIdMap[member.name]) {
@@ -849,9 +849,10 @@
           npc.traits.push(DATA_POOLS.traits[Math.floor(rng() * DATA_POOLS.traits.length)]);
         }
 
-        // Avoid duplicates
-        if (!data.npcs.find(n => n.id === npc.id)) {
+        // Avoid duplicates with efficient set lookup
+        if (!addedNpcIds.has(npc.id)) {
           data.npcs.push(npc);
+          addedNpcIds.add(npc.id);
         }
       }
     }
@@ -872,7 +873,7 @@
       }
       if (others.length > 1 && rng() > 0.4) {
         const rival = others[Math.floor(rng() * others.length)];
-        if (rival.name !== mf.allies[0] && !mf.rivals.includes(rival.name)) {
+        if ((!mf.allies.length || rival.name !== mf.allies[0]) && !mf.rivals.includes(rival.name)) {
           mf.rivals.push(rival.name);
           if (!rival.rivals.includes(mf.name)) rival.rivals.push(mf.name);
         }
@@ -899,7 +900,7 @@
     // ========================================================================
     // POIs (from MapEngine)
     // ========================================================================
-    if (engine.pois && engine.pois.length > 0) {
+    if (engine.pois && engine.pois.length > 0 && data.regions.length > 0) {
       for (let i = 0; i < engine.pois.length; i++) {
         const enginePoi = engine.pois[i];
         const poiWorldW = engine.grid.cols * engine.grid.step;
@@ -908,6 +909,7 @@
         const normY = poiWorldH > 0 ? enginePoi.y / poiWorldH : 0.5;
 
         // Find nearest region by distance in world space
+        if (data.regions.length === 0) return data;
         let nearestRegion = data.regions[0];
         let minDist = Infinity;
         for (const engineReg of engine.territory.regions) {
@@ -940,28 +942,6 @@
       }
     }
 
-    // ========================================================================
-    // SET ALLIES AND RIVALS
-    // ========================================================================
-    for (const faction of data.factions) {
-      const otherFactions = data.factions.filter(f => f.id !== faction.id);
-      const numAllies = Math.floor(rng() * 2);
-      const numRivals = Math.floor(rng() * 2);
-
-      for (let i = 0; i < numAllies && otherFactions.length > 0; i++) {
-        const ally = otherFactions[Math.floor(rng() * otherFactions.length)];
-        if (!faction.allies.includes(ally.name)) {
-          faction.allies.push(ally.name);
-        }
-      }
-
-      for (let i = 0; i < numRivals && otherFactions.length > 0; i++) {
-        const rival = otherFactions[Math.floor(rng() * otherFactions.length)];
-        if (!faction.rivals.includes(rival.name) && !faction.allies.includes(rival.name)) {
-          faction.rivals.push(rival.name);
-        }
-      }
-    }
 
     // ========================================================================
     // POST-PROCESSING: Interconnect all generated data
@@ -970,8 +950,7 @@
     // 1. Cities should reference their notable NPCs by name
     for (const city of data.cities) {
       const cityNPCs = data.npcs.filter(npc => npc.id && city.npcs.includes(npc.id));
-      const notableNPCNames = cityNPCs
-        .sort(() => rng() - 0.5)
+      const notableNPCNames = shuffleArray(cityNPCs, rng)
         .slice(0, Math.ceil(cityNPCs.length / 2)) // Take half the NPCs
         .map(npc => npc.name);
       city.notableNPCs = notableNPCNames;
@@ -980,9 +959,13 @@
     // 2. NPCs should have meaningful connections to POIs
     // For each NPC in a region, add 1-2 known POIs from the same region
     for (const npc of data.npcs) {
-      const npcRegion = data.regions.find(r =>
-        data.cities.find(c => c.name === npc.loc && c.region === r.name)
-      ) || data.regions.find(r => npc.faction === r.ctrl);
+      // First try to find region by city location, then fallback to faction control
+      let npcRegion = data.regions.find(r =>
+        data.cities.some(c => c.name === npc.loc && c.region === r.name)
+      );
+      if (!npcRegion) {
+        npcRegion = data.regions.find(r => npc.faction === r.name);
+      }
 
       if (npcRegion) {
         const regionPOIs = data.pois.filter(poi => poi.region === npcRegion.name);
@@ -991,8 +974,7 @@
             Math.floor(rng() * 2) + 1, // 1-2 POIs
             regionPOIs.length
           );
-          const knownPOINames = regionPOIs
-            .sort(() => rng() - 0.5)
+          const knownPOINames = shuffleArray(regionPOIs, rng)
             .slice(0, numPOIs)
             .map(poi => poi.name);
           npc.knownPOIs = knownPOINames;
@@ -1026,78 +1008,54 @@
       }
     }
 
+    // Helper function to safely replace placeholders in quest text
+    function replaceQuestPlaceholders(text, city, data, rng) {
+      let result = text;
+
+      // Replace [NPC] with a random city NPC name (single replacement to avoid duplication)
+      if (result.includes('[NPC]')) {
+        const cityNPCs = data.npcs.filter(npc => npc.id && (city.npcs || []).includes(npc.id));
+        if (cityNPCs.length > 0) {
+          const randomNPC = cityNPCs[Math.floor(rng() * cityNPCs.length)];
+          result = result.replace('[NPC]', randomNPC.name);
+        }
+      }
+
+      // Replace [CITY] with the current city name (single replacement)
+      if (result.includes('[CITY]')) {
+        result = result.replace('[CITY]', city.name);
+      }
+
+      // Replace [REGION] with the current region name (single replacement)
+      if (result.includes('[REGION]')) {
+        result = result.replace('[REGION]', city.region);
+      }
+
+      // Replace [POI] with a random POI from the region (single replacement)
+      if (result.includes('[POI]')) {
+        const region = data.regions.find(r => r.name === city.region);
+        if (region) {
+          const regionPOIs = data.pois.filter(poi => poi.region === region.name);
+          if (regionPOIs.length > 0) {
+            const randomPOI = regionPOIs[Math.floor(rng() * regionPOIs.length)];
+            result = result.replace('[POI]', randomPOI.name);
+          }
+        }
+      }
+
+      return result;
+    }
+
     // 4. Quest hooks in cities should be personalized with real names
     // Do a post-processing pass to replace generic placeholders with actual NPC/city/POI names
     for (const city of data.cities) {
       for (let i = 0; i < city.questHooks.length; i++) {
-        let hook = city.questHooks[i];
-
-        // Replace [NPC] with a random city NPC name
-        if (hook.includes('[NPC]')) {
-          const cityNPCs = data.npcs.filter(npc => npc.id && city.npcs.includes(npc.id));
-          if (cityNPCs.length > 0) {
-            const randomNPC = cityNPCs[Math.floor(rng() * cityNPCs.length)];
-            hook = hook.replace(/\[NPC\]/g, randomNPC.name);
-          }
-        }
-
-        // Replace [CITY] with the current city name
-        if (hook.includes('[CITY]')) {
-          hook = hook.replace(/\[CITY\]/g, city.name);
-        }
-
-        // Replace [REGION] with the current region name
-        if (hook.includes('[REGION]')) {
-          hook = hook.replace(/\[REGION\]/g, city.region);
-        }
-
-        // Replace [POI] with a random POI from the region
-        if (hook.includes('[POI]')) {
-          const region = data.regions.find(r => r.name === city.region);
-          if (region) {
-            const regionPOIs = data.pois.filter(poi => poi.region === region.name);
-            if (regionPOIs.length > 0) {
-              const randomPOI = regionPOIs[Math.floor(rng() * regionPOIs.length)];
-              hook = hook.replace(/\[POI\]/g, randomPOI.name);
-            }
-          }
-        }
-
-        city.questHooks[i] = hook;
+        city.questHooks[i] = replaceQuestPlaceholders(city.questHooks[i], city, data, rng);
       }
 
       // Also update the tavern rumor with personalization
       if (city.tavern && city.tavern.rumor) {
-        let rumor = city.tavern.rumor;
-
-        if (rumor.includes('[NPC]')) {
-          const cityNPCs = data.npcs.filter(npc => npc.id && city.npcs.includes(npc.id));
-          if (cityNPCs.length > 0) {
-            const randomNPC = cityNPCs[Math.floor(rng() * cityNPCs.length)];
-            rumor = rumor.replace(/\[NPC\]/g, randomNPC.name);
-          }
-        }
-
-        if (rumor.includes('[CITY]')) {
-          rumor = rumor.replace(/\[CITY\]/g, city.name);
-        }
-
-        if (rumor.includes('[REGION]')) {
-          rumor = rumor.replace(/\[REGION\]/g, city.region);
-        }
-
-        if (rumor.includes('[POI]')) {
-          const region = data.regions.find(r => r.name === city.region);
-          if (region) {
-            const regionPOIs = data.pois.filter(poi => poi.region === region.name);
-            if (regionPOIs.length > 0) {
-              const randomPOI = regionPOIs[Math.floor(rng() * regionPOIs.length)];
-              rumor = rumor.replace(/\[POI\]/g, randomPOI.name);
-            }
-          }
-        }
-
-        city.tavern.rumor = rumor;
+        city.tavern.rumor = replaceQuestPlaceholders(city.tavern.rumor, city, data, rng);
       }
     }
 
@@ -1116,6 +1074,16 @@
 
   function selectRandomElement(arr, rng) {
     return arr[Math.floor(rng() * arr.length)];
+  }
+
+  function shuffleArray(arr, rng) {
+    // Fisher-Yates shuffle algorithm for uniform randomization
+    const result = [...arr];
+    for (let i = result.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [result[i], result[j]] = [result[j], result[i]];
+    }
+    return result;
   }
 
   // ============================================================================

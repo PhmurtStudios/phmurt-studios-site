@@ -14,16 +14,34 @@
    ═══════════════════════════════════════════════════════════════════ */
 
 /* ── Publishable key (safe for client-side) ──────────────────────── */
-var STRIPE_PUBLISHABLE_KEY = 'pk_live_51TK9O7Rt76j4bhQkBUE3nWdoEBVTTFk3fju0s4Rhpgn5YSEmAE7VDVq00XPATlGSRdo6EigeV8WFDwjpj25qXiZs00sC7Y1OlD';
+/* SECURITY: Load from environment, never hardcode in source */
+var STRIPE_PUBLISHABLE_KEY = typeof STRIPE_PUBLISHABLE_KEY_ENV !== 'undefined'
+  ? STRIPE_PUBLISHABLE_KEY_ENV
+  : '';
 
 /* ── Price IDs (public, identify your Stripe product prices) ─────── */
-var STRIPE_PRICE_ID_MONTHLY = 'price_1TKp4PRt76j4bhQkqeFk4X9e';   // $5.00/month
-var STRIPE_PRICE_ID_YEARLY  = 'price_1TKp4QRt76j4bhQk3Dw7NRmP';   // $50.00/year
+/* SECURITY: Load from environment, never hardcode in source */
+/* Set these via: script tags with data attributes, window globals, or build-time injection */
+var STRIPE_PRICE_ID_MONTHLY = typeof STRIPE_PRICE_ID_MONTHLY_ENV !== 'undefined'
+  ? STRIPE_PRICE_ID_MONTHLY_ENV
+  : '';
+var STRIPE_PRICE_ID_YEARLY = typeof STRIPE_PRICE_ID_YEARLY_ENV !== 'undefined'
+  ? STRIPE_PRICE_ID_YEARLY_ENV
+  : '';
 
 /* Legacy alias — checkout function reads the specific monthly/yearly IDs */
+/* DEPRECATED: Use STRIPE_PRICE_ID_MONTHLY or STRIPE_PRICE_ID_YEARLY instead */
 var STRIPE_PRICE_ID = '';                 // (unused, kept for compat)
 
-var STRIPE_PORTAL_URL = '';               // Leave blank to auto-generate
+/* ── Customer Portal Configuration ────────────────────────────────── */
+/* STRIPE_CUSTOMER_PORTAL_ID: Your Stripe Customer Portal configuration ID */
+var STRIPE_CUSTOMER_PORTAL_ID = typeof STRIPE_CUSTOMER_PORTAL_ID_ENV !== 'undefined'
+  ? STRIPE_CUSTOMER_PORTAL_ID_ENV
+  : '';
+
+/* STRIPE_PORTAL_URL is typically constructed by your backend from STRIPE_CUSTOMER_PORTAL_ID.
+   Leave empty — your backend should provide the URL when needed. */
+var STRIPE_PORTAL_URL = '';
 
 /* ═══════════════════════════════════════════════════════════════════
    SUPABASE EDGE FUNCTION URL for creating Checkout Sessions
@@ -32,16 +50,77 @@ var STRIPE_PORTAL_URL = '';               // Leave blank to auto-generate
 var STRIPE_CHECKOUT_FUNCTION_URL = '';
 
 (function () {
+  // Initialize STRIPE_CHECKOUT_FUNCTION_URL from SUPABASE_URL
   if (!STRIPE_CHECKOUT_FUNCTION_URL && typeof SUPABASE_URL !== 'undefined' && SUPABASE_URL) {
-    // Validate URL format before concatenating
     try {
-      var parsedUrl = new URL(SUPABASE_URL);
-      // Ensure URL ends without trailing slash before concatenation
+      // Validate SUPABASE_URL format
+      new URL(SUPABASE_URL);
       var baseUrl = SUPABASE_URL.replace(/\/$/, '');
-      STRIPE_CHECKOUT_FUNCTION_URL = baseUrl + '/functions/v1/stripe-checkout';
+      var checkoutUrl = baseUrl + '/functions/v1/stripe-checkout';
+      // Validate resulting URL is well-formed
+      new URL(checkoutUrl);
+      STRIPE_CHECKOUT_FUNCTION_URL = checkoutUrl;
     } catch (e) {
-      // Invalid URL, leave STRIPE_CHECKOUT_FUNCTION_URL empty
-      if (window.PHMURT_DEBUG) console.warn('[Stripe] Invalid SUPABASE_URL format:', e);
+      if (typeof console !== 'undefined' && console.warn) {
+        console.warn('[Stripe] Failed to initialize checkout URL:', e);
+      }
     }
+  }
+
+  // Validate required configuration
+  function validateStripeConfig() {
+    var errors = [];
+
+    if (!STRIPE_PUBLISHABLE_KEY) {
+      errors.push('STRIPE_PUBLISHABLE_KEY is not configured. Set STRIPE_PUBLISHABLE_KEY_ENV.');
+    } else if (!/^pk_(test|live)_/.test(STRIPE_PUBLISHABLE_KEY)) {
+      errors.push('STRIPE_PUBLISHABLE_KEY format invalid. Expected pk_test_... or pk_live_...');
+    }
+
+    if (!STRIPE_PRICE_ID_MONTHLY) {
+      errors.push('STRIPE_PRICE_ID_MONTHLY is not configured. Set STRIPE_PRICE_ID_MONTHLY_ENV.');
+    } else if (!/^price_/.test(STRIPE_PRICE_ID_MONTHLY)) {
+      errors.push('STRIPE_PRICE_ID_MONTHLY format invalid. Expected price_...');
+    }
+
+    if (!STRIPE_PRICE_ID_YEARLY) {
+      errors.push('STRIPE_PRICE_ID_YEARLY is not configured. Set STRIPE_PRICE_ID_YEARLY_ENV.');
+    } else if (!/^price_/.test(STRIPE_PRICE_ID_YEARLY)) {
+      errors.push('STRIPE_PRICE_ID_YEARLY format invalid. Expected price_...');
+    }
+
+    if (!STRIPE_CUSTOMER_PORTAL_ID) {
+      errors.push('STRIPE_CUSTOMER_PORTAL_ID is not configured. Set STRIPE_CUSTOMER_PORTAL_ID_ENV.');
+    } else if (!/^bps_/.test(STRIPE_CUSTOMER_PORTAL_ID)) {
+      errors.push('STRIPE_CUSTOMER_PORTAL_ID format invalid. Expected bps_...');
+    }
+
+    if (!STRIPE_CHECKOUT_FUNCTION_URL) {
+      errors.push('STRIPE_CHECKOUT_FUNCTION_URL not initialized. Check SUPABASE_URL configuration.');
+    } else {
+      try {
+        new URL(STRIPE_CHECKOUT_FUNCTION_URL);
+      } catch (e) {
+        errors.push('STRIPE_CHECKOUT_FUNCTION_URL format invalid. Invalid URL: ' + STRIPE_CHECKOUT_FUNCTION_URL);
+      }
+    }
+
+    return errors;
+  }
+
+  // Expose validation function globally (client-side only)
+  if (typeof window !== 'undefined' && typeof window.validateStripeConfig === 'undefined') {
+    window.validateStripeConfig = validateStripeConfig;
+  }
+
+  // Log warnings on config issues if debug is enabled
+  var configErrors = validateStripeConfig();
+  if (configErrors.length > 0 && typeof console !== 'undefined' && console.warn) {
+    console.warn('[Stripe Config] Issues found:', configErrors);
+  }
+
+  // Store validation errors for later reference
+  if (typeof window !== 'undefined' && typeof window.stripeConfigErrors === 'undefined') {
+    window.stripeConfigErrors = configErrors;
   }
 })();

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   <meta name="referrer" content="strict-origin" />
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://*.stripe.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://*.stripe.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
   <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), usb=(), payment=(), serial=(), bluetooth=()" />
   <title>How to Play D&D · Phmurt Studios</title>
   <meta name="description" content="Learn how to play Dungeons & Dragons with our interactive step-by-step tutorial. From character creation to combat, master the fundamentals of tabletop RPGs." />
@@ -25,12 +25,12 @@
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
   <link rel="manifest" href="site.webmanifest" />
-  <link rel="stylesheet" href="style.css" />
-  <script src="theme.js"></script>
+  <link rel="stylesheet" href="style.css?v=185" />
+  <script src="theme.js?v=185"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous" integrity="sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG"></script>
-  <script src="supabase-config.js"></script>
-  <script src="stripe-config.js"></script>
-  <script src="phmurt-auth.js?v=182"></script>
+  <script src="supabase-config.js?v=185"></script>
+  <script src="stripe-config.js?v=185"></script>
+  <script src="phmurt-auth.js?v=185"></script>
 
   <style>
     /* ═══════════════════════════════════════════════════════════════════
@@ -1213,7 +1213,7 @@
 
   <div id="ps-site-footer"></div>
 
-  <script src="phmurt-shell.js"></script>
+  <script src="phmurt-shell.js?v=185"></script>
   <script>
     // ═══════════════════════════════════════════════════════════════════
     // LEARN PAGE — JAVASCRIPT
@@ -1372,7 +1372,7 @@
     function initDiceRoller() {
       const roller = document.getElementById('diceRoller');
       const result = document.getElementById('diceResult');
-      if (!roller) return;
+      if (!roller || !result) return;
       roller.addEventListener('click', function() {
         if (roller.classList.contains('rolling')) return;
         roller.classList.add('rolling');
@@ -1415,7 +1415,7 @@
     function initAbilityCalc() {
       const inp = document.getElementById('abilityScoreInput');
       const res = document.getElementById('modifierResult');
-      if (!inp) return;
+      if (!inp || !res) return;
       inp.addEventListener('input', function() {
         const s = Math.max(1,Math.min(30,parseInt(this.value)||10));
         const m = Math.floor((s-10)/2);
@@ -1429,7 +1429,7 @@
       const btn = document.getElementById('rollSkillBtn');
       const res = document.getElementById('skillResult');
       const dc = document.getElementById('dcInput');
-      if (!picker) return;
+      if (!picker || !btn || !res || !dc) return;
       picker.innerHTML = SKILLS.map(s=>'<button class="learn-skill-btn" data-skill="'+esc(s)+'">'+esc(s)+'</button>').join('');
       picker.querySelectorAll('button').forEach(b => {
         b.addEventListener('click', function(){
@@ -1438,8 +1438,9 @@
           selectedSkill = this.dataset.skill;
         });
       });
-      picker.querySelector('button').click();
-      if (btn) btn.addEventListener('click', function() {
+      var firstBtn = picker.querySelector('button');
+      if (firstBtn) firstBtn.click();
+      btn.addEventListener('click', function() {
         if (!selectedSkill) return;
         const d = parseInt(dc.value)||12;
         const roll = Math.floor(Math.random()*20)+1;
@@ -1463,6 +1464,7 @@
             const idx=parseInt(this.dataset.index);
             const opts=q.options;
             const fb=document.getElementById(q.id+'-feedback');
+            if (!fb) return;
             c.querySelectorAll('button').forEach(b=>b.classList.remove('selected','correct','incorrect'));
             this.classList.add('selected', opts[idx].correct?'correct':'incorrect');
             fb.classList.add('visible');

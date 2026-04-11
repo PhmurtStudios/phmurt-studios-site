@@ -1208,7 +1208,7 @@
   function createTemple(deityId, level, city) {
     var levelData = TEMPLE_LEVELS[level || 'temple'];
     return {
-      id: 'temple-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9),
+      id: 'temple-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11),
       deityId: deityId,
       city: city || 'Unknown',
       region: 'Unknown',  // Will be set by assignTemples
@@ -1500,8 +1500,8 @@
       if (holyDateParts.length > 1) {
         var datePart = holyDateParts[1].replace(')', '').split(',').pop().trim();
         var monthDay = datePart.split('day')[0].trim().split('th')[0].split('st')[0].split('nd')[0].split('rd')[0].trim().split(' ');
-        var holyMonth = parseInt(monthDay[0]);
-        var holyDay = parseInt(monthDay[1]);
+        var holyMonth = parseInt(monthDay[0], 10);
+        var holyDay = parseInt(monthDay[1], 10);
 
         if (month === holyMonth && day === holyDay) {
           temple.devotion = Math.min(100, temple.devotion + 15);
@@ -1752,9 +1752,10 @@
   };
 
   ReligionEngine.prototype.getDeityByName = function(name) {
+    if (!name) return null;
     var allDeities = PANTHEON.greater.concat(PANTHEON.intermediate, PANTHEON.lesser);
     for (var i = 0; i < allDeities.length; i++) {
-      if (allDeities[i].name.toLowerCase() === name.toLowerCase() || allDeities[i].id === name) {
+      if (allDeities[i].name.toLowerCase() === String(name).toLowerCase() || allDeities[i].id === name) {
         return allDeities[i];
       }
     }

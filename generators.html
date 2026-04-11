@@ -25,13 +25,13 @@
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
   <link rel="manifest" href="site.webmanifest" />
-  <link rel="stylesheet" href="style.css" />
-  <script src="theme.js"></script>
-  <script src="fantasy-map-engine.js"></script>
+  <link rel="stylesheet" href="style.css?v=185" />
+  <script src="theme.js?v=185"></script>
+  <script src="fantasy-map-engine.js?v=185"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous" integrity="sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG"></script>
-  <script src="supabase-config.js"></script>
-  <script src="stripe-config.js"></script>
-  <script src="phmurt-auth.js?v=182"></script>
+  <script src="supabase-config.js?v=185"></script>
+  <script src="stripe-config.js?v=185"></script>
+  <script src="phmurt-auth.js?v=185"></script>
 </head>
 <body data-phmurt-feature="generators">
   <a href="#main-content" class="ps-skip-nav">Skip to content</a>
@@ -2768,7 +2768,7 @@
 
   <div id="ps-site-footer"></div>
 
-  <script src="phmurt-shell.js"></script>
+  <script src="phmurt-shell.js?v=185"></script>
   <script>
     // ═══════════════════════════════ GENERATOR DATA & UTILITIES ═══════════════════════════════
 
@@ -3683,7 +3683,7 @@
 
       // Generate shop inventory
       const inventoryItems = randomNth(randomInt(4, 8), DATA.magicItems.concat(DATA.potions).concat(DATA.artObjects));
-      const inventory = inventoryItems.map((item, i) => `<div>• ${item} - ${randomInt(50, 2000)} GP</div>`).join('');
+      const inventory = inventoryItems.map((item, i) => `<div>• ${escapeHtml(item)} - ${randomInt(50, 2000)} GP</div>`).join('');
 
       const html = `
         <div class="gen-npc-card gen-result" style="animation: fadeIn 0.4s ease-in;">
@@ -3807,7 +3807,7 @@
           <div class="gen-result-item">
             <div class="gen-result-label">Food Menu</div>
             <div class="gen-result-value" style="display: flex; flex-wrap: wrap; gap: 8px;">
-              ${menuItems.map(item => '<div style="background: var(--bg-card); padding: 6px 10px; border-radius: 3px; font-size: 12px; border-left: 2px solid var(--crimson);">⚘ ' + item + '</div>').join('')}
+              ${menuItems.map(item => '<div style="background: var(--bg-card); padding: 6px 10px; border-radius: 3px; font-size: 12px; border-left: 2px solid var(--crimson);">⚘ ' + escapeHtml(item) + '</div>').join('')}
             </div>
           </div>
           <div class="gen-result-item">
@@ -3816,36 +3816,36 @@
           </div>
           ${roomRates ? `<div class="gen-result-item">
             <div class="gen-result-label">Room Rate (per night)</div>
-            <div class="gen-result-value">${roomRates}</div>
+            <div class="gen-result-value">${escapeHtml(roomRates)}</div>
           </div>` : ''}
 
           <div class="gen-result-subheading">The Experience</div>
           <div class="gen-result-item">
             <div class="gen-result-label">Notable Feature</div>
-            <div class="gen-result-value">${tavern.feature}</div>
+            <div class="gen-result-value">${escapeHtml(tavern.feature)}</div>
           </div>
           <div class="gen-result-item">
             <div class="gen-result-label">Entertainment Tonight</div>
-            <div class="gen-result-value">${tavern.entertainment}</div>
+            <div class="gen-result-value">${escapeHtml(tavern.entertainment)}</div>
           </div>
           <div style="background: linear-gradient(135deg, var(--bg-card) 0%, rgba(192, 57, 43, 0.1) 100%); padding: 12px; margin: 8px 0; border: 1px solid rgba(192, 57, 43, 0.3); border-radius: 4px;">
             <div style="font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--crimson); margin-bottom: 6px;">⭐ Notable Patron</div>
             <div style="font-weight: bold; margin-bottom: 4px;">${escapeHtml(notablePatron.name)}</div>
-            <div style="font-size: 12px; color: var(--text-dim);">${notablePatron.description}</div>
+            <div style="font-size: 12px; color: var(--text-dim);">${escapeHtml(notablePatron.description)}</div>
           </div>
           <div class="gen-result-item">
             <div class="gen-result-label">Complication or Danger</div>
-            <div class="gen-result-value">${tavern.danger}</div>
+            <div class="gen-result-value">${escapeHtml(tavern.danger)}</div>
           </div>
           <div class="gen-result-item">
             <div class="gen-result-label">Current Rumor</div>
-            <div class="gen-result-value">"${tavern.rumor}"</div>
+            <div class="gen-result-value">"${escapeHtml(tavern.rumor)}"</div>
           </div>
 
           <div class="gen-result-subheading">The Regulars</div>
           ${regulars.map(r => `<div style="background: var(--bg-mid); padding: 12px; margin-bottom: 8px; border-left: 3px solid var(--crimson); border-radius: 2px;">
             <div style="font-weight: bold; margin-bottom: 4px;">⊙ ${escapeHtml(r.name)}</div>
-            <div style="font-size: 12px; color: var(--text-dim);">${r.desc}</div>
+            <div style="font-size: 12px; color: var(--text-dim);">${escapeHtml(r.desc)}</div>
           </div>`).join('')}
 
           <div class="gen-result-subheading">The Barkeep</div>
@@ -3855,15 +3855,15 @@
           </div>
           <div class="gen-result-item">
             <div class="gen-npc-stat-label">Appearance</div>
-            <div class="gen-npc-stat-value">${barkeep.appearance}</div>
+            <div class="gen-npc-stat-value">${escapeHtml(barkeep.appearance)}</div>
           </div>
           <div class="gen-result-item">
             <div class="gen-npc-stat-label">Personality</div>
-            <div class="gen-npc-stat-value">${barkeep.personality}</div>
+            <div class="gen-npc-stat-value">${escapeHtml(barkeep.personality)}</div>
           </div>
           <div class="gen-result-item">
             <div class="gen-npc-stat-label">Notable Quirk</div>
-            <div class="gen-npc-stat-value">${barkeep.quirk}</div>
+            <div class="gen-npc-stat-value">${escapeHtml(barkeep.quirk)}</div>
           </div>
 
           <div class="gen-result-actions">
@@ -3960,7 +3960,7 @@
           </div>
           <div class="gen-result-item">
             <div class="gen-result-label">Environmental Hazard</div>
-            <div class="gen-result-value">${hazard}</div>
+            <div class="gen-result-value">${escapeHtml(hazard)}</div>
           </div>
 
           <div class="gen-result-subheading">Encounters</div>
@@ -3985,13 +3985,13 @@
                 const rarities = ['common', 'uncommon', 'rare', 'very rare', 'legendary'];
                 const rarity = rarities[Math.floor(Math.random() * rarities.length)];
                 const rarityClass = 'gen-rarity-' + rarity.toLowerCase().replace(' ', '-');
-                return '<div style="display: inline-block; margin: 4px;"><span class="gen-rarity-badge ' + rarityClass + '">' + rarity.toUpperCase() + '</span><br><small>' + item + '</small></div>';
+                return '<div style="display: inline-block; margin: 4px;"><span class="gen-rarity-badge ' + rarityClass + '">' + rarity.toUpperCase() + '</span><br><small>' + escapeHtml(item) + '</small></div>';
               }).join('')}
             </div>
           </div>
           <div class="gen-result-item">
             <div class="gen-result-label">Dungeon Lore/History</div>
-            <div class="gen-result-value">${lore}</div>
+            <div class="gen-result-value">${escapeHtml(lore)}</div>
           </div>
 
           <div class="gen-result-actions">
@@ -4363,21 +4363,21 @@
           </div>
           ${magicItem ? `<div class="gen-result-item">
             <div class="gen-result-label">Magic Item</div>
-            <div class="gen-result-value">${magicItem}</div>
+            <div class="gen-result-value">${escapeHtml(magicItem)}</div>
           </div>` : '<div class="gen-result-item"><div class="gen-result-label">Magic Item</div><div class="gen-result-value">None</div></div>'}
 
           <div class="gen-result-subheading">Tactical Guidance for DM</div>
           <div class="gen-result-item">
             <div class="gen-result-label">Tactical Notes</div>
-            <div class="gen-result-value">${tactics}</div>
+            <div class="gen-result-value">${escapeHtml(tactics)}</div>
           </div>
           <div class="gen-result-item">
             <div class="gen-result-label">Possible Complication</div>
-            <div class="gen-result-value">${complication}</div>
+            <div class="gen-result-value">${escapeHtml(complication)}</div>
           </div>
           <div class="gen-result-item">
             <div class="gen-result-label">Alternative Resolution</div>
-            <div class="gen-result-value">${alternative}</div>
+            <div class="gen-result-value">${escapeHtml(alternative)}</div>
           </div>
 
           <div class="gen-result-actions">
@@ -4497,7 +4497,7 @@
       html += `
         <div class="gen-result-item">
           <div class="gen-result-label">Container/Location</div>
-          <div class="gen-result-value">${container}</div>
+          <div class="gen-result-value">${escapeHtml(container)}</div>
         </div>
       `;
 
@@ -4505,7 +4505,7 @@
         html += `
           <div class="gen-result-item" style="background: rgba(192, 57, 43, 0.25); padding: 12px; border-left: 4px solid var(--crimson); border-radius: 2px;">
             <div class="gen-result-label" style="color: var(--crimson);">⚠ CURSE WARNING</div>
-            <div class="gen-result-value"><strong style="color: var(--crimson);">Cursed item detected!</strong><br>${curse}</div>
+            <div class="gen-result-value"><strong style="color: var(--crimson);">Cursed item detected!</strong><br>${escapeHtml(curse)}</div>
           </div>
         `;
       }
@@ -4610,11 +4610,11 @@
             </div>
             <div class="gen-quest-arrow">→</div>
             <div class="gen-quest-step" style="background: var(--bg-mid); border-left: 3px solid rgba(52, 152, 219, 0.6);">
-              <strong>Location:</strong><br>${location}
+              <strong>Location:</strong><br>${escapeHtml(location)}
             </div>
             <div class="gen-quest-arrow">→</div>
             <div class="gen-quest-step" style="background: var(--bg-mid); border-left: 3px solid rgba(243, 156, 18, 0.6);">
-              <strong>Challenge:</strong><br>${timePressure}
+              <strong>Challenge:</strong><br>${escapeHtml(timePressure)}
             </div>
             <div class="gen-quest-arrow">→</div>
             <div class="gen-quest-step" style="background: var(--bg-mid); border-left: 3px solid rgba(155, 89, 182, 0.6);">
@@ -4625,18 +4625,18 @@
           <div class="gen-result-item">
             <div class="gen-result-label">Key NPCs Involved</div>
             <div class="gen-result-value">
-              ${npcs.map(n => `<div style="padding: 6px; background: var(--bg-mid); margin: 4px 0; border-left: 3px solid var(--crimson); border-radius: 2px;">• ${n}</div>`).join('')}
+              ${npcs.map(n => `<div style="padding: 6px; background: var(--bg-mid); margin: 4px 0; border-left: 3px solid var(--crimson); border-radius: 2px;">• ${escapeHtml(n)}</div>`).join('')}
             </div>
           </div>
 
           <div class="gen-result-subheading">The Challenge</div>
           <div class="gen-result-item">
             <div class="gen-result-label">Hidden Twist</div>
-            <div class="gen-result-value">${twist}</div>
+            <div class="gen-result-value">${escapeHtml(twist)}</div>
           </div>
           <div class="gen-result-item">
             <div class="gen-result-label">What's at Stake</div>
-            <div class="gen-result-value">${stakes}</div>
+            <div class="gen-result-value">${escapeHtml(stakes)}</div>
           </div>
 
           <div class="gen-result-subheading">Rewards</div>
@@ -4646,7 +4646,7 @@
           </div>
           <div class="gen-result-item">
             <div class="gen-result-label">Alternative Reward</div>
-            <div class="gen-result-value">${rewardAlternative}</div>
+            <div class="gen-result-value">${escapeHtml(rewardAlternative)}</div>
           </div>
 
           <div class="gen-result-actions">
@@ -4761,11 +4761,11 @@
           </div>
           <div class="gen-result-item">
             <div class="gen-result-label">Time of Day</div>
-            <div class="gen-result-value">${weather.timeOfDay}</div>
+            <div class="gen-result-value">${escapeHtml(weather.timeOfDay)}</div>
           </div>
           <div class="gen-result-item">
             <div class="gen-result-label">Moon Phase</div>
-            <div class="gen-result-value">${weather.moonPhase}</div>
+            <div class="gen-result-value">${escapeHtml(weather.moonPhase)}</div>
           </div>
 
           <div class="gen-result-subheading">Conditions</div>
@@ -4773,7 +4773,7 @@
             <div class="gen-result-label">Weather Condition</div>
             <div class="gen-result-value">
               <span style="font-size: 20px; margin-right: 8px;">${weather.condition.includes('Clear') ? '✦' : weather.condition.includes('Cloudy') ? '☁️' : weather.condition.includes('Rain') ? '∿' : weather.condition.includes('Snow') ? '✧' : weather.condition.includes('Storm') ? '∿' : weather.condition.includes('Fog') ? '≋' : weather.condition.includes('Windy') ? '≈' : '✦'}</span>
-              ${weather.condition}
+              ${escapeHtml(weather.condition)}
             </div>
           </div>
           <div class="gen-result-item">
@@ -4782,12 +4782,12 @@
               <div class="gen-temp-bar">
                 <div class="gen-temp-indicator" style="left: ${(parseInt(weather.temperature.split('-')[0]) + 50) / 100 * 100}%;"></div>
               </div>
-              <span>${weather.temperature}</span>
+              <span>${escapeHtml(weather.temperature)}</span>
             </div>
           </div>
           <div class="gen-result-item">
             <div class="gen-result-label">Wind</div>
-            <div class="gen-result-value">${weather.windDescription} (${weather.wind} mph)</div>
+            <div class="gen-result-value">${escapeHtml(weather.windDescription)} (${weather.wind} mph)</div>
           </div>
           <div class="gen-result-item">
             <div class="gen-result-label">Visibility</div>
@@ -4795,17 +4795,17 @@
           </div>
           <div class="gen-result-item">
             <div class="gen-result-label">Precipitation</div>
-            <div class="gen-result-value">${weather.precipitation}</div>
+            <div class="gen-result-value">${escapeHtml(weather.precipitation)}</div>
           </div>
           <div class="gen-result-item">
             <div class="gen-result-label">Special Event</div>
-            <div class="gen-result-value">${weather.event}</div>
+            <div class="gen-result-value">${escapeHtml(weather.event)}</div>
           </div>
 
           <div class="gen-result-subheading">Gameplay Impact</div>
           <div class="gen-result-item">
             <div class="gen-result-label">Mechanical Effects</div>
-            <div class="gen-result-value" style="${gameplayEffect.includes('Disadvantage') || gameplayEffect.includes('Half movement') ? 'color: var(--text);' : ''}">${gameplayEffect.includes('No special') ? '<span class="gen-effect-minor">✓ ' + gameplayEffect + '</span>' : gameplayEffect.includes('Disadvantage') ? '<span class="gen-effect-moderate">⚠ ' + gameplayEffect + '</span>' : '<span class="gen-effect-severe">✗ ' + gameplayEffect + '</span>'}</div>
+            <div class="gen-result-value" style="${gameplayEffect.includes('Disadvantage') || gameplayEffect.includes('Half movement') ? 'color: var(--text);' : ''}">${gameplayEffect.includes('No special') ? '<span class="gen-effect-minor">✓ ' + escapeHtml(gameplayEffect) + '</span>' : gameplayEffect.includes('Disadvantage') ? '<span class="gen-effect-moderate">⚠ ' + escapeHtml(gameplayEffect) + '</span>' : '<span class="gen-effect-severe">✗ ' + escapeHtml(gameplayEffect) + '</span>'}</div>
           </div>
           <div class="gen-result-item">
             <div class="gen-result-label">Travel Pace Impact</div>
@@ -4943,16 +4943,16 @@
           </div>
           <div class="gen-result-item">
             <div class="gen-result-label">Effect</div>
-            <div class="gen-result-value">${effect}</div>
+            <div class="gen-result-value">${escapeHtml(effect)}</div>
           </div>
           <div class="gen-result-item">
             <div class="gen-result-label">Duration</div>
-            <div class="gen-result-value">${duration}</div>
+            <div class="gen-result-value">${escapeHtml(duration)}</div>
           </div>
           ${nature !== 'beneficial' ? `<div class="gen-result-item"><div class="gen-result-label">Save DC (if applicable)</div><div class="gen-result-value">DC ${saveDC}</div></div>` : ''}
           <div class="gen-result-item">
             <div class="gen-result-label">DM Tip</div>
-            <div class="gen-result-value"><em>${dmTip}</em></div>
+            <div class="gen-result-value"><em>${escapeHtml(dmTip)}</em></div>
           </div>
           <div class="gen-result-actions">
             <button class="gen-result-btn" onclick="copyToClipboard('Wild Magic (${escapeJsString(roll)}): ${escapeJsString(effect)} (${escapeJsString(severity)}, ${escapeJsString(duration)})')">Copy</button>
@@ -4972,7 +4972,7 @@
         html += `
           <div class="gen-result-item">
             <div class="gen-result-label">Roll ${i + 1}: d100 = ${roll}</div>
-            <div class="gen-result-value">${effect}</div>
+            <div class="gen-result-value">${escapeHtml(effect)}</div>
           </div>
         `;
       }
@@ -5049,13 +5049,13 @@
       var rarityLabels = { common: 'Common', uncommon: 'Uncommon', rare: 'Rare', very_rare: 'Very Rare', legendary: 'Legendary' };
 
       var html = '<div class="gen-result" style="animation: fadeIn 0.4s ease-in;">';
-      html += '<div class="gen-npc-name">' + potion.name + '</div>';
-      html += '<div style="display:inline-block;padding:4px 12px;background:' + (rarityColors[potion.rarity]||'#888') + ';color:#fff;font-size:11px;letter-spacing:1px;text-transform:uppercase;font-family:Cinzel,serif;margin-bottom:16px;">' + (rarityLabels[potion.rarity]||potion.rarity) + '</div>';
-      html += '<div class="gen-npc-stat"><div class="gen-npc-stat-label">Appearance</div><div class="gen-npc-stat-value">' + potion.appear + '</div></div>';
-      html += '<div class="gen-npc-stat"><div class="gen-npc-stat-label">Effect</div><div class="gen-npc-stat-value">' + potion.effect + '</div></div>';
-      html += '<div class="gen-npc-stat"><div class="gen-npc-stat-label">Duration</div><div class="gen-npc-stat-value">' + potion.duration + '</div></div>';
-      if (potion.side) html += '<div class="gen-npc-stat"><div class="gen-npc-stat-label">Side Effect</div><div class="gen-npc-stat-value"><em>' + potion.side + '</em></div></div>';
-      html += '<div class="gen-npc-stat"><div class="gen-npc-stat-label">Value</div><div class="gen-npc-stat-value">' + potion.value + '</div></div>';
+      html += '<div class="gen-npc-name">' + escapeHtml(potion.name) + '</div>';
+      html += '<div style="display:inline-block;padding:4px 12px;background:' + (rarityColors[potion.rarity]||'#888') + ';color:#fff;font-size:11px;letter-spacing:1px;text-transform:uppercase;font-family:Cinzel,serif;margin-bottom:16px;">' + (rarityLabels[potion.rarity]||escapeHtml(potion.rarity)) + '</div>';
+      html += '<div class="gen-npc-stat"><div class="gen-npc-stat-label">Appearance</div><div class="gen-npc-stat-value">' + escapeHtml(potion.appear) + '</div></div>';
+      html += '<div class="gen-npc-stat"><div class="gen-npc-stat-label">Effect</div><div class="gen-npc-stat-value">' + escapeHtml(potion.effect) + '</div></div>';
+      html += '<div class="gen-npc-stat"><div class="gen-npc-stat-label">Duration</div><div class="gen-npc-stat-value">' + escapeHtml(potion.duration) + '</div></div>';
+      if (potion.side) html += '<div class="gen-npc-stat"><div class="gen-npc-stat-label">Side Effect</div><div class="gen-npc-stat-value"><em>' + escapeHtml(potion.side) + '</em></div></div>';
+      html += '<div class="gen-npc-stat"><div class="gen-npc-stat-label">Value</div><div class="gen-npc-stat-value">' + escapeHtml(potion.value) + '</div></div>';
       html += '<div class="gen-output-actions"><button class="gen-action-btn" onclick="copyOutputToClipboard(this)">Copy to Clipboard</button><button class="gen-action-btn" onclick="saveOutputNote(this)">Save to Notes</button><button class="gen-action-btn" onclick="exportPotionToCampaign()">Add to Campaign</button></div>';
       html += '</div>';
 
@@ -5297,19 +5297,19 @@
         <div class="gen-spell-card">
           <div class="gen-spell-name">${escapeHtml(spell.name)}</div>
           <div class="gen-spell-meta" style="display: flex; align-items: center; gap: 12px;">
-            <span>${spell.level}</span>
-            <span style="display: inline-block; padding: 4px 12px; background: var(--bg-mid); border-left: 3px solid var(--crimson); border-radius: 2px; font-size: 11px; font-family: 'Cinzel', serif;">${spell.school}</span>
-            <span style="color: var(--text-dim);">• ${spell.class}</span>
+            <span>${escapeHtml(spell.level)}</span>
+            <span style="display: inline-block; padding: 4px 12px; background: var(--bg-mid); border-left: 3px solid var(--crimson); border-radius: 2px; font-size: 11px; font-family: 'Cinzel', serif;">${escapeHtml(spell.school)}</span>
+            <span style="color: var(--text-dim);">• ${escapeHtml(spell.class)}</span>
           </div>
 
           <div class="gen-spell-section">
             <div class="gen-spell-detail">
               <div class="gen-spell-detail-label">Casting Time</div>
-              <div class="gen-spell-detail-value">${spell.castingTime}</div>
+              <div class="gen-spell-detail-value">${escapeHtml(spell.castingTime)}</div>
             </div>
             <div class="gen-spell-detail">
               <div class="gen-spell-detail-label">Range</div>
-              <div class="gen-spell-detail-value">${spell.range}</div>
+              <div class="gen-spell-detail-value">${escapeHtml(spell.range)}</div>
             </div>
           </div>
 
@@ -5317,24 +5317,24 @@
             <div class="gen-spell-detail">
               <div class="gen-spell-detail-label">Components</div>
               <div class="gen-spell-detail-value">
-                ${spell.components.split(', ').map(c => '<span class="gen-component-chip">' + c.trim() + '</span>').join('')}
+                ${spell.components.split(', ').map(c => '<span class="gen-component-chip">' + escapeHtml(c.trim()) + '</span>').join('')}
               </div>
             </div>
             <div class="gen-spell-detail">
               <div class="gen-spell-detail-label">Duration</div>
-              <div class="gen-spell-detail-value">${spell.duration}</div>
+              <div class="gen-spell-detail-value">${escapeHtml(spell.duration)}</div>
             </div>
           </div>
 
           <div class="gen-spell-description">
             <strong>Description</strong><br>
-            ${spell.description}
-            ${spell.damage ? `<br><br><strong>Damage:</strong> ${spell.damage} ${spell.damageType}` : ''}
+            ${escapeHtml(spell.description)}
+            ${spell.damage ? `<br><br><strong>Damage:</strong> ${escapeHtml(spell.damage)} ${escapeHtml(spell.damageType)}` : ''}
           </div>
 
           ${spell.higherLevel ? `
             <div class="gen-spell-higher">
-              <strong>At Higher Levels.</strong> ${spell.higherLevel}
+              <strong>At Higher Levels.</strong> ${escapeHtml(spell.higherLevel)}
             </div>
           ` : ''}
 
@@ -5454,9 +5454,9 @@
         const names = randomNth(3, raceNamePools[selectedRace]);
         html += `
           <div class="gen-result-item">
-            <div class="gen-result-label">${selectedRace} Character Names (3)</div>
+            <div class="gen-result-label">${escapeHtml(selectedRace)} Character Names (3)</div>
             <div class="gen-result-value">
-              ${names.map(n => `<div style="padding: 8px; background: var(--bg-mid); margin: 4px 0; border-left: 3px solid var(--crimson); border-radius: 2px;">⊙ ${n}</div>`).join('')}
+              ${names.map(n => `<div style="padding: 8px; background: var(--bg-mid); margin: 4px 0; border-left: 3px solid var(--crimson); border-radius: 2px;">⊙ ${escapeHtml(n)}</div>`).join('')}
             </div>
           </div>
         `;
@@ -5479,21 +5479,21 @@
       for (let i = 0; i < count; i++) {
         const type = random(types);
         if (type === 'pocket') {
-          html += `<div class="gen-result-item"><div class="gen-result-label">Pocket Item ${i + 1}</div><div class="gen-result-value">${random(DATA.pocketItems)}</div></div>`;
+          html += `<div class="gen-result-item"><div class="gen-result-label">Pocket Item ${i + 1}</div><div class="gen-result-value">${escapeHtml(random(DATA.pocketItems))}</div></div>`;
         } else if (type === 'graffiti') {
-          html += `<div class="gen-result-item"><div class="gen-result-label">Graffiti ${i + 1}</div><div class="gen-result-value">"${random(DATA.graffiti)}" - ${random(['faded', 'fresh', 'ominous', 'hopeful'])}</div></div>`;
+          html += `<div class="gen-result-item"><div class="gen-result-label">Graffiti ${i + 1}</div><div class="gen-result-value">"${escapeHtml(random(DATA.graffiti))}" - ${escapeHtml(random(['faded', 'fresh', 'ominous', 'hopeful']))}</div></div>`;
         } else if (type === 'sound') {
-          html += `<div class="gen-result-item"><div class="gen-result-label">Sound ${i + 1}</div><div class="gen-result-value">${random(DATA.sounds)}</div></div>`;
+          html += `<div class="gen-result-item"><div class="gen-result-label">Sound ${i + 1}</div><div class="gen-result-value">${escapeHtml(random(DATA.sounds))}</div></div>`;
         } else if (type === 'books') {
           const book = random(DATA.bookTitles);
-          html += `<div class="gen-result-item"><div class="gen-result-label">Book ${i + 1}</div><div class="gen-result-value"><strong>${book}</strong></div></div>`;
+          html += `<div class="gen-result-item"><div class="gen-result-label">Book ${i + 1}</div><div class="gen-result-value"><strong>${escapeHtml(book)}</strong></div></div>`;
         } else if (type === 'poster') {
           const namePool = random([DATA.npcNames.common, DATA.npcNames.elvish]);
           const crime = random(['Murder', 'Theft', 'Espionage', 'Fraud', 'Treason']);
-          html += `<div class="gen-result-item"><div class="gen-result-label">Wanted ${i + 1}</div><div class="gen-result-value">${random(namePool)} for ${crime}. Reward: ${randomInt(100, 5000)} GP</div></div>`;
+          html += `<div class="gen-result-item"><div class="gen-result-label">Wanted ${i + 1}</div><div class="gen-result-value">${escapeHtml(random(namePool))} for ${escapeHtml(crime)}. Reward: ${randomInt(100, 5000)} GP</div></div>`;
         } else if (type === 'shop') {
           const item = random(DATA.magicItems);
-          html += `<div class="gen-result-item"><div class="gen-result-label">Shop Item ${i + 1}</div><div class="gen-result-value">${item} - ${randomInt(50, 2000)} GP</div></div>`;
+          html += `<div class="gen-result-item"><div class="gen-result-label">Shop Item ${i + 1}</div><div class="gen-result-value">${escapeHtml(item)} - ${randomInt(50, 2000)} GP</div></div>`;
         }
       }
 
@@ -5520,7 +5520,7 @@
     // Full engine loaded from external file: fantasy-map-engine.js
     // See that file for: terrain generation, kingdom/settlement/road/POI systems,
     // Tolkien-style rendering, zoom navigation, city views, and user interaction.
-    // The external file defines: generateFantasyWorld(), downloadCurrentMap(), 
+    // The external file defines: generateFantasyWorld(), downloadCurrentMap(),
     // mapZoomTo(), showOtherMapGen(), and all supporting functions.
 
     // ═══════════════════════════════ MONSTER CREATOR — IN-HOUSE AI ENGINE ═══════════════════════════════
@@ -6810,8 +6810,8 @@
           const item = document.createElement('div');
           item.className = 'dynamic-item';
           item.innerHTML = `<div style="display:grid;gap:8px;">
-            <input type="text" class="gen-control-input" placeholder="Trait name" value="${t.name}" style="margin:0;" />
-            <textarea class="gen-control-input" placeholder="Trait description" rows="3" style="margin:0;">${t.desc}</textarea>
+            <input type="text" class="gen-control-input" placeholder="Trait name" value="${escapeHtml(t.name)}" style="margin:0;" />
+            <textarea class="gen-control-input" placeholder="Trait description" rows="3" style="margin:0;">${escapeHtml(t.desc)}</textarea>
             <button class="dynamic-item-remove" onclick="this.parentElement.parentElement.remove()">Remove</button>
           </div>`;
           traitsList.appendChild(item);
@@ -6827,10 +6827,10 @@
         item.className = 'dynamic-item';
         item.innerHTML = `<div style="display:grid;gap:8px;">
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-            <input type="text" class="gen-control-input" placeholder="Action name" value="${defaultAction.name}" style="margin:0;" />
+            <input type="text" class="gen-control-input" placeholder="Action name" value="${escapeHtml(defaultAction.name)}" style="margin:0;" />
             <input type="number" class="gen-control-input" placeholder="Attack bonus" value="0" style="margin:0;" />
           </div>
-          <textarea class="gen-control-input" placeholder="Action description" rows="3" style="margin:0;">${defaultAction.desc}</textarea>
+          <textarea class="gen-control-input" placeholder="Action description" rows="3" style="margin:0;">${escapeHtml(defaultAction.desc)}</textarea>
           <button class="dynamic-item-remove" onclick="this.parentElement.parentElement.remove()">Remove</button>
         </div>`;
         actionsList.appendChild(item);
@@ -8611,8 +8611,8 @@
           const item = document.createElement('div');
           item.className = 'dynamic-item';
           item.innerHTML = `<div style="display:grid;gap:8px;">
-            <input type="text" class="gen-control-input" placeholder="Trait name" value="${(t.name||'').replace(/"/g,'&quot;')}" style="margin:0;" />
-            <textarea class="gen-control-input" placeholder="Trait description" rows="3" style="margin:0;">${(t.description||'').replace(/</g,'&lt;')}</textarea>
+            <input type="text" class="gen-control-input" placeholder="Trait name" value="${escapeHtml(t.name||'')}" style="margin:0;" />
+            <textarea class="gen-control-input" placeholder="Trait description" rows="3" style="margin:0;">${escapeHtml(t.description||'')}</textarea>
             <button class="dynamic-item-remove" onclick="this.parentElement.parentElement.remove()">Remove</button>
           </div>`;
           traitsList.appendChild(item);
@@ -8628,10 +8628,10 @@
           item.className = 'dynamic-item';
           item.innerHTML = `<div style="display:grid;gap:8px;">
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-              <input type="text" class="gen-control-input" placeholder="Action name" value="${(a.name||'').replace(/"/g,'&quot;')}" style="margin:0;" />
+              <input type="text" class="gen-control-input" placeholder="Action name" value="${escapeHtml(a.name||'')}" style="margin:0;" />
               <input type="number" class="gen-control-input" placeholder="Attack bonus" value="0" style="margin:0;" />
             </div>
-            <textarea class="gen-control-input" placeholder="Action description" rows="3" style="margin:0;">${(a.description||'').replace(/</g,'&lt;')}</textarea>
+            <textarea class="gen-control-input" placeholder="Action description" rows="3" style="margin:0;">${escapeHtml(a.description||'')}</textarea>
             <button class="dynamic-item-remove" onclick="this.parentElement.parentElement.remove()">Remove</button>
           </div>`;
           actionsList.appendChild(item);
@@ -8649,8 +8649,8 @@
           const item = document.createElement('div');
           item.className = 'dynamic-item';
           item.innerHTML = `<div style="display:grid;gap:8px;">
-            <input type="text" class="gen-control-input" placeholder="Legendary action name" value="${(la.name||'').replace(/"/g,'&quot;')}" style="margin:0;" />
-            <textarea class="gen-control-input" placeholder="Description" rows="3" style="margin:0;">${(la.description||'').replace(/</g,'&lt;')}</textarea>
+            <input type="text" class="gen-control-input" placeholder="Legendary action name" value="${escapeHtml(la.name||'')}" style="margin:0;" />
+            <textarea class="gen-control-input" placeholder="Description" rows="3" style="margin:0;">${escapeHtml(la.description||'')}</textarea>
             <button class="dynamic-item-remove" onclick="this.parentElement.parentElement.remove()">Remove</button>
           </div>`;
           legendaryList.appendChild(item);

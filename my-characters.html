@@ -26,12 +26,12 @@
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
   <link rel="manifest" href="site.webmanifest" />
-  <link rel="stylesheet" href="style.css" />
-  <script src="theme.js"></script>
+  <link rel="stylesheet" href="style.css?v=185" />
+  <script src="theme.js?v=185"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous" integrity="sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG"></script>
-  <script src="supabase-config.js"></script>
-  <script src="stripe-config.js"></script>
-  <script src="phmurt-auth.js?v=182"></script>
+  <script src="supabase-config.js?v=185"></script>
+  <script src="stripe-config.js?v=185"></script>
+  <script src="phmurt-auth.js?v=185"></script>
 </head>
 <body data-nav-active="My Characters" data-footer-copy="Roll Well. Play Weird." data-breadcrumb="Home|index.html;My Characters">
   <a href="#main-content" class="ps-skip-nav">Skip to content</a>
@@ -122,8 +122,10 @@
         var race    = _escHtml(c.race  || '');
         var cls     = _escHtml(c.class || c.class_ || '');
         var level   = c.level ? '· Level ' + c.level : '';
-        var builder = c.builder_type || '5e';
-        var editHref = (builder === '35e' ? 'character-builder-35.html' : 'character-builder.html') + '?load=' + id;
+        // INTEGRATION (V-011): Use edition field if builder_type not present (for backward compatibility)
+        var builder = c.builder_type || c.edition || '5e';
+        var is35 = builder === '35e' || builder === '3.5';
+        var editHref = (is35 ? 'character-builder.html' : 'character-builder.html') + (is35 ? '#35e' : '') + '?load=' + id;
 
         var card = document.createElement('div');
         card.className = 'ps-sheet-card';
@@ -245,6 +247,6 @@
       attachDeleteHandlers();
     });
   </script>
-  <script src="phmurt-shell.js"></script>
+  <script src="phmurt-shell.js?v=185"></script>
 </body>
 </html>

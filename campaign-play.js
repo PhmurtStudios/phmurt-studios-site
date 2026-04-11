@@ -1553,6 +1553,14 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   const _combatSaveTimer = useRef(null);
   const _combatRestored = useRef(false);
 
+  // ── RACE CONDITION FIX: Store setData in ref to avoid stale closures in debounced callback ──
+  // Without this, the debounce timer captures stale setData from first render, causing
+  // updated combat state to be ignored or applied to wrong campaign.
+  const setDataRef = useRef(setData);
+  useEffect(() => {
+    setDataRef.current = setData;
+  }, [setData]);
+
   // Restore combat state from cloud on mount (once)
   useEffect(() => {
     if (_combatRestored.current || !setData) return;
@@ -1581,6 +1589,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         if (saved.round != null) setRound(saved.round);
         if (saved.combatLive != null) setCombatLive(saved.combatLive);
         if (saved.conditions) setConditions(saved.conditions);
+        if (saved.tokenConditions) setTokenConditions(saved.tokenConditions);
         if (saved.tokens?.length) setTokens(saved.tokens);
         if (saved.walls?.length) setWalls(saved.walls);
         if (saved.drawings?.length) setDrawings(saved.drawings);
@@ -1595,8 +1604,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   }, [activeCampaignId, data?.activeCombat]);
 
   // Debounced save of combat state to campaign data (2s debounce to avoid excessive writes)
+  // ── CRITICAL FIX: Use setDataRef.current to avoid stale setData in debounced callback ──
   useEffect(() => {
-    if (!setData) return;
+    if (!setDataRef.current) return; // Use ref, not setData
     if (_combatSaveTimer.current) clearTimeout(_combatSaveTimer.current);
     _combatSaveTimer.current = setTimeout(() => {
       const combatSnapshot = combatLive ? {
@@ -1605,6 +1615,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         turn: turn,
         round: round,
         conditions: conditions,
+        tokenConditions: tokenConditions,
         tokens: tokens.map(t => {
           // Strip image data to keep size down — only save essential token fields
           const { imageData, _imgElement, ...essentials } = t;
@@ -1624,10 +1635,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       if (!window._cmActiveCombatState) window._cmActiveCombatState = {};
       window._cmActiveCombatState[activeCampaignId] = combatSnapshot;
       // Persist to campaign data (triggers cloud save via the main save loop)
-      setData(d => ({ ...d, activeCombat: combatSnapshot }));
+      // Use ref to ensure we use current setData, not stale closure
+      setDataRef.current(d => ({ ...d, activeCombat: combatSnapshot }));
     }, 2000);
     return () => clearTimeout(_combatSaveTimer.current);
-  }, [combatLive, combatants, turn, round, conditions, tokens, walls, drawings, fogCells, terrainCells, turnStateByToken, combatTargetByActor, bgImage, gridSize, setData, activeCampaignId]);
+  }, [combatLive, combatants, turn, round, conditions, tokens, walls, drawings, fogCells, terrainCells, turnStateByToken, combatTargetByActor, bgImage, gridSize, activeCampaignId]);
 
   const addCombatLogEntry = (entry) => {
     const enriched = {...entry, id: "log-" + Date.now() + "-" + Math.random().toString(16).slice(2), time: new Date().toLocaleTimeString()};
@@ -1763,7 +1775,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       hp: monster.hp,
       maxHp: monster.hp,
       ac: monster.ac,
-      speed: parseInt(monster.speed) || 30,
+      speed: parseInt(monster.speed, 10) || 30,
       tokenType: "enemy",
       vision: 0,
       hidden: false,
@@ -1817,12 +1829,12 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     if (tokenRef.tokenType === "pc" && !defeatPatch?.deathDead) {
       addTokenCondition(tokenRef.id, "Unconscious");
       removeTokenCondition(tokenRef.id, "Dead");
-      syncRowConditions((conds) => [...new Set(conds.filter((cond) => cond !== "Dead").concat("Unconscious"))]);
+      syncRowConditions((conds) => [...new Set([...conds.filter((cond) => cond !== "Dead"), "Unconscious"])]);
       return;
     }
     addTokenCondition(tokenRef.id, "Dead");
     removeTokenCondition(tokenRef.id, "Unconscious");
-    syncRowConditions((conds) => [...new Set(conds.filter((cond) => cond !== "Unconscious").concat("Dead"))]);
+    syncRowConditions((conds) => [...new Set([...conds.filter((cond) => cond !== "Unconscious"), "Dead"])]);
   };
 
   const applyTokenVitalsUpdate = (tokenRef, nextHp, extraUpdates = {}) => {
@@ -2028,7 +2040,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       if (result.tempHpAbsorbed > 0) {
         addCombatLogEntry({ type:"system", text: resolvedTarget.name + " absorbs " + result.tempHpAbsorbed + " damage with temporary HP (" + result.newTempHp + " temp HP remaining)" });
       }
-      actualDamage = result.hpLost > 0 ? (resolvedTarget.hp || 0) - result.newHp : 0;
+      actualDamage = result.hpLost > 0 ? Math.max(0, (resolvedTarget.hp || 0) - (result.newHp || 0)) : 0;
       applyTokenVitalsUpdate(resolvedTarget, result.newHp);
     } else {
       const newHp = Math.max(0, (resolvedTarget.hp || 0) - finalDamage);
@@ -2542,7 +2554,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     if (monsterTokens.length === 0) return null;
     const pcTokens = tokens.filter(t => t.tokenType === "pc");
     const partyLevels = pcTokens.length > 0 ? pcTokens.map(t => t.level || 5) : [5, 5, 5, 5]; // Default level 5 party of 4
-    const monsterXPs = monsterTokens.map(t => t.monsterData.xp || 0);
+    const monsterXPs = monsterTokens.map(t => t.monsterData?.xp || 0);
     return window.CombatEngine.calculateEncounterDifficulty(partyLevels, monsterXPs);
   }, [tokens]);
 
@@ -2689,11 +2701,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       const base = spell.damage;
       const diceMatch = rules.bonusDice.match(/(\d+)d(\d+)/);
       if (diceMatch) {
-        const bonusCount = parseInt(diceMatch[1]) * (rules.per2Levels ? Math.floor(levelsAbove / 2) : levelsAbove);
+        const bonusCount = parseInt(diceMatch[1], 10) * (rules.per2Levels ? Math.floor(levelsAbove / 2) : levelsAbove);
         if (bonusCount > 0) {
           const baseDice = base.match(/(\d+)d(\d+)/);
           if (baseDice) {
-            const newCount = parseInt(baseDice[1]) + bonusCount;
+            const newCount = parseInt(baseDice[1], 10) + bonusCount;
             return base.replace(/\d+d\d+/, newCount + "d" + baseDice[2]);
           }
         }
@@ -2710,7 +2722,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     if (diceMatch) {
       const baseDice = base.match(/(\d+)d(\d+)/);
       if (baseDice) {
-        const newCount = parseInt(baseDice[1]) + parseInt(diceMatch[1]) * levelsAbove;
+        const newCount = parseInt(baseDice[1], 10) + parseInt(diceMatch[1], 10) * levelsAbove;
         return base.replace(/\d+d\d+/, newCount + "d" + baseDice[2]);
       }
     }
@@ -3992,7 +4004,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   const handlePropUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file || !file.type.startsWith("image/")) return;
-    if (file.size > 10 * 1024 * 1024) { alert("Prop image too large (max 10 MB)."); e.target.value = ""; return; }
+    if (file.size > 10 * 1024 * 1024) { e.target.value = ""; return; }
     const reader = new FileReader();
     reader.onload = () => addProp(reader.result, file.name.replace(/\.[^.]+$/, ""));
     reader.readAsDataURL(file);
@@ -5412,7 +5424,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
     Object.entries(terrainCells).forEach(([key, terrainType]) => {
       if (!terrainType) return;
-      const [gx, gy] = key.split(",").map(Number);
+      const coords = key.split(",").map(Number);
+      if (coords.length !== 2) return;
+      const [gx, gy] = coords;
       const terrain = TERRAIN_TYPES[terrainType];
       if (!terrain) return;
 
@@ -5530,12 +5544,16 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       const foggedSet = new Set();
       Object.entries(fogCells).forEach(([key, val]) => { if (val) foggedSet.add(key); });
       foggedSet.forEach(key => {
-        const [gx, gy] = key.split(",").map(Number);
+        const coords = key.split(",").map(Number);
+        if (coords.length !== 2) return;
+        const [gx, gy] = coords;
         drawFogCell(gx, gy, "full");
       });
       // Soft edges on borders of fogged areas
       foggedSet.forEach(key => {
-        const [gx, gy] = key.split(",").map(Number);
+        const coords = key.split(",").map(Number);
+        if (coords.length !== 2) return;
+        const [gx, gy] = coords;
         [[0,-1],[0,1],[-1,0],[1,0]].forEach(([dx,dy]) => {
           if (!isFogged(gx+dx, gy+dy, foggedSet)) {
             ctx.fillStyle = fogEdge;
@@ -5565,7 +5583,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         }
         // Soft edges around fully visible areas bordering fog
         fullFogSet.forEach(key => {
-          const [gx, gy] = key.split(",").map(Number);
+          const coords = key.split(",").map(Number);
+          if (coords.length !== 2) return;
+          const [gx, gy] = coords;
           [[0,-1],[0,1],[-1,0],[1,0]].forEach(([dx,dy]) => {
             const nk = (gx+dx) + "," + (gy+dy);
             const nVis = visibleCells[nk];
@@ -6330,10 +6350,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           // Outcome prediction — parse "1d8+3" or "2d6+5" style damage expressions
           const diceMatch = (damageExpr || "").match(/^(\d+)d(\d+)/);
           const modMatch = (damageExpr || "").match(/[+-]\d+/);
-          const dmgMod = modMatch ? parseInt(modMatch[0]) : 0;
-          const avgDamage = diceMatch ? (parseInt(diceMatch[1]) * (parseInt(diceMatch[2]) + 1) / 2 + dmgMod) : 0;
-          const minDamage = diceMatch ? Math.max(1, parseInt(diceMatch[1]) + dmgMod) : 0;
-          const maxDamage = diceMatch ? (parseInt(diceMatch[1]) * parseInt(diceMatch[2]) + dmgMod) : 0;
+          const dmgMod = modMatch ? parseInt(modMatch[0], 10) : 0;
+          const avgDamage = diceMatch ? (parseInt(diceMatch[1], 10) * (parseInt(diceMatch[2], 10) + 1) / 2 + dmgMod) : 0;
+          const minDamage = diceMatch ? Math.max(1, parseInt(diceMatch[1], 10) + dmgMod) : 0;
+          const maxDamage = diceMatch ? (parseInt(diceMatch[1], 10) * parseInt(diceMatch[2], 10) + dmgMod) : 0;
           const expectedDamage = Math.round(avgDamage * hitChance / 100);
           const killChance = hovTk.hp > 0 ? Math.min(100, Math.round(hitChance * Math.min(1, maxDamage / hovTk.hp) * 100) / 100) : 0;
 
@@ -7773,7 +7793,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         PhmurtRealtime.broadcastState(activeCampaignId, state);
       } else {
         // Fallback: localStorage only (same-device or no campaign)
-        try { localStorage.setItem(getSyncStorageKey(activeCampaignId), JSON.stringify(state)); } catch {}
+        try { localStorage.setItem(getSyncStorageKey(activeCampaignId), JSON.stringify(state)); } catch (err) {
+          console.warn('[BattleMap] localStorage sync fallback failed:', err && err.message || err);
+        }
       }
     }, 150);
     return () => clearTimeout(syncTimerRef.current);
@@ -7812,7 +7834,12 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       // Load bg image from DM's scene (data URL)
       if (state._bgSrc) {
         const img = new window.Image();
-        img.onload = () => setBgImage(img);
+        var imgTimeout = setTimeout(function() { img.src = ''; }, 5000);
+        img.onload = () => {
+          clearTimeout(imgTimeout);
+          setBgImage(img);
+        };
+        img.onerror = function() { console.warn('[CombatMap] Background image failed to load'); };
         img.src = state._bgSrc;
       } else if (state._bgSrc === null) {
         setBgImage(null);
@@ -7835,7 +7862,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           if (!raw || raw === syncFallbackLastRawRef.current) return;
           syncFallbackLastRawRef.current = raw;
           applyState(JSON.parse(raw));
-        } catch {}
+        } catch (err) {
+          console.warn('[BattleMap] localStorage fallback poll error:', err && err.message || err);
+        }
       }, 250);
       realtimeHandleRef.current = { leave: () => clearInterval(interval) };
     }
@@ -8065,7 +8094,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         // Parse range from monster action desc (e.g. "reach 10 ft." or "range 30/120 ft.")
         const desc = card.data?.action?.desc || "";
         const rangeMatch = desc.match(/(?:reach|range)\s+(\d+)/i);
-        cardRange = rangeMatch ? parseInt(rangeMatch[1]) : 10;
+        cardRange = rangeMatch ? parseInt(rangeMatch[1], 10) : 10;
       } else {
         cardRange = card.data?.range || 5;
       }
@@ -8802,7 +8831,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     const file = e.target.files?.[0];
     if (!file) return;
     if (!file.type.startsWith("image/")) return;
-    if (file.size > MAX_IMG_SIZE) { alert("Image too large (max 20 MB). Please use a smaller file."); e.target.value = ""; return; }
+    if (file.size > MAX_IMG_SIZE) { e.target.value = ""; return; }
     const reader = new FileReader();
     reader.onload = () => {
       const img = new Image();
@@ -8832,7 +8861,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     const file = e.target.files?.[0];
     if (!file || !selectedTokenId) return;
     if (!file.type.startsWith("image/")) return;
-    if (file.size > 5 * 1024 * 1024) { alert("Token image too large (max 5 MB)."); e.target.value = ""; return; }
+    if (file.size > 5 * 1024 * 1024) { e.target.value = ""; return; }
     const reader = new FileReader();
     reader.onload = () => {
       const dataUrl = reader.result;
@@ -8915,6 +8944,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     if (selectedTokenId === id) setSelectedTokenId(null);
     if (tokenPopup?.tokenId === id) setTokenPopup(null);
     if (removedIndex >= 0 && combatants.length > 0) {
+      if (combatants.length === 0) {
+        setTurn(0);
+        return;
+      }
       setTurn(t => Math.max(0, removedIndex < t || t >= combatants.length - 1 ? t - 1 : t));
     }
   };
@@ -9990,9 +10023,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     const cx = (canvasRef.current?.width / 2 - pan.x) / zoom;
     const cy = (canvasRef.current?.height / 2 - pan.y) / zoom;
     const snap = snapToGridCenter(cx, cy);
-    const hpNum = parseInt(addHp) || 30;
+    const hpNum = parseInt(addHp, 10) || 30;
     setTokens(p => [...p, { id: tokenId, name: addName, color: cssVar("--crimson"), hp: hpNum, maxHp: hpNum, x: snap.x, y: snap.y, vision:0, darkvision:0, speed:30, hidden:false }]);
-    const newC = { id: "cb-" + Date.now(), mapTokenId: tokenId, name: addName, init: parseInt(addInit), hp: hpNum, maxHp: hpNum, ac: parseInt(addAc) || 12, type: "enemy" };
+    const newC = { id: "cb-" + Date.now(), mapTokenId: tokenId, name: addName, init: parseInt(addInit, 10) || 0, hp: hpNum, maxHp: hpNum, ac: parseInt(addAc, 10) || 12, type: "enemy" };
     setCombatants(p => [...p, newC].sort((a, b) => b.init - a.init));
     setCombatLive(true);
     openCombatSidebar("tracker");
@@ -10064,7 +10097,12 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     };
     const updated = [...templates, tpl];
     setTemplates(updated);
-    localStorage.setItem(TEMPLATE_KEY, JSON.stringify(updated));
+    try {
+      localStorage.setItem(TEMPLATE_KEY, JSON.stringify(updated));
+    } catch (storageErr) {
+      console.error('[CombatPlay] Failed to save encounter template locally:', storageErr);
+      // Still attempt cloud save even if local storage fails
+    }
     // Also save to Supabase cloud
     if (typeof PhmurtDB !== 'undefined' && activeCampaignId && activeCampaignId !== 'example') {
       PhmurtDB.saveEncounterTemplate(activeCampaignId, tpl).catch(function(err) { console.warn('Operation failed:', err && err.message || err); });
@@ -10089,7 +10127,12 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     const tpl = templates.find(t => t.id === id);
     const updated = templates.filter(t => t.id !== id);
     setTemplates(updated);
-    localStorage.setItem(TEMPLATE_KEY, JSON.stringify(updated));
+    try {
+      localStorage.setItem(TEMPLATE_KEY, JSON.stringify(updated));
+    } catch (storageErr) {
+      console.error('[CombatPlay] Failed to delete encounter template locally:', storageErr);
+      // Still attempt cloud delete even if local storage fails
+    }
     // Also delete from Supabase cloud
     if (typeof PhmurtDB !== 'undefined' && tpl && tpl._fromCloud) {
       PhmurtDB.deleteEncounterTemplate(id).catch(function(err) { console.warn('Operation failed:', err && err.message || err); });
@@ -10150,8 +10193,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
   const macroPerception = () => {
     const mod = prompt("WIS modifier:");
+    if (mod === null) return;
     const result = parseDiceExpression("1d20+" + (parseInt(mod, 10) || 0));
-    setDiceResult({ value: result.total, type: "perception", name: (selectedToken?.name || "Perception"), time: Date.now(), crit: result.rolls[0] === 20, fumble: result.rolls[0] === 1 });
+    setDiceResult({ value: result.total, type: "perception", name: (selectedToken?.name || "Perception"), time: Date.now(), crit: (result.rolls && result.rolls[0]) === 20, fumble: (result.rolls && result.rolls[0]) === 1 });
     setRollHistory(prev => [{ expr: "1d20+" + (parseInt(mod, 10) || 0), rolls: result.rolls, mod: result.modifier, total: result.total, who: (selectedToken?.name || "?") + " perception", time: Date.now() }, ...prev].slice(0, 20));
     setTimeout(() => setDiceResult(null), 3000);
   };
@@ -10839,13 +10883,16 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   {rollHistory.length === 0 ? (
                     <div style={{ fontSize:9, color:T.textFaint, textAlign:"center", padding:"12px 8px", fontStyle:"italic" }}>No rolls yet</div>
                   ) : (
-                    rollHistory.map((roll, i) => (
-                      <div key={i} style={{ padding:"6px 8px", marginBottom:"4px", background:T.bgInput, borderRadius:"2px", fontSize:8, color:T.text, borderLeft:"2px solid " + (roll.result > 15 ? "#5ee09a" : roll.result <= 5 ? "#f06858" : "transparent") }}>
+                    rollHistory.map((roll, i) => {
+                      const rollTotal = roll.result || roll.total;
+                      return (
+                      <div key={`roll-${roll.time || i}`} style={{ padding:"6px 8px", marginBottom:"4px", background:T.bgInput, borderRadius:"2px", fontSize:8, color:T.text, borderLeft:"2px solid " + (rollTotal > 15 ? "#5ee09a" : rollTotal <= 5 ? "#f06858" : "transparent") }}>
                         <div style={{ fontFamily:T.ui, letterSpacing:"0.5px", fontWeight:500, marginBottom:2 }}>{roll.expr}</div>
-                        <div style={{ color:T.textMuted, marginBottom:1 }}>Rolls: {roll.rolls.join(", ")}</div>
-                        <div style={{ color:T.text, fontWeight:600 }}>Total: {roll.result}</div>
+                        <div style={{ color:T.textMuted, marginBottom:1 }}>Rolls: {roll.rolls && roll.rolls.join(", ")}</div>
+                        <div style={{ color:T.text, fontWeight:600 }}>Total: {rollTotal}</div>
                       </div>
-                    ))
+                    );
+                    })
                   )}
                 </div>
               </div>
@@ -11407,7 +11454,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             <input type="file" ref={mapImgInputRef} style={{display:"none"}} accept="image/*" onChange={e => {
               const file = e.target.files?.[0];
               if (!file) return;
-              if (file.size > MAX_IMG_SIZE) { alert("Image too large (max 20 MB)."); e.target.value = ""; return; }
+              if (file.size > MAX_IMG_SIZE) { e.target.value = ""; return; }
               const mid = e.target.dataset.mapId;
               const reader = new FileReader();
               reader.onload = () => {
@@ -11428,7 +11475,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               const mid = e.target.dataset.mapId;
               const sid = e.target.dataset.sceneId;
               if (!file || !mid || !sid) return;
-              if (file.size > MAX_IMG_SIZE) { alert("Image too large (max 20 MB)."); e.target.value = ""; return; }
+              if (file.size > MAX_IMG_SIZE) { e.target.value = ""; return; }
               const reader = new FileReader();
               reader.onload = () => {
                 setBattleMaps(prev => prev.map(m => {
@@ -11882,19 +11929,19 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     {m.traits && m.traits.length > 0 && (
                       <div style={{ marginTop:4, borderTop:"1px solid "+bd06, paddingTop:4 }}>
                         <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"1px", color:T.textFaint, textTransform:"uppercase", marginBottom:3 }}>Traits</div>
-                        {m.traits.map((tr,i) => <div key={i} style={{ marginBottom:2 }}><strong>{tr.name}:</strong> {tr.desc.slice(0, 120)}{tr.desc.length > 120 ? "..." : ""}</div>)}
+                        {m.traits.map((tr,i) => <div key={`trait-${i}-${tr.name}`} style={{ marginBottom:2 }}><strong>{tr.name}:</strong> {tr.desc.slice(0, 120)}{tr.desc.length > 120 ? "..." : ""}</div>)}
                       </div>
                     )}
                     {m.actions && m.actions.length > 0 && (
                       <div style={{ marginTop:4, borderTop:"1px solid "+bd06, paddingTop:4 }}>
                         <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"1px", color:T.textFaint, textTransform:"uppercase", marginBottom:3 }}>Actions</div>
-                        {m.actions.map((a,i) => <div key={i} style={{ marginBottom:2 }}><strong>{a.name}:</strong> {a.desc.slice(0, 100)}{a.desc.length > 100 ? "..." : ""}</div>)}
+                        {m.actions.map((a,i) => <div key={`action-${i}-${a.name}`} style={{ marginBottom:2 }}><strong>{a.name}:</strong> {a.desc.slice(0, 100)}{a.desc.length > 100 ? "..." : ""}</div>)}
                       </div>
                     )}
                     {m.legendaryActions && m.legendaryActions.length > 0 && (
                       <div style={{ marginTop:4, borderTop:"1px solid "+bd06, paddingTop:4 }}>
                         <div style={{ fontFamily:T.ui, fontSize:7, letterSpacing:"1px", color:T.gold, textTransform:"uppercase", marginBottom:3 }}>Legendary Actions</div>
-                        {m.legendaryActions.map((a,i) => <div key={i} style={{ marginBottom:2 }}><strong>{a.name}:</strong> {a.desc.slice(0, 100)}{a.desc.length > 100 ? "..." : ""}</div>)}
+                        {m.legendaryActions.map((a,i) => <div key={`legendary-${i}-${a.name}`} style={{ marginBottom:2 }}><strong>{a.name}:</strong> {a.desc.slice(0, 100)}{a.desc.length > 100 ? "..." : ""}</div>)}
                       </div>
                     )}
                   </div>
@@ -12366,7 +12413,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                   ].map((act, i) => {
                     const Icon = act.icon;
                     return (
-                      <button key={i} onClick={act.onClick}
+                      <button key={`token-action-${act.label || i}`} onClick={act.onClick}
                         onMouseEnter={e => { e.currentTarget.style.background = act.danger ? "rgba(212,67,58,0.12)" : act.active ? "rgba(212,67,58,0.18)" : bg06; e.currentTarget.style.borderColor = act.danger ? "rgba(212,67,58,0.35)" : "rgba(255,255,255,0.12)"; }}
                         onMouseLeave={e => { e.currentTarget.style.background = act.active ? "rgba(212,67,58,0.1)" : "rgba(0,0,0,0.1)"; e.currentTarget.style.borderColor = act.active ? "rgba(212,67,58,0.3)" : T.border; }}
                         style={{ flex: act.label ? 1 : "0 0 36px", padding:"7px 4px", background: act.active ? "rgba(212,67,58,0.1)" : "rgba(0,0,0,0.1)", border:"1px solid " + (act.active ? "rgba(212,67,58,0.3)" : T.border), borderRadius:"6px", color: act.danger ? "rgba(212,67,58,0.7)" : act.active ? "var(--crimson)" : T.textMuted, fontFamily:T.ui, fontSize:10, fontWeight:500, cursor:"pointer", transition:"all 0.15s ease", display:"flex", alignItems:"center", justifyContent:"center", gap:4, letterSpacing:"0.3px" }}>
@@ -12918,7 +12965,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                           <div style={{ marginBottom: 12 }}>
                             <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1.2px", textTransform: "uppercase", color: "rgba(212,67,58,0.5)", marginBottom: 8, fontWeight:600 }}>Resistances</div>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                              {resistances.map((r, i) => <span key={i} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", color: "#f59e0b" }}>{typeof r === "string" ? r : (r.name || r.type || "Resist")}</span>)}
+                              {resistances.map((r, i) => <span key={`resist-${i}-${typeof r === "string" ? r : (r.name || r.type || "")}`} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.2)", color: "#f59e0b" }}>{typeof r === "string" ? r : (r.name || r.type || "Resist")}</span>)}
                             </div>
                           </div>
                         )}
@@ -12928,7 +12975,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                           <div style={{ marginBottom: 12 }}>
                             <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1.2px", textTransform: "uppercase", color: "rgba(212,67,58,0.5)", marginBottom: 8, fontWeight:600 }}>Weapons & Equipment</div>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                              {equipment.map((w, i) => <span key={i} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", color: "#ef4444" }}>{typeof w === "string" ? w : (w.name || "Item")}</span>)}
+                              {equipment.map((w, i) => <span key={`equip-${i}-${typeof w === "string" ? w : (w.name || "")}`} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.15)", color: "#ef4444" }}>{typeof w === "string" ? w : (w.name || "Item")}</span>)}
                             </div>
                           </div>
                         )}
@@ -12959,7 +13006,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                           <div style={{ marginBottom: 12 }}>
                             <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1.2px", textTransform: "uppercase", color: "rgba(212,67,58,0.5)", marginBottom: 8, fontWeight:600 }}>Spells ({knownSpells.length})</div>
                             <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-                              {knownSpells.slice(0, 30).map((sp, i) => <span key={i} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.15)", color: "#a78bfa" }}>{typeof sp === "string" ? sp : (sp.name || "Spell")}</span>)}
+                              {knownSpells.slice(0, 30).map((sp, i) => <span key={`spell-${i}-${typeof sp === "string" ? sp : (sp.name || "")}`} style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, background: "rgba(167,139,250,0.06)", border: "1px solid rgba(167,139,250,0.15)", color: "#a78bfa" }}>{typeof sp === "string" ? sp : (sp.name || "Spell")}</span>)}
                               {knownSpells.length > 30 && <span style={{ padding: "3px 8px", borderRadius: 999, fontSize: 10, fontFamily: T.ui, color: T.textFaint, fontStyle: "italic" }}>+{knownSpells.length - 30} more</span>}
                             </div>
                           </div>
@@ -12986,8 +13033,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                         )}
 
                         {/* Open Builder */}
-                        {_pm?.sheetUrl && (
-                          <button onClick={() => window.open(_pm.sheetUrl, "_blank")}
+                        {_pm?.sheetUrl && /^(https?:\/\/(www\.)?phmurtstudios\.com\/|character-builder)/.test(_pm.sheetUrl) && (
+                          <button onClick={() => window.open(_pm.sheetUrl, "_blank", "noopener,noreferrer")}
                             style={{ width: "100%", padding: "10px", background: "rgba(41,182,246,0.08)", border: "1px solid rgba(41,182,246,0.25)", borderRadius: 8, color: "#29b6f6", fontFamily: T.ui, fontSize: 11, fontWeight: 600, letterSpacing: "0.5px", cursor: "pointer", textTransform: "uppercase", marginBottom: 12 }}>
                             Open in Character Builder
                           </button>

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 175;
+const CACHE_VERSION = 185;
 const CACHE_NAME = 'phmurt-v' + CACHE_VERSION;
 const PRECACHE_URLS = [
   '/',
@@ -32,8 +32,14 @@ const PRECACHE_URLS = [
   'campaign-homebrew.js',
   'campaign-factionwar.js',
   'campaign-prophecy.js',
-  // campaign-plague.js removed from standalone tab — plague events in living-world.js
+  'campaign-plague.js',
   'campaign-heist.js',
+  'campaign-kingdom.js',
+  'campaign-map-engine.js',
+  'campaign-map-bridge.js',
+  'campaign-crafting.js',
+  'campaign-invites.js',
+  'override_functions.js',
   'campaign-intrigue.js',
   'campaign-puzzles.js',
   'campaign-scheduler.js',
@@ -126,7 +132,8 @@ self.addEventListener('fetch', (event) => {
 
     // Only handle GET requests from same origin
     if (request.method !== 'GET') return;
-    if (url.protocol === 'chrome-extension:') return;
+    // SECURITY: Only allow http and https protocols
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
     if (url.origin !== self.location.origin) return;
   } catch (e) {
     // SECURITY: Invalid URL parsing - don't cache
@@ -141,7 +148,11 @@ self.addEventListener('fetch', (event) => {
   }
   // Avoid caching API-like data requests; keep them network-only.
   const acceptHeader = request.headers ? (request.headers.get('accept') || '') : '';
-  if (typeof acceptHeader === 'string' && acceptHeader.includes('application/json')) return;
+  if (typeof acceptHeader === 'string' && acceptHeader.includes('application/json')) {
+    return event.respondWith(fetch(request).catch(() => {
+      return new Response('API request not available offline', { status: 503 });
+    }));
+  }
 
   // Network-first for HTML pages (always get fresh content)
   const acceptHTML = request.headers ? (request.headers.get('accept') || '') : '';
@@ -149,7 +160,7 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          if (!response || response.status !== 200 || response.type !== 'basic') {
+          if (!response || !response.ok || response.type !== 'basic') {
             throw new Error('Bad network response');
           }
           const responseToCache = response.clone();
@@ -179,13 +190,13 @@ self.addEventListener('fetch', (event) => {
   }
 
   // Network-first for JS/CSS assets (always get fresh code, fall back to cache offline)
-  const dest = String(request.destination || '').slice(0, 50);
+  const dest = String(request.destination || '');
   const isCodeAsset = dest === 'style' || dest === 'script';
   if (isCodeAsset) {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          if (response && response.status === 200 && response.type === 'basic') {
+          if (response && response.ok && response.type === 'basic') {
             const responseToCache = response.clone();
             // Cache update happens independently, don't block response on cache write
             caches.open(CACHE_NAME).then((cache) => {
@@ -215,7 +226,7 @@ self.addEventListener('fetch', (event) => {
       return cache.match(request).then((cachedResponse) => {
         // SECURITY: Always return cached response if available, revalidate in background
         const fetchPromise = fetch(request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+          if (networkResponse && networkResponse.ok && networkResponse.type === 'basic') {
             cache.put(request, networkResponse.clone()).catch(() => {
               /* cache.put failed - log and continue */
             });
@@ -245,7 +256,7 @@ self.addEventListener('message', (event) => {
 
   try {
     // SECURITY: Validate message type before processing
-    const msgType = String(event.data.type || '').slice(0, 50);
+    const msgType = event.data.type && typeof event.data.type === 'string' ? String(event.data.type).slice(0, 50) : '';
     if (msgType === 'SKIP_WAITING') {
       self.skipWaiting();
     } else if (msgType === 'CLEAR_CACHE') {

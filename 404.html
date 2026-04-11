@@ -7,6 +7,7 @@
   <meta name="referrer" content="strict-origin" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://*.stripe.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
   <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), usb=(), payment=(), serial=(), bluetooth=()" />
+  <meta name="color-scheme" content="light dark" />
   <title>404 | Page Not Found · Phmurt Studios</title>
   <meta name="description" content="This page could not be found. Head back to the Phmurt Studios homepage." />
   <meta property="og:title" content="404 | Page Not Found · Phmurt Studios" />
@@ -25,35 +26,37 @@
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
   <link rel="manifest" href="site.webmanifest" />
-  <link rel="stylesheet" href="style.css" />
-  <script src="theme.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous" integrity="sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG"></script>
-  <script src="supabase-config.js"></script>
-  <script src="stripe-config.js"></script>
-  <script src="phmurt-auth.js?v=182"></script>
+  <link rel="stylesheet" href="style.css?v=185" />
+  <script defer src="theme.js?v=185"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous" integrity="sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG"></script>
+  <script defer src="supabase-config.js?v=185"></script>
+  <script defer src="stripe-config.js?v=185"></script>
+  <script defer src="phmurt-auth.js?v=185"></script>
 </head>
-<body data-nav-active="" data-footer-copy="Roll Well. Play Weird." data-breadcrumb="Home|index.html;Page Not Found">
+<body data-nav-active="404" data-footer-copy="Roll Well. Play Weird." data-breadcrumb="Home|index.html;Page Not Found">
 
   <a href="#main-content" class="ps-skip-nav">Skip to content</a>
   <div id="ps-site-shell"></div>
 
   <div id="ps-page-breadcrumb"></div>
 
-  <div class="ps-404">
-    <img src="owlbear-purple.png" alt="Phmurt Studios owlbear mascot" class="ps-404-img" />
-    <div class="ps-404-code">Error 404</div>
-    <div class="ps-404-title">Lost in the Dungeon</div>
-    <div class="ps-404-sub">The page rolled a natural 1.</div>
-    <p class="ps-404-desc" style="font-style:italic;">The path you seek has been lost to the mists. Perhaps it was consumed by a particularly ambitious Soup Savant experimenting with extradimensional ingredients, or perhaps the cartographer simply forgot to draw this corridor.</p>
-    <div style="text-align:center;color:var(--text-faint);font-family:'Cinzel',serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;margin:20px 0 24px;opacity:0.5;">⚔ Make a Wisdom (Survival) check to find your way back ⚔</div>
-    <div style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center;">
-      <a href="index.html" class="ps-cta">⚜ Return Home</a>
-      <a href="grimoire.html" class="ps-cta" style="background:transparent;border-color:rgba(212,67,58,0.4);color:var(--text-dim);">⸎ Browse the Grimoire</a>
+  <main id="main-content">
+    <div class="ps-404">
+      <img src="owlbear-purple.png" alt="Phmurt Studios owlbear mascot" class="ps-404-img" />
+      <div class="ps-404-code">Error 404</div>
+      <div class="ps-404-title">Lost in the Dungeon</div>
+      <div class="ps-404-sub">The page rolled a natural 1.</div>
+      <p class="ps-404-desc">The path you seek has been lost to the mists. Perhaps it was consumed by a particularly ambitious Soup Savant experimenting with extradimensional ingredients, or perhaps the cartographer simply forgot to draw this corridor.</p>
+      <div class="ps-404-check">Make a Wisdom (Survival) check to find your way back</div>
+      <div class="ps-404-cta-group">
+        <a href="index.html" class="ps-cta">↜ Return Home</a>
+        <a href="grimoire.html" class="ps-cta ps-cta-secondary">↳ Browse the Grimoire</a>
+      </div>
     </div>
-  </div>
+  </main>
 
   <div id="ps-site-footer"></div>
 
-  <script src="phmurt-shell.js"></script>
+  <script src="phmurt-shell.js?v=185"></script>
 </body>
 </html>

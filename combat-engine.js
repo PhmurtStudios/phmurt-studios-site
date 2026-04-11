@@ -38,7 +38,7 @@ window.CombatEngine = (() => {
     // Handle "Xd" expressions like "3x1d4+1" (magic missile style)
     if (expr.includes("x")) {
       const parts = expr.split("x");
-      const count = Math.min(1000, Math.max(1, parseInt(parts[0]) || 1));
+      const count = Math.min(1000, Math.max(1, parseInt(parts[0], 10) || 1));
       const subExpr = parts[1] || "1d4";
       const results = [];
       let grandTotal = 0;
@@ -63,25 +63,25 @@ window.CombatEngine = (() => {
     const match = expr.match(/^(\d+)?d(\d+)\s*(kh\d+|kl\d+)?\s*([+-]\s*\d+)?$/);
     if (!match) {
       // Try just a flat number
-      const num = parseInt(expr);
+      const num = parseInt(expr, 10);
       if (!isNaN(num)) return { rolls: [num], modifier: 0, total: num, expression: expr, details: String(num), nat20: false, nat1: false };
       return { rolls: [], modifier: 0, total: 0, expression: expr, details: "?", nat20: false, nat1: false };
     }
 
-    const count = parseInt(match[1]) || 1;
-    const sides = parseInt(match[2]) || 1;
+    const count = parseInt(match[1], 10) || 1;
+    const sides = parseInt(match[2], 10) || 1;
     const keepRule = match[3] || "";
-    const modifier = match[4] ? parseInt(match[4].replace(/\s/g, "")) : 0;
+    const modifier = match[4] ? parseInt(match[4].replace(/\s/g, ""), 10) : 0;
 
     let rolls = [];
     for (let i = 0; i < count; i++) rolls.push(rollDie(sides));
 
     let keptRolls = [...rolls];
     if (keepRule.startsWith("kh")) {
-      const keep = Math.max(1, parseInt(keepRule.slice(2)) || 1);
+      const keep = Math.max(1, parseInt(keepRule.slice(2), 10) || 1);
       keptRolls = [...rolls].sort((a, b) => b - a).slice(0, keep);
     } else if (keepRule.startsWith("kl")) {
-      const keep = Math.max(1, parseInt(keepRule.slice(2)) || 1);
+      const keep = Math.max(1, parseInt(keepRule.slice(2), 10) || 1);
       keptRolls = [...rolls].sort((a, b) => a - b).slice(0, keep);
     }
 
@@ -121,7 +121,7 @@ window.CombatEngine = (() => {
     }
     if (parts.length === 0 && damageStr) {
       // Try simple number
-      const num = parseInt(damageStr);
+      const num = parseInt(damageStr, 10);
       if (!isNaN(num)) parts.push({ type: "untyped", roll: { total: num, rolls: [num], expression: String(num), details: String(num) }, total: num, critBonus: 0 });
     }
     const total = parts.reduce((s, p) => s + p.total, 0);
@@ -170,24 +170,24 @@ window.CombatEngine = (() => {
 
     const attackType = attackMatch[1].toLowerCase(); // "melee" or "ranged"
     const weaponOrSpell = attackMatch[2].toLowerCase(); // "weapon" or "spell"
-    const toHit = parseInt(attackMatch[3]);
+    const toHit = parseInt(attackMatch[3], 10);
 
     // Parse reach/range
     let reach = 5;
     const reachMatch = desc.match(/reach\s+(\d+)\s*ft/i);
-    if (reachMatch) reach = parseInt(reachMatch[1]);
+    if (reachMatch) reach = parseInt(reachMatch[1], 10);
     const rangeMatch = desc.match(/range\s+(\d+)(?:\/(\d+))?\s*ft/i);
     let range = null, longRange = null;
     if (rangeMatch) {
-      range = parseInt(rangeMatch[1]);
-      longRange = rangeMatch[2] ? parseInt(rangeMatch[2]) : null;
+      range = parseInt(rangeMatch[1], 10);
+      longRange = rangeMatch[2] ? parseInt(rangeMatch[2], 10) : null;
     }
 
     // Parse targets
     let targets = 1;
     const targetsMatch = desc.match(/(\d+)\s+target/i);
     // "one target" is default
-    if (targetsMatch) targets = parseInt(targetsMatch[1]);
+    if (targetsMatch) targets = parseInt(targetsMatch[1], 10);
 
     // Parse damage
     const hitMatch = desc.match(/Hit:\s*(.*?)(?:\.|$)/i);
@@ -199,7 +199,7 @@ window.CombatEngine = (() => {
       let dm;
       while ((dm = dmgRegex.exec(hitStr)) !== null) {
         damageComponents.push({
-          avgDamage: parseInt(dm[1]),
+          avgDamage: parseInt(dm[1], 10),
           dice: dm[2] + (dm[3] ? dm[3].replace(/\s/g, "") : ""),
           type: dm[4].toLowerCase(),
         });
@@ -221,7 +221,7 @@ window.CombatEngine = (() => {
     let onHitSave = null;
     const saveMatch = desc.match(/must\s+(?:succeed on|make)\s+a?\s*DC\s*(\d+)\s+(Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma)\s+saving\s+throw/i);
     if (saveMatch) {
-      onHitSave = { dc: parseInt(saveMatch[1]), ability: saveMatch[2] };
+      onHitSave = { dc: parseInt(saveMatch[1], 10), ability: saveMatch[2] };
       // Check for effect on failed save
       const failMatch = desc.match(/(?:or\s+(?:be\s+)?(knocked\s+prone|grappled|restrained|poisoned|frightened|charmed|paralyzed|petrified|stunned|blinded|deafened|incapacitated))/i);
       if (failMatch) onHitSave.condition = failMatch[1].replace(/knocked\s+/, "").toLowerCase();
@@ -229,7 +229,7 @@ window.CombatEngine = (() => {
       const failDmg = desc.match(/taking\s+(\d+)\s*\((\d+d\d+)\s*([+-]\s*\d+)?\)\s*([\w]+)\s*damage/i);
       if (failDmg) {
         onHitSave.damage = {
-          avgDamage: parseInt(failDmg[1]),
+          avgDamage: parseInt(failDmg[1], 10),
           dice: failDmg[2] + (failDmg[3] ? failDmg[3].replace(/\s/g, "") : ""),
           type: failDmg[4].toLowerCase(),
         };
@@ -273,7 +273,7 @@ window.CombatEngine = (() => {
     // Skip if this is primarily an attack action (has "to hit")
     if (/\+\d+\s+to hit/i.test(desc)) return null;
 
-    const dc = parseInt(saveMatch[1]);
+    const dc = parseInt(saveMatch[1], 10);
     const ability = saveMatch[2];
 
     // Parse shape/area
@@ -284,18 +284,18 @@ window.CombatEngine = (() => {
     const cubeMatch = desc.match(/(\d+)-foot\s+cube/i);
     const rangeMatch2 = desc.match(/within\s+(\d+)\s+feet/i);
 
-    if (coneMatch) { shape = "cone"; radius = parseInt(coneMatch[1]); }
-    else if (lineMatch) { shape = "line"; length = parseInt(lineMatch[1]); width = parseInt(lineMatch[2]); }
-    else if (sphereMatch) { shape = "sphere"; radius = parseInt(sphereMatch[1]); }
-    else if (cubeMatch) { shape = "cube"; radius = parseInt(cubeMatch[1]); }
-    else if (rangeMatch2) { shape = "sphere"; radius = parseInt(rangeMatch2[1]); }
+    if (coneMatch) { shape = "cone"; radius = parseInt(coneMatch[1], 10); }
+    else if (lineMatch) { shape = "line"; length = parseInt(lineMatch[1], 10); width = parseInt(lineMatch[2], 10); }
+    else if (sphereMatch) { shape = "sphere"; radius = parseInt(sphereMatch[1], 10); }
+    else if (cubeMatch) { shape = "cube"; radius = parseInt(cubeMatch[1], 10); }
+    else if (rangeMatch2) { shape = "sphere"; radius = parseInt(rangeMatch2[1], 10); }
 
     // Parse damage on failure
     let failDamage = null;
     const dmgMatch = desc.match(/taking\s+(\d+)\s*\((\d+d\d+)\s*([+-]\s*\d+)?\)\s*(acid|bludgeoning|cold|fire|force|lightning|necrotic|piercing|poison|psychic|radiant|slashing|thunder)\s*damage/i);
     if (dmgMatch) {
       failDamage = {
-        avgDamage: parseInt(dmgMatch[1]),
+        avgDamage: parseInt(dmgMatch[1], 10),
         dice: dmgMatch[2] + (dmgMatch[3] ? dmgMatch[3].replace(/\s/g, "") : ""),
         type: dmgMatch[4].toLowerCase(),
       };
@@ -310,13 +310,13 @@ window.CombatEngine = (() => {
     for (const cond of conditionChecks) {
       if (new RegExp(`\\b${cond}\\b`, "i").test(desc)) failConditions.push(cond);
     }
-    if (/knocked\s+prone/i.test(desc)) failConditions.push("prone");
+    // Note: "knocked prone" is already caught by the "prone" check above
 
     // Recharge
     let recharge = null;
     const rechargeMatch = action.name.match(/Recharge\s+(\d+)(?:-(\d+))?/i);
     if (rechargeMatch) {
-      recharge = { min: parseInt(rechargeMatch[1]), max: parseInt(rechargeMatch[2] || 6) };
+      recharge = { min: parseInt(rechargeMatch[1], 10), max: parseInt(rechargeMatch[2] || 6, 10) };
     }
 
     // Detect breath weapon type for visual effects
@@ -370,7 +370,7 @@ window.CombatEngine = (() => {
     const numWords = { one: 1, two: 2, three: 3, four: 4, five: 5 };
     let m;
     while ((m = patternRegex.exec(desc)) !== null) {
-      const count = numWords[m[1]] || parseInt(m[1]) || 1;
+      const count = numWords[m[1]] || parseInt(m[1], 10) || 1;
       const name = m[2].trim().replace(/\s+attacks?$/, "");
       // Find matching action
       const action = actionMap[name] || Object.values(actionMap).find(a => a && a.name && a.name.toLowerCase().includes(name));
@@ -383,7 +383,7 @@ window.CombatEngine = (() => {
     if (attacks.length === 0 && allActions) {
       const simpleMatch = desc.match(/makes?\s+(\w+)\s+(?:melee\s+)?attacks?/);
       if (simpleMatch) {
-        const count = numWords[simpleMatch[1]] || parseInt(simpleMatch[1]) || 2;
+        const count = numWords[simpleMatch[1]] || parseInt(simpleMatch[1], 10) || 2;
         // Find first attack action
         const firstAttack = (allActions || []).find(a => a && a.name && a.name !== "Multiattack" && a.desc && /attack:/i.test(a.desc));
         if (firstAttack) {
@@ -427,7 +427,7 @@ window.CombatEngine = (() => {
       const abbrMap = { str: "str", dex: "dex", con: "con", int: "int", wis: "wis", cha: "cha" };
       const regex = new RegExp(`${shortAbility}\\s*([+-]\\d+)`, "i");
       const m = saveStr.match(regex);
-      if (m) return parseInt(m[1]);
+      if (m) return parseInt(m[1], 10);
     }
 
     return baseMod;
@@ -438,8 +438,8 @@ window.CombatEngine = (() => {
     let crNum = typeof cr === "string" ? parseFloat(cr) : cr;
     if (typeof cr === "string" && cr.includes("/")) {
       const parts = cr.split("/");
-      const num = parseInt(parts[0]) || 1;
-      const denom = parseInt(parts[1]) || 1;
+      const num = parseInt(parts[0], 10) || 1;
+      const denom = parseInt(parts[1], 10) || 1;
       crNum = denom !== 0 ? num / denom : 1;
     }
     if (crNum < 5) return 2;
@@ -1205,7 +1205,7 @@ window.CombatEngine = (() => {
       let maxReach = 5;
       for (const a of actions) {
         const m = (a.desc || "").match(/reach\s+(\d+)\s*ft/i);
-        if (m) maxReach = Math.max(maxReach, parseInt(m[1]));
+        if (m) maxReach = Math.max(maxReach, parseInt(m[1], 10));
       }
       return maxReach;
     }
@@ -1303,7 +1303,7 @@ window.CombatEngine = (() => {
 
     // Must use finesse or ranged weapon
     const w = WEAPONS[weaponName];
-    if (w && !w.properties.includes("finesse") && w.melee) return { eligible: false, reason: "Needs finesse or ranged weapon" };
+    if (w && w.melee && !w.properties.includes("finesse")) return { eligible: false, reason: "Needs finesse or ranged weapon" };
 
     // Advantage OR ally within 5ft of target
     const allyNearTarget = (nearbyAllies || []).some(a =>
@@ -1573,7 +1573,7 @@ window.CombatEngine = (() => {
           if (atkRoll.isCrit) {
             // For spell crits, double the dice rolls (e.g., 1d10 → 2d10)
             const baseCritExpr = baseDamage.replace(/(\d+)d(\d+)/g, (match, count, sides) => {
-              return (parseInt(count) * 2) + "d" + sides;
+              return (parseInt(count, 10) * 2) + "d" + sides;
             });
             const critRoll = rollDice(baseCritExpr);
             critBonus = critRoll.total - dmg.total; // Add only the bonus (don't double-count base roll)

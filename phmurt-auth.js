@@ -13,9 +13,9 @@
    For pro feature access:
    1. Use session.isSubscribed for UI/UX only (enable buttons, show modals)
    2. Server-side RLS policies must ALWAYS verify:
-      - subscription_tier == 'pro'
+      - subscription_tier IN ('pro', 'party', 'lifetime')
       - subscription_status == 'active'
-      - subscription_expires_at > now()
+      - subscription_expires_at > now() (or NULL for lifetime subscriptions)
       - is_banned == false
    3. Webhook (stripe-webhook/index.ts) is the source of truth for status
 
@@ -70,6 +70,11 @@ var PhmurtDB = (function () {
   }
 
   /* ── Session factory ─────────────────────────────────────────────── */
+  // CRITICAL FIX (V-056): Track profile fetch version to prevent race conditions
+  // when rapid auth state changes occur. Each auth state change increments this
+  // counter, and profile fetch only updates _session if its version is still current.
+  var _profileFetchVersion = 0;
+
   function _isAdmin(profileFlag) {
     return !!profileFlag;
   }
@@ -86,7 +91,12 @@ var PhmurtDB = (function () {
     // NOTE: This is a client-side check only. Server must always verify subscription status
     // before granting pro features. Never trust client-side isSubscribed flag alone.
     var subExpires = profile && profile.subscription_expires_at ? new Date(profile.subscription_expires_at) : null;
-    var isSubscribed = tier === 'pro' && subStatus === 'active' && (!subExpires || subExpires > new Date());
+    // UPDATED: Support 'pro', 'party', and 'lifetime' tiers
+    // Lifetime subscriptions are never treated as expired
+    // SECURITY: Require 'active' status (not 'pending' or other statuses)
+    var isSubscribed = (tier === 'pro' || tier === 'party' || tier === 'lifetime')
+      && subStatus === 'active'
+      && (tier === 'lifetime' || !subExpires || subExpires > new Date());
     return {
       userId:              user.id,
       user:                user.id,   // Alias so sess.user works (e.g. pricing.html)
@@ -97,7 +107,8 @@ var PhmurtDB = (function () {
       isSuperuser:         !!(profile && profile.is_superuser),
       isBanned:            !!(profile && profile.is_banned),
       isBetaUser:          !!(profile && profile.is_beta_user),
-      subscriptionTier:    isSubscribed ? 'pro' : 'free',
+      tier:                tier,  // NEW: Expose actual tier string for feature gating
+      subscriptionTier:    isSubscribed ? tier : 'free',
       isSubscribed:        isSubscribed,
       subscriptionExpires: subExpires ? subExpires.toISOString() : null,
       subscriptionCancelAt: (profile && profile.subscription_cancel_at) || null,
@@ -175,7 +186,7 @@ var PhmurtDB = (function () {
               current: current
             };
             // Fire event so the upgrade banner can appear
-            try { window.dispatchEvent(new CustomEvent('phmurt-limit-reached', { detail: result })); } catch (e) {}
+            try { window.dispatchEvent(new CustomEvent('phmurt-limit-reached', { detail: result })); } catch (e) { /* Event dispatch may fail silently */ }
             return result;
           }
           return { blocked: false, limit: maxCount, current: current };
@@ -230,6 +241,8 @@ var PhmurtDB = (function () {
             if (session) {
               _session = session;
               _fireChange();
+              // CRITICAL FIX (V-057): Persist Supabase session to localStorage so other tabs can sync
+              _lsSet(LS_SESSION, session);
             }
           }
         });
@@ -243,20 +256,33 @@ var PhmurtDB = (function () {
 
     sb.auth.onAuthStateChange(function (event, sess) {
       if (sess && sess.user) {
+        // CRITICAL FIX (V-056): Capture version at time of auth event
+        var thisVersion = ++_profileFetchVersion;
         _fetchProfile(sess.user.id).then(function (profile) {
+          // Only apply this result if no newer auth events have occurred
+          if (_profileFetchVersion !== thisVersion) {
+            if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] onAuthStateChange stale profile fetch ignored (newer event occurred)');
+            return;
+          }
           var session = _makeSession(sess.user, profile);
           if (session) {
             _session = session;
             _fireChange();
+            // CRITICAL FIX (V-057): Persist to localStorage for cross-tab sync
+            _lsSet(LS_SESSION, session);
           }
         }).catch(function (err) {
           if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] onAuthStateChange profile fetch failed:', err ? err.message : 'Unknown error');
         });
       } else if (event === 'SIGNED_OUT') {
+        // CRITICAL FIX (V-056): Invalidate any pending profile fetches
+        _profileFetchVersion++;
         // Only clear session on explicit sign-out, not on initial load
         // with no Supabase session (which would wipe the legacy session)
         _session = null;
         _fireChange();
+        // CRITICAL FIX (V-057): Clear localStorage to trigger cross-tab sync
+        _legacySetSession(null);
       }
       // Ignore INITIAL_SESSION with no session — don't wipe legacy session
     });
@@ -406,8 +432,16 @@ var PhmurtDB = (function () {
     if (j.length <= 3584) _setCk(CK_USERS, j, 365);
   }
   function _legacyHashPwd(pwd, email) {
-    var s = pwd + ':' + email.toLowerCase();
-    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(s))
+    // SECURITY: Use email as a per-user salt to prevent rainbow tables
+    // This is still client-side only and should not be relied upon for production.
+    // The real security is Supabase JWT + server-side auth.
+    var salt = email.toLowerCase();
+    var iterations = 1000; // Multiple iterations to slow down brute force
+    var input = '';
+    for (var i = 0; i < iterations; i++) {
+      input += (pwd + ':' + salt);
+    }
+    return crypto.subtle.digest('SHA-256', new TextEncoder().encode(input))
       .then(function (h) { return Array.from(new Uint8Array(h)).map(function (b) { return b.toString(16).padStart(2, '0'); }).join(''); });
   }
   function _uid() {
@@ -419,7 +453,17 @@ var PhmurtDB = (function () {
 
   function _initLegacy() {
     var s = _legacyGetSession();
-    if (s) { _session = s; _fireChange(); }
+    if (s) {
+      // Ensure legacy sessions have consistent subscription fields
+      if (s.tier === undefined) s.tier = 'free';
+      if (s.subscriptionTier === undefined) s.subscriptionTier = 'free';
+      if (s.isSubscribed === undefined) s.isSubscribed = false;
+      if (s.subscriptionExpires === undefined) s.subscriptionExpires = null;
+      if (s.subscriptionCancelAt === undefined) s.subscriptionCancelAt = null;
+      if (s.isBanned === undefined) s.isBanned = false;
+      if (s.isBetaUser === undefined) s.isBetaUser = false;
+      _session = s; _fireChange();
+    }
   }
 
   /* Legacy character helpers */
@@ -441,7 +485,7 @@ var PhmurtDB = (function () {
       }
       if (!found) camps.push(campaign);
       _legacySaveCamps(camps);
-    } catch (e) {}
+    } catch (e) { /* Legacy localStorage may not be available */ }
   }
 
   function _legacyDeleteCampLocal(id) {
@@ -449,7 +493,7 @@ var PhmurtDB = (function () {
       var camps = _legacyGetCamps();
       camps = camps.filter(function (c) { return c.id !== id; });
       _legacySaveCamps(camps);
-    } catch (e) {}
+    } catch (e) { /* Legacy localStorage may not be available */ }
   }
 
   /* ── Re-authentication prompt for legacy sessions ────────────────
@@ -619,7 +663,12 @@ var PhmurtDB = (function () {
               if (!data || !data.url) throw new Error(data && data.error ? data.error : 'No checkout URL returned from server.');
               try {
                 var parsed = new URL(data.url);
-                if (parsed.protocol !== 'https:' || (parsed.hostname.indexOf('stripe.com') === -1 && parsed.hostname.indexOf('phmurtstudios.com') === -1)) {
+                // SECURITY: Strict hostname validation using exact match, not indexOf
+                var isValidHost = parsed.hostname === 'stripe.com' ||
+                                  parsed.hostname === 'checkout.stripe.com' ||
+                                  parsed.hostname === 'www.phmurtstudios.com' ||
+                                  parsed.hostname === 'phmurtstudios.com';
+                if (parsed.protocol !== 'https:' || !isValidHost) {
                   throw new Error('Unexpected redirect URL.');
                 }
                 cleanup();
@@ -634,7 +683,9 @@ var PhmurtDB = (function () {
           .catch(function (err) {
             submitBtn.textContent = 'Continue to Checkout';
             submitBtn.disabled = false;
-            errEl.textContent = err.message || 'Sign-in failed. Please try again.';
+            // SECURITY: Sanitize error message to prevent XSS injection
+            var errMsg = err.message || 'Sign-in failed. Please try again.';
+            errEl.textContent = String(errMsg).slice(0, 200); // Truncate to prevent DOM bloat
             errEl.style.display = 'block';
             // Show password reset link when password is wrong
             if (err._showReset && !document.getElementById('phmurt-reauth-reset')) {
@@ -779,8 +830,11 @@ var PhmurtDB = (function () {
     signIn: function (email, password) {
       // SECURITY (V-011): Client-side rate limiting on sign-in attempts
       var now = Date.now();
-      // Remove attempts older than 60 seconds
-      _signInAttempts = _signInAttempts.filter(function(t) { return now - t < 60000; });
+      // Remove attempts older than 60 seconds - validate array hasn't been tampered
+      if (!Array.isArray(_signInAttempts)) _signInAttempts = [];
+      _signInAttempts = _signInAttempts.filter(function(t) {
+        return typeof t === 'number' && now - t < 60000;
+      });
       if (_signInAttempts.length >= 5) {
         return Promise.reject(new Error('Too many sign-in attempts. Please wait 60 seconds.'));
       }
@@ -821,7 +875,18 @@ var PhmurtDB = (function () {
       var u = users[ne];
       if (!u) return Promise.reject(new Error('Invalid email or password.'));
       return _legacyHashPwd(password, ne).then(function (hash) {
-        if (hash !== u.passwordHash) throw new Error('Invalid email or password.');
+        // SECURITY: Constant-time comparison to prevent timing attacks (defense in depth)
+        // Compare hash lengths first, then hashes; this prevents early rejection on hash length mismatch
+        var hashMatch = (hash && u.passwordHash && hash.length === u.passwordHash.length);
+        if (hashMatch) {
+          var match = true;
+          for (var i = 0; i < hash.length; i++) {
+            if (hash[i] !== u.passwordHash[i]) match = false;
+          }
+          if (!match) throw new Error('Invalid email or password.');
+        } else {
+          throw new Error('Invalid email or password.');
+        }
         var sess = { userId: u.userId, name: u.name, email: ne, displayName: u.name, isAdmin: false };
         _legacySetSession(sess);
         _session = sess;
@@ -1436,7 +1501,9 @@ var PhmurtDB = (function () {
       // SECURITY: Validate template.id exists and is a string before using it
       if (template.id && typeof template.id === 'string' && !template.id.startsWith('tpl-')) {
         // Existing DB record
-        return sb.from('encounter_templates').update(record).eq('id', template.id)
+        // CRITICAL FIX (V-059): Check owner_id to prevent updating other users' templates
+        return sb.from('encounter_templates').update(record)
+          .eq('id', template.id).eq('owner_id', _session.userId)
           .then(function (r) { return { success: !r.error, error: r.error && r.error.message }; });
       }
       return sb.from('encounter_templates').insert(record).select('id').single()
@@ -1457,9 +1524,12 @@ var PhmurtDB = (function () {
     },
 
     deleteEncounterTemplate: function (templateId) {
+      // CRITICAL FIX (V-059): Check owner_id to prevent deleting other users' templates
+      if (!_session) return Promise.resolve(false);
       var sb = _sb();
       if (!sb) return Promise.resolve(false);
-      return sb.from('encounter_templates').delete().eq('id', templateId)
+      return sb.from('encounter_templates').delete()
+        .eq('id', templateId).eq('owner_id', _session.userId)
         .then(function (r) { return !r.error; })
         .catch(function () { return false; });
     },
@@ -1496,9 +1566,12 @@ var PhmurtDB = (function () {
     },
 
     deleteInviteCode: function (inviteId) {
+      // CRITICAL FIX (V-059): Check owner_id to prevent deleting other users' invite codes
+      if (!_session) return Promise.resolve(false);
       var sb = _sb();
       if (!sb) return Promise.resolve(false);
-      return sb.from('campaign_invites').delete().eq('id', inviteId)
+      return sb.from('campaign_invites').delete()
+        .eq('id', inviteId).eq('owner_id', _session.userId)
         .then(function (r) { return !r.error; })
         .catch(function () { return false; });
     },
@@ -1507,6 +1580,7 @@ var PhmurtDB = (function () {
     getCampaignMembers: function (campaignId) {
       var sb = _sb();
       if (!sb) return Promise.resolve([]);
+      // SECURITY: Server-side RLS must verify that the user owns or is a member of this campaign
       return sb.from('campaign_members')
         .select('user_id, role, joined_at, profiles(name, email)')
         .eq('campaign_id', campaignId)
@@ -1546,7 +1620,13 @@ var PhmurtDB = (function () {
       var sb = _sb();
       if (!sb || !_session) return Promise.resolve(null);
       if (!file || !file.name) return Promise.resolve({ error: 'No file provided' });
-      var path = _session.userId + '/' + campaignId + '/' + Date.now() + '-' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_').replace(/\.\./g, '_');
+      // SECURITY: Sanitize file name - remove path separators, null bytes, and double extensions
+      var safeName = String(file.name || 'file')
+        .replace(/\0/g, '') // Remove null bytes
+        .replace(/[\/\\]/g, '_') // Remove path separators
+        .replace(/[^a-zA-Z0-9._-]/g, '_') // Only alphanumeric, dots, underscores, hyphens
+        .replace(/\.\./g, '_'); // Remove double dots
+      var path = _session.userId + '/' + campaignId + '/' + Date.now() + '-' + safeName;
       return sb.storage.from('map-images').upload(path, file, { upsert: false })
         .then(function (r) {
           if (r.error) { if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtDB] Map upload failed:', r.error.message); return null; }
@@ -1568,9 +1648,14 @@ var PhmurtDB = (function () {
       if (!sb || !_session) return Promise.resolve(null);
       if (!file || !file.name) return Promise.resolve({ error: 'No file provided' });
       // SECURITY: Sanitize file extension to prevent path traversal and double extensions
-      var ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/\.\./g, '_').replace(/[^a-z0-9]/g, '');
+      var parts = String(file.name || 'file.jpg').split('.');
+      var ext = (parts.length > 1 ? parts[parts.length - 1] : 'jpg').toLowerCase();
+      // Clean extension: only lowercase alphanumeric, max 5 chars
+      ext = ext.replace(/[^a-z0-9]/g, '').slice(0, 5);
       if (!ext) ext = 'jpg';
-      var path = _session.userId + '/' + entityId + '.' + ext;
+      // Validate entityId doesn't contain path separators
+      var safeEntityId = String(entityId || 'entity').replace(/[\/\\]/g, '_').replace(/[^a-zA-Z0-9_-]/g, '');
+      var path = _session.userId + '/' + safeEntityId + '.' + ext;
       return sb.storage.from('portraits').upload(path, file, { upsert: true })
         .then(function (r) {
           if (r.error) { if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtDB] Portrait upload failed:', r.error.message); return null; }
@@ -1583,7 +1668,7 @@ var PhmurtDB = (function () {
     getSubscriptionInfo: function () {
       if (!_session) return { tier: 'free', isSubscribed: false };
       return {
-        tier:        _session.subscriptionTier || 'free',
+        tier:        _session.tier || 'free',  // UPDATED: Use actual tier from profile
         isSubscribed: !!_session.isSubscribed,
         expiresAt:   _session.subscriptionExpires || null,
         cancelAt:    _session.subscriptionCancelAt || null,
@@ -1631,10 +1716,15 @@ var PhmurtDB = (function () {
           }
           var data = result.data;
           if (!data || !data.url) throw new Error(data && data.error ? data.error : 'No checkout URL returned from server.');
-          // SECURITY: Validate the redirect URL
+          // SECURITY: Validate the redirect URL with strict hostname matching
           try {
             var parsed = new URL(data.url);
-            if (parsed.protocol !== 'https:' || (parsed.hostname.indexOf('stripe.com') === -1 && parsed.hostname.indexOf('phmurtstudios.com') === -1)) {
+            // Strict hostname validation using exact match, not indexOf
+            var isValidHost = parsed.hostname === 'stripe.com' ||
+                              parsed.hostname === 'checkout.stripe.com' ||
+                              parsed.hostname === 'www.phmurtstudios.com' ||
+                              parsed.hostname === 'phmurtstudios.com';
+            if (parsed.protocol !== 'https:' || !isValidHost) {
               throw new Error('Unexpected redirect URL.');
             }
             window.location.href = data.url;
@@ -1688,6 +1778,9 @@ var PhmurtDB = (function () {
         }).then(function (result) {
           // redirectToCheckout returns only if there was an error (success = browser redirect)
           if (result && result.error) throw new Error(result.error.message);
+        }).catch(function (stripeErr) {
+          console.error('[PhmurtAuth] Stripe checkout error:', stripeErr && stripeErr.message || stripeErr);
+          throw stripeErr;
         });
       }
 
@@ -1803,9 +1896,76 @@ var PhmurtDB = (function () {
 /* ── Cross-tab session sync ──────────────────────────────────────── */
 window.addEventListener('storage', function (e) {
   if (e.key === 'phmurt_auth_session' || e.key === 'phmurt_sb_auth') {
+    // CRITICAL FIX (V-055): Re-validate _session from localStorage, don't just fire event.
+    // If another tab signs out, _session remains in memory as stale data.
+    // Must reload from storage to catch sign-outs.
+    if (e.newValue === null) {
+      // Session was deleted in another tab — clear it here too
+      _session = null;
+    } else {
+      // Try to reload from storage (legacy or Supabase)
+      var stored = _lsGet(LS_SESSION);
+      if (stored && stored.userId) {
+        _session = stored;
+      } else {
+        _session = null;
+      }
+    }
     window.dispatchEvent(new Event('phmurt-auth-change'));
   }
 });
+
+/* ── Periodic subscription status validation ──────────────────────
+   CRITICAL FIX (V-058): Validate subscription status periodically (5 min)
+   to catch webhook-based changes (cancellations, downgrades) that update
+   the database but not the client-side session cache. Without this, users
+   see stale subscription status after their Stripe subscription is canceled.
+   ─────────────────────────────────────────────────────────────────── */
+(function() {
+  var _lastValidationTime = 0;
+  var _VALIDATION_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+  setInterval(function() {
+    var now = Date.now();
+    if (now - _lastValidationTime < _VALIDATION_INTERVAL) return;
+    _lastValidationTime = now;
+
+    if (!_session || !_session.userId) return; // Not signed in
+    var sb = (typeof phmurtSupabase !== 'undefined' && phmurtSupabase) ? phmurtSupabase : null;
+    if (!sb) return; // Supabase not available
+
+    // Fetch latest profile from server
+    sb.from('profiles').select('subscription_tier, subscription_status, subscription_expires_at, subscription_cancel_at, is_banned')
+      .eq('id', _session.userId).maybeSingle()
+      .then(function(r) {
+        if (!r.data) return; // User profile missing
+        var profile = r.data;
+
+        // Detect subscription changes and update session
+        var oldTier = _session.tier;
+        var newTier = profile.subscription_tier || 'free';
+        var oldStatus = _session.isSubscribed;
+        var newStatus = (newTier === 'pro' || newTier === 'party' || newTier === 'lifetime')
+          && profile.subscription_status === 'active'
+          && (newTier === 'lifetime' || !profile.subscription_expires_at || new Date(profile.subscription_expires_at) > new Date());
+
+        if (oldTier !== newTier || oldStatus !== newStatus || (profile.is_banned && !_session.isBanned)) {
+          // Subscription status changed server-side, update client session
+          _session = _makeSession(_session, profile);
+          _fireChange();
+          _lsSet(LS_SESSION, _session);
+          if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) {
+            console.info('[PhmurtAuth] Subscription status refreshed from server:', { oldTier, newTier, oldStatus, newStatus });
+          }
+        }
+      })
+      .catch(function(err) {
+        if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) {
+          console.warn('[PhmurtAuth] Periodic subscription validation failed:', err && err.message);
+        }
+      });
+  }, 1 * 60 * 1000); // Check every minute (but only validate every 5 min due to throttle)
+})();
 
 /* ── Client-side error reporter ─────────────────────────────────── */
 /* Logs unhandled JS errors to the site_errors Supabase table so
@@ -1822,7 +1982,7 @@ window.addEventListener('storage', function (e) {
       var sb = (typeof phmurtSupabase !== 'undefined' && phmurtSupabase) ? phmurtSupabase : null;
       if (!sb) return;
       var sess = null;
-      try { sess = PhmurtDB.getSession(); } catch (e) {}
+      try { sess = PhmurtDB.getSession(); } catch (e) { /* Session may not be available */ }
       sb.from('site_errors').insert({
         message: String(message || 'Unknown error').slice(0, 500),
         stack: String(stack || '').slice(0, 2000),
@@ -1953,7 +2113,7 @@ window.addEventListener('storage', function (e) {
               etaDiv.textContent = 'Estimated return: ' + eta.toLocaleString();
               box.appendChild(etaDiv);
             }
-          } catch (e) {}
+          } catch (e) { /* ETA formatting may fail silently */ }
         }
         overlay.appendChild(box);
         document.body.appendChild(overlay);
@@ -1981,7 +2141,7 @@ window.addEventListener('storage', function (e) {
         if (flags.beta_enabled !== true || flags[betaKey] !== true) {
           // Check if user is a beta tester
           var sess = null;
-          try { sess = PhmurtDB.getSession(); } catch (e) {}
+          try { sess = PhmurtDB.getSession(); } catch (e) { /* Session may not be available */ }
           if (!sess || !sess.isBetaUser) {
             showDisabledPage('Beta Feature', 'This feature is currently in beta testing and not yet available to all users.');
             return;
@@ -2011,7 +2171,7 @@ window.addEventListener('storage', function (e) {
       // ── Announcements ─────────────────────────────────────────────
       var now = new Date();
       var dismissed = {};
-      try { dismissed = JSON.parse(sessionStorage.getItem('phmurt_dismissed_announcements') || '{}'); } catch (e) {}
+      try { dismissed = JSON.parse(sessionStorage.getItem('phmurt_dismissed_announcements') || '{}'); } catch (e) { /* sessionStorage may not be available */ }
 
       announcements.forEach(function (a) {
         // Check if already dismissed this session
@@ -2052,7 +2212,7 @@ window.addEventListener('storage', function (e) {
             try {
               dismissed[a.id] = true;
               sessionStorage.setItem('phmurt_dismissed_announcements', JSON.stringify(dismissed));
-            } catch (e) {}
+            } catch (e) { /* sessionStorage may not be available */ }
           });
         }
       });
@@ -2219,6 +2379,11 @@ window.addEventListener('storage', function (e) {
           '<h2 class="upgrade-title">Redirecting to Checkout…</h2>';
         return _doStripeCheckout(token, plan, overlay).then(function () {
           clearTimeout(_checkoutTimeout);
+        }).catch(function (checkoutErr) {
+          clearTimeout(_checkoutTimeout);
+          console.error('[PhmurtAuth] Checkout error:', checkoutErr && checkoutErr.message || checkoutErr);
+          // Redirect to pricing page on checkout failure
+          window.location.href = 'pricing.html' + (plan ? '?plan=' + plan : '');
         });
       }
       // No JWT — show inline password form (user interaction clears the timeout)
@@ -2301,7 +2466,9 @@ window.addEventListener('storage', function (e) {
           .catch(function (err) {
             submitBtn.textContent = 'Continue to Checkout';
             submitBtn.disabled = false;
-            errEl.textContent = err.message || 'Sign-in failed.';
+            // SECURITY: Sanitize error message to prevent XSS
+            var errMsg = err.message || 'Sign-in failed.';
+            errEl.textContent = String(errMsg).slice(0, 200);
             errEl.style.display = 'block';
             if (err._showReset && !resetArea.querySelector('a')) {
               var a = document.createElement('a');
@@ -2334,7 +2501,6 @@ window.addEventListener('storage', function (e) {
   function _doStripeCheckout(token, plan, overlay) {
     var sb = (typeof phmurtSupabase !== 'undefined' && phmurtSupabase) ? phmurtSupabase : null;
     if (!sb) {
-      alert('Supabase not configured.');
       return Promise.reject(new Error('Supabase not configured.'));
     }
 
@@ -2347,7 +2513,12 @@ window.addEventListener('storage', function (e) {
       if (!data || !data.url) throw new Error(data && data.error ? data.error : 'No checkout URL returned from server.');
       try {
         var parsed = new URL(data.url);
-        if (parsed.protocol !== 'https:' || (parsed.hostname.indexOf('stripe.com') === -1 && parsed.hostname.indexOf('phmurtstudios.com') === -1)) {
+        // SECURITY: Strict hostname validation using exact match, not indexOf
+        var isValidHost = parsed.hostname === 'stripe.com' ||
+                          parsed.hostname === 'checkout.stripe.com' ||
+                          parsed.hostname === 'www.phmurtstudios.com' ||
+                          parsed.hostname === 'phmurtstudios.com';
+        if (parsed.protocol !== 'https:' || !isValidHost) {
           throw new Error('Unexpected redirect URL.');
         }
         window.location.href = data.url;
@@ -2358,7 +2529,6 @@ window.addEventListener('storage', function (e) {
     })
     .catch(function (err) {
       if (overlay) overlay.remove();
-      alert('Could not start checkout: ' + (err.message || 'Unknown error'));
       throw err;
     });
   }

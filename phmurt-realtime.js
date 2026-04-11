@@ -31,7 +31,7 @@ var PhmurtRealtime = (function () {
   var _channels    = {};   // campaignId → Supabase channel
   var _timers      = {};   // campaignId → debounce timer
   var _snapTimers  = {};   // campaignId → snapshot save timer
-  var SYNC_KEY     = 'phmurt_bm_sync';  // localStorage fallback key
+  var SYNC_KEY     = 'phmurt-battlemap-sync';  // localStorage fallback key (must match campaign-play.js)
 
   /* ── Supabase client ref ──────────────────────────────────────── */
   function _sb() {
@@ -58,7 +58,7 @@ var PhmurtRealtime = (function () {
 
       // Clean up existing channel for this campaign if any
       if (_channels[campaignId]) {
-        try { sb.removeChannel(_channels[campaignId]); } catch (e) {}
+        try { sb.removeChannel(_channels[campaignId]); } catch (e) { /* Channel cleanup may fail silently */ }
       }
 
       var channel = sb.channel(channelName, {
@@ -78,24 +78,21 @@ var PhmurtRealtime = (function () {
 
       // Also listen for DB snapshot updates (for late joiners via Realtime Postgres)
       if (role === 'player') {
-        var safeFilterCampaignId = String(campaignId).replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 100);
-        if (safeFilterCampaignId) {
-          channel.on(
-            'postgres_changes',
-            { event: 'UPDATE', schema: 'public', table: 'battle_map_snapshots', filter: 'campaign_id=eq.' + safeFilterCampaignId },
-            function (payload) {
-              // SECURITY: Validate postgres change payload before using
-              if (payload && typeof payload === 'object' && payload.new && typeof payload.new === 'object' &&
-                  payload.new.state && typeof onState === 'function') {
-                try {
-                  onState(payload.new.state);
-                } catch (e) {
-                  console.warn('[PhmurtRealtime] postgres_changes onState callback error:', e);
-                }
+        channel.on(
+          'postgres_changes',
+          { event: 'UPDATE', schema: 'public', table: 'battle_map_snapshots', filter: 'campaign_id=eq.' + safeCampaignId },
+          function (payload) {
+            // SECURITY: Validate postgres change payload before using
+            if (payload && typeof payload === 'object' && payload.new && typeof payload.new === 'object' &&
+                payload.new.state && typeof onState === 'function') {
+              try {
+                onState(payload.new.state);
+              } catch (e) {
+                console.warn('[PhmurtRealtime] postgres_changes onState callback error:', e);
               }
             }
-          );
-        }
+          }
+        );
       }
 
       channel.subscribe(function (status) {
@@ -112,7 +109,10 @@ var PhmurtRealtime = (function () {
       return {
         leave: function () {
           if (_channels[campaignId]) {
-            try { sb.removeChannel(_channels[campaignId]); } catch (e) {}
+            var currentSb = _sb();
+            if (currentSb) {
+              try { currentSb.removeChannel(_channels[campaignId]); } catch (e) { /* Channel cleanup may fail silently */ }
+            }
             delete _channels[campaignId];
           }
           clearTimeout(_timers[campaignId]);
@@ -129,10 +129,10 @@ var PhmurtRealtime = (function () {
 
   /* ── Broadcast state (DM → players) ──────────────────────────── */
   function broadcastState(campaignId, state) {
-    if (!campaignId) return;
+    if (!campaignId || !state || typeof state !== 'object') return;
 
     // Always write to localStorage for same-device fallback
-    try { localStorage.setItem(SYNC_KEY + ':' + campaignId, JSON.stringify(state)); } catch (e) {}
+    try { localStorage.setItem(SYNC_KEY + ':' + campaignId, JSON.stringify(state)); } catch (e) { /* localStorage may not be available or full */ }
 
     var sb = _sb();
     if (!sb) return;
@@ -157,7 +157,7 @@ var PhmurtRealtime = (function () {
     clearTimeout(_snapTimers[campaignId]);
     _snapTimers[campaignId] = setTimeout(function () {
       // Ensure callback still has valid state reference
-      if (campaignId && state) {
+      if (campaignId && state && typeof state === 'object') {
         saveSnapshot(campaignId, state);
       }
     }, 5000);

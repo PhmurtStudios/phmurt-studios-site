@@ -1,5 +1,5 @@
 const T = window.__PHMURT_THEME || {};
-try { if (window.T) Object.assign(T, window.T); } catch(e) {}
+try { if (window.T) Object.assign(T, window.T); } catch(e) { console.error('Theme initialization error:', e); }
 if (!T.bg) T.bg = "var(--bg)";
 if (!T.bgNav) T.bgNav = "var(--bg-nav)";
 if (!T.bgCard) T.bgCard = "var(--bg-card)";
@@ -8,6 +8,7 @@ if (!T.textMuted) T.textMuted = "var(--text-dim)";
 if (!T.textFaint) T.textFaint = "var(--text-faint)";
 if (!T.crimson) T.crimson = "var(--crimson)";
 if (!T.crimsonBorder) T.crimsonBorder = "var(--crimson-border)";
+if (!T.crimsonDim) T.crimsonDim = "rgba(212, 67, 58, 0.15)";
 if (!T.gold) T.gold = "var(--gold)";
 if (!T.border) T.border = "var(--border)";
 if (!T.heading) T.heading = "'Cinzel', serif";
@@ -408,9 +409,9 @@ function TemplatePickerGrid({ templates, onSelect }) {
 function FeatureListEditor({ label, items, onChange }) {
   const add = () => onChange([...(items || []), { name: "", description: "" }]);
   const update = (idx, field, val) => {
-    const arr = [...items]; arr[idx] = { ...arr[idx], [field]: val }; onChange(arr);
+    const arr = [...(items || [])]; arr[idx] = { ...arr[idx], [field]: val }; onChange(arr);
   };
-  const remove = (idx) => onChange(items.filter((_, i) => i !== idx));
+  const remove = (idx) => onChange((items || []).filter((_, i) => i !== idx));
   return (
     <div style={{ marginBottom: "16px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
@@ -467,7 +468,7 @@ function MonsterCreator({ templates, onSave, onClose, initialData }) {
   };
 
   const save = () => { onSave(form); onClose(); };
-  const setAbility = (i, v) => { const a = [...form.abilities]; a[i] = parseInt(v) || 10; setForm({ ...form, abilities: a }); };
+  const setAbility = (i, v) => { const a = [...form.abilities]; a[i] = parseInt(v, 10) || 10; setForm({ ...form, abilities: a }); };
 
   return (
     <ModalShell title={initialData ? "Edit Monster" : "Create Monster"} onClose={onClose}>
@@ -483,7 +484,7 @@ function MonsterCreator({ templates, onSave, onClose, initialData }) {
             {["tiny","small","medium","large","huge","gargantuan"].map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>)}
           </select>
         </div>
-        <div><label style={labelStyle}>AC</label><input type="number" value={form.ac} onChange={e => setForm({ ...form, ac: parseInt(e.target.value) || 10 })} style={inputStyle} /></div>
+        <div><label style={labelStyle}>AC</label><input type="number" value={form.ac} onChange={e => setForm({ ...form, ac: parseInt(e.target.value, 10) || 10 })} style={inputStyle} /></div>
         <div><label style={labelStyle}>HP Formula</label><input type="text" value={form.hpFormula} onChange={e => setForm({ ...form, hpFormula: e.target.value })} placeholder="4d8+8" style={inputStyle} /></div>
         <div><label style={labelStyle}>Speed</label><input type="text" value={form.speed} onChange={e => setForm({ ...form, speed: e.target.value })} placeholder="30 ft." style={inputStyle} /></div>
       </div>
@@ -502,7 +503,7 @@ function MonsterCreator({ templates, onSave, onClose, initialData }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginBottom: "16px" }}>
         <div><label style={labelStyle}>CR</label><input type="number" step="0.125" value={form.cr} onChange={e => setForm({ ...form, cr: parseFloat(e.target.value) || 0 })} style={inputStyle} /></div>
-        <div><label style={labelStyle}>XP</label><input type="number" value={form.xp} onChange={e => setForm({ ...form, xp: parseInt(e.target.value) || 0 })} style={inputStyle} /></div>
+        <div><label style={labelStyle}>XP</label><input type="number" value={form.xp} onChange={e => setForm({ ...form, xp: parseInt(e.target.value, 10) || 0 })} style={inputStyle} /></div>
         <div><label style={labelStyle}>Alignment</label><input type="text" value={form.alignment} onChange={e => setForm({ ...form, alignment: e.target.value })} style={inputStyle} /></div>
       </div>
 
@@ -635,7 +636,7 @@ function SpellCreator({ templates, onSave, onClose, initialData }) {
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "12px", marginBottom: "16px" }}>
         <div><label style={labelStyle}>Name</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} /></div>
         <div><label style={labelStyle}>Level (0=Cantrip)</label>
-          <select value={form.level} onChange={e => setForm({ ...form, level: parseInt(e.target.value) })} style={selectStyle}>
+          <select value={form.level} onChange={e => setForm({ ...form, level: parseInt(e.target.value, 10) })} style={selectStyle}>
             {[0,1,2,3,4,5,6,7,8,9].map(l => <option key={l} value={l}>{l === 0 ? "Cantrip" : l}</option>)}
           </select>
         </div>
@@ -731,7 +732,7 @@ function NPCCreator({ templates, onSave, onClose, initialData }) {
     }));
   };
   const save = () => { onSave(form); onClose(); };
-  const setAbility = (i, v) => { const a = [...form.abilities]; a[i] = parseInt(v) || 10; setForm({ ...form, abilities: a }); };
+  const setAbility = (i, v) => { const a = [...form.abilities]; a[i] = parseInt(v, 10) || 10; setForm({ ...form, abilities: a }); };
 
   return (
     <ModalShell title={initialData ? "Edit NPC" : "Create NPC"} onClose={onClose}>
@@ -743,7 +744,7 @@ function NPCCreator({ templates, onSave, onClose, initialData }) {
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "12px", marginBottom: "16px" }}>
         <div><label style={labelStyle}>Class</label><input type="text" value={form.class} onChange={e => setForm({ ...form, class: e.target.value })} placeholder="Fighter" style={inputStyle} /></div>
-        <div><label style={labelStyle}>Level</label><input type="number" value={form.level} onChange={e => setForm({ ...form, level: parseInt(e.target.value) || 1 })} style={inputStyle} /></div>
+        <div><label style={labelStyle}>Level</label><input type="number" value={form.level} onChange={e => setForm({ ...form, level: parseInt(e.target.value, 10) || 1 })} style={inputStyle} /></div>
         <div><label style={labelStyle}>Background</label><input type="text" value={form.background} onChange={e => setForm({ ...form, background: e.target.value })} style={inputStyle} /></div>
         <div><label style={labelStyle}>Faction</label><input type="text" value={form.faction} onChange={e => setForm({ ...form, faction: e.target.value })} style={inputStyle} /></div>
       </div>
@@ -831,7 +832,7 @@ function ClassFeatureCreator({ templates, onSave, onClose, initialData }) {
         {form.featureType === "subclass" && (
           <div><label style={labelStyle}>Subclass Name</label><input type="text" value={form.subclassName} onChange={e => setForm({ ...form, subclassName: e.target.value })} placeholder="Path of..." style={inputStyle} /></div>
         )}
-        <div><label style={labelStyle}>Level</label><input type="number" min="1" max="20" value={form.level} onChange={e => setForm({ ...form, level: parseInt(e.target.value) || 1 })} style={inputStyle} /></div>
+        <div><label style={labelStyle}>Level</label><input type="number" min="1" max="20" value={form.level} onChange={e => setForm({ ...form, level: parseInt(e.target.value, 10) || 1 })} style={inputStyle} /></div>
       </div>
       <div style={{ marginBottom: "16px" }}>
         <label style={labelStyle}>Prerequisite</label>
@@ -977,7 +978,7 @@ function SpellDetail({ spell }) {
       <div style={{ borderBottom: "2px solid " + schoolColor, paddingBottom: "12px", marginBottom: "16px" }}>
         <div style={{ fontFamily: T.heading, fontSize: "22px", color: T.gold }}>{spell.name}</div>
         <div style={{ fontStyle: "italic", color: T.textMuted, fontSize: "13px", marginTop: "2px" }}>
-          {spell.level === 0 ? "Cantrip" : "Level " + spell.level} {(spell.school || "evocation").charAt(0).toUpperCase() + (spell.school || "").slice(1)}
+          {spell.level === 0 ? "Cantrip" : "Level " + spell.level} {(spell.school || "evocation").charAt(0).toUpperCase() + (spell.school || "evocation").slice(1)}
           {spell.ritual && " (ritual)"}
         </div>
       </div>
@@ -1076,7 +1077,7 @@ function FeatDetail({ feat }) {
       <div style={{ borderBottom: "2px solid " + catColor, paddingBottom: "12px", marginBottom: "16px" }}>
         <div style={{ fontFamily: T.heading, fontSize: "22px", color: T.gold }}>{feat.name}</div>
         <div style={{ fontStyle: "italic", color: T.textMuted, fontSize: "13px", marginTop: "2px" }}>
-          {(feat.category || "General").charAt(0).toUpperCase() + (feat.category || "").slice(1)} Feat
+          {(feat.category || "General").charAt(0).toUpperCase() + (feat.category || "General").slice(1)} Feat
         </div>
       </div>
       {feat.prerequisite && feat.prerequisite !== "None" && (
@@ -1191,7 +1192,7 @@ function ExportModal({ items, categoryLabel, onClose }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (e) {
-      /* fallback: select the textarea */
+      console.error('Failed to copy export to clipboard:', e);
     }
   };
 
@@ -1306,7 +1307,7 @@ window.CampaignHomebrewView = function CampaignHomebrewView({ data, setData, vie
     try {
       navigator.clipboard.writeText(JSON.stringify(currentCat.data[idx], null, 2));
       if (window.psToast) window.psToast("Copied to clipboard!");
-    } catch (e) { /* silent */ }
+    } catch (e) { console.error('Failed to copy to clipboard:', e); }
   };
 
   const handleImport = (items) => {

@@ -10,8 +10,18 @@ const {
   eid, uid, cmClone, cmSafeInt, cmAbilityMod, cmHumanizeKey,
   getFantasyIcon, DiceRoller, ConfirmFlyout,
 } = window.__CM;
-const { ChevronDown, ChevronRight, ChevronLeft, Swords, Users, MapPin, Crown, Scroll, Clock, Star, BookOpen, Dice6, Target, Heart, CheckCircle, Circle, ArrowRight, Plus, Compass, Mountain, Castle, Skull, Flag, TrendingUp, TrendingDown, Minus, SkipForward, Search, Bell, Settings, X, Edit3, Trash2, Eye, EyeOff, Globe, Layers, Activity, Upload, Download, FileText, Save, Copy, Calendar, Lock, Unlock, ToggleLeft, ToggleRight, AlertTriangle, Package, Shield, Wand2, Filter } = window.LucideReact || {};
+const { ChevronDown, ChevronUp, ChevronRight, ChevronLeft, Swords, Users, MapPin, Crown, Scroll, Clock, Star, BookOpen, Dice6, Target, Heart, CheckCircle, Circle, ArrowRight, Plus, Compass, Mountain, Castle, Skull, Flag, TrendingUp, TrendingDown, Minus, SkipForward, Search, Bell, Settings, X, Edit3, Trash2, Eye, EyeOff, Globe, Layers, Activity, Upload, Download, FileText, Save, Copy, Calendar, Lock, Unlock, ToggleLeft, ToggleRight, AlertTriangle, Package, Shield, Wand2, Filter } = window.LucideReact || {};
 const FilterIcon = Filter || Layers;
+
+// Helper function to read CSS variables from DOM
+function cssVar(varName) {
+  if (typeof window === "undefined") return "#000";
+  try {
+    return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  } catch (e) {
+    return "#000";
+  }
+}
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TIMELINE
@@ -43,8 +53,13 @@ function inferEventImportance(ev) {
   return "standard";
 }
 
+function htmlEscape(s) {
+  const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+  return String(s || '').replace(/[&<>"']/g, c => map[c]);
+}
+
 function timelineEventHeadline(ev) {
-  const sanitize = (s) => String(s || '').replace(/[<>]/g, '');
+  const sanitize = (s) => htmlEscape(s || '');
   if (ev.headline && String(ev.headline).trim()) return sanitize(ev.headline).trim();
   const t = sanitize(ev.text).trim();
   if (!t) return "Untitled event";
@@ -57,7 +72,8 @@ function timelineEventHeadline(ev) {
 
 function TimelineView({ data, setData, onNav, viewRole }) {
   const isPlayerView = viewRole === "player";
-  const [open,setOpen] = useState(new Set([data.timeline[0]?.id]));
+  const validTimeline = Array.isArray(data?.timeline) ? data.timeline : [];
+  const [open,setOpen] = useState(new Set([validTimeline[0]?.id]));
   const [_dmViewInternal,setDmView] = useState(!isPlayerView);
   const dmView = isPlayerView ? false : _dmViewInternal; // Players can NEVER see DM-only content
   const [addingSession, setAddingSession] = useState(false);
@@ -75,7 +91,7 @@ function TimelineView({ data, setData, onNav, viewRole }) {
   const [hoverEventKey, setHoverEventKey] = useState(null);
   const [narrow, setNarrow] = useState(typeof window !== "undefined" ? window.innerWidth < 920 : true);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
-  const latestSessionId = data.timeline[0]?.id;
+  const latestSessionId = validTimeline[0]?.id;
   const activeFilterTally = (filterType !== "all" ? 1 : 0) + (filterCharacter ? 1 : 0) + (filterLocation ? 1 : 0);
 
   useEffect(() => {
@@ -109,15 +125,15 @@ function TimelineView({ data, setData, onNav, viewRole }) {
   const evIcons = { encounter:Swords, discovery:Search, roleplay:Users, world_change:Globe, loot:Package, quest_complete:CheckCircle };
   const scopeIcons = { character:Heart, world:Globe, party:Users };
 
-  const toggle = id => setOpen(s => { const n=new Set(s); n.has(id)?n.delete(id):n.add(id); return n; });
-  const toggleEventKey = (sessionId, evId) => {
+  const toggle = useCallback(id => setOpen(s => { const n=new Set(s); n.has(id)?n.delete(id):n.add(id); return n; }), []);
+  const toggleEventKey = useCallback((sessionId, evId) => {
     const key = `${sessionId}:${evId}`;
     setExpandedEvents(prev => {
       const n = new Set(prev);
       n.has(key) ? n.delete(key) : n.add(key);
       return n;
     });
-  };
+  }, []);
 
   const addSession = () => {
     if (!newSession.title || !newSession.title.trim()) return;
@@ -148,11 +164,12 @@ function TimelineView({ data, setData, onNav, viewRole }) {
     if(!newEvent.text) return;
     const linkedNames = newEvent.linkedNames ? newEvent.linkedNames.split(",").map(x => x.trim()).filter(Boolean) : [];
     const headline = (newEvent.headline || "").trim();
+    const outcome = (newEvent.outcome || "").trim();
     const payload = {
       id: eid(),
       type: newEvent.type,
       text: newEvent.text,
-      outcome: newEvent.outcome || "",
+      outcome: outcome || undefined,
       dmOnly: !!newEvent.dmOnly,
       location: (newEvent.location || "").trim() || undefined,
       scope: (newEvent.scope || "").trim() || undefined,
@@ -224,7 +241,7 @@ function TimelineView({ data, setData, onNav, viewRole }) {
     return metaMatch;
   };
 
-  const visibleCount = data.timeline.filter(sessionMatchesFilters).length;
+  const visibleCount = validTimeline.filter(sessionMatchesFilters).length;
 
   return (
     <div style={{ padding: compactLayout ? "16px 28px 28px" : "20px 40px 36px", maxWidth:1040, margin:"0 auto", width:"100%", transition:"padding 0.25s ease" }}>
@@ -232,17 +249,17 @@ function TimelineView({ data, setData, onNav, viewRole }) {
         <div style={{ flex:"1 1 160px", minWidth:0 }}>
           <div style={{ fontSize: compactLayout ? 20 : 22, color:T.text, fontWeight:400, fontFamily:T.body, letterSpacing:"0.02em", lineHeight:1.2 }}>Timeline</div>
           <div style={{ fontSize:12, color:T.textMuted, fontWeight:300, marginTop:2 }}>
-            {data.timeline.length} session{data.timeline.length !== 1 ? "s" : ""}{visibleCount < data.timeline.length ? ` · ${visibleCount} visible` : ""}
+            {validTimeline.length} session{validTimeline.length !== 1 ? "s" : ""}{visibleCount < validTimeline.length ? ` · ${visibleCount} visible` : ""}
           </div>
         </div>
-        {data.timeline.length > 0 && (
+        {validTimeline.length > 0 && (
           <div style={{ flex:"2 1 240px", minWidth:0, maxWidth:360, position:"relative" }}>
             <Search size={13} color={T.textFaint} style={{ position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", pointerEvents:"none", opacity:0.7 }}/>
             <Input value={searchQuery} onChange={setSearchQuery} placeholder="Search…" style={{ paddingLeft:32, paddingTop:7, paddingBottom:7, fontSize:13, background:T.bgInput, borderColor:T.borderMid }} />
           </div>
         )}
         <div style={{ display:"flex", flexWrap:"wrap", alignItems:"center", gap:8, marginLeft:"auto" }}>
-          {data.timeline.length > 0 && (
+          {validTimeline.length > 0 && (
             <button type="button" onClick={()=>setFiltersExpanded(e => !e)} style={{
               display:"inline-flex", alignItems:"center", gap:6, padding:"6px 10px", cursor:"pointer",
               background: activeFilterTally ? T.crimsonSoft : "transparent", border:`1px solid ${activeFilterTally ? T.crimsonBorder : T.border}`,
@@ -262,7 +279,7 @@ function TimelineView({ data, setData, onNav, viewRole }) {
         </div>
       </div>
 
-      {data.timeline.length > 0 && filtersExpanded && (
+      {validTimeline.length > 0 && filtersExpanded && (
         <div style={{
           marginBottom:18, padding:"12px 14px",
           background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px",
@@ -318,7 +335,7 @@ function TimelineView({ data, setData, onNav, viewRole }) {
         </div>
       </Modal>
 
-      {data.timeline.length === 0 && (
+      {validTimeline.length === 0 && (
         <Section style={{ textAlign:"center", padding:48 }}>
           <Clock size={32} color={T.textFaint} style={{ marginBottom:16 }}/>
           <p style={{ fontSize:14, color:T.textMuted, fontWeight:300, margin:"0 0 16px" }}>No sessions logged yet.</p>
@@ -326,7 +343,7 @@ function TimelineView({ data, setData, onNav, viewRole }) {
         </Section>
       )}
 
-      {data.timeline.length > 0 && visibleCount === 0 && (
+      {validTimeline.length > 0 && visibleCount === 0 && (
         <Section style={{ textAlign:"center", padding:32, marginBottom:24 }}>
           <p style={{ fontSize:14, color:T.textMuted, fontWeight:300, margin:0 }}>No sessions match your search or filters. Try clearing filters or broadening your search.</p>
           <button type="button" onClick={()=>{ setSearchQuery(""); setFilterType("all"); setFilterCharacter(""); setFilterLocation(""); }} style={{
@@ -355,7 +372,7 @@ function TimelineView({ data, setData, onNav, viewRole }) {
           }}/>
         )}
 
-        {(Array.isArray(data.timeline) ? data.timeline : []).map((s, timelineIdx) => {
+        {validTimeline.map((s, timelineIdx) => {
           if (!s || !s.id) return null;
           const isOpen = open.has(s.id);
           if (!sessionMatchesFilters(s)) return null;
@@ -418,9 +435,9 @@ function TimelineView({ data, setData, onNav, viewRole }) {
                       fontSize: compactLayout ? 15 : isLatest ? 19 : 17,
                       color:T.text, fontWeight: isLatest ? 500 : 400,
                       marginBottom:4, lineHeight:1.3, letterSpacing:"0.01em",
-                    }}>{String(s.title || '').replace(/[<>]/g, '')}</div>
+                    }}>{htmlEscape(s.title)}</div>
                     <div style={{ fontSize:11, color:T.textMuted, fontWeight:300, display:"flex", alignItems:"center", gap:6, flexWrap:"wrap", fontFamily:T.body }}>
-                      <Calendar size={11} color={T.textFaint}/> {String(s.date || '').replace(/[<>]/g, '')}
+                      <Calendar size={11} color={T.textFaint}/> {htmlEscape(s.date)}
                       <span style={{ color:T.border }}>|</span>
                       <span>{s.events?.length||0} events</span>
                     </div>
@@ -434,7 +451,7 @@ function TimelineView({ data, setData, onNav, viewRole }) {
                   <p style={{
                     fontSize: compactLayout ? 12 : 13, color:T.textDim, lineHeight:1.65, margin:"12px 0 14px", fontWeight:300,
                     borderTop:`1px solid ${T.borderMid}`, paddingTop:12,
-                  }}>{String(s.summary || '').replace(/[<>]/g, '')}</p>
+                  }}>{htmlEscape(s.summary)}</p>
 
                   {/* Events */}
                   {s.events?.length > 0 && (
@@ -517,21 +534,21 @@ function TimelineView({ data, setData, onNav, viewRole }) {
                                 )}
                                 {evOpen && (
                                   <div style={{ marginTop:10, paddingTop:10, borderTop:`1px solid ${T.borderMid}`, animation:"fadeIn 0.2s ease" }}>
-                                    <p style={{ fontSize:13, color:T.textDim, lineHeight:1.65, fontWeight:300, margin:0 }}>{String(ev.text || '').replace(/[<>]/g, '')}</p>
+                                    <p style={{ fontSize:13, color:T.textDim, lineHeight:1.65, fontWeight:300, margin:0 }}>{htmlEscape(ev.text)}</p>
                                     {ev.outcome && (
                                       <div style={{ fontSize:12, color:T.textMuted, marginTop:10, fontWeight:300, fontStyle:"italic" }}>
-                                        {String(ev.outcome || '').replace(/[<>]/g, '')}
+                                        {htmlEscape(ev.outcome)}
                                       </div>
                                     )}
                                     <div style={{ fontSize:10, color:T.textFaint, marginTop:10, display:"flex", flexWrap:"wrap", gap:8, alignItems:"center" }}>
-                                      {ScopeIc && <span style={{ display:"inline-flex", alignItems:"center", gap:3 }}><ScopeIc size={10}/> {String(ev.scope || '').replace(/[<>]/g, '')}</span>}
-                                      {ev.location && <span style={{ display:"inline-flex", alignItems:"center", gap:3 }}><MapPin size={10} color={col}/> {String(ev.location || '').replace(/[<>]/g, '')}</span>}
+                                      {ScopeIc && <span style={{ display:"inline-flex", alignItems:"center", gap:3 }}><ScopeIc size={10}/> {htmlEscape(ev.scope)}</span>}
+                                      {ev.location && <span style={{ display:"inline-flex", alignItems:"center", gap:3 }}><MapPin size={10} color={col}/> {htmlEscape(ev.location)}</span>}
                                       {major && <span style={{ fontFamily:T.ui, letterSpacing:"0.08em", textTransform:"uppercase" }}>Key beat</span>}
                                     </div>
                                     {(ev.linkedNames||[]).length > 0 && (
                                       <div style={{ display:"flex", flexWrap:"wrap", gap:4, marginTop:8 }}>
                                         {(ev.linkedNames||[]).map(name => (
-                                          <span key={name} style={{ fontSize:10, padding:"2px 6px", borderRadius:2, background:T.bgInput, border:`1px solid ${T.borderMid}`, color:T.textMuted }}>{String(name || '').replace(/[<>]/g, '')}</span>
+                                          <span key={name} style={{ fontSize:10, padding:"2px 6px", borderRadius:2, background:T.bgInput, border:`1px solid ${T.borderMid}`, color:T.textMuted }}>{htmlEscape(name)}</span>
                                         ))}
                                       </div>
                                     )}
@@ -571,7 +588,7 @@ function TimelineView({ data, setData, onNav, viewRole }) {
                   {s.changes?.length > 0 && (
                     <div style={{ padding:10, background:T.bgInput, border:`1px solid ${T.borderMid}`, borderRadius:"3px", marginBottom:12 }}>
                       <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", color:T.textMuted, textTransform:"uppercase", display:"block", marginBottom:6 }}>World changes</span>
-                      {s.changes.map((c,ci) => <div key={ci} style={{ fontSize:12, color:T.textDim, fontWeight:300, padding:"2px 0" }}>· {c}</div>)}
+                      {s.changes.map((c,ci) => <div key={`${s.id}-change-${ci}`} style={{ fontSize:12, color:T.textDim, fontWeight:300, padding:"2px 0" }}>· {c}</div>)}
                     </div>
                   )}
 

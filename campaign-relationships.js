@@ -279,7 +279,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
                 key: n.id,
                 style: { display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: T.bgHover, border: `1px solid ${T.border}`, borderRadius: 4, borderLeft: `3px solid ${n.factionColor}` }
               },
-                React.createElement("div", { style: { width: 30, height: 30, borderRadius: "50%", background: n.factionColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: T.bg, fontFamily: T.heading, fontWeight: 600, flexShrink: 0 } }, n.name.charAt(0)),
+                React.createElement("div", { style: { width: 30, height: 30, borderRadius: "50%", background: n.factionColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: T.bg, fontFamily: T.heading, fontWeight: 600, flexShrink: 0 } }, String(n.name || '').charAt(0)),
                 React.createElement("div", { style: { flex: 1, minWidth: 0 } },
                   React.createElement("div", { style: { fontSize: 12, color: T.text } }, String(n.name || '').replace(/[<>]/g, '')),
                   React.createElement("div", { style: { fontSize: 10, color: T.textFaint, marginTop: 1 } }, [String(n.role || '').replace(/[<>]/g, ''), String(n.faction || '').replace(/[<>]/g, ''), String(n.loc || '').replace(/[<>]/g, '')].filter(Boolean).join(" · "))
@@ -308,8 +308,8 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
               },
                 React.createElement("div", { style: { width: 14, height: 14, borderRadius: "50%", background: f.color || T.crimson, flexShrink: 0 } }),
                 React.createElement("div", { style: { flex: 1, minWidth: 0 } },
-                  React.createElement("div", { style: { fontSize: 14, color: T.text, fontWeight: 400 } }, f.name),
-                  React.createElement("div", { style: { fontSize: 10, color: T.textFaint, marginTop: 2 } }, [f.govType, "Power " + (f.power || "?")].filter(Boolean).join(" · "))
+                  React.createElement("div", { style: { fontSize: 14, color: T.text, fontWeight: 400 } }, String(f.name || '').replace(/[<>]/g, '')),
+                  React.createElement("div", { style: { fontSize: 10, color: T.textFaint, marginTop: 2 } }, [String(f.govType || '').replace(/[<>]/g, ''), "Power " + String(f.power || '?').replace(/[<>]/g, '')].filter(Boolean).join(" · "))
                 ),
                 React.createElement(TierBadge, { tier: f.tier, color: f.tierColor }),
                 React.createElement("div", { style: { width: 120 } }, React.createElement(RepBar, { score: f.score, color: f.tierColor })),
@@ -328,10 +328,10 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
                 key: n.id,
                 style: { display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", background: T.crimsonDim, border: `1px solid ${T.border}`, borderRadius: 4, borderLeft: `3px solid ${n.factionColor}` }
               },
-                React.createElement("div", { style: { width: 30, height: 30, borderRadius: "50%", background: n.factionColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: T.bg, fontFamily: T.heading, fontWeight: 600, flexShrink: 0 } }, n.name.charAt(0)),
+                React.createElement("div", { style: { width: 30, height: 30, borderRadius: "50%", background: n.factionColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, color: T.bg, fontFamily: T.heading, fontWeight: 600, flexShrink: 0 } }, String(n.name || '').charAt(0)),
                 React.createElement("div", { style: { flex: 1, minWidth: 0 } },
-                  React.createElement("div", { style: { fontSize: 12, color: T.text } }, n.name),
-                  React.createElement("div", { style: { fontSize: 10, color: T.textFaint, marginTop: 1 } }, [n.role, n.faction].filter(Boolean).join(" · "))
+                  React.createElement("div", { style: { fontSize: 12, color: T.text } }, String(n.name || '').replace(/[<>]/g, '')),
+                  React.createElement("div", { style: { fontSize: 10, color: T.textFaint, marginTop: 1 } }, [String(n.role || '').replace(/[<>]/g, ''), String(n.faction || '').replace(/[<>]/g, '')].filter(Boolean).join(" · "))
                 ),
                 React.createElement(TierBadge, { tier: n.tier, color: n.tierColor }),
                 n.alive === false && React.createElement("span", { style: { fontSize: 8, color: T.green, fontFamily: T.ui, letterSpacing: "1px" } }, "DEFEATED")
@@ -359,10 +359,10 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
       }
     },
       React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: selectedEntity === n.name ? 10 : 0 } },
-        React.createElement("div", { style: { width: 28, height: 28, borderRadius: "50%", background: n.factionColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: T.bg, fontFamily: T.heading, fontWeight: 600, flexShrink: 0 } }, n.name.charAt(0)),
+        React.createElement("div", { style: { width: 28, height: 28, borderRadius: "50%", background: n.factionColor, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: T.bg, fontFamily: T.heading, fontWeight: 600, flexShrink: 0 } }, String(n.name || '').charAt(0)),
         React.createElement("div", { style: { flex: 1, minWidth: 0 } },
-          React.createElement("div", { style: { fontSize: 13, color: T.text } }, n.name),
-          React.createElement("div", { style: { fontSize: 10, color: T.textFaint, marginTop: 1 } }, [n.role, n.faction, n.loc].filter(Boolean).join(" · "))
+          React.createElement("div", { style: { fontSize: 13, color: T.text } }, String(n.name || '').replace(/[<>]/g, '')),
+          React.createElement("div", { style: { fontSize: 10, color: T.textFaint, marginTop: 1 } }, [String(n.role || '').replace(/[<>]/g, ''), String(n.faction || '').replace(/[<>]/g, ''), String(n.loc || '').replace(/[<>]/g, '')].filter(Boolean).join(" · "))
         ),
         React.createElement(TierBadge, { tier: n.tier, color: n.tierColor }),
         n.alive === false && React.createElement("span", { style: { fontSize: 8, color: T.crimson, fontFamily: T.ui } }, "DEAD")
@@ -398,8 +398,8 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
           },
             React.createElement("div", { style: { width: 28, height: 28, borderRadius: "50%", background: T.questGold, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, color: T.bg, fontFamily: T.heading, fontWeight: 600 } }, "★"),
             React.createElement("div", null,
-              React.createElement("div", { style: { fontSize: 13, color: T.text } }, p.name),
-              React.createElement("div", { style: { fontSize: 10, color: T.textFaint, marginTop: 1 } }, [p.race, p.class || p.class_, p.level ? "Lv" + p.level : null].filter(Boolean).join(" · "))
+              React.createElement("div", { style: { fontSize: 13, color: T.text } }, String(p.name || '').replace(/[<>]/g, '')),
+              React.createElement("div", { style: { fontSize: 10, color: T.textFaint, marginTop: 1 } }, [String(p.race || '').replace(/[<>]/g, ''), String(p.class || p.class_ || '').replace(/[<>]/g, ''), p.level ? "Lv" + String(p.level) : null].filter(Boolean).join(" · "))
             )
           ))
         )
@@ -442,7 +442,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
         React.createElement("div", { style: { fontSize: 10, color: T.textFaint, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 12 } }, "Kingdom Affiliation"),
         React.createElement(Select, { value: data.partyKingdom || "", onChange: v => setData(d => ({ ...d, partyKingdom: v })), style: { width: "100%", marginBottom: 12 } },
           React.createElement("option", { value: "" }, "No Affiliation (Independent)"),
-          factions.map(f => React.createElement("option", { key: f.id, value: f.name }, f.name))
+          factions.map(f => React.createElement("option", { key: f.id, value: String(f.name || '').replace(/[<>]/g, '') }, String(f.name || '').replace(/[<>]/g, '')))
         ),
         data.partyKingdom && React.createElement("div", { style: { fontSize: 12, color: T.textMuted, fontStyle: "italic" } },
           "The party is affiliated with ",
@@ -475,7 +475,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
                   key: f.id,
                   style: { display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", background: T.bg, border: `1px solid ${T.border}`, borderRadius: 3, borderLeft: `3px solid ${f.color}` }
                 },
-                  React.createElement("span", { style: { flex: 1, fontSize: 13, color: T.text, fontWeight: 300 } }, f.name),
+                  React.createElement("span", { style: { flex: 1, fontSize: 13, color: T.text, fontWeight: 300 } }, String(f.name || '').replace(/[<>]/g, '')),
                   React.createElement(Select, {
                     value: rep,
                     onChange: v => setData(d => ({ ...d, partyReputations: { ...(d.partyReputations || {}), [f.name]: v } })),
@@ -501,7 +501,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
                   borderLeft: `3px solid ${f.color}`, transition: "all 0.2s"
                 }
               },
-                React.createElement("span", { style: { fontSize: 13, color: T.text, fontWeight: 300, flex: 1 } }, f.name),
+                React.createElement("span", { style: { fontSize: 13, color: T.text, fontWeight: 300, flex: 1 } }, String(f.name || '').replace(/[<>]/g, '')),
                 React.createElement("div", { style: { display: "flex", gap: 8, fontSize: 10 } },
                   f.allies?.length > 0 && React.createElement("span", { style: { color: T.green } }, f.allies.length + " allies"),
                   f.rivals?.length > 0 && React.createElement("span", { style: { color: T.crimson } }, f.rivals.length + " rivals"),
@@ -615,7 +615,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
             }
           },
             React.createElement("option", { value: "" }, "All factions"),
-            factionStandings.map(f => React.createElement("option", { key: f.id, value: f.name }, f.name))
+            factionStandings.map(f => React.createElement("option", { key: f.id, value: String(f.name || '').replace(/[<>]/g, '') }, String(f.name || '').replace(/[<>]/g, '')))
           )
         ),
 
@@ -662,7 +662,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
                 onChange: (e) => setNewEventFaction(e.target.value),
                 style: { flex: 1, padding: "6px 8px", fontSize: 11, fontFamily: T.body, background: T.bgInput, border: `1px solid ${T.border}`, borderRadius: 3, color: T.text, cursor: "pointer" }
               },
-                factionStandings.map(f => React.createElement("option", { key: f.id, value: f.name }, f.name))
+                factionStandings.map(f => React.createElement("option", { key: f.id, value: String(f.name || '').replace(/[<>]/g, '') }, String(f.name || '').replace(/[<>]/g, '')))
               ),
               React.createElement("input", {
                 type: "number", value: newEventAmount, onChange: (e) => setNewEventAmount(e.target.value),
@@ -699,7 +699,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
               key: f.id,
               style: { padding: "16px", background: T.bgHover, border: `1px solid ${T.border}`, borderRadius: 4, borderLeft: `3px solid ${f.color}` }
             },
-              React.createElement("div", { style: { fontSize: 13, color: T.text, fontWeight: 500, marginBottom: 10 } }, f.name),
+              React.createElement("div", { style: { fontSize: 13, color: T.text, fontWeight: 500, marginBottom: 10 } }, String(f.name || '').replace(/[<>]/g, '')),
               React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 } },
                 tiers.length === 0
                   ? React.createElement("div", { style: { fontSize: 10, color: T.textFaint, fontStyle: "italic" } }, "No thresholds defined")
@@ -746,7 +746,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
               key: f.id,
               style: { padding: "14px", background: T.bgHover, border: `1px solid ${T.border}`, borderRadius: 4 }
             },
-              React.createElement("div", { style: { fontSize: 12, color: T.text, fontWeight: 500, marginBottom: 10 } }, f.name),
+              React.createElement("div", { style: { fontSize: 12, color: T.text, fontWeight: 500, marginBottom: 10 } }, String(f.name || '').replace(/[<>]/g, '')),
               React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, marginBottom: 10 } },
                 React.createElement("span", { style: { fontSize: 10, color: T.textFaint } }, "Decay rate:"),
                 React.createElement("span", { style: { fontSize: 11, color: rate > 0 ? T.green : rate < 0 ? T.crimson : T.textMuted, fontWeight: 500 } },
@@ -791,7 +791,7 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
               style: { padding: "14px", background: T.bgHover, border: `1px solid ${T.border}`, borderRadius: 4, borderLeft: `3px solid ${f.color}` }
             },
               React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 12, marginBottom: 10 } },
-                React.createElement("span", { style: { fontSize: 12, color: T.text, fontWeight: 500 } }, f.name),
+                React.createElement("span", { style: { fontSize: 12, color: T.text, fontWeight: 500 } }, String(f.name || '').replace(/[<>]/g, '')),
                 React.createElement("span", { style: { fontSize: 14, color: f.color, fontFamily: T.ui, fontWeight: 600, marginLeft: "auto" } }, favors + " favor" + (favors !== 1 ? "s" : ""))
               ),
               React.createElement("div", { style: { fontSize: 10, color: T.textMuted, marginBottom: 10, lineHeight: 1.5 } }, "Special favors earned from major quests or faction events. Can be spent for military aid, rare items, or political support."),

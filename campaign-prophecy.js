@@ -168,7 +168,7 @@
         <span style={{ flex: 1, color: trigger.met ? 'var(--green)' : 'var(--text)' }}>
           {getTriggerText()}
         </span>
-        {trigger.met && <Check size={14} color="var(--green)" />}
+        {trigger.met && Check && <Check size={14} color="var(--green)" />}
         {canEdit && (
           <button
             onClick={() => onRemove()}
@@ -181,7 +181,7 @@
               alignItems: 'center'
             }}
           >
-            <X size={14} color="var(--text-muted)" />
+            {X && <X size={14} color="var(--text-muted)" />}
           </button>
         )}
       </div>
@@ -280,7 +280,7 @@
                   alignItems: 'center',
                   gap: '3px'
                 }}>
-                  {(prophecy?.visibility || 'public') === 'dm_only' ? <EyeOff size={10} /> : <Eye size={10} />}
+                  {(prophecy?.visibility || 'public') === 'dm_only' ? (EyeOff && <EyeOff size={10} />) : (Eye && <Eye size={10} />)}
                   {(prophecy?.visibility || 'public') === 'dm_only' ? 'DM Only' : 'Partial'}
                 </span>
               )}
@@ -344,7 +344,7 @@
               color: 'var(--text-dim)'
             }}
           >
-            {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            {expanded ? (ChevronUp && <ChevronUp size={16} />) : (ChevronDown && <ChevronDown size={16} />)}
           </button>
         </div>
 
@@ -464,7 +464,7 @@
                     gap: '4px'
                   }}
                 >
-                  <Edit2 size={12} /> Edit
+                  {Edit2 && <Edit2 size={12} />} Edit
                 </button>
                 <button
                   onClick={() => onDelete(prophecy.id)}
@@ -483,7 +483,7 @@
                     gap: '4px'
                   }}
                 >
-                  <Trash2 size={12} /> Delete
+                  {Trash2 && <Trash2 size={12} />} Delete
                 </button>
               </div>
             )}
@@ -533,7 +533,7 @@
       const cities = (worldData.cities || []);
 
       if (regions.length === 0 || factions.length === 0 || npcs.length === 0 || cities.length === 0) {
-        alert('World data not fully loaded. Please ensure regions, factions, NPCs, and cities are defined.');
+        console.warn('World data not fully loaded. Some prophecy fields may be empty.');
         return;
       }
 
@@ -560,6 +560,10 @@
 
     const handleAddTrigger = () => {
       if (newTrigger.type === 'custom' && !newTrigger.description) return;
+      if (newTrigger.type === 'faction_power' && !newTrigger.factionName) return;
+      if (newTrigger.type === 'npc_dead' && !newTrigger.npcName) return;
+      if (newTrigger.type === 'region_state' && !newTrigger.regionName) return;
+      if (newTrigger.type === 'war_declared' && (!newTrigger.faction1 || !newTrigger.faction2)) return;
       setTriggers([...triggers, { ...newTrigger, met: false }]);
       setNewTrigger({ type: 'custom', description: '' });
     };
@@ -569,17 +573,23 @@
     };
 
     const handleSave = () => {
+      // Sanitize text inputs to prevent XSS
+      const sanitize = (str) => {
+        if (!str) return '';
+        return String(str).replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      };
+
       onSave({
-        id: prophecy?.id || 'prophecy_' + Date.now(),
-        text: text.trim(),
-        interpretation: interpretation.trim(),
+        id: prophecy?.id || 'prophecy_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
+        text: sanitize(text.trim()),
+        interpretation: sanitize(interpretation.trim()),
         status,
         visibility,
         importance,
         linkedDeity,
         triggerMode,
-        fulfillmentEvent: fulfillmentEvent.trim(),
-        consequences: consequences.trim(),
+        fulfillmentEvent: sanitize(fulfillmentEvent.trim()),
+        consequences: sanitize(consequences.trim()),
         triggers,
         signs: prophecy?.signs || [],
         createdTurn: prophecy?.createdTurn || 0
@@ -650,7 +660,7 @@
               gap: '6px'
             }}
           >
-            <Sparkles size={14} /> Generate Random Prophecy
+            {Sparkles && <Sparkles size={14} />} Generate Random Prophecy
           </button>
         </div>
 
@@ -995,8 +1005,8 @@
             {newTrigger.type === 'faction_power' && (
               <div style={{ marginBottom: '8px' }}>
                 <select
-                  value={newTrigger.description}
-                  onChange={(e) => setNewTrigger({ ...newTrigger, description: e.target.value })}
+                  value={newTrigger.factionName || ''}
+                  onChange={(e) => setNewTrigger({ ...newTrigger, factionName: e.target.value, operator: '>', value: 50 })}
                   style={{
                     width: '100%',
                     padding: '6px',
@@ -1016,8 +1026,8 @@
                 </select>
                 <input
                   type="text"
-                  value={newTrigger.description}
-                  onChange={(e) => setNewTrigger({ ...newTrigger, description: e.target.value })}
+                  value={newTrigger.factionName || ''}
+                  onChange={(e) => setNewTrigger({ ...newTrigger, factionName: e.target.value, operator: '>', value: 50 })}
                   placeholder="Or enter faction name manually..."
                   style={{
                     width: '100%',
@@ -1036,8 +1046,8 @@
             {newTrigger.type === 'npc_dead' && (
               <div style={{ marginBottom: '8px' }}>
                 <select
-                  value={newTrigger.description}
-                  onChange={(e) => setNewTrigger({ ...newTrigger, description: e.target.value })}
+                  value={newTrigger.npcName || ''}
+                  onChange={(e) => setNewTrigger({ ...newTrigger, npcName: e.target.value })}
                   style={{
                     width: '100%',
                     padding: '6px',
@@ -1057,8 +1067,8 @@
                 </select>
                 <input
                   type="text"
-                  value={newTrigger.description}
-                  onChange={(e) => setNewTrigger({ ...newTrigger, description: e.target.value })}
+                  value={newTrigger.npcName || ''}
+                  onChange={(e) => setNewTrigger({ ...newTrigger, npcName: e.target.value })}
                   placeholder="Or enter NPC name manually..."
                   style={{
                     width: '100%',
@@ -1077,8 +1087,8 @@
             {newTrigger.type === 'region_state' && (
               <div style={{ marginBottom: '8px' }}>
                 <select
-                  value={newTrigger.description}
-                  onChange={(e) => setNewTrigger({ ...newTrigger, description: e.target.value })}
+                  value={newTrigger.regionName || ''}
+                  onChange={(e) => setNewTrigger({ ...newTrigger, regionName: e.target.value, state: 'conquered' })}
                   style={{
                     width: '100%',
                     padding: '6px',
@@ -1098,8 +1108,8 @@
                 </select>
                 <input
                   type="text"
-                  value={newTrigger.description}
-                  onChange={(e) => setNewTrigger({ ...newTrigger, description: e.target.value })}
+                  value={newTrigger.regionName || ''}
+                  onChange={(e) => setNewTrigger({ ...newTrigger, regionName: e.target.value, state: 'conquered' })}
                   placeholder="Or enter region name manually..."
                   style={{
                     width: '100%',
@@ -1118,8 +1128,8 @@
             {newTrigger.type === 'war_declared' && (
               <div style={{ marginBottom: '8px' }}>
                 <select
-                  value={newTrigger.description}
-                  onChange={(e) => setNewTrigger({ ...newTrigger, description: e.target.value })}
+                  value={newTrigger.faction1 || ''}
+                  onChange={(e) => setNewTrigger({ ...newTrigger, faction1: e.target.value })}
                   style={{
                     width: '100%',
                     padding: '6px',
@@ -1132,16 +1142,14 @@
                     boxSizing: 'border-box'
                   }}
                 >
-                  <option value="">Select faction...</option>
+                  <option value="">Select first faction...</option>
                   {(worldData.factions || []).map(f => (
                     <option key={f.name} value={f.name}>{f.name}</option>
                   ))}
                 </select>
-                <input
-                  type="text"
-                  value={newTrigger.description}
-                  onChange={(e) => setNewTrigger({ ...newTrigger, description: e.target.value })}
-                  placeholder="Or enter faction name manually..."
+                <select
+                  value={newTrigger.faction2 || ''}
+                  onChange={(e) => setNewTrigger({ ...newTrigger, faction2: e.target.value })}
                   style={{
                     width: '100%',
                     padding: '6px',
@@ -1152,7 +1160,12 @@
                     fontSize: '11px',
                     boxSizing: 'border-box'
                   }}
-                />
+                >
+                  <option value="">Select second faction...</option>
+                  {(worldData.factions || []).map(f => (
+                    <option key={f.name} value={f.name}>{f.name}</option>
+                  ))}
+                </select>
               </div>
             )}
 
@@ -1174,7 +1187,7 @@
                 gap: '4px'
               }}
             >
-              <Plus size={12} /> Add Trigger
+              {Plus && <Plus size={12} />} Add Trigger
             </button>
           </div>
         </div>
@@ -1198,7 +1211,7 @@
               gap: '6px'
             }}
           >
-            <Save size={14} /> Save Prophecy
+            {Save && <Save size={14} />} Save Prophecy
           </button>
           <button
             onClick={onCancel}
@@ -1737,7 +1750,7 @@
                       gap: '6px'
                     }}
                   >
-                    <Plus size={14} /> New Prophecy
+                    {Plus && <Plus size={14} />} New Prophecy
                   </button>
                 )}
 

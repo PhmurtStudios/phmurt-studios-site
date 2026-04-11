@@ -24,12 +24,12 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
-  <link rel="stylesheet" href="style.css" />
-  <script src="theme.js"></script>
+  <link rel="stylesheet" href="style.css?v=185" />
+  <script src="theme.js?v=185"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous" integrity="sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG"></script>
-  <script src="supabase-config.js"></script>
-  <script src="stripe-config.js"></script>
-  <script src="phmurt-auth.js?v=182"></script>
+  <script src="supabase-config.js?v=185"></script>
+  <script src="stripe-config.js?v=185"></script>
+  <script src="phmurt-auth.js?v=185"></script>
 
   <style>
     /* ── Hub layout ──────────────────────────────────────────────── */
@@ -277,7 +277,7 @@
   <div class="fantasy-section-end">&diams;   &diams;   &diams;</div>
 
   <div id="ps-site-footer"></div>
-  <script src="phmurt-shell.js"></script>
+  <script src="phmurt-shell.js?v=185"></script>
 
   <script>
   (function () {
@@ -340,11 +340,12 @@
         var race = esc(c.race || '');
         var cls = esc(c.class || c.class_ || '');
         var level = c.level || 1;
-        var builder = c.builder_type || '5e';
-        var is35 = builder === '35e';
+        // INTEGRATION (V-011b): Use edition field if builder_type not present (for backward compatibility)
+        var builder = c.builder_type || c.edition || '5e';
+        var is35 = builder === '35e' || builder === '3.5';
         var edClass = is35 ? 'e35' : 'e5';
         var edLabel = is35 ? '3.5e' : '5e';
-        var viewHref = (is35 ? 'character-builder.html' : 'character-builder.html') + '?load=' + id;
+        var viewHref = 'character-builder.html' + (is35 ? '#35e' : '') + '?load=' + id;
 
         return '<div class="ch-card" data-id="' + id + '" data-href="' + viewHref + '">' +
           '<div class="ch-card-level">' + level + '</div>' +

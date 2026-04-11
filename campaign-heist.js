@@ -493,7 +493,6 @@
 
     const handleCreate = () => {
       if (!newHeist.name || !newHeist.location) {
-        alert('Please fill in heist name and location');
         return;
       }
       const updated = { ...data };
@@ -597,7 +596,7 @@
                 min="1"
                 max="5"
                 value={newHeist.difficulty}
-                onChange={(e) => setNewHeist({...newHeist, difficulty: parseInt(e.target.value)})}
+                onChange={(e) => setNewHeist({...newHeist, difficulty: parseInt(e.target.value, 10)})}
               />
             </div>
             <div>
@@ -646,7 +645,7 @@
                   value={newHeist.security[sec]}
                   onChange={(e) => setNewHeist({
                     ...newHeist,
-                    security: {...newHeist.security, [sec]: parseInt(e.target.value)}
+                    security: {...newHeist.security, [sec]: parseInt(e.target.value, 10)}
                   })}
                 />
               </div>
@@ -875,7 +874,7 @@
             type="number"
             min="0"
             value={newRoom.guards}
-            onChange={(e) => setNewRoom({...newRoom, guards: parseInt(e.target.value)})}
+            onChange={(e) => setNewRoom({...newRoom, guards: parseInt(e.target.value, 10)})}
           />
         </div>
 
@@ -1102,17 +1101,25 @@
     );
   }
 
+  function Dice2Icon(props) {
+    return (
+      <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <g><circle cx="6" cy="6" r="3"></circle><path d="M13 13l5.768-9.542a2 2 0 0 0-2.203-3.159L9 11"></path><circle cx="18" cy="18" r="3"></circle></g>
+      </svg>
+    );
+  }
+
   function ComplicationManager({ heist, setHeist, data }) {
     const drawComplication = () => {
       const random = COMPLICATIONS[Math.floor(Math.random() * COMPLICATIONS.length)];
       const enriched = enrichComplication(random, data);
       const updated = {...heist};
-      if (!updated.complications) updated.complications = [];
-      updated.complications.push({
+      const newComplication = {
         id: Date.now(),
         ...enriched,
         resolved: false
-      });
+      };
+      updated.complications = [...(updated.complications || []), newComplication];
       setHeist(updated);
     };
 
@@ -1201,14 +1208,15 @@
       setHeist(updated);
     }, [heist, setHeist]);
 
-    const consequences = [
-      { threshold: 25, text: 'Local guards on alert' },
-      { threshold: 50, text: 'Wanted posters issued' },
-      { threshold: 75, text: 'Bounty hunters hired' },
-      { threshold: 90, text: 'Guild/Noble sends assassins' }
-    ];
-
-    const activeConsequences = useMemo(() => consequences.filter(c => heist.heat >= c.threshold), [heist.heat]);
+    const activeConsequences = useMemo(() => {
+      const consequences = [
+        { threshold: 25, text: 'Local guards on alert' },
+        { threshold: 50, text: 'Wanted posters issued' },
+        { threshold: 75, text: 'Bounty hunters hired' },
+        { threshold: 90, text: 'Guild/Noble sends assassins' }
+      ];
+      return consequences.filter(c => heist.heat >= c.threshold);
+    }, [heist.heat]);
 
     return (
       <div style={styles.section}>
@@ -1257,8 +1265,8 @@
           {activeConsequences.length > 0 && (
             <div style={{...styles.card, backgroundColor: T.bgCard, borderColor: T.crimson, padding: '12px'}}>
               <h4 style={{margin: '0 0 8px 0', color: T.crimsonSoft}}>Active Consequences:</h4>
-              {activeConsequences.map((cons, idx) => (
-                <p key={idx} style={{margin: '4px 0', fontSize: '14px', color: T.crimsonSoft}}>
+              {activeConsequences.map((cons) => (
+                <p key={cons.threshold} style={{margin: '4px 0', fontSize: '14px', color: T.crimsonSoft}}>
                   {cons.text}
                 </p>
               ))}
@@ -1367,14 +1375,6 @@
         <CrewPlanning heist={heist} setHeist={setHeist} data={data} />
         <ComplicationManager heist={heist} setHeist={setHeist} data={data} />
       </div>
-    );
-  }
-
-  function Dice2Icon(props) {
-    return (
-      <svg {...props} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <g><circle cx="6" cy="6" r="3"></circle><path d="M13 13l5.768-9.542a2 2 0 0 0-2.203-3.159L9 11"></path><circle cx="18" cy="18" r="3"></circle></g>
-      </svg>
     );
   }
 

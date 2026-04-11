@@ -21,7 +21,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
-  <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="style.css?v=185" />
   <style>
     * {
       margin: 0;
@@ -144,7 +144,7 @@
       font-size: 12px;
     }
   </style>
-  <script src="theme.js"></script>
+  <script src="theme.js?v=185"></script>
 </head>
 <body data-nav-active="Fantasy Map" data-footer-copy="Roll Well. Play Weird.">
 
@@ -2085,7 +2085,9 @@
       const link = document.createElement('a');
       link.href = canvas.toDataURL('image/png');
       link.download = 'fantasy_map.png';
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
     }
 
     // Auto-generate on load
@@ -2094,6 +2096,6 @@
     });
   </script>
 
-  <script src="phmurt-shell.js"></script>
+  <script src="phmurt-shell.js?v=185"></script>
 </body>
 </html>

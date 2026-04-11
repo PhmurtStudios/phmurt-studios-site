@@ -94,13 +94,13 @@
           if (slot.dayOfWeek < 0 || slot.dayOfWeek > 6) {
             throw new Error(`Invalid dayOfWeek: ${slot.dayOfWeek}`);
           }
-          if (slot.startHour < 0 || slot.startHour > 24 || slot.endHour < 0 || slot.endHour > 24) {
+          if (slot.startHour < 0 || slot.startHour > 23 || slot.endHour < 0 || slot.endHour > 24) {
             throw new Error(`Invalid hours: ${slot.startHour}-${slot.endHour}`);
           }
         }
       }
 
-      const player = this.players.get(playerId) || { name: playerId, email: null };
+      const player = this.players.get(playerId) || { id: playerId, name: playerId, email: null };
       player.availability = {
         recurring: availability.recurring || [],
         exceptions: availability.exceptions || []
@@ -115,7 +115,7 @@
      * @param {object} metadata - { name, email }
      */
     setPlayerMetadata(playerId, metadata) {
-      const player = this.players.get(playerId) || { name: playerId, email: null, availability: { recurring: [], exceptions: [] } };
+      const player = this.players.get(playerId) || { id: playerId, name: playerId, email: null, availability: { recurring: [], exceptions: [] } };
 
       if (metadata.name) player.name = metadata.name;
       if (metadata.email) player.email = metadata.email;
@@ -370,8 +370,8 @@
       }
 
       const duration = options.duration || 4;
-      const startHour = parseInt(startTime.split(':')[0]);
-      const endHour = startHour + duration;
+      const startHour = parseInt(startTime.split(':')[0], 10);
+      const endHour = Math.min(24, startHour + duration);
       const created = [];
 
       // Find start date (next occurrence of dayOfWeek)
@@ -424,14 +424,14 @@
         this.players.clear();
         if (data.players && Array.isArray(data.players)) {
           for (const player of data.players) {
-            if (player && (player.name || player.id)) {
-              this.players.set(player.name || player.id, player);
+            if (player && player.id) {
+              this.players.set(player.id, player);
             }
           }
         }
 
         this.sessions = Array.isArray(data.sessions) ? data.sessions : [];
-        this._sessionCounter = Math.max(0, parseInt(data._sessionCounter) || 0);
+        this._sessionCounter = Math.max(0, parseInt(data._sessionCounter, 10) || 0);
         this._createdAt = data._createdAt || new Date().toISOString();
       } catch (e) {
         throw new Error(`Deserialization failed: ${e.message}`);

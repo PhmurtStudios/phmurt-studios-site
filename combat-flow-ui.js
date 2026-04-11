@@ -30,8 +30,14 @@ window.CombatFlowUI = (() => {
     untyped:      { color: "#ffffff", glow: "#e0e0e0", icon: "⚪", label: "Damage" },
   };
 
-  const getDamageConfig = (type) =>
-    DAMAGE_TYPE_CONFIG[(type || "untyped").toLowerCase()] || DAMAGE_TYPE_CONFIG.untyped;
+  const getDamageConfig = (type) => {
+    const safeType = String(type || "untyped").toLowerCase();
+    // Validate type is a string key to prevent prototype pollution
+    if (typeof safeType !== 'string' || safeType.length > 50) {
+      return DAMAGE_TYPE_CONFIG.untyped;
+    }
+    return DAMAGE_TYPE_CONFIG[safeType] || DAMAGE_TYPE_CONFIG.untyped;
+  };
 
 
   // ─── ACTION CATEGORY DEFINITIONS ───────────────────────────────────────────
@@ -176,24 +182,28 @@ window.CombatFlowUI = (() => {
    * @param {number} [opts.offsetX]  - Random scatter range (px)
    */
   function spawnFloatingText(opts) {
+    if (!opts || typeof opts !== 'object' || opts === null) return null;
+    // Validate and sanitize input coordinates
+    const x = isFinite(opts.x) ? opts.x : 0;
+    const y = isFinite(opts.y) ? opts.y : 0;
     const styleDef = TEXT_STYLES[opts.style || "damage"] || TEXT_STYLES.damage;
-    const scatter = opts.offsetX || 12;
+    const scatter = Math.max(0, Math.min(100, opts.offsetX || 12)); // Clamp scatter
     const particle = {
       id: _nextTextId++,
-      x: opts.x + (Math.random() - 0.5) * scatter,
-      y: opts.y - 10,
-      text: opts.text || "",
+      x: x + (Math.random() - 0.5) * scatter,
+      y: y - 10,
+      text: String(opts.text || ""),
       color: opts.color || "#fff",
       glow: opts.glow || opts.color || "#fff",
-      fontSize: opts.fontSize || styleDef.fontSize,
+      fontSize: Math.max(8, Math.min(72, opts.fontSize || styleDef.fontSize)), // Clamp font size
       fontWeight: styleDef.fontWeight,
       fontFamily: styleDef.fontFamily,
       born: performance.now(),
-      lifetime: opts.lifetime || styleDef.lifetime,
+      lifetime: Math.max(100, opts.lifetime || styleDef.lifetime), // Min lifetime
       vx: styleDef.vx + (Math.random() - 0.5) * 8,
       vy: styleDef.vy,
       style: opts.style || "damage",
-      delay: opts.delay || 0,
+      delay: Math.max(0, opts.delay || 0), // No negative delays
       scale: 1,
     };
     _activeTexts.push(particle);
@@ -207,7 +217,7 @@ window.CombatFlowUI = (() => {
    * @param {Object} result     - Attack result from resolveAttack()
    */
   function spawnDamageText(x, y, result) {
-    if (!result || typeof result !== 'object') return;
+    if (!result || typeof result !== 'object' || result === null) return;
 
     if (result.miss || result.fumble) {
       spawnFloatingText({
@@ -232,13 +242,16 @@ window.CombatFlowUI = (() => {
     }
 
     // Spawn per-damage-type numbers with stagger
-    const breakdown = result.damageBreakdown || [];
+    const breakdown = Array.isArray(result.damageBreakdown) ? result.damageBreakdown : [];
     let delay = result.isCrit ? 300 : 0;
     let totalApplied = 0;
 
     breakdown.forEach((comp, i) => {
+      // Validate comp structure
+      if (!comp || typeof comp !== 'object') return;
       const cfg = getDamageConfig(comp.type);
-      const applied = comp.applied != null ? comp.applied : comp.total;
+      // Ensure applied and total are valid finite numbers
+      const applied = isFinite(comp.applied) ? Math.floor(comp.applied) : (isFinite(comp.total) ? Math.floor(comp.total) : 0);
       totalApplied += applied;
 
       if (applied === 0 && comp.relation === "immune") {
@@ -268,11 +281,12 @@ window.CombatFlowUI = (() => {
     });
 
     // If no breakdown, show total
-    if (breakdown.length === 0 && result.totalDamage > 0) {
+    const safeTotalDamage = isFinite(result.totalDamage) ? Math.floor(result.totalDamage) : 0;
+    if (breakdown.length === 0 && safeTotalDamage > 0) {
       const cfg = getDamageConfig(result.damageType);
       spawnFloatingText({
         x, y,
-        text: "-" + result.totalDamage,
+        text: "-" + safeTotalDamage,
         style: result.isCrit ? "crit" : "damage",
         color: cfg.color,
         glow: cfg.glow,
@@ -285,9 +299,11 @@ window.CombatFlowUI = (() => {
    * Spawn healing text.
    */
   function spawnHealText(x, y, amount) {
+    // Validate amount is a number
+    const safeAmount = isFinite(amount) ? Math.abs(Math.floor(amount)) : 0;
     spawnFloatingText({
       x, y,
-      text: "+" + amount,
+      text: "+" + safeAmount,
       style: "heal",
       color: "#66bb6a",
       glow: "#2e7d32",
@@ -298,9 +314,11 @@ window.CombatFlowUI = (() => {
    * Spawn a saving throw result.
    */
   function spawnSaveText(x, y, success, label) {
+    // Sanitize label
+    const safeLabel = label ? String(label).substring(0, 30) : null;
     spawnFloatingText({
       x, y,
-      text: success ? (label || "SAVED") : (label || "FAILED"),
+      text: success ? (safeLabel || "SAVED") : (safeLabel || "FAILED"),
       style: "save",
       color: success ? "#66bb6a" : "#ef5350",
       glow: success ? "#2e7d32" : "#c62828",
@@ -311,9 +329,11 @@ window.CombatFlowUI = (() => {
    * Spawn condition applied/removed text.
    */
   function spawnConditionText(x, y, conditionName, applied) {
+    // Sanitize condition name
+    const safeName = conditionName ? String(conditionName).substring(0, 30) : "Condition";
     spawnFloatingText({
       x, y,
-      text: (applied ? "+" : "−") + " " + conditionName,
+      text: (applied ? "+" : "−") + " " + safeName,
       style: "condition",
       color: applied ? "#ffa726" : "#78909c",
       glow: applied ? "#e65100" : "#546e7a",
@@ -324,9 +344,11 @@ window.CombatFlowUI = (() => {
    * Spawn death/unconscious text.
    */
   function spawnDeathText(x, y, text) {
+    // Sanitize text
+    const safeText = text ? String(text).substring(0, 30) : "DEFEATED";
     spawnFloatingText({
       x, y,
-      text: text || "DEFEATED",
+      text: safeText,
       style: "death",
       color: "#d32f2f",
       glow: "#b71c1c",
@@ -337,9 +359,11 @@ window.CombatFlowUI = (() => {
    * Spawn info text (e.g., "Dodging", "Disengaged", etc.)
    */
   function spawnInfoText(x, y, text, color) {
+    // Sanitize text
+    const safeText = text ? String(text).substring(0, 50) : "";
     spawnFloatingText({
       x, y,
-      text: text,
+      text: safeText,
       style: "info",
       color: color || "#90caf9",
       glow: color || "#42a5f5",
@@ -359,13 +383,15 @@ window.CombatFlowUI = (() => {
     if (!ctx || typeof ctx !== 'object') return;
 
     const expired = new Set();
-    const safeZoom = Math.max(0.01, Math.min(100, zoom || 1));
+    // Validate zoom is finite number, prevent NaN/Infinity
+    const safeZoom = Math.max(0.01, Math.min(100, isFinite(zoom) ? zoom : 1));
+    const safeNow = isFinite(now) ? now : performance.now(); // Validate timestamp
     const invZoom = 1 / safeZoom;
 
     ctx.save();
 
     _activeTexts.forEach((p) => {
-      const age = now - p.born;
+      const age = safeNow - p.born;
       if (age < p.delay) return; // still delayed
 
       const activeAge = age - p.delay;
@@ -424,9 +450,15 @@ window.CombatFlowUI = (() => {
 
     ctx.restore();
 
-    // Prune expired
+    // Prune expired (more efficient in-place removal)
     if (expired.size > 0) {
-      _activeTexts = _activeTexts.filter((p) => !expired.has(p.id));
+      let writeIdx = 0;
+      for (let i = 0; i < _activeTexts.length; i++) {
+        if (!expired.has(_activeTexts[i].id)) {
+          _activeTexts[writeIdx++] = _activeTexts[i];
+        }
+      }
+      _activeTexts.length = writeIdx;
     }
   }
 
@@ -442,6 +474,8 @@ window.CombatFlowUI = (() => {
    */
   function clearFloatingTexts() {
     _activeTexts = [];
+    // Reset ID counter to prevent unbounded growth
+    _nextTextId = 0;
   }
 
 
@@ -469,28 +503,35 @@ window.CombatFlowUI = (() => {
    * @returns {Object} Structured display result
    */
   function formatAttackResult(opts) {
-    if (!opts || typeof opts !== 'object') return { lines: [], details: [] };
+    if (!opts || typeof opts !== 'object' || opts === null) return { lines: [], details: [] };
     const lines = [];
     const details = [];
 
     // Attack roll line
     if (opts.attackRoll && typeof opts.attackRoll === 'object') {
       const r = opts.attackRoll;
+      // Validate numeric values
+      const roll1 = isFinite(r.roll1) ? Math.floor(r.roll1) : 0;
+      const roll2 = isFinite(r.roll2) ? Math.floor(r.roll2) : 0;
+      const chosen = isFinite(r.chosen) ? Math.floor(r.chosen) : 0;
+      const modifier = isFinite(r.modifier) ? Math.floor(r.modifier) : 0;
+      const total = isFinite(r.total) ? Math.floor(r.total) : 0;
       let rollStr = "";
       if (r.mode === "advantage") {
-        rollStr = "2d20kh1(" + r.roll1 + ", " + r.roll2 + ") → " + r.chosen;
+        rollStr = "2d20kh1(" + roll1 + ", " + roll2 + ") → " + chosen;
       } else if (r.mode === "disadvantage") {
-        rollStr = "2d20kl1(" + r.roll1 + ", " + r.roll2 + ") → " + r.chosen;
+        rollStr = "2d20kl1(" + roll1 + ", " + roll2 + ") → " + chosen;
       } else {
-        rollStr = "d20(" + r.chosen + ")";
+        rollStr = "d20(" + chosen + ")";
       }
-      rollStr += (r.modifier >= 0 ? " + " : " − ") + Math.abs(r.modifier) + " = " + r.total;
+      rollStr += (modifier >= 0 ? " + " : " − ") + Math.abs(modifier) + " = " + total;
 
       let verdict = "";
+      const targetAC = isFinite(opts.targetAC) ? Math.floor(opts.targetAC) : 10;
       if (r.nat20) verdict = "NATURAL 20 — CRITICAL HIT!";
       else if (r.nat1) verdict = "NATURAL 1 — AUTOMATIC MISS!";
-      else if (opts.hit) verdict = r.total + " vs AC " + opts.targetAC + " → HIT";
-      else verdict = r.total + " vs AC " + opts.targetAC + " → MISS";
+      else if (opts.hit) verdict = total + " vs AC " + targetAC + " → HIT";
+      else verdict = total + " vs AC " + targetAC + " → MISS";
 
       details.push({
         section: "attack",
@@ -509,9 +550,14 @@ window.CombatFlowUI = (() => {
       const sv = opts.savingThrow;
       const abilityNames = { str: "STR", dex: "DEX", con: "CON", int: "INT", wis: "WIS", cha: "CHA" };
       const abilityLabel = abilityNames[(sv.ability || "").toLowerCase()] || sv.ability || "?";
-      let rollStr = "d20(" + (sv.roll || "?") + ")";
-      rollStr += (sv.modifier >= 0 ? " + " : " − ") + Math.abs(sv.modifier || 0) + " = " + (sv.total || "?");
-      const verdict = (sv.total || 0) + " vs DC " + sv.dc + " → " + (sv.success ? "SAVED" : "FAILED");
+      // Validate save roll numbers
+      const saveRoll = isFinite(sv.roll) ? Math.floor(sv.roll) : 0;
+      const saveMod = isFinite(sv.modifier) ? Math.floor(sv.modifier) : 0;
+      const saveTotal = isFinite(sv.total) ? Math.floor(sv.total) : 0;
+      const saveDC = isFinite(sv.dc) ? Math.floor(sv.dc) : 10;
+      let rollStr = "d20(" + saveRoll + ")";
+      rollStr += (saveMod >= 0 ? " + " : " − ") + Math.abs(saveMod) + " = " + saveTotal;
+      const verdict = saveTotal + " vs DC " + saveDC + " → " + (sv.success ? "SAVED" : "FAILED");
 
       details.push({
         section: "save",
@@ -519,67 +565,81 @@ window.CombatFlowUI = (() => {
         roll: rollStr,
         verdict: verdict,
         success: sv.success,
-        dc: sv.dc,
+        dc: saveDC,
       });
     }
 
     // Damage breakdown
-    if (opts.damageBreakdown && opts.damageBreakdown.length > 0) {
+    if (Array.isArray(opts.damageBreakdown) && opts.damageBreakdown.length > 0) {
       const dmgLines = opts.damageBreakdown.map((comp) => {
+        // Validate comp is object
+        if (!comp || typeof comp !== 'object') return null;
         const cfg = getDamageConfig(comp.type);
         let line = "";
-        if (comp.roll && comp.roll.expression) {
-          line = comp.roll.expression + "(" + comp.roll.details + ")";
-          if (comp.roll.modifier) {
-            line += (comp.roll.modifier >= 0 ? " + " : " − ") + Math.abs(comp.roll.modifier);
+        const compTotal = isFinite(comp.total) ? Math.floor(comp.total) : 0;
+        if (comp.roll && typeof comp.roll === 'object') {
+          // Validate roll expression length to prevent injection/DoS
+          const expr = String(comp.roll.expression || "");
+          const rollDetails = String(comp.roll.details || "");
+          if (expr.length > 100 || rollDetails.length > 100) {
+            line = String(compTotal);
+          } else {
+            line = expr + "(" + rollDetails + ")";
+            if (comp.roll.modifier != null && isFinite(comp.roll.modifier)) {
+              line += (comp.roll.modifier >= 0 ? " + " : " − ") + Math.abs(Math.floor(comp.roll.modifier));
+            }
+            line += " = " + compTotal;
           }
-          line += " = " + comp.total;
         } else {
-          line = String(comp.total || 0);
+          line = String(compTotal);
         }
         line += " " + cfg.label.toLowerCase();
 
-        if (comp.relation === "resistant") line += " (½ resistant → " + comp.applied + ")";
+        const applied = isFinite(comp.applied) ? Math.floor(comp.applied) : compTotal;
+        if (comp.relation === "resistant") line += " (½ resistant → " + applied + ")";
         else if (comp.relation === "immune") line += " (immune → 0)";
-        else if (comp.relation === "vulnerable") line += " (×2 vulnerable → " + comp.applied + ")";
+        else if (comp.relation === "vulnerable") line += " (×2 vulnerable → " + applied + ")";
 
-        return { text: line, type: comp.type, applied: comp.applied != null ? comp.applied : comp.total, color: cfg.color };
-      });
+        return { text: line, type: comp.type, applied: applied, color: cfg.color };
+      }).filter(l => l !== null);
 
-      const totalApplied = opts.totalDamage || dmgLines.reduce((s, d) => s + (d.applied || 0), 0);
+      const calcTotal = dmgLines.reduce((s, d) => s + (isFinite(d.applied) ? d.applied : 0), 0);
+      const totalApplied = isFinite(opts.totalDamage) ? Math.floor(opts.totalDamage) : calcTotal;
+      const rawDamage = isFinite(opts.rawDamage) ? Math.floor(opts.rawDamage) : totalApplied;
 
       details.push({
         section: "damage",
         label: opts.isCrit ? "Critical Damage" : "Damage",
         components: dmgLines,
         totalDamage: totalApplied,
-        rawDamage: opts.rawDamage || totalApplied,
+        rawDamage: rawDamage,
       });
     }
 
     // Conditions
-    if (opts.conditionsApplied && opts.conditionsApplied.length) {
+    if (Array.isArray(opts.conditionsApplied) && opts.conditionsApplied.length) {
       details.push({
         section: "conditions",
         label: "Conditions Applied",
-        conditions: opts.conditionsApplied.map((c) => ({ name: c, applied: true })),
+        conditions: opts.conditionsApplied.map((c) => ({ name: String(c || "Unknown"), applied: true })),
       });
     }
-    if (opts.conditionsRemoved && opts.conditionsRemoved.length) {
+    if (Array.isArray(opts.conditionsRemoved) && opts.conditionsRemoved.length) {
       details.push({
         section: "conditions",
         label: "Conditions Removed",
-        conditions: opts.conditionsRemoved.map((c) => ({ name: c, applied: false })),
+        conditions: opts.conditionsRemoved.map((c) => ({ name: String(c || "Unknown"), applied: false })),
       });
     }
 
+    const safeTotalDmg = isFinite(opts.totalDamage) ? Math.floor(opts.totalDamage) : 0;
     return {
       attacker: opts.attacker ? { id: opts.attacker.id, name: opts.attacker.name, tokenType: opts.attacker.tokenType } : null,
       target: opts.target ? { id: opts.target.id, name: opts.target.name, tokenType: opts.target.tokenType } : null,
-      actionName: opts.actionName || "Attack",
+      actionName: opts.actionName ? String(opts.actionName).substring(0, 50) : "Attack",
       hit: !!opts.hit,
       isCrit: !!opts.isCrit,
-      totalDamage: opts.totalDamage || 0,
+      totalDamage: safeTotalDmg,
       details: details,
       timestamp: Date.now(),
     };
@@ -600,10 +660,17 @@ window.CombatFlowUI = (() => {
     if (!entry) return null;
 
     const maskName = (name, tokenId) => {
-      if (viewRole !== "player") return name;
+      if (viewRole !== "player") return escapeHtml(String(name || "?"));
       const tok = getTokenById ? getTokenById(tokenId) : null;
       if (tok && tok.hidden) return "Hidden Creature";
-      return name;
+      return escapeHtml(String(name || "?"));
+    };
+
+    // HTML escape helper to prevent XSS
+    const escapeHtml = (text) => {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
     };
 
     const formatted = {
@@ -624,51 +691,61 @@ window.CombatFlowUI = (() => {
         const tgtName = maskName(entry.target, entry.targetId);
         formatted.icon = entry.isCrit ? "⊛" : "⚔";
         formatted.color = "#dc143c";
-        formatted.headline = atkName + " → " + tgtName + ": " + (entry.action || "Attack");
+        const actionStr = entry.action ? String(entry.action).substring(0, 50) : "Attack";
+        formatted.headline = atkName + " → " + tgtName + ": " + actionStr;
         formatted.expandable = true;
 
-        if (entry.details && entry.details.length) {
+        if (Array.isArray(entry.details) && entry.details.length) {
           entry.details.forEach((d) => {
+            if (!d || typeof d !== 'object') return;
             if (d.section === "attack") {
               formatted.sublines.push({
-                text: d.roll,
+                text: String(d.roll || ""),
                 accent: d.hit ? "#5ee09a" : "#ef5350",
                 bold: false,
               });
               formatted.sublines.push({
-                text: d.verdict,
+                text: String(d.verdict || ""),
                 accent: d.nat20 ? "#ffd54f" : (d.hit ? "#5ee09a" : "#ef5350"),
                 bold: true,
               });
             }
             if (d.section === "damage") {
-              d.components.forEach((c) => {
-                formatted.sublines.push({
-                  text: c.text,
-                  accent: c.color || "#f4ead6",
-                  bold: false,
+              if (Array.isArray(d.components)) {
+                d.components.forEach((c) => {
+                  if (c && typeof c === 'object') {
+                    formatted.sublines.push({
+                      text: String(c.text || ""),
+                      accent: c.color || "#f4ead6",
+                      bold: false,
+                    });
+                  }
                 });
-              });
+              }
+              const totalDmg = isFinite(d.totalDamage) ? d.totalDamage : 0;
+              const rawDmg = isFinite(d.rawDamage) ? d.rawDamage : totalDmg;
               formatted.sublines.push({
-                text: "Total: " + d.totalDamage + " damage" + (d.rawDamage !== d.totalDamage ? " (" + d.rawDamage + " raw)" : ""),
+                text: "Total: " + totalDmg + " damage" + (rawDmg !== totalDmg ? " (" + rawDmg + " raw)" : ""),
                 accent: "#dc143c",
                 bold: true,
               });
             }
-            if (d.section === "conditions" && d.conditions && d.conditions.length) {
+            if (d.section === "conditions" && Array.isArray(d.conditions) && d.conditions.length) {
               d.conditions.forEach((c) => {
-                formatted.sublines.push({
-                  text: (c.applied ? "Applied: " : "Removed: ") + c.name,
-                  accent: c.applied ? "#ffa726" : "#78909c",
-                  bold: false,
-                });
+                if (c && typeof c === 'object') {
+                  formatted.sublines.push({
+                    text: (c.applied ? "Applied: " : "Removed: ") + String(c.name || "Unknown"),
+                    accent: c.applied ? "#ffa726" : "#78909c",
+                    bold: false,
+                  });
+                }
               });
             }
           });
         } else {
-          // Legacy format
-          if (entry.roll) formatted.sublines.push({ text: "Roll: " + entry.roll, accent: "#90caf9" });
-          if (entry.damage) formatted.sublines.push({ text: "Damage: " + entry.damage, accent: "#dc143c", bold: true });
+          // Legacy format - validate strings
+          if (entry.roll) formatted.sublines.push({ text: "Roll: " + String(entry.roll).substring(0, 100), accent: "#90caf9" });
+          if (entry.damage) formatted.sublines.push({ text: "Damage: " + String(entry.damage).substring(0, 100), accent: "#dc143c", bold: true });
         }
         break;
       }
@@ -678,18 +755,20 @@ window.CombatFlowUI = (() => {
         const tgtName = maskName(entry.target, entry.targetId);
         formatted.icon = "⛨";
         formatted.color = "#78909c";
-        formatted.headline = atkName + " → " + tgtName + ": " + (entry.action || "Attack") + " — MISS";
+        const actionStr = entry.action ? String(entry.action).substring(0, 50) : "Attack";
+        formatted.headline = atkName + " → " + tgtName + ": " + actionStr + " — MISS";
         formatted.expandable = true;
 
-        if (entry.details && entry.details.length) {
+        if (Array.isArray(entry.details) && entry.details.length) {
           entry.details.forEach((d) => {
+            if (!d || typeof d !== 'object') return;
             if (d.section === "attack") {
-              formatted.sublines.push({ text: d.roll, accent: "#90caf9" });
-              formatted.sublines.push({ text: d.verdict, accent: "#ef5350", bold: true });
+              formatted.sublines.push({ text: String(d.roll || ""), accent: "#90caf9" });
+              formatted.sublines.push({ text: String(d.verdict || ""), accent: "#ef5350", bold: true });
             }
           });
         } else if (entry.roll) {
-          formatted.sublines.push({ text: "Roll: " + entry.roll, accent: "#90caf9" });
+          formatted.sublines.push({ text: "Roll: " + String(entry.roll).substring(0, 100), accent: "#90caf9" });
         }
         break;
       }
@@ -698,22 +777,30 @@ window.CombatFlowUI = (() => {
         const tgtName = maskName(entry.target, entry.targetId);
         formatted.icon = entry.success ? "✓" : "✗";
         formatted.color = entry.success ? "#66bb6a" : "#ef5350";
-        formatted.headline = tgtName + ": " + (entry.ability || "").toUpperCase() + " Save" +
-          (entry.action ? " vs " + entry.action : "") +
+        const abilityStr = entry.ability ? String(entry.ability).toUpperCase().substring(0, 10) : "?";
+        const actionStr = entry.action ? String(entry.action).substring(0, 50) : "";
+        formatted.headline = tgtName + ": " + abilityStr + " Save" +
+          (actionStr ? " vs " + actionStr : "") +
           " — " + (entry.success ? "SAVED" : "FAILED");
         formatted.expandable = true;
 
-        if (entry.details && entry.details.length) {
+        if (Array.isArray(entry.details) && entry.details.length) {
           entry.details.forEach((d) => {
+            if (!d || typeof d !== 'object') return;
             if (d.section === "save") {
-              formatted.sublines.push({ text: d.roll, accent: "#90caf9" });
-              formatted.sublines.push({ text: d.verdict, accent: d.success ? "#66bb6a" : "#ef5350", bold: true });
+              formatted.sublines.push({ text: String(d.roll || ""), accent: "#90caf9" });
+              formatted.sublines.push({ text: String(d.verdict || ""), accent: d.success ? "#66bb6a" : "#ef5350", bold: true });
             }
             if (d.section === "damage") {
-              d.components.forEach((c) => {
-                formatted.sublines.push({ text: c.text, accent: c.color });
-              });
-              formatted.sublines.push({ text: "Total: " + d.totalDamage + " damage", accent: "#dc143c", bold: true });
+              if (Array.isArray(d.components)) {
+                d.components.forEach((c) => {
+                  if (c && typeof c === 'object') {
+                    formatted.sublines.push({ text: String(c.text || ""), accent: c.color });
+                  }
+                });
+              }
+              const totalDmg = isFinite(d.totalDamage) ? d.totalDamage : 0;
+              formatted.sublines.push({ text: "Total: " + totalDmg + " damage", accent: "#dc143c", bold: true });
             }
           });
         }
@@ -723,50 +810,62 @@ window.CombatFlowUI = (() => {
       case "heal": {
         formatted.icon = "⊕";
         formatted.color = "#66bb6a";
-        formatted.headline = (entry.target || "?") + " healed for " + (entry.amount || 0) + " HP";
+        const target = entry.target ? String(entry.target).substring(0, 50) : "?";
+        const amount = isFinite(entry.amount) ? Math.floor(entry.amount) : 0;
+        formatted.headline = target + " healed for " + amount + " HP";
         break;
       }
 
       case "death": {
         formatted.icon = "☠";
         formatted.color = "#d32f2f";
-        formatted.headline = (entry.target || "?") + " — " + (entry.text || "Defeated");
+        const target = entry.target ? String(entry.target).substring(0, 50) : "?";
+        const text = entry.text ? String(entry.text).substring(0, 50) : "Defeated";
+        formatted.headline = target + " — " + text;
         break;
       }
 
       case "condition": {
         formatted.icon = entry.applied ? "◆" : "◇";
         formatted.color = entry.applied ? "#ffa726" : "#78909c";
-        formatted.headline = (entry.target || "?") + ": " +
-          (entry.applied ? "+" : "−") + " " + (entry.condition || "Condition");
+        const target = entry.target ? String(entry.target).substring(0, 50) : "?";
+        const condition = entry.condition ? String(entry.condition).substring(0, 50) : "Condition";
+        formatted.headline = target + ": " +
+          (entry.applied ? "+" : "−") + " " + condition;
         break;
       }
 
       case "initiative": {
         formatted.icon = "⊞";
         formatted.color = "#ffd54f";
-        formatted.headline = entry.text || "Initiative rolled";
+        const text = entry.text ? String(entry.text).substring(0, 50) : "Initiative rolled";
+        formatted.headline = text;
         break;
       }
 
       case "round": {
         formatted.icon = "⏳";
         formatted.color = "#90caf9";
-        formatted.headline = entry.text || "Round " + (entry.round || "?");
+        const round = isFinite(entry.round) ? Math.floor(entry.round) : "?";
+        const text = entry.text ? String(entry.text).substring(0, 50) : ("Round " + round);
+        formatted.headline = text;
         break;
       }
 
       case "feature": {
         formatted.icon = "✦";
         formatted.color = "#ffd54f";
-        formatted.headline = entry.text || (entry.attacker || "?") + " used " + (entry.action || "feature");
+        const attacker = entry.attacker ? String(entry.attacker).substring(0, 50) : "?";
+        const action = entry.action ? String(entry.action).substring(0, 50) : "feature";
+        formatted.headline = entry.text ? String(entry.text).substring(0, 50) : (attacker + " used " + action);
         break;
       }
 
       default: {
         formatted.icon = "⸎";
         formatted.color = "rgba(242,232,214,0.5)";
-        formatted.headline = entry.text || "Unknown action";
+        const text = entry.text ? String(entry.text).substring(0, 50) : "Unknown action";
+        formatted.headline = text;
         break;
       }
     }
@@ -785,7 +884,7 @@ window.CombatFlowUI = (() => {
    * @returns {Object} Filtered token data
    */
   function filterTokenForView(token, viewRole, playerId) {
-    if (!token) return null;
+    if (!token || typeof token !== 'object' || token === null) return null;
     if (viewRole === "dm") return token; // DM sees everything
 
     // Player view: PCs show full data, enemies show limited
@@ -794,20 +893,22 @@ window.CombatFlowUI = (() => {
     }
 
     // For enemies/NPCs: hide internal stats in player view
+    const hp = isFinite(token.hp) ? token.hp : 0;
+    const maxHp = isFinite(token.maxHp) ? token.maxHp : 1;
     return {
       ...token,
       // Show visible state
       id: token.id,
-      name: token.hidden ? "Unknown Creature" : token.name,
-      x: token.x,
-      y: token.y,
+      name: token.hidden ? "Unknown Creature" : String(token.name || "Unknown"),
+      x: isFinite(token.x) ? token.x : 0,
+      y: isFinite(token.y) ? token.y : 0,
       color: token.color,
       tokenType: token.tokenType,
       size: token.size,
-      hidden: token.hidden,
+      hidden: !!token.hidden,
       // Show HP as percentage, not exact numbers (BG3-style)
-      hp: token.hp,
-      maxHp: token.maxHp,
+      hp: hp,
+      maxHp: maxHp,
       hpVisible: !token.hidden, // Players can see HP bars of visible enemies
       // Hide detailed stats
       ac: undefined,
@@ -815,7 +916,7 @@ window.CombatFlowUI = (() => {
       monsterData: undefined,
       combatProfile: undefined,
       // Keep conditions visible (they're observable in-world)
-      conditions: token.conditions,
+      conditions: Array.isArray(token.conditions) ? token.conditions : [],
     };
   }
 
@@ -825,13 +926,16 @@ window.CombatFlowUI = (() => {
    * @returns {Object} Available action types
    */
   function getAvailableActions(turnState) {
-    if (!turnState) return { action: true, bonus: true, reaction: true, move: true };
+    if (!turnState || typeof turnState !== 'object' || turnState === null) {
+      return { action: true, bonus: true, reaction: true, move: true };
+    }
+    const movementRemaining = isFinite(turnState.movementRemaining) ? turnState.movementRemaining : 0;
     return {
       action: !turnState.actionUsed,
       bonus: !turnState.bonusActionUsed,
       reaction: !turnState.reactionSpent,
-      move: (turnState.movementRemaining || 0) > 0,
-      moveFt: turnState.movementRemaining || 0,
+      move: movementRemaining > 0,
+      moveFt: Math.max(0, movementRemaining),
     };
   }
 
@@ -843,7 +947,9 @@ window.CombatFlowUI = (() => {
    * @returns {{ available: boolean, reason: string }}
    */
   function checkActionAvailability(categoryId, turnState, token) {
-    const cat = ACTION_CATEGORIES[categoryId] || BONUS_ACTIONS[categoryId];
+    // Validate categoryId is a string
+    const safeCategoryId = String(categoryId || "").substring(0, 50);
+    const cat = ACTION_CATEGORIES[safeCategoryId] || BONUS_ACTIONS[safeCategoryId];
     if (!cat) return { available: false, reason: "Unknown action" };
 
     const avail = getAvailableActions(turnState);
@@ -870,17 +976,19 @@ window.CombatFlowUI = (() => {
    * Used by the ConfirmFlyout to show the outcome of an action.
    */
   function createRollResultCard(formattedResult) {
-    if (!formattedResult) return null;
+    if (!formattedResult || typeof formattedResult !== 'object' || formattedResult === null) return null;
+    // Validate totalDamage
+    const totalDamage = isFinite(formattedResult.totalDamage) ? Math.floor(formattedResult.totalDamage) : 0;
     return {
       type: "rollResult",
       attacker: formattedResult.attacker,
       target: formattedResult.target,
       actionName: formattedResult.actionName,
-      hit: formattedResult.hit,
-      isCrit: formattedResult.isCrit,
-      totalDamage: formattedResult.totalDamage,
-      details: formattedResult.details,
-      timestamp: formattedResult.timestamp,
+      hit: !!formattedResult.hit,
+      isCrit: !!formattedResult.isCrit,
+      totalDamage: totalDamage,
+      details: Array.isArray(formattedResult.details) ? formattedResult.details : [],
+      timestamp: isFinite(formattedResult.timestamp) ? formattedResult.timestamp : Date.now(),
     };
   }
 
@@ -893,8 +1001,8 @@ window.CombatFlowUI = (() => {
   function getDisplayInitiative(combatants, tokens, viewRole) {
     if (!Array.isArray(combatants) || !Array.isArray(tokens)) return [];
     return combatants.map((c) => {
-      if (!c || typeof c !== 'object') return null;
-      const tok = tokens.find((t) => t && t.id === c.mapTokenId);
+      if (!c || typeof c !== 'object' || c === null) return null;
+      const tok = tokens.find((t) => t && t !== null && typeof t === 'object' && t.id === c.mapTokenId);
       if (!tok) return { ...c, visible: false };
 
       if (viewRole === "player" && tok.hidden) {
@@ -904,16 +1012,18 @@ window.CombatFlowUI = (() => {
         };
       }
 
+      const hp = isFinite(tok.hp) ? tok.hp : 0;
+      const maxHp = isFinite(tok.maxHp) ? tok.maxHp : 1;
       return {
         ...c,
         visible: true,
         tokenType: tok.tokenType,
-        hp: tok.hp,
-        maxHp: tok.maxHp,
-        isDead: (tok.hp || 0) <= 0,
+        hp: hp,
+        maxHp: maxHp,
+        isDead: hp <= 0,
         isPC: tok.tokenType === "pc",
       };
-    });
+    }).filter(c => c !== null);
   }
 
 

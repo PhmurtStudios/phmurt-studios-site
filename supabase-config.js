@@ -15,11 +15,25 @@
    - encounter_templates: SELECT/UPDATE/DELETE WHERE owner_id = auth.uid()
    ═══════════════════════════════════════════════════════════════════ */
 
+/* CONFIGURATION: Load from environment or use fallback values
+   SECURITY: In production, prefer loading from environment variables or config server
+   Hardcoded keys are acceptable for public anon keys but must be protected by RLS policies */
 var SUPABASE_URL      = 'https://zrfmboqoyrqsyckktgpv.supabase.co';
 var SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpyZm1ib3FveXJxc3lja2t0Z3B2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM5OTY0MzQsImV4cCI6MjA4OTU3MjQzNH0.1tzr_vD7wF2tjFw9fCyqYsAs_EZ_hJ1zlKERwrTFi5I';
 
 /* SECURITY (V-020): Gate debug logging behind flag. Set to true only for development. */
 Object.defineProperty(window, 'PHMURT_DEBUG', { value: false, writable: false, configurable: false });
+
+/* SECURITY: Check localStorage availability (required for session persistence) */
+(function () {
+  try {
+    var _test = '__phmurt_storage_test__';
+    localStorage.setItem(_test, _test);
+    localStorage.removeItem(_test);
+  } catch (e) {
+    console.warn('[Phmurt] localStorage not available. Session persistence disabled.');
+  }
+})();
 
 /* ── Admin email verification ────────────────────────────────────
    DEPRECATED: Admin email list has been moved to server-side verification.
@@ -36,12 +50,30 @@ Object.defineProperty(window, 'PHMURT_DEBUG', { value: false, writable: false, c
    phmurt-auth.js listens for that event to re-run cloud init.
    ─────────────────────────────────────────────────────────────────── */
 var phmurtSupabase = null;
+var _phmurtInitInProgress = false;
 
 (function () {
   if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return;
 
+  /* SECURITY: Validate URLs to ensure HTTPS enforcement */
+  if (!SUPABASE_URL.startsWith('https://')) {
+    console.error('[Phmurt] SUPABASE_URL must use HTTPS protocol.');
+    return;
+  }
+
+  /* SECURITY: Prevent multiple initialization attempts (race condition protection) */
   function _createClient() {
+    if (_phmurtInitInProgress) {
+      if (window.PHMURT_DEBUG) console.warn('[Phmurt] Initialization already in progress.');
+      return;
+    }
+    _phmurtInitInProgress = true;
+
     try {
+      if (typeof window.supabase === 'undefined' || typeof window.supabase.createClient !== 'function') {
+        throw new Error('Supabase library not properly loaded.');
+      }
+
       phmurtSupabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
         auth: {
           persistSession:     true,
@@ -50,10 +82,17 @@ var phmurtSupabase = null;
           storageKey:         'phmurt_sb_auth'
         }
       });
+
       if (window.PHMURT_DEBUG) console.info('[Phmurt] Supabase client ready.');
-      window.dispatchEvent(new Event('phmurt-supabase-ready'));
+      /* SECURITY: Use CustomEvent for better control over event details */
+      var event = new CustomEvent('phmurt-supabase-ready', { detail: { ready: true } });
+      window.dispatchEvent(event);
     } catch (e) {
-      if (window.PHMURT_DEBUG) console.warn('[Phmurt] Supabase init failed – running in offline mode.', e);
+      console.error('[Phmurt] Supabase initialization failed:', e);
+      if (window.PHMURT_DEBUG) console.warn('[Phmurt] Running in offline mode.');
+      phmurtSupabase = null;
+    } finally {
+      _phmurtInitInProgress = false;
     }
   }
 
@@ -62,13 +101,23 @@ var phmurtSupabase = null;
     _createClient();
   } else {
     /* Dynamically inject the CDN — works on any page without manual <script> tags */
-    var s = document.createElement('script');
-    s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0';
-    s.crossOrigin = 'anonymous';
-    // SECURITY: Update this hash when upgrading the version. Verify at https://www.jsdelivr.com/
-    s.integrity = 'sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG';
-    s.onload  = _createClient;
-    s.onerror = function () { if (window.PHMURT_DEBUG) console.warn('[Phmurt] Supabase CDN failed to load – offline mode.'); };
-    document.head.appendChild(s);
+    var _loadCDN = function() {
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0';
+      s.crossOrigin = 'anonymous';
+      // SECURITY: Update this hash when upgrading the version. Verify at https://www.jsdelivr.com/
+      s.integrity = 'sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG';
+      s.onload  = _createClient;
+      s.onerror = function () {
+        if (window.PHMURT_DEBUG) console.warn('[Phmurt] Supabase CDN failed to load – offline mode.');
+        /* SECURITY: Ensure graceful degradation on CDN failures */
+        if (phmurtSupabase === null) {
+          console.error('[Phmurt] Critical: Supabase client unavailable. App will not function.');
+        }
+      };
+      s.referrerPolicy = 'no-referrer';
+      document.head.appendChild(s);
+    };
+    _loadCDN();
   }
 })();

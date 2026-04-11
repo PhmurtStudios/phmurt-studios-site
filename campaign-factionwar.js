@@ -207,7 +207,7 @@ const WORLD_EVENTS = [
     const oldCtrl = r.controllerId;
     r.controllerId = null; r.controllerName = "Rebels"; r.state = "contested"; r.unrest = 40;
     if (oldCtrl && state.factions[oldCtrl]) {
-      state.factions[oldCtrl].territories = state.factions[oldCtrl].territories.filter(t => t !== parseInt(rid));
+      state.factions[oldCtrl].territories = state.factions[oldCtrl].territories.filter(t => String(t) !== String(rid));
     }
     return { text:`Rebellion in ${r.name}! Territory lost to rebels.`, icon:"🔥", severity:"critical" };
   }},
@@ -233,7 +233,7 @@ const WORLD_EVENTS = [
     // Damage all armies in region
     Object.values(state.factions).forEach(f => {
       f.armies.forEach(a => {
-        if (a.position === parseInt(rid)) {
+        if (a.position === rid || String(a.position) === String(rid)) {
           a.units.forEach(u => u.count = Math.max(1, Math.floor(u.count * 0.85)));
           a.morale = Math.max(10, a.morale - 20);
         }
@@ -313,7 +313,7 @@ function initWarState(campaignData) {
   // Initialize faction war data
   const warFactions = {};
   factions.forEach((f, i) => {
-    const controlled = regions.filter(r => r.ctrl === f.name).map(r => r.id);
+    const controlled = regions.filter(r => r.ctrl === f.name).map(r => String(r.id));
     const profile = Object.keys(AI_PROFILES)[i % Object.keys(AI_PROFILES).length];
     const leaders = npcs.filter(n => n.faction === f.name && (n.isLeader || n.role?.match(/king|lord|chief|ruler|general|commander/i)));
     warFactions[f.id] = {
@@ -409,7 +409,7 @@ function initWarState(campaignData) {
       type: r.type || "wilderness",
       controllerId: controller ? controller.id : null,
       controllerName: r.ctrl || "Unaligned",
-      population: parseInt(String(r.population || "1000").replace(/,/g, "")) || 1000,
+      population: parseInt(String(r.population || "1000").replace(/,/g, ""), 10) || 1000,
       state: r.state || "stable",
       fortification: r.type === "capital" ? 3 : r.type === "city" ? 2 : r.type === "town" ? 1 : 0,
       buildings: [],
@@ -544,7 +544,7 @@ function resolvesBattle(attacker, defender, region, state) {
   const atkWarCouncil = (region.buildings || []).includes("warCouncil") && region.controllerId === attacker.factionId;
 
   // Calculate army power
-  function calcArmyPower(army, isDefender, cmdBonus) {
+  function calcArmyPower(army, isDefender, cmdBonus, factionData) {
     let power = 0;
     let totalModels = 0;
     army.units.forEach(u => {
@@ -568,7 +568,7 @@ function resolvesBattle(attacker, defender, region, state) {
         if (enemyCav > 0) atk += 5; // enhanced anti-cav when enemy has cavalry
         else atk += 2; // small base bonus
       }
-      if (ut.special === "frenzy") atk += Math.floor((1 - u.hp / ut.hp) * 6);
+      if (ut.special === "frenzy" && ut.hp > 0) atk += Math.floor((1 - u.hp / ut.hp) * 6);
       if (ut.special === "holdTheLine" && isDefender) def += 3;
       if (ut.special === "armorPierce") atk += 2;
       if (ut.special === "volley" && !isDefender) atk += 2;
@@ -592,7 +592,11 @@ function resolvesBattle(attacker, defender, region, state) {
     });
 
     // Commander level bonus (3% per level)
-    let cmdLvl = army.commanderLevel || 5;
+    let cmdLvl = 5; // default
+    if (army.commanderId && factionData?.commanderPool) {
+      const cmd = factionData.commanderPool.find(c => c.id === army.commanderId);
+      if (cmd) cmdLvl = cmd.level || 5;
+    }
     if (isDefender && defWarCouncil) cmdLvl += 2;
     if (!isDefender && atkWarCouncil) cmdLvl += 2;
     power *= 1 + (cmdLvl * 0.03);
@@ -606,8 +610,8 @@ function resolvesBattle(attacker, defender, region, state) {
     return { power, totalModels };
   }
 
-  const atkCalc = calcArmyPower(attacker, false, atkCmd);
-  const defCalc = calcArmyPower(defender, true, defCmd);
+  const atkCalc = calcArmyPower(attacker, false, atkCmd, atkFaction);
+  const defCalc = calcArmyPower(defender, true, defCmd, defFaction);
 
   const total = atkCalc.power + defCalc.power;
   const atkRatio = total > 0 ? atkCalc.power / total : 0.5;
@@ -751,9 +755,10 @@ function aiTakeTurn(state, factionId) {
         const ut = UNIT_TYPES[uType];
         if (!ut) return false;
         let canAfford = true;
+        const testCount = 25; // Test recruitment amount
         Object.keys(ut.cost).forEach(k => {
           const have = k === "gold" ? faction.gold : (faction.resources[k] || 0);
-          if (have < ut.cost[k] * 2) canAfford = false; // recruit at least 20
+          if (have < ut.cost[k] * Math.ceil(testCount / 10)) canAfford = false;
         });
         return canAfford;
       });
@@ -802,13 +807,13 @@ function aiTakeTurn(state, factionId) {
 
       if (!diplo.warDeclared && diplo.relation < -50 && rng() < profile.attackWeight * 0.5) {
         // Declare war
-        actions.push({ type:"declareWar", targetFactionId: parseInt(otherId) });
+        actions.push({ type:"declareWar", targetFactionId: otherId });
       } else if (diplo.warDeclared && diplo.relation > -20 && rng() < profile.diplomacyWeight * 0.3) {
         // Offer peace
-        actions.push({ type:"offerPeace", targetFactionId: parseInt(otherId) });
+        actions.push({ type:"offerPeace", targetFactionId: otherId });
       } else if (!diplo.warDeclared && diplo.relation > 30 && !diplo.treaties.includes("alliance") && rng() < profile.diplomacyWeight * 0.4) {
         // Form alliance
-        actions.push({ type:"formAlliance", targetFactionId: parseInt(otherId) });
+        actions.push({ type:"formAlliance", targetFactionId: otherId });
       }
     });
   }
@@ -826,7 +831,7 @@ function processTurn(state) {
   Object.keys(newState.factions).forEach(fid => {
     const f = newState.factions[fid];
     if (f.eliminated) return;
-    const income = calcIncome(newState, parseInt(fid));
+    const income = calcIncome(newState, fid);
     f.gold += income.gold;
     f.resources.food += income.food;
     f.resources.iron += income.iron;
@@ -839,7 +844,7 @@ function processTurn(state) {
 
   // Phase 2: AI actions
   Object.keys(newState.factions).forEach(fid => {
-    const actions = aiTakeTurn(newState, parseInt(fid));
+    const actions = aiTakeTurn(newState, fid);
     const f = newState.factions[fid];
     actions.forEach(action => {
       switch(action.type) {
@@ -966,7 +971,7 @@ function processTurn(state) {
   Object.keys(newState.factions).forEach(fid => {
     newState.factions[fid].armies.forEach(army => {
       if (!regionArmies[army.position]) regionArmies[army.position] = [];
-      regionArmies[army.position].push({ ...army, factionId: parseInt(fid), factionName: newState.factions[fid].name });
+      regionArmies[army.position].push({ ...army, factionId: fid, factionName: newState.factions[fid].name });
     });
   });
 
@@ -998,8 +1003,8 @@ function processTurn(state) {
         if (realDef) { realDef.units = defender.units; realDef.morale = defender.morale; realDef.experience = defender.experience; }
 
         // Remove armies with no units
-        newState.factions[attacker.factionId].armies = newState.factions[attacker.factionId].armies.filter(army => army.units.length > 0);
-        newState.factions[defender.factionId].armies = newState.factions[defender.factionId].armies.filter(army => army.units.length > 0);
+        if (newState.factions[attacker.factionId]) newState.factions[attacker.factionId].armies = newState.factions[attacker.factionId].armies.filter(army => army.units.length > 0);
+        if (newState.factions[defender.factionId]) newState.factions[defender.factionId].armies = newState.factions[defender.factionId].armies.filter(army => army.units.length > 0);
 
         // Territory changes
         if (result.attackerWins && region.controllerId === defender.factionId) {
@@ -1009,8 +1014,8 @@ function processTurn(state) {
           region.controllerName = newOwner.name;
           region.state = "conquered";
           region.unrest = 30;
-          oldOwner.territories = oldOwner.territories.filter(t => t !== parseInt(rid));
-          newOwner.territories.push(parseInt(rid));
+          oldOwner.territories = oldOwner.territories.filter(t => String(t) !== String(rid));
+          newOwner.territories.push(String(rid));
           oldOwner.losses.territories++;
           newOwner.victories.territoriesGained++;
         }
@@ -1065,7 +1070,7 @@ function processTurn(state) {
     f.armies.forEach(army => {
       const cmdBonus = getCommanderBonuses(army, f);
       const region = newState.regions[army.position];
-      const inFriendly = f.territories.includes(army.position);
+      const inFriendly = f.territories.map(t => String(t)).includes(String(army.position));
       const hasSupplyDepot = region && (region.buildings || []).includes("supplyDepot");
       const hasHospital = region && (region.buildings || []).includes("hospital");
       const supplyRate = hasSupplyDepot ? 40 : 20;
@@ -1220,7 +1225,7 @@ function StrategicMap({ state, selectedRegion, onSelectRegion, selectedFaction }
         if (!from) return null;
         return (adjacency[rid] || []).map(toId => {
           const to = regions[toId];
-          if (!to || parseInt(rid) > parseInt(toId)) return null; // draw each line once
+          if (!to || String(rid).localeCompare(String(toId)) > 0) return null; // draw each line once
           return React.createElement("line", {
             key: rid + "-" + toId,
             x1: from.x, y1: from.y, x2: to.x, y2: to.y,

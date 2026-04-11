@@ -8,7 +8,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
     green: "var(--green)", greenDim: "var(--green-dim)",
     heading: "'Cinzel', serif", body: "'Spectral', serif", ui: "'Cinzel', serif"
   };
-  try { if (window.T) Object.assign(T, window.T); } catch(e) {}
+  try { if (window.T) Object.assign(T, window.T); } catch(e) { console.error('Theme merge failed:', e); }
 
   const [showScheduleModal, setShowScheduleModal] = React.useState(false);
   const [showAvailEditor, setShowAvailEditor] = React.useState(false);
@@ -25,7 +25,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
   // Get next session
   const now = new Date();
   const upcomingSessions = scheduler.sessions
-    .filter(s => new Date(s.date) >= now)
+    .filter(s => s && s.date && new Date(s.date) >= now)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
   const nextSession = upcomingSessions[0];
 
@@ -67,7 +67,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
 
     if (ratio === 1) return T.gold;
     if (ratio >= 0.66) return T.green;
-    if (ratio > 0) return T.gold;
+    if (ratio > 0.33) return T.goldDim;
     return T.textFaint;
   };
 
@@ -154,10 +154,11 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
   // Get player stats
   const getPlayerStats = (playerId) => {
     const playerSessions = scheduler.sessions.filter(s =>
-      s.attendees && s.attendees.includes(playerId)
+      s && s.attendees && s.attendees.includes(playerId) && s.status === 'completed'
     );
+    const completedSessions = scheduler.sessions.filter(s => s && s.status === 'completed');
+    const total = Math.max(completedSessions.length, 1);
     const attended = playerSessions.length;
-    const total = Math.max(scheduler.sessions.length, 1);
     const percentage = Math.round((attended / total) * 100);
 
     return {
@@ -225,7 +226,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
         },
           (nextSession.attendees || []).map((attendeeId, idx) =>
             React.createElement('div', {
-              key: attendeeId,
+              key: attendeeId || idx,
               style: {
                 width: '32px',
                 height: '32px',
@@ -270,9 +271,9 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
       // Future Sessions List
       upcomingSessions.slice(1, 5).length > 0 && React.createElement('div', {},
         React.createElement('div', { style: { fontSize: '12px', color: T.gold, fontWeight: 'bold', marginBottom: '10px' } }, 'UPCOMING'),
-        upcomingSessions.slice(1, 5).map(session =>
+        upcomingSessions.slice(1, 5).map((session, idx) =>
           React.createElement('div', {
-            key: session.id,
+            key: session?.id || idx,
             style: {
               backgroundColor: T.bgCard,
               border: `1px solid ${T.border}`,
@@ -308,12 +309,12 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
           marginTop: 'auto',
           transition: 'all 0.3s'
         },
-        onMouseEnter: (e) => e.target.style.backgroundColor = T.crimson,
+        onMouseEnter: (e) => e.target.style.backgroundColor = T.crimsonDim,
         onMouseLeave: (e) => e.target.style.backgroundColor = T.crimson
       }, '+ SCHEDULE SESSION'),
 
       // Past Sessions
-      scheduler.sessions.filter(s => new Date(s.date) < now).length > 0 && React.createElement('div', {},
+      scheduler.sessions.filter(s => s && s.date && new Date(s.date) < now).length > 0 && React.createElement('div', {},
         React.createElement('button', {
           onClick: () => setExpandedPastSessions(!expandedPastSessions),
           style: {
@@ -330,12 +331,12 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
           }
         }, expandedPastSessions ? '▼ PAST SESSIONS' : '▶ PAST SESSIONS'),
         expandedPastSessions && scheduler.sessions
-          .filter(s => new Date(s.date) < now)
+          .filter(s => s && s.date && new Date(s.date) < now)
           .sort((a, b) => new Date(b.date) - new Date(a.date))
           .slice(0, 5)
-          .map(session =>
+          .map((session, idx) =>
             React.createElement('div', {
-              key: session.id,
+              key: session?.id || idx,
               style: {
                 backgroundColor: T.bgNav,
                 border: `1px solid ${T.textFaint}`,
@@ -632,7 +633,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
           .filter(m => m.role !== 'dm')
           .map(member => {
             const stats = getPlayerStats(member.user_id);
-            const character = party.find(p => p.name?.toLowerCase().includes(member.profiles?.name?.toLowerCase() || ''));
+            const character = party.find(p => (p.name || '').toLowerCase().includes((member.profiles?.name || '').toLowerCase())) || null;
             return React.createElement('div', {
               key: member.user_id,
               style: {
@@ -644,10 +645,10 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
               }
             },
               React.createElement('div', { style: { fontWeight: 'bold', color: T.gold, marginBottom: '4px' } },
-                String(member.profiles?.name || 'Unknown').replace(/[<>]/g, '')
+                String(member.profiles?.name || 'Unknown').replace(/[&<>"']/g, '')
               ),
               React.createElement('div', { style: { color: T.textMuted, fontSize: '10px', marginBottom: '6px' } },
-                character ? `${String(character.name || '').replace(/[<>]/g, '')} (${String(character.class || '').replace(/[<>]/g, '')})` : 'No character'
+                character ? `${String(character.name || '').replace(/[&<>"']/g, '')} (${String(character.class || '').replace(/[&<>"']/g, '')})` : 'No character'
               ),
               React.createElement('div', { style: { display: 'flex', justifyContent: 'space-between', marginBottom: '6px' } },
                 React.createElement('span', { style: { color: T.textFaint } }, `${stats.attended || 0}/${stats.total || 0} attended`),
@@ -672,7 +673,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
                 })
               ),
               React.createElement('div', { style: { color: T.textFaint, fontSize: '9px', marginTop: '4px' } },
-                `Last: ${String(stats.lastAttended || 'Never').replace(/[<>]/g, '')}`
+                `Last: ${String(stats.lastAttended || 'Never').replace(/[&<>"']/g, '')}`
               )
             );
           })
@@ -762,7 +763,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
             onChange: (e) => {
               if (e.target.value) {
                 const [year, month, day] = e.target.value.split('-');
-                setSelectedDate(new Date(year, parseInt(month) - 1, day));
+                setSelectedDate(new Date(parseInt(year, 10), parseInt(month, 10) - 1, parseInt(day, 10)));
               } else {
                 setSelectedDate(null);
               }
@@ -784,7 +785,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
             React.createElement('label', { style: { display: 'block', fontSize: '12px', color: T.textMuted, marginBottom: '6px' } }, 'START TIME'),
             React.createElement('select', {
               value: selectedTimeRange.start,
-              onChange: (e) => setSelectedTimeRange({ ...selectedTimeRange, start: parseInt(e.target.value) }),
+              onChange: (e) => setSelectedTimeRange({ ...selectedTimeRange, start: parseInt(e.target.value, 10) }),
               style: {
                 width: '100%',
                 padding: '8px',
@@ -802,7 +803,7 @@ window.CampaignSchedulerView = function CampaignSchedulerView({ data, setData, v
             React.createElement('label', { style: { display: 'block', fontSize: '12px', color: T.textMuted, marginBottom: '6px' } }, 'END TIME'),
             React.createElement('select', {
               value: selectedTimeRange.end,
-              onChange: (e) => setSelectedTimeRange({ ...selectedTimeRange, end: parseInt(e.target.value) }),
+              onChange: (e) => setSelectedTimeRange({ ...selectedTimeRange, end: parseInt(e.target.value, 10) }),
               style: {
                 width: '100%',
                 padding: '8px',

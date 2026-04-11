@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   <meta name="referrer" content="strict-origin" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://*.stripe.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
@@ -17,6 +18,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Open Game License - Phmurt Studios" />
   <meta name="twitter:description" content="Open Game License attribution and legal notices for Phmurt Studios content." />
+  <link rel="canonical" href="https://phmurtstudios.com/ogl.html" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
@@ -24,27 +26,19 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
-  <link rel="stylesheet" href="style.css" />
-  <script src="theme.js"></script>
+  <link rel="stylesheet" href="style.css?v=185" />
+  <script src="theme.js?v=185"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous" integrity="sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG"></script>
-  <script src="supabase-config.js"></script>
-  <script src="phmurt-auth.js?v=182"></script>
+  <script src="supabase-config.js?v=185"></script>
+  <script src="phmurt-auth.js?v=185"></script>
 </head>
-<body data-nav-active="OGL" data-footer-copy="Roll Well. Play Weird.">
+<body data-nav-active="OGL" data-footer-copy="Roll Well. Play Weird." data-breadcrumb="Home / Open Game License">
 
   <a href="#main-content" class="ps-skip-nav">Skip to content</a>
+  <div id="ps-site-shell"></div>
+  <div id="ps-page-breadcrumb"></div>
 
-  <div class="ps-site-shell">
-    <div class="ps-page-breadcrumb">
-      <nav aria-label="Breadcrumb">
-        <ol>
-          <li><a href="/">Home</a></li>
-          <li><span>Open Game License</span></li>
-        </ol>
-      </nav>
-    </div>
-
-    <main id="main-content" class="ps-page-content">
+  <main id="main-content" class="ps-page-content">
       <div class="ps-content-section">
         <h1>Open Game License Attribution</h1>
 
@@ -130,8 +124,14 @@
         </section>
       </div>
     </main>
-  </div>
 
-  <script src="phmurt-shell.js"></script>
+  <div id="ps-site-footer"></div>
+  <noscript>
+    <p style="padding: 20px; text-align: center; color: #e74c3c; font-family: sans-serif;">
+      This site requires JavaScript to function properly. Please enable JavaScript in your browser settings.
+    </p>
+  </noscript>
+
+  <script src="phmurt-shell.js?v=185"></script>
 </body>
 </html>

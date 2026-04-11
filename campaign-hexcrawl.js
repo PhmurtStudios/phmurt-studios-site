@@ -85,7 +85,7 @@
     jungle: {
       id: 'jungle',
       name: 'Jungle',
-      icon: '⚍',
+      icon: '🌳',
       travelCost: 3,
       forageDC: 12,
       shelterAvailable: true,
@@ -118,7 +118,7 @@
     lake: {
       id: 'lake',
       name: 'Lake',
-      icon: '○',
+      icon: '◐',
       travelCost: 1,
       forageDC: 9,
       shelterAvailable: false,
@@ -145,11 +145,11 @@
   const HEX_FEATURES = [
     { id: 'campsite', name: 'Abandoned Campsite', icon: '⌂', description: 'Former adventurer camp with cold fire pit', mechanicalEffect: 'shelter_available' },
     { id: 'stream', name: 'Crystal Stream', icon: '≈', description: 'Clear water source', mechanicalEffect: 'water_source' },
-    { id: 'cave', name: 'Cave Entrance', icon: '⌂', description: 'Leads into darkness', mechanicalEffect: 'shelter_or_danger' },
+    { id: 'cave', name: 'Cave Entrance', icon: '⛰', description: 'Leads into darkness', mechanicalEffect: 'shelter_or_danger' },
     { id: 'standing_stones', name: 'Standing Stones', icon: '⊙', description: 'Ancient circle of mysterious megaliths', mechanicalEffect: 'arcane_resonance' },
     { id: 'fairy_ring', name: 'Fairy Ring', icon: '◎', description: 'Circle of mushrooms with otherworldly aura', mechanicalEffect: 'magic_site' },
     { id: 'old_road', name: 'Old Road', icon: '─', description: 'Cobblestone path, long abandoned', mechanicalEffect: 'travel_bonus' },
-    { id: 'animal_den', name: 'Animal Den', icon: '◎', description: 'Burrow or lair of local fauna', mechanicalEffect: 'encounter_likely' },
+    { id: 'animal_den', name: 'Animal Den', icon: '◈', description: 'Burrow or lair of local fauna', mechanicalEffect: 'encounter_likely' },
     { id: 'herb_patch', name: 'Herb Patch', icon: '⚘', description: 'Medicinal plants growing wild', mechanicalEffect: 'forage_bonus' },
     { id: 'mineral_vein', name: 'Mineral Vein', icon: '◆', description: 'Exposed ore deposit', mechanicalEffect: 'material_source' },
     { id: 'viewpoint', name: 'Natural Viewpoint', icon: '◉', description: 'High vantage point overlooking the land', mechanicalEffect: 'vision_bonus' },
@@ -286,7 +286,7 @@
 
       const qDist = Math.abs(qEnd - qStart);
       const rDist = Math.abs(rEnd - rStart);
-      const gridSize = Math.max(qDist, rDist) + 5;
+      const gridSize = Math.min(Math.max(qDist, rDist) + 5, 50);
 
       for (let i = -gridSize; i <= gridSize; i++) {
         for (let j = -gridSize; j <= gridSize; j++) {
@@ -397,7 +397,7 @@
         }
       }
 
-      const dangerLevel = Math.ceil(rng() * 5);
+      const dangerLevel = Math.floor(rng() * 5) + 1;
 
       return {
         q,

@@ -134,7 +134,7 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
       const generated = window.QuestBoard.generateQuests(data);
       setData(d => ({
         ...d,
-        quests: [...d.quests, ...generated]
+        quests: [...(d.quests || []), ...generated]
       }));
     } else {
       console.warn('QuestBoard.generateQuests not available');
@@ -145,7 +145,7 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
   const QuestCard = ({ quest }) => {
     const isExpanded = expandedQuestId === quest.id;
     const giver = getQuestGiver(quest.id);
-    const region = regions.find(r => r.name === quest.region);
+    const region = regions.find(r => r && r.name === quest.region);
 
     return (
       <div
@@ -286,8 +286,8 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
             color: T.gold
           }}
         >
-          {quest.rewards?.gold > 0 && <span>{quest.rewards.gold} gold</span>}
-          {quest.rewards?.xp > 0 && <span>{quest.rewards.xp} XP</span>}
+          {quest.rewards && quest.rewards.gold > 0 && <span>{quest.rewards.gold} gold</span>}
+          {quest.rewards && quest.rewards.xp > 0 && <span>{quest.rewards.xp} XP</span>}
         </div>
 
         {/* Status badge */}
@@ -341,7 +341,6 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
                         color: obj.completed ? T.textFaint : T.textMuted,
                         opacity: obj.completed ? 0.6 : 1
                       }}
-                      onClick={() => isDM && toggleObjective(quest.id, idx)}
                     >
                       <input
                         type="checkbox"
@@ -366,9 +365,9 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
                   Rewards
                 </h4>
                 <div style={{ fontSize: '13px', fontFamily: T.body, color: T.textMuted }}>
-                  {quest.rewards.gold > 0 && <div>{quest.rewards.gold} gold pieces</div>}
-                  {quest.rewards.xp > 0 && <div>{quest.rewards.xp} experience points</div>}
-                  {quest.rewards.items && Array.isArray(quest.rewards.items) && quest.rewards.items.length > 0 && (
+                  {quest.rewards.gold && quest.rewards.gold > 0 && <div>{quest.rewards.gold} gold pieces</div>}
+                  {quest.rewards.xp && quest.rewards.xp > 0 && <div>{quest.rewards.xp} experience points</div>}
+                  {Array.isArray(quest.rewards.items) && quest.rewards.items.length > 0 && (
                     <div>
                       Items: {quest.rewards.items.map(item => String(item).replace(/[<>]/g, '')).join(', ')}
                     </div>
@@ -499,9 +498,9 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
           </p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', flex: 1 }}>
-            {party.map(member => (
+            {party.map((member, idx) => (
               <div
-                key={member.name}
+                key={`party-${idx}-${member.name}`}
                 style={{
                   backgroundColor: T.bgHover,
                   border: `1px solid ${T.border}`,
@@ -555,6 +554,19 @@ window.CampaignQuestsView = function CampaignQuestsView({ data, setData, viewRol
               </div>
             ))}
             <button
+              onClick={() => {
+                const entries = Object.entries(downtimeAssignments).filter(([, activity]) => activity);
+                if (entries.length === 0) {
+                  if (typeof window.psToast === 'function') {
+                    window.psToast('Assign activities before resolving downtime');
+                  }
+                  return;
+                }
+                setDowntimeAssignments({});
+                if (typeof window.psToast === 'function') {
+                  window.psToast(`Downtime resolved for ${entries.length} member(s)`);
+                }
+              }}
               style={{
                 marginTop: 'auto',
                 padding: '10px 16px',

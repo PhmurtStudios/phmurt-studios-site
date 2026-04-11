@@ -340,7 +340,7 @@
           d.plague.outbreaks.splice(existingIdx, 1);
         } else {
           d.plague.outbreaks.push({
-            id: Math.random().toString(36).slice(2, 11),
+            id: 'outbreak_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
             location,
             diseaseId,
             infectedCount: 1,
@@ -365,7 +365,7 @@
         if (!d.plague.patients) d.plague.patients = [];
 
         d.plague.patients.push({
-          id: Math.random().toString(36).slice(2, 11),
+          id: 'patient_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
           name,
           diseaseId,
           currentStage: 1,
@@ -1147,7 +1147,7 @@
                   }}
                 >
                   <div style={{ color: 'var(--gold)', fontWeight: 'bold' }}>
-                    {mut.disease} in {mut.location}
+                    {mut.disease} in {mut.outbreak}
                   </div>
                   <div style={{ color: 'var(--text-dim)', fontSize: '11px' }}>
                     Virulence {mut.severity}
@@ -1262,7 +1262,7 @@
                 gap: '6px'
               }}
             >
-              {tab.icon && tab.icon({ size: 16 })}
+              {tab.icon && typeof tab.icon === 'function' && tab.icon({ size: 16 })}
               {tab.label}
             </button>
           ))}

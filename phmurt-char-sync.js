@@ -45,7 +45,8 @@
         }
       } catch (e) {
         console.warn("[CharSync] listener error", e);
-        // Remove listener that throws repeated errors to prevent spam
+        // Remove listener that throws errors to prevent spam and memory issues
+        listeners.splice(i, 1);
       }
     }
     /* DOM event for cross-component / cross-page */
@@ -258,7 +259,7 @@
     if (typeof PhmurtDB.getCampaigns !== "function") return Promise.resolve();
 
     return PhmurtDB.getCampaigns().then(function (campaigns) {
-      if (!Array.isArray(campaigns) || campaigns.length === 0) return;
+      if (!Array.isArray(campaigns) || campaigns.length === 0) return Promise.resolve();
 
       var cid = String(characterId);
       var saves = [];
@@ -300,9 +301,9 @@
         });
         if (changed) {
           var activityText = String(fields.name || 'Character') + " synced from Character Builder";
-          camp.data.activity = [
-            { time: "Just now", text: activityText.slice(0, 200) },
-          ].concat(Array.isArray(camp.data.activity) ? camp.data.activity.slice(0, 39) : []);
+          var newActivity = { time: "Just now", text: activityText.slice(0, 200) };
+          var priorActivity = Array.isArray(camp.data.activity) ? camp.data.activity.slice(0, 39) : [];
+          camp.data.activity = [newActivity].concat(priorActivity);
           var savePayload = typeof cmCompactForCloud === "function" ? cmCompactForCloud(camp.data || camp) : (camp.data || camp);
           if (savePayload && typeof savePayload === 'object') {
             saves.push(PhmurtDB.saveCampaign(savePayload));
@@ -312,6 +313,7 @@
       return Promise.all(saves);
     }).catch(function (e) {
       console.warn("[CharSync] server fan-out failed", e);
+      return Promise.resolve();
     });
   }
 
@@ -351,7 +353,7 @@
         if (!existing || typeof existing !== 'object' || Array.isArray(existing)) {
           existing = {};
         }
-      } catch (e) {}
+      } catch (e) { /* localStorage may not be available */ }
       // SECURITY: Sanitize campaignId as key
       var safeCampId = String(campaignId || '').replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 100);
       if (safeCampId) {

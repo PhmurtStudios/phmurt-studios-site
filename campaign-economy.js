@@ -182,6 +182,21 @@
   ];
 
   // ─────────────────────────────────────────────────────────────────────
+  // SECURITY: String sanitization for user-controlled data
+  // ─────────────────────────────────────────────────────────────────────
+
+  function sanitizeString(str) {
+    if (typeof str !== 'string') return '';
+    return str.replace(/[<>&"']/g, char => ({
+      '<': '&lt;',
+      '>': '&gt;',
+      '&': '&amp;',
+      '"': '&quot;',
+      "'": '&#039;'
+    }[char]));
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
   // REGION RESOURCE ASSIGNMENT (Deterministic seeded RNG)
   // ─────────────────────────────────────────────────────────────────────
 
@@ -244,6 +259,9 @@
 
   class EconomyEngine {
     constructor(campaignData) {
+      if (!campaignData || typeof campaignData !== 'object') {
+        throw new Error('EconomyEngine requires valid campaignData object');
+      }
       this.regions = campaignData.regions || [];
       this.factions = campaignData.factions || [];
       this.cities = campaignData.cities || [];
@@ -258,7 +276,7 @@
       const goodsById = new Map();
       TRADE_GOODS.forEach(g => goodsById.set(g.id, g));
 
-      const rng = mulberry32(42);
+      const rng = mulberry32(campaignData.seed || 42);
       this.regions.forEach(region => {
         const regionMarket = new Map();
         const goods = this.regionResources.get(region.id) || [];
@@ -303,6 +321,9 @@
      * Updates supply, demand, prices, and generates economic events
      */
     tick(data, rng, relations, warState) {
+      if (!rng || typeof rng !== 'function') {
+        throw new Error('EconomyEngine.tick requires valid RNG function');
+      }
       const events = [];
 
       // ─ Phase 1: Produce goods (supply increases) ─
@@ -321,7 +342,9 @@
         regionMarket.forEach((price, goodId) => {
           const good = TRADE_GOODS.find(g => g.id === goodId);
           if (!good) return; // Skip if good definition not found
-          const supply = this.supply.get(regionId)?.get(goodId) || 50;
+          const supplyMap = this.supply.get(regionId);
+          if (!supplyMap) return; // Safety check for region supply
+          const supply = supplyMap.get(goodId) || 50;
 
           // Price changes: high supply = lower prices, low supply = higher prices
           const supplyFactor = (100 - supply) / 100; // -0.5 to +0.5
@@ -333,7 +356,7 @@
 
           // Supply decreases due to consumption
           const consumption = 1 + rng() * 2;
-          this.supply.get(regionId).set(goodId, Math.max(0, supply - consumption));
+          supplyMap.set(goodId, Math.max(0, supply - consumption));
         });
       });
 
@@ -440,13 +463,14 @@
       if (!regionMarket) return null;
 
       const goods = [];
+      const supplyMap = this.supply.get(region.id);
       regionMarket.forEach((price, goodId) => {
         const good = TRADE_GOODS.find(g => g.id === goodId);
         if (good) {
           goods.push({
             ...good,
             currentPrice: price,
-            supply: this.supply.get(region.id)?.get(goodId) || 50
+            supply: supplyMap?.get(goodId) || 50
           });
         }
       });
@@ -468,7 +492,7 @@
       this.tradeRoutes.forEach(route => {
         if (route.active) {
           const fromRegion = this.regions.find(r => r.id === route.from);
-          if (fromRegion?.ctrl === factionName) {
+          if (fromRegion?.ctrl === faction.id) {
             tradeIncomePerTick += route.profit || 0;
           }
         }
@@ -637,39 +661,47 @@
      * Deserialize economy state from persistence
      */
     deserialize(data) {
-      if (!data) return;
+      if (!data || typeof data !== 'object') return;
 
       this.markets.clear();
-      if (data.markets) {
+      if (Array.isArray(data.markets)) {
         data.markets.forEach(({ regionId, goods }) => {
+          if (!regionId || !Array.isArray(goods)) return;
           const regionMarket = new Map();
           goods.forEach(({ goodId, price }) => {
-            regionMarket.set(goodId, price);
+            if (goodId && typeof price === 'number') {
+              regionMarket.set(goodId, price);
+            }
           });
           this.markets.set(regionId, regionMarket);
         });
       }
 
       this.treasuries.clear();
-      if (data.treasuries) {
+      if (Array.isArray(data.treasuries)) {
         data.treasuries.forEach(({ factionId, gold }) => {
-          this.treasuries.set(factionId, gold);
+          if (factionId && typeof gold === 'number') {
+            this.treasuries.set(factionId, gold);
+          }
         });
       }
 
       this.supply.clear();
-      if (data.supply) {
+      if (Array.isArray(data.supply)) {
         data.supply.forEach(({ regionId, goods }) => {
+          if (!regionId || !Array.isArray(goods)) return;
           const supplyMap = new Map();
           goods.forEach(({ goodId, amount }) => {
-            supplyMap.set(goodId, amount);
+            if (goodId && typeof amount === 'number') {
+              supplyMap.set(goodId, amount);
+            }
           });
           this.supply.set(regionId, supplyMap);
         });
       }
 
-      if (data.tradeRoutes) this.tradeRoutes = data.tradeRoutes;
-      if (data.tick) this.tick = data.tick;
+      if (Array.isArray(data.tradeRoutes)) this.tradeRoutes = data.tradeRoutes;
+      if (typeof data.tick === 'number') this.tick = data.tick;
     }
   }
 
@@ -698,8 +730,8 @@
         const boomedPrice = Math.round(currentPrice * 1.4);
 
         return {
-          headline: `${good.name} Boom in ${region.name}`,
-          detail: `Sudden demand surge for ${good.name}! Prices in ${region.name} spike from ${currentPrice} to ${boomedPrice} gold per unit.`,
+          headline: `${sanitizeString(good.name)} Boom in ${sanitizeString(region.name)}`,
+          detail: `Sudden demand surge for ${sanitizeString(good.name)}! Prices in ${sanitizeString(region.name)} spike from ${currentPrice} to ${boomedPrice} gold per unit.`,
           category: "economic",
           icon: "▲",
           importance: "standard",
@@ -732,8 +764,8 @@
         const crashedPrice = Math.max(1, Math.round(currentPrice * 0.5));
 
         return {
-          headline: `Oversupply Crashes ${good.name} Market`,
-          detail: `Too much ${good.name} flooding the market in ${region.name}! Prices plummet from ${currentPrice} to ${crashedPrice} gold per unit.`,
+          headline: `Oversupply Crashes ${sanitizeString(good.name)} Market`,
+          detail: `Too much ${sanitizeString(good.name)} flooding the market in ${sanitizeString(region.name)}! Prices plummet from ${currentPrice} to ${crashedPrice} gold per unit.`,
           category: "economic",
           icon: "▼",
           importance: "standard",
@@ -768,11 +800,12 @@
         const goodNames = goodsToTrade
           .map(gid => TRADE_GOODS.find(g => g.id === gid)?.name)
           .filter(Boolean)
+          .map(n => sanitizeString(n))
           .join(", ");
 
         return {
-          headline: `Merchant Caravan Departs ${fromRegion.name}`,
-          detail: `A lucrative caravan carrying ${goodNames} is headed to ${toRegion.name}. Savvy traders can profit from regional price differences!`,
+          headline: `Merchant Caravan Departs ${sanitizeString(fromRegion.name)}`,
+          detail: `A lucrative caravan carrying ${goodNames} is headed to ${sanitizeString(toRegion.name)}. Savvy traders can profit from regional price differences!`,
           category: "economic",
           icon: "◈",
           importance: "standard",
@@ -796,8 +829,8 @@
         const region = candidates[Math.floor(rng() * candidates.length)];
 
         return {
-          headline: `Pirates Attack Trade in ${region.name}`,
-          detail: `Notorious sea pirates have struck a major trading post in ${region.name}, disrupting shipments and terrorizing merchants.`,
+          headline: `Pirates Attack Trade in ${sanitizeString(region.name)}`,
+          detail: `Notorious sea pirates have struck a major trading post in ${sanitizeString(region.name)}, disrupting shipments and terrorizing merchants.`,
           category: "economic",
           icon: "⚑",
           importance: "major",
@@ -831,8 +864,8 @@
         const newGood = available[Math.floor(rng() * available.length)];
 
         return {
-          headline: `New Deposit of ${newGood.name} Found in ${region.name}`,
-          detail: `Prospectors have discovered a rich deposit of ${newGood.name} in ${region.name}. This could boost the region's economy!`,
+          headline: `New Deposit of ${sanitizeString(newGood.name)} Found in ${sanitizeString(region.name)}`,
+          detail: `Prospectors have discovered a rich deposit of ${sanitizeString(newGood.name)} in ${sanitizeString(region.name)}. This could boost the region's economy!`,
           category: "economic",
           icon: "⛏",
           importance: "major",
@@ -879,8 +912,8 @@
         if (!target) return null;
 
         return {
-          headline: `${sanctioner.name} Imposes Trade Embargo on ${target}`,
-          detail: `In a bold economic move, the ${sanctioner.name} has cut off all trade with the ${target}. Expect prices to skyrocket in ${target} territories!`,
+          headline: `${sanitizeString(sanctioner.name)} Imposes Trade Embargo on ${sanitizeString(target)}`,
+          detail: `In a bold economic move, the ${sanitizeString(sanctioner.name)} has cut off all trade with the ${sanitizeString(target)}. Expect prices to skyrocket in ${sanitizeString(target)} territories!`,
           category: "economic",
           icon: "⊘",
           importance: "major",
@@ -924,8 +957,8 @@
         const manipFactor = manipulated === "inflated" ? 1.6 : 0.4;
 
         return {
-          headline: `${good.name} Price ${manipulated === "inflated" ? "Inflated" : "Deflated"} in ${region.name}`,
-          detail: `Merchants with deep pockets are artificially ${manipulated} the price of ${good.name} in ${region.name} for profit!`,
+          headline: `${sanitizeString(good.name)} Price ${manipulated === "inflated" ? "Inflated" : "Deflated"} in ${sanitizeString(region.name)}`,
+          detail: `Merchants with deep pockets are artificially ${manipulated} the price of ${sanitizeString(good.name)} in ${sanitizeString(region.name)} for profit!`,
           category: "economic",
           icon: manipulated === "inflated" ? "≡" : "◆",
           importance: "standard",
@@ -955,8 +988,8 @@
         const faminePrices = Math.round(grainPrice * 3.5);
 
         return {
-          headline: `Famine Strikes ${region.name}`,
-          detail: `Crop failure and food shortages plague ${region.name}. Grain prices have tripled, and peasants go hungry as traders hoard supplies.`,
+          headline: `Famine Strikes ${sanitizeString(region.name)}`,
+          detail: `Crop failure and food shortages plague ${sanitizeString(region.name)}. Grain prices have tripled, and peasants go hungry as traders hoard supplies.`,
           category: "economic",
           icon: "⚌",
           importance: "critical",
@@ -981,8 +1014,4 @@
   window.ECONOMY_EVENTS = ECONOMY_EVENTS;
   window.assignRegionResources = assignRegionResources;
 
-  // For debugging
-  if (typeof window.PHMURT_DEBUG === "boolean" && window.PHMURT_DEBUG) {
-    console.log("[economy] EconomyEngine loaded with", TRADE_GOODS.length, "goods and", ECONOMY_EVENTS.length, "event types");
-  }
 })();

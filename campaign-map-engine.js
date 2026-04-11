@@ -1720,7 +1720,7 @@
           const edgeCost = 1.0 + rng() * jitter * 3.5;
           const newCost = cost + edgeCost;
           grid.owner[nIdx] = regionId;
-          this.regions[regionId].cells.add(nIdx);
+          if (regionId >= 0 && regionId < this.regions.length) { this.regions[regionId].cells.add(nIdx); }
           heap.push(newCost, { idx: nIdx, regionId });
         }
       }
@@ -1830,8 +1830,11 @@
       shuffle(regionOrder, rng);
       for (let i = 0; i < regionOrder.length; i++) this._assignRegionToFaction(regionOrder[i], i % numFactions);
       for (const faction of this.factions) {
-        const first = this.regions[Array.from(faction.regions)[0]];
-        if (first && first.cities.length) faction.capital = first.cities[0];
+        const regionIds = Array.from(faction.regions);
+        if (regionIds.length > 0) {
+          const first = this.regions[regionIds[0]];
+          if (first && first.cities.length) faction.capital = first.cities[0];
+        }
       }
       this._borderCache = null;
       return this.factions;
@@ -1885,7 +1888,8 @@
 
     getFactionAt(x, y) {
       const idx = this.grid.cellAt(x, y);
-      return idx >= 0 && this.grid.faction[idx] >= 0 ? this.factions[this.grid.faction[idx]] : null;
+      const factionIdx = this.grid.faction[idx];
+      return idx >= 0 && factionIdx >= 0 && factionIdx < this.factions.length ? this.factions[factionIdx] : null;
     }
   }
 
@@ -2160,7 +2164,9 @@
 
       const factionBorders = [];
       for (const [key, segs] of factionEdges) {
-        const [a, b] = key.split("-").map(Number);
+        const parts = key.split("-").map(Number);
+        const a = parts[0], b = parts[1];
+        if (typeof a !== "number" || typeof b !== "number") continue;
         for (const points of this._chainSegments(segs)) {
           factionBorders.push({ points: this._flowSmooth(points), a, b, type: "faction" });
         }
@@ -3473,7 +3479,7 @@
       const bf = this.opts.bodyFont || DEFAULTS.bodyFont;
       const lf = this.opts.labelFont || DEFAULTS.labelFont;
       ctx.font = `600 14px ${lf}`;
-      const titleW = ctx.measureText(poi.name).width;
+      const poiNameWidth = ctx.measureText(poi.name).width;
 
       ctx.font = `12px ${bf}`;
       const typeStr = `${poi.icon} ${poi.label}`;
@@ -3481,6 +3487,7 @@
 
       // Word-wrap description
       const wrapText = (text, maxWidth) => {
+        if (!text || typeof text !== "string") return [];
         const words = text.split(" ");
         const lines = [];
         let line = "";
@@ -3501,7 +3508,7 @@
       let hookLines = [];
       if (isExpanded) {
         ctx.font = `italic 12px ${bf}`;
-        hookLines = wrapText('"' + poi.hook + '"', maxW - pad * 2);
+        hookLines = wrapText(poi.hook ? '"' + poi.hook + '"' : "", maxW - pad * 2);
       }
 
       // Calculate box height
@@ -3569,7 +3576,7 @@
       ctx.fillText(poi.name, bx + pad, ty);
       // LEGENDARY tag for major POIs
       if (poi.major) {
-        const titleEndX = bx + pad + ctx.measureText(poi.name).width + 8;
+        const titleEndX = bx + pad + poiNameWidth + 8;
         ctx.font = `700 9px ${lf}`;
         const tagText = "LEGENDARY";
         const tagW = ctx.measureText(tagText).width + 8;
@@ -3669,6 +3676,7 @@
 
       // Word-wrap helper
       const wrapText = (text, font, maxWidth) => {
+        if (!text || typeof text !== "string") return [];
         ctx.font = font;
         const words = text.split(" ");
         const lines = [];
@@ -3684,7 +3692,7 @@
       };
 
       // Find faction info
-      const region = city.regionId >= 0 ? this.ts.regions[city.regionId] : null;
+      const region = city.regionId >= 0 && city.regionId < this.ts.regions.length ? this.ts.regions[city.regionId] : null;
       const faction = region ? this.ts.factions[region.factionId] : null;
       const factionName = faction ? faction.name : "Unclaimed";
       const regionName = region ? region.name : "Unknown";
@@ -4407,11 +4415,16 @@
         const regionId = grid.owner[bestIdx];
         const factionId = grid.faction[bestIdx];
 
-        const prefix = poiType.prefixes[(rng() * poiType.prefixes.length) | 0];
-        const suffix = poiType.suffixes[(rng() * poiType.suffixes.length) | 0];
+        const prefixes = poiType.prefixes || [];
+        const suffixes = poiType.suffixes || [];
+        const hooks = poiType.hooks || [];
+        if (prefixes.length === 0 || suffixes.length === 0 || hooks.length === 0) continue;
+
+        const prefix = prefixes[(rng() * prefixes.length) | 0];
+        const suffix = suffixes[(rng() * suffixes.length) | 0];
         const name = `The ${prefix} ${suffix}`;
 
-        const hook = poiType.hooks[(rng() * poiType.hooks.length) | 0];
+        const hook = hooks[(rng() * hooks.length) | 0];
         const danger = clamp(3 + ((rng() * 3) | 0), 3, 5); // major POIs are always dangerous (3-5)
 
         const elev = grid.elevation[bestIdx];
@@ -4483,12 +4496,17 @@
         const factionId = grid.faction[bestIdx];
 
         // Generate name — promoted POIs get "The" prefix for gravitas
-        const prefix = poiType.prefixes[(rng() * poiType.prefixes.length) | 0];
-        const suffix = poiType.suffixes[(rng() * poiType.suffixes.length) | 0];
+        const prefixes = poiType.prefixes || [];
+        const suffixes = poiType.suffixes || [];
+        const hooks = poiType.hooks || [];
+        if (prefixes.length === 0 || suffixes.length === 0 || hooks.length === 0) continue;
+
+        const prefix = prefixes[(rng() * prefixes.length) | 0];
+        const suffix = suffixes[(rng() * suffixes.length) | 0];
         const name = isMajorCandidate ? `The ${prefix} ${suffix}` : `${prefix} ${suffix}`;
 
         // Pick a quest hook
-        const hook = poiType.hooks[(rng() * poiType.hooks.length) | 0];
+        const hook = hooks[(rng() * hooks.length) | 0];
 
         // Generate danger level — promoted majors are more dangerous
         const danger = isMajorCandidate
@@ -4666,6 +4684,7 @@
       // 60% chance to pick specific if available, otherwise universal
       const useSpecific = specific.length > 0 && rng() < 0.6;
       const candidates = useSpecific ? specific : (universal.length > 0 ? universal : pool);
+      if (candidates.length === 0) return null;
       return candidates[(rng() * candidates.length) | 0];
     }
 

@@ -1481,6 +1481,7 @@ function fmGenerateSettlements() {
     for (let i = 0; i < numCities; i++) {
       let placed = false;
       for (let attempt = 0; attempt < 50; attempt++) {
+        if (!kingdom.cells || kingdom.cells.length === 0) break;
         const idx = fmRandInt(0, kingdom.cells.length);
         const kCell = kingdom.cells[idx];
         if (isValidSettlementLocation(kCell.row, kCell.col, 15)) {
@@ -1514,6 +1515,7 @@ function fmGenerateSettlements() {
     for (let i = 0; i < numTowns; i++) {
       let placed = false;
       for (let attempt = 0; attempt < 50; attempt++) {
+        if (!kingdom.cells || kingdom.cells.length === 0) break;
         const idx = fmRandInt(0, kingdom.cells.length);
         const kCell = kingdom.cells[idx];
         if (isValidSettlementLocation(kCell.row, kCell.col, 8)) {
@@ -1546,6 +1548,7 @@ function fmGenerateSettlements() {
     for (let i = 0; i < numHamlets; i++) {
       let placed = false;
       for (let attempt = 0; attempt < 50; attempt++) {
+        if (!kingdom.cells || kingdom.cells.length === 0) break;
         const idx = fmRandInt(0, kingdom.cells.length);
         const kCell = kingdom.cells[idx];
         if (isValidSettlementLocation(kCell.row, kCell.col, 4)) {
@@ -1611,8 +1614,8 @@ class PriorityQueue {
 function fmAStarPath(start, goal, cols, rows) {
   const getCost = (cell) => {
     if (!cell || cell.isWater) return Infinity;
-    if (cell.isMountain) return 15;
     if (cell.isMountain && cell.height > 0.75) return Infinity;
+    if (cell.isMountain) return 15;
     if (cell.isForest || cell.biome === 'dense_forest') return 3;
     if (cell.biome === 'swamp') return 8;
     if (cell.biome === 'desert') return 4;
@@ -1639,7 +1642,9 @@ function fmAStarPath(start, goal, cols, rows) {
   fScore.set(startKey, heuristic(start, goal));
 
   while (!openSet.isEmpty()) {
-    const current = openSet.dequeue().item;
+    const dequeued = openSet.dequeue();
+    if (!dequeued) break;
+    const current = dequeued.item;
     const currentKey = key(current.row, current.col);
 
     if (currentKey === goalKey) {
@@ -2144,7 +2149,7 @@ function fmNameFeatures() {
       const culture = fmPick(['fantasy', 'norse', 'celtic']);
       features.rivers.push({
         name: fmNameGen.feature('river', culture),
-        cells: river,
+        cells: river.path,
         cellCount: river.length
       });
     }
@@ -4102,11 +4107,11 @@ var fmRenderWater = function(ctx) {
       // Dense stippling very near coast (distance 1-3)
       if (dist >= 1 && dist <= 3) {
         ctx.globalAlpha = 0.25 + (3 - dist) * 0.1;
-        var stippleCount = 6 + fmRand(row, col, 'stipple') * 5;
+        var stippleCount = 6 + Math.floor(fmJitterHash(row, col, 1) * 5);
         for (var s = 0; s < stippleCount; s++) {
-          var dotX = cx + (fmRand(row, col, 'stipX' + s) - 0.5) * w;
-          var dotY = cy + (fmRand(row, col, 'stipY' + s) - 0.5) * h;
-          var dotR = 0.25 + fmRand(row, col, 'stipR' + s) * 0.4;
+          var dotX = cx + (fmJitterHash(row, col, 2 + s) - 0.5) * w;
+          var dotY = cy + (fmJitterHash(row, col, 100 + s) - 0.5) * h;
+          var dotR = 0.25 + fmJitterHash(row, col, 200 + s) * 0.4;
           ctx.beginPath();
           ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
           ctx.fill();
@@ -4115,11 +4120,11 @@ var fmRenderWater = function(ctx) {
       // Moderate stippling further out (distance 4-8)
       else if (dist > 3 && dist <= 8) {
         ctx.globalAlpha = 0.12 + (8 - dist) * 0.018;
-        var stippleCount = 3 + fmRand(row, col, 'stipple') * 2;
+        var stippleCount = 3 + Math.floor(fmJitterHash(row, col, 3) * 2);
         for (var s = 0; s < stippleCount; s++) {
-          var dotX = cx + (fmRand(row, col, 'stipX' + s) - 0.5) * w;
-          var dotY = cy + (fmRand(row, col, 'stipY' + s) - 0.5) * h;
-          var dotR = 0.3 + fmRand(row, col, 'stipR' + s) * 0.3;
+          var dotX = cx + (fmJitterHash(row, col, 10 + s) - 0.5) * w;
+          var dotY = cy + (fmJitterHash(row, col, 110 + s) - 0.5) * h;
+          var dotR = 0.3 + fmJitterHash(row, col, 210 + s) * 0.3;
           ctx.beginPath();
           ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
           ctx.fill();
@@ -4331,14 +4336,14 @@ var fmRenderTerrainFeatures = function(ctx) {
 
       // Sparse clusters of 5-8 dots with slight irregularity
       ctx.globalAlpha = 0.2;
-      var clusterSize = 5 + Math.floor(fmRand(row, col, 'dCluster') * 4); // 5-8 dots per cluster
+      var clusterSize = 5 + Math.floor(fmJitterHash(row, col, 1) * 4); // 5-8 dots per cluster
       for (var d = 0; d < clusterSize; d++) {
         // Hand-drawn irregularity: vary positions slightly
-        var angle = fmRand(row, col, 'dAngle' + d) * Math.PI * 2;
-        var dist = fmRand(row, col, 'dDist' + d) * w * 0.8;
+        var angle = fmJitterHash(row, col, 10 + d) * Math.PI * 2;
+        var dist = fmJitterHash(row, col, 50 + d) * w * 0.8;
         var dotX = cx + Math.cos(angle) * dist;
         var dotY = cy + Math.sin(angle) * dist;
-        var dotR = 0.4 + fmRand(row, col, 'dRad' + d) * 0.5;
+        var dotR = 0.4 + fmJitterHash(row, col, 100 + d) * 0.5;
         ctx.beginPath();
         ctx.arc(dotX, dotY, dotR, 0, Math.PI * 2);
         ctx.fill();
@@ -4372,11 +4377,11 @@ var fmRenderTerrainFeatures = function(ctx) {
       var tufts = 3;
       for (var t = 0; t < tufts; t++) {
         // Slight variation in angle for each tuft (hand-drawn feel)
-        var angleVar = fmRand(row, col, 'tAngle' + t) * 0.3 - 0.15;
+        var angleVar = fmJitterHash(row, col, 20 + t) * 0.3 - 0.15;
         var baseAngle = -Math.PI / 2 + (t - 1) * (Math.PI / 4) + angleVar;
 
         // Length varies slightly per tuft
-        var tuftLen = 4 + fmRand(row, col, 'tLen' + t) * 2;
+        var tuftLen = 4 + fmJitterHash(row, col, 60 + t) * 2;
 
         var startX = cx + Math.cos(baseAngle - Math.PI / 2) * 2;
         var startY = cy;
@@ -4622,7 +4627,7 @@ var fmRenderSettlements = function(ctx) {
     }
 
     labelWidth = measureLabel(city.name, font);
-    var fontSize = parseInt(font) || 9;
+    var fontSize = parseInt(font, 10) || 9;
 
     labelData.push({
       idx: i,
@@ -6714,10 +6719,11 @@ function fmSetupInteraction() {
       tooltip.style.display = 'none';
     }
   };
-  FMap.canvas.addEventListener('mousemove', handleCanvasMouseMove);
+  window._fmCanvasMoveHandler = handleCanvasMouseMove;
+  FMap.canvas.addEventListener('mousemove', window._fmCanvasMoveHandler);
 
   // Click handler
-  FMap.canvas.addEventListener('click', (e) => {
+  window._fmCanvasClickHandler = (e) => {
     if (!FMap.view.hoveredEntity) return;
 
     const entity = FMap.view.hoveredEntity;
@@ -6735,10 +6741,11 @@ function fmSetupInteraction() {
     } else if (entity.type === 'landmark') {
       fmShowLandmarkDetail(entity.data);
     }
-  });
+  };
+  FMap.canvas.addEventListener('click', window._fmCanvasClickHandler);
 
   // Context menu handler
-  FMap.canvas.addEventListener('contextmenu', (e) => {
+  window._fmCanvasContextHandler = (e) => {
     e.preventDefault();
 
     if (!FMap.view.hoveredEntity) {
@@ -6754,12 +6761,13 @@ function fmSetupInteraction() {
     } else {
       fmShowContextMenu(e.clientX, e.clientY, FMap.view.hoveredEntity.type, FMap.view.hoveredEntity.data);
     }
-  });
+  };
+  FMap.canvas.addEventListener('contextmenu', window._fmCanvasContextHandler);
 
   // Canvas resize listener with throttling to avoid excessive redraws
   let lastResizeTime = 0;
   const RESIZE_THROTTLE_MS = 200;
-  window.addEventListener('resize', () => {
+  window._fmResizeHandler = () => {
     const now = performance.now();
     if (now - lastResizeTime < RESIZE_THROTTLE_MS) return;
     lastResizeTime = now;
@@ -6771,7 +6779,8 @@ function fmSetupInteraction() {
     } else if (FMap.level === 'city') {
       fmRenderCityMap(FMap.view.currentCity);
     }
-  });
+  };
+  window.addEventListener('resize', window._fmResizeHandler);
 }
 
 function fmScreenToGridCoords(screenX, screenY) {
@@ -7306,7 +7315,6 @@ function fmSaveUserPOI(row, col) {
   const description = document.getElementById('poiDescInput').value;
 
   if (!name) {
-    alert('Please enter a name for the POI');
     return;
   }
 
@@ -7356,8 +7364,10 @@ function fmDeletePOI(poiId) {
 // ============================================================================
 
 function fmSaveEdits() {
-  const editsJSON = JSON.stringify(FMap.userEdits);
-  localStorage.setItem('fmap_user_edits', editsJSON);
+  try {
+    const editsJSON = JSON.stringify(FMap.userEdits);
+    localStorage.setItem('fmap_user_edits', editsJSON);
+  } catch (e) { /* storage full — edits remain in memory but won't persist */ }
 }
 
 function fmLoadEdits() {
@@ -7611,6 +7621,9 @@ function fmCleanup() {
     FMap.canvas.removeEventListener('mousemove', window._fmCanvasMoveHandler);
     FMap.canvas.removeEventListener('click', window._fmCanvasClickHandler);
     FMap.canvas.removeEventListener('contextmenu', window._fmCanvasContextHandler);
+  }
+  if (window._fmResizeHandler) {
+    window.removeEventListener('resize', window._fmResizeHandler);
   }
   FMap.ctx = null;
   FMap.canvas = null;

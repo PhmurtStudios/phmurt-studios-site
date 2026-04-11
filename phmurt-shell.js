@@ -158,7 +158,9 @@
 
   function normalizePath(path) {
     if (!path || path === '/' || path.endsWith('/')) return 'index.html';
-    return path.split('/').pop();
+    // Remove query string and fragments
+    var normalized = path.split('/').pop().split('?')[0].split('#')[0];
+    return normalized || 'index.html';
   }
 
   // Map page filenames to which top-level nav label should be active
@@ -322,6 +324,7 @@
   (function enhanceThemeToggle() {
     let attempts = 0;
     const maxAttempts = 20;
+    let transitionTimeout = null;
     const tryBind = () => {
       if (typeof window.toggleTheme !== 'function') {
         attempts += 1;
@@ -330,10 +333,12 @@
       }
       const origToggle = window.toggleTheme;
       window.toggleTheme = function() {
+        // Clear any pending transition removal to prevent race conditions
+        if (transitionTimeout) clearTimeout(transitionTimeout);
         document.documentElement.classList.add('theme-transition');
         origToggle.apply(this, arguments);
         syncThemeButton();
-        setTimeout(() => document.documentElement.classList.remove('theme-transition'), 500);
+        transitionTimeout = setTimeout(() => document.documentElement.classList.remove('theme-transition'), 500);
       };
     };
     tryBind();
@@ -344,7 +349,7 @@
     const activeLabel = activeNavFor(pageName, document.body?.dataset.navActive || null);
 
     // Skip-nav link (accessibility)
-    if (!document.querySelector('.ps-skip-nav')) {
+    if (!document.querySelector('.ps-skip-nav') && document.body) {
       const skip = document.createElement('a');
       skip.href = '#main-content';
       skip.className = 'ps-skip-nav';
@@ -379,7 +384,7 @@
     btn.setAttribute('aria-label', 'Back to top');
     btn.innerHTML = '&#8593;';
     btn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
-    document.body.appendChild(btn);
+    if (document.body) document.body.appendChild(btn);
 
     let ticking = false;
     window.addEventListener('scroll', () => {
@@ -440,7 +445,7 @@
       if (dd) {
         // SECURITY: Validate subscription fields before use
         var isPro = !!(session.isSubscribed === true || session.subscriptionTier === 'pro');
-        var cancelStatus = session.subscriptionCancelAt ? 'Canceling' : 'Active';
+        var cancelStatus = (session && session.subscriptionCancelAt) ? 'Canceling' : 'Active';
         var tierBadge = isPro
           ? '<div style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-bottom:1px solid var(--border-mid);"><span style="font-family:Cinzel,serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:#f5ede0;background:var(--crimson);padding:2px 8px;border-radius:3px;">PRO</span><span style="font-size:10px;color:var(--text-faint);">' + psEscapeHtml(cancelStatus) + '</span></div>'
           : '<div style="padding:6px 14px;border-bottom:1px solid var(--border-mid);"><a href="pricing.html" style="font-family:Cinzel,serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;color:var(--crimson);text-decoration:none;">✦ Upgrade to Pro</a></div>';
@@ -455,6 +460,7 @@
           '<button id="nav-delete-account-btn" style="color:var(--crimson,#d4433a);">Delete Account</button>' +
           '<button id="nav-signout-btn">Sign Out</button>';
 
+        // SECURITY: Delegate to prevent event listener accumulation
         var soBtn = document.getElementById('nav-signout-btn');
         if (soBtn) {
           soBtn.addEventListener('click', function() {
@@ -547,7 +553,7 @@
       menu.classList.toggle('open', open);
       ham.setAttribute('aria-expanded', String(open));
       menu.setAttribute('aria-hidden', String(!open));
-      document.body.classList.toggle('menu-open', open);
+      if (document.body) document.body.classList.toggle('menu-open', open);
     };
 
     ham.addEventListener('click', () => setOpen(!menu.classList.contains('open')));
@@ -626,7 +632,7 @@
       a.addEventListener('click', (e) => {
         if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
         e.preventDefault();
-        document.body.classList.add('page-out');
+        if (document.body) document.body.classList.add('page-out');
         window.setTimeout(() => { window.location.href = href; }, 180);
       });
     });
@@ -724,7 +730,7 @@
       </style>
     `;
 
-    document.body.appendChild(banner);
+    if (document.body) document.body.appendChild(banner);
 
     // Wire up button handlers
     const acceptBtn = document.getElementById('cookie-accept-btn');
@@ -743,20 +749,24 @@
 
     if (acceptBtn) {
       acceptBtn.addEventListener('click', () => {
-        localStorage.setItem('phmurt_cookie_consent', 'accepted');
+        try { localStorage.setItem('phmurt_cookie_consent', 'accepted'); } catch (e) { /* storage full */ }
         dismissBanner();
       });
     }
 
     if (declineBtn) {
       declineBtn.addEventListener('click', () => {
-        localStorage.setItem('phmurt_cookie_consent', 'declined');
+        try { localStorage.setItem('phmurt_cookie_consent', 'declined'); } catch (e) { /* storage full */ }
         dismissBanner();
       });
     }
   }
 
+  var _authDropdownCloseSetup = false;
   function setupAuthDropdownClose() {
+    // SECURITY: Prevent duplicate event listeners
+    if (_authDropdownCloseSetup) return;
+    _authDropdownCloseSetup = true;
     document.addEventListener('click', function (e) {
       if (e.target.closest('.nav-auth-wrap')) return;
       const dd = document.getElementById('nav-user-dropdown');
@@ -771,16 +781,16 @@
     duration = Math.max(1000, Math.min(10000, Number(duration) || 3000));
     const existing = document.getElementById('ps-toast');
     if (existing) {
-      try { existing.remove(); } catch (e) {}
+      try { existing.remove(); } catch (e) { /* DOM element may have already been removed */ }
     }
     const toast = document.createElement('div');
     toast.id = 'ps-toast';
     toast.textContent = message;
-    document.body.appendChild(toast);
+    if (document.body) document.body.appendChild(toast);
     requestAnimationFrame(function() { if (toast) toast.classList.add('visible'); });
     setTimeout(function() {
       if (toast) toast.classList.remove('visible');
-      setTimeout(function() { try { toast.remove(); } catch (e) {} }, 300);
+      setTimeout(function() { try { toast.remove(); } catch (e) { /* DOM element may have already been removed */ } }, 300);
     }, duration);
   };
 
@@ -844,7 +854,7 @@
             userId = String(sess.userId).slice(0, 100);
           }
         }
-      } catch(e) {}
+      } catch(e) { /* Session retrieval may fail silently */ }
 
       // Build visit record with full context
       var record = {
@@ -891,7 +901,7 @@
         var sel = d === PhmurtDice._selectedDie ? ' ps-die-selected' : '';
         // SECURITY (V-041): Use data-die attribute instead of inline onclick, validate die value
         var dieNum = Math.floor(Number(d)) || 20;
-        return '<button class="ps-die-btn' + sel + '" data-die="' + dieNum + '">d' + dieNum + '</button>';
+        return '<button class="ps-die-btn' + sel + '" data-die="' + psEscapeHtml(String(dieNum)) + '">d' + psEscapeHtml(String(dieNum)) + '</button>';
       }).join('');
 
       var historyHtml = '';
@@ -907,7 +917,9 @@
           if (h.max === total && count === 1) cls = ' nat20';
           if (total === count) cls = ' nat1';
           var rollStr = Array.isArray(h.rolls) ? h.rolls.map(function(r) { return String(Number(r) || 0); }).join('+') : '';
-          historyHtml += '<div class="ps-dice-hist-row"><span class="ps-dice-hist-label">' + count + 'd' + die + '</span><span class="ps-dice-hist-val' + cls + '">' + total + (h.rolls && h.rolls.length > 1 ? ' <span class="ps-dice-hist-detail">(' + rollStr + ')</span>' : '') + '</span></div>';
+          // SECURITY: Escape rollStr to prevent XSS injection in innerHTML
+          var escapedRollStr = psEscapeHtml(rollStr);
+          historyHtml += '<div class="ps-dice-hist-row"><span class="ps-dice-hist-label">' + psEscapeHtml(String(count)) + 'd' + psEscapeHtml(String(die)) + '</span><span class="ps-dice-hist-val' + cls + '">' + psEscapeHtml(String(total)) + (h.rolls && h.rolls.length > 1 ? ' <span class="ps-dice-hist-detail">(' + escapedRollStr + ')</span>' : '') + '</span></div>';
         });
         historyHtml += '</div>';
       }
@@ -918,7 +930,7 @@
           '<div class="ps-dice-selector">' + diceHtml + '</div>' +
           '<div class="ps-dice-count-row">' +
             '<button class="ps-dice-count-btn" data-adjust="-1">-</button>' +
-            '<span class="ps-dice-count-display">' + PhmurtDice._count + 'd' + PhmurtDice._selectedDie + '</span>' +
+            '<span class="ps-dice-count-display">' + psEscapeHtml(String(PhmurtDice._count)) + 'd' + psEscapeHtml(String(PhmurtDice._selectedDie)) + '</span>' +
             '<button class="ps-dice-count-btn" data-adjust="1">+</button>' +
           '</div>' +
           '<button class="ps-dice-roll-btn">Roll</button>' +
@@ -980,9 +992,9 @@
         PhmurtDice._history = PhmurtDice._history.slice(-20);
       }
 
-      // Animate button
+      // Animate button - use more reliable selector
       var popup = document.getElementById('dicePopup');
-      var btn = popup ? popup.querySelector('.ps-dice-btn') : null;
+      var btn = popup ? popup.querySelector('.ps-dice-roll-btn') : null;
       if (btn) {
         btn.classList.add('rolling');
         setTimeout(function() { if (btn) btn.classList.remove('rolling'); }, 500);
@@ -1005,14 +1017,22 @@
         if (Array.isArray(rolls) && rolls.length > 1) {
           var breakdownDiv = document.createElement('div');
           breakdownDiv.className = 'ps-dice-result-breakdown';
-          breakdownDiv.textContent = rolls.map(function(r) { return String(Math.max(0, Number(r) || 0)); }).join(' + ');
+          // SECURITY: Validate each roll value before displaying
+          breakdownDiv.textContent = rolls.map(function(r) {
+            var num = Number(r) || 0;
+            return String(Math.max(0, Math.min(100, num)));
+          }).join(' + ');
           resultEl.appendChild(breakdownDiv);
         }
       }
     },
 
     _timer: null,
+    _initDone: false,
     init: function() {
+      // SECURITY: Prevent duplicate event listeners on multiple calls
+      if (PhmurtDice._initDone) return;
+      PhmurtDice._initDone = true;
       document.addEventListener('click', function(e) {
         var wrapper = document.querySelector('.ps-dice-wrapper');
         if (wrapper && !wrapper.contains(e.target)) {

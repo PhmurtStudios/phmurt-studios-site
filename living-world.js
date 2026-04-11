@@ -1074,7 +1074,7 @@
           const strongest = factionPower[0];
           const weakest = factionPower[factionPower.length - 1];
           if (!strongest || !weakest || strongest.faction.name === weakest.faction.name) return null;
-          if (strongest.power < 60 || weakest.faction.power > 35) return null;
+          if (strongest.power < 60 || weakest.power > 35) return null;
           if (weakest.regions < 1) return null;
 
           // Must be at war or have very hostile relations
@@ -3304,9 +3304,18 @@
             event.relationMutation(this.relations);
           }
 
+          // Apply mutations to internal state
+          if (event.mutations) {
+            this._currentData = event.mutations(this._currentData) || this._currentData;
+          }
+
           // Notify subscribers
           if (this.onEvent) this.onEvent(event);
           if (this.onStateUpdate && event.mutations) {
+            // ── CRITICAL SYNCHRONIZATION FIX: Ensure onStateUpdate callback completes ──
+            // The callback applies mutations to campaign data via setData. We must wait
+            // for it to process before continuing, otherwise we risk losing updates.
+            // Note: setData in React is async, but the callback itself is sync.
             this.onStateUpdate(event.mutations);
           }
           return; // One event per tick

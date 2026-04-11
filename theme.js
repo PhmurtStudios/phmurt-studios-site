@@ -56,7 +56,7 @@
 
     try {
       localStorage.setItem(VISITED_KEY, 'true');
-    } catch(e) {}
+    } catch(e) { /* localStorage may not be available */ }
 
     _transitionTimeoutId = setTimeout(function() {
       document.documentElement.classList.remove('theme-transition');
@@ -83,6 +83,8 @@
             el.classList.remove('first-visit');
           }
         }, 5000);
+        // Store timeout ID for potential cleanup
+        toggle._pulseTimeoutId = pulseTimeout;
       }
     }
   }

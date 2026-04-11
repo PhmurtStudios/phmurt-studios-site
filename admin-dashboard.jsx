@@ -313,7 +313,7 @@ function CampaignsPage({ addToast, canDeleteContent }) {
     if (!canDeleteContent) { addToast('Only superusers can delete campaigns.', 'error'); return; }
     if (!confirm('Delete this campaign? This cannot be undone.')) return;
     const { error } = await sb.from('campaigns').delete().eq('id', id);
-    if (error) { addToast('Delete failed: ' + error.message, 'error'); return; }
+    if (error) { addToast('Delete failed. Please check your permissions and try again.', 'error'); return; }
     logAuditEvent('delete_campaign', 'campaign', id, { name: selected?.name });
     addToast('Campaign deleted.', 'success');
     setSelected(null);
@@ -323,7 +323,7 @@ function CampaignsPage({ addToast, canDeleteContent }) {
   async function toggleFlag(c, reason) {
     const next = !c.flagged;
     const { error } = await sb.from('campaigns').update({ flagged: next, flag_reason: next ? (reason || 'Flagged by admin') : null }).eq('id', c.id);
-    if (error) { addToast('Flag update failed: ' + error.message, 'error'); return; }
+    if (error) { addToast('Flag update failed. Please try again.', 'error'); return; }
     logAuditEvent(next ? 'flag_campaign' : 'unflag_campaign', 'campaign', c.id, { reason: reason || 'Flagged by admin' });
     addToast(next ? 'Campaign flagged.' : 'Flag removed.', next ? 'error' : 'success');
     refetch();
@@ -568,7 +568,7 @@ function UsersPage({ addToast, canManageAdmins }) {
     if (user.is_superuser) { addToast('Superuser accounts cannot be modified.', 'error'); return; }
     const next = !user.is_banned;
     const { error } = await sb.from('profiles').update({ is_banned: next }).eq('id', user.id);
-    if (error) { addToast('Update failed: ' + error.message, 'error'); return; }
+    if (error) { addToast('Update failed. Please check your permissions and try again.', 'error'); return; }
     logAuditEvent(next ? 'ban_user' : 'unban_user', 'user', user.id, { email: user.email, name: user.name });
     addToast(next ? 'User banned.' : 'User unbanned.', next ? 'error' : 'success');
     refetch(); setSelectedUser(null);
@@ -579,7 +579,7 @@ function UsersPage({ addToast, canManageAdmins }) {
     if (user.is_superuser) { addToast('Superuser accounts cannot be modified.', 'error'); return; }
     const next = !user.is_admin;
     const { error } = await sb.from('profiles').update({ is_admin: next }).eq('id', user.id);
-    if (error) { addToast('Update failed: ' + error.message, 'error'); return; }
+    if (error) { addToast('Update failed. Please check your permissions and try again.', 'error'); return; }
     logAuditEvent(next ? 'grant_admin' : 'revoke_admin', 'user', user.id, { email: user.email });
     addToast(next ? 'Admin privileges granted.' : 'Admin privileges removed.', 'success');
     refetch(); setSelectedUser(null);
@@ -590,7 +590,7 @@ function UsersPage({ addToast, canManageAdmins }) {
     if (user && user.is_superuser) { addToast('Superuser accounts cannot be deleted.', 'error'); return; }
     if (!confirm('Delete this profile row? If auth/user data exists elsewhere, remove it separately.')) return;
     const { error } = await sb.from('profiles').delete().eq('id', id);
-    if (error) { addToast('Delete failed: ' + error.message, 'error'); return; }
+    if (error) { addToast('Delete failed. Please check your permissions and try again.', 'error'); return; }
     logAuditEvent('delete_user', 'user', id, { email: user?.email, name: user?.name });
     addToast('User deleted.', 'success');
     refetch(); setSelectedUser(null);
@@ -599,9 +599,9 @@ function UsersPage({ addToast, canManageAdmins }) {
   async function sendPasswordReset(email) {
     if (!sb) { addToast('Supabase not configured.', 'error'); return; }
     const { error } = await sb.auth.resetPasswordForEmail(email);
-    if (error) { addToast('Reset email failed: ' + error.message, 'error'); return; }
+    if (error) { addToast('Reset email failed. Please try again.', 'error'); return; }
     logAuditEvent('password_reset', 'user', null, { email });
-    addToast('Password reset email sent to ' + email, 'success');
+    addToast('Password reset email sent.', 'success');
   }
 
   async function saveNote() {
@@ -609,7 +609,7 @@ function UsersPage({ addToast, canManageAdmins }) {
     setSavingNote(true);
     const { error } = await sb.from('profiles').update({ admin_notes: noteText || null }).eq('id', selectedUser.id);
     setSavingNote(false);
-    if (error) { addToast('Failed to save note: ' + error.message, 'error'); return; }
+    if (error) { addToast('Failed to save note. Please try again.', 'error'); return; }
     addToast('Note saved.', 'success');
     refetch();
   }
@@ -792,7 +792,7 @@ function CharactersPage({ addToast, canDeleteContent }) {
     if (!canDeleteContent) { addToast('Only superusers can delete characters.', 'error'); return; }
     if (!confirm('Delete this character sheet? This cannot be undone.')) return;
     const { error } = await sb.from('characters').delete().eq('id', id);
-    if (error) { addToast('Delete failed: ' + error.message, 'error'); return; }
+    if (error) { addToast('Delete failed. Please check your permissions and try again.', 'error'); return; }
     logAuditEvent('delete_character', 'character', id, { name: selected?.name });
     addToast('Character deleted.', 'success');
     setSelected(null);
@@ -802,7 +802,7 @@ function CharactersPage({ addToast, canDeleteContent }) {
   async function toggleFlag(c, reason) {
     const next = !c.flagged;
     const { error } = await sb.from('characters').update({ flagged: next, flag_reason: next ? (reason || 'Flagged by admin') : null }).eq('id', c.id);
-    if (error) { addToast('Flag update failed: ' + error.message, 'error'); return; }
+    if (error) { addToast('Flag update failed. Please try again.', 'error'); return; }
     logAuditEvent(next ? 'flag_character' : 'unflag_character', 'character', c.id, { reason: reason || 'Flagged by admin' });
     addToast(next ? 'Character flagged.' : 'Flag removed.', next ? 'error' : 'success');
     refetch();
@@ -812,7 +812,7 @@ function CharactersPage({ addToast, canDeleteContent }) {
     if (selectedIds.size === 0) return;
     const ids = Array.from(selectedIds);
     const { error } = await sb.from('characters').update({ flagged: true, flag_reason: 'Bulk flagged by admin' }).in('id', ids);
-    if (error) { addToast('Bulk flag failed: ' + error.message, 'error'); return; }
+    if (error) { addToast('Bulk flag failed. Please try again.', 'error'); return; }
     logAuditEvent('bulk_flag_characters', 'character', null, { count: ids.length, ids });
     addToast(ids.length + ' characters flagged.', 'success');
     setSelectedIds(new Set());
@@ -824,7 +824,7 @@ function CharactersPage({ addToast, canDeleteContent }) {
     if (!confirm('Delete ' + selectedIds.size + ' characters? This cannot be undone.')) return;
     const ids = Array.from(selectedIds);
     const { error } = await sb.from('characters').delete().in('id', ids);
-    if (error) { addToast('Bulk delete failed: ' + error.message, 'error'); return; }
+    if (error) { addToast('Bulk delete failed. Please check your permissions and try again.', 'error'); return; }
     addToast(ids.length + ' characters deleted.', 'success');
     setSelectedIds(new Set());
     refetch();
@@ -1455,18 +1455,18 @@ function ManageAdminsCard({ addToast, canManageAdmins }) {
       setWorking(false); return;
     }
     const { error: upErr } = await sb.from('profiles').update({ is_admin: true }).eq('id', rows[0].id);
-    if (upErr) { addToast('Failed to grant admin: ' + upErr.message, 'error'); }
-    else       { addToast(addr + ' is now an admin.', 'success'); setEmail(''); fetchAdmins(); }
+    if (upErr) { addToast('Failed to grant admin. Please try again.', 'error'); }
+    else       { addToast('Admin privileges granted.', 'success'); setEmail(''); fetchAdmins(); }
     setWorking(false);
   }
 
   async function revokeAdmin(user) {
     if (!canManageAdmins) { addToast('Only superusers can revoke admin access.', 'error'); return; }
     if (!sb) return;
-    if (!confirm('Remove admin access from ' + user.email + '?')) return;
+    if (!confirm('Remove admin access from this account?')) return;
     const { error } = await sb.from('profiles').update({ is_admin: false }).eq('id', user.id);
-    if (error) addToast('Failed to revoke: ' + error.message, 'error');
-    else       { addToast(user.email + ' admin access removed.', 'success'); fetchAdmins(); }
+    if (error) addToast('Failed to revoke admin access. Please try again.', 'error');
+    else       { addToast('Admin access removed.', 'success'); fetchAdmins(); }
   }
 
   return (
@@ -2259,7 +2259,7 @@ function AnnouncementsPage({ addToast }) {
 
     if (editing) {
       const { error } = await sb.from('site_announcements').update(payload).eq('id', editing.id);
-      if (error) { addToast('Update failed: ' + error.message, 'error'); return; }
+      if (error) { addToast('Update failed. Please try again.', 'error'); return; }
       logAuditEvent('update_announcement', 'announcement', editing.id, { title: payload.title });
       addToast('Announcement updated.', 'success');
     } else {
@@ -2267,7 +2267,7 @@ function AnnouncementsPage({ addToast }) {
       payload.created_by = sess?.session?.user?.id || null;
       payload.is_active = true;
       const { error } = await sb.from('site_announcements').insert(payload);
-      if (error) { addToast('Create failed: ' + error.message, 'error'); return; }
+      if (error) { addToast('Create failed. Please try again.', 'error'); return; }
       logAuditEvent('create_announcement', 'announcement', null, { title: payload.title });
       addToast('Announcement created.', 'success');
     }
@@ -2278,7 +2278,7 @@ function AnnouncementsPage({ addToast }) {
   async function toggleActive(a) {
     const next = !a.is_active;
     const { error } = await sb.from('site_announcements').update({ is_active: next, updated_at: new Date().toISOString() }).eq('id', a.id);
-    if (error) { addToast('Toggle failed: ' + error.message, 'error'); return; }
+    if (error) { addToast('Update failed. Please try again.', 'error'); return; }
     logAuditEvent(next ? 'activate_announcement' : 'deactivate_announcement', 'announcement', a.id, { title: a.title });
     addToast(next ? 'Announcement activated.' : 'Announcement deactivated.', 'success');
     refetch();
@@ -2287,7 +2287,7 @@ function AnnouncementsPage({ addToast }) {
   async function deleteAnnouncement(a) {
     if (!confirm('Delete this announcement permanently?')) return;
     const { error } = await sb.from('site_announcements').delete().eq('id', a.id);
-    if (error) { addToast('Delete failed: ' + error.message, 'error'); return; }
+    if (error) { addToast('Delete failed. Please try again.', 'error'); return; }
     logAuditEvent('delete_announcement', 'announcement', a.id, { title: a.title });
     addToast('Announcement deleted.', 'success');
     refetch();
@@ -2878,7 +2878,7 @@ function FeatureFlagsPage({ addToast, viewer }) {
       updated_by: sess?.session?.user?.id || null,
       updated_at: new Date().toISOString(),
     }).eq('key', setting.key);
-    if (error) { addToast('Update failed: ' + error.message, 'error'); return; }
+    if (error) { addToast('Update failed. Please try again.', 'error'); return; }
     logAuditEvent('toggle_setting', 'setting', setting.key, { old_value: current, new_value: next, label: setting.label });
     addToast(`${setting.label}: ${next ? 'ON' : 'OFF'}`, next ? 'success' : 'info');
     refetch();
@@ -2900,7 +2900,7 @@ function FeatureFlagsPage({ addToast, viewer }) {
       updated_by: sess?.session?.user?.id || null,
       updated_at: new Date().toISOString(),
     }).eq('key', setting.key);
-    if (error) { addToast('Update failed: ' + error.message, 'error'); return; }
+    if (error) { addToast('Update failed. Please try again.', 'error'); return; }
     logAuditEvent('update_setting', 'setting', setting.key, { old_value: parseValue(setting.value), new_value: parsed, label: setting.label });
     addToast(`${setting.label} updated.`, 'success');
     setEditingKey(null);
@@ -3236,7 +3236,7 @@ function SubscriptionsPage({ addToast }) {
       subscription_started_at: tier === 'pro' ? new Date().toISOString() : null,
       subscription_expires_at: null,
     }).eq('id', userId);
-    if (error) { addToast('Update failed: ' + error.message, 'error'); return; }
+    if (error) { addToast('Update failed. Please try again.', 'error'); return; }
     logAuditEvent('manual_subscription_change', 'user', userId, { new_tier: tier });
     addToast(`User tier set to ${tier}.`, 'success');
     refetch();

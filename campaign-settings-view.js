@@ -32,14 +32,14 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
   const updateModule = (key, value) => {
     setData(d => ({
       ...d,
-      modules: { ...d.modules, [key]: value }
+      modules: { ...(d.modules || {}), [key]: value }
     }));
   };
 
   const updateModuleConfig = (key, value) => {
     setData(d => ({
       ...d,
-      modules: { ...d.modules, [key]: value }
+      modules: { ...(d.modules || {}), [key]: value }
     }));
   };
 
@@ -106,6 +106,10 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
         if (typeof imported !== 'object' || imported === null) {
           throw new Error('Invalid JSON structure');
         }
+        // Preserve critical fields, prevent malicious overwrites
+        if (typeof imported.campaignName !== 'string') imported.campaignName = '';
+        if (!Array.isArray(imported.quests)) imported.quests = [];
+        if (typeof imported.modules !== 'object' || imported.modules === null) imported.modules = {};
         setData(d => ({ ...d, ...imported }));
       } catch (err) {
         const errorMsg = err && err.message ? err.message : 'Unknown error';
@@ -128,7 +132,7 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
     if (window.confirm("Are you sure? This will reset all event history and faction power.")) {
       setData(d => ({
         ...d,
-        modules: { ...d.modules, eventHistory: [], factionPower: {} }
+        modules: { ...(d.modules || {}), eventHistory: [], factionPower: {} }
       }));
     }
   };
@@ -145,7 +149,7 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
   const canEnableModule = (key) => {
     const required = isModuleRequired(key);
     if (!required) return true;
-    return data.modules[required] === true;
+    return (data.modules || {})[required] === true;
   };
 
   const systemConfigs = {
@@ -338,7 +342,7 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
 
         <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "1.25rem" }}>
           {systems.map(system => {
-            const isEnabled = data.modules[system.key];
+            const isEnabled = (data.modules || {})[system.key];
             const isDisabled = !canEnableModule(system.key);
             const requiredSystem = isModuleRequired(system.key);
 
@@ -426,7 +430,7 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
                           {config.type === "select" && (
                             <div>
                               <select
-                                value={(data.modules[config.key] || config.options[0]) === "Custom" || (config.options.includes("Custom") && !config.options.includes(data.modules[config.key]) && data.modules[config.key]) ? "Custom" : (data.modules[config.key] || config.options[0])}
+                                value={((data.modules || {})[config.key] || config.options[0]) === "Custom" || (config.options.includes("Custom") && !config.options.includes((data.modules || {})[config.key]) && (data.modules || {})[config.key]) ? "Custom" : ((data.modules || {})[config.key] || config.options[0])}
                                 onChange={(e) => updateModuleConfig(config.key, e.target.value)}
                                 style={{
                                   width: "100%",
@@ -443,15 +447,15 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
                                   <option key={opt} value={opt}>{opt}</option>
                                 ))}
                               </select>
-                              {config.options.includes("Custom") && ((data.modules[config.key] || "") === "Custom" || (!config.options.slice(0, -1).includes(data.modules[config.key]) && data.modules[config.key] && data.modules[config.key] !== config.options[0])) && (
+                              {config.options.includes("Custom") && (((data.modules || {})[config.key] || "") === "Custom" || (!config.options.slice(0, -1).includes((data.modules || {})[config.key]) && (data.modules || {})[config.key] && (data.modules || {})[config.key] !== config.options[0])) && (
                                 <div style={{ marginTop: "0.4rem", display: "flex", alignItems: "center", gap: "0.4rem" }}>
                                   <input
                                     type="number"
                                     min="10"
                                     max="3600"
                                     placeholder="seconds"
-                                    value={data.modules[config.key + "Custom"] || ""}
-                                    onChange={(e) => updateModuleConfig(config.key + "Custom", parseInt(e.target.value) || "")}
+                                    value={(data.modules || {})[config.key + "Custom"] || ""}
+                                    onChange={(e) => updateModuleConfig(config.key + "Custom", parseInt(e.target.value, 10) || "")}
                                     style={{
                                       flex: 1,
                                       padding: "0.5rem",
@@ -471,8 +475,8 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
                           {config.type === "number" && (
                             <input
                               type="number"
-                              value={data.modules[config.key] || 1042}
-                              onChange={(e) => updateModuleConfig(config.key, parseInt(e.target.value))}
+                              value={(data.modules || {})[config.key] || 1042}
+                              onChange={(e) => updateModuleConfig(config.key, parseInt(e.target.value, 10))}
                               style={{
                                 width: "100%",
                                 padding: "0.5rem",
@@ -487,11 +491,11 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
                           )}
                           {config.type === "toggle" && (
                             <div
-                              onClick={() => updateModuleConfig(config.key, !data.modules[config.key])}
+                              onClick={() => updateModuleConfig(config.key, !((data.modules || {})[config.key]))}
                               style={{
                                 width: "40px",
                                 height: "24px",
-                                background: data.modules[config.key] ? T.crimson : T.border,
+                                background: (data.modules || {})[config.key] ? T.crimson : T.border,
                                 borderRadius: "12px",
                                 cursor: "pointer",
                                 display: "flex",
@@ -507,7 +511,7 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
                                   background: T.bg,
                                   borderRadius: "10px",
                                   transition: "transform 0.2s ease",
-                                  transform: data.modules[config.key] ? "translateX(16px)" : "translateX(0)"
+                                  transform: (data.modules || {})[config.key] ? "translateX(16px)" : "translateX(0)"
                                 }}
                               />
                             </div>
@@ -542,11 +546,11 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
                 {visibility.label}
               </label>
               <div
-                onClick={() => updateModule(visibility.key, !data.modules[visibility.key])}
+                onClick={() => updateModule(visibility.key, !((data.modules || {})[visibility.key]))}
                 style={{
                   width: "40px",
                   height: "24px",
-                  background: data.modules[visibility.key] ? T.crimson : T.border,
+                  background: (data.modules || {})[visibility.key] ? T.crimson : T.border,
                   borderRadius: "12px",
                   cursor: "pointer",
                   display: "flex",
@@ -563,7 +567,7 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
                     background: T.bg,
                     borderRadius: "10px",
                     transition: "transform 0.2s ease",
-                    transform: data.modules[visibility.key] ? "translateX(16px)" : "translateX(0)"
+                    transform: (data.modules || {})[visibility.key] ? "translateX(16px)" : "translateX(0)"
                   }}
                 />
               </div>

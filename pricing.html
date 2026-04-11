@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta http-equiv="X-Content-Type-Options" content="nosniff" />
   <meta name="referrer" content="strict-origin" />
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://*.stripe.com; frame-ancestors 'none'; base-uri 'self'; form-action 'none'; object-src 'none';" />
@@ -17,6 +18,7 @@
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Pricing · Phmurt Studios" />
   <meta name="twitter:description" content="Compare Phmurt Studios Free and Pro plans." />
+  <link rel="canonical" href="https://phmurtstudios.com/pricing.html" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
@@ -24,12 +26,12 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
-  <link rel="stylesheet" href="style.css" />
-  <script src="theme.js"></script>
+  <link rel="stylesheet" href="style.css?v=185" />
+  <script src="theme.js?v=185"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous" integrity="sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG"></script>
-  <script src="supabase-config.js"></script>
-  <script src="stripe-config.js"></script>
-  <script src="phmurt-auth.js?v=182"></script>
+  <script src="supabase-config.js?v=185"></script>
+  <script src="stripe-config.js?v=185"></script>
+  <script src="phmurt-auth.js?v=185"></script>
 
   <style>
     /* ── Pricing page layout ─────────────────────────────────────── */
@@ -94,7 +96,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
       gap: 28px;
-      max-width: 780px;
+      max-width: 1400px;
       margin: 32px auto 64px;
       padding: 0 24px;
     }
@@ -123,6 +125,39 @@
       letter-spacing: .08em;
       padding: 3px 14px;
       border-radius: 10px;
+    }
+    .plan-card.lifetime {
+      border-color: #c9a84c;
+      box-shadow: 0 0 30px rgba(201, 168, 76, .2);
+      background: linear-gradient(135deg, var(--bg-card, #1e1e2e) 0%, rgba(201, 168, 76, .03) 100%);
+    }
+    .plan-card.lifetime::before {
+      content: 'LIMITED';
+      position: absolute;
+      top: -12px; left: 50%;
+      transform: translateX(-50%);
+      background: #c9a84c;
+      color: #0a0a0a;
+      font-size: .7rem;
+      font-weight: 700;
+      letter-spacing: .08em;
+      padding: 3px 14px;
+      border-radius: 10px;
+    }
+    .plan-card.lifetime .plan-name {
+      color: #c9a84c;
+    }
+    .plan-card.lifetime .plan-urgency {
+      color: #c9a84c;
+      font-size: .8rem;
+      font-weight: 600;
+      margin: 0 0 12px;
+      letter-spacing: .05em;
+    }
+    .plan-card.lifetime .plan-counter {
+      color: var(--text-secondary, #aaa);
+      font-size: .85rem;
+      margin: 0 0 16px;
     }
     .plan-name {
       font-family: 'Cinzel', serif;
@@ -176,6 +211,17 @@
       color: #fff;
     }
     .plan-cta.pro-cta:hover { opacity: .9; }
+    .plan-cta.party-cta {
+      background: var(--accent, #7c3aed);
+      color: #fff;
+    }
+    .plan-cta.party-cta:hover { opacity: .9; }
+    .plan-cta.lifetime-cta {
+      background: #c9a84c;
+      color: #0a0a0a;
+      font-weight: 700;
+    }
+    .plan-cta.lifetime-cta:hover { opacity: .85; }
     .plan-cta.active-cta {
       background: transparent;
       border: 1px solid var(--accent, #7c3aed);
@@ -269,7 +315,7 @@
 
     <div class="billing-toggle">
       <span class="active" id="lbl-monthly">Monthly</span>
-      <div class="billing-switch" id="billing-switch" role="switch" aria-checked="false" tabindex="0"></div>
+      <div class="billing-switch" id="billing-switch" role="switch" aria-checked="false" aria-label="Toggle between monthly and yearly billing" tabindex="0"></div>
       <span id="lbl-yearly">Yearly</span>
       <span class="billing-save">Save $10</span>
     </div>
@@ -323,6 +369,45 @@
       </ul>
     </div>
 
+    <!-- Party Pass plan -->
+    <div class="plan-card">
+      <h2 class="plan-name">Party Pass</h2>
+      <p class="plan-desc">One DM + up to 5 players sharing one workspace.</p>
+      <div class="plan-price" id="party-price">$9.99 <span class="period">/ month</span></div>
+      <p class="plan-price-note" id="party-note">That's ~$1.67/person per month</p>
+      <button class="plan-cta party-cta" id="party-cta">Get Party Pass</button>
+      <ul class="plan-features">
+        <li>1 DM + up to 5 players (6 accounts)</li>
+        <li>Shared campaign workspace</li>
+        <li>All Pro features for everyone</li>
+        <li>Unlimited characters &amp; campaigns</li>
+        <li>All generators &amp; tools</li>
+        <li>Advanced Campaign Tabs</li>
+        <li>World-Building Tools</li>
+        <li>Priority Support</li>
+      </ul>
+    </div>
+
+    <!-- Lifetime Pass plan -->
+    <div class="plan-card lifetime">
+      <h2 class="plan-name">Lifetime Pass</h2>
+      <p class="plan-desc">All Pro features forever. One-time purchase.</p>
+      <div class="plan-price">$49.99 <span class="period">one-time</span></div>
+      <p class="plan-urgency">Early Supporter Edition — Limited to first 200 members</p>
+      <p class="plan-counter" id="lifetime-counter">199 of 200 remaining</p>
+      <button class="plan-cta lifetime-cta" id="lifetime-cta">Claim Lifetime Access</button>
+      <ul class="plan-features">
+        <li>All Pro features forever</li>
+        <li>No recurring charges</li>
+        <li>Unlimited characters &amp; campaigns</li>
+        <li>All generators (Name, Loot, Encounter, Quest)</li>
+        <li>Advanced Campaign Tabs</li>
+        <li>World-Building &amp; Economy Engines</li>
+        <li>Hexcrawl &amp; Battle Map</li>
+        <li>Priority Support</li>
+      </ul>
+    </div>
+
   </section>
 
   <!-- ── FAQ ───────────────────────────────────────────────────────── -->
@@ -349,10 +434,27 @@
       <div class="faq-q">Can I switch between monthly and yearly?</div>
       <div class="faq-a">Yes — manage your billing cycle from your subscription settings. Switch at any time and we'll prorate the difference.</div>
     </div>
+    <div class="faq-item">
+      <div class="faq-q">How does the Party Pass work?</div>
+      <div class="faq-a">One person purchases the Party Pass and invites up to 5 other players. Everyone gets a full Pro account with access to the shared campaign workspace. The DM can manage who's in the party from the settings.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">What happens after 200 Lifetime Passes sell out?</div>
+      <div class="faq-a">The Lifetime Pass is an early supporter offer limited to the first 200 members. Once sold out, this offer won't return at this price. You'll still be able to subscribe to Pro, Party Pass, or other plans.</div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q">Can I upgrade from Pro to Party Pass?</div>
+      <div class="faq-a">Yes — upgrade at any time from your account settings. We'll prorate the difference between your current plan and the new plan, so you'll only pay for what you're gaining.</div>
+    </div>
   </section>
 
   <div id="ps-site-footer"></div>
-  <script src="phmurt-shell.js"></script>
+  <script src="phmurt-shell.js?v=185"></script>
+  <noscript>
+    <p style="padding: 20px; text-align: center; color: #e74c3c; font-family: sans-serif;">
+      This site requires JavaScript to function properly. Please enable JavaScript in your browser settings.
+    </p>
+  </noscript>
 
   <script>
   (function () {
@@ -365,6 +467,10 @@
     var noteEl = document.getElementById('pro-note');
     var ctaEl = document.getElementById('pro-cta');
     var freeCtaEl = document.getElementById('free-cta');
+    var partyPriceEl = document.getElementById('party-price');
+    var partyNoteEl = document.getElementById('party-note');
+    var partyCtaEl = document.getElementById('party-cta');
+    var lifetimeCtaEl = document.getElementById('lifetime-cta');
 
     function updatePricing() {
       if (yearly) {
@@ -380,6 +486,15 @@
         span.textContent = '/ year';
         priceEl.appendChild(span);
         noteEl.textContent = 'That\'s ~$4.17/mo — save $10 vs monthly';
+
+        // Update Party Pass pricing
+        while (partyPriceEl.firstChild) { partyPriceEl.removeChild(partyPriceEl.firstChild); }
+        partyPriceEl.appendChild(document.createTextNode('$99 '));
+        var partySpan = document.createElement('span');
+        partySpan.className = 'period';
+        partySpan.textContent = '/ year';
+        partyPriceEl.appendChild(partySpan);
+        partyNoteEl.textContent = 'That\'s ~$1.38/person per month';
       } else {
         sw.classList.remove('yearly');
         sw.setAttribute('aria-checked', 'false');
@@ -393,6 +508,15 @@
         span.textContent = '/ month';
         priceEl.appendChild(span);
         noteEl.textContent = '';
+
+        // Update Party Pass pricing
+        while (partyPriceEl.firstChild) { partyPriceEl.removeChild(partyPriceEl.firstChild); }
+        partyPriceEl.appendChild(document.createTextNode('$9.99 '));
+        var partySpan = document.createElement('span');
+        partySpan.className = 'period';
+        partySpan.textContent = '/ month';
+        partyPriceEl.appendChild(partySpan);
+        partyNoteEl.textContent = 'That\'s ~$1.67/person per month';
       }
     }
 
@@ -445,61 +569,108 @@
       }
     } catch (e) {}
 
-    /* ── Subscribe button ─────────────────────────────────────────── */
+    /* ── Subscribe button helper function ──────────────────────── */
     var isCheckoutInProgress = false; // SECURITY: Prevent double-clicks during checkout
-    var originalCtaText = ctaEl.textContent;
+    var originalProText = ctaEl.textContent;
+    var originalPartyText = partyCtaEl.textContent;
+    var originalLifetimeText = lifetimeCtaEl.textContent;
 
-    ctaEl.addEventListener('click', function () {
-      if (isCheckoutInProgress) return;
-      if (typeof PhmurtDB === 'undefined') {
-        showToast('Please sign in first to subscribe.', 'error');
-        return;
-      }
-      var sess = PhmurtDB.getSession();
-      if (!sess || !sess.userId) {
-        window.dispatchEvent(new CustomEvent('phmurt-show-auth', { detail: { tab: 'login' } }));
-        return;
-      }
-      if (sess.isSubscribed) {
-        ctaEl.textContent = 'Opening\u2026';
-        ctaEl.disabled = true;
-        PhmurtDB.manageSubscription(window.location.href).catch(function (err) {
-          console.error('Billing portal error:', err);
-          showToast('Could not open billing portal. Please try again.', 'error');
-          ctaEl.textContent = 'Manage Subscription';
-          ctaEl.disabled = false;
+    function handleCheckout(button, originalText, planType) {
+      return function () {
+        if (isCheckoutInProgress) return;
+        if (typeof PhmurtDB === 'undefined') {
+          showToast('Please sign in first to subscribe.', 'error');
+          return;
+        }
+        var sess = PhmurtDB.getSession();
+        if (!sess || !sess.userId) {
+          window.dispatchEvent(new CustomEvent('phmurt-show-auth', { detail: { tab: 'login' } }));
+          return;
+        }
+        if (sess.isSubscribed && planType !== 'lifetime') {
+          button.textContent = 'Opening\u2026';
+          button.disabled = true;
+          PhmurtDB.manageSubscription(window.location.href).catch(function (err) {
+            console.error('Billing portal error:', err);
+            showToast('Could not open billing portal. Please try again.', 'error');
+            button.textContent = 'Manage Subscription';
+            button.disabled = false;
+          });
+          return;
+        }
+        isCheckoutInProgress = true;
+        button.textContent = 'Connecting\u2026';
+        button.disabled = true;
+
+        var interval;
+        if (planType === 'pro') {
+          interval = yearly ? 'yearly' : 'monthly';
+        } else if (planType === 'party') {
+          interval = yearly ? 'party_yearly' : 'party_monthly';
+        } else if (planType === 'lifetime') {
+          interval = 'lifetime';
+        }
+
+        PhmurtDB.startSubscription(window.location.href, interval).catch(function (err) {
+          isCheckoutInProgress = false;
+          button.textContent = originalText;
+          button.disabled = false;
+          console.error('Checkout error:', err);
+          var msg = (err && err.message && err.message !== 'Checkout request failed.') ? err.message : 'Could not start checkout. Please try again.';
+          showToast(msg, 'error');
         });
-        return;
-      }
-      isCheckoutInProgress = true;
-      ctaEl.textContent = 'Connecting\u2026';
-      ctaEl.disabled = true;
-      var plan = yearly ? 'yearly' : 'monthly';
-      PhmurtDB.startSubscription(window.location.href, plan).catch(function (err) {
-        isCheckoutInProgress = false;
-        ctaEl.textContent = originalCtaText;
-        ctaEl.disabled = false;
-        console.error('Checkout error:', err);
-        // Show the actual error from the edge function if available, otherwise generic
-        var msg = (err && err.message && err.message !== 'Checkout request failed.') ? err.message : 'Could not start checkout. Please try again.';
-        showToast(msg, 'error');
-      });
-    });
+      };
+    }
+
+    // Attach handlers to all CTA buttons
+    ctaEl.addEventListener('click', handleCheckout(ctaEl, originalProText, 'pro'));
+    partyCtaEl.addEventListener('click', handleCheckout(partyCtaEl, originalPartyText, 'party'));
+    lifetimeCtaEl.addEventListener('click', handleCheckout(lifetimeCtaEl, originalLifetimeText, 'lifetime'));
 
     /* ── Adjust CTAs if user is already subscribed ────────────────── */
     function updateForAuth() {
       if (typeof PhmurtDB === 'undefined') return;
       var sess = PhmurtDB.getSession();
-      if (sess && sess.isSubscribed) {
-        ctaEl.textContent = 'Manage Subscription';
-        ctaEl.className = 'plan-cta active-cta';
-        freeCtaEl.textContent = 'Current: Pro';
-        freeCtaEl.className = 'plan-cta free-cta';
-        freeCtaEl.removeAttribute('href');
-      } else if (sess && sess.userId) {
-        freeCtaEl.textContent = 'Current Plan';
-        freeCtaEl.className = 'plan-cta active-cta';
-        freeCtaEl.removeAttribute('href');
+      if (sess && sess.userId) {
+        // Determine current subscription type
+        var subType = sess.subscriptionType || null; // 'pro', 'party', 'lifetime', or null for free
+
+        if (subType === 'pro') {
+          ctaEl.textContent = 'Manage Subscription';
+          ctaEl.className = 'plan-cta active-cta';
+          partyCtaEl.textContent = 'Upgrade to Party Pass';
+          partyCtaEl.className = 'plan-cta party-cta';
+          lifetimeCtaEl.textContent = 'Upgrade to Lifetime';
+          lifetimeCtaEl.className = 'plan-cta lifetime-cta';
+          freeCtaEl.textContent = 'Current: Pro';
+          freeCtaEl.className = 'plan-cta free-cta';
+          freeCtaEl.removeAttribute('href');
+        } else if (subType === 'party') {
+          ctaEl.textContent = 'Downgrade to Pro';
+          ctaEl.className = 'plan-cta pro-cta';
+          partyCtaEl.textContent = 'Manage Subscription';
+          partyCtaEl.className = 'plan-cta active-cta';
+          lifetimeCtaEl.textContent = 'Upgrade to Lifetime';
+          lifetimeCtaEl.className = 'plan-cta lifetime-cta';
+          freeCtaEl.textContent = 'Current: Party Pass';
+          freeCtaEl.className = 'plan-cta free-cta';
+          freeCtaEl.removeAttribute('href');
+        } else if (subType === 'lifetime') {
+          ctaEl.textContent = 'Current Plan';
+          ctaEl.className = 'plan-cta active-cta';
+          partyCtaEl.textContent = 'Current Plan';
+          partyCtaEl.className = 'plan-cta active-cta';
+          lifetimeCtaEl.textContent = 'Current: Lifetime';
+          lifetimeCtaEl.className = 'plan-cta active-cta';
+          freeCtaEl.textContent = 'Current: Lifetime';
+          freeCtaEl.className = 'plan-cta free-cta';
+          freeCtaEl.removeAttribute('href');
+        } else {
+          // Free tier
+          freeCtaEl.textContent = 'Current Plan';
+          freeCtaEl.className = 'plan-cta active-cta';
+          freeCtaEl.removeAttribute('href');
+        }
       }
     }
     window.addEventListener('phmurt-auth-change', updateForAuth);
@@ -510,7 +681,7 @@
     try {
       var _autoCheckout = new URLSearchParams(window.location.search).get('plan');
       // SECURITY: Only auto-checkout if plan is valid
-      if (_autoCheckout === 'monthly' || _autoCheckout === 'yearly') {
+      if (_autoCheckout === 'monthly' || _autoCheckout === 'yearly' || _autoCheckout === 'party_monthly' || _autoCheckout === 'party_yearly' || _autoCheckout === 'lifetime') {
         // Wait for auth to be ready, then auto-trigger checkout
         var _autoTriggered = false;
         function _tryAutoCheckout() {
@@ -525,10 +696,10 @@
           // Dispatch event instead of click to avoid double-triggering
           isCheckoutInProgress = true;
           // SECURITY: Validate plan before passing to API
-          var plan = (_autoCheckout === 'yearly') ? 'yearly' : 'monthly';
+          var plan = _autoCheckout; // Use the param directly since we validated it above
           PhmurtDB.startSubscription(window.location.href, plan).catch(function (err) {
             isCheckoutInProgress = false;
-            ctaEl.textContent = originalCtaText;
+            ctaEl.textContent = originalProText;
             ctaEl.disabled = false;
             console.error('Auto-checkout failed:', err);
             var msg = (err && err.message && err.message !== 'Checkout request failed.') ? err.message : 'Checkout failed. Please try again.';

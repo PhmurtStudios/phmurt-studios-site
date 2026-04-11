@@ -22,13 +22,13 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
-  <link rel="stylesheet" href="style.css" />
-  <script src="theme.js"></script>
+  <link rel="stylesheet" href="style.css?v=185" />
+  <script src="theme.js?v=185"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous" integrity="sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG"></script>
-  <script src="supabase-config.js"></script>
-  <script src="stripe-config.js"></script>
-  <script src="phmurt-auth.js?v=182"></script>
-  <script src="builder-data-35.js"></script>
+  <script src="supabase-config.js?v=185"></script>
+  <script src="stripe-config.js?v=185"></script>
+  <script src="phmurt-auth.js?v=185"></script>
+  <script src="builder-data-35.js?v=185"></script>
   <style>
     .cb-wrap { display:grid; grid-template-columns:280px 1fr; min-height:calc(100vh - 60px); max-width:1600px; margin:0 auto; padding:0 32px; }
     .cb-sidebar { background:var(--bg); border-right:1px solid var(--border); padding:24px 0; position:sticky; top:60px; height:calc(100vh - 60px); overflow-y:auto; }
@@ -1773,10 +1773,10 @@ function buildMainTab35(maxHP,ac,babVal,dexMod,strMod) {
 
   var curHP = parseInt(document.getElementById('hp35cur')?.value || maxHP);
   var showDying = curHP <= 0;
-  
+
   // Conditions state
   var activeConditions = window.activeConditions35 || {};
-  
+
   var html = '<div class="cs-main-grid">'+
     '<div>'+
       '<div class="cs-box" style="padding:14px;"><div class="cs-box-title">Ability Scores</div><div class="cs-ability-grid">'+abilHTML+'</div></div>'+
@@ -1840,7 +1840,7 @@ function buildMainTab35(maxHP,ac,babVal,dexMod,strMod) {
     html += '<button class="cs-death-save-btn" onclick="rollStabilize35('+maxHP+','+sheet35State.ac+','+sheet35State.babVal+','+sheet35State.dexMod+','+sheet35State.strMod+')">Roll Stabilization (DC 10 CON)</button>';
     html += '</div>';
   }
-  
+
   // Add conditions tracker
   var allConditions = ['Blinded','Confused','Dazed','Deafened','Exhausted','Fatigued','Frightened','Grappled','Nauseated','Paralyzed','Prone','Shaken','Sickened','Stunned'];
   var conditionsTags = allConditions.map(function(cond) {
@@ -1848,7 +1848,7 @@ function buildMainTab35(maxHP,ac,babVal,dexMod,strMod) {
     return '<div class="cs-condition-tag '+(isActive?'active':'')+'" onclick="toggleCondition35(\''+cond+'\','+maxHP+','+sheet35State.ac+','+sheet35State.babVal+','+sheet35State.dexMod+','+sheet35State.strMod+')">'+cond+'</div>';
   }).join('');
   html += '<div class="cs-conditions"><div class="cs-conditions-title">Conditions</div><div class="cs-conditions-tags">'+conditionsTags+'</div></div>';
-  
+
   document.getElementById('tab35-main').innerHTML = html;
   renderRollLog35();
 }
@@ -2913,6 +2913,6 @@ document.addEventListener('DOMContentLoaded', function() {
   </script>
   <div id="ps-site-footer"></div>
 
-  <script src="phmurt-shell.js"></script>
+  <script src="phmurt-shell.js?v=185"></script>
 </body>
 </html>

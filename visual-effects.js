@@ -15,6 +15,7 @@ window.VFX = (() => {
   let panRef = { x: 0, y: 0 };
   let zoomRef = 1;
   let gridSizeRef = 40;
+  const PARTICLE_DT = 0.016; // ~60fps deltaTime in seconds
 
   // ─── COLOR PALETTES ────────────────────────────────────────────────────────
 
@@ -25,7 +26,7 @@ window.VFX = (() => {
     acid:        { primary: "#76ff03", secondary: "#c6ff00", glow: "rgba(118,255,3,0.4)", particles: ["#76ff03","#c6ff00","#69f0ae","#b9f6ca","#fff"] },
     poison:      { primary: "#4caf50", secondary: "#81c784", glow: "rgba(76,175,80,0.4)", particles: ["#4caf50","#81c784","#a5d6a7","#c8e6c9","#e8f5e9"] },
     necrotic:    { primary: "#7c3aed", secondary: "#9c27b0", glow: "rgba(124,58,237,0.4)", particles: ["#7c3aed","#9c27b0","#ce93d8","#e1bee7","#4a0072"] },
-    radiant:     { primary: "#ffd54f", secondary: "#fff9c4", glow: "rgba(212,67,58,0.5)", particles: ["#ffd54f","#fff9c4","#fff","#ffecb3","#ffe082"] },
+    radiant:     { primary: "#ffd54f", secondary: "#fff9c4", glow: "rgba(255,213,79,0.5)", particles: ["#ffd54f","#fff9c4","#fff","#ffecb3","#ffe082"] },
     force:       { primary: "#b574ff", secondary: "#e1bee7", glow: "rgba(181,116,255,0.4)", particles: ["#b574ff","#e1bee7","#ce93d8","#f3e5f5","#fff"] },
     psychic:     { primary: "#e040fb", secondary: "#f48fb1", glow: "rgba(224,64,251,0.4)", particles: ["#e040fb","#f48fb1","#ce93d8","#f3e5f5","#fff"] },
     thunder:     { primary: "#90caf9", secondary: "#bbdefb", glow: "rgba(144,202,249,0.5)", particles: ["#90caf9","#bbdefb","#e3f2fd","#fff","#64b5f6"] },
@@ -36,6 +37,9 @@ window.VFX = (() => {
   };
 
   const getColors = (type) => DAMAGE_COLORS[type] || DAMAGE_COLORS.force;
+
+  // Utility: pick random color from array
+  const getRandomColor = (colorArray) => colorArray[Math.floor(Math.random() * colorArray.length)];
 
 
   // ─── PARTICLE SYSTEM ───────────────────────────────────────────────────────
@@ -58,9 +62,10 @@ window.VFX = (() => {
       this.size *= 0.995;
     }
     draw(ctx) {
+      if (!ctx || this.alpha <= 0) return; // Skip if invisible
       ctx.save();
       ctx.globalAlpha = this.alpha;
-      ctx.fillStyle = this.color;
+      ctx.fillStyle = this.color || "#fff"; // Default to white if color invalid
       ctx.beginPath();
       ctx.arc(this.x, this.y, Math.max(0.5, this.size), 0, Math.PI * 2);
       ctx.fill();
@@ -99,12 +104,12 @@ window.VFX = (() => {
             particles.push(new Particle(
               px, py,
               (Math.random() - 0.5) * 40, (Math.random() - 0.5) * 40,
-              colors.particles[Math.floor(Math.random() * colors.particles.length)],
+              getRandomColor(colors.particles),
               2 + Math.random() * 3, 0.4 + Math.random() * 0.3
             ));
           }
         }
-        particles.forEach(p => p.update(0.016));
+        particles.forEach(p => p.update(PARTICLE_DT));
         return t < 1;
       },
       draw(ctx) {
@@ -166,12 +171,12 @@ window.VFX = (() => {
             particles.push(new Particle(
               toX + (Math.random() - 0.5) * 20, toY + (Math.random() - 0.5) * 20,
               (Math.random() - 0.5) * 60, (Math.random() - 0.5) * 60,
-              colors.particles[Math.floor(Math.random() * colors.particles.length)],
+              getRandomColor(colors.particles),
               1.5 + Math.random() * 2.5, 0.3 + Math.random() * 0.3
             ));
           }
         }
-        particles.forEach(p => p.update(0.016));
+        particles.forEach(p => p.update(PARTICLE_DT));
         return t < 1;
       },
       draw(ctx) {
@@ -291,13 +296,13 @@ window.VFX = (() => {
             particles.push(new Particle(
               toX, toY,
               Math.cos(a) * spd, Math.sin(a) * spd,
-              colors.particles[Math.floor(Math.random() * colors.particles.length)],
+              getRandomColor(colors.particles),
               2 + Math.random() * 3, 0.3 + Math.random() * 0.3,
               0, 0.95
             ));
           }
         }
-        particles.forEach(p => p.update(0.016));
+        particles.forEach(p => p.update(PARTICLE_DT));
         return t < 1;
       },
       draw(ctx) {
@@ -415,13 +420,13 @@ window.VFX = (() => {
               pvy = Math.sin(angle) * 30 + (Math.random() - 0.5) * 20;
             }
             particles.push(new Particle(px, py, pvx, pvy,
-              colors.particles[Math.floor(Math.random() * colors.particles.length)],
+              getRandomColor(colors.particles),
               3 + Math.random() * 5, 0.4 + Math.random() * 0.4,
               breathType === "fire" ? -20 : 0, 0.96
             ));
           }
         }
-        particles.forEach(p => p.update(0.016));
+        particles.forEach(p => p.update(PARTICLE_DT));
         return t < 1;
       },
       draw(ctx) {
@@ -510,13 +515,13 @@ window.VFX = (() => {
             particles.push(new Particle(
               x + Math.cos(a) * dist, y + Math.sin(a) * dist,
               Math.cos(a) * spd, Math.sin(a) * spd,
-              colors.particles[Math.floor(Math.random() * colors.particles.length)],
+              getRandomColor(colors.particles),
               2 + Math.random() * 4, 0.5 + Math.random() * 0.4,
               damageType === "fire" ? -30 : 0, 0.95
             ));
           }
         }
-        particles.forEach(p => p.update(0.016));
+        particles.forEach(p => p.update(PARTICLE_DT));
         return t < 1;
       },
       draw(ctx) {
@@ -568,6 +573,8 @@ window.VFX = (() => {
     const duration = 1100;
     const startTime = performance.now();
     const particles = [];
+    // Sanitize amount: ensure it's a number, default to 0
+    const safeAmount = amount ? Math.max(0, Math.floor(Number(amount) || 0)) : null;
 
     return {
       type: "heal",
@@ -582,13 +589,13 @@ window.VFX = (() => {
             particles.push(new Particle(
               x + ox, y + 10,
               (Math.random() - 0.5) * 8, -20 - Math.random() * 30,
-              colors.particles[Math.floor(Math.random() * colors.particles.length)],
+              getRandomColor(colors.particles),
               1.5 + Math.random() * 2.5, 0.6 + Math.random() * 0.4,
               -5, 0.99
             ));
           }
         }
-        particles.forEach(p => p.update(0.016));
+        particles.forEach(p => p.update(PARTICLE_DT));
         return t < 1;
       },
       draw(ctx) {
@@ -605,7 +612,7 @@ window.VFX = (() => {
         ctx.fill();
 
         // Healing number
-        if (amount) {
+        if (safeAmount !== null) {
           const numAlpha = t < 0.2 ? t / 0.2 : (t < 0.7 ? 1 : 1 - (t - 0.7) / 0.3);
           const numY = y - 20 - t * 25;
           ctx.globalAlpha = numAlpha;
@@ -614,7 +621,7 @@ window.VFX = (() => {
           ctx.fillStyle = colors.primary;
           ctx.shadowColor = colors.glow;
           ctx.shadowBlur = 8;
-          ctx.fillText(`+${amount}`, x, numY);
+          ctx.fillText(`+${safeAmount}`, x, numY);
         }
 
         ctx.globalAlpha = 1;
@@ -645,7 +652,7 @@ window.VFX = (() => {
             color, 2 + Math.random() * 2, 0.5 + Math.random() * 0.3
           ));
         }
-        particles.forEach(p => p.update(0.016));
+        particles.forEach(p => p.update(PARTICLE_DT));
         return t < 1;
       },
       draw(ctx) {
@@ -677,6 +684,8 @@ window.VFX = (() => {
     const colors = getColors(damageType);
     const duration = 1400;
     const startTime = performance.now();
+    // Sanitize amount: ensure it's a number, default to 0
+    const safeAmount = Math.max(0, Math.floor(Number(amount) || 0));
 
     return {
       type: "damageNumber",
@@ -700,13 +709,13 @@ window.VFX = (() => {
 
         // Shadow/outline
         ctx.fillStyle = "rgba(0,0,0,0.7)";
-        ctx.fillText(`-${amount}`, x + 1 + shake, floatY + 1);
+        ctx.fillText(`-${safeAmount}`, x + 1 + shake, floatY + 1);
 
         // Main text
         ctx.fillStyle = isCrit ? "#ff4444" : colors.primary;
         ctx.shadowColor = colors.glow;
         ctx.shadowBlur = isCrit ? 15 : 8;
-        ctx.fillText(`-${amount}`, x + shake, floatY);
+        ctx.fillText(`-${safeAmount}`, x + shake, floatY);
 
         if (isCrit) {
           ctx.font = "bold 9px 'Cinzel', serif";
@@ -750,6 +759,8 @@ window.VFX = (() => {
   const createConditionEffect = (x, y, conditionName) => {
     const duration = 1200;
     const startTime = performance.now();
+    // Sanitize input: ensure it's a string and truncate to prevent overflow
+    const safeName = String(conditionName || "").slice(0, 20).toUpperCase();
 
     return {
       type: "condition",
@@ -767,7 +778,7 @@ window.VFX = (() => {
         ctx.fillStyle = "#e040fb";
         ctx.shadowColor = "rgba(224,64,251,0.5)";
         ctx.shadowBlur = 8;
-        ctx.fillText(conditionName.toUpperCase(), x, floatY);
+        ctx.fillText(safeName, x, floatY);
         ctx.restore();
       },
     };
@@ -793,12 +804,12 @@ window.VFX = (() => {
             particles.push(new Particle(x, y,
               Math.cos(a) * (50 + Math.random() * 80),
               Math.sin(a) * (50 + Math.random() * 80),
-              colors.particles[Math.floor(Math.random() * colors.particles.length)],
+              getRandomColor(colors.particles),
               2 + Math.random() * 3, 0.3 + Math.random() * 0.3, 0, 0.93
             ));
           }
         }
-        particles.forEach(p => p.update(0.016));
+        particles.forEach(p => p.update(PARTICLE_DT));
         return t < 1;
       },
       draw(ctx) {
@@ -847,12 +858,12 @@ window.VFX = (() => {
             particles.push(new Particle(
               toX + (Math.random() - 0.5) * 10, toY + (Math.random() - 0.5) * 10,
               (Math.random() - 0.5) * 50, (Math.random() - 0.5) * 50,
-              colors.particles[Math.floor(Math.random() * colors.particles.length)],
+              getRandomColor(colors.particles),
               2 + Math.random() * 3, 0.3 + Math.random() * 0.2
             ));
           }
         }
-        particles.forEach(p => p.update(0.016));
+        particles.forEach(p => p.update(PARTICLE_DT));
         return t < 1;
       },
       draw(ctx) {
@@ -869,7 +880,7 @@ window.VFX = (() => {
         ctx.shadowBlur = 10;
         const sweepAngle = Math.PI * 0.8;
         ctx.beginPath();
-        ctx.arc(fromX, fromY, Math.sqrt((toX-fromX)**2 + (toY-fromY)**2) * 0.8,
+        ctx.arc(fromX, fromY, Math.sqrt((toX - fromX) ** 2 + (toY - fromY) ** 2) * 0.8,
           angle - sweepAngle / 2, angle - sweepAngle / 2 + sweepAngle * progress);
         ctx.stroke();
         ctx.globalAlpha = 1;
@@ -941,6 +952,9 @@ window.VFX = (() => {
     const duration = 1800;
     const startTime = performance.now();
     const bounceCount = 3;
+    // Validate inputs
+    const safeDieType = Math.max(1, Math.floor(Number(dieType) || 20));
+    const safeResult = Math.max(1, Math.min(safeDieType, Math.floor(Number(result) || 1)));
 
     return {
       type: "diceRoll",
@@ -973,7 +987,7 @@ window.VFX = (() => {
         ctx.shadowColor = color;
         ctx.shadowBlur = 8;
 
-        if (dieType === 20) {
+        if (safeDieType === 20) {
           // d20 — draw as rounded hexagon
           ctx.beginPath();
           for (let i = 0; i < 6; i++) {
@@ -988,7 +1002,12 @@ window.VFX = (() => {
           // Generic — rounded square
           const halfSize = size * 0.45;
           ctx.beginPath();
-          ctx.roundRect(-halfSize, -halfSize, halfSize * 2, halfSize * 2, 3);
+          if (ctx.roundRect) {
+            ctx.roundRect(-halfSize, -halfSize, halfSize * 2, halfSize * 2, 3);
+          } else {
+            // Fallback for browsers without roundRect support
+            ctx.rect(-halfSize, -halfSize, halfSize * 2, halfSize * 2);
+          }
           ctx.fill();
           ctx.stroke();
         }
@@ -996,12 +1015,12 @@ window.VFX = (() => {
         // Result number
         if (t > 0.25) {
           ctx.rotate(-rotation); // Unrotate for text
-          ctx.font = `bold ${result >= 10 ? 10 : 12}px 'Cinzel', serif`;
+          ctx.font = `bold ${safeResult >= 10 ? 10 : 12}px 'Cinzel', serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "middle";
-          ctx.fillStyle = result === 20 ? "#ffd700" : result === 1 ? "#ef5350" : "#fff";
-          ctx.shadowBlur = result === 20 ? 15 : 0;
-          ctx.fillText(String(result), 0, 1);
+          ctx.fillStyle = safeResult === safeDieType ? "#ffd700" : safeResult === 1 ? "#ef5350" : "#fff";
+          ctx.shadowBlur = safeResult === safeDieType ? 15 : 0;
+          ctx.fillText(String(safeResult), 0, 1);
         }
 
         ctx.restore();
@@ -1013,7 +1032,7 @@ window.VFX = (() => {
           ctx.font = "8px 'Cinzel', serif";
           ctx.textAlign = "center";
           ctx.fillStyle = "#aaa";
-          ctx.fillText(`d${dieType}`, dieX, dieY + size * 0.55 + 10);
+          ctx.fillText(`d${safeDieType}`, dieX, dieY + size * 0.55 + 10);
           ctx.restore();
         }
       },
@@ -1028,8 +1047,10 @@ window.VFX = (() => {
   };
 
   const updateAndDrawEffects = (ctx) => {
+    if (!ctx) return; // Guard against missing context
     const now = performance.now();
     activeEffects = activeEffects.filter(e => {
+      if (!e) return false; // Guard against null effects
       const alive = e.update(now);
       if (alive) e.draw(ctx);
       return alive;

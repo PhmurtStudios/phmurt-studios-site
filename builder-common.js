@@ -16,11 +16,12 @@ window.PhmurtBuilderCommon = (function(){
       });
     }
     if (menu && ham) {
+      var closeMenu = function(){
+        ham.classList.remove('open');
+        menu.classList.remove('open');
+      };
       menu.querySelectorAll('a').forEach(function(a){
-        a.addEventListener('click', function(){
-          ham.classList.remove('open');
-          menu.classList.remove('open');
-        });
+        a.addEventListener('click', closeMenu);
       });
     }
     document.addEventListener('click', function(e){
@@ -37,19 +38,28 @@ window.PhmurtBuilderCommon = (function(){
       if (href && href.endsWith('.html') && !href.startsWith('http') && !href.startsWith('mailto')) {
         a.addEventListener('click', function(e){
           e.preventDefault();
-          window.location.href = href;
+          try {
+            window.location.href = href;
+          } catch (err) {
+            console.error('Navigation failed:', err);
+          }
         });
       }
     });
     if ('IntersectionObserver' in window) {
       var obs = new IntersectionObserver(function(entries){
         entries.forEach(function(entry){
-          if (entry.isIntersecting) entry.target.classList.add('visible');
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            obs.unobserve(entry.target);
+          }
         });
       }, { threshold: 0.1 });
       document.querySelectorAll('.reveal').forEach(function(el){
         obs.observe(el);
       });
+      // Store observer reference to allow cleanup if needed
+      window.__revealObserver = obs;
     }
   }
 
@@ -66,7 +76,7 @@ window.PhmurtBuilderCommon = (function(){
   function createDebounced(fn, wait){
     var timer = null;
     return function(){
-      var args = arguments;
+      var args = Array.prototype.slice.call(arguments);
       clearTimeout(timer);
       timer = setTimeout(function(){
         fn.apply(null, args);
@@ -83,7 +93,11 @@ window.PhmurtBuilderCommon = (function(){
       localStorage.setItem('phmurt_builder_draft_' + key, JSON.stringify({ savedAt: Date.now(), payload: payload }));
       return true;
     } catch (err) {
-      console.warn('Draft save failed:', err);
+      if (err.name === 'QuotaExceededError') {
+        console.warn('localStorage quota exceeded:', err);
+      } else {
+        console.warn('Draft save failed:', err);
+      }
       return false;
     }
   }
@@ -106,7 +120,11 @@ window.PhmurtBuilderCommon = (function(){
 
   function clearDraft(key){
     if (!key || typeof key !== 'string') return;
-    localStorage.removeItem('phmurt_builder_draft_' + key);
+    try {
+      localStorage.removeItem('phmurt_builder_draft_' + key);
+    } catch (err) {
+      console.warn('Draft clear failed:', err);
+    }
   }
 
   function formatRelative(ts){
@@ -193,7 +211,12 @@ window.PhmurtBuilderCommon = (function(){
   function applyStateFields(target, source, fields){
     if (!target || !source || !Array.isArray(fields)) return target;
     fields.forEach(function(key){
-      if (source[key] !== undefined) target[key] = clone(source[key]);
+      if (source[key] !== undefined) {
+        var cloned = clone(source[key]);
+        if (cloned !== undefined) {
+          target[key] = cloned;
+        }
+      }
     });
     return target;
   }
@@ -215,7 +238,7 @@ window.PhmurtBuilderCommon = (function(){
     var out = {};
     ['cp','sp','ep','gp','pp'].forEach(function(coin){
       var el = document.getElementById((prefix || 'coin-') + coin);
-      var val = el ? parseInt(el.value, 10) : 0;
+      var val = el && el.value ? parseInt(el.value, 10) : 0;
       out[coin] = !isNaN(val) ? Math.max(0, val) : 0;
     });
     return out;
@@ -223,11 +246,14 @@ window.PhmurtBuilderCommon = (function(){
 
   function setTransientStatus(el, message, timeout){
     if (!el) return;
-    el.textContent = message || '';
+    var targetMessage = message || '';
+    el.textContent = targetMessage;
     if (timeout && timeout > 0) {
-      setTimeout(function(){
-        if (el.textContent === message) el.textContent = '';
+      var timeoutId = setTimeout(function(){
+        if (el.textContent === targetMessage) el.textContent = '';
       }, timeout);
+      // Store timeout ID on element to allow cancellation if needed
+      el.__transientStatusTimeout = timeoutId;
     }
   }
 
@@ -257,13 +283,23 @@ window.PhmurtBuilderCommon = (function(){
     var id = localStorage.getItem(storageKey);
     if (!id || typeof id !== 'string') return null;
     localStorage.removeItem(storageKey);
-    var data = await PhmurtDB.loadCharacter(id);
+    var data;
+    try {
+      data = await PhmurtDB.loadCharacter(id);
+    } catch (err) {
+      console.error('[BuilderCommon] Failed to load character:', err);
+      return null;
+    }
     if (!data) return null;
     if (opts.expectedEdition && data.edition !== opts.expectedEdition) return null;
     if (typeof opts.onData === 'function') opts.onData(data, id, keys);
     if (opts.persistEditKeys !== false) {
-      localStorage.setItem(keys.editKey, id);
-      localStorage.setItem(keys.currentKey, id);
+      try {
+        localStorage.setItem(keys.editKey, id);
+        localStorage.setItem(keys.currentKey, id);
+      } catch (err) {
+        console.warn('[BuilderCommon] Failed to persist edit keys:', err);
+      }
     }
     return { id: id, data: data, keys: keys };
   }
@@ -280,7 +316,13 @@ window.PhmurtBuilderCommon = (function(){
     var keys = getEditionKeys(opts.edition);
     var existingId = opts.existingId || localStorage.getItem(keys.editKey) || undefined;
     var snapshot = typeof opts.getSnapshot === 'function' ? opts.getSnapshot() : opts.snapshot;
-    var result = await PhmurtDB.saveCharacter(snapshot, existingId);
+    var result;
+    try {
+      result = await PhmurtDB.saveCharacter(snapshot, existingId);
+    } catch (err) {
+      console.error('[BuilderCommon] saveCharacter threw:', err);
+      return { success: false, error: 'Save failed.' };
+    }
     if (result && result.success && result.id) {
       // SECURITY (V-044): Only update localStorage if database save succeeded with valid ID
       // This prevents marking a character as "current" if sync fails

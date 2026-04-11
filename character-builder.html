@@ -22,13 +22,13 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
-  <link rel="stylesheet" href="style.css" />
-  <script src="theme.js"></script>
+  <link rel="stylesheet" href="style.css?v=185" />
+  <script src="theme.js?v=185"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous" integrity="sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG"></script>
-  <script src="supabase-config.js"></script>
-  <script src="stripe-config.js"></script>
-  <script src="phmurt-auth.js?v=182"></script>
-  <script src="phmurt-char-sync.js"></script>
+  <script src="supabase-config.js?v=185"></script>
+  <script src="stripe-config.js?v=185"></script>
+  <script src="phmurt-auth.js?v=185"></script>
+  <script src="phmurt-char-sync.js?v=185"></script>
   <style>
     /* ── BUILDER LAYOUT ── */
     .cb-wrap { display: grid; grid-template-columns: 280px 1fr; min-height: calc(100vh - 60px); max-width: 1600px; margin: 0 auto; padding: 0 32px; }
@@ -519,7 +519,7 @@
   }
   #cs-levelup-btn { animation: levelup-pulse 2s ease-in-out infinite; }
   html.light-mode #cs-levelup-btn { box-shadow: 0 0 14px rgba(139,26,16,0.55); }
-  
+
   /* Homebrew entity modal */
   .hbe-create-btn:hover { background: rgba(139,105,20,0.1) !important; }
 
@@ -1294,7 +1294,7 @@
 
   </div>
 
-  <script src="builder-data.js"></script>
+  <script src="builder-data.js?v=185"></script>
   <!-- builder-data-35.js lazy-loaded on first 3.5e edition switch -->
   <script>
 // ══════════════════════════════════════════════════════════════
@@ -1757,7 +1757,7 @@ function renderRaces(){
     const editBtn=race.source==='homebrew'?'<button data-hbe-edit-type="race" data-hbe-edit-id="'+escapeAttr(id)+'" style="position:absolute;top:6px;right:6px;background:none;border:none;color:#8b6914;cursor:pointer;font-size:11px;" title="Edit">✎</button>':'';
     d.style.position='relative';
     var raceFlavorText = {human:'Versatile and ambitious, found in every corner of the world',elf:'Graceful and long-lived, with a deep bond to magic and nature',dwarf:'Stout and hardy, masters of stone and forge',halfling:'Small and nimble, with a knack for avoiding danger',gnome:'Curious and inventive, brimming with enthusiasm',halfelf:'Blending elven grace with human versatility',half_elf:'Blending elven grace with human versatility','half-elf':'Blending elven grace with human versatility',halforc:'Fierce and enduring, marked by strength and resilience',half_orc:'Fierce and enduring, marked by strength and resilience','half-orc':'Fierce and enduring, marked by strength and resilience',tiefling:'Touched by infernal heritage, wielding dark charisma',dragonborn:'Proud and draconic, breathing elemental power'};
-    var raceFlavor = raceFlavorText[id] || (escapeHtml(asi) + ' · ' + escapeHtml(race.size) + ' · ' + escapeHtml(race.speed) + 'ft');
+    var raceFlavor = escapeHtml(raceFlavorText[id] || (asi + ' · ' + race.size + ' · ' + race.speed + 'ft'));
     d.innerHTML=`<div class="cb-card-name">${escapeHtml(race.name)}${hbBadge}</div><div class="cb-card-detail">${raceFlavor}</div>${editBtn}`;
     c.appendChild(d);
   });
@@ -1849,7 +1849,7 @@ function renderClasses(){
     const editBtn=cls.source==='homebrew'?'<button data-hbe-edit-type="class" data-hbe-edit-id="'+escapeAttr(id)+'" style="position:absolute;top:6px;right:6px;background:none;border:none;color:#8b6914;cursor:pointer;font-size:11px;" title="Edit">✎</button>':'';
     d.style.position='relative';
     var classFlavorText = {barbarian:'Primal warrior fueled by rage',bard:'Magical performer and jack-of-all-trades',cleric:'Divine spellcaster and healer',druid:'Nature\'s guardian and shapeshifter',fighter:'Master of martial combat',monk:'Disciplined warrior of body and mind',paladin:'Holy knight sworn to an oath',ranger:'Skilled hunter and wilderness tracker',rogue:'Stealthy expert and cunning striker',sorcerer:'Innate wielder of arcane magic',warlock:'Pact-bound channeler of eldritch power',wizard:'Scholarly master of the arcane arts'};
-    var flavorText = classFlavorText[id] || ('d' + cls.hitDie + ' Hit Die');
+    var flavorText = escapeHtml(classFlavorText[id] || ('d' + cls.hitDie + ' Hit Die'));
     d.innerHTML=`<div class="cb-card-name">${escapeHtml(cls.name)}${hbBadge}</div><div class="cb-card-detail">${flavorText}</div><div class="cb-card-badge">${cls.primaryAbility.toUpperCase()}</div>${editBtn}`;
     c.appendChild(d);
   });
@@ -2305,7 +2305,7 @@ function renderSpells(){
     const ch=C.selectedCantrips.length;
     html+=`<div class="cb-spell-section"><div class="cb-spell-header">Cantrips: Choose ${cantripCount}</div>
       <div class="cb-spell-count"><span style="color:${ch>=cantripCount?'#5a9a5a':'var(--crimson)'}">${ch}/${cantripCount}</span> selected</div>
-      <div class="cb-spell-grid">${spellList.cantrips.map(sp=>{const escapedSp=sp.replace(/'/g,"\\'");return`
+      <div class="cb-spell-grid">${spellList.cantrips.map(sp=>{const escapedSp=escapeAttr(sp);return`
           <div class="cb-spell-item ${C.selectedCantrips.includes(sp)?'selected':''}">
             <div class="cb-spell-dot" onclick="toggleSpell('${escapedSp}','c',${cantripCount})" style="cursor:pointer;flex-shrink:0;"></div>
             <span style="flex:1;cursor:pointer;" onclick="toggleSpell('${escapedSp}','c',${cantripCount})">${sp}</span>
@@ -2316,7 +2316,7 @@ function renderSpells(){
     const ch=C.selectedSpells.length;
     html+=`<div class="cb-spell-section"><div class="cb-spell-header">1st-Level Spells: Choose ${spellCount}</div>
       <div class="cb-spell-count"><span style="color:${ch>=spellCount?'#5a9a5a':'var(--crimson)'}">${ch}/${spellCount}</span> selected</div>
-      <div class="cb-spell-grid">${spellList.level1.map(sp=>{const escapedSp=sp.replace(/'/g,"\\'");return`
+      <div class="cb-spell-grid">${spellList.level1.map(sp=>{const escapedSp=escapeAttr(sp);return`
           <div class="cb-spell-item ${C.selectedSpells.includes(sp)?'selected':''}">
             <div class="cb-spell-dot" onclick="toggleSpell('${escapedSp}','s',${spellCount})" style="cursor:pointer;flex-shrink:0;"></div>
             <span style="flex:1;cursor:pointer;" onclick="toggleSpell('${escapedSp}','s',${spellCount})">${sp}</span>
@@ -2724,7 +2724,7 @@ function buildSpellCards(){
   const atkB=pb2+sm; const dc=8+pb2+sm;
   let html='';
   [...C.selectedCantrips,...C.selectedSpells].forEach(sp=>{
-    const escapedSp=sp.replace(/'/g,"\\'");
+    const escapedSp=escapeAttr(sp);
     html+=`<div class="cb-weapon-card" onclick="rollCheck('Spell','${escapedSp}',${atkB})" title="Click to roll spell attack">
       <div class="cb-weapon-top"><span class="cb-weapon-name">${sp}</span><span class="cb-weapon-hint">▸ Atk</span></div>
       <div class="cb-weapon-stats"><span class="cb-weapon-atk">ATK +${atkB}</span><span class="cb-weapon-dmg">DC ${dc}</span></div>
@@ -2911,9 +2911,9 @@ function buildAbilityTrackers(){
             <span class="cs-use-recharge">${rechargeLabel}</span>
           </div>
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
-            <button onclick="adjustPool('${u.name.replace(/'/g,"&#39;")}',-1)" style="width:24px;height:24px;background:var(--crimson-soft);border:1px solid var(--crimson-border);color:var(--crimson);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">−</button>
+            <button onclick="adjustPool('${escapeAttr(u.name)}',-1)" style="width:24px;height:24px;background:var(--crimson-soft);border:1px solid var(--crimson-border);color:var(--crimson);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">−</button>
             <span id="pool-${u.name.replace(/\s/g,'_')}" style="font-family:'Cinzel',serif;font-size:18px;color:var(--text);min-width:36px;text-align:center;">${max-(abilityUsed[u.name]||0)}</span>
-            <button onclick="adjustPool('${u.name.replace(/'/g,"&#39;") }',1)" style="width:24px;height:24px;background:var(--crimson-soft);border:1px solid var(--crimson-border);color:var(--crimson);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">+</button>
+            <button onclick="adjustPool('${escapeAttr(u.name)}',1)" style="width:24px;height:24px;background:var(--crimson-soft);border:1px solid var(--crimson-border);color:var(--crimson);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">+</button>
             <span style="font-family:'Cinzel',serif;font-size:10px;color:var(--text-faint);">/ ${max} remaining</span>
           </div>
           <div class="cs-feature-card-desc">${u.desc}</div>
@@ -2921,7 +2921,7 @@ function buildAbilityTrackers(){
       }
       const pips=Array.from({length:max},(_,i)=>{
         const isUsed=i<used;
-        return `<div class="cs-use-pip ${isUsed?'used':'available'}" onclick="toggleUse('${u.name.replace(/'/g,"&#39;") }',${i},${max})" title="${isUsed?'Click to restore':'Click to use'}"></div>`;
+        return `<div class="cs-use-pip ${isUsed?'used':'available'}" onclick="toggleUse('${escapeAttr(u.name)}',${i},${max})" title="${isUsed?'Click to restore':'Click to use'}"></div>`;
       }).join('');
       return `<div class="cs-feature-card" style="margin-bottom:8px;">
         <div class="cs-feature-card-top">
@@ -3041,7 +3041,7 @@ function buildActionsTab(){
     html+='<div class="cs-action-section"><div class="cs-action-title">Class Abilities</div>';
     html+=actionUses.map(u=>{
       const max=resolveUses(u.uses); const used=abilityUsed[u.name]||0;
-      const safeName=u.name.replace(/'/g,"\\'");
+      const safeName=escapeAttr(u.name);
       const pips=u.isPool?`<span style="font-family:'Cinzel',serif;font-size:14px;color:var(--text);">${max-used}/${max}</span>`:
         Array.from({length:max},(_,i)=>`<div class="cs-use-pip ${i<used?'used':'available'}" onclick="toggleUse('${safeName}',${i},${max})"></div>`).join('');
       return `<div class="cs-feature-card">
@@ -3614,13 +3614,15 @@ function calcMaxHP(){
     for(var lv=1; lv<=entry.level; lv++){
       globalLv++;
       var stored = C.hpRolls[globalLv-1];
+      var levelHp;
       if(globalLv === 1){
         // First level of first class: always max hit die
-        hp += (entryIdx===0) ? hd : (Math.floor(hd/2)+1);
+        levelHp = (entryIdx===0) ? hd : (Math.floor(hd/2)+1);
       } else {
-        hp += (stored !== undefined) ? stored : (Math.floor(hd/2)+1);
+        levelHp = (stored !== undefined) ? stored : (Math.floor(hd/2)+1);
       }
-      hp += conM;
+      // Add CON modifier but ensure minimum 1 HP gain per level
+      hp += Math.max(1, levelHp + conM);
     }
   });
   // Tough feat: +2 HP per character level (computed dynamically so it scales with future levels)
@@ -3811,12 +3813,12 @@ function luRenderSpellPicker() {
       var desc     = (DND_DATA.spellDescriptions && DND_DATA.spellDescriptions[sp]) || {};
       var tooltip  = (desc.castTime || '') + (desc.range ? ' \u00b7 ' + desc.range : '') + (desc.desc ? '\n' + desc.desc : '');
       html += '<div style="display:inline-flex;align-items:center;gap:0;margin-bottom:0;">'
-              + '<div onclick="luToggleSpell(\'' + sp.replace(/'/g, "\\'") + '\',true)"'
+              + '<div onclick="luToggleSpell(\'' + escapeAttr(sp) + '\',true)"'
               + ' style="padding:7px 13px;font-family:\'Cinzel\',serif;font-size:8px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;'
               + 'border:1px solid ' + (isPicked ? 'var(--crimson)' : 'var(--border)') + ';border-right:none;'
               + 'background:' + (isPicked ? 'var(--crimson)' : 'var(--bg-card)') + ';'
               + 'color:' + (isPicked ? '#f5f0e8' : 'var(--text-muted)') + ';">' + sp + '</div>'
-              + '<button onclick="showSpellInfo(\'' + sp.replace(/'/g,"&apos;") + '\',0)" title="Spell details"'
+              + '<button onclick="showSpellInfo(\'' + escapeAttr(sp) + '\',0)" title="Spell details"'
               + ' style="padding:5px 7px;background:' + (isPicked?'var(--crimson)':'var(--bg-card)') + ';border:1px solid ' + (isPicked?'var(--crimson)':'var(--border)') + ';'
               + 'color:' + (isPicked?'rgba(245,240,232,0.7)':'var(--text-faint)') + ';cursor:pointer;font-size:11px;line-height:1;">ℹ</button>'
               + '</div>';
@@ -3857,12 +3859,12 @@ function luRenderSpellPicker() {
         var desc     = (DND_DATA.spellDescriptions && DND_DATA.spellDescriptions[sp]) || {};
         var tooltip  = (desc.school ? desc.school : '') + (desc.castTime ? ' \u00b7 ' + desc.castTime : '') + (desc.range ? ' \u00b7 ' + desc.range : '') + (desc.desc ? '\n' + desc.desc : '');
         html += '<div style="display:inline-flex;align-items:center;gap:0;margin-bottom:0;">'
-              + '<div onclick="luToggleSpell(\'' + sp.replace(/'/g, "&apos;") + '\',false)"'
+              + '<div onclick="luToggleSpell(\'' + escapeAttr(sp) + '\',false)"'
               + ' style="padding:7px 13px;font-family:\'Cinzel\',serif;font-size:8px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;'
               + 'border:1px solid ' + (isPicked ? 'var(--crimson)' : 'var(--border)') + ';border-right:none;'
               + 'background:' + (isPicked ? 'var(--crimson)' : 'var(--bg-card)') + ';'
               + 'color:' + (isPicked ? '#f5f0e8' : 'var(--text-muted)') + ';">' + sp + '</div>'
-              + '<button onclick="showSpellInfo(\'' + sp.replace(/'/g,"&apos;") + '\',\'' + sp.level + '\')" title="Spell details"'
+              + '<button onclick="showSpellInfo(\'' + escapeAttr(sp) + '\',\'' + sp.level + '\')" title="Spell details"'
               + ' style="padding:5px 7px;background:' + (isPicked?'var(--crimson)':'var(--bg-card)') + ';border:1px solid ' + (isPicked?'var(--crimson)':'var(--border)') + ';'
               + 'color:' + (isPicked?'rgba(245,240,232,0.7)':'var(--text-faint)') + ';cursor:pointer;font-size:11px;line-height:1;">ℹ</button>'
               + '</div>';
@@ -3933,7 +3935,7 @@ function luRenderFeatPicker() {
     var prereqMet  = luFeatPrereqMet(feat);
     var disabled   = isTaken || !prereqMet;
 
-    html += '<div onclick="' + (disabled ? '' : 'luSelectFeat(\'' + feat.name.replace(/'/g,"\\'") + '\')') + '"';
+    html += '<div onclick="' + (disabled ? '' : 'luSelectFeat(\'' + escapeAttr(feat.name) + '\')') + '"';
     html += ' style="padding:14px 16px;margin-bottom:6px;border:2px solid ';
     html += isSelected ? 'var(--crimson)' : disabled ? 'var(--border)' : 'var(--border)';
     html += ';background:';
@@ -4274,7 +4276,7 @@ function luFeatChoiceWeapons(count, fc) {
   allWeapons.forEach(function(w) {
     var isPicked = picked.indexOf(w) !== -1;
     var disabled = !isPicked && picked.length >= count;
-    html += '<div onclick="' + (disabled ? '' : 'luFeatToggleList(\'weapons\',\'' + w.replace(/'/g,"\\'") + '\',' + count + ')') + '"'
+    html += '<div onclick="' + (disabled ? '' : 'luFeatToggleList(\'weapons\',\'' + escapeAttr(w) + '\',' + count + ')') + '"'
           + ' style="padding:5px 11px;font-family:\'Cinzel\',serif;font-size:8px;letter-spacing:1px;text-transform:uppercase;cursor:' + (disabled?'default':'pointer') + ';'
           + 'border:1px solid ' + (isPicked?'var(--crimson)':'var(--border)') + ';'
           + 'background:' + (isPicked?'var(--crimson)':'var(--bg-card)') + ';'
@@ -4367,7 +4369,7 @@ function luFeatChoiceSkillsTools(count, fc) {
   allTools.forEach(function(t) {
     var isPicked = picked.indexOf(t) !== -1;
     var disabled = !isPicked && picked.length >= count;
-    html += '<div onclick="' + (disabled ? '' : 'luFeatToggleList(\'skillsTools\',\'' + t.replace(/'/g,"\\'") + '\',' + count + ')') + '"'
+    html += '<div onclick="' + (disabled ? '' : 'luFeatToggleList(\'skillsTools\',\'' + escapeAttr(t) + '\',' + count + ')') + '"'
           + ' style="padding:5px 11px;font-family:\'Cinzel\',serif;font-size:8px;letter-spacing:1px;text-transform:uppercase;cursor:' + (disabled?'default':'pointer') + ';'
           + 'border:1px solid ' + (isPicked?'var(--crimson)':'var(--border)') + ';'
           + 'background:' + (isPicked?'var(--crimson)':'var(--bg-card)') + ';'
@@ -4388,7 +4390,7 @@ function luFeatChoiceManeuvers(count, fc) {
   maneuvers.forEach(function(m) {
     var isPicked = picked.indexOf(m.name) !== -1;
     var disabled = !isPicked && picked.length >= count;
-    html += '<div onclick="' + (disabled ? '' : 'luFeatToggleList(\'maneuvers\',\'' + m.name.replace(/'/g,"\\'") + '\',' + count + ')') + '"'
+    html += '<div onclick="' + (disabled ? '' : 'luFeatToggleList(\'maneuvers\',\'' + escapeAttr(m.name) + '\',' + count + ')') + '"'
           + ' style="padding:10px 14px;border:1px solid ' + (isPicked?'var(--crimson)':'var(--border)') + ';'
           + 'background:' + (isPicked?'rgba(139,26,16,0.1)':'var(--bg-card)') + ';cursor:' + (disabled?'default':'pointer') + ';opacity:' + (disabled&&!isPicked?'0.4':'1') + ';">'
           + '<div style="font-family:\'Cinzel\',serif;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:' + (isPicked?'var(--crimson)':'var(--text)') + ';margin-bottom:4px;">' + m.name + '</div>'
@@ -4432,7 +4434,7 @@ function luFeatChoiceMagicInitiate(fc) {
     cantrips.forEach(function(sp) {
       var isPicked = miCantrips.indexOf(sp) !== -1;
       var disabled = !isPicked && miCantrips.length >= 2;
-      html += '<div onclick="' + (disabled?'':'luFeatMIToggle(\'cantrip\',\'' + sp.replace(/'/g,"\\'") + '\')') + '"'
+      html += '<div onclick="' + (disabled?'':'luFeatMIToggle(\'cantrip\',\'' + escapeAttr(sp) + '\')') + '"'
             + ' style="padding:5px 11px;font-family:\'Cinzel\',serif;font-size:8px;letter-spacing:1px;text-transform:uppercase;cursor:' + (disabled?'default':'pointer') + ';'
             + 'border:1px solid ' + (isPicked?'var(--crimson)':'var(--border)') + ';'
             + 'background:' + (isPicked?'var(--crimson)':'var(--bg-card)') + ';'
@@ -4446,7 +4448,7 @@ function luFeatChoiceMagicInitiate(fc) {
     lvl1spells.forEach(function(sp) {
       var isPicked = miSpells.indexOf(sp) !== -1;
       var disabled = !isPicked && miSpells.length >= 1;
-      html += '<div onclick="' + (disabled?'':'luFeatMIToggle(\'spell\',\'' + sp.replace(/'/g,"\\'") + '\')') + '"'
+      html += '<div onclick="' + (disabled?'':'luFeatMIToggle(\'spell\',\'' + escapeAttr(sp) + '\')') + '"'
             + ' style="padding:5px 11px;font-family:\'Cinzel\',serif;font-size:8px;letter-spacing:1px;text-transform:uppercase;cursor:' + (disabled?'default':'pointer') + ';'
             + 'border:1px solid ' + (isPicked?'var(--crimson)':'var(--border)') + ';'
             + 'background:' + (isPicked?'var(--crimson)':'var(--bg-card)') + ';'
@@ -5760,12 +5762,12 @@ function renderCatalog(){
 }
 
 // ── SAVE CHARACTER (auto-save, silent) ──
-let _saveTimer = null;
+let _saveTimer5e = null;
 
 function scheduleSave(){
   // Debounce — save 1.5s after last change
-  if(_saveTimer) clearTimeout(_saveTimer);
-  _saveTimer = setTimeout(()=>{ saveCharacterToDB(); }, 1500);
+  if(_saveTimer5e) clearTimeout(_saveTimer5e);
+  _saveTimer5e = setTimeout(()=>{ saveCharacterToDB(); }, 1500);
 }
 
 function startNewCharacter(){
@@ -5800,6 +5802,7 @@ async function saveCharacterToDB(){
 
   const snapshot = {
     edition:          '5e',
+    builder_type:     '5e',
     name:             (C.details && C.details.name) || 'Unnamed',
     race:             C.race,
     subrace:          C.subrace,
@@ -6024,10 +6027,10 @@ function init(){
 
     // Scroll fade effect
     (function(){
-      
+
     })();
     document.addEventListener('click',e=>{if(!e.target.closest('.nav-auth-wrap'))document.getElementById('nav-user-dropdown')?.classList.remove('open');});
-  
+
 // ══════════════════════════════════════════════════════════════
 // HOMEBREW ENTITY SYSTEM
 // Races, Classes, Subclasses, Backgrounds, Feats
@@ -8536,7 +8539,13 @@ var C35 = {
   level: 1, rollLog: [],
   hpRolls: [12], levelUpSkills: {}, levelUpFeats: [], levelUpAbilityBoosts: [],
   classes: [],
-  levelHistory: []
+  levelHistory: [],
+  // INTEGRATION (V-004c): Combat fields for sync with campaigns
+  ac: 10,
+  damageResistances: [],
+  damageImmunities: [],
+  damageVulnerabilities: [],
+  conditionImmunities: []
 };
 
 var STANDARD_ARRAY35 = [15,14,13,12,10,8];
@@ -9069,7 +9078,7 @@ function renderSkills35() {
     if (!isClass) tr.className = 'cross-class';
     tr.innerHTML =
       '<td>'+skill.name+(skill.trained?'<span style="color:var(--crimson);font-size:10px;margin-left:3px;">†</span>':'')+'</td>'+
-      '<td style="font-family:\'Cinzel\',serif;font-size:8px;letter-spacing:1px;text-transform:uppercase;color:'+(isClass?'#4eda80':'var(--text-faint)')+'">'+ 
+      '<td style="font-family:\'Cinzel\',serif;font-size:8px;letter-spacing:1px;text-transform:uppercase;color:'+(isClass?'#4eda80':'var(--text-faint)')+'">'+
         (isClass?'Class':'Cross')+'<br><span style="font-size:9px;opacity:0.6;">'+(isClass?'1pt':'2pts')+'/rank · max '+max+'</span>'+
       '</td>'+
       '<td style="font-family:\'Cinzel\',serif;font-size:9px;color:var(--text-muted);">'+DND35_DATA.abilityShort[skill.ability]+'</td>'+
@@ -9847,18 +9856,36 @@ async function saveChar35() {
   if (btn) { btn.textContent='Saving...'; btn.disabled=true; }
   ensureClasses35();
   var snapshot = {
-    edition:'3.5', name:(C35.details && C35.details.name) || 'Unnamed', race:C35.race, cls:C35.cls, alignment:C35.alignment,
-    abilities:{...C35.abilities}, scoreMethod:C35.scoreMethod, arrayAssigned:{...C35.arrayAssigned},
-    skillRanks:{...C35.skillRanks}, selectedFeats:[...C35.selectedFeats],
-    equipChoices:{...C35.equipChoices}, weaponChoices:{...(C35.weaponChoices||{})},
-    selectedCantrips:[...C35.selectedCantrips], selectedSpells:[...C35.selectedSpells],
+    edition:'3.5',
+    builder_type:'35e',
+    name:(C35.details && C35.details.name) || 'Unnamed',
+    race:C35.race,
+    cls:C35.cls,
+    alignment:C35.alignment,
+    abilities:{...C35.abilities},
+    scoreMethod:C35.scoreMethod,
+    arrayAssigned:{...C35.arrayAssigned},
+    skillRanks:{...C35.skillRanks},
+    selectedFeats:[...C35.selectedFeats],
+    equipChoices:{...C35.equipChoices},
+    weaponChoices:{...(C35.weaponChoices||{})},
+    selectedCantrips:[...C35.selectedCantrips],
+    selectedSpells:[...C35.selectedSpells],
     spellsByLevel: C35.spellsByLevel ? JSON.parse(JSON.stringify(C35.spellsByLevel)) : {},
-    details:{...C35.details}, level:C35.level||1, hpRolls:[...(C35.hpRolls||[])],
+    details:{...C35.details},
+    level:C35.level||1,
+    hpRolls:[...(C35.hpRolls||[])],
     classes: C35.classes ? JSON.parse(JSON.stringify(C35.classes)) : [],
     levelHistory: [...(C35.levelHistory||[])],
     levelUpSkills: C35.levelUpSkills ? JSON.parse(JSON.stringify(C35.levelUpSkills)) : {},
     levelUpFeats:[...(C35.levelUpFeats||[])],
     levelUpAbilityBoosts: C35.levelUpAbilityBoosts ? JSON.parse(JSON.stringify(C35.levelUpAbilityBoosts)) : {},
+    // INTEGRATION (V-004b): Include combat-critical fields for 3.5e sync with campaigns
+    ac: C35.ac || (10 + Math.floor((C35.abilities.dex - 10) / 2)),
+    damageResistances: [...(C35.damageResistances || [])],
+    damageImmunities: [...(C35.damageImmunities || [])],
+    damageVulnerabilities: [...(C35.damageVulnerabilities || [])],
+    conditionImmunities: [...(C35.conditionImmunities || [])],
     savedAt:Date.now()
   };
   // SECURITY: Safely read localStorage
@@ -9929,7 +9956,9 @@ function init35() {
       if (!data||data.edition!=='3.5') return;
       ['race','cls','alignment','abilities','scoreMethod','arrayAssigned','skillRanks','selectedFeats',
        'equipChoices','weaponChoices','selectedCantrips','selectedSpells','spellsByLevel','details','level','hpRolls',
-       'levelUpSkills','levelUpFeats','levelUpAbilityBoosts','classes','levelHistory'].forEach(function(k){
+       'levelUpSkills','levelUpFeats','levelUpAbilityBoosts','classes','levelHistory',
+       // INTEGRATION (V-004d): Restore combat fields for sync
+       'ac','damageResistances','damageImmunities','damageVulnerabilities','conditionImmunities'].forEach(function(k){
         if (data[k]!==undefined) C35[k]=data[k];
       });
       ensureClasses35();
@@ -9961,13 +9990,13 @@ function init35() {
 </script>
 
   <!-- LEVEL UP MODAL -->
-  
+
   <!-- SRD LEGAL NOTICE -->
   <div style="text-align:center;padding:20px;font-family:'Spectral',serif;font-size:11px;color:var(--text-faint);line-height:1.6;border-top:1px solid var(--border);margin-top:20px;">
     <strong style="font-family:'Cinzel',serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;">Legal Notice</strong><br>
     This character builder uses game mechanics based on the <em>Systems Reference Document 5.1</em> (SRD 5.1) and the <em>d20 System Reference Document</em> (3.5e SRD)
     by Wizards of the Coast LLC, licensed under the
-    <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener" style="color:var(--text-dim);">Creative Commons Attribution 4.0 International License</a>.<br>
+    <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer" style="color:var(--text-dim);">Creative Commons Attribution 4.0 International License</a>.<br>
     Dungeons &amp; Dragons, D&amp;D, and related marks are trademarks of Wizards of the Coast LLC.
     Phmurt Studios is not affiliated with Wizards of the Coast LLC.
   </div>
@@ -10084,7 +10113,7 @@ function init35() {
   (function(){
     var SAVE_KEY_5E = 'phmurt_builder_5e';
     var SAVE_KEY_35 = 'phmurt_builder_35e';
-    var _saveTimer = null;
+    var _saveTimerAuto = null;
 
     function autoSave5e() {
       try {
@@ -10115,8 +10144,8 @@ function init35() {
     }
 
     function scheduleAutoSave() {
-      clearTimeout(_saveTimer);
-      _saveTimer = setTimeout(function() {
+      clearTimeout(_saveTimerAuto);
+      _saveTimerAuto = setTimeout(function() {
         var is35 = document.getElementById('builder-35e') &&
                    document.getElementById('builder-35e').style.display !== 'none';
         if (is35) autoSave35(); else autoSave5e();
@@ -10177,6 +10206,6 @@ function init35() {
 
   <div id="ps-site-footer"></div>
 
-  <script src="phmurt-shell.js"></script>
+  <script src="phmurt-shell.js?v=185"></script>
 </body>
 </html>

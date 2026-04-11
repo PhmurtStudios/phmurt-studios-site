@@ -1,0 +1,1587 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   KINGDOM BUILDER — Comprehensive Domain & Kingdom Management System
+   Territory claiming, settlement building, governance, religion, diplomacy.
+   Integrates with Living World, Economy, Faction War, Seasons, and Religion.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+(function() {
+  'use strict';
+
+  const { useState, useEffect, useRef, useCallback, useMemo } = React;
+  const {
+    Home, Hammer, Shield, Coins, Users, TrendingUp, AlertTriangle,
+    Plus, Trash2, Edit2, Check, Clock, Zap, MapPin, Award, BarChart3,
+    Crown, Scroll, BookOpen, Swords, Flag, Eye, ChevronRight, ChevronDown,
+    Settings, Star, Heart, Landmark, Scale, Map, Building2, Wheat,
+    Castle, Sparkles, X, ChevronLeft, ArrowRight, Info, Lock, Compass,
+    Anchor, Flame, Droplets, Wind, Sun, Moon, Mountain, Trees, Skull,
+    GraduationCap, Gem, Target, Tent, Axe, Bug
+  } = window.LucideReact || {};
+
+  const T = window.__PHMURT_THEME || {
+    bg: "var(--bg)", bgNav: "var(--bg-nav)", bgCard: "var(--bg-card)",
+    bgHover: "var(--bg-hover)", text: "var(--text)", textDim: "var(--text-dim)",
+    textMuted: "var(--text-muted)", textFaint: "var(--text-faint)",
+    crimson: "var(--crimson)", crimsonSoft: "var(--crimson-soft)",
+    gold: "var(--gold)", green: "var(--green)", border: "var(--border)",
+    ui: "'Cinzel', serif", heading: "'Cinzel', serif", body: "'Spectral', Georgia, serif"
+  };
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 1: CONSTANTS & CATALOGS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // ── Settlement Size Tiers ──────────────────────────────────────────────
+  const SETTLEMENT_SIZES = {
+    hamlet:     { name: "Hamlet",     minPop: 0,     maxPop: 200,   maxBuildings: 6,  baseLots: 1, icon: "⌂", defenseBonus: 0 },
+    village:    { name: "Village",    minPop: 200,   maxPop: 1000,  maxBuildings: 12, baseLots: 2, icon: "⌂", defenseBonus: 1 },
+    town:       { name: "Town",       minPop: 1000,  maxPop: 5000,  maxBuildings: 24, baseLots: 4, icon: "◈", defenseBonus: 2 },
+    smallCity:  { name: "Small City", minPop: 5000,  maxPop: 15000, maxBuildings: 40, baseLots: 6, icon: "◈", defenseBonus: 4 },
+    largeCity:  { name: "Large City", minPop: 15000, maxPop: 40000, maxBuildings: 60, baseLots: 8, icon: "★", defenseBonus: 6 },
+    metropolis: { name: "Metropolis", minPop: 40000, maxPop: 999999,maxBuildings: 80, baseLots:12, icon: "★", defenseBonus: 8 }
+  };
+
+  function getSettlementSize(pop) {
+    if (pop >= 40000) return "metropolis";
+    if (pop >= 15000) return "largeCity";
+    if (pop >= 5000)  return "smallCity";
+    if (pop >= 1000)  return "town";
+    if (pop >= 200)   return "village";
+    return "hamlet";
+  }
+
+  // ── Terrain Types (aligned with hexcrawl) ──────────────────────────────
+  const TERRAIN_TYPES = {
+    plains:    { name: "Plains",     claimCost: 1, prepCost: 1, farmValue: 3, mineValue: 0, tradeValue: 1, icon: "🌾", color: "#8fbc5e", desc: "Fertile lowlands ideal for farming" },
+    forest:    { name: "Forest",     claimCost: 2, prepCost: 2, farmValue: 0, mineValue: 0, tradeValue: 1, icon: "🌲", color: "#2d6a2d", desc: "Dense woodland rich in timber and game" },
+    hills:     { name: "Hills",      claimCost: 2, prepCost: 1, farmValue: 1, mineValue: 2, tradeValue: 1, icon: "⛰",  color: "#8b7355", desc: "Rolling terrain with mineral deposits" },
+    mountains: { name: "Mountains",  claimCost: 4, prepCost: 3, farmValue: 0, mineValue: 3, tradeValue: 0, icon: "🏔",  color: "#6b6b6b", desc: "Towering peaks with deep ore veins" },
+    swamp:     { name: "Swamp",      claimCost: 3, prepCost: 3, farmValue: 0, mineValue: 0, tradeValue: 0, icon: "🌿", color: "#4a6741", desc: "Boggy wetlands with hidden dangers" },
+    desert:    { name: "Desert",     claimCost: 2, prepCost: 2, farmValue: 0, mineValue: 1, tradeValue: 2, icon: "🏜",  color: "#c2a64e", desc: "Arid wastes with buried treasures" },
+    coast:     { name: "Coast",      claimCost: 2, prepCost: 1, farmValue: 1, mineValue: 0, tradeValue: 3, icon: "🌊", color: "#4a8db7", desc: "Shoreline with fishing and ports" },
+    jungle:    { name: "Jungle",     claimCost: 4, prepCost: 4, farmValue: 1, mineValue: 0, tradeValue: 1, icon: "🌴", color: "#1a5c1a", desc: "Thick tropical canopy with rare herbs" },
+    tundra:    { name: "Tundra",     claimCost: 2, prepCost: 2, farmValue: 0, mineValue: 1, tradeValue: 0, icon: "❄",  color: "#a0c4d8", desc: "Frozen expanse with hardy people" },
+    grassland: { name: "Grassland",  claimCost: 1, prepCost: 1, farmValue: 2, mineValue: 0, tradeValue: 1, icon: "🌿", color: "#a8cc65", desc: "Wide open pastures for livestock" },
+    volcanic:  { name: "Volcanic",   claimCost: 5, prepCost: 4, farmValue: 0, mineValue: 4, tradeValue: 0, icon: "🌋", color: "#a83232", desc: "Dangerous but rich in rare minerals" },
+    oasis:     { name: "Oasis",      claimCost: 3, prepCost: 1, farmValue: 2, mineValue: 0, tradeValue: 2, icon: "🏝",  color: "#4ab89a", desc: "Lush haven amid barren lands" }
+  };
+
+  // ── Territory Improvements ─────────────────────────────────────────────
+  const HEX_IMPROVEMENTS = {
+    // Economic
+    farm:       { name: "Farm",           cost: 2, buildTurns: 1, requires: ["plains","hills","coast","grassland","oasis"],  economy: 2, loyalty: 0, stability: 0, icon: "🌾", desc: "Cultivated farmland producing food", category: "economic" },
+    ranch:      { name: "Ranch",          cost: 3, buildTurns: 1, requires: ["plains","grassland","hills"],                  economy: 2, loyalty: 0, stability: 0, icon: "🐄", desc: "Raises livestock for meat and leather", category: "economic" },
+    mine:       { name: "Mine",           cost: 4, buildTurns: 2, requires: ["hills","mountains","volcanic"],                economy: 3, loyalty: 0, stability: 0, icon: "⛏",  desc: "Extracts ore and precious metals", category: "economic" },
+    lumberCamp: { name: "Lumber Camp",    cost: 2, buildTurns: 1, requires: ["forest","jungle"],                             economy: 2, loyalty: 0, stability: 0, icon: "🪓", desc: "Harvests timber for construction", category: "economic" },
+    quarry:     { name: "Quarry",         cost: 4, buildTurns: 2, requires: ["hills","mountains"],                           economy: 2, loyalty: 0, stability: 1, icon: "🧱", desc: "Cuts stone for building", category: "economic" },
+    fishery:    { name: "Fishery",        cost: 2, buildTurns: 1, requires: ["coast","swamp"],                               economy: 2, loyalty: 0, stability: 0, icon: "🐟", desc: "Harvests fish and sea resources", category: "economic" },
+    vineyard:   { name: "Vineyard",       cost: 3, buildTurns: 2, requires: ["plains","hills","oasis"],                      economy: 2, loyalty: 1, stability: 0, icon: "🍇", desc: "Produces wine and luxury goods", category: "economic" },
+    tradingPost:{ name: "Trading Post",   cost: 4, buildTurns: 1, requires: null,                                            economy: 3, loyalty: 0, stability: 0, icon: "📦", desc: "Frontier outpost facilitating commerce", category: "economic" },
+    herbGarden: { name: "Herb Garden",    cost: 3, buildTurns: 1, requires: ["forest","jungle","swamp","oasis"],             economy: 1, loyalty: 1, stability: 0, icon: "🌿", desc: "Cultivates rare herbs and reagents", category: "economic" },
+    silkFarm:   { name: "Silk Farm",      cost: 5, buildTurns: 2, requires: ["forest","jungle"],                             economy: 3, loyalty: 0, stability: 0, icon: "🕸", desc: "Produces fine silks for trade", category: "economic" },
+    apiary:     { name: "Apiary",         cost: 2, buildTurns: 1, requires: ["plains","forest","grassland"],                 economy: 1, loyalty: 1, stability: 0, icon: "🐝", desc: "Bee keeping for honey and wax", category: "economic" },
+    saltFlats:  { name: "Salt Works",     cost: 3, buildTurns: 1, requires: ["coast","desert","tundra"],                     economy: 3, loyalty: 0, stability: 0, icon: "⬜", desc: "Harvests salt — a valuable commodity", category: "economic" },
+
+    // Infrastructure
+    road:       { name: "Road",           cost: 1, buildTurns: 0, requires: null,                                            economy: 1, loyalty: 0, stability: 0, icon: "═",  desc: "Connects settlements, speeds travel", category: "infrastructure" },
+    bridge:     { name: "Bridge",         cost: 3, buildTurns: 1, requires: ["swamp","coast"],                               economy: 1, loyalty: 0, stability: 0, icon: "🌉", desc: "Spans waterways and chasms", category: "infrastructure" },
+    aqueduct:   { name: "Aqueduct",       cost: 4, buildTurns: 2, requires: null,                                            economy: 1, loyalty: 1, stability: 0, icon: "≋",  desc: "Carries fresh water to settlements", category: "infrastructure" },
+    canal:      { name: "Canal",          cost: 6, buildTurns: 3, requires: ["plains","swamp","coast","grassland"],           economy: 2, loyalty: 0, stability: 0, icon: "🚣", desc: "Navigable waterway for trade barges", category: "infrastructure" },
+    lighthouse: { name: "Lighthouse",     cost: 4, buildTurns: 2, requires: ["coast"],                                       economy: 2, loyalty: 0, stability: 1, icon: "🗼", desc: "Guides ships and deters pirates", category: "infrastructure" },
+
+    // Military
+    fort:       { name: "Fort",           cost: 6, buildTurns: 2, requires: null,                                            economy: 0, loyalty: 0, stability: 2, icon: "🏰", desc: "Military outpost defending the hex", category: "military" },
+    watchtower: { name: "Watchtower",     cost: 3, buildTurns: 1, requires: null,                                            economy: 0, loyalty: 0, stability: 1, icon: "🗼", desc: "Provides early warning of threats", category: "military" },
+    borderPost: { name: "Border Post",    cost: 2, buildTurns: 1, requires: null,                                            economy: 0, loyalty: 0, stability: 1, icon: "🚩", desc: "Marks and monitors the frontier", category: "military" },
+    siegeWorks: { name: "Siege Works",    cost: 8, buildTurns: 3, requires: ["hills","mountains"],                           economy: 0, loyalty: 0, stability: 3, icon: "🔥", desc: "Fortified artillery emplacement", category: "military" },
+
+    // Religious/Cultural
+    shrine:     { name: "Roadside Shrine",cost: 1, buildTurns: 0, requires: null,                                            economy: 0, loyalty: 1, stability: 0, icon: "⛩",  desc: "Small shrine blessing travelers", category: "cultural" },
+    sacredGrove:{ name: "Sacred Grove",   cost: 3, buildTurns: 1, requires: ["forest","jungle"],                             economy: 0, loyalty: 2, stability: 0, icon: "🌳", desc: "Ancient druidic sanctuary", category: "cultural" },
+    monument:   { name: "Waystone",       cost: 2, buildTurns: 1, requires: null,                                            economy: 0, loyalty: 1, stability: 1, icon: "🗿", desc: "Carved monolith marking territory", category: "cultural" }
+  };
+
+  const HEX_IMPROVEMENT_CATEGORIES = {
+    economic:       { label: "Economic",       color: "#d4af37" },
+    infrastructure: { label: "Infrastructure", color: "#3498db" },
+    military:       { label: "Military",       color: "#c94f3f" },
+    cultural:       { label: "Cultural",       color: "#9b59b6" }
+  };
+
+  // ── Settlement Building Catalog ────────────────────────────────────────
+  const BUILDINGS = {
+    // ─── Government ───
+    townHall:       { name: "Town Hall",        cost: 10, buildTurns: 2, category: "government",    economy: 1, loyalty: 1, stability: 1, unrest: -1, slots: 2, requires: [], desc: "Seat of local government", icon: "🏛" },
+    castle:         { name: "Castle",           cost: 36, buildTurns: 4, category: "government",    economy: 2, loyalty: 2, stability: 4, unrest: -2, slots: 4, requires: ["townHall"], desc: "Fortified seat of power", icon: "🏰" },
+    palace:         { name: "Royal Palace",     cost: 54, buildTurns: 6, category: "government",    economy: 3, loyalty: 4, stability: 4, unrest: -3, slots: 6, requires: ["castle"], desc: "Grand seat of the sovereign", icon: "👑" },
+    courthouse:     { name: "Courthouse",       cost: 12, buildTurns: 2, category: "government",    economy: 0, loyalty: 2, stability: 2, unrest: -1, slots: 1, requires: ["townHall"], desc: "Administers justice and law", icon: "⚖" },
+    embassy:        { name: "Embassy",          cost: 16, buildTurns: 2, category: "government",    economy: 1, loyalty: 0, stability: 2, unrest: 0,  slots: 2, requires: ["townHall"], desc: "Foreign diplomatic quarters", icon: "🏳" },
+    prison:         { name: "Prison",           cost: 8,  buildTurns: 1, category: "government",    economy: 0, loyalty: -1, stability: 2, unrest: -2, slots: 1, requires: ["courthouse"], desc: "Houses criminals", icon: "⛓" },
+    taxOffice:      { name: "Tax Office",       cost: 8,  buildTurns: 1, category: "government",    economy: 2, loyalty: -1, stability: 1, unrest: 0, slots: 1, requires: ["townHall"], desc: "Efficient revenue collection", icon: "📋" },
+    crier:          { name: "Town Crier Post",  cost: 2,  buildTurns: 0, category: "government",    economy: 0, loyalty: 1, stability: 1, unrest: 0, slots: 0, requires: [], desc: "Delivers news and royal decrees", icon: "📯" },
+
+    // ─── Military ───
+    barracks:       { name: "Barracks",         cost: 6,  buildTurns: 1, category: "military",      economy: 0, loyalty: 0, stability: 1, unrest: -1, slots: 1, requires: [], desc: "Houses and trains soldiers", icon: "⚔" },
+    garrison:       { name: "Garrison",         cost: 14, buildTurns: 2, category: "military",      economy: 0, loyalty: 0, stability: 3, unrest: -1, slots: 2, requires: ["barracks"], desc: "Permanent military presence", icon: "🛡" },
+    walls:          { name: "City Walls",       cost: 4,  buildTurns: 1, category: "military",      economy: 0, loyalty: 0, stability: 2, unrest: 0,  slots: 0, requires: [], desc: "Stone fortifications", icon: "🧱" },
+    reinforcedWalls:{ name: "Reinforced Walls", cost: 12, buildTurns: 2, category: "military",      economy: 0, loyalty: 0, stability: 4, unrest: 0,  slots: 0, requires: ["walls"], desc: "Magically warded stone walls", icon: "🧱" },
+    trainingGround: { name: "Training Ground",  cost: 8,  buildTurns: 1, category: "military",      economy: 0, loyalty: 0, stability: 1, unrest: -1, slots: 1, requires: ["barracks"], desc: "Advanced military drills", icon: "🎯" },
+    arsenal:        { name: "Arsenal",          cost: 16, buildTurns: 2, category: "military",      economy: 1, loyalty: 0, stability: 2, unrest: 0,  slots: 1, requires: ["garrison","smithy"], desc: "Weapons and siege storage", icon: "💣" },
+    warCollege:     { name: "War College",      cost: 22, buildTurns: 3, category: "military",      economy: 0, loyalty: 0, stability: 3, unrest: 0,  slots: 2, requires: ["trainingGround","academy"], desc: "Trains elite officers and tacticians", icon: "📐" },
+    spyNetwork:     { name: "Spy Network",      cost: 12, buildTurns: 2, category: "military",      economy: 1, loyalty: 0, stability: 2, unrest: -1, slots: 1, requires: ["barracks"], desc: "Covert intelligence operations", icon: "👁" },
+    stables:        { name: "Military Stables",  cost: 8, buildTurns: 1, category: "military",      economy: 0, loyalty: 0, stability: 1, unrest: 0,  slots: 1, requires: ["barracks"], desc: "Houses warhorses and cavalry mounts", icon: "🐎" },
+
+    // ─── Economic ───
+    marketplace:    { name: "Marketplace",      cost: 6,  buildTurns: 1, category: "economic",      economy: 3, loyalty: 1, stability: 0, unrest: 0,  slots: 2, requires: [], desc: "Central trading hub", icon: "🏪" },
+    bazaar:         { name: "Grand Bazaar",     cost: 20, buildTurns: 3, category: "economic",      economy: 5, loyalty: 2, stability: 0, unrest: 0,  slots: 4, requires: ["marketplace"], desc: "Sprawling exotic marketplace", icon: "🎪" },
+    smithy:         { name: "Smithy",           cost: 4,  buildTurns: 1, category: "economic",      economy: 2, loyalty: 0, stability: 0, unrest: 0,  slots: 1, requires: [], desc: "Weapons and tools forge", icon: "🔨" },
+    shop:           { name: "Shop",             cost: 4,  buildTurns: 1, category: "economic",      economy: 2, loyalty: 0, stability: 0, unrest: 0,  slots: 1, requires: [], desc: "General goods store", icon: "🛒" },
+    warehouse:      { name: "Warehouse",        cost: 6,  buildTurns: 1, category: "economic",      economy: 2, loyalty: 0, stability: 0, unrest: 0,  slots: 1, requires: ["marketplace"], desc: "Bulk storage for goods", icon: "🏭" },
+    mint:           { name: "Mint",             cost: 20, buildTurns: 3, category: "economic",      economy: 5, loyalty: 0, stability: 1, unrest: 0,  slots: 2, requires: ["marketplace","castle"], desc: "Mints the kingdom's coinage", icon: "🪙" },
+    bank:           { name: "Bank",             cost: 14, buildTurns: 2, category: "economic",      economy: 4, loyalty: 0, stability: 1, unrest: 0,  slots: 1, requires: ["marketplace"], desc: "Manages wealth and loans", icon: "🏦" },
+    guildHall:      { name: "Guild Hall",       cost: 18, buildTurns: 2, category: "economic",      economy: 3, loyalty: 1, stability: 1, unrest: 0,  slots: 2, requires: ["marketplace"], desc: "Artisan and merchant guilds", icon: "⚜" },
+    dock:           { name: "Dock",             cost: 12, buildTurns: 2, category: "economic",      economy: 4, loyalty: 0, stability: 0, unrest: 0,  slots: 2, requires: [], coastOnly: true, desc: "Harbor for ships and trade", icon: "⚓" },
+    shipyard:       { name: "Shipyard",         cost: 20, buildTurns: 3, category: "economic",      economy: 4, loyalty: 0, stability: 1, unrest: 0,  slots: 3, requires: ["dock"], coastOnly: true, desc: "Builds vessels for trade and war", icon: "🚢" },
+    inn:            { name: "Inn",              cost: 4,  buildTurns: 1, category: "economic",      economy: 2, loyalty: 1, stability: 0, unrest: 0,  slots: 1, requires: [], desc: "Lodging for travelers", icon: "🏨" },
+    tannery:        { name: "Tannery",          cost: 4,  buildTurns: 1, category: "economic",      economy: 2, loyalty: -1, stability: 0, unrest: 0, slots: 1, requires: [], desc: "Processes hides into leather", icon: "🦌" },
+    brewery:        { name: "Brewery",          cost: 6,  buildTurns: 1, category: "economic",      economy: 2, loyalty: 1, stability: 0, unrest: 0,  slots: 1, requires: [], desc: "Brews ale and spirits", icon: "🍺" },
+    jeweler:        { name: "Jeweler",          cost: 10, buildTurns: 2, category: "economic",      economy: 3, loyalty: 0, stability: 0, unrest: 0,  slots: 1, requires: ["smithy"], desc: "Crafts fine jewelry and gems", icon: "💎" },
+    exchangeHouse:  { name: "Exchange House",   cost: 16, buildTurns: 2, category: "economic",      economy: 4, loyalty: 0, stability: 0, unrest: 0,  slots: 2, requires: ["bank"], desc: "Currency exchange and foreign investments", icon: "💱" },
+
+    // ─── Religious ───
+    shrineBuilding: { name: "Shrine",           cost: 4,  buildTurns: 1, category: "religious",     economy: 0, loyalty: 1, stability: 1, unrest: -1, slots: 1, requires: [], desc: "Small place of worship", icon: "⛩" },
+    temple:         { name: "Temple",           cost: 16, buildTurns: 2, category: "religious",     economy: 1, loyalty: 2, stability: 2, unrest: -2, slots: 2, requires: ["shrineBuilding"], desc: "Major house of worship", icon: "🕍" },
+    cathedral:      { name: "Cathedral",        cost: 32, buildTurns: 4, category: "religious",     economy: 2, loyalty: 4, stability: 4, unrest: -4, slots: 4, requires: ["temple"], desc: "Grand seat of faith", icon: "⛪" },
+    monastery:      { name: "Monastery",        cost: 12, buildTurns: 2, category: "religious",     economy: 1, loyalty: 1, stability: 1, unrest: 0,  slots: 2, requires: ["shrineBuilding"], desc: "Cloistered order of devotion", icon: "📿" },
+    graveyard:      { name: "Graveyard",        cost: 2,  buildTurns: 1, category: "religious",     economy: 0, loyalty: 1, stability: 0, unrest: -1, slots: 1, requires: [], desc: "Hallowed burial ground", icon: "⚰" },
+    oracleHall:     { name: "Oracle Hall",      cost: 14, buildTurns: 2, category: "religious",     economy: 0, loyalty: 2, stability: 2, unrest: -1, slots: 2, requires: ["temple"], desc: "Divination and prophecy center", icon: "🔮" },
+    reliquary:      { name: "Reliquary",        cost: 10, buildTurns: 2, category: "religious",     economy: 1, loyalty: 2, stability: 1, unrest: -1, slots: 1, requires: ["shrineBuilding"], desc: "Houses sacred relics and artifacts", icon: "📦" },
+
+    // ─── Cultural ───
+    tavern:         { name: "Tavern",           cost: 4,  buildTurns: 1, category: "cultural",      economy: 1, loyalty: 2, stability: 0, unrest: -1, slots: 1, requires: [], desc: "Drink, song, and rumors", icon: "🍺" },
+    theater:        { name: "Theater",          cost: 12, buildTurns: 2, category: "cultural",      economy: 1, loyalty: 3, stability: 0, unrest: -1, slots: 2, requires: [], desc: "Performances and art", icon: "🎭" },
+    library:        { name: "Library",          cost: 8,  buildTurns: 1, category: "cultural",      economy: 1, loyalty: 1, stability: 1, unrest: 0,  slots: 1, requires: [], desc: "Repository of knowledge", icon: "📚" },
+    academy:        { name: "Academy",          cost: 20, buildTurns: 3, category: "cultural",      economy: 2, loyalty: 2, stability: 2, unrest: 0,  slots: 2, requires: ["library"], desc: "Higher learning institution", icon: "🎓" },
+    bardCollege:    { name: "Bard College",     cost: 16, buildTurns: 2, category: "cultural",      economy: 1, loyalty: 3, stability: 0, unrest: -2, slots: 2, requires: ["theater"], desc: "School of music and lore", icon: "🎵" },
+    arena:          { name: "Arena",            cost: 18, buildTurns: 3, category: "cultural",      economy: 2, loyalty: 4, stability: 0, unrest: -2, slots: 4, requires: [], desc: "Gladiatorial combat and spectacle", icon: "🏟" },
+    colosseum:      { name: "Grand Colosseum",  cost: 36, buildTurns: 5, category: "cultural",      economy: 4, loyalty: 6, stability: 0, unrest: -4, slots: 6, requires: ["arena"], desc: "Legendary arena of champions", icon: "🏛" },
+    monument:       { name: "Monument",         cost: 6,  buildTurns: 1, category: "cultural",      economy: 0, loyalty: 2, stability: 1, unrest: -1, slots: 1, requires: [], desc: "Inspires civic pride", icon: "🗿" },
+    museum:         { name: "Museum",           cost: 14, buildTurns: 2, category: "cultural",      economy: 1, loyalty: 2, stability: 1, unrest: -1, slots: 2, requires: ["library"], desc: "Preserves history and culture", icon: "🏛" },
+    park:           { name: "Park",             cost: 2,  buildTurns: 1, category: "cultural",      economy: 0, loyalty: 2, stability: 0, unrest: -1, slots: 1, requires: [], desc: "Green space for citizens", icon: "🌳" },
+    bathhouse:      { name: "Bathhouse",        cost: 6,  buildTurns: 1, category: "cultural",      economy: 1, loyalty: 2, stability: 0, unrest: -1, slots: 1, requires: [], desc: "Public baths for health and socializing", icon: "🛁" },
+    observatory:    { name: "Observatory",      cost: 14, buildTurns: 2, category: "cultural",      economy: 1, loyalty: 1, stability: 1, unrest: 0,  slots: 2, requires: ["academy"], desc: "Studies the stars and planes", icon: "🔭" },
+    zoo:            { name: "Menagerie",        cost: 10, buildTurns: 2, category: "cultural",      economy: 1, loyalty: 3, stability: 0, unrest: -1, slots: 2, requires: [], desc: "Exotic creatures on display", icon: "🦁" },
+
+    // ─── Residential ───
+    tenements:      { name: "Tenements",        cost: 2,  buildTurns: 1, category: "residential",   economy: 0, loyalty: -1, stability: 0, unrest: 0, slots: 1, requires: [], desc: "Cheap cramped housing", popBonus: 250, icon: "🏚" },
+    houses:         { name: "Houses",           cost: 4,  buildTurns: 1, category: "residential",   economy: 0, loyalty: 0, stability: 0, unrest: -1, slots: 1, requires: [], desc: "Decent citizen housing", popBonus: 500, icon: "🏠" },
+    mansions:       { name: "Mansions",         cost: 8,  buildTurns: 2, category: "residential",   economy: 1, loyalty: 1, stability: 0, unrest: 0,  slots: 2, requires: [], desc: "Noble estates", popBonus: 100, icon: "🏘" },
+    nobleVilla:     { name: "Noble Villa",      cost: 16, buildTurns: 2, category: "residential",   economy: 2, loyalty: 1, stability: 1, unrest: 0,  slots: 4, requires: ["mansions"], desc: "Grand aristocratic estate", popBonus: 50, icon: "🏰" },
+    foreignQuarter: { name: "Foreign Quarter",  cost: 10, buildTurns: 2, category: "residential",   economy: 2, loyalty: 0, stability: -1, unrest: 0, slots: 2, requires: [], desc: "District for foreign nationals", popBonus: 300, icon: "🌍" },
+
+    // ─── Infrastructure ───
+    granary:        { name: "Granary",          cost: 6,  buildTurns: 1, category: "infrastructure", economy: 1, loyalty: 1, stability: 1, unrest: 0, slots: 1, requires: [], desc: "Food storage and reserves", icon: "🌾" },
+    mill:           { name: "Mill",             cost: 4,  buildTurns: 1, category: "infrastructure", economy: 2, loyalty: 0, stability: 0, unrest: 0, slots: 1, requires: [], desc: "Grinds grain into flour", icon: "💨" },
+    cistern:        { name: "Cistern",          cost: 4,  buildTurns: 1, category: "infrastructure", economy: 0, loyalty: 1, stability: 1, unrest: 0, slots: 1, requires: [], desc: "Clean water storage", icon: "💧" },
+    sewer:          { name: "Sewer System",     cost: 10, buildTurns: 2, category: "infrastructure", economy: 0, loyalty: 2, stability: 2, unrest: -1, slots: 0, requires: ["cistern"], desc: "Underground waste management", icon: "🕳" },
+    magicShop:      { name: "Magic Shop",       cost: 20, buildTurns: 2, category: "infrastructure", economy: 3, loyalty: 0, stability: 0, unrest: 0, slots: 1, requires: ["library"], desc: "Arcane goods and services", icon: "✨" },
+    hospital:       { name: "Hospital",         cost: 14, buildTurns: 2, category: "infrastructure", economy: 0, loyalty: 2, stability: 1, unrest: -1, slots: 2, requires: [], desc: "Healing and plague prevention", icon: "🏥" },
+    alchemistLab:   { name: "Alchemist Lab",    cost: 12, buildTurns: 2, category: "infrastructure", economy: 2, loyalty: 0, stability: 0, unrest: 0, slots: 1, requires: ["library"], desc: "Produces potions and reagents", icon: "⚗" },
+    clocktower:     { name: "Clocktower",       cost: 10, buildTurns: 2, category: "infrastructure", economy: 1, loyalty: 1, stability: 1, unrest: 0, slots: 1, requires: [], desc: "Timekeeping and signal tower", icon: "🕐" },
+    teleportCircle: { name: "Teleport Circle",  cost: 30, buildTurns: 4, category: "infrastructure", economy: 4, loyalty: 0, stability: 0, unrest: 0, slots: 2, requires: ["magicShop","academy"], desc: "Arcane instant travel network", icon: "🌀" },
+    foundry:        { name: "Foundry",          cost: 10, buildTurns: 2, category: "infrastructure", economy: 3, loyalty: 0, stability: 0, unrest: 0, slots: 2, requires: ["smithy"], desc: "Industrial metalworking facility", icon: "🔥" }
+  };
+
+  const BUILDING_CATEGORIES = {
+    government:     { label: "Government",     color: "#5b7fb5", icon: "🏛" },
+    military:       { label: "Military",       color: "#c94f3f", icon: "⚔" },
+    economic:       { label: "Economic",       color: "#d4af37", icon: "💰" },
+    religious:      { label: "Religious",      color: "#9b59b6", icon: "⛩" },
+    cultural:       { label: "Cultural",       color: "#e67e22", icon: "🎭" },
+    residential:    { label: "Residential",    color: "#7cb342", icon: "🏠" },
+    infrastructure: { label: "Infrastructure", color: "#3498db", icon: "⚙" }
+  };
+
+  // ── Council Roles ──────────────────────────────────────────────────────
+  const COUNCIL_ROLES = {
+    ruler:          { name: "Ruler",           stat: "all",       desc: "Sovereign head of state. Provides bonuses to all kingdom stats.",                   icon: "👑", bonus: { economy: 1, loyalty: 1, stability: 1 } },
+    consort:        { name: "Consort",         stat: "loyalty",   desc: "Supports the ruler. Boosts loyalty and can act as regent.",                          icon: "💍", bonus: { loyalty: 2 } },
+    councilor:      { name: "Councilor",       stat: "loyalty",   desc: "Manages citizen relations. Addresses grievances and public opinion.",                icon: "📣", bonus: { loyalty: 2 } },
+    general:        { name: "General",         stat: "stability", desc: "Commands the military. Essential for defense and warfare.",                          icon: "⚔",  bonus: { stability: 2 } },
+    grandDiplomat:  { name: "Grand Diplomat",  stat: "stability", desc: "Handles foreign relations, treaties, and alliances.",                               icon: "🏳", bonus: { stability: 2 } },
+    highPriest:     { name: "High Priest",     stat: "stability", desc: "Spiritual leader. Manages temples, divine favor, and religious policy.",             icon: "✝",  bonus: { stability: 2 } },
+    magister:       { name: "Magister",        stat: "economy",   desc: "Oversees arcane matters, magical research, and spell services.",                    icon: "✦",  bonus: { economy: 2 } },
+    marshal:        { name: "Marshal",         stat: "economy",   desc: "Patrols the countryside, manages roads, clears threats from territory.",            icon: "🐎", bonus: { economy: 2 } },
+    enforcer:       { name: "Royal Enforcer",  stat: "loyalty",   desc: "Maintains public order through shows of force. Feared but effective.",              icon: "⚖",  bonus: { loyalty: 2 } },
+    spymaster:      { name: "Spymaster",       stat: "economy",   desc: "Runs intelligence networks. Espionage, counter-intelligence, and secrets.",         icon: "👁",  bonus: { economy: 2 } },
+    treasurer:      { name: "Treasurer",       stat: "economy",   desc: "Manages the royal treasury, tax collection, and kingdom finances.",                 icon: "💰", bonus: { economy: 3 } },
+    warden:         { name: "Warden",          stat: "loyalty",   desc: "Manages infrastructure, public works, and settlement defense.",                     icon: "🔰", bonus: { loyalty: 2 } },
+    headsman:       { name: "Headsman",        stat: "stability", desc: "Public executioner. Discourages crime and sedition through fear.",                  icon: "⚔",  bonus: { stability: 1 } },
+    harbourmaster:  { name: "Harbourmaster",   stat: "economy",   desc: "Manages port tariffs, naval trade, and maritime defense.",                          icon: "⚓", bonus: { economy: 2 } }
+  };
+
+  // ── Edicts ─────────────────────────────────────────────────────────────
+  const EDICT_TYPES = {
+    taxation: {
+      name: "Taxation",
+      desc: "How heavily citizens are taxed",
+      icon: "💰",
+      options: {
+        none:         { label: "None",         economy: -1, loyalty: 1,  stability: 0 },
+        light:        { label: "Light",        economy: 1,  loyalty: 0,  stability: 0 },
+        normal:       { label: "Normal",       economy: 2,  loyalty: -1, stability: 0 },
+        heavy:        { label: "Heavy",        economy: 3,  loyalty: -2, stability: 0 },
+        overwhelming: { label: "Overwhelming", economy: 4,  loyalty: -4, stability: 0 }
+      }
+    },
+    promotion: {
+      name: "Promotion",
+      desc: "Investment in attracting new citizens and trade",
+      icon: "📢",
+      options: {
+        none:        { label: "None",       economy: 0,  loyalty: 0, stability: -1, consumption: 0 },
+        token:       { label: "Token",      economy: 0,  loyalty: 0, stability: 1,  consumption: 1 },
+        standard:    { label: "Standard",   economy: 0,  loyalty: 0, stability: 2,  consumption: 2 },
+        aggressive:  { label: "Aggressive", economy: 0,  loyalty: 0, stability: 3,  consumption: 4 },
+        expansionist:{ label: "Expansionist",economy: 0, loyalty: 0, stability: 4,  consumption: 8 }
+      }
+    },
+    holiday: {
+      name: "Festivals",
+      desc: "Frequency of kingdom-sponsored festivals and holidays",
+      icon: "🎉",
+      options: {
+        none:       { label: "None",       economy: 0, loyalty: -1, stability: 0, consumption: 0 },
+        annual:     { label: "Annual",     economy: 0, loyalty: 1,  stability: 0, consumption: 1 },
+        biannual:   { label: "Biannual",   economy: 0, loyalty: 2,  stability: 0, consumption: 2 },
+        quarterly:  { label: "Quarterly",  economy: 0, loyalty: 3,  stability: 0, consumption: 4 },
+        monthly:    { label: "Monthly",    economy: 0, loyalty: 4,  stability: 0, consumption: 8 }
+      }
+    },
+    law: {
+      name: "Law Enforcement",
+      desc: "Strictness of laws and their enforcement",
+      icon: "⚖",
+      options: {
+        lax:       { label: "Lax",        economy: 0, loyalty: 1,  stability: -1 },
+        normal:    { label: "Normal",     economy: 0, loyalty: 0,  stability: 1 },
+        strict:    { label: "Strict",     economy: 0, loyalty: -1, stability: 2 },
+        oppressive:{ label: "Oppressive", economy: 0, loyalty: -3, stability: 3 }
+      }
+    },
+    religion: {
+      name: "Religious Policy",
+      desc: "Official stance on religion within the kingdom",
+      icon: "⛩",
+      options: {
+        tolerance:   { label: "Tolerance",   economy: 0, loyalty: 1,  stability: 0, desc: "All faiths welcome" },
+        stateChurch: { label: "State Church", economy: 0, loyalty: 0,  stability: 2, desc: "One faith sponsored by the crown" },
+        theocracy:   { label: "Theocracy",   economy: 0, loyalty: -1, stability: 3, desc: "Religion and state are one" },
+        secular:     { label: "Secular",     economy: 1, loyalty: 0,  stability: -1, desc: "Religion holds no official power" }
+      }
+    },
+    conscription: {
+      name: "Conscription",
+      desc: "Military draft policy for citizens",
+      icon: "⚔",
+      options: {
+        none:       { label: "None",        economy: 0, loyalty: 1,  stability: -1 },
+        volunteer:  { label: "Volunteer",   economy: 0, loyalty: 0,  stability: 1 },
+        militia:    { label: "Militia Levy", economy: -1, loyalty: -1, stability: 2 },
+        universal:  { label: "Universal",   economy: -2, loyalty: -3, stability: 4 }
+      }
+    }
+  };
+
+  // ── Kingdom Events ─────────────────────────────────────────────────────
+  const KINGDOM_EVENTS = [
+    // ─ Beneficial ─
+    { id: "bountiful_harvest",     name: "Bountiful Harvest",         type: "beneficial", weight: 3, desc: "The fields yield a magnificent crop this season.",                          effect: { treasury: 3, popGrowth: 100 }, condition: function(k) { return k.territories && Object.values(k.territories).some(function(t) { return (t.improvements||[]).some(function(i) { return i.type === "farm"; }); }); } },
+    { id: "trade_opportunity",     name: "Trade Opportunity",         type: "beneficial", weight: 3, desc: "A foreign merchant guild seeks a lasting trade agreement.",                  effect: { treasury: 4 } },
+    { id: "cultural_renaissance",  name: "Cultural Renaissance",      type: "beneficial", weight: 2, desc: "Artists and scholars flock to the kingdom, inspired by its culture.",        effect: { treasury: 2, unrest: -1 } },
+    { id: "pilgrimage",            name: "Holy Pilgrimage",           type: "beneficial", weight: 2, desc: "Pilgrims travel to your kingdom's temples, bringing devotion and coin.",     effect: { treasury: 3, unrest: -2 }, condition: function(k) { return k.stateReligion; } },
+    { id: "hero_emerges",          name: "Local Hero Emerges",        type: "beneficial", weight: 1, desc: "A common citizen performs a heroic deed, becoming a folk legend.",            effect: { unrest: -3 } },
+    { id: "diplomatic_marriage",   name: "Diplomatic Marriage",       type: "beneficial", weight: 1, desc: "A favorable marriage alliance is proposed.",                                 effect: { treasury: 2 } },
+    { id: "divine_blessing",       name: "Divine Blessing",           type: "beneficial", weight: 1, desc: "The gods smile upon the kingdom. Crops grow, the sick are healed.",          effect: { unrest: -4, popGrowth: 200 }, condition: function(k) { return k.stateReligion; } },
+    { id: "new_settlers",          name: "New Settlers Arrive",       type: "beneficial", weight: 3, desc: "Settlers from distant lands seek a new home in your domain.",                effect: { popGrowth: 300, treasury: 1 } },
+    { id: "mine_strike",           name: "Rich Vein Discovered",      type: "beneficial", weight: 2, desc: "Miners strike a rich vein of precious ore.",                                effect: { treasury: 8 }, condition: function(k) { return k.territories && Object.values(k.territories).some(function(t) { return (t.improvements||[]).some(function(i) { return i.type === "mine"; }); }); } },
+    { id: "wandering_wizard",      name: "Wandering Wizard",          type: "beneficial", weight: 2, desc: "A powerful mage offers to enchant the kingdom's defenses.",                  effect: { treasury: 2 } },
+    { id: "treasure_hoard",        name: "Hidden Treasure Found",     type: "beneficial", weight: 1, desc: "Workers unearth an ancient treasure hoard while digging foundations.",       effect: { treasury: 6 } },
+    { id: "good_harvest_moon",     name: "Harvest Moon",              type: "beneficial", weight: 2, desc: "An auspicious moon brings fertility to the land.",                           effect: { popGrowth: 150, treasury: 1 } },
+    { id: "artisan_influx",        name: "Artisan Influx",            type: "beneficial", weight: 2, desc: "Skilled craftspeople seek refuge and opportunities in your realm.",           effect: { treasury: 2, popGrowth: 100 } },
+
+    // ─ Harmful ─
+    { id: "bandit_raids",          name: "Bandit Raids",              type: "harmful",    weight: 3, desc: "Organized bandits attack caravans and outlying farms.",                      effect: { treasury: -2, unrest: 2 }, check: { stat: "stability", dc: 14 } },
+    { id: "plague_outbreak",       name: "Plague Outbreak",           type: "harmful",    weight: 2, desc: "Disease spreads through the settlements.",                                   effect: { unrest: 3, popGrowth: -500 }, check: { stat: "stability", dc: 16 } },
+    { id: "tax_revolt",            name: "Tax Revolt",                type: "harmful",    weight: 2, desc: "Citizens refuse to pay taxes and demand reform.",                            effect: { treasury: -3, unrest: 4 }, check: { stat: "loyalty", dc: 14 } },
+    { id: "monster_attack",        name: "Monster Attack",            type: "harmful",    weight: 2, desc: "A dangerous creature terrorizes the countryside.",                           effect: { unrest: 3 }, check: { stat: "stability", dc: 15 } },
+    { id: "corruption_scandal",    name: "Corruption Scandal",        type: "harmful",    weight: 2, desc: "A council member is caught embezzling from the treasury.",                   effect: { treasury: -4, unrest: 2 }, check: { stat: "loyalty", dc: 13 } },
+    { id: "food_shortage",         name: "Food Shortage",             type: "harmful",    weight: 2, desc: "Poor yields and supply chain issues cause hunger.",                          effect: { unrest: 4 }, check: { stat: "economy", dc: 14 } },
+    { id: "earthquake",            name: "Earthquake",                type: "harmful",    weight: 1, desc: "The ground shakes, damaging buildings and terrifying citizens.",              effect: { treasury: -3, unrest: 3 }, check: { stat: "stability", dc: 18 } },
+    { id: "dragon_sighting",       name: "Dragon Sighting",           type: "harmful",    weight: 1, desc: "A dragon circles the kingdom, demanding tribute.",                          effect: { treasury: -8, unrest: 5 }, check: { stat: "stability", dc: 20 } },
+    { id: "heresy",                name: "Heretical Movement",        type: "harmful",    weight: 2, desc: "A cult spreads dangerous beliefs, undermining the faith.",                   effect: { unrest: 3 }, check: { stat: "stability", dc: 14 }, condition: function(k) { return k.stateReligion; } },
+    { id: "border_dispute",        name: "Border Dispute",            type: "harmful",    weight: 2, desc: "A neighboring power claims part of your territory.",                        effect: { unrest: 2 }, check: { stat: "stability", dc: 15 } },
+    { id: "assassination_attempt", name: "Assassination Attempt",     type: "harmful",    weight: 1, desc: "An assassin targets a council member.",                                     effect: { unrest: 3 }, check: { stat: "stability", dc: 17 } },
+    { id: "famine",                name: "Famine",                    type: "harmful",    weight: 1, desc: "Widespread crop failure threatens starvation.",                              effect: { treasury: -4, popGrowth: -1000, unrest: 6 }, check: { stat: "economy", dc: 18 } },
+    { id: "flood",                 name: "Great Flood",               type: "harmful",    weight: 1, desc: "Rivers overflow, destroying farmland and bridges.",                         effect: { treasury: -3, unrest: 3 }, check: { stat: "stability", dc: 15 } },
+    { id: "smuggler_ring",         name: "Smuggler Ring",             type: "harmful",    weight: 2, desc: "A smuggling operation undermines lawful commerce.",                          effect: { treasury: -2, unrest: 1 }, check: { stat: "economy", dc: 13 } },
+    { id: "wildfire",              name: "Wildfire",                  type: "harmful",    weight: 1, desc: "Fire sweeps through forests and outlying settlements.",                      effect: { treasury: -2, unrest: 2 }, check: { stat: "stability", dc: 14 }, condition: function(k) { return k.territories && Object.values(k.territories).some(function(t) { return t.terrain === "forest" || t.terrain === "jungle"; }); } },
+    { id: "cursed_artifact",       name: "Cursed Artifact Unearthed", type: "harmful",    weight: 1, desc: "Workers unearth something that should have stayed buried.",                 effect: { unrest: 4 }, check: { stat: "stability", dc: 16 } },
+    { id: "goblin_incursion",      name: "Goblin Incursion",          type: "harmful",    weight: 2, desc: "Goblin tribes muster and raid the borderlands.",                            effect: { treasury: -2, unrest: 2 }, check: { stat: "stability", dc: 13 } },
+    { id: "haunting",              name: "Restless Dead",             type: "harmful",    weight: 1, desc: "Undead stir in the graveyards, terrorizing nearby villages.",                effect: { unrest: 3 }, check: { stat: "stability", dc: 15 } },
+
+    // ─ Neutral / Choice ─
+    { id: "refugees",              name: "Refugees Arrive",           type: "choice",     weight: 3, desc: "Displaced people beg for shelter. Accept them or turn them away?",
+      choiceA: { label: "Welcome them", effect: { popGrowth: 500, treasury: -2 } },
+      choiceB: { label: "Turn them away", effect: { unrest: 1 } } },
+    { id: "traveling_circus",      name: "Traveling Circus",          type: "choice",     weight: 2, desc: "A famous circus troupe offers to perform. Fund them or decline?",
+      choiceA: { label: "Fund the show", effect: { unrest: -3, treasury: -1 } },
+      choiceB: { label: "Politely decline", effect: {} } },
+    { id: "land_dispute",          name: "Noble Land Dispute",        type: "choice",     weight: 2, desc: "Two noble houses claim the same parcel. Side with the warriors or the merchants?",
+      choiceA: { label: "Favor the warriors", effect: { treasury: -1 } },
+      choiceB: { label: "Favor the merchants", effect: { treasury: 2, unrest: 1 } } },
+    { id: "undead_rising",         name: "Undead Rising",             type: "choice",     weight: 1, desc: "Undead emerge from an old graveyard. Send troops or call for adventurers?",
+      choiceA: { label: "Send troops", effect: { treasury: -2 } },
+      choiceB: { label: "Hire adventurers", effect: { treasury: -4, unrest: -1 } } },
+    { id: "foreign_envoy",         name: "Foreign Envoy",             type: "choice",     weight: 2, desc: "An envoy proposes a mutual defense pact. The terms favor them slightly.",
+      choiceA: { label: "Accept the pact", effect: { treasury: -1 } },
+      choiceB: { label: "Negotiate harder", effect: {} } },
+    { id: "merchant_prince",       name: "Merchant Prince",           type: "choice",     weight: 2, desc: "A wealthy merchant offers to build a trading post — for exclusive trade rights.",
+      choiceA: { label: "Grant exclusivity", effect: { treasury: 5, unrest: 1 } },
+      choiceB: { label: "Decline the offer", effect: {} } },
+    { id: "wandering_prophet",     name: "Wandering Prophet",         type: "choice",     weight: 2, desc: "A charismatic prophet draws crowds. Embrace or exile them?",
+      choiceA: { label: "Embrace the prophet", effect: { unrest: -2, treasury: -1 } },
+      choiceB: { label: "Exile the prophet", effect: { unrest: 1 } } },
+    { id: "ancient_ruins",         name: "Ancient Ruins Discovered",  type: "choice",     weight: 2, desc: "Explorers find ruins in the wilderness. Excavate or seal them?",
+      choiceA: { label: "Excavate", effect: { treasury: 4, unrest: 1 } },
+      choiceB: { label: "Seal them", effect: { unrest: -1 } } },
+    { id: "thieves_guild",         name: "Thieves' Guild Offer",      type: "choice",     weight: 1, desc: "The local thieves' guild offers information in exchange for tolerance.",
+      choiceA: { label: "Accept the deal", effect: { treasury: 2, unrest: 1 } },
+      choiceB: { label: "Crack down on them", effect: { treasury: -2, unrest: -1 } } },
+    { id: "dragon_egg",            name: "Dragon Egg Found",          type: "choice",     weight: 1, desc: "A farmer discovers a dragon egg. It could hatch something powerful — or dangerous.",
+      choiceA: { label: "Keep and nurture it", effect: { unrest: 2 } },
+      choiceB: { label: "Destroy it safely", effect: { unrest: -1 } } },
+    { id: "feywild_crossing",      name: "Feywild Crossing",          type: "choice",     weight: 1, desc: "A portal to the Feywild opens in your territory. Wondrous but unpredictable.",
+      choiceA: { label: "Embrace the fey", effect: { treasury: 3, unrest: 2 } },
+      choiceB: { label: "Ward it shut", effect: { treasury: -2 } } }
+  ];
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 2: KINGDOM ENGINE (BUG-FIXED)
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  function initKingdom(name, rulerName) {
+    return {
+      name: name || "New Kingdom",
+      founded: Date.now(),
+      turn: 0,
+      phase: "idle",
+
+      // Core Stats (derived — stored for display but recalculated each render)
+      unrest: 0,
+      fame: 0,
+      infamy: 0,
+
+      // Resources
+      treasury: 10,
+
+      // Population
+      totalPopulation: 100,
+
+      // Territory & Settlements
+      territories: {},
+      settlements: {},
+      capitalSettlement: null,
+
+      // Governance
+      council: {},
+      edicts: {
+        taxation: "normal",
+        promotion: "none",
+        holiday: "none",
+        law: "normal",
+        religion: "tolerance",
+        conscription: "volunteer"
+      },
+      laws: [],
+
+      // Religion
+      stateReligion: null,
+      divineFavor: {},
+
+      // Military (hooks into Faction War)
+      warFactionId: null,
+
+      // History
+      eventLog: [],
+      turnHistory: [],
+      activeEvent: null
+    };
+  }
+
+  // ── Calculate derived kingdom stats (PURE — no side effects) ───────────
+  function calcKingdomStats(kingdom) {
+    var economy = 0, loyalty = 0, stability = 0, consumption = 0;
+    var totalDefense = 0;
+
+    // Council bonuses
+    var council = kingdom.council || {};
+    Object.keys(council).forEach(function(role) {
+      var npc = council[role];
+      if (npc && COUNCIL_ROLES[role]) {
+        var bonus = COUNCIL_ROLES[role].bonus;
+        economy += bonus.economy || 0;
+        loyalty += bonus.loyalty || 0;
+        stability += bonus.stability || 0;
+      }
+    });
+
+    // Vacant council penalty: -2 per unfilled critical role
+    var criticalRoles = ["ruler", "treasurer", "general", "highPriest"];
+    criticalRoles.forEach(function(role) {
+      if (!council[role]) stability -= 2;
+    });
+
+    // Edict modifiers
+    var edicts = kingdom.edicts || {};
+    Object.keys(edicts).forEach(function(edictType) {
+      var level = edicts[edictType];
+      var edictDef = EDICT_TYPES[edictType];
+      if (edictDef && edictDef.options[level]) {
+        var opts = edictDef.options[level];
+        economy += opts.economy || 0;
+        loyalty += opts.loyalty || 0;
+        stability += opts.stability || 0;
+        consumption += opts.consumption || 0;
+      }
+    });
+
+    // Territory improvements
+    var territories = kingdom.territories || {};
+    Object.keys(territories).forEach(function(hexId) {
+      var hex = territories[hexId];
+      (hex.improvements || []).forEach(function(imp) {
+        var impData = HEX_IMPROVEMENTS[imp.type];
+        if (impData && imp.completed) {
+          economy += impData.economy || 0;
+          loyalty += impData.loyalty || 0;
+          stability += impData.stability || 0;
+        }
+      });
+    });
+
+    // Settlement buildings
+    var settlements = kingdom.settlements || {};
+    Object.keys(settlements).forEach(function(setId) {
+      var settlement = settlements[setId];
+      (settlement.buildings || []).forEach(function(b) {
+        var bData = BUILDINGS[b.type];
+        if (bData && b.completed) {
+          economy += bData.economy || 0;
+          loyalty += bData.loyalty || 0;
+          stability += bData.stability || 0;
+          if (bData.category === "military") totalDefense += (bData.stability || 0);
+        }
+      });
+      var size = getSettlementSize(settlement.population || 0);
+      totalDefense += SETTLEMENT_SIZES[size]?.defenseBonus || 0;
+    });
+
+    // Consumption from claimed hexes
+    var numHexes = Object.keys(territories).length;
+    consumption += numHexes;
+
+    // Unrest penalty — applied to derived stats, NOT mutating kingdom
+    var unrest = kingdom.unrest || 0;
+    economy -= unrest;
+    loyalty -= unrest;
+    stability -= unrest;
+
+    // Income: positive economy → treasury gains
+    var income = Math.max(0, economy);
+
+    return { economy: economy, loyalty: loyalty, stability: stability, consumption: consumption, income: income, totalDefense: totalDefense, unrest: unrest };
+  }
+
+  // ── Process a kingdom turn phase ───────────────────────────────────────
+  function processKingdomTurn(kingdom, phase) {
+    var k = JSON.parse(JSON.stringify(kingdom));
+    var stats = calcKingdomStats(k);
+    var log = [];
+
+    switch (phase) {
+      case "upkeep": {
+        var cost = Math.max(0, stats.consumption);
+        if (k.treasury >= cost) {
+          k.treasury -= cost;
+          log.push("Paid " + cost + " BP in consumption costs.");
+        } else {
+          var deficit = cost - k.treasury;
+          k.treasury = 0;
+          k.unrest = (k.unrest || 0) + 2;
+          log.push("Treasury deficit of " + deficit + " BP! Unrest increases by 2.");
+        }
+
+        // Stability check to reduce unrest
+        if (k.unrest > 0) {
+          var roll = Math.floor(Math.random() * 20) + 1 + stats.stability;
+          if (roll >= 14) {
+            k.unrest = Math.max(0, k.unrest - 1);
+            log.push("Stability check passed (rolled " + roll + "). Unrest reduced by 1.");
+          } else {
+            k.unrest += 1;
+            log.push("Stability check failed (rolled " + roll + "). Unrest increases by 1.");
+          }
+        }
+
+        // Unrest-reducing buildings
+        var unrestReduction = 0;
+        Object.values(k.settlements || {}).forEach(function(s) {
+          (s.buildings || []).forEach(function(b) {
+            var bData = BUILDINGS[b.type];
+            if (bData && b.completed && bData.unrest && bData.unrest < 0) {
+              unrestReduction += Math.abs(bData.unrest);
+            }
+          });
+        });
+        if (unrestReduction > 0 && k.unrest > 0) {
+          var reduced = Math.min(k.unrest, unrestReduction);
+          k.unrest = Math.max(0, k.unrest - reduced);
+          log.push("Buildings reduce unrest by " + reduced + ".");
+        }
+
+        if (k.unrest >= 20) {
+          log.push("⚠ CRITICAL: Unrest has reached " + k.unrest + "! The kingdom is on the verge of collapse!");
+        }
+        break;
+      }
+
+      case "income": {
+        var incRoll = Math.floor(Math.random() * 20) + 1 + stats.economy;
+        var earned = Math.max(0, Math.floor(incRoll / 5));
+        k.treasury += earned;
+        log.push("Economy check: rolled " + incRoll + ". Earned " + earned + " BP.");
+
+        // Population growth
+        var loyaltyBonus = Math.max(0, stats.loyalty);
+        var growthRate = loyaltyBonus * 10 + 50;
+        var popGrowth = Math.floor(growthRate * Math.max(0, 1 - (k.unrest || 0) * 0.05));
+        k.totalPopulation = Math.max(0, (k.totalPopulation || 100) + popGrowth);
+
+        // Distribute population to settlements proportionally
+        var setKeys = Object.keys(k.settlements || {});
+        if (setKeys.length > 0 && popGrowth > 0) {
+          var perSettlement = Math.floor(popGrowth / setKeys.length);
+          setKeys.forEach(function(sid) { k.settlements[sid].population = (k.settlements[sid].population || 100) + perSettlement; });
+        }
+
+        if (popGrowth > 0) log.push("Population grew by " + popGrowth + " (total: " + k.totalPopulation.toLocaleString() + ").");
+        if (popGrowth <= 0) log.push("Population stagnant at " + k.totalPopulation.toLocaleString() + ".");
+        break;
+      }
+
+      case "event": {
+        var eventRoll = Math.floor(Math.random() * 100);
+        if (eventRoll < 60) {
+          var eligible = KINGDOM_EVENTS.filter(function(e) { return !e.condition || e.condition(k); });
+          if (eligible.length === 0) { log.push("No applicable events."); break; }
+          var totalWeight = eligible.reduce(function(s, e) { return s + e.weight; }, 0);
+          var pick = Math.random() * totalWeight;
+          var chosen = eligible[0];
+          for (var ei = 0; ei < eligible.length; ei++) {
+            pick -= eligible[ei].weight;
+            if (pick <= 0) { chosen = eligible[ei]; break; }
+          }
+
+          if (chosen.type === "choice") {
+            k.activeEvent = JSON.parse(JSON.stringify(chosen));
+            k.activeEvent.timestamp = Date.now();
+            log.push("Event: " + chosen.name + " — " + chosen.desc + " (awaiting DM decision)");
+          } else if (chosen.type === "harmful" && chosen.check) {
+            var statVal = stats[chosen.check.stat] || 0;
+            var chkRoll = Math.floor(Math.random() * 20) + 1 + statVal;
+            if (chkRoll >= chosen.check.dc) {
+              log.push("Event: " + chosen.name + " — Mitigated! (rolled " + chkRoll + " vs DC " + chosen.check.dc + ")");
+              // On success: half the bad effects
+              applyEventEffect(k, chosen.effect, 0.5);
+            } else {
+              log.push("Event: " + chosen.name + " — Failed to mitigate! (rolled " + chkRoll + " vs DC " + chosen.check.dc + ")");
+              applyEventEffect(k, chosen.effect, 1.0);
+            }
+          } else {
+            applyEventEffect(k, chosen.effect, 1.0);
+            log.push("Event: " + chosen.name + " — " + chosen.desc);
+          }
+
+          if (!k.eventLog) k.eventLog = [];
+          k.eventLog.push({ turn: k.turn, event: chosen.name, type: chosen.type, timestamp: Date.now() });
+        } else {
+          log.push("No kingdom event this turn.");
+        }
+        break;
+      }
+
+      case "building": {
+        var anyCompleted = false;
+        // Settlement construction
+        Object.values(k.settlements || {}).forEach(function(settlement) {
+          var queue = settlement.constructionQueue || [];
+          var newQueue = [];
+          queue.forEach(function(item) {
+            item.turnsRemaining -= 1;
+            if (item.turnsRemaining <= 0) {
+              if (!settlement.buildings) settlement.buildings = [];
+              settlement.buildings.push({ type: item.buildingType, completed: true, builtTurn: k.turn });
+              anyCompleted = true;
+              log.push("Completed: " + (BUILDINGS[item.buildingType]?.name || item.buildingType) + " in " + settlement.name);
+            } else {
+              newQueue.push(item);
+            }
+          });
+          settlement.constructionQueue = newQueue;
+        });
+
+        // Hex improvements
+        Object.values(k.territories || {}).forEach(function(hex) {
+          var queue = hex.improvementQueue || [];
+          var newQueue = [];
+          queue.forEach(function(item) {
+            item.turnsRemaining -= 1;
+            if (item.turnsRemaining <= 0) {
+              if (!hex.improvements) hex.improvements = [];
+              hex.improvements.push({ type: item.type, completed: true, builtTurn: k.turn });
+              anyCompleted = true;
+              log.push("Completed: " + (HEX_IMPROVEMENTS[item.type]?.name || item.type) + " at " + hex.name);
+            } else {
+              newQueue.push(item);
+            }
+          });
+          hex.improvementQueue = newQueue;
+        });
+
+        if (!anyCompleted) log.push("No construction completed this turn.");
+        break;
+      }
+
+      default:
+        break;
+    }
+
+    return { kingdom: k, log: log };
+  }
+
+  function applyEventEffect(kingdom, effect, multiplier) {
+    if (!effect) return;
+    var m = multiplier || 1.0;
+    if (effect.treasury) kingdom.treasury = Math.max(0, kingdom.treasury + Math.round(effect.treasury * m));
+    if (effect.unrest) kingdom.unrest = Math.max(0, (kingdom.unrest || 0) + Math.round(effect.unrest * m));
+    if (effect.popGrowth) kingdom.totalPopulation = Math.max(0, (kingdom.totalPopulation || 100) + Math.round(effect.popGrowth * m));
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 3: SHARED STYLES
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  const S = {
+    page: { display:"flex", flexDirection:"column", height:"100%", background:T.bg, color:T.text, fontFamily:T.body, overflow:"hidden" },
+    header: { padding:"16px 20px", borderBottom:"1px solid "+T.border, display:"flex", justifyContent:"space-between", alignItems:"center", background:T.bgCard, flexShrink:0 },
+    title: { fontSize:"22px", fontWeight:"bold", fontFamily:T.heading, color:T.gold, margin:0, display:"flex", alignItems:"center", gap:"10px" },
+    scrollArea: { flex:1, overflowY:"auto", padding:"20px" },
+    card: { background:T.bgCard, border:"1px solid "+T.border, borderRadius:"8px", padding:"16px", marginBottom:"12px" },
+    cardHover: { cursor:"pointer", transition:"border-color 0.2s" },
+    grid2: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px" },
+    grid3: { display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"12px" },
+    grid4: { display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(200px, 1fr))", gap:"12px" },
+    statRow: { display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(140px, 1fr))", gap:"10px", marginBottom:"16px" },
+    statBox: { background:T.bgCard, border:"1px solid "+T.border, borderRadius:"6px", padding:"10px", textAlign:"center" },
+    statLabel: { fontSize:"10px", color:T.textDim, fontWeight:"600", textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:"2px" },
+    statVal: function(color) { return { fontSize:"22px", fontWeight:"bold", color: color || T.gold }; },
+    sectionHead: { fontSize:"16px", fontWeight:"bold", color:T.gold, marginBottom:"10px", display:"flex", alignItems:"center", gap:"8px", fontFamily:T.heading },
+    btn: { padding:"7px 14px", borderRadius:"4px", border:"1px solid "+T.crimson, background:T.crimson, color:"#fff", cursor:"pointer", fontWeight:"600", fontSize:"13px", display:"inline-flex", alignItems:"center", gap:"6px", transition:"all 0.2s", fontFamily:T.ui },
+    btnGold: { background:"transparent", color:T.gold, borderColor:T.gold },
+    btnSmall: { padding:"4px 10px", fontSize:"11px" },
+    btnDanger: { background:"#c94f3f", borderColor:"#c94f3f" },
+    input: { padding:"7px 10px", borderRadius:"4px", border:"1px solid "+T.border, background:T.bg, color:T.text, fontSize:"13px", fontFamily:"inherit", width:"100%" },
+    select: { padding:"7px 10px", borderRadius:"4px", border:"1px solid "+T.border, background:T.bg, color:T.text, fontSize:"13px", fontFamily:"inherit", width:"100%" },
+    label: { fontSize:"10px", fontWeight:"600", color:T.textDim, textTransform:"uppercase", letterSpacing:"0.8px", marginBottom:"4px", display:"block" },
+    pill: function(color) { return { display:"inline-block", padding:"2px 8px", borderRadius:"10px", fontSize:"10px", fontWeight:"700", background:(color||T.gold)+"18", color:color||T.gold, letterSpacing:"0.3px" }; },
+    tabs: { display:"flex", gap:"4px", marginBottom:"16px", flexWrap:"wrap" },
+    tab: function(active) { return { padding:"6px 14px", borderRadius:"4px", border:"1px solid "+(active?T.gold:T.border), background:active?T.gold+"18":"transparent", color:active?T.gold:T.textDim, cursor:"pointer", fontSize:"12px", fontWeight:"600", fontFamily:T.ui, transition:"all 0.2s" }; },
+    empty: { textAlign:"center", padding:"40px 20px", color:T.textDim, fontSize:"14px" },
+    divider: { border:"none", borderTop:"1px solid "+T.border, margin:"16px 0" },
+    badge: function(color) { return { display:"inline-flex", alignItems:"center", gap:"4px", padding:"3px 8px", borderRadius:"4px", fontSize:"11px", fontWeight:"600", background:(color||"#888")+"20", color:color||"#888" }; }
+  };
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 4: UI COMPONENTS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  function StatBadge(_ref) {
+    var label = _ref.label, value = _ref.value, color = _ref.color;
+    return React.createElement("div", { style: S.statBox },
+      React.createElement("div", { style: S.statLabel }, label),
+      React.createElement("div", { style: S.statVal(color) },
+        typeof value === "number" ? (value >= 0 ? "+" + value : String(value)) : value
+      )
+    );
+  }
+
+  // ── Kingdom Dashboard ──────────────────────────────────────────────────
+  function KingdomDashboard(_ref) {
+    var kingdom = _ref.kingdom, stats = _ref.stats, onNavigate = _ref.onNavigate, viewRole = _ref.viewRole;
+    var hexCount = Object.keys(kingdom.territories || {}).length;
+    var settlementCount = Object.keys(kingdom.settlements || {}).length;
+    var buildingCount = Object.values(kingdom.settlements || {}).reduce(function(s, set) { return s + (set.buildings || []).filter(function(b) { return b.completed; }).length; }, 0);
+    var councilFilled = Object.keys(kingdom.council || {}).filter(function(r) { return kingdom.council[r]; }).length;
+    var recentEvents = (kingdom.eventLog || []).slice(-5).reverse();
+
+    return React.createElement("div", null,
+      React.createElement("div", { style: Object.assign({}, S.card, { display:"flex", justifyContent:"space-between", alignItems:"center" }) },
+        React.createElement("div", null,
+          React.createElement("div", { style: { fontSize:"20px", fontWeight:"bold", fontFamily:T.heading, color:T.gold } }, kingdom.name),
+          React.createElement("div", { style: { fontSize:"12px", color:T.textDim, marginTop:"4px" } },
+            "Turn " + kingdom.turn + " · Founded " + new Date(kingdom.founded).toLocaleDateString() + " · Pop. " + (kingdom.totalPopulation || 0).toLocaleString()
+          )
+        ),
+        kingdom.stateReligion && React.createElement("div", { style: S.pill("#9b59b6") }, "⛩ " + kingdom.stateReligion)
+      ),
+
+      React.createElement("div", { style: S.statRow },
+        React.createElement(StatBadge, { label: "Economy", value: stats.economy, color: stats.economy >= 0 ? "#7cb342" : "#c94f3f" }),
+        React.createElement(StatBadge, { label: "Loyalty", value: stats.loyalty, color: stats.loyalty >= 0 ? "#7cb342" : "#c94f3f" }),
+        React.createElement(StatBadge, { label: "Stability", value: stats.stability, color: stats.stability >= 0 ? "#7cb342" : "#c94f3f" }),
+        React.createElement(StatBadge, { label: "Treasury", value: kingdom.treasury + " BP", color: T.gold }),
+        React.createElement(StatBadge, { label: "Unrest", value: kingdom.unrest || 0, color: (kingdom.unrest || 0) > 5 ? "#c94f3f" : (kingdom.unrest || 0) > 0 ? "#e67e22" : "#7cb342" }),
+        React.createElement(StatBadge, { label: "Defense", value: stats.totalDefense, color: "#5b7fb5" })
+      ),
+
+      React.createElement("div", { style: Object.assign({}, S.statRow, { gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))" }) },
+        React.createElement("div", { style: S.statBox },
+          React.createElement("div", { style: S.statLabel }, "Income / Turn"),
+          React.createElement("div", { style: { fontSize:"16px", fontWeight:"bold", color:"#7cb342" } }, "+" + stats.income + " BP")
+        ),
+        React.createElement("div", { style: S.statBox },
+          React.createElement("div", { style: S.statLabel }, "Consumption"),
+          React.createElement("div", { style: { fontSize:"16px", fontWeight:"bold", color:"#c94f3f" } }, "-" + stats.consumption + " BP")
+        ),
+        React.createElement("div", { style: S.statBox },
+          React.createElement("div", { style: S.statLabel }, "Net / Turn"),
+          React.createElement("div", { style: { fontSize:"16px", fontWeight:"bold", color: (stats.income - stats.consumption) >= 0 ? "#7cb342" : "#c94f3f" } },
+            (stats.income - stats.consumption >= 0 ? "+" : "") + (stats.income - stats.consumption) + " BP"
+          )
+        ),
+        React.createElement("div", { style: S.statBox },
+          React.createElement("div", { style: S.statLabel }, "Hexes / Settlements"),
+          React.createElement("div", { style: { fontSize:"16px", fontWeight:"bold", color:T.gold } }, hexCount + " / " + settlementCount)
+        ),
+        React.createElement("div", { style: S.statBox },
+          React.createElement("div", { style: S.statLabel }, "Buildings"),
+          React.createElement("div", { style: { fontSize:"16px", fontWeight:"bold", color:T.gold } }, buildingCount)
+        ),
+        React.createElement("div", { style: S.statBox },
+          React.createElement("div", { style: S.statLabel }, "Council"),
+          React.createElement("div", { style: { fontSize:"16px", fontWeight:"bold", color: councilFilled >= 4 ? "#7cb342" : "#e67e22" } }, councilFilled + "/" + Object.keys(COUNCIL_ROLES).length)
+        )
+      ),
+
+      React.createElement("div", { style: Object.assign({}, S.grid3, { marginBottom: "16px" }) },
+        [
+          { id: "territory", label: "Territory", icon: "🗺", desc: "Claim hexes, build improvements, manage land", color: "#8fbc5e" },
+          { id: "settlements", label: "Settlements", icon: "🏘", desc: "Found towns, construct buildings, grow cities", color: "#d4af37" },
+          { id: "governance", label: "Governance", icon: "👑", desc: "Council, edicts, laws, and royal decrees", color: "#5b7fb5" },
+          { id: "religion", label: "Religion", icon: "⛩", desc: "State faith, temples, divine favor", color: "#9b59b6" },
+          { id: "events", label: "Event Log", icon: "📜", desc: "Kingdom history and recent events", color: "#e67e22" },
+          viewRole === "dm" ? { id: "turn", label: "Advance Turn", icon: "⚡", desc: "Process the next kingdom turn", color: T.crimson } : null
+        ].filter(Boolean).map(function(panel) {
+          return React.createElement("div", {
+            key: panel.id,
+            style: Object.assign({}, S.card, S.cardHover, { borderLeft: "4px solid " + panel.color, cursor: "pointer" }),
+            onClick: function() { onNavigate(panel.id); }
+          },
+            React.createElement("div", { style: { fontSize: "20px", marginBottom: "6px" } }, panel.icon),
+            React.createElement("div", { style: { fontSize: "14px", fontWeight: "bold", color: panel.color, fontFamily: T.heading } }, panel.label),
+            React.createElement("div", { style: { fontSize: "12px", color: T.textDim, marginTop: "4px" } }, panel.desc)
+          );
+        })
+      ),
+
+      kingdom.activeEvent && React.createElement("div", { style: Object.assign({}, S.card, { borderLeft: "4px solid #e67e22" }) },
+        React.createElement("div", { style: { fontSize:"14px", fontWeight:"bold", color:"#e67e22", marginBottom:"6px" } }, "⚠ Pending Event: " + kingdom.activeEvent.name),
+        React.createElement("div", { style: { fontSize:"12px", color:T.textDim, marginBottom:"8px" } }, kingdom.activeEvent.desc),
+        viewRole === "dm" && React.createElement("button", { style: S.btn, onClick: function() { onNavigate("events"); } }, "Resolve Event")
+      ),
+
+      recentEvents.length > 0 && React.createElement("div", null,
+        React.createElement("div", { style: S.sectionHead }, "📜 Recent Events"),
+        recentEvents.map(function(ev, i) {
+          return React.createElement("div", { key: i, style: { padding:"8px 12px", borderBottom:"1px solid "+T.border, fontSize:"12px" } },
+            React.createElement("span", { style: { color:T.gold, fontWeight:"600" } }, "Turn " + ev.turn + ": "),
+            React.createElement("span", { style: { color: ev.type === "harmful" ? "#c94f3f" : ev.type === "beneficial" ? "#7cb342" : T.textDim } }, ev.event)
+          );
+        })
+      )
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 5: PANEL COMPONENTS (Territory, Settlement, Governance, Religion, Events, Turn)
+  // These are loaded from the original implementation but with fixed state updates.
+  // The key fix: setKingdom now receives the full prev state and returns full next state.
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  // Helper: immutable kingdom update
+  function updateKingdom(setKingdom, updater) {
+    setKingdom(function(prev) {
+      var k = JSON.parse(JSON.stringify(prev.kingdom || prev));
+      updater(k);
+      if (prev.kingdom !== undefined) return Object.assign({}, prev, { kingdom: k });
+      return k;
+    });
+  }
+
+  // ── Territory Panel ────────────────────────────────────────────────────
+  function TerritoryPanel(_ref) {
+    var kingdom = _ref.kingdom, setKingdom = _ref.setKingdom, viewRole = _ref.viewRole, onBack = _ref.onBack;
+    var _s1 = useState(false), showClaimForm = _s1[0], setShowClaimForm = _s1[1];
+    var _s2 = useState({ name: "", terrain: "plains" }), claimForm = _s2[0], setClaimForm = _s2[1];
+    var _s3 = useState(null), selectedHex = _s3[0], setSelectedHex = _s3[1];
+    var _s4 = useState(false), showBuildMenu = _s4[0], setShowBuildMenu = _s4[1];
+    var _s5 = useState(null), impCategory = _s5[0], setImpCategory = _s5[1];
+
+    var territories = kingdom.territories || {};
+    var hexList = Object.entries(territories).sort(function(a, b) { return a[1].name.localeCompare(b[1].name); });
+
+    var handleClaim = function() {
+      if (!claimForm.name) return;
+      var terrain = TERRAIN_TYPES[claimForm.terrain];
+      if (!terrain || kingdom.treasury < terrain.claimCost) return;
+      var hexId = Date.now().toString();
+      updateKingdom(setKingdom, function(k) {
+        k.treasury -= terrain.claimCost;
+        k.territories[hexId] = { id: hexId, name: claimForm.name, terrain: claimForm.terrain, claimedTurn: k.turn, improvements: [], improvementQueue: [], prepared: false };
+      });
+      setShowClaimForm(false);
+      setClaimForm({ name: "", terrain: "plains" });
+    };
+
+    var handlePrepare = function(hexId) {
+      var hex = territories[hexId];
+      if (!hex || hex.prepared) return;
+      var terrain = TERRAIN_TYPES[hex.terrain];
+      if (!terrain || kingdom.treasury < terrain.prepCost) return;
+      updateKingdom(setKingdom, function(k) { k.treasury -= terrain.prepCost; k.territories[hexId].prepared = true; });
+    };
+
+    var handleBuildImprovement = function(hexId, impType) {
+      var imp = HEX_IMPROVEMENTS[impType];
+      if (!imp || kingdom.treasury < imp.cost) return;
+      var hex = territories[hexId];
+      if (imp.requires && !imp.requires.includes(hex.terrain)) return;
+      updateKingdom(setKingdom, function(k) {
+        k.treasury -= imp.cost;
+        if (imp.buildTurns <= 0) {
+          k.territories[hexId].improvements.push({ type: impType, completed: true, builtTurn: k.turn });
+        } else {
+          if (!k.territories[hexId].improvementQueue) k.territories[hexId].improvementQueue = [];
+          k.territories[hexId].improvementQueue.push({ type: impType, turnsRemaining: imp.buildTurns });
+        }
+      });
+      setShowBuildMenu(false);
+    };
+
+    var sel = selectedHex ? territories[selectedHex] : null;
+
+    return React.createElement("div", null,
+      React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" } },
+        React.createElement("div", { style: S.sectionHead }, Map && React.createElement(Map, { size: 18 }), "Territory (" + hexList.length + " hexes)"),
+        React.createElement("div", { style: { display:"flex", gap:"8px" } },
+          viewRole === "dm" && React.createElement("button", { style: S.btn, onClick: function() { setShowClaimForm(!showClaimForm); } }, Plus && React.createElement(Plus, { size: 14 }), "Claim Hex"),
+          React.createElement("button", { style: Object.assign({}, S.btn, S.btnGold), onClick: onBack }, "← Dashboard")
+        )
+      ),
+
+      showClaimForm && React.createElement("div", { style: Object.assign({}, S.card, { borderLeft:"4px solid #8fbc5e" }) },
+        React.createElement("div", { style: { fontSize:"14px", fontWeight:"bold", color:"#8fbc5e", marginBottom:"10px" } }, "Claim New Hex"),
+        React.createElement("div", { style: S.grid2 },
+          React.createElement("div", null,
+            React.createElement("label", { style: S.label }, "Hex Name"),
+            React.createElement("input", { style: S.input, value: claimForm.name, placeholder: "e.g., Greenhollow Valley", onChange: function(e) { setClaimForm({ name: e.target.value, terrain: claimForm.terrain }); } })
+          ),
+          React.createElement("div", null,
+            React.createElement("label", { style: S.label }, "Terrain"),
+            React.createElement("select", { style: S.select, value: claimForm.terrain, onChange: function(e) { setClaimForm({ name: claimForm.name, terrain: e.target.value }); } },
+              Object.entries(TERRAIN_TYPES).map(function(entry) { return React.createElement("option", { key: entry[0], value: entry[0] }, entry[1].icon + " " + entry[1].name + " (" + entry[1].claimCost + " BP)"); })
+            )
+          )
+        ),
+        React.createElement("div", { style: { display:"flex", gap:"8px", marginTop:"10px" } },
+          React.createElement("button", { style: S.btn, onClick: handleClaim }, "Claim (" + (TERRAIN_TYPES[claimForm.terrain]?.claimCost || 0) + " BP)"),
+          React.createElement("button", { style: Object.assign({}, S.btn, S.btnGold), onClick: function() { setShowClaimForm(false); } }, "Cancel")
+        )
+      ),
+
+      hexList.length === 0
+        ? React.createElement("div", { style: S.empty }, "No territory claimed yet. Claim your first hex to begin building your kingdom!")
+        : React.createElement("div", { style: S.grid4 },
+          hexList.map(function(entry) {
+            var id = entry[0], hex = entry[1];
+            var terrain = TERRAIN_TYPES[hex.terrain] || {};
+            var impCount = (hex.improvements || []).filter(function(i) { return i.completed; }).length;
+            var isBuilding = (hex.improvementQueue || []).length > 0;
+            return React.createElement("div", {
+              key: id,
+              style: Object.assign({}, S.card, S.cardHover, { borderLeft:"4px solid "+(terrain.color||T.gold), background: selectedHex === id ? T.bgHover : T.bgCard }),
+              onClick: function() { setSelectedHex(selectedHex === id ? null : id); }
+            },
+              React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center" } },
+                React.createElement("span", { style: { fontSize:"14px", fontWeight:"bold", color:terrain.color || T.gold } }, hex.name),
+                React.createElement("span", { style: { fontSize:"16px" } }, terrain.icon)
+              ),
+              React.createElement("div", { style: { fontSize:"11px", color:T.textDim, marginTop:"4px" } }, terrain.name + (terrain.desc ? " — " + terrain.desc : "")),
+              React.createElement("div", { style: { display:"flex", gap:"6px", marginTop:"6px", flexWrap:"wrap" } },
+                hex.prepared ? React.createElement("span", { style: S.pill("#7cb342") }, "Prepared") : React.createElement("span", { style: S.pill("#e67e22") }, "Unprepared"),
+                impCount > 0 && React.createElement("span", { style: S.pill(T.gold) }, impCount + " imp."),
+                isBuilding && React.createElement("span", { style: S.pill("#3498db") }, "🔨 Building")
+              )
+            );
+          })
+        ),
+
+      sel && React.createElement("div", { style: Object.assign({}, S.card, { marginTop:"16px", borderLeft:"4px solid "+(TERRAIN_TYPES[sel.terrain]?.color||T.gold) }) },
+        React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"12px" } },
+          React.createElement("div", { style: { fontSize:"16px", fontWeight:"bold", color:T.gold, fontFamily:T.heading } }, sel.name + " — " + (TERRAIN_TYPES[sel.terrain]?.name || sel.terrain)),
+          React.createElement("div", { style: { display:"flex", gap:"6px" } },
+            !sel.prepared && viewRole === "dm" && React.createElement("button", { style: Object.assign({}, S.btn, S.btnSmall), onClick: function() { handlePrepare(selectedHex); } }, "Prepare (" + (TERRAIN_TYPES[sel.terrain]?.prepCost||0) + " BP)"),
+            sel.prepared && viewRole === "dm" && React.createElement("button", { style: Object.assign({}, S.btn, S.btnSmall), onClick: function() { setShowBuildMenu(!showBuildMenu); } }, "+ Improvement")
+          )
+        ),
+
+        (sel.improvements || []).length > 0 && React.createElement("div", { style: { marginBottom:"12px" } },
+          React.createElement("div", { style: Object.assign({}, S.label, { marginBottom:"8px" }) }, "Improvements"),
+          React.createElement("div", { style: { display:"flex", gap:"8px", flexWrap:"wrap" } },
+            (sel.improvements || []).map(function(imp, idx) {
+              var impData = HEX_IMPROVEMENTS[imp.type] || {};
+              return React.createElement("div", { key: idx, style: S.badge(HEX_IMPROVEMENT_CATEGORIES[impData.category]?.color || "#888") }, impData.icon + " " + impData.name);
+            })
+          )
+        ),
+
+        (sel.improvementQueue || []).length > 0 && React.createElement("div", { style: { marginBottom:"12px" } },
+          React.createElement("div", { style: Object.assign({}, S.label, { marginBottom:"8px" }) }, "Under Construction"),
+          (sel.improvementQueue || []).map(function(item, idx) {
+            return React.createElement("div", { key: idx, style: { fontSize:"12px", color:T.textDim, padding:"4px 0" } },
+              "🔨 " + (HEX_IMPROVEMENTS[item.type]?.name || item.type) + " — " + item.turnsRemaining + " turn(s) remaining"
+            );
+          })
+        ),
+
+        showBuildMenu && React.createElement("div", { style: { marginTop:"12px" } },
+          React.createElement("div", { style: Object.assign({}, S.label, { marginBottom:"8px" }) }, "Available Improvements"),
+          React.createElement("div", { style: S.tabs },
+            Object.entries(HEX_IMPROVEMENT_CATEGORIES).map(function(entry) {
+              return React.createElement("div", { key: entry[0], style: S.tab(impCategory === entry[0]), onClick: function() { setImpCategory(impCategory === entry[0] ? null : entry[0]); } }, entry[1].label);
+            })
+          ),
+          React.createElement("div", { style: S.grid4 },
+            Object.entries(HEX_IMPROVEMENTS).filter(function(entry) {
+              var imp = entry[1];
+              if (impCategory && imp.category !== impCategory) return false;
+              if (!imp.requires) return true;
+              return imp.requires.includes(sel.terrain);
+            }).map(function(entry) {
+              var key = entry[0], imp = entry[1];
+              var canAfford = kingdom.treasury >= imp.cost;
+              var alreadyBuilt = (sel.improvements || []).some(function(i) { return i.type === key; });
+              var ok = canAfford && !alreadyBuilt;
+              return React.createElement("div", {
+                key: key,
+                style: Object.assign({}, S.card, { opacity: ok ? 1 : 0.45, cursor: ok ? "pointer" : "default", padding:"10px" }),
+                onClick: function() { ok && handleBuildImprovement(selectedHex, key); }
+              },
+                React.createElement("div", { style: { fontSize:"14px", marginBottom:"4px" } }, imp.icon + " " + imp.name),
+                React.createElement("div", { style: { fontSize:"10px", color:T.textDim } }, imp.desc),
+                React.createElement("div", { style: { fontSize:"10px", color:T.gold, marginTop:"4px" } }, imp.cost + " BP · " + (imp.buildTurns || 0) + " turns"),
+                React.createElement("div", { style: { display:"flex", gap:"4px", flexWrap:"wrap", marginTop:"4px" } },
+                  imp.economy > 0 && React.createElement("span", { style: S.pill("#d4af37") }, "+" + imp.economy + " Econ"),
+                  imp.stability > 0 && React.createElement("span", { style: S.pill("#5b7fb5") }, "+" + imp.stability + " Stab"),
+                  imp.loyalty > 0 && React.createElement("span", { style: S.pill("#7cb342") }, "+" + imp.loyalty + " Loy")
+                ),
+                alreadyBuilt && React.createElement("div", { style: { fontSize:"10px", color:"#7cb342", marginTop:"4px" } }, "✓ Already built")
+              );
+            })
+          )
+        ),
+
+        React.createElement("div", { style: { fontSize:"11px", color:T.textDim, marginTop:"8px" } },
+          "Farm: " + (TERRAIN_TYPES[sel.terrain]?.farmValue || 0) + " · Mine: " + (TERRAIN_TYPES[sel.terrain]?.mineValue || 0) + " · Trade: " + (TERRAIN_TYPES[sel.terrain]?.tradeValue || 0)
+        )
+      )
+    );
+  }
+
+  // ── Settlement Panel ───────────────────────────────────────────────────
+  function SettlementPanel(_ref) {
+    var kingdom = _ref.kingdom, setKingdom = _ref.setKingdom, viewRole = _ref.viewRole, onBack = _ref.onBack;
+    var _s1 = useState(false), showFoundForm = _s1[0], setShowFoundForm = _s1[1];
+    var _s2 = useState({ name: "", hexId: "" }), foundForm = _s2[0], setFoundForm = _s2[1];
+    var _s3 = useState(null), selectedSettlement = _s3[0], setSelectedSettlement = _s3[1];
+    var _s4 = useState(null), buildCategory = _s4[0], setBuildCategory = _s4[1];
+
+    var settlements = kingdom.settlements || {};
+    var settlementList = Object.entries(settlements).sort(function(a, b) { return (b[1].population || 0) - (a[1].population || 0); });
+    var preparedHexes = Object.entries(kingdom.territories || {}).filter(function(e) { return e[1].prepared; });
+
+    var handleFound = function() {
+      if (!foundForm.name || !foundForm.hexId) return;
+      var id = Date.now().toString();
+      updateKingdom(setKingdom, function(k) {
+        k.settlements[id] = { id: id, name: foundForm.name, hexId: foundForm.hexId, population: 100, buildings: [], constructionQueue: [], foundedTurn: k.turn };
+        if (!k.capitalSettlement) k.capitalSettlement = id;
+      });
+      setShowFoundForm(false); setFoundForm({ name: "", hexId: "" });
+    };
+
+    var handleBuild = function(settlementId, buildingType) {
+      var building = BUILDINGS[buildingType];
+      if (!building || kingdom.treasury < building.cost) return;
+      var settlement = settlements[settlementId];
+      var size = getSettlementSize(settlement.population || 0);
+      var maxBldg = SETTLEMENT_SIZES[size]?.maxBuildings || 6;
+      var current = (settlement.buildings || []).length + (settlement.constructionQueue || []).length;
+      if (current >= maxBldg) return;
+      if (building.requires && building.requires.length > 0) {
+        var existingTypes = (settlement.buildings || []).map(function(b) { return b.type; });
+        if (!building.requires.every(function(r) { return existingTypes.includes(r); })) return;
+      }
+      updateKingdom(setKingdom, function(k) {
+        k.treasury -= building.cost;
+        var s = k.settlements[settlementId];
+        if (!s.constructionQueue) s.constructionQueue = [];
+        if (building.buildTurns <= 0) {
+          if (!s.buildings) s.buildings = [];
+          s.buildings.push({ type: buildingType, completed: true, builtTurn: k.turn });
+        } else {
+          s.constructionQueue.push({ buildingType: buildingType, turnsRemaining: building.buildTurns });
+        }
+      });
+    };
+
+    var sel = selectedSettlement ? settlements[selectedSettlement] : null;
+    var selSize = sel ? getSettlementSize(sel.population || 0) : null;
+    var selSizeData = selSize ? SETTLEMENT_SIZES[selSize] : null;
+
+    return React.createElement("div", null,
+      React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" } },
+        React.createElement("div", { style: S.sectionHead }, Building2 && React.createElement(Building2, { size: 18 }), "Settlements (" + settlementList.length + ")"),
+        React.createElement("div", { style: { display:"flex", gap:"8px" } },
+          viewRole === "dm" && React.createElement("button", { style: S.btn, onClick: function() { setShowFoundForm(!showFoundForm); } }, Plus && React.createElement(Plus, { size: 14 }), "Found Settlement"),
+          React.createElement("button", { style: Object.assign({}, S.btn, S.btnGold), onClick: onBack }, "← Dashboard")
+        )
+      ),
+
+      showFoundForm && React.createElement("div", { style: Object.assign({}, S.card, { borderLeft:"4px solid #d4af37" }) },
+        React.createElement("div", { style: { fontSize:"14px", fontWeight:"bold", color:"#d4af37", marginBottom:"10px" } }, "Found New Settlement"),
+        preparedHexes.length === 0
+          ? React.createElement("div", { style: { fontSize:"12px", color:T.textDim } }, "You need at least one prepared hex. Go to Territory first.")
+          : React.createElement(React.Fragment, null,
+            React.createElement("div", { style: S.grid2 },
+              React.createElement("div", null,
+                React.createElement("label", { style: S.label }, "Name"),
+                React.createElement("input", { style: S.input, value: foundForm.name, placeholder: "e.g., Oakvale", onChange: function(e) { setFoundForm({ name: e.target.value, hexId: foundForm.hexId }); } })
+              ),
+              React.createElement("div", null,
+                React.createElement("label", { style: S.label }, "Location"),
+                React.createElement("select", { style: S.select, value: foundForm.hexId, onChange: function(e) { setFoundForm({ name: foundForm.name, hexId: e.target.value }); } },
+                  React.createElement("option", { value: "" }, "— Select hex —"),
+                  preparedHexes.map(function(e) { return React.createElement("option", { key: e[0], value: e[0] }, e[1].name + " (" + (TERRAIN_TYPES[e[1].terrain]?.name || "") + ")"); })
+                )
+              )
+            ),
+            React.createElement("div", { style: { display:"flex", gap:"8px", marginTop:"10px" } },
+              React.createElement("button", { style: S.btn, onClick: handleFound }, "Found Settlement"),
+              React.createElement("button", { style: Object.assign({}, S.btn, S.btnGold), onClick: function() { setShowFoundForm(false); } }, "Cancel")
+            )
+          )
+      ),
+
+      settlementList.length === 0
+        ? React.createElement("div", { style: S.empty }, "No settlements yet. Claim and prepare a hex, then found your first settlement!")
+        : React.createElement("div", { style: S.grid4 },
+          settlementList.map(function(entry) {
+            var id = entry[0], s = entry[1];
+            var size = getSettlementSize(s.population || 0);
+            var sizeData = SETTLEMENT_SIZES[size];
+            var bCount = (s.buildings || []).filter(function(b) { return b.completed; }).length;
+            var isCapital = kingdom.capitalSettlement === id;
+            return React.createElement("div", {
+              key: id,
+              style: Object.assign({}, S.card, S.cardHover, { borderLeft:"4px solid "+(isCapital ? T.crimson : "#d4af37"), background: selectedSettlement === id ? T.bgHover : T.bgCard }),
+              onClick: function() { setSelectedSettlement(selectedSettlement === id ? null : id); }
+            },
+              React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center" } },
+                React.createElement("span", { style: { fontSize:"14px", fontWeight:"bold", color:T.gold } }, s.name),
+                isCapital && React.createElement("span", { style: S.pill(T.crimson) }, "👑 Capital")
+              ),
+              React.createElement("div", { style: { fontSize:"11px", color:T.textDim, marginTop:"4px" } },
+                sizeData.icon + " " + sizeData.name + " · Pop: " + (s.population || 0).toLocaleString()
+              ),
+              React.createElement("div", { style: { fontSize:"11px", color:T.textDim } }, bCount + "/" + sizeData.maxBuildings + " buildings"),
+              (s.constructionQueue || []).length > 0 && React.createElement("span", { style: Object.assign({}, S.pill("#3498db"), { marginTop:"6px" }) }, "🔨 " + s.constructionQueue.length + " building")
+            );
+          })
+        ),
+
+      sel && React.createElement("div", { style: Object.assign({}, S.card, { marginTop:"16px", borderLeft:"4px solid "+T.gold }) },
+        React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"12px" } },
+          React.createElement("div", null,
+            React.createElement("div", { style: { fontSize:"18px", fontWeight:"bold", color:T.gold, fontFamily:T.heading } }, sel.name),
+            React.createElement("div", { style: { fontSize:"12px", color:T.textDim } },
+              selSizeData.icon + " " + selSizeData.name + " · Pop: " + (sel.population || 0).toLocaleString() + " · " + (sel.buildings || []).length + "/" + selSizeData.maxBuildings + " buildings"
+            )
+          ),
+          kingdom.capitalSettlement !== selectedSettlement && viewRole === "dm" && React.createElement("button", {
+            style: Object.assign({}, S.btn, S.btnSmall),
+            onClick: function() { updateKingdom(setKingdom, function(k) { k.capitalSettlement = selectedSettlement; }); }
+          }, "Set as Capital")
+        ),
+
+        (sel.buildings || []).length > 0 && React.createElement("div", { style: { marginBottom:"12px" } },
+          React.createElement("div", { style: Object.assign({}, S.label, { marginBottom:"8px" }) }, "Buildings"),
+          React.createElement("div", { style: { display:"flex", gap:"6px", flexWrap:"wrap" } },
+            (sel.buildings || []).map(function(b, idx) {
+              var bData = BUILDINGS[b.type] || {};
+              var cat = BUILDING_CATEGORIES[bData.category] || {};
+              return React.createElement("div", { key: idx, style: S.badge(cat.color) }, bData.icon + " " + bData.name);
+            })
+          )
+        ),
+
+        (sel.constructionQueue || []).length > 0 && React.createElement("div", { style: { marginBottom:"12px" } },
+          React.createElement("div", { style: Object.assign({}, S.label, { marginBottom:"8px" }) }, "Under Construction"),
+          (sel.constructionQueue || []).map(function(item, idx) {
+            return React.createElement("div", { key: idx, style: { fontSize:"12px", color:T.textDim, padding:"4px 0" } },
+              "🔨 " + (BUILDINGS[item.buildingType]?.name || item.buildingType) + " — " + item.turnsRemaining + " turn(s)"
+            );
+          })
+        ),
+
+        viewRole === "dm" && React.createElement("div", { style: { marginTop:"12px" } },
+          React.createElement("div", { style: Object.assign({}, S.label, { marginBottom:"8px" }) }, "Construct Building"),
+          React.createElement("div", { style: S.tabs },
+            Object.entries(BUILDING_CATEGORIES).map(function(entry) {
+              return React.createElement("div", { key: entry[0], style: S.tab(buildCategory === entry[0]), onClick: function() { setBuildCategory(buildCategory === entry[0] ? null : entry[0]); } }, entry[1].icon + " " + entry[1].label);
+            })
+          ),
+          buildCategory && React.createElement("div", { style: { display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(180px, 1fr))", gap:"8px" } },
+            Object.entries(BUILDINGS).filter(function(e) { return e[1].category === buildCategory; }).map(function(entry) {
+              var key = entry[0], b = entry[1];
+              var canAfford = kingdom.treasury >= b.cost;
+              var existingTypes = (sel.buildings || []).map(function(x) { return x.type; });
+              var meetsReqs = !b.requires || b.requires.length === 0 || b.requires.every(function(r) { return existingTypes.includes(r); });
+              var alreadyMax = (sel.buildings || []).length + (sel.constructionQueue || []).length >= selSizeData.maxBuildings;
+              var enabled = canAfford && meetsReqs && !alreadyMax;
+              return React.createElement("div", {
+                key: key,
+                style: Object.assign({}, S.card, { padding:"10px", opacity: enabled ? 1 : 0.45, cursor: enabled ? "pointer" : "default" }),
+                onClick: function() { enabled && handleBuild(selectedSettlement, key); }
+              },
+                React.createElement("div", { style: { fontSize:"13px", fontWeight:"bold", marginBottom:"2px" } }, b.icon + " " + b.name),
+                React.createElement("div", { style: { fontSize:"10px", color:T.textDim, marginBottom:"4px" } }, b.desc),
+                React.createElement("div", { style: { fontSize:"10px", color:T.gold } }, b.cost + " BP · " + b.buildTurns + " turns"),
+                React.createElement("div", { style: { display:"flex", gap:"4px", flexWrap:"wrap", marginTop:"4px" } },
+                  b.economy > 0 && React.createElement("span", { style: S.pill("#d4af37") }, "+" + b.economy + " Econ"),
+                  b.loyalty > 0 && React.createElement("span", { style: S.pill("#7cb342") }, "+" + b.loyalty + " Loy"),
+                  b.stability > 0 && React.createElement("span", { style: S.pill("#5b7fb5") }, "+" + b.stability + " Stab"),
+                  b.unrest && b.unrest < 0 && React.createElement("span", { style: S.pill("#9b59b6") }, b.unrest + " Unrest")
+                ),
+                !meetsReqs && React.createElement("div", { style: { fontSize:"9px", color:"#c94f3f", marginTop:"4px" } }, "Requires: " + b.requires.map(function(r) { return BUILDINGS[r]?.name || r; }).join(", "))
+              );
+            })
+          )
+        )
+      )
+    );
+  }
+
+  // ── Governance Panel ───────────────────────────────────────────────────
+  function GovernancePanel(_ref) {
+    var kingdom = _ref.kingdom, setKingdom = _ref.setKingdom, viewRole = _ref.viewRole, data = _ref.data, onBack = _ref.onBack;
+    var _s1 = useState(null), editingRole = _s1[0], setEditingRole = _s1[1];
+    var npcs = data.npcs || data.party || [];
+    var council = kingdom.council || {};
+
+    var handleAssign = function(role, value) {
+      if (value === "__clear__") {
+        updateKingdom(setKingdom, function(k) { delete k.council[role]; });
+      } else if (value) {
+        var npc = npcs.find(function(n) { return (n.id || n.name) === value; });
+        if (npc) updateKingdom(setKingdom, function(k) { k.council[role] = { id: npc.id || npc.name, name: npc.name || npc.id }; });
+      }
+      setEditingRole(null);
+    };
+
+    var handleSetEdict = function(edictType, level) {
+      updateKingdom(setKingdom, function(k) { k.edicts[edictType] = level; });
+    };
+
+    return React.createElement("div", null,
+      React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" } },
+        React.createElement("div", { style: S.sectionHead }, Crown && React.createElement(Crown, { size: 18 }), "Governance & Law"),
+        React.createElement("button", { style: Object.assign({}, S.btn, S.btnGold), onClick: onBack }, "← Dashboard")
+      ),
+
+      React.createElement("div", { style: Object.assign({}, S.card, { marginBottom:"16px" }) },
+        React.createElement("div", { style: { fontSize:"14px", fontWeight:"bold", color:T.gold, marginBottom:"12px", fontFamily:T.heading } }, "👑 Royal Council"),
+        React.createElement("div", { style: { display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(220px, 1fr))", gap:"8px" } },
+          Object.entries(COUNCIL_ROLES).map(function(entry) {
+            var roleKey = entry[0], roleData = entry[1];
+            var assigned = council[roleKey];
+            var isCritical = ["ruler","treasurer","general","highPriest"].includes(roleKey);
+            return React.createElement("div", { key: roleKey, style: Object.assign({}, S.card, { padding:"10px", borderLeft:"3px solid "+(assigned ? "#7cb342" : isCritical ? "#c94f3f" : T.border) }) },
+              React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center" } },
+                React.createElement("div", { style: { fontSize:"12px", fontWeight:"bold", color:T.gold } }, roleData.icon + " " + roleData.name),
+                assigned ? React.createElement("span", { style: S.pill("#7cb342") }, "Filled") : React.createElement("span", { style: S.pill(isCritical ? "#c94f3f" : T.textDim) }, isCritical ? "⚠ Vacant" : "Open")
+              ),
+              React.createElement("div", { style: { fontSize:"10px", color:T.textDim, margin:"4px 0" } }, roleData.desc),
+              assigned && React.createElement("div", { style: { fontSize:"12px", fontWeight:"600", color:T.text } }, assigned.name),
+              React.createElement("div", { style: { display:"flex", gap:"4px", marginTop:"4px", flexWrap:"wrap" } },
+                roleData.bonus.economy && React.createElement("span", { style: S.pill("#d4af37") }, "+" + roleData.bonus.economy + " Econ"),
+                roleData.bonus.loyalty && React.createElement("span", { style: S.pill("#7cb342") }, "+" + roleData.bonus.loyalty + " Loy"),
+                roleData.bonus.stability && React.createElement("span", { style: S.pill("#5b7fb5") }, "+" + roleData.bonus.stability + " Stab")
+              ),
+              viewRole === "dm" && React.createElement("div", { style: { marginTop:"6px" } },
+                editingRole === roleKey
+                  ? React.createElement("select", { style: Object.assign({}, S.select, { fontSize:"11px" }), onChange: function(e) { handleAssign(roleKey, e.target.value); }, value: "" },
+                      React.createElement("option", { value: "" }, "— Select NPC —"),
+                      npcs.map(function(npc, i) { return React.createElement("option", { key: i, value: npc.id || npc.name }, npc.name || npc.id); }),
+                      assigned && React.createElement("option", { value: "__clear__" }, "⊘ Remove")
+                    )
+                  : React.createElement("button", { style: Object.assign({}, S.btn, S.btnSmall, S.btnGold), onClick: function() { setEditingRole(roleKey); } }, assigned ? "Reassign" : "Assign")
+              )
+            );
+          })
+        )
+      ),
+
+      React.createElement("div", { style: S.card },
+        React.createElement("div", { style: { fontSize:"14px", fontWeight:"bold", color:T.gold, marginBottom:"12px", fontFamily:T.heading } }, "📜 Royal Edicts"),
+        Object.entries(EDICT_TYPES).map(function(entry) {
+          var edictKey = entry[0], edict = entry[1];
+          return React.createElement("div", { key: edictKey, style: { marginBottom:"16px" } },
+            React.createElement("div", { style: { fontSize:"13px", fontWeight:"bold", color:T.text, marginBottom:"2px" } }, (edict.icon || "") + " " + edict.name),
+            React.createElement("div", { style: { fontSize:"10px", color:T.textDim, marginBottom:"8px" } }, edict.desc),
+            React.createElement("div", { style: { display:"flex", gap:"6px", flexWrap:"wrap" } },
+              Object.entries(edict.options).map(function(optEntry) {
+                var optKey = optEntry[0], opt = optEntry[1];
+                var active = (kingdom.edicts || {})[edictKey] === optKey;
+                return React.createElement("div", {
+                  key: optKey,
+                  style: { padding:"6px 12px", borderRadius:"4px", fontSize:"11px", fontWeight:"600", border:"1px solid "+(active ? T.gold : T.border), background: active ? T.gold+"18" : "transparent", color: active ? T.gold : T.textDim, cursor: viewRole === "dm" ? "pointer" : "default", transition:"all 0.2s" },
+                  onClick: function() { viewRole === "dm" && handleSetEdict(edictKey, optKey); }
+                },
+                  opt.label,
+                  React.createElement("div", { style: { display:"flex", gap:"4px", marginTop:"4px", flexWrap:"wrap" } },
+                    opt.economy && React.createElement("span", { style: { fontSize:"9px", color: opt.economy > 0 ? "#7cb342" : "#c94f3f" } }, (opt.economy > 0 ? "+" : "") + opt.economy + " Econ"),
+                    opt.loyalty && React.createElement("span", { style: { fontSize:"9px", color: opt.loyalty > 0 ? "#7cb342" : "#c94f3f" } }, (opt.loyalty > 0 ? "+" : "") + opt.loyalty + " Loy"),
+                    opt.stability && React.createElement("span", { style: { fontSize:"9px", color: opt.stability > 0 ? "#7cb342" : "#c94f3f" } }, (opt.stability > 0 ? "+" : "") + opt.stability + " Stab"),
+                    opt.consumption && React.createElement("span", { style: { fontSize:"9px", color:"#c94f3f" } }, "-" + opt.consumption + " BP/turn")
+                  )
+                );
+              })
+            )
+          );
+        })
+      )
+    );
+  }
+
+  // ── Religion Panel ─────────────────────────────────────────────────────
+  function ReligionPanel(_ref) {
+    var kingdom = _ref.kingdom, setKingdom = _ref.setKingdom, viewRole = _ref.viewRole, onBack = _ref.onBack;
+    var _s1 = useState(false), showPicker = _s1[0], setShowPicker = _s1[1];
+    var pantheon = window.PANTHEON || {};
+    var allDeities = [].concat(pantheon.greater || [], pantheon.intermediate || [], pantheon.lesser || []);
+    var stateReligion = kingdom.stateReligion;
+    var divineFavor = kingdom.divineFavor || {};
+    var stateDeity = allDeities.find(function(d) { return d.id === stateReligion || d.name === stateReligion; });
+
+    var handleSet = function(deityId) { updateKingdom(setKingdom, function(k) { k.stateReligion = deityId; if (!k.divineFavor[deityId]) k.divineFavor[deityId] = 50; }); setShowPicker(false); };
+    var handleFavor = function(deityId, delta) { updateKingdom(setKingdom, function(k) { k.divineFavor[deityId] = Math.max(0, Math.min(100, (k.divineFavor[deityId] || 50) + delta)); }); };
+
+    var templeBuildings = [];
+    Object.values(kingdom.settlements || {}).forEach(function(s) { (s.buildings || []).forEach(function(b) { if (["shrineBuilding","temple","cathedral","monastery","oracleHall","reliquary"].includes(b.type)) templeBuildings.push(Object.assign({}, b, { settlement: s.name })); }); });
+
+    return React.createElement("div", null,
+      React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" } },
+        React.createElement("div", { style: S.sectionHead }, Star && React.createElement(Star, { size: 18 }), "Religion & Divine Favor"),
+        React.createElement("button", { style: Object.assign({}, S.btn, S.btnGold), onClick: onBack }, "← Dashboard")
+      ),
+
+      React.createElement("div", { style: Object.assign({}, S.card, { borderLeft:"4px solid #9b59b6" }) },
+        React.createElement("div", { style: { fontSize:"14px", fontWeight:"bold", color:"#9b59b6", marginBottom:"8px", fontFamily:T.heading } }, "⛩ State Religion"),
+        stateReligion
+          ? React.createElement("div", null,
+              React.createElement("div", { style: { fontSize:"16px", fontWeight:"bold", color:T.gold } }, (stateDeity?.symbol || "✦") + " " + (stateDeity?.name || stateReligion)),
+              stateDeity && React.createElement("div", { style: { fontSize:"12px", color:T.textDim, marginTop:"4px" } }, (stateDeity.title || "") + " · " + (stateDeity.alignment || "") + " · " + (stateDeity.domains || []).join(", ")),
+              React.createElement("div", { style: { marginTop:"8px" } },
+                React.createElement("div", { style: S.label }, "Divine Favor"),
+                React.createElement("div", { style: { display:"flex", alignItems:"center", gap:"8px" } },
+                  React.createElement("div", { style: { flex:1, height:"8px", background:T.border, borderRadius:"4px", overflow:"hidden" } },
+                    React.createElement("div", { style: { width: (divineFavor[stateReligion] || 50) + "%", height:"100%", background: (divineFavor[stateReligion] || 50) > 70 ? "#7cb342" : (divineFavor[stateReligion] || 50) > 30 ? "#e67e22" : "#c94f3f", borderRadius:"4px", transition:"width 0.3s" } })
+                  ),
+                  React.createElement("span", { style: { fontSize:"14px", fontWeight:"bold", color:T.gold, minWidth:"40px" } }, (divineFavor[stateReligion] || 50) + "%"),
+                  viewRole === "dm" && React.createElement("button", { style: Object.assign({}, S.btn, S.btnSmall), onClick: function() { handleFavor(stateReligion, 5); } }, "+5"),
+                  viewRole === "dm" && React.createElement("button", { style: Object.assign({}, S.btn, S.btnSmall, S.btnDanger), onClick: function() { handleFavor(stateReligion, -5); } }, "-5")
+                )
+              ),
+              viewRole === "dm" && React.createElement("button", { style: Object.assign({}, S.btn, S.btnSmall, S.btnGold, { marginTop:"10px" }), onClick: function() { setShowPicker(true); } }, "Change State Religion")
+            )
+          : React.createElement("div", null,
+              React.createElement("div", { style: { fontSize:"12px", color:T.textDim, marginBottom:"10px" } }, "No state religion declared."),
+              viewRole === "dm" && React.createElement("button", { style: S.btn, onClick: function() { setShowPicker(true); } }, "Declare State Religion")
+            ),
+
+        showPicker && React.createElement("div", { style: { marginTop:"12px", maxHeight:"300px", overflowY:"auto" } },
+          React.createElement("div", { style: Object.assign({}, S.label, { marginBottom:"8px" }) }, "Select Deity"),
+          allDeities.length > 0
+            ? React.createElement("div", { style: { display:"grid", gridTemplateColumns:"repeat(auto-fill, minmax(200px, 1fr))", gap:"6px" } },
+                allDeities.map(function(deity) { return React.createElement("div", { key: deity.id || deity.name, style: Object.assign({}, S.card, { padding:"8px", cursor:"pointer", borderLeft:"3px solid #9b59b6" }), onClick: function() { handleSet(deity.id || deity.name); } },
+                  React.createElement("div", { style: { fontSize:"12px", fontWeight:"bold", color:T.gold } }, (deity.symbol || "✦") + " " + deity.name),
+                  React.createElement("div", { style: { fontSize:"10px", color:T.textDim } }, deity.title || deity.alignment || "")
+                ); })
+              )
+            : React.createElement("div", null,
+                React.createElement("div", { style: { fontSize:"12px", color:T.textDim, marginBottom:"8px" } }, "No pantheon loaded. Enter a deity name:"),
+                React.createElement("div", { style: { display:"flex", gap:"6px" } },
+                  React.createElement("input", { id:"_kbDeityInput", style: S.input, placeholder:"e.g., Pelor" }),
+                  React.createElement("button", { style: S.btn, onClick: function() { var v = document.getElementById("_kbDeityInput"); if (v && v.value) handleSet(v.value); } }, "Set")
+                )
+              ),
+          React.createElement("button", { style: Object.assign({}, S.btn, S.btnGold, S.btnSmall, { marginTop:"8px" }), onClick: function() { setShowPicker(false); } }, "Cancel")
+        )
+      ),
+
+      React.createElement("div", { style: Object.assign({}, S.card, { marginTop:"12px" }) },
+        React.createElement("div", { style: { fontSize:"13px", fontWeight:"bold", color:"#9b59b6", marginBottom:"10px" } }, "🕍 Holy Sites (" + templeBuildings.length + ")"),
+        templeBuildings.length === 0
+          ? React.createElement("div", { style: { fontSize:"12px", color:T.textDim } }, "No religious buildings yet. Build shrines and temples in your settlements.")
+          : React.createElement("div", { style: { display:"flex", gap:"6px", flexWrap:"wrap" } },
+              templeBuildings.map(function(b, i) { var bData = BUILDINGS[b.type] || {}; return React.createElement("div", { key: i, style: S.badge("#9b59b6") }, bData.icon + " " + bData.name + " (" + b.settlement + ")"); })
+            )
+      )
+    );
+  }
+
+  // ── Event Log Panel ────────────────────────────────────────────────────
+  function EventLogPanel(_ref) {
+    var kingdom = _ref.kingdom, setKingdom = _ref.setKingdom, viewRole = _ref.viewRole, onBack = _ref.onBack;
+    var events = (kingdom.eventLog || []).slice().reverse();
+    var activeEvent = kingdom.activeEvent;
+
+    var handleResolve = function(choice) {
+      if (!activeEvent) return;
+      var fx = choice === "A" ? activeEvent.choiceA?.effect : activeEvent.choiceB?.effect;
+      updateKingdom(setKingdom, function(k) {
+        if (fx) applyEventEffect(k, fx, 1.0);
+        if (!k.eventLog) k.eventLog = [];
+        k.eventLog.push({ turn: k.turn, event: activeEvent.name + " → " + (choice === "A" ? activeEvent.choiceA.label : activeEvent.choiceB.label), type: "resolved", timestamp: Date.now() });
+        k.activeEvent = null;
+      });
+    };
+
+    return React.createElement("div", null,
+      React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" } },
+        React.createElement("div", { style: S.sectionHead }, Scroll && React.createElement(Scroll, { size: 18 }), "Kingdom Events"),
+        React.createElement("button", { style: Object.assign({}, S.btn, S.btnGold), onClick: onBack }, "← Dashboard")
+      ),
+
+      activeEvent && React.createElement("div", { style: Object.assign({}, S.card, { borderLeft:"4px solid #e67e22" }) },
+        React.createElement("div", { style: { fontSize:"14px", fontWeight:"bold", color:"#e67e22", marginBottom:"6px" } }, "⚠ " + activeEvent.name),
+        React.createElement("div", { style: { fontSize:"12px", color:T.textDim, marginBottom:"12px" } }, activeEvent.desc),
+        activeEvent.choiceA && viewRole === "dm" && React.createElement("div", { style: { display:"flex", gap:"8px" } },
+          React.createElement("button", { style: S.btn, onClick: function() { handleResolve("A"); } }, activeEvent.choiceA.label),
+          React.createElement("button", { style: Object.assign({}, S.btn, S.btnGold), onClick: function() { handleResolve("B"); } }, activeEvent.choiceB.label)
+        )
+      ),
+
+      events.length === 0
+        ? React.createElement("div", { style: S.empty }, "No events yet.")
+        : events.map(function(ev, i) {
+          return React.createElement("div", { key: i, style: { padding:"10px 14px", borderBottom:"1px solid "+T.border, display:"flex", alignItems:"center", gap:"10px" } },
+            React.createElement("div", { style: { width:"28px", height:"28px", borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"12px", flexShrink:0, background: ev.type === "harmful" ? "#c94f3f20" : ev.type === "beneficial" ? "#7cb34220" : "#5b7fb520" } },
+              ev.type === "harmful" ? "⚠" : ev.type === "beneficial" ? "✦" : "✓"
+            ),
+            React.createElement("div", { style: { flex:1 } },
+              React.createElement("div", { style: { fontSize:"13px", fontWeight:"600", color:T.text } }, ev.event),
+              React.createElement("div", { style: { fontSize:"10px", color:T.textDim } }, "Turn " + ev.turn)
+            )
+          );
+        })
+    );
+  }
+
+  // ── Turn Resolution Panel ──────────────────────────────────────────────
+  function TurnPanel(_ref) {
+    var kingdom = _ref.kingdom, setKingdom = _ref.setKingdom, viewRole = _ref.viewRole, onBack = _ref.onBack;
+    var _s1 = useState(0), phase = _s1[0], setPhase = _s1[1];
+    var _s2 = useState([]), turnLog = _s2[0], setTurnLog = _s2[1];
+
+    var phases = [
+      { id: "upkeep",   name: "1. Upkeep",  desc: "Pay consumption, check stability", icon: "💰" },
+      { id: "income",   name: "2. Income",   desc: "Collect revenue, population growth", icon: "📈" },
+      { id: "event",    name: "3. Events",   desc: "Roll for kingdom events", icon: "🎲" },
+      { id: "building", name: "4. Building", desc: "Advance construction", icon: "🔨" }
+    ];
+
+    var handleProcess = function() {
+      if (phase >= phases.length) return;
+      var result = processKingdomTurn(kingdom, phases[phase].id);
+      setKingdom(function(prev) { return Object.assign({}, prev, { kingdom: result.kingdom }); });
+      setTurnLog(function(prev) { return prev.concat([{ phase: phases[phase].name, logs: result.log }]); });
+      setPhase(function(p) { return p + 1; });
+    };
+
+    var handleFinalize = function() {
+      updateKingdom(setKingdom, function(k) {
+        k.turn += 1;
+        if (!k.turnHistory) k.turnHistory = [];
+        k.turnHistory.push({ turn: k.turn - 1, log: turnLog, timestamp: Date.now() });
+      });
+      setPhase(0); setTurnLog([]);
+    };
+
+    var allDone = phase >= phases.length;
+
+    return React.createElement("div", null,
+      React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"16px" } },
+        React.createElement("div", { style: S.sectionHead }, Zap && React.createElement(Zap, { size: 18 }), "Kingdom Turn " + (kingdom.turn + 1)),
+        React.createElement("button", { style: Object.assign({}, S.btn, S.btnGold), onClick: onBack }, "← Dashboard")
+      ),
+
+      React.createElement("div", { style: { display:"flex", gap:"4px", marginBottom:"16px" } },
+        phases.map(function(p, i) {
+          return React.createElement("div", { key: p.id, style: { flex:1, padding:"8px", borderRadius:"4px", textAlign:"center", fontSize:"11px", fontWeight:"600", background: i < phase ? "#7cb34220" : i === phase ? T.gold+"20" : T.bgCard, border: "1px solid " + (i < phase ? "#7cb342" : i === phase ? T.gold : T.border), color: i < phase ? "#7cb342" : i === phase ? T.gold : T.textDim } },
+            p.icon + " " + p.name
+          );
+        })
+      ),
+
+      !allDone && React.createElement("div", { style: Object.assign({}, S.card, { borderLeft:"4px solid "+T.gold }) },
+        React.createElement("div", { style: { fontSize:"14px", fontWeight:"bold", color:T.gold, marginBottom:"6px" } }, phases[phase].name),
+        React.createElement("div", { style: { fontSize:"12px", color:T.textDim, marginBottom:"12px" } }, phases[phase].desc),
+        viewRole === "dm" && React.createElement("button", { style: S.btn, onClick: handleProcess }, "Process " + phases[phase].name)
+      ),
+
+      allDone && React.createElement("div", { style: Object.assign({}, S.card, { borderLeft:"4px solid #7cb342" }) },
+        React.createElement("div", { style: { fontSize:"14px", fontWeight:"bold", color:"#7cb342", marginBottom:"6px" } }, "✓ All Phases Complete"),
+        React.createElement("div", { style: { fontSize:"12px", color:T.textDim, marginBottom:"12px" } }, "Review below, then finalize."),
+        viewRole === "dm" && React.createElement("button", { style: Object.assign({}, S.btn, { background:"#7cb342", borderColor:"#7cb342" }), onClick: handleFinalize }, "Finalize Turn " + (kingdom.turn + 1))
+      ),
+
+      turnLog.length > 0 && React.createElement("div", { style: { marginTop:"16px" } },
+        React.createElement("div", { style: S.sectionHead }, "📋 Turn Log"),
+        turnLog.map(function(entry, i) {
+          return React.createElement("div", { key: i, style: Object.assign({}, S.card, { borderLeft:"3px solid "+(i === turnLog.length - 1 ? T.gold : "#7cb342") }) },
+            React.createElement("div", { style: { fontSize:"12px", fontWeight:"bold", color:T.gold, marginBottom:"6px" } }, entry.phase),
+            entry.logs.map(function(line, j) { return React.createElement("div", { key: j, style: { fontSize:"12px", color:T.textDim, padding:"2px 0" } }, "• " + line); })
+          );
+        })
+      )
+    );
+  }
+
+  // ── Kingdom Creation Wizard ────────────────────────────────────────────
+  function CreateKingdomWizard(_ref) {
+    var onComplete = _ref.onComplete;
+    var _s1 = useState(""), name = _s1[0], setName = _s1[1];
+    return React.createElement("div", { style: Object.assign({}, S.empty, { maxWidth:"500px", margin:"0 auto" }) },
+      React.createElement("div", { style: { fontSize:"48px", marginBottom:"16px" } }, "👑"),
+      React.createElement("div", { style: { fontSize:"22px", fontWeight:"bold", color:T.gold, fontFamily:T.heading, marginBottom:"8px" } }, "Found a Kingdom"),
+      React.createElement("div", { style: { fontSize:"13px", color:T.textDim, marginBottom:"24px" } }, "Establish your domain, appoint your council, and build your legacy."),
+      React.createElement("div", { style: { textAlign:"left", maxWidth:"360px", margin:"0 auto" } },
+        React.createElement("div", { style: { marginBottom:"16px" } },
+          React.createElement("label", { style: S.label }, "Kingdom Name"),
+          React.createElement("input", { style: S.input, value: name, placeholder: "e.g., The Realm of Thornwall", onChange: function(e) { setName(e.target.value); } })
+        ),
+        React.createElement("button", {
+          style: Object.assign({}, S.btn, { width:"100%", justifyContent:"center" }),
+          onClick: function() { if (name) onComplete(initKingdom(name)); }
+        }, Crown && React.createElement(Crown, { size: 16 }), "Establish Kingdom")
+      )
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SECTION 6: MAIN COMPONENT
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  function KingdomView(_ref) {
+    var data = _ref.data, setData = _ref.setData, viewRole = _ref.viewRole;
+    var _s1 = useState("dashboard"), view = _s1[0], setView = _s1[1];
+    var kingdom = data.kingdom || null;
+
+    var setKingdom = useCallback(function(updater) {
+      setData(function(prev) {
+        if (typeof updater === "function") return updater(prev);
+        return Object.assign({}, prev, { kingdom: updater });
+      });
+    }, [setData]);
+
+    var handleCreate = useCallback(function(newKingdom) {
+      setData(function(prev) { return Object.assign({}, prev, { kingdom: newKingdom }); });
+    }, [setData]);
+
+    var stats = useMemo(function() {
+      if (!kingdom) return { economy: 0, loyalty: 0, stability: 0, consumption: 0, income: 0, totalDefense: 0, unrest: 0 };
+      return calcKingdomStats(kingdom);
+    }, [kingdom]);
+
+    if (!kingdom) {
+      return React.createElement("div", { style: S.page },
+        React.createElement("div", { style: S.header },
+          React.createElement("h1", { style: S.title }, Crown && React.createElement(Crown, { size: 26 }), "Kingdom Builder")
+        ),
+        React.createElement("div", { style: S.scrollArea },
+          viewRole === "dm"
+            ? React.createElement(CreateKingdomWizard, { onComplete: handleCreate })
+            : React.createElement("div", { style: S.empty }, "No kingdom founded yet. The DM can establish one from this tab.")
+        )
+      );
+    }
+
+    return React.createElement("div", { style: S.page },
+      React.createElement("div", { style: S.header },
+        React.createElement("h1", { style: S.title }, Crown && React.createElement(Crown, { size: 22 }), kingdom.name),
+        React.createElement("div", { style: { display:"flex", alignItems:"center", gap:"12px" } },
+          React.createElement("span", { style: { fontSize:"12px", color:T.textDim } }, "Turn " + kingdom.turn),
+          React.createElement("span", { style: { fontSize:"12px", color:T.gold, fontWeight:"bold" } }, kingdom.treasury + " BP"),
+          (kingdom.unrest || 0) > 5 && React.createElement("span", { style: S.pill("#c94f3f") }, "⚠ Unrest: " + kingdom.unrest)
+        )
+      ),
+      React.createElement("div", { style: S.scrollArea },
+        view === "dashboard" && React.createElement(KingdomDashboard, { kingdom: kingdom, stats: stats, onNavigate: setView, viewRole: viewRole }),
+        view === "territory" && React.createElement(TerritoryPanel, { kingdom: kingdom, setKingdom: setKingdom, viewRole: viewRole, onBack: function() { setView("dashboard"); } }),
+        view === "settlements" && React.createElement(SettlementPanel, { kingdom: kingdom, setKingdom: setKingdom, viewRole: viewRole, onBack: function() { setView("dashboard"); } }),
+        view === "governance" && React.createElement(GovernancePanel, { kingdom: kingdom, setKingdom: setKingdom, viewRole: viewRole, data: data, onBack: function() { setView("dashboard"); } }),
+        view === "religion" && React.createElement(ReligionPanel, { kingdom: kingdom, setKingdom: setKingdom, viewRole: viewRole, onBack: function() { setView("dashboard"); } }),
+        view === "events" && React.createElement(EventLogPanel, { kingdom: kingdom, setKingdom: setKingdom, viewRole: viewRole, onBack: function() { setView("dashboard"); } }),
+        view === "turn" && React.createElement(TurnPanel, { kingdom: kingdom, setKingdom: setKingdom, viewRole: viewRole, onBack: function() { setView("dashboard"); } })
+      )
+    );
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // EXPORTS
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  window.KingdomView = KingdomView;
+  window.KINGDOM_BUILDINGS = BUILDINGS;
+  window.KINGDOM_EVENTS = KINGDOM_EVENTS;
+  window.SETTLEMENT_SIZES = SETTLEMENT_SIZES;
+  window.COUNCIL_ROLES = COUNCIL_ROLES;
+  window.HEX_IMPROVEMENTS = HEX_IMPROVEMENTS;
+  window.TERRAIN_TYPES = TERRAIN_TYPES;
+  window.initKingdom = initKingdom;
+  window.calcKingdomStats = calcKingdomStats;
+
+})();

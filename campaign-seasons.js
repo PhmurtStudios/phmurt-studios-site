@@ -184,10 +184,16 @@ window.CampaignSeasons = (function(){
     Sandstorm: { icon: '∿', visibility: 'poor', hazard: true, effects: ['movement_slow', 'ranged_disadvantage', 'sand_damage'] }
   };
 
-  // Helper: Sanitize string for safe concatenation
+  // Helper: Sanitize string for safe concatenation (XSS protection)
   const sanitizeString = function(str) {
     if (!str || typeof str !== 'string') return '';
-    return str.replace(/[<>]/g, '');
+    return str.replace(/[<>&"']/g, char => ({
+      '<': '&lt;',
+      '>': '&gt;',
+      '&': '&amp;',
+      '"': '&quot;',
+      "'": '&#039;'
+    }[char]));
   };
 
   // ═══════════════════════════════════════════════════════════════════════════
@@ -203,10 +209,15 @@ window.CampaignSeasons = (function(){
   }
 
   CalendarTracker.prototype.advance = function(days) {
-    days = Math.max(0, parseInt(days) || 0);
+    days = Math.max(0, parseInt(days, 10) || 0);
+    if (days === 0) return;
+
+    // Update day of week
+    this.dayOfWeek = (this.dayOfWeek + days) % FANTASY_CALENDAR.dayNames.length;
+
+    // Advance through days
     for (var i = 0; i < days; i++) {
       this.day++;
-      this.dayOfWeek = (this.dayOfWeek + 1) % FANTASY_CALENDAR.dayNames.length;
 
       if (this.day > FANTASY_CALENDAR.daysPerMonth) {
         this.day = 1;
@@ -274,12 +285,12 @@ window.CampaignSeasons = (function(){
   };
 
   CalendarTracker.prototype.deserialize = function(data) {
-    if (!data) return;
-    this.day = data.day || 1;
-    this.month = data.month || 1;
-    this.year = data.year || 1000;
-    this.dayOfWeek = data.dayOfWeek || 0;
-    this.eventLog = data.eventLog ? data.eventLog.slice() : [];
+    if (!data || typeof data !== 'object') return;
+    this.day = (typeof data.day === 'number' && data.day > 0) ? data.day : 1;
+    this.month = (typeof data.month === 'number' && data.month > 0) ? data.month : 1;
+    this.year = (typeof data.year === 'number') ? data.year : 1000;
+    this.dayOfWeek = (typeof data.dayOfWeek === 'number' && data.dayOfWeek >= 0) ? data.dayOfWeek : 0;
+    this.eventLog = Array.isArray(data.eventLog) ? data.eventLog.slice() : [];
   };
 
   CalendarTracker.prototype.logEvent = function(event) {
@@ -414,25 +425,25 @@ window.CampaignSeasons = (function(){
 
     // Find the region by name
     if (worldData.regions && Array.isArray(worldData.regions)) {
-      region = worldData.regions.find(function(r) { return r.name === regionName; });
+      region = worldData.regions.find(function(r) { return r && r.name === regionName; });
     }
 
-    if (!region) return 'Unable to locate region: ' + regionName;
+    if (!region || !region.id) return 'Unable to locate region: ' + sanitizeString(regionName);
 
     // Find cities in this region
     if (worldData.cities && Array.isArray(worldData.cities)) {
-      cities = worldData.cities.filter(function(c) { return c.region === regionName; });
+      cities = worldData.cities.filter(function(c) { return c && c.region === regionName; });
     }
 
     var weatherData = this.regionWeather.get(region.id);
     if (!weatherData) return 'No weather data for ' + regionName;
 
     var weather = weatherData.current;
-    var narrative = 'A ' + weather.toLowerCase() + ' sweeps across ' + regionName;
+    var narrative = 'A ' + weather.toLowerCase() + ' sweeps across ' + sanitizeString(regionName);
 
     if (cities.length > 0) {
-      var cityName = cities[Math.floor(Math.random() * cities.length)].name;
-      narrative += ', flooding the streets of ' + cityName;
+      var cityName = cities[Math.floor(this.rng() * cities.length)].name;
+      narrative += ', flooding the streets of ' + sanitizeString(cityName);
     }
 
     narrative += '.';
@@ -491,10 +502,10 @@ window.CampaignSeasons = (function(){
 
   WeatherEngine.prototype.getRegionForecast = function(regionName, worldData, days) {
     days = Math.min(Math.max(1, days || 3), 14);
-    if (!worldData || !worldData.regions) return [];
+    if (!worldData || !worldData.regions || !Array.isArray(worldData.regions)) return [];
 
-    var region = worldData.regions.find(function(r) { return r.name === regionName; });
-    if (!region) return [];
+    var region = worldData.regions.find(function(r) { return r && r.name === regionName; });
+    if (!region || !region.id) return [];
 
     var regionId = region.id;
     var current = this.regionWeather.get(regionId);
@@ -521,11 +532,11 @@ window.CampaignSeasons = (function(){
 
       // Add location references to narrative
       if (cities.length > 0 && i === 0) {
-        var city = cities[Math.floor(Math.random() * cities.length)];
+        var city = cities[Math.floor(this.rng() * cities.length)];
         narrative += ' around ' + sanitizeString(city.name);
       }
       if (pois.length > 0 && i === days - 1) {
-        var poi = pois[Math.floor(Math.random() * pois.length)];
+        var poi = pois[Math.floor(this.rng() * pois.length)];
         narrative += ' (affecting ' + sanitizeString(poi.name) + ')';
       }
 
@@ -599,21 +610,26 @@ window.CampaignSeasons = (function(){
   };
 
   WeatherEngine.prototype.deserialize = function(data) {
-    if (!data) return;
-    this.seed = data.seed || 42;
+    if (!data || typeof data !== 'object') return;
+    this.seed = (typeof data.seed === 'number') ? data.seed : 42;
+    this.rng = mulberry32(this.seed);
     this.regionWeather.clear();
     this.weatherHistory.clear();
 
-    if (data.regionWeather && Array.isArray(data.regionWeather)) {
+    if (Array.isArray(data.regionWeather)) {
       data.regionWeather.forEach(function(item) {
-        this.regionWeather.set(item.regionId, item.data);
+        if (item && item.regionId && item.data && typeof item.data === 'object') {
+          this.regionWeather.set(item.regionId, item.data);
+        }
       }, this);
     }
 
-    if (data.weatherHistory && Array.isArray(data.weatherHistory)) {
+    if (Array.isArray(data.weatherHistory)) {
       data.weatherHistory.forEach(function(item) {
-        var key = item.regionId + '_' + item.date;
-        this.weatherHistory.set(key, item);
+        if (item && item.regionId && item.date && typeof item.date === 'string') {
+          var key = item.regionId + '_' + item.date;
+          this.weatherHistory.set(key, item);
+        }
       }, this);
     }
   };
@@ -622,9 +638,11 @@ window.CampaignSeasons = (function(){
   // SEASONS & EVENTS MANAGER
   // ═══════════════════════════════════════════════════════════════════════════
 
-  function SeasonalEffectsManager() {
+  function SeasonalEffectsManager(seed) {
     this.activeEvents = [];
     this.eventHistory = [];
+    this.seed = seed || 42;
+    this.rng = mulberry32(this.seed);
   }
 
   SeasonalEffectsManager.prototype.getSeasonalEffects = function(season, data) {
@@ -636,7 +654,7 @@ window.CampaignSeasons = (function(){
       npcReactions: []
     };
 
-    if (!season) return effects;
+    if (!season || !data || typeof data !== 'object') return effects;
 
     switch (season.id) {
       case 'frostfall':
@@ -785,7 +803,7 @@ window.CampaignSeasons = (function(){
         var celebratingCount = Math.min(2, Math.max(1, Math.floor(worldData.cities.length / 3)));
         var usedCities = new Set();
         for (var i = 0; i < celebratingCount && usedCities.size < worldData.cities.length; i++) {
-          var cityIdx = Math.floor(Math.random() * worldData.cities.length);
+          var cityIdx = Math.floor(this.rng() * worldData.cities.length);
           if (worldData.cities[cityIdx] && worldData.cities[cityIdx].name && !usedCities.has(cityIdx)) {
             event.worldContext.celebratingCities.push(sanitizeString(worldData.cities[cityIdx].name));
             usedCities.add(cityIdx);
@@ -798,7 +816,7 @@ window.CampaignSeasons = (function(){
         var affectedCount = Math.min(2, Math.max(1, Math.floor(worldData.factions.length / 2)));
         var usedFactions = new Set();
         for (var j = 0; j < affectedCount && usedFactions.size < worldData.factions.length; j++) {
-          var factionIdx = Math.floor(Math.random() * worldData.factions.length);
+          var factionIdx = Math.floor(this.rng() * worldData.factions.length);
           if (worldData.factions[factionIdx] && worldData.factions[factionIdx].name && !usedFactions.has(factionIdx)) {
             event.worldContext.affectedFactions.push(sanitizeString(worldData.factions[factionIdx].name));
             usedFactions.add(factionIdx);
@@ -811,7 +829,7 @@ window.CampaignSeasons = (function(){
         var involvedCount = Math.min(1, Math.max(0, Math.floor(worldData.npcs.length / 4)));
         var usedNpcs = new Set();
         for (var k = 0; k < involvedCount && usedNpcs.size < worldData.npcs.length; k++) {
-          var npcIdx = Math.floor(Math.random() * worldData.npcs.length);
+          var npcIdx = Math.floor(this.rng() * worldData.npcs.length);
           if (worldData.npcs[npcIdx] && worldData.npcs[npcIdx].name && !usedNpcs.has(npcIdx)) {
             event.worldContext.involvedNPCs.push(sanitizeString(worldData.npcs[npcIdx].name));
             usedNpcs.add(npcIdx);
@@ -853,9 +871,9 @@ window.CampaignSeasons = (function(){
   };
 
   SeasonalEffectsManager.prototype.deserialize = function(data) {
-    if (!data) return;
-    this.activeEvents = data.activeEvents ? data.activeEvents.slice() : [];
-    this.eventHistory = data.eventHistory ? data.eventHistory.slice() : [];
+    if (!data || typeof data !== 'object') return;
+    this.activeEvents = Array.isArray(data.activeEvents) ? data.activeEvents.slice() : [];
+    this.eventHistory = Array.isArray(data.eventHistory) ? data.eventHistory.slice() : [];
   };
 
   // ═══════════════════════════════════════════════════════════════════════════

@@ -24,13 +24,13 @@
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
   <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
-  <link rel="stylesheet" href="style.css" />
-  <script src="theme.js"></script>
+  <link rel="stylesheet" href="style.css?v=185" />
+  <script src="theme.js?v=185"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous" integrity="sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG"></script>
-  <script src="supabase-config.js"></script>
-  <script src="stripe-config.js"></script>
-  <script src="phmurt-auth.js?v=182"></script>
-  <script src="builder-data.js"></script>
+  <script src="supabase-config.js?v=185"></script>
+  <script src="stripe-config.js?v=185"></script>
+  <script src="phmurt-auth.js?v=185"></script>
+  <script src="builder-data.js?v=185"></script>
 
   <style>
     /* ── Custom Scrollbars (thin, themed) ────────────────────────── */
@@ -1412,12 +1412,12 @@
 
   <div style="font-size:10px;color:var(--text-faint);text-align:center;max-width:600px;margin:0 auto;padding:16px 24px 0;line-height:1.5;">
     Homebrew content is user-created and not affiliated with Wizards of the Coast.
-    Game mechanics based on the <em>Systems Reference Document 5.1</em> (SRD 5.1), licensed under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener" style="color:var(--text-faint);">CC BY 4.0</a>.
+    Game mechanics based on the <em>Systems Reference Document 5.1</em> (SRD 5.1), licensed under <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener noreferrer" style="color:var(--text-faint);">CC BY 4.0</a>.
     D&amp;D and related marks are trademarks of Wizards of the Coast LLC.
   </div>
   <div id="ps-site-footer"></div>
 
-  <script src="phmurt-shell.js"></script>
+  <script src="phmurt-shell.js?v=185"></script>
   <script>
     // ── HTML Escape Utility ──────────────────────────────────────────────────
     // Escapes all HTML special characters to prevent XSS attacks
@@ -2966,7 +2966,7 @@
       if(C.race) lines.push({l:'Race',v:DND_DATA.races[C.race].name+(C.subrace?` (${(DND_DATA.races[C.race].subraces||[]).find(s=>s.id===C.subrace)?.name||C.subrace})`:'')});
       if(C.cls) lines.push({l:'Class',v:DND_DATA.classes[C.cls].name});
       if(C.background) lines.push({l:'Background',v:DND_DATA.backgrounds[C.background].name});
-      el.innerHTML=lines.map(l=>`<div class="cb-mini-stat"><span class="cb-mini-stat-label">${l.l}</span><span class="cb-mini-stat-val">${l.v}</span></div>`).join('');
+      el.innerHTML=lines.map(l=>`<div class="cb-mini-stat"><span class="cb-mini-stat-label">${escapeHtml(l.l)}</span><span class="cb-mini-stat-val">${escapeHtml(l.v)}</span></div>`).join('');
     }
 
     // ══════════════════════════════════════════

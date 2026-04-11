@@ -79,7 +79,7 @@ var fmRenderTerrain = function(ctx) {
           } else if (cell.biome === 'mountain' && (neighbor.biome === 'hills' || neighbor.biome === 'grassland')) {
             transColor = dark ? '#3a3a2a' : '#a8a878';
             isBorder = true;
-          } else if (cell.biome === 'desert' && !neighbor.biome.includes('desert')) {
+          } else if (cell.biome === 'desert' && neighbor.biome && !neighbor.biome.includes('desert')) {
             transColor = desertColor;
             isBorder = true;
           }
@@ -768,24 +768,24 @@ var fmRenderMountains = function(ctx) {
     if (pk.isSnow) {
       var snowH = peakH * 0.32;
       var snowT = snowH / peakH;
-      var sLeft = tipX + (leftX - tipX) * snowT;
-      var sRight = tipX + (rightX - tipX) * snowT;
+      var sLeft = mainTipX + (leftX - mainTipX) * snowT;
+      var sRight = mainTipX + (rightX - mainTipX) * snowT;
 
       ctx.fillStyle = dark ? '#e8e8f0' : '#faf8f2';
       ctx.globalAlpha = 0.94;
       ctx.beginPath();
-      ctx.moveTo(tipX, tipY);
+      ctx.moveTo(mainTipX, mainTipY);
 
       // Jagged broken edge — more realistic
       var jags = 5;
       for (var jag = 0; jag <= jags; jag++) {
         var jagT = jag / jags;
         var jagX = sLeft + (sRight - sLeft) * jagT;
-        var jagY = tipY + snowH + (rng() - 0.5) * 3.5;
+        var jagY = mainTipY + snowH + (rng() - 0.5) * 3.5;
         if (jag === 0) ctx.lineTo(sLeft, jagY);
         else ctx.lineTo(jagX, jagY);
       }
-      ctx.lineTo(sRight, tipY + snowH + (rng() - 0.5) * 3.5);
+      ctx.lineTo(sRight, mainTipY + snowH + (rng() - 0.5) * 3.5);
       ctx.closePath();
       ctx.fill();
 
@@ -1297,7 +1297,7 @@ var fmRenderRoads = function(ctx) {
       // For 2-point roads, add subtle curve
       var dx = screenPath[1].x - screenPath[0].x;
       var dy = screenPath[1].y - screenPath[0].y;
-      var len = Math.sqrt(dx * dx + dy * dy);
+      var len = Math.sqrt(dx * dx + dy * dy) || 1;
       var perpX = -dy / len;
       var perpY = dx / len;
 
@@ -1335,12 +1335,14 @@ var fmRenderRoads = function(ctx) {
         ctx.quadraticCurveTo(controlX, controlY, endX, endY);
       }
 
-      ctx.quadraticCurveTo(
-        screenPath[screenPath.length - 2].x,
-        screenPath[screenPath.length - 2].y,
-        screenPath[screenPath.length - 1].x,
-        screenPath[screenPath.length - 1].y
-      );
+      if (screenPath.length >= 3) {
+        ctx.quadraticCurveTo(
+          screenPath[screenPath.length - 2].x,
+          screenPath[screenPath.length - 2].y,
+          screenPath[screenPath.length - 1].x,
+          screenPath[screenPath.length - 1].y
+        );
+      }
       ctx.stroke();
     }
   }
@@ -1369,6 +1371,7 @@ var fmRenderSettlements = function(ctx) {
 
   for (var i = 0; i < settlements.length; i++) {
     var city = settlements[i];
+    if (!city || city.col === undefined || city.row === undefined) continue;
     var screen = fmCellToScreen(city.col, city.row);
     var x = screen.x;
     var y = screen.y;
@@ -1482,10 +1485,10 @@ var fmRenderSettlements = function(ctx) {
       ctx.strokeStyle = parchmentHalo;
       ctx.lineWidth = 5;
       ctx.lineJoin = 'round';
-      ctx.strokeText(city.name, x, y + 20);
+      ctx.strokeText((city.name || '').substring(0, 40), x, y + 20);
       ctx.globalAlpha = 1.0;
       ctx.fillStyle = inkColor;
-      ctx.fillText(city.name, x, y + 20);
+      ctx.fillText((city.name || '').substring(0, 40), x, y + 20);
 
     } else if (city.type === 'city') {
       // === CITY: Cluster with variant arrangements ===
@@ -1553,9 +1556,9 @@ var fmRenderSettlements = function(ctx) {
       ctx.globalAlpha = 1.0;
       ctx.strokeStyle = parchmentHalo;
       ctx.lineWidth = 2.5;
-      ctx.strokeText(city.name, x, y + 15);
+      ctx.strokeText((city.name || '').substring(0, 40), x, y + 15);
       ctx.fillStyle = inkColor;
-      ctx.fillText(city.name, x, y + 15);
+      ctx.fillText((city.name || '').substring(0, 40), x, y + 15);
 
     } else if (city.type === 'town') {
       // === TOWN: Houses with peaked roofs (3 variants) ===
@@ -1645,9 +1648,9 @@ var fmRenderSettlements = function(ctx) {
       ctx.globalAlpha = 1.0;
       ctx.strokeStyle = parchmentHalo;
       ctx.lineWidth = 2;
-      ctx.strokeText(city.name, x, y + 12);
+      ctx.strokeText((city.name || '').substring(0, 40), x, y + 12);
       ctx.fillStyle = inkColor;
-      ctx.fillText(city.name, x, y + 12);
+      ctx.fillText((city.name || '').substring(0, 40), x, y + 12);
 
     } else if (city.type === 'hamlet') {
       // === HAMLET/VILLAGE: Single small house with chimney smoke ===
@@ -1698,9 +1701,9 @@ var fmRenderSettlements = function(ctx) {
       ctx.globalAlpha = 1.0;
       ctx.strokeStyle = parchmentHalo;
       ctx.lineWidth = 1.5;
-      ctx.strokeText(city.name, x, y + 10);
+      ctx.strokeText((city.name || '').substring(0, 40), x, y + 10);
       ctx.fillStyle = inkColor;
-      ctx.fillText(city.name, x, y + 10);
+      ctx.fillText((city.name || '').substring(0, 40), x, y + 10);
     }
     ctx.globalAlpha = 1.0;
   }

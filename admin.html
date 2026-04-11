@@ -19,12 +19,12 @@
 <link rel="manifest" href="site.webmanifest">
 <!-- Supabase must load FIRST so phmurtSupabase is defined before anything else -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous" integrity="sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG"></script>
-<script src="supabase-config.js"></script>
-<script src="stripe-config.js"></script>
+<script src="supabase-config.js?v=185"></script>
+<script src="stripe-config.js?v=185"></script>
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin="anonymous" integrity="sha384-DGyLxAyjq0f9SPpVevD6IgztCFlnMF6oW/XQGmfe+IsZ8TqEiDrcHkMLKI6fiB/Z"></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin="anonymous" integrity="sha384-gTGxhz21lVGYNMcdJOyq01Edg0jhn/c22nsx0kyqP0TxaV5WVdsSH1fSDUf5YJj1"></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin="anonymous" integrity="sha384-dqDn4UOhYWNxmtwnMX6yC3WtZZ6Li8rF6rLB7cu0i/R7btvb+p+kObgEHto7VsJK"></script>
-<script src="theme.js"></script>
+<script src="theme.js?v=185"></script>
 <script>
 /* ═══════════════════════════════════════════════════════════════════
    ADMIN GATE  —  Self-contained two-factor access control
@@ -316,6 +316,18 @@
     /* ── STAGE 2: Sign in ────────────────────────────────────────────── */
     function renderAuthStage() {
       document.documentElement.style.visibility = ''; // Ensure page is visible for the gate overlay
+
+      // SECURITY (V-010): Verify image gate was actually passed, not just loaded from sessionStorage
+      // On page reload, _gate1Passed is lost, but we must re-verify against sessionStorage
+      var imgOkFlag = false;
+      try { imgOkFlag = sessionStorage.getItem(IMG_OK_KEY) === 'true'; } catch(e) {}
+      if (!imgOkFlag && !_gate1Passed) {
+        // Both memory and session storage show image gate wasn't passed
+        // Redirect back to image stage
+        renderImageStage();
+        return;
+      }
+
       var mode = 'in'; // 'in' | 'up'
       gate.innerHTML =
         '<div style="max-width:400px;width:100%;">' +

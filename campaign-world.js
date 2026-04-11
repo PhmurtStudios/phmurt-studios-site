@@ -529,8 +529,8 @@ function generateAtlasData(seed) {
   const seaNamePool = ["Sea of Frost", "Sea of Storms", "Sea of Silence", "Pale Sea", "Ashen Sea", "Sea of Winds", "Ember Sea", "Sea of Thorns", "Moonlit Sea"];
   const seaShuffled = [...seaNamePool].sort(() => rng() - 0.5);
   const seaLabels = [
-    { x: 400 + Math.round(rng() * 400), y: 1600 + Math.round(rng() * 800), label: seaShuffled[0], rotate: -12 + Math.round((rng() - 0.5) * 20), size: 34, spacing: 8, opacity: 0.34 },
-    { x: 5000 + Math.round(rng() * 600), y: 1200 + Math.round(rng() * 800), label: seaShuffled[1], rotate: Math.round((rng() - 0.5) * 20), size: 34, spacing: 8, opacity: 0.34 },
+    { x: 400 + Math.round(rng() * 400), y: 1600 + Math.round(rng() * 800), label: seaShuffled[0] || "Sea of Dreams", rotate: -12 + Math.round((rng() - 0.5) * 20), size: 34, spacing: 8, opacity: 0.34 },
+    { x: 5000 + Math.round(rng() * 600), y: 1200 + Math.round(rng() * 800), label: seaShuffled[1] || "Sea of Dreams", rotate: Math.round((rng() - 0.5) * 20), size: 34, spacing: 8, opacity: 0.34 },
     { x: 2200 + Math.round(rng() * 1600), y: 200 + Math.round(rng() * 400), label: seaShuffled[2] || "Crownwater Expanse", rotate: Math.round((rng() - 0.5) * 10), size: 30, spacing: 10, opacity: 0.22 },
   ];
 
@@ -538,8 +538,8 @@ function generateAtlasData(seed) {
   const rangeNamePool = ["Ironspine", "Stormcrown", "Sundered", "Dragonspire", "Frostfang", "Ashenveil", "Thunderpeak", "Wyrmridge"];
   const rangeShuffled = [...rangeNamePool].sort(() => rng() - 0.5);
   const rangeLabels = mountainRanges.map((r, i) => ({
-    x: Math.round(parseInt(r.ridge.match(/M(\d+)/)?.[1] || "3000")),
-    y: Math.round(parseInt(r.ridge.match(/M\d+,(\d+)/)?.[1] || "2250")),
+    x: Math.round(parseInt(r.ridge.match(/M(\d+)/)?.[1] || "3000", 10)),
+    y: Math.round(parseInt(r.ridge.match(/M\d+,(\d+)/)?.[1] || "2250", 10)),
     label: (rangeShuffled[i % rangeShuffled.length] || "Unknown") + " Range",
     rotate: (rng() - 0.5) * 30
   }));
@@ -1243,7 +1243,7 @@ function regionsAndFactionsFromMetadata(seedNum) {
   }
 
   const rng = mulberry32(seedNum * 31337);
-  const pick = (arr) => arr[Math.floor(rng() * arr.length)];
+  const pick = (arr) => arr.length > 0 ? arr[Math.floor(rng() * arr.length)] : "";
   const pickN = (arr, n) => { const s = [...arr].sort(() => rng() - 0.5); return s.slice(0, Math.min(n, s.length)); };
 
   // ── Generate a name ──
@@ -1408,7 +1408,7 @@ function regionsAndFactionsFromMetadata(seedNum) {
   const shuffledSubTemplates = [...subFactionTemplates].sort(() => rng() - 0.5);
   let subFactionIdx = 0;
   meta.regions.forEach((reg, ri) => {
-    const parentFaction = factions[ri % factions.length];
+    const parentFaction = factions.length > 0 ? factions[ri % factions.length] : { name: "Unaligned", power: 10 };
     const numSubs = 2 + Math.floor(rng() * 2); // 2-3 sub-factions per region
     for (let si = 0; si < numSubs; si++) {
       const st = shuffledSubTemplates[(subFactionIdx++) % shuffledSubTemplates.length];
@@ -1455,7 +1455,7 @@ function regionsAndFactionsFromMetadata(seedNum) {
         hierarchy: subHierarchy,
         resources: pickN(st.influence, Math.min(st.influence.length, 2)),
         allies: rng() > 0.6 ? [parentFaction.name] : [],
-        rivals: rng() > 0.7 ? [factions[Math.floor(rng() * Math.min(factions.length, majorFactionCount))].name] : [],
+        rivals: rng() > 0.7 ? (factions.length > 0 ? [factions[Math.floor(rng() * Math.min(factions.length, majorFactionCount))].name] : []) : [],
         // Sub-faction metadata
         isSubFaction: true,
         parentRegion: reg.name,
@@ -1595,7 +1595,7 @@ function regionsAndFactionsFromMetadata(seedNum) {
     const controllingFaction = regionObj.ctrl;
     (r.cities || []).forEach((c, ci) => {
       const cRng = mulberry32(seedNum * 7919 + ri * 997 + ci * 31);
-      const cPick = (arr) => arr[Math.floor(cRng() * arr.length)];
+      const cPick = (arr) => arr.length > 0 ? arr[Math.floor(cRng() * arr.length)] : "";
       const cPickN = (arr, n) => { const s = [...arr].sort(() => cRng() - 0.5); return s.slice(0, n); };
       const isCapital = !!c.capital;
       const pop = isCapital ? (12000 + Math.floor(cRng() * 38000)) :
@@ -1621,7 +1621,7 @@ function regionsAndFactionsFromMetadata(seedNum) {
           price: (() => {
             // Vary prices by local supply/demand (0.7x to 1.5x)
             const mult = 0.7 + cRng() * 0.8;
-            const base = parseInt(item.price) || 0;
+            const base = parseInt(item.price, 10) || 0;
             const unit = item.price.replace(/[0-9.,\s]/g, '').trim();
             return Math.round(base * mult) + ' ' + unit;
           })(),
@@ -1816,7 +1816,7 @@ function regionsAndFactionsFromMetadata(seedNum) {
   const generatedPois = rawPois.length > 0 ? rawPois : (() => {
     // Generate 14-22 POIs, filling blank spaces on the map intelligently
     const gRng = mulberry32(seedNum * 8191);
-    const gPick = (arr) => arr[Math.floor(gRng() * arr.length)];
+    const gPick = (arr) => arr.length > 0 ? arr[Math.floor(gRng() * arr.length)] : "";
     const numPois = 14 + Math.floor(gRng() * 9);
     const pois = [];
     const cityAnchors = allCities.map(c => ({ x: c.mapX, y: c.mapY, region: c.region }));
@@ -1878,11 +1878,11 @@ function regionsAndFactionsFromMetadata(seedNum) {
   const allPois = [];
   let poiId = 1;
   const poiRng = mulberry32(seedNum * 4217);
-  const poiPick = (arr) => arr[Math.floor(poiRng() * arr.length)];
+  const poiPick = (arr) => arr.length > 0 ? arr[Math.floor(poiRng() * arr.length)] : null;
   const poiPickN = (arr, n) => { const s = [...arr].sort(() => poiRng() - 0.5); return s.slice(0, Math.min(n, s.length)); };
   generatedPois.forEach((p, pi) => {
     const pRng = mulberry32(seedNum * 1031 + pi * 73);
-    const pPick = (arr) => arr[Math.floor(pRng() * arr.length)];
+    const pPick = (arr) => arr.length > 0 ? arr[Math.floor(pRng() * arr.length)] : "";
     const pPickN = (arr, n) => { const s = [...arr].sort(() => pRng() - 0.5); return s.slice(0, Math.min(n, s.length)); };
     const lorePool = POI_LORE[p.type] || POI_LORE.default;
     const threat = pPick(POI_THREAT_LEVELS);
@@ -2214,8 +2214,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
   const [lwShowLog, setLwShowLog] = useState(false);
   const [lwSpeed, setLwSpeed] = useState(() => {
     const freq = data.modules && data.modules.lwEventFrequency;
-    if (freq === "Custom") return parseInt(data.modules.lwEventFrequencyCustom) || 90;
-    if (freq) return parseInt(freq) || 90;
+    if (freq === "Custom") return parseInt(data.modules.lwEventFrequencyCustom, 10) || 90;
+    if (freq) return parseInt(freq, 10) || 90;
     return 90;
   }); // seconds between events
   const [lwTimeSkipOpen, setLwTimeSkipOpen] = useState(false);
@@ -2252,11 +2252,15 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
     const engine = window.livingWorld;
     if (lwActive && data.factions?.length > 0) {
       engine.setData(data);
+
+      // ── CRITICAL FIX: Use setDataRef to avoid stale closures ──
+      // The callbacks need to use current setData from setDataRef.current, not the one captured
+      // in this closure. This prevents race conditions where mutations are lost.
       engine.onEvent = (event) => {
         setLwEvents(prev => [event, ...prev].slice(0, 30));
         setLwLog(prev => [event, ...prev]);
         // Persist to campaign data for save/load + auto-add major events to timeline
-        setData(d => {
+        setDataRef.current(d => {
           const updated = {
             ...d,
             _lwEventLog: [
@@ -2272,7 +2276,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
         });
       };
       engine.onStateUpdate = (mutator) => {
-        setData(d => {
+        setDataRef.current(d => {
           try {
             const mutated = mutator(d);
             const updated = ensureDataConsistency(mutated);
@@ -2294,13 +2298,28 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
       engine.stop();
     }
     return () => { engine.stop(); };
-  }, [data, lwActive, lwSpeed, isLive]);
+  }, [data, lwActive, lwSpeed, isLive]); // NOTE: Intentional exclusion of setData from deps; using setDataRef instead
 
   // Keep engine's data reference current
+  // CRITICAL: This updates engine._currentData so event mutations use latest world state.
+  // However, this ALSO triggers in response to setData calls from engine callbacks,
+  // creating a potential double-update cycle. To mitigate:
+  // 1. Callback closures use setDataRef to avoid staleness
+  // 2. Engine.setData() check: if state already matches, skip update
+  // 3. Engine.onStateUpdate only calls for event.mutations (filtered)
   useEffect(() => {
     if (!isLive) return;
     if (window.livingWorld && lwActive) window.livingWorld.setData(data);
   }, [data, lwActive, isLive]);
+
+  // ── RACE CONDITION FIX: Callback closures with stale setData ──
+  // When engine callbacks (onEvent, onStateUpdate) fire, they reference old `setData`.
+  // This causes mutations to be lost or applied to stale state. Ref-based wrapper ensures
+  // callbacks always use current setData from the closure.
+  const setDataRef = useRef(setData);
+  useEffect(() => {
+    setDataRef.current = setData;
+  }, [setData]);
 
   // ── Real-time player sync via BroadcastChannel ──
   useEffect(() => {
@@ -2544,7 +2563,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
   // This fallback only runs when MapEngine hasn't loaded yet (non-map tab on first load).
   useEffect(() => {
     if (!data.atlasMapSeed) return;
-    const seedNum = parseInt(data.atlasMapSeed);
+    const seedNum = parseInt(data.atlasMapSeed, 10);
     if (isNaN(seedNum)) return;
     // Only auto-generate if the world data is empty (fresh campaign)
     if (data.regions && data.regions.length > 0) return;
@@ -2569,7 +2588,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
   // This ensures regions/factions/cities/npcs/pois always match the procedural map.
   useEffect(() => {
     if (!data.atlasMapSeed) return;
-    const seedNum = parseInt(data.atlasMapSeed);
+    const seedNum = parseInt(data.atlasMapSeed, 10);
     if (isNaN(seedNum)) return;
     if (typeof window.MapEngine !== "function" || typeof window.mapEngineToWorldData !== "function") return;
 
@@ -2614,7 +2633,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
   // ── MapEngine: create/destroy VISUAL instance when canvas mounts or seed changes ──
   useEffect(() => {
     if (tab !== "map" || !mapCanvasRef.current) return;
-    const seedNum = parseInt(data.atlasMapSeed || "1");
+    const seedNum = parseInt(data.atlasMapSeed || "1", 10);
     if (isNaN(seedNum)) return;
 
     // Destroy old engine
@@ -2776,7 +2795,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
 
   // Resolve atlas image source: prefer embedded base64 from atlas-images.js, fall back to file URL
   const atlasImageSrc = React.useMemo(() => {
-    const seedNum = parseInt(data.atlasMapSeed);
+    const seedNum = parseInt(data.atlasMapSeed, 10);
     if (window.ATLAS_IMAGES && window.ATLAS_IMAGES[seedNum]) {
       return window.ATLAS_IMAGES[seedNum];
     }
@@ -2821,7 +2840,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
     const pad=560;
     const factionSeats = getFactionSeatMap();
     const seatUsage = {};
-    return data.regions.map((r) => {
+    return (data.regions || []).map((r) => {
       const s = seed(String(r.name || "") + String(r.id || "") + String(r.type || ""));
       const freeSeatIndex = Math.abs(s) % atlasFreeSeats.length;
       const seatKey = r.ctrl && factionSeats[r.ctrl] ? r.ctrl : "free-" + freeSeatIndex;
@@ -2881,7 +2900,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
       for (let ii = 0; ii < Math.min(3, isles.length); ii++) {
         const isleMatch = isles[ii].path.match(/M(\d+),(\d+)/);
         if (isleMatch) {
-          allAnchors.push({ x: parseInt(isleMatch[1]), y: parseInt(isleMatch[2]), onLand: false });
+          allAnchors.push({ x: parseInt(isleMatch[1], 10), y: parseInt(isleMatch[2], 10), onLand: false });
         }
       }
     }
@@ -3057,7 +3076,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
   }, [handleMouseDown, mapPan.x, mapPan.y, mapZoom, atlasLocked]);
 
   const handleMapTouchMove = useCallback((e) => {
-    if (!mapTouchRef.current.active) return;
+    if (!mapTouchRef.current || !mapTouchRef.current.active) return;
     e.preventDefault();
     if (mapTouchRef.current.mode === "pinch" && e.touches && e.touches.length >= 2) {
       const pinch = getMapPinchMetrics(e);
@@ -3078,7 +3097,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
   }, [handleMouseMove, mapPan.x, mapPan.y, mapZoom]);
 
   const handleMapTouchEnd = useCallback((e) => {
-    if (!mapTouchRef.current.active) return;
+    if (!mapTouchRef.current || !mapTouchRef.current.active) return;
     e.preventDefault();
     const mode = mapTouchRef.current.mode;
     mapTouchRef.current = { active: false };
@@ -3211,10 +3230,10 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
   const atlasTerritories = territories();
 
   const worldNodes = useMemo(() => mapRegions.map((r) => {
-    const faction = data.factions.find((f) => f.name === r.ctrl) || null;
-    const quests = data.quests.filter((q) => q.region === r.name);
+    const faction = (data.factions || []).find((f) => f.name === r.ctrl) || null;
+    const quests = (data.quests || []).filter((q) => q.region === r.name);
     const activeQuests = quests.filter((q) => q.status !== "completed");
-    const npcs = data.npcs.filter((n) => n.loc === r.name);
+    const npcs = (data.npcs || []).filter((n) => n.loc === r.name);
     const encounters = (data.encounters || []).filter((enc) => enc.location === r.name);
     const timelineEvents = (data.timeline || [])
       .flatMap((session) => (session.events || []).map((ev) => ({
@@ -3829,7 +3848,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                 })}
 
                 {/* ═══ LAYER 7: Weather overlay ═══ */}
-                {false && mapZoom > 0.4 && data.factions.map(wz => (
+                {false && mapZoom > 0.4 && (data.factions || []).map(wz => (
                   <g key={wz.key} opacity={0.12 + (mapZoom > 1 ? 0.08 : 0)}>
                     {wz.type==="rain" && <><circle cx={wz.x} cy={wz.y} r={wz.r} fill="rgba(110,160,250,0.08)" stroke="rgba(110,160,250,0.15)" strokeWidth="1" strokeDasharray="8,6"/>
                       {mapZoom > 1 && [0,1,2,3,4,5].map(ri => <line key={`r-${ri}`} x1={wz.x-wz.r*0.6+ri*(wz.r*0.24)} y1={wz.y-20} x2={wz.x-wz.r*0.6+ri*(wz.r*0.24)-8} y2={wz.y+20} stroke="rgba(110,160,250,0.2)" strokeWidth="1" strokeLinecap="round"/>)}</>}
@@ -3911,7 +3930,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       <div>
                         <div style={{ fontSize: 16, fontWeight: 600, color: "var(--text)", fontFamily: "'Cinzel', serif", letterSpacing: "0.8px" }}>{c.name}</div>
                         <div style={{ fontSize: 9, color: "var(--text-muted)", marginTop: 3, fontFamily: "'Cinzel', serif", letterSpacing: "1.2px", textTransform: "uppercase" }}>
-                          {(() => { const m = window.TOWN_METADATA?.[c.name]; return m ? (m.isCapital ? "Capital" : m.population >= 4000 ? "City" : m.population >= 1500 ? "Town" : "Village") : (c.isCapital ? "Capital" : "Settlement"); })()} of {c.region} · Pop. {c.population?.toLocaleString?.() || c.population}
+                          {(() => { const m = window.TOWN_METADATA?.[c.name]; return m ? (m.isCapital ? "Capital" : m.population >= 4000 ? "City" : m.population >= 1500 ? "Town" : "Village") : (c.isCapital ? "Capital" : "Settlement"); })()} of {c.region} · Pop. {c.population || "Unknown"}
                         </div>
                       </div>
                       <button onClick={() => setCityPopup(null)} style={{ background: "var(--bg-input)", border: `1px solid var(--border)`, borderRadius: "3px", color: "var(--text-faint)", cursor: "pointer", fontSize: 13, padding: "2px 8px", lineHeight: 1.2, transition: "all 0.15s" }} onMouseEnter={e=>{e.target.style.borderColor="var(--crimson-border)";e.target.style.color="var(--crimson)";}} onMouseLeave={e=>{e.target.style.borderColor="var(--border)";e.target.style.color="var(--text-faint)";}}>×</button>
@@ -3930,8 +3949,8 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     )}
                     <div style={{ display: "flex", gap: 12, marginBottom: 6, fontSize: 10, color: "var(--text-muted)", fontFamily: "'Spectral', serif" }}>
                       <span>Residents: {cityNpcs.length}</span>
-                      <span>Shops: {c.shops.length}</span>
-                      <span>Tavern: {c.tavern.name}</span>
+                      <span>Shops: {c.shops?.length || 0}</span>
+                      <span>Tavern: {c.tavern?.name || "Unknown"}</span>
                     </div>
                     {c.questHooks && c.questHooks.length > 0 && (
                       <div style={{ fontSize: 10, color: T.questGold, fontStyle: "italic", marginBottom: 12, lineHeight: 1.5, fontFamily: "'Spectral', serif", padding: "6px 10px", background: "rgba(212,67,58,0.06)", borderRadius: "3px", border: "1px solid rgba(212,67,58,0.12)" }}>Quest: {c.questHooks[0]}</div>
@@ -4066,7 +4085,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       })}
                     </select>
                     <button onClick={() => {
-                      const current = parseInt(data.atlasMapSeed || "0");
+                      const current = parseInt(data.atlasMapSeed || "0", 10);
                       const next = (current % 100) + 1;
                       // Just update the seed — the useEffect will regenerate map + all world data
                       setData(d => ({ ...d, atlasMapSeed: String(next) }));
@@ -4170,7 +4189,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                         borderRadius:"3px", color:T.gold, fontFamily:T.ui, fontSize:8, outline:"none"
                       }} />
                     <button onClick={() => {
-                      const num = parseInt(document.getElementById("customSkipEvents")?.value || "7");
+                      const num = parseInt(document.getElementById("customSkipEvents")?.value || "7", 10);
                       if (num > 0) {
                         setLwTimeSkipOpen(false);
                         handleTimeSkip(num);
@@ -4697,7 +4716,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                           {c.questHooks.map((q, qi) => (
                             <div key={qi} style={{
                               padding:"12px 16px", background:T.bgCard, border:`1px solid ${T.border}`, borderRadius:"4px",
-                              borderLeft:"3px solid T.gold", display:"flex", alignItems:"center", gap:12,
+                              borderLeft:`3px solid ${T.gold}`, display:"flex", alignItems:"center", gap:12,
                             }}>
                               <Scroll size={14} color={T.gold} style={{ flexShrink:0 }}/>
                               <span style={{ fontSize:12, color:T.textMuted, lineHeight:1.5, fontStyle:"italic" }}>{q}</span>
@@ -4712,7 +4731,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
 
               return (
                 <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
-                  {data.regions.map(r => {
+                  {(data.regions || []).map(r => {
                     const FantasyIcon = getFantasyIcon(r.type);
                     const active = sel?.id === r.id && selType === "region";
                     const isExpanded = expandedRegions[r.id] || false;
@@ -5525,18 +5544,18 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     <div style={{ padding: "20px 24px", marginBottom: 16, background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: "4px" }}>
                       <div style={{ fontSize: 10, color: T.textFaint, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 12 }}>Tavern & Inn</div>
                       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                        <span style={{ fontSize: 16, fontWeight: 400, color: T.text, fontFamily: "'Spectral', serif" }}>{c.tavern.name}</span>
-                        <span style={{ fontSize: 11, color: T.textFaint }}>— Innkeeper: {c.tavern.innkeeper} ({c.tavern.innkeeperPersonality})</span>
+                        <span style={{ fontSize: 16, fontWeight: 400, color: T.text, fontFamily: "'Spectral', serif" }}>{c.tavern && c.tavern.name}</span>
+                        <span style={{ fontSize: 11, color: T.textFaint }}>— Innkeeper: {c.tavern && c.tavern.innkeeper} ({c.tavern && c.tavern.innkeeperPersonality})</span>
                       </div>
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
-                        {c.tavern.services.map((s, si) => (
+                        {c.tavern && c.tavern.services.map((s, si) => (
                           <div key={si} style={{ display: "flex", justifyContent: "space-between", padding: "6px 10px", background: "rgba(0,0,0,0.12)", borderRadius: "3px", fontSize: 11 }}>
                             <span style={{ color: T.textMuted }}>{s.name}</span>
                             <span style={{ color: T.gold, fontFamily: T.ui }}>{s.price}</span>
                           </div>
                         ))}
                       </div>
-                      {c.tavern.rumor && (
+                      {c.tavern && c.tavern.rumor && (
                         <div style={{ fontSize: 11, color: T.questGold, fontStyle: "italic", padding: "8px 12px", background: "rgba(212,67,58,0.06)", border: "1px solid rgba(212,67,58,0.15)", borderRadius: "3px" }}>
                           Rumor: "{c.tavern.rumor}"
                         </div>
@@ -5545,9 +5564,9 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
 
                     {/* ── Shops ── */}
                     <div style={{ marginBottom: 16 }}>
-                      <div style={{ fontSize: 10, color: T.textFaint, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 12, paddingLeft: 4 }}>Shops & Merchants ({c.shops.length})</div>
+                      <div style={{ fontSize: 10, color: T.textFaint, letterSpacing: "2px", textTransform: "uppercase", marginBottom: 12, paddingLeft: 4 }}>Shops & Merchants ({(c.shops || []).length})</div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                        {c.shops.map(shop => (
+                        {(c.shops || []).map(shop => (
                           <div key={shop.id} style={{ background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: "4px", overflow: "hidden" }}>
                             <div style={{ padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between", borderBottom: `1px solid ${T.border}` }}>
                               <div>
@@ -5624,7 +5643,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                           {c.questHooks.map((q, qi) => (
                             <div key={qi} style={{
                               padding: "12px 16px", background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: "4px",
-                              borderLeft: `3px solid T.gold`, display: "flex", alignItems: "center", gap: 12,
+                              borderLeft: `3px solid ${T.gold}`, display: "flex", alignItems: "center", gap: 12,
                             }}>
                               <Scroll size={14} color={T.gold} style={{ flexShrink: 0 }} />
                               <span style={{ fontSize: 12, color: T.textMuted, lineHeight: 1.5, fontStyle: "italic" }}>{q}</span>
@@ -5955,7 +5974,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       </Select>
                       <div>
                         <span style={{ fontFamily:T.ui, fontSize:8, color:T.textFaint, letterSpacing:"1px" }}>POWER: {sel.power}</span>
-                        <input type="range" min="0" max="100" value={sel.power} onChange={e=>{const v=parseInt(e.target.value);updateFaction(sel.id,{power:v});setSel(p=>({...p,power:v}));}} style={{ width:"100%" }} />
+                        <input type="range" min="0" max="100" value={sel.power} onChange={e=>{const v=parseInt(e.target.value, 10);updateFaction(sel.id,{power:v});setSel(p=>({...p,power:v}));}} style={{ width:"100%" }} />
                       </div>
                       <Select value={sel.trend} onChange={v=>{updateFaction(sel.id,{trend:v});setSel(p=>({...p,trend:v}));}} style={{ width:"100%" }}>
                         {["rising","stable","declining"].map(t=><option key={t} value={t}>{t}</option>)}
@@ -6039,7 +6058,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       </Select>
                       <Input value={sel.loc || ""} onChange={v=>{updateNpc(sel.id,{loc:v});setSel(p=>({...p,loc:v}));}} placeholder="Location" />
                       <Input value={sel.faction || ""} onChange={v=>{updateNpc(sel.id,{faction:v});setSel(p=>({...p,faction:v}));}} placeholder="Faction" />
-                      <Input value={String(sel.level || "")} onChange={v=>{const lv=parseInt(v)||0;updateNpc(sel.id,{level:lv});setSel(p=>({...p,level:lv}));}} placeholder="Level" />
+                      <Input value={String(sel.level || "")} onChange={v=>{const lv=parseInt(v, 10)||0;updateNpc(sel.id,{level:lv});setSel(p=>({...p,level:lv}));}} placeholder="Level" />
                       <Textarea value={(sel.traits || []).join(", ")} onChange={v=>{const t=v.split(",").map(s=>s.trim()).filter(Boolean);updateNpc(sel.id,{traits:t});setSel(p=>({...p,traits:t}));}} placeholder="Traits (comma separated)" rows={2} />
                       <Textarea value={sel.secret || ""} onChange={v=>{updateNpc(sel.id,{secret:v});setSel(p=>({...p,secret:v}));}} placeholder="Secret (DM only)" rows={2} />
                       <ToggleSwitch on={sel.alive} onToggle={()=>{updateNpc(sel.id,{alive:!sel.alive});setSel(p=>({...p,alive:!p.alive}));}} label="Alive" />
@@ -6164,7 +6183,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                       <CrimsonBtn small onClick={()=>focusWorldNode(selectedWorldNode, selectedWorldNode.type==="dungeon" ? "site" : selectedWorldNode.type==="city" ? "local" : "region")} secondary>
                         <Eye size={12}/> Drill In
                       </CrimsonBtn>
-                      {selectedWorldNode.encounters?.length === 1 ? (
+                      {selectedWorldNode.encounters && selectedWorldNode.encounters.length === 1 ? (
                         <CrimsonBtn small onClick={()=>queueEncounterLaunch(selectedWorldNode.encounters[0], selectedWorldNode)}>
                           <Swords size={12}/> Launch Encounter
                         </CrimsonBtn>
@@ -7615,7 +7634,7 @@ function AddEntityModal({ open, onClose, tab, onAdd, data }) {
           </Select>
           <Select value={form.ctrl||""} onChange={v=>setForm(p=>({...p,ctrl:v}))} style={{ width:"100%" }}>
             <option value="">No controller</option>
-            {data.factions.map(f=><option key={f.id} value={f.name}>{f.name}</option>)}
+            {(data.factions || []).map(f=><option key={f.id} value={f.name}>{f.name}</option>)}
           </Select>
           <Select value={form.threat||"low"} onChange={v=>setForm(p=>({...p,threat:v}))} style={{ width:"100%" }}>
             {["low","medium","high","extreme"].map(t=><option key={t} value={t}>{t}</option>)}
@@ -7633,12 +7652,12 @@ function AddEntityModal({ open, onClose, tab, onAdd, data }) {
           </Select>
           <Textarea value={form.description||""} onChange={v=>setForm(p=>({...p,description:v}))} placeholder="Description..." rows={2} />
           <Input value={form.hook||""} onChange={v=>setForm(p=>({...p,hook:v}))} placeholder="Adventure hook..." />
-          <Select value={form.danger||0} onChange={v=>setForm(p=>({...p,danger:parseInt(v)}))} style={{ width:"100%" }}>
+          <Select value={form.danger||0} onChange={v=>setForm(p=>({...p,danger:parseInt(v, 10)}))} style={{ width:"100%" }}>
             {[0,1,2,3,4,5].map(d=><option key={d} value={d}>{["Safe","Low","Moderate","Dangerous","Deadly","Catastrophic"][d]}</option>)}
           </Select>
           <Select value={form.region||""} onChange={v=>setForm(p=>({...p,region:v}))} style={{ width:"100%" }}>
             <option value="">No region</option>
-            {data.regions.map(r=><option key={r.id} value={r.name}>{r.name}</option>)}
+            {(data.regions || []).map(r=><option key={r.id} value={r.name}>{r.name}</option>)}
           </Select>
         </>}
         {tab==="npcs" && <>
@@ -7646,7 +7665,7 @@ function AddEntityModal({ open, onClose, tab, onAdd, data }) {
           <Input value={form.loc||""} onChange={v=>setForm(p=>({...p,loc:v}))} placeholder="Location" />
           <Select value={form.faction||""} onChange={v=>setForm(p=>({...p,faction:v||null}))} style={{ width:"100%" }}>
             <option value="">No faction</option>
-            {data.factions.map(f=><option key={f.id} value={f.name}>{f.name}</option>)}
+            {(data.factions || []).map(f=><option key={f.id} value={f.name}>{f.name}</option>)}
           </Select>
           <Select value={form.attitude||"neutral"} onChange={v=>setForm(p=>({...p,attitude:v}))} style={{ width:"100%" }}>
             {["allied","friendly","neutral","cautious","hostile"].map(a=><option key={a} value={a}>{a}</option>)}
