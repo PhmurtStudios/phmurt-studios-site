@@ -391,14 +391,15 @@
     <!-- Lifetime Pass plan -->
     <div class="plan-card lifetime">
       <h2 class="plan-name">Lifetime Pass</h2>
-      <p class="plan-desc">All Pro features forever. One-time purchase.</p>
-      <div class="plan-price">$49.99 <span class="period">one-time</span></div>
+      <p class="plan-desc">Everything Pro offers &mdash; plus exclusive content access, forever. One payment, no subscriptions.</p>
+      <div class="plan-price">$50 <span class="period">one-time</span></div>
       <p class="plan-urgency">Early Supporter Edition — Limited to first 200 members</p>
       <p class="plan-counter" id="lifetime-counter">199 of 200 remaining</p>
       <button class="plan-cta lifetime-cta" id="lifetime-cta">Claim Lifetime Access</button>
       <ul class="plan-features">
         <li>All Pro features forever</li>
-        <li>No recurring charges</li>
+        <li>Access to all published content — free &amp; premium, past &amp; future</li>
+        <li>No recurring charges, ever</li>
         <li>Unlimited characters &amp; campaigns</li>
         <li>All generators (Name, Loot, Encounter, Quest)</li>
         <li>Advanced Campaign Tabs</li>
@@ -440,7 +441,7 @@
     </div>
     <div class="faq-item">
       <div class="faq-q">What happens after 200 Lifetime Passes sell out?</div>
-      <div class="faq-a">The Lifetime Pass is an early supporter offer limited to the first 200 members. Once sold out, this offer won't return at this price. You'll still be able to subscribe to Pro, Party Pass, or other plans.</div>
+      <div class="faq-a">The Lifetime Pass is an early supporter offer limited to the first 200 members. Once sold out, this offer won't return at this price. Lifetime members keep access to every piece of content we ever publish — free and premium — forever. You'll still be able to subscribe to Pro, Party Pass, or other plans after it sells out.</div>
     </div>
     <div class="faq-item">
       <div class="faq-q">Can I upgrade from Pro to Party Pass?</div>
@@ -534,6 +535,38 @@
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); yearly = !yearly; updatePricing(); }
     });
 
+    /* ── Lifetime slot counter (live from Supabase) ─────────────────── */
+    (function loadLifetimeSlots() {
+      var counterEl = document.getElementById('lifetime-counter');
+      var MAX_LIFETIME = 200;
+      try {
+        if (typeof phmurtSupabase !== 'undefined' && phmurtSupabase) {
+          phmurtSupabase.from('profiles')
+            .select('id', { count: 'exact', head: true })
+            .eq('subscription_tier', 'lifetime')
+            .eq('subscription_status', 'active')
+            .then(function (res) {
+              var sold = (res && res.count != null) ? res.count : 0;
+              var remaining = Math.max(0, MAX_LIFETIME - sold);
+              if (counterEl) {
+                counterEl.textContent = remaining + ' of ' + MAX_LIFETIME + ' remaining';
+                if (remaining === 0) {
+                  counterEl.textContent = 'SOLD OUT';
+                  counterEl.style.color = '#ef4444';
+                  counterEl.style.fontWeight = '700';
+                  if (lifetimeCtaEl) {
+                    lifetimeCtaEl.textContent = 'Sold Out';
+                    lifetimeCtaEl.disabled = true;
+                    lifetimeCtaEl.style.opacity = '0.5';
+                    lifetimeCtaEl.style.cursor = 'not-allowed';
+                  }
+                }
+              }
+            });
+        }
+      } catch (e) { /* Supabase not loaded yet — keep hardcoded fallback */ }
+    })();
+
     /* ── Inline toast helper ────────────────────────────────────────── */
     function showToast(msg, type) {
       var old = document.getElementById('phmurt-toast');
@@ -604,6 +637,11 @@
         var sess = PhmurtDB.getSession();
         if (!sess || !sess.userId) {
           window.dispatchEvent(new CustomEvent('phmurt-show-auth', { detail: { tab: 'login' } }));
+          return;
+        }
+        // Block lifetime checkout if sold out
+        if (planType === 'lifetime' && lifetimeCtaEl && lifetimeCtaEl.disabled) {
+          showToast('All 200 Lifetime slots have been claimed.', 'error');
           return;
         }
         if (sess.isSubscribed && planType !== 'lifetime') {

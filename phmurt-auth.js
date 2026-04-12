@@ -110,6 +110,8 @@ var PhmurtDB = (function () {
       tier:                tier,  // NEW: Expose actual tier string for feature gating
       subscriptionTier:    isSubscribed ? tier : 'free',
       isSubscribed:        isSubscribed,
+      isLifetime:          tier === 'lifetime' && isSubscribed,
+      hasAllContentAccess: tier === 'lifetime' && isSubscribed, // Lifetime members get all content (free + premium, past + future)
       subscriptionExpires: subExpires ? subExpires.toISOString() : null,
       subscriptionCancelAt: (profile && profile.subscription_cancel_at) || null,
     };
@@ -1781,10 +1783,15 @@ var PhmurtDB = (function () {
       // Helper: call the checkout edge function via the Supabase client
       // (handles apikey, auth headers, and gateway validation correctly)
       function _invokeCheckout(supabaseClient) {
+        // Determine interval — support monthly, yearly, party_monthly, party_yearly, lifetime
+        var resolvedInterval = interval;
+        if (interval !== 'yearly' && interval !== 'party_monthly' && interval !== 'party_yearly' && interval !== 'lifetime') {
+          resolvedInterval = 'monthly';
+        }
         return supabaseClient.functions.invoke('stripe-checkout', {
           body: {
             return_url: returnUrl || window.location.href,
-            interval: (interval === 'yearly') ? 'yearly' : 'monthly',
+            interval: resolvedInterval,
           },
         }).then(function (result) {
           if (result.error) {

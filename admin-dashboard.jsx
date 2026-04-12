@@ -980,18 +980,47 @@ function TrafficPage() {
   const [pageQuery, setPageQuery] = useState('');
   const [showOnlySuspicious, setShowOnlySuspicious] = useState(false);
 
-  const { data: visits, loading, error, refetch } = useAdminQuery(async (db) => {
+  const { data: trafficResult, loading, error, refetch } = useAdminQuery(async (db) => {
     // Fetch 2x the time range so we can compute trend vs previous window
     const doubleCutoff = new Date(Date.now() - (rangeDays * 2 * 24 * 60 * 60 * 1000)).toISOString();
-    const { data, error } = await db
-      .from('site_visits')
-      .select('id, page, visited_at, user_id, session_id, user_agent, referrer')
-      .gte('visited_at', doubleCutoff)
-      .order('visited_at', { ascending: false })
-      .limit(rangeDays >= 60 ? 10000 : 6000);
-    if (error) throw error;
-    return data || [];
+    const currentCutoff = new Date(Date.now() - (rangeDays * 24 * 60 * 60 * 1000)).toISOString();
+
+    // Use { count: 'exact' } to get server-side totals (bypasses the 1000-row default cap)
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayISO = todayStart.toISOString();
+
+    const [rowResult, currentCountResult, previousCountResult, todayCountResult] = await Promise.all([
+      db.from('site_visits')
+        .select('id, page, visited_at, user_id, session_id, user_agent, referrer')
+        .gte('visited_at', doubleCutoff)
+        .order('visited_at', { ascending: false })
+        .limit(rangeDays >= 60 ? 10000 : 6000),
+      db.from('site_visits')
+        .select('*', { count: 'exact', head: true })
+        .gte('visited_at', currentCutoff),
+      db.from('site_visits')
+        .select('*', { count: 'exact', head: true })
+        .gte('visited_at', doubleCutoff)
+        .lt('visited_at', currentCutoff),
+      db.from('site_visits')
+        .select('*', { count: 'exact', head: true })
+        .gte('visited_at', todayISO),
+    ]);
+    if (rowResult.error) throw rowResult.error;
+    return {
+      rows: rowResult.data || [],
+      serverTotal: currentCountResult.count ?? null,
+      serverPreviousTotal: previousCountResult.count ?? null,
+      serverTodayTotal: todayCountResult.count ?? null,
+      truncated: (rowResult.data || []).length >= (rangeDays >= 60 ? 10000 : 6000),
+    };
   }, [rangeDays]);
+
+  const visits = trafficResult ? trafficResult.rows : null;
+  const serverTotal = trafficResult ? trafficResult.serverTotal : null;
+  const serverPreviousTotal = trafficResult ? trafficResult.serverPreviousTotal : null;
+  const serverTodayTotal = trafficResult ? trafficResult.serverTodayTotal : null;
 
   const normalizePath = useCallback((p) => {
     const raw = String(p || '/').trim() || '/';
@@ -1075,16 +1104,17 @@ function TrafficPage() {
       byPage,
       byDay,
       byHour,
-      total: currentWindowTotal,
+      total: serverTotal != null ? serverTotal : currentWindowTotal,
+      clientTotal: currentWindowTotal,
       uniqueUsers: userSet.size,
       uniqueVisitors: sessionSet.size,
       anonymous: anonymous,
       suspiciousCount,
       suspiciousByPath,
-      previousWindowTotal,
+      previousWindowTotal: serverPreviousTotal != null ? serverPreviousTotal : previousWindowTotal,
       peakHour,
     };
-  }, [visits, rangeDays, normalizePath, isSuspiciousPath, toLocalDate, toLocalHour]);
+  }, [visits, rangeDays, normalizePath, isSuspiciousPath, toLocalDate, toLocalHour, serverTotal, serverPreviousTotal]);
 
   const topPages = useMemo(() => {
     const q = pageQuery.trim().toLowerCase();
@@ -1161,15 +1191,15 @@ function TrafficPage() {
 
       {!loading && !error && (
         <>
-          {visits && visits.length >= (rangeDays >= 60 ? 10000 : 6000) && (
+          {((trafficResult && trafficResult.truncated) || (serverTotal != null && stats.clientTotal < serverTotal)) && (
             <div style={{background:'rgba(212,67,58,0.08)',border:'1px solid rgba(212,67,58,0.25)',padding:'10px 16px',marginBottom:'16px',borderRadius:'6px',fontSize:'12px',color:'var(--text-muted)'}}>
-              <strong style={{color:'var(--danger)'}}>Data truncated:</strong> The query limit was reached. Stats below may be incomplete. Try selecting a shorter time range for accurate results.
+              <strong style={{color:'var(--danger)'}}>Note:</strong> Showing breakdown from {stats.clientTotal.toLocaleString()} sampled rows{serverTotal != null ? ` out of ${serverTotal.toLocaleString()} total visits` : ''}. Total counts are accurate; per-page and hourly breakdowns are based on the sample.
             </div>
           )}
           <div className="stat-grid" style={{marginBottom:'24px'}}>
             <div className="stat-card">
               <div className="stat-label">Visits Tracked</div>
-              <div className="stat-value">{stats.total}</div>
+              <div className="stat-value">{(stats.total || 0).toLocaleString()}</div>
               <div className="stat-sub">Last {rangeDays} days</div>
             </div>
             <div className="stat-card">
@@ -1179,7 +1209,7 @@ function TrafficPage() {
             </div>
             <div className="stat-card">
               <div className="stat-label">Today</div>
-              <div className="stat-value">{stats.byDay[today] || 0}</div>
+              <div className="stat-value">{serverTodayTotal != null ? serverTodayTotal : (stats.byDay[today] || 0)}</div>
               <div className="stat-sub">Page loads since midnight</div>
             </div>
             <div className="stat-card">
@@ -3440,14 +3470,16 @@ function SubscriptionsPage({ addToast }) {
 
   async function manualSetTier(userId, tier) {
     // SECURITY: Validate tier and userId before sending to DB
-    if (tier !== 'free' && tier !== 'pro') { addToast('Invalid tier value.', 'error'); return; }
+    if (tier !== 'free' && tier !== 'pro' && tier !== 'lifetime') { addToast('Invalid tier value.', 'error'); return; }
     if (!userId || typeof userId !== 'string' || !/^[0-9a-f-]{36}$/i.test(userId)) { addToast('Invalid user ID.', 'error'); return; }
-    const { error } = await getSb().from('profiles').update({
+    const updateData = {
       subscription_tier: tier,
-      subscription_status: tier === 'pro' ? 'active' : null,
-      subscription_started_at: tier === 'pro' ? new Date().toISOString() : null,
+      subscription_status: (tier === 'pro' || tier === 'lifetime') ? 'active' : null,
+      subscription_started_at: (tier === 'pro' || tier === 'lifetime') ? new Date().toISOString() : null,
       subscription_expires_at: null,
-    }).eq('id', userId);
+    };
+    if (tier === 'lifetime') updateData.subscription_interval = null; // No recurring interval for lifetime
+    const { error } = await getSb().from('profiles').update(updateData).eq('id', userId);
     if (error) { addToast('Update failed. Please try again.', 'error'); return; }
     logAuditEvent('manual_subscription_change', 'user', userId, { new_tier: tier });
     addToast(`User tier set to ${tier}.`, 'success');
@@ -3509,6 +3541,11 @@ function SubscriptionsPage({ addToast }) {
           <div className="stat-label">Canceling</div>
           <div className="stat-value" style={{color: s.cancelingUsers.length > 0 ? '#ef4444' : 'var(--accent)'}}>{s.cancelingUsers.length}</div>
           <div className="stat-sub">Set to cancel at period end</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Lifetime Slots</div>
+          <div className="stat-value" style={{color:'#c9a84c'}}>{s.lifetimeCount} / 200</div>
+          <div className="stat-sub">{200 - s.lifetimeCount} remaining · $50 one-time</div>
         </div>
       </div>
 
