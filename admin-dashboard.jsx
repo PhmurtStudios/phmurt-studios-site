@@ -3601,6 +3601,483 @@ function SubscriptionsPage({ addToast }) {
 }
 
 // ═══════════════════════════════
+// STORAGE PAGE — Cloud storage usage monitoring
+// ═══════════════════════════════
+Icons.HardDrive = () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="22" y1="12" x2="2" y2="12"/><path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" y1="16" x2="6.01" y2="16"/><line x1="10" y1="16" x2="10.01" y2="16"/></svg>;
+
+function StoragePage({ addToast }) {
+  // ── Supabase free-tier plan limits ──
+  const PLAN_LIMITS = {
+    storage: 1 * 1024 * 1024 * 1024, // 1 GB
+    bandwidth: 2 * 1024 * 1024 * 1024, // 2 GB / month
+  };
+
+  const [bucketDetails, setBucketDetails] = useState(null);
+  const [userBreakdown, setUserBreakdown] = useState(null);
+  const [loadingBuckets, setLoadingBuckets] = useState(true);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [bucketError, setBucketError] = useState(null);
+  const [userError, setUserError] = useState(null);
+  const [expandedUser, setExpandedUser] = useState(null);
+  const [sortBy, setSortBy] = useState('size');
+  const [searchTerm, setSearchTerm] = useState('');
+
+  // ── File type categories ──
+  const FILE_CATEGORIES = {
+    'Images':    ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.ico', '.bmp', '.avif'],
+    'Maps':      ['.webp', '.png'], // context-based (in atlas/ or map/ paths)
+    'Data':      ['.json', '.csv', '.tsv', '.xml'],
+    'Documents': ['.pdf', '.doc', '.docx', '.txt', '.md'],
+    'Audio':     ['.mp3', '.wav', '.ogg', '.m4a'],
+    'Other':     [],
+  };
+
+  function categoriseFile(name, path) {
+    const lower = (name || '').toLowerCase();
+    const fullPath = (path || '').toLowerCase();
+    if (fullPath.includes('atlas') || fullPath.includes('map')) return 'Maps';
+    for (const [cat, exts] of Object.entries(FILE_CATEGORIES)) {
+      if (cat === 'Maps' || cat === 'Other') continue;
+      if (exts.some(ext => lower.endsWith(ext))) return cat;
+    }
+    return 'Other';
+  }
+
+  function fmtSize(bytes) {
+    if (!bytes || bytes === 0) return '0 B';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let i = 0;
+    let v = bytes;
+    while (v >= 1024 && i < units.length - 1) { v /= 1024; i++; }
+    return v.toFixed(i === 0 ? 0 : 1) + ' ' + units[i];
+  }
+
+  // ── Fetch bucket-level data ──
+  useEffect(() => {
+    if (!sb) { setLoadingBuckets(false); setBucketError('Supabase not connected'); return; }
+    (async () => {
+      try {
+        const { data: buckets, error: bErr } = await sb.storage.listBuckets();
+        if (bErr) throw bErr;
+        if (!buckets || buckets.length === 0) {
+          setBucketDetails({ buckets: [], totalSize: 0, totalFiles: 0, categories: {} });
+          setLoadingBuckets(false);
+          return;
+        }
+
+        let totalSize = 0, totalFiles = 0;
+        const categories = {};
+        const bucketInfos = [];
+
+        for (const bucket of buckets) {
+          const bInfo = { id: bucket.id, name: bucket.name, public: bucket.public, size: 0, files: 0, categories: {} };
+          // List up to 1000 files per bucket (paginate if needed)
+          let offset = 0;
+          let hasMore = true;
+          while (hasMore) {
+            const { data: files, error: fErr } = await sb.storage.from(bucket.name).list('', { limit: 1000, offset, sortBy: { column: 'name', order: 'asc' } });
+            if (fErr) { hasMore = false; break; }
+            if (!files || files.length === 0) { hasMore = false; break; }
+            for (const f of files) {
+              if (f.id === null && f.name && !f.metadata) continue; // folder
+              const sz = (f.metadata && f.metadata.size) || 0;
+              const cat = categoriseFile(f.name, f.name);
+              bInfo.size += sz;
+              bInfo.files += 1;
+              bInfo.categories[cat] = (bInfo.categories[cat] || 0) + sz;
+              categories[cat] = (categories[cat] || 0) + sz;
+              totalSize += sz;
+              totalFiles += 1;
+            }
+            offset += files.length;
+            if (files.length < 1000) hasMore = false;
+          }
+          bucketInfos.push(bInfo);
+        }
+
+        setBucketDetails({ buckets: bucketInfos, totalSize, totalFiles, categories });
+      } catch (e) {
+        setBucketError(e.message || 'Failed to load storage data');
+      } finally {
+        setLoadingBuckets(false);
+      }
+    })();
+  }, []);
+
+  // ── Fetch per-user storage from profiles + a storage_usage RPC or manual scan ──
+  useEffect(() => {
+    if (!sb) { setLoadingUsers(false); setUserError('Supabase not connected'); return; }
+    (async () => {
+      try {
+        // Get all users
+        const { data: profiles, error: pErr } = await sb.from('profiles').select('id, name, email, avatar_url, created_at');
+        if (pErr) throw pErr;
+        if (!profiles) { setUserBreakdown([]); setLoadingUsers(false); return; }
+
+        // Count characters and campaigns per user to estimate data footprint
+        const [charCounts, campCounts] = await Promise.all([
+          sb.from('characters').select('owner_id'),
+          sb.from('campaigns').select('owner_id').catch(() => ({ data: [] })),
+        ]);
+
+        const charMap = {};
+        (charCounts.data || []).forEach(c => { charMap[c.owner_id] = (charMap[c.owner_id] || 0) + 1; });
+        const campMap = {};
+        ((campCounts.data || campCounts || []).data || []).forEach(c => { campMap[c.owner_id] = (campMap[c.owner_id] || 0) + 1; });
+
+        // For storage file counts, list files per user folder if buckets are user-partitioned
+        // Otherwise estimate from row counts (characters ~8KB avg, campaigns ~25KB avg with atlas data)
+        const AVG_CHAR_SIZE = 8 * 1024;
+        const AVG_CAMP_SIZE = 25 * 1024;
+
+        // Try to get actual storage usage from user folders in each bucket
+        const { data: buckets } = await sb.storage.listBuckets();
+        const userFileMap = {}; // userId -> { size, files, categories }
+
+        if (buckets && buckets.length > 0) {
+          for (const bucket of buckets) {
+            // List top-level folders (might be user IDs)
+            const { data: topLevel } = await sb.storage.from(bucket.name).list('', { limit: 1000 });
+            if (!topLevel) continue;
+
+            for (const item of topLevel) {
+              if (item.id === null && !item.metadata) {
+                // It's a folder — could be a user ID
+                const folderId = item.name;
+                if (!userFileMap[folderId]) userFileMap[folderId] = { size: 0, files: 0, categories: {} };
+
+                const { data: userFiles } = await sb.storage.from(bucket.name).list(folderId, { limit: 500 });
+                if (userFiles) {
+                  for (const f of userFiles) {
+                    if (f.id === null && !f.metadata) continue;
+                    const sz = (f.metadata && f.metadata.size) || 0;
+                    const cat = categoriseFile(f.name, folderId + '/' + f.name);
+                    userFileMap[folderId].size += sz;
+                    userFileMap[folderId].files += 1;
+                    userFileMap[folderId].categories[cat] = (userFileMap[folderId].categories[cat] || 0) + sz;
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        const breakdown = profiles.map(p => {
+          const charCount = charMap[p.id] || 0;
+          const campCount = campMap[p.id] || 0;
+          const fileData = userFileMap[p.id] || { size: 0, files: 0, categories: {} };
+
+          // Estimated data size = actual file storage + estimated row data
+          const estimatedRowData = (charCount * AVG_CHAR_SIZE) + (campCount * AVG_CAMP_SIZE);
+          const totalEstimated = fileData.size + estimatedRowData;
+
+          return {
+            id: p.id,
+            name: p.name || p.email || 'Unknown',
+            email: p.email || '',
+            avatarUrl: p.avatar_url,
+            createdAt: p.created_at,
+            characters: charCount,
+            campaigns: campCount,
+            fileStorage: fileData.size,
+            fileCount: fileData.files,
+            categories: fileData.categories,
+            estimatedRowData,
+            totalEstimated,
+          };
+        });
+
+        setUserBreakdown(breakdown);
+      } catch (e) {
+        setUserError(e.message || 'Failed to load user storage data');
+      } finally {
+        setLoadingUsers(false);
+      }
+    })();
+  }, []);
+
+  const catColors = {
+    Images: '#5b7fb5', Maps: '#5ee09a', Data: '#f59e0b', Documents: '#9b59b6', Audio: '#e67e22', Other: '#6b7280',
+  };
+
+  // Sort & filter users
+  const sortedUsers = useMemo(() => {
+    if (!userBreakdown) return [];
+    let filtered = userBreakdown;
+    if (searchTerm) {
+      const q = searchTerm.toLowerCase();
+      filtered = filtered.filter(u => u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q));
+    }
+    return [...filtered].sort((a, b) => {
+      if (sortBy === 'size') return b.totalEstimated - a.totalEstimated;
+      if (sortBy === 'files') return b.fileCount - a.fileCount;
+      if (sortBy === 'name') return a.name.localeCompare(b.name);
+      return 0;
+    });
+  }, [userBreakdown, sortBy, searchTerm]);
+
+  const usagePercent = bucketDetails ? Math.min(100, (bucketDetails.totalSize / PLAN_LIMITS.storage) * 100) : 0;
+
+  return (
+    <div className="admin-page">
+      <div className="page-header">
+        <h1>Storage</h1>
+        <p className="page-desc">Cloud storage usage across all Supabase buckets.</p>
+      </div>
+
+      {/* ── Plan Overview ── */}
+      <div className="stat-grid" style={{ marginBottom: '24px' }}>
+        <div className="stat-card">
+          <div className="stat-label">Storage Used</div>
+          <div className="stat-value">{loadingBuckets ? '...' : fmtSize(bucketDetails?.totalSize || 0)}</div>
+          <div className="stat-sub">of {fmtSize(PLAN_LIMITS.storage)} (free tier)</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Total Files</div>
+          <div className="stat-value">{loadingBuckets ? '...' : (bucketDetails?.totalFiles || 0).toLocaleString()}</div>
+          <div className="stat-sub">across all buckets</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Buckets</div>
+          <div className="stat-value">{loadingBuckets ? '...' : (bucketDetails?.buckets?.length || 0)}</div>
+          <div className="stat-sub">storage containers</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Plan Capacity</div>
+          <div className="stat-value" style={{ color: usagePercent > 80 ? 'var(--danger)' : usagePercent > 50 ? 'var(--warning)' : 'var(--success)' }}>
+            {loadingBuckets ? '...' : usagePercent.toFixed(1) + '%'}
+          </div>
+          <div className="stat-sub">{usagePercent > 80 ? 'Consider upgrading' : usagePercent > 50 ? 'Moderate usage' : 'Healthy'}</div>
+        </div>
+      </div>
+
+      {/* ── Usage Bar ── */}
+      {!loadingBuckets && bucketDetails && (
+        <div className="card" style={{ marginBottom: '24px' }}>
+          <div className="card-header"><h2>Plan Usage</h2></div>
+          <div className="card-body">
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', fontSize: '12px', color: 'var(--text-muted)' }}>
+              <span>{fmtSize(bucketDetails.totalSize)} used</span>
+              <span>{fmtSize(PLAN_LIMITS.storage - bucketDetails.totalSize)} remaining</span>
+            </div>
+            <div style={{ height: '24px', borderRadius: '4px', background: 'var(--bg-light)', overflow: 'hidden', position: 'relative' }}>
+              <div style={{
+                height: '100%', borderRadius: '4px', transition: 'width 0.6s ease',
+                width: usagePercent + '%',
+                background: usagePercent > 80 ? 'linear-gradient(90deg, var(--warning), var(--danger))' : usagePercent > 50 ? 'linear-gradient(90deg, var(--success), var(--warning))' : 'linear-gradient(90deg, #5b7fb5, var(--success))',
+              }} />
+              {usagePercent >= 2 && (
+                <span style={{ position: 'absolute', top: '50%', left: Math.min(usagePercent, 95) + '%', transform: 'translate(-100%, -50%)', fontSize: '10px', fontWeight: 600, color: '#fff', paddingRight: '6px' }}>
+                  {usagePercent.toFixed(1)}%
+                </span>
+              )}
+            </div>
+
+            {/* Category breakdown bar */}
+            {Object.keys(bucketDetails.categories).length > 0 && (
+              <div style={{ marginTop: '16px' }}>
+                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginBottom: '6px', letterSpacing: '1px', textTransform: 'uppercase' }}>By Type</div>
+                <div style={{ height: '12px', borderRadius: '3px', overflow: 'hidden', display: 'flex', background: 'var(--bg-light)' }}>
+                  {Object.entries(bucketDetails.categories).sort((a, b) => b[1] - a[1]).map(([cat, sz]) => (
+                    <div key={cat} title={cat + ': ' + fmtSize(sz)} style={{
+                      width: (bucketDetails.totalSize > 0 ? (sz / bucketDetails.totalSize) * 100 : 0) + '%',
+                      background: catColors[cat] || '#6b7280', minWidth: sz > 0 ? '2px' : '0',
+                    }} />
+                  ))}
+                </div>
+                <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', marginTop: '8px' }}>
+                  {Object.entries(bucketDetails.categories).sort((a, b) => b[1] - a[1]).map(([cat, sz]) => (
+                    <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '11px', color: 'var(--text-muted)' }}>
+                      <span style={{ width: '8px', height: '8px', borderRadius: '2px', background: catColors[cat] || '#6b7280' }} />
+                      {cat} <span style={{ color: 'var(--text-faint)' }}>({fmtSize(sz)})</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {bucketError && <div className="card" style={{ borderColor: 'var(--danger)' }}><div className="card-body" style={{ color: 'var(--danger)' }}>{bucketError}</div></div>}
+
+      {/* ── Bucket Details ── */}
+      {!loadingBuckets && bucketDetails && bucketDetails.buckets.length > 0 && (
+        <div className="card" style={{ marginBottom: '24px' }}>
+          <div className="card-header"><h2>Buckets</h2></div>
+          <div className="card-body" style={{ padding: 0 }}>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Bucket</th>
+                  <th>Visibility</th>
+                  <th>Files</th>
+                  <th>Size</th>
+                  <th>% of Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {bucketDetails.buckets.map(b => (
+                  <tr key={b.id}>
+                    <td><span className="mono" style={{ fontWeight: 600 }}>{b.name}</span></td>
+                    <td><span className={`badge ${b.public ? 'badge-warning' : 'badge-info'}`}>{b.public ? 'Public' : 'Private'}</span></td>
+                    <td>{b.files.toLocaleString()}</td>
+                    <td>{fmtSize(b.size)}</td>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div style={{ flex: 1, height: '6px', borderRadius: '3px', background: 'var(--bg-light)', overflow: 'hidden' }}>
+                          <div style={{ width: (bucketDetails.totalSize > 0 ? (b.size / bucketDetails.totalSize) * 100 : 0) + '%', height: '100%', background: 'var(--crimson)', borderRadius: '3px' }} />
+                        </div>
+                        <span style={{ fontSize: '11px', color: 'var(--text-muted)', minWidth: '36px' }}>
+                          {bucketDetails.totalSize > 0 ? ((b.size / bucketDetails.totalSize) * 100).toFixed(1) : 0}%
+                        </span>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {!loadingBuckets && bucketDetails && bucketDetails.buckets.length === 0 && (
+        <div className="card" style={{ marginBottom: '24px' }}>
+          <div className="card-body" style={{ textAlign: 'center', padding: '32px', color: 'var(--text-muted)' }}>
+            No storage buckets found. Create one in your Supabase dashboard to start tracking usage.
+          </div>
+        </div>
+      )}
+
+      {/* ── Per-User Breakdown ── */}
+      <div className="card">
+        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <h2>User Storage</h2>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div className="search-bar" style={{ width: '200px' }}>
+              <Icons.Search />
+              <input placeholder="Search users..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
+            </div>
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ padding: '6px 10px', borderRadius: '4px', border: '1px solid var(--border-mid)', background: 'var(--bg)', color: 'var(--text)', fontSize: '12px' }}>
+              <option value="size">Sort by Size</option>
+              <option value="files">Sort by Files</option>
+              <option value="name">Sort by Name</option>
+            </select>
+          </div>
+        </div>
+        <div className="card-body" style={{ padding: 0 }}>
+          {loadingUsers && <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>Loading user data...</div>}
+          {userError && <div style={{ padding: '16px', color: 'var(--danger)' }}>{userError}</div>}
+          {!loadingUsers && !userError && sortedUsers.length === 0 && (
+            <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)' }}>No users found.</div>
+          )}
+          {!loadingUsers && !userError && sortedUsers.length > 0 && (
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th></th>
+                  <th>User</th>
+                  <th>Files</th>
+                  <th>File Storage</th>
+                  <th>Est. Data</th>
+                  <th>Total Est.</th>
+                  <th>Breakdown</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedUsers.map(u => (
+                  <React.Fragment key={u.id}>
+                    <tr style={{ cursor: 'pointer' }} onClick={() => setExpandedUser(expandedUser === u.id ? null : u.id)}>
+                      <td style={{ width: '28px' }}>
+                        {u.avatarUrl
+                          ? <img src={u.avatarUrl} alt="" style={{ width: 24, height: 24, borderRadius: '50%' }} />
+                          : <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'var(--bg-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '10px', color: 'var(--text-muted)' }}>{(u.name || '?')[0].toUpperCase()}</div>
+                        }
+                      </td>
+                      <td>
+                        <div style={{ fontWeight: 500 }}>{u.name}</div>
+                        <div style={{ fontSize: '10px', color: 'var(--text-faint)' }}>{u.email}</div>
+                      </td>
+                      <td>{u.fileCount}</td>
+                      <td>{fmtSize(u.fileStorage)}</td>
+                      <td title="Characters + Campaigns row data">{fmtSize(u.estimatedRowData)}</td>
+                      <td style={{ fontWeight: 600 }}>{fmtSize(u.totalEstimated)}</td>
+                      <td style={{ width: '140px' }}>
+                        <div style={{ height: '8px', borderRadius: '4px', overflow: 'hidden', display: 'flex', background: 'var(--bg-light)' }}>
+                          {Object.entries(u.categories).sort((a, b) => b[1] - a[1]).map(([cat, sz]) => (
+                            <div key={cat} title={cat + ': ' + fmtSize(sz)} style={{
+                              width: u.fileStorage > 0 ? (sz / u.fileStorage) * 100 + '%' : '0',
+                              background: catColors[cat] || '#6b7280', minWidth: sz > 0 ? '2px' : '0',
+                            }} />
+                          ))}
+                          {u.estimatedRowData > 0 && (
+                            <div title={'Row data: ' + fmtSize(u.estimatedRowData)} style={{
+                              width: u.totalEstimated > 0 ? (u.estimatedRowData / u.totalEstimated) * 100 + '%' : '0',
+                              background: '#374151', minWidth: '2px',
+                            }} />
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                    {expandedUser === u.id && (
+                      <tr>
+                        <td colSpan={7} style={{ padding: '12px 16px', background: 'var(--bg-light)' }}>
+                          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '10px' }}>
+                            <div style={{ padding: '10px', borderRadius: '4px', background: 'var(--bg)', border: '1px solid var(--border-mid)' }}>
+                              <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Characters</div>
+                              <div style={{ fontSize: '16px', fontWeight: 600 }}>{u.characters}</div>
+                              <div style={{ fontSize: '10px', color: 'var(--text-faint)' }}>~{fmtSize(u.characters * 8192)} data</div>
+                            </div>
+                            <div style={{ padding: '10px', borderRadius: '4px', background: 'var(--bg)', border: '1px solid var(--border-mid)' }}>
+                              <div style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Campaigns</div>
+                              <div style={{ fontSize: '16px', fontWeight: 600 }}>{u.campaigns}</div>
+                              <div style={{ fontSize: '10px', color: 'var(--text-faint)' }}>~{fmtSize(u.campaigns * 25600)} data</div>
+                            </div>
+                            {Object.entries(u.categories).sort((a, b) => b[1] - a[1]).map(([cat, sz]) => (
+                              <div key={cat} style={{ padding: '10px', borderRadius: '4px', background: 'var(--bg)', border: '1px solid var(--border-mid)' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                  <span style={{ width: '6px', height: '6px', borderRadius: '2px', background: catColors[cat] || '#6b7280' }} />
+                                  <span style={{ fontSize: '10px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{cat}</span>
+                                </div>
+                                <div style={{ fontSize: '16px', fontWeight: 600 }}>{fmtSize(sz)}</div>
+                              </div>
+                            ))}
+                            {u.fileCount === 0 && Object.keys(u.categories).length === 0 && (
+                              <div style={{ padding: '10px', color: 'var(--text-faint)', fontSize: '11px', fontStyle: 'italic' }}>
+                                No uploaded files — storage estimate is from database rows only.
+                              </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+
+      {/* ── Free Plan Info ── */}
+      <div className="card" style={{ marginTop: '24px', borderColor: 'var(--border-mid)' }}>
+        <div className="card-body" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <div style={{ fontWeight: 600, marginBottom: '4px' }}>Supabase Free Plan</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+              1 GB file storage · 2 GB bandwidth / month · 50 MB database · 500 MB egress / month
+            </div>
+          </div>
+          <a href="https://supabase.com/dashboard/project/zrfmboqoyrqsyckktgpv/settings/billing" target="_blank" rel="noopener noreferrer" className="btn btn-primary" style={{ textDecoration: 'none', fontSize: '12px' }}>
+            Manage Plan
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ═══════════════════════════════
 // MAIN APP
 // ═══════════════════════════════
 function AdminApp() {
@@ -3686,6 +4163,7 @@ function AdminApp() {
     { id: 'export',         label: 'Data Export',      icon: Icons.Download },
     { id: 'cleanup',        label: 'Data Cleanup',     icon: Icons.Trash },
     { section: 'System' },
+    { id: 'storage',        label: 'Storage',           icon: Icons.HardDrive },
     { id: 'settings',       label: 'Settings',         icon: Icons.Settings },
   ];
 
@@ -3706,6 +4184,7 @@ function AdminApp() {
       case 'flags':         return <FeatureFlagsPage addToast={addToast} viewer={viewer} />;
       case 'export':        return <DataExportPage addToast={addToast} />;
       case 'cleanup':       return <CleanupPage addToast={addToast} />;
+      case 'storage':       return <StoragePage addToast={addToast} />;
       case 'settings':      return <SettingsPage addToast={addToast} canManageAdmins={canManageAdmins} />;
       default:              return <DashboardPage onNavigate={setPage} />;
     }
