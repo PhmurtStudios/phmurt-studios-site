@@ -5012,7 +5012,7 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
                 padding:"4px 10px", borderRadius:"3px",
                 background: "rgba(201,160,50,0.12)", color: T.gold
               }}>
-                {data.playerRole === "ruler" ? "👑 Ruler" : data.playerRole === "noble" ? "🏰 Noble" : data.playerRole === "knight" ? "⚔️ Knight" : data.playerRole === "merchant" ? "💰 Merchant" : data.playerRole === "adventurer" ? "🗡️ Adventurer" : data.playerRole === "commoner" ? "🔨 Artisan" : data.playerRole === "peasant" ? "🌾 Peasant" : data.playerRole}
+                {data.playerRole === "ruler" ? "♛ Ruler" : data.playerRole === "noble" ? "♕ Noble" : data.playerRole === "knight" ? "⚔ Knight" : data.playerRole === "merchant" ? "⚖ Merchant" : data.playerRole === "adventurer" ? "✦ Adventurer" : data.playerRole === "commoner" ? "⚒ Artisan" : data.playerRole === "peasant" ? "⚘ Peasant" : data.playerRole}
               </span>
             )}
           </div>
@@ -5548,7 +5548,7 @@ window.__CM = {
 /* Tab module loading state */
 const _tabModuleState = { dashboard: true, timeline: false, world: false, play: false };
 const _tabModulePromises = {};
-const _MODULE_VERSION = 195; // Bump to force re-fetch past service worker cache
+const _MODULE_VERSION = 196; // Bump to force re-fetch past service worker cache
 
 /**
  * Lazy-load a tab module: fetch JSX, transpile with Babel, execute.
@@ -6122,13 +6122,13 @@ function App() {
 
   // Kingdom social role definitions
   const KINGDOM_ROLES = [
-    { id: "ruler", label: "Ruler", icon: "👑", desc: "You are the sovereign. Oversee all kingdom affairs — territory, diplomacy, armies, and the treasury.", gameplay: "Full kingdom management, turn-based realm building, council appointments" },
-    { id: "noble", label: "Noble", icon: "🏰", desc: "A lord or lady of the court. You advise the crown and manage your own estate within the realm.", gameplay: "Estate management, political maneuvering, council duties, court intrigue" },
-    { id: "knight", label: "Knight", icon: "⚔️", desc: "A sworn sword of the kingdom. Lead armies, protect the realm, and earn glory on the battlefield.", gameplay: "Military campaigns, combat missions, tournaments, oath quests" },
-    { id: "merchant", label: "Merchant", icon: "💰", desc: "A trader and entrepreneur. Build a commercial empire, negotiate trade deals, and grow your fortune.", gameplay: "Trade routes, shop management, market speculation, guild politics" },
-    { id: "adventurer", label: "Adventurer", icon: "🗡️", desc: "A wandering hero. Take quests, explore dungeons, and build your reputation across the kingdom.", gameplay: "Quest board, dungeon crawls, bounty hunting, fame & renown tracking" },
-    { id: "commoner", label: "Artisan", icon: "🔨", desc: "A skilled craftsperson or professional. Master your trade and rise through the guild ranks.", gameplay: "Crafting, apprenticeships, guild advancement, community building" },
-    { id: "peasant", label: "Peasant", icon: "🌾", desc: "Starting from nothing. Farm the land, do odd jobs, and claw your way up from the bottom.", gameplay: "Farming, fetch quests, survival, slow progression through social ranks" },
+    { id: "ruler", label: "Ruler", icon: "♛", desc: "You are the sovereign. Oversee all kingdom affairs — territory, diplomacy, armies, and the treasury.", gameplay: "Full kingdom management, turn-based realm building, council appointments" },
+    { id: "noble", label: "Noble", icon: "♕", desc: "A lord or lady of the court. You advise the crown and manage your own estate within the realm.", gameplay: "Estate management, political maneuvering, council duties, court intrigue" },
+    { id: "knight", label: "Knight", icon: "⚔", desc: "A sworn sword of the kingdom. Lead armies, protect the realm, and earn glory on the battlefield.", gameplay: "Military campaigns, combat missions, tournaments, oath quests" },
+    { id: "merchant", label: "Merchant", icon: "⚖", desc: "A trader and entrepreneur. Build a commercial empire, negotiate trade deals, and grow your fortune.", gameplay: "Trade routes, shop management, market speculation, guild politics" },
+    { id: "adventurer", label: "Adventurer", icon: "✦", desc: "A wandering hero. Take quests, explore dungeons, and build your reputation across the kingdom.", gameplay: "Quest board, dungeon crawls, bounty hunting, fame & renown tracking" },
+    { id: "commoner", label: "Artisan", icon: "⚒", desc: "A skilled craftsperson or professional. Master your trade and rise through the guild ranks.", gameplay: "Crafting, apprenticeships, guild advancement, community building" },
+    { id: "peasant", label: "Peasant", icon: "⚘", desc: "Starting from nothing. Till the soil, take what work you can find, and rise from humble origins.", gameplay: "Farming, fetch quests, survival, slow progression through social ranks" },
   ];
 
   const handleConfirmCreate = () => {
@@ -6880,6 +6880,13 @@ function App() {
               {/* ── STEP 2: Kingdom Setup (Live campaigns only) ── */}
               {createStep === 2 && <>
 
+              {/* Step 2 Header */}
+              <div style={{ textAlign:"center", marginBottom:20 }}>
+                <div style={{ fontSize:10, color:T.textFaint, letterSpacing:"6px", fontFamily:"serif", marginBottom:8 }}>{"— \u2726 —"}</div>
+                <div style={{ fontFamily:T.heading, fontSize:14, color:T.gold, letterSpacing:"2px", textTransform:"uppercase" }}>Kingdom Setup</div>
+                <div style={{ fontSize:11, color:T.textFaint, marginTop:6, lineHeight:"1.5" }}>Establish your role and dominion in the realm.</div>
+              </div>
+
               {/* Your Role */}
               <div style={{ marginBottom:24 }}>
                 <label style={{ display:"block", fontFamily:T.heading, fontSize:12, color:T.gold, letterSpacing:"1px", textTransform:"uppercase", marginBottom:6 }}>
@@ -6900,7 +6907,7 @@ function App() {
                           display:"flex", alignItems:"flex-start", gap:12,
                         }}
                       >
-                        <div style={{ fontSize:22, lineHeight:"1", flexShrink:0, marginTop:2 }}>{role.icon}</div>
+                        <div style={{ fontSize:20, lineHeight:"1", flexShrink:0, marginTop:2, fontFamily:"serif", color: sel ? T.gold : T.textMuted, opacity: sel ? 1 : 0.6 }}>{role.icon}</div>
                         <div style={{ flex:1 }}>
                           <div style={{ fontSize:13, color: sel ? T.text : T.textMuted, fontWeight:600, fontFamily:T.heading, letterSpacing:"0.5px" }}>
                             {role.label}
@@ -7023,7 +7030,7 @@ function App() {
                   opacity: createName.trim() ? 1 : 0.5
                 }}
               >
-                {createType === "live" && createStep === 1 ? "Next: Kingdom Setup" : createStep === 2 ? "Establish Kingdom" : "Create Campaign"}
+                {createType === "live" && createStep === 1 ? "Next \u2192 Kingdom Setup" : createStep === 2 ? "\u2726 Establish Kingdom" : "Create Campaign"}
               </button>
             </div>
           </div>

@@ -68,13 +68,13 @@
 
   // ── Army Unit Types ────────────────────────────────────────────────────
   var ARMY_UNITS = {
-    militia:   { name: "Militia",        icon: "🛡️", cost: 2, attack: 1, defense: 2, hp: 3, recruitTurns: 0, desc: "Cheap defensive troops" },
-    infantry:  { name: "Infantry",       icon: "⚔️", cost: 4, attack: 3, defense: 3, hp: 5, recruitTurns: 1, desc: "Solid frontline soldiers" },
-    cavalry:   { name: "Cavalry",        icon: "🐎", cost: 6, attack: 5, defense: 2, hp: 4, recruitTurns: 1, desc: "Fast-striking mounted warriors" },
-    archers:   { name: "Archers",        icon: "🏹", cost: 3, attack: 4, defense: 1, hp: 3, recruitTurns: 1, desc: "Ranged skirmish troops" },
-    knights:   { name: "Knights",        icon: "🗡️", cost: 8, attack: 6, defense: 5, hp: 7, recruitTurns: 2, desc: "Elite heavy cavalry", requires: ["barracks"] },
-    siege:     { name: "Siege Engine",   icon: "🏰", cost: 10, attack: 8, defense: 1, hp: 4, recruitTurns: 3, desc: "Devastating against fortifications", requires: ["smithy"] },
-    mages:     { name: "War Mages",      icon: "✨", cost: 12, attack: 7, defense: 2, hp: 3, recruitTurns: 2, desc: "Arcane artillery unit", requires: ["magicShop"] }
+    militia:   { name: "Militia",        icon: "⛊", cost: 2, attack: 1, defense: 2, hp: 3, recruitTurns: 0, desc: "Cheap defensive troops" },
+    infantry:  { name: "Infantry",       icon: "⚔", cost: 4, attack: 3, defense: 3, hp: 5, recruitTurns: 1, desc: "Solid frontline soldiers" },
+    cavalry:   { name: "Cavalry",        icon: "♘", cost: 6, attack: 5, defense: 2, hp: 4, recruitTurns: 1, desc: "Fast-striking mounted warriors" },
+    archers:   { name: "Archers",        icon: "↣", cost: 3, attack: 4, defense: 1, hp: 3, recruitTurns: 1, desc: "Ranged skirmish troops" },
+    knights:   { name: "Knights",        icon: "⚜", cost: 8, attack: 6, defense: 5, hp: 7, recruitTurns: 2, desc: "Elite heavy cavalry", requires: ["barracks"] },
+    siege:     { name: "Siege Engine",   icon: "△", cost: 10, attack: 8, defense: 1, hp: 4, recruitTurns: 3, desc: "Devastating against fortifications", requires: ["smithy"] },
+    mages:     { name: "War Mages",      icon: "✦", cost: 12, attack: 7, defense: 2, hp: 3, recruitTurns: 2, desc: "Arcane artillery unit", requires: ["magicShop"] }
   };
 
   // ── Kingdom Crises & Events ────────────────────────────────────────────
@@ -88,7 +88,7 @@
         { label: "Do nothing", effect: { popGrowth: -200, unrest: 2 }, msg: "Plague spreads unchecked" }
       ]
     },
-    { id: "dragon_crisis",       name: "Dragon Attack",         type: "harmful", severity: "critical", icon: "🐉",
+    { id: "dragon_crisis",       name: "Dragon Attack",         type: "harmful", severity: "critical", icon: "◆",
       desc: "A wyrm descends upon your kingdom, demanding tribute.",
       choices: [
         { label: "Pay tribute (10 BP)", effect: { treasury: -10 }, msg: "Dragon leaves peacefully" },
@@ -96,7 +96,7 @@
         { label: "Negotiate", effect: { treasury: -2, diplomacy: 2 }, msg: "Dragon becomes potential ally" }
       ]
     },
-    { id: "rebellion_crisis",    name: "Rebellion",             type: "harmful", severity: "major", icon: "🔥",
+    { id: "rebellion_crisis",    name: "Rebellion",             type: "harmful", severity: "major", icon: "✶",
       desc: "Discontented citizens rise up against the crown.",
       choices: [
         { label: "Crush the rebellion", effect: { loyalty: -3, unrest: -5, popGrowth: -50 }, msg: "Swift military response" },
@@ -104,7 +104,7 @@
         { label: "Abdicate a council seat", effect: { loyalty: -1, unrest: -8 }, msg: "Lose power but gain stability" }
       ]
     },
-    { id: "famine_crisis",       name: "Famine",                type: "harmful", severity: "major", icon: "🌾",
+    { id: "famine_crisis",       name: "Famine",                type: "harmful", severity: "major", icon: "⚘",
       desc: "Crop failures threaten your people with starvation.",
       choices: [
         { label: "Import food (8 BP)", effect: { treasury: -8, popGrowth: 100 }, msg: "Crisis averted" },
@@ -112,7 +112,7 @@
         { label: "Raid neighbors", effect: { treasury: 5, infamy: 2, stability: -2 }, msg: "Food gained, relations suffer" }
       ]
     },
-    { id: "earthquake_crisis",   name: "Earthquake",            type: "harmful", severity: "major", icon: "⛰️",
+    { id: "earthquake_crisis",   name: "Earthquake",            type: "harmful", severity: "major", icon: "▲",
       desc: "The ground trembles and buildings crack.",
       choices: [
         { label: "Emergency repairs (12 BP)", effect: { treasury: -12 }, msg: "Buildings saved" },
@@ -120,21 +120,21 @@
       ]
     },
     // ─ Beneficial ─
-    { id: "gold_rush_event",     name: "Gold Rush",             type: "beneficial", severity: "major", icon: "💰",
+    { id: "gold_rush_event",     name: "Gold Rush",             type: "beneficial", severity: "major", icon: "⊛",
       desc: "Rich mineral deposits discovered in your territory!",
       choices: [
         { label: "Crown-controlled mining", effect: { treasury: 15, economy: 2 }, msg: "Steady income" },
         { label: "Open claims", effect: { popGrowth: 500, economy: 4, stability: -1 }, msg: "Rush of settlers" }
       ]
     },
-    { id: "marriage_alliance",   name: "Diplomatic Marriage",    type: "beneficial", severity: "major", icon: "👑",
+    { id: "marriage_alliance",   name: "Diplomatic Marriage",    type: "beneficial", severity: "major", icon: "♛",
       desc: "A noble house proposes a political marriage alliance.",
       choices: [
         { label: "Accept the alliance", effect: { loyalty: 2, diplomacy: 1 }, msg: "New ally" },
         { label: "Decline politely", effect: {}, msg: "No effect" }
       ]
     },
-    { id: "wandering_hero",      name: "Wandering Hero",        type: "beneficial", severity: "minor", icon: "⚔️",
+    { id: "wandering_hero",      name: "Wandering Hero",        type: "beneficial", severity: "minor", icon: "✦",
       desc: "A legendary adventurer offers their services.",
       choices: [
         { label: "Hire as general", effect: { stability: 2, economy: -1 }, msg: "Army attack +2 for 5 turns" },
@@ -142,7 +142,7 @@
         { label: "Send on quest", effect: { treasury: -5, fame: 3 }, msg: "50% success: treasury +10" }
       ]
     },
-    { id: "harvest_event",       name: "Bountiful Harvest",     type: "beneficial", severity: "minor", icon: "🌻",
+    { id: "harvest_event",       name: "Bountiful Harvest",     type: "beneficial", severity: "minor", icon: "❦",
       desc: "The harvest exceeds all expectations.",
       choices: [
         { label: "Store surplus", effect: { foodSurplus: 100, consumption: -2 }, msg: "Food stored 3 turns" },
@@ -150,7 +150,7 @@
         { label: "Feast!", effect: { loyalty: 3, unrest: -2, consumption: 2 }, msg: "Morale boost" }
       ]
     },
-    { id: "vision_event",        name: "Religious Vision",      type: "beneficial", severity: "minor", icon: "✨",
+    { id: "vision_event",        name: "Religious Vision",      type: "beneficial", severity: "minor", icon: "✝",
       desc: "A priest reports a divine vision blessing the realm.",
       choices: [
         { label: "Build a shrine", effect: { divineFavor: 15, stability: 1, treasury: -4 }, msg: "Faith increases" },
@@ -1535,24 +1535,24 @@ function getBannerSVG(cfg) {
               playerRole === "peasant" ? "Peasant" : "Citizen"
             )
           ),
-          React.createElement("div", { style: { fontSize:"28px" } },
-            playerRole === "ruler" ? "\uD83D\uDC51" :
-            playerRole === "noble" ? "\uD83C\uDFF0" :
-            playerRole === "knight" ? "\u2694\uFE0F" :
-            playerRole === "merchant" ? "\uD83D\uDCB0" :
-            playerRole === "adventurer" ? "\uD83D\uDDE1\uFE0F" :
-            playerRole === "commoner" ? "\uD83D\uDD28" :
-            playerRole === "peasant" ? "\uD83C\uDF3E" : "\u2728"
+          React.createElement("div", { style: { fontSize:"28px", fontFamily:"serif" } },
+            playerRole === "ruler" ? "\u265B" :
+            playerRole === "noble" ? "\u2655" :
+            playerRole === "knight" ? "\u2694" :
+            playerRole === "merchant" ? "\u2696" :
+            playerRole === "adventurer" ? "\u2726" :
+            playerRole === "commoner" ? "\u2692" :
+            playerRole === "peasant" ? "\u2698" : "\u2726"
           )
         ),
         React.createElement("div", { style: { fontSize:"11px", color:T.textDim, marginTop:"8px", lineHeight:"1.5", fontStyle:"italic" } },
-          playerRole === "ruler" ? "The weight of the crown is yours. Every decision shapes the fate of your people." :
-          playerRole === "noble" ? "You hold lands and title. Manage your estate, navigate court politics, and serve — or undermine — the crown." :
-          playerRole === "knight" ? "Honor, steel, and duty. The kingdom's enemies are yours to vanquish." :
-          playerRole === "merchant" ? "Gold is the true power. Build your trade empire and let coin do the talking." :
-          playerRole === "adventurer" ? "The realm is full of danger and opportunity. Take quests, slay beasts, and write your legend." :
-          playerRole === "commoner" ? "Honest work builds empires. Master your craft and rise through the guilds." :
-          playerRole === "peasant" ? "Start with nothing but grit. Farm, forage, and fight your way to a better life." : ""
+          playerRole === "ruler" ? "The weight of the crown is yours alone. Every decree shapes the fate of your people and the land itself." :
+          playerRole === "noble" ? "Lands, title, and ambition. Navigate the intricacies of court while tending to your estate." :
+          playerRole === "knight" ? "Honour bound in steel. The realm's enemies fall before your blade." :
+          playerRole === "merchant" ? "Coin is the truest currency of power. Let your ledgers speak louder than swords." :
+          playerRole === "adventurer" ? "Fortune favours the bold. Seek quests, face peril, and carve your name into legend." :
+          playerRole === "commoner" ? "Steady hands shape kingdoms. Master your craft and rise through the guild ranks." :
+          playerRole === "peasant" ? "From nothing, everything begins. Till the soil, take what work you can, and endure." : ""
         ),
         React.createElement("div", { style: { display:"flex", gap:"8px", marginTop:"10px", flexWrap:"wrap" } },
           playerRole === "ruler" && React.createElement("span", { style: S.pill(accentFg) }, "Full Kingdom Control"),
@@ -2119,7 +2119,7 @@ function getBannerSVG(cfg) {
             ),
             React.createElement("div", { style: { display:"flex", gap:"8px", marginTop:"10px" } },
               React.createElement("button", { style: S.btn, onClick: handleFound }, "Found Settlement"),
-              setData && React.createElement("button", { style: Object.assign({}, S.btn, { background:"#d4af37", color:"#1a1a2e" }), onClick: function() { startAtlasPlacement("temp-" + Date.now(), foundForm.name); } }, "📍 Place on Atlas"),
+              setData && React.createElement("button", { style: Object.assign({}, S.btn, { background:"#d4af37", color:"#1a1a2e" }), onClick: function() { startAtlasPlacement("temp-" + Date.now(), foundForm.name); } }, "◎ Place on Atlas"),
               React.createElement("button", { style: Object.assign({}, S.btn, S.btnGold), onClick: function() { setShowFoundForm(false); } }, "Cancel")
             )
           )
@@ -2159,7 +2159,7 @@ function getBannerSVG(cfg) {
             React.createElement("div", { style: { fontSize:"12px", color:T.textDim } },
               selSizeData.icon + " " + selSizeData.name + " · Pop: " + (sel.population || 0).toLocaleString() + " · " + (sel.buildings || []).length + "/" + selSizeData.maxBuildings + " buildings"
             ),
-            sel.mapX && sel.mapY && React.createElement("div", { style: { fontSize:"11px", color:"#d4af37", marginTop:"4px" } }, "📍 Mapped at (" + sel.mapX.toFixed(2) + ", " + sel.mapY.toFixed(2) + ")")
+            sel.mapX && sel.mapY && React.createElement("div", { style: { fontSize:"11px", color:"#d4af37", marginTop:"4px" } }, "◎ Mapped at (" + sel.mapX.toFixed(2) + ", " + sel.mapY.toFixed(2) + ")")
           ),
           React.createElement("div", { style: { display:"flex", gap:"6px" } },
             kingdom.capitalSettlement !== selectedSettlement && viewRole === "dm" && React.createElement("button", {
@@ -2169,7 +2169,7 @@ function getBannerSVG(cfg) {
             setData && (!sel.mapX || !sel.mapY) && viewRole === "dm" && React.createElement("button", {
               style: Object.assign({}, S.btn, S.btnSmall, { background:"#d4af37", color:"#1a1a2e" }),
               onClick: function() { startAtlasPlacement(selectedSettlement, sel.name); }
-            }, "📍 Place")
+            }, "◎ Place")
           )
         ),
 
@@ -2547,8 +2547,8 @@ function getBannerSVG(cfg) {
               React.createElement("div", { style: { fontSize:"14px", fontWeight:"bold", color:"#c94f3f" } }, army.name),
               React.createElement("div", { style: { fontSize:"11px", color:T.textDim, marginTop:"4px" } }, stats.unitCount + " units"),
               React.createElement("div", { style: { display:"flex", gap:"8px", marginTop:"6px" } },
-                React.createElement("span", { style: S.pill("#c94f3f") }, "⚔️ " + stats.attack),
-                React.createElement("span", { style: S.pill("#5b7fb5") }, "🛡️ " + stats.defense)
+                React.createElement("span", { style: S.pill("#c94f3f") }, "\u2694 " + stats.attack),
+                React.createElement("span", { style: S.pill("#5b7fb5") }, "\u26CA " + stats.defense)
               ),
               React.createElement("div", { style: { fontSize:"10px", color:T.textDim, marginTop:"6px", textTransform:"capitalize" } }, army.status)
             );
@@ -2747,7 +2747,7 @@ function getBannerSVG(cfg) {
               treaties.map(function(treaty) {
                 var otherK = kingdoms.find(function(k) { return k.id === treaty.withKingdomId; });
                 return React.createElement("div", { key: treaty.id, style: Object.assign({}, S.card, { borderLeft:"4px solid "+T.gold }) },
-                  React.createElement("div", { style: { fontSize:"12px", fontWeight:"bold", marginBottom:"4px" } }, treaty.type === "alliance" ? "⚔️ Alliance" : treaty.type === "trade" ? "⚖️ Trade" : treaty.type === "non_aggression" ? "✋ Non-Aggression" : "👑 Vassalage"),
+                  React.createElement("div", { style: { fontSize:"12px", fontWeight:"bold", marginBottom:"4px" } }, treaty.type === "alliance" ? "\u2694 Alliance" : treaty.type === "trade" ? "\u2696 Trade" : treaty.type === "non_aggression" ? "\u2690 Non-Aggression" : "\u265B Vassalage"),
                   React.createElement("div", { style: { fontSize:"11px", color:T.textDim, marginBottom:"6px" } }, "with ", otherK ? otherK.name : "Unknown"),
                   viewRole === "dm" && React.createElement("button", { style: Object.assign({}, S.btn, S.btnSmall, { color:"#c94f3f", borderColor:"#c94f3f" }), onClick: function() { removeTreaty(treaty.id); } }, Trash2 && React.createElement(Trash2, { size: 12 }), "Revoke")
                 );

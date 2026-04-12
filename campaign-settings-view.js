@@ -350,13 +350,13 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
                   fontSize: "0.95rem"
                 }}
               >
-                <option value="ruler">Ruler — Sovereign of the realm</option>
-                <option value="noble">Noble — Lord/Lady of the court</option>
-                <option value="knight">Knight — Sworn sword of the kingdom</option>
-                <option value="merchant">Merchant — Trader and entrepreneur</option>
-                <option value="adventurer">Adventurer — Wandering hero</option>
-                <option value="commoner">Artisan — Skilled craftsperson</option>
-                <option value="peasant">Peasant — Starting from nothing</option>
+                <option value="ruler">♛ Ruler — Sovereign of the realm</option>
+                <option value="noble">♕ Noble — Lord or Lady of the court</option>
+                <option value="knight">⚔ Knight — Sworn sword of the kingdom</option>
+                <option value="merchant">⚖ Merchant — Trader and entrepreneur</option>
+                <option value="adventurer">✦ Adventurer — Wandering hero</option>
+                <option value="commoner">⚒ Artisan — Skilled craftsperson</option>
+                <option value="peasant">⚘ Peasant — Starting from nothing</option>
               </select>
             </label>
           )}
