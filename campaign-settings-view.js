@@ -329,6 +329,37 @@ window.CampaignSettingsView = function CampaignSettingsView({ data, setData, vie
               </select>
             </label>
           </div>
+
+          {/* Player Kingdom Role */}
+          {data.campaignType === "live" && (
+            <label style={{ display: "block", marginTop: "1rem" }}>
+              <div style={{ color: T.text, fontSize: "0.9rem", fontWeight: "600", marginBottom: "0.5rem" }}>
+                Kingdom Role
+              </div>
+              <select
+                value={data.playerRole || "adventurer"}
+                onChange={e => setData(d => ({ ...d, playerRole: e.target.value }))}
+                style={{
+                  width: "100%",
+                  padding: "0.75rem",
+                  background: T.bg,
+                  border: `1px solid ${T.border}`,
+                  color: T.text,
+                  borderRadius: "4px",
+                  fontFamily: T.body,
+                  fontSize: "0.95rem"
+                }}
+              >
+                <option value="ruler">Ruler — Sovereign of the realm</option>
+                <option value="noble">Noble — Lord/Lady of the court</option>
+                <option value="knight">Knight — Sworn sword of the kingdom</option>
+                <option value="merchant">Merchant — Trader and entrepreneur</option>
+                <option value="adventurer">Adventurer — Wandering hero</option>
+                <option value="commoner">Artisan — Skilled craftsperson</option>
+                <option value="peasant">Peasant — Starting from nothing</option>
+              </select>
+            </label>
+          )}
         </div>
       </div>
 

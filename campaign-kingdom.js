@@ -575,6 +575,7 @@
       // Sync settlement populations to atlas cities
       var settlements = kingdom.settlements || {};
       var existingCities = (result.cities || []).slice();
+      var MAP_W = 6000, MAP_H = 4500;
       Object.keys(settlements).forEach(function(setId) {
         var s = settlements[setId];
         var cityId = "kingdom-city-" + setId;
@@ -591,13 +592,24 @@
             isCapital: kingdom.capitalSettlement === setId
           });
         } else {
+          // Resolve coordinates from the atlas province for map positioning
+          var cityX = 0.5, cityY = 0.5; // fallback center
+          var regProv = atlasProvs.find(function(p) { return p.name === s.regionName || p.id === s.regionName; });
+          if (regProv) {
+            cityX = (regProv.labelX || regProv.cityX || (MAP_W * 0.5)) / MAP_W;
+            cityY = (regProv.labelY || regProv.cityY || (MAP_H * 0.5)) / MAP_H;
+          }
           existingCities.push({
             id: cityId,
             name: s.name,
             region: s.regionName,
             population: s.population || 100,
             ctrl: kingdom.name,
-            isCapital: kingdom.capitalSettlement === setId
+            isCapital: kingdom.capitalSettlement === setId,
+            mapX: cityX,
+            mapY: cityY,
+            origX: cityX,
+            origY: cityY
           });
         }
       });
@@ -1462,7 +1474,7 @@ function getBannerSVG(cfg) {
 
   // ── Kingdom Dashboard ──────────────────────────────────────────────────
   function KingdomDashboard(_ref) {
-    var kingdom = _ref.kingdom, stats = _ref.stats, onNavigate = _ref.onNavigate, viewRole = _ref.viewRole;
+    var kingdom = _ref.kingdom, stats = _ref.stats, onNavigate = _ref.onNavigate, viewRole = _ref.viewRole, playerRole = _ref.playerRole || "adventurer";
     var regionCount = Object.keys(kingdom.territories || {}).length;
     var settlementCount = Object.keys(kingdom.settlements || {}).length;
     var buildingCount = Object.values(kingdom.settlements || {}).reduce(function(s, set) { return s + (set.buildings || []).filter(function(b) { return b.completed; }).length; }, 0);
@@ -1504,6 +1516,62 @@ function getBannerSVG(cfg) {
       // Ornamental divider
       React.createElement("div", { style: { textAlign:"center", color:accentFg+"55", fontSize:"14px", letterSpacing:"8px", margin:"8px 0", fontFamily:"serif", position:"relative", zIndex:1 } }, "\u2726 \u2727 \u2726"),
 
+      // Player Role Status Card
+      React.createElement("div", { style: Object.assign({}, S.card, {
+        padding:"16px 20px", marginBottom:"14px", position:"relative", zIndex:1,
+        borderLeft:"3px solid " + accentFg + "88",
+        background:"linear-gradient(90deg, " + accentBg + "12 0%, " + T.bgCard + " 100%)"
+      }) },
+        React.createElement("div", { style: { display:"flex", justifyContent:"space-between", alignItems:"center" } },
+          React.createElement("div", null,
+            React.createElement("div", { style: { fontSize:"10px", color:T.textDim, fontFamily:T.ui, letterSpacing:"2px", textTransform:"uppercase", marginBottom:"4px" } }, "Your Station"),
+            React.createElement("div", { style: { fontSize:"16px", fontWeight:"bold", color:accentFg, fontFamily:T.heading, letterSpacing:"1px" } },
+              playerRole === "ruler" ? "Sovereign Ruler" :
+              playerRole === "noble" ? "Noble Lord" :
+              playerRole === "knight" ? "Sworn Knight" :
+              playerRole === "merchant" ? "Guild Merchant" :
+              playerRole === "adventurer" ? "Adventurer" :
+              playerRole === "commoner" ? "Artisan" :
+              playerRole === "peasant" ? "Peasant" : "Citizen"
+            )
+          ),
+          React.createElement("div", { style: { fontSize:"28px" } },
+            playerRole === "ruler" ? "\uD83D\uDC51" :
+            playerRole === "noble" ? "\uD83C\uDFF0" :
+            playerRole === "knight" ? "\u2694\uFE0F" :
+            playerRole === "merchant" ? "\uD83D\uDCB0" :
+            playerRole === "adventurer" ? "\uD83D\uDDE1\uFE0F" :
+            playerRole === "commoner" ? "\uD83D\uDD28" :
+            playerRole === "peasant" ? "\uD83C\uDF3E" : "\u2728"
+          )
+        ),
+        React.createElement("div", { style: { fontSize:"11px", color:T.textDim, marginTop:"8px", lineHeight:"1.5", fontStyle:"italic" } },
+          playerRole === "ruler" ? "The weight of the crown is yours. Every decision shapes the fate of your people." :
+          playerRole === "noble" ? "You hold lands and title. Manage your estate, navigate court politics, and serve — or undermine — the crown." :
+          playerRole === "knight" ? "Honor, steel, and duty. The kingdom's enemies are yours to vanquish." :
+          playerRole === "merchant" ? "Gold is the true power. Build your trade empire and let coin do the talking." :
+          playerRole === "adventurer" ? "The realm is full of danger and opportunity. Take quests, slay beasts, and write your legend." :
+          playerRole === "commoner" ? "Honest work builds empires. Master your craft and rise through the guilds." :
+          playerRole === "peasant" ? "Start with nothing but grit. Farm, forage, and fight your way to a better life." : ""
+        ),
+        React.createElement("div", { style: { display:"flex", gap:"8px", marginTop:"10px", flexWrap:"wrap" } },
+          playerRole === "ruler" && React.createElement("span", { style: S.pill(accentFg) }, "Full Kingdom Control"),
+          playerRole === "ruler" && React.createElement("span", { style: S.pill("#7cb342") }, "Diplomacy & War"),
+          playerRole === "noble" && React.createElement("span", { style: S.pill("#9b59b6") }, "Estate & Politics"),
+          playerRole === "noble" && React.createElement("span", { style: S.pill("#5b7fb5") }, "Council Seat"),
+          playerRole === "knight" && React.createElement("span", { style: S.pill("#c94f3f") }, "Military Command"),
+          playerRole === "knight" && React.createElement("span", { style: S.pill(accentFg) }, "Oath Quests"),
+          playerRole === "merchant" && React.createElement("span", { style: S.pill(accentFg) }, "Trade Routes"),
+          playerRole === "merchant" && React.createElement("span", { style: S.pill("#7cb342") }, "Market & Guilds"),
+          playerRole === "adventurer" && React.createElement("span", { style: S.pill("#e67e22") }, "Quest Board"),
+          playerRole === "adventurer" && React.createElement("span", { style: S.pill("#5b7fb5") }, "Fame & Renown"),
+          playerRole === "commoner" && React.createElement("span", { style: S.pill("#8e6f3e") }, "Crafting & Trade"),
+          playerRole === "commoner" && React.createElement("span", { style: S.pill("#7cb342") }, "Guild Advancement"),
+          playerRole === "peasant" && React.createElement("span", { style: S.pill("#8fbc5e") }, "Farming & Foraging"),
+          playerRole === "peasant" && React.createElement("span", { style: S.pill("#8e6f3e") }, "Odd Jobs & Fetch Quests")
+        )
+      ),
+
       // Capital crisis warning
       (stats.capitalConquered || stats.capitalLost) && React.createElement("div", {
         style: Object.assign({}, S.card, {
@@ -1517,7 +1585,8 @@ function getBannerSVG(cfg) {
         React.createElement("div", { style: { fontSize:"12px", color:T.textDim } }, stats.capitalPenalty)
       ),
 
-      React.createElement("div", { style: Object.assign({}, S.statRow, { position:"relative", zIndex:1 }) },
+      // Full stat badges — rulers and nobles see everything
+      (playerRole === "ruler" || playerRole === "noble") && React.createElement("div", { style: Object.assign({}, S.statRow, { position:"relative", zIndex:1 }) },
         React.createElement(StatBadge, { label: "Economy", value: stats.economy, color: stats.economy >= 0 ? "#7cb342" : "#c94f3f" }),
         React.createElement(StatBadge, { label: "Loyalty", value: stats.loyalty, color: stats.loyalty >= 0 ? "#7cb342" : "#c94f3f" }),
         React.createElement(StatBadge, { label: "Treasury", value: kingdom.treasury + " BP", color: accentFg, featured: true }),
@@ -1526,8 +1595,16 @@ function getBannerSVG(cfg) {
         React.createElement(StatBadge, { label: "Defense", value: stats.totalDefense, color: "#5b7fb5" })
       ),
 
-      // Treasury Details
-      React.createElement("div", { style: Object.assign({}, S.statRow, { gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", position:"relative", zIndex:1 }) },
+      // Simplified realm status for non-ruler roles
+      (playerRole !== "ruler" && playerRole !== "noble") && React.createElement("div", { style: Object.assign({}, S.statRow, { position:"relative", zIndex:1 }) },
+        React.createElement(StatBadge, { label: "Population", value: (kingdom.totalPopulation || 0).toLocaleString(), color: accentFg }),
+        React.createElement(StatBadge, { label: "Unrest", value: (kingdom.unrest || 0) > 5 ? "High" : (kingdom.unrest || 0) > 0 ? "Moderate" : "Peaceful", color: (kingdom.unrest || 0) > 5 ? "#c94f3f" : (kingdom.unrest || 0) > 0 ? "#e67e22" : "#7cb342" }),
+        React.createElement(StatBadge, { label: "Prosperity", value: stats.economy >= 5 ? "Thriving" : stats.economy >= 0 ? "Stable" : "Struggling", color: stats.economy >= 0 ? "#7cb342" : "#c94f3f", featured: true }),
+        React.createElement(StatBadge, { label: "Safety", value: stats.totalDefense > 10 ? "Well-defended" : stats.totalDefense > 0 ? "Guarded" : "Vulnerable", color: "#5b7fb5" })
+      ),
+
+      // Treasury Details — only for ruler and noble
+      (playerRole === "ruler" || playerRole === "noble") && React.createElement("div", { style: Object.assign({}, S.statRow, { gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", position:"relative", zIndex:1 }) },
         React.createElement("div", { style: Object.assign({}, S.statBox, { borderTopColor: accentFg+"44", background:"linear-gradient(180deg, "+accentBg+"08 0%, "+T.bgCard+" 100%)" }) },
           React.createElement("div", { style: Object.assign({}, S.statLabel, { color:accentFg }) }, "Income / Turn"),
           React.createElement("div", { style: { fontSize:"16px", fontWeight:"bold", color:"#7cb342", fontFamily:T.heading } }, "+" + stats.income + " BP")
@@ -1576,15 +1653,28 @@ function getBannerSVG(cfg) {
       // ── Bottom Section: full width, edge to edge ──
       React.createElement("div", { style: { position:"relative", zIndex:1 } },
 
-      // Royal Chambers Navigation
-      React.createElement("div", { style: Object.assign({}, S.sectionHead, { position:"relative", zIndex:1, color:accentFg, borderImage:"linear-gradient(90deg, "+accentFg+"66 0%, "+accentFg+"22 70%, transparent 100%) 1" }) }, Compass && React.createElement(Compass, { size: 16 }), " Royal Chambers"),
+      // Royal Chambers Navigation — adapts to player role
+      React.createElement("div", { style: Object.assign({}, S.sectionHead, { position:"relative", zIndex:1, color:accentFg, borderImage:"linear-gradient(90deg, "+accentFg+"66 0%, "+accentFg+"22 70%, transparent 100%) 1" }) }, Compass && React.createElement(Compass, { size: 16 }),
+        playerRole === "ruler" ? " Royal Chambers" :
+        playerRole === "noble" ? " Noble's Court" :
+        playerRole === "knight" ? " Knight's Orders" :
+        playerRole === "merchant" ? " Trade Hall" :
+        playerRole === "adventurer" ? " Adventurer's Guild" :
+        playerRole === "commoner" ? " Workshop" :
+        playerRole === "peasant" ? " Village Square" : " Kingdom"
+      ),
 
       // Featured Row: Territory and Settlements
       React.createElement("div", { style: { display:"grid", gridTemplateColumns:"1fr 1fr", gap:"14px", marginBottom: "14px", position:"relative", zIndex:1 } },
         [
-          { id: "territory", label: "Territory", icon: Map, desc: "Claim regions, build improvements, manage land", color: "#8fbc5e", featured: true },
-          { id: "settlements", label: "Settlements", icon: Building2, desc: "Found towns, construct buildings, grow cities", color: accentFg, featured: true }
-        ].map(function(panel) {
+          (playerRole === "ruler" || playerRole === "noble") ? { id: "territory", label: "Territory", icon: Map, desc: "Claim regions, build improvements, manage land", color: "#8fbc5e", featured: true } : null,
+          { id: "settlements", label: playerRole === "peasant" ? "Village" : playerRole === "merchant" ? "Market District" : "Settlements", icon: Building2, desc: playerRole === "peasant" ? "Your village — work the land, find odd jobs" : playerRole === "merchant" ? "Shops, trade posts, and market stalls" : "Found towns, construct buildings, grow cities", color: accentFg, featured: true },
+          playerRole === "adventurer" ? { id: "events", label: "Quest Board", icon: Scroll, desc: "Available quests, bounties, and contracts", color: "#e67e22", featured: true } : null,
+          playerRole === "knight" ? { id: "military", label: "Barracks", icon: Sword, desc: "Your unit, training, and active campaigns", color: "#c94f3f", featured: true } : null,
+          playerRole === "merchant" ? { id: "events", label: "Trade Ledger", icon: Coins, desc: "Track deals, profits, and market trends", color: "#e67e22", featured: true } : null,
+          playerRole === "peasant" ? { id: "events", label: "Job Board", icon: Scroll, desc: "Farming contracts, odd jobs, and fetch quests", color: "#8e6f3e", featured: true } : null,
+          playerRole === "commoner" ? { id: "events", label: "Guild Hall", icon: Award, desc: "Apprenticeships, commissions, and guild ranks", color: "#8e6f3e", featured: true } : null
+        ].filter(Boolean).map(function(panel) {
           return React.createElement("div", {
             key: panel.id,
             style: Object.assign({}, S.card, S.cardHover, {
@@ -1606,15 +1696,23 @@ function getBannerSVG(cfg) {
         })
       ),
 
-      // Secondary Row: Remaining chambers
+      // Secondary Row: Remaining chambers — filtered by role
       React.createElement("div", { style: { display:"grid", gridTemplateColumns:"repeat(auto-fit, minmax(160px, 1fr))", gap:"12px", marginBottom: "16px", position:"relative", zIndex:1 } },
         [
-          { id: "governance", label: "Governance", icon: Crown, desc: "Council, edicts, laws, and royal decrees", color: "#5b7fb5" },
-          { id: "military", label: "Military", icon: Sword, desc: "Armies, units, and warfare", color: "#c94f3f" },
-          { id: "religion", label: "Religion", icon: Star, desc: "State faith, temples, divine favor", color: "#9b59b6" },
-          { id: "diplomacy", label: "Diplomacy", icon: Handshake, desc: "Treaties, relations, and diplomacy", color: "#e67e22" },
-          { id: "events", label: "Event Log", icon: Scroll, desc: "Kingdom history and recent events", color: "#5b7fb5" },
-          viewRole === "dm" ? { id: "turn", label: "Advance Turn", icon: Zap, desc: "Process the next kingdom turn", color: T.crimson } : null
+          // Governance: rulers and nobles
+          (playerRole === "ruler" || playerRole === "noble") ? { id: "governance", label: "Governance", icon: Crown, desc: "Council, edicts, laws, and royal decrees", color: "#5b7fb5" } : null,
+          // Military: rulers, nobles, knights
+          (playerRole === "ruler" || playerRole === "noble" || playerRole === "knight") ? { id: "military", label: "Military", icon: Sword, desc: playerRole === "knight" ? "Your sworn unit, battles, and tournaments" : "Armies, units, and warfare", color: "#c94f3f" } : null,
+          // Religion: available to all
+          { id: "religion", label: playerRole === "peasant" ? "Temple" : "Religion", icon: Star, desc: playerRole === "peasant" || playerRole === "commoner" ? "Pray, tithe, and seek divine blessing" : "State faith, temples, divine favor", color: "#9b59b6" },
+          // Diplomacy: rulers and nobles
+          (playerRole === "ruler" || playerRole === "noble") ? { id: "diplomacy", label: "Diplomacy", icon: Handshake, desc: "Treaties, relations, and foreign affairs", color: "#e67e22" } : null,
+          // Territory: knights, merchants, adventurers can view
+          (playerRole === "knight" || playerRole === "merchant" || playerRole === "adventurer") ? { id: "territory", label: "The Realm", icon: Map, desc: "Explore the kingdom's lands and regions", color: "#8fbc5e" } : null,
+          // Event Log: all roles
+          { id: "events", label: "Chronicles", icon: Scroll, desc: "Kingdom history and recent events", color: "#5b7fb5" },
+          // Advance Turn: DM only (ruler role)
+          viewRole === "dm" && (playerRole === "ruler" || playerRole === "noble") ? { id: "turn", label: "Advance Turn", icon: Zap, desc: "Process the next kingdom turn", color: T.crimson } : null
         ].filter(Boolean).map(function(panel) {
           return React.createElement("div", {
             key: panel.id,
@@ -2962,7 +3060,7 @@ function getBannerSVG(cfg) {
   // ═══════════════════════════════════════════════════════════════════════════
 
   function KingdomView(_ref) {
-    var data = _ref.data, setData = _ref.setData, viewRole = _ref.viewRole, onNav = _ref.onNav;
+    var data = _ref.data, setData = _ref.setData, viewRole = _ref.viewRole, onNav = _ref.onNav, playerRole = _ref.playerRole || "adventurer";
     var _s1 = useState("dashboard"), view = _s1[0], setView = _s1[1];
     var _s2 = useState(null), selectedKingdomId = _s2[0], setSelectedKingdomId = _s2[1];
 
@@ -2978,6 +3076,24 @@ function getBannerSVG(cfg) {
     }, [kingdoms, selectedKingdomId]);
 
     var kingdom = kingdoms.find(function(k) { return k.id === activeKingdomId; }) || null;
+
+    // Auto-sync kingdoms created during campaign setup that haven't synced to world yet
+    useEffect(function() {
+      if (!kingdom || !kingdom._startRegion || !data.regions || data.regions.length === 0) return;
+      // This kingdom was created during campaign setup — sync region control, faction, and city to the world
+      syncKingdomToWorld(kingdom, setData);
+      // Clean up the temp fields
+      setData(function(prev) {
+        var list = (prev.kingdoms || []).map(function(k) {
+          if (k.id !== kingdom.id) return k;
+          var cleaned = Object.assign({}, k);
+          delete cleaned._startRegion;
+          delete cleaned._capitalCityName;
+          return cleaned;
+        });
+        return Object.assign({}, prev, { kingdoms: list });
+      });
+    }, [kingdom && kingdom._startRegion, data.regions && data.regions.length]);
 
     var setKingdom = useCallback(function(updater) {
       setData(function(prev) {
@@ -3141,7 +3257,7 @@ function getBannerSVG(cfg) {
           viewRole === "dm" && React.createElement("button", { style: Object.assign({}, S.btn, S.btnSmall), onClick: function() { setView("createNew"); } }, Plus && React.createElement(Plus, { size: 14 }), "New")
         ),
         view === "createNew" && viewRole === "dm" && React.createElement(CreateKingdomWizard, { data: data, onNav: onNav, onComplete: function(newK) { handleCreate(newK); setSelectedKingdomId(newK.id); setView("dashboard"); } }),
-        view === "dashboard" && React.createElement(KingdomDashboard, { kingdom: kingdom, stats: stats, onNavigate: setView, viewRole: viewRole }),
+        view === "dashboard" && React.createElement(KingdomDashboard, { kingdom: kingdom, stats: stats, onNavigate: setView, viewRole: viewRole, playerRole: playerRole }),
         view === "territory" && React.createElement(TerritoryPanel, { kingdom: kingdom, setKingdom: setKingdom, setData: setData, viewRole: viewRole, data: data, onBack: function() { setView("dashboard"); } }),
         view === "settlements" && React.createElement(SettlementPanel, { kingdom: kingdom, setKingdom: setKingdom, setData: setData, viewRole: viewRole, onBack: function() { setView("dashboard"); } }),
         view === "governance" && React.createElement(GovernancePanel, { kingdom: kingdom, setKingdom: setKingdom, viewRole: viewRole, data: data, onBack: function() { setView("dashboard"); } }),

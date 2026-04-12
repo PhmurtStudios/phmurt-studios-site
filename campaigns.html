@@ -55,7 +55,7 @@
   <script src="campaign-homebrew.js?v=187" defer></script>
   <script src="campaign-scheduler.js?v=187" defer></script>
   <script src="campaign-city-gen.js?v=1" defer></script>
-  <script src="campaign-kingdom.js?v=330" defer></script>
+  <script src="campaign-kingdom.js?v=332" defer></script>
   <script src="campaign-crafting.js?v=187" defer></script>
   <script src="campaign-invites.js?v=187" defer></script>
   <style>
@@ -1783,6 +1783,7 @@ const NEW_CAMPAIGN = (type = "traditional") => ({
   combatLedger: [],
   worldMap: { pendingLaunch: null, lastRoute: null, lastFocusedRegionId: null },
   battleIntegrationVersion: 1,
+  playerRole: "adventurer", // kingdom social role: ruler, noble, knight, merchant, adventurer, commoner, peasant
   activity: [{ time: "Just now", text: "Campaign created" }],
 });
 
@@ -5005,6 +5006,15 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
             }}>
               {data.campaignType === "live" ? "↯ Live Campaign" : "⸎ Traditional Campaign"}
             </span>
+            {data.campaignType === "live" && data.playerRole && (
+              <span style={{
+                fontSize:10, fontWeight:500, letterSpacing:"0.5px", textTransform:"uppercase",
+                padding:"4px 10px", borderRadius:"3px",
+                background: "rgba(201,160,50,0.12)", color: T.gold
+              }}>
+                {data.playerRole === "ruler" ? "👑 Ruler" : data.playerRole === "noble" ? "🏰 Noble" : data.playerRole === "knight" ? "⚔️ Knight" : data.playerRole === "merchant" ? "💰 Merchant" : data.playerRole === "adventurer" ? "🗡️ Adventurer" : data.playerRole === "commoner" ? "🔨 Artisan" : data.playerRole === "peasant" ? "🌾 Peasant" : data.playerRole}
+              </span>
+            )}
           </div>
         </div>
 
@@ -5013,7 +5023,7 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
           {[
             { label:"Sessions", val:data.sessionsPlayed, icon:BookOpen, accent:"var(--crimson)" },
             { label:"Quests", val:data.quests.length, icon:Scroll, accent:"#9b2c2c" },
-            { label:"Party", val:data.party.length, icon:Users, accent:"#58aaff" },
+            data.campaignType === "live" && data.kingdoms?.length ? { label:"Kingdom", val:data.kingdoms[0]?.name || "—", icon:Castle, accent:T.gold } : { label:"Party", val:data.party.length, icon:Users, accent:"#58aaff" },
             { label:"Regions", val:data.regions.length, icon:MapPin, accent:"#5a8f5a" },
           ].map((s,i) => (
             <div key={i} style={{
@@ -5538,7 +5548,7 @@ window.__CM = {
 /* Tab module loading state */
 const _tabModuleState = { dashboard: true, timeline: false, world: false, play: false };
 const _tabModulePromises = {};
-const _MODULE_VERSION = 194; // Bump to force re-fetch past service worker cache
+const _MODULE_VERSION = 195; // Bump to force re-fetch past service worker cache
 
 /**
  * Lazy-load a tab module: fetch JSX, transpile with Babel, execute.
@@ -5854,6 +5864,11 @@ function App() {
   const [createName, setCreateName] = useState("");
   const [createType, setCreateType] = useState("traditional");
   const [createModules, setCreateModules] = useState({});
+  const [createStep, setCreateStep] = useState(1); // 1=name/type, 2=kingdom setup (live only)
+  const [createKingdomName, setCreateKingdomName] = useState("");
+  const [createKingdomRegion, setCreateKingdomRegion] = useState("");
+  const [createKingdomCapital, setCreateKingdomCapital] = useState("");
+  const [createPlayerRole, setCreatePlayerRole] = useState("adventurer");
 
   // ── Lazy tab module readiness ──
   const [tabsReady, setTabsReady] = useState({
@@ -6097,13 +6112,57 @@ function App() {
     setCreateName("");
     setCreateType("traditional");
     setCreateModules({});
+    setCreateStep(1);
+    setCreateKingdomName("");
+    setCreateKingdomRegion("");
+    setCreateKingdomCapital("");
+    setCreatePlayerRole("adventurer");
     setCreateModalOpen(true);
   };
 
+  // Kingdom social role definitions
+  const KINGDOM_ROLES = [
+    { id: "ruler", label: "Ruler", icon: "👑", desc: "You are the sovereign. Oversee all kingdom affairs — territory, diplomacy, armies, and the treasury.", gameplay: "Full kingdom management, turn-based realm building, council appointments" },
+    { id: "noble", label: "Noble", icon: "🏰", desc: "A lord or lady of the court. You advise the crown and manage your own estate within the realm.", gameplay: "Estate management, political maneuvering, council duties, court intrigue" },
+    { id: "knight", label: "Knight", icon: "⚔️", desc: "A sworn sword of the kingdom. Lead armies, protect the realm, and earn glory on the battlefield.", gameplay: "Military campaigns, combat missions, tournaments, oath quests" },
+    { id: "merchant", label: "Merchant", icon: "💰", desc: "A trader and entrepreneur. Build a commercial empire, negotiate trade deals, and grow your fortune.", gameplay: "Trade routes, shop management, market speculation, guild politics" },
+    { id: "adventurer", label: "Adventurer", icon: "🗡️", desc: "A wandering hero. Take quests, explore dungeons, and build your reputation across the kingdom.", gameplay: "Quest board, dungeon crawls, bounty hunting, fame & renown tracking" },
+    { id: "commoner", label: "Artisan", icon: "🔨", desc: "A skilled craftsperson or professional. Master your trade and rise through the guild ranks.", gameplay: "Crafting, apprenticeships, guild advancement, community building" },
+    { id: "peasant", label: "Peasant", icon: "🌾", desc: "Starting from nothing. Farm the land, do odd jobs, and claw your way up from the bottom.", gameplay: "Farming, fetch quests, survival, slow progression through social ranks" },
+  ];
+
   const handleConfirmCreate = () => {
     if (!createName.trim()) return;
+    // For live campaigns, go to step 2 (kingdom setup) first
+    if (createType === "live" && createStep === 1) {
+      setCreateStep(2);
+      if (!createKingdomName) setCreateKingdomName(createName.trim() + " Kingdom");
+      return;
+    }
     const base = NEW_CAMPAIGN(createType);
-    if (createType === "live" && Object.keys(createModules).length > 0) {
+    if (createType === "live") {
+      // Auto-enable kingdom module + living world for live campaigns
+      Object.assign(base.modules, createModules, { kingdom: true, livingWorld: true, questBoard: true });
+      // Store the player role preference
+      base.playerRole = createPlayerRole;
+      // Auto-initialize kingdom if a name was provided
+      if (createKingdomName.trim() && window.initKingdom) {
+        const k = window.initKingdom(createKingdomName.trim(), null, undefined);
+        if (createKingdomRegion) {
+          k.territories[createKingdomRegion] = { id: createKingdomRegion, name: createKingdomRegion, terrain: "plains", claimedTurn: 0, improvements: [], improvementQueue: [] };
+          k.atlasRegions = [createKingdomRegion];
+          k._startRegion = createKingdomRegion;
+        }
+        if (createKingdomCapital.trim()) {
+          const capId = Date.now().toString();
+          k.settlements[capId] = { id: capId, name: createKingdomCapital.trim(), regionName: createKingdomRegion, population: 500, buildings: [], constructionQueue: [], foundedTurn: 0 };
+          k.capitalSettlement = capId;
+          k.totalPopulation = 500;
+          k._capitalCityName = createKingdomCapital.trim();
+        }
+        base.kingdoms = [k];
+      }
+    } else if (Object.keys(createModules).length > 0) {
       Object.assign(base.modules, createModules);
     }
     const newCamp = { id: "camp-" + Date.now(), data: { ...base, name: createName.trim() }, isExample: false };
@@ -6112,6 +6171,7 @@ function App() {
     setActiveTab("dashboard");
     setCreateModalOpen(false);
     setCreateModules({});
+    setCreateStep(1);
   };
 
   const handleDeleteCampaign = (id) => {
@@ -6537,7 +6597,7 @@ function App() {
         )}
         {activeTab === "kingdom" && (
           window.KingdomView
-            ? React.createElement(window.KingdomView, { data: data, setData: setData, viewRole: viewRole, onNav: setActiveTab })
+            ? React.createElement(window.KingdomView, { data: data, setData: setData, viewRole: viewRole, onNav: setActiveTab, playerRole: data.playerRole || "adventurer" })
             : <TabLoadingSpinner label="Kingdom" />
         )}
         {activeTab === "crafting" && (
@@ -6632,7 +6692,8 @@ function App() {
           <div style={{
             background:"rgba(20,18,14,0.98)", border:"1px solid rgba(212,67,58,0.25)",
             borderRadius:"8px", boxShadow:"0 20px 60px rgba(0,0,0,0.6)",
-            width:"90%", maxWidth:600, padding:0, overflow:"hidden"
+            width:"90%", maxWidth:600, maxHeight:"90vh", padding:0, overflow:"hidden",
+            display:"flex", flexDirection:"column"
           }}>
             {/* Header */}
             <div style={{
@@ -6640,15 +6701,33 @@ function App() {
               background:"rgba(212,67,58,0.05)"
             }}>
               <h2 style={{ fontFamily:T.heading, fontSize:22, color:T.text, margin:0, letterSpacing:"1px" }}>
-                Create New Campaign
+                {createStep === 2 ? "Kingdom Setup" : "Create New Campaign"}
               </h2>
               <p style={{ fontFamily:T.body, fontSize:13, color:T.textMuted, margin:"8px 0 0 0" }}>
-                Choose a campaign type to get started
+                {createStep === 2 ? "Establish your kingdom and choose your place in the realm" : "Choose a campaign type to get started"}
               </p>
             </div>
 
             {/* Content */}
-            <div style={{ padding:"24px" }}>
+            <div style={{ padding:"24px", overflowY:"auto", flex:1 }}>
+
+              {/* Step indicator */}
+              {createType === "live" && (
+                <div style={{ display:"flex", gap:8, marginBottom:20, justifyContent:"center" }}>
+                  {[1,2].map(s => (
+                    <div key={s} style={{
+                      width:28, height:28, borderRadius:"50%", display:"flex", alignItems:"center", justifyContent:"center",
+                      fontSize:11, fontFamily:T.ui, fontWeight:600,
+                      background: createStep >= s ? "rgba(94,224,154,0.15)" : "rgba(255,255,255,0.03)",
+                      border: createStep >= s ? "1px solid rgba(94,224,154,0.5)" : "1px solid rgba(255,255,255,0.1)",
+                      color: createStep >= s ? T.green : T.textFaint,
+                    }}>{s}</div>
+                  ))}
+                </div>
+              )}
+
+              {/* ── STEP 1: Name & Type ── */}
+              {createStep === 1 && <>
               {/* Name Input */}
               <div style={{ marginBottom:24 }}>
                 <label style={{ display:"block", fontFamily:T.heading, fontSize:12, color:T.gold, letterSpacing:"1px", textTransform:"uppercase", marginBottom:8 }}>
@@ -6722,15 +6801,15 @@ function App() {
                       Live Campaign
                     </h3>
                     <p style={{ fontFamily:T.body, fontSize:11, color:T.textMuted, margin:"0 0 12px 0", lineHeight:"1.5" }}>
-                      A living, breathing world. Kingdoms wage wars, forge alliances, and collapse in real-time.
+                      A kingdom-focused campaign. Rise from peasant to king — or rule from the start.
                     </p>
                     <div style={{ fontSize:10, color:T.textFaint, lineHeight:"1.6" }}>
-                      <div>• Everything in Traditional</div>
+                      <div>• Kingdom Growth & Management</div>
+                      <div>• Role-Based Gameplay (Ruler to Peasant)</div>
                       <div>• Living World Engine</div>
-                      <div>• Real-Time Kingdom Diplomacy</div>
-                      <div>• Multiplayer Sync</div>
-                      <div>• Time Skip</div>
-                      <div>• Dynamic Map Changes</div>
+                      <div>• Territory, Armies & Diplomacy</div>
+                      <div>• Dynamic Map & Factions</div>
+                      <div>• Quest Board & Progression</div>
                     </div>
                   </div>
                 </div>
@@ -6796,6 +6875,110 @@ function App() {
                   </div>
                 </div>
               )}
+              </>}
+
+              {/* ── STEP 2: Kingdom Setup (Live campaigns only) ── */}
+              {createStep === 2 && <>
+
+              {/* Your Role */}
+              <div style={{ marginBottom:24 }}>
+                <label style={{ display:"block", fontFamily:T.heading, fontSize:12, color:T.gold, letterSpacing:"1px", textTransform:"uppercase", marginBottom:6 }}>
+                  Your Role in the Kingdom
+                </label>
+                <p style={{ fontFamily:T.body, fontSize:11, color:T.textFaint, marginBottom:14, lineHeight:"1.5" }}>
+                  This shapes your starting position, available actions, and how you experience the world.
+                </p>
+                <div style={{ display:"grid", gridTemplateColumns:"1fr", gap:6 }}>
+                  {KINGDOM_ROLES.map(role => {
+                    const sel = createPlayerRole === role.id;
+                    return (
+                      <div key={role.id} onClick={() => setCreatePlayerRole(role.id)}
+                        style={{
+                          padding:"12px 14px", borderRadius:4, cursor:"pointer", transition:"all 0.2s",
+                          border: sel ? "1px solid rgba(94,224,154,0.5)" : "1px solid rgba(212,67,58,0.12)",
+                          background: sel ? "rgba(94,224,154,0.06)" : "rgba(255,255,255,0.01)",
+                          display:"flex", alignItems:"flex-start", gap:12,
+                        }}
+                      >
+                        <div style={{ fontSize:22, lineHeight:"1", flexShrink:0, marginTop:2 }}>{role.icon}</div>
+                        <div style={{ flex:1 }}>
+                          <div style={{ fontSize:13, color: sel ? T.text : T.textMuted, fontWeight:600, fontFamily:T.heading, letterSpacing:"0.5px" }}>
+                            {role.label}
+                          </div>
+                          <div style={{ fontSize:11, color:T.textFaint, marginTop:3, lineHeight:"1.5" }}>{role.desc}</div>
+                          <div style={{ fontSize:9, color: sel ? "rgba(94,224,154,0.7)" : T.textFaint, marginTop:4, fontStyle:"italic", letterSpacing:"0.3px" }}>{role.gameplay}</div>
+                        </div>
+                        <div style={{
+                          width:18, height:18, borderRadius:"50%", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center",
+                          background: sel ? "rgba(94,224,154,0.2)" : "rgba(255,255,255,0.05)",
+                          border: sel ? "1px solid rgba(94,224,154,0.5)" : "1px solid rgba(212,67,58,0.15)",
+                          fontSize:10, marginTop:4,
+                        }}>
+                          {sel ? "✓" : ""}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Kingdom Name */}
+              <div style={{ marginBottom:20 }}>
+                <label style={{ display:"block", fontFamily:T.heading, fontSize:12, color:T.gold, letterSpacing:"1px", textTransform:"uppercase", marginBottom:8 }}>
+                  Kingdom Name
+                </label>
+                <input
+                  type="text"
+                  value={createKingdomName}
+                  onChange={e => setCreateKingdomName(e.target.value)}
+                  placeholder="e.g., The Iron Dominion"
+                  style={{
+                    width:"100%", padding:"12px 14px", fontFamily:T.body, fontSize:14,
+                    background:"rgba(255,255,255,0.03)", border:"1px solid rgba(212,67,58,0.2)",
+                    borderRadius:"6px", color:T.text, outline:"none", boxSizing:"border-box"
+                  }}
+                />
+              </div>
+
+              {/* Starting Region */}
+              <div style={{ marginBottom:20 }}>
+                <label style={{ display:"block", fontFamily:T.heading, fontSize:12, color:T.gold, letterSpacing:"1px", textTransform:"uppercase", marginBottom:8 }}>
+                  Starting Region <span style={{ fontSize:10, opacity:0.5, textTransform:"none" }}>(optional — can set later)</span>
+                </label>
+                <select
+                  value={createKingdomRegion}
+                  onChange={e => { setCreateKingdomRegion(e.target.value); setCreateKingdomCapital(""); }}
+                  style={{
+                    width:"100%", padding:"10px 12px", fontFamily:T.body, fontSize:14,
+                    background:"rgba(255,255,255,0.03)", border:"1px solid rgba(212,67,58,0.2)",
+                    borderRadius:"6px", color:T.text, outline:"none", boxSizing:"border-box", appearance:"auto"
+                  }}
+                >
+                  <option value="">— Choose later —</option>
+                  {(window.__CM?.ATLAS_PROVINCES || []).map(p => (
+                    <option key={p.id} value={p.name}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Capital City Name */}
+              <div style={{ marginBottom:12 }}>
+                <label style={{ display:"block", fontFamily:T.heading, fontSize:12, color:T.gold, letterSpacing:"1px", textTransform:"uppercase", marginBottom:8 }}>
+                  Capital City <span style={{ fontSize:10, opacity:0.5, textTransform:"none" }}>(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={createKingdomCapital}
+                  onChange={e => setCreateKingdomCapital(e.target.value)}
+                  placeholder="e.g., Thornwall Keep"
+                  style={{
+                    width:"100%", padding:"12px 14px", fontFamily:T.body, fontSize:14,
+                    background:"rgba(255,255,255,0.03)", border:"1px solid rgba(212,67,58,0.2)",
+                    borderRadius:"6px", color:T.text, outline:"none", boxSizing:"border-box"
+                  }}
+                />
+              </div>
+              </>}
             </div>
 
             {/* Footer */}
@@ -6803,8 +6986,21 @@ function App() {
               padding:"16px 24px", borderTop:"1px solid rgba(212,67,58,0.15)",
               display:"flex", gap:10, justifyContent:"flex-end"
             }}>
+              {createStep === 2 && (
+                <button
+                  onClick={() => setCreateStep(1)}
+                  style={{
+                    padding:"10px 18px", fontFamily:T.ui, fontSize:11, letterSpacing:"1px",
+                    background:"transparent", border:`1px solid ${T.border}`, borderRadius:"4px",
+                    color:T.textFaint, cursor:"pointer", transition:"all 0.2s", textTransform:"uppercase",
+                    marginRight:"auto"
+                  }}
+                >
+                  Back
+                </button>
+              )}
               <button
-                onClick={() => setCreateModalOpen(false)}
+                onClick={() => { setCreateModalOpen(false); setCreateStep(1); }}
                 style={{
                   padding:"10px 18px", fontFamily:T.ui, fontSize:11, letterSpacing:"1px",
                   background:"transparent", border:`1px solid ${T.border}`, borderRadius:"4px",
@@ -6815,16 +7011,19 @@ function App() {
               </button>
               <button
                 onClick={handleConfirmCreate}
-                disabled={!createName.trim()}
+                disabled={!createName.trim() || (createStep === 2 && !createKingdomName.trim())}
                 style={{
                   padding:"10px 24px", fontFamily:T.ui, fontSize:11, letterSpacing:"1px",
-                  background:"rgba(212,67,58,0.15)", border:"1px solid rgba(212,67,58,0.4)", borderRadius:"4px",
-                  color:"#d4433a", cursor: createName.trim() ? "pointer" : "not-allowed", transition:"all 0.2s",
+                  background: createStep === 2 ? "rgba(94,224,154,0.15)" : "rgba(212,67,58,0.15)",
+                  border: createStep === 2 ? "1px solid rgba(94,224,154,0.4)" : "1px solid rgba(212,67,58,0.4)",
+                  borderRadius:"4px",
+                  color: createStep === 2 ? T.green : "#d4433a",
+                  cursor: createName.trim() ? "pointer" : "not-allowed", transition:"all 0.2s",
                   textTransform:"uppercase", fontWeight:500,
                   opacity: createName.trim() ? 1 : 0.5
                 }}
               >
-                Create Campaign
+                {createType === "live" && createStep === 1 ? "Next: Kingdom Setup" : createStep === 2 ? "Establish Kingdom" : "Create Campaign"}
               </button>
             </div>
           </div>
