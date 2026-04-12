@@ -166,7 +166,7 @@ function DashboardPage({ onNavigate }) {
     const [users, chars, camps, visits, recent] = await Promise.all([
       db.from('profiles').select('id', { count: 'exact' }).limit(0),
       db.from('characters').select('id', { count: 'exact' }).limit(0),
-      db.from('campaigns').select('id', { count: 'exact' }).limit(0).catch(() => ({ count: null, error: null })),
+      Promise.resolve(db.from('campaigns').select('id', { count: 'exact' }).limit(0)).catch(() => ({ count: null, error: null })),
       db.from('site_visits').select('id', { count: 'exact' }).limit(0).gte('visited_at', todayUTC),
       db.from('profiles').select('id, name, email, created_at, is_admin, is_banned').order('created_at', { ascending: false }).limit(5),
     ]);
@@ -176,10 +176,10 @@ function DashboardPage({ onNavigate }) {
     if (visits.error) throw visits.error;
     if (recent.error) throw recent.error;
     return {
-      users:   users.count  || 0,
-      chars:   chars.count  || 0,
-      camps:   (camps && camps.count) || '—',
-      visits:  visits.count || 0,
+      users:   users.count  ?? 0,
+      chars:   chars.count  ?? 0,
+      camps:   (camps && camps.count != null) ? camps.count : '—',
+      visits:  visits.count ?? 0,
       recent:  recent.data  || [],
     };
   });
@@ -297,7 +297,7 @@ function CampaignsPage({ addToast, canDeleteContent }) {
   const { data: campaigns, loading, error, refetch } = useAdminQuery(async (db) => {
     const { data, error } = await db
       .from('campaigns')
-      .select('id, data, owner_id, name, system, flagged, flag_reason, created_at, updated_at')
+      .select('id, data, owner_id, system, flagged, flag_reason, created_at, updated_at')
       .order('updated_at', { ascending: false })
       .limit(200);
     if (error) throw error;
@@ -558,7 +558,7 @@ function UsersPage({ addToast, canManageAdmins }) {
     if (!getSb()) return;
     const [chars, camps, visits] = await Promise.all([
       getSb().from('characters').select('id, name, class, race, level, builder_type, updated_at').eq('owner_id', u.id).order('updated_at', { ascending: false }).limit(20).then(r => r.data || []).catch(() => []),
-      getSb().from('campaigns').select('id, name, data, system, updated_at').eq('owner_id', u.id).order('updated_at', { ascending: false }).limit(20).then(r => r.data || []).catch(() => []),
+      getSb().from('campaigns').select('id, data, system, updated_at').eq('owner_id', u.id).order('updated_at', { ascending: false }).limit(20).then(r => r.data || []).catch(() => []),
       getSb().from('site_visits').select('page, visited_at').eq('user_id', u.id).order('visited_at', { ascending: false }).limit(30).then(r => r.data || []).catch(() => []),
     ]);
     setUserChars(chars);
@@ -1725,7 +1725,7 @@ function FlaggedContentPage({ addToast, canDeleteContent }) {
   const { data, loading, error, refetch } = useAdminQuery(async (db) => {
     const [chars, camps] = await Promise.all([
       db.from('characters').select('id, owner_id, name, race, class, level, data, flagged, flag_reason, updated_at').eq('flagged', true).order('updated_at', { ascending: false }).limit(100).then(r => r.data || []).catch(() => []),
-      db.from('campaigns').select('id, owner_id, name, data, flagged, flag_reason, updated_at').eq('flagged', true).order('updated_at', { ascending: false }).limit(100).then(r => r.data || []).catch(() => []),
+      db.from('campaigns').select('id, owner_id, data, flagged, flag_reason, updated_at').eq('flagged', true).order('updated_at', { ascending: false }).limit(100).then(r => r.data || []).catch(() => []),
     ]);
     return { characters: chars, campaigns: camps };
   });
@@ -1734,23 +1734,27 @@ function FlaggedContentPage({ addToast, canDeleteContent }) {
   const total = flagged.characters.length + flagged.campaigns.length;
 
   async function unflagChar(id) {
-    await getSb().from('characters').update({ flagged: false, flag_reason: null }).eq('id', id);
+    const { error } = await getSb().from('characters').update({ flagged: false, flag_reason: null }).eq('id', id);
+    if (error) { addToast('Failed to unflag character: ' + error.message, 'error'); return; }
     addToast('Character unflagged.', 'success'); refetch();
   }
   async function unflagCamp(id) {
-    await getSb().from('campaigns').update({ flagged: false, flag_reason: null }).eq('id', id);
+    const { error } = await getSb().from('campaigns').update({ flagged: false, flag_reason: null }).eq('id', id);
+    if (error) { addToast('Failed to unflag campaign: ' + error.message, 'error'); return; }
     addToast('Campaign unflagged.', 'success'); refetch();
   }
   async function deleteChar(id) {
     if (!canDeleteContent) return;
     if (!confirm('Delete this character?')) return;
-    await getSb().from('characters').delete().eq('id', id);
+    const { error } = await getSb().from('characters').delete().eq('id', id);
+    if (error) { addToast('Failed to delete character: ' + error.message, 'error'); return; }
     addToast('Character deleted.', 'success'); refetch();
   }
   async function deleteCamp(id) {
     if (!canDeleteContent) return;
     if (!confirm('Delete this campaign?')) return;
-    await getSb().from('campaigns').delete().eq('id', id);
+    const { error } = await getSb().from('campaigns').delete().eq('id', id);
+    if (error) { addToast('Failed to delete campaign: ' + error.message, 'error'); return; }
     addToast('Campaign deleted.', 'success'); refetch();
   }
 
@@ -1931,7 +1935,8 @@ function EngagementPage() {
       db.from('campaigns').select('id, owner_id, data, system, created_at').order('created_at', { ascending: false }).limit(1000).then(r => r.data || []).catch(() => []),
       db.from('site_visits').select('user_id, session_id, page, visited_at').gte('visited_at', cutoff).order('visited_at', { ascending: false }).limit(10000).then(r => r.data || []).catch(() => []),
     ]);
-    return { profiles, chars, camps, visits };
+    const truncated = profiles.length >= 2000 || chars.length >= 2000 || camps.length >= 1000 || visits.length >= 10000;
+    return { profiles, chars, camps, visits, truncated };
   }, [rangeDays]);
 
   const stats = useMemo(() => {
@@ -2024,6 +2029,12 @@ function EngagementPage() {
       {loading && <div style={{padding:'40px',textAlign:'center',color:'var(--text-muted)'}}>Loading…</div>}
       {error && <div style={{padding:'20px',color:'var(--danger)'}}>{error}</div>}
 
+      {!loading && !error && data && data.truncated && (
+        <div style={{padding:'10px 16px',marginBottom:'16px',background:'rgba(212,167,58,0.1)',border:'1px solid rgba(212,167,58,0.3)',borderRadius:6,fontSize:'12px',color:'var(--text-muted)',fontFamily:'Spectral,serif'}}>
+          ⚠ Some data was truncated due to query limits. Metrics shown may be approximate for large datasets.
+        </div>
+      )}
+
       {!loading && !error && stats && (<>
         <div className="stat-grid" style={{marginBottom:'20px'}}>
           <div className="stat-card"><div className="stat-label">Total Users</div><div className="stat-value">{stats.totalUsers}</div></div>
@@ -2040,9 +2051,9 @@ function EngagementPage() {
             <div className="card-body">
               {[
                 { label: 'Signed Up', value: stats.totalUsers, pct: 100 },
-                { label: 'Created a Character', value: stats.withChar, pct: stats.totalUsers ? Math.round(stats.withChar / stats.totalUsers * 100) : 0 },
-                { label: 'Started a Campaign', value: stats.withCamp, pct: stats.totalUsers ? Math.round(stats.withCamp / stats.totalUsers * 100) : 0 },
-                { label: 'Both', value: stats.withBoth, pct: stats.totalUsers ? Math.round(stats.withBoth / stats.totalUsers * 100) : 0 },
+                { label: 'Created a Character', value: stats.withChar, pct: stats.totalUsers ? Math.min(100, Math.round(stats.withChar / stats.totalUsers * 100)) : 0 },
+                { label: 'Started a Campaign', value: stats.withCamp, pct: stats.totalUsers ? Math.min(100, Math.round(stats.withCamp / stats.totalUsers * 100)) : 0 },
+                { label: 'Both', value: stats.withBoth, pct: stats.totalUsers ? Math.min(100, Math.round(stats.withBoth / stats.totalUsers * 100)) : 0 },
               ].map((step, i) => (
                 <div key={i} style={{marginBottom:'12px'}}>
                   <div style={{display:'flex',justifyContent:'space-between',fontSize:'13px',marginBottom:'4px'}}>
@@ -2466,10 +2477,10 @@ function DataExportPage({ addToast }) {
           break;
         }
         case 'campaigns': {
-          const { data, error } = await getSb().from('campaigns').select('id, owner_id, name, system, flagged, flag_reason, created_at, updated_at').order('updated_at', { ascending: false }).limit(10000);
+          const { data, error } = await getSb().from('campaigns').select('id, owner_id, data, system, flagged, flag_reason, created_at, updated_at').order('updated_at', { ascending: false }).limit(10000);
           if (error) throw error;
-          csv = toCSV(data, [
-            { key: 'id', label: 'Campaign ID' }, { key: 'owner_id', label: 'Owner ID' }, { key: 'name', label: 'Name' },
+          csv = toCSV(data.map(c => ({ ...c, campaign_name: (c.data && c.data.name) || '(unnamed)' })), [
+            { key: 'id', label: 'Campaign ID' }, { key: 'owner_id', label: 'Owner ID' }, { key: 'campaign_name', label: 'Name' },
             { key: 'system', label: 'System' }, { key: 'flagged', label: 'Flagged' }, { key: 'flag_reason', label: 'Flag Reason' },
             { key: 'created_at', label: 'Created' }, { key: 'updated_at', label: 'Updated' },
           ]);
@@ -2681,10 +2692,12 @@ function TierManagementPage({ addToast }) {
     setSaving(true);
     try {
       const { data: sess } = await getSb().auth.getSession();
-      await Promise.all([
+      const [defsResult, keysResult] = await Promise.all([
         getSb().from('site_settings').upsert({ key: 'all_feature_definitions', value: JSON.stringify(updatedDefs), updated_by: sess?.session?.user?.id || null, updated_at: new Date().toISOString() }, { onConflict: 'key' }),
         getSb().from('site_settings').upsert({ key: 'free_feature_keys', value: JSON.stringify(updatedFreeKeys), updated_by: sess?.session?.user?.id || null, updated_at: new Date().toISOString() }, { onConflict: 'key' }),
       ]);
+      if (defsResult.error) throw defsResult.error;
+      if (keysResult.error) throw keysResult.error;
       logAuditEvent('remove_feature', 'setting', featureKey, {});
       addToast(`Removed feature: ${featureKey}`, 'success');
       refetch();
@@ -3249,9 +3262,9 @@ function CleanupPage({ addToast }) {
         getSb().from('admin_audit_log').select('id', { count: 'exact' }).limit(0),
       ]);
       setManualCounts({
-        errors: errors.count || 0,
-        visits: visits.count || 0,
-        audit: audit.count || 0,
+        errors: errors.count ?? 0,
+        visits: visits.count ?? 0,
+        audit: audit.count ?? 0,
       });
     } catch (e) { /* ignore */ }
   }
@@ -3713,14 +3726,14 @@ function StoragePage({ addToast }) {
     (async () => {
       try {
         // Get all users
-        const { data: profiles, error: pErr } = await getSb().from('profiles').select('id, name, email, avatar_url, created_at');
+        const { data: profiles, error: pErr } = await getSb().from('profiles').select('id, name, email, created_at');
         if (pErr) throw pErr;
         if (!profiles) { setUserBreakdown([]); setLoadingUsers(false); return; }
 
         // Count characters and campaigns per user to estimate data footprint
         const [charCounts, campCounts] = await Promise.all([
           getSb().from('characters').select('owner_id'),
-          getSb().from('campaigns').select('owner_id').catch(() => ({ data: [] })),
+          Promise.resolve(getSb().from('campaigns').select('owner_id')).catch(() => ({ data: [] })),
         ]);
 
         const charMap = {};
@@ -3778,7 +3791,7 @@ function StoragePage({ addToast }) {
             id: p.id,
             name: p.name || p.email || 'Unknown',
             email: p.email || '',
-            avatarUrl: p.avatar_url,
+            avatarUrl: null,
             createdAt: p.created_at,
             characters: charCount,
             campaigns: campCount,
