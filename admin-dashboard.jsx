@@ -8,8 +8,10 @@ const API_BASE_URL = null; // Set to your .NET backend URL when deployed, e.g. '
 // ═══════════════════════════════
 // MOCK DATA
 // ═══════════════════════════════
-// ── Supabase reference ──────────────────────────────────────────────
-const sb = (typeof phmurtSupabase !== 'undefined' && phmurtSupabase) ? phmurtSupabase : null;
+// ── Supabase reference (always read live — never snapshot at script parse time) ──
+function getSb() {
+  return (typeof phmurtSupabase !== 'undefined' && phmurtSupabase) ? phmurtSupabase : null;
+}
 
 // ── Admin data-fetching hook ────────────────────────────────────────
 function useAdminQuery(fetchFn, deps = []) {
@@ -18,13 +20,14 @@ function useAdminQuery(fetchFn, deps = []) {
   const [error, setError]   = useState(null);
 
   const fetch_ = useCallback(() => {
-    if (!sb) {
+    const client = getSb();
+    if (!client) {
       setLoading(false);
       setError('Supabase connection failed. The Supabase JS library may not have loaded. Check your network connection and reload the page.');
       return;
     }
     setLoading(true);
-    fetchFn(sb)
+    fetchFn(client)
       .then(d  => { setData(d); setError(null); })
       .catch(e => {
         const msg = e.message || 'Load failed';
@@ -100,11 +103,11 @@ function timeAgo(iso) {
 // AUDIT LOG HELPER
 // ═══════════════════════════════
 async function logAuditEvent(action, targetType, targetId, details = {}) {
-  if (!sb) return;
+  if (!getSb()) return;
   try {
-    const { data: { session } } = await sb.auth.getSession();
+    const { data: { session } } = await getSb().auth.getSession();
     const user = session && session.user;
-    await sb.from('admin_audit_log').insert({
+    await getSb().from('admin_audit_log').insert({
       admin_id: user ? user.id : null,
       admin_email: user ? user.email : null,
       action,
@@ -163,7 +166,7 @@ function DashboardPage({ onNavigate }) {
     const [users, chars, camps, visits, recent] = await Promise.all([
       db.from('profiles').select('id', { count: 'exact' }).limit(0),
       db.from('characters').select('id', { count: 'exact' }).limit(0),
-      Promise.resolve(db.from('campaigns').select('id', { count: 'exact' }).limit(0)).catch(() => ({ count: null, error: null })),
+      db.from('campaigns').select('id', { count: 'exact' }).limit(0).catch(() => ({ count: null, error: null })),
       db.from('site_visits').select('id', { count: 'exact' }).limit(0).gte('visited_at', todayUTC),
       db.from('profiles').select('id, name, email, created_at, is_admin, is_banned').order('created_at', { ascending: false }).limit(5),
     ]);
@@ -260,11 +263,11 @@ function DashboardPage({ onNavigate }) {
           <div className="card-header"><h2>Platform Status</h2></div>
           <div className="card-body">
             {[
-              { label: 'Auth Backend',         value: sb ? 'Supabase ✓' : 'Local (not configured)', ok: !!sb },
-              { label: 'Session Persistence',  value: 'Supabase session (no local auth fallback)', ok: !!sb },
+              { label: 'Auth Backend',         value: getSb() ? 'Supabase ✓' : 'Local (not configured)', ok: !!getSb() },
+              { label: 'Session Persistence',  value: 'Supabase session (no local auth fallback)', ok: !!getSb() },
               { label: 'Character Cloud Sync', value: 'Enabled', ok: true },
               { label: 'Campaign Cloud Sync',  value: 'Enabled', ok: true },
-              { label: 'Page Visit Tracking',  value: sb ? 'Enabled' : 'Unavailable', ok: !!sb },
+              { label: 'Page Visit Tracking',  value: getSb() ? 'Enabled' : 'Unavailable', ok: !!getSb() },
               { label: 'Admin Gate',           value: 'Image key + role verification', ok: true },
               { label: 'Sign-in Throttling',   value: '8 attempts / 10 min window', ok: true },
             ].map((item, i) => (
@@ -312,7 +315,7 @@ function CampaignsPage({ addToast, canDeleteContent }) {
   async function deleteCampaign(id) {
     if (!canDeleteContent) { addToast('Only superusers can delete campaigns.', 'error'); return; }
     if (!confirm('Delete this campaign? This cannot be undone.')) return;
-    const { error } = await sb.from('campaigns').delete().eq('id', id);
+    const { error } = await getSb().from('campaigns').delete().eq('id', id);
     if (error) { addToast('Delete failed. Please check your permissions and try again.', 'error'); return; }
     logAuditEvent('delete_campaign', 'campaign', id, { name: selected?.name });
     addToast('Campaign deleted.', 'success');
@@ -322,7 +325,7 @@ function CampaignsPage({ addToast, canDeleteContent }) {
 
   async function toggleFlag(c, reason) {
     const next = !c.flagged;
-    const { error } = await sb.from('campaigns').update({ flagged: next, flag_reason: next ? (reason || 'Flagged by admin') : null }).eq('id', c.id);
+    const { error } = await getSb().from('campaigns').update({ flagged: next, flag_reason: next ? (reason || 'Flagged by admin') : null }).eq('id', c.id);
     if (error) { addToast('Flag update failed. Please try again.', 'error'); return; }
     logAuditEvent(next ? 'flag_campaign' : 'unflag_campaign', 'campaign', c.id, { reason: reason || 'Flagged by admin' });
     addToast(next ? 'Campaign flagged.' : 'Flag removed.', next ? 'error' : 'success');
@@ -332,7 +335,7 @@ function CampaignsPage({ addToast, canDeleteContent }) {
   async function bulkFlag() {
     if (selectedIds.size === 0) return;
     const ids = Array.from(selectedIds);
-    const { error } = await sb.from('campaigns').update({ flagged: true, flag_reason: 'Bulk flagged by admin' }).in('id', ids);
+    const { error } = await getSb().from('campaigns').update({ flagged: true, flag_reason: 'Bulk flagged by admin' }).in('id', ids);
     if (error) { addToast('Bulk flag failed.', 'error'); return; }
     addToast(ids.length + ' campaigns flagged.', 'success');
     setSelectedIds(new Set()); refetch();
@@ -342,7 +345,7 @@ function CampaignsPage({ addToast, canDeleteContent }) {
     if (selectedIds.size === 0 || !canDeleteContent) return;
     if (!confirm('Delete ' + selectedIds.size + ' campaigns? This cannot be undone.')) return;
     const ids = Array.from(selectedIds);
-    const { error } = await sb.from('campaigns').delete().in('id', ids);
+    const { error } = await getSb().from('campaigns').delete().in('id', ids);
     if (error) { addToast('Bulk delete failed.', 'error'); return; }
     addToast(ids.length + ' campaigns deleted.', 'success');
     setSelectedIds(new Set()); refetch();
@@ -552,11 +555,11 @@ function UsersPage({ addToast, canManageAdmins }) {
   async function selectUser(u) {
     setSelectedUser(u);
     setNoteText(u.admin_notes || '');
-    if (!sb) return;
+    if (!getSb()) return;
     const [chars, camps, visits] = await Promise.all([
-      sb.from('characters').select('id, name, class, race, level, builder_type, updated_at').eq('owner_id', u.id).order('updated_at', { ascending: false }).limit(20).then(r => r.data || []).catch(() => []),
-      Promise.resolve(sb.from('campaigns').select('id, name, data, system, updated_at').eq('owner_id', u.id).order('updated_at', { ascending: false }).limit(20)).then(r => r.data || []).catch(() => []),
-      sb.from('site_visits').select('page, visited_at').eq('user_id', u.id).order('visited_at', { ascending: false }).limit(30).then(r => r.data || []).catch(() => []),
+      getSb().from('characters').select('id, name, class, race, level, builder_type, updated_at').eq('owner_id', u.id).order('updated_at', { ascending: false }).limit(20).then(r => r.data || []).catch(() => []),
+      getSb().from('campaigns').select('id, name, data, system, updated_at').eq('owner_id', u.id).order('updated_at', { ascending: false }).limit(20).then(r => r.data || []).catch(() => []),
+      getSb().from('site_visits').select('page, visited_at').eq('user_id', u.id).order('visited_at', { ascending: false }).limit(30).then(r => r.data || []).catch(() => []),
     ]);
     setUserChars(chars);
     setUserCamps(camps);
@@ -567,7 +570,7 @@ function UsersPage({ addToast, canManageAdmins }) {
     if (!canManageAdmins) { addToast('Superuser privileges required.', 'error'); return; }
     if (user.is_superuser) { addToast('Superuser accounts cannot be modified.', 'error'); return; }
     const next = !user.is_banned;
-    const { error } = await sb.from('profiles').update({ is_banned: next }).eq('id', user.id);
+    const { error } = await getSb().from('profiles').update({ is_banned: next }).eq('id', user.id);
     if (error) { addToast('Update failed. Please check your permissions and try again.', 'error'); return; }
     logAuditEvent(next ? 'ban_user' : 'unban_user', 'user', user.id, { email: user.email, name: user.name });
     addToast(next ? 'User banned.' : 'User unbanned.', next ? 'error' : 'success');
@@ -578,7 +581,7 @@ function UsersPage({ addToast, canManageAdmins }) {
     if (!canManageAdmins) { addToast('Only superusers can change admin roles.', 'error'); return; }
     if (user.is_superuser) { addToast('Superuser accounts cannot be modified.', 'error'); return; }
     const next = !user.is_admin;
-    const { error } = await sb.from('profiles').update({ is_admin: next }).eq('id', user.id);
+    const { error } = await getSb().from('profiles').update({ is_admin: next }).eq('id', user.id);
     if (error) { addToast('Update failed. Please check your permissions and try again.', 'error'); return; }
     logAuditEvent(next ? 'grant_admin' : 'revoke_admin', 'user', user.id, { email: user.email });
     addToast(next ? 'Admin privileges granted.' : 'Admin privileges removed.', 'success');
@@ -589,7 +592,7 @@ function UsersPage({ addToast, canManageAdmins }) {
     if (!canManageAdmins) { addToast('Only superusers can delete users.', 'error'); return; }
     if (user && user.is_superuser) { addToast('Superuser accounts cannot be deleted.', 'error'); return; }
     if (!confirm('Delete this profile row? If auth/user data exists elsewhere, remove it separately.')) return;
-    const { error } = await sb.from('profiles').delete().eq('id', id);
+    const { error } = await getSb().from('profiles').delete().eq('id', id);
     if (error) { addToast('Delete failed. Please check your permissions and try again.', 'error'); return; }
     logAuditEvent('delete_user', 'user', id, { email: user?.email, name: user?.name });
     addToast('User deleted.', 'success');
@@ -597,17 +600,17 @@ function UsersPage({ addToast, canManageAdmins }) {
   }
 
   async function sendPasswordReset(email) {
-    if (!sb) { addToast('Supabase not configured.', 'error'); return; }
-    const { error } = await sb.auth.resetPasswordForEmail(email);
+    if (!getSb()) { addToast('Supabase not configured.', 'error'); return; }
+    const { error } = await getSb().auth.resetPasswordForEmail(email);
     if (error) { addToast('Reset email failed. Please try again.', 'error'); return; }
     logAuditEvent('password_reset', 'user', null, { email });
     addToast('Password reset email sent.', 'success');
   }
 
   async function saveNote() {
-    if (!selectedUser || !sb) return;
+    if (!selectedUser || !getSb()) return;
     setSavingNote(true);
-    const { error } = await sb.from('profiles').update({ admin_notes: noteText || null }).eq('id', selectedUser.id);
+    const { error } = await getSb().from('profiles').update({ admin_notes: noteText || null }).eq('id', selectedUser.id);
     setSavingNote(false);
     if (error) { addToast('Failed to save note. Please try again.', 'error'); return; }
     addToast('Note saved.', 'success');
@@ -791,7 +794,7 @@ function CharactersPage({ addToast, canDeleteContent }) {
   async function deleteCharacter(id) {
     if (!canDeleteContent) { addToast('Only superusers can delete characters.', 'error'); return; }
     if (!confirm('Delete this character sheet? This cannot be undone.')) return;
-    const { error } = await sb.from('characters').delete().eq('id', id);
+    const { error } = await getSb().from('characters').delete().eq('id', id);
     if (error) { addToast('Delete failed. Please check your permissions and try again.', 'error'); return; }
     logAuditEvent('delete_character', 'character', id, { name: selected?.name });
     addToast('Character deleted.', 'success');
@@ -801,7 +804,7 @@ function CharactersPage({ addToast, canDeleteContent }) {
 
   async function toggleFlag(c, reason) {
     const next = !c.flagged;
-    const { error } = await sb.from('characters').update({ flagged: next, flag_reason: next ? (reason || 'Flagged by admin') : null }).eq('id', c.id);
+    const { error } = await getSb().from('characters').update({ flagged: next, flag_reason: next ? (reason || 'Flagged by admin') : null }).eq('id', c.id);
     if (error) { addToast('Flag update failed. Please try again.', 'error'); return; }
     logAuditEvent(next ? 'flag_character' : 'unflag_character', 'character', c.id, { reason: reason || 'Flagged by admin' });
     addToast(next ? 'Character flagged.' : 'Flag removed.', next ? 'error' : 'success');
@@ -811,7 +814,7 @@ function CharactersPage({ addToast, canDeleteContent }) {
   async function bulkFlag() {
     if (selectedIds.size === 0) return;
     const ids = Array.from(selectedIds);
-    const { error } = await sb.from('characters').update({ flagged: true, flag_reason: 'Bulk flagged by admin' }).in('id', ids);
+    const { error } = await getSb().from('characters').update({ flagged: true, flag_reason: 'Bulk flagged by admin' }).in('id', ids);
     if (error) { addToast('Bulk flag failed. Please try again.', 'error'); return; }
     logAuditEvent('bulk_flag_characters', 'character', null, { count: ids.length, ids });
     addToast(ids.length + ' characters flagged.', 'success');
@@ -823,7 +826,7 @@ function CharactersPage({ addToast, canDeleteContent }) {
     if (selectedIds.size === 0 || !canDeleteContent) return;
     if (!confirm('Delete ' + selectedIds.size + ' characters? This cannot be undone.')) return;
     const ids = Array.from(selectedIds);
-    const { error } = await sb.from('characters').delete().in('id', ids);
+    const { error } = await getSb().from('characters').delete().in('id', ids);
     if (error) { addToast('Bulk delete failed. Please check your permissions and try again.', 'error'); return; }
     addToast(ids.length + ' characters deleted.', 'success');
     setSelectedIds(new Set());
@@ -1442,9 +1445,9 @@ function ManageAdminsCard({ addToast, canManageAdmins }) {
   const [working, setWorking]   = useState(false);
 
   function fetchAdmins() {
-    if (!sb) { setLoading(false); return; }
+    if (!getSb()) { setLoading(false); return; }
     setLoading(true);
-    sb.from('profiles').select('*')
+    getSb().from('profiles').select('*')
       .or('is_admin.eq.true,is_superuser.eq.true').order('email')
       .then(r => { setAdmins(r.data || []); setLoading(false); })
       .catch(() => setLoading(false));
@@ -1453,7 +1456,7 @@ function ManageAdminsCard({ addToast, canManageAdmins }) {
 
   async function grantAdmin() {
     if (!canManageAdmins) { addToast('Only superusers can grant admin access.', 'error'); return; }
-    if (!sb) { addToast('Supabase not configured.', 'error'); return; }
+    if (!getSb()) { addToast('Supabase not configured.', 'error'); return; }
     const addr = email.trim().toLowerCase();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(addr)) {
       addToast('Please enter a valid email address.', 'error');
@@ -1462,12 +1465,12 @@ function ManageAdminsCard({ addToast, canManageAdmins }) {
     if (!addr) { addToast('Enter an email address.', 'error'); return; }
     setWorking(true);
     // Look up the user in profiles by email
-    const { data: rows, error } = await sb.from('profiles').select('id, email').eq('email', addr).limit(1);
+    const { data: rows, error } = await getSb().from('profiles').select('id, email').eq('email', addr).limit(1);
     if (error || !rows || rows.length === 0) {
       addToast('No account found with that email. They must sign up first.', 'error');
       setWorking(false); return;
     }
-    const { error: upErr } = await sb.from('profiles').update({ is_admin: true }).eq('id', rows[0].id);
+    const { error: upErr } = await getSb().from('profiles').update({ is_admin: true }).eq('id', rows[0].id);
     if (upErr) { addToast('Failed to grant admin. Please try again.', 'error'); }
     else       { addToast('Admin privileges granted.', 'success'); setEmail(''); fetchAdmins(); }
     setWorking(false);
@@ -1475,9 +1478,9 @@ function ManageAdminsCard({ addToast, canManageAdmins }) {
 
   async function revokeAdmin(user) {
     if (!canManageAdmins) { addToast('Only superusers can revoke admin access.', 'error'); return; }
-    if (!sb) return;
+    if (!getSb()) return;
     if (!confirm('Remove admin access from this account?')) return;
-    const { error } = await sb.from('profiles').update({ is_admin: false }).eq('id', user.id);
+    const { error } = await getSb().from('profiles').update({ is_admin: false }).eq('id', user.id);
     if (error) addToast('Failed to revoke admin access. Please try again.', 'error');
     else       { addToast('Admin access removed.', 'success'); fetchAdmins(); }
   }
@@ -1486,7 +1489,7 @@ function ManageAdminsCard({ addToast, canManageAdmins }) {
     <div className="card" style={{gridColumn:'1 / -1'}}>
       <div className="card-header"><h2>Manage Admin Accounts</h2></div>
       <div className="card-body">
-        {!sb ? (
+        {!getSb() ? (
           <p style={{fontSize:'13px',color:'var(--text-muted)'}}>Supabase must be configured to manage admins here.</p>
         ) : (
           <>
@@ -1550,7 +1553,7 @@ function ManageAdminsCard({ addToast, canManageAdmins }) {
 }
 
 function SettingsPage({ addToast, canManageAdmins }) {
-  const sbConfigured = !!sb;
+  const sbConfigured = !!getSb();
 
   return (
     <div>
@@ -1722,7 +1725,7 @@ function FlaggedContentPage({ addToast, canDeleteContent }) {
   const { data, loading, error, refetch } = useAdminQuery(async (db) => {
     const [chars, camps] = await Promise.all([
       db.from('characters').select('id, owner_id, name, race, class, level, data, flagged, flag_reason, updated_at').eq('flagged', true).order('updated_at', { ascending: false }).limit(100).then(r => r.data || []).catch(() => []),
-      Promise.resolve(db.from('campaigns').select('id, owner_id, name, data, flagged, flag_reason, updated_at').eq('flagged', true).order('updated_at', { ascending: false }).limit(100)).then(r => r.data || []).catch(() => []),
+      db.from('campaigns').select('id, owner_id, name, data, flagged, flag_reason, updated_at').eq('flagged', true).order('updated_at', { ascending: false }).limit(100).then(r => r.data || []).catch(() => []),
     ]);
     return { characters: chars, campaigns: camps };
   });
@@ -1731,23 +1734,23 @@ function FlaggedContentPage({ addToast, canDeleteContent }) {
   const total = flagged.characters.length + flagged.campaigns.length;
 
   async function unflagChar(id) {
-    await sb.from('characters').update({ flagged: false, flag_reason: null }).eq('id', id);
+    await getSb().from('characters').update({ flagged: false, flag_reason: null }).eq('id', id);
     addToast('Character unflagged.', 'success'); refetch();
   }
   async function unflagCamp(id) {
-    await sb.from('campaigns').update({ flagged: false, flag_reason: null }).eq('id', id);
+    await getSb().from('campaigns').update({ flagged: false, flag_reason: null }).eq('id', id);
     addToast('Campaign unflagged.', 'success'); refetch();
   }
   async function deleteChar(id) {
     if (!canDeleteContent) return;
     if (!confirm('Delete this character?')) return;
-    await sb.from('characters').delete().eq('id', id);
+    await getSb().from('characters').delete().eq('id', id);
     addToast('Character deleted.', 'success'); refetch();
   }
   async function deleteCamp(id) {
     if (!canDeleteContent) return;
     if (!confirm('Delete this campaign?')) return;
-    await sb.from('campaigns').delete().eq('id', id);
+    await getSb().from('campaigns').delete().eq('id', id);
     addToast('Campaign deleted.', 'success'); refetch();
   }
 
@@ -1925,7 +1928,7 @@ function EngagementPage() {
     const [profiles, chars, camps, visits] = await Promise.all([
       db.from('profiles').select('id, created_at').order('created_at', { ascending: false }).limit(2000).then(r => r.data || []).catch(() => []),
       db.from('characters').select('id, owner_id, created_at').order('created_at', { ascending: false }).limit(2000).then(r => r.data || []).catch(() => []),
-      Promise.resolve(db.from('campaigns').select('id, owner_id, data, system, created_at').order('created_at', { ascending: false }).limit(1000)).then(r => r.data || []).catch(() => []),
+      db.from('campaigns').select('id, owner_id, data, system, created_at').order('created_at', { ascending: false }).limit(1000).then(r => r.data || []).catch(() => []),
       db.from('site_visits').select('user_id, session_id, page, visited_at').gte('visited_at', cutoff).order('visited_at', { ascending: false }).limit(10000).then(r => r.data || []).catch(() => []),
     ]);
     return { profiles, chars, camps, visits };
@@ -2271,15 +2274,15 @@ function AnnouncementsPage({ addToast }) {
     };
 
     if (editing) {
-      const { error } = await sb.from('site_announcements').update(payload).eq('id', editing.id);
+      const { error } = await getSb().from('site_announcements').update(payload).eq('id', editing.id);
       if (error) { addToast('Update failed. Please try again.', 'error'); return; }
       logAuditEvent('update_announcement', 'announcement', editing.id, { title: payload.title });
       addToast('Announcement updated.', 'success');
     } else {
-      const { data: sess } = await sb.auth.getSession();
+      const { data: sess } = await getSb().auth.getSession();
       payload.created_by = sess?.session?.user?.id || null;
       payload.is_active = true;
-      const { error } = await sb.from('site_announcements').insert(payload);
+      const { error } = await getSb().from('site_announcements').insert(payload);
       if (error) { addToast('Create failed. Please try again.', 'error'); return; }
       logAuditEvent('create_announcement', 'announcement', null, { title: payload.title });
       addToast('Announcement created.', 'success');
@@ -2290,7 +2293,7 @@ function AnnouncementsPage({ addToast }) {
 
   async function toggleActive(a) {
     const next = !a.is_active;
-    const { error } = await sb.from('site_announcements').update({ is_active: next, updated_at: new Date().toISOString() }).eq('id', a.id);
+    const { error } = await getSb().from('site_announcements').update({ is_active: next, updated_at: new Date().toISOString() }).eq('id', a.id);
     if (error) { addToast('Update failed. Please try again.', 'error'); return; }
     logAuditEvent(next ? 'activate_announcement' : 'deactivate_announcement', 'announcement', a.id, { title: a.title });
     addToast(next ? 'Announcement activated.' : 'Announcement deactivated.', 'success');
@@ -2299,7 +2302,7 @@ function AnnouncementsPage({ addToast }) {
 
   async function deleteAnnouncement(a) {
     if (!confirm('Delete this announcement permanently?')) return;
-    const { error } = await sb.from('site_announcements').delete().eq('id', a.id);
+    const { error } = await getSb().from('site_announcements').delete().eq('id', a.id);
     if (error) { addToast('Delete failed. Please try again.', 'error'); return; }
     logAuditEvent('delete_announcement', 'announcement', a.id, { title: a.title });
     addToast('Announcement deleted.', 'success');
@@ -2433,14 +2436,14 @@ function DataExportPage({ addToast }) {
   }
 
   async function exportData(type) {
-    if (!sb) { addToast('Supabase not configured.', 'error'); return; }
+    if (!getSb()) { addToast('Supabase not configured.', 'error'); return; }
     setExporting(type);
     try {
       let csv, filename;
       const timestamp = new Date().toISOString().slice(0, 10);
       switch (type) {
         case 'users': {
-          const { data, error } = await sb.from('profiles').select('id, name, email, is_admin, is_superuser, is_banned, is_beta_user, admin_notes, tags, created_at').order('created_at', { ascending: false }).limit(10000);
+          const { data, error } = await getSb().from('profiles').select('id, name, email, is_admin, is_superuser, is_banned, is_beta_user, admin_notes, tags, created_at').order('created_at', { ascending: false }).limit(10000);
           if (error) throw error;
           csv = toCSV(data, [
             { key: 'id', label: 'User ID' }, { key: 'name', label: 'Name' }, { key: 'email', label: 'Email' },
@@ -2451,7 +2454,7 @@ function DataExportPage({ addToast }) {
           break;
         }
         case 'characters': {
-          const { data, error } = await sb.from('characters').select('id, owner_id, name, race, class, level, builder_type, flagged, flag_reason, created_at, updated_at').order('updated_at', { ascending: false }).limit(10000);
+          const { data, error } = await getSb().from('characters').select('id, owner_id, name, race, class, level, builder_type, flagged, flag_reason, created_at, updated_at').order('updated_at', { ascending: false }).limit(10000);
           if (error) throw error;
           csv = toCSV(data, [
             { key: 'id', label: 'Character ID' }, { key: 'owner_id', label: 'Owner ID' }, { key: 'name', label: 'Name' },
@@ -2463,7 +2466,7 @@ function DataExportPage({ addToast }) {
           break;
         }
         case 'campaigns': {
-          const { data, error } = await sb.from('campaigns').select('id, owner_id, name, system, flagged, flag_reason, created_at, updated_at').order('updated_at', { ascending: false }).limit(10000);
+          const { data, error } = await getSb().from('campaigns').select('id, owner_id, name, system, flagged, flag_reason, created_at, updated_at').order('updated_at', { ascending: false }).limit(10000);
           if (error) throw error;
           csv = toCSV(data, [
             { key: 'id', label: 'Campaign ID' }, { key: 'owner_id', label: 'Owner ID' }, { key: 'name', label: 'Name' },
@@ -2474,7 +2477,7 @@ function DataExportPage({ addToast }) {
           break;
         }
         case 'audit': {
-          const { data, error } = await sb.from('admin_audit_log').select('*').order('created_at', { ascending: false }).limit(10000);
+          const { data, error } = await getSb().from('admin_audit_log').select('*').order('created_at', { ascending: false }).limit(10000);
           if (error) throw error;
           csv = toCSV(data, [
             { key: 'id', label: 'ID' }, { key: 'admin_email', label: 'Admin' }, { key: 'action', label: 'Action' },
@@ -2485,7 +2488,7 @@ function DataExportPage({ addToast }) {
           break;
         }
         case 'errors': {
-          const { data, error } = await sb.from('site_errors').select('*').order('created_at', { ascending: false }).limit(10000);
+          const { data, error } = await getSb().from('site_errors').select('*').order('created_at', { ascending: false }).limit(10000);
           if (error) throw error;
           csv = toCSV(data, [
             { key: 'id', label: 'ID' }, { key: 'message', label: 'Error' }, { key: 'page', label: 'Page' },
@@ -2495,7 +2498,7 @@ function DataExportPage({ addToast }) {
           break;
         }
         case 'visits': {
-          const { data, error } = await sb.from('site_visits').select('*').order('visited_at', { ascending: false }).limit(10000);
+          const { data, error } = await getSb().from('site_visits').select('*').order('visited_at', { ascending: false }).limit(10000);
           if (error) throw error;
           csv = toCSV(data, [
             { key: 'id', label: 'ID' }, { key: 'page', label: 'Page' }, { key: 'user_id', label: 'User ID' }, { key: 'visited_at', label: 'Visited At' },
@@ -2631,8 +2634,8 @@ function TierManagementPage({ addToast }) {
   async function updateSetting(key, value) {
     setSaving(true);
     try {
-      const { data: sess } = await sb.auth.getSession();
-      const { error } = await sb.from('site_settings').upsert({
+      const { data: sess } = await getSb().auth.getSession();
+      const { error } = await getSb().from('site_settings').upsert({
         key,
         value: JSON.stringify(value),
         updated_by: sess?.session?.user?.id || null,
@@ -2677,10 +2680,10 @@ function TierManagementPage({ addToast }) {
     const updatedFreeKeys = freeFeatureKeys.filter(k => k !== featureKey);
     setSaving(true);
     try {
-      const { data: sess } = await sb.auth.getSession();
+      const { data: sess } = await getSb().auth.getSession();
       await Promise.all([
-        sb.from('site_settings').upsert({ key: 'all_feature_definitions', value: JSON.stringify(updatedDefs), updated_by: sess?.session?.user?.id || null, updated_at: new Date().toISOString() }, { onConflict: 'key' }),
-        sb.from('site_settings').upsert({ key: 'free_feature_keys', value: JSON.stringify(updatedFreeKeys), updated_by: sess?.session?.user?.id || null, updated_at: new Date().toISOString() }, { onConflict: 'key' }),
+        getSb().from('site_settings').upsert({ key: 'all_feature_definitions', value: JSON.stringify(updatedDefs), updated_by: sess?.session?.user?.id || null, updated_at: new Date().toISOString() }, { onConflict: 'key' }),
+        getSb().from('site_settings').upsert({ key: 'free_feature_keys', value: JSON.stringify(updatedFreeKeys), updated_by: sess?.session?.user?.id || null, updated_at: new Date().toISOString() }, { onConflict: 'key' }),
       ]);
       logAuditEvent('remove_feature', 'setting', featureKey, {});
       addToast(`Removed feature: ${featureKey}`, 'success');
@@ -3035,8 +3038,8 @@ function FeatureFlagsPage({ addToast, viewer }) {
     }
     setConfirmMaintenance(false);
 
-    const { data: sess } = await sb.auth.getSession();
-    const { error } = await sb.from('site_settings').update({
+    const { data: sess } = await getSb().auth.getSession();
+    const { error } = await getSb().from('site_settings').update({
       value: JSON.stringify(next),
       updated_by: sess?.session?.user?.id || null,
       updated_at: new Date().toISOString(),
@@ -3057,8 +3060,8 @@ function FeatureFlagsPage({ addToast, viewer }) {
       addToast('Invalid value format.', 'error'); return;
     }
 
-    const { data: sess } = await sb.auth.getSession();
-    const { error } = await sb.from('site_settings').update({
+    const { data: sess } = await getSb().auth.getSession();
+    const { error } = await getSb().from('site_settings').update({
       value: JSON.stringify(parsed),
       updated_by: sess?.session?.user?.id || null,
       updated_at: new Date().toISOString(),
@@ -3238,12 +3241,12 @@ function CleanupPage({ addToast }) {
   const [manualCounts, setManualCounts] = useState(null);
 
   async function loadCounts() {
-    if (!sb) return;
+    if (!getSb()) return;
     try {
       const [errors, visits, audit] = await Promise.all([
-        sb.from('site_errors').select('id', { count: 'exact' }).limit(0),
-        sb.from('site_visits').select('id', { count: 'exact' }).limit(0),
-        sb.from('admin_audit_log').select('id', { count: 'exact' }).limit(0),
+        getSb().from('site_errors').select('id', { count: 'exact' }).limit(0),
+        getSb().from('site_visits').select('id', { count: 'exact' }).limit(0),
+        getSb().from('admin_audit_log').select('id', { count: 'exact' }).limit(0),
       ]);
       setManualCounts({
         errors: errors.count || 0,
@@ -3256,10 +3259,10 @@ function CleanupPage({ addToast }) {
   useEffect(() => { loadCounts(); }, []);
 
   async function runCleanup() {
-    if (!sb) { addToast('Supabase not configured.', 'error'); return; }
+    if (!getSb()) { addToast('Supabase not configured.', 'error'); return; }
     setRunning(true);
     try {
-      const { data, error } = await sb.rpc('run_admin_cleanup');
+      const { data, error } = await getSb().rpc('run_admin_cleanup');
       if (error) throw error;
       setLastResult(data);
       logAuditEvent('run_cleanup', 'system', null, data);
@@ -3426,7 +3429,7 @@ function SubscriptionsPage({ addToast }) {
     // SECURITY: Validate tier and userId before sending to DB
     if (tier !== 'free' && tier !== 'pro') { addToast('Invalid tier value.', 'error'); return; }
     if (!userId || typeof userId !== 'string' || !/^[0-9a-f-]{36}$/i.test(userId)) { addToast('Invalid user ID.', 'error'); return; }
-    const { error } = await sb.from('profiles').update({
+    const { error } = await getSb().from('profiles').update({
       subscription_tier: tier,
       subscription_status: tier === 'pro' ? 'active' : null,
       subscription_started_at: tier === 'pro' ? new Date().toISOString() : null,
@@ -3654,10 +3657,10 @@ function StoragePage({ addToast }) {
 
   // ── Fetch bucket-level data ──
   useEffect(() => {
-    if (!sb) { setLoadingBuckets(false); setBucketError('Supabase not connected'); return; }
+    if (!getSb()) { setLoadingBuckets(false); setBucketError('Supabase not connected'); return; }
     (async () => {
       try {
-        const { data: buckets, error: bErr } = await sb.storage.listBuckets();
+        const { data: buckets, error: bErr } = await getSb().storage.listBuckets();
         if (bErr) throw bErr;
         if (!buckets || buckets.length === 0) {
           setBucketDetails({ buckets: [], totalSize: 0, totalFiles: 0, categories: {} });
@@ -3675,7 +3678,7 @@ function StoragePage({ addToast }) {
           let offset = 0;
           let hasMore = true;
           while (hasMore) {
-            const { data: files, error: fErr } = await sb.storage.from(bucket.name).list('', { limit: 1000, offset, sortBy: { column: 'name', order: 'asc' } });
+            const { data: files, error: fErr } = await getSb().storage.from(bucket.name).list('', { limit: 1000, offset, sortBy: { column: 'name', order: 'asc' } });
             if (fErr) { hasMore = false; break; }
             if (!files || files.length === 0) { hasMore = false; break; }
             for (const f of files) {
@@ -3706,24 +3709,24 @@ function StoragePage({ addToast }) {
 
   // ── Fetch per-user storage from profiles + a storage_usage RPC or manual scan ──
   useEffect(() => {
-    if (!sb) { setLoadingUsers(false); setUserError('Supabase not connected'); return; }
+    if (!getSb()) { setLoadingUsers(false); setUserError('Supabase not connected'); return; }
     (async () => {
       try {
         // Get all users
-        const { data: profiles, error: pErr } = await sb.from('profiles').select('id, name, email, avatar_url, created_at');
+        const { data: profiles, error: pErr } = await getSb().from('profiles').select('id, name, email, avatar_url, created_at');
         if (pErr) throw pErr;
         if (!profiles) { setUserBreakdown([]); setLoadingUsers(false); return; }
 
         // Count characters and campaigns per user to estimate data footprint
         const [charCounts, campCounts] = await Promise.all([
-          sb.from('characters').select('owner_id'),
-          sb.from('campaigns').select('owner_id').catch(() => ({ data: [] })),
+          getSb().from('characters').select('owner_id'),
+          getSb().from('campaigns').select('owner_id').catch(() => ({ data: [] })),
         ]);
 
         const charMap = {};
         (charCounts.data || []).forEach(c => { charMap[c.owner_id] = (charMap[c.owner_id] || 0) + 1; });
         const campMap = {};
-        ((campCounts.data || campCounts || []).data || []).forEach(c => { campMap[c.owner_id] = (campMap[c.owner_id] || 0) + 1; });
+        (campCounts.data || []).forEach(c => { campMap[c.owner_id] = (campMap[c.owner_id] || 0) + 1; });
 
         // For storage file counts, list files per user folder if buckets are user-partitioned
         // Otherwise estimate from row counts (characters ~8KB avg, campaigns ~25KB avg with atlas data)
@@ -3731,13 +3734,13 @@ function StoragePage({ addToast }) {
         const AVG_CAMP_SIZE = 25 * 1024;
 
         // Try to get actual storage usage from user folders in each bucket
-        const { data: buckets } = await sb.storage.listBuckets();
+        const { data: buckets } = await getSb().storage.listBuckets();
         const userFileMap = {}; // userId -> { size, files, categories }
 
         if (buckets && buckets.length > 0) {
           for (const bucket of buckets) {
             // List top-level folders (might be user IDs)
-            const { data: topLevel } = await sb.storage.from(bucket.name).list('', { limit: 1000 });
+            const { data: topLevel } = await getSb().storage.from(bucket.name).list('', { limit: 1000 });
             if (!topLevel) continue;
 
             for (const item of topLevel) {
@@ -3746,7 +3749,7 @@ function StoragePage({ addToast }) {
                 const folderId = item.name;
                 if (!userFileMap[folderId]) userFileMap[folderId] = { size: 0, files: 0, categories: {} };
 
-                const { data: userFiles } = await sb.storage.from(bucket.name).list(folderId, { limit: 500 });
+                const { data: userFiles } = await getSb().storage.from(bucket.name).list(folderId, { limit: 500 });
                 if (userFiles) {
                   for (const f of userFiles) {
                     if (f.id === null && !f.metadata) continue;
@@ -4094,12 +4097,13 @@ function AdminApp() {
   }, []);
 
   useEffect(() => {
-    if (!sb || !sb.auth) return;
-    sb.auth.getSession()
+    const _sb = getSb();
+    if (!_sb || !_sb.auth) return;
+    _sb.auth.getSession()
       .then(({ data }) => {
         const user = data && data.session && data.session.user;
         if (!user) return;
-        return sb.from('profiles')
+        return _sb.from('profiles')
           .select('*')
           .eq('id', user.id)
           .maybeSingle()
