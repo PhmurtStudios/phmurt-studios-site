@@ -38,7 +38,7 @@
        Beginner-friendly primer — same visual system as learn.html
        ═══════════════════════════════════════════════════════════════════ */
 
-    /* ── Progress Bar ── */
+    /* progress bar */
     .learn-progress-bar {
       position: fixed; top: 0; left: 0; right: 0;
       height: 3px; background: var(--bg-mid); z-index: 300;
@@ -49,7 +49,7 @@
       transition: width 0.3s ease;
     }
 
-    /* ── Back to Top ── */
+    /* back to top */
     .learn-back-to-top {
       position: fixed; bottom: 40px; right: 40px;
       width: 44px; height: 44px; background: var(--crimson);
@@ -62,7 +62,7 @@
     .learn-back-to-top.visible { opacity: 1; pointer-events: all; }
     .learn-back-to-top:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(212,67,58,0.35); }
 
-    /* ── Side Navigation ── */
+    /* side navigation */
     .learn-side-nav {
       position: fixed; left: 0; top: 80px; width: 220px;
       max-height: calc(100vh - 100px); background: var(--bg-card);
@@ -87,7 +87,7 @@
     }
     .learn-nav-check { font-size: 10px; margin-left: 4px; opacity: 0.6; }
 
-    /* ── Content ── */
+    /* content */
     .learn-content { max-width: 1100px; margin: 0 auto; padding: 0 56px 60px; }
     @media (min-width: 1200px) {
       .learn-content {
@@ -97,12 +97,21 @@
     }
     @media (max-width: 860px) { .learn-content { padding: 0 24px 40px; } }
 
-    /* ── Hero ── */
+    /* hero */
     .learn-hero {
       padding: 100px 40px 60px; text-align: center;
       background: radial-gradient(ellipse at 50% 0%, var(--crimson-soft) 0%, transparent 60%);
     }
     .learn-hero-content { max-width: 720px; margin: 0 auto; }
+    .learn-hero-mascot {
+      width: 90px; height: auto; margin: 0 auto 18px; display: block;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.25));
+      animation: owlFloat 3s ease-in-out infinite;
+    }
+    @keyframes owlFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
     .learn-hero-eyebrow {
       font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 4px;
       text-transform: uppercase; color: var(--crimson); margin-bottom: 16px;
@@ -116,7 +125,7 @@
       line-height: 1.7; max-width: 600px; margin: 0 auto 40px;
     }
 
-    /* ── Roadmap ── */
+    /* roadmap */
     .learn-roadmap {
       display: flex; justify-content: center; flex-wrap: wrap; gap: 8px;
       margin: 0 auto; max-width: 650px;
@@ -137,7 +146,7 @@
     }
     .learn-roadmap-step.completed .learn-roadmap-num { background: rgba(94,224,154,0.15); color: var(--green); }
 
-    /* ── Section Divider ── */
+    /* section divider */
     .learn-section-divider-full {
       display: flex; align-items: center; gap: 12px; padding: 30px 40px;
       max-width: 800px; margin: 0 auto;
@@ -148,7 +157,7 @@
     .learn-divider-dot { width: 4px; height: 4px; background: var(--text-faint); border-radius: 50%; }
     .learn-divider-gem { width: 8px; height: 8px; background: var(--crimson); transform: rotate(45deg); }
 
-    /* ── Group Headers ── */
+    /* group headers */
     .learn-group { margin-bottom: 12px; }
     .learn-group-header { display: flex; align-items: center; gap: 16px; }
     .learn-group-tier {
@@ -161,7 +170,7 @@
     .learn-group-tier.advanced { background: rgba(212,67,58,0.1); color: var(--crimson); border: 1px solid rgba(212,67,58,0.2); }
     .learn-group-line { flex: 1; height: 1px; background: var(--border); }
 
-    /* ── Section Cards ── */
+    /* section cards */
     .learn-section {
       margin-bottom: 48px; opacity: 0; transform: translateY(20px);
       transition: opacity 0.5s, transform 0.5s;
@@ -193,7 +202,7 @@
     }
     @media (max-width: 600px) { .learn-section-content { padding-left: 0; } }
 
-    /* ── Objectives ── */
+    /* objectives */
     .learn-objectives {
       background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
       padding: 16px 20px; margin-bottom: 20px;
@@ -210,16 +219,16 @@
       content: '◆'; position: absolute; left: 0; color: var(--crimson); font-size: 8px; top: 8px;
     }
 
-    /* ── Intro Text ── */
+    /* intro text */
     .learn-intro { margin-bottom: 24px; }
 
-    /* ── Labels ── */
+    /* labels */
     .learn-label {
       font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 2px;
       text-transform: uppercase; color: var(--gold); margin-bottom: 12px; margin-top: 28px;
     }
 
-    /* ── Takeaway Boxes ── */
+    /* takeaway boxes */
     .learn-takeaway {
       background: var(--bg-card); border-left: 3px solid var(--crimson);
       border-radius: 0 6px 6px 0; padding: 16px 20px; margin-top: 24px;
@@ -230,7 +239,7 @@
     }
     .learn-takeaway-text { font-size: 14px; color: var(--text-dim); line-height: 1.7; }
 
-    /* ── Scenario / Interactive ── */
+    /* scenario / interactive */
     .learn-scenario {
       background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
       padding: 20px; margin-bottom: 20px;
@@ -258,7 +267,7 @@
     }
     .learn-outcome.active { display: block; }
 
-    /* ── Tip Cards ── */
+    /* tip cards */
     .learn-tip-grid {
       display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 12px; margin: 16px 0;
@@ -275,7 +284,7 @@
     }
     .learn-tip-card-text { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
 
-    /* ── Encounter Table ── */
+    /* encounter table */
     .learn-encounter-table {
       width: 100%; border-collapse: collapse; margin: 16px 0;
       font-family: 'Spectral', serif; font-size: 13px;
@@ -291,7 +300,7 @@
     }
     .learn-encounter-table tr:hover td { background: var(--bg-hover); }
 
-    /* ── Checklist ── */
+    /* checklist */
     .learn-checklist { list-style: none; padding: 0; margin: 16px 0; }
     .learn-checklist li {
       display: flex; align-items: flex-start; gap: 10px; padding: 10px 0;
@@ -310,7 +319,7 @@
       background: var(--crimson-soft); border-color: var(--crimson);
     }
 
-    /* ── Do/Don't Columns ── */
+    /* do/don't columns */
     .learn-do-dont {
       display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0;
     }
@@ -336,7 +345,7 @@
     .learn-do li::before { content: '✓'; position: absolute; left: 0; color: var(--green); font-size: 11px; }
     .learn-dont li::before { content: '✗'; position: absolute; left: 0; color: var(--crimson); font-size: 11px; }
 
-    /* ── Quiz ── */
+    /* quiz */
     .learn-quiz { margin: 16px 0; }
     .learn-quiz-question {
       background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
@@ -363,7 +372,7 @@
     .learn-quiz-feedback.correct { background: rgba(94,224,154,0.05); border: 1px solid rgba(94,224,154,0.15); color: var(--text-dim); }
     .learn-quiz-feedback.wrong { background: rgba(212,67,58,0.05); border: 1px solid rgba(212,67,58,0.15); color: var(--text-dim); }
 
-    /* ── Session Prep Simulator ── */
+    /* session prep simulator */
     .learn-prep-sim {
       background: var(--bg-card); border: 1px solid var(--border); border-radius: 6px;
       padding: 20px; margin: 16px 0;
@@ -400,9 +409,10 @@
 
   <div class="learn-progress-bar"><div class="learn-progress-fill" id="progressFill"></div></div>
 
-  <!-- ═══ HERO ═══ -->
+  <!-- HERO -->
   <div class="learn-hero">
     <div class="learn-hero-content">
+      <img src="owlbear-purple.png" alt="Phmurt Studios Owlbear Mascot" class="learn-hero-mascot" />
       <div class="learn-hero-eyebrow">Step Behind the Screen</div>
       <h1 class="learn-hero-title">Learn to DM</h1>
       <p class="learn-hero-subtitle">A beginner-friendly primer that walks you through running your first session — from prep to improv to keeping players engaged.</p>
@@ -413,7 +423,7 @@
     </div>
   </div>
 
-  <!-- ═══ SIDE NAV ═══ -->
+  <!-- SIDE NAV -->
   <div class="learn-side-nav" id="sideNav"></div>
   <div class="learn-back-to-top" id="backToTop">↑</div>
 
@@ -425,9 +435,7 @@
 
   <div class="learn-content">
 
-    <!-- ═══════════════════════════════════════════════════
-         GROUP 1: GETTING STARTED (Beginner)
-         ═══════════════════════════════════════════════════ -->
+    <!-- GROUP 1: GETTING STARTED (Beginner) -->
     <div class="learn-group">
       <div class="learn-group-header">
         <span class="learn-group-tier beginner">The Basics</span>
@@ -545,7 +553,7 @@
           <div class="learn-prep-step" data-step="3">
             <div class="learn-prep-num">3</div>
             <div>
-              <div class="learn-prep-text"><strong>A handful of NPCs.</strong> Prepare 2-3 named NPCs with a one-line personality and a motivation. "Mara, suspicious merchant, wants to leave town before the festival." That's enough — you'll fill in the rest at the table.</div>
+              <div class="learn-prep-text"><strong>A handful of NPCs.</strong> Prepare 2-3 named NPCs with a one line personality and a motivation. "Mara, suspicious merchant, wants to leave town before the festival." That's enough — you'll fill in the rest at the table.</div>
             </div>
           </div>
         </div>
@@ -554,7 +562,7 @@
           <div class="learn-do">
             <div class="learn-do-title">Do Prepare</div>
             <ul>
-              <li>NPC names and one-line personalities</li>
+              <li>NPC names and one line personalities</li>
               <li>Monster stat blocks you'll actually use</li>
               <li>A rough outline of what <em>could</em> happen</li>
               <li>A list of random names for improvised NPCs</li>
@@ -578,9 +586,7 @@
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════
-         GROUP 2: RUNNING THE GAME (Intermediate)
-         ═══════════════════════════════════════════════════ -->
+    <!-- GROUP 2: RUNNING THE GAME (Intermediate) -->
     <div class="learn-group">
       <div class="learn-group-header">
         <span class="learn-group-tier intermediate">Running the Game</span>
@@ -605,7 +611,7 @@
           <div class="learn-objectives-title">What You'll Learn</div>
           <ul class="learn-objectives-list">
             <li>The "Yes, and..." principle adapted for D&D</li>
-            <li>How to handle players going off-script</li>
+            <li>How to handle players going off script</li>
             <li>Three improv tricks every DM should know</li>
           </ul>
         </div>
@@ -719,9 +725,7 @@
       </div>
     </div>
 
-    <!-- ═══════════════════════════════════════════════════
-         GROUP 3: MASTERING THE TABLE (Advanced)
-         ═══════════════════════════════════════════════════ -->
+    <!-- GROUP 3: MASTERING THE TABLE (Advanced) -->
     <div class="learn-group">
       <div class="learn-group-header">
         <span class="learn-group-tier advanced">Mastering the Table</span>
@@ -994,7 +998,7 @@
       },
       {
         prompt: 'Your players skip the dungeon you prepared and go somewhere unexpected. What\'s the best approach?',
-        options: ['Force them back with an in-game disaster', 'Re-skin your dungeon content to fit the new location', 'End the session and prep for next week', 'Punish them for going off-script'],
+        options: ['Force them back with an in-game disaster', 'Re-skin your dungeon content to fit the new location', 'End the session and prep for next week', 'Punish them for going off script'],
         correct: 1,
         feedback: 'Re-skinning is a DM superpower. Your goblin lair becomes a bandit camp, your puzzles still work, and players never know the difference.'
       },

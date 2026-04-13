@@ -26,6 +26,67 @@
   <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
   <link rel="stylesheet" href="style.css?v=185" />
   <script src="theme.js?v=185"></script>
+  <style>
+    /* legendary soups page */
+    .legendary-wrapper {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 56px 56px;
+    }
+    .legendary-intro {
+      font-size: 16px;
+      color: var(--text-dim);
+      line-height: 1.85;
+      margin-bottom: 16px;
+    }
+    .legendary-intro ul {
+      margin: 16px 0 16px 24px;
+      font-size: 14px;
+      color: var(--text-dim);
+      line-height: 1.85;
+    }
+    .legendary-intro li {
+      margin-bottom: 8px;
+    }
+    .ps-legendary-card {
+      margin-bottom: 36px;
+    }
+    .ps-legendary-stats {
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+    .legendary-effects {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--crimson-border);
+    }
+    .legendary-effects-title {
+      font-family: 'Cinzel', serif;
+      font-size: 9px;
+      letter-spacing: 2px;
+      color: var(--crimson);
+      text-transform: uppercase;
+      margin-bottom: 12px;
+    }
+    .legendary-effects ul {
+      font-size: 14px;
+      line-height: 1.85;
+      color: var(--text-dim);
+      margin: 0 0 0 20px;
+    }
+    .legendary-effects li {
+      margin-bottom: 6px;
+    }
+    .legendary-effects-note {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 12px;
+      font-style: italic;
+    }
+    @media (max-width: 768px) {
+      .legendary-wrapper { padding: 0 24px 40px; }
+      .ps-legendary-stats { grid-template-columns: 1fr; }
+    }
+  </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous" integrity="sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG"></script>
   <script src="supabase-config.js?v=185"></script>
   <script src="stripe-config.js?v=185"></script>
@@ -46,13 +107,14 @@
 
   <div class="ps-divider"><div class="ps-div-line"></div><div class="ps-div-ornament"><div class="ps-div-dot"></div><div class="ps-div-gem"></div><div class="ps-div-dot"></div></div><div class="ps-div-line r"></div></div>
 
-  <div class="fantasy-divider">◆</div>
+
+  <div class="legendary-wrapper">
 
   <div class="ps-section-header">
     <div class="ps-section-title">Introduction</div>
   </div>
 
-  <div class="ps-content-block">
+  <div class="legendary-intro">
     <p>Legendary soups represent the pinnacle of culinary achievement and magical craftsmanship. These recipes call for ingredients harvested from legendary creatures, each one a monument to power incarnate. The recipes that follow are not for the faint of heart. They demand ingredients of incredible scarcity, hours or days of careful preparation, and consequences that reshape those who consume them.</p>
 
     <p>A legendary soup follows these fundamental rules:</p>
@@ -66,11 +128,10 @@
     </ul>
 
     <p>These soups are works of art, power made palatable. They are the dreams of heroes and the obsessions of those who dare to aspire to immortality through broth.</p>
-  </div>
+  </div> <!-- end legendary-intro -->
 
   <div class="ps-divider"><div class="ps-div-line"></div><div class="ps-div-ornament"><div class="ps-div-dot"></div><div class="ps-div-gem"></div><div class="ps-div-dot"></div></div><div class="ps-div-line r"></div></div>
 
-  <div class="fantasy-divider">◆</div>
 
   <div class="ps-section-header">
     <div class="ps-section-title">Legendary Recipes</div>
@@ -95,15 +156,15 @@
         <div class="ps-legendary-stat-val">1 creature</div>
       </div>
     </div>
-    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--crimson-border);">
-      <div style="font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1px; color: var(--crimson); text-transform: uppercase; margin-bottom: 12px;">Effects</div>
-      <ul style="font-size: 14px; line-height: 1.8; color: var(--text-dim);">
+    <div class="legendary-effects">
+      <div class="legendary-effects-title">Effects</div>
+      <ul>
         <li>Maximum hit points increased by 50</li>
         <li>Resistance to nonmagical bludgeoning, piercing, and slashing damage</li>
         <li>Regenerate 10 hit points at the start of your turn</li>
         <li>Immunity to the frightened condition</li>
       </ul>
-      <p style="font-size: 13px; color: var(--text-muted); margin-top: 12px; font-style: italic;">These effects are permanent.</p>
+      <p class="legendary-effects-note">These effects are permanent.</p>
     </div>
   </div>
 
@@ -126,15 +187,15 @@
         <div class="ps-legendary-stat-val">1 creature</div>
       </div>
     </div>
-    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--crimson-border);">
-      <div style="font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1px; color: var(--crimson); text-transform: uppercase; margin-bottom: 12px;">Effects (7 Days)</div>
-      <ul style="font-size: 14px; line-height: 1.8; color: var(--text-dim);">
+    <div class="legendary-effects">
+      <div class="legendary-effects-title">Effects (7 Days)</div>
+      <ul>
         <li>Truesight out to 120 feet</li>
         <li>Immunity to gaze attacks</li>
         <li>See invisible creatures and objects as if they were visible</li>
         <li>Once per day, create a 30-foot cone of antimagic (as the antimagic field spell)</li>
       </ul>
-      <p style="font-size: 13px; color: var(--text-muted); margin-top: 12px; font-style: italic;">Effects fade after 7 days.</p>
+      <p class="legendary-effects-note">Effects fade after 7 days.</p>
     </div>
   </div>
 
@@ -157,15 +218,15 @@
         <div class="ps-legendary-stat-val">1 creature</div>
       </div>
     </div>
-    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--crimson-border);">
-      <div style="font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1px; color: var(--crimson); text-transform: uppercase; margin-bottom: 12px;">Effects (Permanent)</div>
-      <ul style="font-size: 14px; line-height: 1.8; color: var(--text-dim);">
+    <div class="legendary-effects">
+      <div class="legendary-effects-title">Effects (Permanent)</div>
+      <ul>
         <li>You no longer age</li>
         <li>Advantage on Intelligence checks and saving throws</li>
         <li>Once per long rest, when you would be reduced to 0 hit points, you are instead reduced to 1 hit point</li>
         <li>Proficiency (or expertise if you already have it) with Arcana, History, and Religion checks</li>
       </ul>
-      <p style="font-size: 13px; color: var(--text-muted); margin-top: 12px; font-style: italic;">These effects are permanent.</p>
+      <p class="legendary-effects-note">These effects are permanent.</p>
     </div>
   </div>
 
@@ -188,15 +249,15 @@
         <div class="ps-legendary-stat-val">4 creatures</div>
       </div>
     </div>
-    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--crimson-border);">
-      <div style="font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1px; color: var(--crimson); text-transform: uppercase; margin-bottom: 12px;">Effects (30 Days)</div>
-      <ul style="font-size: 14px; line-height: 1.8; color: var(--text-dim);">
+    <div class="legendary-effects">
+      <div class="legendary-effects-title">Effects (30 Days)</div>
+      <ul>
         <li>Immunity to the damage type of the dragon's breath weapon</li>
         <li>Strength and Constitution each increase by 4 (maximum 24)</li>
         <li>Advantage on Intimidation checks and saving throws against the frightened condition</li>
         <li>Once per day, you can exhale a 30-foot cone of the dragon's breath weapon type (DC 20 saving throw, same damage as the dragon's breath)</li>
       </ul>
-      <p style="font-size: 13px; color: var(--text-muted); margin-top: 12px; font-style: italic;">Effects fade after 30 days.</p>
+      <p class="legendary-effects-note">Effects fade after 30 days.</p>
     </div>
   </div>
 
@@ -219,15 +280,15 @@
         <div class="ps-legendary-stat-val">6 creatures</div>
       </div>
     </div>
-    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--crimson-border);">
-      <div style="font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1px; color: var(--crimson); text-transform: uppercase; margin-bottom: 12px;">Effects (10 Days)</div>
-      <ul style="font-size: 14px; line-height: 1.8; color: var(--text-dim);">
+    <div class="legendary-effects">
+      <div class="legendary-effects-title">Effects (10 Days)</div>
+      <ul>
         <li>Telepathy out to 120 feet with creatures you can see</li>
         <li>Cast detect thoughts at will (no spell slot required)</li>
         <li>Once per day, cast dominate monster (DC 18 Intelligence saving throw to resist)</li>
         <li>Immunity to charm and frighten effects caused by aberrations</li>
       </ul>
-      <p style="font-size: 13px; color: var(--text-muted); margin-top: 12px; font-style: italic;">Effects fade after 10 days.</p>
+      <p class="legendary-effects-note">Effects fade after 10 days.</p>
     </div>
   </div>
 
@@ -250,15 +311,15 @@
         <div class="ps-legendary-stat-val">4 creatures</div>
       </div>
     </div>
-    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--crimson-border);">
-      <div style="font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1px; color: var(--crimson); text-transform: uppercase; margin-bottom: 12px;">Effects (14 Days)</div>
-      <ul style="font-size: 14px; line-height: 1.8; color: var(--text-dim);">
+    <div class="legendary-effects">
+      <div class="legendary-effects-title">Effects (14 Days)</div>
+      <ul>
         <li>Swim speed of 60 feet and ability to breathe underwater</li>
         <li>Immunity to lightning damage</li>
         <li>Once per day, exhale a cloud of ink in a 20-foot radius (creatures in the area must make a DC 18 Constitution saving throw or be blinded for 1 minute)</li>
         <li>Ability to communicate telepathically with creatures that can swim</li>
       </ul>
-      <p style="font-size: 13px; color: var(--text-muted); margin-top: 12px; font-style: italic;">Effects fade after 14 days.</p>
+      <p class="legendary-effects-note">Effects fade after 14 days.</p>
     </div>
   </div>
 
@@ -281,14 +342,14 @@
         <div class="ps-legendary-stat-val">1 creature</div>
       </div>
     </div>
-    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--crimson-border);">
-      <div style="font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1px; color: var(--crimson); text-transform: uppercase; margin-bottom: 12px;">Effects (Permanent)</div>
-      <ul style="font-size: 14px; line-height: 1.8; color: var(--text-dim);">
+    <div class="legendary-effects">
+      <div class="legendary-effects-title">Effects (Permanent)</div>
+      <ul>
         <li>Immunity to fire, cold, lightning, acid, and poison damage</li>
         <li>Once per day, exhale a 30-foot cone of elemental damage (fire, cold, lightning, acid, or poison; DC 20 Dexterity saving throw, 10d8 damage)</li>
         <li>Advantage on Charisma checks and saving throws when dealing with chromatic dragons</li>
       </ul>
-      <p style="font-size: 13px; color: var(--text-muted); margin-top: 12px; font-style: italic;">This recipe has never been successfully completed in known history.</p>
+      <p class="legendary-effects-note">This recipe has never been successfully completed in known history.</p>
     </div>
   </div>
 
@@ -311,15 +372,15 @@
         <div class="ps-legendary-stat-val">1 creature</div>
       </div>
     </div>
-    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--crimson-border);">
-      <div style="font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1px; color: var(--crimson); text-transform: uppercase; margin-bottom: 12px;">Effects (Permanent)</div>
-      <ul style="font-size: 14px; line-height: 1.8; color: var(--text-dim);">
+    <div class="legendary-effects">
+      <div class="legendary-effects-title">Effects (Permanent)</div>
+      <ul>
         <li>Proficiency with all skills (you gain proficiency bonus on any ability check you make)</li>
         <li>Cast legend lore at will (no spell slot required)</li>
         <li>Advantage on all Intelligence saving throws and Intelligence checks</li>
         <li>Once per week, spend 1 hour in meditation to receive a vision of a past event within 10,000 years</li>
       </ul>
-      <p style="font-size: 13px; color: var(--text-muted); margin-top: 12px; font-style: italic;">These effects are permanent.</p>
+      <p class="legendary-effects-note">These effects are permanent.</p>
     </div>
   </div>
 
@@ -342,14 +403,14 @@
         <div class="ps-legendary-stat-val">1 creature</div>
       </div>
     </div>
-    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--crimson-border);">
-      <div style="font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1px; color: var(--crimson); text-transform: uppercase; margin-bottom: 12px;">Effects (Permanent)</div>
-      <ul style="font-size: 14px; line-height: 1.8; color: var(--text-dim);">
+    <div class="legendary-effects">
+      <div class="legendary-effects-title">Effects (Permanent)</div>
+      <ul>
         <li>See invisible creatures and objects within 60 feet, even through magical darkness</li>
         <li>Once per day, cast foresight on yourself (no spell slot required)</li>
         <li>Always know if a creature within 30 feet of you is lying</li>
       </ul>
-      <p style="font-size: 13px; color: var(--text-muted); margin-top: 12px; font-style: italic;">Drawback: You have disadvantage on saving throws against effects caused by Vecna.</p>
+      <p class="legendary-effects-note">Drawback: You have disadvantage on saving throws against effects caused by Vecna.</p>
     </div>
   </div>
 
@@ -372,17 +433,19 @@
         <div class="ps-legendary-stat-val">Applied to existing soup</div>
       </div>
     </div>
-    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--crimson-border);">
-      <div style="font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1px; color: var(--crimson); text-transform: uppercase; margin-bottom: 12px;">Effects When Applied (7 Days)</div>
-      <ul style="font-size: 14px; line-height: 1.8; color: var(--text-dim);">
+    <div class="legendary-effects">
+      <div class="legendary-effects-title">Effects When Applied (7 Days)</div>
+      <ul>
         <li>Any healing received also grants temporary hit points equal to the amount healed (last for 24 hours)</li>
         <li>Resistance to necrotic damage for 7 days</li>
         <li>No need to sleep and immunity to exhaustion for 7 days</li>
         <li>Once during those 7 days, when you would be reduced to 0 hit points, you instead drop to 1 hit point and are immune to all damage until the end of your next turn</li>
       </ul>
-      <p style="font-size: 13px; color: var(--text-muted); margin-top: 12px; font-style: italic;">Effects fade after 7 days.</p>
+      <p class="legendary-effects-note">Effects fade after 7 days.</p>
     </div>
   </div>
+
+  </div> <!-- end legendary-wrapper -->
 
   <div class="ps-divider"><div class="ps-div-line"></div><div class="ps-div-ornament"><div class="ps-div-dot"></div><div class="ps-div-gem"></div><div class="ps-div-dot"></div></div><div class="ps-div-line r"></div></div>
 

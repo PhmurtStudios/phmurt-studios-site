@@ -2045,13 +2045,13 @@
       // ── Immunities & Resistances ──
       html += '<div class="hb-form-section">Damage & Condition Immunities</div>';
       html += '<div class="hb-form-row">';
-      html += '<div class="hb-form-group"><label class="hb-form-label">Vulnerabilities (comma-separated)</label>';
+      html += '<div class="hb-form-group"><label class="hb-form-label">Vulnerabilities (comma separated)</label>';
       html += '<input type="text" class="hb-form-input" id="mon-vuln" placeholder="e.g. Fire, Cold" value="' + escapeAttr(existing && existing.vulnerabilities ? existing.vulnerabilities.join(', ') : '') + '"></div>';
-      html += '<div class="hb-form-group"><label class="hb-form-label">Resistances (comma-separated)</label>';
+      html += '<div class="hb-form-group"><label class="hb-form-label">Resistances (comma separated)</label>';
       html += '<input type="text" class="hb-form-input" id="mon-resist" placeholder="e.g. Cold, Lightning" value="' + escapeAttr(existing && existing.resistances ? existing.resistances.join(', ') : '') + '"></div>';
       html += '</div>';
       html += '<div class="hb-form-row">';
-      html += '<div class="hb-form-group"><label class="hb-form-label">Immunities (comma-separated)</label>';
+      html += '<div class="hb-form-group"><label class="hb-form-label">Immunities (comma separated)</label>';
       html += '<input type="text" class="hb-form-input" id="mon-immune" placeholder="e.g. Fire, Poison" value="' + (existing && existing.immunities ? existing.immunities.join(', ') : '') + '"></div>';
       html += '<div class="hb-form-group"><label class="hb-form-label">Condition Immunities</label>';
       html += '<input type="text" class="hb-form-input" id="mon-cond-immune" placeholder="e.g. Charmed, Frightened" value="' + (existing && existing.conditionImmunities ? existing.conditionImmunities.join(', ') : '') + '"></div>';
@@ -2165,7 +2165,7 @@
         monster.skillProficiencies.push(cb.value);
       });
 
-      // Parse comma-separated lists
+      // Parse comma separated lists
       monster.vulnerabilities = document.getElementById('mon-vuln').value.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s; });
       monster.resistances = document.getElementById('mon-resist').value.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s; });
       monster.immunities = document.getElementById('mon-immune').value.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s; });
@@ -2440,7 +2440,7 @@
 
         // Form
         + inp('name', 'Item Name *', existing ? existing.name : '', 'e.g. Blade of Forgotten Kings')
-        + inp('tags', 'Tags (comma-separated)', existing && existing.tags ? existing.tags.join(', ') : '', 'magical, cursed, legendary')
+        + inp('tags', 'Tags (comma separated)', existing && existing.tags ? existing.tags.join(', ') : '', 'magical, cursed, legendary')
         + sel('category', 'Category *', catOptions)
         + inp('subcategory', 'Subcategory', existing ? existing.subcategory : '', 'e.g. Named Weapons, Misc')
         + sel('rarity', 'Rarity', rarOpts)
@@ -3639,7 +3639,7 @@
           F.inp('name', 'Race Name *', e.name, 'e.g. Aasimar'),
           F.sel('size', 'Size', ['Small','Medium','Large'], e.size||'Medium'),
         ]);
-        html += F.inp('tags', 'Tags (comma-separated)', (e.tags||[]).join(', '), 'elemental, demonic, winged');
+        html += F.inp('tags', 'Tags (comma separated)', (e.tags||[]).join(', '), 'elemental, demonic, winged');
 
         html += F.head('Movement & Senses');
         html += F.grid([
@@ -3650,7 +3650,7 @@
           F.inp('flySpeed', 'Fly Speed (ft, 0 = none)', e.flySpeed||0, '0', 'number'),
           F.inp('swimSpeed', 'Swim Speed (ft, 0 = none)', e.swimSpeed||0, '0', 'number'),
         ]);
-        html += F.inp('languages', 'Languages (comma-separated)', (e.languages||[]).join(', '), 'Common, Elvish');
+        html += F.inp('languages', 'Languages (comma separated)', (e.languages||[]).join(', '), 'Common, Elvish');
 
         html += F.head('Ability Score Increases');
         html += F.note('Format: str:2, dex:1 (use ability abbreviations: str dex con int wis cha)');
@@ -3669,8 +3669,8 @@
         html += '</div>';
 
         html += F.head('Proficiencies');
-        html += F.inp('weaponProf', 'Weapon Proficiencies (comma-separated)', (e.weaponProf||[]).join(', '), 'Longsword, Shortbow');
-        html += F.inp('toolProf', 'Tool Proficiencies (comma-separated)', (e.toolProf||[]).join(', '), "Smith's tools");
+        html += F.inp('weaponProf', 'Weapon Proficiencies (comma separated)', (e.weaponProf||[]).join(', '), 'Longsword, Shortbow');
+        html += F.inp('toolProf', 'Tool Proficiencies (comma separated)', (e.toolProf||[]).join(', '), "Smith's tools");
 
         html += F.head('Innate Spellcasting (Optional)');
         html += F.inp('cantrip', 'Cantrip Name', e.cantrip||'', 'e.g. Light, Thaumaturgy');
@@ -3745,16 +3745,16 @@
             F.inp('name', 'Class Name *', e.name, 'e.g. Blood Hunter'),
             F.sel('hitDie', 'Hit Die', hitDieOpts, e.hitDie||8),
           ]);
-          html += F.inp('tags', 'Tags (comma-separated)', (e.tags||[]).join(', '), 'gritty, bloodmagic, dark-arts');
+          html += F.inp('tags', 'Tags (comma separated)', (e.tags||[]).join(', '), 'gritty, bloodmagic, dark-arts');
           html += F.grid([
             F.sel('primaryAbility', 'Primary Ability', abilityOpts, e.primaryAbility||'str'),
             F.inp('skillCount', 'Skill Choices', e.skillCount||2, '2', 'number'),
           ]);
-          html += F.inp('skillOptions', 'Skill Options (comma-separated, blank = Any)', skillOptVal, 'Athletics, Stealth, Perception');
+          html += F.inp('skillOptions', 'Skill Options (comma separated, blank = Any)', skillOptVal, 'Athletics, Stealth, Perception');
 
           html += F.head('Proficiencies');
-          html += F.inp('armorProf', 'Armor (comma-separated)', armorVal, 'Light armor, Medium armor, Shields');
-          html += F.inp('weaponProf', 'Weapons (comma-separated)', weaponVal, 'Simple weapons, Martial weapons');
+          html += F.inp('armorProf', 'Armor (comma separated)', armorVal, 'Light armor, Medium armor, Shields');
+          html += F.inp('weaponProf', 'Weapons (comma separated)', weaponVal, 'Simple weapons, Martial weapons');
           html += F.inp('toolProf', 'Tools (optional)', (e.toolProf||[]).join(', '), "Thieves' tools");
           html += F.grid([
             F.sel('save1', 'Saving Throw 1', abilityOpts, save1),
@@ -3766,7 +3766,7 @@
             F.inp('subclassTitle', 'Subclass Title', e.subclassTitle||'', 'e.g. Primal Path, Sacred Oath'),
             F.sel('subclassLevel', 'Subclass Gained At', scLvOpts, e.subclassLevel||3),
           ]);
-          html += F.inp('subclasses', 'Subclass Names (comma-separated)', subclassVal, 'Path of the Berserker, Path of the Totem');
+          html += F.inp('subclasses', 'Subclass Names (comma separated)', subclassVal, 'Path of the Berserker, Path of the Totem');
           html += F.note('Players choose their subclass at this level. The title appears in the level-up modal.');
 
           html += F.head('1st Level Features');
@@ -3785,7 +3785,7 @@
             +'<button class="hbc-tpl-btn" onclick="_hbcTplExtraAttack()">✦ Extra Attack (Lv 5)</button>'
             +'<button class="hbc-tpl-btn" onclick="_hbcTplMartial()">✦ Martial Template</button>'
             +'<button class="hbc-tpl-btn" onclick="_hbcTplCaster()">✦ Full Caster Template</button>'
-            +'<button class="hbc-tpl-btn" onclick="_hbcTplHalfCaster()">✦ Half-Caster Template</button>'
+            +'<button class="hbc-tpl-btn" onclick="_hbcTplHalfCaster()">✦ Half Caster Template</button>'
             +'</div>';
 
           // Hidden textarea still holds the data for save compatibility
@@ -3905,7 +3905,7 @@
         else if(innerTab==='equipment'){
           html += F.head('Starting Equipment');
           html += F.note('All items below are granted at character creation.');
-          html += F.tex('equipment','Equipment (comma-separated)',e._equipmentStr||'','Longsword or two shortswords, leather armor, a dungeoneer\'s pack, 25 gp',3);
+          html += F.tex('equipment','Equipment (comma separated)',e._equipmentStr||'','Longsword or two shortswords, leather armor, a dungeoneer\'s pack, 25 gp',3);
           html += F.head('Starting Wealth (Alternative)');
           html += F.inp('startingGold','Starting Gold',e.startingGold||'','e.g. 4d4 × 10 gp');
         }
@@ -3916,10 +3916,10 @@
 
         html += F.head('Identity');
         html += F.inp('name', 'Background Name *', e.name, 'e.g. Bounty Hunter');
-        html += F.inp('tags', 'Tags (comma-separated)', (e.tags||[]).join(', '), 'criminal, noble, folk-hero');
+        html += F.inp('tags', 'Tags (comma separated)', (e.tags||[]).join(', '), 'criminal, noble, folk-hero');
 
         html += F.head('Proficiencies');
-        html += F.inp('skills', 'Skills (2, comma-separated) *', bgSkillVal, 'Deception, Intimidation');
+        html += F.inp('skills', 'Skills (2, comma separated) *', bgSkillVal, 'Deception, Intimidation');
         html += F.grid([
           F.inp('tools', 'Tool Proficiencies (optional)', bgToolVal, "Thieves' tools"),
           F.inp('languages', 'Extra Languages', e.languages||0, '0', 'number'),
@@ -3930,7 +3930,7 @@
         html += F.tex('featureDesc', 'Feature Description *', e.featureDesc, 'Your criminal contacts allow you to...', 3);
 
         html += F.head('Equipment');
-        html += F.inp('equipment', 'Equipment (comma-separated)', e.equipment||'', 'Common clothes, belt pouch, 10 gp');
+        html += F.inp('equipment', 'Equipment (comma separated)', e.equipment||'', 'Common clothes, belt pouch, 10 gp');
 
         html += F.head('Personality (Optional)');
         html += F.note('Suggested options for character personality. One per line. Players pick or roll when creating a character.');
@@ -3956,7 +3956,7 @@
         html += F.head('Identity');
         html += F.sel('parentClass', 'Parent Class *', parentOpts, e.parentClass||Object.keys(DND_DATA.classes)[0]);
         html += F.inp('name', 'Subclass Name *', e.name, 'e.g. School of Pyromancy');
-        html += F.inp('tags', 'Tags (comma-separated)', (e.tags||[]).join(', '), 'fire, elemental, magic');
+        html += F.inp('tags', 'Tags (comma separated)', (e.tags||[]).join(', '), 'fire, elemental, magic');
         html += F.tex('desc', 'Subclass Description', e.desc||'', 'A brief flavour text...', 2);
 
         html += F.head('Expanded Spell List (Optional)');

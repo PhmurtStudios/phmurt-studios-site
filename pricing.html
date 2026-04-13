@@ -34,7 +34,19 @@
   <script src="phmurt-auth.js?v=187"></script>
 
   <style>
-    /* ── Pricing page layout ─────────────────────────────────────── */
+    /* pricing page layout */
+    .pricing-mascot {
+      width: 100px;
+      height: auto;
+      margin: 0 auto 20px;
+      display: block;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.25));
+      animation: mascotFloat 3s ease-in-out infinite;
+    }
+    @keyframes mascotFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-6px); }
+    }
     .pricing-hero {
       text-align: center;
       padding: 80px 24px 40px;
@@ -52,7 +64,7 @@
       margin: 0 auto;
     }
 
-    /* ── Billing toggle ──────────────────────────────────────────── */
+    /* billing toggle */
     .billing-toggle {
       display: flex;
       align-items: center;
@@ -91,7 +103,7 @@
       font-weight: 600;
     }
 
-    /* ── Plan cards ──────────────────────────────────────────────── */
+    /* plan cards */
     .pricing-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -259,7 +271,7 @@
       color: var(--text-secondary, #555);
     }
 
-    /* ── FAQ section ─────────────────────────────────────────────── */
+    /* faq section */
     .pricing-faq {
       max-width: 640px;
       margin: 0 auto 80px;
@@ -308,8 +320,9 @@
   <div id="ps-site-shell"></div>
   <div id="ps-page-breadcrumb"></div>
 
-  <!-- ── Hero ──────────────────────────────────────────────────────── -->
+  
   <section class="pricing-hero" id="main-content">
+    <img src="owlbear-purple.png" alt="Phmurt Studios Owlbear Mascot" class="pricing-mascot" />
     <h1>Choose Your Path</h1>
     <p>Every adventurer starts somewhere. Upgrade to Pro when you're ready for the full arsenal.</p>
 
@@ -321,7 +334,7 @@
     </div>
   </section>
 
-  <!-- ── Plan cards ────────────────────────────────────────────────── -->
+  <!-- Plan cards -->
   <section class="pricing-grid">
 
     <!-- Free plan -->
@@ -343,7 +356,7 @@
         <li class="locked">Unlimited Characters &amp; Campaigns</li>
         <li class="locked">Random Generators</li>
         <li class="locked">Advanced Campaign Tabs</li>
-        <li class="locked">World-Building Tools</li>
+        <li class="locked">World Building Tools</li>
         <li class="locked">Priority Support</li>
       </ul>
     </div>
@@ -369,8 +382,8 @@
       </ul>
     </div>
 
-    <!-- Party Pass plan -->
-    <div class="plan-card">
+    <!-- Party Pass plan (hidden for now) -->
+    <div class="plan-card" id="party-card" style="display:none;">
       <h2 class="plan-name">Party Pass</h2>
       <p class="plan-desc">One DM + up to 5 players sharing one workspace.</p>
       <div class="plan-price" id="party-price">$9.99 <span class="period">/ month</span></div>
@@ -383,7 +396,7 @@
         <li>Unlimited characters &amp; campaigns</li>
         <li>All generators &amp; tools</li>
         <li>Advanced Campaign Tabs</li>
-        <li>World-Building Tools</li>
+        <li>World Building Tools</li>
         <li>Priority Support</li>
       </ul>
     </div>
@@ -392,7 +405,7 @@
     <div class="plan-card lifetime">
       <h2 class="plan-name">Lifetime Pass</h2>
       <p class="plan-desc">Everything Pro offers &mdash; plus exclusive content access, forever. One payment, no subscriptions.</p>
-      <div class="plan-price">$50 <span class="period">one-time</span></div>
+      <div class="plan-price">$50 <span class="period">one time</span></div>
       <p class="plan-urgency">Early Supporter Edition — Limited to first 200 members</p>
       <p class="plan-counter" id="lifetime-counter">199 of 200 remaining</p>
       <button class="plan-cta lifetime-cta" id="lifetime-cta">Claim Lifetime Access</button>
@@ -403,7 +416,7 @@
         <li>Unlimited characters &amp; campaigns</li>
         <li>All generators (Name, Loot, Encounter, Quest)</li>
         <li>Advanced Campaign Tabs</li>
-        <li>World-Building &amp; Economy Engines</li>
+        <li>World Building &amp; Economy Engines</li>
         <li>Hexcrawl &amp; Battle Map</li>
         <li>Priority Support</li>
       </ul>
@@ -411,7 +424,7 @@
 
   </section>
 
-  <!-- ── FAQ ───────────────────────────────────────────────────────── -->
+  <!-- FAQ -->
   <section class="pricing-faq">
     <h2>Frequently Asked Questions</h2>
 
@@ -435,18 +448,24 @@
       <div class="faq-q">Can I switch between monthly and yearly?</div>
       <div class="faq-a">Yes — manage your billing cycle from your subscription settings. Switch at any time and we'll prorate the difference.</div>
     </div>
+    <!-- Party Pass FAQ hidden for now -->
+    <!--
     <div class="faq-item">
       <div class="faq-q">How does the Party Pass work?</div>
       <div class="faq-a">One person purchases the Party Pass and invites up to 5 other players. Everyone gets a full Pro account with access to the shared campaign workspace. The DM can manage who's in the party from the settings.</div>
     </div>
+    -->
     <div class="faq-item">
       <div class="faq-q">What happens after 200 Lifetime Passes sell out?</div>
       <div class="faq-a">The Lifetime Pass is an early supporter offer limited to the first 200 members. Once sold out, this offer won't return at this price. Lifetime members keep access to every piece of content we ever publish — free and premium — forever. You'll still be able to subscribe to Pro, Party Pass, or other plans after it sells out.</div>
     </div>
+    <!-- Party Pass upgrade FAQ hidden for now -->
+    <!--
     <div class="faq-item">
       <div class="faq-q">Can I upgrade from Pro to Party Pass?</div>
       <div class="faq-a">Yes — upgrade at any time from your account settings. We'll prorate the difference between your current plan and the new plan, so you'll only pay for what you're gaining.</div>
     </div>
+    -->
   </section>
 
   <div id="ps-site-footer"></div>
@@ -459,7 +478,7 @@
 
   <script>
   (function () {
-    /* ── Billing toggle logic ─────────────────────────────────────── */
+    /* billing toggle logic */
     var yearly = false;
     var sw = document.getElementById('billing-switch');
     var lblM = document.getElementById('lbl-monthly');
@@ -535,7 +554,7 @@
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); yearly = !yearly; updatePricing(); }
     });
 
-    /* ── Lifetime slot counter (live from Supabase) ─────────────────── */
+    /* lifetime slot counter (live from supabase) */
     (function loadLifetimeSlots() {
       var counterEl = document.getElementById('lifetime-counter');
       var MAX_LIFETIME = 200;
@@ -567,7 +586,7 @@
       } catch (e) { /* Supabase not loaded yet — keep hardcoded fallback */ }
     })();
 
-    /* ── Inline toast helper ────────────────────────────────────────── */
+    /* inline toast helper */
     function showToast(msg, type) {
       var old = document.getElementById('phmurt-toast');
       if (old) old.remove();
@@ -589,7 +608,7 @@
       setTimeout(function () { t.style.transition = 'opacity 0.4s'; t.style.opacity = '0'; setTimeout(function () { t.remove(); }, 400); }, 5000);
     }
 
-    /* ── Handle return from Stripe ───────────────────────────────── */
+    /* handle return from stripe */
     try {
       var returnParams = new URLSearchParams(window.location.search);
       var subStatus = returnParams.get('subscription');
@@ -621,7 +640,7 @@
       }
     } catch (e) {}
 
-    /* ── Subscribe button helper function ──────────────────────── */
+    /* subscribe button helper function */
     var isCheckoutInProgress = false; // SECURITY: Prevent double-clicks during checkout
     var originalProText = ctaEl.textContent;
     var originalPartyText = partyCtaEl.textContent;
@@ -684,7 +703,7 @@
     partyCtaEl.addEventListener('click', handleCheckout(partyCtaEl, originalPartyText, 'party'));
     lifetimeCtaEl.addEventListener('click', handleCheckout(lifetimeCtaEl, originalLifetimeText, 'lifetime'));
 
-    /* ── Adjust CTAs if user is already subscribed ────────────────── */
+    /* adjust ctas if user is already subscribed */
     function updateForAuth() {
       if (typeof PhmurtDB === 'undefined') return;
       var sess = PhmurtDB.getSession();
@@ -768,7 +787,7 @@
       }
     } catch (e) { /* ignore */ }
 
-    /* ── FAQ accordion ────────────────────────────────────────────── */
+    /* faq accordion */
     document.querySelectorAll('.faq-q').forEach(function (q) {
       // SECURITY: Ensure proper keyboard accessibility
       q.setAttribute('role', 'button');

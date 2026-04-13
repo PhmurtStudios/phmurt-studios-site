@@ -29,293 +29,248 @@
   <script src="phmurt-auth.js?v=187"></script>
 
   <style>
-    :root {
-      --soup-accent: var(--crimson);
-      --soup-accent-dark: var(--crimson-dim);
-      --soup-light: #f5ede0;
-    }
+    /* soup savant page */
 
+    /* hero */
     .ps-hero {
-      background: linear-gradient(135deg, rgba(20, 20, 30, 0.95) 0%, rgba(40, 25, 35, 0.95) 100%);
-      border-bottom: 2px solid var(--crimson-border);
-      padding: 3rem 2rem;
       text-align: center;
-      margin-bottom: 3rem;
+      padding: 80px 24px 48px;
     }
-
     .ps-hero-eyebrow {
       font-family: 'Cinzel', serif;
-      font-size: 0.875rem;
-      letter-spacing: 0.15em;
-      color: var(--crimson);
-      margin-bottom: 0.5rem;
+      font-size: 10px;
+      letter-spacing: 4px;
       text-transform: uppercase;
+      color: var(--crimson);
+      margin-bottom: 12px;
     }
-
     .ps-hero-title {
       font-family: 'Cinzel', serif;
-      font-size: 3rem;
+      font-size: clamp(2rem, 5vw, 3rem);
       font-weight: 700;
-      color: var(--soup-accent);
-      margin: 0.5rem 0;
-      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+      color: var(--text);
+      margin: 0 0 8px;
     }
-
     .ps-hero-subtitle {
       font-family: 'Spectral', serif;
-      font-size: 1.25rem;
+      font-size: 1.15rem;
       color: var(--text-dim);
       font-style: italic;
-      margin-top: 0.5rem;
     }
 
+    /* flavor cards */
     .ps-flavor-cards {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 2rem;
-      margin: 3rem 0;
+      gap: 24px;
+      margin: 0 0 48px;
     }
-
     .ps-flavor-card {
-      background: linear-gradient(135deg, rgba(50, 30, 40, 0.8), rgba(30, 30, 40, 0.9));
-      border: 1px solid var(--crimson-border);
-      border-left: 4px solid var(--soup-accent);
-      padding: 1.5rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--crimson);
       border-radius: 4px;
+      padding: 24px;
       font-family: 'Spectral', serif;
-      font-size: 0.95rem;
-      line-height: 1.6;
-      color: var(--text);
+      font-size: 14px;
+      line-height: 1.75;
+      color: var(--text-dim);
     }
-
     .ps-flavor-card::before {
-      content: '"';
+      content: '\201C';
       font-family: 'Cinzel', serif;
-      font-size: 3rem;
-      color: var(--soup-accent);
-      opacity: 0.3;
+      font-size: 2.5rem;
+      color: var(--crimson);
+      opacity: 0.25;
       display: block;
-      margin: -0.5rem 0 0 0;
       line-height: 1;
+      margin-bottom: -4px;
     }
 
+    /* intro section */
     .ps-intro-section {
-      max-width: 900px;
-      margin: 3rem auto;
-      padding: 2rem;
-      background: rgba(30, 20, 25, 0.5);
-      border-left: 4px solid var(--soup-accent);
+      max-width: 860px;
+      margin: 0 auto 48px;
+      padding: 28px 32px;
+      background: var(--crimson-soft);
+      border-left: 3px solid var(--crimson);
+      border-radius: 0 4px 4px 0;
     }
-
     .ps-intro-section p {
       font-family: 'Spectral', serif;
-      font-size: 1rem;
-      line-height: 1.8;
-      color: var(--text);
-      margin: 1rem 0;
+      font-size: 15px;
+      line-height: 1.85;
+      color: var(--text-dim);
+      margin: 12px 0;
     }
+    .ps-intro-section p:first-child { margin-top: 0; }
+    .ps-intro-section p:last-child { margin-bottom: 0; }
 
+    /* section headings */
     .ps-section-heading {
       font-family: 'Cinzel', serif;
-      font-size: 1.75rem;
+      font-size: 11px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
       font-weight: 700;
-      color: var(--soup-accent);
-      margin: 2.5rem 0 1.5rem 0;
-      border-bottom: 2px solid var(--crimson-border);
-      padding-bottom: 0.75rem;
+      color: var(--crimson);
+      margin: 48px 0 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 10px;
     }
-
+    .ps-section-heading::before {
+      content: '\25C6';
+      font-size: 7px;
+      color: var(--crimson);
+    }
     .ps-section-heading.level-2 {
-      font-size: 1.35rem;
-      color: var(--soup-accent);
-      margin: 1.75rem 0 1rem 0;
-      border-bottom: 1px solid var(--crimson-border);
+      font-size: 10px;
+      letter-spacing: 3px;
+      margin: 32px 0 16px;
+      border-bottom: 1px solid var(--border);
     }
 
+    /* stat block */
     .ps-stat-block {
-      background: linear-gradient(135deg, rgba(40, 30, 35, 0.9), rgba(30, 25, 30, 0.95));
-      border: 2px solid var(--crimson-border);
-      border-left: 4px solid var(--soup-accent);
-      padding: 1.5rem;
-      margin: 2rem 0;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: 4px;
+      padding: 28px;
+      margin: 24px 0;
+      position: relative;
+      overflow: hidden;
     }
-
+    .ps-stat-block::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--crimson), transparent);
+    }
     .ps-stat-row {
       display: grid;
       grid-template-columns: 200px 1fr;
-      gap: 1rem;
-      margin: 0.75rem 0;
+      gap: 12px;
+      margin: 10px 0;
       align-items: flex-start;
     }
-
     .ps-stat-label {
       font-family: 'Cinzel', serif;
       font-weight: 700;
-      color: var(--soup-accent);
+      color: var(--crimson);
       text-transform: uppercase;
-      font-size: 0.85rem;
-      letter-spacing: 0.1em;
+      font-size: 9px;
+      letter-spacing: 2px;
     }
-
     .ps-stat-value {
       font-family: 'Spectral', serif;
-      color: var(--text);
-      font-size: 0.95rem;
+      color: var(--text-dim);
+      font-size: 14px;
     }
 
-    .ps-table {
+    /* tables */
+    .ps-table, .ps-soup-table {
       width: 100%;
       border-collapse: collapse;
-      margin: 2rem 0;
-      background: rgba(20, 20, 30, 0.8);
-      border: 1px solid var(--crimson-border);
+      margin: 24px 0;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      overflow: hidden;
     }
-
-    .ps-table thead {
-      background: linear-gradient(90deg, rgba(50, 30, 40, 0.8), rgba(30, 30, 40, 0.9));
-      border-bottom: 2px solid var(--soup-accent);
+    .ps-table thead, .ps-soup-table thead {
+      background: var(--crimson-soft);
+      border-bottom: 1px solid var(--crimson-border);
     }
-
-    .ps-table th {
-      padding: 0.75rem;
+    .ps-table th, .ps-soup-table th {
+      padding: 10px 14px;
       text-align: left;
       font-family: 'Cinzel', serif;
       font-weight: 700;
-      color: var(--soup-accent);
-      font-size: 0.85rem;
-      letter-spacing: 0.1em;
+      color: var(--crimson);
+      font-size: 9px;
+      letter-spacing: 2px;
       text-transform: uppercase;
     }
-
-    .ps-table td {
-      padding: 0.75rem;
-      border-bottom: 1px solid var(--crimson-border);
+    .ps-table td, .ps-soup-table td {
+      padding: 10px 14px;
+      border-bottom: 1px solid var(--border);
       font-family: 'Spectral', serif;
-      color: var(--text);
-      font-size: 0.9rem;
+      color: var(--text-dim);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .ps-table tbody tr:hover, .ps-soup-table tbody tr:hover {
+      background: var(--crimson-soft);
     }
 
-    .ps-table tbody tr:hover {
-      background: rgba(60, 40, 50, 0.6);
-    }
-
+    /* feature blocks */
     .ps-feature {
-      margin: 2rem 0;
-      padding: 1.5rem;
-      background: rgba(30, 20, 25, 0.5);
-      border-left: 4px solid var(--soup-accent);
-      border-radius: 2px;
+      margin: 24px 0;
+      padding: 24px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--crimson);
+      border-radius: 0 4px 4px 0;
     }
-
     .ps-feature-title {
       font-family: 'Cinzel', serif;
-      font-size: 1.2rem;
+      font-size: 16px;
       font-weight: 700;
-      color: var(--soup-accent);
-      margin-bottom: 0.75rem;
+      color: var(--text);
+      margin-bottom: 8px;
     }
-
     .ps-feature-subtitle {
       font-family: 'Cinzel', serif;
-      font-size: 0.9rem;
-      color: var(--text-dim);
-      margin-bottom: 1rem;
-      font-weight: 500;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 12px;
     }
-
     .ps-feature p {
       font-family: 'Spectral', serif;
-      color: var(--text);
-      font-size: 0.95rem;
-      line-height: 1.7;
-      margin: 0.75rem 0;
+      color: var(--text-dim);
+      font-size: 14px;
+      line-height: 1.75;
+      margin: 10px 0;
     }
-
     .ps-feature ul {
       font-family: 'Spectral', serif;
-      color: var(--text);
-      font-size: 0.95rem;
-      line-height: 1.7;
-      margin: 0.75rem 0;
-      margin-left: 1.5rem;
+      color: var(--text-dim);
+      font-size: 14px;
+      line-height: 1.75;
+      margin: 10px 0 10px 20px;
     }
+    .ps-feature li { margin: 6px 0; }
 
-    .ps-feature li {
-      margin: 0.5rem 0;
-    }
-
-    .ps-soup-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin: 1.5rem 0;
-      background: rgba(20, 20, 30, 0.8);
-      border: 1px solid var(--crimson-border);
-    }
-
-    .ps-soup-table thead {
-      background: linear-gradient(90deg, rgba(50, 30, 40, 0.8), rgba(30, 30, 40, 0.9));
-      border-bottom: 2px solid var(--soup-accent);
-    }
-
-    .ps-soup-table th {
-      padding: 0.75rem;
-      text-align: left;
-      font-family: 'Cinzel', serif;
-      font-weight: 700;
-      color: var(--soup-accent);
-      font-size: 0.85rem;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-    }
-
-    .ps-soup-table td {
-      padding: 0.75rem;
-      border-bottom: 1px solid var(--crimson-border);
-      font-family: 'Spectral', serif;
-      color: var(--text);
-      font-size: 0.9rem;
-    }
-
-    .ps-soup-table tbody tr:hover {
-      background: rgba(60, 40, 50, 0.6);
-    }
-
+    /* content & columns */
     .ps-content-wrapper {
-      max-width: 1200px;
+      max-width: 1100px;
       margin: 0 auto;
-      padding: 0 56px;
+      padding: 0 56px 56px;
     }
-
+    .ps-content-wrapper section p {
+      font-size: 15px;
+      color: var(--text-dim);
+      line-height: 1.85;
+      margin-bottom: 16px;
+    }
     .ps-columns-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 2rem;
-      margin: 2rem 0;
+      gap: 24px;
+      margin: 24px 0;
     }
 
     @media (max-width: 768px) {
-      .ps-columns-2 {
-        grid-template-columns: 1fr;
-      }
-
-      .ps-hero-title {
-        font-size: 2rem;
-      }
-
-      .ps-stat-row {
-        grid-template-columns: 1fr;
-        gap: 0.25rem;
-      }
-
-      .ps-table, .ps-soup-table {
-        font-size: 0.8rem;
-      }
-
-      .ps-table th, .ps-table td,
-      .ps-soup-table th, .ps-soup-table td {
-        padding: 0.5rem;
-      }
+      .ps-columns-2 { grid-template-columns: 1fr; }
+      .ps-hero-title { font-size: 2rem; }
+      .ps-stat-row { grid-template-columns: 1fr; gap: 4px; }
+      .ps-content-wrapper { padding: 0 24px 40px; }
+      .ps-table th, .ps-table td, .ps-soup-table th, .ps-soup-table td { padding: 8px; }
     }
   </style>
 </head>
@@ -325,14 +280,15 @@
   <div id="ps-site-shell"></div>
   <div id="ps-page-breadcrumb"></div>
 
-  <main class="ps-content">
-    <!-- Hero Section -->
-    <div class="ps-hero">
-      <div class="ps-hero-eyebrow">D&D 5e Homebrew Class</div>
-      <h1 class="ps-hero-title">The Soup Savant</h1>
-      <p class="ps-hero-subtitle">A Life Devoted to the Perfect Bowl</p>
-    </div>
+  <div class="ps-page-hero">
+    <div class="ps-page-eyebrow">D&D 5e Homebrew Class</div>
+    <div class="ps-page-title">The Soup Savant</div>
+    <div class="ps-page-subtitle">A Life Devoted to the Perfect Bowl</div>
+  </div>
 
+  <div class="ps-divider"><div class="ps-div-line"></div><div class="ps-div-ornament"><div class="ps-div-dot"></div><div class="ps-div-gem"></div><div class="ps-div-dot"></div></div><div class="ps-div-line r"></div></div>
+
+  <main class="ps-content">
     <div class="ps-content-wrapper">
       <!-- Flavor Stories -->
       <div class="ps-flavor-cards">
@@ -499,7 +455,7 @@
               <td>7</td>
               <td>+3</td>
               <td>d6</td>
-              <td>Pop-up Stand</td>
+              <td>Pop Up Stand</td>
               <td>5</td>
               <td>5</td>
               <td>4th</td>
@@ -571,7 +527,7 @@
               <td>15</td>
               <td>+5</td>
               <td>d10</td>
-              <td>Pop-up Restaurant</td>
+              <td>Pop Up Restaurant</td>
               <td>9</td>
               <td>9</td>
               <td>8th</td>
@@ -636,24 +592,24 @@
 
           <p>You have mastered the magical art of Soupcooking. Your soups are the vessels through which you channel magical power. You have the ability to prepare soups in advance and store them in magical thermoses. At the beginning of your adventure or the start of each long rest, you choose which soups to prepare based on your Instant Soups, Cookbook, and Thermos capacity.</p>
 
-          <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1.5rem 0 0.75rem 0;">Instant Soups</h4>
+          <h4 style="font-family: 'Cinzel', serif; color: var(--crimson); margin: 1.5rem 0 0.75rem 0;">Instant Soups</h4>
           <p>You know a certain number of soup recipes and can prepare a number of soups equal to your Soup Savant level plus your Charisma modifier (minimum of one soup). When you prepare soups, you choose from your Cookbook. The Cookbook subsection describes how to add soups to your Cookbook.</p>
 
-          <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1.5rem 0 0.75rem 0;">Cookbook</h4>
+          <h4 style="font-family: 'Cinzel', serif; color: var(--crimson); margin: 1.5rem 0 0.75rem 0;">Cookbook</h4>
           <p>You start with a Cookbook containing two 1st level soups of your choice. You add one soup to your Cookbook whenever you gain a Soup Savant level.</p>
 
-          <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1.5rem 0 0.75rem 0;">Thermoses and Cooking Soups</h4>
+          <h4 style="font-family: 'Cinzel', serif; color: var(--crimson); margin: 1.5rem 0 0.75rem 0;">Thermoses and Cooking Soups</h4>
           <p>At 1st level, you have two magical thermoses. Each thermos can hold one soup. When you finish a long rest, you can prepare soups in your thermoses. You can prepare any soup in your Cookbook that you have the thermos level to hold.</p>
 
           <p>When you use a soup, you expend it from the thermos. As long as you have access to basic cooking supplies and ingredients, you can spend 10 minutes preparing a new soup to fill an empty thermos during a short or long rest.</p>
 
-          <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1.5rem 0 0.75rem 0;">Soupcooking Ability</h4>
+          <h4 style="font-family: 'Cinzel', serif; color: var(--crimson); margin: 1.5rem 0 0.75rem 0;">Soupcooking Ability</h4>
           <p>Charisma is your Soupcooking ability for your soups. You use your Charisma modifier whenever a soup refers to your spellcasting ability. Additionally, you use your Charisma modifier when setting the saving throw DC for a soup you have prepared and when making an attack roll with one.</p>
 
           <p><strong>Soup Save DC:</strong> 8 + your proficiency bonus + your Charisma modifier</p>
           <p><strong>Soup Attack Modifier:</strong> your proficiency bonus + your Charisma modifier</p>
 
-          <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1.5rem 0 0.75rem 0;">Slow Cooking</h4>
+          <h4 style="font-family: 'Cinzel', serif; color: var(--crimson); margin: 1.5rem 0 0.75rem 0;">Slow Cooking</h4>
           <p>When you reach 5th level, your Instant Soups and Thermos Maximum increases. Your Instant Soups increases to 4, and you gain an additional thermos. The maximum thermos level is the thermos level shown on the Soup Savant table for your level.</p>
         </div>
 
@@ -770,12 +726,12 @@
           <p>Your experience tasting soups has attuned you to magical flavors. You can taste the presence of magic in food and drink, and you gain advantage on checks to identify the properties of a food item or drink. You also gain advantage on saving throws against being poisoned or affected by harmful substances in food or drink.</p>
         </div>
 
-        <!-- Pop-up Stand -->
+        <!-- Pop Up Stand -->
         <div class="ps-feature">
-          <div class="ps-feature-title">Pop-up Stand</div>
+          <div class="ps-feature-title">Pop Up Stand</div>
           <div class="ps-feature-subtitle">7th Level Soup Savant Feature</div>
 
-          <p>You can establish a temporary soup stand in 1 hour and break it down in 10 minutes. While operating a pop-up stand, you can prepare soups without using your prepared soups, spending resources and time instead. Any creature that consumes a soup from your pop-up stand gains temporary hit points equal to your Culinary Die plus your Charisma modifier. You can set up your pop-up stand in a place of your choosing, and you can operate it independently of your companions.</p>
+          <p>You can establish a temporary soup stand in 1 hour and break it down in 10 minutes. While operating a pop up stand, you can prepare soups without using your prepared soups, spending resources and time instead. Any creature that consumes a soup from your pop up stand gains temporary hit points equal to your Culinary Die plus your Charisma modifier. You can set up your pop up stand in a place of your choosing, and you can operate it independently of your companions.</p>
         </div>
 
         <!-- Soup Kitchen -->
@@ -808,22 +764,22 @@
 
           <p>Your soups have achieved legendary status. You can now create soups with the following special properties:</p>
 
-          <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1rem 0 0.5rem 0;">Smell of Divine Presence</h4>
+          <h4 style="font-family: 'Cinzel', serif; color: var(--crimson); margin: 1rem 0 0.5rem 0;">Smell of Divine Presence</h4>
           <p>The aroma of your soup can be detected up to 300 feet away. Creatures that smell it gain advantage on saving throws against fear and being charmed for 1 minute.</p>
 
-          <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1rem 0 0.5rem 0;">Healing Properties</h4>
+          <h4 style="font-family: 'Cinzel', serif; color: var(--crimson); margin: 1rem 0 0.5rem 0;">Healing Properties</h4>
           <p>When a creature consumes your soup, they regain hit points equal to 2d6 plus your Charisma modifier. A creature can benefit from this property once per long rest.</p>
 
-          <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1rem 0 0.5rem 0;">Charming Aura</h4>
+          <h4 style="font-family: 'Cinzel', serif; color: var(--crimson); margin: 1rem 0 0.5rem 0;">Charming Aura</h4>
           <p>Any creature that consumes your soup has advantage on Charisma checks for 1 hour. Additionally, while under the effect of this property, the creature is considered friendly to you and your allies for the purpose of Charisma (Persuasion) checks.</p>
         </div>
 
-        <!-- Pop-up Restaurant -->
+        <!-- Pop Up Restaurant -->
         <div class="ps-feature">
-          <div class="ps-feature-title">Pop-up Restaurant</div>
+          <div class="ps-feature-title">Pop Up Restaurant</div>
           <div class="ps-feature-subtitle">15th Level Soup Savant Feature</div>
 
-          <p>You can establish a semi-permanent restaurant in 1 week using materials costing 500 gold pieces. Your pop-up restaurant provides all the benefits of your pop-up stand, plus the following:</p>
+          <p>You can establish a semi-permanent restaurant in 1 week using materials costing 500 gold pieces. Your pop up restaurant provides all the benefits of your pop up stand, plus the following:</p>
 
           <ul>
             <li>You can hire staff to assist you in preparing and serving soups</li>
@@ -849,7 +805,7 @@
 
           <p>You have reached the pinnacle of your culinary mastery. When you roll initiative and have no soups prepared, you regain all expended soups. Additionally, you can attempt to create your Magnum Opus.</p>
 
-          <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1rem 0 0.5rem 0;">Magnum Opus</h4>
+          <h4 style="font-family: 'Cinzel', serif; color: var(--crimson); margin: 1rem 0 0.5rem 0;">Magnum Opus</h4>
           <p>You can spend 8 hours during a long rest to create your Magnum Opus. This is the perfect soup. You create a single thermos containing the Magnum Opus, a legendary soup. This soup has the following properties:</p>
 
           <ul>
@@ -874,16 +830,16 @@
 
         <p>When you use a soup, you choose one of the following delivery methods:</p>
 
-        <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1.5rem 0 0.75rem 0;">Served</h4>
+        <h4 style="font-family: 'Cinzel', serif; color: var(--crimson); margin: 1.5rem 0 0.75rem 0;">Served</h4>
         <p>You present the soup to a creature within 5 feet of you. The creature must be willing to consume the soup, or you must succeed on a Charisma (Persuasion) check opposed by their Wisdom (Insight) check. If the creature consumes the soup, the effects activate immediately. Serving a soup is an action.</p>
 
-        <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1.5rem 0 0.75rem 0;">Thrown</h4>
+        <h4 style="font-family: 'Cinzel', serif; color: var(--crimson); margin: 1.5rem 0 0.75rem 0;">Thrown</h4>
         <p>You throw the thermos as a ranged attack with a range of 20/60 feet. The thermos breaks on impact and releases a cloud of soup. All creatures in a 10-foot-radius sphere centered on the point of impact must make a Constitution saving throw. Creatures that fail take damage equal to 3d6 plus your Charisma modifier. Creatures that succeed take half damage. Throwing a soup is an action.</p>
 
-        <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1.5rem 0 0.75rem 0;">Pressure Cooked</h4>
+        <h4 style="font-family: 'Cinzel', serif; color: var(--crimson); margin: 1.5rem 0 0.75rem 0;">Pressure Cooked</h4>
         <p>You rupture a thermos to release a burst of magical pressure. All creatures within 15 feet of you (excluding yourself) must make a Constitution saving throw. Creatures that fail are knocked prone and take damage equal to 2d6 plus your Charisma modifier. Creatures that succeed take half damage and are not knocked prone. Using a Pressure Cooked soup is an action.</p>
 
-        <h4 style="font-family: 'Cinzel', serif; color: var(--soup-accent); margin: 1.5rem 0 0.75rem 0;">Ranged Spell Attack</h4>
+        <h4 style="font-family: 'Cinzel', serif; color: var(--crimson); margin: 1.5rem 0 0.75rem 0;">Ranged Spell Attack</h4>
         <p>You use the soup as a ranged spell attack with a range of 30/120 feet. Make a spell attack roll. On a hit, the target takes damage equal to your Culinary Die plus your Charisma modifier, plus any additional effects of the soup. On a miss, the thermos still breaks and some soup is wasted, but the primary effect is negated.</p>
 
         <h3 class="ps-section-heading level-2">Developing New Recipes</h3>
@@ -895,6 +851,8 @@
 
     </div>
   </main>
+
+  <div class="ps-divider"><div class="ps-div-line"></div><div class="ps-div-ornament"><div class="ps-div-dot"></div><div class="ps-div-gem"></div><div class="ps-div-dot"></div></div><div class="ps-div-line r"></div></div>
 
   <div id="ps-site-footer"></div>
 

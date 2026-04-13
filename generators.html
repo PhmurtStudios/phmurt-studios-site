@@ -36,10 +36,10 @@
 <body data-phmurt-feature="generators">
   <a href="#main-content" class="ps-skip-nav">Skip to content</a>
   <style>
-    /* ═══════════════════════════════ GENERATORS PAGE STYLES ═══════════════════════════════ */
+    /* generators page styles */
     .gen-container {
       display: grid;
-      grid-template-columns: 280px 1fr;
+      grid-template-columns: 260px 1fr;
       gap: 0;
       min-height: calc(100vh - 200px);
       background: var(--bg);
@@ -51,14 +51,15 @@
     @media (max-width: 1024px) {
       .gen-container {
         grid-template-columns: 1fr;
+        padding: 0 16px;
       }
     }
 
-    /* ── SIDEBAR ── */
+    /* sidebar */
     .gen-sidebar {
       background: var(--bg-card);
       border-right: 1px solid var(--border);
-      padding: 24px;
+      padding: 28px 20px;
       position: sticky;
       top: 0;
       max-height: 100vh;
@@ -72,74 +73,88 @@
       letter-spacing: 3px;
       text-transform: uppercase;
       color: var(--crimson);
-      margin-bottom: 20px;
+      margin-bottom: 28px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       gap: 8px;
     }
 
     .gen-sidebar-title::before {
-      content: '';
-      display: block;
-      width: 20px;
-      height: 1px;
-      background: var(--crimson);
+      content: '\2726';
+      font-size: 10px;
+      color: var(--crimson);
     }
 
     .gen-category {
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
 
     .gen-category-label {
       font-family: 'Cinzel', serif;
-      font-size: 10px;
-      letter-spacing: 2px;
+      font-size: 9px;
+      letter-spacing: 2.5px;
       text-transform: uppercase;
       color: var(--text-muted);
-      margin-bottom: 12px;
+      margin-bottom: 10px;
+      padding-left: 12px;
       display: block;
+      opacity: 0.7;
     }
 
     .gen-nav-item {
-      display: block;
+      display: flex;
+      align-items: center;
+      gap: 10px;
       padding: 10px 14px;
-      margin-bottom: 6px;
-      background: var(--bg-mid);
-      border: 1px solid var(--border-subtle);
-      border-radius: 2px;
+      margin-bottom: 4px;
+      background: transparent;
+      border: none;
+      border-radius: 4px;
       font-family: 'Spectral', serif;
-      font-size: 13px;
+      font-size: 13.5px;
       color: var(--text-dim);
       cursor: pointer;
       transition: all 0.2s ease;
       text-align: left;
-      border: none;
       width: 100%;
+      position: relative;
     }
 
     .gen-nav-item:hover {
       background: var(--bg-hover);
       color: var(--text);
-      border-left: 3px solid var(--crimson);
-      padding-left: 11px;
+      padding-left: 18px;
     }
 
     .gen-nav-item.active {
-      background: rgba(192, 57, 43, 0.15);
+      background: rgba(192, 57, 43, 0.12);
       color: var(--crimson);
-      border-left: 3px solid var(--crimson);
-      padding-left: 11px;
+      padding-left: 18px;
+      font-weight: 500;
     }
 
-    /* ── MAIN CONTENT ── */
+    .gen-nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 6px;
+      bottom: 6px;
+      width: 3px;
+      background: var(--crimson);
+      border-radius: 0 2px 2px 0;
+    }
+
+    /* main content */
     .gen-main {
-      padding: 48px;
+      padding: 48px 56px;
       overflow-y: auto;
     }
 
     @media (max-width: 768px) {
       .gen-main {
-        padding: 32px 20px;
+        padding: 28px 20px;
       }
     }
 
@@ -149,36 +164,37 @@
 
     .gen-panel.active {
       display: block;
-      animation: fadeIn 0.3s ease;
+      animation: fadeIn 0.35s ease;
     }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
+      from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
     .gen-title {
       font-family: 'Cinzel', serif;
-      font-size: 32px;
+      font-size: 28px;
       letter-spacing: 2px;
       color: var(--text);
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
 
     .gen-description {
       font-size: 14px;
       color: var(--text-dim);
       margin-bottom: 32px;
-      max-width: 600px;
+      max-width: 620px;
+      line-height: 1.65;
     }
 
-    /* ── CONTROLS ── */
+    /* controls */
     .gen-controls {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      border-radius: 2px;
+      border-radius: 4px;
       padding: 24px;
-      margin-bottom: 32px;
+      margin-bottom: 28px;
       display: grid;
       gap: 16px;
     }
@@ -200,10 +216,10 @@
       background: var(--bg-input);
       border: 1px solid var(--border-subtle);
       color: var(--text);
-      padding: 8px 12px;
+      padding: 9px 14px;
       font-family: 'Spectral', serif;
       font-size: 14px;
-      border-radius: 2px;
+      border-radius: 4px;
       transition: all 0.2s ease;
     }
 
@@ -221,6 +237,7 @@
       display: flex;
       gap: 12px;
       flex-wrap: wrap;
+      align-items: center;
     }
 
     .gen-button {
@@ -228,45 +245,51 @@
       font-size: 10px;
       letter-spacing: 2px;
       text-transform: uppercase;
-      padding: 10px 20px;
+      padding: 11px 22px;
       border: 1px solid var(--crimson-border);
       background: transparent;
       color: var(--crimson);
       cursor: pointer;
-      transition: all 0.2s ease;
-      border-radius: 2px;
+      transition: all 0.25s ease;
+      border-radius: 4px;
     }
 
     .gen-button:hover {
       background: var(--crimson-soft);
       border-color: var(--crimson);
+      transform: translateY(-1px);
     }
 
     .gen-button.primary {
       background: var(--crimson);
       color: var(--white);
       border-color: var(--crimson);
+      box-shadow: 0 2px 8px rgba(192, 57, 43, 0.25);
     }
 
     .gen-button.primary:hover {
       background: var(--crimson-dim);
       border-color: var(--crimson-dim);
+      box-shadow: 0 4px 14px rgba(192, 57, 43, 0.35);
+      transform: translateY(-1px);
     }
 
     .gen-button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
+      transform: none;
     }
 
-    /* ── OUTPUT ── */
+    /* output */
     .gen-output {
       background: var(--bg-card);
-      border: 1px solid var(--crimson-border);
-      border-radius: 2px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
       padding: 32px;
-      margin-bottom: 32px;
+      margin-bottom: 28px;
       min-height: 200px;
       position: relative;
+      overflow: hidden;
     }
 
     .gen-output::before {
@@ -293,6 +316,7 @@
       text-align: center;
       padding: 60px 20px;
       font-style: italic;
+      font-size: 14px;
     }
 
     .gen-result {
@@ -305,8 +329,8 @@
     }
 
     .gen-result-item {
-      margin-bottom: 24px;
-      padding-bottom: 24px;
+      margin-bottom: 20px;
+      padding-bottom: 20px;
       border-bottom: 1px solid var(--border);
     }
 
@@ -326,17 +350,22 @@
     }
 
     .gen-result-value {
-      font-size: 16px;
+      font-size: 15px;
       color: var(--text);
-      line-height: 1.6;
+      line-height: 1.65;
     }
 
     .gen-npc-card {
       background: var(--bg-mid);
       border: 1px solid var(--border);
-      border-radius: 2px;
+      border-radius: 4px;
       padding: 24px;
       margin-bottom: 16px;
+      transition: border-color 0.2s ease;
+    }
+
+    .gen-npc-card:hover {
+      border-color: var(--crimson-border);
     }
 
     .gen-npc-name {
@@ -355,7 +384,7 @@
 
     .gen-npc-stat {
       display: grid;
-      grid-template-columns: 180px 1fr;
+      grid-template-columns: 160px 1fr;
       gap: 12px;
       margin-bottom: 8px;
       font-size: 13px;
@@ -411,11 +440,11 @@
       font-weight: 700;
     }
 
-    /* ── NARRATIVE TEXT ── */
+    /* narrative text */
     .gen-narrative{background:rgba(139,115,85,.12);border-left:4px solid var(--crimson);padding:16px 20px;margin:0 0 20px 0;border-radius:0 6px 6px 0;font-family:'Spectral',serif;font-style:italic;font-size:1.05rem;line-height:1.7;color:var(--text-muted,#b8a88a);}
     .gen-narrative strong{color:var(--crimson);font-style:normal;}
 
-    /* ── ACTION BUTTONS ── */
+    /* action buttons */
     .gen-result-actions {
       display: flex;
       gap: 10px;
@@ -449,7 +478,7 @@
       background: var(--crimson-soft);
     }
 
-    /* ── GEN OUTPUT ACTIONS (Copy/Save buttons) ── */
+    /* gen output actions (copy/save buttons) */
     .gen-output-actions {
       display: flex;
       gap: 8px;
@@ -482,7 +511,7 @@
       color: var(--crimson);
     }
 
-    /* ── HISTORY PANEL ── */
+    /* history panel */
     .gen-history-panel {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -542,7 +571,7 @@
       color: var(--text);
     }
 
-    /* ── RESPONSIVE ── */
+    /* responsive */
     @media (max-width: 1024px) {
       .gen-sidebar {
         position: relative;
@@ -585,7 +614,7 @@
       }
     }
 
-    /* ── CANVAS GENERATORS ── */
+    /* canvas generators */
     .gen-canvas-container {
       background: var(--bg-mid);
       border: 1px solid var(--border);
@@ -668,7 +697,7 @@
       border-radius: 2px;
     }
 
-    /* ── 5E STAT BLOCK ── */
+    /* 5e stat block */
     .statblock {
       background: var(--bg-card);
       border: 2px solid var(--border);
@@ -982,7 +1011,7 @@
       background: #c9302c;
     }
 
-    /* ── IMPROVED OUTPUT CARD STYLES ── */
+    /* improved output card styles */
     .gen-output-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -1053,7 +1082,7 @@
       background: var(--crimson-soft);
     }
 
-    /* ── SPELL CARD STYLES ── */
+    /* spell card styles */
     .gen-spell-card {
       background: var(--bg-mid);
       border: 1px solid var(--border);
@@ -1172,7 +1201,7 @@
       border-radius: 4px;
     }
 
-    /* ═══════════════════════════════ ENHANCED GENERATOR STYLES ═══════════════════════════════ */
+    /* enhanced generator styles */
 
     @keyframes fadeIn {
       from {
@@ -1530,62 +1559,42 @@
   </div>
 
   <div class="gen-container">
-    <!-- SIDEBAR -->
+    
     <div class="gen-sidebar">
       <div class="gen-sidebar-title">Generators</div>
 
       <div class="gen-category">
-        <label class="gen-category-label">Characters</label>
+        <label class="gen-category-label">Characters & Places</label>
         <button class="gen-nav-item active" data-gen="npc">NPC Generator</button>
-      </div>
-
-      <div class="gen-category">
-        <button class="gen-nav-item" data-gen="maps">Fantasy Maps</button>
-      </div>
-
-      <div class="gen-category">
-        <label class="gen-category-label">Places</label>
+        <button class="gen-nav-item" data-gen="monster-creator">Monster Creator</button>
         <button class="gen-nav-item" data-gen="tavern">Tavern / Inn</button>
       </div>
 
       <div class="gen-category">
-        <label class="gen-category-label">Encounters</label>
+        <label class="gen-category-label">Encounters & Loot</label>
         <button class="gen-nav-item" data-gen="encounter">Encounter</button>
         <button class="gen-nav-item" data-gen="treasure">Treasure & Loot</button>
-      </div>
-
-      <div class="gen-category">
-        <label class="gen-category-label">Creatures</label>
-        <button class="gen-nav-item" data-gen="monster-creator">Monster Creator</button>
-      </div>
-
-      <div class="gen-category">
-        <label class="gen-category-label">Adventure</label>
         <button class="gen-nav-item" data-gen="plot">Plot Hooks</button>
-        <button class="gen-nav-item" data-gen="weather">Weather</button>
       </div>
 
       <div class="gen-category">
-        <label class="gen-category-label">Spellcasting</label>
+        <label class="gen-category-label">Magic & Spells</label>
         <button class="gen-nav-item" data-gen="spellgen">Spell Generator</button>
-      </div>
-
-      <div class="gen-category">
-        <label class="gen-category-label">Magic</label>
         <button class="gen-nav-item" data-gen="wildmagic">Wild Magic Surge</button>
         <button class="gen-nav-item" data-gen="potion">Potion Effects</button>
       </div>
 
       <div class="gen-category">
-        <label class="gen-category-label">Flavor</label>
+        <label class="gen-category-label">World & Flavor</label>
+        <button class="gen-nav-item" data-gen="weather">Weather</button>
         <button class="gen-nav-item" data-gen="flavor">Flavor & Details</button>
       </div>
     </div>
 
-    <!-- MAIN CONTENT -->
+    
     <div class="gen-main">
 
-      <!-- NPC GENERATOR -->
+      <!-- npc generator -->
       <div class="gen-panel active" data-gen="npc">
         <h1 class="gen-title">NPC Generator</h1>
         <p class="gen-description">Create detailed, memorable NPCs with personality, motivation, and quirks. Click Generate to create a complete character.</p>
@@ -1679,7 +1688,7 @@
         </div>
       </div>
 
-      <!-- TAVERN GENERATOR -->
+      <!-- tavern generator -->
       <div class="gen-panel" data-gen="tavern">
         <h1 class="gen-title">Tavern & Inn Generator</h1>
         <p class="gen-description">Generate complete taverns with names, atmospheres, signature drinks, and rumors. Every tavern needs a barkeep.</p>
@@ -1706,8 +1715,8 @@
         </div>
       </div>
 
-      <!-- UNIFIED MAPS GENERATOR -->
-      <div class="gen-panel" data-gen="maps">
+      <!-- UNIFIED MAPS GENERATOR (hidden — removed from sidebar) -->
+      <div class="gen-panel" data-gen="maps" style="display:none !important;"
         <h1 class="gen-title">Fantasy World Generator</h1>
         <p class="gen-description">Generate a massive continental fantasy world with kingdoms, cities, road networks, dungeons, and points of interest. Click to zoom from the world map into kingdoms and individual cities.</p>
 
@@ -1969,7 +1978,7 @@
         </div>
       </div>
 
-      <!-- ENCOUNTER GENERATOR -->
+      <!-- encounter generator -->
       <div class="gen-panel" data-gen="encounter">
         <h1 class="gen-title">Encounter Generator</h1>
         <p class="gen-description">Generate balanced combat or roleplay encounters based on party size and difficulty.</p>
@@ -2018,7 +2027,7 @@
         </div>
       </div>
 
-      <!-- TREASURE GENERATOR -->
+      <!-- treasure generator -->
       <div class="gen-panel" data-gen="treasure">
         <h1 class="gen-title">Treasure & Loot Generator</h1>
         <p class="gen-description">Generate treasure hoards, coins, gems, art objects, and magical items.</p>
@@ -2054,7 +2063,7 @@
         </div>
       </div>
 
-      <!-- MONSTER CREATOR GENERATOR -->
+      <!-- monster creator generator -->
       <div class="gen-panel" data-gen="monster-creator">
         <h1 class="gen-title">Monster Creator</h1>
         <p class="gen-description">Create unique D&D 5e monster stat blocks powered by AI. Describe any creature concept and get a fully detailed, original stat block with unique abilities and lore.</p>
@@ -2066,7 +2075,7 @@
           <button class="mode-tab" onclick="switchMonsterMode('detailed', this)">Detailed Builder</button>
         </div>
 
-        <!-- QUICK GENERATE MODE -->
+        <!-- quick generate mode -->
         <div id="monsterQuickMode" class="mode-content active">
           <div class="gen-controls">
             <div class="gen-control-group">
@@ -2085,7 +2094,7 @@
               <div class="gen-control-group">
                 <label class="gen-control-label">Challenge Rating (CR) Preference</label>
                 <select class="gen-control-input" id="monsterCRPref">
-                  <option value="auto" selected>Auto-detect from concept</option>
+                  <option value="auto" selected>Auto detect from concept</option>
                   <option value="0">0 (Minion)</option>
                   <option value="0.5">1/2 (Very Easy)</option>
                   <option value="1">1 (Easy)</option>
@@ -2094,7 +2103,7 @@
                   <option value="8">8 (Hard)</option>
                   <option value="11">11 (Very Hard)</option>
                   <option value="15">15 (Deadly)</option>
-                  <option value="20">20 (Near-Legendary)</option>
+                  <option value="20">20 (Near Legendary)</option>
                   <option value="25">25+ (Legendary)</option>
                 </select>
               </div>
@@ -2119,7 +2128,7 @@
           </div>
         </div>
 
-        <!-- DETAILED BUILDER MODE -->
+        <!-- detailed builder mode -->
         <div id="monsterDetailedMode" class="mode-content">
           <div class="gen-controls">
             <div class="gen-control-group">
@@ -2230,7 +2239,7 @@
             </div>
           </div>
 
-          <!-- SPEED SECTION -->
+          <!-- speed section -->
           <div class="gen-controls">
             <h3 style="margin-top: 0; font-family: 'Cinzel', serif; font-size: 14px; color: var(--crimson);">Speed</h3>
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
@@ -2253,7 +2262,7 @@
             </div>
           </div>
 
-          <!-- ABILITY SCORES -->
+          <!-- ability scores -->
           <div class="gen-controls">
             <h3 style="margin-top: 0; font-family: 'Cinzel', serif; font-size: 14px; color: var(--crimson);">Ability Scores</h3>
             <div class="ability-scores">
@@ -2296,7 +2305,7 @@
             </div>
           </div>
 
-          <!-- PROFICIENCIES -->
+          <!-- proficiencies -->
           <div class="gen-controls">
             <h3 style="margin-top: 0; font-family: 'Cinzel', serif; font-size: 14px; color: var(--crimson);">Proficiencies & Resistances</h3>
             <div class="gen-control-group">
@@ -2335,24 +2344,24 @@
             </div>
           </div>
 
-          <!-- DAMAGE & CONDITION IMMUNITIES -->
+          <!-- damage & condition immunities -->
           <div class="gen-controls">
             <h3 style="margin-top: 0; font-family: 'Cinzel', serif; font-size: 14px; color: var(--crimson);">Immunities & Resistances</h3>
             <div class="gen-control-group">
-              <label class="gen-control-label">Damage Resistances (comma-separated)</label>
+              <label class="gen-control-label">Damage Resistances (comma separated)</label>
               <input type="text" class="gen-control-input" id="monsterDamageRes" placeholder="e.g., fire, cold, poison" />
             </div>
             <div class="gen-control-group">
-              <label class="gen-control-label">Damage Immunities (comma-separated)</label>
+              <label class="gen-control-label">Damage Immunities (comma separated)</label>
               <input type="text" class="gen-control-input" id="monsterDamageImm" placeholder="e.g., poison, psychic" />
             </div>
             <div class="gen-control-group">
-              <label class="gen-control-label">Condition Immunities (comma-separated)</label>
+              <label class="gen-control-label">Condition Immunities (comma separated)</label>
               <input type="text" class="gen-control-input" id="monsterCondImm" placeholder="e.g., charmed, frightened" />
             </div>
           </div>
 
-          <!-- SENSES & LANGUAGES -->
+          <!-- senses & languages -->
           <div class="gen-controls">
             <h3 style="margin-top: 0; font-family: 'Cinzel', serif; font-size: 14px; color: var(--crimson);">Senses & Languages</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
@@ -2366,26 +2375,26 @@
               </div>
             </div>
             <div class="gen-control-group">
-              <label class="gen-control-label">Languages (comma-separated)</label>
+              <label class="gen-control-label">Languages (comma separated)</label>
               <input type="text" class="gen-control-input" id="monsterLanguages" placeholder="e.g., Common, Draconic, Telepathy 120 ft" />
             </div>
           </div>
 
-          <!-- TRAITS -->
+          <!-- traits -->
           <div class="gen-controls">
             <h3 style="margin-top: 0; font-family: 'Cinzel', serif; font-size: 14px; color: var(--crimson);">Traits & Abilities</h3>
             <button class="add-item-btn" onclick="addMonsterTrait()">+ Add Trait</button>
             <div class="dynamic-list" id="monsterTraitsList"></div>
           </div>
 
-          <!-- ACTIONS -->
+          <!-- actions -->
           <div class="gen-controls">
             <h3 style="margin-top: 0; font-family: 'Cinzel', serif; font-size: 14px; color: var(--crimson);">Actions</h3>
             <button class="add-item-btn" onclick="addMonsterAction()">+ Add Action</button>
             <div class="dynamic-list" id="monsterActionsList"></div>
           </div>
 
-          <!-- LEGENDARY ACTIONS -->
+          <!-- legendary actions -->
           <div class="gen-controls">
             <h3 style="margin-top: 0; font-family: 'Cinzel', serif; font-size: 14px; color: var(--crimson);">Legendary Actions</h3>
             <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 12px;">
@@ -2398,16 +2407,16 @@
           <div class="gen-button-group">
             <button class="gen-button primary" onclick="generateStatBlock()">Generate Stat Block</button>
             <button class="gen-button" onclick="randomizeDetailedMonster()">Randomize Builder</button>
-            <button class="gen-button" onclick="autoCompleteMonsterFields()">Auto-Complete Missing Fields</button>
+            <button class="gen-button" onclick="autoCompleteMonsterFields()">Auto Complete Missing Fields</button>
           </div>
         </div>
 
-        <!-- OUTPUT STAT BLOCK -->
+        <!-- output stat block -->
         <div class="gen-output" id="statBlockOutput">
           <div class="gen-output-empty">Configure your monster and click Generate to view the stat block</div>
         </div>
 
-        <!-- ACTION BUTTONS FOR STAT BLOCK -->
+        <!-- action buttons for stat block -->
         <div class="gen-button-group" id="monsterActionButtons" style="display: none; margin-top: 16px;">
           <button class="gen-button" onclick="saveMonsterBlock()">Save Stat Block</button>
           <button class="gen-button" onclick="addMonsterToCampaign()">Add to Campaign</button>
@@ -2416,7 +2425,7 @@
         </div>
       </div>
 
-      <!-- PLOT HOOKS GENERATOR -->
+      <!-- plot hooks generator -->
       <div class="gen-panel" data-gen="plot">
         <h1 class="gen-title">Plot Hook Generator</h1>
         <p class="gen-description">Generate adventure hooks with patrons, complications, and rewards.</p>
@@ -2475,7 +2484,7 @@
         </div>
       </div>
 
-      <!-- WEATHER GENERATOR -->
+      <!-- weather generator -->
       <div class="gen-panel" data-gen="weather">
         <h1 class="gen-title">Weather Generator</h1>
         <p class="gen-description">Generate weather conditions and random atmospheric events.</p>
@@ -2526,7 +2535,7 @@
 
           <div class="gen-button-group">
             <button class="gen-button primary" onclick="generateWeather()">Generate Weather</button>
-            <button class="gen-button" onclick="generate5DayForecast()">5-Day Forecast</button>
+            <button class="gen-button" onclick="generate5DayForecast()">5 Day Forecast</button>
           </div>
         </div>
 
@@ -2535,7 +2544,7 @@
         </div>
       </div>
 
-      <!-- SPELL GENERATOR -->
+      <!-- spell generator -->
       <div class="gen-panel" data-gen="spellgen">
         <h1 class="gen-title">Random Spell Generator</h1>
         <p class="gen-description">Generate unique D&D spells with proper formatting, damage scaling, and flavor text. Perfect for custom spell lists and magical scrolls.</p>
@@ -2624,7 +2633,7 @@
         </div>
       </div>
 
-      <!-- WILD MAGIC SURGE -->
+      <!-- wild magic surge -->
       <div class="gen-panel" data-gen="wildmagic">
         <h1 class="gen-title">Wild Magic Surge Table</h1>
         <p class="gen-description">Roll d100 and experience the chaos of wild magic. 100+ unique effects with customizable severity and effects.</p>
@@ -2648,7 +2657,7 @@
               <option value="any">Any</option>
               <option value="minor">Minor (Cosmetic)</option>
               <option value="moderate">Moderate (Impactful)</option>
-              <option value="major">Major (Game-Changing)</option>
+              <option value="major">Major (Game Changing)</option>
               <option value="catastrophic">Catastrophic (Extreme)</option>
             </select>
           </div>
@@ -2658,8 +2667,8 @@
             <select class="gen-control-input" id="wildmagicDuration">
               <option value="any">Any</option>
               <option value="instant">Instantaneous</option>
-              <option value="short">Short-term (1d4 minutes)</option>
-              <option value="long">Long-term (1+ hours)</option>
+              <option value="short">Short term (1d4 minutes)</option>
+              <option value="long">Long term (1+ hours)</option>
             </select>
           </div>
 
@@ -2675,7 +2684,7 @@
         </div>
       </div>
 
-      <!-- POTION EFFECTS -->
+      <!-- potion effects -->
       <div class="gen-panel" data-gen="potion">
         <h1 class="gen-title">Potion Effects Generator</h1>
         <p class="gen-description">Discover what mysterious potions do when imbibed.</p>
@@ -2718,7 +2727,7 @@
         </div>
       </div>
 
-      <!-- FLAVOR & DETAILS -->
+      <!-- flavor & details -->
       <div class="gen-panel" data-gen="flavor">
         <h1 class="gen-title">Flavor & Random Details</h1>
         <p class="gen-description">Generate atmospheric details, ambient sounds, graffiti, and more.</p>
@@ -8910,14 +8919,14 @@
       let html = `
         <div class="stat-block" style="font-family: 'Libre Baskerville', 'Georgia', 'Times New Roman', serif; max-width: 620px; background: ${bodyBg}; color: ${bodyText}; padding: 0; border: 2px solid ${headerBg}; border-radius: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.25); line-height: 1.4; overflow: hidden;">
 
-          <!-- ═══ Top header bar with gradient ═══ -->
+          <!-- Top header bar with gradient -->
           <div style="background: ${headerGradient}; color: ${headerColor}; padding: 14px 16px 12px; margin: 0;">
             <div style="font-size: 22px; font-weight: bold; letter-spacing: 1px; font-variant: small-caps;">${name}</div>
             <div style="font-size: 12px; font-style: italic; opacity: 0.85; margin-top: 3px;">${size} ${type.toLowerCase()}, ${alignment}</div>
             ${conceptText ? `<div style="font-size: 11px; font-style: italic; opacity: 0.75; margin-top: 4px; font-weight: normal;">"${escapeHtml(conceptText)}"</div>` : ''}
           </div>
 
-          <!-- ═══ Core Stats Block ═══ -->
+          <!-- Core Stats Block -->
           <div style="padding: 12px 16px 0;">
 
             <!-- AC, HP, Speed -->
@@ -8969,7 +8978,7 @@
             <!-- Divider -->
             <div style="border-top: 1px solid ${dividerColor}; margin: 8px 0;"></div>
 
-            <!-- ═══ Description ═══ -->
+            <!-- Description -->
             ${description ? `
               <div style="margin: 12px 0;">
                 <div style="font-size: 14px; font-weight: bold; color: ${sectionHeaderColor}; font-variant: small-caps; border-bottom: 1px solid ${dividerColor}; padding-bottom: 5px; margin-bottom: 8px;">Description</div>
@@ -8977,7 +8986,7 @@
               </div>
             ` : ''}
 
-            <!-- ═══ Lore ═══ -->
+            <!-- Lore -->
             ${lore ? `
               <div style="margin: 12px 0;">
                 <div style="font-size: 14px; font-weight: bold; color: ${sectionHeaderColor}; font-variant: small-caps; border-bottom: 1px solid ${dividerColor}; padding-bottom: 5px; margin-bottom: 8px;">Lore</div>
@@ -8985,7 +8994,7 @@
               </div>
             ` : ''}
 
-            <!-- ═══ Abilities / Traits ═══ -->
+            <!-- Abilities / Traits -->
             ${traits.length > 0 ? `
               <div style="margin: 12px 0;">
                 <div style="font-size: 14px; font-weight: bold; color: ${sectionHeaderColor}; font-variant: small-caps; border-bottom: 1px solid ${dividerColor}; padding-bottom: 5px; margin-bottom: 8px;">Abilities</div>
@@ -8997,7 +9006,7 @@
               </div>
             ` : ''}
 
-            <!-- ═══ Actions ═══ -->
+            <!-- Actions -->
             ${actions.length > 0 ? `
               <div style="margin: 12px 0;">
                 <div style="font-size: 14px; font-weight: bold; color: ${sectionHeaderColor}; font-variant: small-caps; border-bottom: 1px solid ${dividerColor}; padding-bottom: 5px; margin-bottom: 8px;">Actions</div>
@@ -9009,7 +9018,7 @@
               </div>
             ` : ''}
 
-            <!-- ═══ Legendary Actions ═══ -->
+            <!-- Legendary Actions -->
             ${legendary.length > 0 ? `
               <div style="margin: 12px 0;">
                 <div style="font-size: 14px; font-weight: bold; color: ${sectionHeaderColor}; font-variant: small-caps; border-bottom: 1px solid ${dividerColor}; padding-bottom: 5px; margin-bottom: 8px;">Legendary Actions</div>
@@ -9024,7 +9033,7 @@
               </div>
             ` : ''}
 
-            <!-- ═══ Loot ═══ -->
+            <!-- Loot -->
             ${loot.length > 0 ? `
               <div style="margin: 12px 0 14px;">
                 <div style="font-size: 14px; font-weight: bold; color: ${sectionHeaderColor}; font-variant: small-caps; border-bottom: 1px solid ${dividerColor}; padding-bottom: 5px; margin-bottom: 8px;">Loot</div>
@@ -9039,7 +9048,7 @@
 
           </div>
 
-          <!-- ═══ Bottom bar ═══ -->
+          <!-- Bottom bar -->
           <div style="background: ${headerBg}; padding: 6px 16px; margin: 0;">
             <div style="font-size: 10px; color: rgba(255,255,255,0.6); text-align: right; font-style: italic;">Phmurt Studios Monster Generator</div>
           </div>
@@ -13240,7 +13249,7 @@ var SHOP_DATA = {
     },
     well: {
         names: ['The Town Well', 'Old Stone Well', 'The Deep Draw', 'Wishing Well', 'The Clear Spring'],
-        desc: 'A stone-lined well at a crossroads. Locals gather here to draw water and exchange gossip.',
+        desc: 'A stone lined well at a crossroads. Locals gather here to draw water and exchange gossip.',
         inventory: [
             { name: 'Fresh Water', desc: 'Fill your waterskin from the well', price: 'Free' },
             { name: 'Local Gossip', desc: 'Hear what the townsfolk are talking about', price: 'Free' },
