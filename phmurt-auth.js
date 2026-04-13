@@ -2624,18 +2624,17 @@ var PhmurtDB = (function () {
   });
 
   // ── Global Feature Gate ─────────────────────────────────────────
-  // Call window.PhmurtGate(featureName) from any page. Returns true
-  // if the user may proceed; returns false and shows an upgrade
-  // modal if they're on the free tier.  Usage:
-  //   if (!PhmurtGate('generators')) return;
+  // Call window.PhmurtGate(featureName) from any page.
+  // Always returns true (feature is never hard-blocked).
+  // For free-tier users: shows a soft upsell modal they can dismiss.
+  // For admin-unlocked features (in free_feature_keys): no modal shown at all.
   // SECURITY: Feature label is escaped to prevent XSS
-  // ────────────────────────────────────────────────────────────────
   window.PhmurtGate = function (featureName) {
     if (typeof PhmurtDB === 'undefined') return true; // Offline/no-auth fallback
-    if (PhmurtDB.isFeatureAvailable(featureName)) return true;
+    if (PhmurtDB.isFeatureAvailable(featureName)) return true; // Admin-unlocked or subscribed — no modal
 
-    // ── Build & show upgrade modal ──────────────────────────────
-    if (document.getElementById('phmurt-gate-modal')) return false; // Already showing
+    // ── Show soft upsell modal (non-blocking) ──────────────────
+    if (document.getElementById('phmurt-gate-modal')) return true; // Already showing, proceed
 
     var tierCfg = PhmurtDB.getTierConfig();
     var overlay = document.createElement('div');
@@ -2661,18 +2660,21 @@ var PhmurtDB = (function () {
           '<span class="upgrade-save">' + psEscapeHtml(String(tierCfg.pro.price.yearlySavings || '')) + ' with yearly!</span>' +
         '</div>' +
         '<div class="upgrade-divider"></div>' +
-        '<div class="upgrade-footer">' +
+        '<div class="upgrade-footer" style="display:flex;align-items:center;justify-content:space-between;">' +
           '<a class="upgrade-compare" href="pricing.html">Compare plans</a>' +
+          '<button id="phmurt-gate-notnow" style="background:none;border:none;color:#5a5046;font-family:Cinzel,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;padding:0;transition:color 0.15s;" onmouseover="this.style.color=\'var(--crimson,#d4433a)\'" onmouseout="this.style.color=\'#5a5046\'">Not Now</button>' +
         '</div>' +
       '</div>';
 
     document.body.appendChild(overlay);
 
-    // Close - SECURITY (V-028): Properly handle event listeners to prevent leaks
+    // Close handlers — SECURITY (V-028): Properly handle event listeners to prevent leaks
     var closeBtn = document.getElementById('phmurt-gate-close');
+    var notNowBtn = document.getElementById('phmurt-gate-notnow');
     var closeHandler = function () { overlay.remove(); };
     var bgClickHandler = function (ev) { if (ev.target === overlay) overlay.remove(); };
     if (closeBtn) closeBtn.addEventListener('click', closeHandler);
+    if (notNowBtn) notNowBtn.addEventListener('click', closeHandler);
     overlay.addEventListener('click', bgClickHandler);
 
     // Direct checkout buttons — skip pricing.html redirect
@@ -2694,21 +2696,21 @@ var PhmurtDB = (function () {
     var observer = new MutationObserver(function() {
       if (!document.body.contains(overlay)) {
         if (closeBtn) closeBtn.removeEventListener('click', closeHandler);
+        if (notNowBtn) notNowBtn.removeEventListener('click', closeHandler);
         overlay.removeEventListener('click', bgClickHandler);
         observer.disconnect();
       }
     });
     observer.observe(document.body, { childList: true, subtree: true });
 
-    return false;
+    return true; // Soft gate — always allow; modal is informational only
   };
 
   // ── Auto-gate pages with data-phmurt-feature attribute ──────────
   function _autoGatePage() {
     var feature = document.body && document.body.getAttribute('data-phmurt-feature');
-    if (feature && !window.PhmurtGate(feature)) {
-      // Feature was blocked — the modal is already showing
-    }
+    // PhmurtGate shows a soft upsell modal for free-tier users; page always loads
+    if (feature) window.PhmurtGate(feature);
   }
 
   // Auto-gate runs after auth state resolves

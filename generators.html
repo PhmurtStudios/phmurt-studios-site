@@ -65,7 +65,7 @@
     .gen-container {
       width: 100%;
       display: grid;
-      grid-template-columns: 300px 1fr;
+      grid-template-columns: 200px 1fr;
       gap: 0;
       height: calc(100vh - 56px);
       background: var(--bg);
@@ -82,7 +82,7 @@
     .gen-sidebar {
       background: var(--bg-card);
       border-right: 1px solid var(--border);
-      padding: 28px 20px;
+      padding: 16px 14px;
       height: 100%;
       overflow-y: auto;
       z-index: 100;
@@ -170,9 +170,10 @@
 
     /* main content */
     .gen-main {
-      overflow-y: auto;
+      padding: 0;
+      display: block;
+      overflow: hidden;
       height: 100%;
-      padding: 48px 72px;
     }
 
     @media (max-width: 768px) {
@@ -186,8 +187,10 @@
     }
 
     .gen-panel.active {
-      display: block;
-      animation: fadeIn 0.35s ease;
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      height: 100%;
+      overflow: hidden;
     }
 
     @keyframes fadeIn {
@@ -196,11 +199,7 @@
     }
 
     .gen-title {
-      font-family: 'Cinzel', serif;
-      font-size: 36px;
-      letter-spacing: 2px;
-      color: var(--text);
-      margin-bottom: 8px;
+      display: none;
     }
 
     .gen-description {
@@ -310,7 +309,7 @@
       border-radius: 4px;
       padding: 32px;
       margin-bottom: 28px;
-      min-height: 300px;
+      min-height: 80px;
       position: relative;
       overflow: hidden;
     }
@@ -1563,14 +1562,72 @@
       margin-bottom: 12px;
     }
 
+    /* split-pane layout for each generator panel */
+    .gen-ctrl-pane {
+      padding: 20px 18px;
+      overflow-y: auto;
+      border-right: 1px solid var(--border);
+      background: var(--bg-card);
+      height: 100%;
+      box-sizing: border-box;
+    }
+
+    .gen-out-pane {
+      padding: 24px 32px;
+      overflow-y: auto;
+      height: 100%;
+      box-sizing: border-box;
+      background: var(--bg);
+    }
+
+    .gen-panel-hdr {
+      margin-bottom: 18px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .gen-panel-name {
+      font-family: 'Cinzel', serif;
+      font-size: 11px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--crimson);
+      margin-bottom: 6px;
+    }
+
+    .gen-panel-desc {
+      font-family: 'Spectral', serif;
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      font-style: italic;
+    }
+
+    .gen-ctrl-pane .gen-controls {
+      background: transparent;
+      border: none;
+      padding: 0;
+      margin-bottom: 0;
+    }
+
+    .gen-out-pane .gen-output {
+      height: calc(100% - 80px);
+      min-height: 200px;
+    }
+
+    .gen-out-pane .gen-output-empty {
+      padding: 80px 20px;
+    }
+
+    @media (max-width: 1024px) {
+      .gen-panel.active {
+        grid-template-columns: 1fr;
+      }
+    }
+
   </style>
   <div id="ps-site-shell"></div>
   <div id="ps-page-breadcrumb"></div>
-
-  <div class="gen-header-bar">
-    <div class="gen-header-title">✦ DM Generator Suite</div>
-    <div class="gen-header-sub">Roll something remarkable</div>
-  </div>
 
   <div class="gen-container">
     
@@ -1610,10 +1667,13 @@
 
       <!-- npc generator -->
       <div class="gen-panel active" data-gen="npc">
-        <h1 class="gen-title">NPC Generator</h1>
-        <p class="gen-description">Create detailed, memorable NPCs with personality, motivation, and quirks. Click Generate to create a complete character.</p>
+        <div class="gen-ctrl-pane">
+          <div class="gen-panel-hdr">
+            <div class="gen-panel-name">NPC Generator</div>
+            <div class="gen-panel-desc">Create detailed, memorable NPCs with personality, motivation, and quirks. Click Generate to create a complete character.</div>
+          </div>
 
-        <div class="gen-controls">
+          <div class="gen-controls">
           <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px;">
             <div class="gen-control-group">
               <label class="gen-control-label">Race</label>
@@ -1688,7 +1748,9 @@
             <button class="gen-button" onclick="generateMerchant()">Generate Merchant</button>
           </div>
         </div>
+        </div>
 
+        <div class="gen-out-pane">
         <div class="gen-output" id="npcOutput">
           <div class="gen-output-empty">Click Generate to create an NPC</div>
         </div>
@@ -1700,14 +1762,18 @@
           </div>
           <div class="gen-history-items" id="npcHistory"></div>
         </div>
+        </div>
       </div>
 
       <!-- tavern generator -->
       <div class="gen-panel" data-gen="tavern">
-        <h1 class="gen-title">Tavern & Inn Generator</h1>
-        <p class="gen-description">Generate complete taverns with names, atmospheres, signature drinks, and rumors. Every tavern needs a barkeep.</p>
+        <div class="gen-ctrl-pane">
+          <div class="gen-panel-hdr">
+            <div class="gen-panel-name">Tavern & Inn Generator</div>
+            <div class="gen-panel-desc">Generate complete taverns with names, atmospheres, signature drinks, and rumors. Every tavern needs a barkeep.</div>
+          </div>
 
-        <div class="gen-controls">
+          <div class="gen-controls">
           <div class="gen-control-group">
             <label class="gen-control-label">Tavern Type</label>
             <select class="gen-control-input" id="tavernType">
@@ -1723,18 +1789,24 @@
             <button class="gen-button primary" onclick="generateTavern()">Generate Tavern</button>
           </div>
         </div>
+        </div>
 
+        <div class="gen-out-pane">
         <div class="gen-output" id="tavernOutput">
           <div class="gen-output-empty">Click Generate to create a tavern</div>
+        </div>
         </div>
       </div>
 
       <!-- UNIFIED MAPS GENERATOR (hidden — removed from sidebar) -->
-      <div class="gen-panel" data-gen="maps" style="display:none !important;"
-        <h1 class="gen-title">Fantasy World Generator</h1>
-        <p class="gen-description">Generate a massive continental fantasy world with kingdoms, cities, road networks, dungeons, and points of interest. Click to zoom from the world map into kingdoms and individual cities.</p>
+      <div class="gen-panel" data-gen="maps" style="display:none !important;">
+        <div class="gen-ctrl-pane">
+          <div class="gen-panel-hdr">
+            <div class="gen-panel-name">Fantasy World Generator</div>
+            <div class="gen-panel-desc">Generate a massive continental fantasy world with kingdoms, cities, road networks, dungeons, and points of interest. Click to zoom from the world map into kingdoms and individual cities.</div>
+          </div>
 
-        <div class="gen-controls">
+          <div class="gen-controls">
           <!-- Zoom Breadcrumb Navigation -->
           <div id="mapBreadcrumb" class="map-breadcrumb" style="display:none; margin-bottom:12px; font-family:Cinzel,serif; font-size:14px;">
             <span class="map-crumb active" onclick="mapZoomTo('world')" style="cursor:pointer; color:var(--crimson);">World</span>
@@ -1776,6 +1848,15 @@
             <button class="gen-button" id="mapDownloadBtn" onclick="downloadCurrentMap()">Download Map</button>
           </div>
         </div>
+        </div>
+
+        <div class="gen-out-pane">
+        <div id="mapInfoPanel" style="display:none; margin-top:12px; padding:16px; background:var(--bg-card); border:1px solid var(--border); border-radius:8px; max-height:400px; overflow-y:auto;">
+        </div>
+
+        <div class="gen-output" id="mapOutput">
+          <div class="gen-output-empty">Click Generate World to create a fully explorable fantasy world with kingdoms, cities, roads, dungeons, and more</div>
+        </div>
 
         <div class="gen-canvas-container" id="mapCanvasContainer" style="display: none; position:relative; overflow:hidden;">
           <canvas id="fantasyMapCanvas" width="1400" height="1000" style="max-width:100%; height:auto;"></canvas>
@@ -1786,13 +1867,6 @@
           <canvas id="buildingMapCanvas" width="700" height="500" style="display:none;"></canvas>
           <canvas id="dungeonMapCanvas" width="800" height="600" style="display:none;"></canvas>
           <div id="mapTooltip" style="display:none; position:absolute; background:var(--bg-card); border:1px solid var(--border); padding:8px 12px; border-radius:6px; font-family:Cinzel,serif; font-size:12px; color:var(--text); pointer-events:none; z-index:10; max-width:280px; box-shadow:0 2px 8px rgba(0,0,0,0.3);"></div>
-        </div>
-
-        <div id="mapInfoPanel" style="display:none; margin-top:12px; padding:16px; background:var(--bg-card); border:1px solid var(--border); border-radius:8px; max-height:400px; overflow-y:auto;">
-        </div>
-
-        <div class="gen-output" id="mapOutput">
-          <div class="gen-output-empty">Click Generate World to create a fully explorable fantasy world with kingdoms, cities, roads, dungeons, and more</div>
         </div>
 
         <!-- Other Map Generators (collapsible) -->
@@ -1990,14 +2064,19 @@
             </div>
           </div>
         </div>
+        </div>
+        </div>
       </div>
 
       <!-- encounter generator -->
       <div class="gen-panel" data-gen="encounter">
-        <h1 class="gen-title">Encounter Generator</h1>
-        <p class="gen-description">Generate balanced combat or roleplay encounters based on party size and difficulty.</p>
+        <div class="gen-ctrl-pane">
+          <div class="gen-panel-hdr">
+            <div class="gen-panel-name">Encounter Generator</div>
+            <div class="gen-panel-desc">Generate balanced combat or roleplay encounters based on party size and difficulty.</div>
+          </div>
 
-        <div class="gen-controls">
+          <div class="gen-controls">
           <div class="gen-control-group">
             <label class="gen-control-label">Environment</label>
             <select class="gen-control-input" id="encEnvironment">
@@ -2035,18 +2114,24 @@
             <button class="gen-button primary" onclick="generateEncounter()">Generate Encounter</button>
           </div>
         </div>
+        </div>
 
+        <div class="gen-out-pane">
         <div class="gen-output" id="encounterOutput">
           <div class="gen-output-empty">Click Generate to create an encounter</div>
+        </div>
         </div>
       </div>
 
       <!-- treasure generator -->
       <div class="gen-panel" data-gen="treasure">
-        <h1 class="gen-title">Treasure & Loot Generator</h1>
-        <p class="gen-description">Generate treasure hoards, coins, gems, art objects, and magical items.</p>
+        <div class="gen-ctrl-pane">
+          <div class="gen-panel-hdr">
+            <div class="gen-panel-name">Treasure & Loot Generator</div>
+            <div class="gen-panel-desc">Generate treasure hoards, coins, gems, art objects, and magical items.</div>
+          </div>
 
-        <div class="gen-controls">
+          <div class="gen-controls">
           <div class="gen-control-group">
             <label class="gen-control-label">Treasure Type</label>
             <select class="gen-control-input" id="treasureType">
@@ -2071,20 +2156,26 @@
             <button class="gen-button primary" onclick="generateTreasure()">Generate Treasure</button>
           </div>
         </div>
+        </div>
 
+        <div class="gen-out-pane">
         <div class="gen-output" id="treasureOutput">
           <div class="gen-output-empty">Click Generate to create treasure</div>
+        </div>
         </div>
       </div>
 
       <!-- monster creator generator -->
       <div class="gen-panel" data-gen="monster-creator">
-        <h1 class="gen-title">Monster Creator</h1>
-        <p class="gen-description">Create unique D&D 5e monster stat blocks powered by AI. Describe any creature concept and get a fully detailed, original stat block with unique abilities and lore.</p>
+        <div class="gen-ctrl-pane">
+          <div class="gen-panel-hdr">
+            <div class="gen-panel-name">Monster Creator</div>
+            <div class="gen-panel-desc">Create unique D&D 5e monster stat blocks powered by AI. Describe any creature concept and get a fully detailed, original stat block with unique abilities and lore.</div>
+          </div>
 
-        <!-- Monster generation engine runs entirely in-browser -->
+          <!-- Monster generation engine runs entirely in-browser -->
 
-        <div class="mode-tabs">
+          <div class="mode-tabs">
           <button class="mode-tab active" onclick="switchMonsterMode('quick', this)">Quick Generate</button>
           <button class="mode-tab" onclick="switchMonsterMode('detailed', this)">Detailed Builder</button>
         </div>
@@ -2424,7 +2515,9 @@
             <button class="gen-button" onclick="autoCompleteMonsterFields()">Auto Complete Missing Fields</button>
           </div>
         </div>
+        </div>
 
+        <div class="gen-out-pane">
         <!-- output stat block -->
         <div class="gen-output" id="statBlockOutput">
           <div class="gen-output-empty">Configure your monster and click Generate to view the stat block</div>
@@ -2437,14 +2530,18 @@
           <button class="gen-button" onclick="exportMonsterAsImage()">Export as Image</button>
           <button class="gen-button" onclick="copyMonsterToClipboard()">Copy to Clipboard</button>
         </div>
+        </div>
       </div>
 
       <!-- plot hooks generator -->
       <div class="gen-panel" data-gen="plot">
-        <h1 class="gen-title">Plot Hook Generator</h1>
-        <p class="gen-description">Generate adventure hooks with patrons, complications, and rewards.</p>
+        <div class="gen-ctrl-pane">
+          <div class="gen-panel-hdr">
+            <div class="gen-panel-name">Plot Hook Generator</div>
+            <div class="gen-panel-desc">Generate adventure hooks with patrons, complications, and rewards.</div>
+          </div>
 
-        <div class="gen-controls">
+          <div class="gen-controls">
           <div class="gen-control-group">
             <label class="gen-control-label">Adventure Type</label>
             <select class="gen-control-input" id="plotGenre">
@@ -2492,18 +2589,24 @@
             <button class="gen-button" onclick="generateMultiplePlots(3)">Generate 3</button>
           </div>
         </div>
+        </div>
 
+        <div class="gen-out-pane">
         <div class="gen-output" id="plotOutput">
           <div class="gen-output-empty">Click Generate to create a plot hook</div>
+        </div>
         </div>
       </div>
 
       <!-- weather generator -->
       <div class="gen-panel" data-gen="weather">
-        <h1 class="gen-title">Weather Generator</h1>
-        <p class="gen-description">Generate weather conditions and random atmospheric events.</p>
+        <div class="gen-ctrl-pane">
+          <div class="gen-panel-hdr">
+            <div class="gen-panel-name">Weather Generator</div>
+            <div class="gen-panel-desc">Generate weather conditions and random atmospheric events.</div>
+          </div>
 
-        <div class="gen-controls">
+          <div class="gen-controls">
           <div class="gen-control-group">
             <label class="gen-control-label">Climate</label>
             <select class="gen-control-input" id="climate">
@@ -2552,18 +2655,24 @@
             <button class="gen-button" onclick="generate5DayForecast()">5 Day Forecast</button>
           </div>
         </div>
+        </div>
 
+        <div class="gen-out-pane">
         <div class="gen-output" id="weatherOutput">
           <div class="gen-output-empty">Click Generate to create weather</div>
+        </div>
         </div>
       </div>
 
       <!-- spell generator -->
       <div class="gen-panel" data-gen="spellgen">
-        <h1 class="gen-title">Random Spell Generator</h1>
-        <p class="gen-description">Generate unique D&D spells with proper formatting, damage scaling, and flavor text. Perfect for custom spell lists and magical scrolls.</p>
+        <div class="gen-ctrl-pane">
+          <div class="gen-panel-hdr">
+            <div class="gen-panel-name">Random Spell Generator</div>
+            <div class="gen-panel-desc">Generate unique D&D spells with proper formatting, damage scaling, and flavor text. Perfect for custom spell lists and magical scrolls.</div>
+          </div>
 
-        <div class="gen-controls">
+          <div class="gen-controls">
           <div class="gen-control-group">
             <label class="gen-control-label">Spell Level</label>
             <select class="gen-control-input" id="spellLevel">
@@ -2641,18 +2750,24 @@
             <button class="gen-button" onclick="generateMultipleSpells(3)">Generate 3</button>
           </div>
         </div>
+        </div>
 
+        <div class="gen-out-pane">
         <div class="gen-output" id="spellOutput">
           <div class="gen-output-empty">Click Generate to create a spell</div>
+        </div>
         </div>
       </div>
 
       <!-- wild magic surge -->
       <div class="gen-panel" data-gen="wildmagic">
-        <h1 class="gen-title">Wild Magic Surge Table</h1>
-        <p class="gen-description">Roll d100 and experience the chaos of wild magic. 100+ unique effects with customizable severity and effects.</p>
+        <div class="gen-ctrl-pane">
+          <div class="gen-panel-hdr">
+            <div class="gen-panel-name">Wild Magic Surge Table</div>
+            <div class="gen-panel-desc">Roll d100 and experience the chaos of wild magic. 100+ unique effects with customizable severity and effects.</div>
+          </div>
 
-        <div class="gen-controls">
+          <div class="gen-controls">
           <div class="gen-control-group">
             <label class="gen-control-label">Surge Type</label>
             <select class="gen-control-input" id="wildmagicType">
@@ -2692,18 +2807,24 @@
             <button class="gen-button" onclick="generateMultipleWildMagic(10)">Roll 10 Times</button>
           </div>
         </div>
+        </div>
 
+        <div class="gen-out-pane">
         <div class="gen-output" id="wildmagicOutput">
           <div class="gen-output-empty">Click Roll to trigger wild magic</div>
+        </div>
         </div>
       </div>
 
       <!-- potion effects -->
       <div class="gen-panel" data-gen="potion">
-        <h1 class="gen-title">Potion Effects Generator</h1>
-        <p class="gen-description">Discover what mysterious potions do when imbibed.</p>
+        <div class="gen-ctrl-pane">
+          <div class="gen-panel-hdr">
+            <div class="gen-panel-name">Potion Effects Generator</div>
+            <div class="gen-panel-desc">Discover what mysterious potions do when imbibed.</div>
+          </div>
 
-        <div class="gen-controls">
+          <div class="gen-controls">
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
             <div class="gen-control-group">
               <label class="gen-control-label">Rarity</label>
@@ -2735,18 +2856,24 @@
             <button class="gen-button" onclick="generateMultiplePotions(5)">Generate 5</button>
           </div>
         </div>
+        </div>
 
+        <div class="gen-out-pane">
         <div class="gen-output" id="potionOutput">
           <div class="gen-output-empty">Click Generate to create a potion effect</div>
+        </div>
         </div>
       </div>
 
       <!-- flavor & details -->
       <div class="gen-panel" data-gen="flavor">
-        <h1 class="gen-title">Flavor & Random Details</h1>
-        <p class="gen-description">Generate atmospheric details, ambient sounds, graffiti, and more.</p>
+        <div class="gen-ctrl-pane">
+          <div class="gen-panel-hdr">
+            <div class="gen-panel-name">Flavor & Random Details</div>
+            <div class="gen-panel-desc">Generate atmospheric details, ambient sounds, graffiti, and more.</div>
+          </div>
 
-        <div class="gen-controls">
+          <div class="gen-controls">
           <div class="gen-control-group">
             <label class="gen-control-label">Detail Type</label>
             <select class="gen-control-input" id="flavorType">
@@ -2779,9 +2906,12 @@
             <button class="gen-button" onclick="generateMultipleFlavor(5)">Generate 5</button>
           </div>
         </div>
+        </div>
 
+        <div class="gen-out-pane">
         <div class="gen-output" id="flavorOutput">
           <div class="gen-output-empty">Click Generate to create a detail</div>
+        </div>
         </div>
       </div>
 
