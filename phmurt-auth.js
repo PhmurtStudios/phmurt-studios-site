@@ -1888,11 +1888,17 @@ var PhmurtDB = (function () {
       return sb.auth.getSession().then(function (r) {
         var token = r.data && r.data.session && r.data.session.access_token;
         if (!token) {
-          // Legacy session without Supabase JWT — prompt re-authentication
-          // to get a fresh JWT for the secure edge-function checkout path.
-          // (Client-side redirectToCheckout with lineItems is deprecated by Stripe
-          //  and may hang indefinitely, so we skip it and go straight to re-auth.)
-          return _showReauthPrompt(sb, returnUrl, interval);
+          // No token — try a silent refresh before falling back to re-auth prompt
+          return sb.auth.refreshSession().then(function (ref) {
+            var refreshedToken = ref.data && ref.data.session && ref.data.session.access_token;
+            if (!refreshedToken) {
+              return _showReauthPrompt(sb, returnUrl, interval);
+            }
+            // Refresh succeeded — proceed to checkout
+            return _invokeCheckout(sb);
+          }).catch(function () {
+            return _showReauthPrompt(sb, returnUrl, interval);
+          });
         }
 
         // Try checkout; on failure try refreshing session, then re-auth as last resort
