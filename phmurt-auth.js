@@ -640,10 +640,15 @@ var PhmurtDB = (function () {
             if (!token) throw new Error('Authentication failed. Please try again.');
             submitBtn.textContent = 'Starting checkout…';
             // Now proceed with the actual checkout via Supabase functions.invoke
+            // Determine interval — support monthly, yearly, party_monthly, party_yearly, lifetime
+            var resolvedInterval = interval;
+            if (interval !== 'yearly' && interval !== 'party_monthly' && interval !== 'party_yearly' && interval !== 'lifetime') {
+              resolvedInterval = 'monthly';
+            }
             return sb.functions.invoke('stripe-checkout', {
               body: {
                 return_url: returnUrl || window.location.href,
-                interval: (interval === 'yearly') ? 'yearly' : 'monthly',
+                interval: resolvedInterval,
               },
             }).then(function (result) {
               if (result.error) {
@@ -665,9 +670,9 @@ var PhmurtDB = (function () {
               if (!data || !data.url) throw new Error(data && data.error ? data.error : 'No checkout URL returned from server.');
               try {
                 var parsed = new URL(data.url);
-                // SECURITY: Strict hostname validation using exact match, not indexOf
+                // SECURITY: Strict hostname validation — allow all *.stripe.com subdomains
                 var isValidHost = parsed.hostname === 'stripe.com' ||
-                                  parsed.hostname === 'checkout.stripe.com' ||
+                                  (parsed.hostname.length > 11 && parsed.hostname.slice(-11) === '.stripe.com') ||
                                   parsed.hostname === 'www.phmurtstudios.com' ||
                                   parsed.hostname === 'phmurtstudios.com';
                 if (parsed.protocol !== 'https:' || !isValidHost) {
