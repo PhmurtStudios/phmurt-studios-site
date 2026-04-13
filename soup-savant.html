@@ -29,84 +29,199 @@
   <script src="phmurt-auth.js?v=187"></script>
 
   <style>
-    /* soup savant page */
+    /* soup savant full-screen layout */
 
-    /* hero */
-    .ps-hero {
-      text-align: center;
-      padding: 80px 24px 48px;
+    .ss-layout {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 100vh;
+      background: var(--bg);
     }
-    .ps-hero-eyebrow {
+
+    .ss-toc {
+      position: sticky;
+      top: 56px; /* nav height */
+      height: calc(100vh - 56px);
+      overflow-y: auto;
+      background: var(--bg-card);
+      border-right: 1px solid var(--border);
+      padding: 28px 0;
+    }
+
+    .ss-toc-header {
       font-family: 'Cinzel', serif;
-      font-size: 10px;
+      font-size: 9px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--crimson);
+      padding: 0 20px 16px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 20px;
+    }
+
+    .ss-quick-stat {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 20px;
+      font-size: 11px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 4px;
+    }
+
+    .ss-quick-stat-label {
+      font-family: 'Cinzel', serif;
+      color: var(--text-muted);
+      font-size: 9px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    .ss-quick-stat-val {
+      color: var(--crimson);
+      font-family: 'Spectral', serif;
+      font-size: 12px;
+      font-weight: 500;
+    }
+
+    .ss-toc-section {
+      margin-bottom: 6px;
+    }
+
+    .ss-toc-link {
+      display: block;
+      padding: 7px 20px;
+      font-family: 'Spectral', serif;
+      font-size: 13px;
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: all 0.2s;
+      border-left: 2px solid transparent;
+    }
+
+    .ss-toc-link:hover {
+      color: var(--text);
+      background: var(--bg-hover);
+      border-left-color: var(--crimson-border);
+    }
+
+    .ss-toc-link.active {
+      color: var(--crimson);
+      border-left-color: var(--crimson);
+      background: rgba(192, 57, 43, 0.08);
+    }
+
+    .ss-toc-sub {
+      display: block;
+      padding: 5px 20px 5px 32px;
+      font-family: 'Spectral', serif;
+      font-size: 11px;
+      color: var(--text-muted);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .ss-toc-sub:hover {
+      color: var(--text-dim);
+    }
+
+    /* main content */
+    .ss-content {
+      padding: 48px 72px 80px;
+      overflow-y: auto;
+    }
+
+    .ss-content-inner {
+      max-width: 860px;
+    }
+
+    /* hero strip above layout */
+    .ss-hero-strip {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+      padding: 48px 56px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ss-hero-strip::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(ellipse at 0% 50%, var(--crimson-soft) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .ss-hero-eyebrow {
+      font-family: 'Cinzel', serif;
+      font-size: 9px;
       letter-spacing: 4px;
       text-transform: uppercase;
       color: var(--crimson);
-      margin-bottom: 12px;
-    }
-    .ps-hero-title {
-      font-family: 'Cinzel', serif;
-      font-size: clamp(2rem, 5vw, 3rem);
-      font-weight: 700;
-      color: var(--text);
-      margin: 0 0 8px;
-    }
-    .ps-hero-subtitle {
-      font-family: 'Spectral', serif;
-      font-size: 1.15rem;
-      color: var(--text-dim);
-      font-style: italic;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+      z-index: 1;
     }
 
-    /* flavor cards */
+    .ss-hero-eyebrow::before {
+      content: '✦';
+      font-size: 8px;
+    }
+
+    .ss-hero-title {
+      font-family: 'Cinzel', serif;
+      font-size: clamp(2rem, 4vw, 3.5rem);
+      font-weight: 300;
+      color: var(--text);
+      margin: 0 0 6px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .ss-hero-subtitle {
+      font-family: 'Spectral', serif;
+      font-size: 20px;
+      color: var(--text-muted);
+      font-style: italic;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* flavor cards — horizontal strip */
     .ps-flavor-cards {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 24px;
-      margin: 0 0 48px;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 40px;
     }
+
     .ps-flavor-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-left: 3px solid var(--crimson);
       border-radius: 4px;
-      padding: 24px;
+      padding: 20px;
       font-family: 'Spectral', serif;
-      font-size: 14px;
+      font-size: 13px;
       line-height: 1.75;
       color: var(--text-dim);
+      position: relative;
     }
+
     .ps-flavor-card::before {
       content: '\201C';
       font-family: 'Cinzel', serif;
       font-size: 2.5rem;
       color: var(--crimson);
-      opacity: 0.25;
+      opacity: 0.2;
       display: block;
       line-height: 1;
       margin-bottom: -4px;
     }
 
-    /* intro section */
-    .ps-intro-section {
-      max-width: 860px;
-      margin: 0 auto 48px;
-      padding: 28px 32px;
-      background: var(--crimson-soft);
-      border-left: 3px solid var(--crimson);
-      border-radius: 0 4px 4px 0;
-    }
-    .ps-intro-section p {
-      font-family: 'Spectral', serif;
-      font-size: 15px;
-      line-height: 1.85;
-      color: var(--text-dim);
-      margin: 12px 0;
-    }
-    .ps-intro-section p:first-child { margin-top: 0; }
-    .ps-intro-section p:last-child { margin-bottom: 0; }
-
-    /* section headings */
+    /* sections */
     .ps-section-heading {
       font-family: 'Cinzel', serif;
       font-size: 11px;
@@ -121,16 +236,49 @@
       align-items: center;
       gap: 10px;
     }
+
     .ps-section-heading::before {
-      content: '\25C6';
+      content: '◆';
       font-size: 7px;
-      color: var(--crimson);
     }
+
     .ps-section-heading.level-2 {
       font-size: 10px;
       letter-spacing: 3px;
       margin: 32px 0 16px;
-      border-bottom: 1px solid var(--border);
+    }
+
+    /* intro callout */
+    .ps-intro-section {
+      margin-bottom: 40px;
+      padding: 24px 28px;
+      background: var(--crimson-soft);
+      border-left: 3px solid var(--crimson);
+      border-radius: 0 4px 4px 0;
+    }
+
+    .ps-intro-section p {
+      font-family: 'Spectral', serif;
+      font-size: 15px;
+      line-height: 1.85;
+      color: var(--text-dim);
+      margin: 12px 0;
+    }
+
+    .ps-intro-section p:first-child {
+      margin-top: 0;
+    }
+
+    .ps-intro-section p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* section body text */
+    .ss-content section p {
+      font-size: 15px;
+      color: var(--text-dim);
+      line-height: 1.85;
+      margin-bottom: 16px;
     }
 
     /* stat block */
@@ -143,6 +291,7 @@
       position: relative;
       overflow: hidden;
     }
+
     .ps-stat-block::before {
       content: '';
       position: absolute;
@@ -150,6 +299,7 @@
       height: 2px;
       background: linear-gradient(90deg, var(--crimson), transparent);
     }
+
     .ps-stat-row {
       display: grid;
       grid-template-columns: 200px 1fr;
@@ -157,6 +307,7 @@
       margin: 10px 0;
       align-items: flex-start;
     }
+
     .ps-stat-label {
       font-family: 'Cinzel', serif;
       font-weight: 700;
@@ -165,6 +316,7 @@
       font-size: 9px;
       letter-spacing: 2px;
     }
+
     .ps-stat-value {
       font-family: 'Spectral', serif;
       color: var(--text-dim);
@@ -177,13 +329,14 @@
       border-collapse: collapse;
       margin: 24px 0;
       border: 1px solid var(--border);
-      border-radius: 4px;
       overflow: hidden;
     }
+
     .ps-table thead, .ps-soup-table thead {
       background: var(--crimson-soft);
       border-bottom: 1px solid var(--crimson-border);
     }
+
     .ps-table th, .ps-soup-table th {
       padding: 10px 14px;
       text-align: left;
@@ -194,6 +347,7 @@
       letter-spacing: 2px;
       text-transform: uppercase;
     }
+
     .ps-table td, .ps-soup-table td {
       padding: 10px 14px;
       border-bottom: 1px solid var(--border);
@@ -202,75 +356,91 @@
       font-size: 13px;
       line-height: 1.6;
     }
+
     .ps-table tbody tr:hover, .ps-soup-table tbody tr:hover {
       background: var(--crimson-soft);
     }
 
     /* feature blocks */
     .ps-feature {
-      margin: 24px 0;
-      padding: 24px;
+      margin: 20px 0;
+      padding: 20px 24px;
       background: var(--bg-card);
       border: 1px solid var(--border);
       border-left: 3px solid var(--crimson);
-      border-radius: 0 4px 4px 0;
     }
+
     .ps-feature-title {
       font-family: 'Cinzel', serif;
-      font-size: 16px;
+      font-size: 14px;
       font-weight: 700;
       color: var(--text);
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
+
     .ps-feature-subtitle {
       font-family: 'Cinzel', serif;
-      font-size: 10px;
+      font-size: 9px;
       letter-spacing: 2px;
       text-transform: uppercase;
       color: var(--text-muted);
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
+
     .ps-feature p {
       font-family: 'Spectral', serif;
       color: var(--text-dim);
       font-size: 14px;
       line-height: 1.75;
-      margin: 10px 0;
+      margin: 8px 0;
     }
+
     .ps-feature ul {
       font-family: 'Spectral', serif;
       color: var(--text-dim);
       font-size: 14px;
       line-height: 1.75;
-      margin: 10px 0 10px 20px;
+      margin: 8px 0 8px 20px;
     }
-    .ps-feature li { margin: 6px 0; }
 
-    /* content & columns */
-    .ps-content-wrapper {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 0 56px 56px;
+    .ps-feature li {
+      margin: 4px 0;
     }
-    .ps-content-wrapper section p {
-      font-size: 15px;
-      color: var(--text-dim);
-      line-height: 1.85;
-      margin-bottom: 16px;
-    }
-    .ps-columns-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 24px;
-      margin: 24px 0;
+
+    @media (max-width: 1024px) {
+      .ss-layout {
+        grid-template-columns: 1fr;
+      }
+
+      .ss-toc {
+        display: none;
+      }
+
+      .ss-content {
+        padding: 32px 24px;
+      }
     }
 
     @media (max-width: 768px) {
-      .ps-columns-2 { grid-template-columns: 1fr; }
-      .ps-hero-title { font-size: 2rem; }
-      .ps-stat-row { grid-template-columns: 1fr; gap: 4px; }
-      .ps-content-wrapper { padding: 0 24px 40px; }
-      .ps-table th, .ps-table td, .ps-soup-table th, .ps-soup-table td { padding: 8px; }
+      .ps-flavor-cards {
+        grid-template-columns: 1fr;
+      }
+
+      .ps-stat-row {
+        grid-template-columns: 1fr;
+      }
+
+      .ss-hero-strip {
+        padding: 32px 24px;
+      }
+
+      .ss-content {
+        padding: 24px 16px 60px;
+      }
+
+      .ps-table th, .ps-table td, .ps-soup-table th, .ps-soup-table td {
+        padding: 8px;
+      }
     }
   </style>
 </head>
@@ -280,16 +450,47 @@
   <div id="ps-site-shell"></div>
   <div id="ps-page-breadcrumb"></div>
 
-  <div class="ps-page-hero">
-    <div class="ps-page-eyebrow">D&D 5e Homebrew Class</div>
-    <div class="ps-page-title">The Soup Savant</div>
-    <div class="ps-page-subtitle">A Life Devoted to the Perfect Bowl</div>
+  <!-- full-width hero strip -->
+  <div class="ss-hero-strip">
+    <div class="ss-hero-eyebrow">D&D 5e Homebrew Class</div>
+    <div class="ss-hero-title">The Soup Savant</div>
+    <div class="ss-hero-subtitle">A Life Devoted to the Perfect Bowl</div>
   </div>
 
-  <div class="ps-divider"><div class="ps-div-line"></div><div class="ps-div-ornament"><div class="ps-div-dot"></div><div class="ps-div-gem"></div><div class="ps-div-dot"></div></div><div class="ps-div-line r"></div></div>
+  <!-- full-screen 2-col layout -->
+  <div class="ss-layout">
+    <!-- TOC sidebar -->
+    <nav class="ss-toc" aria-label="Contents">
+      <div class="ss-toc-header">Contents</div>
+      <div style="padding: 0 20px 16px; border-bottom: 1px solid var(--border); margin-bottom: 16px;">
+        <div class="ss-quick-stat">
+          <span class="ss-quick-stat-label">Hit Die</span>
+          <span class="ss-quick-stat-val">d6</span>
+        </div>
+        <div class="ss-quick-stat">
+          <span class="ss-quick-stat-label">Spellcasting</span>
+          <span class="ss-quick-stat-val">Charisma</span>
+        </div>
+        <div class="ss-quick-stat">
+          <span class="ss-quick-stat-label">Saves</span>
+          <span class="ss-quick-stat-val">Con, Cha</span>
+        </div>
+      </div>
+      <a class="ss-toc-link" href="#class-overview">Overview</a>
+      <a class="ss-toc-link" href="#class-features">Class Features</a>
+      <a class="ss-toc-link" href="#level-table">Level Table</a>
+      <a class="ss-toc-link" href="#soupcooking">Soupcooking</a>
+      <a class="ss-toc-sub" href="#soupcooking">Soups & Thermoses</a>
+      <a class="ss-toc-link" href="#subclasses">Subclasses</a>
+      <a class="ss-toc-sub" href="#subclasses">Sous Chef</a>
+      <a class="ss-toc-sub" href="#subclasses">Street Vendor</a>
+      <a class="ss-toc-sub" href="#subclasses">Divine Caterer</a>
+      <a class="ss-toc-link" href="#spells">Spell List</a>
+    </nav>
 
-  <main class="ps-content">
-    <div class="ps-content-wrapper">
+    <!-- main content -->
+    <main class="ss-content" id="main-content">
+      <div class="ss-content-inner">
       <!-- Flavor Stories -->
       <div class="ps-flavor-cards">
         <div class="ps-flavor-card">
@@ -311,7 +512,7 @@
       </div>
 
       <!-- Interdisciplinary Training -->
-      <section>
+      <section id="class-overview">
         <h2 class="ps-section-heading">Interdisciplinary Training</h2>
         <p>The path to becoming a Soup Savant requires mastery across multiple domains. A Soup Savant must be an alchemist to understand the transformative properties of their ingredients. They must be an herbalist to source the rarest and most potent botanicals. They must be an artisan to create the vessels that carry their work. They must be a merchant to sustain their travels and fund their experiments. But most importantly, they must be willing to embrace the possibility that cooking might be one of the most powerful forms of magic in existence.</p>
       </section>
@@ -338,7 +539,7 @@
       </section>
 
       <!-- Class Features Stat Block -->
-      <div class="ps-stat-block">
+      <div class="ps-stat-block" id="class-features">
         <h3 class="ps-section-heading level-2">Class Features</h3>
 
         <div class="ps-stat-row">
@@ -383,7 +584,7 @@
       </div>
 
       <!-- Progression Table -->
-      <div style="overflow-x: auto;">
+      <div style="overflow-x: auto;" id="level-table">
         <table class="ps-table">
           <thead>
             <tr>
@@ -586,7 +787,7 @@
         <h2 class="ps-section-heading">Class Features</h2>
 
         <!-- Soupcooking -->
-        <div class="ps-feature">
+        <div class="ps-feature" id="soupcooking">
           <div class="ps-feature-title">Soupcooking</div>
           <div class="ps-feature-subtitle">1st Level Soup Savant Feature</div>
 
@@ -821,7 +1022,7 @@
       </section>
 
       <!-- Soup Spell System -->
-      <section>
+      <section id="spells">
         <h2 class="ps-section-heading">Soup Spell System</h2>
 
         <p>Your soups are magical in nature and can be cast in multiple ways depending on your needs and the situation. Each soup in your Cookbook has an associated delivery method that determines how you use it in combat or exploration.</p>
@@ -849,10 +1050,9 @@
         <p>You gain one new soup in your Cookbook whenever you level up as a Soup Savant. You can choose any soup you have discovered during your adventures, or you can work with your DM to create a custom soup based on your character's experiences.</p>
       </section>
 
-    </div>
-  </main>
-
-  <div class="ps-divider"><div class="ps-div-line"></div><div class="ps-div-ornament"><div class="ps-div-dot"></div><div class="ps-div-gem"></div><div class="ps-div-dot"></div></div><div class="ps-div-line r"></div></div>
+      </div>
+    </main>
+  </div>
 
   <div id="ps-site-footer"></div>
 

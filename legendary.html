@@ -27,37 +27,156 @@
   <link rel="stylesheet" href="style.css?v=185" />
   <script src="theme.js?v=185"></script>
   <style>
-    /* legendary soups page */
-    .legendary-wrapper {
-      max-width: 1100px;
-      margin: 0 auto;
-      padding: 0 56px 56px;
+    /* legendary soups page - full width redesign */
+    .leg-intro-strip {
+      background: var(--bg-card);
+      border-top: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      padding: 40px 64px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 48px;
+      align-items: start;
     }
-    .legendary-intro {
-      font-size: 16px;
-      color: var(--text-dim);
+    .leg-intro-text {
+      font-family: 'Spectral', serif;
+      font-size: 15px;
       line-height: 1.85;
+      color: var(--text-dim);
+    }
+    .leg-intro-text p {
       margin-bottom: 16px;
     }
-    .legendary-intro ul {
-      margin: 16px 0 16px 24px;
-      font-size: 14px;
-      color: var(--text-dim);
-      line-height: 1.85;
+    .leg-intro-text p:last-child {
+      margin-bottom: 0;
     }
-    .legendary-intro li {
+    .leg-intro-rules {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-top: 2px solid var(--crimson);
+      padding: 24px;
+    }
+    .leg-intro-rules-title {
+      font-family: 'Cinzel', serif;
+      font-size: 9px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--crimson);
+      margin-bottom: 16px;
+    }
+    .leg-intro-rules ul {
+      font-family: 'Spectral', serif;
+      font-size: 13px;
+      line-height: 1.8;
+      color: var(--text-dim);
+      margin: 0 0 0 16px;
+    }
+    .leg-intro-rules li {
       margin-bottom: 8px;
     }
-    .ps-legendary-card {
+    .leg-recipes-section {
+      padding: 48px 64px 80px;
+      background: var(--bg);
+    }
+    .leg-recipes-header {
+      font-family: 'Cinzel', serif;
+      font-size: 10px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--crimson);
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
       margin-bottom: 36px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .leg-recipes-header::before {
+      content: '◆';
+      font-size: 8px;
+    }
+    .leg-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+    }
+    .ps-legendary-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 0;
+      padding: 36px;
+      position: relative;
+      overflow: hidden;
+      transition: border-color 0.2s;
+    }
+    .ps-legendary-card:hover {
+      border-color: var(--crimson-border);
+    }
+    .ps-legendary-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, var(--crimson), var(--crimson-dim), transparent);
+    }
+    .ps-legendary-name {
+      font-family: 'Cinzel', serif;
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--text);
+      margin-bottom: 4px;
+      letter-spacing: 1px;
+    }
+    .ps-legendary-subtitle {
+      font-size: 11px;
+      font-family: 'Cinzel', serif;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--crimson);
+      margin-bottom: 16px;
+      opacity: 0.8;
+    }
+    .ps-legendary-lore {
+      font-size: 14px;
+      font-style: italic;
+      color: var(--text-muted);
+      line-height: 1.8;
+      margin-bottom: 20px;
+      border-left: 2px solid var(--crimson);
+      padding: 8px 0 8px 16px;
+      background: var(--crimson-soft);
     }
     .ps-legendary-stats {
+      display: grid;
       grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 0;
+    }
+    .ps-legendary-stat {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 12px;
+    }
+    .ps-legendary-stat-label {
+      font-family: 'Cinzel', serif;
+      font-size: 8px;
+      letter-spacing: 2px;
+      color: var(--crimson);
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+    .ps-legendary-stat-val {
+      font-size: 12px;
+      color: var(--text-dim);
+      font-style: italic;
+      line-height: 1.5;
     }
     .legendary-effects {
       margin-top: 20px;
       padding-top: 20px;
-      border-top: 1px solid var(--crimson-border);
+      border-top: 1px solid var(--border);
     }
     .legendary-effects-title {
       font-family: 'Cinzel', serif;
@@ -65,26 +184,42 @@
       letter-spacing: 2px;
       color: var(--crimson);
       text-transform: uppercase;
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
     .legendary-effects ul {
-      font-size: 14px;
+      font-size: 13px;
       line-height: 1.85;
       color: var(--text-dim);
-      margin: 0 0 0 20px;
+      margin: 0 0 0 18px;
     }
     .legendary-effects li {
-      margin-bottom: 6px;
+      margin-bottom: 5px;
     }
     .legendary-effects-note {
-      font-size: 13px;
+      font-size: 12px;
       color: var(--text-muted);
-      margin-top: 12px;
+      margin-top: 10px;
       font-style: italic;
     }
+    @media (max-width: 1100px) {
+      .leg-grid {
+        grid-template-columns: 1fr;
+      }
+      .leg-intro-strip {
+        grid-template-columns: 1fr;
+      }
+    }
     @media (max-width: 768px) {
-      .legendary-wrapper { padding: 0 24px 40px; }
-      .ps-legendary-stats { grid-template-columns: 1fr; }
+      .leg-intro-strip {
+        padding: 24px 32px;
+        gap: 24px;
+      }
+      .leg-recipes-section {
+        padding: 32px 32px 48px;
+      }
+      .ps-legendary-stats {
+        grid-template-columns: 1fr;
+      }
     }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" crossorigin="anonymous" integrity="sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG"></script>
@@ -105,37 +240,29 @@
     <div class="ps-page-subtitle">Recipes of the Mightiest Creatures in Existence</div>
   </div>
 
-  <div class="ps-divider"><div class="ps-div-line"></div><div class="ps-div-ornament"><div class="ps-div-dot"></div><div class="ps-div-gem"></div><div class="ps-div-dot"></div></div><div class="ps-div-line r"></div></div>
-
-
-  <div class="legendary-wrapper">
-
-  <div class="ps-section-header">
-    <div class="ps-section-title">Introduction</div>
+  <div class="leg-intro-strip">
+    <div>
+      <div class="leg-intro-text">
+        <p>Legendary soups represent the pinnacle of culinary achievement and magical craftsmanship. These recipes call for ingredients harvested from legendary creatures, each one a monument to power incarnate. The recipes that follow are not for the faint of heart. They demand ingredients of incredible scarcity, hours or days of careful preparation, and consequences that reshape those who consume them.</p>
+        <p>These soups are works of art, power made palatable. They are the dreams of heroes and the obsessions of those who dare to aspire to immortality through broth.</p>
+      </div>
+    </div>
+    <div class="leg-intro-rules">
+      <div class="leg-intro-rules-title">Fundamental Rules</div>
+      <ul>
+        <li>No thermos is needed to maintain a legendary soup's properties. Once prepared, its benefits manifest immediately and require no magical vessel.</li>
+        <li>Minimum cooking time is 8 hours. Some legendary recipes require significantly longer.</li>
+        <li>Legendary soups cannot be enhanced by Soup of the Day, Culinary Edge, or Divinely Delicious features.</li>
+        <li>Only one creature can cook a legendary soup. Multiple cooks attempting to prepare the same batch causes the recipe to spoil entirely.</li>
+        <li>The ingredient is consumed in the cooking process. It cannot be recovered, reused, or divided among multiple batches.</li>
+        <li>Harvesting an ingredient from a defeated legendary creature requires DM approval and must occur within a strict time window after the creature's death.</li>
+      </ul>
+    </div>
   </div>
 
-  <div class="legendary-intro">
-    <p>Legendary soups represent the pinnacle of culinary achievement and magical craftsmanship. These recipes call for ingredients harvested from legendary creatures, each one a monument to power incarnate. The recipes that follow are not for the faint of heart. They demand ingredients of incredible scarcity, hours or days of careful preparation, and consequences that reshape those who consume them.</p>
-
-    <p>A legendary soup follows these fundamental rules:</p>
-    <ul>
-      <li>No thermos is needed to maintain a legendary soup's properties. Once prepared, its benefits manifest immediately and require no magical vessel.</li>
-      <li>Minimum cooking time is 8 hours. Some legendary recipes require significantly longer.</li>
-      <li>Legendary soups cannot be enhanced by Soup of the Day, Culinary Edge, or Divinely Delicious features.</li>
-      <li>Only one creature can cook a legendary soup. Multiple cooks attempting to prepare the same batch causes the recipe to spoil entirely.</li>
-      <li>The ingredient is consumed in the cooking process. It cannot be recovered, reused, or divided among multiple batches.</li>
-      <li>Harvesting an ingredient from a defeated legendary creature requires DM approval and must occur within a strict time window after the creature's death.</li>
-    </ul>
-
-    <p>These soups are works of art, power made palatable. They are the dreams of heroes and the obsessions of those who dare to aspire to immortality through broth.</p>
-  </div> <!-- end legendary-intro -->
-
-  <div class="ps-divider"><div class="ps-div-line"></div><div class="ps-div-ornament"><div class="ps-div-dot"></div><div class="ps-div-gem"></div><div class="ps-div-dot"></div></div><div class="ps-div-line r"></div></div>
-
-
-  <div class="ps-section-header">
-    <div class="ps-section-title">Legendary Recipes</div>
-  </div>
+  <div class="leg-recipes-section">
+    <div class="leg-recipes-header">Legendary Recipes</div>
+    <div class="leg-grid">
 
   <!-- 1. Tarrasque Tail Consomme -->
   <div class="ps-legendary-card">
@@ -445,9 +572,8 @@
     </div>
   </div>
 
-  </div> <!-- end legendary-wrapper -->
-
-  <div class="ps-divider"><div class="ps-div-line"></div><div class="ps-div-ornament"><div class="ps-div-dot"></div><div class="ps-div-gem"></div><div class="ps-div-dot"></div></div><div class="ps-div-line r"></div></div>
+    </div>
+  </div>
 
   <div id="ps-site-footer"></div>
 

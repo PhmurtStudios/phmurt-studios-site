@@ -36,22 +36,45 @@
 <body data-phmurt-feature="generators">
   <a href="#main-content" class="ps-skip-nav">Skip to content</a>
   <style>
-    /* generators page styles */
+    /* generators page styles - full-screen layout overhaul */
+
+    .gen-header-bar {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      padding: 14px 24px;
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .gen-header-title {
+      font-family: 'Cinzel', serif;
+      font-size: 14px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--crimson);
+    }
+
+    .gen-header-sub {
+      font-family: 'Spectral', serif;
+      font-size: 13px;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
     .gen-container {
+      width: 100%;
       display: grid;
-      grid-template-columns: 260px 1fr;
+      grid-template-columns: 300px 1fr;
       gap: 0;
-      min-height: calc(100vh - 200px);
+      height: calc(100vh - 56px);
       background: var(--bg);
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 0 32px;
     }
 
     @media (max-width: 1024px) {
       .gen-container {
         grid-template-columns: 1fr;
-        padding: 0 16px;
+        height: auto;
       }
     }
 
@@ -60,9 +83,7 @@
       background: var(--bg-card);
       border-right: 1px solid var(--border);
       padding: 28px 20px;
-      position: sticky;
-      top: 0;
-      max-height: 100vh;
+      height: 100%;
       overflow-y: auto;
       z-index: 100;
     }
@@ -93,8 +114,8 @@
 
     .gen-category-label {
       font-family: 'Cinzel', serif;
-      font-size: 9px;
-      letter-spacing: 2.5px;
+      font-size: 10px;
+      letter-spacing: 3px;
       text-transform: uppercase;
       color: var(--text-muted);
       margin-bottom: 10px;
@@ -108,6 +129,7 @@
       align-items: center;
       gap: 10px;
       padding: 10px 14px;
+      height: 36px;
       margin-bottom: 4px;
       background: transparent;
       border: none;
@@ -148,8 +170,9 @@
 
     /* main content */
     .gen-main {
-      padding: 48px 56px;
       overflow-y: auto;
+      height: 100%;
+      padding: 48px 72px;
     }
 
     @media (max-width: 768px) {
@@ -174,7 +197,7 @@
 
     .gen-title {
       font-family: 'Cinzel', serif;
-      font-size: 28px;
+      font-size: 36px;
       letter-spacing: 2px;
       color: var(--text);
       margin-bottom: 8px;
@@ -287,7 +310,7 @@
       border-radius: 4px;
       padding: 32px;
       margin-bottom: 28px;
-      min-height: 200px;
+      min-height: 300px;
       position: relative;
       overflow: hidden;
     }
@@ -298,8 +321,9 @@
       top: 0;
       left: 0;
       right: 0;
-      height: 2px;
+      height: 3px;
       background: linear-gradient(90deg, transparent, var(--crimson), transparent);
+      box-shadow: 0 2px 8px rgba(192, 57, 43, 0.15);
     }
 
     .gen-output.rolling {
@@ -575,7 +599,7 @@
     @media (max-width: 1024px) {
       .gen-sidebar {
         position: relative;
-        max-height: none;
+        height: auto;
         border-bottom: 1px solid var(--border);
         border-right: none;
       }
@@ -583,6 +607,7 @@
       .gen-nav-item {
         display: inline-block;
         width: auto;
+        height: auto;
         margin-right: 8px;
         margin-bottom: 8px;
       }
@@ -1542,20 +1567,9 @@
   <div id="ps-site-shell"></div>
   <div id="ps-page-breadcrumb"></div>
 
-  <div class="ps-page-hero">
-    <div class="ps-page-eyebrow">DM Tools</div>
-    <div class="ps-page-title">Random Generator Suite</div>
-    <div class="ps-page-subtitle">Everything You Need to Improvise</div>
-  </div>
-
-  <div class="ps-divider" style="margin: 32px 0;">
-    <div class="ps-div-line"></div>
-    <div class="ps-div-ornament">
-      <div class="ps-div-dot"></div>
-      <div class="ps-div-gem"></div>
-      <div class="ps-div-dot"></div>
-    </div>
-    <div class="ps-div-line r"></div>
+  <div class="gen-header-bar">
+    <div class="gen-header-title">✦ DM Generator Suite</div>
+    <div class="gen-header-sub">Roll something remarkable</div>
   </div>
 
   <div class="gen-container">
