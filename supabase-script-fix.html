@@ -1,0 +1,20 @@
+<!--
+  REPLACE the two existing <script> tags loading @supabase/supabase-js with the ONE line below.
+
+  Why this broke:
+  - Both old <script> tags carried the same SRI hash (sha384-PsnFqJ58...).
+  - That hash no longer matches the actual file content jsdelivr serves for either
+    @supabase/supabase-js@2 (latest) OR @supabase/supabase-js@2.47.0.
+  - Browser silently refuses to execute scripts whose SRI hash doesn't verify.
+  - Result: window.supabase is undefined, supabase-config.js logs
+    "Critical: Supabase client unavailable", sign-in form has no client to call,
+    and shows the generic "Invalid email or password" message no matter what
+    you type.
+
+  Why use a pinned version + matching hash:
+  - Unpinned URLs (e.g., @2 = latest 2.x) WILL break SRI again the moment a new
+    2.x version ships. Pin the version and pin the hash together.
+-->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0"
+        integrity="sha384-fm42zLXjam4N3lT5umWgNtBBPMP3Ddrdmr9lnPKtDWzs5Dqy457Yn6+eTvCgRU3n"
+        crossorigin="anonymous"></script>

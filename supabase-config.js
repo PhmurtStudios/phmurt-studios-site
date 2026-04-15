@@ -106,7 +106,7 @@ var _phmurtInitInProgress = false;
       s.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0';
       s.crossOrigin = 'anonymous';
       // SECURITY: Update this hash when upgrading the version. Verify at https://www.jsdelivr.com/
-      s.integrity = 'sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG';
+      s.integrity = 'sha384-fm42zLXjam4N3lT5umWgNtBBPMP3Ddrdmr9lnPKtDWzs5Dqy457Yn6+eTvCgRU3n';
       s.onload  = _createClient;
       s.onerror = function () {
         if (window.PHMURT_DEBUG) console.warn('[Phmurt] Supabase CDN failed to load – offline mode.');

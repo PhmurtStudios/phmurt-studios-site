@@ -90,7 +90,7 @@ CREATE POLICY "Service role can update all profiles"
 
 The `service_role` API key (server-side only, never shipped to browsers) will continue to work exactly as before. Anon and authenticated users keep whatever update access the **other 5 policies** on `profiles` give them — typically "users can update their own row," which appears to already exist (saved query "User Self-Update Policy for Profiles").
 
-> ✅ **APPLIED 2026-04-15.** Anon UPDATE on `profiles` now affects 0 rows (verified via `SET LOCAL role = 'anon'` test). Rollback in `rls-rollback.sql`.
+> ⚠️ **APPLIED then ROLLED BACK 2026-04-15.** Fix verified to close the vuln, but rolled back along with rate-limit triggers after a sign-in failure report. See §4b. The vulnerability is currently open again. Re-apply after isolating the sign-in issue.
 
 ### 2.3 Other anon-writable policies (review, but likely intentional)
 
@@ -159,7 +159,28 @@ I can pull each function's body into the audit if you want — say the word.
 
 ---
 
-## 4a. Applied changes (this session)
+## 4b. Rolled back (later in same session)
+
+User reported sign-in failures ("incorrect email or password") for `dreverad18@gmail.com` after the §4a changes. Without a definitive diagnosis, all §4a database changes were rolled back at user request to unblock:
+
+```sql
+DROP TRIGGER IF EXISTS rl_site_errors ON public.site_errors;
+DROP TRIGGER IF EXISTS rl_site_visits ON public.site_visits;
+DROP FUNCTION IF EXISTS public.rl_throttle_inserts();
+DROP POLICY IF EXISTS "Service role can update all profiles" ON public.profiles;
+CREATE POLICY "Service role can update all profiles" ON public.profiles
+  AS PERMISSIVE FOR UPDATE TO public USING (true) WITH CHECK (true);
+```
+
+Outstanding issues to revisit:
+- The RLS vulnerability on `profiles` UPDATE (§2.2) is open again. Re-applying it is still recommended once we can confirm the sign-in flow doesn't depend on it.
+- The duplicate `site_errors` "Anon insert errors" policy stayed dropped (it was redundant, not relied on).
+- Rate-limit triggers on `site_errors` / `site_visits` were not re-applied. If reintroduced, test sign-in immediately afterward.
+- Sign-in failure root cause not isolated. The `auth.audit_log_entries` table is empty (audit logging appears disabled in this project), so post-hoc diagnosis is limited. Next time, capture the `POST /auth/v1/token?grant_type=password` response body during a failed attempt.
+
+---
+
+## 4a. Applied changes (this session, then rolled back \u2014 see §4b)
 
 | Change | Status | Notes |
 |---|---|---|
