@@ -101,6 +101,153 @@ const cardBase = {
 };
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   CREATOR SHELL & SHARED FORM COMPONENTS
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function CreatorShell({ title, children, preview, onClose, onSave, saveLabel }) {
+  return (
+    <div style={{
+      position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: T.bg, zIndex: 1000, display: "flex", flexDirection: "column"
+    }}>
+      <div style={{
+        display: "flex", justifyContent: "space-between", alignItems: "center",
+        padding: "12px 24px", borderBottom: "2px solid " + T.gold,
+        backgroundColor: T.bgCard, flexShrink: 0
+      }}>
+        <h2 style={{ color: T.gold, fontFamily: T.heading, margin: 0, fontSize: "20px", letterSpacing: "0.02em" }}>{title}</h2>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+          <button onClick={onSave} style={{ ...primaryBtn, padding: "8px 24px" }}>{saveLabel || "Save"}</button>
+          <button onClick={onClose} style={{ ...secondaryBtn, padding: "8px 24px" }}>Cancel</button>
+        </div>
+      </div>
+      <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
+        <div style={{ flex: "1 1 55%", overflowY: "auto", padding: "20px 24px" }}>
+          {children}
+        </div>
+        <div style={{
+          flex: "1 1 45%", overflowY: "auto", padding: "20px 24px",
+          backgroundColor: T.bgNav, borderLeft: "1px solid " + T.border,
+          display: "flex", flexDirection: "column"
+        }}>
+          <div style={{
+            fontSize: "11px", fontFamily: T.ui, color: T.textFaint, textTransform: "uppercase",
+            letterSpacing: "0.1em", marginBottom: "16px", paddingBottom: "8px",
+            borderBottom: "1px solid " + T.border, display: "flex", alignItems: "center", gap: "8px"
+          }}>
+            <span style={{ fontSize: "14px" }}>&#9670;</span> Live Preview
+          </div>
+          <div style={{ flex: 1 }}>{preview}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FormSection({ title, icon, defaultOpen, children }) {
+  const [open, setOpen] = React.useState(defaultOpen !== false);
+  return (
+    <div style={{
+      marginBottom: "14px", borderRadius: "8px", border: "1px solid " + T.border,
+      overflow: "hidden", transition: "all 0.2s"
+    }}>
+      <button onClick={() => setOpen(!open)} style={{
+        width: "100%", display: "flex", alignItems: "center", gap: "10px",
+        padding: "11px 16px", backgroundColor: open ? T.bgCard : "transparent",
+        border: "none", cursor: "pointer", color: T.gold, fontFamily: T.heading,
+        fontSize: "13px", fontWeight: "bold", textAlign: "left",
+        transition: "background-color 0.2s", letterSpacing: "0.03em"
+      }}>
+        <span style={{
+          transition: "transform 0.2s", transform: open ? "rotate(90deg)" : "rotate(0)",
+          fontSize: "8px", color: T.textMuted, display: "inline-block"
+        }}>{"\u25B6"}</span>
+        {icon && <span style={{ fontSize: "14px" }}>{icon}</span>}
+        {title}
+      </button>
+      {open && (
+        <div style={{ padding: "14px 16px", borderTop: "1px solid " + T.border }}>
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function ToggleSwitch({ checked, onChange, label }) {
+  return (
+    <label style={{
+      display: "inline-flex", alignItems: "center", gap: "10px", cursor: "pointer",
+      fontSize: "13px", color: T.text, userSelect: "none"
+    }}>
+      <div onClick={(e) => { e.preventDefault(); onChange(!checked); }} style={{
+        width: "36px", height: "20px", borderRadius: "10px", flexShrink: 0,
+        backgroundColor: checked ? T.crimson : T.border,
+        position: "relative", transition: "background-color 0.2s", cursor: "pointer"
+      }}>
+        <div style={{
+          width: "16px", height: "16px", borderRadius: "50%",
+          backgroundColor: "#fff", position: "absolute", top: "2px",
+          left: checked ? "18px" : "2px", transition: "left 0.2s",
+          boxShadow: "0 1px 3px rgba(0,0,0,0.3)"
+        }} />
+      </div>
+      {label}
+    </label>
+  );
+}
+
+function LivePreview({ category, form }) {
+  if (!form || !form.name) {
+    const icons = { monsters: "\u2739", items: "\u2694", spells: "\u2726", npcs: "\u25C9", classFeatures: "\u2605", feats: "\u2736" };
+    return (
+      <div style={{ textAlign: "center", padding: "60px 20px", color: T.textFaint }}>
+        <div style={{ fontSize: "48px", marginBottom: "16px", opacity: 0.15 }}>{icons[category] || "\u2726"}</div>
+        <div style={{ fontFamily: T.body, fontSize: "14px", fontStyle: "italic" }}>
+          Start typing to see a live preview
+        </div>
+        <div style={{ fontSize: "12px", marginTop: "8px", color: T.textFaint, opacity: 0.6 }}>
+          Your creation will appear here as you fill in the form
+        </div>
+      </div>
+    );
+  }
+  switch (category) {
+    case "monsters": return <StatBlockPreview monster={form} />;
+    case "items": return <ItemDetail item={form} />;
+    case "spells": return <SpellDetail spell={form} />;
+    case "npcs": return <NPCDetail npc={form} viewRole="dm" />;
+    case "classFeatures": return <ClassFeatureDetail feature={form} />;
+    case "feats": return <FeatDetail feat={form} />;
+    default: return null;
+  }
+}
+
+function AbilityScoreRow({ abilities, onChange }) {
+  const setAbility = (i, v) => {
+    const a = [...abilities]; a[i] = parseInt(v, 10) || 10; onChange(a);
+  };
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "8px" }}>
+      {AbilityNames.map((name, i) => (
+        <div key={name} style={{
+          textAlign: "center", padding: "10px 4px", backgroundColor: T.bgCard,
+          borderRadius: "8px", border: "1px solid " + T.border
+        }}>
+          <div style={{ fontSize: "11px", color: T.gold, fontFamily: T.ui, marginBottom: "6px", letterSpacing: "0.05em" }}>{name}</div>
+          <input type="number" value={abilities[i]} onChange={e => setAbility(i, e.target.value)}
+            style={{
+              ...inputStyle, textAlign: "center", padding: "6px 2px", fontSize: "16px",
+              fontWeight: "bold", border: "none", backgroundColor: "transparent", color: T.text, width: "100%"
+            }} />
+          <div style={{ fontSize: "11px", color: T.textMuted, marginTop: "4px", fontFamily: T.body }}>{fmtMod(abilities[i])}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
    STAT BLOCK PREVIEW (Monsters)
    ═══════════════════════════════════════════════════════════════════════════ */
 
@@ -349,7 +496,7 @@ function FeatCard({ feat, onExpand }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   CREATOR MODALS
+   CREATOR MODALS — Redesigned with split-pane layout
    ═══════════════════════════════════════════════════════════════════════════ */
 
 function ModalShell({ title, children, onClose }) {
@@ -377,31 +524,50 @@ function ModalShell({ title, children, onClose }) {
   );
 }
 
-function TemplatePickerGrid({ templates, onSelect }) {
+function TemplatePickerGrid({ templates, onSelect, category }) {
   if (!templates || typeof templates !== 'object') return null;
   const entries = Object.entries(templates);
   if (!entries.length) return null;
+
+  const getColor = (tmpl) => {
+    if (category === "monsters") return CRColors[tmpl.cr] || "#8a7c6f";
+    if (category === "items") return RarityColors[tmpl.rarity] || "#808080";
+    if (category === "spells") return SchoolColors[tmpl.school] || "#666";
+    if (category === "feats") return FeatCatColors[tmpl.category] || "#666";
+    return T.gold;
+  };
+  const getSubtitle = (tmpl) => {
+    if (tmpl.cr != null) return "CR " + tmpl.cr;
+    if (tmpl.rarity) return tmpl.rarity.replace("_", " ");
+    if (tmpl.school) return tmpl.school;
+    if (tmpl.category) return tmpl.category;
+    if (tmpl.race) return tmpl.race;
+    if (tmpl.className) return tmpl.className;
+    return tmpl.type || "";
+  };
+
   return (
-    <div style={{ marginBottom: "20px" }}>
-      <div style={sectionHead}>
-        <span style={{ fontSize: "16px" }}>&#9670;</span> Quick Start from Template
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: "8px" }}>
-        {entries.map(([key, tmpl]) => (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(150px, 1fr))", gap: "8px" }}>
+      {entries.map(([key, tmpl]) => {
+        const color = getColor(tmpl);
+        return (
           <button key={key} onClick={() => onSelect(key)} style={{
-            padding: "10px", backgroundColor: T.bg, border: "1px solid " + T.border,
-            borderRadius: "6px", cursor: "pointer", textAlign: "left", transition: "all 0.2s",
-            color: T.text
+            padding: "12px", backgroundColor: T.bgCard, borderRadius: "8px", cursor: "pointer",
+            textAlign: "left", transition: "all 0.2s", color: T.text,
+            border: "1px solid " + T.border, borderLeft: "3px solid " + color
           }}>
-            <div style={{ fontSize: "12px", fontFamily: T.heading, color: T.gold, marginBottom: "4px" }}>
+            <div style={{ fontSize: "12px", fontFamily: T.heading, color: T.gold, marginBottom: "3px", lineHeight: "1.3" }}>
               {(tmpl.name || key).replace(/_/g, " ")}
             </div>
-            <div style={{ fontSize: "10px", color: T.textFaint, lineHeight: "1.3" }}>
-              {tmpl.type || tmpl.school || tmpl.className || tmpl.category || tmpl.race || ""}
+            <div style={{
+              fontSize: "10px", color: color, fontFamily: T.ui, textTransform: "uppercase",
+              letterSpacing: "0.05em"
+            }}>
+              {getSubtitle(tmpl)}
             </div>
           </button>
-        ))}
-      </div>
+        );
+      })}
     </div>
   );
 }
@@ -412,27 +578,57 @@ function FeatureListEditor({ label, items, onChange }) {
     const arr = [...(items || [])]; arr[idx] = { ...arr[idx], [field]: val }; onChange(arr);
   };
   const remove = (idx) => onChange((items || []).filter((_, i) => i !== idx));
+  const singularLabel = label.replace(/s$/, "");
+
   return (
     <div style={{ marginBottom: "16px" }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-        <div style={sectionHead}><span style={{ fontSize: "14px" }}>&#9670;</span> {label}</div>
-        <button onClick={add} style={{ ...primaryBtn, padding: "4px 10px", fontSize: "11px" }}>+ Add</button>
+        <div style={{
+          color: T.gold, fontFamily: T.heading, fontSize: "12px", letterSpacing: "0.05em", textTransform: "uppercase"
+        }}>
+          {label} {items && items.length > 0 && <span style={{ color: T.textFaint, fontWeight: "normal" }}>({items.length})</span>}
+        </div>
+        <button onClick={add} style={{
+          padding: "4px 12px", fontSize: "11px", fontFamily: T.ui,
+          backgroundColor: "transparent", color: T.gold, border: "1px solid " + T.gold,
+          borderRadius: "4px", cursor: "pointer", transition: "all 0.2s", letterSpacing: "0.03em"
+        }}>+ Add</button>
       </div>
+      {(!items || items.length === 0) && (
+        <div style={{
+          padding: "16px", textAlign: "center", color: T.textFaint, fontSize: "12px",
+          fontStyle: "italic", borderRadius: "6px", border: "1px dashed " + T.border
+        }}>
+          No {label.toLowerCase()} yet
+        </div>
+      )}
       {items && items.map((f, idx) => (
         <div key={idx} style={{
-          marginBottom: "8px", padding: "10px", backgroundColor: T.bg,
-          borderRadius: "6px", borderLeft: "3px solid " + T.gold
+          marginBottom: "8px", padding: "12px 14px", backgroundColor: T.bgCard,
+          borderRadius: "8px", border: "1px solid " + T.border, borderLeft: "3px solid " + T.gold
         }}>
-          <input type="text" value={f.name} placeholder="Name" onChange={e => update(idx, "name", e.target.value)}
-            style={{ ...inputStyle, marginBottom: "6px", fontSize: "12px" }} />
-          <textarea value={f.description} placeholder="Description" onChange={e => update(idx, "description", e.target.value)}
-            style={{ ...inputStyle, minHeight: "50px", fontSize: "12px", resize: "vertical" }} />
-          <button onClick={() => remove(idx)} style={{ ...dangerBtn, padding: "3px 8px", fontSize: "10px", marginTop: "6px" }}>Remove</button>
+          <div style={{ display: "flex", gap: "10px", alignItems: "center", marginBottom: "8px" }}>
+            <span style={{ color: T.gold, fontFamily: T.heading, fontSize: "13px", fontWeight: "bold", minWidth: "20px" }}>
+              {idx + 1}.
+            </span>
+            <input type="text" value={f.name} placeholder={"Name this " + singularLabel.toLowerCase()}
+              onChange={e => update(idx, "name", e.target.value)}
+              style={{ ...inputStyle, flex: 1, fontWeight: "bold", fontSize: "13px" }} />
+            <button onClick={() => remove(idx)} style={{
+              background: "none", border: "none", color: T.textFaint, fontSize: "18px",
+              cursor: "pointer", padding: "2px 6px", lineHeight: 1
+            }} title="Remove">&times;</button>
+          </div>
+          <textarea value={f.description} placeholder="Describe the effect..."
+            onChange={e => update(idx, "description", e.target.value)}
+            style={{ ...inputStyle, minHeight: "50px", fontSize: "12px", resize: "vertical", marginLeft: "30px", width: "calc(100% - 30px)", boxSizing: "border-box" }} />
         </div>
       ))}
     </div>
   );
 }
+
+/* ─── Monster Creator ─── */
 
 function MonsterCreator({ templates, onSave, onClose, initialData }) {
   const [form, setForm] = React.useState(initialData || {
@@ -468,66 +664,72 @@ function MonsterCreator({ templates, onSave, onClose, initialData }) {
   };
 
   const save = () => { onSave(form); onClose(); };
-  const setAbility = (i, v) => { const a = [...form.abilities]; a[i] = parseInt(v, 10) || 10; setForm({ ...form, abilities: a }); };
 
   return (
-    <ModalShell title={initialData ? "Edit Monster" : "Create Monster"} onClose={onClose}>
-      <TemplatePickerGrid templates={templates} onSelect={applyTemplate} />
+    <CreatorShell
+      title={initialData ? "Edit Monster" : "Create Monster"}
+      onClose={onClose} onSave={save} saveLabel="Save Monster"
+      preview={<LivePreview category="monsters" form={form} />}
+    >
+      <FormSection title="Quick Start" icon={"\u25C6"} defaultOpen={!initialData}>
+        <TemplatePickerGrid templates={templates} onSelect={applyTemplate} category="monsters" />
+      </FormSection>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
-        <div><label style={labelStyle}>Name</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} /></div>
-        <div><label style={labelStyle}>Type</label><input type="text" value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} placeholder="humanoid, beast, undead..." style={inputStyle} /></div>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "12px", marginBottom: "16px" }}>
-        <div><label style={labelStyle}>Size</label>
-          <select value={form.size} onChange={e => setForm({ ...form, size: e.target.value })} style={selectStyle}>
-            {["tiny","small","medium","large","huge","gargantuan"].map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>)}
-          </select>
+      <FormSection title="Identity" icon={"\u25C6"}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+          <div><label style={labelStyle}>Name</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} placeholder="Give your monster a name" /></div>
+          <div><label style={labelStyle}>Creature Type</label><input type="text" value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} placeholder="humanoid, beast, undead..." style={inputStyle} /></div>
         </div>
-        <div><label style={labelStyle}>AC</label><input type="number" value={form.ac} onChange={e => setForm({ ...form, ac: parseInt(e.target.value, 10) || 10 })} style={inputStyle} /></div>
-        <div><label style={labelStyle}>HP Formula</label><input type="text" value={form.hpFormula} onChange={e => setForm({ ...form, hpFormula: e.target.value })} placeholder="4d8+8" style={inputStyle} /></div>
-        <div><label style={labelStyle}>Speed</label><input type="text" value={form.speed} onChange={e => setForm({ ...form, speed: e.target.value })} placeholder="30 ft." style={inputStyle} /></div>
-      </div>
-
-      <div style={sectionHead}><span style={{ fontSize: "14px" }}>&#9670;</span> Ability Scores</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "8px", marginBottom: "16px" }}>
-        {AbilityNames.map((name, i) => (
-          <div key={name} style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "10px", color: T.gold, fontFamily: T.ui, marginBottom: "3px" }}>{name}</div>
-            <input type="number" value={form.abilities[i]} onChange={e => setAbility(i, e.target.value)}
-              style={{ ...inputStyle, textAlign: "center", padding: "6px 4px" }} />
-            <div style={{ fontSize: "10px", color: T.textMuted, marginTop: "2px" }}>{fmtMod(form.abilities[i])}</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          <div><label style={labelStyle}>Size</label>
+            <select value={form.size} onChange={e => setForm({ ...form, size: e.target.value })} style={selectStyle}>
+              {["tiny","small","medium","large","huge","gargantuan"].map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>)}
+            </select>
           </div>
-        ))}
-      </div>
+          <div><label style={labelStyle}>Alignment</label><input type="text" value={form.alignment} onChange={e => setForm({ ...form, alignment: e.target.value })} style={inputStyle} /></div>
+        </div>
+      </FormSection>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginBottom: "16px" }}>
-        <div><label style={labelStyle}>CR</label><input type="number" step="0.125" value={form.cr} onChange={e => setForm({ ...form, cr: parseFloat(e.target.value) || 0 })} style={inputStyle} /></div>
-        <div><label style={labelStyle}>XP</label><input type="number" value={form.xp} onChange={e => setForm({ ...form, xp: parseInt(e.target.value, 10) || 0 })} style={inputStyle} /></div>
-        <div><label style={labelStyle}>Alignment</label><input type="text" value={form.alignment} onChange={e => setForm({ ...form, alignment: e.target.value })} style={inputStyle} /></div>
-      </div>
+      <FormSection title="Combat Statistics" icon={"\u25C6"}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+          <div><label style={labelStyle}>Armor Class</label><input type="number" value={form.ac} onChange={e => setForm({ ...form, ac: parseInt(e.target.value, 10) || 10 })} style={inputStyle} /></div>
+          <div><label style={labelStyle}>Hit Points</label><input type="text" value={form.hpFormula} onChange={e => setForm({ ...form, hpFormula: e.target.value })} placeholder="4d8+8" style={inputStyle} /></div>
+          <div><label style={labelStyle}>Speed</label><input type="text" value={form.speed} onChange={e => setForm({ ...form, speed: e.target.value })} placeholder="30 ft." style={inputStyle} /></div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
+          <div><label style={labelStyle}>Challenge Rating</label><input type="number" step="0.125" value={form.cr} onChange={e => setForm({ ...form, cr: parseFloat(e.target.value) || 0 })} style={inputStyle} /></div>
+          <div><label style={labelStyle}>XP</label><input type="number" value={form.xp} onChange={e => setForm({ ...form, xp: parseInt(e.target.value, 10) || 0 })} style={inputStyle} /></div>
+          <div />
+        </div>
+      </FormSection>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
-        <div><label style={labelStyle}>Senses</label><input type="text" value={form.senses} onChange={e => setForm({ ...form, senses: e.target.value })} placeholder="darkvision 60 ft." style={inputStyle} /></div>
-        <div><label style={labelStyle}>Languages</label><input type="text" value={form.languages} onChange={e => setForm({ ...form, languages: e.target.value })} style={inputStyle} /></div>
-      </div>
+      <FormSection title="Ability Scores" icon={"\u25C6"}>
+        <AbilityScoreRow abilities={form.abilities} onChange={abilities => setForm({ ...form, abilities })} />
+      </FormSection>
 
-      <div style={{ marginBottom: "16px" }}>
-        <label style={labelStyle}>Description</label>
-        <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} style={{ ...inputStyle, minHeight: "60px", resize: "vertical" }} />
-      </div>
+      <FormSection title="Senses & Languages" icon={"\u25C6"} defaultOpen={false}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          <div><label style={labelStyle}>Senses</label><input type="text" value={form.senses} onChange={e => setForm({ ...form, senses: e.target.value })} placeholder="darkvision 60 ft., passive Perception 12" style={inputStyle} /></div>
+          <div><label style={labelStyle}>Languages</label><input type="text" value={form.languages} onChange={e => setForm({ ...form, languages: e.target.value })} placeholder="Common, Draconic" style={inputStyle} /></div>
+        </div>
+      </FormSection>
 
-      <FeatureListEditor label="Traits" items={form.traits} onChange={traits => setForm({ ...form, traits })} />
-      <FeatureListEditor label="Actions" items={form.actions} onChange={actions => setForm({ ...form, actions })} />
-      <FeatureListEditor label="Legendary Actions" items={form.legendaryActions} onChange={legendaryActions => setForm({ ...form, legendaryActions })} />
+      <FormSection title="Description" icon={"\u25C6"} defaultOpen={false}>
+        <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
+          placeholder="Describe this creature's appearance, behavior, and habitat..."
+          style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} />
+      </FormSection>
 
-      <div style={{ display: "flex", gap: "10px", marginTop: "20px", borderTop: "1px solid " + T.border, paddingTop: "16px" }}>
-        <button onClick={save} style={{ ...primaryBtn, flex: 1 }}>Save Monster</button>
-        <button onClick={onClose} style={{ ...secondaryBtn, flex: 1 }}>Cancel</button>
-      </div>
-    </ModalShell>
+      <FormSection title="Traits & Abilities" icon={"\u25C6"}>
+        <FeatureListEditor label="Traits" items={form.traits} onChange={traits => setForm({ ...form, traits })} />
+        <FeatureListEditor label="Actions" items={form.actions} onChange={actions => setForm({ ...form, actions })} />
+        <FeatureListEditor label="Legendary Actions" items={form.legendaryActions} onChange={legendaryActions => setForm({ ...form, legendaryActions })} />
+      </FormSection>
+    </CreatorShell>
   );
 }
+
+/* ─── Item Creator ─── */
 
 function ItemCreator({ templates, onSave, onClose, initialData }) {
   const [form, setForm] = React.useState(initialData || {
@@ -543,68 +745,79 @@ function ItemCreator({ templates, onSave, onClose, initialData }) {
   const save = () => { onSave(form); onClose(); };
 
   return (
-    <ModalShell title={initialData ? "Edit Item" : "Create Item"} onClose={onClose}>
-      <TemplatePickerGrid templates={templates} onSelect={applyTemplate} />
+    <CreatorShell
+      title={initialData ? "Edit Item" : "Create Item"}
+      onClose={onClose} onSave={save} saveLabel="Save Item"
+      preview={<LivePreview category="items" form={form} />}
+    >
+      <FormSection title="Quick Start" icon={"\u25C6"} defaultOpen={!initialData}>
+        <TemplatePickerGrid templates={templates} onSelect={applyTemplate} category="items" />
+      </FormSection>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
-        <div><label style={labelStyle}>Name</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} /></div>
-        <div><label style={labelStyle}>Type</label>
-          <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} style={selectStyle}>
-            {["wondrous item","weapon","armor","ring","wand","potion","scroll","accessory"].map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase()+t.slice(1)}</option>)}
-          </select>
+      <FormSection title="Identity" icon={"\u25C6"}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+          <div><label style={labelStyle}>Name</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} placeholder="Name your item" /></div>
+          <div><label style={labelStyle}>Type</label>
+            <select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })} style={selectStyle}>
+              {["wondrous item","weapon","armor","ring","wand","potion","scroll","accessory"].map(t => <option key={t} value={t}>{t.charAt(0).toUpperCase()+t.slice(1)}</option>)}
+            </select>
+          </div>
         </div>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
-        <div><label style={labelStyle}>Rarity</label>
-          <select value={form.rarity} onChange={e => setForm({ ...form, rarity: e.target.value })} style={selectStyle}>
-            {Object.keys(RarityColors).map(r => <option key={r} value={r}>{r.replace("_"," ").toUpperCase()}</option>)}
-          </select>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          <div><label style={labelStyle}>Rarity</label>
+            <select value={form.rarity} onChange={e => setForm({ ...form, rarity: e.target.value })} style={selectStyle}>
+              {Object.keys(RarityColors).map(r => <option key={r} value={r}>{r.replace("_"," ").toUpperCase()}</option>)}
+            </select>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", paddingTop: "18px" }}>
+            <ToggleSwitch checked={form.attunement} onChange={v => setForm({ ...form, attunement: v })} label="Requires Attunement" />
+          </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", paddingTop: "20px" }}>
-          <label style={{ color: T.text, fontSize: "13px", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-            <input type="checkbox" checked={form.attunement} onChange={e => setForm({ ...form, attunement: e.target.checked })} />
-            Requires Attunement
-          </label>
+      </FormSection>
+
+      <FormSection title="Description" icon={"\u25C6"}>
+        <div style={{ marginBottom: "12px" }}>
+          <label style={labelStyle}>Description</label>
+          <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} placeholder="What does this item do?" />
         </div>
-      </div>
-      <div style={{ marginBottom: "16px" }}>
-        <label style={labelStyle}>Description</label>
-        <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} />
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "12px", marginBottom: "16px" }}>
-        <div><label style={labelStyle}>Damage</label><input type="text" value={form.damage} onChange={e => setForm({ ...form, damage: e.target.value })} placeholder="1d8" style={inputStyle} /></div>
-        <div><label style={labelStyle}>Damage Type</label><input type="text" value={form.damageType} onChange={e => setForm({ ...form, damageType: e.target.value })} placeholder="slashing" style={inputStyle} /></div>
-        <div><label style={labelStyle}>Charges</label><input type="text" value={form.charges} onChange={e => setForm({ ...form, charges: e.target.value })} style={inputStyle} /></div>
-        <div><label style={labelStyle}>Recharge</label><input type="text" value={form.recharge} onChange={e => setForm({ ...form, recharge: e.target.value })} placeholder="at dawn" style={inputStyle} /></div>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
-        <div><label style={labelStyle}>Value (gp)</label><input type="text" value={form.value} onChange={e => setForm({ ...form, value: e.target.value })} style={inputStyle} /></div>
-        <div><label style={labelStyle}>Weight (lbs)</label><input type="text" value={form.weight} onChange={e => setForm({ ...form, weight: e.target.value })} style={inputStyle} /></div>
-      </div>
-      <div style={{ marginBottom: "16px" }}>
-        <label style={labelStyle}>Lore / Flavor Text</label>
-        <textarea value={form.lore} onChange={e => setForm({ ...form, lore: e.target.value })} style={{ ...inputStyle, minHeight: "60px", resize: "vertical" }} />
-      </div>
-      <div style={{
-        marginBottom: "16px", padding: "14px", backgroundColor: T.crimsonDim,
-        borderRadius: "8px", borderLeft: "3px solid " + T.crimson
-      }}>
-        <label style={{ color: T.text, fontSize: "13px", display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-          <input type="checkbox" checked={form.cursed} onChange={e => setForm({ ...form, cursed: e.target.checked })} />
-          Cursed Item
-        </label>
-        {form.cursed && (
-          <textarea value={form.curseEffect} onChange={e => setForm({ ...form, curseEffect: e.target.value })}
-            placeholder="Describe the curse effect..." style={{ ...inputStyle, marginTop: "10px", minHeight: "50px", resize: "vertical" }} />
-        )}
-      </div>
-      <div style={{ display: "flex", gap: "10px", marginTop: "20px", borderTop: "1px solid " + T.border, paddingTop: "16px" }}>
-        <button onClick={save} style={{ ...primaryBtn, flex: 1 }}>Save Item</button>
-        <button onClick={onClose} style={{ ...secondaryBtn, flex: 1 }}>Cancel</button>
-      </div>
-    </ModalShell>
+        <div>
+          <label style={labelStyle}>Lore / Flavor Text</label>
+          <textarea value={form.lore} onChange={e => setForm({ ...form, lore: e.target.value })} style={{ ...inputStyle, minHeight: "60px", resize: "vertical" }} placeholder="The history and legend behind this item..." />
+        </div>
+      </FormSection>
+
+      <FormSection title="Properties" icon={"\u25C6"} defaultOpen={false}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+          <div><label style={labelStyle}>Damage</label><input type="text" value={form.damage} onChange={e => setForm({ ...form, damage: e.target.value })} placeholder="1d8" style={inputStyle} /></div>
+          <div><label style={labelStyle}>Damage Type</label><input type="text" value={form.damageType} onChange={e => setForm({ ...form, damageType: e.target.value })} placeholder="slashing" style={inputStyle} /></div>
+          <div><label style={labelStyle}>Charges</label><input type="text" value={form.charges} onChange={e => setForm({ ...form, charges: e.target.value })} style={inputStyle} /></div>
+          <div><label style={labelStyle}>Recharge</label><input type="text" value={form.recharge} onChange={e => setForm({ ...form, recharge: e.target.value })} placeholder="at dawn" style={inputStyle} /></div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
+          <div><label style={labelStyle}>AC Bonus</label><input type="text" value={form.ac} onChange={e => setForm({ ...form, ac: e.target.value })} style={inputStyle} /></div>
+          <div><label style={labelStyle}>Value (gp)</label><input type="text" value={form.value} onChange={e => setForm({ ...form, value: e.target.value })} style={inputStyle} /></div>
+          <div><label style={labelStyle}>Weight (lbs)</label><input type="text" value={form.weight} onChange={e => setForm({ ...form, weight: e.target.value })} style={inputStyle} /></div>
+        </div>
+      </FormSection>
+
+      <FormSection title="Curse" icon={"\u25C6"} defaultOpen={form.cursed}>
+        <div style={{
+          padding: "14px", backgroundColor: T.crimsonDim, borderRadius: "8px",
+          borderLeft: "3px solid " + T.crimson
+        }}>
+          <ToggleSwitch checked={form.cursed} onChange={v => setForm({ ...form, cursed: v })} label="This item is cursed" />
+          {form.cursed && (
+            <textarea value={form.curseEffect} onChange={e => setForm({ ...form, curseEffect: e.target.value })}
+              placeholder="Describe the curse effect..."
+              style={{ ...inputStyle, marginTop: "12px", minHeight: "50px", resize: "vertical" }} />
+          )}
+        </div>
+      </FormSection>
+    </CreatorShell>
   );
 }
+
+/* ─── Spell Creator ─── */
 
 function SpellCreator({ templates, onSave, onClose, initialData }) {
   const [form, setForm] = React.useState(initialData || {
@@ -630,89 +843,92 @@ function SpellCreator({ templates, onSave, onClose, initialData }) {
   const spellClasses = ["Bard","Cleric","Druid","Paladin","Ranger","Sorcerer","Warlock","Wizard"];
 
   return (
-    <ModalShell title={initialData ? "Edit Spell" : "Create Spell"} onClose={onClose}>
-      <TemplatePickerGrid templates={templates} onSelect={applyTemplate} />
+    <CreatorShell
+      title={initialData ? "Edit Spell" : "Create Spell"}
+      onClose={onClose} onSave={save} saveLabel="Save Spell"
+      preview={<LivePreview category="spells" form={form} />}
+    >
+      <FormSection title="Quick Start" icon={"\u25C6"} defaultOpen={!initialData}>
+        <TemplatePickerGrid templates={templates} onSelect={applyTemplate} category="spells" />
+      </FormSection>
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "12px", marginBottom: "16px" }}>
-        <div><label style={labelStyle}>Name</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} /></div>
-        <div><label style={labelStyle}>Level (0=Cantrip)</label>
-          <select value={form.level} onChange={e => setForm({ ...form, level: parseInt(e.target.value, 10) })} style={selectStyle}>
-            {[0,1,2,3,4,5,6,7,8,9].map(l => <option key={l} value={l}>{l === 0 ? "Cantrip" : l}</option>)}
-          </select>
+      <FormSection title="Identity" icon={"\u25C6"}>
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "12px", marginBottom: "12px" }}>
+          <div><label style={labelStyle}>Name</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} placeholder="Name your spell" /></div>
+          <div><label style={labelStyle}>Level</label>
+            <select value={form.level} onChange={e => setForm({ ...form, level: parseInt(e.target.value, 10) })} style={selectStyle}>
+              {[0,1,2,3,4,5,6,7,8,9].map(l => <option key={l} value={l}>{l === 0 ? "Cantrip" : "Level " + l}</option>)}
+            </select>
+          </div>
         </div>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
-        <div><label style={labelStyle}>School</label>
-          <select value={form.school} onChange={e => setForm({ ...form, school: e.target.value })} style={selectStyle}>
-            {schools.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>)}
-          </select>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          <div><label style={labelStyle}>School</label>
+            <select value={form.school} onChange={e => setForm({ ...form, school: e.target.value })} style={selectStyle}>
+              {schools.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase()+s.slice(1)}</option>)}
+            </select>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: "20px", paddingTop: "18px" }}>
+            <ToggleSwitch checked={form.ritual} onChange={v => setForm({ ...form, ritual: v })} label="Ritual" />
+            <ToggleSwitch checked={form.concentration} onChange={v => setForm({ ...form, concentration: v })} label="Concentration" />
+          </div>
         </div>
-        <div style={{ display: "flex", alignItems: "center", gap: "16px", paddingTop: "20px" }}>
-          <label style={{ color: T.text, fontSize: "13px", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
-            <input type="checkbox" checked={form.ritual} onChange={e => setForm({ ...form, ritual: e.target.checked })} /> Ritual
-          </label>
-          <label style={{ color: T.text, fontSize: "13px", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
-            <input type="checkbox" checked={form.concentration} onChange={e => setForm({ ...form, concentration: e.target.checked })} /> Concentration
-          </label>
+      </FormSection>
+
+      <FormSection title="Casting" icon={"\u25C6"}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+          <div><label style={labelStyle}>Casting Time</label><input type="text" value={form.castingTime} onChange={e => setForm({ ...form, castingTime: e.target.value })} style={inputStyle} /></div>
+          <div><label style={labelStyle}>Range</label><input type="text" value={form.range} onChange={e => setForm({ ...form, range: e.target.value })} style={inputStyle} /></div>
+          <div><label style={labelStyle}>Duration</label><input type="text" value={form.duration} onChange={e => setForm({ ...form, duration: e.target.value })} style={inputStyle} /></div>
         </div>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginBottom: "16px" }}>
-        <div><label style={labelStyle}>Casting Time</label><input type="text" value={form.castingTime} onChange={e => setForm({ ...form, castingTime: e.target.value })} style={inputStyle} /></div>
-        <div><label style={labelStyle}>Range</label><input type="text" value={form.range} onChange={e => setForm({ ...form, range: e.target.value })} style={inputStyle} /></div>
-        <div><label style={labelStyle}>Duration</label><input type="text" value={form.duration} onChange={e => setForm({ ...form, duration: e.target.value })} style={inputStyle} /></div>
-      </div>
-      <div style={{ marginBottom: "16px" }}>
-        <label style={labelStyle}>Components</label>
-        <div style={{ display: "flex", gap: "16px", marginTop: "4px" }}>
-          {["v","s","m"].map(c => (
-            <label key={c} style={{ color: T.text, fontSize: "13px", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
-              <input type="checkbox" checked={form.components[c]} onChange={e => setForm({ ...form, components: { ...form.components, [c]: e.target.checked } })} />
-              {c === "v" ? "Verbal" : c === "s" ? "Somatic" : "Material"}
-            </label>
-          ))}
+        <div>
+          <label style={labelStyle}>Components</label>
+          <div style={{ display: "flex", gap: "20px", marginTop: "6px" }}>
+            <ToggleSwitch checked={form.components.v} onChange={v => setForm({ ...form, components: { ...form.components, v: v } })} label="Verbal" />
+            <ToggleSwitch checked={form.components.s} onChange={v => setForm({ ...form, components: { ...form.components, s: v } })} label="Somatic" />
+            <ToggleSwitch checked={form.components.m} onChange={v => setForm({ ...form, components: { ...form.components, m: v } })} label="Material" />
+          </div>
+          {form.components.m && (
+            <input type="text" value={form.materialComponent} onChange={e => setForm({ ...form, materialComponent: e.target.value })}
+              placeholder="Material component description" style={{ ...inputStyle, marginTop: "10px" }} />
+          )}
         </div>
-        {form.components.m && (
-          <input type="text" value={form.materialComponent} onChange={e => setForm({ ...form, materialComponent: e.target.value })}
-            placeholder="Material component description" style={{ ...inputStyle, marginTop: "8px" }} />
-        )}
-      </div>
-      <div style={{ marginBottom: "16px" }}>
-        <label style={labelStyle}>Description</label>
-        <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} />
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginBottom: "16px" }}>
-        <div><label style={labelStyle}>Damage</label><input type="text" value={form.damage} onChange={e => setForm({ ...form, damage: e.target.value })} placeholder="3d6" style={inputStyle} /></div>
-        <div><label style={labelStyle}>Damage Type</label><input type="text" value={form.damageType} onChange={e => setForm({ ...form, damageType: e.target.value })} placeholder="fire" style={inputStyle} /></div>
-        <div><label style={labelStyle}>Save Type</label>
-          <select value={form.saveType} onChange={e => setForm({ ...form, saveType: e.target.value })} style={selectStyle}>
-            <option value="">None</option>
-            {["STR","DEX","CON","INT","WIS","CHA"].map(s => <option key={s} value={s.toLowerCase()}>{s}</option>)}
-          </select>
+      </FormSection>
+
+      <FormSection title="Effect" icon={"\u25C6"}>
+        <div style={{ marginBottom: "12px" }}>
+          <label style={labelStyle}>Description</label>
+          <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} placeholder="What does this spell do?" />
         </div>
-      </div>
-      <div style={{ marginBottom: "16px" }}>
-        <label style={labelStyle}>At Higher Levels</label>
-        <textarea value={form.higherLevels} onChange={e => setForm({ ...form, higherLevels: e.target.value })} style={{ ...inputStyle, minHeight: "50px", resize: "vertical" }} />
-      </div>
-      <div style={{ marginBottom: "16px" }}>
-        <label style={labelStyle}>Available to Classes</label>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "8px", marginTop: "6px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+          <div><label style={labelStyle}>Damage</label><input type="text" value={form.damage} onChange={e => setForm({ ...form, damage: e.target.value })} placeholder="3d6" style={inputStyle} /></div>
+          <div><label style={labelStyle}>Damage Type</label><input type="text" value={form.damageType} onChange={e => setForm({ ...form, damageType: e.target.value })} placeholder="fire" style={inputStyle} /></div>
+          <div><label style={labelStyle}>Save Type</label>
+            <select value={form.saveType} onChange={e => setForm({ ...form, saveType: e.target.value })} style={selectStyle}>
+              <option value="">None</option>
+              {["STR","DEX","CON","INT","WIS","CHA"].map(s => <option key={s} value={s.toLowerCase()}>{s}</option>)}
+            </select>
+          </div>
+        </div>
+        <div>
+          <label style={labelStyle}>At Higher Levels</label>
+          <textarea value={form.higherLevels} onChange={e => setForm({ ...form, higherLevels: e.target.value })} style={{ ...inputStyle, minHeight: "50px", resize: "vertical" }} placeholder="When cast at a higher level..." />
+        </div>
+      </FormSection>
+
+      <FormSection title="Available Classes" icon={"\u25C6"} defaultOpen={false}>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "10px" }}>
           {spellClasses.map(cls => (
-            <label key={cls} style={{ color: T.text, fontSize: "12px", display: "flex", alignItems: "center", gap: "6px", cursor: "pointer" }}>
-              <input type="checkbox" checked={(form.classes || []).includes(cls)} onChange={e => {
-                setForm({ ...form, classes: e.target.checked ? [...(form.classes || []), cls] : (form.classes || []).filter(c => c !== cls) });
-              }} /> {cls}
-            </label>
+            <ToggleSwitch key={cls} checked={(form.classes || []).includes(cls)} onChange={v => {
+              setForm({ ...form, classes: v ? [...(form.classes || []), cls] : (form.classes || []).filter(c => c !== cls) });
+            }} label={cls} />
           ))}
         </div>
-      </div>
-      <div style={{ display: "flex", gap: "10px", marginTop: "20px", borderTop: "1px solid " + T.border, paddingTop: "16px" }}>
-        <button onClick={save} style={{ ...primaryBtn, flex: 1 }}>Save Spell</button>
-        <button onClick={onClose} style={{ ...secondaryBtn, flex: 1 }}>Cancel</button>
-      </div>
-    </ModalShell>
+      </FormSection>
+    </CreatorShell>
   );
 }
+
+/* ─── NPC Creator ─── */
 
 function NPCCreator({ templates, onSave, onClose, initialData }) {
   const [form, setForm] = React.useState(initialData || {
@@ -732,69 +948,80 @@ function NPCCreator({ templates, onSave, onClose, initialData }) {
     }));
   };
   const save = () => { onSave(form); onClose(); };
-  const setAbility = (i, v) => { const a = [...form.abilities]; a[i] = parseInt(v, 10) || 10; setForm({ ...form, abilities: a }); };
 
   return (
-    <ModalShell title={initialData ? "Edit NPC" : "Create NPC"} onClose={onClose}>
-      <TemplatePickerGrid templates={templates} onSelect={applyTemplate} />
+    <CreatorShell
+      title={initialData ? "Edit NPC" : "Create NPC"}
+      onClose={onClose} onSave={save} saveLabel="Save NPC"
+      preview={<LivePreview category="npcs" form={form} />}
+    >
+      <FormSection title="Quick Start" icon={"\u25C6"} defaultOpen={!initialData}>
+        <TemplatePickerGrid templates={templates} onSelect={applyTemplate} category="npcs" />
+      </FormSection>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
-        <div><label style={labelStyle}>Name</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} /></div>
-        <div><label style={labelStyle}>Race</label><input type="text" value={form.race} onChange={e => setForm({ ...form, race: e.target.value })} style={inputStyle} /></div>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "12px", marginBottom: "16px" }}>
-        <div><label style={labelStyle}>Class</label><input type="text" value={form.class} onChange={e => setForm({ ...form, class: e.target.value })} placeholder="Fighter" style={inputStyle} /></div>
-        <div><label style={labelStyle}>Level</label><input type="number" value={form.level} onChange={e => setForm({ ...form, level: parseInt(e.target.value, 10) || 1 })} style={inputStyle} /></div>
-        <div><label style={labelStyle}>Background</label><input type="text" value={form.background} onChange={e => setForm({ ...form, background: e.target.value })} style={inputStyle} /></div>
-        <div><label style={labelStyle}>Faction</label><input type="text" value={form.faction} onChange={e => setForm({ ...form, faction: e.target.value })} style={inputStyle} /></div>
-      </div>
-      <div style={{ marginBottom: "16px" }}>
-        <label style={labelStyle}>Appearance</label>
-        <textarea value={form.appearance} onChange={e => setForm({ ...form, appearance: e.target.value })} style={{ ...inputStyle, minHeight: "60px", resize: "vertical" }} />
-      </div>
+      <FormSection title="Identity" icon={"\u25C6"}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+          <div><label style={labelStyle}>Name</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} placeholder="Name your NPC" /></div>
+          <div><label style={labelStyle}>Race</label><input type="text" value={form.race} onChange={e => setForm({ ...form, race: e.target.value })} style={inputStyle} /></div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "12px" }}>
+          <div><label style={labelStyle}>Class</label><input type="text" value={form.class} onChange={e => setForm({ ...form, class: e.target.value })} placeholder="Fighter" style={inputStyle} /></div>
+          <div><label style={labelStyle}>Level</label><input type="number" value={form.level} onChange={e => setForm({ ...form, level: parseInt(e.target.value, 10) || 1 })} style={inputStyle} /></div>
+          <div><label style={labelStyle}>Background</label><input type="text" value={form.background} onChange={e => setForm({ ...form, background: e.target.value })} style={inputStyle} /></div>
+          <div><label style={labelStyle}>Faction</label><input type="text" value={form.faction} onChange={e => setForm({ ...form, faction: e.target.value })} style={inputStyle} /></div>
+        </div>
+      </FormSection>
 
-      <div style={sectionHead}><span style={{ fontSize: "14px" }}>&#9670;</span> Ability Scores</div>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: "8px", marginBottom: "16px" }}>
-        {AbilityNames.map((name, i) => (
-          <div key={name} style={{ textAlign: "center" }}>
-            <div style={{ fontSize: "10px", color: T.gold, fontFamily: T.ui, marginBottom: "3px" }}>{name}</div>
-            <input type="number" value={form.abilities[i]} onChange={e => setAbility(i, e.target.value)}
-              style={{ ...inputStyle, textAlign: "center", padding: "6px 4px" }} />
-            <div style={{ fontSize: "10px", color: T.textMuted, marginTop: "2px" }}>{fmtMod(form.abilities[i])}</div>
-          </div>
-        ))}
-      </div>
+      <FormSection title="Appearance" icon={"\u25C6"}>
+        <textarea value={form.appearance} onChange={e => setForm({ ...form, appearance: e.target.value })}
+          placeholder="Describe how this NPC looks, dresses, and carries themselves..."
+          style={{ ...inputStyle, minHeight: "70px", resize: "vertical" }} />
+      </FormSection>
 
-      <div style={sectionHead}><span style={{ fontSize: "14px" }}>&#9670;</span> Personality Traits</div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
-        <div><label style={labelStyle}>Personality</label><input type="text" value={form.personality} onChange={e => setForm({ ...form, personality: e.target.value })} style={inputStyle} /></div>
-        <div><label style={labelStyle}>Ideal</label><input type="text" value={form.ideal} onChange={e => setForm({ ...form, ideal: e.target.value })} style={inputStyle} /></div>
-        <div><label style={labelStyle}>Bond</label><input type="text" value={form.bond} onChange={e => setForm({ ...form, bond: e.target.value })} style={inputStyle} /></div>
-        <div><label style={labelStyle}>Flaw</label><input type="text" value={form.flaw} onChange={e => setForm({ ...form, flaw: e.target.value })} style={inputStyle} /></div>
-      </div>
-      <div style={{ marginBottom: "16px" }}>
-        <label style={labelStyle}>Backstory</label>
-        <textarea value={form.backstory} onChange={e => setForm({ ...form, backstory: e.target.value })} style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} />
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
-        <div><label style={labelStyle}>Equipment (comma-separated)</label><input type="text" value={form.equipment} onChange={e => setForm({ ...form, equipment: e.target.value })} style={inputStyle} /></div>
-        <div><label style={labelStyle}>Spells (comma-separated)</label><input type="text" value={form.spells} onChange={e => setForm({ ...form, spells: e.target.value })} style={inputStyle} /></div>
-      </div>
-      <div style={{
-        marginBottom: "16px", padding: "14px", backgroundColor: T.crimsonDim,
-        borderRadius: "8px", borderLeft: "3px solid " + T.gold
-      }}>
-        <label style={{ ...labelStyle, color: T.gold }}>Secret Motivation (DM Only)</label>
-        <textarea value={form.motivation} onChange={e => setForm({ ...form, motivation: e.target.value })}
-          placeholder="What does this NPC really want?" style={{ ...inputStyle, minHeight: "50px", resize: "vertical" }} />
-      </div>
-      <div style={{ display: "flex", gap: "10px", marginTop: "20px", borderTop: "1px solid " + T.border, paddingTop: "16px" }}>
-        <button onClick={save} style={{ ...primaryBtn, flex: 1 }}>Save NPC</button>
-        <button onClick={onClose} style={{ ...secondaryBtn, flex: 1 }}>Cancel</button>
-      </div>
-    </ModalShell>
+      <FormSection title="Ability Scores" icon={"\u25C6"} defaultOpen={false}>
+        <AbilityScoreRow abilities={form.abilities} onChange={abilities => setForm({ ...form, abilities })} />
+      </FormSection>
+
+      <FormSection title="Personality" icon={"\u25C6"}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+          <div><label style={labelStyle}>Personality Traits</label><input type="text" value={form.personality} onChange={e => setForm({ ...form, personality: e.target.value })} style={inputStyle} placeholder="How do they act?" /></div>
+          <div><label style={labelStyle}>Ideal</label><input type="text" value={form.ideal} onChange={e => setForm({ ...form, ideal: e.target.value })} style={inputStyle} placeholder="What do they believe in?" /></div>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          <div><label style={labelStyle}>Bond</label><input type="text" value={form.bond} onChange={e => setForm({ ...form, bond: e.target.value })} style={inputStyle} placeholder="What ties them to the world?" /></div>
+          <div><label style={labelStyle}>Flaw</label><input type="text" value={form.flaw} onChange={e => setForm({ ...form, flaw: e.target.value })} style={inputStyle} placeholder="What is their weakness?" /></div>
+        </div>
+      </FormSection>
+
+      <FormSection title="Backstory" icon={"\u25C6"} defaultOpen={false}>
+        <textarea value={form.backstory} onChange={e => setForm({ ...form, backstory: e.target.value })}
+          placeholder="Tell the story of this NPC's life..."
+          style={{ ...inputStyle, minHeight: "100px", resize: "vertical" }} />
+      </FormSection>
+
+      <FormSection title="Equipment & Spells" icon={"\u25C6"} defaultOpen={false}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+          <div><label style={labelStyle}>Equipment (comma-separated)</label><input type="text" value={form.equipment} onChange={e => setForm({ ...form, equipment: e.target.value })} style={inputStyle} placeholder="longsword, shield, chain mail" /></div>
+          <div><label style={labelStyle}>Spells (comma-separated)</label><input type="text" value={form.spells} onChange={e => setForm({ ...form, spells: e.target.value })} style={inputStyle} placeholder="fireball, shield, mage hand" /></div>
+        </div>
+      </FormSection>
+
+      <FormSection title="Secret Motivation" icon={"\u25C6"} defaultOpen={false}>
+        <div style={{
+          padding: "14px", backgroundColor: T.crimsonDim, borderRadius: "8px",
+          borderLeft: "3px solid " + T.gold
+        }}>
+          <label style={{ ...labelStyle, color: T.gold }}>DM Eyes Only</label>
+          <textarea value={form.motivation} onChange={e => setForm({ ...form, motivation: e.target.value })}
+            placeholder="What does this NPC really want? What are they hiding?"
+            style={{ ...inputStyle, minHeight: "60px", resize: "vertical" }} />
+        </div>
+      </FormSection>
+    </CreatorShell>
   );
 }
+
+/* ─── Class Feature Creator ─── */
 
 function ClassFeatureCreator({ templates, onSave, onClose, initialData }) {
   const [form, setForm] = React.useState(initialData || {
@@ -810,51 +1037,62 @@ function ClassFeatureCreator({ templates, onSave, onClose, initialData }) {
   const classes = ["Barbarian","Bard","Cleric","Druid","Fighter","Monk","Paladin","Ranger","Rogue","Sorcerer","Warlock","Wizard"];
 
   return (
-    <ModalShell title={initialData ? "Edit Class Feature" : "Create Class Feature"} onClose={onClose}>
-      <TemplatePickerGrid templates={templates} onSelect={applyTemplate} />
+    <CreatorShell
+      title={initialData ? "Edit Class Feature" : "Create Class Feature"}
+      onClose={onClose} onSave={save} saveLabel="Save Feature"
+      preview={<LivePreview category="classFeatures" form={form} />}
+    >
+      <FormSection title="Quick Start" icon={"\u25C6"} defaultOpen={!initialData}>
+        <TemplatePickerGrid templates={templates} onSelect={applyTemplate} category="classFeatures" />
+      </FormSection>
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "12px", marginBottom: "16px" }}>
-        <div><label style={labelStyle}>Feature Name</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} /></div>
-        <div><label style={labelStyle}>Type</label>
-          <select value={form.featureType} onChange={e => setForm({ ...form, featureType: e.target.value })} style={selectStyle}>
-            <option value="class">Class Feature</option>
-            <option value="subclass">Subclass Feature</option>
-          </select>
+      <FormSection title="Identity" icon={"\u25C6"}>
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "12px", marginBottom: "12px" }}>
+          <div><label style={labelStyle}>Feature Name</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} placeholder="Name this feature" /></div>
+          <div><label style={labelStyle}>Type</label>
+            <select value={form.featureType} onChange={e => setForm({ ...form, featureType: e.target.value })} style={selectStyle}>
+              <option value="class">Class Feature</option>
+              <option value="subclass">Subclass Feature</option>
+            </select>
+          </div>
         </div>
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px", marginBottom: "16px" }}>
-        <div><label style={labelStyle}>Class</label>
-          <select value={form.className} onChange={e => setForm({ ...form, className: e.target.value })} style={selectStyle}>
-            <option value="">Any</option>
-            {classes.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
+          <div><label style={labelStyle}>Class</label>
+            <select value={form.className} onChange={e => setForm({ ...form, className: e.target.value })} style={selectStyle}>
+              <option value="">Any</option>
+              {classes.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          {form.featureType === "subclass" && (
+            <div><label style={labelStyle}>Subclass Name</label><input type="text" value={form.subclassName} onChange={e => setForm({ ...form, subclassName: e.target.value })} placeholder="Path of..." style={inputStyle} /></div>
+          )}
+          <div><label style={labelStyle}>Level</label><input type="number" min="1" max="20" value={form.level} onChange={e => setForm({ ...form, level: parseInt(e.target.value, 10) || 1 })} style={inputStyle} /></div>
         </div>
-        {form.featureType === "subclass" && (
-          <div><label style={labelStyle}>Subclass Name</label><input type="text" value={form.subclassName} onChange={e => setForm({ ...form, subclassName: e.target.value })} placeholder="Path of..." style={inputStyle} /></div>
-        )}
-        <div><label style={labelStyle}>Level</label><input type="number" min="1" max="20" value={form.level} onChange={e => setForm({ ...form, level: parseInt(e.target.value, 10) || 1 })} style={inputStyle} /></div>
-      </div>
-      <div style={{ marginBottom: "16px" }}>
-        <label style={labelStyle}>Prerequisite</label>
-        <input type="text" value={form.prerequisite} onChange={e => setForm({ ...form, prerequisite: e.target.value })} style={inputStyle} />
-      </div>
-      <div style={{ marginBottom: "16px" }}>
-        <label style={labelStyle}>Description</label>
-        <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} />
-      </div>
-      <div style={{ marginBottom: "16px" }}>
-        <label style={labelStyle}>Mechanics / Rules Text</label>
-        <textarea value={form.mechanics} onChange={e => setForm({ ...form, mechanics: e.target.value })}
-          placeholder="Describe the exact mechanical effect: actions, saving throws, damage, durations, etc."
-          style={{ ...inputStyle, minHeight: "100px", resize: "vertical" }} />
-      </div>
-      <div style={{ display: "flex", gap: "10px", marginTop: "20px", borderTop: "1px solid " + T.border, paddingTop: "16px" }}>
-        <button onClick={save} style={{ ...primaryBtn, flex: 1 }}>Save Feature</button>
-        <button onClick={onClose} style={{ ...secondaryBtn, flex: 1 }}>Cancel</button>
-      </div>
-    </ModalShell>
+      </FormSection>
+
+      <FormSection title="Prerequisite" icon={"\u25C6"} defaultOpen={false}>
+        <input type="text" value={form.prerequisite} onChange={e => setForm({ ...form, prerequisite: e.target.value })} style={inputStyle} placeholder="None, or a specific requirement" />
+      </FormSection>
+
+      <FormSection title="Description" icon={"\u25C6"}>
+        <div style={{ marginBottom: "12px" }}>
+          <label style={labelStyle}>Description</label>
+          <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
+            placeholder="What does this feature represent narratively?"
+            style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} />
+        </div>
+        <div>
+          <label style={labelStyle}>Mechanics / Rules Text</label>
+          <textarea value={form.mechanics} onChange={e => setForm({ ...form, mechanics: e.target.value })}
+            placeholder="Describe the exact mechanical effect: actions, saving throws, damage, durations..."
+            style={{ ...inputStyle, minHeight: "100px", resize: "vertical" }} />
+        </div>
+      </FormSection>
+    </CreatorShell>
   );
 }
+
+/* ─── Feat Creator ─── */
 
 function FeatCreator({ templates, onSave, onClose, initialData }) {
   const [form, setForm] = React.useState(initialData || {
@@ -874,46 +1112,64 @@ function FeatCreator({ templates, onSave, onClose, initialData }) {
   const removeBenefit = (idx) => setForm({ ...form, benefits: form.benefits.filter((_, i) => i !== idx) });
 
   return (
-    <ModalShell title={initialData ? "Edit Feat" : "Create Feat"} onClose={onClose}>
-      <TemplatePickerGrid templates={templates} onSelect={applyTemplate} />
+    <CreatorShell
+      title={initialData ? "Edit Feat" : "Create Feat"}
+      onClose={onClose} onSave={save} saveLabel="Save Feat"
+      preview={<LivePreview category="feats" form={form} />}
+    >
+      <FormSection title="Quick Start" icon={"\u25C6"} defaultOpen={!initialData}>
+        <TemplatePickerGrid templates={templates} onSelect={applyTemplate} category="feats" />
+      </FormSection>
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "12px", marginBottom: "16px" }}>
-        <div><label style={labelStyle}>Feat Name</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} /></div>
-        <div><label style={labelStyle}>Category</label>
-          <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} style={selectStyle}>
-            {Object.keys(FeatCatColors).map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
-          </select>
+      <FormSection title="Identity" icon={"\u25C6"}>
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "12px", marginBottom: "12px" }}>
+          <div><label style={labelStyle}>Feat Name</label><input type="text" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} placeholder="Name your feat" /></div>
+          <div><label style={labelStyle}>Category</label>
+            <select value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} style={selectStyle}>
+              {Object.keys(FeatCatColors).map(c => <option key={c} value={c}>{c.charAt(0).toUpperCase()+c.slice(1)}</option>)}
+            </select>
+          </div>
         </div>
-      </div>
-      <div style={{ marginBottom: "16px" }}>
-        <label style={labelStyle}>Prerequisite</label>
-        <input type="text" value={form.prerequisite} onChange={e => setForm({ ...form, prerequisite: e.target.value })} placeholder="None, or a specific requirement" style={inputStyle} />
-      </div>
-      <div style={{ marginBottom: "16px" }}>
-        <label style={labelStyle}>Description</label>
-        <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} />
-      </div>
-      <div style={{ marginBottom: "16px" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px" }}>
-          <div style={sectionHead}><span style={{ fontSize: "14px" }}>&#9670;</span> Benefits</div>
-          <button onClick={addBenefit} style={{ ...primaryBtn, padding: "4px 10px", fontSize: "11px" }}>+ Add Benefit</button>
+        <div>
+          <label style={labelStyle}>Prerequisite</label>
+          <input type="text" value={form.prerequisite} onChange={e => setForm({ ...form, prerequisite: e.target.value })} placeholder="None, or a specific requirement" style={inputStyle} />
+        </div>
+      </FormSection>
+
+      <FormSection title="Description" icon={"\u25C6"}>
+        <textarea value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
+          placeholder="Describe what this feat represents..."
+          style={{ ...inputStyle, minHeight: "80px", resize: "vertical" }} />
+      </FormSection>
+
+      <FormSection title="Benefits" icon={"\u25C6"}>
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "10px" }}>
+          <button onClick={addBenefit} style={{
+            padding: "4px 12px", fontSize: "11px", fontFamily: T.ui,
+            backgroundColor: "transparent", color: T.gold, border: "1px solid " + T.gold,
+            borderRadius: "4px", cursor: "pointer", transition: "all 0.2s", letterSpacing: "0.03em"
+          }}>+ Add Benefit</button>
         </div>
         {form.benefits.map((b, idx) => (
-          <div key={idx} style={{ display: "flex", gap: "8px", marginBottom: "8px", alignItems: "start" }}>
-            <div style={{ color: T.gold, fontFamily: T.heading, fontSize: "14px", paddingTop: "8px", minWidth: "20px" }}>{idx + 1}.</div>
+          <div key={idx} style={{
+            display: "flex", gap: "10px", marginBottom: "8px", alignItems: "start",
+            padding: "10px 12px", backgroundColor: T.bgCard, borderRadius: "8px",
+            border: "1px solid " + T.border, borderLeft: "3px solid " + (FeatCatColors[form.category] || T.gold)
+          }}>
+            <span style={{ color: FeatCatColors[form.category] || T.gold, fontFamily: T.heading, fontSize: "14px", fontWeight: "bold", paddingTop: "6px", minWidth: "20px" }}>{idx + 1}.</span>
             <textarea value={b} onChange={e => updateBenefit(idx, e.target.value)}
+              placeholder="Describe this benefit..."
               style={{ ...inputStyle, flex: 1, minHeight: "40px", resize: "vertical" }} />
             {form.benefits.length > 1 && (
-              <button onClick={() => removeBenefit(idx)} style={{ ...dangerBtn, padding: "6px 8px", fontSize: "11px", marginTop: "2px" }}>&times;</button>
+              <button onClick={() => removeBenefit(idx)} style={{
+                background: "none", border: "none", color: T.textFaint, fontSize: "18px",
+                cursor: "pointer", padding: "4px 6px", lineHeight: 1, marginTop: "4px"
+              }} title="Remove">&times;</button>
             )}
           </div>
         ))}
-      </div>
-      <div style={{ display: "flex", gap: "10px", marginTop: "20px", borderTop: "1px solid " + T.border, paddingTop: "16px" }}>
-        <button onClick={save} style={{ ...primaryBtn, flex: 1 }}>Save Feat</button>
-        <button onClick={onClose} style={{ ...secondaryBtn, flex: 1 }}>Cancel</button>
-      </div>
-    </ModalShell>
+      </FormSection>
+    </CreatorShell>
   );
 }
 
