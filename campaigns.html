@@ -5933,7 +5933,7 @@ function App() {
   // ── If user switches to an unloaded tab, prioritize loading it ──
   useEffect(() => {
     if (activeTab === "dashboard" || tabsReady[activeTab]) return;
-    var urls = { timeline: "campaign-timeline.js", world: "campaign-world.js", play: "campaign-play.js", factionwar: "campaign-factionwar.js", prophecy: "campaign-prophecy.js", heist: "campaign-heist.js", intrigue: "campaign-intrigue.js", downtime: "campaign-downtime.js", puzzles: "campaign-puzzles.js", kingdom: "campaign-kingdom.js", crafting: "campaign-crafting.js", invites: "campaign-invites.js", quests: "campaign-quests-view.js", homebrew: "campaign-homebrew-view.js", relationships: "campaign-relationships.js", scheduler: "campaign-scheduler-view.js", settings: "campaign-settings-view.js" };
+    var urls = { timeline: "campaign-timeline.js", world: "campaign-world.js", play: "campaign-play.js", "encounter-builder": "campaign-encounter-builder.js", factionwar: "campaign-factionwar.js", prophecy: "campaign-prophecy.js", heist: "campaign-heist.js", intrigue: "campaign-intrigue.js", downtime: "campaign-downtime.js", puzzles: "campaign-puzzles.js", kingdom: "campaign-kingdom.js", crafting: "campaign-crafting.js", invites: "campaign-invites.js", quests: "campaign-quests-view.js", homebrew: "campaign-homebrew-view.js", relationships: "campaign-relationships.js", scheduler: "campaign-scheduler-view.js", settings: "campaign-settings-view.js" };
     var preload = activeTab === "world" ? loadTabModule("living-world", "living-world.js") : Promise.resolve();
     preload.then(function() { return loadTabModule(activeTab, urls[activeTab]); }).then(function() {
       setTabsReady(function(prev) { var n = Object.assign({}, prev); n[activeTab] = true; return n; });
@@ -6330,6 +6330,7 @@ function App() {
     { id:"play", label:"Play", icon: PlayNavIcon, roles:["dm","player"] },
     { id:"quests", label:"Quests", icon: Scroll, roles:["dm","player"], module:"questBoard" },
     { id:"relationships", label:"Relations", icon: Activity, roles:["dm","player"], module:"livingWorld" },
+    { id:"encounter-builder", label:"Encounters", icon: Target, roles:["dm"] },
     { id:"homebrew", label:"Homebrew", icon: Wand2, roles:["dm"], module:"homebrew" },
     { id:"factionwar", label:"War", icon: Swords, roles:["dm"], module:"factionWar", proOnly:true },
     { id:"prophecy", label:"Prophecy", icon: BookOpen, roles:["dm"], module:"prophecy", proOnly:true },
@@ -6543,6 +6544,11 @@ function App() {
           ) : (
             <TabLoadingSpinner label={!tabsReady.play ? "Play" : "Combat Engine"} />
           )
+        )}
+        {activeTab === "encounter-builder" && (
+          tabsReady["encounter-builder"] && window.EncounterBuilderView
+            ? React.createElement(window.EncounterBuilderView, { data: data, setData: setData, viewRole: viewRole })
+            : <TabLoadingSpinner label="Encounters" />
         )}
         {activeTab === "quests" && (
           window.CampaignQuestsView

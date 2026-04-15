@@ -718,6 +718,162 @@ const WALL_TYPES = {
   high: { color: "rgba(139,69,19,0.8)", label: "High Wall", dash: [1, 3], width: 2, blocksVision: false, blocksMovement: false },
 };
 
+// ── Hazard type definitions ──
+const HAZARD_TYPES = {
+  fire:       { color: "rgba(255,100,20,0.45)", label: "Fire",          icon: "F", damage: "1d6",  damageType: "fire",      condition: "", defaultTrigger: "start_of_turn" },
+  poison_gas: { color: "rgba(120,200,50,0.40)", label: "Poison Gas",    icon: "P", damage: "1d4",  damageType: "poison",    condition: "Poisoned", defaultTrigger: "start_of_turn" },
+  spike_trap: { color: "rgba(160,160,160,0.50)", label: "Spike Trap",   icon: "^", damage: "2d6",  damageType: "piercing",  condition: "", defaultTrigger: "proximity" },
+  magic_zone: { color: "rgba(160,80,240,0.35)", label: "Magical Zone",  icon: "★", damage: "1d8",  damageType: "force",     condition: "", defaultTrigger: "start_of_turn" },
+  pit_trap:   { color: "rgba(20,20,28,0.55)",   label: "Pit Trap",      icon: "X", damage: "2d6",  damageType: "bludgeoning", condition: "Prone", defaultTrigger: "proximity" },
+  ice_slick:  { color: "rgba(170,210,240,0.40)", label: "Ice Slick",    icon: "I", damage: "",     damageType: "",          condition: "Prone", defaultTrigger: "proximity" },
+  necrotic:   { color: "rgba(80,0,80,0.45)",    label: "Necrotic Aura", icon: "N", damage: "2d6",  damageType: "necrotic",  condition: "", defaultTrigger: "start_of_turn" },
+  lightning:  { color: "rgba(200,200,50,0.40)", label: "Lightning Field",icon: "L", damage: "2d8",  damageType: "lightning", condition: "", defaultTrigger: "manual" },
+  acid:       { color: "rgba(180,220,40,0.40)", label: "Acid Pool",     icon: "A", damage: "1d6",  damageType: "acid",      condition: "", defaultTrigger: "start_of_turn" },
+  web:        { color: "rgba(200,200,200,0.35)", label: "Web",           icon: "W", damage: "",     damageType: "",          condition: "Restrained", defaultTrigger: "proximity" },
+};
+
+// ── Built-in object library (consistent geometric art style: clean shapes, subtle shading, warm palette) ──
+const BUILTIN_OBJECTS = [
+  // ═══ FURNITURE ═══
+  { id: "table", name: "Table", category: "Furniture", color: "#8B6914", defaultSize: 2, tags: ["moveable", "destructible"], draw(ctx, x, y, s) { ctx.fillStyle="#8B6914"; ctx.fillRect(x+s*0.1,y+s*0.2,s*0.8,s*0.6); ctx.strokeStyle="#6B4F10"; ctx.lineWidth=1.5; ctx.strokeRect(x+s*0.1,y+s*0.2,s*0.8,s*0.6); ctx.fillStyle="#6B4F10"; [[0.15,0.25],[0.75,0.25],[0.15,0.7],[0.75,0.7]].forEach(([px,py])=>{ctx.fillRect(x+s*px,y+s*py,s*0.1,s*0.1);}); } },
+  { id: "table_round", name: "Round Table", category: "Furniture", color: "#8B6914", defaultSize: 2, tags: ["moveable", "destructible"], draw(ctx, x, y, s) { ctx.fillStyle="#8B6914"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.36,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#6B4F10"; ctx.lineWidth=1.5; ctx.stroke(); ctx.fillStyle="#A07818"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.24,0,Math.PI*2); ctx.fill(); } },
+  { id: "chair", name: "Chair", category: "Furniture", color: "#A0522D", defaultSize: 1, tags: ["moveable"], draw(ctx, x, y, s) { ctx.fillStyle="#A0522D"; ctx.fillRect(x+s*0.2,y+s*0.35,s*0.6,s*0.5); ctx.fillRect(x+s*0.2,y+s*0.1,s*0.6,s*0.2); ctx.strokeStyle="#7B3F1E"; ctx.lineWidth=1; ctx.strokeRect(x+s*0.2,y+s*0.35,s*0.6,s*0.5); } },
+  { id: "throne", name: "Throne", category: "Furniture", color: "#8B0000", defaultSize: 1, tags: ["moveable"], draw(ctx, x, y, s) { ctx.fillStyle="#4a0808"; ctx.fillRect(x+s*0.18,y+s*0.08,s*0.64,s*0.35); ctx.fillStyle="#8B0000"; ctx.fillRect(x+s*0.2,y+s*0.35,s*0.6,s*0.5); ctx.strokeStyle="#FFD700"; ctx.lineWidth=1.5; ctx.strokeRect(x+s*0.18,y+s*0.08,s*0.64,s*0.8); ctx.fillStyle="#FFD700"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.18,s*0.06,0,Math.PI*2); ctx.fill(); } },
+  { id: "bed", name: "Bed", category: "Furniture", color: "#6B4423", defaultSize: 2, tags: ["moveable"], draw(ctx, x, y, s) { ctx.fillStyle="#6B4423"; ctx.fillRect(x+s*0.05,y+s*0.1,s*0.9,s*0.8); ctx.fillStyle="#e8dcc8"; ctx.fillRect(x+s*0.1,y+s*0.15,s*0.8,s*0.45); ctx.fillStyle="#8B6C5C"; ctx.fillRect(x+s*0.15,y+s*0.62,s*0.7,s*0.22); } },
+  { id: "bookshelf", name: "Bookshelf", category: "Furniture", color: "#654321", defaultSize: 1, tags: ["destructible", "blocking"], draw(ctx, x, y, s) { ctx.fillStyle="#654321"; ctx.fillRect(x+s*0.1,y+s*0.05,s*0.8,s*0.9); for(let i=0;i<4;i++){ctx.fillStyle=["#8B0000","#00008B","#006400","#8B6914"][i]; ctx.fillRect(x+s*0.15+i*s*0.16,y+s*0.1,s*0.12,s*0.35);} for(let i=0;i<3;i++){ctx.fillStyle=["#4B0082","#8B4513","#2F4F4F"][i]; ctx.fillRect(x+s*0.18+i*s*0.2,y+s*0.52,s*0.12,s*0.35);} } },
+  { id: "bench", name: "Bench", category: "Furniture", color: "#9B7635", defaultSize: 1, tags: ["moveable"], draw(ctx, x, y, s) { ctx.fillStyle="#9B7635"; ctx.fillRect(x+s*0.08,y+s*0.4,s*0.84,s*0.2); ctx.strokeStyle="#7B5A20"; ctx.lineWidth=1.5; ctx.strokeRect(x+s*0.08,y+s*0.4,s*0.84,s*0.2); ctx.fillStyle="#7B5A20"; ctx.fillRect(x+s*0.15,y+s*0.6,s*0.08,s*0.25); ctx.fillRect(x+s*0.77,y+s*0.6,s*0.08,s*0.25); } },
+  { id: "wardrobe", name: "Wardrobe", category: "Furniture", color: "#5C3A1E", defaultSize: 1, tags: ["blocking", "destructible"], draw(ctx, x, y, s) { ctx.fillStyle="#5C3A1E"; ctx.fillRect(x+s*0.12,y+s*0.08,s*0.76,s*0.84); ctx.strokeStyle="#3E2710"; ctx.lineWidth=1.5; ctx.strokeRect(x+s*0.12,y+s*0.08,s*0.76,s*0.84); ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.08); ctx.lineTo(x+s*0.5,y+s*0.92); ctx.stroke(); ctx.fillStyle="#B8860B"; ctx.beginPath(); ctx.arc(x+s*0.44,y+s*0.5,s*0.03,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(x+s*0.56,y+s*0.5,s*0.03,0,Math.PI*2); ctx.fill(); } },
+  { id: "desk", name: "Desk", category: "Furniture", color: "#7B5B3A", defaultSize: 1, tags: ["moveable", "destructible"], draw(ctx, x, y, s) { ctx.fillStyle="#7B5B3A"; ctx.fillRect(x+s*0.08,y+s*0.2,s*0.84,s*0.55); ctx.strokeStyle="#5A3D20"; ctx.lineWidth=1.5; ctx.strokeRect(x+s*0.08,y+s*0.2,s*0.84,s*0.55); ctx.fillStyle="#e8dcc8"; ctx.fillRect(x+s*0.55,y+s*0.3,s*0.25,s*0.15); ctx.fillStyle="#333"; ctx.fillRect(x+s*0.15,y+s*0.35,s*0.2,s*0.06); } },
+  { id: "rug", name: "Rug", category: "Furniture", color: "#8B2252", defaultSize: 2, tags: ["moveable"], draw(ctx, x, y, s) { ctx.fillStyle="#8B2252"; ctx.beginPath(); ctx.ellipse(x+s*0.5,y+s*0.5,s*0.42,s*0.35,0,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#6B1A3E"; ctx.lineWidth=1; ctx.stroke(); ctx.strokeStyle="#C08060"; ctx.lineWidth=0.8; ctx.beginPath(); ctx.ellipse(x+s*0.5,y+s*0.5,s*0.3,s*0.24,0,0,Math.PI*2); ctx.stroke(); ctx.beginPath(); ctx.ellipse(x+s*0.5,y+s*0.5,s*0.16,s*0.12,0,0,Math.PI*2); ctx.stroke(); } },
+  { id: "cabinet", name: "Cabinet", category: "Furniture", color: "#6B4423", defaultSize: 1, tags: ["blocking", "destructible", "interactable"], draw(ctx, x, y, s) { ctx.fillStyle="#6B4423"; ctx.fillRect(x+s*0.12,y+s*0.1,s*0.76,s*0.8); ctx.strokeStyle="#4A2E12"; ctx.lineWidth=1.5; ctx.strokeRect(x+s*0.12,y+s*0.1,s*0.76,s*0.8); ctx.strokeStyle="#4A2E12"; ctx.beginPath(); ctx.moveTo(x+s*0.12,y+s*0.5); ctx.lineTo(x+s*0.88,y+s*0.5); ctx.stroke(); ctx.fillStyle="#B8860B"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.35,s*0.025,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.65,s*0.025,0,Math.PI*2); ctx.fill(); } },
+  // ═══ CONTAINERS ═══
+  { id: "crate", name: "Crate", category: "Containers", color: "#B8860B", defaultSize: 1, tags: ["moveable", "destructible"], draw(ctx, x, y, s) { ctx.fillStyle="#B8860B"; ctx.fillRect(x+s*0.15,y+s*0.15,s*0.7,s*0.7); ctx.strokeStyle="#8B6508"; ctx.lineWidth=2; ctx.strokeRect(x+s*0.15,y+s*0.15,s*0.7,s*0.7); ctx.beginPath(); ctx.moveTo(x+s*0.15,y+s*0.5); ctx.lineTo(x+s*0.85,y+s*0.5); ctx.moveTo(x+s*0.5,y+s*0.15); ctx.lineTo(x+s*0.5,y+s*0.85); ctx.stroke(); } },
+  { id: "barrel", name: "Barrel", category: "Containers", color: "#8B6914", defaultSize: 1, tags: ["moveable", "destructible"], draw(ctx, x, y, s) { ctx.fillStyle="#8B6914"; ctx.beginPath(); ctx.ellipse(x+s*0.5,y+s*0.5,s*0.3,s*0.38,0,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#6B4F10"; ctx.lineWidth=2; ctx.stroke(); ctx.beginPath(); ctx.ellipse(x+s*0.5,y+s*0.35,s*0.28,s*0.06,0,0,Math.PI*2); ctx.stroke(); ctx.beginPath(); ctx.ellipse(x+s*0.5,y+s*0.65,s*0.28,s*0.06,0,0,Math.PI*2); ctx.stroke(); } },
+  { id: "chest", name: "Chest", category: "Containers", color: "#DAA520", defaultSize: 1, tags: ["moveable", "interactable"], draw(ctx, x, y, s) { ctx.fillStyle="#8B6508"; ctx.fillRect(x+s*0.15,y+s*0.3,s*0.7,s*0.45); ctx.fillStyle="#DAA520"; ctx.fillRect(x+s*0.15,y+s*0.2,s*0.7,s*0.2); ctx.strokeStyle="#6B4F10"; ctx.lineWidth=1.5; ctx.strokeRect(x+s*0.15,y+s*0.2,s*0.7,s*0.55); ctx.fillStyle="#FFD700"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.48,s*0.05,0,Math.PI*2); ctx.fill(); } },
+  { id: "sack", name: "Sack", category: "Containers", color: "#C4A862", defaultSize: 1, tags: ["moveable"], draw(ctx, x, y, s) { ctx.fillStyle="#C4A862"; ctx.beginPath(); ctx.moveTo(x+s*0.35,y+s*0.25); ctx.quadraticCurveTo(x+s*0.2,y+s*0.55,x+s*0.25,y+s*0.8); ctx.lineTo(x+s*0.75,y+s*0.8); ctx.quadraticCurveTo(x+s*0.8,y+s*0.55,x+s*0.65,y+s*0.25); ctx.closePath(); ctx.fill(); ctx.strokeStyle="#8B7744"; ctx.lineWidth=1.5; ctx.stroke(); ctx.strokeStyle="#8B7744"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(x+s*0.4,y+s*0.28); ctx.lineTo(x+s*0.5,y+s*0.2); ctx.lineTo(x+s*0.6,y+s*0.28); ctx.stroke(); } },
+  { id: "pot", name: "Clay Pot", category: "Containers", color: "#B87333", defaultSize: 1, tags: ["moveable", "destructible"], draw(ctx, x, y, s) { ctx.fillStyle="#B87333"; ctx.beginPath(); ctx.ellipse(x+s*0.5,y+s*0.55,s*0.28,s*0.3,0,0,Math.PI*2); ctx.fill(); ctx.fillRect(x+s*0.38,y+s*0.22,s*0.24,s*0.15); ctx.strokeStyle="#8B5A2B"; ctx.lineWidth=1; ctx.stroke(); ctx.fillStyle="#9A6030"; ctx.beginPath(); ctx.ellipse(x+s*0.5,y+s*0.45,s*0.2,s*0.04,0,0,Math.PI*2); ctx.fill(); } },
+  { id: "cauldron", name: "Cauldron", category: "Containers", color: "#2F2F2F", defaultSize: 1, tags: ["moveable", "interactable"], draw(ctx, x, y, s) { ctx.fillStyle="#2F2F2F"; ctx.beginPath(); ctx.ellipse(x+s*0.5,y+s*0.55,s*0.32,s*0.28,0,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#1a1a1a"; ctx.lineWidth=2; ctx.stroke(); ctx.fillStyle="#3A6B3A"; ctx.beginPath(); ctx.ellipse(x+s*0.5,y+s*0.42,s*0.24,s*0.1,0,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#444"; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.3,s*0.32,Math.PI+0.4,Math.PI*2-0.4); ctx.stroke(); } },
+  // ═══ STRUCTURAL ═══
+  { id: "pillar", name: "Pillar", category: "Structural", color: "#A9A9A9", defaultSize: 1, tags: ["blocking"], draw(ctx, x, y, s) { ctx.fillStyle="#A9A9A9"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.28,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#808080"; ctx.lineWidth=2; ctx.stroke(); ctx.fillStyle="#C0C0C0"; ctx.beginPath(); ctx.arc(x+s*0.45,y+s*0.42,s*0.08,0,Math.PI*2); ctx.fill(); } },
+  { id: "pillar_square", name: "Square Pillar", category: "Structural", color: "#A0A0A0", defaultSize: 1, tags: ["blocking"], draw(ctx, x, y, s) { ctx.fillStyle="#A0A0A0"; ctx.fillRect(x+s*0.22,y+s*0.22,s*0.56,s*0.56); ctx.strokeStyle="#787878"; ctx.lineWidth=2; ctx.strokeRect(x+s*0.22,y+s*0.22,s*0.56,s*0.56); ctx.fillStyle="#B8B8B8"; ctx.fillRect(x+s*0.26,y+s*0.26,s*0.18,s*0.18); } },
+  { id: "statue", name: "Statue", category: "Structural", color: "#808080", defaultSize: 1, tags: ["blocking"], draw(ctx, x, y, s) { ctx.fillStyle="#808080"; ctx.fillRect(x+s*0.3,y+s*0.6,s*0.4,s*0.3); ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.35,s*0.18,0,Math.PI*2); ctx.fill(); ctx.fillRect(x+s*0.38,y+s*0.35,s*0.24,s*0.28); ctx.strokeStyle="#606060"; ctx.lineWidth=1; ctx.stroke(); } },
+  { id: "fountain", name: "Fountain", category: "Structural", color: "#4682B4", defaultSize: 2, tags: ["blocking"], draw(ctx, x, y, s) { ctx.fillStyle="#4682B4"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.38,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#2C5F8A"; ctx.lineWidth=2; ctx.stroke(); ctx.fillStyle="#87CEEB"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.25,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#708090"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.08,0,Math.PI*2); ctx.fill(); } },
+  { id: "well", name: "Well", category: "Structural", color: "#696969", defaultSize: 1, tags: ["blocking", "interactable"], draw(ctx, x, y, s) { ctx.fillStyle="#696969"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.35,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#1a1a2e"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.22,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#555"; ctx.lineWidth=2; ctx.stroke(); } },
+  { id: "altar", name: "Altar", category: "Structural", color: "#708090", defaultSize: 2, tags: ["blocking", "interactable"], draw(ctx, x, y, s) { ctx.fillStyle="#708090"; ctx.fillRect(x+s*0.12,y+s*0.25,s*0.76,s*0.55); ctx.strokeStyle="#556B7F"; ctx.lineWidth=2; ctx.strokeRect(x+s*0.12,y+s*0.25,s*0.76,s*0.55); ctx.fillStyle="#e8dcc8"; ctx.fillRect(x+s*0.2,y+s*0.22,s*0.6,s*0.06); ctx.fillStyle="#FFD700"; ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.38); ctx.lineTo(x+s*0.44,y+s*0.52); ctx.lineTo(x+s*0.56,y+s*0.52); ctx.closePath(); ctx.fill(); } },
+  { id: "archway", name: "Archway", category: "Structural", color: "#8B8682", defaultSize: 1, tags: ["blocking"], draw(ctx, x, y, s) { ctx.fillStyle="#8B8682"; ctx.fillRect(x+s*0.1,y+s*0.15,s*0.18,s*0.75); ctx.fillRect(x+s*0.72,y+s*0.15,s*0.18,s*0.75); ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.35,s*0.32,Math.PI,0); ctx.lineWidth=s*0.08; ctx.strokeStyle="#8B8682"; ctx.stroke(); ctx.lineWidth=1; ctx.strokeStyle="#706A64"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.35,s*0.36,Math.PI,0); ctx.stroke(); } },
+  { id: "stairs_up", name: "Stairs Up", category: "Structural", color: "#9B9690", defaultSize: 1, tags: [], draw(ctx, x, y, s) { ctx.fillStyle="#9B9690"; for(let i=0;i<5;i++) { const shade = 0.7 + i*0.06; ctx.fillStyle=`rgb(${Math.round(155*shade)},${Math.round(150*shade)},${Math.round(144*shade)})`; ctx.fillRect(x+s*0.12,y+s*(0.15+i*0.14),s*0.76,s*0.14); } ctx.strokeStyle="#706A64"; ctx.lineWidth=1; ctx.strokeRect(x+s*0.12,y+s*0.15,s*0.76,s*0.7); ctx.fillStyle="#556B2F"; ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.2); ctx.lineTo(x+s*0.42,y+s*0.32); ctx.lineTo(x+s*0.58,y+s*0.32); ctx.closePath(); ctx.fill(); } },
+  { id: "stairs_down", name: "Stairs Down", category: "Structural", color: "#7A756F", defaultSize: 1, tags: [], draw(ctx, x, y, s) { ctx.fillStyle="#7A756F"; for(let i=0;i<5;i++) { const shade = 1.0 - i*0.06; ctx.fillStyle=`rgb(${Math.round(122*shade)},${Math.round(117*shade)},${Math.round(111*shade)})`; ctx.fillRect(x+s*0.12,y+s*(0.15+i*0.14),s*0.76,s*0.14); } ctx.strokeStyle="#555"; ctx.lineWidth=1; ctx.strokeRect(x+s*0.12,y+s*0.15,s*0.76,s*0.7); ctx.fillStyle="#8B0000"; ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.72); ctx.lineTo(x+s*0.42,y+s*0.6); ctx.lineTo(x+s*0.58,y+s*0.6); ctx.closePath(); ctx.fill(); } },
+  { id: "tombstone", name: "Tombstone", category: "Structural", color: "#696969", defaultSize: 1, tags: ["blocking"], draw(ctx, x, y, s) { ctx.fillStyle="#696969"; ctx.fillRect(x+s*0.28,y+s*0.35,s*0.44,s*0.55); ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.35,s*0.22,Math.PI,0); ctx.fill(); ctx.strokeStyle="#505050"; ctx.lineWidth=1; ctx.stroke(); ctx.strokeRect(x+s*0.28,y+s*0.35,s*0.44,s*0.55); ctx.fillStyle="#505050"; ctx.fillRect(x+s*0.38,y+s*0.42,s*0.24,s*0.03); ctx.fillRect(x+s*0.35,y+s*0.5,s*0.3,s*0.02); } },
+  { id: "sarcophagus", name: "Sarcophagus", category: "Structural", color: "#8B8378", defaultSize: 2, tags: ["blocking", "interactable"], draw(ctx, x, y, s) { ctx.fillStyle="#8B8378"; ctx.fillRect(x+s*0.1,y+s*0.15,s*0.8,s*0.7); ctx.strokeStyle="#6B6358"; ctx.lineWidth=2; ctx.strokeRect(x+s*0.1,y+s*0.15,s*0.8,s*0.7); ctx.strokeStyle="#A09888"; ctx.lineWidth=1; ctx.strokeRect(x+s*0.15,y+s*0.2,s*0.7,s*0.6); ctx.fillStyle="#6B6358"; ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.35); ctx.lineTo(x+s*0.42,y+s*0.55); ctx.lineTo(x+s*0.58,y+s*0.55); ctx.closePath(); ctx.fill(); } },
+  // ═══ NATURE ═══
+  { id: "tree", name: "Tree", category: "Nature", color: "#228B22", defaultSize: 2, tags: ["blocking", "climbable"], draw(ctx, x, y, s) { ctx.fillStyle="#8B4513"; ctx.fillRect(x+s*0.42,y+s*0.55,s*0.16,s*0.35); ctx.fillStyle="#228B22"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.38,s*0.32,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#1a7a1a"; ctx.beginPath(); ctx.arc(x+s*0.42,y+s*0.42,s*0.18,0,Math.PI*2); ctx.fill(); } },
+  { id: "pine_tree", name: "Pine Tree", category: "Nature", color: "#2D5F2D", defaultSize: 2, tags: ["blocking", "climbable"], draw(ctx, x, y, s) { ctx.fillStyle="#6B4513"; ctx.fillRect(x+s*0.44,y+s*0.65,s*0.12,s*0.28); ctx.fillStyle="#2D5F2D"; ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.1); ctx.lineTo(x+s*0.22,y+s*0.5); ctx.lineTo(x+s*0.78,y+s*0.5); ctx.closePath(); ctx.fill(); ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.25); ctx.lineTo(x+s*0.18,y+s*0.7); ctx.lineTo(x+s*0.82,y+s*0.7); ctx.closePath(); ctx.fill(); ctx.fillStyle="#1E4A1E"; ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.1); ctx.lineTo(x+s*0.36,y+s*0.38); ctx.lineTo(x+s*0.5,y+s*0.3); ctx.closePath(); ctx.fill(); } },
+  { id: "dead_tree", name: "Dead Tree", category: "Nature", color: "#5C4033", defaultSize: 2, tags: ["blocking", "climbable"], draw(ctx, x, y, s) { ctx.strokeStyle="#5C4033"; ctx.lineWidth=s*0.06; ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.85); ctx.lineTo(x+s*0.5,y+s*0.35); ctx.stroke(); ctx.lineWidth=s*0.04; ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.5); ctx.lineTo(x+s*0.28,y+s*0.25); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.42); ctx.lineTo(x+s*0.72,y+s*0.2); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.58); ctx.lineTo(x+s*0.3,y+s*0.48); ctx.stroke(); ctx.lineWidth=s*0.025; ctx.beginPath(); ctx.moveTo(x+s*0.72,y+s*0.2); ctx.lineTo(x+s*0.8,y+s*0.15); ctx.stroke(); } },
+  { id: "boulder", name: "Boulder", category: "Nature", color: "#808080", defaultSize: 1, tags: ["blocking", "climbable"], draw(ctx, x, y, s) { ctx.fillStyle="#808080"; ctx.beginPath(); ctx.ellipse(x+s*0.5,y+s*0.55,s*0.35,s*0.28,0,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#606060"; ctx.lineWidth=1.5; ctx.stroke(); ctx.fillStyle="#999"; ctx.beginPath(); ctx.ellipse(x+s*0.42,y+s*0.48,s*0.1,s*0.06,0,0,Math.PI*2); ctx.fill(); } },
+  { id: "bush", name: "Bush", category: "Nature", color: "#2E8B57", defaultSize: 1, tags: ["moveable"], draw(ctx, x, y, s) { ctx.fillStyle="#2E8B57"; [[0.35,0.55,0.2],[0.55,0.45,0.22],[0.5,0.6,0.18]].forEach(([px,py,r])=>{ctx.beginPath(); ctx.arc(x+s*px,y+s*py,s*r,0,Math.PI*2); ctx.fill();}); ctx.fillStyle="#228B22"; ctx.beginPath(); ctx.arc(x+s*0.45,y+s*0.5,s*0.14,0,Math.PI*2); ctx.fill(); } },
+  { id: "flowering_bush", name: "Flower Bush", category: "Nature", color: "#3CB371", defaultSize: 1, tags: ["moveable"], draw(ctx, x, y, s) { ctx.fillStyle="#3CB371"; [[0.35,0.55,0.2],[0.55,0.45,0.22],[0.5,0.6,0.18]].forEach(([px,py,r])=>{ctx.beginPath(); ctx.arc(x+s*px,y+s*py,s*r,0,Math.PI*2); ctx.fill();}); ctx.fillStyle="#FF69B4"; [[0.38,0.42,0.04],[0.55,0.5,0.035],[0.48,0.58,0.04],[0.62,0.42,0.03]].forEach(([px,py,r])=>{ctx.beginPath(); ctx.arc(x+s*px,y+s*py,s*r,0,Math.PI*2); ctx.fill();}); } },
+  { id: "tall_grass", name: "Tall Grass", category: "Nature", color: "#6B8E23", defaultSize: 1, tags: [], draw(ctx, x, y, s) { ctx.strokeStyle="#6B8E23"; ctx.lineWidth=1.5; for(let i=0;i<7;i++){const bx=0.2+i*0.09; ctx.beginPath(); ctx.moveTo(x+s*bx,y+s*0.85); ctx.quadraticCurveTo(x+s*(bx+(i%2?0.06:-0.06)),y+s*0.45,x+s*(bx+(i%2?0.08:-0.08)),y+s*(0.2+i*0.03)); ctx.stroke();} ctx.strokeStyle="#556B2F"; for(let i=0;i<4;i++){const bx=0.25+i*0.14; ctx.beginPath(); ctx.moveTo(x+s*bx,y+s*0.85); ctx.quadraticCurveTo(x+s*(bx-0.04),y+s*0.5,x+s*(bx-0.05),y+s*0.3); ctx.stroke();} } },
+  { id: "mushroom_cluster", name: "Mushrooms", category: "Nature", color: "#CD853F", defaultSize: 1, tags: [], draw(ctx, x, y, s) { const mush = (cx,cy,cap,stem) => { ctx.fillStyle="#8B6914"; ctx.fillRect(x+s*(cx-0.02),y+s*(cy),s*0.04,s*stem); ctx.fillStyle="#CD853F"; ctx.beginPath(); ctx.ellipse(x+s*cx,y+s*cy,s*cap,s*cap*0.5,0,Math.PI,0); ctx.fill(); ctx.strokeStyle="#A0522D"; ctx.lineWidth=0.8; ctx.stroke(); ctx.fillStyle="#F5DEB3"; ctx.beginPath(); ctx.arc(x+s*(cx-cap*0.3),y+s*(cy-cap*0.15),s*cap*0.15,0,Math.PI*2); ctx.fill(); }; mush(0.35,0.55,0.12,0.25); mush(0.55,0.5,0.15,0.3); mush(0.65,0.6,0.1,0.2); } },
+  { id: "flower_patch", name: "Flowers", category: "Nature", color: "#DA70D6", defaultSize: 1, tags: [], draw(ctx, x, y, s) { ctx.fillStyle="#228B22"; ctx.fillRect(x+s*0.15,y+s*0.65,s*0.7,s*0.15); const f=[[0.3,0.45,"#FF6347"],[0.5,0.38,"#DA70D6"],[0.7,0.48,"#FFD700"],[0.4,0.55,"#87CEEB"],[0.6,0.42,"#FF69B4"]]; f.forEach(([px,py,c])=>{ctx.strokeStyle="#2E7D32"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(x+s*px,y+s*0.7); ctx.lineTo(x+s*px,y+s*py); ctx.stroke(); ctx.fillStyle=c; ctx.beginPath(); ctx.arc(x+s*px,y+s*py,s*0.05,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#FFD700"; ctx.beginPath(); ctx.arc(x+s*px,y+s*py,s*0.02,0,Math.PI*2); ctx.fill();}); } },
+  { id: "pond", name: "Pond", category: "Nature", color: "#3A7CA5", defaultSize: 2, tags: [], draw(ctx, x, y, s) { ctx.fillStyle="#3A7CA5"; ctx.beginPath(); ctx.ellipse(x+s*0.5,y+s*0.52,s*0.4,s*0.32,0,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#4A9CC5"; ctx.beginPath(); ctx.ellipse(x+s*0.45,y+s*0.48,s*0.2,s*0.14,0.2,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#2D6B8A"; ctx.strokeStyle="#2D6B8A"; ctx.lineWidth=1; ctx.beginPath(); ctx.ellipse(x+s*0.5,y+s*0.52,s*0.42,s*0.34,0,0,Math.PI*2); ctx.stroke(); ctx.fillStyle="#228B22"; [[0.15,0.42,0.05],[0.82,0.55,0.04],[0.2,0.65,0.04]].forEach(([px,py,r])=>{ctx.beginPath(); ctx.arc(x+s*px,y+s*py,s*r,0,Math.PI*2); ctx.fill();}); } },
+  { id: "log", name: "Fallen Log", category: "Nature", color: "#6B4226", defaultSize: 1, tags: ["climbable"], draw(ctx, x, y, s) { ctx.fillStyle="#6B4226"; ctx.save(); ctx.translate(x+s*0.5,y+s*0.55); ctx.rotate(0.15); ctx.beginPath(); ctx.ellipse(0,0,s*0.38,s*0.1,0,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#4A2E12"; ctx.lineWidth=1; ctx.stroke(); ctx.fillStyle="#8B5A2B"; ctx.beginPath(); ctx.ellipse(-s*0.36,0,s*0.1,s*0.08,0,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#4A2E12"; ctx.stroke(); ctx.restore(); } },
+  { id: "vine_wall", name: "Vine Wall", category: "Nature", color: "#2E7D32", defaultSize: 1, tags: ["climbable", "destructible"], draw(ctx, x, y, s) { ctx.fillStyle="rgba(46,125,50,0.3)"; ctx.fillRect(x+s*0.1,y+s*0.05,s*0.8,s*0.9); ctx.strokeStyle="#2E7D32"; ctx.lineWidth=2; for(let i=0;i<4;i++){ctx.beginPath(); ctx.moveTo(x+s*(0.15+i*0.22),y+s*0.05); ctx.quadraticCurveTo(x+s*(0.25+i*0.18),y+s*0.5,x+s*(0.18+i*0.2),y+s*0.95); ctx.stroke();} ctx.fillStyle="#3CB371"; [[0.25,0.3],[0.45,0.5],[0.65,0.25],[0.35,0.7],[0.7,0.6]].forEach(([px,py])=>{ctx.beginPath(); ctx.ellipse(x+s*px,y+s*py,s*0.06,s*0.04,Math.random(),0,Math.PI*2); ctx.fill();}); } },
+  { id: "rock_cluster", name: "Rocks", category: "Nature", color: "#888", defaultSize: 1, tags: [], draw(ctx, x, y, s) { [[0.35,0.6,0.14,0.1,"#888"],[0.58,0.55,0.12,0.08,"#777"],[0.48,0.65,0.1,0.07,"#999"],[0.65,0.65,0.08,0.06,"#7A7A7A"]].forEach(([px,py,rx,ry,c])=>{ctx.fillStyle=c; ctx.beginPath(); ctx.ellipse(x+s*px,y+s*py,s*rx,s*ry,0,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#606060"; ctx.lineWidth=0.8; ctx.stroke();}); } },
+  { id: "lily_pad", name: "Lily Pad", category: "Nature", color: "#3B7A3B", defaultSize: 1, tags: [], draw(ctx, x, y, s) { ctx.fillStyle="rgba(58,124,165,0.4)"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.38,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#3B7A3B"; [[0.4,0.42,0.14],[0.6,0.55,0.12],[0.35,0.62,0.1]].forEach(([px,py,r])=>{ctx.beginPath(); ctx.arc(x+s*px,y+s*py,s*r,0.1,Math.PI*2-0.1); ctx.lineTo(x+s*px,y+s*py); ctx.fill();}); ctx.fillStyle="#FFB6C1"; ctx.beginPath(); ctx.arc(x+s*0.55,y+s*0.4,s*0.04,0,Math.PI*2); ctx.fill(); } },
+  // ═══ LIGHT SOURCES ═══
+  { id: "torch_sconce", name: "Wall Torch", category: "Light Sources", color: "#FF8C00", defaultSize: 1, tags: [], draw(ctx, x, y, s) { ctx.fillStyle="rgba(255,140,0,0.15)"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.4,s*0.35,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#5C4033"; ctx.fillRect(x+s*0.46,y+s*0.4,s*0.08,s*0.45); ctx.fillStyle="#FF8C00"; ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.18); ctx.quadraticCurveTo(x+s*0.38,y+s*0.32,x+s*0.42,y+s*0.42); ctx.lineTo(x+s*0.58,y+s*0.42); ctx.quadraticCurveTo(x+s*0.62,y+s*0.32,x+s*0.5,y+s*0.18); ctx.fill(); ctx.fillStyle="#FFD700"; ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.24); ctx.quadraticCurveTo(x+s*0.44,y+s*0.33,x+s*0.46,y+s*0.4); ctx.lineTo(x+s*0.54,y+s*0.4); ctx.quadraticCurveTo(x+s*0.56,y+s*0.33,x+s*0.5,y+s*0.24); ctx.fill(); } },
+  { id: "campfire", name: "Campfire", category: "Light Sources", color: "#FF4500", defaultSize: 1, tags: [], draw(ctx, x, y, s) { ctx.fillStyle="rgba(255,69,0,0.12)"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.42,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#5C4033"; [[0.3,0.65,0.25],[0.55,0.68,0.2],[0.7,0.62,-0.3]].forEach(([px,py,r])=>{ctx.save(); ctx.translate(x+s*px,y+s*py); ctx.rotate(r); ctx.fillRect(-s*0.12,-s*0.025,s*0.24,s*0.05); ctx.restore();}); ctx.fillStyle="#FF4500"; ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.22); ctx.quadraticCurveTo(x+s*0.32,y+s*0.45,x+s*0.35,y+s*0.62); ctx.lineTo(x+s*0.65,y+s*0.62); ctx.quadraticCurveTo(x+s*0.68,y+s*0.45,x+s*0.5,y+s*0.22); ctx.fill(); ctx.fillStyle="#FFD700"; ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.32); ctx.quadraticCurveTo(x+s*0.4,y+s*0.48,x+s*0.42,y+s*0.58); ctx.lineTo(x+s*0.58,y+s*0.58); ctx.quadraticCurveTo(x+s*0.6,y+s*0.48,x+s*0.5,y+s*0.32); ctx.fill(); } },
+  { id: "candelabra", name: "Candelabra", category: "Light Sources", color: "#DAA520", defaultSize: 1, tags: ["moveable"], draw(ctx, x, y, s) { ctx.fillStyle="rgba(255,215,0,0.1)"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.35,s*0.3,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#DAA520"; ctx.fillRect(x+s*0.47,y+s*0.35,s*0.06,s*0.5); ctx.fillRect(x+s*0.3,y+s*0.45,s*0.4,s*0.04); ctx.fillStyle="#FFD700"; [[0.32,0.38],[0.5,0.3],[0.68,0.38]].forEach(([px,py])=>{ctx.beginPath(); ctx.moveTo(x+s*px,y+s*(py-0.08)); ctx.lineTo(x+s*(px-0.03),y+s*py); ctx.lineTo(x+s*(px+0.03),y+s*py); ctx.closePath(); ctx.fill();}); ctx.fillStyle="#B8860B"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.85,s*0.1,0,Math.PI*2); ctx.fill(); } },
+  { id: "brazier", name: "Brazier", category: "Light Sources", color: "#8B4513", defaultSize: 1, tags: ["blocking"], draw(ctx, x, y, s) { ctx.fillStyle="rgba(255,100,20,0.12)"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.4,s*0.35,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#555"; ctx.beginPath(); ctx.moveTo(x+s*0.25,y+s*0.65); ctx.lineTo(x+s*0.3,y+s*0.4); ctx.lineTo(x+s*0.7,y+s*0.4); ctx.lineTo(x+s*0.75,y+s*0.65); ctx.closePath(); ctx.fill(); ctx.strokeStyle="#333"; ctx.lineWidth=1.5; ctx.stroke(); ctx.fillStyle="#FF6600"; ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.2); ctx.quadraticCurveTo(x+s*0.35,y+s*0.35,x+s*0.38,y+s*0.42); ctx.lineTo(x+s*0.62,y+s*0.42); ctx.quadraticCurveTo(x+s*0.65,y+s*0.35,x+s*0.5,y+s*0.2); ctx.fill(); ctx.fillStyle="#555"; ctx.fillRect(x+s*0.35,y+s*0.65,s*0.08,s*0.2); ctx.fillRect(x+s*0.57,y+s*0.65,s*0.08,s*0.2); } },
+  { id: "lantern", name: "Lantern", category: "Light Sources", color: "#E8B84B", defaultSize: 1, tags: ["moveable"], draw(ctx, x, y, s) { ctx.fillStyle="rgba(232,184,75,0.12)"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.3,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#555"; ctx.fillRect(x+s*0.38,y+s*0.28,s*0.24,s*0.04); ctx.fillRect(x+s*0.38,y+s*0.68,s*0.24,s*0.04); ctx.fillStyle="#E8B84B"; ctx.globalAlpha=0.7; ctx.fillRect(x+s*0.4,y+s*0.32,s*0.2,s*0.36); ctx.globalAlpha=1; ctx.strokeStyle="#555"; ctx.lineWidth=1; ctx.strokeRect(x+s*0.38,y+s*0.28,s*0.24,s*0.44); ctx.fillStyle="#FFD700"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.48,s*0.05,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#666"; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.22,s*0.06,Math.PI,0); ctx.stroke(); } },
+  // ═══ DUNGEON ═══
+  { id: "spike_floor", name: "Floor Spikes", category: "Dungeon", color: "#888", defaultSize: 1, tags: ["destructible"], draw(ctx, x, y, s) { ctx.fillStyle="#777"; [[0.3,0.3],[0.5,0.25],[0.7,0.35],[0.25,0.55],[0.5,0.5],[0.75,0.55],[0.35,0.75],[0.55,0.7],[0.7,0.78]].forEach(([px,py])=>{ctx.beginPath(); ctx.moveTo(x+s*px,y+s*(py-0.12)); ctx.lineTo(x+s*(px-0.04),y+s*py); ctx.lineTo(x+s*(px+0.04),y+s*py); ctx.closePath(); ctx.fill();}); ctx.strokeStyle="#555"; ctx.lineWidth=0.5; ctx.stroke(); } },
+  { id: "cage", name: "Cage", category: "Dungeon", color: "#666", defaultSize: 1, tags: ["blocking", "interactable"], draw(ctx, x, y, s) { ctx.strokeStyle="#666"; ctx.lineWidth=1.5; ctx.strokeRect(x+s*0.15,y+s*0.15,s*0.7,s*0.7); for(let i=0;i<4;i++){ctx.beginPath(); ctx.moveTo(x+s*(0.28+i*0.15),y+s*0.15); ctx.lineTo(x+s*(0.28+i*0.15),y+s*0.85); ctx.stroke();} ctx.fillStyle="rgba(102,102,102,0.15)"; ctx.fillRect(x+s*0.15,y+s*0.15,s*0.7,s*0.7); ctx.fillStyle="#888"; ctx.beginPath(); ctx.arc(x+s*0.82,y+s*0.5,s*0.04,0,Math.PI*2); ctx.fill(); } },
+  { id: "chains", name: "Chains", category: "Dungeon", color: "#777", defaultSize: 1, tags: [], draw(ctx, x, y, s) { ctx.strokeStyle="#777"; ctx.lineWidth=2; for(let i=0;i<3;i++){const ox=0.25+i*0.2; for(let j=0;j<4;j++){ctx.beginPath(); ctx.ellipse(x+s*ox,y+s*(0.2+j*0.18),s*0.04,s*0.07,0,0,Math.PI*2); ctx.stroke();}} ctx.fillStyle="#555"; ctx.fillRect(x+s*0.18,y+s*0.1,s*0.06,s*0.06); ctx.fillRect(x+s*0.38,y+s*0.1,s*0.06,s*0.06); ctx.fillRect(x+s*0.58,y+s*0.1,s*0.06,s*0.06); } },
+  { id: "trapdoor", name: "Trapdoor", category: "Dungeon", color: "#6B4226", defaultSize: 1, tags: ["interactable"], draw(ctx, x, y, s) { ctx.fillStyle="#6B4226"; ctx.fillRect(x+s*0.15,y+s*0.15,s*0.7,s*0.7); ctx.strokeStyle="#4A2E12"; ctx.lineWidth=2; ctx.strokeRect(x+s*0.15,y+s*0.15,s*0.7,s*0.7); ctx.beginPath(); ctx.moveTo(x+s*0.15,y+s*0.5); ctx.lineTo(x+s*0.85,y+s*0.5); ctx.stroke(); ctx.fillStyle="#333"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.38,s*0.05,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#4A2E12"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.15); ctx.lineTo(x+s*0.5,y+s*0.5); ctx.stroke(); } },
+  { id: "cobweb", name: "Cobweb", category: "Dungeon", color: "#C8C8C8", defaultSize: 1, tags: [], draw(ctx, x, y, s) { ctx.strokeStyle="rgba(200,200,200,0.5)"; ctx.lineWidth=0.8; const cx=x+s*0.5,cy=y+s*0.5; for(let a=0;a<Math.PI*2;a+=Math.PI/4){ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(cx+Math.cos(a)*s*0.4,cy+Math.sin(a)*s*0.4); ctx.stroke();} for(let r=1;r<=3;r++){ctx.beginPath(); for(let a=0;a<=Math.PI*2;a+=Math.PI/8){const d=r*s*0.12; ctx.lineTo(cx+Math.cos(a)*d,cy+Math.sin(a)*d);} ctx.closePath(); ctx.stroke();} } },
+  { id: "grate", name: "Floor Grate", category: "Dungeon", color: "#555", defaultSize: 1, tags: [], draw(ctx, x, y, s) { ctx.fillStyle="#1a1a1a"; ctx.fillRect(x+s*0.15,y+s*0.15,s*0.7,s*0.7); ctx.strokeStyle="#555"; ctx.lineWidth=2; ctx.strokeRect(x+s*0.15,y+s*0.15,s*0.7,s*0.7); for(let i=0;i<4;i++){ctx.beginPath(); ctx.moveTo(x+s*(0.28+i*0.13),y+s*0.15); ctx.lineTo(x+s*(0.28+i*0.13),y+s*0.85); ctx.stroke();} for(let i=0;i<4;i++){ctx.beginPath(); ctx.moveTo(x+s*0.15,y+s*(0.28+i*0.13)); ctx.lineTo(x+s*0.85,y+s*(0.28+i*0.13)); ctx.stroke();} } },
+  { id: "pillar_broken", name: "Broken Pillar", category: "Dungeon", color: "#9B9690", defaultSize: 1, tags: ["climbable"], draw(ctx, x, y, s) { ctx.fillStyle="#9B9690"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.6,s*0.28,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#7A756F"; ctx.lineWidth=1.5; ctx.stroke(); ctx.fillStyle="#8B8682"; ctx.beginPath(); ctx.moveTo(x+s*0.35,y+s*0.55); ctx.lineTo(x+s*0.42,y+s*0.35); ctx.lineTo(x+s*0.55,y+s*0.38); ctx.lineTo(x+s*0.5,y+s*0.55); ctx.closePath(); ctx.fill(); ctx.fillStyle="#A0A0A0"; [[0.6,0.72,0.06],[0.32,0.7,0.05]].forEach(([px,py,r])=>{ctx.beginPath(); ctx.arc(x+s*px,y+s*py,s*r,0,Math.PI*2); ctx.fill();}); } },
+  // ═══ MAGICAL ═══
+  { id: "crystal", name: "Crystal", category: "Magical", color: "#9370DB", defaultSize: 1, tags: ["interactable"], draw(ctx, x, y, s) { ctx.fillStyle="rgba(147,112,219,0.15)"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.35,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#9370DB"; ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.12); ctx.lineTo(x+s*0.38,y+s*0.55); ctx.lineTo(x+s*0.5,y+s*0.7); ctx.lineTo(x+s*0.62,y+s*0.55); ctx.closePath(); ctx.fill(); ctx.fillStyle="#B39DDB"; ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.12); ctx.lineTo(x+s*0.5,y+s*0.7); ctx.lineTo(x+s*0.62,y+s*0.55); ctx.closePath(); ctx.fill(); ctx.strokeStyle="#7B68AE"; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.12); ctx.lineTo(x+s*0.38,y+s*0.55); ctx.lineTo(x+s*0.5,y+s*0.7); ctx.lineTo(x+s*0.62,y+s*0.55); ctx.closePath(); ctx.stroke(); } },
+  { id: "rune_circle", name: "Rune Circle", category: "Magical", color: "#4169E1", defaultSize: 2, tags: ["interactable"], draw(ctx, x, y, s) { ctx.strokeStyle="rgba(65,105,225,0.5)"; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.4,0,Math.PI*2); ctx.stroke(); ctx.strokeStyle="rgba(65,105,225,0.3)"; ctx.lineWidth=1; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.3,0,Math.PI*2); ctx.stroke(); for(let a=0;a<Math.PI*2;a+=Math.PI/3){const rx=x+s*0.5+Math.cos(a)*s*0.35,ry=y+s*0.5+Math.sin(a)*s*0.35; ctx.fillStyle="rgba(65,105,225,0.7)"; ctx.beginPath(); ctx.arc(rx,ry,s*0.03,0,Math.PI*2); ctx.fill();} ctx.fillStyle="rgba(65,105,225,0.15)"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.4,0,Math.PI*2); ctx.fill(); } },
+  { id: "magic_mirror", name: "Magic Mirror", category: "Magical", color: "#B0C4DE", defaultSize: 1, tags: ["interactable", "blocking"], draw(ctx, x, y, s) { ctx.fillStyle="#4A3C2A"; ctx.beginPath(); ctx.ellipse(x+s*0.5,y+s*0.48,s*0.34,s*0.38,0,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#B0C4DE"; ctx.beginPath(); ctx.ellipse(x+s*0.5,y+s*0.48,s*0.28,s*0.32,0,0,Math.PI*2); ctx.fill(); ctx.fillStyle="rgba(255,255,255,0.3)"; ctx.beginPath(); ctx.ellipse(x+s*0.42,y+s*0.4,s*0.1,s*0.14,0.3,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#6B5B4A"; ctx.lineWidth=2; ctx.beginPath(); ctx.ellipse(x+s*0.5,y+s*0.48,s*0.32,s*0.36,0,0,Math.PI*2); ctx.stroke(); } },
+  { id: "glowing_orb", name: "Glowing Orb", category: "Magical", color: "#00CED1", defaultSize: 1, tags: ["interactable"], draw(ctx, x, y, s) { ctx.fillStyle="rgba(0,206,209,0.1)"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.4,0,Math.PI*2); ctx.fill(); ctx.fillStyle="rgba(0,206,209,0.2)"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.28,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#00CED1"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.16,0,Math.PI*2); ctx.fill(); ctx.fillStyle="rgba(255,255,255,0.5)"; ctx.beginPath(); ctx.arc(x+s*0.44,y+s*0.44,s*0.05,0,Math.PI*2); ctx.fill(); } },
+  { id: "portal", name: "Portal", category: "Magical", color: "#8A2BE2", defaultSize: 2, tags: ["interactable"], draw(ctx, x, y, s) { ctx.fillStyle="rgba(138,43,226,0.08)"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.42,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="rgba(138,43,226,0.6)"; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.36,0,Math.PI*2); ctx.stroke(); ctx.strokeStyle="rgba(138,43,226,0.3)"; ctx.lineWidth=1.5; ctx.beginPath(); ctx.ellipse(x+s*0.5,y+s*0.5,s*0.25,s*0.35,0.5,0,Math.PI*2); ctx.stroke(); ctx.fillStyle="rgba(75,0,130,0.4)"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.2,0,Math.PI*2); ctx.fill(); } },
+  // ═══ BARRIERS ═══
+  { id: "fence", name: "Fence", category: "Barriers", color: "#A0522D", defaultSize: 1, tags: ["destructible", "blocking"], draw(ctx, x, y, s) { ctx.strokeStyle="#A0522D"; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(x+s*0.1,y+s*0.5); ctx.lineTo(x+s*0.9,y+s*0.5); ctx.stroke(); [0.15,0.35,0.55,0.75].forEach(px=>{ctx.fillStyle="#8B4513"; ctx.fillRect(x+s*px,y+s*0.3,s*0.08,s*0.4);}); } },
+  { id: "barricade", name: "Barricade", category: "Barriers", color: "#8B4513", defaultSize: 1, tags: ["destructible", "blocking"], draw(ctx, x, y, s) { ctx.fillStyle="#8B4513"; ctx.save(); ctx.translate(x+s*0.5,y+s*0.5); [[-0.3,-0.1,0.3],[0,0.15,-0.2],[0.25,-0.05,0.15]].forEach(([dx,dy,r])=>{ctx.save(); ctx.rotate(r); ctx.fillRect(-s*0.25+s*dx,s*dy,s*0.5,s*0.08); ctx.restore();}); ctx.restore(); } },
+  { id: "rubble_pile", name: "Rubble Pile", category: "Barriers", color: "#A9A9A9", defaultSize: 1, tags: ["destructible"], draw(ctx, x, y, s) { ctx.fillStyle="#A9A9A9"; [[0.3,0.6,0.12],[0.55,0.55,0.1],[0.4,0.45,0.09],[0.6,0.65,0.08],[0.5,0.58,0.14]].forEach(([px,py,r])=>{ctx.beginPath(); ctx.ellipse(x+s*px,y+s*py,s*r,s*r*0.7,0.2,0,Math.PI*2); ctx.fill();}); ctx.strokeStyle="#808080"; ctx.lineWidth=0.5; ctx.stroke(); } },
+  { id: "iron_gate", name: "Iron Gate", category: "Barriers", color: "#555", defaultSize: 1, tags: ["blocking", "interactable"], draw(ctx, x, y, s) { ctx.fillStyle="#555"; ctx.fillRect(x+s*0.08,y+s*0.1,s*0.08,s*0.8); ctx.fillRect(x+s*0.84,y+s*0.1,s*0.08,s*0.8); ctx.strokeStyle="#444"; ctx.lineWidth=2; for(let i=0;i<5;i++){ctx.beginPath(); ctx.moveTo(x+s*(0.22+i*0.13),y+s*0.1); ctx.lineTo(x+s*(0.22+i*0.13),y+s*0.9); ctx.stroke();} ctx.beginPath(); ctx.moveTo(x+s*0.16,y+s*0.35); ctx.lineTo(x+s*0.84,y+s*0.35); ctx.moveTo(x+s*0.16,y+s*0.65); ctx.lineTo(x+s*0.84,y+s*0.65); ctx.stroke(); ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.15,s*0.34,Math.PI,0); ctx.lineWidth=3; ctx.strokeStyle="#555"; ctx.stroke(); } },
+  { id: "sandbags", name: "Sandbags", category: "Barriers", color: "#C4A862", defaultSize: 1, tags: ["destructible", "blocking"], draw(ctx, x, y, s) { ctx.fillStyle="#C4A862"; [[0.28,0.7,0.18,0.07],[0.52,0.68,0.18,0.07],[0.72,0.72,0.16,0.06],[0.38,0.58,0.17,0.07],[0.62,0.56,0.17,0.07],[0.5,0.48,0.16,0.06]].forEach(([px,py,rx,ry])=>{ctx.beginPath(); ctx.ellipse(x+s*px,y+s*py,s*rx,s*ry,0,0,Math.PI*2); ctx.fill();}); ctx.strokeStyle="#A08840"; ctx.lineWidth=0.8; [[0.28,0.7,0.18,0.07],[0.52,0.68,0.18,0.07],[0.38,0.58,0.17,0.07],[0.62,0.56,0.17,0.07],[0.5,0.48,0.16,0.06]].forEach(([px,py,rx,ry])=>{ctx.beginPath(); ctx.ellipse(x+s*px,y+s*py,s*rx,s*ry,0,0,Math.PI*2); ctx.stroke();}); } },
+  // ═══ INTERACTIVE ═══
+  { id: "lever", name: "Lever", category: "Interactive", color: "#888", defaultSize: 1, tags: ["interactable"], draw(ctx, x, y, s) { ctx.fillStyle="#666"; ctx.fillRect(x+s*0.35,y+s*0.6,s*0.3,s*0.25); ctx.strokeStyle="#444"; ctx.lineWidth=1.5; ctx.strokeRect(x+s*0.35,y+s*0.6,s*0.3,s*0.25); ctx.strokeStyle="#B8860B"; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.62); ctx.lineTo(x+s*0.5,y+s*0.25); ctx.stroke(); ctx.fillStyle="#DAA520"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.22,s*0.06,0,Math.PI*2); ctx.fill(); } },
+  { id: "switch", name: "Switch", category: "Interactive", color: "#777", defaultSize: 1, tags: ["interactable"], draw(ctx, x, y, s) { ctx.fillStyle="#555"; ctx.fillRect(x+s*0.3,y+s*0.3,s*0.4,s*0.4); ctx.strokeStyle="#444"; ctx.lineWidth=1.5; ctx.strokeRect(x+s*0.3,y+s*0.3,s*0.4,s*0.4); ctx.fillStyle="#888"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.12,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#333"; ctx.lineWidth=1; ctx.stroke(); ctx.fillStyle="#DAA520"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.06,0,Math.PI*2); ctx.fill(); } },
+  { id: "pressure_plate", name: "Pressure Plate", category: "Interactive", color: "#8B8682", defaultSize: 1, tags: ["interactable"], draw(ctx, x, y, s) { ctx.fillStyle="rgba(139,134,130,0.5)"; ctx.fillRect(x+s*0.18,y+s*0.18,s*0.64,s*0.64); ctx.strokeStyle="#706A64"; ctx.lineWidth=1.5; ctx.setLineDash([3,3]); ctx.strokeRect(x+s*0.18,y+s*0.18,s*0.64,s*0.64); ctx.setLineDash([]); ctx.fillStyle="#706A64"; ctx.fillRect(x+s*0.22,y+s*0.22,s*0.56,s*0.56); ctx.strokeStyle="#8B8682"; ctx.lineWidth=0.5; ctx.strokeRect(x+s*0.22,y+s*0.22,s*0.56,s*0.56); ctx.fillStyle="rgba(139,134,130,0.7)"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.04,0,Math.PI*2); ctx.fill(); } },
+  { id: "button_wall", name: "Wall Button", category: "Interactive", color: "#696969", defaultSize: 1, tags: ["interactable"], draw(ctx, x, y, s) { ctx.fillStyle="#505050"; ctx.fillRect(x+s*0.25,y+s*0.25,s*0.5,s*0.5); ctx.strokeStyle="#333"; ctx.lineWidth=1.5; ctx.strokeRect(x+s*0.25,y+s*0.25,s*0.5,s*0.5); ctx.fillStyle="#8B0000"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.5,s*0.14,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#660000"; ctx.lineWidth=1; ctx.stroke(); ctx.fillStyle="#AA2020"; ctx.beginPath(); ctx.arc(x+s*0.47,y+s*0.46,s*0.04,0,Math.PI*2); ctx.fill(); } },
+  { id: "tripwire", name: "Tripwire", category: "Interactive", color: "#AAA", defaultSize: 1, tags: ["destructible"], draw(ctx, x, y, s) { ctx.fillStyle="#5C4033"; ctx.fillRect(x+s*0.12,y+s*0.4,s*0.06,s*0.2); ctx.fillRect(x+s*0.82,y+s*0.4,s*0.06,s*0.2); ctx.strokeStyle="rgba(170,170,170,0.5)"; ctx.lineWidth=1; ctx.setLineDash([4,4]); ctx.beginPath(); ctx.moveTo(x+s*0.18,y+s*0.5); ctx.lineTo(x+s*0.82,y+s*0.5); ctx.stroke(); ctx.setLineDash([]); ctx.fillStyle="#DAA520"; ctx.beginPath(); ctx.arc(x+s*0.15,y+s*0.5,s*0.03,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(x+s*0.85,y+s*0.5,s*0.03,0,Math.PI*2); ctx.fill(); } },
+  // ═══ OUTDOOR ═══
+  { id: "tent", name: "Tent", category: "Outdoor", color: "#D2B48C", defaultSize: 2, tags: ["destructible"], draw(ctx, x, y, s) { ctx.fillStyle="#D2B48C"; ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.15); ctx.lineTo(x+s*0.1,y+s*0.8); ctx.lineTo(x+s*0.9,y+s*0.8); ctx.closePath(); ctx.fill(); ctx.strokeStyle="#A0522D"; ctx.lineWidth=1.5; ctx.stroke(); ctx.fillStyle="#8B6914"; ctx.beginPath(); ctx.moveTo(x+s*0.5,y+s*0.15); ctx.lineTo(x+s*0.5,y+s*0.8); ctx.lineTo(x+s*0.9,y+s*0.8); ctx.closePath(); ctx.fill(); ctx.fillStyle="#3E2510"; ctx.fillRect(x+s*0.42,y+s*0.55,s*0.16,s*0.25); } },
+  { id: "cart", name: "Cart", category: "Outdoor", color: "#7B5B3A", defaultSize: 2, tags: ["moveable", "destructible"], draw(ctx, x, y, s) { ctx.fillStyle="#7B5B3A"; ctx.fillRect(x+s*0.2,y+s*0.25,s*0.6,s*0.45); ctx.strokeStyle="#5A3D20"; ctx.lineWidth=1.5; ctx.strokeRect(x+s*0.2,y+s*0.25,s*0.6,s*0.45); ctx.strokeStyle="#666"; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(x+s*0.28,y+s*0.75,s*0.1,0,Math.PI*2); ctx.stroke(); ctx.beginPath(); ctx.arc(x+s*0.72,y+s*0.75,s*0.1,0,Math.PI*2); ctx.stroke(); ctx.fillStyle="#5A3D20"; ctx.fillRect(x+s*0.08,y+s*0.42,s*0.16,s*0.04); ctx.fillRect(x+s*0.76,y+s*0.42,s*0.16,s*0.04); } },
+  { id: "hay_bale", name: "Hay Bale", category: "Outdoor", color: "#DAA520", defaultSize: 1, tags: ["moveable", "destructible", "climbable"], draw(ctx, x, y, s) { ctx.fillStyle="#DAA520"; ctx.beginPath(); ctx.ellipse(x+s*0.5,y+s*0.55,s*0.34,s*0.26,0,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#B8860B"; ctx.lineWidth=1.5; ctx.stroke(); ctx.strokeStyle="#B8860B"; ctx.lineWidth=1; for(let a=0;a<Math.PI*2;a+=0.4){const rx=s*0.34*0.85,ry=s*0.26*0.85; ctx.beginPath(); ctx.ellipse(x+s*0.5,y+s*0.55,rx,ry,a,0,0.2); ctx.stroke();} } },
+  { id: "well_bucket", name: "Well & Bucket", category: "Outdoor", color: "#696969", defaultSize: 1, tags: ["blocking", "interactable"], draw(ctx, x, y, s) { ctx.fillStyle="#696969"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.55,s*0.3,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#1a1a2e"; ctx.beginPath(); ctx.arc(x+s*0.5,y+s*0.55,s*0.18,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#555"; ctx.lineWidth=2; ctx.stroke(); ctx.strokeStyle="#6B4226"; ctx.lineWidth=3; ctx.beginPath(); ctx.moveTo(x+s*0.35,y+s*0.55); ctx.lineTo(x+s*0.35,y+s*0.18); ctx.lineTo(x+s*0.65,y+s*0.18); ctx.lineTo(x+s*0.65,y+s*0.55); ctx.stroke(); } },
+  { id: "signpost", name: "Signpost", category: "Outdoor", color: "#7B5B3A", defaultSize: 1, tags: [], draw(ctx, x, y, s) { ctx.fillStyle="#6B4226"; ctx.fillRect(x+s*0.47,y+s*0.3,s*0.06,s*0.6); ctx.fillStyle="#7B5B3A"; ctx.fillRect(x+s*0.25,y+s*0.2,s*0.45,s*0.15); ctx.strokeStyle="#5A3D20"; ctx.lineWidth=1; ctx.strokeRect(x+s*0.25,y+s*0.2,s*0.45,s*0.15); ctx.beginPath(); ctx.moveTo(x+s*0.7,y+s*0.2); ctx.lineTo(x+s*0.78,y+s*0.275); ctx.lineTo(x+s*0.7,y+s*0.35); ctx.fill(); } },
+  { id: "dock_plank", name: "Dock Plank", category: "Outdoor", color: "#8B7355", defaultSize: 1, tags: [], draw(ctx, x, y, s) { ctx.fillStyle="#8B7355"; for(let i=0;i<4;i++){ctx.fillRect(x+s*0.05,y+s*(0.12+i*0.2),s*0.9,s*0.16);} ctx.strokeStyle="#6B5340"; ctx.lineWidth=0.8; for(let i=0;i<4;i++){ctx.strokeRect(x+s*0.05,y+s*(0.12+i*0.2),s*0.9,s*0.16);} } },
+  { id: "hitching_post", name: "Hitching Post", category: "Outdoor", color: "#6B4226", defaultSize: 1, tags: ["blocking"], draw(ctx, x, y, s) { ctx.fillStyle="#6B4226"; ctx.fillRect(x+s*0.2,y+s*0.3,s*0.08,s*0.55); ctx.fillRect(x+s*0.72,y+s*0.3,s*0.08,s*0.55); ctx.fillStyle="#8B5B3A"; ctx.fillRect(x+s*0.18,y+s*0.38,s*0.64,s*0.06); ctx.strokeStyle="#4A2E12"; ctx.lineWidth=1; ctx.strokeRect(x+s*0.18,y+s*0.38,s*0.64,s*0.06); } },
+  // ═══ TREASURE & LOOT ═══
+  { id: "gold_pile", name: "Gold Pile", category: "Treasure", color: "#FFD700", defaultSize: 1, tags: ["interactable"], draw(ctx, x, y, s) { ctx.fillStyle="#DAA520"; ctx.beginPath(); ctx.ellipse(x+s*0.5,y+s*0.62,s*0.32,s*0.18,0,0,Math.PI*2); ctx.fill(); ctx.fillStyle="#FFD700"; [[0.4,0.55,0.06],[0.52,0.52,0.05],[0.58,0.58,0.05],[0.45,0.48,0.04],[0.55,0.45,0.04],[0.48,0.6,0.05]].forEach(([px,py,r])=>{ctx.beginPath(); ctx.arc(x+s*px,y+s*py,s*r,0,Math.PI*2); ctx.fill();}); ctx.strokeStyle="#B8860B"; ctx.lineWidth=0.5; [[0.4,0.55,0.06],[0.52,0.52,0.05],[0.58,0.58,0.05]].forEach(([px,py,r])=>{ctx.beginPath(); ctx.arc(x+s*px,y+s*py,s*r,0,Math.PI*2); ctx.stroke();}); } },
+  { id: "potion", name: "Potion", category: "Treasure", color: "#FF4444", defaultSize: 1, tags: ["moveable", "interactable"], draw(ctx, x, y, s) { ctx.fillStyle="#FF4444"; ctx.beginPath(); ctx.moveTo(x+s*0.42,y+s*0.3); ctx.quadraticCurveTo(x+s*0.28,y+s*0.5,x+s*0.3,y+s*0.72); ctx.lineTo(x+s*0.7,y+s*0.72); ctx.quadraticCurveTo(x+s*0.72,y+s*0.5,x+s*0.58,y+s*0.3); ctx.closePath(); ctx.fill(); ctx.strokeStyle="#CC2222"; ctx.lineWidth=1; ctx.stroke(); ctx.fillStyle="#888"; ctx.fillRect(x+s*0.44,y+s*0.22,s*0.12,s*0.1); ctx.fillStyle="rgba(255,255,255,0.3)"; ctx.beginPath(); ctx.ellipse(x+s*0.42,y+s*0.52,s*0.04,s*0.08,0.3,0,Math.PI*2); ctx.fill(); } },
+  { id: "scroll", name: "Scroll", category: "Treasure", color: "#F5DEB3", defaultSize: 1, tags: ["moveable", "interactable"], draw(ctx, x, y, s) { ctx.fillStyle="#F5DEB3"; ctx.fillRect(x+s*0.22,y+s*0.25,s*0.56,s*0.5); ctx.fillStyle="#D2B48C"; ctx.beginPath(); ctx.ellipse(x+s*0.22,y+s*0.5,s*0.06,s*0.25,0,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.ellipse(x+s*0.78,y+s*0.5,s*0.06,s*0.25,0,0,Math.PI*2); ctx.fill(); ctx.strokeStyle="#A0522D"; ctx.lineWidth=1; ctx.beginPath(); ctx.ellipse(x+s*0.22,y+s*0.5,s*0.06,s*0.25,0,0,Math.PI*2); ctx.stroke(); ctx.beginPath(); ctx.ellipse(x+s*0.78,y+s*0.5,s*0.06,s*0.25,0,0,Math.PI*2); ctx.stroke(); ctx.fillStyle="#8B6914"; for(let i=0;i<3;i++){ctx.fillRect(x+s*0.3,y+s*(0.35+i*0.1),s*0.4,s*0.02);} } },
+  { id: "weapon_rack", name: "Weapon Rack", category: "Treasure", color: "#5C4033", defaultSize: 1, tags: ["blocking", "interactable"], draw(ctx, x, y, s) { ctx.fillStyle="#5C4033"; ctx.fillRect(x+s*0.12,y+s*0.15,s*0.76,s*0.08); ctx.fillRect(x+s*0.12,y+s*0.55,s*0.76,s*0.08); ctx.fillRect(x+s*0.15,y+s*0.15,s*0.06,s*0.7); ctx.fillRect(x+s*0.79,y+s*0.15,s*0.06,s*0.7); ctx.strokeStyle="#888"; ctx.lineWidth=1.5; [[0.3,0.23,0.3,0.53],[0.45,0.23,0.45,0.53],[0.6,0.23,0.6,0.53]].forEach(([x1,y1,x2,y2])=>{ctx.beginPath(); ctx.moveTo(x+s*x1,y+s*y1); ctx.lineTo(x+s*x2,y+s*y2); ctx.stroke();}); ctx.fillStyle="#B8860B"; ctx.beginPath(); ctx.arc(x+s*0.3,y+s*0.23,s*0.025,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(x+s*0.45,y+s*0.23,s*0.025,0,Math.PI*2); ctx.fill(); ctx.beginPath(); ctx.arc(x+s*0.6,y+s*0.23,s*0.025,0,Math.PI*2); ctx.fill(); } },
+];
+
+const BUILTIN_OBJECT_CATEGORIES = [...new Set(BUILTIN_OBJECTS.map(o => o.category))];
+
+// ── Interactive element types ──
+const INTERACTIVE_ELEMENT_TYPES = {
+  lever:          { label: "Lever",          icon: "L", stateA: "off", stateB: "on",   colorA: "#888", colorB: "#4CAF50" },
+  switch:         { label: "Switch",         icon: "S", stateA: "off", stateB: "on",   colorA: "#777", colorB: "#FF9800" },
+  pressure_plate: { label: "Pressure Plate", icon: "P", stateA: "up",  stateB: "down", colorA: "#8B8682", colorB: "#d4433a" },
+  button:         { label: "Wall Button",    icon: "B", stateA: "off", stateB: "on",   colorA: "#696969", colorB: "#8B0000" },
+  tripwire:       { label: "Tripwire",       icon: "T", stateA: "set", stateB: "triggered", colorA: "#AAA", colorB: "#FF4444" },
+};
+
+// ── Terrain brush helper ──
+function getTerrainBrushCells(gx, gy, size) {
+  const cells = [];
+  const half = Math.floor(size / 2);
+  for (let dx = -half; dx < size - half; dx++) {
+    for (let dy = -half; dy < size - half; dy++) {
+      cells.push((gx + dx) + "," + (gy + dy));
+    }
+  }
+  return cells;
+}
+
+// ── Flood fill helper ──
+function floodFillTerrain(startGx, startGy, newType, terrainCells, limit = 500) {
+  const startKey = startGx + "," + startGy;
+  const startType = terrainCells[startKey] || null;
+  if (startType === newType) return {};
+  const visited = new Set();
+  const queue = [[startGx, startGy]];
+  const filled = {};
+  while (queue.length > 0 && visited.size < limit) {
+    const [gx, gy] = queue.shift();
+    const key = gx + "," + gy;
+    if (visited.has(key)) continue;
+    visited.add(key);
+    const cellType = terrainCells[key] || null;
+    if (cellType !== startType) continue;
+    filled[key] = newType;
+    [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dx, dy]) => {
+      const nk = (gx+dx) + "," + (gy+dy);
+      if (!visited.has(nk)) queue.push([gx+dx, gy+dy]);
+    });
+  }
+  return filled;
+}
+
 // ── Phase 4: Multiplayer & Extensibility constants ──
 const SYNC_KEY = 'phmurt-battlemap-sync';
 const getSyncStorageKey = (campaignId) => SYNC_KEY + ":" + (campaignId || "local");
@@ -780,6 +936,8 @@ function hasLineOfSight(x1, y1, x2, y2, walls) {
     // Only walls that block vision interrupt line of sight
     const wt = WALL_TYPES[w.type || "solid"] || WALL_TYPES.solid;
     if (!wt.blocksVision) continue;
+    // Open or broken doors don't block vision
+    if (w.type === "door" && (w.state === "open" || w.state === "broken")) continue;
     if (segmentsIntersect(x1, y1, x2, y2, w.x1, w.y1, w.x2, w.y2)) return false;
   }
   return true;
@@ -1497,7 +1655,32 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   // ── Terrain system ──
   const [terrainCells, setTerrainCells] = useState({});
   const [selectedTerrain, setSelectedTerrain] = useState("difficult");
+  const [terrainBrushSize, setTerrainBrushSize] = useState(1);
+  const [terrainFillMode, setTerrainFillMode] = useState(false);
   const [selectedWallType, setSelectedWallType] = useState("solid");
+
+  // ── Elevation system ──
+  const [elevationCells, setElevationCells] = useState({});
+  const [selectedElevation, setSelectedElevation] = useState(1);
+
+  // ── Hazard zone system ──
+  const [hazards, setHazards] = useState([]);
+  const [selectedHazardType, setSelectedHazardType] = useState("fire");
+  const [hazardRadius, setHazardRadius] = useState(1);
+
+  // ── Layers system ──
+  const [layerVisibility, setLayerVisibility] = useState({ terrain: true, structures: true, objects: true, tokens: true, effects: true, atmosphere: true });
+  const [layerLocked, setLayerLocked] = useState({ terrain: false, structures: false, objects: false, tokens: false, effects: false, atmosphere: false });
+
+  // ── Room tool ──
+  const [roomShape, setRoomShape] = useState("rect");
+  const [roomFillTerrain, setRoomFillTerrain] = useState(true);
+  const [roomStart, setRoomStart] = useState(null);
+  const [roomPreview, setRoomPreview] = useState(null);
+
+  // ── Interactive elements system ──
+  const [interactiveElements, setInteractiveElements] = useState([]);
+  const [selectedInteractiveType, setSelectedInteractiveType] = useState("lever");
 
   // ── Interaction state ──
   const [dragState, setDragState] = useState(null);
@@ -1507,7 +1690,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
   // ── Mode system ──
   const [mode, setMode] = useState("select"); // "select" | "draw" | "combat"
-  const [drawTool, setDrawTool] = useState("draw"); // "draw" | "fog" | "wall" | "terrain" | "ruler" | "eraser"
+  const [drawTool, setDrawTool] = useState("draw"); // "draw" | "fog" | "wall" | "terrain" | "elevation" | "room" | "objects" | "hazard" | "ruler" | "eraser"
   const [selectedTokenId, setSelectedTokenId] = useState(null);
   const [battleFocusPanelCollapsed, setBattleFocusPanelCollapsed] = useState(false);
   const [hoveredTokenId, setHoveredTokenId] = useState(null);
@@ -1595,6 +1778,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         if (saved.drawings?.length) setDrawings(saved.drawings);
         if (saved.fogCells) setFogCells(saved.fogCells);
         if (saved.terrainCells) setTerrainCells(saved.terrainCells);
+        if (saved.elevationCells) setElevationCells(saved.elevationCells);
+        if (saved.hazards) setHazards(saved.hazards);
+        if (saved.layerVisibility) setLayerVisibility(saved.layerVisibility);
+        if (saved.layerLocked) setLayerLocked(saved.layerLocked);
         if (saved.turnStateByToken) setTurnStateByToken(saved.turnStateByToken);
         if (saved.combatTargetByActor) setCombatTargetByActor(saved.combatTargetByActor);
         if (saved.bgImage) setBgImage(saved.bgImage);
@@ -1625,6 +1812,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         drawings: drawings,
         fogCells: fogCells,
         terrainCells: terrainCells,
+        elevationCells: elevationCells,
+        hazards: hazards,
+        layerVisibility: layerVisibility,
+        layerLocked: layerLocked,
         turnStateByToken: turnStateByToken,
         combatTargetByActor: combatTargetByActor,
         bgImage: bgImage,
@@ -1639,7 +1830,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       setDataRef.current(d => ({ ...d, activeCombat: combatSnapshot }));
     }, 2000);
     return () => clearTimeout(_combatSaveTimer.current);
-  }, [combatLive, combatants, turn, round, conditions, tokens, walls, drawings, fogCells, terrainCells, turnStateByToken, combatTargetByActor, bgImage, gridSize, activeCampaignId]);
+  }, [combatLive, combatants, turn, round, conditions, tokens, walls, drawings, fogCells, terrainCells, elevationCells, hazards, layerVisibility, layerLocked, turnStateByToken, combatTargetByActor, bgImage, gridSize, activeCampaignId]);
 
   const addCombatLogEntry = (entry) => {
     const enriched = {...entry, id: "log-" + Date.now() + "-" + Math.random().toString(16).slice(2), time: new Date().toLocaleTimeString()};
@@ -1966,9 +2157,13 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       opts.flanking = window.CombatEngine.checkFlanking(attackerToken, targetToken, allies, gridSize);
     }
 
-    // ── BG3: Height advantage ──
+    // ── BG3: Height advantage (uses elevation cells if available) ──
     if (typeof window.CombatEngine !== "undefined" && typeof window.CombatEngine.getHeightAdvantage === "function") {
-      opts.heightAdvantage = window.CombatEngine.getHeightAdvantage(attackerToken, targetToken);
+      const aKey = Math.floor((attackerToken.x || 0) / gridSize) + "," + Math.floor((attackerToken.y || 0) / gridSize);
+      const tKey = Math.floor((targetToken.x || 0) / gridSize) + "," + Math.floor((targetToken.y || 0) / gridSize);
+      const atkWithElev = { ...attackerToken, elevation: (elevationCells[aKey] || 0) * 5 + (attackerToken.elevation || 0) };
+      const tgtWithElev = { ...targetToken, elevation: (elevationCells[tKey] || 0) * 5 + (targetToken.elevation || 0) };
+      opts.heightAdvantage = window.CombatEngine.getHeightAdvantage(atkWithElev, tgtWithElev);
     }
 
     return opts;
@@ -2896,6 +3091,12 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     const y2 = toCell.y * gridSize + gridSize / 2;
     return (walls || []).some((wall) => {
       const wallType = WALL_TYPES[wall.type || "solid"] || WALL_TYPES.solid;
+      // Open doors don't block movement; locked/closed doors do block for door type
+      if (wall.type === "door") {
+        const ds = wall.state || "closed";
+        if (ds === "open" || ds === "broken") return false;
+        return segmentsIntersect(x1, y1, x2, y2, wall.x1, wall.y1, wall.x2, wall.y2);
+      }
       return wallType.blocksMovement && segmentsIntersect(x1, y1, x2, y2, wall.x1, wall.y1, wall.x2, wall.y2);
     });
   };
@@ -3815,6 +4016,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     fogCells: deepClone(fogCells),
     walls: deepClone(walls),
     terrainCells: deepClone(terrainCells),
+    elevationCells: deepClone(elevationCells),
+    hazards: deepClone(hazards),
+    interactiveElements: deepClone(interactiveElements),
     props: deepClone(props),
     bgColor, gridSize, showGrid, zoom, pan: {...pan},
     conditions: deepClone(conditions),
@@ -3825,6 +4029,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     playModeResolution: deepClone(playModeResolution),
     combatLog: deepClone(combatLog),
     combatLive, turn, round,
+    layerVisibility: {...layerVisibility},
+    layerLocked: {...layerLocked},
   });
 
   // Load a scene snapshot onto the canvas
@@ -3835,7 +4041,12 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     setFogCells(state.fogCells || {});
     setWalls(state.walls || []);
     setTerrainCells(state.terrainCells || {});
+    setElevationCells(state.elevationCells || {});
+    setHazards(state.hazards || []);
+    setInteractiveElements(state.interactiveElements || []);
     setProps(state.props || []);
+    if (state.layerVisibility) setLayerVisibility(state.layerVisibility);
+    if (state.layerLocked) setLayerLocked(state.layerLocked);
     setBgColor(state.bgColor || cssVar("--bg") || "#10101e");
     if (state.gridSize) setGridSize(state.gridSize);
     if (state.showGrid !== undefined) setShowGrid(state.showGrid);
@@ -3975,6 +4186,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   const [propDrag, setPropDrag] = useState(null); // { propId, startX, startY, propStartX, propStartY }
   const [propResize, setPropResize] = useState(null); // { propId, corner, startX, startY }
   const propImgInputRef = useRef(null);
+  const placingObjectRef = useRef(null);
   const propImagesCache = useRef({});
 
   const addProp = (src, name) => {
@@ -4493,6 +4705,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     (walls || []).forEach((w) => {
       if (!segmentsIntersect(from.x, from.y, to.x, to.y, w.x1, w.y1, w.x2, w.y2)) return;
       const wallType = WALL_TYPES[w.type || "solid"] || WALL_TYPES.solid;
+      // Open or broken doors don't block vision or provide cover
+      if (w.type === "door" && (w.state === "open" || w.state === "broken")) return;
       if (wallType.blocksVision) {
         hasSight = false;
         return;
@@ -4513,6 +4727,18 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       coverBonus = Math.max(coverBonus, 2);
       coverSources.push((TERRAIN_TYPES[terrainType]?.label || "Terrain") + " cover (+2)");
     }
+    // Blocking objects provide half cover
+    (props || []).forEach(p => {
+      if (!p.tags?.includes("blocking")) return;
+      if (p.objectState === "destroyed") return;
+      // Check if line of fire crosses the blocking object's bounds
+      const ox1 = p.x, oy1 = p.y, ox2 = p.x + p.width, oy2 = p.y + p.height;
+      const edges = [[ox1,oy1,ox2,oy1],[ox2,oy1,ox2,oy2],[ox2,oy2,ox1,oy2],[ox1,oy2,ox1,oy1]];
+      if (edges.some(([a,b,c,d]) => segmentsIntersect(from.x, from.y, to.x, to.y, a, b, c, d))) {
+        coverBonus = Math.max(coverBonus, 2);
+        coverSources.push((p.name || "Object") + " cover (+2)");
+      }
+    });
     if (targetToken.combatCover && coverSources.length === 0) coverSources.push("Manual cover +" + targetToken.combatCover + " AC");
     return {
       hasLineOfSight: hasSight,
@@ -5422,6 +5648,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       }
     };
 
+    if (layerVisibility.terrain) {
     Object.entries(terrainCells).forEach(([key, terrainType]) => {
       if (!terrainType) return;
       const coords = key.split(",").map(Number);
@@ -5437,6 +5664,43 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       // Texture pattern overlay
       drawTerrainTexture(gx, gy, terrainType, gridSize);
     });
+
+    // Elevation rendering
+    Object.entries(elevationCells).forEach(([key, height]) => {
+      if (!height) return;
+      const coords = key.split(",").map(Number);
+      if (coords.length !== 2) return;
+      const [gx, gy] = coords;
+      const px = gx * gridSize, py = gy * gridSize;
+
+      // Shading — higher = lighter overlay
+      const alpha = 0.03 + height * 0.035;
+      ctx.fillStyle = `rgba(200,220,255,${alpha})`;
+      ctx.fillRect(px, py, gridSize, gridSize);
+
+      // Height number in corner
+      ctx.font = `bold ${Math.max(8, gridSize * 0.22)}px ${T.ui}`;
+      ctx.fillStyle = `rgba(150,200,255,0.7)`;
+      ctx.textAlign = "right"; ctx.textBaseline = "top";
+      ctx.fillText(height * 5 + "'", px + gridSize - 2, py + 2);
+
+      // Border on elevation boundaries
+      [[1,0],[0,1],[-1,0],[0,-1]].forEach(([dx, dy]) => {
+        const nk = (gx+dx) + "," + (gy+dy);
+        const nh = elevationCells[nk] || 0;
+        if (nh !== height) {
+          ctx.strokeStyle = `rgba(100,180,255,${0.3 + Math.abs(height - nh) * 0.1})`;
+          ctx.lineWidth = 1.5 + Math.abs(height - nh) * 0.5;
+          ctx.beginPath();
+          if (dx === 1) { ctx.moveTo(px + gridSize, py); ctx.lineTo(px + gridSize, py + gridSize); }
+          else if (dx === -1) { ctx.moveTo(px, py); ctx.lineTo(px, py + gridSize); }
+          else if (dy === 1) { ctx.moveTo(px, py + gridSize); ctx.lineTo(px + gridSize, py + gridSize); }
+          else { ctx.moveTo(px, py); ctx.lineTo(px + gridSize, py); }
+          ctx.stroke();
+        }
+      });
+    });
+    } // end layerVisibility.terrain
 
     // Drawings (finalized) — smooth quadratic curves
     drawings.forEach(d => {
@@ -5485,27 +5749,224 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       ctx.globalAlpha = 1.0;
     }
 
-    // Walls — render with type-specific styles
+    // Walls — render with type-specific styles (with door state support)
+    if (layerVisibility.structures) {
     ctx.lineCap = "round";
     walls.forEach(wall => {
       const wt = WALL_TYPES[wall.type || "solid"] || WALL_TYPES.solid;
-      ctx.strokeStyle = wt.color;
-      ctx.lineWidth = wt.width;
-      if (wt.dash.length > 0) ctx.setLineDash(wt.dash);
-      else ctx.setLineDash([]);
-      ctx.beginPath();
-      ctx.moveTo(wall.x1, wall.y1);
-      ctx.lineTo(wall.x2, wall.y2);
-      ctx.stroke();
-      // Draw endpoint dots for doors
+      const doorState = wall.state || "closed";
+
       if (wall.type === "door") {
-        ctx.setLineDash([]);
-        ctx.fillStyle = wt.color;
-        ctx.beginPath(); ctx.arc(wall.x1, wall.y1, 3, 0, Math.PI * 2); ctx.fill();
-        ctx.beginPath(); ctx.arc(wall.x2, wall.y2, 3, 0, Math.PI * 2); ctx.fill();
+        const mx = (wall.x1 + wall.x2) / 2, my = (wall.y1 + wall.y2) / 2;
+        if (doorState === "open") {
+          ctx.strokeStyle = "rgba(232,148,10,0.35)";
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([2, 4]);
+          ctx.beginPath(); ctx.moveTo(wall.x1, wall.y1); ctx.lineTo(wall.x2, wall.y2); ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = "rgba(232,148,10,0.5)";
+          ctx.beginPath(); ctx.arc(wall.x1, wall.y1, 2.5, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(wall.x2, wall.y2, 2.5, 0, Math.PI * 2); ctx.fill();
+        } else if (doorState === "locked") {
+          ctx.strokeStyle = "#e8940a"; ctx.lineWidth = 3; ctx.setLineDash([]);
+          ctx.beginPath(); ctx.moveTo(wall.x1, wall.y1); ctx.lineTo(wall.x2, wall.y2); ctx.stroke();
+          // Lock icon at midpoint
+          ctx.fillStyle = "#e8940a"; ctx.font = `bold ${Math.max(10, gridSize * 0.28)}px ${T.ui}`;
+          ctx.textAlign = "center"; ctx.textBaseline = "middle";
+          ctx.fillText("🔒", mx, my);
+          ctx.fillStyle = "#e8940a";
+          ctx.beginPath(); ctx.arc(wall.x1, wall.y1, 3, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(wall.x2, wall.y2, 3, 0, Math.PI * 2); ctx.fill();
+        } else if (doorState === "broken") {
+          ctx.strokeStyle = "rgba(180,100,30,0.6)"; ctx.lineWidth = 2; ctx.setLineDash([]);
+          // Jagged broken line
+          const dx = wall.x2 - wall.x1, dy = wall.y2 - wall.y1, len = Math.hypot(dx, dy);
+          const nx = -dy / len * 4, ny = dx / len * 4;
+          ctx.beginPath(); ctx.moveTo(wall.x1, wall.y1);
+          for (let t = 0.15; t < 0.85; t += 0.15) {
+            const jx = wall.x1 + dx * t + nx * (Math.random() - 0.5) * 2;
+            const jy = wall.y1 + dy * t + ny * (Math.random() - 0.5) * 2;
+            ctx.lineTo(jx, jy);
+          }
+          ctx.lineTo(wall.x2, wall.y2); ctx.stroke();
+          // Debris dots
+          for (let i = 0; i < 4; i++) {
+            ctx.fillStyle = "rgba(140,100,60,0.5)";
+            ctx.beginPath(); ctx.arc(mx + (Math.random()-0.5)*12, my + (Math.random()-0.5)*12, 1.5, 0, Math.PI*2); ctx.fill();
+          }
+        } else {
+          // Closed door (default)
+          ctx.strokeStyle = wt.color; ctx.lineWidth = wt.width;
+          if (wt.dash.length > 0) ctx.setLineDash(wt.dash); else ctx.setLineDash([]);
+          ctx.beginPath(); ctx.moveTo(wall.x1, wall.y1); ctx.lineTo(wall.x2, wall.y2); ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = wt.color;
+          ctx.beginPath(); ctx.arc(wall.x1, wall.y1, 3, 0, Math.PI * 2); ctx.fill();
+          ctx.beginPath(); ctx.arc(wall.x2, wall.y2, 3, 0, Math.PI * 2); ctx.fill();
+        }
+      } else {
+        ctx.strokeStyle = wt.color; ctx.lineWidth = wt.width;
+        if (wt.dash.length > 0) ctx.setLineDash(wt.dash); else ctx.setLineDash([]);
+        ctx.beginPath(); ctx.moveTo(wall.x1, wall.y1); ctx.lineTo(wall.x2, wall.y2); ctx.stroke();
       }
     });
     ctx.setLineDash([]);
+    } // end layerVisibility.structures
+
+    // Hazard zones — render with pulsing overlay
+    if (layerVisibility.effects) {
+    const now = performance.now();
+    hazards.forEach(hz => {
+      const cx = hz.gx * gridSize + gridSize / 2;
+      const cy = hz.gy * gridSize + gridSize / 2;
+      const rPx = hz.radius * gridSize;
+      const pulse = 0.85 + 0.15 * Math.sin(now / 600 + hz.gx * 3);
+
+      // Fill
+      const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, rPx);
+      grad.addColorStop(0, hz.color.replace(/[\d.]+\)/, (hz.active ? 0.4 * pulse : 0.15) + ")"));
+      grad.addColorStop(1, hz.color.replace(/[\d.]+\)/, (hz.active ? 0.1 : 0.05) + ")"));
+      ctx.fillStyle = grad;
+      ctx.beginPath(); ctx.arc(cx, cy, rPx, 0, Math.PI * 2); ctx.fill();
+
+      // Edge ring
+      ctx.strokeStyle = hz.color.replace(/[\d.]+\)/, (hz.active ? 0.6 * pulse : 0.25) + ")");
+      ctx.lineWidth = hz.active ? 2 : 1;
+      ctx.setLineDash(hz.active ? [] : [4, 3]);
+      ctx.beginPath(); ctx.arc(cx, cy, rPx, 0, Math.PI * 2); ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Center icon
+      const ht = HAZARD_TYPES[hz.type];
+      if (ht) {
+        ctx.font = `bold ${Math.max(10, gridSize * 0.35)}px ${T.ui}`;
+        ctx.fillStyle = hz.active ? hz.color.replace(/[\d.]+\)/, "0.9)") : hz.color.replace(/[\d.]+\)/, "0.4)");
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText(ht.icon, cx, cy);
+      }
+
+      // Inactive X overlay
+      if (!hz.active) {
+        ctx.strokeStyle = "rgba(255,60,60,0.3)"; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(cx - gridSize*0.25, cy - gridSize*0.25); ctx.lineTo(cx + gridSize*0.25, cy + gridSize*0.25); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(cx + gridSize*0.25, cy - gridSize*0.25); ctx.lineTo(cx - gridSize*0.25, cy + gridSize*0.25); ctx.stroke();
+      }
+    });
+    } // end layerVisibility.effects
+
+    // Interactive elements — render on the objects layer
+    if (layerVisibility.objects) {
+      interactiveElements.forEach(ie => {
+        const iet = INTERACTIVE_ELEMENT_TYPES[ie.type];
+        if (!iet) return;
+        const cx = ie.gx * gridSize + gridSize / 2;
+        const cy = ie.gy * gridSize + gridSize / 2;
+        const isActive = ie.state === iet.stateB;
+        const col = isActive ? iet.colorB : iet.colorA;
+        const hasLinks = (ie.linkedTargets || []).length > 0;
+
+        // Background circle
+        ctx.fillStyle = isActive ? "rgba(76,175,80,0.15)" : "rgba(128,128,128,0.1)";
+        ctx.beginPath(); ctx.arc(cx, cy, gridSize * 0.42, 0, Math.PI * 2); ctx.fill();
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cx, cy, gridSize * 0.42, 0, Math.PI * 2); ctx.stroke();
+
+        // Lever-specific: draw angled arm
+        if (ie.type === "lever") {
+          ctx.strokeStyle = isActive ? "#DAA520" : "#888";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy + gridSize * 0.15);
+          ctx.lineTo(cx + (isActive ? gridSize * 0.2 : -gridSize * 0.2), cy - gridSize * 0.2);
+          ctx.stroke();
+          ctx.fillStyle = isActive ? "#FFD700" : "#AAA";
+          ctx.beginPath(); ctx.arc(cx + (isActive ? gridSize * 0.2 : -gridSize * 0.2), cy - gridSize * 0.2, gridSize * 0.06, 0, Math.PI * 2); ctx.fill();
+        }
+        // Switch: filled circle indicator
+        else if (ie.type === "switch") {
+          ctx.fillStyle = col;
+          ctx.beginPath(); ctx.arc(cx, cy, gridSize * 0.15, 0, Math.PI * 2); ctx.fill();
+          ctx.fillStyle = isActive ? "#FFD700" : "#555";
+          ctx.beginPath(); ctx.arc(cx, cy, gridSize * 0.08, 0, Math.PI * 2); ctx.fill();
+        }
+        // Pressure plate: square plate
+        else if (ie.type === "pressure_plate") {
+          const ps = gridSize * 0.6;
+          ctx.fillStyle = isActive ? "rgba(212,67,58,0.3)" : "rgba(139,134,130,0.3)";
+          ctx.fillRect(cx - ps/2, cy - ps/2, ps, ps);
+          ctx.strokeStyle = col;
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([3, 3]);
+          ctx.strokeRect(cx - ps/2, cy - ps/2, ps, ps);
+          ctx.setLineDash([]);
+        }
+        // Button: circle with highlight
+        else if (ie.type === "button") {
+          ctx.fillStyle = col;
+          ctx.beginPath(); ctx.arc(cx, cy, gridSize * 0.18, 0, Math.PI * 2); ctx.fill();
+          ctx.strokeStyle = "#333";
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+          if (isActive) { ctx.fillStyle = "rgba(255,100,100,0.4)"; ctx.beginPath(); ctx.arc(cx - gridSize*0.04, cy - gridSize*0.04, gridSize*0.06, 0, Math.PI*2); ctx.fill(); }
+        }
+        // Tripwire: horizontal line
+        else if (ie.type === "tripwire") {
+          ctx.strokeStyle = isActive ? "#FF4444" : "rgba(170,170,170,0.5)";
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash(isActive ? [] : [4, 4]);
+          ctx.beginPath();
+          ctx.moveTo(cx - gridSize * 0.4, cy);
+          ctx.lineTo(cx + gridSize * 0.4, cy);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        // Label
+        ctx.font = `bold ${Math.max(8, gridSize * 0.22)}px ${T.ui}`;
+        ctx.fillStyle = isActive ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.5)";
+        ctx.textAlign = "center"; ctx.textBaseline = "top";
+        ctx.fillText(iet.icon, cx, cy + gridSize * 0.28);
+
+        // Link lines to linked targets
+        if (hasLinks) {
+          ctx.strokeStyle = "rgba(255,215,0,0.25)";
+          ctx.lineWidth = 1;
+          ctx.setLineDash([4, 4]);
+          (ie.linkedTargets || []).forEach(lt => {
+            let tx = cx, ty = cy;
+            if (lt.startsWith("door-")) {
+              const idx = parseInt(lt.split("-")[1]);
+              const dw = walls[idx];
+              if (dw) { tx = (dw.x1 + dw.x2) / 2; ty = (dw.y1 + dw.y2) / 2; }
+            } else if (lt.startsWith("hazard-")) {
+              const idx = parseInt(lt.split("-")[1]);
+              const hz = hazards[idx];
+              if (hz) { tx = hz.gx * gridSize + gridSize / 2; ty = hz.gy * gridSize + gridSize / 2; }
+            } else if (lt.startsWith("ie-")) {
+              const idx = parseInt(lt.split("-")[1]);
+              const el2 = interactiveElements[idx];
+              if (el2) { tx = el2.gx * gridSize + gridSize / 2; ty = el2.gy * gridSize + gridSize / 2; }
+            }
+            if (tx !== cx || ty !== cy) {
+              ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(tx, ty); ctx.stroke();
+            }
+          });
+          ctx.setLineDash([]);
+        }
+      });
+    }
+
+    // Room preview overlay
+    if (roomStart && roomPreview && activeTool === "room") {
+      const x1 = Math.min(roomStart.x, roomPreview.x), y1 = Math.min(roomStart.y, roomPreview.y);
+      const x2 = Math.max(roomStart.x, roomPreview.x), y2 = Math.max(roomStart.y, roomPreview.y);
+      ctx.fillStyle = "rgba(181,116,255,0.08)";
+      ctx.fillRect(x1, y1, x2 - x1, y2 - y1);
+      ctx.strokeStyle = "rgba(181,116,255,0.5)"; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+      ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
+      ctx.setLineDash([]);
+    }
     // Wall preview
     if (wallStart && wallPreview) {
       const previewWt = WALL_TYPES[selectedWallType] || WALL_TYPES.solid;
@@ -5716,37 +6177,93 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       }
     }
 
-    // Props (below tokens layer)
-    props.filter(p => p.layer === "below").forEach(p => {
-      let pImg = propImagesCache.current[p.id];
-      if (!pImg && p.src) {
-        pImg = new Image();
-        pImg.onload = () => { propImagesCache.current[p.id] = pImg; render(); };
-        pImg.src = p.src;
+    // Props (below tokens layer) — supports both image props and built-in objects
+    const renderProp = (p) => {
+      const isBuiltin = !!p.builtinId;
+      const builtinDef = isBuiltin ? BUILTIN_OBJECTS.find(o => o.id === p.builtinId) : null;
+
+      if (!isBuiltin) {
+        let pImg = propImagesCache.current[p.id];
+        if (!pImg && p.src) {
+          pImg = new Image();
+          pImg.onload = () => { propImagesCache.current[p.id] = pImg; render(); };
+          pImg.src = p.src;
+          return;
+        }
+        if (!pImg) return;
+        ctx.save();
+        ctx.translate(p.x + p.width / 2, p.y + p.height / 2);
+        ctx.rotate((p.rotation || 0) * Math.PI / 180);
+        ctx.globalAlpha = p.locked ? 0.85 : 1;
+        ctx.drawImage(pImg, -p.width / 2, -p.height / 2, p.width, p.height);
+      } else if (builtinDef) {
+        ctx.save();
+        ctx.translate(p.x + p.width / 2, p.y + p.height / 2);
+        ctx.rotate((p.rotation || 0) * Math.PI / 180);
+        ctx.globalAlpha = p.locked ? 0.85 : 1;
+
+        // Object state visual modifiers
+        const state = p.objectState || "intact";
+        if (state === "damaged") {
+          ctx.globalAlpha *= 0.8;
+        } else if (state === "destroyed") {
+          ctx.globalAlpha *= 0.5;
+        }
+
+        builtinDef.draw(ctx, -p.width / 2, -p.height / 2, p.width);
+
+        // Damage overlay
+        if (state === "damaged") {
+          ctx.strokeStyle = "rgba(255,60,40,0.5)"; ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(-p.width*0.3, -p.height*0.2);
+          ctx.lineTo(p.width*0.1, p.height*0.15);
+          ctx.lineTo(-p.width*0.1, p.height*0.3);
+          ctx.stroke();
+        } else if (state === "destroyed") {
+          // Grey wash + rubble scatter
+          ctx.fillStyle = "rgba(80,80,80,0.3)";
+          ctx.fillRect(-p.width/2, -p.height/2, p.width, p.height);
+          for (let i = 0; i < 5; i++) {
+            ctx.fillStyle = "rgba(120,110,100,0.5)";
+            ctx.beginPath();
+            ctx.arc((Math.random()-0.5)*p.width*0.6, (Math.random()-0.5)*p.height*0.6, 2+Math.random()*3, 0, Math.PI*2);
+            ctx.fill();
+          }
+        }
+      } else {
         return;
       }
-      if (!pImg) return;
-      ctx.save();
-      ctx.translate(p.x + p.width / 2, p.y + p.height / 2);
-      ctx.rotate((p.rotation || 0) * Math.PI / 180);
-      ctx.globalAlpha = p.locked ? 0.85 : 1;
-      ctx.drawImage(pImg, -p.width / 2, -p.height / 2, p.width, p.height);
-      // Selection outline
+
+      // Selection outline (for both types)
       if (p.id === selectedPropId) {
         ctx.strokeStyle = "#58aaff";
         ctx.lineWidth = 2 / zoom;
         ctx.setLineDash([6 / zoom, 4 / zoom]);
         ctx.strokeRect(-p.width / 2, -p.height / 2, p.width, p.height);
         ctx.setLineDash([]);
-        // Resize handles
         const hs = 8 / zoom;
         [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([dx,dy]) => {
           ctx.fillStyle = "#58aaff";
           ctx.fillRect(dx * p.width / 2 - hs / 2, dy * p.height / 2 - hs / 2, hs, hs);
         });
       }
+
+      // Tag indicators (small icons for blocking, etc.)
+      if (p.tags?.length > 0 && p.id === selectedPropId) {
+        const tagY = -p.height / 2 - 12 / zoom;
+        ctx.font = `${9 / zoom}px ${T.ui}`;
+        ctx.fillStyle = "rgba(200,200,200,0.7)";
+        ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+        ctx.fillText(p.tags.map(t => t[0].toUpperCase()).join(""), 0, tagY);
+      }
+
       ctx.restore();
-    });
+    };
+
+    if (layerVisibility.objects) {
+    props.filter(p => p.layer === "below").forEach(renderProp);
+    }
 
     // Region markers on map overview (when no scene is active)
     if (activeMapId && !activeSceneId) {
@@ -7448,35 +7965,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       }
     });
 
-    // Props (above tokens layer)
-    props.filter(p => p.layer === "above").forEach(p => {
-      let pImg = propImagesCache.current[p.id];
-      if (!pImg && p.src) {
-        pImg = new Image();
-        pImg.onload = () => { propImagesCache.current[p.id] = pImg; render(); };
-        pImg.src = p.src;
-        return;
-      }
-      if (!pImg) return;
-      ctx.save();
-      ctx.translate(p.x + p.width / 2, p.y + p.height / 2);
-      ctx.rotate((p.rotation || 0) * Math.PI / 180);
-      ctx.globalAlpha = p.locked ? 0.85 : 1;
-      ctx.drawImage(pImg, -p.width / 2, -p.height / 2, p.width, p.height);
-      if (p.id === selectedPropId) {
-        ctx.strokeStyle = "#58aaff";
-        ctx.lineWidth = 2 / zoom;
-        ctx.setLineDash([6 / zoom, 4 / zoom]);
-        ctx.strokeRect(-p.width / 2, -p.height / 2, p.width, p.height);
-        ctx.setLineDash([]);
-        const hs = 8 / zoom;
-        [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([dx,dy]) => {
-          ctx.fillStyle = "#58aaff";
-          ctx.fillRect(dx * p.width / 2 - hs / 2, dy * p.height / 2 - hs / 2, hs, hs);
-        });
-      }
-      ctx.restore();
-    });
+    // Props (above tokens layer) — uses shared renderProp
+    if (layerVisibility.objects) {
+    props.filter(p => p.layer === "above").forEach(renderProp);
+    }
 
     // Laser pointer trail (DM tool) — reads from ref to avoid render storms
     const laserPts = laserPointsRef.current;
@@ -7918,6 +8410,17 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       if (!hotbarActive && e.key === "1") { setMode("select"); }
       if (!hotbarActive && e.key === "2" && viewRole === "dm") { setMode("draw"); }
       if (!hotbarActive && e.key === "3") { setMode("combat"); setSidebarOpen(true); }
+      // Draw tool hotkeys (only in draw mode, DM only, when hotbar not active)
+      if (!hotbarActive && mode === "draw" && viewRole === "dm" && !combatLive) {
+        const toolKeys = { d:"draw", f:"fog", w:"wall", t:"terrain", h:"elevation", o:"room", j:"objects", i:"interact", z:"hazard", r:"ruler", x:"eraser" };
+        const lk = e.key.toLowerCase();
+        if (toolKeys[lk]) { setDrawTool(toolKeys[lk]); setWallStart(null); setWallPreview(null); }
+        // Brush size shortcuts: [ and ] to decrease/increase
+        if (e.key === "[") setTerrainBrushSize(p => Math.max(1, p === 5 ? 3 : p === 3 ? 2 : 1));
+        if (e.key === "]") setTerrainBrushSize(p => p === 1 ? 2 : p === 2 ? 3 : 5);
+        // G key: toggle grid
+        if (lk === "g") setShowGrid(p => !p);
+      }
       if (e.key === "Tab") {
         if (battleFocusToken && combatLive) {
           e.preventDefault();
@@ -8009,7 +8512,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     window.addEventListener("keydown", handleKey);
     window.addEventListener("keyup", handleKeyUp);
     return () => { window.removeEventListener("keydown", handleKey); window.removeEventListener("keyup", handleKeyUp); };
-  }, [selectedToken, battleFocusToken, launcherToken, tokenPopup, movementMode, movementOrigin, selectedTokenId, activeSpell, pendingCombatAction, combatLive]);
+  }, [selectedToken, battleFocusToken, launcherToken, tokenPopup, movementMode, movementOrigin, selectedTokenId, activeSpell, pendingCombatAction, combatLive, mode, viewRole]);
 
   const getPointerPoint = (e) => {
     const p = e?.touches?.[0] || e?.changedTouches?.[0] || e || { clientX: 0, clientY: 0 };
@@ -8322,10 +8825,76 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     }
 
     if (activeTool === "terrain") {
+      if (layerLocked.terrain) return;
       const gx = Math.floor(w.x/gridSize), gy = Math.floor(w.y/gridSize);
-      const key = gx + "," + gy;
-      setTerrainCells(p => ({...p, [key]: selectedTerrain}));
+      if (terrainFillMode) {
+        const filled = floodFillTerrain(gx, gy, selectedTerrain, terrainCells);
+        if (Object.keys(filled).length > 0) setTerrainCells(p => ({...p, ...filled}));
+        return;
+      }
+      const cells = getTerrainBrushCells(gx, gy, terrainBrushSize);
+      setTerrainCells(p => { const n = {...p}; cells.forEach(k => n[k] = selectedTerrain); return n; });
       setDragState({ type:"terrain", adding: selectedTerrain });
+      return;
+    }
+
+    if (activeTool === "elevation") {
+      if (layerLocked.terrain) return;
+      const gx = Math.floor(w.x/gridSize), gy = Math.floor(w.y/gridSize);
+      const cells = getTerrainBrushCells(gx, gy, terrainBrushSize);
+      setElevationCells(p => { const n = {...p}; cells.forEach(k => n[k] = selectedElevation); return n; });
+      setDragState({ type:"elevation", adding: selectedElevation });
+      return;
+    }
+
+    if (activeTool === "hazard") {
+      if (layerLocked.effects) return;
+      const gx = Math.floor(w.x/gridSize), gy = Math.floor(w.y/gridSize);
+      const ht = HAZARD_TYPES[selectedHazardType];
+      setHazards(p => [...p, {
+        id: "hz-" + Date.now(), gx, gy, radius: hazardRadius, shape: "circle",
+        type: selectedHazardType, damage: ht.damage, damageType: ht.damageType,
+        condition: ht.condition, trigger: ht.defaultTrigger, active: true,
+        color: ht.color, label: ht.label
+      }]);
+      return;
+    }
+
+    if (activeTool === "objects") {
+      if (layerLocked.objects) return;
+      if (placingObjectRef.current) {
+        const obj = placingObjectRef.current;
+        const sz = obj.defaultSize * gridSize;
+        const snapX = Math.floor(w.x / gridSize) * gridSize;
+        const snapY = Math.floor(w.y / gridSize) * gridSize;
+        setProps(p => [...p, {
+          id: "obj-" + Date.now(), builtinId: obj.id, x: snapX, y: snapY,
+          width: sz, height: sz, rotation: 0, layer: "above",
+          name: obj.name, locked: false, tags: [...obj.tags],
+          objectState: "intact", category: obj.category
+        }]);
+      }
+      return;
+    }
+
+    if (activeTool === "interact") {
+      if (layerLocked.objects) return;
+      const gx = Math.floor(w.x/gridSize), gy = Math.floor(w.y/gridSize);
+      const iet = INTERACTIVE_ELEMENT_TYPES[selectedInteractiveType];
+      setInteractiveElements(p => [...p, {
+        id: "ie-" + Date.now(), gx, gy, type: selectedInteractiveType,
+        state: iet.stateA, label: iet.label, linkedTargets: [],
+      }]);
+      return;
+    }
+
+    if (activeTool === "room") {
+      if (layerLocked.structures) return;
+      const snap = snapToGridIntersection(w.x, w.y);
+      if (roomShape === "rect") {
+        setRoomStart(snap);
+        setRoomPreview(snap);
+      }
       return;
     }
 
@@ -8472,11 +9041,36 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         setWalls(p => p.filter((_, i) => i !== hitWall));
         return;
       }
-      // Check terrain
+      // Check hazards
+      const hitHazard = hazards.findIndex(h => {
+        const hx = h.gx * gridSize + gridSize / 2, hy = h.gy * gridSize + gridSize / 2;
+        return Math.hypot(w.x - hx, w.y - hy) < (h.radius + 0.5) * gridSize;
+      });
+      if (hitHazard >= 0) {
+        setHazards(p => p.filter((_, i) => i !== hitHazard));
+        return;
+      }
+      // Check interactive elements
+      const hitIeErase = interactiveElements.findIndex(ie => {
+        const iex = ie.gx * gridSize + gridSize / 2, iey = ie.gy * gridSize + gridSize / 2;
+        return Math.hypot(w.x - iex, w.y - iey) < gridSize * 0.6;
+      });
+      if (hitIeErase >= 0) {
+        setInteractiveElements(p => p.filter((_, i) => i !== hitIeErase));
+        return;
+      }
+      // Check terrain (brush-sized)
       const tgx = Math.floor(w.x / gridSize), tgy = Math.floor(w.y / gridSize);
-      const terrainKey = tgx + "," + tgy;
-      if (terrainCells[terrainKey]) {
-        setTerrainCells(p => { const n = {...p}; delete n[terrainKey]; return n; });
+      const eraseCells = getTerrainBrushCells(tgx, tgy, terrainBrushSize);
+      const hasAny = eraseCells.some(k => terrainCells[k]);
+      if (hasAny) {
+        setTerrainCells(p => { const n = {...p}; eraseCells.forEach(k => delete n[k]); return n; });
+        return;
+      }
+      // Check elevation
+      const hasElev = eraseCells.some(k => elevationCells[k]);
+      if (hasElev) {
+        setElevationCells(p => { const n = {...p}; eraseCells.forEach(k => delete n[k]); return n; });
         return;
       }
       // Check drawings (find nearest drawing within threshold)
@@ -8635,8 +9229,15 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       setFogCells(p => ({...p, [gx + "," + gy]: dragState.adding}));
     } else if (dragState?.type === "terrain") {
       const gx = Math.floor(w.x/gridSize), gy = Math.floor(w.y/gridSize);
-      const key = gx + "," + gy;
-      setTerrainCells(p => ({...p, [key]: dragState.adding}));
+      const cells = getTerrainBrushCells(gx, gy, terrainBrushSize);
+      setTerrainCells(p => { const n = {...p}; cells.forEach(k => n[k] = dragState.adding); return n; });
+    } else if (dragState?.type === "elevation") {
+      const gx = Math.floor(w.x/gridSize), gy = Math.floor(w.y/gridSize);
+      const cells = getTerrainBrushCells(gx, gy, terrainBrushSize);
+      setElevationCells(p => { const n = {...p}; cells.forEach(k => n[k] = dragState.adding); return n; });
+    } else if (activeTool === "room" && roomStart && roomShape === "rect") {
+      const snap = snapToGridIntersection(w.x, w.y);
+      setRoomPreview(snap);
     } else if (activeTool === "ruler" && rulerStart) {
       setRulerEnd(w);
     }
@@ -8652,6 +9253,31 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     // Prop drag/resize release
     if (propDrag) setPropDrag(null);
     if (propResize) setPropResize(null);
+
+    // Room tool: finalize rectangle on mouse up
+    if (activeTool === "room" && roomStart && roomPreview && roomShape === "rect") {
+      const x1 = Math.min(roomStart.x, roomPreview.x), y1 = Math.min(roomStart.y, roomPreview.y);
+      const x2 = Math.max(roomStart.x, roomPreview.x), y2 = Math.max(roomStart.y, roomPreview.y);
+      if (x1 !== x2 && y1 !== y2) {
+        const newWalls = [
+          { x1, y1, x2, y2: y1, type: selectedWallType },
+          { x1: x2, y1, x2, y2, type: selectedWallType },
+          { x1, y1: y2, x2, y2, type: selectedWallType },
+          { x1, y1, x2: x1, y2, type: selectedWallType },
+        ];
+        setWalls(p => [...p, ...newWalls]);
+        if (roomFillTerrain) {
+          const gx1 = Math.round(x1/gridSize), gy1 = Math.round(y1/gridSize);
+          const gx2 = Math.round(x2/gridSize), gy2 = Math.round(y2/gridSize);
+          setTerrainCells(p => {
+            const n = {...p};
+            for (let gx = gx1; gx < gx2; gx++) for (let gy = gy1; gy < gy2; gy++) n[gx+","+gy] = selectedTerrain;
+            return n;
+          });
+        }
+      }
+      setRoomStart(null); setRoomPreview(null);
+    }
 
     if (activeTool === "draw" && drawPoints.length > 1) {
       setDrawings(p => [...p, { points:drawPoints, color:drawColor, width:drawWidth }]);
@@ -8764,13 +9390,38 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     // During weapon/spell targeting, right-click cancels (handled in mouseDown), don't show context menu
     if (activeWeapon || activeSpell) return;
     const w = getMouseWorld(e);
-    // Check props first
+    const rect = canvasRef.current.getBoundingClientRect();
+    const menuX = e.clientX - rect.left, menuY = e.clientY - rect.top;
+    // Check props first (DM only)
     if (viewRole === "dm") {
       const hitProp = [...props].reverse().find(p => w.x >= p.x && w.x <= p.x + p.width && w.y >= p.y && w.y <= p.y + p.height);
       if (hitProp) {
-        const rect = canvasRef.current.getBoundingClientRect();
-        setContextMenu({ x: e.clientX - rect.left, y: e.clientY - rect.top, propId: hitProp.id });
+        setContextMenu({ x: menuX, y: menuY, propId: hitProp.id });
         setSelectedPropId(hitProp.id);
+        return;
+      }
+      // Check walls (doors especially) for state toggling
+      const hitWallIdx = walls.findIndex(wall => distToSegment(w.x, w.y, wall.x1, wall.y1, wall.x2, wall.y2) < 10);
+      if (hitWallIdx >= 0 && walls[hitWallIdx].type === "door") {
+        setContextMenu({ x: menuX, y: menuY, wallIdx: hitWallIdx });
+        return;
+      }
+      // Check interactive elements
+      const hitIe = interactiveElements.findIndex(ie => {
+        const iex = ie.gx * gridSize + gridSize / 2, iey = ie.gy * gridSize + gridSize / 2;
+        return Math.hypot(w.x - iex, w.y - iey) < gridSize * 0.6;
+      });
+      if (hitIe >= 0) {
+        setContextMenu({ x: menuX, y: menuY, interactiveIdx: hitIe });
+        return;
+      }
+      // Check hazards for toggling
+      const hitHz = hazards.findIndex(h => {
+        const hx = h.gx * gridSize + gridSize / 2, hy = h.gy * gridSize + gridSize / 2;
+        return Math.hypot(w.x - hx, w.y - hy) < (h.radius + 0.5) * gridSize;
+      });
+      if (hitHz >= 0) {
+        setContextMenu({ x: menuX, y: menuY, hazardIdx: hitHz });
         return;
       }
     }
@@ -9772,6 +10423,28 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       }
     }
 
+    // Hazard zone damage at start of turn
+    hazards.forEach(hz => {
+      if (!hz.active) return;
+      if (hz.trigger !== "start_of_turn") return;
+      const hx = hz.gx * gridSize + gridSize / 2, hy = hz.gy * gridSize + gridSize / 2;
+      const dist = Math.hypot((token.x || 0) - hx, (token.y || 0) - hy);
+      if (dist > hz.radius * gridSize) return;
+      // Token is in this hazard zone
+      if (hz.damage && CE && CE.rollDice) {
+        const dmgRoll = CE.rollDice(hz.damage);
+        if (dmgRoll && dmgRoll.total > 0) {
+          addCombatLogEntry({ type: "system", text: token.name + " takes " + dmgRoll.total + " " + (hz.damageType || "") + " damage from " + hz.label });
+          applyAttackResultToTarget(token.id, token, dmgRoll.total, hz.damageType || "fire");
+          spawnFloatingTextForToken(token.id, "damage", { total: dmgRoll.total, damageType: hz.damageType || "fire", isCrit: false });
+        }
+      }
+      if (hz.condition) {
+        addTokenCondition(token.id, hz.condition);
+        addCombatLogEntry({ type: "system", text: token.name + " is " + hz.condition + " by " + hz.label });
+      }
+    });
+
     // Reset per-turn flags
     if (token._sneakAttackUsedThisTurn) {
       updateToken(token.id, { _sneakAttackUsedThisTurn: false });
@@ -10259,12 +10932,17 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     : [{ id:"select", icon:Target, label:"Select" }, { id:"draw", icon:Edit3, label:"Draw" }, { id:"combat", icon:Swords, label:"Combat" }];
 
   const drawToolDefs = [
-    { id:"draw", label:"Draw", icon:Edit3 },
-    { id:"fog", label:"Fog", icon:Eye },
-    { id:"wall", label:"Wall", icon:Lock },
-    { id:"terrain", label:"Terrain", icon:Mountain },
-    { id:"ruler", label:"Ruler", icon:Compass },
-    { id:"eraser", label:"Eraser", icon:Trash2 },
+    { id:"draw", label:"Draw", icon:Edit3, hotkey:"D" },
+    { id:"fog", label:"Fog", icon:Eye, hotkey:"F" },
+    { id:"wall", label:"Wall", icon:Lock, hotkey:"W" },
+    { id:"terrain", label:"Terrain", icon:Mountain, hotkey:"T" },
+    { id:"elevation", label:"Height", icon:TrendingUp, hotkey:"H" },
+    { id:"room", label:"Room", icon:LayoutDashboard, hotkey:"O" },
+    { id:"objects", label:"Objects", icon:Package, hotkey:"J" },
+    { id:"interact", label:"Interact", icon:Link, hotkey:"I" },
+    { id:"hazard", label:"Hazard", icon:AlertTriangle, hotkey:"Z" },
+    { id:"ruler", label:"Ruler", icon:Compass, hotkey:"R" },
+    { id:"eraser", label:"Eraser", icon:Trash2, hotkey:"X" },
   ];
 
   const getCursor = () => {
@@ -10899,37 +11577,174 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             )}
 
             {/* Prop context menu */}
-            {contextMenu && contextMenu.propId && (() => {
-              const pk = props.find(p => p.id === contextMenu.propId);
-              if (!pk) return null;
+            {contextMenu && (() => {
               const menuBtnStyle = { display:"block", width:"100%", padding:"8px 14px", background:"none", border:"none", textAlign:"left", cursor:"pointer", fontSize:12, fontFamily:T.ui, letterSpacing:"0.3px", transition:"background 0.1s" };
-              return (
+              const menuWrap = (title, children) => (
                 <div style={{ position:"absolute", left:contextMenu.x, top:contextMenu.y, background:panelBg, backdropFilter:"blur(12px)", border:"1px solid " + T.crimsonBorder, borderRadius:"8px", boxShadow:"0 8px 32px rgba(0,0,6,0.6)", zIndex:100, minWidth:180, padding:"6px 0", overflow:"hidden" }}
                   onMouseLeave={() => setContextMenu(null)}>
-                  <div style={{ padding:"8px 14px", fontSize:12, color:T.text, fontWeight:600, borderBottom:"1px solid " + T.border, fontFamily:T.ui, letterSpacing:"0.3px" }}>{pk.name}</div>
-                  <button onClick={() => { updateProp(pk.id, { layer: pk.layer === "above" ? "below" : "above" }); setContextMenu(null); }}
-                    onMouseEnter={e => e.currentTarget.style.background=bg04} onMouseLeave={e => e.currentTarget.style.background="none"}
-                    style={{...menuBtnStyle, color:T.textMuted}}>
-                    {pk.layer === "above" ? "Move Below Tokens" : "Move Above Tokens"}
-                  </button>
-                  <button onClick={() => { updateProp(pk.id, { locked: !pk.locked }); setContextMenu(null); }}
-                    onMouseEnter={e => e.currentTarget.style.background=bg04} onMouseLeave={e => e.currentTarget.style.background="none"}
-                    style={{...menuBtnStyle, color:T.textMuted}}>
-                    {pk.locked ? "Unlock" : "Lock Position"}
-                  </button>
-                  <button onClick={() => { updateProp(pk.id, { rotation: (pk.rotation || 0) + 45 }); setContextMenu(null); }}
-                    onMouseEnter={e => e.currentTarget.style.background=bg04} onMouseLeave={e => e.currentTarget.style.background="none"}
-                    style={{...menuBtnStyle, color:T.textMuted}}>
-                    Rotate 45°
-                  </button>
-                  <div style={{ height:1, background:T.border, margin:"2px 0" }} />
-                  <button onClick={() => { removeProp(pk.id); setContextMenu(null); }}
-                    onMouseEnter={e => e.currentTarget.style.background=lm("rgba(212,67,58,0.08)", "rgba(212,67,58,0.06)")} onMouseLeave={e => e.currentTarget.style.background="none"}
-                    style={{...menuBtnStyle, color:T.crimson}}>
-                    Remove Prop
-                  </button>
+                  <div style={{ padding:"8px 14px", fontSize:12, color:T.text, fontWeight:600, borderBottom:"1px solid " + T.border, fontFamily:T.ui, letterSpacing:"0.3px" }}>{title}</div>
+                  {children}
                 </div>
               );
+              const menuBtn = (label, onClick, color) => (
+                <button onClick={() => { onClick(); setContextMenu(null); }}
+                  onMouseEnter={e => e.currentTarget.style.background=bg04} onMouseLeave={e => e.currentTarget.style.background="none"}
+                  style={{...menuBtnStyle, color: color || T.textMuted}}>{label}</button>
+              );
+
+              // Door state context menu
+              if (contextMenu.wallIdx != null) {
+                const wall = walls[contextMenu.wallIdx];
+                if (!wall) return null;
+                const ds = wall.state || "closed";
+                const setDoorState = (state) => setWalls(p => p.map((w, i) => i === contextMenu.wallIdx ? {...w, state} : w));
+                return menuWrap("Door — " + ds.charAt(0).toUpperCase() + ds.slice(1), (
+                  <React.Fragment>
+                    {["open", "closed", "locked", "broken"].map(s => (
+                      <button key={s} onClick={() => { setDoorState(s); setContextMenu(null); }}
+                        onMouseEnter={e => e.currentTarget.style.background=bg04} onMouseLeave={e => e.currentTarget.style.background="none"}
+                        style={{...menuBtnStyle, color: ds === s ? T.gold || "#e8940a" : T.textMuted, fontWeight: ds === s ? 700 : 400}}>
+                        {s === "open" ? "Open" : s === "closed" ? "Closed" : s === "locked" ? "Locked 🔒" : "Broken 💥"}
+                      </button>
+                    ))}
+                    <div style={{ height:1, background:T.border, margin:"2px 0" }} />
+                    {menuBtn("Delete Wall", () => setWalls(p => p.filter((_, i) => i !== contextMenu.wallIdx)), T.crimson)}
+                  </React.Fragment>
+                ));
+              }
+
+              // Hazard context menu
+              if (contextMenu.hazardIdx != null) {
+                const hz = hazards[contextMenu.hazardIdx];
+                if (!hz) return null;
+                const updateHz = (updates) => setHazards(p => p.map((h, i) => i === contextMenu.hazardIdx ? {...h, ...updates} : h));
+                return menuWrap(hz.label + (hz.active ? " (Active)" : " (Inactive)"), (
+                  <React.Fragment>
+                    {menuBtn(hz.active ? "Deactivate" : "Activate", () => updateHz({ active: !hz.active }))}
+                    {hz.damage && <div style={{ padding:"4px 14px", fontSize:10, color:tx50, fontFamily:T.ui }}>{hz.damage} {hz.damageType}{hz.condition ? " + " + hz.condition : ""}</div>}
+                    <div style={{ padding:"4px 14px", fontSize:10, color:tx50, fontFamily:T.ui }}>Trigger: {hz.trigger}</div>
+                    {["manual", "proximity", "start_of_turn"].map(tr => (
+                      <button key={tr} onClick={() => { updateHz({ trigger: tr }); setContextMenu(null); }}
+                        onMouseEnter={e => e.currentTarget.style.background=bg04} onMouseLeave={e => e.currentTarget.style.background="none"}
+                        style={{...menuBtnStyle, color: hz.trigger === tr ? (T.gold || "#e8940a") : T.textMuted, fontSize:11}}>
+                        {tr === "manual" ? "Manual Trigger" : tr === "proximity" ? "Proximity Trigger" : "Start of Turn"}
+                      </button>
+                    ))}
+                    <div style={{ height:1, background:T.border, margin:"2px 0" }} />
+                    {menuBtn("Remove Hazard", () => setHazards(p => p.filter((_, i) => i !== contextMenu.hazardIdx)), T.crimson)}
+                  </React.Fragment>
+                ));
+              }
+
+              // Interactive element context menu
+              if (contextMenu.interactiveIdx != null) {
+                const ie = interactiveElements[contextMenu.interactiveIdx];
+                if (!ie) return null;
+                const iet = INTERACTIVE_ELEMENT_TYPES[ie.type];
+                const updateIe = (updates) => setInteractiveElements(p => p.map((el, i) => i === contextMenu.interactiveIdx ? {...el, ...updates} : el));
+                const toggleState = () => updateIe({ state: ie.state === iet.stateA ? iet.stateB : iet.stateA });
+                // Gather linkable targets: doors, hazards, other interactive elements
+                const linkableDoors = walls.map((w, i) => w.type === "door" ? { id: "door-" + i, label: "Door #" + (i+1) + " (" + (w.state || "closed") + ")", wallIdx: i } : null).filter(Boolean);
+                const linkableHazards = hazards.map((h, i) => ({ id: "hazard-" + i, label: h.label + " #" + (i+1), hazardIdx: i }));
+                const linkableIes = interactiveElements.map((el2, i) => i !== contextMenu.interactiveIdx ? { id: "ie-" + i, label: el2.label + " #" + (i+1), ieIdx: i } : null).filter(Boolean);
+                const allLinkable = [...linkableDoors, ...linkableHazards, ...linkableIes];
+                const linked = ie.linkedTargets || [];
+                return menuWrap(ie.label + " — " + ie.state.charAt(0).toUpperCase() + ie.state.slice(1), (
+                  <React.Fragment>
+                    {menuBtn("Toggle → " + (ie.state === iet.stateA ? iet.stateB : iet.stateA), () => {
+                      toggleState();
+                      // Activate linked targets
+                      (ie.linkedTargets || []).forEach(lt => {
+                        if (lt.startsWith("door-")) {
+                          const idx = parseInt(lt.split("-")[1]);
+                          setWalls(p => p.map((w, i) => i === idx ? {...w, state: w.state === "open" ? "closed" : "open"} : w));
+                        } else if (lt.startsWith("hazard-")) {
+                          const idx = parseInt(lt.split("-")[1]);
+                          setHazards(p => p.map((h, i) => i === idx ? {...h, active: !h.active} : h));
+                        } else if (lt.startsWith("ie-")) {
+                          const idx = parseInt(lt.split("-")[1]);
+                          setInteractiveElements(p => p.map((el2, i) => {
+                            if (i !== idx) return el2;
+                            const t = INTERACTIVE_ELEMENT_TYPES[el2.type];
+                            return {...el2, state: el2.state === t.stateA ? t.stateB : t.stateA};
+                          }));
+                        }
+                      });
+                    })}
+                    <div style={{ height:1, background:T.border, margin:"2px 0" }} />
+                    <div style={{ padding:"4px 14px", fontSize:10, color:tx50, fontFamily:T.ui, textTransform:"uppercase", letterSpacing:"0.5px" }}>Linked Targets</div>
+                    {allLinkable.length === 0 && <div style={{ padding:"4px 14px", fontSize:10, color:tx35, fontFamily:T.ui }}>No linkable targets on map</div>}
+                    {allLinkable.map(lt => {
+                      const isLinked = linked.includes(lt.id);
+                      return (
+                        <button key={lt.id} onClick={() => {
+                          const newLinked = isLinked ? linked.filter(l => l !== lt.id) : [...linked, lt.id];
+                          updateIe({ linkedTargets: newLinked });
+                        }}
+                          onMouseEnter={e => e.currentTarget.style.background=bg04} onMouseLeave={e => e.currentTarget.style.background="none"}
+                          style={{...menuBtnStyle, color: isLinked ? (T.green || "#5ee09a") : T.textMuted, fontSize:11}}>
+                          {isLinked ? "✓ " : "  "}{lt.label}
+                        </button>
+                      );
+                    })}
+                    <div style={{ height:1, background:T.border, margin:"2px 0" }} />
+                    {menuBtn("Remove", () => setInteractiveElements(p => p.filter((_, i) => i !== contextMenu.interactiveIdx)), T.crimson)}
+                  </React.Fragment>
+                ));
+              }
+
+              // Prop/object context menu
+              if (contextMenu.propId) {
+                const pk = props.find(p => p.id === contextMenu.propId);
+                if (!pk) return null;
+                const isBuiltin = !!pk.builtinId;
+                const isDestructible = pk.tags?.includes("destructible");
+                const allTags = ["moveable", "destructible", "climbable", "blocking", "interactable"];
+                return menuWrap(pk.name, (
+                  <React.Fragment>
+                    {menuBtn(pk.layer === "above" ? "Move Below Tokens" : "Move Above Tokens", () => updateProp(pk.id, { layer: pk.layer === "above" ? "below" : "above" }))}
+                    {menuBtn(pk.locked ? "Unlock" : "Lock Position", () => updateProp(pk.id, { locked: !pk.locked }))}
+                    {menuBtn("Rotate 45°", () => updateProp(pk.id, { rotation: (pk.rotation || 0) + 45 }))}
+                    {/* Object state cycling for built-in destructible objects */}
+                    {isBuiltin && isDestructible && (
+                      <React.Fragment>
+                        <div style={{ height:1, background:T.border, margin:"2px 0" }} />
+                        <div style={{ padding:"4px 14px", fontSize:10, color:tx50, fontFamily:T.ui, textTransform:"uppercase", letterSpacing:"0.5px" }}>State</div>
+                        {["intact", "damaged", "destroyed"].map(s => (
+                          <button key={s} onClick={() => { updateProp(pk.id, { objectState: s }); setContextMenu(null); }}
+                            onMouseEnter={e => e.currentTarget.style.background=bg04} onMouseLeave={e => e.currentTarget.style.background="none"}
+                            style={{...menuBtnStyle, color: (pk.objectState || "intact") === s ? (T.gold || "#e8940a") : T.textMuted, fontWeight: (pk.objectState || "intact") === s ? 700 : 400, fontSize:11}}>
+                            {s === "intact" ? "Intact" : s === "damaged" ? "Damaged" : "Destroyed"}
+                          </button>
+                        ))}
+                      </React.Fragment>
+                    )}
+                    {/* Tag toggles for built-in objects */}
+                    {isBuiltin && (
+                      <React.Fragment>
+                        <div style={{ height:1, background:T.border, margin:"2px 0" }} />
+                        <div style={{ padding:"4px 14px", fontSize:10, color:tx50, fontFamily:T.ui, textTransform:"uppercase", letterSpacing:"0.5px" }}>Tags</div>
+                        {allTags.map(tag => {
+                          const has = pk.tags?.includes(tag);
+                          return (
+                            <button key={tag} onClick={() => {
+                              const newTags = has ? (pk.tags || []).filter(t => t !== tag) : [...(pk.tags || []), tag];
+                              updateProp(pk.id, { tags: newTags });
+                            }}
+                              onMouseEnter={e => e.currentTarget.style.background=bg04} onMouseLeave={e => e.currentTarget.style.background="none"}
+                              style={{...menuBtnStyle, color: has ? (T.green || "#5ee09a") : T.textMuted, fontSize:11}}>
+                              {has ? "✓ " : "  "}{tag}
+                            </button>
+                          );
+                        })}
+                      </React.Fragment>
+                    )}
+                    <div style={{ height:1, background:T.border, margin:"2px 0" }} />
+                    {menuBtn("Remove", () => removeProp(pk.id), T.crimson)}
+                  </React.Fragment>
+                ));
+              }
+              return null;
             })()}
 
             {/* Token command popup — hidden during ability targeting so canvas gets clicks */}
@@ -11539,7 +12354,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
 
               {/* ── Group 1: Draw Sub-tools (contextual, only in draw mode) ── */}
               {mode === "draw" && drawToolDefs.map(dt => (
-                <button key={dt.id} onClick={() => { setDrawTool(dt.id); setWallStart(null); setWallPreview(null); }} title={dt.label}
+                <button key={dt.id} onClick={() => { setDrawTool(dt.id); setWallStart(null); setWallPreview(null); }} title={dt.label + (dt.hotkey ? " [" + dt.hotkey + "]" : "")}
                   onMouseEnter={e => tbHover(e, drawTool === dt.id)}
                   onMouseLeave={e => tbLeave(e, drawTool === dt.id)}
                   style={tbBtnStyle(drawTool === dt.id, "gold")}>
@@ -11551,6 +12366,25 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               {mode === "draw" && drawTool === "terrain" && (
                 <React.Fragment>
                   <div style={{ width:32, height:1, background:bg06, margin:"4px 0" }} />
+                  {/* Brush size + Fill toggle */}
+                  <div style={{ display:"flex", gap:2, flexWrap:"wrap", justifyContent:"center", marginBottom:4 }}>
+                    {[1,2,3,5].map(sz => (
+                      <button key={sz} onClick={() => { setTerrainBrushSize(sz); setTerrainFillMode(false); }}
+                        style={{ width:20, height:20, display:"flex", alignItems:"center", justifyContent:"center",
+                          background: !terrainFillMode && terrainBrushSize === sz ? "rgba(255,200,20,0.3)" : "transparent",
+                          border: !terrainFillMode && terrainBrushSize === sz ? "1px solid rgba(255,200,20,0.5)" : "1px solid "+bd08,
+                          borderRadius:5, cursor:"pointer", fontSize:8, fontFamily:T.ui, color:T.text, fontWeight:600 }}>
+                        {sz}
+                      </button>
+                    ))}
+                    <button onClick={() => setTerrainFillMode(!terrainFillMode)} title="Flood Fill"
+                      style={{ width:20, height:20, display:"flex", alignItems:"center", justifyContent:"center",
+                        background: terrainFillMode ? "rgba(100,200,255,0.3)" : "transparent",
+                        border: terrainFillMode ? "1px solid rgba(100,200,255,0.5)" : "1px solid "+bd08,
+                        borderRadius:5, cursor:"pointer", fontSize:9, fontFamily:T.ui, color:T.text, fontWeight:700 }}>
+                      F
+                    </button>
+                  </div>
                   <div style={{ maxHeight:200, overflowY:"auto", display:"flex", flexDirection:"column", gap:2, scrollbarWidth:"thin", scrollbarColor:"rgba(255,255,255,0.08) transparent" }}>
                     {Object.entries(TERRAIN_TYPES).map(([key, terrain]) => (
                       <button key={key} onClick={() => setSelectedTerrain(key)} title={terrain.label + " (cost: " + terrain.cost + ")"}
@@ -11565,6 +12399,144 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                         <span>{terrain.icon || terrain.label.substring(0,1)}</span>
                       </button>
                     ))}
+                  </div>
+                </React.Fragment>
+              )}
+
+              {/* ── Elevation sub-panel ── */}
+              {mode === "draw" && drawTool === "elevation" && (
+                <React.Fragment>
+                  <div style={{ width:32, height:1, background:bg06, margin:"4px 0" }} />
+                  <div style={{ display:"flex", gap:2, flexWrap:"wrap", justifyContent:"center", marginBottom:4 }}>
+                    {[1,2,3,5].map(sz => (
+                      <button key={sz} onClick={() => setTerrainBrushSize(sz)}
+                        style={{ width:20, height:20, display:"flex", alignItems:"center", justifyContent:"center",
+                          background: terrainBrushSize === sz ? "rgba(100,200,255,0.3)" : "transparent",
+                          border: terrainBrushSize === sz ? "1px solid rgba(100,200,255,0.5)" : "1px solid "+bd08,
+                          borderRadius:5, cursor:"pointer", fontSize:8, fontFamily:T.ui, color:T.text, fontWeight:600 }}>
+                        {sz}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
+                    {[0,1,2,3,4,5].map(h => (
+                      <button key={h} onClick={() => setSelectedElevation(h)}
+                        style={{
+                          width:tbBtnW, height:24, display:"flex", alignItems:"center", justifyContent:"center", gap:4,
+                          background: selectedElevation === h ? `rgba(100,180,255,${0.15 + h*0.06})` : "transparent",
+                          border: selectedElevation === h ? "1px solid rgba(100,180,255,0.5)" : "none",
+                          borderRadius:6, cursor:"pointer", fontSize:10, fontFamily:T.ui, color:T.text, fontWeight:600 }}>
+                        <span style={{ fontSize:8, opacity:0.6 }}>H</span>{h * 5}ft
+                      </button>
+                    ))}
+                  </div>
+                </React.Fragment>
+              )}
+
+              {/* ── Room tool sub-panel ── */}
+              {mode === "draw" && drawTool === "room" && (
+                <React.Fragment>
+                  <div style={{ width:32, height:1, background:bg06, margin:"4px 0" }} />
+                  <button onClick={() => setRoomShape("rect")}
+                    style={{ width:tbBtnW, height:28, display:"flex", alignItems:"center", justifyContent:"center",
+                      background: roomShape === "rect" ? "rgba(181,116,255,0.15)" : "transparent",
+                      border: roomShape === "rect" ? "1px solid rgba(181,116,255,0.4)" : "none",
+                      borderRadius:6, cursor:"pointer", fontSize:9, fontFamily:T.ui, color:T.text, fontWeight:600 }}>
+                    Rect
+                  </button>
+                  <div style={{ width:32, height:1, background:bg06, margin:"2px 0" }} />
+                  <button onClick={() => setRoomFillTerrain(!roomFillTerrain)} title="Fill interior with terrain"
+                    style={{ width:tbBtnW, height:24, display:"flex", alignItems:"center", justifyContent:"center",
+                      background: roomFillTerrain ? "rgba(255,200,20,0.2)" : "transparent",
+                      border: roomFillTerrain ? "1px solid rgba(255,200,20,0.4)" : "1px solid "+bd08,
+                      borderRadius:6, cursor:"pointer", fontSize:8, fontFamily:T.ui, color:T.text, fontWeight:600 }}>
+                    Fill
+                  </button>
+                </React.Fragment>
+              )}
+
+              {/* ── Objects library sub-panel ── */}
+              {mode === "draw" && drawTool === "objects" && (
+                <React.Fragment>
+                  <div style={{ width:32, height:1, background:bg06, margin:"4px 0" }} />
+                  <div style={{ maxHeight:280, overflowY:"auto", display:"flex", flexDirection:"column", gap:2, scrollbarWidth:"thin", scrollbarColor:"rgba(255,255,255,0.08) transparent" }}>
+                    {BUILTIN_OBJECT_CATEGORIES.map(cat => (
+                      <React.Fragment key={cat}>
+                        <div style={{ fontSize:7, fontFamily:T.ui, color:tx50, textTransform:"uppercase", letterSpacing:"0.5px", padding:"3px 4px", opacity:0.7 }}>{cat}</div>
+                        {BUILTIN_OBJECTS.filter(o => o.category === cat).map(obj => (
+                          <button key={obj.id} onClick={() => { placingObjectRef.current = obj; }}
+                            title={obj.name + " — " + obj.tags.join(", ")}
+                            style={{
+                              width:tbBtnW, height:28, display:"flex", alignItems:"center", justifyContent:"center",
+                              background: placingObjectRef.current?.id === obj.id ? "rgba(218,165,32,0.2)" : "transparent",
+                              border:"none", borderRadius:6, cursor:"pointer", fontSize:9, fontFamily:T.ui, color:T.text, fontWeight:600,
+                              transition:"all 0.12s" }}>
+                            <span style={{ width:12, height:12, borderRadius:3, background:obj.color, display:"inline-block", marginRight:4 }} />
+                            <span style={{ fontSize:8, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap", maxWidth:30 }}>{obj.name.substring(0,5)}</span>
+                          </button>
+                        ))}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                </React.Fragment>
+              )}
+
+              {/* ── Hazard sub-panel ── */}
+              {mode === "draw" && drawTool === "hazard" && (
+                <React.Fragment>
+                  <div style={{ width:32, height:1, background:bg06, margin:"4px 0" }} />
+                  <div style={{ display:"flex", gap:2, flexWrap:"wrap", justifyContent:"center", marginBottom:4 }}>
+                    {[1,2,3,4].map(r => (
+                      <button key={r} onClick={() => setHazardRadius(r)}
+                        style={{ width:20, height:20, display:"flex", alignItems:"center", justifyContent:"center",
+                          background: hazardRadius === r ? "rgba(255,100,20,0.3)" : "transparent",
+                          border: hazardRadius === r ? "1px solid rgba(255,100,20,0.5)" : "1px solid "+bd08,
+                          borderRadius:5, cursor:"pointer", fontSize:8, fontFamily:T.ui, color:T.text, fontWeight:600 }}>
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ maxHeight:200, overflowY:"auto", display:"flex", flexDirection:"column", gap:2, scrollbarWidth:"thin", scrollbarColor:"rgba(255,255,255,0.08) transparent" }}>
+                    {Object.entries(HAZARD_TYPES).map(([key, ht]) => (
+                      <button key={key} onClick={() => setSelectedHazardType(key)} title={ht.label + (ht.damage ? " — " + ht.damage + " " + ht.damageType : "") + (ht.condition ? " (" + ht.condition + ")" : "")}
+                        onMouseEnter={e => { if (selectedHazardType !== key) e.currentTarget.style.background=bg06; }}
+                        onMouseLeave={e => { if (selectedHazardType !== key) e.currentTarget.style.background="transparent"; }}
+                        style={{
+                          width:tbBtnW, height:28, display:"flex", alignItems:"center", justifyContent:"center",
+                          background: selectedHazardType === key ? ht.color : "transparent",
+                          border:"none", borderRadius:8, cursor:"pointer", transition:"all 0.15s",
+                          fontSize:10, fontFamily:T.ui, color:T.text, fontWeight:600,
+                        }}>
+                        <span>{ht.icon}</span>
+                      </button>
+                    ))}
+                  </div>
+                </React.Fragment>
+              )}
+
+              {/* ── Interactive element sub-panel ── */}
+              {mode === "draw" && drawTool === "interact" && (
+                <React.Fragment>
+                  <div style={{ width:32, height:1, background:bg06, margin:"4px 0" }} />
+                  <div style={{ display:"flex", flexDirection:"column", gap:2 }}>
+                    {Object.entries(INTERACTIVE_ELEMENT_TYPES).map(([key, iet]) => (
+                      <button key={key} onClick={() => setSelectedInteractiveType(key)} title={iet.label}
+                        onMouseEnter={e => { if (selectedInteractiveType !== key) e.currentTarget.style.background=bg06; }}
+                        onMouseLeave={e => { if (selectedInteractiveType !== key) e.currentTarget.style.background="transparent"; }}
+                        style={{
+                          width:tbBtnW, height:28, display:"flex", alignItems:"center", justifyContent:"center", gap:3,
+                          background: selectedInteractiveType === key ? "rgba(65,105,225,0.2)" : "transparent",
+                          border: selectedInteractiveType === key ? "1px solid rgba(65,105,225,0.4)" : "none",
+                          borderRadius:8, cursor:"pointer", transition:"all 0.15s",
+                          fontSize:9, fontFamily:T.ui, color:T.text, fontWeight:600,
+                        }}>
+                        <span style={{ fontSize:10 }}>{iet.icon}</span>
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ width:32, height:1, background:bg06, margin:"4px 0" }} />
+                  <div style={{ padding:"2px 3px", fontSize:7, color:tx35, fontFamily:T.ui, textAlign:"center", lineHeight:1.3 }}>
+                    Right-click to link to doors, hazards, etc.
                   </div>
                 </React.Fragment>
               )}
@@ -11773,6 +12745,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             <div style={{ display:"flex", gap:3, flexShrink:0, padding:"6px 6px 0", background:tabBarBg }}>
               {[
                 {id:"map",label:"Map",icon:Globe, roles:["dm"]},
+                {id:"layers",label:"Layers",icon:Layers, roles:["dm"]},
                 {id:"inspect",label:"Inspect",icon:Eye, roles:["dm","player"]},
                 {id:"combat",label:"Combat",icon:Swords, roles:["dm","player"]},
                 {id:"tokens",label:"Tokens",icon:Users, roles:["dm"]},
@@ -13319,6 +14292,56 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     </button>
                   </div>
                 )}
+              </div>
+            </div>
+          )}
+
+          {/* ══ LAYERS TAB ══ */}
+          {rightPanelTab === "layers" && viewRole === "dm" && (
+            <div style={{ padding: "16px 20px 18px" }}>
+              <div style={{ fontFamily: T.ui, fontSize: 8, letterSpacing: "1.5px", textTransform: "uppercase", color: "rgba(212,67,58,0.6)", marginBottom: 14, fontWeight:600 }}>Layers</div>
+              {[
+                { id: "terrain", label: "Background", desc: "Terrain, elevation", icon: Mountain },
+                { id: "structures", label: "Structures", desc: "Walls, doors", icon: Lock },
+                { id: "objects", label: "Objects", desc: "Props, built-in objects", icon: Package },
+                { id: "tokens", label: "Tokens", desc: "PCs, NPCs, monsters", icon: Users },
+                { id: "effects", label: "Effects", desc: "Hazards, spell effects", icon: AlertTriangle },
+                { id: "atmosphere", label: "Atmosphere", desc: "Fog, drawings", icon: Eye },
+              ].map(layer => {
+                const visible = layerVisibility[layer.id];
+                const locked = layerLocked[layer.id];
+                const LayerIcon = layer.icon;
+                return (
+                  <div key={layer.id} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 12px", marginBottom:4, background: lm("rgba(255,255,255,0.03)","rgba(0,0,0,0.04)"), borderRadius:8, border:"1px solid rgba(255,255,255,0.03)" }}>
+                    {LayerIcon && <LayerIcon size={14} color={visible ? (T.text || "#e8dcc8") : (T.textFaint || "#555")} />}
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontFamily:T.ui, fontSize:12, color: visible ? T.text : T.textFaint, fontWeight:600, letterSpacing:"0.3px" }}>{layer.label}</div>
+                      <div style={{ fontFamily:T.ui, fontSize:9, color:tx35, letterSpacing:"0.2px" }}>{layer.desc}</div>
+                    </div>
+                    <button onClick={() => setLayerVisibility(p => ({...p, [layer.id]: !visible}))} title={visible ? "Hide" : "Show"}
+                      style={{ background:"none", border:"none", cursor:"pointer", padding:4, borderRadius:4 }}>
+                      {visible
+                        ? React.createElement(Eye, { size:14, color: T.blue || "#58aaff" })
+                        : React.createElement(EyeOff, { size:14, color: T.textFaint || "#555" })}
+                    </button>
+                    <button onClick={() => setLayerLocked(p => ({...p, [layer.id]: !locked}))} title={locked ? "Unlock" : "Lock"}
+                      style={{ background:"none", border:"none", cursor:"pointer", padding:4, borderRadius:4 }}>
+                      {locked
+                        ? React.createElement(Lock, { size:14, color: T.crimson || "#d4433a" })
+                        : React.createElement(Unlock, { size:14, color: T.textFaint || "#555" })}
+                    </button>
+                  </div>
+                );
+              })}
+              <div style={{ marginTop:12 }}>
+                <button onClick={() => setLayerVisibility({ terrain:true, structures:true, objects:true, tokens:true, effects:true, atmosphere:true })}
+                  style={{ padding:"6px 12px", background:"rgba(88,170,255,0.1)", border:"1px solid rgba(88,170,255,0.25)", borderRadius:6, cursor:"pointer", fontSize:10, fontFamily:T.ui, color:T.blue || "#58aaff", marginRight:6 }}>
+                  Show All
+                </button>
+                <button onClick={() => setLayerLocked({ terrain:false, structures:false, objects:false, tokens:false, effects:false, atmosphere:false })}
+                  style={{ padding:"6px 12px", background:"rgba(94,224,154,0.1)", border:"1px solid rgba(94,224,154,0.25)", borderRadius:6, cursor:"pointer", fontSize:10, fontFamily:T.ui, color:T.green || "#5ee09a" }}>
+                  Unlock All
+                </button>
               </div>
             </div>
           )}
