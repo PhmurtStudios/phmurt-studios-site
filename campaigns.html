@@ -3748,6 +3748,17 @@ const cmDeepClean = (obj) => {
   return obj;
 };
 
+// SECURITY (V-052): Safe object merge that rejects prototype pollution keys
+const _POISON_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
+const cmSafeMerge = (target, source) => {
+  if (!source || typeof source !== 'object') return target;
+  for (const key of Object.keys(source)) {
+    if (_POISON_KEYS.has(key)) continue;
+    target[key] = source[key];
+  }
+  return target;
+};
+
 const cmExpandFromCloud = (data) => {
   if (!data || !data._compactVersion) return data; // Not compacted, return as-is
   const d = cmClone(data);
@@ -3770,7 +3781,7 @@ const cmExpandFromCloud = (data) => {
           if (d._regionDiffs) {
             d._regionDiffs.forEach(diff => {
               const idx = d.regions.findIndex(r => r.id === diff.id);
-              if (idx >= 0) Object.assign(d.regions[idx], diff);
+              if (idx >= 0) cmSafeMerge(d.regions[idx], diff);
               else d.regions.push(diff); // new user-added region
             });
           }
@@ -3787,7 +3798,7 @@ const cmExpandFromCloud = (data) => {
           if (d._factionDiffs) {
             d._factionDiffs.forEach(diff => {
               const idx = d.factions.findIndex(f => f.id === diff.id);
-              if (idx >= 0) Object.assign(d.factions[idx], diff);
+              if (idx >= 0) cmSafeMerge(d.factions[idx], diff);
               else d.factions.push(diff);
             });
           }
@@ -3800,7 +3811,7 @@ const cmExpandFromCloud = (data) => {
           if (d._npcDiffs) {
             d._npcDiffs.forEach(diff => {
               const idx = d.npcs.findIndex(n => n.id === diff.id);
-              if (idx >= 0) Object.assign(d.npcs[idx], diff);
+              if (idx >= 0) cmSafeMerge(d.npcs[idx], diff);
               else d.npcs.push(diff);
             });
           }
@@ -5479,9 +5490,10 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
           <SectionTitle icon={Wand2}>Quick Tools</SectionTitle>
           <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:6 }}>
             {[
-              { label:"NPC Gen", icon:Users, accent: T.moveBlue, url:`generators.html?export=campaign&campaignId=${activeCampaignId}` },
-              { label:"Encounter", icon:Swords, accent: T.green, url:`generators.html?export=campaign&campaignId=${activeCampaignId}&type=encounter` },
-              { label:"Treasure", icon:Package, accent:T.gold, url:`generators.html?export=campaign&campaignId=${activeCampaignId}&type=treasure` },
+              // SECURITY (V-056): Encode campaign ID in URL params to prevent query injection
+              { label:"NPC Gen", icon:Users, accent: T.moveBlue, url:`generators.html?export=campaign&campaignId=${encodeURIComponent(activeCampaignId||'')}` },
+              { label:"Encounter", icon:Swords, accent: T.green, url:`generators.html?export=campaign&campaignId=${encodeURIComponent(activeCampaignId||'')}&type=encounter` },
+              { label:"Treasure", icon:Package, accent:T.gold, url:`generators.html?export=campaign&campaignId=${encodeURIComponent(activeCampaignId||'')}&type=treasure` },
               { label:"Compendium", icon:BookOpen, accent:"#c792ea", url:"compendium.html" },
               { label:"Grimoire", icon:Wand2, accent:"#f2917c", url:"grimoire.html" },
               { label:"Character", icon:FileText, accent:T.gold, url:"character-builder.html" },

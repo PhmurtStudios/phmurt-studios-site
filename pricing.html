@@ -666,7 +666,8 @@
         if (sess.isSubscribed && planType !== 'lifetime') {
           button.textContent = 'Opening\u2026';
           button.disabled = true;
-          PhmurtDB.manageSubscription(window.location.href).catch(function (err) {
+          // SECURITY (V-055): Use origin + pathname only to prevent open redirect via query params
+          PhmurtDB.manageSubscription(window.location.origin + window.location.pathname).catch(function (err) {
             console.error('Billing portal error:', err);
             showToast('Could not open billing portal. Please try again.', 'error');
             button.textContent = 'Manage Subscription';
@@ -687,7 +688,8 @@
           interval = 'lifetime';
         }
 
-        PhmurtDB.startSubscription(window.location.href, interval).catch(function (err) {
+        // SECURITY (V-055): Use origin + pathname only to prevent open redirect
+        PhmurtDB.startSubscription(window.location.origin + window.location.pathname, interval).catch(function (err) {
           isCheckoutInProgress = false;
           button.textContent = originalText;
           button.disabled = false;
@@ -773,7 +775,8 @@
           isCheckoutInProgress = true;
           // SECURITY: Validate plan before passing to API
           var plan = _autoCheckout; // Use the param directly since we validated it above
-          PhmurtDB.startSubscription(window.location.href, plan).catch(function (err) {
+          // SECURITY (V-055): Use origin + pathname only to prevent open redirect
+          PhmurtDB.startSubscription(window.location.origin + window.location.pathname, plan).catch(function (err) {
             isCheckoutInProgress = false;
             ctaEl.textContent = originalProText;
             ctaEl.disabled = false;

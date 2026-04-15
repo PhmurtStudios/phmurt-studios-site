@@ -5940,7 +5940,7 @@ function updateMiniSummary(){
   if(C.race) lines.push({l:'Race',v:DND_DATA.races[C.race].name+(C.subrace?` (${(DND_DATA.races[C.race].subraces||[]).find(s=>s.id===C.subrace)?.name||C.subrace})`:'')});
   if(C.cls) lines.push({l:'Class',v:DND_DATA.classes[C.cls].name});
   if(C.background) lines.push({l:'Background',v:DND_DATA.backgrounds[C.background].name});
-  el.innerHTML=lines.map(l=>`<div class="cb-mini-stat"><span class="cb-mini-stat-label">${l.l}</span><span class="cb-mini-stat-val">${l.v}</span></div>`).join('');
+  el.innerHTML=lines.map(l=>`<div class="cb-mini-stat"><span class="cb-mini-stat-label">${escapeHtml(l.l)}</span><span class="cb-mini-stat-val">${escapeHtml(l.v)}</span></div>`).join('');
 }
 
 // ══════════════════════════════════════════
@@ -6047,13 +6047,25 @@ var HOMEBREW_ENTITIES_KEY = 'phmurt_homebrew_entities';
 // ── Input sanitization for homebrew entities ──────────────────
 // Strips HTML tags from all string fields to prevent stored XSS.
 // Applied both on save (defense at write) and on load (defense at read).
+// SECURITY (V-057): Harden homebrew string sanitization against XSS bypasses.
+// Strips HTML tags, HTML entities that decode to tags, javascript: URIs, and event handlers.
 function _sanitizeHBStrings(obj) {
   if (obj == null) return obj;
-  if (typeof obj === 'string') return obj.replace(/<[^>]*>/g, '');
+  if (typeof obj === 'string') {
+    var s = obj;
+    s = s.replace(/&#(\d+);?/g, function(m, code) { var c = String.fromCharCode(parseInt(code,10)); return (c === '<' || c === '>' || c === '"' || c === "'") ? '' : c; });
+    s = s.replace(/&#x([0-9a-f]+);?/gi, function(m, hex) { var c = String.fromCharCode(parseInt(hex,16)); return (c === '<' || c === '>' || c === '"' || c === "'") ? '' : c; });
+    s = s.replace(/<[^>]*>/g, '');
+    s = s.replace(/\b(javascript|vbscript|data)\s*:/gi, '$1');
+    s = s.replace(/\bon\w+\s*=/gi, '');
+    return s;
+  }
   if (Array.isArray(obj)) return obj.map(_sanitizeHBStrings);
   if (typeof obj === 'object') {
     var out = {};
     for (var k in obj) {
+      // SECURITY: Reject prototype pollution keys
+      if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
       if (Object.prototype.hasOwnProperty.call(obj, k)) out[k] = _sanitizeHBStrings(obj[k]);
     }
     return out;

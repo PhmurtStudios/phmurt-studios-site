@@ -1869,6 +1869,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
   const [reactionPrompt, setReactionPrompt] = useState(null); // { attackerToken, moverToken, resolve }
   const reactionPromptResolveRef = useRef(null);
 
+  // ── Legendary Resistance prompt ──
+  const [legendaryResistPrompt, setLegendaryResistPrompt] = useState(null);
+  // { tokenId, tokenName, saveAbility, rolled, dc, remaining, max, conditionsToRemove, onUse, onDecline }
+
   // ── Floating combat text helper — spawns animated damage numbers above tokens ──
   const spawnFloatingTextForToken = useCallback((tokenId, type, opts) => {
     if (typeof window.CombatFlowUI === "undefined") return;
@@ -1929,6 +1933,37 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         break;
     }
   }, [tokens]);
+
+  // ── Helper: convert engine damage array to CFUI breakdown format ──
+  const buildDamageBreakdown = (engineDamageArray) => {
+    if (!Array.isArray(engineDamageArray) || engineDamageArray.length === 0) return [];
+    return engineDamageArray.map(comp => {
+      const notes = (Array.isArray(comp.damageNotes) ? comp.damageNotes.join(" ") : String(comp.damageNotes || "")).toLowerCase();
+      let relation = "normal";
+      if (notes.includes("immune")) relation = "immune";
+      else if (notes.includes("vulnerable")) relation = "vulnerable";
+      else if (notes.includes("resistant")) relation = "resistant";
+      return {
+        type: comp.type || "untyped",
+        total: comp.totalBeforeReduction || comp.total || 0,
+        applied: comp.total != null ? comp.total : 0,
+        relation,
+      };
+    });
+  };
+
+  // ── Helper: damage type color lookup (local fallback if CFUI not loaded) ──
+  const DAMAGE_TYPE_COLORS = {
+    fire: "#ff4500", cold: "#00bfff", lightning: "#00e5ff", thunder: "#9c88ff",
+    acid: "#76ff03", poison: "#4caf50", necrotic: "#8b5cf6", radiant: "#ffd54f",
+    force: "#e040fb", psychic: "#ec407a", bludgeoning: "#bcaaa4", piercing: "#e0e0e0",
+    slashing: "#ef9a9a", healing: "#66bb6a", untyped: "#ffffff",
+  };
+  const getDmgColor = (type) => {
+    const CFUI = typeof window.CombatFlowUI !== "undefined" ? window.CombatFlowUI : null;
+    if (CFUI) return CFUI.getDamageConfig(type || "untyped").color;
+    return DAMAGE_TYPE_COLORS[(type || "untyped").toLowerCase()] || "#fff";
+  };
 
   const filteredMonsters = React.useMemo(() => {
     if (typeof window.SRD_MONSTERS === 'undefined') return [];
@@ -2137,6 +2172,49 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     return "normal";
   };
 
+  // ── Get detailed advantage/disadvantage sources for tooltip display ──
+  const getAttackAdvantageSources = (attacker, target, isRanged, combatOpts) => {
+    if (!attacker || !target) return { result: "normal", advantageSources: [], disadvantageSources: [] };
+
+    const attackerConds = new Set(getMergedConditionsForToken(attacker).map(c => c.toLowerCase()));
+    const targetConds = new Set(getMergedConditionsForToken(target).map(c => c.toLowerCase()));
+    const advSources = [];
+    const disSources = [];
+
+    // Condition-based advantage
+    if (!isRanged && targetConds.has("prone")) advSources.push("Target Prone (melee)");
+    if (targetConds.has("blinded")) advSources.push("Target Blinded");
+    if (targetConds.has("paralyzed")) advSources.push("Target Paralyzed");
+    if (targetConds.has("stunned")) advSources.push("Target Stunned");
+    if (targetConds.has("unconscious")) advSources.push("Target Unconscious");
+    if (targetConds.has("restrained")) advSources.push("Target Restrained");
+    if (attackerConds.has("invisible") || attackerConds.has("hidden")) advSources.push("Attacker Unseen");
+
+    // Condition-based disadvantage
+    if (attackerConds.has("blinded")) disSources.push("Attacker Blinded");
+    if (attackerConds.has("poisoned")) disSources.push("Attacker Poisoned");
+    if (attackerConds.has("restrained")) disSources.push("Attacker Restrained");
+    if (isRanged && targetConds.has("prone")) disSources.push("Target Prone (ranged)");
+    if (targetConds.has("invisible") || targetConds.has("hidden")) disSources.push("Target Unseen");
+
+    // Spatial sources from combatOpts
+    if (combatOpts) {
+      if (combatOpts.flanking) advSources.push("Flanking");
+      if (combatOpts.heightAdvantage === "advantage") advSources.push("High Ground");
+      if (combatOpts.heightAdvantage === "disadvantage") disSources.push("Low Ground");
+      if (combatOpts.targetDodging) disSources.push("Target Dodging");
+    }
+
+    const hasAdv = advSources.length > 0;
+    const hasDis = disSources.length > 0;
+    let result = "normal";
+    if (hasAdv && hasDis) result = "normal";
+    else if (hasAdv) result = "advantage";
+    else if (hasDis) result = "disadvantage";
+
+    return { result, advantageSources: advSources, disadvantageSources: disSources };
+  };
+
   const buildCombatEngineOptions = (targetToken, attackerToken) => {
     const lane = getLineCoverProfile(attackerToken, targetToken);
     const opts = {
@@ -2254,8 +2332,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           addCombatLogEntry({ type:"save", text: resolvedTarget.name + " FAILS concentration save (DC " + save.dc + ", rolled " + save.total + ") — " + (resolvedTarget.activeConcentrationSpell || "spell") + " ends!" });
           updateToken(resolvedTarget.id, { activeConcentrationSpell: null });
           removeTokenCondition(resolvedTarget.id, "Concentrating");
+          spawnFloatingTextForToken(resolvedTarget.id, "info", { text: "CONCENTRATION BROKEN!", color: "#ff4444" });
+          flashToken(resolvedTarget.id, "damage");
         } else {
           addCombatLogEntry({ type:"save", text: resolvedTarget.name + " maintains concentration (DC " + save.dc + ", rolled " + save.total + ")" });
+          spawnFloatingTextForToken(resolvedTarget.id, "info", { text: "Concentration held (DC " + save.dc + ")", color: "#5ee09a" });
         }
       }
     }
@@ -2375,12 +2456,12 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       const totalDmg = result.totalDamage + bonusDamage;
       const logLabel = bonusLabels.length > 0 ? " (" + bonusLabels.join(", ") + ")" : "";
       const dtype = r0.damage?.[0]?.type || "slashing";
-      addCombatLogEntry({ type: "attack", attacker: attacker.name, target: target.name, action: weaponName + logLabel, hit: true, damage: totalDmg, isCrit: r0.isCrit, roll: r0.attackRoll });
+      const oldPathBreakdown = buildDamageBreakdown(r0.damage);
+      addCombatLogEntry({ type: "attack", attacker: attacker.name, target: target.name, action: weaponName + logLabel, hit: true, damage: totalDmg, isCrit: r0.isCrit, roll: r0.attackRoll, damageBreakdown: oldPathBreakdown });
       applyAttackResultToTarget(targetId, target, totalDmg, dtype);
-      // Floating combat text + weapon-specific animation
-      spawnFloatingTextForToken(targetId, "damage", { total: totalDmg, damageType: dtype, isCrit: r0.isCrit });
+      // Floating combat text + weapon-specific animation (emitPlayModeVfx handles floating text)
       flashToken(targetId, "damage");
-      emitPlayModeVfx(attacker, target, { mode: "attack", actionName: weaponName, weaponName: weaponName, damageType: dtype, amount: totalDmg, isCrit: r0.isCrit, isRanged: !!(CE.isRangedWeapon ? CE.isRangedWeapon(weaponName) : isRangedWeapon(weaponName)) });
+      emitPlayModeVfx(attacker, target, { mode: "attack", actionName: weaponName, weaponName: weaponName, damageType: dtype, amount: totalDmg, isCrit: r0.isCrit, isRanged: !!(CE.isRangedWeapon ? CE.isRangedWeapon(weaponName) : isRangedWeapon(weaponName)), breakdown: oldPathBreakdown });
       // Special class animations
       const cls = (attacker.class || attacker.cls || "").toLowerCase();
       if (bonusLabels.some(l => l.includes("Sneak"))) triggerActionAnim("sneak_attack", attacker, target, "#6b2fa0");
@@ -2415,11 +2496,11 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           const extraTotalDmg = extraResult.totalDamage + extraBonusDamage;
           const extraLogLabel = extraBonusLabels.length > 0 ? " (" + extraBonusLabels.join(", ") + ")" : "";
           const extraDtype = extraAttack.damage?.[0]?.type || "slashing";
-          addCombatLogEntry({ type: "attack", attacker: attacker.name, target: target.name, action: weaponName + " (Extra Attack " + (i + 1) + ")" + extraLogLabel, hit: true, damage: extraTotalDmg, isCrit: extraAttack.isCrit, roll: extraAttack.attackRoll });
+          const extraBreakdown = buildDamageBreakdown(extraAttack.damage);
+          addCombatLogEntry({ type: "attack", attacker: attacker.name, target: target.name, action: weaponName + " (Extra Attack " + (i + 1) + ")" + extraLogLabel, hit: true, damage: extraTotalDmg, isCrit: extraAttack.isCrit, roll: extraAttack.attackRoll, damageBreakdown: extraBreakdown });
           applyAttackResultToTarget(targetId, target, extraTotalDmg, extraDtype);
-          spawnFloatingTextForToken(targetId, "damage", { total: extraTotalDmg, damageType: extraDtype, isCrit: extraAttack.isCrit });
           flashToken(targetId, "damage");
-          emitPlayModeVfx(attacker, target, { mode: "attack", actionName: weaponName + " (Extra Attack)", weaponName: weaponName, damageType: extraDtype, amount: extraTotalDmg, isCrit: extraAttack.isCrit, isRanged: !!(CE.isRangedWeapon ? CE.isRangedWeapon(weaponName) : isRangedWeapon(weaponName)) });
+          emitPlayModeVfx(attacker, target, { mode: "attack", actionName: weaponName + " (Extra Attack)", weaponName: weaponName, damageType: extraDtype, amount: extraTotalDmg, isCrit: extraAttack.isCrit, isRanged: !!(CE.isRangedWeapon ? CE.isRangedWeapon(weaponName) : isRangedWeapon(weaponName)), breakdown: extraBreakdown });
         } else if (extraAttack) {
           addCombatLogEntry({ type: "miss", attacker: attacker.name, target: target.name, action: weaponName + " (Extra Attack " + (i + 1) + ")", roll: extraAttack.attackRoll });
           spawnFloatingTextForToken(targetId, "miss", {});
@@ -2472,8 +2553,15 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         triggerActionAnim("critical_hit", actorToken, targetToken, "#ffd700");
       }
       triggerActionAnim(animType, actorToken, targetToken, opts.isCrit ? "#ffd700" : (opts.color || "#e0d0b0"));
-      // Floating combat text — use CFUI if loaded, otherwise inline fallback
-      if (CFUI && targetToken) {
+      // Floating combat text — use breakdown for per-type colors if available
+      if (CFUI && targetToken && opts.breakdown && opts.breakdown.length > 0) {
+        CFUI.spawnDamageText(target.x, target.y, {
+          miss: false, isCrit: !!opts.isCrit,
+          damageBreakdown: opts.breakdown,
+          totalDamage: opts.amount || 0,
+          damageType: damageType,
+        });
+      } else if (CFUI && targetToken) {
         if (opts.isCrit) CFUI.spawnFloatingText({ x: target.x, y: target.y - 20, text: "CRITICAL!", style: "crit", color: "#ffd54f", glow: "#ffab00" });
         if (opts.amount > 0) {
           const cfg = CFUI.getDamageConfig(damageType);
@@ -2586,15 +2674,16 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         if (seq.type === "attack" && seq.result) {
           if (seq.result.hit) {
             totalDmg += seq.result.totalDamage || 0;
-            addCombatLogEntry({ type: "attack", attacker: attacker.name, target: target.name, action: seq.action.name, hit: true, damage: seq.result.totalDamage, isCrit: seq.result.isCrit, roll: seq.result.attackRoll });
+            const seqBreakdown = buildDamageBreakdown(seq.result.damage);
+            addCombatLogEntry({ type: "attack", attacker: attacker.name, target: target.name, action: seq.action.name, hit: true, damage: seq.result.totalDamage, isCrit: seq.result.isCrit, roll: seq.result.attackRoll, damageBreakdown: seqBreakdown });
             pushCombatRoll(
               attacker.name + " \u2694 " + target.name + (seq.result.isCrit ? " CRITICAL!" : " HIT!"),
               "Attack: " + (seq.result.attackRoll?.details || "d20") + " + " + (seq.result.attackRoll?.modifier ?? "?") + " = " + (seq.result.attackRoll?.total ?? "?") + " vs AC " + (seq.result.attackRoll?.targetAC ?? target.ac ?? 10) + "  |  Damage: " + (seq.result.totalDamage || 0),
               seq.result.isCrit ? "crit" : "hit"
             );
-            // Trigger VFX via action animation system
+            // Trigger VFX with per-type damage breakdown
             const dtype = seq.result.damage?.[0]?.type || "slashing";
-            spawnFloatingTextForToken(targetId, "damage", { total: seq.result.totalDamage, damageType: dtype, isCrit: seq.result.isCrit });
+            spawnFloatingTextForToken(targetId, "damage", { total: seq.result.totalDamage, damageType: dtype, isCrit: seq.result.isCrit, breakdown: seqBreakdown });
             flashToken(targetId, "damage");
             { // Monster action VFX lookup
               const monsterAnimKey = (seq.action.name || "").trim();
@@ -2622,8 +2711,26 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           if (seq.result.damage) totalDmg += seq.result.damage;
           // Save VFX
           emitPlayModeVfx(attacker, target, { mode: "save", actionName: seq.action.name, saveSuccess: seq.result.save?.success, amount: seq.result.damage || 0, damageType: seq.parsed?.failDamage?.type || "force" });
+          const seqAppliedConds = [];
           if (seq.result.conditions?.length) {
-            seq.result.conditions.forEach(c => addTokenCondition(targetId, capitalizeString(c)));
+            seq.result.conditions.forEach(c => { addTokenCondition(targetId, capitalizeString(c)); seqAppliedConds.push(capitalizeString(c)); });
+          }
+          // Legendary Resistance for multiattack save sub-actions
+          if (!seq.result.save?.success && getLegendaryResistanceRemaining(target) > 0) {
+            const seqDmg = seq.result.damage || 0;
+            const seqHalfDmg = Math.floor(seqDmg / 2);
+            const seqPreHp = target.hp != null ? target.hp : (target.maxHp || 30);
+            promptLegendaryResistance(target, seq.parsed?.ability || "DEX", seq.result.save?.total || 0, seq.parsed?.dc || 10,
+              () => { // onUse: restore to half-damage, remove conditions
+                if (seqDmg > 0) {
+                  totalDmg = totalDmg - seqDmg + seqHalfDmg; // adjust accumulated damage
+                  const restoredHp = Math.max(0, Math.min(target.maxHp || 30, seqPreHp - seqHalfDmg));
+                  applyTokenVitalsUpdate(target, restoredHp);
+                }
+                seqAppliedConds.forEach(c => removeTokenCondition(targetId, c));
+              },
+              null
+            );
           }
         }
       });
@@ -2643,14 +2750,15 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       );
       if (result.results[0]?.hit) {
         const dtype = result.results[0].damage?.[0]?.type || "slashing";
-        addCombatLogEntry({ type: "attack", attacker: attacker.name, target: target.name, action: action.name, hit: true, damage: result.totalDamage, isCrit: result.results[0].isCrit, roll: result.results[0].attackRoll });
+        const singleBreakdown = buildDamageBreakdown(result.results[0].damage);
+        addCombatLogEntry({ type: "attack", attacker: attacker.name, target: target.name, action: action.name, hit: true, damage: result.totalDamage, isCrit: result.results[0].isCrit, roll: result.results[0].attackRoll, damageBreakdown: singleBreakdown });
         pushCombatRoll(
           attacker.name + " \u2694 " + target.name + (result.results[0].isCrit ? " CRITICAL!" : " HIT!"),
           "Attack: " + (result.results[0].attackRoll?.details || "d20") + " + " + (result.results[0].attackRoll?.modifier ?? "?") + " = " + (result.results[0].attackRoll?.total ?? "?") + " vs AC " + (result.results[0].attackRoll?.targetAC ?? target.ac ?? 10) + "  |  Damage: " + (result.totalDamage || 0) + " " + dtype,
           result.results[0].isCrit ? "crit" : "hit"
         );
         applyAttackResultToTarget(targetId, target, result.totalDamage, dtype);
-        spawnFloatingTextForToken(targetId, "damage", { total: result.totalDamage, damageType: dtype, isCrit: result.results[0].isCrit });
+        spawnFloatingTextForToken(targetId, "damage", { total: result.totalDamage, damageType: dtype, isCrit: result.results[0].isCrit, breakdown: singleBreakdown });
         flashToken(targetId, "damage");
         { // Monster action VFX
           const monsterAnimKey = (action.name || "").trim();
@@ -2720,14 +2828,31 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         const r = saveResult.results[0];
         addCombatLogEntry({ type: "save", attacker: attacker.name, target: target.name, action: action.name, success: r.save?.success, damage: r.damage, conditions: r.conditions, dc: saveResult.parsed?.dc, ability: saveResult.parsed?.ability });
         if (r.damage > 0) applyAttackResultToTarget(targetId, target, r.damage, saveResult.parsed?.failDamage?.type || "force");
+        const singleSaveConds = [];
         if (r.conditions?.length) {
-          r.conditions.forEach(c => addTokenCondition(targetId, capitalizeString(c)));
+          r.conditions.forEach(c => { addTokenCondition(targetId, capitalizeString(c)); singleSaveConds.push(capitalizeString(c)); });
         }
         // Save action VFX
         emitPlayModeVfx(attacker, target, { mode: "save", actionName: action.name, saveSuccess: r.save?.success, amount: r.damage || 0, damageType: saveResult.parsed?.failDamage?.type || "force" });
         { // Monster-specific VFX for save actions
           const mavfx = typeof MONSTER_ACTION_VFX !== "undefined" && MONSTER_ACTION_VFX[(action.name || "").trim()];
           if (mavfx) triggerActionAnim(mavfx.type || "breath_weapon", attacker, target, mavfx.color || "#f06858");
+        }
+        // Legendary Resistance for single save actions
+        if (!r.save?.success && getLegendaryResistanceRemaining(target) > 0) {
+          const saveDmg = r.damage || 0;
+          const saveHalfDmg = Math.floor(saveDmg / 2);
+          const savePreHp = target.hp != null ? target.hp : (target.maxHp || 30);
+          promptLegendaryResistance(target, saveResult.parsed?.ability || "DEX", r.save?.total || 0, saveResult.parsed?.dc || 10,
+            () => { // onUse: restore to half-damage, remove conditions
+              if (saveDmg > 0) {
+                const restoredHp = Math.max(0, Math.min(target.maxHp || 30, savePreHp - saveHalfDmg));
+                applyTokenVitalsUpdate(target, restoredHp);
+              }
+              singleSaveConds.forEach(c => removeTokenCondition(targetId, c));
+            },
+            null
+          );
         }
       }
     }
@@ -4427,6 +4552,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       let totalHealing = 0;
 
       hitTokens.forEach(t => {
+        // Check legendary resistance availability for this target
+        const tLRRemaining = getLegendaryResistanceRemaining(t);
+        const tHasLR = tLRRemaining > 0 && viewRole === "dm";
+
         // Roll damage PER TARGET (fresh roll each time) — uses upcast damage
         if ((spell.applyEffect === "damage" || spell.damage) && (upcastDamage || spell.damage)) {
           const dmgExpr = (upcastDamage || spell.damage || "1d6").split(" ")[0] || "1d6";
@@ -4439,6 +4568,18 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             if (saveResult.success) {
               dmg = Math.floor(dmg / 2);
               saved = true;
+            } else if (tHasLR) {
+              // Offer legendary resistance — apply full damage now, can undo via modal
+              const fullDmg = dmg;
+              const halfDmg = Math.floor(dmg / 2);
+              const preDmgHp = t.hp != null ? t.hp : (t.maxHp || 30);
+              promptLegendaryResistance(t, spell.save, saveResult.total, spellDC,
+                () => { // onUse: restore to half-damage result
+                  const restoredHp = Math.min(t.maxHp || 30, preDmgHp - halfDmg);
+                  applyTokenVitalsUpdate(t, Math.max(0, restoredHp));
+                },
+                null // onDecline: damage already applied
+              );
             }
           }
 
@@ -4477,6 +4618,14 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             const saveResult = rollSave(spellDC, spell.save, t);
             if (saveResult.success) {
               applyConditions = false;
+            } else if (tHasLR && !legendaryResistPrompt) {
+              // Offer LR for condition-only spells
+              promptLegendaryResistance(t, spell.save, saveResult.total, spellDC,
+                () => { // onUse: remove conditions that were just applied
+                  (spell.conditions || []).forEach(cond => removeTokenCondition(t.id, cond));
+                },
+                null
+              );
             }
           }
           if (applyConditions) {
@@ -4673,6 +4822,54 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
     const text = String(action?.name || "") + " " + String(action?.desc || "");
     const match = text.match(/Costs?\s*(\d+)\s*Actions?/i);
     return Math.max(1, parseInt(match?.[1] || "1", 10) || 1);
+  };
+
+  // ── Legendary Resistance helpers ──
+  const getLegendaryResistanceMax = (token) => {
+    if (!token?.monsterData) return 0;
+    const CE = typeof window.CombatEngine !== "undefined" ? window.CombatEngine : null;
+    if (CE && CE.parseLegendaryResistance) return CE.parseLegendaryResistance(token.monsterData) || 0;
+    // Fallback parse
+    const sources = [...(token.monsterData.special_abilities || []), ...(token.monsterData.traits || [])];
+    for (const t of sources) {
+      const m = ((t.name || "") + " " + (t.desc || "")).match(/legendary\s+resistance\s*\((\d+)\/day\)/i);
+      if (m) return parseInt(m[1], 10);
+    }
+    return 0;
+  };
+
+  const getLegendaryResistanceRemaining = (token) => {
+    const max = getLegendaryResistanceMax(token);
+    if (!max) return 0;
+    const raw = token.legendaryResistanceRemaining;
+    return raw != null ? Math.max(0, Math.min(max, Number(raw))) : max;
+  };
+
+  const promptLegendaryResistance = (token, saveAbility, rolled, dc, onUse, onDecline) => {
+    const remaining = getLegendaryResistanceRemaining(token);
+    const max = getLegendaryResistanceMax(token);
+    if (remaining <= 0 || viewRole !== "dm") { if (onDecline) onDecline(); return; }
+    setLegendaryResistPrompt({
+      tokenId: token.id, tokenName: token.name, saveAbility, rolled, dc,
+      remaining, max, onUse, onDecline,
+    });
+  };
+
+  const useLegendaryResistance = () => {
+    if (!legendaryResistPrompt) return;
+    const { tokenId, remaining, onUse } = legendaryResistPrompt;
+    updateToken(tokenId, { legendaryResistanceRemaining: remaining - 1 });
+    addCombatLogEntry({ type: "system", text: (legendaryResistPrompt.tokenName || "???") + " uses Legendary Resistance! (" + (remaining - 1) + " remaining)" });
+    spawnFloatingTextForToken(tokenId, "info", { text: "LEGENDARY RESISTANCE!", color: "#ffd700" });
+    setLegendaryResistPrompt(null);
+    if (onUse) onUse();
+  };
+
+  const declineLegendaryResistance = () => {
+    if (!legendaryResistPrompt) return;
+    const { onDecline } = legendaryResistPrompt;
+    setLegendaryResistPrompt(null);
+    if (onDecline) onDecline();
   };
 
   const canUseLairSurgeForToken = (token) => (
@@ -6387,6 +6584,36 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         ctx.strokeStyle = "rgba(212,67,58," + (0.45 + 0.4 * pulse) + ")";
         ctx.lineWidth = 3;
         ctx.stroke();
+
+        // Persistent "TURN" badge above token
+        const turnLabel = t.tokenType === "pc" ? "YOUR TURN" : t.name;
+        const turnFs = Math.max(7, gridSize * 0.14);
+        ctx.font = "bold " + turnFs + "px Cinzel";
+        const turnTw = ctx.measureText(turnLabel).width;
+        const turnBadgeW = turnTw + 12;
+        const turnBadgeH = turnFs + 6;
+        const turnBadgeX = t.x - turnBadgeW / 2;
+        const turnBadgeY = t.y - r - turnBadgeH - 16;
+        // Badge background
+        ctx.fillStyle = "rgba(0,0,0,0.6)";
+        ctx.beginPath();
+        drawRoundedRectPath(ctx, turnBadgeX - 1, turnBadgeY - 1, turnBadgeW + 2, turnBadgeH + 2, 5);
+        ctx.fill();
+        const turnPulse = 0.7 + 0.3 * Math.sin(now / 600);
+        ctx.fillStyle = "rgba(255,200,50," + (0.15 + 0.1 * turnPulse) + ")";
+        ctx.beginPath();
+        drawRoundedRectPath(ctx, turnBadgeX, turnBadgeY, turnBadgeW, turnBadgeH, 4);
+        ctx.fill();
+        ctx.strokeStyle = "rgba(255,200,50," + (0.5 + 0.3 * turnPulse) + ")";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        // Badge text
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = "rgba(255,215,0," + (0.8 + 0.2 * turnPulse) + ")";
+        ctx.fillText(turnLabel, t.x, turnBadgeY + turnBadgeH / 2);
+        ctx.textAlign = "left";
+        ctx.textBaseline = "alphabetic";
       }
 
       // Focus target ring so the current actor's chosen target is obvious on the map
@@ -6634,9 +6861,18 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           const hpCol = getHpColor(t.hp, t.maxHp);
           ctx.fillStyle = hpCol;
           ctx.fillRect(barX, barY, barW * hpFrac, barH);
+          // Temp HP cyan extension
+          const tempHp = t.tempHp || 0;
+          if (tempHp > 0 && t.maxHp) {
+            const tempFrac = Math.min(1 - hpFrac, tempHp / t.maxHp);
+            if (tempFrac > 0) {
+              ctx.fillStyle = "rgba(0, 191, 255, 0.6)";
+              ctx.fillRect(barX + barW * hpFrac, barY, barW * tempFrac, barH);
+            }
+          }
           // Top shine for gloss effect
           ctx.fillStyle = "rgba(255,255,255,0.22)";
-          ctx.fillRect(barX, barY, barW * hpFrac, barH * 0.35);
+          ctx.fillRect(barX, barY, barW * Math.min(1, hpFrac + (tempHp > 0 && t.maxHp ? tempHp / t.maxHp : 0)), barH * 0.35);
           // Bottom subtle shadow
           ctx.fillStyle = "rgba(0,0,0,0.15)";
           ctx.fillRect(barX, barY + barH * 0.7, barW * hpFrac, barH * 0.3);
@@ -6644,7 +6880,8 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         }
         // HP text (show on hover/selected/active)
         if (isSelected || isHovered || isActiveCombatant) {
-          const hpText = (t.hp || 0) + "/" + t.maxHp;
+          const tempHpDisp = t.tempHp || 0;
+          const hpText = (t.hp || 0) + "/" + t.maxHp + (tempHpDisp > 0 ? " (+" + tempHpDisp + ")" : "");
           ctx.font = "bold " + Math.max(8, gridSize * 0.15) + "px Cinzel";
           ctx.textAlign = "center";
           ctx.textBaseline = "top";
@@ -6655,29 +6892,50 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         }
       }
 
-      // Condition indicators (small colored dots around top of token)
+      // Condition indicators (readable text badges stacked on left side)
       if (allConds.length > 0) {
-        const condColorMap = {};
-        DND_CONDITIONS.forEach(dc => { condColorMap[dc.name] = dc.color; });
-        const maxDots = Math.min(allConds.length, 8);
-        for (let ci = 0; ci < maxDots; ci++) {
-          const angle = -Math.PI/2 + (ci / maxDots) * Math.PI * 2;
-          const dotR = r + 8;
-          const dx = t.x + Math.cos(angle) * dotR;
-          const dy = t.y + Math.sin(angle) * dotR;
-          // Dot with shadow
+        const condMetaMap = {};
+        DND_CONDITIONS.forEach(dc => { condMetaMap[dc.name] = dc; });
+        const badgeH = Math.max(10, gridSize * 0.18);
+        const badgeFs = Math.max(7, gridSize * 0.13);
+        const badgePad = 3;
+        const badgeGap = 2;
+        const maxBadges = 4;
+        const showConds = allConds.slice(0, maxBadges);
+        const overflow = allConds.length - maxBadges;
+        const badgeX = t.x - r - 6;
+        let badgeY = t.y - r - 4;
+        ctx.textAlign = "right";
+        ctx.textBaseline = "middle";
+        ctx.font = "bold " + badgeFs + "px Cinzel";
+        for (let ci = 0; ci < showConds.length; ci++) {
+          const meta = condMetaMap[showConds[ci]];
+          const label = meta?.icon || showConds[ci].slice(0, 3);
+          const col = meta?.color || "#aaa";
+          const tw = ctx.measureText(label).width;
+          const bw = tw + badgePad * 2;
+          const bx = badgeX - bw;
+          const by = badgeY;
+          // Badge background
+          ctx.fillStyle = "rgba(0,0,0,0.55)";
           ctx.beginPath();
-          ctx.arc(dx, dy, 3.5, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(0,0,0,0.5)";
+          drawRoundedRectPath(ctx, bx - 1, by - 1, bw + 2, badgeH + 2, 3);
           ctx.fill();
+          ctx.fillStyle = col + "cc";
           ctx.beginPath();
-          ctx.arc(dx, dy, 3, 0, Math.PI * 2);
-          ctx.fillStyle = condColorMap[allConds[ci]] || "#aaa";
+          drawRoundedRectPath(ctx, bx, by, bw, badgeH, 3);
           ctx.fill();
-          ctx.strokeStyle = "rgba(0,0,0,0.4)";
-          ctx.lineWidth = 0.5;
-          ctx.stroke();
+          // Badge text
+          ctx.fillStyle = "#fff";
+          ctx.fillText(label, bx + bw - badgePad, by + badgeH / 2 + 0.5);
+          badgeY += badgeH + badgeGap;
         }
+        if (overflow > 0) {
+          ctx.fillStyle = "rgba(255,255,255,0.6)";
+          ctx.font = "bold " + Math.max(6, badgeFs - 1) + "px Cinzel";
+          ctx.fillText("+" + overflow, badgeX, badgeY + badgeH / 2);
+        }
+        ctx.textAlign = "left";
       }
 
       if (!isDead && allConds.includes("Concentrating")) {
@@ -6860,9 +7118,22 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           const toHitBonus = wData ? wData.toHit : 0;
           const damageExpr = wData ? wData.damageExpr : "?";
           const damageType = wData ? wData.damageType : "";
+          const isRangedWpn = wData && (wData.weaponName || "").match(/bow|crossbow|dart|sling|javelin/i);
+          const tipCombatOpts = buildCombatEngineOptions(hovTk, attacker);
+          const advInfo = getAttackAdvantageSources(attacker, hovTk, !!isRangedWpn, tipCombatOpts);
           const needed = tAC - toHitBonus;
-          const hitChance = Math.min(100, Math.max(5, Math.round((21 - Math.max(2, needed)) / 20 * 100)));
+          // Adjust hit chance for advantage/disadvantage (probability math)
+          const baseChance = Math.min(20, Math.max(1, 21 - Math.max(2, needed)));
+          let hitChance;
+          if (advInfo.result === "advantage") {
+            hitChance = Math.min(100, Math.max(5, Math.round((1 - Math.pow((20 - baseChance) / 20, 2)) * 100)));
+          } else if (advInfo.result === "disadvantage") {
+            hitChance = Math.min(100, Math.max(5, Math.round(Math.pow(baseChance / 20, 2) * 100)));
+          } else {
+            hitChance = Math.min(100, Math.max(5, Math.round(baseChance / 20 * 100)));
+          }
           const hitColor = hitChance >= 70 ? "#5ee09a" : hitChance >= 40 ? "#ffd54f" : "#f06858";
+          const hasAdvInfo = advInfo.advantageSources.length > 0 || advInfo.disadvantageSources.length > 0;
 
           // Outcome prediction — parse "1d8+3" or "2d6+5" style damage expressions
           const diceMatch = (damageExpr || "").match(/^(\d+)d(\d+)/);
@@ -6874,9 +7145,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           const expectedDamage = Math.round(avgDamage * hitChance / 100);
           const killChance = hovTk.hp > 0 ? Math.min(100, Math.round(hitChance * Math.min(1, maxDamage / hovTk.hp) * 100) / 100) : 0;
 
-          // Tooltip dimensions
+          // Tooltip dimensions — grow for advantage info
           const pW = gridSize * 2.4;
-          const pH = inRange ? (diceMatch ? gridSize * 2.1 : gridSize * 1.5) : gridSize * 0.9;
+          const advExtraH = hasAdvInfo ? (advInfo.advantageSources.length + advInfo.disadvantageSources.length) * 10 + 8 : 0;
+          const pH = (inRange ? (diceMatch ? gridSize * 2.1 : gridSize * 1.5) : gridSize * 0.9) + advExtraH;
           const pX = hovTk.x - pW / 2;
           const pY = hovTk.y - tr - pH - 12;
           const pR = 8;
@@ -6947,6 +7219,38 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           }
 
           if (inRange) {
+            // Advantage/disadvantage sources
+            if (hasAdvInfo) {
+              const advFs = Math.round(gridSize * 0.14);
+              if (advInfo.result === "advantage") {
+                ctx.textAlign = "left";
+                ctx.font = "bold " + Math.round(gridSize * 0.16) + "px Cinzel";
+                ctx.fillStyle = "#5ee09a";
+                ctx.fillText("ADV", pX + 10, curY);
+                ctx.textAlign = "right";
+                ctx.fillStyle = "#5ee09a";
+                ctx.font = advFs + "px Spectral";
+                ctx.fillText(advInfo.advantageSources.join(", "), pX + pW - 10, curY);
+                curY += advFs + 4;
+              } else if (advInfo.result === "disadvantage") {
+                ctx.textAlign = "left";
+                ctx.font = "bold " + Math.round(gridSize * 0.16) + "px Cinzel";
+                ctx.fillStyle = "#f06858";
+                ctx.fillText("DIS", pX + 10, curY);
+                ctx.textAlign = "right";
+                ctx.fillStyle = "#f06858";
+                ctx.font = advFs + "px Spectral";
+                ctx.fillText(advInfo.disadvantageSources.join(", "), pX + pW - 10, curY);
+                curY += advFs + 4;
+              } else if (advInfo.advantageSources.length > 0 && advInfo.disadvantageSources.length > 0) {
+                ctx.textAlign = "center";
+                ctx.font = advFs + "px Spectral";
+                ctx.fillStyle = "#ffd54f";
+                ctx.fillText("ADV + DIS cancel out", cX, curY);
+                curY += advFs + 4;
+              }
+            }
+
             // Hit chance row
             const hitBarW = pW - 20, hitBarH = 5, hitBarX = pX + 10, hitBarY = curY;
             ctx.fillStyle = "rgba(255,255,255,0.06)";
@@ -6963,9 +7267,9 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             ctx.textAlign = "left";
             ctx.font = "bold " + fs2 + "px Cinzel";
             ctx.fillStyle = hitColor;
-            ctx.fillText(hitChance + "% hit", pX + 10, curY);
+            ctx.fillText(hitChance + "% hit" + (advInfo.result !== "normal" ? " (" + advInfo.result.slice(0, 3) + ")" : ""), pX + 10, curY);
             ctx.textAlign = "right";
-            ctx.fillStyle = "#e2e8f0";
+            ctx.fillStyle = getDmgColor(damageType);
             ctx.font = fs2 + "px Spectral";
             ctx.fillText(damageExpr + " " + damageType, pX + pW - 10, curY);
             curY += fs2 + 3;
@@ -9810,6 +10114,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
       }
       if (attackResult?.hit) {
         const rawDamage = (attackResult.damage || []).reduce((sum, part) => sum + (part.totalBeforeReduction || part.total || 0), 0);
+        const pcBreakdown = buildDamageBreakdown(attackResult.damage);
         applyAttackResultToTarget(target.id, target, attackResult.totalDamage || 0, d.damageType);
         emitPlayModeVfx(actorToken, target, {
           mode: "attack",
@@ -9820,6 +10125,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           isCrit: !!attackResult.isCrit,
           rollValue: attackResult.attackRoll?.chosen ?? null,
           color: attackResult.isCrit ? "#ffd700" : "#f06858",
+          breakdown: pcBreakdown,
         });
         steps.push("If hit, roll damage: " + d.damageExpr + " = " + rawDamage);
         steps.push("Apply modifiers/resistances: " + (attackResult.totalDamage || 0) + " final");
@@ -9831,7 +10137,7 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
           attackResult.isCrit ? "crit" : "hit"
         );
         addStructuredCombatLog("Attacked " + target.name + " with " + card.name, "Hit for " + (attackResult.totalDamage || 0) + " " + d.damageType + " damage", "Action used");
-        addCombatLogEntry({ type: "attack", attacker: actorToken.name, target: target.name, action: card.name, hit: true, damage: attackResult.totalDamage || 0, isCrit: !!attackResult.isCrit, roll: attackResult.attackRoll });
+        addCombatLogEntry({ type: "attack", attacker: actorToken.name, target: target.name, action: card.name, hit: true, damage: attackResult.totalDamage || 0, isCrit: !!attackResult.isCrit, roll: attackResult.attackRoll, damageBreakdown: pcBreakdown });
       } else if (attackResult) {
         emitPlayModeVfx(actorToken, target, {
           mode: "miss",
@@ -9904,6 +10210,22 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
             addTokenCondition(tgt.id, condName);
             emitPlayModeVfx(actorToken, tgt, { mode: "condition", actionName: sp.name, conditionName: condName });
           });
+        }
+        // Legendary Resistance prompt for failed saves
+        if (!s.success && getLegendaryResistanceRemaining(tgt) > 0 && viewRole === "dm") {
+          const preDmgHp = tgt.hp != null ? tgt.hp : (tgt.maxHp || 30);
+          const halfDmg = Math.floor(dmg / 2);
+          const appliedConds = (!s.success && sp.conditions?.length) ? [...sp.conditions] : [];
+          promptLegendaryResistance(tgt, saveAb, s.total, dc,
+            () => { // onUse: restore to half-damage, remove conditions
+              if (dmg > 0) {
+                const restoredHp = Math.max(0, Math.min(tgt.maxHp || 30, preDmgHp - halfDmg));
+                applyTokenVitalsUpdate(tgt, restoredHp);
+              }
+              appliedConds.forEach(c => removeTokenCondition(tgt.id, c));
+            },
+            null
+          );
         }
         steps.push(tgt.name + (s.success ? " succeeded" : " failed") + " " + saveAb + " save, " + s.total + " vs DC " + dc + ".");
         if (finalDmg > 0) steps.push((s.success ? "Takes half: " : "Takes ") + finalDmg + " " + (sp.damageType || "force") + " damage.");
@@ -10394,8 +10716,10 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
         if (result && result.removed) {
           removeTokenCondition(token.id, cond);
           addCombatLogEntry({ type: "save", text: token.name + " shakes off " + cond + " (DC " + result.dc + ", rolled " + result.total + ")" });
+          spawnFloatingTextForToken(token.id, "info", { text: "Shakes off " + cond + "!", color: "#5ee09a" });
         } else if (result) {
           addCombatLogEntry({ type: "save", text: token.name + " fails to shake off " + cond + " (DC " + result.dc + ", rolled " + result.total + ")" });
+          spawnFloatingTextForToken(token.id, "info", { text: "Fails vs " + cond + " (DC " + result.dc + ")", color: "#f06858" });
         }
       }
     }
@@ -11131,6 +11455,46 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
               );
             })()}
 
+            {/* ── Legendary Resistance Prompt Modal ── */}
+            {legendaryResistPrompt && (() => {
+              const lr = legendaryResistPrompt;
+              return (
+                <div style={{
+                  position:"absolute", top:"50%", left:"50%", transform:"translate(-50%, -50%)",
+                  zIndex:200, pointerEvents:"auto",
+                  padding:"24px 32px", borderRadius:16,
+                  background:"rgba(10,10,18,0.96)", backdropFilter:"blur(16px)",
+                  border:"2px solid rgba(255,215,0,0.5)",
+                  boxShadow:"0 8px 48px rgba(0,0,0,0.7), 0 0 80px rgba(255,215,0,0.12)",
+                  display:"flex", flexDirection:"column", alignItems:"center", gap:14,
+                  maxWidth:380, textAlign:"center",
+                }}>
+                  <div style={{ fontFamily:T.ui, fontSize:15, fontWeight:800, color:"#ffd700", letterSpacing:"2.5px", textTransform:"uppercase" }}>
+                    Legendary Resistance
+                  </div>
+                  <div style={{ fontFamily:T.body, fontSize:13, color:T.text, lineHeight:1.6 }}>
+                    <strong>{lr.tokenName}</strong> failed a <strong>{lr.saveAbility}</strong> save
+                    <span style={{ color:T.textFaint }}> (rolled {lr.rolled} vs DC {lr.dc})</span>
+                  </div>
+                  <div style={{ fontFamily:T.body, fontSize:12, color:"#ffd700" }}>
+                    Use Legendary Resistance? ({lr.remaining}/{lr.max} remaining)
+                  </div>
+                  <div style={{ display:"flex", gap:14, marginTop:6 }}>
+                    <button type="button" onClick={useLegendaryResistance}
+                      style={{ padding:"10px 24px", borderRadius:8, background:"linear-gradient(135deg, rgba(255,215,0,0.25), rgba(255,170,0,0.15))", border:"2px solid rgba(255,215,0,0.6)", color:"#ffd700", fontFamily:T.ui, fontSize:13, fontWeight:800, letterSpacing:"1.5px", cursor:"pointer", textTransform:"uppercase", transition:"all 0.15s" }}
+                      onMouseEnter={e => e.currentTarget.style.background="linear-gradient(135deg, rgba(255,215,0,0.4), rgba(255,170,0,0.25))"}
+                      onMouseLeave={e => e.currentTarget.style.background="linear-gradient(135deg, rgba(255,215,0,0.25), rgba(255,170,0,0.15))"}>
+                      Use Resistance
+                    </button>
+                    <button type="button" onClick={declineLegendaryResistance}
+                      style={{ padding:"10px 24px", borderRadius:8, background:bg03, border:"1px solid "+bd08, color:T.textMuted, fontFamily:T.ui, fontSize:13, fontWeight:700, letterSpacing:"1px", cursor:"pointer", textTransform:"uppercase" }}>
+                      Accept Failure
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* ── BG3-style Token Action Ring (around active token) ── */}
             {(() => {
               const ringToken = activeCombatantToken;
@@ -11838,6 +12202,17 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                           </button>
                         ))}
                       </div>
+                      {/* Temp HP control */}
+                      {viewRole === "dm" && (
+                        <div style={{ display:"flex", alignItems:"center", gap:6, marginTop:4 }}>
+                          <span style={{ fontSize:9, fontFamily:T.ui, color:"#00bfff", letterSpacing:"0.5px", flexShrink:0 }}>Temp HP</span>
+                          <input type="number" min="0" value={tk.tempHp || 0}
+                            onChange={e => updateToken(tk.id, { tempHp: Math.max(0, parseInt(e.target.value, 10) || 0) })}
+                            style={{ width:48, padding:"3px 6px", background:lm("rgba(0,191,255,0.06)","rgba(0,191,255,0.04)"), border:"1px solid rgba(0,191,255,0.25)", borderRadius:4, color:"#00bfff", fontFamily:T.ui, fontSize:10, fontWeight:600, textAlign:"center" }} />
+                          <button onClick={() => updateToken(tk.id, { tempHp: 0 })}
+                            style={{ padding:"3px 8px", background:lm("rgba(255,255,255,0.03)","rgba(0,0,0,0.03)"), border:"1px solid " + subtleBorder, borderRadius:4, color:T.textFaint, fontFamily:T.ui, fontSize:9, cursor:"pointer" }}>Clear</button>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -13301,7 +13676,16 @@ function Battlemap({ party = [], npcs = [], viewRole = "dm", setViewRole = null,
                     </span>
                     <span style={{ fontSize:7, color:T.textFaint }}>{entry.time}</span>
                   </div>
-                  {entry.action && <div style={{ fontSize:8, color:T.textFaint, marginTop:1 }}>{entry.action}{entry.damage ? ` — ${entry.damage} dmg` : ""}{entry.roll ? ` (${entry.roll.chosen}+${entry.roll.modifier}=${entry.roll.total} vs AC)` : ""}</div>}
+                  {entry.action && <div style={{ fontSize:8, color:T.textFaint, marginTop:1 }}>{entry.action}{entry.damageBreakdown && entry.damageBreakdown.length > 0 ? (" — " + entry.damageBreakdown.map(b => b.applied + " " + b.type + (b.relation === "resistant" ? " (resist)" : b.relation === "vulnerable" ? "!" : b.relation === "immune" ? " (immune)" : "")).join(" + ")) : (entry.damage ? ` — ${entry.damage} dmg` : "")}{entry.roll ? ` (${entry.roll.chosen}+${entry.roll.modifier}=${entry.roll.total} vs AC)` : ""}</div>}
+                  {entry.damageBreakdown && entry.damageBreakdown.length > 0 && (
+                    <div style={{ fontSize:8, marginTop:2, display:"flex", gap:4, flexWrap:"wrap" }}>
+                      {entry.damageBreakdown.map((b, bi) => (
+                        <span key={bi} style={{ color: getDmgColor(b.type), fontWeight:500 }}>
+                          {b.applied}{b.type !== "untyped" ? " " + b.type : ""}{b.relation === "resistant" ? " (resist)" : b.relation === "vulnerable" ? " (vuln)" : b.relation === "immune" ? " (immune)" : ""}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   {entry.dc && <div style={{ fontSize:8, color:T.textFaint, marginTop:1 }}>DC {entry.dc} {entry.ability} save{entry.damage ? ` — ${entry.damage} dmg` : ""}</div>}
                   {entry.conditions && entry.conditions.length > 0 && <div style={{ fontSize:8, color:T.purple || "#e040fb", marginTop:1 }}>Conditions: {entry.conditions.join(", ")}</div>}
                 </div>

@@ -46,6 +46,15 @@
     .loadUserSyncBlob()                  → Promise<object|null>
      .openAuth()                          → void
    ═══════════════════════════════════════════════════════════════════ */
+// SECURITY: Ensure psEscapeHtml is available even if phmurt-shell.js hasn't loaded yet.
+// phmurt-shell.js defines the canonical version; this is a safe fallback.
+if (typeof window.psEscapeHtml !== 'function') {
+  window.psEscapeHtml = function(str) {
+    if (str == null) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  };
+}
+
 var PhmurtDB = (function () {
 
   /* ── Config ──────────────────────────────────────────────────────── */
@@ -690,9 +699,14 @@ var PhmurtDB = (function () {
           .catch(function (err) {
             submitBtn.textContent = 'Continue to Checkout';
             submitBtn.disabled = false;
-            // SECURITY: Sanitize error message to prevent XSS injection
-            var errMsg = err.message || 'Sign-in failed. Please try again.';
-            errEl.textContent = String(errMsg).slice(0, 200); // Truncate to prevent DOM bloat
+            // SECURITY (V-054): Sanitize error message to prevent user enumeration and XSS injection.
+            // Never expose raw Supabase error messages — they can reveal account existence.
+            var rawMsg = String(err.message || '').toLowerCase();
+            var errMsg = 'Sign-in failed. Please check your email and password.';
+            if (rawMsg.indexOf('rate limit') !== -1 || rawMsg.indexOf('too many') !== -1) errMsg = 'Too many attempts. Please wait a moment.';
+            else if (rawMsg.indexOf('network') !== -1 || rawMsg.indexOf('fetch') !== -1) errMsg = 'Network error. Please check your connection.';
+            else if (rawMsg.indexOf('redirect') !== -1 || rawMsg.indexOf('payment') !== -1) errMsg = err.message; // Payment errors are safe to show
+            errEl.textContent = String(errMsg).slice(0, 200);
             errEl.style.display = 'block';
             // Show password reset link when password is wrong
             if (err._showReset && !document.getElementById('phmurt-reauth-reset')) {
@@ -2503,8 +2517,12 @@ var PhmurtDB = (function () {
           .catch(function (err) {
             submitBtn.textContent = 'Continue to Checkout';
             submitBtn.disabled = false;
-            // SECURITY: Sanitize error message to prevent XSS
-            var errMsg = err.message || 'Sign-in failed.';
+            // SECURITY (V-054): Sanitize error to prevent user enumeration
+            var rawMsg2 = String(err.message || '').toLowerCase();
+            var errMsg = 'Sign-in failed. Please check your email and password.';
+            if (rawMsg2.indexOf('rate limit') !== -1 || rawMsg2.indexOf('too many') !== -1) errMsg = 'Too many attempts. Please wait a moment.';
+            else if (rawMsg2.indexOf('network') !== -1 || rawMsg2.indexOf('fetch') !== -1) errMsg = 'Network error. Please check your connection.';
+            else if (rawMsg2.indexOf('redirect') !== -1 || rawMsg2.indexOf('payment') !== -1) errMsg = err.message;
             errEl.textContent = String(errMsg).slice(0, 200);
             errEl.style.display = 'block';
             if (err._showReset && !resetArea.querySelector('a')) {

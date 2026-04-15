@@ -1856,7 +1856,7 @@
       // Footer
       html += '<div class="hbe-modal-footer">';
       html += '<button class="cmp-btn" onclick="closeFeatModal()">Cancel</button>';
-      html += '<button class="cmp-btn primary" onclick="saveFeat(\'' + (editId || '') + '\')">' + (mode === 'edit' ? 'Update' : 'Save') + ' Feat</button>';
+      html += '<button class="cmp-btn primary" onclick="saveFeat(\'' + escapeAttr(editId || '') + '\')">' + (mode === 'edit' ? 'Update' : 'Save') + ' Feat</button>';
       html += '</div>';
       html += '</div></div>';
 
@@ -2080,7 +2080,7 @@
       // Footer
       html += '<div class="hbe-modal-footer">';
       html += '<button class="cmp-btn" onclick="closeMonsterModal()">Cancel</button>';
-      html += '<button class="cmp-btn primary" onclick="saveMonster(\'' + (editId || '') + '\')">' + (mode === 'edit' ? 'Update' : 'Save') + ' Monster</button>';
+      html += '<button class="cmp-btn primary" onclick="saveMonster(\'' + escapeAttr(editId || '') + '\')">' + (mode === 'edit' ? 'Update' : 'Save') + ' Monster</button>';
       html += '</div>';
       html += '</div></div>';
 
@@ -2302,7 +2302,7 @@
       // Footer
       html += '<div class="hbe-modal-footer">';
       html += '<button class="cmp-btn" onclick="closeEncounterModal()">Cancel</button>';
-      html += '<button class="cmp-btn primary" onclick="saveEncounter(\'' + (editId || '') + '\')">' + (mode === 'edit' ? 'Update' : 'Save') + ' Encounter</button>';
+      html += '<button class="cmp-btn primary" onclick="saveEncounter(\'' + escapeAttr(editId || '') + '\')">' + (mode === 'edit' ? 'Update' : 'Save') + ' Encounter</button>';
       html += '</div>';
       html += '</div></div>';
 
@@ -2476,7 +2476,7 @@
         // Buttons
         + '<div style="display:flex;gap:10px;justify-content:flex-end;">'
         + '<button onclick="closeHomebrewModal()" style="font-family:Cinzel,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:10px 20px;background:transparent;border:1px solid var(--border);color:var(--text-muted);cursor:pointer;">Cancel</button>'
-        + (editId ? '<button onclick="deleteHomebrewItem(\'' + editId + '\')" style="font-family:Cinzel,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:10px 20px;background:transparent;border:1px solid var(--crimson-border);color:var(--crimson);cursor:pointer;">Delete</button>' : '')
+        + (editId ? '<button onclick="deleteHomebrewItem(\'' + escapeAttr(editId) + '\')" style="font-family:Cinzel,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:10px 20px;background:transparent;border:1px solid var(--crimson-border);color:var(--crimson);cursor:pointer;">Delete</button>' : '')
         + '<button onclick="saveHomebrewItem()" style="font-family:Cinzel,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;padding:10px 20px;background:var(--crimson);border:none;color:#f5f0e8;cursor:pointer;">'
         + (editId ? 'Save Changes' : 'Create Item')
         + '</button>'

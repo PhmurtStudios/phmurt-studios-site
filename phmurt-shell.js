@@ -204,7 +204,8 @@
       const [labelPart, hrefPart] = part.split('|').map(v => (v || '').trim());
       return {
         label: labelPart,
-        href: (hrefPart && !/^(javascript|data|vbscript):/i.test(hrefPart)) ? hrefPart : undefined,
+        // SECURITY (V-053): Trim and normalize before protocol check to prevent whitespace bypass
+        href: (hrefPart && !/^(javascript|data|vbscript):/i.test(hrefPart.trim())) ? hrefPart : undefined,
         current: !hrefPart || index === arr.length - 1
       };
     }).filter(item => item.label);

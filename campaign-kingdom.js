@@ -1093,8 +1093,9 @@ function getBannerSVG(cfg) {
     var shape = C.shape || 'pointed';
     var border = C.border || 'trim';
     var emblem = C.emblem || 'lion';
-    var bg = C.bg || '#1a2e20';
-    var fg = C.fg || '#c9a032';
+    var _safeColor = function(c, fallback) { return /^#[0-9a-f]{3,8}$/i.test(c) ? c : fallback; };
+    var bg = _safeColor(C.bg, '#1a2e20');
+    var fg = _safeColor(C.fg, '#c9a032');
     var dk = '#0a0805';
 
     // Shape paths (clip + outline)

@@ -31,9 +31,16 @@
     _listeners[evt] = _listeners[evt].filter(function (f) { return f !== fn; });
   }
   // SECURITY (V-036): Emit function properly cleans up listener list on error
+  var _emitDepth = 0;
   function emit(evt, payload) {
     // SECURITY: Validate event name to prevent injection
     if (!evt || typeof evt !== 'string') return;
+    // SECURITY (V-051): Re-entry guard to prevent infinite emit loops
+    if (_emitDepth > 5) { console.warn("[CharSync] emit re-entry limit reached for", evt); return; }
+    _emitDepth++;
+    try { _emit(evt, payload); } finally { _emitDepth--; }
+  }
+  function _emit(evt, payload) {
     evt = String(evt).slice(0, 100);
 
     /* Internal listeners */
@@ -88,10 +95,14 @@
     if (Array.isArray(damageVulnerabilities)) damageVulnerabilities = damageVulnerabilities.join('; ');
     if (Array.isArray(conditionImmunities)) conditionImmunities = conditionImmunities.join(', ');
 
+    // SECURITY (V-050): Sanitize all string fields to prevent stored XSS when rendered in campaigns.
+    // These fields originate from user input and are stored in campaign party data.
+    var _stripTags = function(s) { return String(s || '').replace(/<[^>]*>/g, '').slice(0, 500); };
+
     return {
-      name:    details.name || (meta && meta.name) || "Unnamed",
-      cls:     _humanize(snapshot.cls || snapshot.class_ || (meta && meta.class) || ""),
-      race:    _humanize(snapshot.race || (meta && meta.race) || ""),
+      name:    _stripTags(details.name || (meta && meta.name) || "Unnamed"),
+      cls:     _stripTags(_humanize(snapshot.cls || snapshot.class_ || (meta && meta.class) || "")),
+      race:    _stripTags(_humanize(snapshot.race || (meta && meta.race) || "")),
       lv:      level,
       maxHp:   maxHp,
       // SECURITY (V-045): AC extraction works for both 5e and 3.5e (both store snapshot.ac)
@@ -102,8 +113,8 @@
       int:     parseInt(abilities.int, 10) || 10,
       wis:     parseInt(abilities.wis, 10) || 10,
       cha:     parseInt(abilities.cha, 10) || 10,
-      bio:     details.backstory || details.bio || details.notes || "",
-      player:  details.player || details.playerName || details.owner || "",
+      bio:     _stripTags(details.backstory || details.bio || details.notes || ""),
+      player:  _stripTags(details.player || details.playerName || details.owner || ""),
       edition: edition,
       // INTEGRATION (V-003): Combat resistances and immunities for proper damage/condition resolution
       damageResistances: damageResistances,

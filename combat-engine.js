@@ -1643,6 +1643,32 @@ window.CombatEngine = (() => {
   };
 
 
+  // ─── LEGENDARY RESISTANCE ──────────────────────────────────────────────────
+  // Parses "Legendary Resistance (X/Day)" from monster traits and checks availability.
+
+  const parseLegendaryResistance = (monster) => {
+    if (!monster) return null;
+    const sources = [
+      ...(monster.special_abilities || []),
+      ...(monster.traits || []),
+      ...(monster.actions || []),
+    ];
+    for (const trait of sources) {
+      const text = (trait.name || "") + " " + (trait.desc || "");
+      const match = text.match(/legendary\s+resistance\s*\((\d+)\/day\)/i);
+      if (match) return parseInt(match[1], 10);
+    }
+    return null;
+  };
+
+  const checkLegendaryResistance = (monster) => {
+    const max = parseLegendaryResistance(monster);
+    if (max == null) return { available: false, remaining: 0, max: 0 };
+    const remaining = monster.legendaryResistanceRemaining != null ? monster.legendaryResistanceRemaining : max;
+    return { available: remaining > 0, remaining, max };
+  };
+
+
   // ─── PUBLIC API ────────────────────────────────────────────────────────────
 
   return {
@@ -1691,6 +1717,10 @@ window.CombatEngine = (() => {
     parseConditionImmunities,
     resolveLegendaryAction,
     executePcWeaponAttack,
+
+    // Legendary Resistance
+    parseLegendaryResistance,
+    checkLegendaryResistance,
 
     // BG3-level features
     rollConcentrationSave,
