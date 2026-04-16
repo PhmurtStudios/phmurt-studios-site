@@ -82,6 +82,8 @@
     .cb-card-detail { font-size: 13px; color:var(--text-muted); font-style: italic; line-height: 1.5; }
     .cb-card-badge { position: absolute; top: 12px; right: 12px; font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 1px; color: var(--crimson); text-transform: uppercase; }
     .cb-card.selected .cb-card-badge { display: none; }
+    .cb-card-create { border: 2px dashed rgba(139,105,20,.4); background: transparent; transition: all .25s; }
+    .cb-card-create:hover { border-color: #8b6914; background: rgba(139,105,20,.06); }
 
     /* ── DETAIL PANEL ── */
     .cb-detail { background: var(--bg-card); border: 1px solid var(--crimson-border); padding: 28px; margin-bottom: 28px; position: relative; border-radius: 2px; }
@@ -1769,6 +1771,12 @@ function renderRaces(){
       editHBEntity(this.getAttribute('data-hbe-edit-type'), this.getAttribute('data-hbe-edit-id'));
     });
   });
+  // Inline "Create Homebrew Race" card
+  var createCard = document.createElement('div');
+  createCard.className = 'cb-card cb-card-create';
+  createCard.onclick = function(){ openHBEntityModal('race', null); };
+  createCard.innerHTML = '<div class="cb-card-name" style="color:#8b6914;">✶ Create Homebrew</div><div class="cb-card-detail" style="color:#8b6914;opacity:.7;">Design your own custom race</div>';
+  c.appendChild(createCard);
 }
 function selectRace(id){
   C.race=id; C.subrace=null;
@@ -1861,6 +1869,12 @@ function renderClasses(){
       editHBEntity(this.getAttribute('data-hbe-edit-type'), this.getAttribute('data-hbe-edit-id'));
     });
   });
+  // Inline "Create Homebrew Class" card
+  var createCard = document.createElement('div');
+  createCard.className = 'cb-card cb-card-create';
+  createCard.onclick = function(){ openHBEntityModal('class', null); };
+  createCard.innerHTML = '<div class="cb-card-name" style="color:#8b6914;">✶ Create Homebrew</div><div class="cb-card-detail" style="color:#8b6914;opacity:.7;">Design your own custom class</div>';
+  c.appendChild(createCard);
 }
 function selectClass(id){
   C.cls=id; C.selectedSkills=[]; C.equipChoices={}; C.weaponChoices={};
@@ -1909,6 +1923,12 @@ function renderBackgrounds(){
       editHBEntity(this.getAttribute('data-hbe-edit-type'), this.getAttribute('data-hbe-edit-id'));
     });
   });
+  // Inline "Create Homebrew Background" card
+  var createCard = document.createElement('div');
+  createCard.className = 'cb-card cb-card-create';
+  createCard.onclick = function(){ openHBEntityModal('background', null); };
+  createCard.innerHTML = '<div class="cb-card-name" style="color:#8b6914;">✶ Create Homebrew</div><div class="cb-card-detail" style="color:#8b6914;opacity:.7;">Design your own custom background</div>';
+  c.appendChild(createCard);
 }
 function selectBackground(id){
   C.background=id;
@@ -6253,29 +6273,10 @@ function _homebrewEntityId(type, name) {
 
 // Call after loadHomebrewEntities() + init() to add ✦ Create buttons
 function injectHomebrewBuilderButtons() {
-  var panels = [
-    { panelId:'panel1', type:'race',       container:'raceCards',  label:'Race' },
-    { panelId:'panel2', type:'class',      container:'classCards', label:'Class' },
-    { panelId:'panel3', type:'background', container:'bgCards',    label:'Background' },
-  ];
-  panels.forEach(function(p) {
-    var panel = document.getElementById(p.panelId);
-    if (!panel) return;
-    // Don't add twice
-    if (panel.querySelector('.hbe-create-btn')) return;
-    var btn = document.createElement('button');
-    btn.className = 'hbe-create-btn';
-    btn.setAttribute('data-type', p.type);
-    btn.textContent = '\u2736 Create Homebrew ' + p.label;
-    btn.style.cssText = 'display:block;width:100%;margin-top:14px;font-family:Cinzel,serif;font-size:9px;letter-spacing:3px;text-transform:uppercase;padding:10px;background:transparent;border:1px solid #8b6914;color:#8b6914;cursor:pointer;';
-    btn.onclick = function() { openHBEntityModal(p.type, null); };
-    // Insert before nav buttons
-    var navBtns = panel.querySelector('.cb-nav-btns');
-    if (navBtns) panel.insertBefore(btn, navBtns);
-    else panel.appendChild(btn);
-  });
-
-  // Subclass button in level-up — added dynamically, handled in openHBEntityModal
+  // Create Homebrew buttons are now inline cards rendered by renderRaces/Classes/Backgrounds.
+  // This function is kept for backward compatibility but no longer injects standalone buttons.
+  // Remove any old standalone buttons that may exist from prior sessions.
+  document.querySelectorAll('.hbe-create-btn').forEach(function(btn) { btn.remove(); });
 }
 
 // ─────────────────────────────────────────────────────────────
