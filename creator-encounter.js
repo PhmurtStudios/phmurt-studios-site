@@ -192,6 +192,18 @@
     {n:"Zombie",cr:"1/4"}
   ];
 
+  /* CR → colour (matches campaign manager) */
+  var CR_COLORS = {
+    '0':'#8a7c6f','1/8':'#8a7c6f','1/4':'#8a7c6f','1/2':'#8a7c6f',
+    '1':'#8a7c6f','2':'#6ba85c','3':'#5c9ba8','4':'#5c7ba8',
+    '5':'#6b5ca8','6':'#8a5ca8','7':'#a85c6b','8':'#a87c5c','9':'#a8a35c',
+    '10':'#d4433a','11':'#d4433a','12':'#d4433a','13':'#d4433a','14':'#d4433a',
+    '15':'#d4433a','16':'#d4433a','17':'#b8860b','18':'#b8860b','19':'#b8860b',
+    '20':'#b8860b','21':'#b8860b','22':'#8b0000','23':'#8b0000','24':'#8b0000',
+    '25':'#8b0000','26':'#8b0000','27':'#8b0000','28':'#8b0000','29':'#8b0000','30':'#8b0000'
+  };
+  function crColor(cr) { return CR_COLORS[String(cr)] || '#8a7c6f'; }
+
   /* Build combined monster list: SRD + homebrew */
   function getMonsterList() {
     var list = SRD_MONSTERS.map(function(m){ return { name: m.n, cr: m.cr, source: 'SRD' }; });
@@ -285,15 +297,20 @@
     var encXp = computeEncounterXP(s);
     var computedDiff = difficultyLabel(encXp.adjustedXp, budget);
 
-    /* ── Added enemies (compact roster) ──────────────────────────── */
+    /* ── Added enemies roster ────────────────────────────────────── */
     var rosterHtml = '';
     if (s.monsters && s.monsters.length && s.monsters.some(function(m){return m.name;})) {
       rosterHtml = '<div class="cr-roster">' +
+        '<div class="cr-roster-header">Current Encounter</div>' +
         (s.monsters||[]).map(function(m, i){
           if (!m.name) return '';
           var xp = U.crToXp ? (U.crToXp(m.cr) || 0) : 0;
-          return '<div class="cr-roster-row">' +
-            '<span class="cr-roster-name">' + esc(m.name) + ' <span class="cr-roster-cr">CR ' + esc(m.cr) + '</span></span>' +
+          var col = crColor(m.cr);
+          return '<div class="cr-roster-row" style="border-left:3px solid '+col+'">' +
+            '<div class="cr-roster-info">' +
+              '<span class="cr-roster-name">' + esc(m.name) + '</span>' +
+              '<span class="cr-roster-badge" style="background:'+col+'">CR ' + esc(m.cr) + '</span>' +
+            '</div>' +
             '<div class="cr-roster-controls">' +
               '<button type="button" class="cr-roster-btn" data-act="dec-monster" data-idx="'+i+'">−</button>' +
               '<span class="cr-roster-count">' + (m.count||1) + '</span>' +
@@ -306,21 +323,27 @@
       '</div>';
     }
 
-    /* ── Monster picker (search + filter + scrollable list) ─────── */
+    /* ── Monster picker (campaign-manager style) ──────────────── */
     var pickerHtml =
       '<div class="cr-picker">' +
-        '<div class="cr-picker-bar">' +
-          '<input type="text" id="cr-mp-search" placeholder="Search monsters…" autocomplete="off" />' +
+        '<div class="cr-picker-toolbar">' +
+          '<div class="cr-picker-search-wrap">' +
+            '<span class="cr-picker-search-icon">&#128269;</span>' +
+            '<input type="text" id="cr-mp-search" placeholder="Search monsters…" autocomplete="off" />' +
+          '</div>' +
           '<select id="cr-mp-cr">' +
             '<option value="">All CRs</option>' +
             CR_OPTS.map(function(c){ return '<option value="'+c+'">CR '+c+'</option>'; }).join('') +
           '</select>' +
           '<select id="cr-mp-src">' +
-            '<option value="">All</option><option value="SRD">SRD</option><option value="Homebrew">Homebrew</option>' +
+            '<option value="">All Sources</option><option value="SRD">SRD</option><option value="Homebrew">Homebrew</option>' +
+          '</select>' +
+          '<select id="cr-mp-sort">' +
+            '<option value="name">Sort: Name</option><option value="cr">Sort: CR</option>' +
           '</select>' +
         '</div>' +
         '<div class="cr-picker-count" id="cr-mp-count"></div>' +
-        '<div class="cr-picker-list" id="cr-mp-list"></div>' +
+        '<div class="cr-picker-grid" id="cr-mp-list"></div>' +
       '</div>';
 
     var terrainHtml = (s.terrain||[]).map(function(t, i){
@@ -451,15 +474,24 @@
     '</div>';
   }
 
-  /* ── Monster picker — populates the scrollable list ──────────── */
+  /* ── Monster picker — populates the card grid ────────────────── */
   var _mpSearchVal = '';
   var _mpCrVal = '';
   var _mpSrcVal = '';
+  var _mpSortVal = 'name';
+
+  function crToNum(cr) {
+    if (cr === '1/8') return 0.125;
+    if (cr === '1/4') return 0.25;
+    if (cr === '1/2') return 0.5;
+    return parseFloat(cr) || 0;
+  }
 
   function wireMonsterPicker(root) {
     var searchInp = root.querySelector('#cr-mp-search');
     var crSel = root.querySelector('#cr-mp-cr');
     var srcSel = root.querySelector('#cr-mp-src');
+    var sortSel = root.querySelector('#cr-mp-sort');
     var listEl = root.querySelector('#cr-mp-list');
     var countEl = root.querySelector('#cr-mp-count');
     if (!searchInp || !listEl) return;
@@ -468,13 +500,15 @@
     searchInp.value = _mpSearchVal;
     if (crSel) crSel.value = _mpCrVal;
     if (srcSel) srcSel.value = _mpSrcVal;
+    if (sortSel) sortSel.value = _mpSortVal;
 
     var allMonsters = getMonsterList();
 
-    function renderPickerList() {
+    function renderPickerGrid() {
       _mpSearchVal = (searchInp.value || '').trim();
       _mpCrVal = crSel ? crSel.value : '';
       _mpSrcVal = srcSel ? srcSel.value : '';
+      _mpSortVal = sortSel ? sortSel.value : 'name';
       var q = _mpSearchVal.toLowerCase();
       var filtered = allMonsters.filter(function(m) {
         if (q && m.name.toLowerCase().indexOf(q) === -1) return false;
@@ -482,26 +516,42 @@
         if (_mpSrcVal && m.source !== _mpSrcVal) return false;
         return true;
       });
+      // Sort
+      filtered.sort(function(a, b) {
+        if (_mpSortVal === 'cr') return crToNum(a.cr) - crToNum(b.cr) || a.name.localeCompare(b.name);
+        return a.name.localeCompare(b.name);
+      });
       countEl.textContent = filtered.length + ' monster' + (filtered.length !== 1 ? 's' : '');
-      if (!filtered.length) { listEl.innerHTML = '<div style="color:var(--text-muted);padding:16px;text-align:center;">No matches</div>'; return; }
+      if (!filtered.length) {
+        listEl.innerHTML = '<div class="cr-mp-empty"><div class="cr-mp-empty-icon">&#9737;</div><div>No monsters match your filters</div></div>';
+        return;
+      }
       listEl.innerHTML = filtered.map(function(m) {
         var xp = U.crToXp ? (U.crToXp(m.cr) || 0) : 0;
-        return '<div class="cr-mp-row" data-mp-name="'+escAttr(m.name)+'" data-mp-cr="'+escAttr(m.cr)+'">' +
-          '<span class="cr-mp-name">' + esc(m.name) + '</span>' +
-          '<span class="cr-mp-meta">CR ' + esc(m.cr) + ' · ' + xp + ' XP' + (m.source === 'Homebrew' ? ' · <em>HB</em>' : '') + '</span>' +
+        var col = crColor(m.cr);
+        return '<div class="cr-mp-card" data-mp-name="'+escAttr(m.name)+'" data-mp-cr="'+escAttr(m.cr)+'" style="border-left:3px solid '+col+'">' +
+          '<div class="cr-mp-card-top">' +
+            '<span class="cr-mp-card-name">' + esc(m.name) + '</span>' +
+            '<span class="cr-mp-card-badge" style="background:'+col+'">CR ' + esc(m.cr) + '</span>' +
+          '</div>' +
+          '<div class="cr-mp-card-stats">' +
+            '<span>' + xp + ' XP</span>' +
+            (m.source === 'Homebrew' ? '<span class="cr-mp-card-hb">HOMEBREW</span>' : '') +
+          '</div>' +
         '</div>';
       }).join('');
     }
-    renderPickerList();
+    renderPickerGrid();
 
-    searchInp.addEventListener('input', renderPickerList);
-    if (crSel) crSel.addEventListener('change', renderPickerList);
-    if (srcSel) srcSel.addEventListener('change', renderPickerList);
+    searchInp.addEventListener('input', renderPickerGrid);
+    if (crSel) crSel.addEventListener('change', renderPickerGrid);
+    if (srcSel) srcSel.addEventListener('change', renderPickerGrid);
+    if (sortSel) sortSel.addEventListener('change', renderPickerGrid);
 
     listEl.addEventListener('click', function(e) {
-      var row = e.target.closest('.cr-mp-row');
-      if (!row) return;
-      addMonsterFromPicker(row.getAttribute('data-mp-name'), row.getAttribute('data-mp-cr'));
+      var card = e.target.closest('.cr-mp-card');
+      if (!card) return;
+      addMonsterFromPicker(card.getAttribute('data-mp-name'), card.getAttribute('data-mp-cr'));
     });
   }
 

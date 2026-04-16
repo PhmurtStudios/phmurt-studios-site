@@ -760,46 +760,79 @@
 
 /* ── Enemy roster (added monsters) ─────────────────────────────── */
 .cr-roster {
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-card);
+}
+.cr-roster-header {
+  font-family: 'Cinzel', serif;
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gold, #c9b458);
+  padding: 10px 12px 6px;
+  border-bottom: 1px solid var(--border);
 }
 .cr-roster-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 8px 10px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-left: 3px solid rgba(139, 0, 0, .35);
-  margin-bottom: 4px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.04);
   font-family: 'Spectral', serif;
   font-size: 13px;
   color: var(--text);
+  transition: background .1s;
 }
-.cr-roster-name { flex: 1; min-width: 0; }
-.cr-roster-cr {
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-left: 4px;
+.cr-roster-row:last-child { border-bottom: none; }
+.cr-roster-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+.cr-roster-name {
+  font-family: 'Cinzel', serif;
+  font-size: 14px;
+  color: var(--gold, #c9b458);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cr-roster-badge {
+  font-size: 10px;
+  font-weight: bold;
+  font-family: 'Cinzel', serif;
+  color: var(--bg, #08080a);
+  padding: 2px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 .cr-roster-controls {
   display: flex;
   align-items: center;
   gap: 4px;
   flex-shrink: 0;
-  margin-left: 10px;
+  margin-left: 12px;
 }
 .cr-roster-btn {
   background: rgba(255,255,255,.08);
   border: 1px solid var(--border);
   color: var(--text);
-  width: 26px;
-  height: 26px;
-  font-size: 14px;
+  width: 28px;
+  height: 28px;
+  font-size: 15px;
   line-height: 1;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 4px;
   transition: background .1s;
   font-family: inherit;
 }
@@ -807,77 +840,154 @@
 .cr-roster-remove { color: #d4433a; font-size: 12px; }
 .cr-roster-remove:hover { background: rgba(212,67,58,.2); }
 .cr-roster-count {
-  min-width: 22px;
+  min-width: 24px;
   text-align: center;
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: 700;
+  font-size: 15px;
+  font-family: 'Cinzel', serif;
 }
 .cr-roster-xp {
   font-size: 11px;
   color: var(--text-muted);
-  min-width: 52px;
+  min-width: 56px;
   text-align: right;
   margin: 0 6px;
 }
 
-/* ── Monster picker (search + filter + scrollable) ─────────────── */
+/* ── Monster picker (campaign-manager style) ──────────────────── */
 .cr-picker {
   border: 1px solid var(--border);
-  background: rgba(255,255,255,.02);
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
+  background: var(--bg-card);
 }
-.cr-picker-bar {
+.cr-picker-toolbar {
   display: flex;
-  gap: 6px;
-  padding: 8px;
-  background: rgba(0,0,0,.15);
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(0,0,0,.18);
   border-bottom: 1px solid var(--border);
   flex-wrap: wrap;
+  align-items: center;
 }
-.cr-picker-bar input[type="text"] {
+.cr-picker-search-wrap {
+  position: relative;
   flex: 1;
-  min-width: 140px;
+  min-width: 180px;
 }
-.cr-picker-bar select {
-  min-width: 80px;
+.cr-picker-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-faint, #5a5040);
+  font-size: 13px;
+  pointer-events: none;
+}
+.cr-picker-search-wrap input[type="text"] {
+  width: 100%;
+  padding-left: 30px !important;
+}
+.cr-picker-toolbar select {
+  min-width: 90px;
 }
 .cr-picker-count {
   font-size: 11px;
   color: var(--text-muted);
-  padding: 4px 10px 2px;
-  font-family: 'Spectral', serif;
+  padding: 5px 12px 3px;
+  font-family: 'Cinzel', serif;
+  letter-spacing: 0.03em;
 }
-.cr-picker-list {
-  max-height: 280px;
+.cr-picker-grid {
+  max-height: 380px;
   overflow-y: auto;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
   scrollbar-width: thin;
   scrollbar-color: rgba(255,255,255,.12) transparent;
 }
-.cr-picker-list::-webkit-scrollbar { width: 6px; }
-.cr-picker-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 3px; }
-.cr-mp-row {
+.cr-picker-grid::-webkit-scrollbar { width: 6px; }
+.cr-picker-grid::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 3px; }
+
+/* ── Monster card in picker ────────────────────────────────────── */
+.cr-mp-card {
+  background: var(--bg, #08080a);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all .15s ease;
+  position: relative;
+  overflow: hidden;
+}
+.cr-mp-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,.02), transparent 60%);
+  pointer-events: none;
+}
+.cr-mp-card:hover {
+  border-color: rgba(212,67,58,.4);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,.3);
+}
+.cr-mp-card:active {
+  transform: translateY(0);
+  background: rgba(212,67,58,.08);
+}
+.cr-mp-card-top {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 7px 10px;
-  border-bottom: 1px solid rgba(255,255,255,.03);
-  cursor: pointer;
-  font-family: 'Spectral', serif;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.cr-mp-card-name {
+  font-family: 'Cinzel', serif;
   font-size: 13px;
-  color: var(--text);
-  transition: background .08s;
+  color: var(--gold, #c9b458);
+  line-height: 1.3;
+  flex: 1;
 }
-.cr-mp-row:hover {
-  background: rgba(212,67,58,.14);
+.cr-mp-card-badge {
+  font-size: 10px;
+  font-weight: bold;
+  font-family: 'Cinzel', serif;
+  color: var(--bg, #08080a);
+  padding: 2px 8px;
+  border-radius: 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
-.cr-mp-row:active {
-  background: rgba(212,67,58,.25);
-}
-.cr-mp-name { flex: 1; }
-.cr-mp-meta {
+.cr-mp-card-stats {
+  display: flex;
+  gap: 12px;
   font-size: 11px;
   color: var(--text-muted);
-  margin-left: 12px;
-  white-space: nowrap;
+  font-family: 'Spectral', serif;
+}
+.cr-mp-card-hb {
+  font-family: 'Cinzel', serif;
+  font-size: 9px;
+  letter-spacing: 0.08em;
+  color: var(--gold, #c9b458);
+  opacity: 0.7;
+}
+
+/* ── Empty state ──────────────────────────────────────────────── */
+.cr-mp-empty {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text-muted);
+  font-family: 'Spectral', serif;
+  font-size: 14px;
+  font-style: italic;
+}
+.cr-mp-empty-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+  opacity: 0.2;
 }
