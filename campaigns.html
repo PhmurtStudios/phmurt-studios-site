@@ -4859,7 +4859,10 @@ function CampaignSelector({ campaigns, activeCampaignId, onSelect, onCreate, onD
 // DASHBOARD
 // ═══════════════════════════════════════════════════════════════════════════
 
-function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
+function DashboardView({ data, setData, onNav, activeCampaignId, viewRole, campaignMembers, setShowInvitePanel }) {
+  // Default props so the legacy call sites (that don't pass these yet) don't crash render.
+  campaignMembers = campaignMembers || [];
+  setShowInvitePanel = setShowInvitePanel || (() => {});
   const isDm = viewRole !== "player";
   const countdown = useCountdown(data.nextSession);
   const active = data.quests.filter(q=>q.status==="active");
@@ -5219,10 +5222,12 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
 
         {/* Party */}
         <div>
-          <SectionTitle icon={Users} count={data.party.length + (function(){
+          <SectionTitle icon={Users} count={(Array.isArray(data.party) ? data.party.length : 0) + (function(){
             // Count pending members (joined users without characters yet)
-            const linkedIds = new Set(data.party.map(p => p.userId).filter(Boolean));
-            return campaignMembers.filter(m => m.role === "player" && m.user_id && !linkedIds.has(m.user_id)).length;
+            const _pty = Array.isArray(data.party) ? data.party : [];
+            const _mem = Array.isArray(campaignMembers) ? campaignMembers : [];
+            const linkedIds = new Set(_pty.map(p => p.userId).filter(Boolean));
+            return _mem.filter(m => m.role === "player" && m.user_id && !linkedIds.has(m.user_id)).length;
           })()} action={isDm ? (
             <div style={{ display:"flex", gap:8, flexWrap:"wrap", justifyContent:"flex-end" }}>
               <LinkBtn onClick={()=>setLibraryOpen(true)}><BookOpen size={10}/> Import from Character Builder</LinkBtn>
@@ -5230,12 +5235,16 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
           ) : null}>The Party</SectionTitle>
 
           {(() => {
+            // Defensive: data.party or campaignMembers can be undefined during early
+            // render before campaign data is fully loaded — treat as empty arrays.
+            const _party   = Array.isArray(data.party) ? data.party : [];
+            const _members = Array.isArray(campaignMembers) ? campaignMembers : [];
             // Build the pending-member list (joined players who haven't imported a character yet).
             // A character is considered "linked" to a user if it has `member.userId` matching
             // campaign_members.user_id. Fallback: match by display name if userId is missing.
-            const linkedIds = new Set(data.party.map(p => p.userId).filter(Boolean));
-            const partyPlayerNames = new Set(data.party.map(p => (p.player || "").trim().toLowerCase()).filter(Boolean));
-            const pendingMembers = campaignMembers.filter(m => {
+            const linkedIds = new Set(_party.map(p => p.userId).filter(Boolean));
+            const partyPlayerNames = new Set(_party.map(p => (p.player || "").trim().toLowerCase()).filter(Boolean));
+            const pendingMembers = _members.filter(m => {
               if (m.role === "dm") return false;
               if (m.user_id && linkedIds.has(m.user_id)) return false;
               const displayName = (m.profiles?.name || m.profiles?.email || "").trim().toLowerCase();
@@ -5243,7 +5252,7 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
               return true;
             });
 
-            if (data.party.length === 0 && pendingMembers.length === 0) {
+            if (_party.length === 0 && pendingMembers.length === 0) {
               return (
                 <Section style={{ textAlign:"center", padding:40 }}>
                   <Users size={32} color={T.textFaint} style={{ marginBottom:16 }}/>
@@ -5261,9 +5270,9 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
             return (
               <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
                 {/* Character cards (players who have imported) */}
-                {data.party.map(p => {
+                {_party.map(p => {
                   // Look up the joined user's profile name (if their userId is linked).
-                  const linkedMember = p.userId ? campaignMembers.find(m => m.user_id === p.userId) : null;
+                  const linkedMember = p.userId ? _members.find(m => m.user_id === p.userId) : null;
                   const linkedUsername = linkedMember?.profiles?.name
                     || linkedMember?.profiles?.email
                     || null;
@@ -5281,7 +5290,7 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
                 {/* Pending members: joined but no character yet */}
                 {pendingMembers.length > 0 && (
                   <React.Fragment>
-                    {data.party.length > 0 && (
+                    {_party.length > 0 && (
                       <div style={{
                         fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px",
                         textTransform:"uppercase", color:T.textFaint,
@@ -6831,7 +6840,7 @@ function App() {
 
       {/* Main Content Area — gradient extends full page */}
       <div style={{ flex:1, display:"flex", flexDirection:"column", minWidth:0, overflowX:"hidden", overflowY: (activeTab === "world" || activeTab === "play" || activeTab === "relationships") ? "hidden" : "auto", position:"relative", background:"radial-gradient(ellipse at 20% 0%, var(--crimson-soft) 0%, transparent 55%), var(--bg)" }}>
-        {activeTab === "dashboard" && <DashboardView data={data} setData={setData} onNav={(tab, target) => { setActiveTab(tab); if (target) setNavTarget(target); }} activeCampaignId={activeCampaignId} viewRole={viewRole} />}
+        {activeTab === "dashboard" && <DashboardView data={data} setData={setData} onNav={(tab, target) => { setActiveTab(tab); if (target) setNavTarget(target); }} activeCampaignId={activeCampaignId} viewRole={viewRole} campaignMembers={campaignMembers} setShowInvitePanel={setShowInvitePanel} />}
         {activeTab === "timeline" && (
           tabsReady.timeline && window.CampaignTimelineView
             ? React.createElement(window.CampaignTimelineView, { data: data, setData: setData, onNav: setActiveTab, viewRole: viewRole })
