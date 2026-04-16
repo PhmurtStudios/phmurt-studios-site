@@ -4672,11 +4672,13 @@
     };
 
     function _hbSb() {
-      if (typeof PHMURT_CONFIG === 'undefined' || !PHMURT_CONFIG.cloudEnabled) return null;
-      if (typeof window.supabase === 'undefined') return null;
-      try {
-        return window.supabase.createClient(PHMURT_CONFIG.supabaseUrl, PHMURT_CONFIG.supabaseAnonKey);
-      } catch(e) { return null; }
+      // Use the global Supabase client already initialized by supabase-config.js
+      if (typeof phmurtSupabase !== 'undefined' && phmurtSupabase) return phmurtSupabase;
+      // Fallback: try creating from globals
+      if (typeof SUPABASE_URL !== 'undefined' && typeof SUPABASE_ANON_KEY !== 'undefined' && typeof window.supabase !== 'undefined') {
+        try { return window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); } catch(e) {}
+      }
+      return null;
     }
 
     // ── Share one entity to the compendium ───────────────────────
