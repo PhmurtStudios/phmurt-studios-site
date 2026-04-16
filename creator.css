@@ -127,11 +127,14 @@
 }
 .cr-preview-pane {
   overflow-y: auto;
-  padding: 32px 36px 120px;
+  padding: 24px 28px 80px;
   background:
     radial-gradient(ellipse at top, rgba(107,78,168,.05), transparent 55%),
     radial-gradient(ellipse at bottom right, rgba(139,0,0,.03), transparent 50%),
     var(--bg-card);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* ── Form sections (progressive disclosure) ──────────────────────── */
@@ -256,6 +259,51 @@
 .cr-field textarea { resize: none; font-family: 'SF Mono', 'Consolas', monospace; font-size: 12px; line-height: 1.55; min-height: 110px; }
 .cr-field.wide { grid-column: 1 / -1; }
 
+/* ── Global input styling (catches inputs NOT inside .cr-field) ──── */
+#creator-root input[type="text"],
+#creator-root input[type="number"],
+#creator-root textarea,
+#creator-root select {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: Spectral, Georgia, serif;
+  font-size: 13px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+  transition: border-color .12s, box-shadow .12s;
+}
+#creator-root input[type="text"]:focus,
+#creator-root input[type="number"]:focus,
+#creator-root textarea:focus,
+#creator-root select:focus {
+  outline: none;
+  border-color: var(--crimson);
+  box-shadow: 0 0 0 3px rgba(139, 0, 0, .12);
+}
+#creator-root textarea {
+  resize: vertical;
+  font-family: Spectral, Georgia, serif;
+  font-size: 13px;
+  line-height: 1.55;
+  min-height: 70px;
+}
+
+/* ── Trait row input refinements ────────────────────────────────── */
+.cr-trait-row input[type="text"],
+.cr-trait-row input[type="number"],
+.cr-trait-row textarea,
+.cr-trait-row select {
+  width: 100%;
+}
+.cr-trait-row {
+  padding: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  margin-bottom: 8px;
+  border-left: 3px solid rgba(139, 0, 0, .25);
+}
+
 /* Checkbox pill cluster */
 .cr-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .cr-chip {
@@ -375,9 +423,10 @@
 
 /* Spell stat-card (fills the right pane beautifully) */
 .cr-spellcard {
-  max-width: 540px;
+  max-width: 600px;
+  width: 100%;
   margin: 0 auto;
-  padding: 30px 34px;
+  padding: 26px 30px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-top: 3px solid var(--crimson);
@@ -504,6 +553,78 @@
   transition: border-color .15s;
 }
 
+/* ── Preview content wrapper (generic) ──────────────────────────── */
+.cr-preview-pane > * {
+  max-width: 650px;
+  width: 100%;
+}
+.cr-preview-pane > h2 {
+  max-width: 650px;
+}
+
+/* ── Statblock preview ─────────────────────────────────────────── */
+.cr-statblock {
+  max-width: 650px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 26px 30px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--crimson);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .3), inset 0 1px 0 rgba(232,223,208,.04);
+}
+
+/* ── Race/Class/Background/etc. preview cards ─────────────────── */
+.cr-preview-card {
+  max-width: 650px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 26px 30px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--crimson);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .3), inset 0 1px 0 rgba(232,223,208,.04);
+}
+.cr-preview-card .cr-pc-name {
+  font-family: Cinzel, serif;
+  font-size: 22px;
+  letter-spacing: 1px;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+.cr-preview-card .cr-pc-meta {
+  font-family: Spectral, Georgia, serif;
+  font-style: italic;
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+.cr-preview-card .cr-pc-section {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.cr-preview-card .cr-pc-section-title {
+  font-family: Cinzel, serif;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--crimson);
+  margin-bottom: 8px;
+}
+.cr-preview-card .cr-pc-trait {
+  margin-bottom: 10px;
+  font-family: Spectral, Georgia, serif;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--text);
+}
+.cr-preview-card .cr-pc-trait strong {
+  font-family: Spectral, Georgia, serif;
+  font-style: italic;
+  font-weight: 600;
+}
+
 /* ── Custom scrollbars ───────────────────────────────────────────── */
 #creator-root .cr-form-pane,
 #creator-root .cr-preview-pane,
@@ -602,12 +723,9 @@
 }
 
 /* ── Trait/enemy row hover ──────────────────────────────────────── */
-.cr-trait-row {
-  transition: border-color .15s, background .15s;
-}
 .cr-trait-row:hover {
   border-color: var(--crimson) !important;
-  background: rgba(139,0,0,.03) !important;
+  background: rgba(139,0,0,.06) !important;
 }
 
 /* ── Focus-visible for accessibility ─────────────────────────────── */

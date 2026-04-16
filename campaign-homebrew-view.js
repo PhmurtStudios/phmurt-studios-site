@@ -1587,6 +1587,70 @@ window.CampaignHomebrewView = function CampaignHomebrewView({ data, setData, vie
   /* Total count */
   const totalCount = Object.values(categoryData).reduce((sum, cat) => sum + cat.data.length, 0);
 
+  /* ─── Community Homebrew Section (fetched from Supabase campaign_homebrew) ─── */
+  const [communityItems, setCommunityItems] = React.useState([]);
+  const [communityLoading, setCommunityLoading] = React.useState(true);
+  const [mainView, setMainView] = React.useState("community"); // "community" | "workshop"
+
+  // Get campaign ID from data
+  const campaignId = data.id || data._id || null;
+
+  React.useEffect(() => {
+    if (!campaignId) { setCommunityLoading(false); return; }
+    var sb = typeof phmurtSupabase !== 'undefined' ? phmurtSupabase : null;
+    if (!sb) { setCommunityLoading(false); return; }
+    (async () => {
+      try {
+        var { data: rows } = await sb
+          .from('campaign_homebrew')
+          .select('*, homebrew_content:homebrew_content_id(*)')
+          .eq('campaign_id', campaignId);
+        var items = (rows || []).map(function(r) {
+          var hc = r.homebrew_content || {};
+          return {
+            linkId: r.id,
+            contentId: r.homebrew_content_id,
+            visibleToPlayers: r.visible_to_players,
+            addedAt: r.added_at,
+            addedBy: r.added_by,
+            type: hc.type || 'unknown',
+            name: (hc.data && hc.data.name) || 'Unnamed',
+            author: (hc.data && hc.data._authorName) || 'Unknown',
+            tags: (hc.data && hc.data.tags) || [],
+            desc: (hc.data && (hc.data.desc || (hc.data.traits && hc.data.traits[0] && hc.data.traits[0].desc) || '')) || '',
+            data: hc.data || {}
+          };
+        });
+        setCommunityItems(items);
+      } catch(e) { console.warn('[CampaignHomebrew] fetch error:', e); }
+      setCommunityLoading(false);
+    })();
+  }, [campaignId]);
+
+  const toggleVisibility = async (linkId, current) => {
+    var sb = typeof phmurtSupabase !== 'undefined' ? phmurtSupabase : null;
+    if (!sb) return;
+    try {
+      await sb.from('campaign_homebrew').update({ visible_to_players: !current }).eq('id', linkId);
+      setCommunityItems(prev => prev.map(i => i.linkId === linkId ? { ...i, visibleToPlayers: !current } : i));
+    } catch(e) { console.warn('[CampaignHomebrew] toggle error:', e); }
+  };
+
+  const removeCommunityItem = async (linkId) => {
+    if (!confirm('Remove this homebrew from the campaign?')) return;
+    var sb = typeof phmurtSupabase !== 'undefined' ? phmurtSupabase : null;
+    if (!sb) return;
+    try {
+      await sb.from('campaign_homebrew').delete().eq('id', linkId);
+      setCommunityItems(prev => prev.filter(i => i.linkId !== linkId));
+    } catch(e) { console.warn('[CampaignHomebrew] remove error:', e); }
+  };
+
+  // Filter community items for player view
+  const visibleCommunityItems = viewRole === 'dm' ? communityItems : communityItems.filter(i => i.visibleToPlayers);
+
+  const typeColors2 = { race:'#4169e1', class:'#d4433a', background:'#2e8b57', subclass:'#8b6914', item:'#6b4ea8', feat:'#ff9f43', spell:'#45aaf2', monster:'#ff6b6b', encounter:'#2ed8a3' };
+
   return (
     <div style={{ backgroundColor: T.bg, color: T.text, fontFamily: T.body, minHeight: "100vh", display: "flex", flexDirection: "column" }}>
 
@@ -1595,27 +1659,37 @@ window.CampaignHomebrewView = function CampaignHomebrewView({ data, setData, vie
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "start", marginBottom: "6px", flexWrap: "wrap", gap: "12px" }}>
           <div>
             <h1 style={{ margin: 0, fontSize: "30px", fontFamily: T.heading, color: T.crimson, letterSpacing: "0.02em" }}>
-              Homebrew Workshop
+              Campaign Homebrew
             </h1>
             <p style={{ margin: "4px 0 0", fontSize: "13px", color: T.textMuted, fontStyle: "italic" }}>
-              Forge custom content for your campaign
-              {totalCount > 0 && <span style={{ marginLeft: "12px", color: T.textFaint }}>({totalCount} total creations)</span>}
+              Community content added to this campaign
+              {visibleCommunityItems.length > 0 && <span style={{ marginLeft: "12px", color: T.textFaint }}>({visibleCommunityItems.length} items)</span>}
             </p>
           </div>
         </div>
 
-        {/* ─── Category Tabs ─── */}
-        <div style={{ display: "flex", gap: "8px", marginTop: "20px", marginBottom: "16px", flexWrap: "wrap" }}>
+        {/* ─── View Toggle ─── */}
+        <div style={{ display: "flex", gap: "8px", marginTop: "16px" }}>
+          <button onClick={() => setMainView("community")} style={pillBtn(mainView === "community")}>
+            Community Homebrew {visibleCommunityItems.length > 0 && <span style={{ opacity: 0.7 }}>({visibleCommunityItems.length})</span>}
+          </button>
+          <button onClick={() => setMainView("workshop")} style={pillBtn(mainView === "workshop")}>
+            Workshop {totalCount > 0 && <span style={{ opacity: 0.7 }}>({totalCount})</span>}
+          </button>
+        </div>
+
+        {/* ─── Category Tabs (workshop only) ─── */}
+        {mainView === "workshop" && <div style={{ display: "flex", gap: "8px", marginTop: "20px", marginBottom: "16px", flexWrap: "wrap" }}>
           {Object.entries(categoryData).map(([key, cat]) => (
             <button key={key} onClick={() => { setActiveTab(key); setSearchTerm(""); setExpandedCard(null); setSortBy("name"); }}
               style={pillBtn(activeTab === key)}>
               <span>{cat.icon}</span> {cat.label} {cat.data.length > 0 && <span style={{ opacity: 0.7 }}>({cat.data.length})</span>}
             </button>
           ))}
-        </div>
+        </div>}
 
-        {/* ─── Action Bar ─── */}
-        <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+        {/* ─── Action Bar (workshop only) ─── */}
+        {mainView === "workshop" && <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
           <div style={{ position: "relative", flex: 1, minWidth: "200px" }}>
             <input type="text" placeholder={"Search " + currentCat.label.toLowerCase() + "..."} value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
               style={{ ...inputStyle, paddingLeft: "32px" }} />
@@ -1635,11 +1709,69 @@ window.CampaignHomebrewView = function CampaignHomebrewView({ data, setData, vie
           {currentCat.data.length > 0 && (
             <button onClick={() => setShowExport(true)} style={secondaryBtn}>Export All</button>
           )}
-        </div>
+        </div>}
       </div>
 
-      {/* ─── Content Area ─── */}
-      <div style={{ flex: 1, overflowY: "auto" }}>
+      {/* ─── Community Homebrew Content ─── */}
+      {mainView === "community" && (
+        <div style={{ flex: 1, overflowY: "auto", padding: "20px 24px" }}>
+          {communityLoading ? (
+            <div style={{ textAlign: "center", padding: "40px 0", color: T.textMuted }}>Loading community homebrew...</div>
+          ) : visibleCommunityItems.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "40px 0" }}>
+              <div style={{ fontSize: "32px", opacity: 0.2, marginBottom: "12px" }}>{"\u2726"}</div>
+              <div style={{ fontFamily: T.heading, fontSize: "14px", color: T.textMuted, marginBottom: "8px" }}>No community homebrew added yet</div>
+              <div style={{ fontSize: "13px", color: T.textFaint }}>
+                Visit the <a href="/compendium.html" style={{ color: T.crimson }}>Compendium</a> to browse and add community homebrew to this campaign.
+              </div>
+            </div>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "16px" }}>
+              {visibleCommunityItems.map(item => {
+                var col = typeColors2[item.type] || T.textMuted;
+                var descSnippet = item.desc && item.desc.length > 100 ? item.desc.slice(0, 97) + '...' : item.desc;
+                return (
+                  <div key={item.linkId} style={{ background: T.bgCard, border: "1px solid " + T.border, borderLeft: "3px solid " + col, borderRadius: "8px", padding: "16px", display: "flex", flexDirection: "column" }}>
+                    <div style={{ fontFamily: T.ui, fontSize: "8px", letterSpacing: "1.5px", textTransform: "uppercase", color: col, marginBottom: "4px" }}>{item.type}</div>
+                    <div style={{ fontFamily: T.heading, fontSize: "16px", color: T.text, marginBottom: "4px" }}>{item.name}</div>
+                    <div style={{ fontSize: "12px", color: T.textFaint, fontStyle: "italic", marginBottom: "8px" }}>by {item.author}</div>
+                    {descSnippet && <div style={{ fontSize: "13px", color: T.textMuted, lineHeight: "1.5", marginBottom: "12px", flex: 1 }}>{descSnippet}</div>}
+                    {item.tags && item.tags.length > 0 && (
+                      <div style={{ display: "flex", gap: "4px", flexWrap: "wrap", marginBottom: "12px" }}>
+                        {(Array.isArray(item.tags) ? item.tags : String(item.tags).split(',')).slice(0, 4).map((tag, ti) => (
+                          <span key={ti} style={{ fontFamily: T.body, fontSize: "10px", color: T.textFaint, background: "rgba(255,255,255,.06)", padding: "2px 8px", borderRadius: "10px" }}>{String(tag).trim()}</span>
+                        ))}
+                      </div>
+                    )}
+                    {/* DM controls */}
+                    {viewRole === "dm" && (
+                      <div style={{ display: "flex", gap: "8px", alignItems: "center", marginTop: "auto", paddingTop: "12px", borderTop: "1px solid " + T.border }}>
+                        <button onClick={() => toggleVisibility(item.linkId, item.visibleToPlayers)}
+                          style={{ ...secondaryBtn, padding: "6px 12px", fontSize: "11px", color: item.visibleToPlayers ? "#2e8b57" : T.textMuted, borderColor: item.visibleToPlayers ? "#2e8b57" : T.border }}>
+                          {item.visibleToPlayers ? "\u2713 Visible to Players" : "\u2717 Hidden from Players"}
+                        </button>
+                        <button onClick={() => removeCommunityItem(item.linkId)}
+                          style={{ ...dangerBtn, padding: "6px 12px", fontSize: "11px" }}>
+                          Remove
+                        </button>
+                      </div>
+                    )}
+                    {/* Player view: just show visible badge */}
+                    {viewRole !== "dm" && (
+                      <div style={{ marginTop: "auto", paddingTop: "8px", borderTop: "1px solid " + T.border }}>
+                        <span style={{ fontSize: "11px", color: "#2e8b57" }}>{"\u2726"} Available for this campaign</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── Workshop Content Area ─── */}
+      {mainView === "workshop" && <div style={{ flex: 1, overflowY: "auto" }}>
         {expandedCard !== null && currentCat.data[expandedCard] ? (
           <div style={{ padding: "20px 24px" }}>
             <DetailToolbar
@@ -1658,7 +1790,7 @@ window.CampaignHomebrewView = function CampaignHomebrewView({ data, setData, vie
           <CardLibrary items={sorted} category={activeTab} onExpand={setExpandedCard}
             emptyMsg={"No " + currentCat.label.toLowerCase() + " created yet. Click \"+ New " + currentCat.singular + "\" to get started!"} />
         )}
-      </div>
+      </div>}
 
       {/* ─── Modals ─── */}
       {showCreator && CreatorComponent && (

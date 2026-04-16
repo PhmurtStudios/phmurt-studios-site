@@ -561,6 +561,10 @@
     .cmp-btn.shared { border-color: #2e8b57; color: #2e8b57; }
 
     /* Like button ──────────────────────────────────────────────── */
+    .cmp-tag-click { cursor: pointer; transition: all .15s; }
+    .cmp-tag-click:hover { color: var(--text); background: rgba(255,255,255,.12); }
+    .cmp-btn-saved { border-color: #2e8b57 !important; color: #2e8b57 !important; background: rgba(46,139,87,.06) !important; }
+    .cmp-btn-saved:hover { background: rgba(46,139,87,.12) !important; }
     .cmp-like-btn {
       font-family: 'Cinzel', serif;
       font-size: 9px;
@@ -1637,7 +1641,7 @@
         <select id="cmp-sort" class="cmp-sort" onchange="cmpRenderContent()">
           <option value="name">A to Z</option>
           <option value="newest">Newest</option>
-          <option value="popular">Most Liked</option>
+          <option value="popular">Newest First</option>
         </select>
       </div>
 
@@ -4692,7 +4696,8 @@
       communityData: null,        // cached fetch results
       loading:       false,
       error:         null,
-      likedIds:      null,        // set of ids liked this session
+      collectionIds: null,        // set of homebrew_content ids in user's collection
+      userCampaigns: null,        // array of {id, name} for campaign picker
     };
 
     function _hbSb() {
@@ -4856,40 +4861,86 @@
       }
     }
 
-    // ── Like an entry ─────────────────────────────────────────────
-    async function hbLikeEntry(compendiumId) {
-      if (!_compendiumState.likedIds) {
-        try { _compendiumState.likedIds = new Set(JSON.parse(localStorage.getItem('phmurt_liked_hb')||'[]')); }
-        catch(e) { _compendiumState.likedIds = new Set(); }
-      }
-      if (_compendiumState.likedIds.has(compendiumId)) return { alreadyLiked: true };
+    // ── Collection: fetch user's bookmarked IDs ────────────────────
+    async function hbFetchUserCollection() {
+      var sb = _hbSb();
+      if (!sb) { _compendiumState.collectionIds = new Set(); return; }
+      var session = (typeof PhmurtDB !== 'undefined') ? PhmurtDB.getSession() : null;
+      var userId = session ? session.userId : null;
+      if (!userId) { _compendiumState.collectionIds = new Set(); return; }
+      try {
+        var { data } = await sb.from('user_collections').select('homebrew_content_id').eq('user_id', userId);
+        _compendiumState.collectionIds = new Set((data || []).map(function(r) { return r.homebrew_content_id; }));
+      } catch(e) { _compendiumState.collectionIds = new Set(); }
+    }
 
+    // ── Collection: add bookmark ─────────────────────────────────
+    async function hbAddToCollection(homebrewContentId) {
       var sb = _hbSb();
       if (!sb) return { error: 'Not available.' };
-
+      var session = (typeof PhmurtDB !== 'undefined') ? PhmurtDB.getSession() : null;
+      var userId = session ? session.userId : null;
+      if (!userId) return { error: 'Sign in to save to your collection.' };
       try {
-        var { error } = await sb.rpc('increment_homebrew_likes', { row_id: compendiumId });
-        // Fallback: direct update if RPC not set up
-        if (error) {
-          // Get current likes then increment
-          var { data: row } = await sb.from('homebrew_content').select('likes_count').eq('id', compendiumId).single();
-          var currentLikes = (row && row.likes_count) ? row.likes_count : 0;
-          var { error: updErr } = await sb.from('homebrew_content')
-            .update({ likes_count: currentLikes + 1 }).eq('id', compendiumId);
-          if (updErr) throw updErr;
-        }
-
-        _compendiumState.likedIds.add(compendiumId);
-        localStorage.setItem('phmurt_liked_hb', JSON.stringify([..._compendiumState.likedIds]));
-        // Update local cache
-        if (_compendiumState.communityData) {
-          var entry = _compendiumState.communityData.find(function(e){ return e.id === compendiumId; });
-          if (entry) entry.likes = (entry.likes||0) + 1;
-        }
+        var { error } = await sb.from('user_collections').upsert(
+          { user_id: userId, homebrew_content_id: homebrewContentId },
+          { onConflict: 'user_id,homebrew_content_id' }
+        );
+        if (error) throw error;
+        if (!_compendiumState.collectionIds) _compendiumState.collectionIds = new Set();
+        _compendiumState.collectionIds.add(homebrewContentId);
         return { success: true };
-      } catch(e) {
-        return { error: e.message };
-      }
+      } catch(e) { return { error: e.message }; }
+    }
+
+    // ── Collection: remove bookmark ──────────────────────────────
+    async function hbRemoveFromCollection(homebrewContentId) {
+      var sb = _hbSb();
+      if (!sb) return { error: 'Not available.' };
+      var session = (typeof PhmurtDB !== 'undefined') ? PhmurtDB.getSession() : null;
+      var userId = session ? session.userId : null;
+      if (!userId) return { error: 'Not signed in.' };
+      try {
+        var { error } = await sb.from('user_collections').delete()
+          .eq('user_id', userId).eq('homebrew_content_id', homebrewContentId);
+        if (error) throw error;
+        if (_compendiumState.collectionIds) _compendiumState.collectionIds.delete(homebrewContentId);
+        return { success: true };
+      } catch(e) { return { error: e.message }; }
+    }
+
+    // ── Campaigns: fetch user's campaigns for picker ─────────────
+    async function hbFetchUserCampaigns() {
+      if (_compendiumState.userCampaigns) return _compendiumState.userCampaigns;
+      // Try local campaign cache first
+      try {
+        var cached = JSON.parse(localStorage.getItem('phmurt_campaign_cache') || 'null');
+        if (cached && cached.campaigns && cached.campaigns.length) {
+          _compendiumState.userCampaigns = cached.campaigns.map(function(c) {
+            return { id: c.id, name: (c.data && c.data.name) || c.name || 'Unnamed Campaign' };
+          });
+          return _compendiumState.userCampaigns;
+        }
+      } catch(e) {}
+      _compendiumState.userCampaigns = [];
+      return [];
+    }
+
+    // ── Campaign homebrew: add entry to a campaign ───────────────
+    async function hbAddToCampaign(campaignId, homebrewContentId) {
+      var sb = _hbSb();
+      if (!sb) return { error: 'Not available.' };
+      var session = (typeof PhmurtDB !== 'undefined') ? PhmurtDB.getSession() : null;
+      var userId = session ? session.userId : null;
+      if (!userId) return { error: 'Sign in first.' };
+      try {
+        var { error } = await sb.from('campaign_homebrew').upsert(
+          { campaign_id: campaignId, homebrew_content_id: homebrewContentId, added_by: userId, visible_to_players: false },
+          { onConflict: 'campaign_id,homebrew_content_id' }
+        );
+        if (error) throw error;
+        return { success: true };
+      } catch(e) { return { error: e.message }; }
     }
 
     // ── Import a community entry to local collection ──────────────
@@ -4937,9 +4988,8 @@
         document.body.appendChild(host);
       }
 
-      // Reset liked IDs from localStorage
-      try { _compendiumState.likedIds = new Set(JSON.parse(localStorage.getItem('phmurt_liked_hb')||'[]')); }
-      catch(e) { _compendiumState.likedIds = new Set(); }
+      // Fetch user collection if not loaded
+      if (!_compendiumState.collectionIds) hbFetchUserCollection();
 
       var S = _compendiumState;
       var typeLabels = { all:'All', race:'Races', class:'Classes', background:'Backgrounds', subclass:'Subclasses', item:'Items' };
@@ -4954,7 +5004,7 @@
 
       // Sort bar (community only)
       var sortBar = '<div style="display:flex;gap:4px;margin-bottom:14px;">';
-      [['newest','Newest'],['popular','Most Liked'],['name','A to Z']].forEach(function(pair) {
+      [['newest','Newest'],['popular','Newest First'],['name','A to Z']].forEach(function(pair) {
         var active = S.sortBy === pair[0];
         sortBar += '<button data-hbs="'+pair[0]+'" class="hbc-sort-btn" style="font-family:Cinzel,serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;padding:4px 10px;background:'+(active?'var(--bg-card)':'transparent')+';border:1px solid '+(active?'var(--border)':'var(--border)')+';color:'+(active?'var(--text)':'var(--text-muted)')+';cursor:pointer;">'+pair[1]+'</button>';
       });
@@ -5248,15 +5298,14 @@
       var typeColors = { race:'#4169e1', class:'var(--crimson)', background:'#2e8b57', subclass:'#8b6914', item:'#6b4ea8' };
       var typeLabels = { race:'Race', class:'Class', background:'Background', subclass:'Subclass', item:'Item' };
 
+      var collectionIds2 = _compendiumState.collectionIds || new Set();
       var html = '';
       filtered.forEach(function(row) {
         var col      = typeColors[row.type] || 'var(--text-muted)';
         var lbl      = typeLabels[row.type] || row.type;
-        var isLiked  = _compendiumState.likedIds && _compendiumState.likedIds.has(row.id);
+        var inColl   = collectionIds2.has(row.id);
         var isLocal  = localIds.has(row.data && row.data.id);
-        var likes    = row.likes || 0;
 
-        // Description snippet from entry data
         var desc = '';
         if (row.data) {
           if (row.data.desc)        desc = row.data.desc;
@@ -5264,85 +5313,82 @@
           else if (row.data.features && row.data.features[0]) desc = row.data.features[0].desc;
           else if (row.data.featureDesc) desc = row.data.featureDesc;
         }
-        if (desc && desc.length > 120) desc = desc.slice(0, 117) + '…';
+        if (desc && desc.length > 120) desc = desc.slice(0, 117) + '\u2026';
 
-        // Tags
         var tagHtml = '';
         if (row.tags && row.tags.length) {
           tagHtml = '<div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:5px;">'
-            + row.tags.slice(0,5).map(function(t) {
-                return '<span style="font-family:Cinzel,serif;font-size:7px;letter-spacing:1px;text-transform:uppercase;color:var(--text-faint);background:var(--bg-card);border:1px solid var(--border);padding:1px 6px;">'+_esc(t)+'</span>';
+            + cmpNormTags(row.tags).slice(0,5).map(function(t) {
+                return '<span class="cmp-tag-click" data-tag-filter="'+_esc(t)+'" style="font-family:Spectral,serif;font-size:10px;color:var(--text-faint);background:rgba(255,255,255,.06);padding:2px 9px;border-radius:10px;cursor:pointer;">'+_esc(t)+'</span>';
               }).join('')
             + '</div>';
         }
 
         html += '<div style="background:var(--bg-card);border:1px solid var(--border);border-left:3px solid '+col+';padding:14px 16px;margin-bottom:10px;">';
-
-        // Header row
         html += '<div style="display:flex;align-items:flex-start;gap:10px;">';
         html += '<div style="flex:1;min-width:0;">';
         html += '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">';
         html += '<span style="font-family:Cinzel,serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--text);">'+_esc(row.name)+'</span>';
         html += '<span style="font-family:Cinzel,serif;font-size:7px;letter-spacing:1px;text-transform:uppercase;color:'+col+';border:1px solid '+col+';padding:1px 5px;">'+lbl+'</span>';
-        if (isLocal) html += '<span style="font-family:Cinzel,serif;font-size:7px;letter-spacing:1px;text-transform:uppercase;color:#2e8b57;border:1px solid #2e8b57;padding:1px 5px;">In Collection</span>';
+        if (inColl) html += '<span style="font-family:Cinzel,serif;font-size:7px;letter-spacing:1px;text-transform:uppercase;color:#2e8b57;border:1px solid #2e8b57;padding:1px 5px;">\u2713 Saved</span>';
+        else if (isLocal) html += '<span style="font-family:Cinzel,serif;font-size:7px;letter-spacing:1px;text-transform:uppercase;color:#2e8b57;border:1px solid #2e8b57;padding:1px 5px;">In Collection</span>';
         html += '</div>';
         html += '<div style="font-size:11px;color:var(--text-faint);margin-top:3px;">by '+_esc(row.author_name||'Unknown')+'</div>';
         if (desc) html += '<div style="font-size:12px;color:var(--text-dim);margin-top:6px;line-height:1.6;">'+_esc(desc)+'</div>';
         html += tagHtml;
         html += '</div>';
-
         // Action column
         html += '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;">';
-        // Like button
-        html += '<button data-like-id="'+row.id+'" class="hbc-like-btn" '
-          + 'style="font-family:Cinzel,serif;font-size:8px;letter-spacing:1px;display:flex;align-items:center;gap:4px;'
-          + 'padding:4px 10px;background:'+(isLiked?'rgba(139,26,16,0.1)':'transparent')+';'
-          + 'border:1px solid '+(isLiked?'var(--crimson)':'var(--border)')+';'
-          + 'color:'+(isLiked?'var(--crimson)':'var(--text-muted)')+';cursor:'+(isLiked?'default':'pointer')+';">'
-          + '♥ <span class="hbc-like-count" data-lid="'+row.id+'">'+likes+'</span>'
-          + '</button>';
-        // Import button
-        if (!isLocal) {
-          html += '<button data-import-id="'+row.id+'" class="hbc-import-btn" '
-            + 'style="font-family:Cinzel,serif;font-size:7px;letter-spacing:1px;text-transform:uppercase;padding:4px 9px;'
-            + 'background:var(--crimson);border:none;color:#f5f0e8;cursor:pointer;">↓ Import</button>';
+        if (inColl) {
+          html += '<button data-uncollect-id="'+row.id+'" class="hbc-collect-btn" style="font-family:Cinzel,serif;font-size:8px;letter-spacing:1px;padding:4px 10px;background:rgba(46,139,87,.06);border:1px solid #2e8b57;color:#2e8b57;cursor:pointer;">\u2713 Saved</button>';
+        } else {
+          html += '<button data-collect-id="'+row.id+'" class="hbc-collect-btn" style="font-family:Cinzel,serif;font-size:8px;letter-spacing:1px;padding:4px 10px;background:transparent;border:1px solid var(--border);color:var(--text-muted);cursor:pointer;">+ Collect</button>';
         }
-        html += '</div>'; // action column
-
-        html += '</div>'; // header row
-        html += '</div>'; // card
+        html += '<button data-campaign-id="'+row.id+'" class="hbc-campaign-btn" style="font-family:Cinzel,serif;font-size:7px;letter-spacing:1px;text-transform:uppercase;padding:4px 9px;background:transparent;border:1px solid var(--border);color:var(--text-muted);cursor:pointer;">\u2694 Campaign</button>';
+        html += '</div>';
+        html += '</div>';
+        html += '</div>';
       });
 
       return html;
     }
 
     function _hbcWireCommunityButtons(container) {
-      // Like buttons
-      container.querySelectorAll('.hbc-like-btn').forEach(function(btn) {
+      // Collect buttons
+      container.querySelectorAll('[data-collect-id]').forEach(function(btn) {
         btn.addEventListener('click', async function() {
-          var id = this.getAttribute('data-like-id');
-          if (_compendiumState.likedIds && _compendiumState.likedIds.has(id)) return;
-          var result = await hbLikeEntry(id);
+          var id = this.getAttribute('data-collect-id');
+          this.textContent = '...';
+          var result = await hbAddToCollection(id);
           if (result.success) {
-            var countEl = container.querySelector('.hbc-like-count[data-lid="'+id+'"]');
-            if (countEl) countEl.textContent = parseInt(countEl.textContent||'0') + 1;
-            this.style.color = 'var(--crimson)';
-            this.style.borderColor = 'var(--crimson)';
-            this.style.cursor = 'default';
+            container.innerHTML = _hbcRenderCommunity();
+            _hbcWireCommunityButtons(container);
+            if (window.psToast) window.psToast('Added to your collection!');
+          } else {
+            this.textContent = '+ Collect';
+            if (window.psToast) window.psToast(result.error || 'Could not add.');
           }
         });
       });
-
-      // Import buttons
-      container.querySelectorAll('.hbc-import-btn').forEach(function(btn) {
+      // Uncollect buttons
+      container.querySelectorAll('[data-uncollect-id]').forEach(function(btn) {
         btn.addEventListener('click', async function() {
-          var id = this.getAttribute('data-import-id');
-          var row = (_compendiumState.communityData||[]).find(function(r){ return r.id === id; });
-          if (row) {
-            this.textContent = '↓ Importing…';
-            this.disabled = true;
-            await hbImportEntry(row);
-          }
+          var id = this.getAttribute('data-uncollect-id');
+          this.textContent = '...';
+          var result = await hbRemoveFromCollection(id);
+          if (result.success) {
+            container.innerHTML = _hbcRenderCommunity();
+            _hbcWireCommunityButtons(container);
+            if (window.psToast) window.psToast('Removed from collection.');
+          } else { this.textContent = '\u2713 Saved'; }
+        });
+      });
+      // Clickable tags
+      container.querySelectorAll('[data-tag-filter]').forEach(function(tag) {
+        tag.addEventListener('click', function() {
+          _compendiumState.search = this.getAttribute('data-tag-filter');
+          container.innerHTML = _hbcRenderCommunity();
+          _hbcWireCommunityButtons(container);
         });
       });
     }
@@ -5461,7 +5507,7 @@
       });
       // Reset sort default per tab
       var sortEl = document.getElementById('cmp-sort');
-      if (sortEl) sortEl.value = tab === 'community' ? 'popular' : 'name';
+      if (sortEl) sortEl.value = tab === 'community' ? 'newest' : 'name';
       cmpRenderTagFilters();
       cmpRenderContent();
     }
@@ -5890,7 +5936,13 @@
       if (!_cmpCommunityData) {
         container.innerHTML = '<div class="cmp-empty"><div class="cmp-empty-icon" style="font-size:32px;">&#9789;</div>'
           + '<div class="cmp-empty-title">Loading community&hellip;</div></div>';
-        var result = await hbFetchCompendium();
+        // Fetch community data, user collection, and campaigns in parallel
+        var results = await Promise.all([
+          hbFetchCompendium(),
+          hbFetchUserCollection(),
+          hbFetchUserCampaigns()
+        ]);
+        var result = results[0];
         if (result.error && !result.data.length) {
           container.innerHTML = '<div class="cmp-empty"><div class="cmp-empty-title">Could not load community content</div>'
             + '<div class="cmp-empty-body">' + cmpEsc(result.error) + '</div></div>';
@@ -5925,9 +5977,7 @@
         Object.values(crRcs).forEach(function(r) { if (r.clientId) localIds.add(r.clientId); });
       } catch(e) {}
 
-      var liked = [];
-      try { liked = JSON.parse(localStorage.getItem('phmurt_liked_hb') || '[]'); } catch(e) {}
-      var likedSet = new Set(liked);
+      var collectionIds = _compendiumState.collectionIds || new Set();
 
       // Filter
       var filtered = (_cmpCommunityData || []).filter(function(row) {
@@ -5970,9 +6020,8 @@
       filtered.forEach(function(row) {
         var col     = typeColors[row.type] || 'var(--text-muted)';
         var lbl     = typeLabels[row.type] || row.type;
-        var isLiked = likedSet.has(row.id);
+        var inCollection = collectionIds.has(row.id);
         var isLocal = row.data && (localIds.has(row.data.id) || localIds.has(row.data.clientId) || localIds.has(row.client_id));
-        var likes   = row.likes || 0;
 
         var desc = '';
         if (row.data) {
@@ -5984,7 +6033,7 @@
         if (desc.length > 130) desc = desc.slice(0, 127) + '...';
 
         var tags = cmpNormTags(row.tags).slice(0, 4).map(function(t) {
-          return '<span class="cmp-tag">' + cmpEsc(t) + '</span>';
+          return '<span class="cmp-tag cmp-tag-click" data-tag-filter="' + cmpEsc(t) + '">' + cmpEsc(t) + '</span>';
         }).join('');
 
         html += '<div class="cmp-card">'
@@ -5993,24 +6042,25 @@
           + '<div class="cmp-card-name">' + cmpEsc(row.name) + '</div>'
           + '<div class="cmp-card-sub">by ' + cmpEsc(row.author_name || 'Unknown') + '</div>';
         if (desc) html += '<div class="cmp-card-desc">' + cmpEsc(desc) + '</div>';
-        if (tags) html += '<div class="cmp-card-tags">' + tags + '</div>';
 
         html += '<div class="cmp-card-footer">';
-        // Tags / badges row
-        if (tags || isLocal) {
+        // Tags row
+        if (tags || inCollection || isLocal) {
           html += '<div class="cmp-card-footer-tags">';
-          if (isLocal) html += '<span class="cmp-badge" style="color:#2e8b57;border-color:#2e8b57;">&#10003; In Collection</span>';
+          if (inCollection) html += '<span class="cmp-badge" style="color:#2e8b57;border-color:#2e8b57;">&#10003; Saved</span>';
+          else if (isLocal) html += '<span class="cmp-badge" style="color:#2e8b57;border-color:#2e8b57;">&#10003; In Collection</span>';
           html += tags + '</div>';
         }
         // Actions row — all left-aligned
-        html += '<div class="cmp-card-footer-actions">'
-          + '<button class="cmp-like-btn' + (isLiked ? ' liked' : '') + '" '
-          + 'data-like-row="' + row.id + '" ' + (isLiked ? 'disabled' : '') + '>'
-          + '&#9829; <span class="like-count" data-lid="' + row.id + '">' + likes + '</span></button>'
-          + '<button class="cmp-btn" data-cview-idx="' + filtered.indexOf(row) + '" title="View details">&#9670; View</button>';
-        if (!isLocal) {
-          html += '<button class="cmp-btn primary" data-import-row="' + row.id + '">&#9670; Import</button>';
+        html += '<div class="cmp-card-footer-actions">';
+        // Add to Collection toggle
+        if (inCollection) {
+          html += '<button class="cmp-btn cmp-btn-saved" data-uncollect-row="' + row.id + '" title="Remove from collection">&#10003; Saved</button>';
+        } else {
+          html += '<button class="cmp-btn" data-collect-row="' + row.id + '" title="Add to your collection">+ Collect</button>';
         }
+        html += '<button class="cmp-btn" data-cview-idx="' + filtered.indexOf(row) + '" title="View details">&#9670; View</button>';
+        html += '<button class="cmp-btn" data-campaign-add="' + row.id + '" title="Add to a campaign">&#9878; Campaign</button>';
         html += '</div></div></div>';
       });
       html += '</div>';
@@ -6026,31 +6076,103 @@
         });
       });
 
-      // Wire like buttons
-      container.querySelectorAll('.cmp-like-btn:not([disabled])').forEach(function(btn) {
+      // Wire "Collect" buttons
+      container.querySelectorAll('[data-collect-row]').forEach(function(btn) {
         btn.addEventListener('click', async function() {
-          var id = this.getAttribute('data-like-row');
-          var result = await hbLikeEntry(id);
+          var id = this.getAttribute('data-collect-row');
+          this.textContent = '...';
+          this.disabled = true;
+          var result = await hbAddToCollection(id);
           if (result.success) {
-            var countEl = container.querySelector('.like-count[data-lid="' + id + '"]');
-            if (countEl) countEl.textContent = parseInt(countEl.textContent || '0') + 1;
-            this.classList.add('liked');
-            this.disabled = true;
+            cmpRenderCommunity();
+            if (window.psToast) window.psToast('Added to your collection!');
+          } else {
+            this.textContent = '+ Collect';
+            this.disabled = false;
+            if (window.psToast) window.psToast(result.error || 'Could not add.');
           }
         });
       });
 
-      // Wire import buttons
-      container.querySelectorAll('[data-import-row]').forEach(function(btn) {
+      // Wire "Saved" (uncollect) buttons
+      container.querySelectorAll('[data-uncollect-row]').forEach(function(btn) {
         btn.addEventListener('click', async function() {
-          var id  = this.getAttribute('data-import-row');
-          var row = (_cmpCommunityData || []).find(function(r) { return r.id === id; });
-          if (!row) return;
-          this.textContent = '&#8595; Importing...';
+          var id = this.getAttribute('data-uncollect-row');
+          this.textContent = '...';
           this.disabled = true;
-          await hbImportEntry(row);
-          cmpRefreshMineCount();
-          cmpRenderContent();
+          var result = await hbRemoveFromCollection(id);
+          if (result.success) {
+            cmpRenderCommunity();
+            if (window.psToast) window.psToast('Removed from collection.');
+          } else {
+            this.textContent = '\u2713 Saved';
+            this.disabled = false;
+          }
+        });
+      });
+
+      // Wire "Campaign" buttons — show campaign picker
+      container.querySelectorAll('[data-campaign-add]').forEach(function(btn) {
+        btn.addEventListener('click', async function(e) {
+          e.stopPropagation();
+          var hbId = this.getAttribute('data-campaign-add');
+          var campaigns = _compendiumState.userCampaigns || [];
+          if (!campaigns.length) {
+            if (window.psToast) window.psToast('No campaigns found. Create one in the Campaign Manager first.');
+            return;
+          }
+          // Remove any existing picker
+          var oldPicker = document.getElementById('cmp-campaign-picker');
+          if (oldPicker) oldPicker.remove();
+          // Build picker dropdown
+          var picker = document.createElement('div');
+          picker.id = 'cmp-campaign-picker';
+          picker.style.cssText = 'position:fixed;z-index:99999;background:var(--bg-card,#141420);border:1px solid var(--border);border-radius:8px;padding:8px 0;min-width:220px;box-shadow:0 8px 24px rgba(0,0,0,.5);';
+          var rect = this.getBoundingClientRect();
+          picker.style.left = Math.min(rect.left, window.innerWidth - 240) + 'px';
+          picker.style.top  = (rect.bottom + 4) + 'px';
+          picker.innerHTML = '<div style="padding:4px 14px 8px;font-family:Cinzel,serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);">Add to Campaign</div>';
+          campaigns.forEach(function(camp) {
+            var opt = document.createElement('button');
+            opt.style.cssText = 'display:block;width:100%;text-align:left;padding:8px 14px;background:none;border:none;color:var(--text);font-family:Spectral,serif;font-size:13px;cursor:pointer;';
+            opt.textContent = camp.name;
+            opt.addEventListener('mouseenter', function() { this.style.background = 'rgba(255,255,255,.06)'; });
+            opt.addEventListener('mouseleave', function() { this.style.background = 'none'; });
+            opt.addEventListener('click', async function() {
+              var result = await hbAddToCampaign(camp.id, hbId);
+              picker.remove();
+              if (result.success) {
+                if (window.psToast) window.psToast('Added to "' + camp.name + '"!');
+              } else {
+                if (window.psToast) window.psToast(result.error || 'Could not add.');
+              }
+            });
+            picker.appendChild(opt);
+          });
+          document.body.appendChild(picker);
+          // Close on outside click
+          setTimeout(function() {
+            document.addEventListener('click', function closePicker(ev) {
+              if (!picker.contains(ev.target)) {
+                picker.remove();
+                document.removeEventListener('click', closePicker);
+              }
+            });
+          }, 10);
+        });
+      });
+
+      // Wire clickable tags — filter by tag
+      container.querySelectorAll('[data-tag-filter]').forEach(function(tag) {
+        tag.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var tagName = this.getAttribute('data-tag-filter');
+          // Set the tag in the search box
+          var searchEl = document.getElementById('cmp-search');
+          if (searchEl) {
+            searchEl.value = tagName;
+            searchEl.dispatchEvent(new Event('input'));
+          }
         });
       });
     }

@@ -318,9 +318,10 @@
       var ab = SKILL_ABILITY[sk]; var mod = abMod(ab) + pb;
       return sk + ' ' + (U.fmtMod ? U.fmtMod(mod) : '');
     }).join(', ');
+    var spd = s.speed || {};
     var speedLine = ['walk','fly','swim','climb','burrow']
-      .filter(function (k) { return s.speed[k] && s.speed[k] > 0; })
-      .map(function (k) { return (k === 'walk' ? '' : k + ' ') + s.speed[k] + ' ft.'; })
+      .filter(function (k) { return spd[k] && spd[k] > 0; })
+      .map(function (k) { return (k === 'walk' ? '' : k + ' ') + spd[k] + ' ft.'; })
       .join(', ');
 
     var xp = U.crToXp ? U.crToXp(s.cr) : 0;
@@ -406,7 +407,10 @@
     if (act === 'add-action') { state.current.actions.push({ name:'', desc:'' }); render(); return; }
     if (act === 'remove-row') {
       var list = t.getAttribute('data-list'); var idx = parseInt(t.getAttribute('data-idx'),10);
-      state.current[list].splice(idx, 1); render(); return;
+      if (state.current[list] && idx >= 0 && idx < state.current[list].length) {
+        state.current[list].splice(idx, 1);
+      }
+      render(); return;
     }
   }
   function onKeydown(e) {

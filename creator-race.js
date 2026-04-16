@@ -333,7 +333,10 @@
     if (act === 'add-subrace') { state.current.subraces.push({ name:'', asi:{}, traits:[] }); render(); return; }
     if (act === 'remove-row') {
       var list = t.getAttribute('data-list'); var idx = parseInt(t.getAttribute('data-idx'),10);
-      state.current[list].splice(idx, 1); render(); return;
+      if (state.current[list] && idx >= 0 && idx < state.current[list].length) {
+        state.current[list].splice(idx, 1);
+      }
+      render(); return;
     }
   }
   function onKeydown(e) {

@@ -189,7 +189,7 @@
     if (a === 'delete') return del();
     if (a === 'export') return exportPng();
     if (a === 'add-row') { state.current.benefits.push(''); render(); return; }
-    if (a === 'remove-row') { state.current.benefits.splice(parseInt(t.getAttribute('data-idx'),10),1); render(); return; }
+    if (a === 'remove-row') { var idx = parseInt(t.getAttribute('data-idx'),10); if (state.current.benefits && idx >= 0 && idx < state.current.benefits.length) state.current.benefits.splice(idx,1); render(); return; }
   }
   function onKeydown(e) {
     if (e.key !== 'Escape') return;
@@ -199,7 +199,7 @@
   }
 
   function save() {
-    if (!state.current.name.trim()) { if (U.showToast) U.showToast('Error', 'Name is required'); else alert('Name is required'); return; }
+    if (!state.current.name || !state.current.name.trim()) { if (U.showToast) U.showToast('Error', 'Name is required'); else alert('Name is required'); return; }
     if (!state.current.clientId) state.current.clientId = generateClientId();
     state.current.benefits = (state.current.benefits||[]).filter(function(b){return b && b.trim();});
     var list = loadAll();

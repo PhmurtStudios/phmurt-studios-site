@@ -528,7 +528,7 @@
   // ── Save / delete ────────────────────────────────────────────────
   function save() {
     if (!state.current.name || !state.current.name.trim()) {
-      if (global.showRestToast) global.showRestToast('Error', 'Name is required');
+      if (U.showToast) U.showToast('Error', 'Name is required');
       else alert('Name is required');
       return;
     }

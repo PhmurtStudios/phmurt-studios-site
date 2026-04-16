@@ -187,7 +187,7 @@
     } else if (list === 'spells' && idx !== null) {
       var spIdx = parseInt(idx, 10);
       if (field === 'spells') {
-        state.current.expandedSpells[spIdx].spells = t.value.split(',').map(function(s){return s.trim();}).filter(function(s){return s;});
+        if (state.current.expandedSpells[spIdx]) state.current.expandedSpells[spIdx].spells = t.value.split(',').map(function(s){return s.trim();}).filter(function(s){return s;});
       }
     } else if (list === 'features' && idx !== null) {
       var fIdx = parseInt(idx, 10);
@@ -199,9 +199,9 @@
       idx = parseInt(selByIdx.getAttribute('data-idx'), 10);
       var sel = t.closest('[data-list="spells"]');
       if (sel && t.getAttribute('data-k') === null) {
-        state.current.expandedSpells[idx].level = parseInt(t.value, 10);
+        if (state.current.expandedSpells[idx]) state.current.expandedSpells[idx].level = parseInt(t.value, 10);
       } else if (t.closest('[data-list="features"]')) {
-        state.current.features[idx].level = parseInt(t.value, 10);
+        if (state.current.features[idx]) state.current.features[idx].level = parseInt(t.value, 10);
       }
     }
     render(); cloudSync();
@@ -226,7 +226,7 @@
   }
 
   function save() {
-    if (!state.current.name.trim()) { if (U.showToast) U.showToast('Error', 'Name is required'); else alert('Name is required'); return; }
+    if (!state.current.name || !state.current.name.trim()) { if (U.showToast) U.showToast('Error', 'Name is required'); else alert('Name is required'); return; }
     if (!state.current.parentClass) { if (U.showToast) U.showToast('Error', 'Parent Class is required'); else alert('Parent Class is required'); return; }
     if (!state.current.clientId) state.current.clientId = generateClientId();
     state.current.expandedSpells = (state.current.expandedSpells||[]).filter(function(sp){return sp.spells && sp.spells.length;});

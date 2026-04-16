@@ -254,7 +254,7 @@
   }
 
   function save() {
-    if (!state.current.name.trim()) { if (U.showToast) U.showToast('Error', 'Name is required'); else alert('Name is required'); return; }
+    if (!state.current.name || !state.current.name.trim()) { if (U.showToast) U.showToast('Error', 'Name is required'); else alert('Name is required'); return; }
     if (!state.current.clientId) state.current.clientId = generateClientId();
     var db = loadAll();
     // preserve legacy id as well so itemDB keeps working

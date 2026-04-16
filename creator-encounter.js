@@ -312,9 +312,9 @@
     if (a === 'delete') return del();
     if (a === 'export') return exportPng();
     if (a === 'add-monster') { state.current.monsters.push({name:'',count:1,cr:'1',notes:''}); render(); return; }
-    if (a === 'remove-monster') { state.current.monsters.splice(parseInt(t.getAttribute('data-idx'),10),1); render(); return; }
+    if (a === 'remove-monster') { var mi = parseInt(t.getAttribute('data-idx'),10); if (state.current.monsters && mi >= 0 && mi < state.current.monsters.length) state.current.monsters.splice(mi,1); render(); return; }
     if (a === 'add-terrain') { state.current.terrain.push({name:'',desc:''}); render(); return; }
-    if (a === 'remove-terrain') { state.current.terrain.splice(parseInt(t.getAttribute('data-idx'),10),1); render(); return; }
+    if (a === 'remove-terrain') { var ti = parseInt(t.getAttribute('data-idx'),10); if (state.current.terrain && ti >= 0 && ti < state.current.terrain.length) state.current.terrain.splice(ti,1); render(); return; }
   }
   function onKeydown(e) {
     if (e.key !== 'Escape') return;
@@ -324,7 +324,7 @@
   }
 
   function save() {
-    if (!state.current.name.trim()) { if (U.showToast) U.showToast('Error', 'Name is required'); else alert('Name is required'); return; }
+    if (!state.current.name || !state.current.name.trim()) { if (U.showToast) U.showToast('Error', 'Name is required'); else alert('Name is required'); return; }
     if (!state.current.clientId) state.current.clientId = generateClientId();
     var list = loadAll();
     state.current.id = state.current.id || state.current.clientId;
