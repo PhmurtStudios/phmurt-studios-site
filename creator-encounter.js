@@ -46,7 +46,7 @@
       type:'encounter', clientId:null,
       name:'New Encounter', environment:'Dungeon', difficulty:'Medium',
       partyLevelMin:1, partyLevelMax:20, partySize:4,
-      setup:'', monsters:[{name:'',count:1,cr:'1',notes:''}],
+      setup:'', monsters:[],
       terrain:[], tactics:'', treasure:'', alternatives:'',
       campaignId:null, isPublic:false
     };
@@ -285,29 +285,43 @@
     var encXp = computeEncounterXP(s);
     var computedDiff = difficultyLabel(encXp.adjustedXp, budget);
 
-    var monstersHtml = (s.monsters||[]).map(function(m, i){
-      var xp = U.crToXp ? (U.crToXp(m.cr) || 0) : 0;
-      return '<div class="cr-trait-row" >' +
-        '<div class="cr-grid cr-grid-3" style="align-items:end;">' +
-          '<div class="cr-field wide"><label>Monster</label>' +
-            '<div class="cr-ac-wrap" data-ac-idx="'+i+'">' +
-              '<input type="text" class="cr-ac-input" data-list="monsters" data-idx="'+i+'" data-field="name" value="'+escAttr(m.name)+'" placeholder="Type to search monsters…" autocomplete="off" />' +
-              '<div class="cr-ac-dropdown" hidden></div>' +
+    /* ── Added enemies (compact roster) ──────────────────────────── */
+    var rosterHtml = '';
+    if (s.monsters && s.monsters.length && s.monsters.some(function(m){return m.name;})) {
+      rosterHtml = '<div class="cr-roster">' +
+        (s.monsters||[]).map(function(m, i){
+          if (!m.name) return '';
+          var xp = U.crToXp ? (U.crToXp(m.cr) || 0) : 0;
+          return '<div class="cr-roster-row">' +
+            '<span class="cr-roster-name">' + esc(m.name) + ' <span class="cr-roster-cr">CR ' + esc(m.cr) + '</span></span>' +
+            '<div class="cr-roster-controls">' +
+              '<button type="button" class="cr-roster-btn" data-act="dec-monster" data-idx="'+i+'">−</button>' +
+              '<span class="cr-roster-count">' + (m.count||1) + '</span>' +
+              '<button type="button" class="cr-roster-btn" data-act="inc-monster" data-idx="'+i+'">+</button>' +
+              '<span class="cr-roster-xp">' + ((m.count||1) * xp) + ' XP</span>' +
+              '<button type="button" class="cr-roster-btn cr-roster-remove" data-act="remove-monster" data-idx="'+i+'" title="Remove">✕</button>' +
             '</div>' +
-            '<button type="button" class="cr-btn cr-btn-xs" data-act="browse-monsters" data-idx="'+i+'" title="Browse all monsters" style="margin-top:4px;font-size:11px;">Browse All</button>' +
-          '</div>' +
-          '<div class="cr-field"><label>Count</label><input type="number" data-list="monsters" data-idx="'+i+'" data-field="count" value="'+(m.count||1)+'" min="1" /></div>' +
-          '<div class="cr-field"><label>CR</label>' +
-            '<select data-list="monsters" data-idx="'+i+'" data-field="cr">' +
-              CR_OPTS.map(function(c){return '<option value="'+c+'"'+(String(m.cr)===c?' selected':'')+'>'+c+'</option>';}).join('') +
-            '</select>' +
-          '</div>' +
-        '</div>' +
-        '<input type="text" data-list="monsters" data-idx="'+i+'" data-field="notes" value="'+escAttr(m.notes)+'" placeholder="Notes (e.g., Half HP, Immobilized)" style="margin-top:8px;" />' +
-        '<div class="cr-autocalc">' + (m.count||1) + ' × ' + xp + ' XP = ' + ((m.count||1) * xp) + ' XP</div>' +
-        '<button type="button" class="cr-btn" data-act="remove-monster" data-idx="'+i+'" style="margin-top:6px;">Remove</button>' +
+          '</div>';
+        }).join('') +
       '</div>';
-    }).join('');
+    }
+
+    /* ── Monster picker (search + filter + scrollable list) ─────── */
+    var pickerHtml =
+      '<div class="cr-picker">' +
+        '<div class="cr-picker-bar">' +
+          '<input type="text" id="cr-mp-search" placeholder="Search monsters…" autocomplete="off" />' +
+          '<select id="cr-mp-cr">' +
+            '<option value="">All CRs</option>' +
+            CR_OPTS.map(function(c){ return '<option value="'+c+'">CR '+c+'</option>'; }).join('') +
+          '</select>' +
+          '<select id="cr-mp-src">' +
+            '<option value="">All</option><option value="SRD">SRD</option><option value="Homebrew">Homebrew</option>' +
+          '</select>' +
+        '</div>' +
+        '<div class="cr-picker-count" id="cr-mp-count"></div>' +
+        '<div class="cr-picker-list" id="cr-mp-list"></div>' +
+      '</div>';
 
     var terrainHtml = (s.terrain||[]).map(function(t, i){
       return '<div class="cr-trait-row" >' +
@@ -360,12 +374,12 @@
           '</div>' +
 
           '<div class="cr-section">' +
-            '<div class="cr-section-label">Enemies</div>' +
-            '<div>' + monstersHtml + '</div>' +
-            '<button type="button" class="cr-btn" data-act="add-monster" style="margin-top:8px;">+ Add Enemy</button>' +
-            '<div class="cr-autocalc" style="margin-top:10px;">' +
+            '<div class="cr-section-label">Enemies <span class="hint">search &amp; click to add</span></div>' +
+            rosterHtml +
+            '<div class="cr-autocalc" style="margin-bottom:10px;">' +
               'Total: ' + encXp.totalMonsters + ' monster(s) · raw ' + encXp.rawXp + ' XP × ' + encXp.multiplier + ' = <strong>' + encXp.adjustedXp + ' adj XP</strong> → computed difficulty: <strong>' + computedDiff + '</strong>' +
             '</div>' +
+            pickerHtml +
           '</div>' +
 
           '<div class="cr-section">' +
@@ -406,7 +420,7 @@
       '</div>';
 
     populateCampaignDropdown(s);
-    wireAutocomplete(root);
+    wireMonsterPicker(root);
     setSyncState('');
   }
 
@@ -437,79 +451,75 @@
     '</div>';
   }
 
-  /* ── Autocomplete for monster name inputs ──────────────────────── */
-  var _acActive = null; // { idx, highlightIdx }
+  /* ── Monster picker — populates the scrollable list ──────────── */
+  var _mpSearchVal = '';
+  var _mpCrVal = '';
+  var _mpSrcVal = '';
 
-  function wireAutocomplete(root) {
-    root.querySelectorAll('.cr-ac-input').forEach(function(inp) {
-      var wrap = inp.closest('.cr-ac-wrap');
-      var dd = wrap && wrap.querySelector('.cr-ac-dropdown');
-      if (!wrap || !dd) return;
-      var idx = parseInt(inp.getAttribute('data-idx'), 10);
+  function wireMonsterPicker(root) {
+    var searchInp = root.querySelector('#cr-mp-search');
+    var crSel = root.querySelector('#cr-mp-cr');
+    var srcSel = root.querySelector('#cr-mp-src');
+    var listEl = root.querySelector('#cr-mp-list');
+    var countEl = root.querySelector('#cr-mp-count');
+    if (!searchInp || !listEl) return;
 
-      inp.addEventListener('input', function(e) {
-        e.stopPropagation(); // prevent default onChange from re-rendering and destroying dropdown
-        var q = inp.value.trim().toLowerCase();
-        // Update state without re-render
-        if (state.current.monsters[idx]) state.current.monsters[idx].name = inp.value;
-        if (q.length < 1) { dd.setAttribute('hidden', ''); _acActive = null; return; }
-        var matches = getMonsterList().filter(function(m) {
-          return m.name.toLowerCase().indexOf(q) !== -1;
-        }).slice(0, 20);
-        if (!matches.length) { dd.setAttribute('hidden', ''); _acActive = null; return; }
-        _acActive = { idx: idx, highlightIdx: 0 };
-        dd.innerHTML = matches.map(function(m, mi) {
-          return '<div class="cr-ac-item' + (mi === 0 ? ' cr-ac-active' : '') + '" data-ac-pick="'+mi+'" data-ac-name="'+escAttr(m.name)+'" data-ac-cr="'+escAttr(m.cr)+'">' +
-            '<span class="cr-ac-name">' + esc(m.name) + '</span>' +
-            '<span class="cr-ac-meta">CR ' + esc(m.cr) + (m.source === 'Homebrew' ? ' · HB' : '') + '</span>' +
-          '</div>';
-        }).join('');
-        dd.removeAttribute('hidden');
+    // Restore filter state across re-renders
+    searchInp.value = _mpSearchVal;
+    if (crSel) crSel.value = _mpCrVal;
+    if (srcSel) srcSel.value = _mpSrcVal;
+
+    var allMonsters = getMonsterList();
+
+    function renderPickerList() {
+      _mpSearchVal = (searchInp.value || '').trim();
+      _mpCrVal = crSel ? crSel.value : '';
+      _mpSrcVal = srcSel ? srcSel.value : '';
+      var q = _mpSearchVal.toLowerCase();
+      var filtered = allMonsters.filter(function(m) {
+        if (q && m.name.toLowerCase().indexOf(q) === -1) return false;
+        if (_mpCrVal && m.cr !== _mpCrVal) return false;
+        if (_mpSrcVal && m.source !== _mpSrcVal) return false;
+        return true;
       });
+      countEl.textContent = filtered.length + ' monster' + (filtered.length !== 1 ? 's' : '');
+      if (!filtered.length) { listEl.innerHTML = '<div style="color:var(--text-muted);padding:16px;text-align:center;">No matches</div>'; return; }
+      listEl.innerHTML = filtered.map(function(m) {
+        var xp = U.crToXp ? (U.crToXp(m.cr) || 0) : 0;
+        return '<div class="cr-mp-row" data-mp-name="'+escAttr(m.name)+'" data-mp-cr="'+escAttr(m.cr)+'">' +
+          '<span class="cr-mp-name">' + esc(m.name) + '</span>' +
+          '<span class="cr-mp-meta">CR ' + esc(m.cr) + ' · ' + xp + ' XP' + (m.source === 'Homebrew' ? ' · <em>HB</em>' : '') + '</span>' +
+        '</div>';
+      }).join('');
+    }
+    renderPickerList();
 
-      inp.addEventListener('keydown', function(e) {
-        if (!_acActive || _acActive.idx !== idx) return;
-        var items = dd.querySelectorAll('.cr-ac-item');
-        if (!items.length) return;
-        if (e.key === 'ArrowDown') {
-          e.preventDefault();
-          _acActive.highlightIdx = Math.min(_acActive.highlightIdx + 1, items.length - 1);
-          items.forEach(function(el, i) { el.classList.toggle('cr-ac-active', i === _acActive.highlightIdx); });
-        } else if (e.key === 'ArrowUp') {
-          e.preventDefault();
-          _acActive.highlightIdx = Math.max(_acActive.highlightIdx - 1, 0);
-          items.forEach(function(el, i) { el.classList.toggle('cr-ac-active', i === _acActive.highlightIdx); });
-        } else if (e.key === 'Enter') {
-          e.preventDefault();
-          var picked = items[_acActive.highlightIdx];
-          if (picked) pickMonster(idx, picked.getAttribute('data-ac-name'), picked.getAttribute('data-ac-cr'));
-        } else if (e.key === 'Escape') {
-          dd.setAttribute('hidden', '');
-          _acActive = null;
-        }
-      });
+    searchInp.addEventListener('input', renderPickerList);
+    if (crSel) crSel.addEventListener('change', renderPickerList);
+    if (srcSel) srcSel.addEventListener('change', renderPickerList);
 
-      inp.addEventListener('blur', function() {
-        // Small delay so click on dropdown item can fire first
-        setTimeout(function() { dd.setAttribute('hidden', ''); _acActive = null; }, 180);
-      });
-
-      dd.addEventListener('mousedown', function(e) {
-        var item = e.target.closest('.cr-ac-item');
-        if (!item) return;
-        e.preventDefault(); // prevent blur
-        pickMonster(idx, item.getAttribute('data-ac-name'), item.getAttribute('data-ac-cr'));
-      });
+    listEl.addEventListener('click', function(e) {
+      var row = e.target.closest('.cr-mp-row');
+      if (!row) return;
+      addMonsterFromPicker(row.getAttribute('data-mp-name'), row.getAttribute('data-mp-cr'));
     });
   }
 
-  function pickMonster(idx, name, cr) {
-    if (!state.current.monsters[idx]) return;
-    state.current.monsters[idx].name = name;
-    state.current.monsters[idx].cr = cr;
-    _acActive = null;
-    render(); wireAutocomplete(document.getElementById('creator-root'));
-    cloudSync();
+  function addMonsterFromPicker(name, cr) {
+    if (!state.current) return;
+    // Check if this monster is already in the roster — if so, increment count
+    var existing = null;
+    (state.current.monsters||[]).forEach(function(m, i) {
+      if (m.name === name && m.cr === cr) existing = i;
+    });
+    if (existing !== null) {
+      state.current.monsters[existing].count = (state.current.monsters[existing].count || 1) + 1;
+    } else {
+      // Remove empty placeholder rows first
+      state.current.monsters = (state.current.monsters||[]).filter(function(m){ return m.name; });
+      state.current.monsters.push({ name: name, count: 1, cr: cr, notes: '' });
+    }
+    render(); cloudSync();
   }
 
   function wireEvents() {
@@ -519,12 +529,11 @@
     root.addEventListener('change', onChange);
     root.addEventListener('click', onClick);
     document.addEventListener('keydown', onKeydown);
-    wireAutocomplete(root);
   }
   function onChange(e) {
     var t = e.target; if (!t) return;
-    // Skip autocomplete inputs — they handle their own state
-    if (t.classList && t.classList.contains('cr-ac-input')) return;
+    // Skip monster picker inputs — they have their own handlers
+    if (t.id === 'cr-mp-search' || t.id === 'cr-mp-cr' || t.id === 'cr-mp-src') return;
     var k = t.getAttribute('data-k'); var list = t.getAttribute('data-list');
     if (k) {
       if (t.type === 'checkbox') state.current[k] = t.checked;
@@ -536,7 +545,7 @@
       if (!state.current[list][idx]) state.current[list][idx] = {};
       state.current[list][idx][field] = (t.type==='number') ? (parseInt(t.value,10)||0) : t.value;
     }
-    render(); wireAutocomplete(document.getElementById('creator-root')); cloudSync();
+    render(); cloudSync();
   }
   function onClick(e) {
     var t = e.target.closest('[data-act]'); if (!t) return;
@@ -545,88 +554,17 @@
     if (a === 'save') return save();
     if (a === 'delete') return del();
     if (a === 'export') return exportPng();
-    if (a === 'add-monster') { state.current.monsters.push({name:'',count:1,cr:'1',notes:''}); render(); return; }
-    if (a === 'remove-monster') { var mi = parseInt(t.getAttribute('data-idx'),10); if (state.current.monsters && mi >= 0 && mi < state.current.monsters.length) state.current.monsters.splice(mi,1); render(); return; }
+    if (a === 'remove-monster') { var mi = parseInt(t.getAttribute('data-idx'),10); if (state.current.monsters && mi >= 0 && mi < state.current.monsters.length) { state.current.monsters.splice(mi,1); render(); cloudSync(); } return; }
+    if (a === 'inc-monster') { var ii = parseInt(t.getAttribute('data-idx'),10); if (state.current.monsters && state.current.monsters[ii]) { state.current.monsters[ii].count = (state.current.monsters[ii].count||1) + 1; render(); cloudSync(); } return; }
+    if (a === 'dec-monster') { var di = parseInt(t.getAttribute('data-idx'),10); if (state.current.monsters && state.current.monsters[di]) { var c = (state.current.monsters[di].count||1) - 1; if (c < 1) state.current.monsters.splice(di,1); else state.current.monsters[di].count = c; render(); cloudSync(); } return; }
     if (a === 'add-terrain') { state.current.terrain.push({name:'',desc:''}); render(); return; }
     if (a === 'remove-terrain') { var ti = parseInt(t.getAttribute('data-idx'),10); if (state.current.terrain && ti >= 0 && ti < state.current.terrain.length) state.current.terrain.splice(ti,1); render(); return; }
-    if (a === 'browse-monsters') { openMonsterBrowser(parseInt(t.getAttribute('data-idx'),10)||0); return; }
   }
   function onKeydown(e) {
     if (e.key !== 'Escape') return;
     var tag = (e.target.tagName||'').toLowerCase();
     if (['input','textarea','select'].indexOf(tag)!==-1) return;
     close();
-  }
-
-  /* ── Full monster browser modal ─────────────────────────────────── */
-  function openMonsterBrowser(targetIdx) {
-    var existing = document.getElementById('cr-monster-browser');
-    if (existing) existing.remove();
-    var allMonsters = getMonsterList();
-    var overlay = document.createElement('div');
-    overlay.id = 'cr-monster-browser';
-    overlay.className = 'cr-modal-overlay';
-    overlay.innerHTML =
-      '<div class="cr-modal" style="max-width:650px;max-height:80vh;display:flex;flex-direction:column;">' +
-        '<div class="cr-modal-header">' +
-          '<h3 style="margin:0;color:var(--text);font-family:Spectral,serif;">Select a Monster</h3>' +
-          '<button type="button" class="cr-btn" data-act="close-browser">✕</button>' +
-        '</div>' +
-        '<div style="padding:0 16px 8px;">' +
-          '<input type="text" id="cr-mb-search" placeholder="Filter by name…" style="width:100%;margin-top:8px;" />' +
-          '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">' +
-            '<select id="cr-mb-cr-filter"><option value="">All CRs</option>' +
-              CR_OPTS.map(function(c){ return '<option value="'+c+'">CR '+c+'</option>'; }).join('') +
-            '</select>' +
-            '<select id="cr-mb-source-filter"><option value="">All Sources</option><option value="SRD">SRD Only</option><option value="Homebrew">Homebrew Only</option></select>' +
-            '<span id="cr-mb-count" style="color:var(--text-muted);font-size:12px;align-self:center;"></span>' +
-          '</div>' +
-        '</div>' +
-        '<div id="cr-mb-list" style="overflow-y:auto;flex:1;padding:0 16px 16px;"></div>' +
-      '</div>';
-    document.body.appendChild(overlay);
-
-    var searchInp = overlay.querySelector('#cr-mb-search');
-    var crFilter = overlay.querySelector('#cr-mb-cr-filter');
-    var srcFilter = overlay.querySelector('#cr-mb-source-filter');
-    var listEl = overlay.querySelector('#cr-mb-list');
-    var countEl = overlay.querySelector('#cr-mb-count');
-
-    function renderList() {
-      var q = (searchInp.value || '').toLowerCase().trim();
-      var crF = crFilter.value;
-      var srcF = srcFilter.value;
-      var filtered = allMonsters.filter(function(m) {
-        if (q && m.name.toLowerCase().indexOf(q) === -1) return false;
-        if (crF && m.cr !== crF) return false;
-        if (srcF && m.source !== srcF) return false;
-        return true;
-      });
-      countEl.textContent = filtered.length + ' monster' + (filtered.length !== 1 ? 's' : '');
-      if (!filtered.length) { listEl.innerHTML = '<div style="color:var(--text-muted);padding:20px;text-align:center;">No matches</div>'; return; }
-      listEl.innerHTML = filtered.map(function(m) {
-        return '<div class="cr-mb-row" data-mb-name="'+escAttr(m.name)+'" data-mb-cr="'+escAttr(m.cr)+'">' +
-          '<span class="cr-mb-name">' + esc(m.name) + '</span>' +
-          '<span class="cr-mb-info">CR ' + esc(m.cr) + (m.source === 'Homebrew' ? ' · <em>Homebrew</em>' : '') + '</span>' +
-        '</div>';
-      }).join('');
-    }
-    renderList();
-
-    searchInp.addEventListener('input', renderList);
-    crFilter.addEventListener('change', renderList);
-    srcFilter.addEventListener('change', renderList);
-
-    listEl.addEventListener('click', function(e) {
-      var row = e.target.closest('.cr-mb-row');
-      if (!row) return;
-      pickMonster(targetIdx, row.getAttribute('data-mb-name'), row.getAttribute('data-mb-cr'));
-      overlay.remove();
-    });
-
-    overlay.querySelector('[data-act="close-browser"]').addEventListener('click', function() { overlay.remove(); });
-    overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
-    searchInp.focus();
   }
 
   function save() {
@@ -680,7 +618,7 @@
     var list = loadAll();
     var existing = editId ? list.find(function(x){return x.id === editId;}) : null;
     state.current = existing ? Object.assign(defaultEncounter(), existing) : defaultEncounter();
-    if (!state.current.monsters || !state.current.monsters.length) state.current.monsters = [{name:'',count:1,cr:'1',notes:''}];
+    if (!state.current.monsters) state.current.monsters = [];
     if (!state.current.terrain) state.current.terrain = [];
     state.editId = editId || null;
     root.removeAttribute('hidden');

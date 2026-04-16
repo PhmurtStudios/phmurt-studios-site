@@ -758,96 +758,124 @@
   font-weight: 600;
 }
 
-/* ── Autocomplete dropdown (encounter monster picker) ──────────── */
-.cr-ac-wrap {
-  position: relative;
+/* ── Enemy roster (added monsters) ─────────────────────────────── */
+.cr-roster {
+  margin-bottom: 8px;
 }
-.cr-ac-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  z-index: 600;
-  max-height: 260px;
-  overflow-y: auto;
+.cr-roster-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
   background: var(--bg-card);
   border: 1px solid var(--border);
-  border-top: none;
-  border-radius: 0 0 6px 6px;
-  box-shadow: 0 8px 24px rgba(0,0,0,.45);
+  border-left: 3px solid rgba(139, 0, 0, .35);
+  margin-bottom: 4px;
+  font-family: 'Spectral', serif;
+  font-size: 13px;
+  color: var(--text);
 }
-.cr-ac-dropdown[hidden] { display: none; }
-.cr-ac-item {
+.cr-roster-name { flex: 1; min-width: 0; }
+.cr-roster-cr {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: 4px;
+}
+.cr-roster-controls {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  margin-left: 10px;
+}
+.cr-roster-btn {
+  background: rgba(255,255,255,.08);
+  border: 1px solid var(--border);
+  color: var(--text);
+  width: 26px;
+  height: 26px;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .1s;
+  font-family: inherit;
+}
+.cr-roster-btn:hover { background: rgba(255,255,255,.14); }
+.cr-roster-remove { color: #d4433a; font-size: 12px; }
+.cr-roster-remove:hover { background: rgba(212,67,58,.2); }
+.cr-roster-count {
+  min-width: 22px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 14px;
+}
+.cr-roster-xp {
+  font-size: 11px;
+  color: var(--text-muted);
+  min-width: 52px;
+  text-align: right;
+  margin: 0 6px;
+}
+
+/* ── Monster picker (search + filter + scrollable) ─────────────── */
+.cr-picker {
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,.02);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.cr-picker-bar {
+  display: flex;
+  gap: 6px;
+  padding: 8px;
+  background: rgba(0,0,0,.15);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+.cr-picker-bar input[type="text"] {
+  flex: 1;
+  min-width: 140px;
+}
+.cr-picker-bar select {
+  min-width: 80px;
+}
+.cr-picker-count {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding: 4px 10px 2px;
+  font-family: 'Spectral', serif;
+}
+.cr-picker-list {
+  max-height: 280px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,.12) transparent;
+}
+.cr-picker-list::-webkit-scrollbar { width: 6px; }
+.cr-picker-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 3px; }
+.cr-mp-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
   padding: 7px 10px;
-  cursor: pointer;
-  font-size: 13px;
-  color: var(--text);
-  font-family: 'Spectral', serif;
-  transition: background .08s;
-}
-.cr-ac-item:hover,
-.cr-ac-item.cr-ac-active {
-  background: rgba(212,67,58,.15);
-}
-.cr-ac-name { flex: 1; }
-.cr-ac-meta {
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-left: 12px;
-  white-space: nowrap;
-}
-
-/* ── Browse-all button ─────────────────────────────────────────── */
-.cr-btn-xs {
-  padding: 3px 8px !important;
-  font-size: 11px !important;
-  min-height: 0 !important;
-}
-
-/* ── Monster browser modal ─────────────────────────────────────── */
-.cr-modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 700;
-  background: rgba(0,0,0,.65);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.cr-modal {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  width: 90%;
-  box-shadow: 0 12px 40px rgba(0,0,0,.6);
-}
-.cr-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 16px 10px;
-  border-bottom: 1px solid var(--border);
-}
-.cr-mb-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 9px 8px;
-  border-bottom: 1px solid rgba(255,255,255,.04);
+  border-bottom: 1px solid rgba(255,255,255,.03);
   cursor: pointer;
   font-family: 'Spectral', serif;
   font-size: 13px;
   color: var(--text);
   transition: background .08s;
 }
-.cr-mb-row:hover {
-  background: rgba(212,67,58,.12);
+.cr-mp-row:hover {
+  background: rgba(212,67,58,.14);
 }
-.cr-mb-name { flex: 1; }
-.cr-mb-info {
+.cr-mp-row:active {
+  background: rgba(212,67,58,.25);
+}
+.cr-mp-name { flex: 1; }
+.cr-mp-meta {
   font-size: 11px;
   color: var(--text-muted);
   margin-left: 12px;
