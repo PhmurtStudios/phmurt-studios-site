@@ -295,18 +295,21 @@
     /* ── Cards grid ─────────────────────────────────────────────── */
     .cmp-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 20px;
     }
 
     /* ── Card ────────────────────────────────────────────────────── */
     .cmp-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
+      border-radius: 6px;
       padding: 0;
       position: relative;
       transition: border-color .2s, transform .2s, box-shadow .2s;
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
     .cmp-card::before {
       content: '';
@@ -319,6 +322,7 @@
       opacity: .3;
       transition: opacity .2s;
       z-index: 1;
+      border-radius: 0 6px 0 0;
     }
     .cmp-card:hover::before {
       background: linear-gradient(225deg, var(--crimson) 50%, transparent 50%);
@@ -327,61 +331,63 @@
     .cmp-card:hover {
       border-color: var(--crimson-border);
       transform: translateY(-2px);
-      box-shadow: 0 4px 16px rgba(0,0,0,.25);
+      box-shadow: 0 6px 24px rgba(0,0,0,.3);
     }
     .cmp-card-header {
-      padding: 14px 18px 10px;
+      padding: 18px 22px 12px;
       border-bottom: 1px solid var(--border);
       background: linear-gradient(180deg, rgba(28,24,20,.5), transparent);
     }
     .cmp-card-body {
-      padding: 14px 20px 18px;
+      padding: 16px 22px 20px;
+      flex: 1;
     }
     .cmp-card-accent {
       position: absolute;
       top: 0; left: 0;
       width: 3px;
       height: 100%;
+      border-radius: 6px 0 0 6px;
     }
     .cmp-card-type {
       font-family: 'Cinzel', serif;
-      font-size: 7px;
+      font-size: 9px;
       letter-spacing: 2.5px;
       text-transform: uppercase;
-      margin-bottom: 6px;
+      margin-bottom: 8px;
       display: flex;
       align-items: center;
       gap: 6px;
     }
     .cmp-card-type::before {
       content: '\25C6';
-      font-size: 5px;
+      font-size: 6px;
       opacity: .6;
     }
     .cmp-card-name {
       font-family: 'Cinzel', serif;
-      font-size: 13px;
-      letter-spacing: 1px;
+      font-size: 17px;
+      letter-spacing: 1.2px;
       text-transform: uppercase;
       color: var(--text);
-      margin-bottom: 4px;
-      padding-left: 10px;
-      line-height: 1.3;
+      margin-bottom: 6px;
+      padding-left: 12px;
+      line-height: 1.35;
     }
     .cmp-card-sub {
       font-family: 'Spectral', serif;
-      font-size: 11px;
+      font-size: 12.5px;
       font-style: italic;
       color: var(--text-faint);
-      padding-left: 10px;
-      margin-bottom: 8px;
+      padding-left: 12px;
+      margin-bottom: 12px;
     }
     .cmp-card-desc {
       font-family: 'Spectral', serif;
-      font-size: 13px;
+      font-size: 13.5px;
       color: var(--text-dim);
-      line-height: 1.65;
-      padding-left: 10px;
+      line-height: 1.7;
+      padding: 0 12px;
       display: -webkit-box;
       -webkit-line-clamp: 3;
       -webkit-box-orient: vertical;
@@ -389,40 +395,52 @@
     }
     .cmp-card-tags {
       display: flex;
-      gap: 4px;
+      gap: 6px;
       flex-wrap: wrap;
-      padding-left: 10px;
-      margin-top: 10px;
+      padding: 12px 14px 0;
     }
     .cmp-tag {
-      font-family: 'Cinzel', serif;
-      font-size: 6.5px;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      color: var(--text-faint);
-      background: var(--bg);
-      border: 1px solid var(--border);
-      padding: 2px 7px;
+      font-family: 'Spectral', serif;
+      font-size: 10px;
+      letter-spacing: .5px;
+      color: var(--text-muted);
+      background: rgba(255,255,255,.06);
+      border: none;
+      padding: 2px 9px;
+      border-radius: 10px;
     }
     .cmp-card-footer {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px 18px 12px 10px;
-      margin-top: 0;
-      border-top: 1px solid var(--border);
-      gap: 8px;
+      flex-direction: column;
+      gap: 0;
+      margin-top: auto;
+    }
+    .cmp-card-footer-tags {
+      display: flex;
+      gap: 6px;
       flex-wrap: wrap;
-      background: linear-gradient(180deg, transparent, rgba(28,24,20,.3));
+      padding: 10px 16px;
+      align-items: center;
+      background: none;
+      border-top: 1px solid var(--border);
+    }
+    .cmp-card-footer-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 8px;
+      padding: 10px 16px 12px;
+      border-top: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(28,24,20,.15), rgba(28,24,20,.35));
     }
     .cmp-card-author {
       font-family: 'Spectral', serif;
-      font-size: 10px;
+      font-size: 11px;
       font-style: italic;
       color: var(--text-faint);
-      padding-left: 10px;
+      padding-left: 12px;
     }
-    .cmp-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .cmp-card-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
 
     /* My homebrew list ─────────────────────────────────────────── */
     .cmp-mine-row {
@@ -474,23 +492,25 @@
     .cmp-mine-badges { display: flex; gap: 5px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
     .cmp-badge {
       font-family: 'Cinzel', serif;
-      font-size: 7px;
-      letter-spacing: 1px;
+      font-size: 8px;
+      letter-spacing: 1.2px;
       text-transform: uppercase;
       border: 1px solid;
-      padding: 2px 7px;
+      padding: 3px 10px;
+      border-radius: 3px;
+      background: rgba(46,139,87,.08);
     }
 
     .cmp-tag-badge {
-      font-family: 'Cinzel', serif;
-      font-size: 7px;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      padding: 2px 8px;
-      border: 1px solid var(--border);
-      color: var(--text-faint);
-      border-radius: 2px;
+      font-family: 'Spectral', serif;
+      font-size: 10px;
+      letter-spacing: .5px;
+      padding: 2px 9px;
+      border: none;
+      color: var(--text-muted);
+      border-radius: 10px;
       display: inline-block;
+      background: rgba(255,255,255,.06);
     }
 
     .cmp-tag-filter {
@@ -521,19 +541,21 @@
     /* Buttons ──────────────────────────────────────────────────── */
     .cmp-btn {
       font-family: 'Cinzel', serif;
-      font-size: 7px;
-      letter-spacing: 2px;
+      font-size: 9px;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
-      padding: 6px 13px;
+      padding: 7px 14px;
       cursor: pointer;
       border: 1px solid var(--border);
+      border-radius: 4px;
       background: transparent;
       color: var(--text-muted);
       transition: all .15s;
+      white-space: nowrap;
     }
-    .cmp-btn:hover { color: var(--text); border-color: var(--text-muted); }
+    .cmp-btn:hover { color: var(--text); border-color: var(--text-muted); background: rgba(255,255,255,.03); }
     .cmp-btn.primary { background: var(--crimson); border-color: var(--crimson); color: #f5f0e8; }
-    .cmp-btn.primary:hover { filter: brightness(1.1); }
+    .cmp-btn.primary:hover { filter: brightness(1.1); background: var(--crimson); }
     .cmp-btn.share { border-color: #8b6914; color: #8b6914; }
     .cmp-btn.share:hover { background: rgba(139,105,20,0.08); border-color: #b88a1a; }
     .cmp-btn.shared { border-color: #2e8b57; color: #2e8b57; }
@@ -541,19 +563,20 @@
     /* Like button ──────────────────────────────────────────────── */
     .cmp-like-btn {
       font-family: 'Cinzel', serif;
-      font-size: 7px;
+      font-size: 9px;
       letter-spacing: 1px;
       display: inline-flex;
       align-items: center;
-      gap: 5px;
-      padding: 5px 11px;
+      gap: 6px;
+      padding: 7px 14px;
       background: transparent;
       border: 1px solid var(--border);
+      border-radius: 4px;
       color: var(--text-faint);
       cursor: pointer;
       transition: all .15s;
     }
-    .cmp-like-btn:hover:not(:disabled) { border-color: var(--crimson-border); color: var(--crimson); }
+    .cmp-like-btn:hover:not(:disabled) { border-color: var(--crimson-border); color: var(--crimson); background: rgba(139,0,0,.04); }
     .cmp-like-btn.liked { border-color: var(--crimson); color: var(--crimson); background: rgba(139,0,0,.06); cursor: default; }
 
     /* Empty / loading states ───────────────────────────────────── */
@@ -1487,6 +1510,7 @@
       inset: 0;
       pointer-events: none;
       border: 1px solid transparent;
+      border-radius: 6px;
       transition: border-color .2s;
     }
     .cmp-card:hover::after {
@@ -5770,7 +5794,7 @@
 
         html += '<div class="cmp-card">'
           + '<div class="cmp-card-accent" style="background:' + col + ';"></div>'
-          + '<div class="cmp-card-type" style="color:' + col + ';padding-left:10px;">' + lbl + '</div>'
+          + '<div class="cmp-card-type" style="color:' + col + ';padding-left:12px;">' + lbl + '</div>'
           + '<div class="cmp-card-name">' + cmpEsc(e.name) + '</div>';
         if (sub)  html += '<div class="cmp-card-sub">' + sub + '</div>';
         if (desc) html += '<div class="cmp-card-desc">' + cmpEsc(desc) + '</div>';
@@ -5784,21 +5808,22 @@
           });
         }
 
-        html += '<div class="cmp-card-footer">'
-          + '<div style="display:flex;gap:5px;flex-wrap:wrap;">';
-        if (isShared) {
-          html += '<span class="cmp-badge" style="color:#2e8b57;border-color:#2e8b57;">&#10003; Shared</span>';
+        html += '<div class="cmp-card-footer">';
+        // Tags row
+        if (tagsHtml || isShared) {
+          html += '<div class="cmp-card-footer-tags">';
+          if (isShared) html += '<span class="cmp-badge" style="color:#2e8b57;border-color:#2e8b57;">&#10003; Shared</span>';
+          html += tagsHtml + '</div>';
         }
-        html += tagsHtml + '</div>'
-          + '<div class="cmp-card-actions">'
+        // Actions row — all left-aligned
+        html += '<div class="cmp-card-footer-actions">'
+          + '<button class="cmp-btn" data-view-type="' + type + '" data-view-id="' + id + '" title="View details">&#9670; View</button>'
+          + '<button class="cmp-btn" data-edit-type="' + type + '" data-edit-id="' + id + '" title="Edit">&#9998; Edit</button>'
           + '<button class="cmp-btn share' + (isShared ? ' shared' : '') + '" '
           + 'data-share-type="' + type + '" data-share-id="' + id + '" '
           + 'data-share-action="' + (isShared ? 'unshare' : 'share') + '" '
           + 'title="' + (isShared ? 'Remove from community' : 'Share with community') + '">'
-          + (isShared ? '&#10003; Shared' : '&#8593; Share') + '</button>'
-          + '<button class="cmp-btn" data-view-type="' + type + '" data-view-id="' + id + '" title="View details">&#128065; View</button>'
-          + '<button class="cmp-btn" data-edit-type="' + type + '" data-edit-id="' + id + '">Edit</button>'
-          + '<button class="ps-fav-btn" data-fav-id="cmp-' + type + '-' + id + '" onclick="toggleFavorite(this)" title="Bookmark">&#9734;</button>'
+          + (isShared ? '&#10003; Shared' : '&#9670; Share') + '</button>'
           + '</div>'
           + '</div>'
           + '</div>';
@@ -5964,24 +5989,27 @@
 
         html += '<div class="cmp-card">'
           + '<div class="cmp-card-accent" style="background:' + col + ';"></div>'
-          + '<div class="cmp-card-type" style="color:' + col + ';padding-left:10px;">' + lbl + '</div>'
+          + '<div class="cmp-card-type" style="color:' + col + ';padding-left:12px;">' + lbl + '</div>'
           + '<div class="cmp-card-name">' + cmpEsc(row.name) + '</div>'
-          + '<div class="cmp-card-sub" style="padding-left:10px;">by ' + cmpEsc(row.author_name || 'Unknown') + '</div>';
+          + '<div class="cmp-card-sub">by ' + cmpEsc(row.author_name || 'Unknown') + '</div>';
         if (desc) html += '<div class="cmp-card-desc">' + cmpEsc(desc) + '</div>';
         if (tags) html += '<div class="cmp-card-tags">' + tags + '</div>';
 
-        html += '<div class="cmp-card-footer">'
-          + '<div style="display:flex;gap:5px;flex-wrap:wrap;">';
-        if (isLocal) html += '<span class="cmp-badge" style="color:#2e8b57;border-color:#2e8b57;">In Collection</span>';
-        html += '</div>'
-          + '<div class="cmp-card-actions">'
+        html += '<div class="cmp-card-footer">';
+        // Tags / badges row
+        if (tags || isLocal) {
+          html += '<div class="cmp-card-footer-tags">';
+          if (isLocal) html += '<span class="cmp-badge" style="color:#2e8b57;border-color:#2e8b57;">&#10003; In Collection</span>';
+          html += tags + '</div>';
+        }
+        // Actions row — all left-aligned
+        html += '<div class="cmp-card-footer-actions">'
           + '<button class="cmp-like-btn' + (isLiked ? ' liked' : '') + '" '
           + 'data-like-row="' + row.id + '" ' + (isLiked ? 'disabled' : '') + '>'
-          + '&#9829; <span class="like-count" data-lid="' + row.id + '">' + likes + '</span></button>';
-
-        html += '<button class="cmp-btn" data-cview-idx="' + filtered.indexOf(row) + '" title="View details">&#128065;</button>';
+          + '&#9829; <span class="like-count" data-lid="' + row.id + '">' + likes + '</span></button>'
+          + '<button class="cmp-btn" data-cview-idx="' + filtered.indexOf(row) + '" title="View details">&#9670; View</button>';
         if (!isLocal) {
-          html += '<button class="cmp-btn primary" data-import-row="' + row.id + '">&#8595; Import</button>';
+          html += '<button class="cmp-btn primary" data-import-row="' + row.id + '">&#9670; Import</button>';
         }
         html += '</div></div></div>';
       });
