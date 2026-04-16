@@ -22,10 +22,12 @@
   display: flex;
   align-items: center;
   gap: 16px;
-  padding: 14px 28px;
+  padding: 14px 32px;
   border-bottom: 1px solid var(--border);
   background: linear-gradient(180deg, var(--bg-card), var(--bg));
   flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0,0,0,.15);
+  z-index: 2;
 }
 .cr-topbar .cr-back {
   background: none;
@@ -119,27 +121,28 @@
 
 .cr-form-pane {
   overflow-y: auto;
-  padding: 28px 32px 120px;
+  padding: 30px 36px 120px;
   border-right: 1px solid var(--border);
   background: var(--bg);
 }
 .cr-preview-pane {
   overflow-y: auto;
-  padding: 32px 32px 120px;
+  padding: 32px 36px 120px;
   background:
-    radial-gradient(ellipse at top, rgba(107,78,168,.06), transparent 60%),
+    radial-gradient(ellipse at top, rgba(107,78,168,.05), transparent 55%),
+    radial-gradient(ellipse at bottom right, rgba(139,0,0,.03), transparent 50%),
     var(--bg-card);
 }
 
 /* ── Form sections (progressive disclosure) ──────────────────────── */
-.cr-section { margin-bottom: 22px; }
+.cr-section { margin-bottom: 26px; }
 .cr-section-label {
   font-family: Cinzel, serif;
-  font-size: 8px;
+  font-size: 9px;
   letter-spacing: 3px;
   text-transform: uppercase;
   color: var(--crimson);
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border);
   display: flex;
@@ -352,36 +355,46 @@
 /* ── Preview pane ────────────────────────────────────────────────── */
 .cr-preview-pane h2 {
   font-family: Cinzel, serif;
-  font-size: 9px;
-  letter-spacing: 3px;
+  font-size: 8px;
+  letter-spacing: 4px;
   text-transform: uppercase;
   color: var(--text-faint);
-  margin: 0 0 18px;
+  margin: 0 0 20px;
   text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.cr-preview-pane h2::before,
+.cr-preview-pane h2::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
 }
 
 /* Spell stat-card (fills the right pane beautifully) */
 .cr-spellcard {
-  max-width: 520px;
+  max-width: 540px;
   margin: 0 auto;
-  padding: 28px 32px;
+  padding: 30px 34px;
   background: var(--bg);
   border: 1px solid var(--border);
   border-top: 3px solid var(--crimson);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, .25);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, .3), inset 0 1px 0 rgba(232,223,208,.04);
   position: relative;
 }
 .cr-spellcard::before,
 .cr-spellcard::after {
   content: '';
   position: absolute;
-  left: 16px;
-  right: 16px;
+  left: 20px;
+  right: 20px;
   height: 1px;
-  background: var(--border);
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
 }
-.cr-spellcard::before { top: 70px; }
-.cr-spellcard::after  { bottom: 70px; }
+.cr-spellcard::before { top: 72px; }
+.cr-spellcard::after  { bottom: 72px; }
 
 .cr-sc-brand {
   position: absolute;
@@ -455,7 +468,7 @@
   font-family: Spectral, Georgia, serif;
   font-size: 13px;
   color: var(--text);
-  line-height: 1.6;
+  line-height: 1.65;
 }
 .cr-sc-higher strong {
   font-family: Cinzel, serif;
@@ -464,8 +477,12 @@
   text-transform: uppercase;
   color: var(--crimson);
   display: block;
-  margin-bottom: 4px;
+  margin-bottom: 6px;
 }
+.cr-sc-higher p { margin: 0 0 8px; }
+.cr-sc-higher p:last-child { margin-bottom: 0; }
+.cr-sc-higher ul { margin: 6px 0 0 22px; padding: 0; }
+.cr-sc-higher li { margin-bottom: 5px; }
 
 .cr-sc-tags {
   margin-top: 20px;
@@ -480,10 +497,11 @@
   font-size: 7px;
   letter-spacing: 2px;
   text-transform: uppercase;
-  padding: 4px 8px;
+  padding: 4px 10px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   color: var(--text-muted);
+  transition: border-color .15s;
 }
 
 /* ── Custom scrollbars ───────────────────────────────────────────── */
@@ -572,4 +590,37 @@
   font-family: Spectral, Georgia, serif;
   font-size: 12px;
   color: #e06050;
+}
+
+/* ── Entrance animation ─────────────────────────────────────────── */
+@keyframes cr-fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+#creator-root:not([hidden]) {
+  animation: cr-fadeIn .2s ease-out;
+}
+
+/* ── Trait/enemy row hover ──────────────────────────────────────── */
+.cr-trait-row {
+  transition: border-color .15s, background .15s;
+}
+.cr-trait-row:hover {
+  border-color: var(--crimson) !important;
+  background: rgba(139,0,0,.03) !important;
+}
+
+/* ── Focus-visible for accessibility ─────────────────────────────── */
+#creator-root button:focus-visible,
+#creator-root input:focus-visible,
+#creator-root select:focus-visible,
+#creator-root textarea:focus-visible {
+  outline: 2px solid var(--crimson);
+  outline-offset: 2px;
+}
+
+/* ── Autocalc strong highlight ──────────────────────────────────── */
+.cr-autocalc strong {
+  color: var(--text);
+  font-weight: 600;
 }

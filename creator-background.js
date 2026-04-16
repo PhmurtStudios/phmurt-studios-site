@@ -112,7 +112,7 @@
           '<div class="cr-section">' +
             '<div class="cr-section-label">Proficiencies</div>' +
             '<div class="cr-field"><label>Skills <span class="req">*</span></label><input type="text" data-k="skills" value="' + escAttr(s.skills) + '" placeholder="e.g. Stealth, Deception" /></div>' +
-            '<div class="cr-field"><label>Tools</label><input type="text" data-k="tools" value="' + escAttr(s.tools) + '" placeholder="e.g. Thieves' tools" /></div>' +
+            '<div class="cr-field"><label>Tools</label><input type="text" data-k="tools" value="' + escAttr(s.tools) + '" placeholder="e.g. Thieves&#39; tools" /></div>' +
             '<div class="cr-field"><label>Extra Languages</label><input type="number" data-k="languages" value="' + (s.languages || 0) + '" min="0" /></div>' +
           '</div>' +
 

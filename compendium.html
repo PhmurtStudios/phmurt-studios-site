@@ -60,21 +60,21 @@
     /* ── Compendium layout ──────────────────────────────────────── */
     .cmp-layout {
       display: grid;
-      grid-template-columns: 260px 1fr;
+      grid-template-columns: 300px 1fr;
       gap: 0;
       min-height: calc(100vh - 120px);
-      max-width: 1400px;
+      max-width: 1440px;
       margin: 0 auto;
       padding: 0 56px 80px;
     }
-    @media (max-width: 860px) {
+    @media (max-width: 920px) {
       .cmp-layout { grid-template-columns: 1fr; }
-      .cmp-sidebar { border-right: none; border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 20px; }
+      .cmp-sidebar { border-right: none; border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 20px; max-height: none; position: static; }
     }
 
     /* ── Sidebar ────────────────────────────────────────────────── */
     .cmp-sidebar {
-      padding: 32px 24px 40px 0;
+      padding: 28px 28px 40px 0;
       border-right: 1px solid var(--border);
       position: sticky;
       top: 80px;
@@ -84,169 +84,233 @@
     }
     .cmp-sidebar-title {
       font-family: 'Cinzel', serif;
-      font-size: 8px;
+      font-size: 9px;
       letter-spacing: 3px;
       text-transform: uppercase;
       color: var(--text-faint);
-      margin-bottom: 16px;
+      margin-bottom: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .cmp-sidebar-title::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
     }
     .cmp-create-btn {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       width: 100%;
-      padding: 11px 14px;
-      margin-bottom: 6px;
-      background: transparent;
+      padding: 12px 16px;
+      margin-bottom: 5px;
+      background: var(--bg-card);
       border: 1px solid var(--border);
-      color: var(--text-muted);
+      border-left: 3px solid var(--crimson);
+      color: var(--text);
       font-family: 'Cinzel', serif;
-      font-size: 9px;
+      font-size: 10px;
       letter-spacing: 2px;
       text-transform: uppercase;
       cursor: pointer;
       text-align: left;
-      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      transition: border-color .15s, color .15s, background .15s, transform .1s;
     }
     .cmp-create-btn:hover {
-      border-color: var(--crimson-border);
+      border-color: var(--crimson);
+      border-left-color: var(--crimson);
       color: var(--text);
-      background: var(--bg-card);
+      background: linear-gradient(90deg, rgba(139,0,0,.10), transparent 70%);
+      transform: translateX(2px);
     }
     .cmp-create-btn .cmp-btn-icon {
-      font-size: 16px;
+      font-size: 14px;
       line-height: 1;
       flex-shrink: 0;
-      color: var(--crimson);
+      width: 22px;
+      text-align: center;
     }
-    .cmp-create-btn.item .cmp-btn-icon { color: #6b4ea8; }
-    .cmp-create-btn.item:hover { border-color: #6b4ea8; }
-    .cmp-create-btn.feat .cmp-btn-icon { color: #e67e22; }
-    .cmp-create-btn.feat:hover { border-color: #e67e22; }
+    .cmp-create-btn.item  { border-left-color: #6b4ea8; }
+    .cmp-create-btn.item  .cmp-btn-icon { color: #6b4ea8; }
+    .cmp-create-btn.item:hover  { border-color: #6b4ea8; background: linear-gradient(90deg, rgba(107,78,168,.10), transparent 70%); }
+    .cmp-create-btn.feat  { border-left-color: #e67e22; }
+    .cmp-create-btn.feat  .cmp-btn-icon { color: #e67e22; }
+    .cmp-create-btn.feat:hover  { border-color: #e67e22; background: linear-gradient(90deg, rgba(230,126,34,.10), transparent 70%); }
+    .cmp-create-btn.spell { border-left-color: #2980b9; }
+    .cmp-create-btn.spell:hover { border-color: #2980b9; background: linear-gradient(90deg, rgba(41,128,185,.10), transparent 70%); }
+    .cmp-create-btn.monster { border-left-color: #e8605a; }
     .cmp-create-btn.monster .cmp-btn-icon { color: #e8605a; }
-    .cmp-create-btn.monster:hover { border-color: #e8605a; }
+    .cmp-create-btn.monster:hover { border-color: #e8605a; background: linear-gradient(90deg, rgba(232,96,90,.10), transparent 70%); }
+    .cmp-create-btn.encounter { border-left-color: #16a085; }
     .cmp-create-btn.encounter .cmp-btn-icon { color: #16a085; }
-    .cmp-create-btn.encounter:hover { border-color: #16a085; }
+    .cmp-create-btn.encounter:hover { border-color: #16a085; background: linear-gradient(90deg, rgba(22,160,133,.10), transparent 70%); }
+    .cmp-create-btn.race  { border-left-color: #c0392b; }
+    .cmp-create-btn.race  .cmp-btn-icon { color: #c0392b; }
+    .cmp-create-btn.race:hover  { border-color: #c0392b; background: linear-gradient(90deg, rgba(192,57,43,.10), transparent 70%); }
+    .cmp-create-btn.class { border-left-color: #d4af37; }
+    .cmp-create-btn.class .cmp-btn-icon { color: #d4af37; }
+    .cmp-create-btn.class:hover { border-color: #d4af37; background: linear-gradient(90deg, rgba(212,175,55,.10), transparent 70%); }
+    .cmp-create-btn.bg    { border-left-color: #7f8c8d; }
+    .cmp-create-btn.bg    .cmp-btn-icon { color: #7f8c8d; }
+    .cmp-create-btn.bg:hover    { border-color: #7f8c8d; background: linear-gradient(90deg, rgba(127,140,141,.10), transparent 70%); }
+    .cmp-create-btn.sub   { border-left-color: #8e44ad; }
+    .cmp-create-btn.sub   .cmp-btn-icon { color: #8e44ad; }
+    .cmp-create-btn.sub:hover   { border-color: #8e44ad; background: linear-gradient(90deg, rgba(142,68,173,.10), transparent 70%); }
 
     .cmp-sidebar-divider {
       border: none;
       border-top: 1px solid var(--border);
-      margin: 20px 0;
+      margin: 18px 0;
+      opacity: .5;
     }
 
     /* ── Main content ───────────────────────────────────────────── */
     .cmp-main {
-      padding: 32px 0 40px 40px;
+      padding: 32px 0 40px 44px;
     }
-    @media (max-width: 860px) { .cmp-main { padding-left: 0; } }
+    @media (max-width: 920px) { .cmp-main { padding-left: 0; } }
 
     /* ── Tabs ───────────────────────────────────────────────────── */
     .cmp-tabs {
       display: flex;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 24px;
+      gap: 0;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 28px;
+      position: relative;
     }
     .cmp-tab {
       font-family: 'Cinzel', serif;
       font-size: 9px;
       letter-spacing: 3px;
       text-transform: uppercase;
-      padding: 12px 24px;
+      padding: 14px 28px;
       background: transparent;
       border: none;
       border-bottom: 2px solid transparent;
-      color: var(--text-muted);
+      color: var(--text-faint);
       cursor: pointer;
-      margin-bottom: -1px;
-      transition: color 0.15s, border-color 0.15s;
+      margin-bottom: -2px;
+      position: relative;
+      transition: color .2s, border-color .2s;
     }
     .cmp-tab:hover { color: var(--text); }
     .cmp-tab.active {
       color: var(--crimson);
       border-bottom-color: var(--crimson);
     }
+    .cmp-tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 28px;
+      right: 28px;
+      height: 2px;
+      background: var(--crimson);
+      filter: blur(4px);
+      opacity: .5;
+    }
 
     /* ── Search / filter bar ───────────────────────────────────── */
     .cmp-toolbar {
       display: flex;
-      gap: 10px;
+      gap: 12px;
       flex-wrap: wrap;
-      margin-bottom: 16px;
+      margin-bottom: 18px;
       align-items: center;
     }
     .cmp-search {
       flex: 1;
-      min-width: 180px;
+      min-width: 200px;
       background: var(--bg-card);
       border: 1px solid var(--border);
+      border-left: 3px solid var(--crimson);
       color: var(--text);
       font-family: 'Spectral', serif;
       font-size: 15px;
-      padding: 9px 14px;
+      padding: 11px 16px;
+      transition: border-color .15s, box-shadow .15s;
     }
-    .cmp-search:focus { outline: none; border-color: var(--crimson-border); }
+    .cmp-search::placeholder { color: var(--text-faint); font-style: italic; }
+    .cmp-search:focus {
+      outline: none;
+      border-color: var(--crimson);
+      box-shadow: 0 0 0 1px rgba(139,0,0,.15);
+    }
     .cmp-sort {
       background: var(--bg-card);
       border: 1px solid var(--border);
-      color: var(--text);
+      color: var(--text-muted);
       font-family: 'Cinzel', serif;
       font-size: 8px;
       letter-spacing: 2px;
       text-transform: uppercase;
-      padding: 9px 14px;
+      padding: 11px 16px;
       cursor: pointer;
+      transition: border-color .15s, color .15s;
     }
+    .cmp-sort:hover { border-color: var(--text-muted); color: var(--text); }
+    .cmp-sort:focus { outline: none; border-color: var(--crimson); }
 
     .cmp-type-filters {
       display: flex;
-      gap: 5px;
+      gap: 6px;
       flex-wrap: wrap;
-      margin-bottom: 20px;
+      margin-bottom: 22px;
     }
     .cmp-type-btn {
       font-family: 'Cinzel', serif;
       font-size: 7px;
       letter-spacing: 2px;
       text-transform: uppercase;
-      padding: 5px 12px;
+      padding: 6px 14px;
       background: transparent;
       border: 1px solid var(--border);
-      color: var(--text-muted);
+      color: var(--text-faint);
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all .15s;
     }
-    .cmp-type-btn:hover { border-color: var(--crimson-border); color: var(--text); }
+    .cmp-type-btn:hover {
+      border-color: var(--crimson-border);
+      color: var(--text);
+      background: rgba(139,0,0,.04);
+    }
     .cmp-type-btn.active {
       background: var(--crimson);
       border-color: var(--crimson);
-      color: var(--white);
+      color: #f5f0e8;
+      box-shadow: 0 1px 4px rgba(139,0,0,.25);
     }
 
     /* ── Cards grid ─────────────────────────────────────────────── */
     .cmp-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-      gap: 14px;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 16px;
     }
-    /* ── Improved Cards ──────────────────────────────────────────── */
+
+    /* ── Card ────────────────────────────────────────────────────── */
     .cmp-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
       padding: 0;
       position: relative;
-      transition: border-color 0.15s, transform 0.15s;
+      transition: border-color .2s, transform .2s, box-shadow .2s;
       overflow: hidden;
     }
     .cmp-card:hover {
       border-color: var(--crimson-border);
-      transform: translateY(-1px);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(0,0,0,.25);
     }
     .cmp-card-header {
-      padding: 14px 18px 10px;
-      border-bottom: 1px solid var(--border-subtle);
+      padding: 16px 20px 12px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(28,24,20,.6), transparent);
     }
     .cmp-card-body {
-      padding: 12px 18px 16px;
+      padding: 14px 20px 18px;
     }
     .cmp-card-accent {
       position: absolute;
@@ -257,21 +321,24 @@
     .cmp-card-type {
       font-family: 'Cinzel', serif;
       font-size: 7px;
-      letter-spacing: 2px;
+      letter-spacing: 2.5px;
       text-transform: uppercase;
       margin-bottom: 6px;
     }
     .cmp-card-name {
       font-family: 'Cinzel', serif;
-      font-size: 12px;
+      font-size: 13px;
       letter-spacing: 1px;
       text-transform: uppercase;
       color: var(--text);
-      margin-bottom: 5px;
+      margin-bottom: 4px;
       padding-left: 10px;
+      line-height: 1.3;
     }
     .cmp-card-sub {
+      font-family: 'Spectral', serif;
       font-size: 11px;
+      font-style: italic;
       color: var(--text-faint);
       padding-left: 10px;
       margin-bottom: 8px;
@@ -280,40 +347,46 @@
       font-family: 'Spectral', serif;
       font-size: 13px;
       color: var(--text-dim);
-      line-height: 1.6;
+      line-height: 1.65;
       padding-left: 10px;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
     }
     .cmp-card-tags {
       display: flex;
       gap: 4px;
       flex-wrap: wrap;
       padding-left: 10px;
-      margin-top: 8px;
+      margin-top: 10px;
     }
     .cmp-tag {
       font-family: 'Cinzel', serif;
-      font-size: 7px;
+      font-size: 6.5px;
       letter-spacing: 1px;
       text-transform: uppercase;
       color: var(--text-faint);
       background: var(--bg);
       border: 1px solid var(--border);
-      padding: 1px 6px;
+      padding: 2px 7px;
     }
     .cmp-card-footer {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding-left: 10px;
-      margin-top: 12px;
-      padding-top: 10px;
+      padding: 10px 20px 14px 10px;
+      margin-top: 0;
       border-top: 1px solid var(--border);
       gap: 8px;
       flex-wrap: wrap;
     }
     .cmp-card-author {
+      font-family: 'Spectral', serif;
       font-size: 10px;
+      font-style: italic;
       color: var(--text-faint);
+      padding-left: 10px;
     }
     .cmp-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
 
@@ -321,14 +394,19 @@
     .cmp-mine-row {
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 13px 0;
-      border-bottom: 1px solid var(--bg-card);
+      gap: 14px;
+      padding: 14px 4px;
+      border-bottom: 1px solid var(--border);
+      transition: background .15s;
     }
+    .cmp-mine-row:hover {
+      background: rgba(139,0,0,.03);
+    }
+    .cmp-mine-row:last-child { border-bottom: none; }
     .cmp-mine-accent {
       flex-shrink: 0;
-      width: 5px;
-      height: 36px;
+      width: 4px;
+      height: 38px;
       border-radius: 2px;
     }
     .cmp-mine-info { flex: 1; min-width: 0; }
@@ -338,16 +416,23 @@
       letter-spacing: 1px;
       text-transform: uppercase;
       color: var(--text);
+      line-height: 1.3;
     }
-    .cmp-mine-sub { font-size: 11px; color: var(--text-faint); margin-top: 2px; }
-    .cmp-mine-badges { display: flex; gap: 5px; align-items: center; margin-top: 3px; flex-wrap: wrap; }
+    .cmp-mine-sub {
+      font-family: 'Spectral', serif;
+      font-size: 11px;
+      font-style: italic;
+      color: var(--text-faint);
+      margin-top: 2px;
+    }
+    .cmp-mine-badges { display: flex; gap: 5px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
     .cmp-badge {
       font-family: 'Cinzel', serif;
       font-size: 7px;
       letter-spacing: 1px;
       text-transform: uppercase;
       border: 1px solid;
-      padding: 1px 6px;
+      padding: 2px 7px;
     }
 
     .cmp-tag-badge {
@@ -393,54 +478,67 @@
       font-size: 7px;
       letter-spacing: 2px;
       text-transform: uppercase;
-      padding: 5px 11px;
+      padding: 6px 13px;
       cursor: pointer;
       border: 1px solid var(--border);
       background: transparent;
       color: var(--text-muted);
-      transition: all 0.15s;
+      transition: all .15s;
     }
     .cmp-btn:hover { color: var(--text); border-color: var(--text-muted); }
-    .cmp-btn.primary { background: var(--crimson); border-color: var(--crimson); color: var(--white); }
-    .cmp-btn.primary:hover { opacity: 0.88; }
+    .cmp-btn.primary { background: var(--crimson); border-color: var(--crimson); color: #f5f0e8; }
+    .cmp-btn.primary:hover { filter: brightness(1.1); }
     .cmp-btn.share { border-color: #8b6914; color: #8b6914; }
-    .cmp-btn.share:hover { background: rgba(139,105,20,0.08); }
+    .cmp-btn.share:hover { background: rgba(139,105,20,0.08); border-color: #b88a1a; }
     .cmp-btn.shared { border-color: #2e8b57; color: #2e8b57; }
 
     /* Like button ──────────────────────────────────────────────── */
     .cmp-like-btn {
       font-family: 'Cinzel', serif;
-      font-size: 8px;
+      font-size: 7px;
       letter-spacing: 1px;
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      padding: 4px 10px;
+      gap: 5px;
+      padding: 5px 11px;
       background: transparent;
       border: 1px solid var(--border);
-      color: var(--text-muted);
+      color: var(--text-faint);
       cursor: pointer;
-      transition: all 0.15s;
+      transition: all .15s;
     }
     .cmp-like-btn:hover:not(:disabled) { border-color: var(--crimson-border); color: var(--crimson); }
-    .cmp-like-btn.liked { border-color: var(--crimson); color: var(--crimson); background: rgba(139,26,16,0.08); cursor: default; }
+    .cmp-like-btn.liked { border-color: var(--crimson); color: var(--crimson); background: rgba(139,0,0,.06); cursor: default; }
 
     /* Empty / loading states ───────────────────────────────────── */
     .cmp-empty {
       text-align: center;
-      padding: 56px 20px;
+      padding: 64px 24px;
       grid-column: 1/-1;
     }
-    .cmp-empty-icon { font-size: 48px; opacity: 0.15; margin-bottom: 16px; }
+    .cmp-empty-icon {
+      font-size: 52px;
+      opacity: .12;
+      margin-bottom: 18px;
+      filter: grayscale(1);
+    }
     .cmp-empty-title {
       font-family: 'Cinzel', serif;
-      font-size: 9px;
+      font-size: 10px;
       letter-spacing: 3px;
       text-transform: uppercase;
       color: var(--text-muted);
-      margin-bottom: 10px;
+      margin-bottom: 12px;
     }
-    .cmp-empty-body { font-size: 13px; color: var(--text-faint); max-width: 360px; margin: 0 auto; line-height: 1.7; }
+    .cmp-empty-body {
+      font-family: 'Spectral', serif;
+      font-size: 14px;
+      font-style: italic;
+      color: var(--text-faint);
+      max-width: 380px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
 
     /* In-page modals ───────────────────────────────────────────── */
     #hb-modal-host, #hbe-modal-host { position: relative; z-index: 5000; }
@@ -1304,43 +1402,43 @@
       <div class="cmp-sidebar-title">Create Homebrew</div>
 
       <button class="cmp-create-btn race"    onclick="openHBEntityModal('race',null)">
-        <span class="cmp-btn-icon">&#9670;</span>Race
+        <span class="cmp-btn-icon">&#9883;</span>Race
       </button>
       <button class="cmp-create-btn class"   onclick="openHBEntityModal('class',null)">
-        <span class="cmp-btn-icon">&#9670;</span>Class
+        <span class="cmp-btn-icon">&#9876;</span>Class
       </button>
       <button class="cmp-create-btn bg"      onclick="openHBEntityModal('background',null)">
-        <span class="cmp-btn-icon">&#9670;</span>Background
+        <span class="cmp-btn-icon">&#9782;</span>Background
       </button>
       <button class="cmp-create-btn sub"     onclick="openHBEntityModal('subclass',null)">
-        <span class="cmp-btn-icon">&#9670;</span>Subclass
+        <span class="cmp-btn-icon">&#10022;</span>Subclass
       </button>
       <button class="cmp-create-btn feat" onclick="openFeatCreatorModal()">
-        <span class="cmp-btn-icon" style="color:#e67e22;">&#9670;</span>Feat
+        <span class="cmp-btn-icon">&#10026;</span>Feat
       </button>
 
       <hr class="cmp-sidebar-divider" />
       <div class="cmp-sidebar-title" style="color:#6b4ea8;">Items</div>
       <button class="cmp-create-btn item"    onclick="openHomebrewModal()">
-        <span class="cmp-btn-icon" style="color:#6b4ea8;">&#9670;</span>Magic Item / Gear
+        <span class="cmp-btn-icon">&#9881;</span>Magic Item / Gear
       </button>
 
       <hr class="cmp-sidebar-divider" />
       <div class="cmp-sidebar-title" style="color:#2980b9;">Spellcasting</div>
       <button class="cmp-create-btn spell"   onclick="openSpellCreatorModal()">
-        <span class="cmp-btn-icon" style="color:#2980b9;">⚡</span>Create Spell
+        <span class="cmp-btn-icon">&#10039;</span>Spell
       </button>
 
       <hr class="cmp-sidebar-divider" />
       <div class="cmp-sidebar-title" style="color:#e8605a;">Creatures</div>
       <button class="cmp-create-btn monster" onclick="openMonsterCreatorModal()">
-        <span class="cmp-btn-icon" style="color:#e8605a;">&#9670;</span>Monster / Creature
+        <span class="cmp-btn-icon">&#9760;</span>Monster / Creature
       </button>
 
       <hr class="cmp-sidebar-divider" />
       <div class="cmp-sidebar-title" style="color:#16a085;">Encounters</div>
       <button class="cmp-create-btn encounter" onclick="openEncounterCreatorModal()">
-        <span class="cmp-btn-icon" style="color:#16a085;">&#9670;</span>Encounter Template
+        <span class="cmp-btn-icon">&#9876;</span>Encounter Template
       </button>
 
       <hr class="cmp-sidebar-divider" />
@@ -1421,17 +1519,17 @@
   </div>
   <div id="ps-site-footer"></div>
 
-  <link rel="stylesheet" href="creator.css?v=190" />
-  <script defer src="creator-util.js?v=190"></script>
-  <script defer src="creator-spell.js?v=190"></script>
-  <script defer src="creator-monster.js?v=190"></script>
-  <script defer src="creator-item.js?v=190"></script>
-  <script defer src="creator-feat.js?v=190"></script>
-  <script defer src="creator-encounter.js?v=190"></script>
-  <script defer src="creator-race.js?v=190"></script>
-  <script defer src="creator-class.js?v=190"></script>
-  <script defer src="creator-background.js?v=190"></script>
-  <script defer src="creator-subclass.js?v=190"></script>
+  <link rel="stylesheet" href="creator.css?v=191" />
+  <script defer src="creator-util.js?v=191"></script>
+  <script defer src="creator-spell.js?v=191"></script>
+  <script defer src="creator-monster.js?v=191"></script>
+  <script defer src="creator-item.js?v=191"></script>
+  <script defer src="creator-feat.js?v=191"></script>
+  <script defer src="creator-encounter.js?v=191"></script>
+  <script defer src="creator-race.js?v=191"></script>
+  <script defer src="creator-class.js?v=191"></script>
+  <script defer src="creator-background.js?v=191"></script>
+  <script defer src="creator-subclass.js?v=191"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="phmurt-shell.js?v=187"></script>
   <script>
