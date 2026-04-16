@@ -32,11 +32,11 @@
     nav: [
       { href: 'index.html', label: 'Home' },
       { href: 'grimoire.html', label: 'Content' },
+      { href: 'getting-started.html', label: 'Getting Started' },
       { href: 'compendium.html', label: 'Homebrew Workshop' },
       { href: 'characters.html', label: 'Characters' },
       { href: 'campaigns.html', label: 'Campaigns' },
       { href: 'generators.html', label: 'Generators' },
-      { href: 'getting-started.html', label: 'Getting Started' },
       { href: 'about.html', label: 'About' }
       // Admin link is injected dynamically by updateAuthNav()
     ],
@@ -44,11 +44,11 @@
     flatNav: [
       ['index.html', 'Home'],
       ['grimoire.html', 'Content'],
+      ['getting-started.html', 'Getting Started'],
       ['compendium.html', 'Homebrew Workshop'],
       ['characters.html', 'Characters'],
       ['campaigns.html', 'Campaigns'],
       ['generators.html', 'Generators'],
-      ['getting-started.html', 'Getting Started'],
       ['about.html', 'About']
       // Admin link is injected dynamically by updateAuthNav()
     ],

@@ -126,3 +126,11 @@
 65. **characters.html** *(updated)* — Added 375px breakpoint: tighter hub padding, compact cards, wrapping footer buttons, responsive filter bar.
 66. **compendium.html** *(updated)* — Added 375px breakpoint: reduced layout padding, smaller type titles, compact form inputs and modal sizing.
 67. **builder-wizard.js** *(updated)* — Injected responsive CSS for wizard overlay: 480px shows 2-column archetype grid, 375px shows single-column mode buttons and archetypes.
+
+### Navigation Reorder
+
+68. **phmurt-shell.js** *(updated)* — Moved "Getting Started" tab to sit between "Content" and "Homebrew Workshop" in both `nav` and `flatNav` arrays.
+
+### Community Homebrew Attribution (SQL — already applied)
+
+69. **archive/sql/migration-attribute-homebrew-to-loki.sql** *(new, already applied)* — Updated `_authorName` in the JSONB `data` column to "Loki" for all public `homebrew_content` rows. Community tab now displays "by Loki" for every shared entry.
