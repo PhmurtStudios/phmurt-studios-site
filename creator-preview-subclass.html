@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Subclass Creator — Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#14110d; --bg-card:#1c1814; --border:#3a332a; --text:#e8dfd0; --text-muted:#a89a82; --text-faint:#6b6152; --crimson:#8b0000; }
+  *{box-sizing:border-box}html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--text);font-family:Spectral,Georgia,serif}
+</style>
+<link rel="stylesheet" href="creator.css" />
+</head>
+<body>
+<div id="creator-root">
+
+  <div class="cr-topbar">
+    <button class="cr-back" type="button">◂ Back</button>
+    <div class="cr-title">
+      <div class="cr-eyebrow">Homebrew · Subclass</div>
+      <div class="cr-heading">School of Pyromancy</div>
+    </div>
+    <div class="cr-sync-indicator ok">✓ Synced</div>
+    <div class="cr-actions">
+      <button class="cr-btn">Export PNG</button>
+      <button class="cr-btn danger">Delete</button>
+      <button class="cr-btn primary">Save</button>
+    </div>
+  </div>
+
+  <div class="cr-split">
+    <div class="cr-form-pane">
+
+      <div class="cr-section">
+        <div class="cr-section-label">Identity <span class="hint">the basics</span></div>
+        <div class="cr-grid cr-grid-2">
+          <div class="cr-field wide"><label>Name <span class="req">*</span></label>
+            <input type="text" value="School of Pyromancy" /></div>
+          <div class="cr-field wide"><label>Parent Class</label>
+            <select><option selected>Wizard</option><option>Sorcerer</option><option>Warlock</option></select></div>
+          <div class="cr-field wide"><label>Description</label>
+            <textarea rows="3">A school dedicated to the mastery of fire magic. Pyromancers learn to harness the destructive and purifying power of flames, bending them to their will in battle and in the pursuit of knowledge.</textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Tags <span class="hint">comma-separated</span></div>
+        <div class="cr-field"><input type="text" value="fire, elemental, damage, control" /></div>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Expanded Spells <span class="hint">spells per spell level</span></div>
+        <div>
+          <div class="cr-trait-row" style="margin-bottom:8px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">
+            <label>1st Level: Burning Hands, Hellish Rebuke</label>
+            <button type="button" class="cr-btn" style="margin-top:6px;">Remove</button>
+          </div>
+          <div class="cr-trait-row" style="margin-bottom:8px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">
+            <label>2nd Level: Scorching Ray, Flaming Sphere</label>
+            <button type="button" class="cr-btn" style="margin-top:6px;">Remove</button>
+          </div>
+          <div class="cr-trait-row" style="margin-bottom:8px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">
+            <label>3rd Level: Fireball, Stinking Cloud</label>
+            <button type="button" class="cr-btn" style="margin-top:6px;">Remove</button>
+          </div>
+        </div>
+        <button type="button" class="cr-btn" style="margin-top:8px;">+ Add Spell Level</button>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Subclass Features</div>
+        <div>
+          <div class="cr-trait-row" style="margin-bottom:8px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">
+            <input type="text" value="Lv2 Pyromantic Spark" />
+            <button type="button" class="cr-btn" style="margin-top:6px;">Remove</button>
+          </div>
+          <div class="cr-trait-row" style="margin-bottom:8px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">
+            <input type="text" value="Lv6 Inferno Mastery" />
+            <button type="button" class="cr-btn" style="margin-top:6px;">Remove</button>
+          </div>
+          <div class="cr-trait-row" style="margin-bottom:8px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">
+            <input type="text" value="Lv10 Heart of Flame" />
+            <button type="button" class="cr-btn" style="margin-top:6px;">Remove</button>
+          </div>
+          <div class="cr-trait-row" style="margin-bottom:8px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">
+            <input type="text" value="Lv14 Phoenix Rebirth" />
+            <button type="button" class="cr-btn" style="margin-top:6px;">Remove</button>
+          </div>
+        </div>
+        <button type="button" class="cr-btn" style="margin-top:8px;">+ Add Feature</button>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Publishing & Sharing</div>
+        <div class="cr-field"><label>Add to Campaign</label>
+          <select><option selected>— Not attached —</option><option>Curse of Strahd (DM)</option></select>
+        </div>
+        <div class="cr-field"><label class="cr-toggle"><input type="checkbox" /> Make public in the community library</label></div>
+      </div>
+
+    </div>
+
+    <div class="cr-preview-pane">
+      <h2>Live Preview</h2>
+      <div class="cr-spellcard">
+        <img src="logo.png" alt="Phmurt" class="cr-sc-brand" />
+        <div class="cr-sc-name">School of Pyromancy</div>
+        <div class="cr-sc-meta">Wizard subclass · Fire, Elemental</div>
+        <div class="cr-sc-body">
+          <p>A school dedicated to the mastery of fire magic. Pyromancers learn to harness the destructive and purifying power of flames, bending them to their will in battle and in the pursuit of knowledge.</p>
+        </div>
+
+        <div class="cr-sc-higher" style="margin-top:12px;">
+          <strong>Expanded Spells</strong>
+          <table style="width:100%;border-collapse:collapse;margin-top:12px;font-size:0.85em;">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border);">
+                <th style="text-align:left;padding:6px;">Level</th>
+                <th style="text-align:left;padding:6px;">Spells</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:6px;">1st</td>
+                <td style="padding:6px;">Burning Hands, Hellish Rebuke</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:6px;">2nd</td>
+                <td style="padding:6px;">Scorching Ray, Flaming Sphere</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:6px;">3rd</td>
+                <td style="padding:6px;">Fireball, Stinking Cloud</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="cr-sc-higher" style="margin-top:12px;">
+          <strong>Subclass Features</strong>
+          <ul style="margin:6px 0 0 22px;padding:0;">
+            <li><strong>Lv2 Pyromantic Spark:</strong> When you cast a fire spell, you can add your Intelligence modifier to the fire damage.</li>
+            <li><strong>Lv6 Inferno Mastery:</strong> When you cast a spell that deals fire damage, you can spend a sorcery point to reroll fire damage dice.</li>
+            <li><strong>Lv10 Heart of Flame:</strong> You gain resistance to fire damage. When you take fire damage, you can use your reaction to gain immunity to that damage this turn.</li>
+            <li><strong>Lv14 Phoenix Rebirth:</strong> When you are reduced to 0 hit points, you can spend a sorcery point to instead gain temporary hit points equal to your wizard level and cast <em>scorching ray</em> as a bonus action.</li>
+          </ul>
+        </div>
+
+        <div class="cr-sc-tags">
+          <span class="cr-sc-tag">Fire</span>
+          <span class="cr-sc-tag">Elemental</span>
+          <span class="cr-sc-tag">Damage</span>
+          <span class="cr-sc-tag">Control</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

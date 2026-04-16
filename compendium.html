@@ -1428,6 +1428,10 @@
   <script defer src="creator-item.js?v=190"></script>
   <script defer src="creator-feat.js?v=190"></script>
   <script defer src="creator-encounter.js?v=190"></script>
+  <script defer src="creator-race.js?v=190"></script>
+  <script defer src="creator-class.js?v=190"></script>
+  <script defer src="creator-background.js?v=190"></script>
+  <script defer src="creator-subclass.js?v=190"></script>
   <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="phmurt-shell.js?v=187"></script>
   <script>
@@ -3240,6 +3244,19 @@
     // ─────────────────────────────────────────────────────────────
 
     function openHBEntityModal(type, editId) {
+      // Route to new split-pane creators if available
+      if (type === 'race' && window.PhmurtRaceCreator && typeof window.PhmurtRaceCreator.openRace === 'function') {
+        window.PhmurtRaceCreator.openRace(editId || null); return;
+      }
+      if (type === 'class' && window.PhmurtClassCreator && typeof window.PhmurtClassCreator.openClass === 'function') {
+        window.PhmurtClassCreator.openClass(editId || null); return;
+      }
+      if (type === 'background' && window.PhmurtBackgroundCreator && typeof window.PhmurtBackgroundCreator.openBackground === 'function') {
+        window.PhmurtBackgroundCreator.openBackground(editId || null); return;
+      }
+      if (type === 'subclass' && window.PhmurtSubclassCreator && typeof window.PhmurtSubclassCreator.openSubclass === 'function') {
+        window.PhmurtSubclassCreator.openSubclass(editId || null); return;
+      }
       _hbeMode   = editId ? 'edit' : 'create';
       _hbeType   = type;
       _hbeEditId = editId || null;

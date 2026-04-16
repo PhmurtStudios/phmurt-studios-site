@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Class Creator — Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#14110d; --bg-card:#1c1814; --border:#3a332a; --text:#e8dfd0; --text-muted:#a89a82; --text-faint:#6b6152; --crimson:#8b0000; }
+  *{box-sizing:border-box}html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--text);font-family:Spectral,Georgia,serif}
+</style>
+<link rel="stylesheet" href="creator.css" />
+</head>
+<body>
+<div id="creator-root">
+
+  <div class="cr-topbar">
+    <button class="cr-back" type="button">◂ Back</button>
+    <div class="cr-title">
+      <div class="cr-eyebrow">Homebrew · Class</div>
+      <div class="cr-heading">Blood Hunter</div>
+    </div>
+    <div class="cr-sync-indicator ok">✓ Synced</div>
+    <div class="cr-actions">
+      <button class="cr-btn">Export PNG</button>
+      <button class="cr-btn danger">Delete</button>
+      <button class="cr-btn primary">Save</button>
+    </div>
+  </div>
+
+  <div class="cr-split">
+    <div class="cr-form-pane">
+
+      <div class="cr-section">
+        <div class="cr-section-label">Identity <span class="hint">the basics</span></div>
+        <div class="cr-grid cr-grid-2">
+          <div class="cr-field wide"><label>Name <span class="req">*</span></label>
+            <input type="text" value="Blood Hunter" /></div>
+          <div class="cr-field"><label>Hit Die</label>
+            <select><option>d6</option><option>d8</option><option selected>d10</option><option>d12</option></select></div>
+          <div class="cr-field"><label>Primary Ability</label>
+            <select><option>Strength</option><option selected>Strength</option><option>Dexterity</option><option>Constitution</option></select></div>
+          <div class="cr-field"><label>Spell Save Ability</label>
+            <select><option selected>Wisdom</option><option>Intelligence</option><option>Charisma</option></select></div>
+        </div>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Proficiencies</div>
+        <div class="cr-grid cr-grid-2">
+          <div class="cr-field wide"><label>Saving Throws</label>
+            <div class="cr-chips">
+              <label class="cr-chip"><input type="checkbox" checked /> Strength</label>
+              <label class="cr-chip"><input type="checkbox" /> Dexterity</label>
+              <label class="cr-chip"><input type="checkbox" /> Constitution</label>
+              <label class="cr-chip"><input type="checkbox" /> Intelligence</label>
+              <label class="cr-chip"><input type="checkbox" checked /> Wisdom</label>
+              <label class="cr-chip"><input type="checkbox" /> Charisma</label>
+            </div>
+          </div>
+          <div class="cr-field wide"><label>Armor Proficiencies</label>
+            <div class="cr-chips">
+              <label class="cr-chip"><input type="checkbox" checked /> Light</label>
+              <label class="cr-chip"><input type="checkbox" checked /> Medium</label>
+              <label class="cr-chip"><input type="checkbox" checked /> Shields</label>
+            </div>
+          </div>
+          <div class="cr-field wide"><label>Weapon Proficiencies</label>
+            <div class="cr-chips">
+              <label class="cr-chip"><input type="checkbox" checked /> Simple Weapons</label>
+              <label class="cr-chip"><input type="checkbox" checked /> Martial Weapons</label>
+            </div>
+          </div>
+          <div class="cr-field wide"><label>Skill Proficiencies (choose 3)</label>
+            <div class="cr-chips">
+              <label class="cr-chip"><input type="checkbox" checked /> Athletics</label>
+              <label class="cr-chip"><input type="checkbox" checked /> Acrobatics</label>
+              <label class="cr-chip"><input type="checkbox" /> Arcana</label>
+              <label class="cr-chip"><input type="checkbox" checked /> Insight</label>
+              <label class="cr-chip"><input type="checkbox" /> Investigation</label>
+              <label class="cr-chip"><input type="checkbox" /> Survival</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Starting Equipment</div>
+        <div class="cr-field wide"><label>Starting Equipment List</label>
+          <textarea rows="4">Any two martial weapons
+A light crossbow and 20 bolts
+Studded leather armor
+A dungeoneer's pack</textarea>
+        </div>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Subclass <span class="hint">available at 3rd level</span></div>
+        <div class="cr-grid cr-grid-2">
+          <div class="cr-field wide"><label>Subclass Name</label>
+            <input type="text" value="Blood Hunter Order" /></div>
+          <div class="cr-field wide"><label>Subclass Options</label>
+            <input type="text" value="Order of the Ghostslayer, Order of the Lycan, Order of the Mutant, Order of the Profane Soul" /></div>
+        </div>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Class Features</div>
+        <div>
+          <div class="cr-trait-row" style="margin-bottom:8px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">
+            <label>Level 1: Crimson Rite</label>
+            <button type="button" class="cr-btn" style="margin-top:6px;">Remove</button>
+          </div>
+          <div class="cr-trait-row" style="margin-bottom:8px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">
+            <label>Level 1: Hunter's Bane</label>
+            <button type="button" class="cr-btn" style="margin-top:6px;">Remove</button>
+          </div>
+        </div>
+        <button type="button" class="cr-btn" style="margin-top:8px;">+ Add Feature</button>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Publishing & Sharing</div>
+        <div class="cr-field"><label>Add to Campaign</label>
+          <select><option selected>— Not attached —</option><option>Curse of Strahd (DM)</option></select>
+        </div>
+        <div class="cr-field"><label class="cr-toggle"><input type="checkbox" /> Make public in the community library</label></div>
+      </div>
+
+    </div>
+
+    <div class="cr-preview-pane">
+      <h2>Live Preview</h2>
+      <div class="cr-spellcard">
+        <img src="logo.png" alt="Phmurt" class="cr-sc-brand" />
+        <div class="cr-sc-name">Blood Hunter</div>
+        <div class="cr-sc-meta">d10 hit die · Strength primary, Wisdom saves</div>
+        <div class="cr-sc-row"><strong>Armor</strong> Light, Medium, Shields</div>
+        <div class="cr-sc-row"><strong>Weapons</strong> Simple, Martial</div>
+        <div class="cr-sc-row"><strong>Skills (choose 3)</strong> Athletics, Acrobatics, Arcana, Insight, Investigation, Survival</div>
+        <div class="cr-sc-row"><strong>Subclass (3rd level)</strong> Blood Hunter Order (Ghostslayer, Lycan, Mutant, Profane Soul)</div>
+
+        <div class="cr-sc-body" style="margin-top:16px;">
+          <strong>Class Progression Table</strong>
+          <table style="width:100%;border-collapse:collapse;margin-top:12px;font-size:0.85em;">
+            <thead>
+              <tr style="border-bottom:1px solid var(--border);">
+                <th style="text-align:left;padding:6px;">Level</th>
+                <th style="text-align:left;padding:6px;">Prof Bonus</th>
+                <th style="text-align:left;padding:6px;">Features</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:6px;">1</td>
+                <td style="padding:6px;">+2</td>
+                <td style="padding:6px;">Crimson Rite, Hunter's Bane</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:6px;">2</td>
+                <td style="padding:6px;">+2</td>
+                <td style="padding:6px;">Fighting Style</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:6px;">3</td>
+                <td style="padding:6px;">+2</td>
+                <td style="padding:6px;">Blood Hunter Order</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:6px;">4</td>
+                <td style="padding:6px;">+2</td>
+                <td style="padding:6px;">Ability Score Increase</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:6px;">5</td>
+                <td style="padding:6px;">+3</td>
+                <td style="padding:6px;">Extra Attack</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:6px;">8</td>
+                <td style="padding:6px;">+3</td>
+                <td style="padding:6px;">Ability Score Increase</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:6px;">12</td>
+                <td style="padding:6px;">+4</td>
+                <td style="padding:6px;">Ability Score Increase</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:6px;">16</td>
+                <td style="padding:6px;">+5</td>
+                <td style="padding:6px;">Ability Score Increase</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:6px;">19</td>
+                <td style="padding:6px;">+6</td>
+                <td style="padding:6px;">Ability Score Increase</td>
+              </tr>
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:6px;">20</td>
+                <td style="padding:6px;">+6</td>
+                <td style="padding:6px;">Master of Blood</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="cr-sc-tags">
+          <span class="cr-sc-tag">Martial</span>
+          <span class="cr-sc-tag">Hunter</span>
+          <span class="cr-sc-tag">Melee</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

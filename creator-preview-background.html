@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Background Creator — Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#14110d; --bg-card:#1c1814; --border:#3a332a; --text:#e8dfd0; --text-muted:#a89a82; --text-faint:#6b6152; --crimson:#8b0000; }
+  *{box-sizing:border-box}html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--text);font-family:Spectral,Georgia,serif}
+</style>
+<link rel="stylesheet" href="creator.css" />
+</head>
+<body>
+<div id="creator-root">
+
+  <div class="cr-topbar">
+    <button class="cr-back" type="button">◂ Back</button>
+    <div class="cr-title">
+      <div class="cr-eyebrow">Homebrew · Background</div>
+      <div class="cr-heading">Bounty Hunter</div>
+    </div>
+    <div class="cr-sync-indicator ok">✓ Synced</div>
+    <div class="cr-actions">
+      <button class="cr-btn">Export PNG</button>
+      <button class="cr-btn danger">Delete</button>
+      <button class="cr-btn primary">Save</button>
+    </div>
+  </div>
+
+  <div class="cr-split">
+    <div class="cr-form-pane">
+
+      <div class="cr-section">
+        <div class="cr-section-label">Identity <span class="hint">the basics</span></div>
+        <div class="cr-grid cr-grid-2">
+          <div class="cr-field wide"><label>Name <span class="req">*</span></label>
+            <input type="text" value="Bounty Hunter" /></div>
+        </div>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Proficiencies</div>
+        <div class="cr-grid cr-grid-2">
+          <div class="cr-field wide"><label>Skill Proficiencies</label>
+            <div class="cr-chips">
+              <label class="cr-chip"><input type="checkbox" checked /> Acrobatics</label>
+              <label class="cr-chip"><input type="checkbox" /> Animal Handling</label>
+              <label class="cr-chip"><input type="checkbox" /> Arcana</label>
+              <label class="cr-chip"><input type="checkbox" /> Athletics</label>
+              <label class="cr-chip"><input type="checkbox" /> Deception</label>
+              <label class="cr-chip"><input type="checkbox" /> History</label>
+              <label class="cr-chip"><input type="checkbox" checked /> Investigation</label>
+              <label class="cr-chip"><input type="checkbox" /> Insight</label>
+              <label class="cr-chip"><input type="checkbox" /> Intimidation</label>
+              <label class="cr-chip"><input type="checkbox" /> Medicine</label>
+              <label class="cr-chip"><input type="checkbox" /> Nature</label>
+              <label class="cr-chip"><input type="checkbox" /> Perception</label>
+              <label class="cr-chip"><input type="checkbox" /> Performance</label>
+              <label class="cr-chip"><input type="checkbox" /> Persuasion</label>
+              <label class="cr-chip"><input type="checkbox" /> Religion</label>
+              <label class="cr-chip"><input type="checkbox" checked /> Survival</label>
+              <label class="cr-chip"><input type="checkbox" /> Sleight of Hand</label>
+              <label class="cr-chip"><input type="checkbox" /> Stealth</label>
+            </div>
+          </div>
+          <div class="cr-field wide"><label>Tool Proficiencies</label>
+            <input type="text" value="Thieves' tools" /></div>
+          <div class="cr-field"><label>Languages</label>
+            <input type="text" value="1 of your choice" /></div>
+        </div>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Feature</div>
+        <div class="cr-field wide"><label>Feature Name <span class="req">*</span></label>
+          <input type="text" value="Ear to the Ground" /></div>
+        <div class="cr-field wide"><label>Feature Description</label>
+          <textarea rows="4">You are in frequent contact with people in the segment of society that your chosen quarries move through. These people are willing to provide information freely, and shelter you if authorities pursue you. This information network operates in the major cities of the region you're from, but doesn't extend to other regions.</textarea>
+        </div>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Equipment</div>
+        <div class="cr-field wide"><label>Starting Equipment</label>
+          <textarea rows="4">Common clothes
+A set of manacles
+A belt pouch containing 10 gp</textarea>
+        </div>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Personality Traits <span class="hint">choose one or roll</span></div>
+        <div>
+          <div class="cr-trait-row" style="margin-bottom:8px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">
+            <input type="text" value="I'm always calm, no matter what the situation." />
+            <button type="button" class="cr-btn" style="margin-top:6px;">Remove</button>
+          </div>
+          <div class="cr-trait-row" style="margin-bottom:8px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">
+            <input type="text" value="I laugh loudly and often at the misfortune of others." />
+            <button type="button" class="cr-btn" style="margin-top:6px;">Remove</button>
+          </div>
+          <div class="cr-trait-row" style="margin-bottom:8px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">
+            <input type="text" value="I'm haunted by memories of my greatest failure, which I relive in my dreams." />
+            <button type="button" class="cr-btn" style="margin-top:6px;">Remove</button>
+          </div>
+        </div>
+        <button type="button" class="cr-btn" style="margin-top:8px;">+ Add Trait</button>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Ideals <span class="hint">choose one or roll</span></div>
+        <div>
+          <div class="cr-trait-row" style="margin-bottom:8px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">
+            <input type="text" value="Justice. Marks must face the law for their crimes." />
+            <button type="button" class="cr-btn" style="margin-top:6px;">Remove</button>
+          </div>
+          <div class="cr-trait-row" style="margin-bottom:8px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">
+            <input type="text" value="Greed. Coin is the only motivator that matters in this world." />
+            <button type="button" class="cr-btn" style="margin-top:6px;">Remove</button>
+          </div>
+        </div>
+        <button type="button" class="cr-btn" style="margin-top:8px;">+ Add Ideal</button>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Bonds <span class="hint">choose one or roll</span></div>
+        <div>
+          <div class="cr-trait-row" style="margin-bottom:8px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">
+            <input type="text" value="I have a nemesis who escaped my grasp and for whom I'll sacrifice almost anything." />
+            <button type="button" class="cr-btn" style="margin-top:6px;">Remove</button>
+          </div>
+          <div class="cr-trait-row" style="margin-bottom:8px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">
+            <input type="text" value="Someone I care about was wronged by someone I'm still hunting." />
+            <button type="button" class="cr-btn" style="margin-top:6px;">Remove</button>
+          </div>
+        </div>
+        <button type="button" class="cr-btn" style="margin-top:8px;">+ Add Bond</button>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Flaws <span class="hint">choose one or roll</span></div>
+        <div>
+          <div class="cr-trait-row" style="margin-bottom:8px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">
+            <input type="text" value="I'm sloppy when it comes to paying my debts." />
+            <button type="button" class="cr-btn" style="margin-top:6px;">Remove</button>
+          </div>
+          <div class="cr-trait-row" style="margin-bottom:8px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">
+            <input type="text" value="I mistake poor planning for boldness." />
+            <button type="button" class="cr-btn" style="margin-top:6px;">Remove</button>
+          </div>
+        </div>
+        <button type="button" class="cr-btn" style="margin-top:8px;">+ Add Flaw</button>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Specialization <span class="hint">optional</span></div>
+        <div class="cr-field wide"><label>Specialty Type</label>
+          <input type="text" value="Bounty Type" placeholder="e.g., Criminal type, location, etc." /></div>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Publishing & Sharing</div>
+        <div class="cr-field"><label>Add to Campaign</label>
+          <select><option selected>— Not attached —</option><option>Curse of Strahd (DM)</option></select>
+        </div>
+        <div class="cr-field"><label class="cr-toggle"><input type="checkbox" /> Make public in the community library</label></div>
+      </div>
+
+    </div>
+
+    <div class="cr-preview-pane">
+      <h2>Live Preview</h2>
+      <div class="cr-spellcard">
+        <img src="logo.png" alt="Phmurt" class="cr-sc-brand" />
+        <div class="cr-sc-name">Bounty Hunter</div>
+        <div class="cr-sc-meta">A hunter who tracks marks for coin and justice</div>
+        <div class="cr-sc-row"><strong>Skill Proficiencies</strong> Investigation, Survival</div>
+        <div class="cr-sc-row"><strong>Tool Proficiencies</strong> Thieves' tools</div>
+        <div class="cr-sc-row"><strong>Languages</strong> 1 of your choice</div>
+        <div class="cr-sc-row"><strong>Equipment</strong> Common clothes, manacles, belt pouch (10 gp)</div>
+
+        <div class="cr-sc-body">
+          <strong>Feature: Ear to the Ground</strong>
+          <p style="margin:6px 0;">You are in frequent contact with people in the segment of society that your chosen quarries move through. These people are willing to provide information freely, and shelter you if authorities pursue you. This information network operates in the major cities of the region you're from, but doesn't extend to other regions.</p>
+        </div>
+
+        <div class="cr-sc-higher">
+          <strong>Personality Traits</strong>
+          <ul style="margin:6px 0 0 22px;padding:0;">
+            <li>I'm always calm, no matter what the situation.</li>
+            <li>I laugh loudly and often at the misfortune of others.</li>
+            <li>I'm haunted by memories of my greatest failure, which I relive in my dreams.</li>
+          </ul>
+          <strong style="display:block;margin-top:10px;">Ideals</strong>
+          <ul style="margin:6px 0 0 22px;padding:0;">
+            <li>Justice. Marks must face the law for their crimes.</li>
+            <li>Greed. Coin is the only motivator that matters in this world.</li>
+          </ul>
+          <strong style="display:block;margin-top:10px;">Bonds</strong>
+          <ul style="margin:6px 0 0 22px;padding:0;">
+            <li>I have a nemesis who escaped my grasp and for whom I'll sacrifice almost anything.</li>
+            <li>Someone I care about was wronged by someone I'm still hunting.</li>
+          </ul>
+          <strong style="display:block;margin-top:10px;">Flaws</strong>
+          <ul style="margin:6px 0 0 22px;padding:0;">
+            <li>I'm sloppy when it comes to paying my debts.</li>
+            <li>I mistake poor planning for boldness.</li>
+          </ul>
+        </div>
+
+        <div class="cr-sc-tags">
+          <span class="cr-sc-tag">Hunter</span>
+          <span class="cr-sc-tag">Criminal</span>
+          <span class="cr-sc-tag">Skilled</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>
