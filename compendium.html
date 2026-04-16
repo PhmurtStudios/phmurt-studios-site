@@ -5478,11 +5478,27 @@
 
       // Gather all local homebrew
       var all = [];
+      // _homebrewEntities uses plural keys (races, classes, etc.)
+      var typeMap = {race:'races', class:'classes', background:'backgrounds', subclass:'subclasses'};
       ['race','class','background','subclass'].forEach(function(type) {
-        Object.values(_homebrewEntities[type] || {}).forEach(function(e) {
+        var key = typeMap[type] || type;
+        Object.values(_homebrewEntities[key] || {}).forEach(function(e) {
           all.push({ type: type, entry: e });
         });
       });
+      // Also load from new creator module storage keys
+      try {
+        var crClasses = JSON.parse(localStorage.getItem('phmurt_homebrew_entities_class') || '[]');
+        crClasses.forEach(function(c) {
+          if (!all.some(function(a){ return a.entry.clientId === c.clientId; }))
+            all.push({ type:'class', entry: c });
+        });
+        var crRaces = JSON.parse(localStorage.getItem('phmurt_homebrew_entities_race') || '{}');
+        Object.values(crRaces).forEach(function(r) {
+          if (!all.some(function(a){ return a.entry.clientId === r.clientId; }))
+            all.push({ type:'race', entry: r });
+        });
+      } catch(e) {}
       Object.values(DND_DATA.homebrewDB || {}).forEach(function(e) {
         all.push({ type: 'item', entry: e });
       });
