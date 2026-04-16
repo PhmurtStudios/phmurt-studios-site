@@ -3940,7 +3940,7 @@
           F.inp('name', 'Race Name *', e.name, 'e.g. Aasimar'),
           F.sel('size', 'Size', ['Small','Medium','Large'], e.size||'Medium'),
         ]);
-        html += F.inp('tags', 'Tags (comma separated)', (e.tags||[]).join(', '), 'elemental, demonic, winged');
+        html += F.inp('tags', 'Tags (comma separated)', cmpNormTags(e.tags).join(', '), 'elemental, demonic, winged');
 
         html += F.head('Movement & Senses');
         html += F.grid([
@@ -4046,7 +4046,7 @@
             F.inp('name', 'Class Name *', e.name, 'e.g. Blood Hunter'),
             F.sel('hitDie', 'Hit Die', hitDieOpts, e.hitDie||8),
           ]);
-          html += F.inp('tags', 'Tags (comma separated)', (e.tags||[]).join(', '), 'gritty, bloodmagic, dark-arts');
+          html += F.inp('tags', 'Tags (comma separated)', cmpNormTags(e.tags).join(', '), 'gritty, bloodmagic, dark-arts');
           html += F.grid([
             F.sel('primaryAbility', 'Primary Ability', abilityOpts, e.primaryAbility||'str'),
             F.inp('skillCount', 'Skill Choices', e.skillCount||2, '2', 'number'),
@@ -4217,7 +4217,7 @@
 
         html += F.head('Identity');
         html += F.inp('name', 'Background Name *', e.name, 'e.g. Bounty Hunter');
-        html += F.inp('tags', 'Tags (comma separated)', (e.tags||[]).join(', '), 'criminal, noble, folk-hero');
+        html += F.inp('tags', 'Tags (comma separated)', cmpNormTags(e.tags).join(', '), 'criminal, noble, folk-hero');
 
         html += F.head('Proficiencies');
         html += F.inp('skills', 'Skills (2, comma separated) *', bgSkillVal, 'Deception, Intimidation');
@@ -5134,7 +5134,7 @@
       var filtered = data.filter(function(row) {
         if (S.typeFilter !== 'all' && row.type !== S.typeFilter) return false;
         if (q) {
-          var searchTarget = (row.name + ' ' + row.type + ' ' + (row.author_name||'') + ' ' + (row.tags||[]).join(' ')).toLowerCase();
+          var searchTarget = (row.name + ' ' + row.type + ' ' + (row.author_name||'') + ' ' + cmpNormTags(row.tags).join(' ')).toLowerCase();
           if (searchTarget.indexOf(q) === -1) return false;
         }
         return true;
@@ -5401,7 +5401,7 @@
         ['race','class','background','subclass'].forEach(function(type) {
           Object.values(_homebrewEntities[type] || {}).forEach(function(e) {
             if (e.tags) {
-              e.tags.forEach(function(tag) { allTags.add(tag); });
+              cmpNormTags(e.tags).forEach(function(tag) { allTags.add(tag); });
             }
           });
         });
@@ -5418,7 +5418,7 @@
       } else if (tabType === 'community') {
         (_cmpCommunityData || []).forEach(function(row) {
           if (row.tags) {
-            row.tags.forEach(function(tag) { allTags.add(tag); });
+            cmpNormTags(row.tags).forEach(function(tag) { allTags.add(tag); });
           }
         });
       }
@@ -5519,13 +5519,13 @@
       var filtered = all.filter(function(row) {
         if (_cmpTypeFilter !== 'all' && row.type !== _cmpTypeFilter) return false;
         if (q) {
-          var searchText = (row.entry.name + ' ' + (row.entry.tags || []).join(' ')).toLowerCase();
+          var searchText = (row.entry.name + ' ' + cmpNormTags(row.entry.tags).join(' ')).toLowerCase();
           if (searchText.indexOf(q) === -1) return false;
         }
         // Tag filter (AND logic - all selected tags must match)
         var activeTags = Object.keys(_cmpTagFilters).filter(function(t) { return _cmpTagFilters[t]; });
         if (activeTags.length > 0) {
-          var entryTags = (row.entry.tags || []).map(function(t) { return t.toLowerCase(); });
+          var entryTags = cmpNormTags(row.entry.tags).map(function(t) { return t.toLowerCase(); });
           for (var i = 0; i < activeTags.length; i++) {
             if (entryTags.indexOf(activeTags[i].toLowerCase()) === -1) return false;
           }
@@ -5590,8 +5590,9 @@
 
         // Render tags
         var tagsHtml = '';
-        if (e.tags && e.tags.length) {
-          e.tags.forEach(function(tag) {
+        var normTags = cmpNormTags(e.tags);
+        if (normTags.length) {
+          normTags.forEach(function(tag) {
             tagsHtml += '<span class="cmp-tag-badge">' + cmpEsc(tag) + '</span>';
           });
         }
@@ -5700,13 +5701,13 @@
       var filtered = (_cmpCommunityData || []).filter(function(row) {
         if (_cmpTypeFilter !== 'all' && row.type !== _cmpTypeFilter) return false;
         if (q) {
-          var t = (row.name + ' ' + row.type + ' ' + (row.author_name || '') + ' ' + (row.tags || []).join(' ')).toLowerCase();
+          var t = (row.name + ' ' + row.type + ' ' + (row.author_name || '') + ' ' + cmpNormTags(row.tags).join(' ')).toLowerCase();
           if (t.indexOf(q) === -1) return false;
         }
         // Tag filter (AND logic - all selected tags must match)
         var activeTags = Object.keys(_cmpTagFilters).filter(function(t) { return _cmpTagFilters[t]; });
         if (activeTags.length > 0) {
-          var rowTags = (row.tags || []).map(function(t) { return t.toLowerCase(); });
+          var rowTags = cmpNormTags(row.tags).map(function(t) { return t.toLowerCase(); });
           for (var i = 0; i < activeTags.length; i++) {
             if (rowTags.indexOf(activeTags[i].toLowerCase()) === -1) return false;
           }
@@ -5750,7 +5751,7 @@
         }
         if (desc.length > 130) desc = desc.slice(0, 127) + '...';
 
-        var tags = (row.tags || []).slice(0, 4).map(function(t) {
+        var tags = cmpNormTags(row.tags).slice(0, 4).map(function(t) {
           return '<span class="cmp-tag">' + cmpEsc(t) + '</span>';
         }).join('');
 
@@ -5812,6 +5813,13 @@
     // ── Helpers ──────────────────────────────────────────────────────────────
     function cmpEsc(str) {
       return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    // Normalize tags: always return an array whether input is string, array, or falsy
+    function cmpNormTags(tags) {
+      if (!tags) return [];
+      if (Array.isArray(tags)) return tags;
+      if (typeof tags === 'string') return tags.split(',').map(function(t){ return t.trim(); }).filter(Boolean);
+      return [];
     }
 
     // hbImportEntry override removed – using the original definition above
