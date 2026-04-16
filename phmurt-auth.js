@@ -1259,60 +1259,58 @@ var PhmurtDB = (function () {
         var dataStr = JSON.stringify(campaign);
         if (dataStr.length > 5000000) return Promise.reject(new Error('Campaign data exceeds maximum size.'));
 
-        var campRow = {
-          id:          campaign.id,
-          owner_id:    _session.userId,
-          description: (campaign.description || '').slice(0, 500),
-          system:      campaign.system || '5e',
-          invite_code: campaign.inviteCode || null,
-          data:        campaign,
-          updated_at:  new Date().toISOString()
-        };
-
         // Check if this is a new campaign (no existing ID or local-only "camp-" prefix ID)
         var isLocal = !campaign.id || (typeof campaign.id === 'string' && campaign.id.startsWith('camp-'));
+
         if (isLocal) {
-          // For new/local campaigns, remove the local ID so Supabase generates a real UUID
+          // ── NEW CAMPAIGN: Insert with only the columns that exist in the DB schema ──
+          // Schema: id (uuid, auto), owner_id (uuid), data (jsonb), description (text),
+          //         system (text), invite_code (text), created_at, updated_at, flagged, flag_reason
           var localId = campaign.id || null;
-          delete campRow.id;
+          var insertRow = {
+            owner_id:    _session.userId,
+            data:        campaign,
+            updated_at:  new Date().toISOString()
+          };
           return _checkLimit('campaigns', 'free_max_campaigns', 'paid_max_campaigns').then(function (limitResult) {
             if (limitResult.blocked) {
               return Promise.reject(new Error(limitResult.message));
             }
-            return sb.from('campaigns').insert(campRow).select('id').single()
+            console.log('[Auth] Inserting new campaign (local ID:', localId, ')...');
+            return sb.from('campaigns').insert(insertRow).select('id').single()
               .then(function (r) {
                 if (r.error) throw r.error;
-                // Update the campaign object with the real UUID from Supabase
                 var newId = r.data.id;
                 campaign.id = newId;
                 campaign._localId = localId;
-                console.log('[Auth] Campaign saved to cloud, UUID:', newId, '(was local:', localId, ')');
-                // Auto-add the owner as a DM member of the new campaign
+                console.log('[Auth] Campaign saved to cloud, UUID:', newId);
+                // Auto-add the owner as a DM member
                 return sb.from('campaign_members').insert({
                   campaign_id: newId,
                   user_id: _session.userId,
                   role: 'dm'
-                }).then(function () {
-                  console.log('[Auth] Owner added as DM member for campaign:', newId);
+                }).then(function (mr) {
+                  if (mr.error) console.warn('[Auth] DM membership insert error:', mr.error.message);
+                  else console.log('[Auth] Owner added as DM for campaign:', newId);
                   return true;
-                }).catch(function (memberErr) {
-                  // Non-fatal: campaign saved, but DM membership failed (may already exist)
-                  console.warn('[Auth] Failed to add owner as DM member:', memberErr);
-                  return true;
-                });
+                }).catch(function () { return true; });
               })
               .catch(function (err) {
-                console.error('[Auth] Campaign cloud insert failed:', err && err.message ? err.message : err);
-                campaign.id = localId; // Restore local ID on failure
+                console.error('[Auth] Campaign cloud insert FAILED:', err && err.message ? err.message : JSON.stringify(err));
+                campaign.id = localId;
                 _legacySaveCampLocal(campaign);
                 return Promise.reject(err);
               });
           });
         }
 
-        // SECURITY FIX: Use scoped update instead of upsert to prevent
-        // overwriting another user's campaign if IDs collide.
-        return sb.from('campaigns').update(campRow)
+        // ── EXISTING CAMPAIGN: Update with only valid columns ──
+        var updateRow = {
+          owner_id:    _session.userId,
+          data:        campaign,
+          updated_at:  new Date().toISOString()
+        };
+        return sb.from('campaigns').update(updateRow)
           .eq('id', campaign.id)
           .eq('owner_id', _session.userId)
           .then(function (r) {
@@ -1323,7 +1321,6 @@ var PhmurtDB = (function () {
             return true;
           })
           .catch(function () {
-            // Fallback: save to localStorage on cloud failure
             _legacySaveCampLocal(campaign);
             return true;
           });
