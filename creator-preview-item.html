@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Item Creator — Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#14110d; --bg-card:#1c1814; --border:#3a332a; --text:#e8dfd0; --text-muted:#a89a82; --text-faint:#6b6152; --crimson:#8b0000; }
+  *{box-sizing:border-box}html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--text);font-family:Spectral,Georgia,serif}
+</style>
+<link rel="stylesheet" href="creator.css" />
+</head>
+<body>
+<div id="creator-root">
+
+  <div class="cr-topbar">
+    <button class="cr-back" type="button">◂ Back</button>
+    <div class="cr-title">
+      <div class="cr-eyebrow">Homebrew · Item</div>
+      <div class="cr-heading">Blade of Forgotten Kings</div>
+    </div>
+    <div class="cr-sync-indicator ok">✓ Synced</div>
+    <div class="cr-actions">
+      <button class="cr-btn">Export PNG</button>
+      <button class="cr-btn danger">Delete</button>
+      <button class="cr-btn primary">Save</button>
+    </div>
+  </div>
+
+  <div class="cr-split">
+    <div class="cr-form-pane">
+
+      <div class="cr-section">
+        <div class="cr-section-label">Identity</div>
+        <div class="cr-grid cr-grid-2">
+          <div class="cr-field wide"><label>Name <span class="req">*</span></label>
+            <input type="text" value="Blade of Forgotten Kings" /></div>
+          <div class="cr-field"><label>Category</label>
+            <select><option selected>Magic Weapon</option><option>Magic Armor</option><option>Ring</option></select></div>
+          <div class="cr-field"><label>Rarity</label>
+            <select><option>Common</option><option>Uncommon</option><option>Rare</option><option selected>Very Rare</option><option>Legendary</option></select></div>
+          <div class="cr-field"><label>Subcategory</label><input type="text" value="Named Weapon" /></div>
+          <div class="cr-field"><label class="cr-toggle"><input type="checkbox" checked /> Requires Attunement</label></div>
+        </div>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Weapon Stats</div>
+        <div class="cr-grid cr-grid-2">
+          <div class="cr-field"><label>Damage</label><input type="text" value="2d6+2" />
+            <div class="cr-autocalc">avg 9 · max 14 · min 4</div>
+          </div>
+          <div class="cr-field"><label>Damage Type</label>
+            <select><option selected>slashing</option><option>fire</option><option>radiant</option></select></div>
+        </div>
+        <div class="cr-field" style="margin-top:10px;">
+          <label>Properties</label>
+          <div class="cr-chips">
+            <label class="cr-chip"><input type="checkbox" /> Ammunition</label>
+            <label class="cr-chip"><input type="checkbox" checked /> Finesse</label>
+            <label class="cr-chip"><input type="checkbox" /> Heavy</label>
+            <label class="cr-chip"><input type="checkbox" /> Light</label>
+            <label class="cr-chip"><input type="checkbox" /> Loading</label>
+            <label class="cr-chip"><input type="checkbox" /> Reach</label>
+            <label class="cr-chip"><input type="checkbox" checked /> Special</label>
+            <label class="cr-chip"><input type="checkbox" /> Thrown</label>
+            <label class="cr-chip"><input type="checkbox" /> Two-handed</label>
+            <label class="cr-chip"><input type="checkbox" checked /> Versatile</label>
+            <label class="cr-chip"><input type="checkbox" checked /> Magical</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Value & Weight</div>
+        <div class="cr-grid cr-grid-2">
+          <div class="cr-field"><label>Value</label><input type="text" value="15,000 gp" /></div>
+          <div class="cr-field"><label>Weight (lb)</label><input type="number" value="3" /></div>
+        </div>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Description <span class="hint">markdown supported</span></div>
+        <div class="cr-field">
+          <textarea rows="6">A longsword of blackened steel, its pommel set with a dull garnet. You gain a **+2 bonus to attack and damage rolls** made with this magic weapon.
+
+Once per dawn, you may speak the name of a lost monarch to cause the blade to flare with *regal silver fire* for one minute, dealing an additional `1d6 radiant damage` to any target it strikes.</textarea>
+        </div>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Tags <span class="hint">comma-separated</span></div>
+        <div class="cr-field"><input type="text" value="magical, sentient, legendary" /></div>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Publishing & Sharing</div>
+        <div class="cr-field"><label>Add to Campaign</label>
+          <select>
+            <option>— Not attached —</option>
+            <option selected>Curse of Strahd (DM)</option>
+            <option>Waterdeep Heist (Player)</option>
+          </select>
+        </div>
+        <div class="cr-field"><label class="cr-toggle"><input type="checkbox" /> Make public in the community library</label></div>
+      </div>
+
+    </div>
+
+    <div class="cr-preview-pane">
+      <h2>Live Preview</h2>
+      <div class="cr-spellcard">
+        <img src="logo.png" alt="Phmurt" class="cr-sc-brand" />
+        <div class="cr-sc-name">Blade of Forgotten Kings</div>
+        <div class="cr-sc-meta">Magic Weapon · Named Weapon, Very Rare (requires attunement)</div>
+        <div class="cr-sc-row"><strong>Damage</strong> 2d6+2 slashing</div>
+        <div class="cr-sc-row"><strong>Properties</strong> Finesse, Special, Versatile, Magical</div>
+        <div class="cr-sc-row"><strong>Value</strong> 15,000 gp</div>
+        <div class="cr-sc-row"><strong>Weight</strong> 3 lb.</div>
+        <div class="cr-sc-body">
+          <p>A longsword of blackened steel, its pommel set with a dull garnet. You gain a <strong>+2 bonus to attack and damage rolls</strong> made with this magic weapon.</p>
+          <p>Once per dawn, you may speak the name of a lost monarch to cause the blade to flare with <em>regal silver fire</em> for one minute, dealing an additional <code>1d6 radiant damage</code> to any target it strikes.</p>
+        </div>
+        <div class="cr-sc-tags">
+          <span class="cr-sc-tag">Magical</span>
+          <span class="cr-sc-tag">Sentient</span>
+          <span class="cr-sc-tag">Legendary</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

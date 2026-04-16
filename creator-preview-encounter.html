@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Encounter Creator — Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root { --bg:#14110d; --bg-card:#1c1814; --border:#3a332a; --text:#e8dfd0; --text-muted:#a89a82; --text-faint:#6b6152; --crimson:#8b0000; }
+  *{box-sizing:border-box}html,body{margin:0;padding:0;height:100%;background:var(--bg);color:var(--text);font-family:Spectral,Georgia,serif}
+</style>
+<link rel="stylesheet" href="creator.css" />
+</head>
+<body>
+<div id="creator-root">
+
+  <div class="cr-topbar">
+    <button class="cr-back">◂ Back</button>
+    <div class="cr-title">
+      <div class="cr-eyebrow">Homebrew · Encounter</div>
+      <div class="cr-heading">Bandits on the Whisper Road</div>
+    </div>
+    <div class="cr-sync-indicator ok">✓ Synced</div>
+    <div class="cr-actions">
+      <button class="cr-btn">Export PNG</button>
+      <button class="cr-btn danger">Delete</button>
+      <button class="cr-btn primary">Save</button>
+    </div>
+  </div>
+
+  <div class="cr-split">
+    <div class="cr-form-pane">
+
+      <div class="cr-section">
+        <div class="cr-section-label">Identity</div>
+        <div class="cr-grid cr-grid-2">
+          <div class="cr-field wide"><label>Name <span class="req">*</span></label>
+            <input type="text" value="Bandits on the Whisper Road" /></div>
+          <div class="cr-field"><label>Environment</label>
+            <select><option>Dungeon</option><option selected>Forest</option><option>Urban</option><option>Coastal</option></select>
+          </div>
+          <div class="cr-field"><label>Intended Difficulty</label>
+            <select><option>Easy</option><option selected>Medium</option><option>Hard</option><option>Deadly</option></select>
+          </div>
+        </div>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Party <span class="hint">XP budget auto-calculates</span></div>
+        <div class="cr-grid cr-grid-3">
+          <div class="cr-field"><label>Level Min</label><input type="number" value="3" /></div>
+          <div class="cr-field"><label>Level Max</label><input type="number" value="3" /></div>
+          <div class="cr-field"><label>Party Size</label><input type="number" value="4" /></div>
+        </div>
+        <div class="cr-autocalc">Budget @ avg party level 3: Easy 300 · Medium 600 · Hard 900 · Deadly 1600 XP</div>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Setup <span class="hint">the scene</span></div>
+        <div class="cr-field">
+          <textarea rows="3">The wagon track narrows between two moss-hung oaks where the road hollows into a shallow gully. Crows scatter from the trees as the party approaches. Arrows whistle from the underbrush before the first bandit steps into view.</textarea>
+        </div>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Enemies</div>
+        <div>
+          <div class="cr-trait-row" style="margin-bottom:10px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">
+            <div class="cr-grid cr-grid-3" style="align-items:end;">
+              <div class="cr-field wide"><label>Monster</label><input type="text" value="Bandit" /></div>
+              <div class="cr-field"><label>Count</label><input type="number" value="4" /></div>
+              <div class="cr-field"><label>CR</label>
+                <select><option>0</option><option selected>1/8</option><option>1/4</option><option>1/2</option></select>
+              </div>
+            </div>
+            <input type="text" value="Hide in brush, take Hide action first round" style="margin-top:8px;" />
+            <div class="cr-autocalc">4 × 25 XP = 100 XP</div>
+            <button type="button" class="cr-btn" style="margin-top:6px;">Remove</button>
+          </div>
+          <div class="cr-trait-row" style="margin-bottom:10px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">
+            <div class="cr-grid cr-grid-3" style="align-items:end;">
+              <div class="cr-field wide"><label>Monster</label><input type="text" value="Bandit Captain" /></div>
+              <div class="cr-field"><label>Count</label><input type="number" value="1" /></div>
+              <div class="cr-field"><label>CR</label>
+                <select><option>1</option><option>1/2</option><option selected>2</option><option>3</option></select>
+              </div>
+            </div>
+            <input type="text" value="Parleys first if approached peacefully; fights if outnumbered" style="margin-top:8px;" />
+            <div class="cr-autocalc">1 × 450 XP = 450 XP</div>
+            <button type="button" class="cr-btn" style="margin-top:6px;">Remove</button>
+          </div>
+        </div>
+        <button type="button" class="cr-btn" style="margin-top:8px;">+ Add Enemy</button>
+        <div class="cr-autocalc" style="margin-top:10px;">
+          Total: 5 monster(s) · raw 550 XP × 2 = <strong>1100 adj XP</strong> → computed difficulty: <strong>Hard</strong>
+        </div>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Terrain & Features</div>
+        <div>
+          <div class="cr-trait-row" style="margin-bottom:10px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">
+            <input type="text" value="Dense Underbrush" style="margin-bottom:6px;" />
+            <textarea rows="2">Half the map is difficult terrain granting half cover to anyone crouching. Perception DC 13 to spot bandits within.</textarea>
+            <button type="button" class="cr-btn" style="margin-top:6px;">Remove</button>
+          </div>
+          <div class="cr-trait-row" style="margin-bottom:10px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">
+            <input type="text" value="Overturned Wagon" style="margin-bottom:6px;" />
+            <textarea rows="2">Blocks the path. Three-quarters cover behind it. AC 15, 30 HP, immune to poison/psychic.</textarea>
+            <button type="button" class="cr-btn" style="margin-top:6px;">Remove</button>
+          </div>
+        </div>
+        <button type="button" class="cr-btn" style="margin-top:8px;">+ Add Terrain Feature</button>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Tactics / DM Notes</div>
+        <div class="cr-field">
+          <textarea rows="3">Captain stays near the wagon, using it for cover. Archers focus on lightly armored targets. Once the captain falls below half HP, the remaining bandits make a Wisdom save DC 12 or flee.</textarea>
+        </div>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Treasure / Rewards</div>
+        <div class="cr-field">
+          <textarea rows="3">Captain's pouch: 42 gp, 15 sp, silver locket (25 gp), a potion of healing. Bandits each carry 1d6 sp and common weapons. In the wagon: crate of salted pork, 20 lb; sealed letter bearing a local noble's crest.</textarea>
+        </div>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Alternative Resolutions <span class="hint">non-combat paths</span></div>
+        <div class="cr-field">
+          <textarea rows="2">DC 15 Persuasion to pay off the captain (100 gp minimum). DC 17 Intimidation to scatter the bandits. DC 13 group Stealth to bypass the ambush entirely via the eastern creek bed.</textarea>
+        </div>
+      </div>
+
+      <div class="cr-section">
+        <div class="cr-section-label">Publishing & Sharing</div>
+        <div class="cr-field"><label>Add to Campaign</label>
+          <select><option>— Not attached —</option><option selected>Curse of Strahd (DM)</option></select>
+        </div>
+        <div class="cr-field"><label class="cr-toggle"><input type="checkbox" /> Make public in the community library</label></div>
+      </div>
+
+    </div>
+
+    <div class="cr-preview-pane">
+      <h2>Live Preview</h2>
+      <div class="cr-spellcard">
+        <img src="logo.png" alt="Phmurt" class="cr-sc-brand" />
+        <div class="cr-sc-name">Bandits on the Whisper Road</div>
+        <div class="cr-sc-meta">Forest · Levels 3–3 · Party of 4</div>
+        <div class="cr-sc-row"><strong>Intended</strong> Medium</div>
+        <div class="cr-sc-row"><strong>Computed</strong> Hard (1100 adj XP)</div>
+        <div class="cr-sc-body">
+          <p>The wagon track narrows between two moss-hung oaks where the road hollows into a shallow gully. Crows scatter from the trees as the party approaches. Arrows whistle from the underbrush before the first bandit steps into view.</p>
+        </div>
+        <div class="cr-sc-higher">
+          <strong>Enemies</strong>
+          <ul style="margin:6px 0 0 22px;padding:0;">
+            <li>4× Bandit (CR 1/8, 25 XP) — <em>Hide in brush, take Hide action first round</em></li>
+            <li>1× Bandit Captain (CR 2, 450 XP) — <em>Parleys first if approached peacefully; fights if outnumbered</em></li>
+          </ul>
+        </div>
+        <div class="cr-sc-higher">
+          <strong>Terrain</strong>
+          <div style="margin-top:6px;"><strong><em>Dense Underbrush.</em></strong> Half the map is difficult terrain granting half cover to anyone crouching. Perception DC 13 to spot bandits within.</div>
+          <div style="margin-top:6px;"><strong><em>Overturned Wagon.</em></strong> Blocks the path. Three-quarters cover behind it. AC 15, 30 HP, immune to poison/psychic.</div>
+        </div>
+        <div class="cr-sc-higher">
+          <strong>Tactics</strong>
+          <p>Captain stays near the wagon, using it for cover. Archers focus on lightly armored targets. Once the captain falls below half HP, the remaining bandits make a Wisdom save DC 12 or flee.</p>
+        </div>
+        <div class="cr-sc-higher">
+          <strong>Treasure</strong>
+          <p>Captain's pouch: 42 gp, 15 sp, silver locket (25 gp), a potion of healing. Bandits each carry 1d6 sp and common weapons. In the wagon: crate of salted pork, 20 lb; sealed letter bearing a local noble's crest.</p>
+        </div>
+        <div class="cr-sc-higher">
+          <strong>Alternatives</strong>
+          <p>DC 15 Persuasion to pay off the captain (100 gp minimum). DC 17 Intimidation to scatter the bandits. DC 13 group Stealth to bypass the ambush entirely via the eastern creek bed.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

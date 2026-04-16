@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Spell Creator — Preview</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600&family=Spectral:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #14110d;
+    --bg-card: #1c1814;
+    --border: #3a332a;
+    --text: #e8dfd0;
+    --text-muted: #a89a82;
+    --text-faint: #6b6152;
+    --crimson: #8b0000;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; height: 100%; background: var(--bg); color: var(--text); font-family: Spectral, Georgia, serif; }
+</style>
+<link rel="stylesheet" href="creator.css" />
+</head>
+<body>
+
+<div id="creator-root">
+
+  <!-- ── Top bar ─────────────────────────────────────────────────── -->
+  <div class="cr-topbar">
+    <button class="cr-back" type="button">◂ Back</button>
+    <div class="cr-title">
+      <div class="cr-eyebrow">Homebrew · Spell</div>
+      <div class="cr-heading">Fireball</div>
+    </div>
+    <div class="cr-sync-indicator ok">✓ Synced</div>
+    <div class="cr-actions">
+      <button class="cr-btn">Export PNG</button>
+      <button class="cr-btn danger">Delete</button>
+      <button class="cr-btn primary">Save</button>
+    </div>
+  </div>
+
+  <!-- ── Split pane ──────────────────────────────────────────────── -->
+  <div class="cr-split">
+
+    <!-- ─── LEFT: Form ─────────────────────────────────────────── -->
+    <div class="cr-form-pane">
+
+      <div class="cr-template-row">
+        <label>Start from SRD</label>
+        <select>
+          <option>— Blank spell —</option>
+          <option selected>Fireball (3rd, Evocation)</option>
+          <option>Cure Wounds (1st, Evocation)</option>
+          <option>Magic Missile (1st, Evocation)</option>
+        </select>
+        <button type="button">Apply</button>
+      </div>
+
+      <!-- Identity -->
+      <div class="cr-section">
+        <div class="cr-section-label">Identity <span class="hint">the basics</span></div>
+        <div class="cr-grid cr-grid-2">
+          <div class="cr-field wide">
+            <label>Name <span class="req">*</span></label>
+            <input type="text" value="Fireball" />
+          </div>
+          <div class="cr-field">
+            <label>Level</label>
+            <select>
+              <option value="0">Cantrip</option>
+              <option value="1">1st Level</option>
+              <option value="2">2nd Level</option>
+              <option value="3" selected>3rd Level</option>
+              <option value="4">4th Level</option>
+              <option value="5">5th Level</option>
+              <option value="6">6th Level</option>
+              <option value="7">7th Level</option>
+              <option value="8">8th Level</option>
+              <option value="9">9th Level</option>
+            </select>
+          </div>
+          <div class="cr-field">
+            <label>School</label>
+            <select>
+              <option>Abjuration</option>
+              <option>Conjuration</option>
+              <option>Divination</option>
+              <option>Enchantment</option>
+              <option selected>Evocation</option>
+              <option>Illusion</option>
+              <option>Necromancy</option>
+              <option>Transmutation</option>
+            </select>
+          </div>
+          <div class="cr-field">
+            <label>Source</label>
+            <input type="text" value="Homebrew" />
+          </div>
+          <div class="cr-field">
+            <label>Ritual?</label>
+            <div class="cr-toggles">
+              <label class="cr-toggle"><input type="checkbox" /> Ritual</label>
+              <label class="cr-toggle"><input type="checkbox" checked /> Concentration</label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Casting -->
+      <div class="cr-section">
+        <div class="cr-section-label">Casting</div>
+        <div class="cr-grid cr-grid-2">
+          <div class="cr-field">
+            <label>Casting Time</label>
+            <select>
+              <option>1 action</option>
+              <option>1 bonus action</option>
+              <option>1 reaction</option>
+              <option>1 minute</option>
+              <option>10 minutes</option>
+              <option>1 hour</option>
+              <option>8 hours</option>
+              <option>12 hours</option>
+              <option>24 hours</option>
+              <option>Special</option>
+            </select>
+          </div>
+          <div class="cr-field">
+            <label>Range</label>
+            <select>
+              <option>Self</option>
+              <option>Touch</option>
+              <option>5 feet</option>
+              <option>10 feet</option>
+              <option>30 feet</option>
+              <option>60 feet</option>
+              <option>90 feet</option>
+              <option>120 feet</option>
+              <option selected>150 feet</option>
+              <option>300 feet</option>
+              <option>500 feet</option>
+              <option>1 mile</option>
+              <option>Sight</option>
+              <option>Unlimited</option>
+              <option>Special</option>
+            </select>
+          </div>
+          <div class="cr-field">
+            <label>Duration</label>
+            <select>
+              <option selected>Instantaneous</option>
+              <option>1 round</option>
+              <option>6 seconds</option>
+              <option>1 minute</option>
+              <option>10 minutes</option>
+              <option>1 hour</option>
+              <option>8 hours</option>
+              <option>24 hours</option>
+              <option>7 days</option>
+              <option>10 days</option>
+              <option>30 days</option>
+              <option>Until dispelled</option>
+              <option>Until dispelled or triggered</option>
+              <option>Permanent</option>
+              <option>Special</option>
+            </select>
+          </div>
+          <div class="cr-field">
+            <label>Components</label>
+            <div class="cr-chips">
+              <label class="cr-chip"><input type="checkbox" checked /> V</label>
+              <label class="cr-chip"><input type="checkbox" checked /> S</label>
+              <label class="cr-chip"><input type="checkbox" checked /> M</label>
+            </div>
+          </div>
+          <div class="cr-field wide">
+            <label>Material Components</label>
+            <input type="text" value="a tiny ball of bat guano and sulfur" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Effect -->
+      <div class="cr-section">
+        <div class="cr-section-label">Effect <span class="hint">auto-fills DC / attack bonus on preview</span></div>
+        <div class="cr-grid cr-grid-2">
+          <div class="cr-field">
+            <label>Attack Type</label>
+            <select>
+              <option selected>— None —</option>
+              <option>Melee Spell Attack</option>
+              <option>Ranged Spell Attack</option>
+              <option>Melee Weapon Attack</option>
+              <option>Ranged Weapon Attack</option>
+            </select>
+          </div>
+          <div class="cr-field">
+            <label>Save Ability</label>
+            <select>
+              <option>— None —</option>
+              <option>Strength</option>
+              <option selected>Dexterity</option>
+              <option>Constitution</option>
+              <option>Intelligence</option>
+              <option>Wisdom</option>
+              <option>Charisma</option>
+            </select>
+            <div class="cr-autocalc">Save DC = 8 + proficiency + spell mod (shown per-caster at play time)</div>
+          </div>
+          <div class="cr-field">
+            <label>Damage</label>
+            <input type="text" value="8d6" />
+            <div class="cr-autocalc">avg 28 · max 48 · at 9th-slot: 14d6 (avg 49, max 84)</div>
+          </div>
+          <div class="cr-field">
+            <label>Damage Type</label>
+            <select>
+              <option>— None —</option>
+              <option>Acid</option>
+              <option>Bludgeoning</option>
+              <option>Cold</option>
+              <option selected>Fire</option>
+              <option>Force</option>
+              <option>Lightning</option>
+              <option>Necrotic</option>
+              <option>Piercing</option>
+              <option>Poison</option>
+              <option>Psychic</option>
+              <option>Radiant</option>
+              <option>Slashing</option>
+              <option>Thunder</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Description -->
+      <div class="cr-section">
+        <div class="cr-section-label">Description <span class="hint">markdown supported</span></div>
+        <div class="cr-field">
+          <textarea rows="6">A bright streak flashes from your pointing finger to a point you choose within range, then blossoms with a low roar into an explosion of flame. Each creature in a **20-foot-radius sphere** centered on that point must make a *Dexterity saving throw*.
+
+A target takes `8d6` fire damage on a failed save, or half as much on a success.</textarea>
+        </div>
+      </div>
+
+      <!-- At Higher Levels -->
+      <div class="cr-section">
+        <div class="cr-section-label">At Higher Levels <span class="hint">what happens in higher-level slots</span></div>
+        <div class="cr-field">
+          <textarea rows="3">When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d6 for each slot level above 3rd.</textarea>
+        </div>
+      </div>
+
+      <!-- Class Lists & Tags -->
+      <div class="cr-section">
+        <div class="cr-section-label">Class Lists & Tags <span class="hint">who can cast it</span></div>
+        <div class="cr-field" style="margin-bottom:12px;">
+          <label>Classes that can cast this spell</label>
+          <div class="cr-chips">
+            <label class="cr-chip"><input type="checkbox" /> Artificer</label>
+            <label class="cr-chip"><input type="checkbox" /> Bard</label>
+            <label class="cr-chip"><input type="checkbox" /> Cleric</label>
+            <label class="cr-chip"><input type="checkbox" /> Druid</label>
+            <label class="cr-chip"><input type="checkbox" /> Paladin</label>
+            <label class="cr-chip"><input type="checkbox" /> Ranger</label>
+            <label class="cr-chip"><input type="checkbox" checked /> Sorcerer</label>
+            <label class="cr-chip"><input type="checkbox" /> Warlock</label>
+            <label class="cr-chip"><input type="checkbox" checked /> Wizard</label>
+          </div>
+        </div>
+        <div class="cr-field">
+          <label>Tags (comma separated)</label>
+          <input type="text" value="AoE, Fire, Damage" />
+        </div>
+      </div>
+
+      <!-- Publishing & Sharing -->
+      <div class="cr-section">
+        <div class="cr-section-label">Publishing & Sharing <span class="hint">who else sees it</span></div>
+        <div class="cr-grid cr-grid-2">
+          <div class="cr-field wide">
+            <label>Add to Campaign</label>
+            <select>
+              <option selected>— Not attached to a campaign —</option>
+              <option>Curse of Strahd (DM)</option>
+              <option>The Whispering Tomb (DM)</option>
+              <option>Waterdeep Heist (Player)</option>
+            </select>
+            <div class="hint">Attach this spell to one of your campaigns so players in that campaign can see it.</div>
+          </div>
+          <div class="cr-field wide">
+            <label>Community Library</label>
+            <label class="cr-toggle"><input type="checkbox" /> Make public in the community library</label>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ─── RIGHT: Live preview ────────────────────────────────── -->
+    <div class="cr-preview-pane">
+      <h2>Live Preview</h2>
+      <div class="cr-spellcard">
+        <img src="logo.png" alt="Phmurt Studios" class="cr-sc-brand" />
+        <div class="cr-sc-name">Fireball</div>
+        <div class="cr-sc-meta">3rd-level evocation</div>
+
+        <div class="cr-sc-row"><strong>Casting Time</strong> 1 action</div>
+        <div class="cr-sc-row"><strong>Range</strong> 150 feet</div>
+        <div class="cr-sc-row"><strong>Components</strong> V, S, M (a tiny ball of bat guano and sulfur)</div>
+        <div class="cr-sc-row"><strong>Duration</strong> Instantaneous</div>
+        <div class="cr-sc-row"><strong>Save</strong> Dexterity</div>
+        <div class="cr-sc-row"><strong>Damage</strong> 8d6 fire</div>
+
+        <div class="cr-sc-body">
+          <p>A bright streak flashes from your pointing finger to a point you choose within range, then blossoms with a low roar into an explosion of flame. Each creature in a <strong>20-foot-radius sphere</strong> centered on that point must make a <em>Dexterity saving throw</em>.</p>
+          <p>A target takes <code>8d6</code> fire damage on a failed save, or half as much on a success.</p>
+        </div>
+
+        <div class="cr-sc-higher">
+          <strong>At Higher Levels</strong>
+          When you cast this spell using a spell slot of 4th level or higher, the damage increases by 1d6 for each slot level above 3rd.
+        </div>
+
+        <div class="cr-sc-tags">
+          <span class="cr-sc-tag">Evocation</span>
+          <span class="cr-sc-tag">Fire</span>
+          <span class="cr-sc-tag">AoE</span>
+          <span class="cr-sc-tag">Sorcerer</span>
+          <span class="cr-sc-tag">Wizard</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

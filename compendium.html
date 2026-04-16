@@ -28,6 +28,7 @@
   <script src="theme.js?v=185"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0" crossorigin="anonymous" integrity="sha384-fm42zLXjam4N3lT5umWgNtBBPMP3Ddrdmr9lnPKtDWzs5Dqy457Yn6+eTvCgRU3n"></script>
   <script src="supabase-config.js?v=185"></script>
+  <script src="stripe-env.js?v=188"></script>
   <script src="stripe-config.js?v=185"></script>
   <script src="phmurt-auth.js?v=187"></script>
   <script src="builder-data.js?v=185"></script>
@@ -1408,6 +1409,9 @@
   <div id="hb-modal-host"></div>
   <div id="hbe-modal-host"></div>
 
+  <!-- New split-pane creator host (currently: Spell; other entity types will follow) -->
+  <div id="creator-root" hidden></div>
+
   <div class="ps-divider"><div class="ps-div-line"></div><div class="ps-div-ornament"><div class="ps-div-dot"></div><div class="ps-div-gem"></div><div class="ps-div-dot"></div></div><div class="ps-div-line r"></div></div>
 
   <div style="font-size:10px;color:var(--text-faint);text-align:center;max-width:600px;margin:0 auto;padding:16px 24px 0;line-height:1.5;">
@@ -1417,6 +1421,14 @@
   </div>
   <div id="ps-site-footer"></div>
 
+  <link rel="stylesheet" href="creator.css?v=190" />
+  <script defer src="creator-util.js?v=190"></script>
+  <script defer src="creator-spell.js?v=190"></script>
+  <script defer src="creator-monster.js?v=190"></script>
+  <script defer src="creator-item.js?v=190"></script>
+  <script defer src="creator-feat.js?v=190"></script>
+  <script defer src="creator-encounter.js?v=190"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqHHDb58B0yaPfCu+Wgds8Gp/gU33kqBtgNS4tSPHuGibyoeqMV/TJlSKda6FXzoEyYGjTe+vXA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="phmurt-shell.js?v=187"></script>
   <script>
     // ── HTML Escape Utility ──────────────────────────────────────────────────
@@ -1580,6 +1592,11 @@
     }
 
     function openSpellCreatorModal(editId) {
+      // Route to the new split-pane creator if it's loaded; legacy modal below is the fallback.
+      if (window.PhmurtCreator && typeof window.PhmurtCreator.openSpell === 'function') {
+        window.PhmurtCreator.openSpell(editId || null);
+        return;
+      }
       _spellModalMode = editId ? 'edit' : 'create';
       _spellEditId = editId || null;
 
@@ -1794,6 +1811,10 @@
     }
 
     function openFeatCreatorModal(editId) {
+      if (window.PhmurtFeatCreator && typeof window.PhmurtFeatCreator.openFeat === 'function') {
+        window.PhmurtFeatCreator.openFeat(editId || null);
+        return;
+      }
       var existing = null;
       if (editId != null) {
         existing = (_homebrewFeats || []).find(function(f) { return f.id === editId; });
@@ -1938,6 +1959,10 @@
     }
 
     function openMonsterCreatorModal(editId) {
+      if (window.PhmurtMonsterCreator && typeof window.PhmurtMonsterCreator.openMonster === 'function') {
+        window.PhmurtMonsterCreator.openMonster(editId || null);
+        return;
+      }
       var existing = null;
       if (editId != null) {
         existing = (_homebrewMonsters || []).find(function(m) { return m.id === editId; });
@@ -2212,6 +2237,10 @@
     }
 
     function openEncounterCreatorModal(editId) {
+      if (window.PhmurtEncounterCreator && typeof window.PhmurtEncounterCreator.openEncounter === 'function') {
+        window.PhmurtEncounterCreator.openEncounter(editId || null);
+        return;
+      }
       var existing = null;
       if (editId != null) {
         existing = (_homebrewEncounters || []).find(function(e) { return e.id === editId; });
@@ -2387,6 +2416,10 @@
     // ══════════════════════════════════════════════════════════════
 
     function openHomebrewModal(editId) {
+      if (window.PhmurtItemCreator && typeof window.PhmurtItemCreator.openItem === 'function') {
+        window.PhmurtItemCreator.openItem(editId || null);
+        return;
+      }
       _homebrewModalMode = editId ? 'edit' : 'create';
       _homebrewEditId    = editId || null;
 

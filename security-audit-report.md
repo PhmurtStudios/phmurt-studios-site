@@ -90,7 +90,7 @@ CREATE POLICY "Service role can update all profiles"
 
 The `service_role` API key (server-side only, never shipped to browsers) will continue to work exactly as before. Anon and authenticated users keep whatever update access the **other 5 policies** on `profiles` give them — typically "users can update their own row," which appears to already exist (saved query "User Self-Update Policy for Profiles").
 
-> ⚠️ **APPLIED then ROLLED BACK 2026-04-15.** Fix verified to close the vuln, but rolled back along with rate-limit triggers after a sign-in failure report. See §4b. The vulnerability is currently open again. Re-apply after isolating the sign-in issue.
+> ✅ **RESOLVED 2026-04-15.** Re-applied after the sign-in failure root cause was isolated to a stale SRI hash on the Supabase JS CDN script (unrelated to RLS). Policy is now scoped to `service_role` only; verified via `pg_policy`. See §4c.
 
 ### 2.3 Other anon-writable policies (review, but likely intentional)
 
@@ -196,6 +196,54 @@ DROP TRIGGER IF EXISTS rl_site_errors ON public.site_errors;
 DROP TRIGGER IF EXISTS rl_site_visits ON public.site_visits;
 DROP FUNCTION IF EXISTS public.rl_throttle_inserts();
 ```
+
+---
+
+## 4c. Sign-in outage root-cause + re-application (2026-04-15, later)
+
+**Root cause of the sign-in failure reported in §4b: not caused by any §4a DB change.**
+
+Every HTML page on the site loaded the Supabase JS client from jsdelivr with an SRI `integrity` attribute pinned to `sha384-PsnFqJ58vyp7buRfuvdS2SrjRdUYinBv6lWwJXx3xQ17hWefo/UkwXowVBT53ubG`. jsdelivr's current payload for `@supabase/supabase-js@2` no longer matches that hash, so every browser silently rejected the script and `window.supabase` was undefined — every sign-in attempt failed at "create client" before a network call was ever made. The reason this surfaced the same day we shipped the RLS fix is coincidence (cache expiry). Audit logging is off on this project, so there was no server-side fingerprint of the failures; front-end DevTools (`Failed to find a valid digest in the 'integrity' attribute`) was the confirming signal.
+
+**Fix applied to all 25 files in the repo:**
+- URL pinned from unpinned `@supabase/supabase-js@2` to `@supabase/supabase-js@2.47.0` (prevents a future 2.x release silently breaking SRI again).
+- `integrity` updated to `sha384-fm42zLXjam4N3lT5umWgNtBBPMP3Ddrdmr9lnPKtDWzs5Dqy457Yn6+eTvCgRU3n` (verified with `openssl dgst -sha384 -binary | openssl base64 -A`).
+- 24 HTML files + `supabase-config.js` fallback loader updated. Committed and pushed to GitHub Pages. Live sign-in confirmed working by user.
+
+**Security fixes from §4a re-applied after outage resolved:**
+
+| Change | Status |
+|---|---|
+| `profiles` UPDATE policy → `service_role` only | ✅ Re-applied (verified via `pg_policy`) |
+| Rate-limit trigger `rl_site_errors` (500 inserts/min) | ✅ Re-applied |
+| Rate-limit trigger `rl_site_visits` (1000 inserts/min) | ✅ Re-applied |
+| `rl_throttle_inserts()` function (SECURITY DEFINER, service_role-bypass) | ✅ Re-applied |
+
+---
+
+## 4d. SECURITY DEFINER RPC hardening (2026-04-15)
+
+Audited all 17 public-schema SECURITY DEFINER functions. Of the 8 anon-reachable RPCs, 5 had real issues:
+
+| Function | Issue | Fix applied |
+|---|---|---|
+| `get_user_campaign_ids(uuid)` | No auth check — anon could enumerate any user's campaign memberships | Now requires `auth.uid()` + restricts to self-or-admin |
+| `is_campaign_member(uuid,uuid)` | No auth check — minor info disclosure | Requires `auth.uid()` |
+| `is_campaign_owner(uuid,uuid)` | No auth check — minor info disclosure | Requires `auth.uid()` |
+| `join_campaign_by_code(text)` | No NULL check on `auth.uid()` — anon call would attempt INSERT with NULL user_id | Explicit auth guard, returns `{success:false, error:"Not authenticated"}` |
+| `upsert_battle_map(uuid,jsonb)` | Could create a battle-map snapshot for a campaign you don't own (INSERT branch bypassed ownership check that only existed in UPDATE branch) | Requires caller owns the campaign; raises `28000`/`42501` otherwise |
+
+Also added `SET search_path = public` to all public SECURITY DEFINER functions that were missing it (`get_subscription_status`, `handle_new_user`, `phmurt_is_admin`) as defense-in-depth against schema-poisoning attacks.
+
+Remaining SECURITY DEFINER functions are either triggers (unreachable via PostgREST), already correctly auth-checked (`is_admin`, `is_superuser`, `get_subscription_status`, `profiles_privilege_check`), or my own helpers (`rl_throttle_inserts`, `rls_auto_enable`).
+
+**Optional future cleanup:** `phmurt_is_admin()` duplicates `is_admin()`. Consolidate to one canonical name and drop the other.
+
+---
+
+## 4e. Sign-in/SRI canary (2026-04-15)
+
+Scheduled task `phmurt-sri-canary` created — daily at 08:07 local. Fetches the homepage, extracts the Supabase JS `<script>` URL and integrity attribute, downloads the actual CDN payload, computes SHA-384, compares. Alerts on mismatch with a recovery recipe. This is the early warning for the exact failure mode we saw on 2026-04-15. Task file: `C:\Users\Aaron\Documents\Claude\Scheduled\phmurt-sri-canary\SKILL.md`.
 
 ---
 

@@ -91,8 +91,8 @@ var STRIPE_CHECKOUT_FUNCTION_URL = '';
 
     if (!STRIPE_CUSTOMER_PORTAL_ID) {
       errors.push('STRIPE_CUSTOMER_PORTAL_ID is not configured. Set STRIPE_CUSTOMER_PORTAL_ID_ENV.');
-    } else if (!/^bps_/.test(STRIPE_CUSTOMER_PORTAL_ID)) {
-      errors.push('STRIPE_CUSTOMER_PORTAL_ID format invalid. Expected bps_...');
+    } else if (!/^bp[cs]_/.test(STRIPE_CUSTOMER_PORTAL_ID)) {
+      errors.push('STRIPE_CUSTOMER_PORTAL_ID format invalid. Expected bpc_... or bps_...');
     }
 
     if (!STRIPE_CHECKOUT_FUNCTION_URL) {
