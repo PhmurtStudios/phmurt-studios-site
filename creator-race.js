@@ -345,7 +345,7 @@
 
   // ── Save / delete ─────────────────────────────────────────────────
   function save() {
-    if (!state.current.name || !state.current.name.trim()) { alert('Name is required'); return; }
+    if (!state.current.name || !state.current.name.trim()) { if (U.showToast) U.showToast('Error', 'Name is required'); else alert('Name is required'); return; }
     if (!state.current.clientId) state.current.clientId = generateClientId();
     var all = loadAll();
     all[state.current.clientId] = state.current;
@@ -356,13 +356,16 @@
     close();
   }
   function del() {
-    if (!confirm('Delete this race?')) return;
-    var all = loadAll();
-    delete all[state.current.clientId];
-    saveAll(all);
-    if (global._homebrewRaces) global._homebrewRaces = all;
-    if (typeof global.cmpRenderContent === 'function') global.cmpRenderContent();
-    close();
+    var doDelete = function() {
+      var all = loadAll();
+      delete all[state.current.clientId];
+      saveAll(all);
+      if (global._homebrewRaces) global._homebrewRaces = all;
+      if (typeof global.cmpRenderContent === 'function') global.cmpRenderContent();
+      close();
+    };
+    if (U.showConfirm) U.showConfirm('Delete this race? This cannot be undone.', doDelete);
+    else if (confirm('Delete this race?')) doDelete();
   }
   function exportJson() {
     var blob = new Blob([JSON.stringify(state.current, null, 2)], { type: 'application/json' });

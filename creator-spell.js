@@ -679,7 +679,8 @@
           render();
           if (global.showRestToast) global.showRestToast('Imported', 'Spell loaded — review and hit Save.');
         } catch (e) {
-          alert('Could not parse that JSON file: ' + e.message);
+          if (U.showToast) U.showToast('Import Error', 'Could not parse that JSON file: ' + e.message);
+          else alert('Could not parse that JSON file: ' + e.message);
         }
       };
       reader.readAsText(file);
@@ -689,22 +690,25 @@
 
   function deleteSpell() {
     if (!state.id) return close();
-    if (!confirm('Delete spell "' + state.spell.name + '"? This cannot be undone.')) return;
-    var all = loadLocal();
-    delete all[state.id];
-    saveLocal(all);
-    if (global._homebrewSpells) delete global._homebrewSpells[state.id];
+    var doDelete = function() {
+      var all = loadLocal();
+      delete all[state.id];
+      saveLocal(all);
+      if (global._homebrewSpells) delete global._homebrewSpells[state.id];
 
-    var sb  = getSupabase();
-    var uid = currentUserId();
-    if (sb && uid) {
-      sb.from(CLOUD_TABLE).delete()
-        .match({ user_id: uid, type: 'spell', client_id: state.id })
-        .then(function () {}, function () {});
-    }
-    if (global.cmpRenderContent)   { try { global.cmpRenderContent(); } catch (e) {} }
-    if (global.cmpRefreshMineCount){ try { global.cmpRefreshMineCount(); } catch (e) {} }
-    close();
+      var sb  = getSupabase();
+      var uid = currentUserId();
+      if (sb && uid) {
+        sb.from(CLOUD_TABLE).delete()
+          .match({ user_id: uid, type: 'spell', client_id: state.id })
+          .then(function () {}, function () {});
+      }
+      if (global.cmpRenderContent)   { try { global.cmpRenderContent(); } catch (e) {} }
+      if (global.cmpRefreshMineCount){ try { global.cmpRefreshMineCount(); } catch (e) {} }
+      close();
+    };
+    if (U.showConfirm) U.showConfirm('Delete spell "' + state.spell.name + '"? This cannot be undone.', doDelete);
+    else if (confirm('Delete spell "' + state.spell.name + '"? This cannot be undone.')) doDelete();
   }
 
   // ── Lifecycle ─────────────────────────────────────────────────────

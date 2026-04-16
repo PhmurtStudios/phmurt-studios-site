@@ -60,115 +60,113 @@
     /* ── Compendium layout ──────────────────────────────────────── */
     .cmp-layout {
       display: grid;
-      grid-template-columns: 300px 1fr;
+      grid-template-columns: 260px 1fr;
       gap: 0;
       min-height: calc(100vh - 120px);
       max-width: 1440px;
       margin: 0 auto;
-      padding: 0 56px 80px;
+      padding: 0 32px 48px;
     }
     @media (max-width: 920px) {
-      .cmp-layout { grid-template-columns: 1fr; }
-      .cmp-sidebar { border-right: none; border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 20px; max-height: none; position: static; }
+      .cmp-layout { grid-template-columns: 1fr; padding: 0 16px 32px; }
+      .cmp-sidebar { border-right: none; border-bottom: 1px solid var(--border); padding-bottom: 14px; margin-bottom: 14px; max-height: none; position: static; }
     }
 
     /* ── Sidebar ────────────────────────────────────────────────── */
     .cmp-sidebar {
-      padding: 28px 28px 40px 0;
+      padding: 18px 16px 24px 0;
+      margin-left: -16px;
       border-right: 1px solid var(--border);
       position: sticky;
-      top: 80px;
+      top: 70px;
       align-self: start;
-      max-height: calc(100vh - 120px);
+      max-height: calc(100vh - 100px);
       overflow-y: auto;
     }
     .cmp-sidebar-title {
       font-family: 'Cinzel', serif;
-      font-size: 9px;
+      font-size: 8px;
       letter-spacing: 3px;
       text-transform: uppercase;
       color: var(--text-faint);
-      margin-bottom: 14px;
+      margin-bottom: 8px;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 6px;
+    }
+    .cmp-sidebar-title::before {
+      content: '\25C6';
+      font-size: 4px;
+      color: currentColor;
+      opacity: .5;
     }
     .cmp-sidebar-title::after {
       content: '';
       flex: 1;
       height: 1px;
-      background: var(--border);
+      background: linear-gradient(90deg, var(--border), transparent);
     }
     .cmp-create-btn {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       width: 100%;
-      padding: 12px 16px;
-      margin-bottom: 5px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--crimson);
-      color: var(--text);
+      padding: 10px 16px;
+      margin-bottom: 8px;
+      background: transparent;
+      border: none;
+      border-left: 3px solid transparent;
+      border-radius: 0 6px 6px 0;
+      color: var(--text-muted);
       font-family: 'Cinzel', serif;
-      font-size: 10px;
-      letter-spacing: 2px;
+      font-size: 11px;
+      letter-spacing: 1.5px;
       text-transform: uppercase;
       cursor: pointer;
       text-align: left;
-      transition: border-color .15s, color .15s, background .15s, transform .1s;
+      transition: background .15s, color .15s, border-color .15s;
     }
     .cmp-create-btn:hover {
-      border-color: var(--crimson);
-      border-left-color: var(--crimson);
       color: var(--text);
-      background: linear-gradient(90deg, rgba(139,0,0,.10), transparent 70%);
-      transform: translateX(2px);
+      background: rgba(255,255,255,0.03);
     }
     .cmp-create-btn .cmp-btn-icon {
-      font-size: 14px;
+      font-size: 16px;
       line-height: 1;
       flex-shrink: 0;
-      width: 22px;
+      width: 20px;
       text-align: center;
     }
-    .cmp-create-btn.item  { border-left-color: #6b4ea8; }
-    .cmp-create-btn.item  .cmp-btn-icon { color: #6b4ea8; }
-    .cmp-create-btn.item:hover  { border-color: #6b4ea8; background: linear-gradient(90deg, rgba(107,78,168,.10), transparent 70%); }
-    .cmp-create-btn.feat  { border-left-color: #e67e22; }
-    .cmp-create-btn.feat  .cmp-btn-icon { color: #e67e22; }
-    .cmp-create-btn.feat:hover  { border-color: #e67e22; background: linear-gradient(90deg, rgba(230,126,34,.10), transparent 70%); }
-    .cmp-create-btn.spell { border-left-color: #2980b9; }
-    .cmp-create-btn.spell:hover { border-color: #2980b9; background: linear-gradient(90deg, rgba(41,128,185,.10), transparent 70%); }
-    .cmp-create-btn.monster { border-left-color: #e8605a; }
-    .cmp-create-btn.monster .cmp-btn-icon { color: #e8605a; }
-    .cmp-create-btn.monster:hover { border-color: #e8605a; background: linear-gradient(90deg, rgba(232,96,90,.10), transparent 70%); }
-    .cmp-create-btn.encounter { border-left-color: #16a085; }
-    .cmp-create-btn.encounter .cmp-btn-icon { color: #16a085; }
-    .cmp-create-btn.encounter:hover { border-color: #16a085; background: linear-gradient(90deg, rgba(22,160,133,.10), transparent 70%); }
-    .cmp-create-btn.race  { border-left-color: #c0392b; }
-    .cmp-create-btn.race  .cmp-btn-icon { color: #c0392b; }
-    .cmp-create-btn.race:hover  { border-color: #c0392b; background: linear-gradient(90deg, rgba(192,57,43,.10), transparent 70%); }
-    .cmp-create-btn.class { border-left-color: #d4af37; }
-    .cmp-create-btn.class .cmp-btn-icon { color: #d4af37; }
-    .cmp-create-btn.class:hover { border-color: #d4af37; background: linear-gradient(90deg, rgba(212,175,55,.10), transparent 70%); }
-    .cmp-create-btn.bg    { border-left-color: #7f8c8d; }
-    .cmp-create-btn.bg    .cmp-btn-icon { color: #7f8c8d; }
-    .cmp-create-btn.bg:hover    { border-color: #7f8c8d; background: linear-gradient(90deg, rgba(127,140,141,.10), transparent 70%); }
-    .cmp-create-btn.sub   { border-left-color: #8e44ad; }
-    .cmp-create-btn.sub   .cmp-btn-icon { color: #8e44ad; }
-    .cmp-create-btn.sub:hover   { border-color: #8e44ad; background: linear-gradient(90deg, rgba(142,68,173,.10), transparent 70%); }
+    .cmp-create-btn .cmp-btn-icon { color: var(--text-muted); }
+    .cmp-create-btn.race  { border-left-color: #ff4757; } .cmp-create-btn.race  .cmp-btn-icon { color: #ff4757; }
+    .cmp-create-btn.race:hover  { background: rgba(255,71,87,.08); color: var(--text); }
+    .cmp-create-btn.class { border-left-color: #ffd32a; } .cmp-create-btn.class .cmp-btn-icon { color: #ffd32a; }
+    .cmp-create-btn.class:hover { background: rgba(255,211,42,.08); color: var(--text); }
+    .cmp-create-btn.bg    { border-left-color: #a4b0be; } .cmp-create-btn.bg    .cmp-btn-icon { color: #a4b0be; }
+    .cmp-create-btn.bg:hover    { background: rgba(164,176,190,.08); color: var(--text); }
+    .cmp-create-btn.sub   { border-left-color: #c56cf0; } .cmp-create-btn.sub   .cmp-btn-icon { color: #c56cf0; }
+    .cmp-create-btn.sub:hover   { background: rgba(197,108,240,.08); color: var(--text); }
+    .cmp-create-btn.feat  { border-left-color: #ff9f43; } .cmp-create-btn.feat  .cmp-btn-icon { color: #ff9f43; }
+    .cmp-create-btn.feat:hover  { background: rgba(255,159,67,.08); color: var(--text); }
+    .cmp-create-btn.item  { border-left-color: #a55eea; } .cmp-create-btn.item  .cmp-btn-icon { color: #a55eea; }
+    .cmp-create-btn.item:hover  { background: rgba(165,94,234,.08); color: var(--text); }
+    .cmp-create-btn.spell { border-left-color: #45aaf2; } .cmp-create-btn.spell .cmp-btn-icon { color: #45aaf2; }
+    .cmp-create-btn.spell:hover { background: rgba(69,170,242,.08); color: var(--text); }
+    .cmp-create-btn.monster { border-left-color: #ff6b6b; } .cmp-create-btn.monster .cmp-btn-icon { color: #ff6b6b; }
+    .cmp-create-btn.monster:hover { background: rgba(255,107,107,.08); color: var(--text); }
+    .cmp-create-btn.encounter { border-left-color: #2ed8a3; } .cmp-create-btn.encounter .cmp-btn-icon { color: #2ed8a3; }
+    .cmp-create-btn.encounter:hover { background: rgba(46,216,163,.08); color: var(--text); }
 
     .cmp-sidebar-divider {
       border: none;
       border-top: 1px solid var(--border);
-      margin: 18px 0;
-      opacity: .5;
+      margin: 10px 0;
+      opacity: .4;
     }
 
     /* ── Main content ───────────────────────────────────────────── */
     .cmp-main {
-      padding: 32px 0 40px 44px;
+      padding: 18px 0 32px 24px;
     }
     @media (max-width: 920px) { .cmp-main { padding-left: 0; } }
 
@@ -177,15 +175,15 @@
       display: flex;
       gap: 0;
       border-bottom: 2px solid var(--border);
-      margin-bottom: 28px;
+      margin-bottom: 18px;
       position: relative;
     }
     .cmp-tab {
       font-family: 'Cinzel', serif;
-      font-size: 9px;
+      font-size: 12px;
       letter-spacing: 3px;
       text-transform: uppercase;
-      padding: 14px 28px;
+      padding: 14px 28px 14px 0;
       background: transparent;
       border: none;
       border-bottom: 2px solid transparent;
@@ -195,6 +193,7 @@
       position: relative;
       transition: color .2s, border-color .2s;
     }
+    .cmp-tab:first-child { padding-left: 0; }
     .cmp-tab:hover { color: var(--text); }
     .cmp-tab.active {
       color: var(--crimson);
@@ -204,7 +203,7 @@
       content: '';
       position: absolute;
       bottom: -2px;
-      left: 28px;
+      left: 0;
       right: 28px;
       height: 2px;
       background: var(--crimson);
@@ -215,9 +214,9 @@
     /* ── Search / filter bar ───────────────────────────────────── */
     .cmp-toolbar {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       flex-wrap: wrap;
-      margin-bottom: 18px;
+      margin-bottom: 12px;
       align-items: center;
     }
     .cmp-search {
@@ -255,9 +254,9 @@
 
     .cmp-type-filters {
       display: flex;
-      gap: 6px;
+      gap: 5px;
       flex-wrap: wrap;
-      margin-bottom: 22px;
+      margin-bottom: 16px;
     }
     .cmp-type-btn {
       font-family: 'Cinzel', serif;
@@ -282,6 +281,16 @@
       color: #f5f0e8;
       box-shadow: 0 1px 4px rgba(139,0,0,.25);
     }
+    /* Per-type active color accents on filter pills */
+    .cmp-type-btn[data-tf="race"].active    { background: #ff4757; border-color: #ff4757; }
+    .cmp-type-btn[data-tf="class"].active   { background: #ffd32a; border-color: #ffd32a; color: #1a1612; }
+    .cmp-type-btn[data-tf="background"].active { background: #a4b0be; border-color: #a4b0be; color: #1a1612; }
+    .cmp-type-btn[data-tf="subclass"].active { background: #c56cf0; border-color: #c56cf0; }
+    .cmp-type-btn[data-tf="feat"].active    { background: #ff9f43; border-color: #ff9f43; color: #1a1612; }
+    .cmp-type-btn[data-tf="item"].active    { background: #a55eea; border-color: #a55eea; }
+    .cmp-type-btn[data-tf="spell"].active   { background: #45aaf2; border-color: #45aaf2; }
+    .cmp-type-btn[data-tf="monster"].active { background: #ff6b6b; border-color: #ff6b6b; }
+    .cmp-type-btn[data-tf="encounter"].active { background: #2ed8a3; border-color: #2ed8a3; color: #1a1612; }
 
     /* ── Cards grid ─────────────────────────────────────────────── */
     .cmp-grid {
@@ -299,15 +308,31 @@
       transition: border-color .2s, transform .2s, box-shadow .2s;
       overflow: hidden;
     }
+    .cmp-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 24px;
+      height: 24px;
+      background: linear-gradient(225deg, var(--border) 50%, transparent 50%);
+      opacity: .3;
+      transition: opacity .2s;
+      z-index: 1;
+    }
+    .cmp-card:hover::before {
+      background: linear-gradient(225deg, var(--crimson) 50%, transparent 50%);
+      opacity: .5;
+    }
     .cmp-card:hover {
       border-color: var(--crimson-border);
       transform: translateY(-2px);
       box-shadow: 0 4px 16px rgba(0,0,0,.25);
     }
     .cmp-card-header {
-      padding: 16px 20px 12px;
+      padding: 14px 18px 10px;
       border-bottom: 1px solid var(--border);
-      background: linear-gradient(180deg, rgba(28,24,20,.6), transparent);
+      background: linear-gradient(180deg, rgba(28,24,20,.5), transparent);
     }
     .cmp-card-body {
       padding: 14px 20px 18px;
@@ -324,6 +349,14 @@
       letter-spacing: 2.5px;
       text-transform: uppercase;
       margin-bottom: 6px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .cmp-card-type::before {
+      content: '\25C6';
+      font-size: 5px;
+      opacity: .6;
     }
     .cmp-card-name {
       font-family: 'Cinzel', serif;
@@ -375,11 +408,12 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 20px 14px 10px;
+      padding: 10px 18px 12px 10px;
       margin-top: 0;
       border-top: 1px solid var(--border);
       gap: 8px;
       flex-wrap: wrap;
+      background: linear-gradient(180deg, transparent, rgba(28,24,20,.3));
     }
     .cmp-card-author {
       font-family: 'Spectral', serif;
@@ -405,9 +439,21 @@
     .cmp-mine-row:last-child { border-bottom: none; }
     .cmp-mine-accent {
       flex-shrink: 0;
-      width: 4px;
-      height: 38px;
+      width: 3px;
+      height: 36px;
       border-radius: 2px;
+      position: relative;
+    }
+    .cmp-mine-accent::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 7px;
+      height: 7px;
+      background: inherit;
+      transform: translate(-50%, -50%) rotate(45deg);
+      opacity: .4;
     }
     .cmp-mine-info { flex: 1; min-width: 0; }
     .cmp-mine-name {
@@ -513,13 +559,23 @@
     /* Empty / loading states ───────────────────────────────────── */
     .cmp-empty {
       text-align: center;
-      padding: 64px 24px;
+      padding: 56px 24px;
       grid-column: 1/-1;
+      position: relative;
+    }
+    .cmp-empty::before {
+      content: '\2726 \2727 \2726';
+      display: block;
+      font-size: 10px;
+      letter-spacing: 8px;
+      color: var(--crimson);
+      opacity: .25;
+      margin-bottom: 20px;
     }
     .cmp-empty-icon {
-      font-size: 52px;
+      font-size: 44px;
       opacity: .12;
-      margin-bottom: 18px;
+      margin-bottom: 14px;
       filter: grayscale(1);
     }
     .cmp-empty-title {
@@ -528,16 +584,24 @@
       letter-spacing: 3px;
       text-transform: uppercase;
       color: var(--text-muted);
-      margin-bottom: 12px;
+      margin-bottom: 10px;
     }
     .cmp-empty-body {
       font-family: 'Spectral', serif;
       font-size: 14px;
       font-style: italic;
       color: var(--text-faint);
-      max-width: 380px;
+      max-width: 360px;
       margin: 0 auto;
       line-height: 1.7;
+    }
+    .cmp-empty::after {
+      content: '';
+      display: block;
+      width: 60px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--crimson-border), transparent);
+      margin: 20px auto 0;
     }
 
     /* In-page modals ───────────────────────────────────────────── */
@@ -1377,6 +1441,78 @@
       border-color: var(--crimson-border);
       background: var(--bg);
     }
+
+    /* ── Decorative: Tab area left accent ────────────────────── */
+    .cmp-tabs::after {
+      content: '';
+      flex: 1;
+    }
+
+    /* ── Decorative: Grid ornament divider ────────────────────── */
+    .cmp-grid::before {
+      content: '\2726  \2727  \2726';
+      grid-column: 1 / -1;
+      text-align: center;
+      font-size: 8px;
+      letter-spacing: 6px;
+      color: var(--crimson);
+      opacity: .2;
+      padding-bottom: 8px;
+    }
+
+    /* ── Decorative: Toolbar decorative end cap ───────────────── */
+    .cmp-toolbar::after {
+      content: '';
+      width: 20px;
+      height: 1px;
+      background: linear-gradient(90deg, var(--crimson-border), transparent);
+      flex-shrink: 0;
+      align-self: center;
+    }
+
+    /* ── Decorative: Type filter row ornaments ────────────────── */
+    .cmp-type-filters::before,
+    .cmp-type-filters::after {
+      content: '\25C6';
+      font-size: 4px;
+      color: var(--crimson);
+      opacity: .3;
+      align-self: center;
+    }
+
+    /* ── Decorative: Card hover inner glow ────────────────────── */
+    .cmp-card::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      border: 1px solid transparent;
+      transition: border-color .2s;
+    }
+    .cmp-card:hover::after {
+      border-color: rgba(212,67,58,.08);
+    }
+
+    /* ── Decorative: Mine section ornament ────────────────────── */
+    #cmp-content::before {
+      content: '';
+      display: block;
+      width: 40px;
+      height: 1px;
+      background: linear-gradient(90deg, var(--crimson), transparent);
+      margin-bottom: 12px;
+    }
+
+    /* ── Decorative: Page hero bottom accent ──────────────────── */
+    .ps-page-hero::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent 10%, var(--crimson-border) 50%, transparent 90%);
+    }
   </style>
 </head>
 <body data-nav-active="Content" data-footer-copy="Roll Well. Play Weird.">
@@ -1402,43 +1538,43 @@
       <div class="cmp-sidebar-title">Create Homebrew</div>
 
       <button class="cmp-create-btn race"    onclick="openHBEntityModal('race',null)">
-        <span class="cmp-btn-icon">&#9883;</span>Race
+        <span class="cmp-btn-icon">&#9823;</span>Race
       </button>
       <button class="cmp-create-btn class"   onclick="openHBEntityModal('class',null)">
-        <span class="cmp-btn-icon">&#9876;</span>Class
+        <span class="cmp-btn-icon">&#9884;</span>Class
       </button>
       <button class="cmp-create-btn bg"      onclick="openHBEntityModal('background',null)">
-        <span class="cmp-btn-icon">&#9782;</span>Background
+        <span class="cmp-btn-icon">&#9998;</span>Background
       </button>
       <button class="cmp-create-btn sub"     onclick="openHBEntityModal('subclass',null)">
-        <span class="cmp-btn-icon">&#10022;</span>Subclass
+        <span class="cmp-btn-icon">&#10697;</span>Subclass
       </button>
       <button class="cmp-create-btn feat" onclick="openFeatCreatorModal()">
-        <span class="cmp-btn-icon">&#10026;</span>Feat
+        <span class="cmp-btn-icon">&#10029;</span>Feat
       </button>
 
       <hr class="cmp-sidebar-divider" />
-      <div class="cmp-sidebar-title" style="color:#6b4ea8;">Items</div>
+      <div class="cmp-sidebar-title" style="color:#a55eea;">Items</div>
       <button class="cmp-create-btn item"    onclick="openHomebrewModal()">
-        <span class="cmp-btn-icon">&#9881;</span>Magic Item / Gear
+        <span class="cmp-btn-icon">&#10022;</span>Magic Item / Gear
       </button>
 
       <hr class="cmp-sidebar-divider" />
-      <div class="cmp-sidebar-title" style="color:#2980b9;">Spellcasting</div>
+      <div class="cmp-sidebar-title" style="color:#45aaf2;">Spellcasting</div>
       <button class="cmp-create-btn spell"   onclick="openSpellCreatorModal()">
-        <span class="cmp-btn-icon">&#10039;</span>Spell
+        <span class="cmp-btn-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2.5A1.5 1.5 0 0 1 5.5 1H11l3 3v7.5a1.5 1.5 0 0 1-1.5 1.5H5.5A1.5 1.5 0 0 1 4 11.5z"/><path d="M11 1v3h3"/><line x1="6.5" y1="6" x2="11" y2="6"/><line x1="6.5" y1="8" x2="11" y2="8"/><line x1="6.5" y1="10" x2="9" y2="10"/></svg></span>Spell
       </button>
 
       <hr class="cmp-sidebar-divider" />
-      <div class="cmp-sidebar-title" style="color:#e8605a;">Creatures</div>
+      <div class="cmp-sidebar-title" style="color:#ff6b6b;">Creatures</div>
       <button class="cmp-create-btn monster" onclick="openMonsterCreatorModal()">
-        <span class="cmp-btn-icon">&#9760;</span>Monster / Creature
+        <span class="cmp-btn-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 1c-.8 0-1.8.4-2 1.2-.2.6.2 1 .8 1.2.5.1 1 0 1.2-.2"/><path d="M9.5 1c.8 0 1.8.4 2 1.2.2.6-.2 1-.8 1.2-.5.1-1 0-1.2-.2"/><path d="M6.8 2.5C6.5 4 6.2 5.5 6.5 7c.3 1.8 1 3.5 1.5 5.2.2.5.3 1.2.5 1.8.1-.6.3-1.3.5-1.8.5-1.7 1.2-3.4 1.5-5.2.3-1.5 0-3-.3-4.5"/></svg></span>Monster / Creature
       </button>
 
       <hr class="cmp-sidebar-divider" />
-      <div class="cmp-sidebar-title" style="color:#16a085;">Encounters</div>
+      <div class="cmp-sidebar-title" style="color:#2ed8a3;">Encounters</div>
       <button class="cmp-create-btn encounter" onclick="openEncounterCreatorModal()">
-        <span class="cmp-btn-icon">&#9876;</span>Encounter Template
+        <span class="cmp-btn-icon">&#9876;</span>Encounter
       </button>
 
       <hr class="cmp-sidebar-divider" />
@@ -1452,6 +1588,12 @@
         Your saved creations are automatically available in the
         <a href="character-builder.html" style="color:var(--crimson);">Character Builder</a>
         when you next create a character.
+      </div>
+
+      <hr class="cmp-sidebar-divider" />
+      <div style="font-size:10px;color:var(--text-faint);line-height:1.55;font-style:italic;">
+        Homebrew content is user-created and not affiliated with or endorsed by Wizards of the Coast. Users are responsible for ensuring their creations respect applicable intellectual property rights. Content based on the D&amp;D 5e SRD is used under the
+        <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener" style="color:var(--text-muted);">Creative Commons Attribution 4.0</a> license.
       </div>
     </aside>
 
@@ -2006,7 +2148,7 @@
 
     function saveFeat(editId) {
       var name = document.getElementById('feat-name').value.trim();
-      if (!name) { alert('Please enter a feat name.'); return; }
+      if (!name) { if (window.PhmurtCreatorUtil && window.PhmurtCreatorUtil.showToast) window.PhmurtCreatorUtil.showToast('Error', 'Please enter a feat name.'); else alert('Please enter a feat name.'); return; }
       var feat = {
         id: editId || ('feat_' + Date.now()),
         type: 'feat',
@@ -2242,7 +2384,7 @@
 
     function saveMonster(editId) {
       var name = document.getElementById('mon-name').value.trim();
-      if (!name) { alert('Please enter a monster name.'); return; }
+      if (!name) { if (window.PhmurtCreatorUtil && window.PhmurtCreatorUtil.showToast) window.PhmurtCreatorUtil.showToast('Error', 'Please enter a monster name.'); else alert('Please enter a monster name.'); return; }
 
       var monster = {
         id: editId || ('mon_' + Date.now()),
@@ -2464,7 +2606,7 @@
 
     function saveEncounter(editId) {
       var name = document.getElementById('enc-name').value.trim();
-      if (!name) { alert('Please enter an encounter name.'); return; }
+      if (!name) { if (window.PhmurtCreatorUtil && window.PhmurtCreatorUtil.showToast) window.PhmurtCreatorUtil.showToast('Error', 'Please enter an encounter name.'); else alert('Please enter an encounter name.'); return; }
 
       var encounter = {
         id: editId || ('enc_' + Date.now()),
@@ -3711,10 +3853,21 @@
       };
       var levels = schedules[parentId] || [3, 7, 10, 15, 18];
       var existing = featEl.value.trim();
-      if(existing && !confirm('This will replace existing features. Continue?')) return;
-      featEl.value = levels.map(function(lv){
-        return lv+'|Subclass Feature|Your subclass grants a feature at this level.';
-      }).join('\n');
+      var fillFeatures = function() {
+        featEl.value = levels.map(function(lv){
+          return lv+'|Subclass Feature|Your subclass grants a feature at this level.';
+        }).join('\n');
+        if (featEl.dispatchEvent) featEl.dispatchEvent(new Event('input', {bubbles:true}));
+      };
+      if (existing) {
+        if (window.PhmurtCreatorUtil && window.PhmurtCreatorUtil.showConfirm) {
+          window.PhmurtCreatorUtil.showConfirm('This will replace existing features. Continue?', fillFeatures);
+        } else if (confirm('This will replace existing features. Continue?')) {
+          fillFeatures();
+        }
+        return;
+      }
+      fillFeatures();
     }
 
     // ─────────────────────────────────────────────────────────────

@@ -204,6 +204,43 @@
     return Math.floor(parts.avg + conMod * totalDice);
   }
 
+  // ── Inline toast (replaces alert) ─────────────────────────────────
+  function showToast(title, message) {
+    if (global.showRestToast) { global.showRestToast(title, message); return; }
+    // Fallback: inject a temporary toast
+    var existing = document.getElementById('cr-toast');
+    if (existing) existing.remove();
+    var toast = document.createElement('div');
+    toast.id = 'cr-toast';
+    toast.style.cssText = 'position:fixed;top:24px;right:24px;z-index:99999;padding:14px 22px;border-radius:8px;font-family:inherit;font-size:14px;color:#fff;background:rgba(30,25,20,.92);border:1px solid var(--crimson-border,#6b3a3a);box-shadow:0 4px 24px rgba(0,0,0,.4);animation:crToastIn .25s ease;max-width:360px;';
+    toast.innerHTML = '<strong style="color:var(--crimson,#d4433a);">' + escapeHtml(title) + '</strong><br/>' + escapeHtml(message);
+    document.body.appendChild(toast);
+    setTimeout(function(){ toast.style.opacity='0'; toast.style.transition='opacity .3s'; }, 2800);
+    setTimeout(function(){ try { toast.remove(); } catch(e){} }, 3200);
+  }
+
+  // ── Inline confirm modal (replaces confirm()) ──────────────────────
+  function showConfirm(message, onYes) {
+    var existing = document.getElementById('cr-confirm-overlay');
+    if (existing) existing.remove();
+    var overlay = document.createElement('div');
+    overlay.id = 'cr-confirm-overlay';
+    overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);';
+    var box = document.createElement('div');
+    box.style.cssText = 'background:var(--bg-card,#1e1914);border:1px solid var(--crimson-border,#6b3a3a);border-radius:10px;padding:28px 32px;max-width:380px;font-family:inherit;color:var(--text,#e8dcc8);text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.5);';
+    box.innerHTML = '<p style="margin:0 0 20px;font-size:15px;line-height:1.5;">' + escapeHtml(message) + '</p>' +
+      '<div style="display:flex;gap:12px;justify-content:center;">' +
+        '<button id="cr-confirm-yes" style="padding:8px 24px;border:none;border-radius:6px;background:var(--crimson,#d4433a);color:#fff;cursor:pointer;font-family:inherit;font-size:14px;font-weight:600;">Delete</button>' +
+        '<button id="cr-confirm-no" style="padding:8px 24px;border:1px solid var(--border,#3d3529);border-radius:6px;background:transparent;color:var(--text-muted,#a89a85);cursor:pointer;font-family:inherit;font-size:14px;">Cancel</button>' +
+      '</div>';
+    overlay.appendChild(box);
+    document.body.appendChild(overlay);
+    function cleanup(){ try { overlay.remove(); } catch(e){} }
+    document.getElementById('cr-confirm-yes').addEventListener('click', function(){ cleanup(); if (onYes) onYes(); });
+    document.getElementById('cr-confirm-no').addEventListener('click', cleanup);
+    overlay.addEventListener('click', function(e){ if (e.target === overlay) cleanup(); });
+  }
+
   // ── Export ────────────────────────────────────────────────────────
   global.PhmurtCreatorUtil = {
     parseDamage: parseDamage,
@@ -219,6 +256,8 @@
     crToProficiency: crToProficiency,
     abilityMod: abilityMod,
     fmtMod: fmtMod,
-    monsterHp: monsterHp
+    monsterHp: monsterHp,
+    showToast: showToast,
+    showConfirm: showConfirm
   };
 })(window);

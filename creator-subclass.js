@@ -226,8 +226,8 @@
   }
 
   function save() {
-    if (!state.current.name.trim()) { alert('Name is required'); return; }
-    if (!state.current.parentClass) { alert('Parent Class is required'); return; }
+    if (!state.current.name.trim()) { if (U.showToast) U.showToast('Error', 'Name is required'); else alert('Name is required'); return; }
+    if (!state.current.parentClass) { if (U.showToast) U.showToast('Error', 'Parent Class is required'); else alert('Parent Class is required'); return; }
     if (!state.current.clientId) state.current.clientId = generateClientId();
     state.current.expandedSpells = (state.current.expandedSpells||[]).filter(function(sp){return sp.spells && sp.spells.length;});
     state.current.features = (state.current.features||[]).filter(function(f){return f.name && f.name.trim();});
@@ -241,16 +241,19 @@
     cloudSync(); close();
   }
   function del() {
-    if (!confirm('Delete this subclass?')) return;
-    var list = loadAll().filter(function(sc){ return sc.id !== state.current.id; });
-    saveAll(list);
-    if (global._homebrewSubclasses !== undefined) global._homebrewSubclasses = list;
-    if (typeof global.cmpRenderContent === 'function') global.cmpRenderContent();
-    close();
+    var doDelete = function() {
+      var list = loadAll().filter(function(sc){ return sc.id !== state.current.id; });
+      saveAll(list);
+      if (global._homebrewSubclasses !== undefined) global._homebrewSubclasses = list;
+      if (typeof global.cmpRenderContent === 'function') global.cmpRenderContent();
+      close();
+    };
+    if (U.showConfirm) U.showConfirm('Delete this subclass? This cannot be undone.', doDelete);
+    else if (confirm('Delete this subclass?')) doDelete();
   }
   function exportPng() {
     var card = document.querySelector('#creator-root .cr-spellcard');
-    if (!card || typeof global.html2canvas !== 'function') { alert('PNG export not available.'); return; }
+    if (!card || typeof global.html2canvas !== 'function') { if (U.showToast) U.showToast('Error', 'PNG export not available.'); else alert('PNG export not available.'); return; }
     global.html2canvas(card, { backgroundColor: null, scale: 2 }).then(function(canvas){
       canvas.toBlob(function(blob){
         var url = URL.createObjectURL(blob);

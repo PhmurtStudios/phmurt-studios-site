@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Compendium Redesign Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #08080a;
+      --bg-card: #141420;
+      --text: #f2e8d6;
+      --text-dim: #cfc0a8;
+      --text-muted: #9a8870;
+      --text-faint: #8a7a62;
+      --crimson: #d4433a;
+      --crimson-soft: rgba(212,67,58,0.14);
+      --crimson-border: rgba(212,67,58,0.36);
+      --border: rgba(255,255,255,0.11);
+      --border-subtle: rgba(255,255,255,0.08);
+      --white: #f2e8d6;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; background: var(--bg); color: var(--text); font-family: 'Spectral', Georgia, serif; font-size: 16px; line-height: 1.5; }
+
+    /* ── Hero (standard sizing from style.css) ─────────────────── */
+    .ps-page-hero { padding: 64px 56px 52px; position: relative; overflow: hidden; }
+    .ps-page-hero::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 0% 50%, var(--crimson-soft), transparent 60%); pointer-events: none; }
+    .ps-page-hero::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent 10%, var(--crimson-border) 50%, transparent 90%); }
+    .ps-page-eyebrow { font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 5px; color: var(--crimson); text-transform: uppercase; margin-bottom: 12px; }
+    .ps-page-eyebrow::before { content: '\2726 '; font-size: 8px; }
+    .ps-page-title { font-family: 'Cinzel', serif; font-size: 56px; font-weight: 300; color: var(--text); line-height: 1.05; margin-bottom: 4px; }
+    .ps-page-subtitle { font-family: 'Cinzel', serif; font-size: 18px; font-weight: 300; font-style: italic; color: var(--text-muted); margin-bottom: 8px; }
+    .ps-page-intro { font-size: 14px; color: var(--text-dim); max-width: 600px; line-height: 1.6; }
+
+    /* ── Divider ────────────────────────────────────────────────── */
+    .ps-divider { display: flex; align-items: center; padding: 0 32px; }
+    .ps-div-line { flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--crimson-border)); }
+    .ps-div-line.r { background: linear-gradient(270deg, transparent, var(--crimson-border)); }
+    .ps-div-ornament { display: flex; align-items: center; gap: 8px; padding: 0 16px; }
+    .ps-div-gem { width: 6px; height: 6px; background: var(--crimson); transform: rotate(45deg); }
+    .ps-div-dot { width: 3px; height: 3px; background: var(--crimson-border); transform: rotate(45deg); }
+
+    /* ── Layout ─────────────────────────────────────────────────── */
+    .cmp-layout { display: grid; grid-template-columns: 260px 1fr; gap: 0; max-width: 1440px; margin: 0 auto; padding: 0 32px 48px; }
+
+    /* ── Sidebar ────────────────────────────────────────────────── */
+    .cmp-sidebar { padding: 18px 16px 24px 0; margin-left: -16px; border-right: 1px solid var(--border); }
+    .cmp-sidebar-title { font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: var(--text-faint); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+    .cmp-sidebar-title::before { content: '\25C6'; font-size: 4px; color: currentColor; opacity: .5; }
+    .cmp-sidebar-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--border), transparent); }
+    .cmp-create-btn { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 16px; margin-bottom: 8px; background: transparent; border: none; border-left: 3px solid transparent; border-radius: 0 6px 6px 0; color: var(--text-muted); font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; text-align: left; transition: background .15s, color .15s, border-color .15s; }
+    .cmp-create-btn:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+    .cmp-create-btn .cmp-btn-icon { font-size: 16px; line-height: 1; flex-shrink: 0; width: 20px; text-align: center; color: var(--text-muted); }
+
+    /* Per-category colors */
+    .cmp-create-btn.race  { border-left-color: #ff4757; } .cmp-create-btn.race  .cmp-btn-icon { color: #ff4757; }
+    .cmp-create-btn.race:hover  { background: rgba(255,71,87,.08); color: var(--text); }
+    .cmp-create-btn.class { border-left-color: #ffd32a; } .cmp-create-btn.class .cmp-btn-icon { color: #ffd32a; }
+    .cmp-create-btn.class:hover { background: rgba(255,211,42,.08); color: var(--text); }
+    .cmp-create-btn.bg    { border-left-color: #a4b0be; } .cmp-create-btn.bg    .cmp-btn-icon { color: #a4b0be; }
+    .cmp-create-btn.bg:hover    { background: rgba(164,176,190,.08); color: var(--text); }
+    .cmp-create-btn.sub   { border-left-color: #c56cf0; } .cmp-create-btn.sub   .cmp-btn-icon { color: #c56cf0; }
+    .cmp-create-btn.sub:hover   { background: rgba(197,108,240,.08); color: var(--text); }
+    .cmp-create-btn.feat  { border-left-color: #ff9f43; } .cmp-create-btn.feat  .cmp-btn-icon { color: #ff9f43; }
+    .cmp-create-btn.feat:hover  { background: rgba(255,159,67,.08); color: var(--text); }
+    .cmp-create-btn.item  { border-left-color: #a55eea; } .cmp-create-btn.item  .cmp-btn-icon { color: #a55eea; }
+    .cmp-create-btn.item:hover  { background: rgba(165,94,234,.08); color: var(--text); }
+    .cmp-create-btn.spell { border-left-color: #45aaf2; } .cmp-create-btn.spell .cmp-btn-icon { color: #45aaf2; }
+    .cmp-create-btn.spell:hover { background: rgba(69,170,242,.08); color: var(--text); }
+    .cmp-create-btn.monster { border-left-color: #ff6b6b; } .cmp-create-btn.monster .cmp-btn-icon { color: #ff6b6b; }
+    .cmp-create-btn.monster:hover { background: rgba(255,107,107,.08); color: var(--text); }
+    .cmp-create-btn.encounter { border-left-color: #2ed8a3; } .cmp-create-btn.encounter .cmp-btn-icon { color: #2ed8a3; }
+    .cmp-create-btn.encounter:hover { background: rgba(46,216,163,.08); color: var(--text); }
+
+    .cmp-sidebar-divider { border: none; border-top: 1px solid var(--border); margin: 10px 0; opacity: .4; }
+
+    /* ── Main content ───────────────────────────────────────────── */
+    .cmp-main { padding: 18px 0 32px 24px; }
+
+    /* ── Tabs (bigger, left-aligned) ────────────────────────────── */
+    .cmp-tabs { display: flex; gap: 0; border-bottom: 2px solid var(--border); margin-bottom: 18px; position: relative; }
+    .cmp-tab { font-family: 'Cinzel', serif; font-size: 12px; letter-spacing: 3px; text-transform: uppercase; padding: 14px 28px 14px 0; background: transparent; border: none; border-bottom: 2px solid transparent; color: var(--text-faint); cursor: pointer; margin-bottom: -2px; position: relative; transition: color .2s, border-color .2s; }
+    .cmp-tab:first-child { padding-left: 0; }
+    .cmp-tab:hover { color: var(--text); }
+    .cmp-tab.active { color: var(--crimson); border-bottom-color: var(--crimson); }
+    .cmp-tab.active::after { content: ''; position: absolute; bottom: -2px; left: 0; right: 28px; height: 2px; background: var(--crimson); filter: blur(4px); opacity: .5; }
+
+    /* ── Search / filter bar ───────────────────────────────────── */
+    .cmp-toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; align-items: center; }
+    .cmp-toolbar::after { content: ''; width: 20px; height: 1px; background: linear-gradient(90deg, var(--crimson-border), transparent); flex-shrink: 0; }
+    .cmp-search { flex: 1; min-width: 200px; background: var(--bg-card); border: 1px solid var(--border); border-left: 3px solid var(--crimson); color: var(--text); font-family: 'Spectral', serif; font-size: 15px; padding: 11px 16px; transition: border-color .15s, box-shadow .15s; }
+    .cmp-search::placeholder { color: var(--text-faint); font-style: italic; }
+    .cmp-search:focus { outline: none; border-color: var(--crimson); box-shadow: 0 0 0 1px rgba(139,0,0,.15); }
+    .cmp-sort { background: var(--bg-card); border: 1px solid var(--border); color: var(--text-muted); font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 2px; text-transform: uppercase; padding: 11px 16px; cursor: pointer; transition: border-color .15s, color .15s; }
+    .cmp-sort:hover { border-color: var(--text-muted); color: var(--text); }
+
+    /* ── Type filters with per-category active colors ──────────── */
+    .cmp-type-filters { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+    .cmp-type-filters::before, .cmp-type-filters::after { content: '\25C6'; font-size: 4px; color: var(--crimson); opacity: .3; }
+    .cmp-type-btn { font-family: 'Cinzel', serif; font-size: 7px; letter-spacing: 2px; text-transform: uppercase; padding: 6px 14px; background: transparent; border: 1px solid var(--border); color: var(--text-faint); cursor: pointer; transition: all .15s; }
+    .cmp-type-btn:hover { border-color: var(--crimson-border); color: var(--text); background: rgba(139,0,0,.04); }
+    .cmp-type-btn.active { background: var(--crimson); border-color: var(--crimson); color: #f5f0e8; box-shadow: 0 1px 4px rgba(139,0,0,.25); }
+    .cmp-type-btn[data-tf="race"].active    { background: #c0392b; border-color: #c0392b; }
+    .cmp-type-btn[data-tf="class"].active   { background: #d4af37; border-color: #d4af37; color: #1a1612; }
+    .cmp-type-btn[data-tf="background"].active { background: #7f8c8d; border-color: #7f8c8d; }
+    .cmp-type-btn[data-tf="subclass"].active { background: #8e44ad; border-color: #8e44ad; }
+    .cmp-type-btn[data-tf="feat"].active    { background: #e67e22; border-color: #e67e22; }
+    .cmp-type-btn[data-tf="item"].active    { background: #6b4ea8; border-color: #6b4ea8; }
+    .cmp-type-btn[data-tf="spell"].active   { background: #2980b9; border-color: #2980b9; }
+    .cmp-type-btn[data-tf="monster"].active { background: #e8605a; border-color: #e8605a; }
+    .cmp-type-btn[data-tf="encounter"].active { background: #16a085; border-color: #16a085; }
+
+    /* ── Cards grid ─────────────────────────────────────────────── */
+    .cmp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 16px; }
+    .cmp-grid::before { content: '\2726  \2727  \2726'; grid-column: 1 / -1; text-align: center; font-size: 8px; letter-spacing: 6px; color: var(--crimson); opacity: .2; padding-bottom: 6px; }
+
+    /* ── Card ────────────────────────────────────────────────────── */
+    .cmp-card { background: var(--bg-card); border: 1px solid var(--border); position: relative; overflow: hidden; transition: border-color .2s, transform .2s, box-shadow .2s; }
+    .cmp-card::before { content: ''; position: absolute; top: 0; right: 0; width: 24px; height: 24px; background: linear-gradient(225deg, var(--border) 50%, transparent 50%); opacity: .3; transition: opacity .2s; z-index: 1; }
+    .cmp-card::after { content: ''; position: absolute; inset: 0; pointer-events: none; border: 1px solid transparent; transition: border-color .2s; }
+    .cmp-card:hover { border-color: var(--crimson-border); transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,.25); }
+    .cmp-card:hover::before { background: linear-gradient(225deg, var(--crimson) 50%, transparent 50%); opacity: .5; }
+    .cmp-card:hover::after { border-color: rgba(212,67,58,.08); }
+    .cmp-card-accent { position: absolute; top: 0; left: 0; width: 3px; height: 100%; }
+    .cmp-card-header { padding: 14px 18px 10px; border-bottom: 1px solid var(--border); background: linear-gradient(180deg, rgba(28,24,20,.5), transparent); }
+    .cmp-card-body { padding: 14px 20px 18px; }
+    .cmp-card-type { font-family: 'Cinzel', serif; font-size: 7px; letter-spacing: 2.5px; text-transform: uppercase; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+    .cmp-card-type::before { content: '\25C6'; font-size: 5px; opacity: .6; }
+    .cmp-card-name { font-family: 'Cinzel', serif; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; color: var(--text); padding-left: 10px; line-height: 1.3; margin-bottom: 4px; }
+    .cmp-card-sub { font-family: 'Spectral', serif; font-size: 11px; font-style: italic; color: var(--text-faint); padding-left: 10px; margin-bottom: 8px; }
+    .cmp-card-desc { font-family: 'Spectral', serif; font-size: 13px; color: var(--text-dim); line-height: 1.65; padding-left: 10px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+    .cmp-card-tags { display: flex; gap: 4px; flex-wrap: wrap; padding-left: 10px; margin-top: 10px; }
+    .cmp-tag { font-family: 'Cinzel', serif; font-size: 6.5px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-faint); background: var(--bg); border: 1px solid var(--border); padding: 2px 7px; }
+    .cmp-card-footer { display: flex; justify-content: space-between; align-items: center; padding: 10px 18px 12px 10px; border-top: 1px solid var(--border); gap: 8px; background: linear-gradient(180deg, transparent, rgba(28,24,20,.3)); }
+    .cmp-card-author { font-family: 'Spectral', serif; font-size: 10px; font-style: italic; color: var(--text-faint); padding-left: 10px; }
+    .cmp-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .cmp-btn { font-family: 'Cinzel', serif; font-size: 7px; letter-spacing: 2px; text-transform: uppercase; padding: 6px 13px; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--text-muted); transition: all .15s; }
+    .cmp-btn:hover { color: var(--text); border-color: var(--text-muted); }
+    .cmp-btn.primary { background: var(--crimson); border-color: var(--crimson); color: #f5f0e8; }
+    .cmp-btn.primary:hover { filter: brightness(1.1); }
+    .cmp-like-btn { font-family: 'Cinzel', serif; font-size: 7px; letter-spacing: 1px; display: inline-flex; align-items: center; gap: 5px; padding: 5px 11px; background: transparent; border: 1px solid var(--border); color: var(--text-faint); cursor: pointer; transition: all .15s; }
+    .cmp-like-btn:hover { border-color: var(--crimson-border); color: var(--crimson); }
+
+    /* ── My homebrew rows ───────────────────────────────────────── */
+    .cmp-mine-row { display: flex; align-items: center; gap: 14px; padding: 14px 4px; border-bottom: 1px solid var(--border); transition: background .15s; }
+    .cmp-mine-row:hover { background: rgba(139,0,0,.03); }
+    .cmp-mine-row:last-child { border-bottom: none; }
+    .cmp-mine-accent { flex-shrink: 0; width: 3px; height: 36px; border-radius: 2px; position: relative; }
+    .cmp-mine-accent::after { content: ''; position: absolute; top: 50%; left: 50%; width: 7px; height: 7px; background: inherit; transform: translate(-50%, -50%) rotate(45deg); opacity: .4; }
+    .cmp-mine-info { flex: 1; min-width: 0; }
+    .cmp-mine-name { font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--text); line-height: 1.3; }
+    .cmp-mine-sub { font-family: 'Spectral', serif; font-size: 11px; font-style: italic; color: var(--text-faint); margin-top: 2px; }
+    .cmp-mine-badges { display: flex; gap: 5px; align-items: center; margin-top: 4px; flex-wrap: wrap; }
+    .cmp-badge { font-family: 'Cinzel', serif; font-size: 7px; letter-spacing: 1px; text-transform: uppercase; border: 1px solid; padding: 2px 7px; }
+
+    /* ── Content ornament ───────────────────────────────────────── */
+    #cmp-content::before { content: ''; display: block; width: 40px; height: 1px; background: linear-gradient(90deg, var(--crimson), transparent); margin-bottom: 12px; }
+
+    .sidebar-info { font-size: 11px; color: var(--text-faint); line-height: 1.6; }
+    .sidebar-info strong { font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); display: block; margin-bottom: 5px; }
+    .section-label { font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 3px; text-transform: uppercase; color: var(--text-faint); margin: 28px 0 14px; display: flex; align-items: center; gap: 10px; }
+    .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  </style>
+</head>
+<body>
+  <div class="ps-page-hero">
+    <div class="ps-page-eyebrow">The Workshop</div>
+    <div class="ps-page-title">Compendium</div>
+    <div class="ps-page-subtitle">Homebrew Creator &amp; Community Browser</div>
+    <p class="ps-page-intro">Forge custom races, classes, backgrounds, subclasses, and items. Share your creations with the community, or browse and import what others have built for your table.</p>
+  </div>
+
+  <div class="ps-divider"><div class="ps-div-line"></div><div class="ps-div-ornament"><div class="ps-div-dot"></div><div class="ps-div-gem"></div><div class="ps-div-dot"></div></div><div class="ps-div-line r"></div></div>
+
+  <div class="cmp-layout">
+    <!-- SIDEBAR -->
+    <aside class="cmp-sidebar">
+      <div class="cmp-sidebar-title">Create Homebrew</div>
+
+      <button class="cmp-create-btn race"><span class="cmp-btn-icon">&#9823;</span>Race</button>
+      <button class="cmp-create-btn class"><span class="cmp-btn-icon">&#9884;</span>Class</button>
+      <button class="cmp-create-btn bg"><span class="cmp-btn-icon">&#9998;</span>Background</button>
+      <button class="cmp-create-btn sub"><span class="cmp-btn-icon">&#10697;</span>Subclass</button>
+      <button class="cmp-create-btn feat"><span class="cmp-btn-icon">&#10029;</span>Feat</button>
+
+      <hr class="cmp-sidebar-divider" />
+      <div class="cmp-sidebar-title" style="color:#a55eea;">Items</div>
+      <button class="cmp-create-btn item"><span class="cmp-btn-icon">&#10022;</span>Magic Item / Gear</button>
+
+      <hr class="cmp-sidebar-divider" />
+      <div class="cmp-sidebar-title" style="color:#45aaf2;">Spellcasting</div>
+      <button class="cmp-create-btn spell"><span class="cmp-btn-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 2.5A1.5 1.5 0 0 1 5.5 1H11l3 3v7.5a1.5 1.5 0 0 1-1.5 1.5H5.5A1.5 1.5 0 0 1 4 11.5z"/><path d="M11 1v3h3"/><line x1="6.5" y1="6" x2="11" y2="6"/><line x1="6.5" y1="8" x2="11" y2="8"/><line x1="6.5" y1="10" x2="9" y2="10"/></svg></span>Spell</button>
+
+      <hr class="cmp-sidebar-divider" />
+      <div class="cmp-sidebar-title" style="color:#ff6b6b;">Creatures</div>
+      <button class="cmp-create-btn monster"><span class="cmp-btn-icon"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 1c-.8 0-1.8.4-2 1.2-.2.6.2 1 .8 1.2.5.1 1 0 1.2-.2"/><path d="M9.5 1c.8 0 1.8.4 2 1.2.2.6-.2 1-.8 1.2-.5.1-1 0-1.2-.2"/><path d="M6.8 2.5C6.5 4 6.2 5.5 6.5 7c.3 1.8 1 3.5 1.5 5.2.2.5.3 1.2.5 1.8.1-.6.3-1.3.5-1.8.5-1.7 1.2-3.4 1.5-5.2.3-1.5 0-3-.3-4.5"/></svg></span>Monster / Creature</button>
+
+      <hr class="cmp-sidebar-divider" />
+      <div class="cmp-sidebar-title" style="color:#2ed8a3;">Encounters</div>
+      <button class="cmp-create-btn encounter"><span class="cmp-btn-icon">&#9876;</span>Encounter</button>
+
+      <hr class="cmp-sidebar-divider" />
+      <div class="sidebar-info">
+        <strong>Using Homebrew</strong>
+        Your saved creations are automatically available in the Character Builder.
+      </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="cmp-main">
+      <div class="cmp-tabs">
+        <button class="cmp-tab active">My Homebrew</button>
+        <button class="cmp-tab">Community &#9830;</button>
+      </div>
+
+      <div class="cmp-toolbar">
+        <input class="cmp-search" type="text" placeholder="Search name, type, tags, author..." />
+        <select class="cmp-sort">
+          <option>A to Z</option>
+          <option>Newest</option>
+        </select>
+      </div>
+
+      <div class="cmp-type-filters">
+        <button class="cmp-type-btn active">All</button>
+        <button class="cmp-type-btn" data-tf="race">Races</button>
+        <button class="cmp-type-btn" data-tf="class">Classes</button>
+        <button class="cmp-type-btn" data-tf="background">Backgrounds</button>
+        <button class="cmp-type-btn" data-tf="subclass">Subclasses</button>
+        <button class="cmp-type-btn" data-tf="feat">Feats</button>
+        <button class="cmp-type-btn" data-tf="item">Items</button>
+        <button class="cmp-type-btn" data-tf="spell">Spells</button>
+        <button class="cmp-type-btn" data-tf="monster">Monsters</button>
+        <button class="cmp-type-btn" data-tf="encounter">Encounters</button>
+      </div>
+
+      <!-- My Homebrew rows -->
+      <div id="cmp-content">
+        <div class="cmp-mine-row">
+          <div class="cmp-mine-accent" style="background:#45aaf2;"></div>
+          <div class="cmp-mine-info">
+            <div class="cmp-mine-name">Eldritch Surge</div>
+            <div class="cmp-mine-sub">3rd-level Evocation</div>
+            <div class="cmp-mine-badges"><span class="cmp-badge" style="color:#2980b9;border-color:#2980b9;">Spell</span></div>
+          </div>
+          <div class="cmp-card-actions">
+            <button class="cmp-btn">Edit</button>
+            <button class="cmp-btn" style="color:#c0392b;border-color:#c0392b;">Del</button>
+          </div>
+        </div>
+
+        <div class="cmp-mine-row">
+          <div class="cmp-mine-accent" style="background:#a55eea;"></div>
+          <div class="cmp-mine-info">
+            <div class="cmp-mine-name">Blade of Forgotten Kings</div>
+            <div class="cmp-mine-sub">Legendary weapon (requires attunement)</div>
+            <div class="cmp-mine-badges">
+              <span class="cmp-badge" style="color:#6b4ea8;border-color:#6b4ea8;">Item</span>
+              <span class="cmp-badge" style="color:#2e8b57;border-color:#2e8b57;">Shared</span>
+            </div>
+          </div>
+          <div class="cmp-card-actions">
+            <button class="cmp-btn">Edit</button>
+            <button class="cmp-btn" style="color:#c0392b;border-color:#c0392b;">Del</button>
+          </div>
+        </div>
+
+        <div class="cmp-mine-row">
+          <div class="cmp-mine-accent" style="background:#ff6b6b;"></div>
+          <div class="cmp-mine-info">
+            <div class="cmp-mine-name">Shadowmaw Drake</div>
+            <div class="cmp-mine-sub">Large dragon, chaotic evil &middot; CR 8</div>
+            <div class="cmp-mine-badges"><span class="cmp-badge" style="color:#e8605a;border-color:#e8605a;">Monster</span></div>
+          </div>
+          <div class="cmp-card-actions">
+            <button class="cmp-btn">Edit</button>
+            <button class="cmp-btn" style="color:#c0392b;border-color:#c0392b;">Del</button>
+          </div>
+        </div>
+
+        <div class="cmp-mine-row">
+          <div class="cmp-mine-accent" style="background:#ff4757;"></div>
+          <div class="cmp-mine-info">
+            <div class="cmp-mine-name">Starborne</div>
+            <div class="cmp-mine-sub">Medium humanoid &middot; +2 CHA, +1 WIS</div>
+            <div class="cmp-mine-badges"><span class="cmp-badge" style="color:#c0392b;border-color:#c0392b;">Race</span></div>
+          </div>
+          <div class="cmp-card-actions">
+            <button class="cmp-btn">Edit</button>
+            <button class="cmp-btn" style="color:#c0392b;border-color:#c0392b;">Del</button>
+          </div>
+        </div>
+
+        <div class="cmp-mine-row">
+          <div class="cmp-mine-accent" style="background:#ff9f43;"></div>
+          <div class="cmp-mine-info">
+            <div class="cmp-mine-name">Stormwarden</div>
+            <div class="cmp-mine-sub">Prerequisite: Constitution 13+</div>
+            <div class="cmp-mine-badges"><span class="cmp-badge" style="color:#e67e22;border-color:#e67e22;">Feat</span></div>
+          </div>
+          <div class="cmp-card-actions">
+            <button class="cmp-btn">Edit</button>
+            <button class="cmp-btn" style="color:#c0392b;border-color:#c0392b;">Del</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Community Cards -->
+      <div class="section-label">Community Tab Preview</div>
+
+      <div class="cmp-grid">
+        <div class="cmp-card">
+          <div class="cmp-card-accent" style="background:#45aaf2;"></div>
+          <div class="cmp-card-header">
+            <div class="cmp-card-type" style="color:#45aaf2;">Spell</div>
+            <div class="cmp-card-name">Chromatic Bolt</div>
+            <div class="cmp-card-sub">2nd-level Evocation &middot; V, S, M</div>
+          </div>
+          <div class="cmp-card-body">
+            <div class="cmp-card-desc">A bolt of prismatic energy leaps from your fingertips, randomly selecting a damage type from fire, cold, lightning, acid, or poison. The target must make a Dexterity saving throw.</div>
+            <div class="cmp-card-tags"><span class="cmp-tag">Sorcerer</span><span class="cmp-tag">Wizard</span><span class="cmp-tag">Damage</span></div>
+          </div>
+          <div class="cmp-card-footer">
+            <span class="cmp-card-author">by RuneScribe42</span>
+            <div class="cmp-card-actions"><button class="cmp-like-btn">&#9829; 24</button><button class="cmp-btn primary">Add</button></div>
+          </div>
+        </div>
+
+        <div class="cmp-card">
+          <div class="cmp-card-accent" style="background:#a55eea;"></div>
+          <div class="cmp-card-header">
+            <div class="cmp-card-type" style="color:#a55eea;">Item</div>
+            <div class="cmp-card-name">Lantern of Lost Souls</div>
+            <div class="cmp-card-sub">Wondrous item, rare (requires attunement)</div>
+          </div>
+          <div class="cmp-card-body">
+            <div class="cmp-card-desc">This wrought-iron lantern flickers with ghostly blue flame. As an action, you can command it to reveal invisible creatures within 30 feet.</div>
+            <div class="cmp-card-tags"><span class="cmp-tag">Divination</span><span class="cmp-tag">Utility</span></div>
+          </div>
+          <div class="cmp-card-footer">
+            <span class="cmp-card-author">by TheDungeonSmith</span>
+            <div class="cmp-card-actions"><button class="cmp-like-btn">&#9829; 67</button><button class="cmp-btn primary">Add</button></div>
+          </div>
+        </div>
+
+        <div class="cmp-card">
+          <div class="cmp-card-accent" style="background:#ff6b6b;"></div>
+          <div class="cmp-card-header">
+            <div class="cmp-card-type" style="color:#ff6b6b;">Monster</div>
+            <div class="cmp-card-name">Voidling</div>
+            <div class="cmp-card-sub">Small aberration, chaotic evil &middot; CR 3</div>
+          </div>
+          <div class="cmp-card-body">
+            <div class="cmp-card-desc">Born from tears in the fabric of the Weave, Voidlings are semi-translucent creatures that phase in and out of reality. They feed on magical energy.</div>
+            <div class="cmp-card-tags"><span class="cmp-tag">Aberration</span><span class="cmp-tag">Low CR</span></div>
+          </div>
+          <div class="cmp-card-footer">
+            <span class="cmp-card-author">by Phmurt</span>
+            <div class="cmp-card-actions"><button class="cmp-like-btn">&#9829; 103</button><button class="cmp-btn primary">Add</button></div>
+          </div>
+        </div>
+
+        <div class="cmp-card">
+          <div class="cmp-card-accent" style="background:#ff4757;"></div>
+          <div class="cmp-card-header">
+            <div class="cmp-card-type" style="color:#ff4757;">Race</div>
+            <div class="cmp-card-name">Emberheart</div>
+            <div class="cmp-card-sub">Medium humanoid &middot; +2 CON, +1 STR</div>
+          </div>
+          <div class="cmp-card-body">
+            <div class="cmp-card-desc">Descended from fire giants who mingled with mortals centuries ago, Emberhearts carry a burning ember where their heart should be.</div>
+            <div class="cmp-card-tags"><span class="cmp-tag">Fire</span><span class="cmp-tag">Martial</span></div>
+          </div>
+          <div class="cmp-card-footer">
+            <span class="cmp-card-author">by DragonForge</span>
+            <div class="cmp-card-actions"><button class="cmp-like-btn">&#9829; 41</button><button class="cmp-btn primary">Add</button></div>
+          </div>
+        </div>
+
+        <div class="cmp-card">
+          <div class="cmp-card-accent" style="background:#2ed8a3;"></div>
+          <div class="cmp-card-header">
+            <div class="cmp-card-type" style="color:#2ed8a3;">Encounter</div>
+            <div class="cmp-card-name">Ambush at Thornhollow</div>
+            <div class="cmp-card-sub">Forest &middot; Hard &middot; Party Level 5</div>
+          </div>
+          <div class="cmp-card-body">
+            <div class="cmp-card-desc">The party stumbles into a web-choked clearing. Phase spiders descend from the canopy while ettercaps block the trail.</div>
+            <div class="cmp-card-tags"><span class="cmp-tag">Forest</span><span class="cmp-tag">Ambush</span><span class="cmp-tag">Tier 1</span></div>
+          </div>
+          <div class="cmp-card-footer">
+            <span class="cmp-card-author">by NightWatch_DM</span>
+            <div class="cmp-card-actions"><button class="cmp-like-btn">&#9829; 38</button><button class="cmp-btn primary">Add</button></div>
+          </div>
+        </div>
+
+        <div class="cmp-card">
+          <div class="cmp-card-accent" style="background:#ffd32a;"></div>
+          <div class="cmp-card-header">
+            <div class="cmp-card-type" style="color:#ffd32a;">Class</div>
+            <div class="cmp-card-name">Blood Hunter</div>
+            <div class="cmp-card-sub">d10 Hit Die &middot; Hemocraft</div>
+          </div>
+          <div class="cmp-card-body">
+            <div class="cmp-card-desc">Sworn warriors who sacrifice their own vitality to fuel dark abilities. Blood Hunters mark their prey with crimson rites.</div>
+            <div class="cmp-card-tags"><span class="cmp-tag">Martial</span><span class="cmp-tag">Dark Magic</span></div>
+          </div>
+          <div class="cmp-card-footer">
+            <span class="cmp-card-author">by CriticalBrew</span>
+            <div class="cmp-card-actions"><button class="cmp-like-btn">&#9829; 189</button><button class="cmp-btn primary">Add</button></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="ps-divider"><div class="ps-div-line"></div><div class="ps-div-ornament"><div class="ps-div-dot"></div><div class="ps-div-gem"></div><div class="ps-div-dot"></div></div><div class="ps-div-line r"></div></div>
+  <div style="font-size:10px;color:var(--text-faint);text-align:center;max-width:600px;margin:0 auto;padding:16px 24px 40px;line-height:1.5;">Homebrew content is user-created and not affiliated with Wizards of the Coast.</div>
+</body>
+</html>

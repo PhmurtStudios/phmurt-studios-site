@@ -418,7 +418,7 @@
 
   // ── Save / delete / export ────────────────────────────────────────
   function save() {
-    if (!state.current.name || !state.current.name.trim()) { alert('Name is required'); return; }
+    if (!state.current.name || !state.current.name.trim()) { if (U.showToast) U.showToast('Error', 'Name is required'); else alert('Name is required'); return; }
     if (!state.current.clientId) state.current.clientId = generateClientId();
     var list = loadAll();
     var existingIdx = list.findIndex(function (m) { return m.clientId === state.current.clientId; });
@@ -431,18 +431,22 @@
     close();
   }
   function del() {
-    if (!confirm('Delete this monster?')) return;
-    var list = loadAll().filter(function (m) { return m.clientId !== state.current.clientId; });
-    saveAll(list);
-    if (global._homebrewMonsters) global._homebrewMonsters = list;
-    if (typeof global.cmpRenderContent === 'function') global.cmpRenderContent();
-    close();
+    var doDelete = function() {
+      var list = loadAll().filter(function (m) { return m.clientId !== state.current.clientId; });
+      saveAll(list);
+      if (global._homebrewMonsters) global._homebrewMonsters = list;
+      if (typeof global.cmpRenderContent === 'function') global.cmpRenderContent();
+      close();
+    };
+    if (U.showConfirm) U.showConfirm('Delete this monster? This cannot be undone.', doDelete);
+    else if (confirm('Delete this monster?')) doDelete();
   }
   function exportPng() {
     var card = document.querySelector('#creator-root .cr-spellcard');
     if (!card) return;
     if (typeof global.html2canvas !== 'function') {
-      alert('PNG export library not loaded. Falling back to JSON copy.');
+      if (U.showToast) U.showToast('Error', 'PNG export library not loaded. Falling back to JSON copy.');
+      else alert('PNG export library not loaded. Falling back to JSON copy.');
       return;
     }
     global.html2canvas(card, { backgroundColor: null, scale: 2 }).then(function (canvas) {

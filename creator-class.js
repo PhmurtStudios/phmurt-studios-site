@@ -211,7 +211,13 @@
             '<div class="cr-section-label">Level Features (2-20)</div>' +
             '<button type="button" class="cr-btn" data-act="add-standard-asi" style="margin-bottom:12px;">Standard ASIs</button>' +
             '<div data-list="levelFeatures">' + levelFeatureRows + '</div>' +
-            '<button type="button" class="cr-btn" data-act="add-level-feature" style="margin-top:8px;">+ Add Level Feature</button>' +
+            '<div class="cr-add-level-row" style="display:flex;gap:8px;align-items:center;margin-top:8px;">' +
+              '<select id="cr-add-level-select" class="cr-input" style="width:90px;">' +
+                (function(){ var o=''; for(var l=2;l<=20;l++) o+='<option value="'+l+'">Lv '+l+'</option>'; return o; })() +
+              '</select>' +
+              '<input id="cr-add-level-name" type="text" class="cr-input" placeholder="Feature name (optional)" style="flex:1;min-width:120px;" />' +
+              '<button type="button" class="cr-btn" data-act="add-level-feature">+ Add</button>' +
+            '</div>' +
           '</div>' +
 
           // 6. Spellcasting
@@ -468,10 +474,15 @@
       state.current.features.splice(idx, 1); render(); return;
     }
     if (act === 'add-level-feature') {
-      var lv = parseInt(prompt('Level (2-20):', '2'), 10) || 2;
+      var lvEl = document.getElementById('cr-add-level-select');
+      var nameEl = document.getElementById('cr-add-level-name');
+      var lv = lvEl ? parseInt(lvEl.value, 10) || 2 : 2;
       if (lv < 2 || lv > 20) lv = 2;
+      var featureName = (nameEl && nameEl.value.trim()) ? nameEl.value.trim() : '';
       if (!state.current.levelFeatures[lv]) state.current.levelFeatures[lv] = [];
-      state.current.levelFeatures[lv].push({ name:'', desc:'', isASI:false }); render(); return;
+      state.current.levelFeatures[lv].push({ name:featureName, desc:'', isASI:false });
+      if (nameEl) nameEl.value = '';
+      render(); return;
     }
     if (act === 'add-standard-asi') {
       [4, 8, 12, 16, 19].forEach(function (asiLv) {
@@ -516,7 +527,11 @@
 
   // ── Save / delete ────────────────────────────────────────────────
   function save() {
-    if (!state.current.name || !state.current.name.trim()) { alert('Name is required'); return; }
+    if (!state.current.name || !state.current.name.trim()) {
+      if (global.showRestToast) global.showRestToast('Error', 'Name is required');
+      else alert('Name is required');
+      return;
+    }
     if (!state.current.clientId) state.current.clientId = generateClientId();
     var list = loadAll();
     var existingIdx = list.findIndex(function (c) { return c.clientId === state.current.clientId; });
@@ -530,12 +545,15 @@
   }
 
   function del() {
-    if (!confirm('Delete this class?')) return;
-    var list = loadAll().filter(function (c) { return c.clientId !== state.current.clientId; });
-    saveAll(list);
-    if (global._homebrewClasses) global._homebrewClasses = list;
-    if (typeof global.cmpRenderContent === 'function') global.cmpRenderContent();
-    close();
+    var doDelete = function() {
+      var list = loadAll().filter(function (c) { return c.clientId !== state.current.clientId; });
+      saveAll(list);
+      if (global._homebrewClasses) global._homebrewClasses = list;
+      if (typeof global.cmpRenderContent === 'function') global.cmpRenderContent();
+      close();
+    };
+    if (U.showConfirm) U.showConfirm('Delete this class? This cannot be undone.', doDelete);
+    else if (confirm('Delete this class?')) doDelete();
   }
 
   function populateCampaignDropdown(s) {

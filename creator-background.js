@@ -291,10 +291,10 @@
   }
 
   function save() {
-    if (!state.current.name.trim()) { alert('Name is required'); return; }
-    if (!state.current.skills.trim()) { alert('Skills are required'); return; }
-    if (!state.current.feature.trim()) { alert('Feature name is required'); return; }
-    if (!state.current.featureDesc.trim()) { alert('Feature description is required'); return; }
+    if (!state.current.name.trim()) { if (U.showToast) U.showToast('Error', 'Name is required'); else alert('Name is required'); return; }
+    if (!state.current.skills.trim()) { if (U.showToast) U.showToast('Error', 'Skills are required'); else alert('Skills are required'); return; }
+    if (!state.current.feature.trim()) { if (U.showToast) U.showToast('Error', 'Feature name is required'); else alert('Feature name is required'); return; }
+    if (!state.current.featureDesc.trim()) { if (U.showToast) U.showToast('Error', 'Feature description is required'); else alert('Feature description is required'); return; }
     if (!state.current.clientId) state.current.clientId = generateClientId();
     state.current.personalityTraits = (state.current.personalityTraits || []).filter(function(t) { return t && t.trim(); });
     state.current.ideals = (state.current.ideals || []).filter(function(t) { return t && t.trim(); });
@@ -310,16 +310,19 @@
     cloudSync(); close();
   }
   function del() {
-    if (!confirm('Delete this background?')) return;
-    var list = loadAll().filter(function(b) { return b.id !== state.current.id; });
-    saveAll(list);
-    if (global._homebrewBackgrounds !== undefined) global._homebrewBackgrounds = list;
-    if (typeof global.cmpRenderContent === 'function') global.cmpRenderContent();
-    close();
+    var doDelete = function() {
+      var list = loadAll().filter(function(b) { return b.id !== state.current.id; });
+      saveAll(list);
+      if (global._homebrewBackgrounds !== undefined) global._homebrewBackgrounds = list;
+      if (typeof global.cmpRenderContent === 'function') global.cmpRenderContent();
+      close();
+    };
+    if (U.showConfirm) U.showConfirm('Delete this background? This cannot be undone.', doDelete);
+    else if (confirm('Delete this background?')) doDelete();
   }
   function exportPng() {
     var card = document.querySelector('#creator-root .cr-spellcard');
-    if (!card || typeof global.html2canvas !== 'function') { alert('PNG export not available.'); return; }
+    if (!card || typeof global.html2canvas !== 'function') { if (U.showToast) U.showToast('Error', 'PNG export not available.'); else alert('PNG export not available.'); return; }
     global.html2canvas(card, { backgroundColor: null, scale: 2 }).then(function(canvas) {
       canvas.toBlob(function(blob) {
         var url = URL.createObjectURL(blob);
