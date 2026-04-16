@@ -1270,16 +1270,44 @@ var PhmurtDB = (function () {
           updated_at:  new Date().toISOString()
         };
 
-        // Check if this is a new campaign (no existing ID) or an update
-        var isNew = !campaign.id;
-        if (isNew) {
+        // Check if this is a new campaign (no existing ID or local-only "camp-" prefix ID)
+        var isLocal = !campaign.id || (typeof campaign.id === 'string' && campaign.id.startsWith('camp-'));
+        if (isLocal) {
+          // For new/local campaigns, remove the local ID so Supabase generates a real UUID
+          var localId = campaign.id || null;
+          delete campRow.id;
           return _checkLimit('campaigns', 'free_max_campaigns', 'paid_max_campaigns').then(function (limitResult) {
             if (limitResult.blocked) {
               return Promise.reject(new Error(limitResult.message));
             }
             return sb.from('campaigns').insert(campRow).select('id').single()
-              .then(function (r) { if (r.error) throw r.error; campaign.id = r.data.id; return true; })
-              .catch(function () { _legacySaveCampLocal(campaign); return true; });
+              .then(function (r) {
+                if (r.error) throw r.error;
+                // Update the campaign object with the real UUID from Supabase
+                var newId = r.data.id;
+                campaign.id = newId;
+                campaign._localId = localId;
+                console.log('[Auth] Campaign saved to cloud, UUID:', newId, '(was local:', localId, ')');
+                // Auto-add the owner as a DM member of the new campaign
+                return sb.from('campaign_members').insert({
+                  campaign_id: newId,
+                  user_id: _session.userId,
+                  role: 'dm'
+                }).then(function () {
+                  console.log('[Auth] Owner added as DM member for campaign:', newId);
+                  return true;
+                }).catch(function (memberErr) {
+                  // Non-fatal: campaign saved, but DM membership failed (may already exist)
+                  console.warn('[Auth] Failed to add owner as DM member:', memberErr);
+                  return true;
+                });
+              })
+              .catch(function (err) {
+                console.warn('[Auth] Campaign cloud insert failed:', err);
+                campaign.id = localId; // Restore local ID on failure
+                _legacySaveCampLocal(campaign);
+                return true;
+              });
           });
         }
 

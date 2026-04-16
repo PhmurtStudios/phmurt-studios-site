@@ -6063,6 +6063,7 @@ function App() {
       if (typeof PhmurtDB.saveCampaign !== "function") return;
       setSaveStatus("saving");
       const saves = [];
+      const idUpdates = []; // Track local→UUID ID changes
       campaigns.forEach(camp => {
         if (camp.isExample) return;
         const payload = camp.data || camp;
@@ -6072,9 +6073,45 @@ function App() {
         // Deep clean to remove all undefined/null/empty values
         const cleaned = cmDeepClean(compacted);
         const saveObj = { ...cleaned, id: camp.id };
-        saves.push(PhmurtDB.saveCampaign(saveObj));
+        const oldId = camp.id;
+        saves.push(PhmurtDB.saveCampaign(saveObj).then(() => {
+          // After save, if saveCampaign assigned a real UUID (replacing "camp-..." local ID),
+          // track the change so we can update local React state
+          if (saveObj.id && saveObj.id !== oldId) {
+            idUpdates.push({ oldId, newId: saveObj.id });
+          }
+        }));
       });
       Promise.all(saves).then(() => {
+        // If any campaigns got real UUIDs from Supabase, update local state
+        if (idUpdates.length > 0) {
+          setCampaigns(prev => prev.map(c => {
+            const upd = idUpdates.find(u => u.oldId === c.id);
+            if (upd) {
+              console.log("[CampaignManager] Updated campaign ID:", upd.oldId, "→", upd.newId);
+              const updated = { ...c, id: upd.newId };
+              if (updated.data) updated.data.id = upd.newId;
+              return updated;
+            }
+            return c;
+          }));
+          // Update active campaign ID if it was one of the renamed ones
+          if (activeCampaignId) {
+            const activeUpd = idUpdates.find(u => u.oldId === activeCampaignId);
+            if (activeUpd) setActiveCampaignId(activeUpd.newId);
+          }
+          // Update campaignRoles to use new UUIDs
+          setCampaignRoles(prev => {
+            const updated = { ...prev };
+            idUpdates.forEach(u => {
+              if (updated[u.oldId]) {
+                updated[u.newId] = updated[u.oldId];
+                delete updated[u.oldId];
+              }
+            });
+            return updated;
+          });
+        }
         setSaveStatus("saved");
         setTimeout(() => setSaveStatus(""), 2500);
       }).catch(err => {
@@ -6250,6 +6287,9 @@ function App() {
     const newCamp = { id: "camp-" + Date.now(), data: { ...base, name: createName.trim() }, isExample: false };
     setCampaigns(prev => [...prev, newCamp]);
     setActiveCampaignId(newCamp.id);
+    // Mark the creator as DM for this campaign immediately
+    setCampaignRoles(prev => ({ ...prev, [newCamp.id]: "dm" }));
+    setViewRole("dm");
     setActiveTab("dashboard");
     setCreateModalOpen(false);
     setCreateModules({});
@@ -6334,11 +6374,18 @@ function App() {
   const handleCreateInvite = () => {
     if (viewRole !== "dm") return; // SECURITY: only DM can create invite codes
     if (typeof PhmurtDB === "undefined" || typeof PhmurtDB.createInviteCode !== "function" || !activeCampaignId) return;
+    // Guard: campaign must have a real UUID (not a local "camp-" ID) before creating invite codes
+    if (typeof activeCampaignId === "string" && activeCampaignId.startsWith("camp-")) {
+      alert("Please wait a moment — your campaign is still syncing to the cloud. Try again in a few seconds.");
+      return;
+    }
     PhmurtDB.createInviteCode(activeCampaignId).then(function(result) {
       if (result) {
         // result is now a full object { id, code, use_count, max_uses, created_at } or just a code string (backward compat)
         var invite = typeof result === 'string' ? { code: result, use_count: 0, created_at: new Date().toISOString() } : result;
         setInviteCodes(function(prev) { return [invite].concat(prev); });
+      } else {
+        console.warn("[CampaignManager] createInviteCode returned null — campaign may not exist in database yet");
       }
     });
   };

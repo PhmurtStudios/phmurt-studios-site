@@ -135,6 +135,28 @@
 
 69. **archive/sql/migration-attribute-homebrew-to-loki.sql** *(new, already applied)* — Updated `_authorName` in the JSONB `data` column to "Loki" for all public `homebrew_content` rows. Community tab now displays "by Loki" for every shared entry.
 
+### Navigation Tab Consistency Fix
+
+74a. **compendium.html** *(updated)* — Fixed `data-nav-active` from `"Content"` to `"Homebrew Workshop"` so the correct tab highlights.
+74b. **generators.html** *(updated)* — Added missing `data-nav-active="Generators"` attribute (only had `data-phmurt-feature`).
+74c. **character-builder.html** *(updated)* — Fixed `data-nav-active` from `"Players"` to `"Characters"`.
+74d. **character-builder-35.html** *(updated)* — Fixed `data-nav-active` from `"3.5e Builder"` to `"Characters"`.
+74e. **character-sheets.html** *(updated)* — Fixed `data-nav-active` from `"Players"` to `"Characters"`.
+74f. **sheet-dnd5e.html** *(updated)* — Fixed `data-nav-active` from `"Players"` to `"Characters"`.
+74g. **my-characters.html** *(updated)* — Fixed `data-nav-active` from `"My Characters"` to `"Characters"`.
+74h. **learn.html** *(updated)* — Fixed `data-nav-active` from `"Learn"` to `"Getting Started"`.
+74i. **sw.js** *(updated)* — Cache version bumped to 192.
+
+### Campaign Invite System Fix — Cloud Save & UUID Resolution
+
+73a. **phmurt-auth.js** *(updated)* — Fixed critical bug where campaigns were never saved to Supabase (0 rows in DB). Root cause: `saveCampaign()` treated locally-generated `"camp-"` prefix IDs as existing campaigns and tried UPDATE (which silently failed on UUID column mismatch). Fix: detects `"camp-"` prefix IDs as local-only, strips the ID so Supabase generates a real UUID via `gen_random_uuid()`, then updates the campaign object with the real UUID. Also auto-enrolls the campaign owner as a DM member in `campaign_members` after successful INSERT.
+
+73b. **campaigns.html** *(updated)* — After cloud save assigns real UUIDs to campaigns, React state is now updated everywhere: `campaigns` array, `activeCampaignId`, and `campaignRoles` all get the new UUID replacing the old local `"camp-"` ID. Added guard in `handleCreateInvite` that blocks invite code generation if the campaign still has a local ID (shows "please wait" message). Sets `campaignRoles` to "dm" immediately on campaign creation so DM UI controls are available before cloud sync completes.
+
+73c. **Supabase migration** *(applied)* — Updated `campaign_members` SELECT RLS policy so campaign owners can see all members of their campaigns and players can see other members in the same campaign (was previously restricted to only seeing your own row).
+
+73d. **sw.js** *(updated)* — Cache version bumped to 191.
+
 ### Campaign Multiplayer System — Full Implementation
 
 72a. **phmurt-auth.js** *(updated)* — Added five new database functions for multiplayer campaign support: `updateMemberRole(campaignId, userId, role)` persists role changes to `campaign_members` table. `removeCampaignMember(campaignId, userId)` removes a player from a campaign (DM only, RLS enforced). `leaveCampaign(campaignId)` lets a player remove themselves. `subscribeToCampaign(campaignId, onUpdate)` creates a Supabase Realtime channel that listens for `campaigns` UPDATE events and `campaign_members` INSERT/UPDATE/DELETE events for live multiplayer sync. `unsubscribeFromCampaign(channel)` cleans up the subscription. Also updated `createInviteCode()` to return the full invite row (`id, code, use_count, max_uses, created_at`) instead of just the code string.
