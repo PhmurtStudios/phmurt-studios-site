@@ -68,6 +68,15 @@ textarea{
   --sidebar-shadow:       -4px 0 24px rgba(0,0,0,0.4);
   --hp-bar-track:         rgba(255,255,255,0.05);
   --bg-hover-subtle:      rgba(255,255,255,0.04);
+  /* Modal surfaces (shared across campaign modals) */
+  --modal-overlay:        rgba(0,0,6,0.70);
+  --modal-shadow:         rgba(0,0,6,0.55);
+  /* Campaign floating panels (detail popovers, inspectors) */
+  --panel-bg:             rgba(20,18,14,0.98);
+  --panel-border:         rgba(212,67,58,0.25);
+  /* Subtle darker/lighter tints for inset cards */
+  --bg-dim:               rgba(0,0,0,0.15);
+  --bg-dimmer:            rgba(0,0,0,0.30);
   /* Semantic accent colors */
   --gold:          #d4433a;
   --gold-dim:      rgba(212,67,58,0.15);
@@ -145,6 +154,15 @@ html.light-mode{
   --black-mid:  #d2c6aa;
   --bg-input:   rgba(12,4,0,0.06);
   --border-subtle: rgba(12,4,0,0.10);
+  /* Modal surfaces — lighter overlay so light-mode doesn't turn pitch-dark */
+  --modal-overlay:  rgba(12,4,0,0.38);
+  --modal-shadow:   rgba(12,4,0,0.22);
+  /* Campaign floating panels (detail popovers, inspectors) */
+  --panel-bg:       rgba(247,240,222,0.98);
+  --panel-border:   rgba(160,30,20,0.30);
+  /* Subtle darker/lighter tints for inset cards */
+  --bg-dim:         rgba(12,4,0,0.06);
+  --bg-dimmer:      rgba(12,4,0,0.12);
   /* Tag variant colors (light mode adjustments) */
   --tag-danger-bg:     rgba(160,30,20,0.12);
   --tag-danger-text:   #b83e32;
@@ -1070,4 +1088,37 @@ body.page-out{opacity:0;transform:translateY(-8px);transition:opacity 0.18s, tra
   .ps-404-desc{font-size:15px;}
   .ps-404-cta-group{flex-direction:column;align-items:center;}
   .ps-404-cta-group .ps-cta{width:100%;max-width:260px;text-align:center;}
+}
+
+/* ═══════════════════════════════
+   LIGHT-MODE INLINE STYLE FALLBACKS
+   Safety net for inline rgba() styles
+   authored against the dark theme.
+   Keeps the UI readable on parchment.
+   ═══════════════════════════════ */
+html.light-mode [style*="rgba(0,0,0,0.7"],
+html.light-mode [style*="rgba(0,0,0,0.8"],
+html.light-mode [style*="rgba(0,0,0,0.9"],
+html.light-mode [style*="rgba(8,8,10"],
+html.light-mode [style*="rgba(10,10,16"]{
+  background-color: var(--panel-bg, rgba(247,240,222,0.98)) !important;
+  color: var(--text, #2a1e10);
+}
+html.light-mode [style*="rgba(20,18,14"],
+html.light-mode [style*="rgba(30,26,22"],
+html.light-mode [style*="rgba(32,28,22"]{
+  background-color: var(--panel-bg, rgba(247,240,222,0.98)) !important;
+}
+html.light-mode [style*="rgba(0,0,0,0.5"],
+html.light-mode [style*="rgba(0,0,0,0.4"],
+html.light-mode [style*="rgba(0,0,0,0.6"]{
+  background-color: var(--bg-dimmer, rgba(12,4,0,0.12)) !important;
+}
+html.light-mode [style*="rgba(0,0,0,0.3"],
+html.light-mode [style*="rgba(0,0,0,0.2"]{
+  background-color: var(--bg-dim, rgba(12,4,0,0.06)) !important;
+}
+/* Text that was white on dark panels - make legible on light panels */
+html.light-mode [style*="rgba(255,255,255"][style*="color"]{
+  color: var(--text, #2a1e10) !important;
 }

@@ -3420,12 +3420,12 @@ const Textarea = ({ value, onChange, placeholder, rows=4, style:sx }) => (
 const Modal = ({ open, onClose, title, children, wide }) => {
   if (!open) return null;
   return (
-    <div style={{ position:"fixed", inset:0, background:"rgba(0,0,6,0.70)", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:32 }}
+    <div style={{ position:"fixed", inset:0, background:"var(--modal-overlay, rgba(0,0,6,0.70))", zIndex:1000, display:"flex", alignItems:"center", justifyContent:"center", padding:32 }}
       onClick={onClose}>
       <div onClick={e=>e.stopPropagation()} style={{
         background:T.bgCard, border:`1px solid ${T.crimsonBorder}`, borderRadius:"4px",
         width: wide ? 740 : 520, maxHeight:"85vh", overflow:"hidden", display:"flex", flexDirection:"column",
-        boxShadow:"0 12px 40px rgba(0,0,6,0.50)",
+        boxShadow:"0 12px 40px var(--modal-shadow, rgba(0,0,6,0.50))",
       }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"18px 24px", borderBottom:`1px solid ${T.border}` }}>
           <span style={{ fontFamily:T.ui, fontSize:11, letterSpacing:"2px", color:T.crimson, textTransform:"uppercase", fontWeight:500 }}>{title}</span>
@@ -4699,13 +4699,23 @@ function PlayerCard({ member, onEdit, onUploadSheet, isDm }) {
           {isLinked && <span title="Linked to Character Builder" style={{ position:"absolute", bottom:-2, right:-2, width:10, height:10, borderRadius:"50%", background:T.green, border:"2px solid " + T.bgCard, boxShadow:"0 0 4px rgba(16,185,129,0.4)" }}/>}
         </div>
         <div style={{ flex:1, minWidth:0 }}>
-          <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
             <span style={{ fontSize:15, color:T.text, fontWeight:300 }}>{member.name}</span>
             <Tag variant="muted">Lv{member.lv} {member.cls}</Tag>
+            {member._linkedUsername && (
+              <span title={`Played by ${member._linkedUsername}`} style={{
+                fontFamily:T.ui, fontSize:9, letterSpacing:"0.5px",
+                color:T.green, background:"rgba(94,224,154,0.10)",
+                border:"1px solid rgba(94,224,154,0.25)",
+                padding:"2px 7px", borderRadius:999, fontWeight:500,
+              }}>@{member._linkedUsername}</span>
+            )}
             {isLinked && <span style={{ fontSize:9, color:T.green, fontFamily:T.ui, letterSpacing:"1px", textTransform:"uppercase", opacity:0.8 }}>{syncLabel || "Linked"}</span>}
           </div>
           <div style={{ fontSize:11, color:T.textFaint, fontWeight:300, marginTop:2 }}>
-            {member.player}{member.race ? ` — ${member.race}` : ""}
+            {member._linkedUsername && member.player && member.player !== member._linkedUsername
+              ? `${member.player} · ${member.race || ""}`
+              : `${member.player || ""}${member.race ? ` — ${member.race}` : ""}`}
           </div>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
@@ -4954,19 +4964,23 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
   }, [activeCampaignId]);
 
   const handlePlayerSubmit = (formData) => {
+    // Attach the current signed-in user's UUID so the party entry links to a
+    // campaign_members row (used by the Party section to show @username badges).
+    const _sess = (typeof PhmurtDB !== "undefined" && PhmurtDB.getSession) ? PhmurtDB.getSession() : null;
+    const _currentUserId = _sess && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(_sess.userId || "")) ? _sess.userId : null;
     if (editingMember) {
       if (formData._remove) {
         setData(d=>({...d, party: d.party.filter(p=>p.id!==editingMember.id),
           activity:[{time:"Just now", text:`Removed ${editingMember.name} from party`},...d.activity].slice(0,20)}));
       } else {
-        setData(d=>({...d, party: d.party.map(p=>p.id===editingMember.id?{...p,...formData, actorId:p.actorId||("pc-"+p.id)}:p),
+        setData(d=>({...d, party: d.party.map(p=>p.id===editingMember.id?{...p,...formData, actorId:p.actorId||("pc-"+p.id), userId:p.userId||_currentUserId}:p),
           activity:[{time:"Just now", text:`${formData.name} updated their character`},...d.activity].slice(0,20)}));
       }
       setEditingMember(null);
     } else {
       setData(d => {
         const id = uid();
-        return { ...d, party: [...d.party, { ...formData, id, actorId: "pc-" + id }],
+        return { ...d, party: [...d.party, { ...formData, id, actorId: "pc-" + id, userId: _currentUserId }],
           activity: [{ time: "Just now", text: `${formData.name} (${formData.player}) joined the party` }, ...d.activity].slice(0, 20) };
       });
       setJoiningParty(false);
@@ -4988,6 +5002,12 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
           return;
         }
         const importedMember = cmSnapshotToPartyMember(characterMeta, snapshot);
+        // Tag the imported character with the current signed-in user's UUID so
+        // it links back to their campaign_members row for @username display.
+        const _sess = (typeof PhmurtDB !== "undefined" && PhmurtDB.getSession) ? PhmurtDB.getSession() : null;
+        if (_sess && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(_sess.userId || ""))) {
+          importedMember.userId = _sess.userId;
+        }
         setData(d => ({
           ...d,
           party: [...(d.party || []), importedMember],
@@ -5199,25 +5219,119 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
 
         {/* Party */}
         <div>
-          <SectionTitle icon={Users} count={data.party.length} action={isDm ? (
+          <SectionTitle icon={Users} count={data.party.length + (function(){
+            // Count pending members (joined users without characters yet)
+            const linkedIds = new Set(data.party.map(p => p.userId).filter(Boolean));
+            return campaignMembers.filter(m => m.role === "player" && m.user_id && !linkedIds.has(m.user_id)).length;
+          })()} action={isDm ? (
             <div style={{ display:"flex", gap:8, flexWrap:"wrap", justifyContent:"flex-end" }}>
               <LinkBtn onClick={()=>setLibraryOpen(true)}><BookOpen size={10}/> Import from Character Builder</LinkBtn>
             </div>
           ) : null}>The Party</SectionTitle>
 
-          {data.party.length === 0 && (
-            <Section style={{ textAlign:"center", padding:40 }}>
-              <Users size={32} color={T.textFaint} style={{ marginBottom:16 }}/>
-              <p style={{ fontSize:14, color:T.textMuted, fontWeight:300, margin:"0 0 16px" }}>{isDm ? "No adventurers yet. Import characters from the Character Builder." : "No adventurers in this campaign yet."}</p>
-              {isDm && <CrimsonBtn onClick={()=>setLibraryOpen(true)}><BookOpen size={12}/> Import from Character Builder</CrimsonBtn>}
-            </Section>
-          )}
+          {(() => {
+            // Build the pending-member list (joined players who haven't imported a character yet).
+            // A character is considered "linked" to a user if it has `member.userId` matching
+            // campaign_members.user_id. Fallback: match by display name if userId is missing.
+            const linkedIds = new Set(data.party.map(p => p.userId).filter(Boolean));
+            const partyPlayerNames = new Set(data.party.map(p => (p.player || "").trim().toLowerCase()).filter(Boolean));
+            const pendingMembers = campaignMembers.filter(m => {
+              if (m.role === "dm") return false;
+              if (m.user_id && linkedIds.has(m.user_id)) return false;
+              const displayName = (m.profiles?.name || m.profiles?.email || "").trim().toLowerCase();
+              if (displayName && partyPlayerNames.has(displayName)) return false;
+              return true;
+            });
 
-          <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
-            {data.party.map(p => (
-              <PlayerCard key={p.id} member={p} onEdit={isDm ? handleEdit : undefined} onUploadSheet={isDm ? handleSheetUpload : undefined} isDm={isDm} />
-            ))}
-          </div>
+            if (data.party.length === 0 && pendingMembers.length === 0) {
+              return (
+                <Section style={{ textAlign:"center", padding:40 }}>
+                  <Users size={32} color={T.textFaint} style={{ marginBottom:16 }}/>
+                  <p style={{ fontSize:14, color:T.textMuted, fontWeight:300, margin:"0 0 16px" }}>{isDm ? "No adventurers yet. Invite players or import characters from the Character Builder." : "No adventurers in this campaign yet."}</p>
+                  {isDm && (
+                    <div style={{ display:"flex", gap:8, justifyContent:"center", flexWrap:"wrap" }}>
+                      <CrimsonBtn onClick={()=>setShowInvitePanel(true)}><Users size={12}/> Invite Players</CrimsonBtn>
+                      <CrimsonBtn onClick={()=>setLibraryOpen(true)} secondary><BookOpen size={12}/> Import from Character Builder</CrimsonBtn>
+                    </div>
+                  )}
+                </Section>
+              );
+            }
+
+            return (
+              <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+                {/* Character cards (players who have imported) */}
+                {data.party.map(p => {
+                  // Look up the joined user's profile name (if their userId is linked).
+                  const linkedMember = p.userId ? campaignMembers.find(m => m.user_id === p.userId) : null;
+                  const linkedUsername = linkedMember?.profiles?.name
+                    || linkedMember?.profiles?.email
+                    || null;
+                  return (
+                    <PlayerCard
+                      key={p.id}
+                      member={{ ...p, _linkedUsername: linkedUsername }}
+                      onEdit={isDm ? handleEdit : undefined}
+                      onUploadSheet={isDm ? handleSheetUpload : undefined}
+                      isDm={isDm}
+                    />
+                  );
+                })}
+
+                {/* Pending members: joined but no character yet */}
+                {pendingMembers.length > 0 && (
+                  <React.Fragment>
+                    {data.party.length > 0 && (
+                      <div style={{
+                        fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px",
+                        textTransform:"uppercase", color:T.textFaint,
+                        marginTop:8, marginBottom:2, paddingLeft:4,
+                      }}>
+                        Awaiting Characters
+                      </div>
+                    )}
+                    {pendingMembers.map((m, i) => {
+                      const displayName = m.profiles?.name || m.profiles?.email || (m.user_id ? m.user_id.substring(0,8) : "Player");
+                      const initial = displayName.charAt(0).toUpperCase();
+                      return (
+                        <div key={m.user_id || ("pending-" + i)} style={{
+                          background: T.bgCard, border:`1px dashed ${T.border}`, borderRadius:4,
+                          padding:"12px 16px", display:"flex", alignItems:"center", gap:12,
+                          opacity:0.92,
+                        }}>
+                          <div style={{
+                            width:32, height:32, borderRadius:"50%",
+                            background:"rgba(94,224,154,0.08)", border:"1px solid rgba(94,224,154,0.25)",
+                            display:"flex", alignItems:"center", justifyContent:"center",
+                            color:T.green, fontFamily:T.ui, fontSize:12, fontWeight:500, flexShrink:0,
+                          }}>{initial}</div>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ display:"flex", alignItems:"center", gap:8, flexWrap:"wrap" }}>
+                              <span style={{ fontSize:14, color:T.text, fontWeight:400 }}>{displayName}</span>
+                              <span style={{
+                                fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase",
+                                color:T.green, background:"rgba(94,224,154,0.10)",
+                                border:"1px solid rgba(94,224,154,0.25)",
+                                padding:"2px 8px", borderRadius:999,
+                              }}>{m.role || "player"}</span>
+                            </div>
+                            <div style={{ fontSize:11, color:T.textFaint, fontStyle:"italic", marginTop:3 }}>
+                              No character yet — waiting for them to import one from the Character Builder.
+                            </div>
+                          </div>
+                          {isDm && (
+                            <LinkBtn onClick={()=>setLibraryOpen(true)}>
+                              <BookOpen size={10}/> Import
+                            </LinkBtn>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </React.Fragment>
+                )}
+              </div>
+            );
+          })()}
         </div>
 
         {/* Encounters — deploy from Play → Scenes */}
@@ -5898,8 +6012,16 @@ function App() {
   const [combatAssetsReady, setCombatAssetsReady] = useState(typeof window.CombatEngine !== "undefined");
   // ── Multiplayer: invite codes, campaign members, join flow ──
   const [inviteCodes, setInviteCodes] = useState([]);
+  const [inviteError, setInviteError] = useState("");
   const [campaignMembers, setCampaignMembers] = useState([]);
   const [showInvitePanel, setShowInvitePanel] = useState(false);
+  // Invite modal UX: which code just got copied (for flash-feedback) + QR visibility
+  const [copiedFlash, setCopiedFlash] = useState(""); // key like "code-<id>" or "link-<id>"
+  const [qrOpenForId, setQrOpenForId] = useState(null);
+  const flashCopy = (key) => {
+    setCopiedFlash(key);
+    setTimeout(() => setCopiedFlash((c) => (c === key ? "" : c)), 1400);
+  };
   const [showQuickNotes, setShowQuickNotes] = useState(false);
   const [joinCode, setJoinCode] = useState("");
   const [joinError, setJoinError] = useState("");
@@ -6380,21 +6502,46 @@ function App() {
   }, [showInvitePanel, activeCampaignId]);
 
   const handleCreateInvite = () => {
-    if (viewRole !== "dm") return; // SECURITY: only DM can create invite codes
-    if (typeof PhmurtDB === "undefined" || typeof PhmurtDB.createInviteCode !== "function" || !activeCampaignId) return;
+    setInviteError("");
+    if (viewRole !== "dm") { setInviteError("Only the DM can create invite codes."); return; }
+    if (typeof PhmurtDB === "undefined" || typeof PhmurtDB.createInviteCode !== "function") {
+      setInviteError("Cloud is not available. Sign in and try again.");
+      return;
+    }
+    if (!activeCampaignId) {
+      setInviteError("No campaign selected.");
+      return;
+    }
     // Guard: campaign must have a real UUID (not a local "camp-" ID) before creating invite codes
     if (typeof activeCampaignId === "string" && activeCampaignId.startsWith("camp-")) {
-      alert("Please wait a moment — your campaign is still syncing to the cloud. Try again in a few seconds.");
+      setInviteError("Your campaign is still syncing to the cloud — try again in a few seconds.");
       return;
     }
     PhmurtDB.createInviteCode(activeCampaignId).then(function(result) {
-      if (result) {
-        // result is now a full object { id, code, use_count, max_uses, created_at } or just a code string (backward compat)
-        var invite = typeof result === 'string' ? { code: result, use_count: 0, created_at: new Date().toISOString() } : result;
-        setInviteCodes(function(prev) { return [invite].concat(prev); });
-      } else {
+      // PhmurtDB contract:
+      //   success → { id, invite_code, uses, max_uses, expires_at, created_at }
+      //   failure → { error: "..." }   (or null / undefined on very old builds)
+      //   legacy  → a bare string code
+      if (!result) {
+        setInviteError("Could not create invite code. Please try again.");
         console.warn("[CampaignManager] createInviteCode returned null — campaign may not exist in database yet");
+        return;
       }
+      if (typeof result === 'object' && result.error) {
+        setInviteError(result.error);
+        console.warn("[CampaignManager] createInviteCode error:", result.error);
+        return;
+      }
+      var invite = typeof result === 'string'
+        ? { invite_code: result, code: result, uses: 0, created_at: new Date().toISOString() }
+        : result;
+      // Normalize so the UI can read either `invite_code` or legacy `code`.
+      if (!invite.invite_code && invite.code) invite.invite_code = invite.code;
+      if (!invite.code && invite.invite_code) invite.code = invite.invite_code;
+      setInviteCodes(function(prev) { return [invite].concat(prev); });
+    }).catch(function(err) {
+      console.error("[CampaignManager] createInviteCode exception:", err);
+      setInviteError((err && err.message) || "Could not create invite code.");
     });
   };
 
@@ -6802,41 +6949,248 @@ function App() {
 
       {/* ══ Invite Players Modal ══ */}
       {showInvitePanel && (
-        <Modal open={true} onClose={() => setShowInvitePanel(false)} title="Invite Players" wide>
-          <div style={{ padding:"20px" }}>
-            <div style={{ marginBottom:20 }}>
-              <p style={{ fontFamily:T.body, fontSize:13, color:T.textMuted, marginBottom:12 }}>
-                Generate an invite code or shareable link. Players who join will see only what you choose to reveal.
-              </p>
+        <Modal open={true} onClose={() => { setShowInvitePanel(false); setInviteError(""); setQrOpenForId(null); }} title="Invite Players" wide>
+          <div style={{ display:"flex", flexDirection:"column", gap:20 }}>
+            {/* Top band: intro + primary action */}
+            <div style={{
+              padding:"18px 20px", borderRadius:6,
+              background: T.crimsonSoft,
+              border:`1px solid ${T.crimsonBorder}`,
+              display:"flex", gap:16, alignItems:"center", flexWrap:"wrap",
+            }}>
+              <div style={{ flex:"1 1 260px", minWidth:0 }}>
+                <div style={{ fontFamily:T.heading, fontSize:15, color:T.text, fontWeight:500, marginBottom:4 }}>
+                  Share access to this campaign
+                </div>
+                <div style={{ fontFamily:T.body, fontSize:12, color:T.textMuted, lineHeight:1.5 }}>
+                  Generate a code or link, share it with your players, and they'll appear in The Party when they join.
+                </div>
+              </div>
               <CrimsonBtn onClick={handleCreateInvite}><Plus size={12}/> Generate Invite Code</CrimsonBtn>
             </div>
 
-            {inviteCodes.length > 0 && (
-              <div style={{ marginBottom:20 }}>
-                <div style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", textTransform:"uppercase", color:T.textFaint, marginBottom:10 }}>Active Codes</div>
-                {inviteCodes.map((inv, i) => (
-                  <div key={inv.id || i} style={{ display:"flex", alignItems:"center", gap:10, padding:"10px 14px", background:"rgba(255,255,255,0.02)", border:"1px solid " + T.border, borderRadius:8, marginBottom:6 }}>
-                    <code style={{ fontFamily:"monospace", fontSize:15, fontWeight:700, color: T.green, flex:1, letterSpacing:"1px" }}>{inv.code}</code>
-                    <button onClick={() => { navigator.clipboard.writeText(inv.code); }} title="Copy code"
-                      style={{ background:"rgba(94,224,154,0.08)", border:"1px solid rgba(94,224,154,0.2)", borderRadius:6, padding:"5px 10px", cursor:"pointer", color: T.green, fontFamily:T.ui, fontSize:8, letterSpacing:"0.5px" }}>Copy Code</button>
-                    <button onClick={() => { navigator.clipboard.writeText(getInviteLink(inv.code)); }} title="Copy link"
-                      style={{ background:"rgba(212,67,58,0.08)", border:"1px solid rgba(212,67,58,0.2)", borderRadius:6, padding:"5px 10px", cursor:"pointer", color:T.crimson, fontFamily:T.ui, fontSize:8, letterSpacing:"0.5px" }}>Copy Link</button>
-                    {inv.id && <button onClick={() => handleDeleteInvite(inv.id)} title="Delete"
-                      style={{ background:"rgba(239,68,68,0.06)", border:"1px solid rgba(239,68,68,0.15)", borderRadius:6, padding:"5px 8px", cursor:"pointer", color:T.crimson, fontSize:10 }}><X size={10}/></button>}
-                  </div>
-                ))}
+            {inviteError && (
+              <div role="alert" style={{
+                padding:"10px 14px", borderRadius:6,
+                background:T.crimsonSoft, border:`1px solid ${T.crimsonBorder}`,
+                color:T.crimson, fontFamily:T.body, fontSize:12,
+              }}>
+                {inviteError}
               </div>
             )}
 
+            {/* Active codes */}
+            {inviteCodes.length === 0 ? (
+              <div style={{
+                padding:"28px 16px", borderRadius:6, textAlign:"center",
+                background: T.bg, border:`1px dashed ${T.border}`, color: T.textFaint,
+              }}>
+                <Users size={28} style={{ opacity:0.5, marginBottom:8 }}/>
+                <div style={{ fontFamily:T.body, fontSize:13, fontStyle:"italic" }}>
+                  No active invite codes yet. Generate one above to get started.
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1.8px", textTransform:"uppercase", color:T.textFaint, marginBottom:10 }}>
+                  Active Codes <span style={{ color:T.textMuted, marginLeft:6 }}>({inviteCodes.length})</span>
+                </div>
+                <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+                  {inviteCodes.map((inv, i) => {
+                    const _code    = inv.code || inv.invite_code || "";
+                    const _link    = getInviteLink(_code);
+                    const _uses    = inv.use_count ?? inv.uses ?? 0;
+                    const _maxUses = inv.max_uses;
+                    const _expires = inv.expires_at ? new Date(inv.expires_at) : null;
+                    const _isExpired = _expires && _expires.getTime() < Date.now();
+                    const _qrOpen = qrOpenForId === inv.id;
+                    const _copiedCode = copiedFlash === ("code-" + inv.id);
+                    const _copiedLink = copiedFlash === ("link-" + inv.id);
+                    const _qrSrc = _code
+                      ? "https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=" + encodeURIComponent(_link)
+                      : "";
+
+                    return (
+                      <div key={inv.id || i} style={{
+                        background: T.bgCard, border:`1px solid ${_isExpired ? T.border : T.crimsonBorder}`,
+                        borderRadius:8, overflow:"hidden",
+                        boxShadow:"0 2px 10px rgba(0,0,6,0.15)",
+                        opacity: _isExpired ? 0.6 : 1,
+                      }}>
+                        {/* Primary row: code + actions */}
+                        <div style={{ display:"flex", alignItems:"center", gap:12, padding:"14px 16px", flexWrap:"wrap" }}>
+                          <code style={{
+                            fontFamily:"'Menlo','Consolas',monospace", fontSize:18, fontWeight:700,
+                            color: _isExpired ? T.textFaint : T.green,
+                            letterSpacing:"2px", flex:"1 1 160px", minWidth:0,
+                            textDecoration: _isExpired ? "line-through" : "none",
+                          }}>{_code}</code>
+
+                          <div style={{ display:"flex", gap:6, flexWrap:"wrap", alignItems:"center" }}>
+                            <button
+                              onClick={() => { navigator.clipboard.writeText(_code); flashCopy("code-" + inv.id); }}
+                              style={{
+                                background: _copiedCode ? T.green : "transparent",
+                                color:      _copiedCode ? T.bgCard : T.green,
+                                border:`1px solid ${_copiedCode ? T.green : T.border}`,
+                                borderRadius:4, padding:"6px 10px", cursor:"pointer",
+                                fontFamily:T.ui, fontSize:9, letterSpacing:"1px", textTransform:"uppercase",
+                                transition:"all 0.15s", display:"inline-flex", alignItems:"center", gap:6,
+                              }}
+                              title="Copy invite code"
+                            >
+                              {_copiedCode ? <Check size={10}/> : <Copy size={10}/>}
+                              {_copiedCode ? "Copied" : "Code"}
+                            </button>
+                            <button
+                              onClick={() => { navigator.clipboard.writeText(_link); flashCopy("link-" + inv.id); }}
+                              style={{
+                                background: _copiedLink ? T.crimson : "transparent",
+                                color:      _copiedLink ? "#fff" : T.crimson,
+                                border:`1px solid ${_copiedLink ? T.crimson : T.crimsonBorder}`,
+                                borderRadius:4, padding:"6px 10px", cursor:"pointer",
+                                fontFamily:T.ui, fontSize:9, letterSpacing:"1px", textTransform:"uppercase",
+                                transition:"all 0.15s", display:"inline-flex", alignItems:"center", gap:6,
+                              }}
+                              title="Copy join link"
+                            >
+                              {_copiedLink ? <Check size={10}/> : <Link size={10}/>}
+                              {_copiedLink ? "Copied" : "Link"}
+                            </button>
+                            <button
+                              onClick={() => setQrOpenForId(_qrOpen ? null : inv.id)}
+                              style={{
+                                background:"transparent", color: _qrOpen ? T.crimson : T.textMuted,
+                                border:`1px solid ${T.border}`, borderRadius:4, padding:"6px 10px",
+                                cursor:"pointer", fontFamily:T.ui, fontSize:9, letterSpacing:"1px",
+                                textTransform:"uppercase", transition:"all 0.15s",
+                                display:"inline-flex", alignItems:"center", gap:6,
+                              }}
+                              title={_qrOpen ? "Hide QR" : "Show QR"}
+                            >
+                              QR
+                            </button>
+                            {inv.id && (
+                              <button
+                                onClick={() => handleDeleteInvite(inv.id)}
+                                style={{
+                                  background:"transparent", color:T.textFaint,
+                                  border:`1px solid ${T.border}`, borderRadius:4,
+                                  padding:"6px 8px", cursor:"pointer", transition:"all 0.15s",
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.color = T.crimson; e.currentTarget.style.borderColor = T.crimsonBorder; }}
+                                onMouseLeave={e => { e.currentTarget.style.color = T.textFaint; e.currentTarget.style.borderColor = T.border; }}
+                                title="Revoke code"
+                              >
+                                <Trash2 size={11}/>
+                              </button>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Meta row: uses / expires */}
+                        <div style={{
+                          display:"flex", gap:14, flexWrap:"wrap", padding:"0 16px 12px",
+                          fontFamily:T.ui, fontSize:9, letterSpacing:"1px", textTransform:"uppercase",
+                          color: T.textFaint,
+                        }}>
+                          <span>Uses: <span style={{ color: T.textMuted }}>{_uses}{_maxUses ? " / " + _maxUses : ""}</span></span>
+                          {_expires && (
+                            <span>
+                              {_isExpired ? "Expired" : "Expires"}{" "}
+                              <span style={{ color: T.textMuted }}>
+                                {_expires.toLocaleDateString(undefined, { month:"short", day:"numeric", year:"numeric" })}
+                              </span>
+                            </span>
+                          )}
+                        </div>
+
+                        {/* QR drawer */}
+                        {_qrOpen && (
+                          <div style={{
+                            borderTop:`1px solid ${T.border}`,
+                            background: T.bg,
+                            padding:"16px", display:"flex", gap:16, alignItems:"center", flexWrap:"wrap",
+                          }}>
+                            <img
+                              src={_qrSrc}
+                              alt={"QR code for invite " + _code}
+                              width="180" height="180"
+                              style={{
+                                background:"#fff", padding:8, borderRadius:6,
+                                border:`1px solid ${T.border}`, flexShrink:0,
+                              }}
+                            />
+                            <div style={{ flex:"1 1 200px", minWidth:0 }}>
+                              <div style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", textTransform:"uppercase", color:T.textFaint, marginBottom:6 }}>
+                                Scan to Join
+                              </div>
+                              <div style={{
+                                fontFamily:"'Menlo','Consolas',monospace", fontSize:11,
+                                color:T.textMuted, wordBreak:"break-all", lineHeight:1.45,
+                                padding:"8px 10px", background:T.bgCard, borderRadius:4, border:`1px solid ${T.border}`,
+                              }}>
+                                {_link}
+                              </div>
+                              <div style={{ fontFamily:T.body, fontSize:11, color:T.textFaint, fontStyle:"italic", marginTop:8 }}>
+                                Players can scan this with their phone to open the campaign directly.
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Current members */}
             {campaignMembers.length > 0 && (
               <div>
-                <div style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1.5px", textTransform:"uppercase", color:T.textFaint, marginBottom:10 }}>Members</div>
-                {campaignMembers.map((m, i) => (
-                  <div key={i} style={{ display:"flex", alignItems:"center", gap:10, padding:"8px 14px", background:"rgba(255,255,255,0.015)", border:"1px solid " + T.border, borderRadius:6, marginBottom:4 }}>
-                    <span style={{ fontFamily:T.ui, fontSize:11, color:T.text, flex:1 }}>{m.profiles?.name || m.profiles?.email || m.user_id?.substring(0,8)}</span>
-                    <span style={{ fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", color: m.role === "dm" ? T.crimson : T.green, background: m.role === "dm" ? "rgba(212,67,58,0.08)" : "rgba(94,224,154,0.08)", padding:"2px 8px", borderRadius:999 }}>{m.role}</span>
-                  </div>
-                ))}
+                <div style={{ fontFamily:T.ui, fontSize:9, letterSpacing:"1.8px", textTransform:"uppercase", color:T.textFaint, marginBottom:10 }}>
+                  Members <span style={{ color:T.textMuted, marginLeft:6 }}>({campaignMembers.length})</span>
+                </div>
+                <div style={{ display:"flex", flexDirection:"column", gap:6 }}>
+                  {campaignMembers.map((m, i) => {
+                    const displayName = m.profiles?.name || m.profiles?.email || (m.user_id ? m.user_id.substring(0,8) : "Unknown");
+                    const initial = (displayName || "?").charAt(0).toUpperCase();
+                    const isDmRow = m.role === "dm";
+                    return (
+                      <div key={m.user_id || i} style={{
+                        display:"flex", alignItems:"center", gap:12,
+                        padding:"10px 14px", background: T.bgCard,
+                        border:`1px solid ${T.border}`, borderRadius:6,
+                      }}>
+                        <div style={{
+                          width:28, height:28, borderRadius:"50%",
+                          background: isDmRow ? T.crimsonSoft : "rgba(94,224,154,0.10)",
+                          border:`1px solid ${isDmRow ? T.crimsonBorder : "rgba(94,224,154,0.25)"}`,
+                          display:"flex", alignItems:"center", justifyContent:"center",
+                          color: isDmRow ? T.crimson : T.green,
+                          fontFamily:T.ui, fontSize:11, fontWeight:600, flexShrink:0,
+                        }}>{initial}</div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontFamily:T.body, fontSize:13, color:T.text, fontWeight:400, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                            {displayName}
+                          </div>
+                          {m.profiles?.name && m.profiles?.email && (
+                            <div style={{ fontFamily:T.body, fontSize:10, color:T.textFaint, marginTop:1, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>
+                              {m.profiles.email}
+                            </div>
+                          )}
+                        </div>
+                        <span style={{
+                          fontFamily:T.ui, fontSize:8, letterSpacing:"1.2px", textTransform:"uppercase",
+                          color: isDmRow ? T.crimson : T.green,
+                          background: isDmRow ? T.crimsonSoft : "rgba(94,224,154,0.10)",
+                          border:`1px solid ${isDmRow ? T.crimsonBorder : "rgba(94,224,154,0.25)"}`,
+                          padding:"3px 10px", borderRadius:999,
+                        }}>{m.role}</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
@@ -6866,19 +7220,20 @@ function App() {
       {createModalOpen && (
         <div style={{
           position:"fixed", top:0, left:0, right:0, bottom:0,
-          background:"rgba(0,0,0,0.7)", display:"flex", alignItems:"center", justifyContent:"center",
+          background:"var(--modal-overlay, rgba(0,0,6,0.70))",
+          display:"flex", alignItems:"center", justifyContent:"center",
           zIndex:1000, backdropFilter:"blur(2px)"
         }}>
           <div style={{
-            background:"rgba(20,18,14,0.98)", border:"1px solid rgba(212,67,58,0.25)",
-            borderRadius:"8px", boxShadow:"0 20px 60px rgba(0,0,0,0.6)",
+            background:T.bgCard, border:`1px solid ${T.crimsonBorder}`,
+            borderRadius:"8px", boxShadow:"0 20px 60px var(--modal-shadow, rgba(0,0,6,0.45))",
             width:"90%", maxWidth:600, maxHeight:"90vh", padding:0, overflow:"hidden",
             display:"flex", flexDirection:"column"
           }}>
             {/* Header */}
             <div style={{
-              padding:"24px", borderBottom:"1px solid rgba(212,67,58,0.15)",
-              background:"rgba(212,67,58,0.05)"
+              padding:"24px", borderBottom:`1px solid ${T.crimsonBorder}`,
+              background:T.crimsonSoft
             }}>
               <h2 style={{ fontFamily:T.heading, fontSize:22, color:T.text, margin:0, letterSpacing:"1px" }}>
                 {createStep === 2 ? "Kingdom Setup" : "Create New Campaign"}

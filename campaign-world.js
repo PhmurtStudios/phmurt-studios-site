@@ -4288,7 +4288,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
 
             {/* Zoom level indicator + Atlas import button */}
             <div style={{ position:"absolute", top:12, right:12, display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6, zIndex:10 }}>
-              <div style={{ padding:"6px 14px", background:"rgba(8,8,10,0.82)", border:"1px solid var(--border)", borderRadius:"4px", fontFamily:T.ui, fontSize:8, color:"var(--text-muted)", letterSpacing:"2.5px", textTransform:"uppercase", boxShadow:"0 4px 20px rgba(0,0,0,0.4)", backdropFilter:"blur(8px)", pointerEvents:"none" }}>
+              <div style={{ padding:"6px 14px", background:"var(--modal-overlay, rgba(8,8,10,0.82))", border:"1px solid var(--border)", borderRadius:"4px", fontFamily:T.ui, fontSize:8, color:"var(--text-muted)", letterSpacing:"2.5px", textTransform:"uppercase", boxShadow:"0 4px 20px rgba(0,0,0,0.4)", backdropFilter:"blur(8px)", pointerEvents:"none" }}>
                 {zoomLevel} view
               </div>
               {isDM && (
@@ -4305,7 +4305,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                           setData(d => { const { atlasMapSeed, generatedAtlas, ...rest } = d; return { ...rest, regions: [], factions: [], npcs: [], cities: [], pois: [], activity: [{ time: "Just now", text: "Reverted to default map" }] }; });
                         }
                       }}
-                      style={{ padding:"4px 8px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(212,67,58,0.25)", borderRadius:"4px", fontFamily:T.ui, fontSize:9, color:T.gold, outline:"none", cursor:"pointer", letterSpacing:"1px" }}
+                      style={{ padding:"4px 8px", background:"var(--panel-bg, rgba(30,26,22,0.9))", border:"1px solid rgba(212,67,58,0.25)", borderRadius:"4px", fontFamily:T.ui, fontSize:9, color:T.gold, outline:"none", cursor:"pointer", letterSpacing:"1px" }}
                     >
                       {Array.from({length:100}, (_,i) => i+1).map(s => {
                         return <option key={s} value={s}>{`World Seed ${s}`}</option>;
@@ -4325,7 +4325,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                 </>
               )}
               {data.atlasMapSeed && (
-                <div style={{ padding:"3px 10px", background:"rgba(8,8,10,0.7)", border:"1px solid var(--border)", borderRadius:"3px", fontFamily:T.ui, fontSize:7, color:"var(--text-faint)", letterSpacing:"1.2px", textTransform:"uppercase", pointerEvents:"none", backdropFilter:"blur(6px)" }}>
+                <div style={{ padding:"3px 10px", background:"var(--modal-overlay, rgba(8,8,10,0.7))", border:"1px solid var(--border)", borderRadius:"3px", fontFamily:T.ui, fontSize:7, color:"var(--text-faint)", letterSpacing:"1.2px", textTransform:"uppercase", pointerEvents:"none", backdropFilter:"blur(6px)" }}>
                   Seed: {data.atlasMapSeed}
                 </div>
               )}
@@ -4354,7 +4354,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                 {lwActive && (
                   <div style={{ display:"flex", gap:4 }}>
                     <select value={lwSpeed} onChange={e => { setLwSpeed(Number(e.target.value)); if (lwActive) { setLwActive(false); setTimeout(() => setLwActive(true), 100); } }}
-                      style={{ padding:"3px 6px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(212,67,58,0.2)", borderRadius:"3px", fontFamily:T.ui, fontSize:8, color:T.gold, outline:"none", cursor:"pointer" }}>
+                      style={{ padding:"3px 6px", background:"var(--panel-bg, rgba(30,26,22,0.9))", border:"1px solid rgba(212,67,58,0.2)", borderRadius:"3px", fontFamily:T.ui, fontSize:8, color:T.gold, outline:"none", cursor:"pointer" }}>
                       <option value={30}>Fast (30s)</option>
                       <option value={60}>Normal (60s)</option>
                       <option value={90}>Slow (90s)</option>
@@ -4382,7 +4382,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
             {/* ── Time Skip Dropdown Menu ── */}
             {isLive && isDM && data.factions?.length > 0 && lwTimeSkipOpen && (
               <div style={{
-                position:"absolute", top:140, left:12, background:"rgba(20,18,14,0.98)", border:"1px solid rgba(212,67,58,0.25)",
+                position:"absolute", top:140, left:12, background:"var(--panel-bg, rgba(20,18,14,0.98))", border:"1px solid var(--panel-border, rgba(212,67,58,0.25))",
                 borderRadius:"6px", zIndex:30, minWidth:140, boxShadow:"0 8px 24px rgba(0,0,0,0.6)"
               }}>
                 <div style={{ padding:"8px 0", fontSize:9, fontFamily:T.ui, color:T.gold, letterSpacing:"1px" }}>
@@ -4412,7 +4412,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                   <div style={{ padding:"6px 12px", borderTop:"1px solid rgba(212,67,58,0.1)", display:"flex", gap:6, alignItems:"center" }}>
                     <input type="number" min="1" max="365" defaultValue="7" id="customSkipEvents"
                       style={{
-                        flex:1, padding:"3px 6px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(212,67,58,0.2)",
+                        flex:1, padding:"3px 6px", background:"var(--panel-bg, rgba(30,26,22,0.9))", border:"1px solid rgba(212,67,58,0.2)",
                         borderRadius:"3px", color:T.gold, fontFamily:T.ui, fontSize:8, outline:"none"
                       }} />
                     <button onClick={() => {
@@ -4563,14 +4563,14 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                 zIndex:40, fontFamily:T.ui
               }}>
                 <div style={{
-                  background:"rgba(20,18,14,0.98)", border:"2px solid rgba(212,67,58,0.5)", borderRadius:"8px",
+                  background:"var(--panel-bg, rgba(20,18,14,0.98))", border:"2px solid var(--panel-border, rgba(212,67,58,0.5))", borderRadius:"8px",
                   padding:"32px", textAlign:"center", minWidth:300
                 }}>
                   <div style={{ fontSize:14, color:T.text, marginBottom:20, letterSpacing:"1px" }}>
                     Traversing the timeline...
                   </div>
                   <div style={{
-                    width:"100%", height:24, background:"rgba(30,26,22,0.9)", border:"1px solid rgba(212,67,58,0.3)",
+                    width:"100%", height:24, background:"var(--panel-bg, rgba(30,26,22,0.9))", border:"1px solid rgba(212,67,58,0.3)",
                     borderRadius:"4px", overflow:"hidden", position:"relative"
                   }}>
                     <div style={{
@@ -4593,7 +4593,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                 zIndex:40, fontFamily:T.ui, padding:20
               }}>
                 <div style={{
-                  background:"rgba(20,18,14,0.98)", border:"2px solid rgba(212,67,58,0.4)", borderRadius:"8px",
+                  background:"var(--panel-bg, rgba(20,18,14,0.98))", border:"2px solid var(--panel-border, rgba(212,67,58,0.4))", borderRadius:"8px",
                   padding:"24px", maxWidth:500, maxHeight:"70vh", overflow:"hidden", display:"flex", flexDirection:"column"
                 }}>
                   <div style={{ fontSize:14, color:T.text, marginBottom:16, letterSpacing:"1px", textAlign:"center" }}>
@@ -4639,7 +4639,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                     </button>
                     <button onClick={() => setLwTimeSkipSummary(null)}
                       style={{
-                        padding:"8px 16px", background:"rgba(30,26,22,0.9)", border:"1px solid rgba(212,67,58,0.25)",
+                        padding:"8px 16px", background:"var(--panel-bg, rgba(30,26,22,0.9))", border:"1px solid rgba(212,67,58,0.25)",
                         borderRadius:"4px", color:T.gold, cursor:"pointer", fontFamily:T.ui, fontSize:9,
                         letterSpacing:"1px", textTransform:"uppercase", transition:"all 0.2s"
                       }}
@@ -7601,7 +7601,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
             {/* Header bar */}
             <div style={{
               display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "12px 24px", background: "rgba(32,28,22,0.95)",
+              padding: "12px 24px", background: "var(--panel-bg, rgba(32,28,22,0.95))",
               borderBottom: "1px solid rgba(212,67,58,0.2)", flexShrink: 0,
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
@@ -7682,7 +7682,7 @@ function WorldView({ data, setData, onNav, viewRole = "dm", navTarget, clearNavT
                           {isHov && !isSel && (
                             <div style={{
                               position: "absolute", left: "50%", transform: "translateX(-50%)", bottom: "calc(100% + 8px)",
-                              background: "rgba(32,28,22,0.95)", border: `1px solid ${typeColor}44`, borderRadius: "4px",
+                              background: "var(--panel-bg, rgba(32,28,22,0.95))", border: `1px solid ${typeColor}44`, borderRadius: "4px",
                               padding: "6px 12px", whiteSpace: "nowrap", pointerEvents: "none", zIndex: 20,
                             }}>
                               <div style={{ fontSize: 11, color: T.text, fontFamily: "'Cinzel', serif" }}>{bldg.name}</div>

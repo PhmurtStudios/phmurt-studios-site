@@ -1254,13 +1254,30 @@ var PhmurtDB = (function () {
     saveCampaign: function (campaign) {
       if (!_session) return Promise.resolve(false);
       var sb = _sb();
+      // Guard: if the signed-in userId isn't a real UUID (e.g. a legacy
+      // "user_xxxx" local-only session), we must NOT attempt a cloud write —
+      // Postgres will 400 with "invalid input syntax for type uuid" and the
+      // debounced save path will keep retrying. Fall back to localStorage.
+      var _uuidRe = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (sb && _session && !_uuidRe.test(String(_session.userId || ''))) {
+        console.warn('[Auth] saveCampaign: session userId is not a UUID; using local fallback.');
+        _legacySaveCampLocal(campaign);
+        return Promise.resolve(true);
+      }
       if (sb) {
         // SECURITY (V-026): Validate campaign data size
         var dataStr = JSON.stringify(campaign);
         if (dataStr.length > 5000000) return Promise.reject(new Error('Campaign data exceeds maximum size.'));
 
-        // Check if this is a new campaign (no existing ID or local-only "camp-" prefix ID)
-        var isLocal = !campaign.id || (typeof campaign.id === 'string' && campaign.id.startsWith('camp-'));
+        // Check if this is a new campaign:
+        //   - no ID yet, OR
+        //   - local-only "camp-" prefix ID, OR
+        //   - any string that isn't a valid Postgres UUID (prevents bogus
+        //     IDs from being sent to an UPDATE and producing "invalid input
+        //     syntax for type uuid" 500s).
+        var isLocal = !campaign.id
+          || (typeof campaign.id === 'string' && campaign.id.startsWith('camp-'))
+          || !_uuidRe.test(String(campaign.id));
 
         if (isLocal) {
           // ── NEW CAMPAIGN: Insert with only the columns that exist in the DB schema ──
@@ -1717,16 +1734,60 @@ var PhmurtDB = (function () {
         .catch(function () { return false; });
     },
 
-    /* ── Campaign Invites ─────────────────────────────────────── */
+    /* ── Campaign Invites ───────────────────────────────────────
+       Schema (public.campaign_invites) — LIVE:
+         id uuid default gen_random_uuid(), campaign_id uuid, owner_id uuid,
+         code text NOT NULL (default md5 slice), max_uses int default 10,
+         use_count int default 0, expires_at timestamptz default now()+30d,
+         created_at timestamptz default now()
+       RLS: owner of `campaigns` row (owner_id = auth.uid()) may INSERT/UPDATE/DELETE.
+    ───────────────────────────────────────────────────────────── */
+
+    /* Generate a short, human-friendly invite code (URL-safe). */
+    _generateInviteCode: function () {
+      // 9 alphanum chars → formatted client-side as XXX-XXX-XXX.
+      // Avoid easily-confused chars (0/O, 1/I/L).
+      var alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+      var out = '';
+      // Prefer crypto.getRandomValues when available for uniqueness.
+      if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+        var buf = new Uint8Array(9);
+        crypto.getRandomValues(buf);
+        for (var i = 0; i < 9; i++) out += alphabet[buf[i] % alphabet.length];
+      } else {
+        for (var j = 0; j < 9; j++) out += alphabet[Math.floor(Math.random() * alphabet.length)];
+      }
+      return out;
+    },
+
     createInviteCode: function (campaignId) {
       var sb = _sb();
-      if (!sb || !_session) return Promise.resolve(null);
+      if (!sb || !_session) return Promise.resolve({ error: 'Not signed in.' });
+
+      // Guard: can't create a cloud invite for a local-only campaign ID
+      // (new campaigns carry an id like "camp-..." until their first cloud save).
+      if (!campaignId || (typeof campaignId === 'string' && campaignId.indexOf('camp-') === 0)) {
+        return Promise.resolve({ error: 'Save this campaign to the cloud before creating invites.' });
+      }
+
+      var code = PhmurtDB._generateInviteCode();
       return sb.from('campaign_invites').insert({
         campaign_id: campaignId,
+        code:        code,
         owner_id:    _session.userId
-      }).select('id, code, use_count, max_uses, created_at').single()
-        .then(function (r) { return r.data || null; })
-        .catch(function () { return null; });
+        // max_uses / use_count / expires_at all have sensible DB defaults
+      }).select('id, code, use_count, max_uses, expires_at, created_at').single()
+        .then(function (r) {
+          if (r.error) {
+            console.warn('[Auth] createInviteCode error:', r.error.message || r.error);
+            return { error: r.error.message || 'Failed to create invite.' };
+          }
+          return r.data || { error: 'No data returned.' };
+        })
+        .catch(function (e) {
+          console.warn('[Auth] createInviteCode exception:', e && e.message);
+          return { error: (e && e.message) || 'Failed to create invite.' };
+        });
     },
 
     joinCampaignByCode: function (code) {
@@ -1739,7 +1800,8 @@ var PhmurtDB = (function () {
 
     getInviteCodes: function (campaignId) {
       var sb = _sb();
-      if (!sb) return Promise.resolve([]);
+      if (!sb || !campaignId) return Promise.resolve([]);
+      if (typeof campaignId === 'string' && campaignId.indexOf('camp-') === 0) return Promise.resolve([]);
       return sb.from('campaign_invites')
         .select('id, code, use_count, max_uses, expires_at, created_at')
         .eq('campaign_id', campaignId)
@@ -1749,12 +1811,14 @@ var PhmurtDB = (function () {
     },
 
     deleteInviteCode: function (inviteId) {
-      // CRITICAL FIX (V-059): Check owner_id to prevent deleting other users' invite codes
+      // Deletion is gated by RLS (campaign owner only), so we don't need a
+      // local owner column match — and the old owner_id column doesn't exist
+      // on campaign_invites anyway.
       if (!_session) return Promise.resolve(false);
       var sb = _sb();
       if (!sb) return Promise.resolve(false);
       return sb.from('campaign_invites').delete()
-        .eq('id', inviteId).eq('owner_id', _session.userId)
+        .eq('id', inviteId)
         .then(function (r) { return !r.error; })
         .catch(function () { return false; });
     },
