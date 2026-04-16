@@ -83,6 +83,154 @@
 
   var CR_OPTS = ['0','1/8','1/4','1/2','1','2','3','4','5','6','7','8','9','10','11','12','13','14','15','16','17','18','19','20','21','22','23','24','25','26','27','28','29','30'];
 
+  /* ── SRD 5.1 Monster Database ──────────────────────────────────── */
+  var SRD_MONSTERS = [
+    {n:"Aboleth",cr:"10"},{n:"Acolyte",cr:"1/4"},{n:"Adult Black Dragon",cr:"14"},{n:"Adult Blue Dragon",cr:"16"},
+    {n:"Adult Brass Dragon",cr:"13"},{n:"Adult Bronze Dragon",cr:"15"},{n:"Adult Copper Dragon",cr:"14"},
+    {n:"Adult Gold Dragon",cr:"17"},{n:"Adult Green Dragon",cr:"15"},{n:"Adult Red Dragon",cr:"17"},
+    {n:"Adult Silver Dragon",cr:"16"},{n:"Adult White Dragon",cr:"13"},{n:"Air Elemental",cr:"5"},
+    {n:"Ancient Black Dragon",cr:"21"},{n:"Ancient Blue Dragon",cr:"23"},{n:"Ancient Brass Dragon",cr:"20"},
+    {n:"Ancient Bronze Dragon",cr:"22"},{n:"Ancient Copper Dragon",cr:"21"},{n:"Ancient Gold Dragon",cr:"24"},
+    {n:"Ancient Green Dragon",cr:"22"},{n:"Ancient Red Dragon",cr:"24"},{n:"Ancient Silver Dragon",cr:"23"},
+    {n:"Ancient White Dragon",cr:"20"},{n:"Androsphinx",cr:"17"},{n:"Animated Armor",cr:"1"},
+    {n:"Ankheg",cr:"2"},{n:"Ape",cr:"1/2"},{n:"Archmage",cr:"12"},{n:"Assassin",cr:"8"},
+    {n:"Awakened Shrub",cr:"0"},{n:"Awakened Tree",cr:"2"},{n:"Axe Beak",cr:"1/4"},{n:"Azer",cr:"2"},
+    {n:"Baboon",cr:"0"},{n:"Badger",cr:"0"},{n:"Balor",cr:"19"},{n:"Bandit",cr:"1/8"},
+    {n:"Bandit Captain",cr:"2"},{n:"Barbed Devil",cr:"5"},{n:"Basilisk",cr:"3"},{n:"Bat",cr:"0"},
+    {n:"Bearded Devil",cr:"3"},{n:"Behir",cr:"11"},{n:"Berserker",cr:"2"},{n:"Black Bear",cr:"1/2"},
+    {n:"Black Dragon Wyrmling",cr:"2"},{n:"Black Pudding",cr:"4"},{n:"Blink Dog",cr:"1/4"},
+    {n:"Blood Hawk",cr:"1/8"},{n:"Blue Dragon Wyrmling",cr:"3"},{n:"Boar",cr:"1/4"},
+    {n:"Bone Devil",cr:"9"},{n:"Brass Dragon Wyrmling",cr:"1"},{n:"Bronze Dragon Wyrmling",cr:"2"},
+    {n:"Brown Bear",cr:"1"},{n:"Bugbear",cr:"1"},{n:"Bulette",cr:"5"},{n:"Camel",cr:"1/8"},
+    {n:"Cat",cr:"0"},{n:"Centaur",cr:"2"},{n:"Chain Devil",cr:"8"},{n:"Chimera",cr:"6"},
+    {n:"Chuul",cr:"4"},{n:"Clay Golem",cr:"9"},{n:"Cloaker",cr:"8"},{n:"Cloud Giant",cr:"9"},
+    {n:"Cockatrice",cr:"1/2"},{n:"Commoner",cr:"0"},{n:"Constrictor Snake",cr:"1/4"},
+    {n:"Copper Dragon Wyrmling",cr:"1"},{n:"Couatl",cr:"4"},{n:"Crab",cr:"0"},
+    {n:"Crocodile",cr:"1/2"},{n:"Cultist",cr:"1/8"},{n:"Cult Fanatic",cr:"2"},
+    {n:"Darkmantle",cr:"1/2"},{n:"Death Dog",cr:"1"},{n:"Deer",cr:"0"},{n:"Deva",cr:"10"},
+    {n:"Dire Wolf",cr:"1"},{n:"Djinni",cr:"11"},{n:"Doppelganger",cr:"3"},
+    {n:"Draft Horse",cr:"1/4"},{n:"Dretch",cr:"1/4"},{n:"Drider",cr:"6"},{n:"Druid",cr:"2"},
+    {n:"Dryad",cr:"1"},{n:"Duergar",cr:"1"},{n:"Dust Mephit",cr:"1/2"},{n:"Eagle",cr:"0"},
+    {n:"Earth Elemental",cr:"5"},{n:"Efreeti",cr:"11"},{n:"Elephant",cr:"4"},
+    {n:"Elf (Drow)",cr:"1/4"},{n:"Elk",cr:"1/4"},{n:"Erinyes",cr:"12"},{n:"Ettercap",cr:"2"},
+    {n:"Ettin",cr:"4"},{n:"Fire Elemental",cr:"5"},{n:"Fire Giant",cr:"9"},
+    {n:"Flesh Golem",cr:"5"},{n:"Flying Snake",cr:"1/8"},{n:"Flying Sword",cr:"1/4"},
+    {n:"Frog",cr:"0"},{n:"Frost Giant",cr:"8"},{n:"Gargoyle",cr:"2"},{n:"Gelatinous Cube",cr:"2"},
+    {n:"Ghast",cr:"2"},{n:"Ghost",cr:"4"},{n:"Ghoul",cr:"1"},{n:"Giant Ape",cr:"7"},
+    {n:"Giant Badger",cr:"1/4"},{n:"Giant Bat",cr:"1/4"},{n:"Giant Boar",cr:"2"},
+    {n:"Giant Centipede",cr:"1/4"},{n:"Giant Constrictor Snake",cr:"2"},{n:"Giant Crab",cr:"1/8"},
+    {n:"Giant Crocodile",cr:"5"},{n:"Giant Eagle",cr:"1"},{n:"Giant Elk",cr:"2"},
+    {n:"Giant Fire Beetle",cr:"0"},{n:"Giant Frog",cr:"1/4"},{n:"Giant Goat",cr:"1/2"},
+    {n:"Giant Hyena",cr:"1"},{n:"Giant Lizard",cr:"1/4"},{n:"Giant Octopus",cr:"1"},
+    {n:"Giant Owl",cr:"1/4"},{n:"Giant Poisonous Snake",cr:"1/4"},{n:"Giant Rat",cr:"1/8"},
+    {n:"Giant Scorpion",cr:"3"},{n:"Giant Sea Horse",cr:"1/2"},{n:"Giant Shark",cr:"5"},
+    {n:"Giant Spider",cr:"1"},{n:"Giant Toad",cr:"1"},{n:"Giant Vulture",cr:"1"},
+    {n:"Giant Wasp",cr:"1/2"},{n:"Giant Weasel",cr:"1/8"},{n:"Giant Wolf Spider",cr:"1/4"},
+    {n:"Gibbering Mouther",cr:"2"},{n:"Glabrezu",cr:"9"},{n:"Gladiator",cr:"5"},
+    {n:"Gnoll",cr:"1/2"},{n:"Gnome (Deep/Svirfneblin)",cr:"1/2"},{n:"Goat",cr:"0"},
+    {n:"Goblin",cr:"1/4"},{n:"Gold Dragon Wyrmling",cr:"3"},{n:"Gorgon",cr:"5"},
+    {n:"Gray Ooze",cr:"1/2"},{n:"Green Dragon Wyrmling",cr:"2"},{n:"Green Hag",cr:"3"},
+    {n:"Grick",cr:"2"},{n:"Griffon",cr:"2"},{n:"Grimlock",cr:"1/4"},
+    {n:"Guardian Naga",cr:"10"},{n:"Guard",cr:"1/8"},{n:"Gynosphinx",cr:"11"},
+    {n:"Half-Red Dragon Veteran",cr:"5"},{n:"Harpy",cr:"1"},{n:"Hawk",cr:"0"},
+    {n:"Hell Hound",cr:"3"},{n:"Hezrou",cr:"8"},{n:"Hill Giant",cr:"5"},
+    {n:"Hippogriff",cr:"1"},{n:"Hobgoblin",cr:"1/2"},{n:"Homunculus",cr:"0"},
+    {n:"Horned Devil",cr:"11"},{n:"Hunter Shark",cr:"2"},{n:"Hydra",cr:"8"},
+    {n:"Hyena",cr:"0"},{n:"Ice Devil",cr:"14"},{n:"Ice Mephit",cr:"1/2"},
+    {n:"Imp",cr:"1"},{n:"Invisible Stalker",cr:"6"},{n:"Iron Golem",cr:"16"},
+    {n:"Jackal",cr:"0"},{n:"Killer Whale",cr:"3"},{n:"Knight",cr:"3"},
+    {n:"Kobold",cr:"1/8"},{n:"Kraken",cr:"23"},{n:"Lamia",cr:"4"},{n:"Lemure",cr:"0"},
+    {n:"Lich",cr:"21"},{n:"Lion",cr:"1"},{n:"Lizard",cr:"0"},{n:"Lizardfolk",cr:"1/2"},
+    {n:"Mage",cr:"6"},{n:"Magma Mephit",cr:"1/2"},{n:"Magmin",cr:"1/2"},
+    {n:"Mammoth",cr:"6"},{n:"Manticore",cr:"3"},{n:"Marilith",cr:"16"},
+    {n:"Mastiff",cr:"1/8"},{n:"Medusa",cr:"6"},{n:"Merfolk",cr:"1/8"},
+    {n:"Merrow",cr:"2"},{n:"Mimic",cr:"2"},{n:"Minotaur",cr:"3"},
+    {n:"Minotaur Skeleton",cr:"2"},{n:"Mule",cr:"1/8"},{n:"Mummy",cr:"3"},
+    {n:"Mummy Lord",cr:"15"},{n:"Nalfeshnee",cr:"13"},{n:"Night Hag",cr:"5"},
+    {n:"Nightmare",cr:"3"},{n:"Noble",cr:"1/8"},{n:"Nothic",cr:"2"},
+    {n:"Ochre Jelly",cr:"2"},{n:"Octopus",cr:"0"},{n:"Ogre",cr:"2"},
+    {n:"Ogre Zombie",cr:"2"},{n:"Oni",cr:"7"},{n:"Orc",cr:"1/2"},
+    {n:"Otyugh",cr:"5"},{n:"Owlbear",cr:"3"},{n:"Owl",cr:"0"},
+    {n:"Panther",cr:"1/4"},{n:"Pegasus",cr:"2"},{n:"Phase Spider",cr:"3"},
+    {n:"Pit Fiend",cr:"20"},{n:"Planetar",cr:"16"},{n:"Plesiosaurus",cr:"2"},
+    {n:"Poisonous Snake",cr:"1/8"},{n:"Polar Bear",cr:"2"},{n:"Pony",cr:"1/8"},
+    {n:"Priest",cr:"2"},{n:"Pseudodragon",cr:"1/4"},{n:"Pteranodon",cr:"1/4"},
+    {n:"Purple Worm",cr:"15"},{n:"Quasit",cr:"1"},{n:"Quipper",cr:"0"},
+    {n:"Rakshasa",cr:"13"},{n:"Rat",cr:"0"},{n:"Raven",cr:"0"},
+    {n:"Red Dragon Wyrmling",cr:"4"},{n:"Reef Shark",cr:"1/2"},
+    {n:"Remorhaz",cr:"11"},{n:"Revenant",cr:"5"},{n:"Rhinoceros",cr:"2"},
+    {n:"Riding Horse",cr:"1/4"},{n:"Roc",cr:"11"},{n:"Roper",cr:"5"},
+    {n:"Rug of Smothering",cr:"2"},{n:"Rust Monster",cr:"1/2"},
+    {n:"Saber-Toothed Tiger",cr:"2"},{n:"Sahuagin",cr:"1/2"},
+    {n:"Salamander",cr:"5"},{n:"Satyr",cr:"1/2"},{n:"Scorpion",cr:"0"},
+    {n:"Scout",cr:"1/2"},{n:"Sea Hag",cr:"2"},{n:"Sea Horse",cr:"0"},
+    {n:"Shadow",cr:"1/2"},{n:"Shambling Mound",cr:"5"},{n:"Shield Guardian",cr:"7"},
+    {n:"Shrieker",cr:"0"},{n:"Silver Dragon Wyrmling",cr:"2"},{n:"Skeleton",cr:"1/4"},
+    {n:"Solar",cr:"21"},{n:"Specter",cr:"1"},{n:"Spider",cr:"0"},
+    {n:"Spirit Naga",cr:"8"},{n:"Sprite",cr:"1/4"},{n:"Spy",cr:"1"},
+    {n:"Steam Mephit",cr:"1/4"},{n:"Stirge",cr:"1/8"},{n:"Stone Giant",cr:"7"},
+    {n:"Stone Golem",cr:"10"},{n:"Storm Giant",cr:"13"},
+    {n:"Succubus/Incubus",cr:"4"},{n:"Swarm of Bats",cr:"1/4"},
+    {n:"Swarm of Insects",cr:"1/2"},{n:"Swarm of Poisonous Snakes",cr:"2"},
+    {n:"Swarm of Quippers",cr:"1"},{n:"Swarm of Ravens",cr:"1/4"},
+    {n:"Swarm of Rats",cr:"1/4"},{n:"Tarrasque",cr:"30"},{n:"Thug",cr:"1/2"},
+    {n:"Tiger",cr:"1"},{n:"Treant",cr:"9"},{n:"Triceratops",cr:"5"},
+    {n:"Tribal Warrior",cr:"1/8"},{n:"Troll",cr:"5"},{n:"Tyrannosaurus Rex",cr:"8"},
+    {n:"Unicorn",cr:"5"},{n:"Vampire",cr:"13"},{n:"Vampire Spawn",cr:"5"},
+    {n:"Veteran",cr:"3"},{n:"Violet Fungus",cr:"1/4"},{n:"Vrock",cr:"6"},
+    {n:"Vulture",cr:"0"},{n:"Warhorse",cr:"1/2"},{n:"Warhorse Skeleton",cr:"1/2"},
+    {n:"Water Elemental",cr:"5"},{n:"Weasel",cr:"0"},{n:"Werebear",cr:"5"},
+    {n:"Wereboar",cr:"4"},{n:"Wererat",cr:"2"},{n:"Weretiger",cr:"4"},
+    {n:"Werewolf",cr:"3"},{n:"White Dragon Wyrmling",cr:"2"},{n:"Wight",cr:"3"},
+    {n:"Will-o'-Wisp",cr:"2"},{n:"Winter Wolf",cr:"3"},{n:"Wolf",cr:"1/4"},
+    {n:"Worg",cr:"1/2"},{n:"Wraith",cr:"5"},{n:"Wyvern",cr:"6"},{n:"Xorn",cr:"5"},
+    {n:"Young Black Dragon",cr:"7"},{n:"Young Blue Dragon",cr:"9"},
+    {n:"Young Brass Dragon",cr:"6"},{n:"Young Bronze Dragon",cr:"8"},
+    {n:"Young Copper Dragon",cr:"7"},{n:"Young Gold Dragon",cr:"10"},
+    {n:"Young Green Dragon",cr:"8"},{n:"Young Red Dragon",cr:"10"},
+    {n:"Young Silver Dragon",cr:"9"},{n:"Young White Dragon",cr:"6"},
+    {n:"Zombie",cr:"1/4"}
+  ];
+
+  /* Build combined monster list: SRD + homebrew */
+  function getMonsterList() {
+    var list = SRD_MONSTERS.map(function(m){ return { name: m.n, cr: m.cr, source: 'SRD' }; });
+    // Add homebrew monsters
+    try {
+      var hb = JSON.parse(localStorage.getItem('phmurt_homebrew_monsters') || '[]');
+      if (Array.isArray(hb)) {
+        hb.forEach(function(m) {
+          if (m && m.name) {
+            list.push({ name: m.name, cr: m.cr || m.challengeRating || '0', source: 'Homebrew' });
+          }
+        });
+      }
+    } catch(e) {}
+    // Also check the old _homebrewEntities format
+    try {
+      var old = global._homebrewEntities;
+      if (old && old.monsters && Array.isArray(old.monsters)) {
+        old.monsters.forEach(function(m) {
+          if (m && m.name && !list.some(function(x){ return x.name === m.name && x.source === 'Homebrew'; })) {
+            list.push({ name: m.name, cr: m.cr || m.challengeRating || '0', source: 'Homebrew' });
+          }
+        });
+      }
+    } catch(e) {}
+    return list;
+  }
+
+  /* Monster lookup by name → cr */
+  function findMonsterCR(name) {
+    if (!name) return null;
+    var lower = name.toLowerCase().trim();
+    var list = getMonsterList();
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].name.toLowerCase() === lower) return list[i].cr;
+    }
+    return null;
+  }
+
   function escAttr(s){ return (s==null?'':String(s)).replace(/"/g,'&quot;'); }
   function esc(s){ return U.escapeHtml ? U.escapeHtml(s) : String(s==null?'':s); }
   function selectEl(key, opts, cur, labels){
@@ -141,7 +289,13 @@
       var xp = U.crToXp ? (U.crToXp(m.cr) || 0) : 0;
       return '<div class="cr-trait-row" >' +
         '<div class="cr-grid cr-grid-3" style="align-items:end;">' +
-          '<div class="cr-field wide"><label>Monster</label><input type="text" data-list="monsters" data-idx="'+i+'" data-field="name" value="'+escAttr(m.name)+'" placeholder="e.g. Orc Warrior" /></div>' +
+          '<div class="cr-field wide"><label>Monster</label>' +
+            '<div class="cr-ac-wrap" data-ac-idx="'+i+'">' +
+              '<input type="text" class="cr-ac-input" data-list="monsters" data-idx="'+i+'" data-field="name" value="'+escAttr(m.name)+'" placeholder="Type to search monsters…" autocomplete="off" />' +
+              '<div class="cr-ac-dropdown" hidden></div>' +
+            '</div>' +
+            '<button type="button" class="cr-btn cr-btn-xs" data-act="browse-monsters" data-idx="'+i+'" title="Browse all monsters" style="margin-top:4px;font-size:11px;">Browse All</button>' +
+          '</div>' +
           '<div class="cr-field"><label>Count</label><input type="number" data-list="monsters" data-idx="'+i+'" data-field="count" value="'+(m.count||1)+'" min="1" /></div>' +
           '<div class="cr-field"><label>CR</label>' +
             '<select data-list="monsters" data-idx="'+i+'" data-field="cr">' +
@@ -252,6 +406,7 @@
       '</div>';
 
     populateCampaignDropdown(s);
+    wireAutocomplete(root);
     setSyncState('');
   }
 
@@ -282,6 +437,81 @@
     '</div>';
   }
 
+  /* ── Autocomplete for monster name inputs ──────────────────────── */
+  var _acActive = null; // { idx, highlightIdx }
+
+  function wireAutocomplete(root) {
+    root.querySelectorAll('.cr-ac-input').forEach(function(inp) {
+      var wrap = inp.closest('.cr-ac-wrap');
+      var dd = wrap && wrap.querySelector('.cr-ac-dropdown');
+      if (!wrap || !dd) return;
+      var idx = parseInt(inp.getAttribute('data-idx'), 10);
+
+      inp.addEventListener('input', function(e) {
+        e.stopPropagation(); // prevent default onChange from re-rendering and destroying dropdown
+        var q = inp.value.trim().toLowerCase();
+        // Update state without re-render
+        if (state.current.monsters[idx]) state.current.monsters[idx].name = inp.value;
+        if (q.length < 1) { dd.setAttribute('hidden', ''); _acActive = null; return; }
+        var matches = getMonsterList().filter(function(m) {
+          return m.name.toLowerCase().indexOf(q) !== -1;
+        }).slice(0, 20);
+        if (!matches.length) { dd.setAttribute('hidden', ''); _acActive = null; return; }
+        _acActive = { idx: idx, highlightIdx: 0 };
+        dd.innerHTML = matches.map(function(m, mi) {
+          return '<div class="cr-ac-item' + (mi === 0 ? ' cr-ac-active' : '') + '" data-ac-pick="'+mi+'" data-ac-name="'+escAttr(m.name)+'" data-ac-cr="'+escAttr(m.cr)+'">' +
+            '<span class="cr-ac-name">' + esc(m.name) + '</span>' +
+            '<span class="cr-ac-meta">CR ' + esc(m.cr) + (m.source === 'Homebrew' ? ' · HB' : '') + '</span>' +
+          '</div>';
+        }).join('');
+        dd.removeAttribute('hidden');
+      });
+
+      inp.addEventListener('keydown', function(e) {
+        if (!_acActive || _acActive.idx !== idx) return;
+        var items = dd.querySelectorAll('.cr-ac-item');
+        if (!items.length) return;
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          _acActive.highlightIdx = Math.min(_acActive.highlightIdx + 1, items.length - 1);
+          items.forEach(function(el, i) { el.classList.toggle('cr-ac-active', i === _acActive.highlightIdx); });
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          _acActive.highlightIdx = Math.max(_acActive.highlightIdx - 1, 0);
+          items.forEach(function(el, i) { el.classList.toggle('cr-ac-active', i === _acActive.highlightIdx); });
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          var picked = items[_acActive.highlightIdx];
+          if (picked) pickMonster(idx, picked.getAttribute('data-ac-name'), picked.getAttribute('data-ac-cr'));
+        } else if (e.key === 'Escape') {
+          dd.setAttribute('hidden', '');
+          _acActive = null;
+        }
+      });
+
+      inp.addEventListener('blur', function() {
+        // Small delay so click on dropdown item can fire first
+        setTimeout(function() { dd.setAttribute('hidden', ''); _acActive = null; }, 180);
+      });
+
+      dd.addEventListener('mousedown', function(e) {
+        var item = e.target.closest('.cr-ac-item');
+        if (!item) return;
+        e.preventDefault(); // prevent blur
+        pickMonster(idx, item.getAttribute('data-ac-name'), item.getAttribute('data-ac-cr'));
+      });
+    });
+  }
+
+  function pickMonster(idx, name, cr) {
+    if (!state.current.monsters[idx]) return;
+    state.current.monsters[idx].name = name;
+    state.current.monsters[idx].cr = cr;
+    _acActive = null;
+    render(); wireAutocomplete(document.getElementById('creator-root'));
+    cloudSync();
+  }
+
   function wireEvents() {
     var root = document.getElementById('creator-root'); if (!root || root._wired) return;
     root._wired = true;
@@ -289,9 +519,12 @@
     root.addEventListener('change', onChange);
     root.addEventListener('click', onClick);
     document.addEventListener('keydown', onKeydown);
+    wireAutocomplete(root);
   }
   function onChange(e) {
     var t = e.target; if (!t) return;
+    // Skip autocomplete inputs — they handle their own state
+    if (t.classList && t.classList.contains('cr-ac-input')) return;
     var k = t.getAttribute('data-k'); var list = t.getAttribute('data-list');
     if (k) {
       if (t.type === 'checkbox') state.current[k] = t.checked;
@@ -303,7 +536,7 @@
       if (!state.current[list][idx]) state.current[list][idx] = {};
       state.current[list][idx][field] = (t.type==='number') ? (parseInt(t.value,10)||0) : t.value;
     }
-    render(); cloudSync();
+    render(); wireAutocomplete(document.getElementById('creator-root')); cloudSync();
   }
   function onClick(e) {
     var t = e.target.closest('[data-act]'); if (!t) return;
@@ -316,12 +549,84 @@
     if (a === 'remove-monster') { var mi = parseInt(t.getAttribute('data-idx'),10); if (state.current.monsters && mi >= 0 && mi < state.current.monsters.length) state.current.monsters.splice(mi,1); render(); return; }
     if (a === 'add-terrain') { state.current.terrain.push({name:'',desc:''}); render(); return; }
     if (a === 'remove-terrain') { var ti = parseInt(t.getAttribute('data-idx'),10); if (state.current.terrain && ti >= 0 && ti < state.current.terrain.length) state.current.terrain.splice(ti,1); render(); return; }
+    if (a === 'browse-monsters') { openMonsterBrowser(parseInt(t.getAttribute('data-idx'),10)||0); return; }
   }
   function onKeydown(e) {
     if (e.key !== 'Escape') return;
     var tag = (e.target.tagName||'').toLowerCase();
     if (['input','textarea','select'].indexOf(tag)!==-1) return;
     close();
+  }
+
+  /* ── Full monster browser modal ─────────────────────────────────── */
+  function openMonsterBrowser(targetIdx) {
+    var existing = document.getElementById('cr-monster-browser');
+    if (existing) existing.remove();
+    var allMonsters = getMonsterList();
+    var overlay = document.createElement('div');
+    overlay.id = 'cr-monster-browser';
+    overlay.className = 'cr-modal-overlay';
+    overlay.innerHTML =
+      '<div class="cr-modal" style="max-width:650px;max-height:80vh;display:flex;flex-direction:column;">' +
+        '<div class="cr-modal-header">' +
+          '<h3 style="margin:0;color:var(--text);font-family:Spectral,serif;">Select a Monster</h3>' +
+          '<button type="button" class="cr-btn" data-act="close-browser">✕</button>' +
+        '</div>' +
+        '<div style="padding:0 16px 8px;">' +
+          '<input type="text" id="cr-mb-search" placeholder="Filter by name…" style="width:100%;margin-top:8px;" />' +
+          '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">' +
+            '<select id="cr-mb-cr-filter"><option value="">All CRs</option>' +
+              CR_OPTS.map(function(c){ return '<option value="'+c+'">CR '+c+'</option>'; }).join('') +
+            '</select>' +
+            '<select id="cr-mb-source-filter"><option value="">All Sources</option><option value="SRD">SRD Only</option><option value="Homebrew">Homebrew Only</option></select>' +
+            '<span id="cr-mb-count" style="color:var(--text-muted);font-size:12px;align-self:center;"></span>' +
+          '</div>' +
+        '</div>' +
+        '<div id="cr-mb-list" style="overflow-y:auto;flex:1;padding:0 16px 16px;"></div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+
+    var searchInp = overlay.querySelector('#cr-mb-search');
+    var crFilter = overlay.querySelector('#cr-mb-cr-filter');
+    var srcFilter = overlay.querySelector('#cr-mb-source-filter');
+    var listEl = overlay.querySelector('#cr-mb-list');
+    var countEl = overlay.querySelector('#cr-mb-count');
+
+    function renderList() {
+      var q = (searchInp.value || '').toLowerCase().trim();
+      var crF = crFilter.value;
+      var srcF = srcFilter.value;
+      var filtered = allMonsters.filter(function(m) {
+        if (q && m.name.toLowerCase().indexOf(q) === -1) return false;
+        if (crF && m.cr !== crF) return false;
+        if (srcF && m.source !== srcF) return false;
+        return true;
+      });
+      countEl.textContent = filtered.length + ' monster' + (filtered.length !== 1 ? 's' : '');
+      if (!filtered.length) { listEl.innerHTML = '<div style="color:var(--text-muted);padding:20px;text-align:center;">No matches</div>'; return; }
+      listEl.innerHTML = filtered.map(function(m) {
+        return '<div class="cr-mb-row" data-mb-name="'+escAttr(m.name)+'" data-mb-cr="'+escAttr(m.cr)+'">' +
+          '<span class="cr-mb-name">' + esc(m.name) + '</span>' +
+          '<span class="cr-mb-info">CR ' + esc(m.cr) + (m.source === 'Homebrew' ? ' · <em>Homebrew</em>' : '') + '</span>' +
+        '</div>';
+      }).join('');
+    }
+    renderList();
+
+    searchInp.addEventListener('input', renderList);
+    crFilter.addEventListener('change', renderList);
+    srcFilter.addEventListener('change', renderList);
+
+    listEl.addEventListener('click', function(e) {
+      var row = e.target.closest('.cr-mb-row');
+      if (!row) return;
+      pickMonster(targetIdx, row.getAttribute('data-mb-name'), row.getAttribute('data-mb-cr'));
+      overlay.remove();
+    });
+
+    overlay.querySelector('[data-act="close-browser"]').addEventListener('click', function() { overlay.remove(); });
+    overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+    searchInp.focus();
   }
 
   function save() {

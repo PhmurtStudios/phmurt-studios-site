@@ -757,3 +757,99 @@
   color: var(--text);
   font-weight: 600;
 }
+
+/* ── Autocomplete dropdown (encounter monster picker) ──────────── */
+.cr-ac-wrap {
+  position: relative;
+}
+.cr-ac-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 600;
+  max-height: 260px;
+  overflow-y: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.45);
+}
+.cr-ac-dropdown[hidden] { display: none; }
+.cr-ac-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 7px 10px;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--text);
+  font-family: 'Spectral', serif;
+  transition: background .08s;
+}
+.cr-ac-item:hover,
+.cr-ac-item.cr-ac-active {
+  background: rgba(212,67,58,.15);
+}
+.cr-ac-name { flex: 1; }
+.cr-ac-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: 12px;
+  white-space: nowrap;
+}
+
+/* ── Browse-all button ─────────────────────────────────────────── */
+.cr-btn-xs {
+  padding: 3px 8px !important;
+  font-size: 11px !important;
+  min-height: 0 !important;
+}
+
+/* ── Monster browser modal ─────────────────────────────────────── */
+.cr-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 700;
+  background: rgba(0,0,0,.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cr-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  width: 90%;
+  box-shadow: 0 12px 40px rgba(0,0,0,.6);
+}
+.cr-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 16px 10px;
+  border-bottom: 1px solid var(--border);
+}
+.cr-mb-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 9px 8px;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  cursor: pointer;
+  font-family: 'Spectral', serif;
+  font-size: 13px;
+  color: var(--text);
+  transition: background .08s;
+}
+.cr-mb-row:hover {
+  background: rgba(212,67,58,.12);
+}
+.cr-mb-name { flex: 1; }
+.cr-mb-info {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-left: 12px;
+  white-space: nowrap;
+}

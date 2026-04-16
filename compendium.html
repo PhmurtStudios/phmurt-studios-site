@@ -442,6 +442,15 @@
     }
     .cmp-card-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
 
+    .cmp-card-collected {
+      border-color: rgba(100, 140, 180, 0.25);
+      border-left: 3px solid rgba(100, 160, 220, 0.45);
+    }
+    .cmp-card-collected::before {
+      background: linear-gradient(135deg, rgba(60, 110, 170, 0.08), transparent 60%);
+    }
+    .cmp-card-collected .cmp-card-type { color: #7aadcf; }
+
     /* My homebrew list ─────────────────────────────────────────── */
     .cmp-mine-row {
       display: flex;
@@ -5361,6 +5370,7 @@
           this.textContent = '...';
           var result = await hbAddToCollection(id);
           if (result.success) {
+            _collectedItemsCache = null;
             container.innerHTML = _hbcRenderCommunity();
             _hbcWireCommunityButtons(container);
             if (window.psToast) window.psToast('Added to your collection!');
@@ -5725,13 +5735,49 @@
 
     // ── MY HOMEBREW ──────────────────────────────────────────────────────────
 
-    function cmpRenderMine() {
+    // Cache for collected items from Supabase
+    var _collectedItemsCache = null;
+    var _collectedItemsFetching = false;
+
+    async function hbFetchCollectedItems() {
+      var sb = _hbSb();
+      if (!sb) return [];
+      var session = (typeof PhmurtDB !== 'undefined') ? PhmurtDB.getSession() : null;
+      var userId = session ? session.userId : null;
+      if (!userId) return [];
+      try {
+        var { data, error } = await sb.from('user_collections')
+          .select('homebrew_content_id, homebrew_content:homebrew_content_id(id, type, data, user_id)')
+          .eq('user_id', userId);
+        if (error) throw error;
+        return (data || []).map(function(r) {
+          var hc = r.homebrew_content;
+          if (!hc || !hc.data) return null;
+          var entry = Object.assign({}, hc.data);
+          entry._collected = true;
+          entry._collectedFromId = hc.id;
+          entry._originalAuthor = entry._authorName || 'Unknown';
+          entry._originalUserId = hc.user_id;
+          if (!entry.name) entry.name = 'Unnamed';
+          return { type: hc.type, entry: entry };
+        }).filter(Boolean);
+      } catch(e) { return []; }
+    }
+
+    async function cmpRenderMine() {
       var container = document.getElementById('cmp-content');
       var q      = (document.getElementById('cmp-search').value || '').toLowerCase();
       var sortBy = document.getElementById('cmp-sort').value;
 
       var typeColors = { race:'#4169e1', class:'var(--crimson)', background:'#2e8b57', subclass:'#8b6914', feat:'#e67e22', item:'#6b4ea8', spell:'#2980b9', monster:'#e8605a', encounter:'#16a085' };
       var typeLabels = { race:'Race', class:'Class', background:'Background', subclass:'Subclass', feat:'Feat', item:'Item', spell:'Spell', monster:'Monster', encounter:'Encounter' };
+
+      // Fetch collected items from Supabase (cached after first load)
+      if (!_collectedItemsCache && !_collectedItemsFetching) {
+        _collectedItemsFetching = true;
+        _collectedItemsCache = await hbFetchCollectedItems();
+        _collectedItemsFetching = false;
+      }
 
       // Gather all local homebrew
       var all = [];
@@ -5755,6 +5801,16 @@
           if (!all.some(function(a){ return a.entry.clientId === r.clientId; }))
             all.push({ type:'race', entry: r });
         });
+        var crBackgrounds = JSON.parse(localStorage.getItem('phmurt_homebrew_entities_background') || '[]');
+        crBackgrounds.forEach(function(b) {
+          if (!all.some(function(a){ return a.entry.clientId === b.clientId; }))
+            all.push({ type:'background', entry: b });
+        });
+        var crSubclasses = JSON.parse(localStorage.getItem('phmurt_homebrew_entities_subclass') || '[]');
+        crSubclasses.forEach(function(s) {
+          if (!all.some(function(a){ return a.entry.clientId === s.clientId; }))
+            all.push({ type:'subclass', entry: s });
+        });
       } catch(e) {}
       Object.values(DND_DATA.homebrewDB || {}).forEach(function(e) {
         all.push({ type: 'item', entry: e });
@@ -5771,6 +5827,17 @@
       (_homebrewEncounters || []).forEach(function(e) {
         all.push({ type: 'encounter', entry: e });
       });
+
+      // Add collected items from Supabase (community bookmarks)
+      if (_collectedItemsCache && _collectedItemsCache.length) {
+        _collectedItemsCache.forEach(function(ci) {
+          // Don't duplicate if already in local storage
+          var isDupe = all.some(function(a) {
+            return a.entry.clientId && ci.entry.clientId && a.entry.clientId === ci.entry.clientId;
+          });
+          if (!isDupe) all.push(ci);
+        });
+      }
 
       // Filter
       var filtered = all.filter(function(row) {
@@ -5838,11 +5905,14 @@
                    e.featureDesc || '';
         if (desc.length > 130) desc = desc.slice(0, 127) + '&hellip;';
 
-        html += '<div class="cmp-card">'
+        var isCollected = !!e._collected;
+
+        html += '<div class="cmp-card' + (isCollected ? ' cmp-card-collected' : '') + '">'
           + '<div class="cmp-card-accent" style="background:' + col + ';"></div>'
-          + '<div class="cmp-card-type" style="color:' + col + ';padding-left:12px;">' + lbl + '</div>'
+          + '<div class="cmp-card-type" style="color:' + col + ';padding-left:12px;">' + lbl + (isCollected ? ' <span style="opacity:.6;font-size:7px;letter-spacing:1px;">&middot; COLLECTED</span>' : '') + '</div>'
           + '<div class="cmp-card-name">' + cmpEsc(e.name) + '</div>';
-        if (sub)  html += '<div class="cmp-card-sub">' + sub + '</div>';
+        if (isCollected && e._originalAuthor) html += '<div class="cmp-card-sub" style="font-style:italic;">by ' + cmpEsc(e._originalAuthor) + '</div>';
+        else if (sub) html += '<div class="cmp-card-sub">' + sub + '</div>';
         if (desc) html += '<div class="cmp-card-desc">' + cmpEsc(desc) + '</div>';
 
         // Render tags
@@ -5862,17 +5932,20 @@
           html += tagsHtml + '</div>';
         }
         // Actions row — all left-aligned
-        html += '<div class="cmp-card-footer-actions">'
-          + '<button class="cmp-btn" data-view-type="' + type + '" data-view-id="' + id + '" title="View details">&#9670; View</button>'
-          + '<button class="cmp-btn" data-edit-type="' + type + '" data-edit-id="' + id + '" title="Edit">&#9998; Edit</button>'
-          + '<button class="cmp-btn share' + (isShared ? ' shared' : '') + '" '
-          + 'data-share-type="' + type + '" data-share-id="' + id + '" '
-          + 'data-share-action="' + (isShared ? 'unshare' : 'share') + '" '
-          + 'title="' + (isShared ? 'Remove from community' : 'Share with community') + '">'
-          + (isShared ? '&#10003; Shared' : '&#9670; Share') + '</button>'
-          + '</div>'
-          + '</div>'
-          + '</div>';
+        html += '<div class="cmp-card-footer-actions">';
+        html += '<button class="cmp-btn" data-view-type="' + type + '" data-view-id="' + id + '" title="View details">&#9670; View</button>';
+        if (isCollected) {
+          html += '<button class="cmp-btn" data-copy-type="' + type + '" data-copy-idx="' + filtered.indexOf(row) + '" title="Make an editable copy">&#9998; Make a Copy</button>';
+          html += '<button class="cmp-btn" data-uncollect-mine="' + cmpEsc(e._collectedFromId || '') + '" title="Remove from collection">&#10005; Remove</button>';
+        } else {
+          html += '<button class="cmp-btn" data-edit-type="' + type + '" data-edit-id="' + id + '" title="Edit">&#9998; Edit</button>';
+          html += '<button class="cmp-btn share' + (isShared ? ' shared' : '') + '" '
+            + 'data-share-type="' + type + '" data-share-id="' + id + '" '
+            + 'data-share-action="' + (isShared ? 'unshare' : 'share') + '" '
+            + 'title="' + (isShared ? 'Remove from community' : 'Share with community') + '">'
+            + (isShared ? '&#10003; Shared' : '&#9670; Share') + '</button>';
+        }
+        html += '</div></div></div>';
       });
       html += '</div>';
 
@@ -5924,6 +5997,87 @@
             );
             cmpRenderContent();
             cmpRefreshMineCount();
+          }
+        });
+      });
+
+      // Wire "Make a Copy" for collected items
+      container.querySelectorAll('[data-copy-type]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var type = this.getAttribute('data-copy-type');
+          var idx  = parseInt(this.getAttribute('data-copy-idx'), 10);
+          var item = filtered[idx];
+          if (!item) return;
+          var copy = JSON.parse(JSON.stringify(item.entry));
+          // Give it a new identity
+          delete copy._collected;
+          delete copy._collectedFromId;
+          delete copy._originalAuthor;
+          delete copy._originalUserId;
+          copy.name = (copy.name || 'Unnamed') + ' (Copy)';
+          copy.clientId = 'hb_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+          copy.id = copy.clientId;
+          copy.shared = false;
+          copy.isPublic = false;
+          // Save to the correct localStorage key
+          try {
+            if (type === 'spell') {
+              _homebrewSpells[copy.clientId] = copy;
+              localStorage.setItem(SPELL_KEY, JSON.stringify(_homebrewSpells));
+            } else if (type === 'feat') {
+              _homebrewFeats.push(copy);
+              localStorage.setItem(FEAT_KEY, JSON.stringify(_homebrewFeats));
+            } else if (type === 'monster') {
+              _homebrewMonsters.push(copy);
+              localStorage.setItem(MONSTER_KEY, JSON.stringify(_homebrewMonsters));
+            } else if (type === 'encounter') {
+              _homebrewEncounters.push(copy);
+              localStorage.setItem(ENCOUNTER_KEY, JSON.stringify(_homebrewEncounters));
+            } else if (type === 'item') {
+              if (!DND_DATA.homebrewDB) DND_DATA.homebrewDB = {};
+              DND_DATA.homebrewDB[copy.clientId] = copy;
+              localStorage.setItem(HOMEBREW_KEY, JSON.stringify(DND_DATA.homebrewDB));
+            } else if (type === 'class') {
+              var cls = JSON.parse(localStorage.getItem('phmurt_homebrew_entities_class') || '[]');
+              cls.push(copy);
+              localStorage.setItem('phmurt_homebrew_entities_class', JSON.stringify(cls));
+            } else if (type === 'race') {
+              var races = JSON.parse(localStorage.getItem('phmurt_homebrew_entities_race') || '{}');
+              races[copy.clientId] = copy;
+              localStorage.setItem('phmurt_homebrew_entities_race', JSON.stringify(races));
+            } else if (type === 'background') {
+              var bgs = JSON.parse(localStorage.getItem('phmurt_homebrew_entities_background') || '[]');
+              bgs.push(copy);
+              localStorage.setItem('phmurt_homebrew_entities_background', JSON.stringify(bgs));
+            } else if (type === 'subclass') {
+              var scs = JSON.parse(localStorage.getItem('phmurt_homebrew_entities_subclass') || '[]');
+              scs.push(copy);
+              localStorage.setItem('phmurt_homebrew_entities_subclass', JSON.stringify(scs));
+            }
+            showRestToast('Copied!', '"' + escapeHtml(copy.name) + '" is now in your local homebrew. You can edit it freely.');
+            cmpRenderContent();
+          } catch(e) {
+            showRestToast('Error', 'Failed to create copy: ' + (e.message || e));
+          }
+        });
+      });
+
+      // Wire "Remove" for collected items
+      container.querySelectorAll('[data-uncollect-mine]').forEach(function(btn) {
+        btn.addEventListener('click', async function() {
+          var hcId = this.getAttribute('data-uncollect-mine');
+          if (!hcId) return;
+          this.textContent = '...';
+          this.disabled = true;
+          var result = await hbRemoveFromCollection(hcId);
+          if (result.error) {
+            showRestToast('Error', result.error);
+            this.disabled = false;
+            this.innerHTML = '&#10005; Remove';
+          } else {
+            _collectedItemsCache = null; // clear cache so it re-fetches
+            showRestToast('Removed', 'Item removed from your collection.');
+            cmpRenderContent();
           }
         });
       });
@@ -6084,6 +6238,7 @@
           this.disabled = true;
           var result = await hbAddToCollection(id);
           if (result.success) {
+            _collectedItemsCache = null;
             cmpRenderCommunity();
             if (window.psToast) window.psToast('Added to your collection!');
           } else {
