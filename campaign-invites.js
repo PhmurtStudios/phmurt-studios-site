@@ -359,7 +359,9 @@
       }
     }, []);
 
-    // Load campaign members and invites on mount
+    // Load campaign members and invites on mount + subscribe to Realtime
+    const realtimeRef = useRef(null);
+
     useEffect(() => {
       if (!campaignId || !window.PhmurtDB) return;
 
@@ -383,6 +385,25 @@
       };
 
       loadData();
+
+      // Subscribe to Realtime updates for live member changes
+      if (window.PhmurtDB.subscribeToCampaign) {
+        realtimeRef.current = window.PhmurtDB.subscribeToCampaign(campaignId, function (campaignData, memberEvent) {
+          if (memberEvent && memberEvent.type === 'members') {
+            // Re-fetch members on any membership change
+            window.PhmurtDB.getCampaignMembers(campaignId).then(function (m) {
+              setMembers(Array.isArray(m) ? m : []);
+            });
+          }
+        });
+      }
+
+      return () => {
+        if (realtimeRef.current && window.PhmurtDB.unsubscribeFromCampaign) {
+          window.PhmurtDB.unsubscribeFromCampaign(realtimeRef.current);
+          realtimeRef.current = null;
+        }
+      };
     }, [campaignId]);
 
     // Auto-save debounced
@@ -439,20 +460,53 @@
       }
     }, []);
 
-    // Update member role (DM only)
-    const updateMemberRole = useCallback((userId, newRole) => {
-      setData(prev => {
-        const roles = { ...prev.invites?.memberRoles };
-        roles[userId] = newRole;
-        return {
-          ...prev,
-          invites: {
-            ...prev.invites,
-            memberRoles: roles
-          }
-        };
-      });
-    }, []);
+    // Update member role (DM only) — persist to Supabase
+    const updateMemberRole = useCallback(async (userId, newRole) => {
+      if (!window.PhmurtDB || !campaignId) return;
+      try {
+        const ok = await window.PhmurtDB.updateMemberRole(campaignId, userId, newRole);
+        if (ok) {
+          // Update local members list
+          setMembers(prev => prev.map(m => m.user_id === userId ? { ...m, role: newRole } : m));
+          // Also store in campaign data for offline reference
+          setData(prev => {
+            const roles = { ...prev.invites?.memberRoles };
+            roles[userId] = newRole;
+            return { ...prev, invites: { ...prev.invites, memberRoles: roles } };
+          });
+        } else {
+          setError('Failed to update role');
+        }
+      } catch (err) {
+        console.error('Failed to update member role:', err);
+        setError('Failed to update role');
+      }
+    }, [campaignId]);
+
+    // Kick/remove member from campaign (DM only) — persist to Supabase
+    const kickMember = useCallback(async (userId) => {
+      if (!window.PhmurtDB || !campaignId) return;
+      try {
+        const ok = await window.PhmurtDB.removeCampaignMember(campaignId, userId);
+        if (ok) {
+          setMembers(prev => prev.filter(m => m.user_id !== userId));
+          // Remove from assignments too
+          setData(prev => {
+            const assignments = { ...prev.invites?.playerAssignments };
+            delete assignments[userId];
+            const roles = { ...prev.invites?.memberRoles };
+            delete roles[userId];
+            return { ...prev, invites: { ...prev.invites, playerAssignments: assignments, memberRoles: roles } };
+          });
+          setError(null);
+        } else {
+          setError('Failed to remove player');
+        }
+      } catch (err) {
+        console.error('Failed to kick member:', err);
+        setError('Failed to remove player');
+      }
+    }, [campaignId]);
 
     // Assign player to character (DM only)
     const assignPlayerToCharacter = useCallback((playerId, characterId, characterName) => {
@@ -619,7 +673,7 @@
                       assignedCharacter: getAssignedCharacter(member.user_id),
                       isCurrentUser: member.user_id === currentUserId,
                       onRoleChange: isDm ? role => updateMemberRole(member.user_id, role) : null,
-                      onKick: isDm ? () => {} : null,
+                      onKick: isDm && !member.isCurrentUser ? () => kickMember(member.user_id) : null,
                       onAssignCharacter: isDm ? () => setAssigningPlayerId(member.user_id) : null
                     })
                   )
@@ -789,7 +843,105 @@
                     )
                   )
                 )
-            )
+            ),
+
+            // ====================================================================
+            // CHARACTER ASSIGNMENT PICKER MODAL
+            // ====================================================================
+            assigningPlayerId
+              ? React.createElement(
+                  'div',
+                  {
+                    style: {
+                      position: 'fixed',
+                      inset: 0,
+                      zIndex: 9000,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '20px'
+                    }
+                  },
+                  React.createElement('div', {
+                    style: { position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.7)' },
+                    onClick: () => setAssigningPlayerId(null)
+                  }),
+                  React.createElement(
+                    'div',
+                    {
+                      style: {
+                        position: 'relative',
+                        background: T.bgCard,
+                        border: '1px solid ' + T.border,
+                        borderRadius: '8px',
+                        padding: '24px',
+                        maxWidth: '400px',
+                        width: '100%',
+                        zIndex: 1
+                      }
+                    },
+                    React.createElement(
+                      'h3',
+                      { style: { fontFamily: T.heading, fontSize: '16px', marginBottom: '16px', color: T.text } },
+                      'Assign to Character'
+                    ),
+                    React.createElement(
+                      'div',
+                      { style: { fontSize: '12px', color: T.textDim, marginBottom: '12px' } },
+                      'Pick a party member to assign to this player.'
+                    ),
+                    partyMembers.length === 0
+                      ? React.createElement('div', { style: { color: T.textDim, fontStyle: 'italic', padding: '12px 0' } }, 'No party members. Add characters in the Dashboard first.')
+                      : partyMembers.map(char =>
+                          React.createElement(
+                            'button',
+                            {
+                              key: char.id,
+                              onClick: () => assignPlayerToCharacter(assigningPlayerId, char.id, char.name),
+                              style: {
+                                display: 'block',
+                                width: '100%',
+                                textAlign: 'left',
+                                padding: '10px 14px',
+                                marginBottom: '6px',
+                                background: T.bgHover,
+                                border: '1px solid ' + T.border,
+                                borderRadius: '6px',
+                                cursor: 'pointer',
+                                color: T.text,
+                                fontSize: '14px',
+                                fontWeight: 'bold',
+                                transition: 'border-color 0.15s'
+                              }
+                            },
+                            char.name,
+                            React.createElement(
+                              'span',
+                              { style: { fontSize: '11px', color: T.textDim, fontWeight: 'normal', marginLeft: '8px' } },
+                              Object.values(data.invites?.playerAssignments || {}).some(a => a.characterId === char.id) ? '(already assigned)' : ''
+                            )
+                          )
+                        ),
+                    React.createElement(
+                      'button',
+                      {
+                        onClick: () => setAssigningPlayerId(null),
+                        style: {
+                          marginTop: '12px',
+                          padding: '8px 16px',
+                          background: 'transparent',
+                          border: '1px solid ' + T.border,
+                          borderRadius: '4px',
+                          color: T.textDim,
+                          fontSize: '12px',
+                          cursor: 'pointer'
+                        }
+                      },
+                      'Cancel'
+                    )
+                  )
+                )
+              : null
             )
         : null
     );

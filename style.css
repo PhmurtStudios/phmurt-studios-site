@@ -1001,3 +1001,73 @@ body.page-out{opacity:0;transform:translateY(-8px);transition:opacity 0.18s, tra
   0%, 100% { border-color: rgba(201,100,60,0.4); }
   50% { border-color: rgba(232,160,96,0.8); }
 }
+
+/* ── POLISH: Missing 404 Page Styles ─────────────────────────── */
+.ps-404-check{
+  font-family:'Cinzel',serif;font-size:10px;letter-spacing:3px;
+  text-transform:uppercase;color:var(--text-faint);margin-bottom:32px;
+  padding:10px 20px;border:1px solid var(--border);display:inline-block;
+}
+.ps-404-cta-group{display:flex;gap:12px;flex-wrap:wrap;justify-content:center;}
+.ps-cta-secondary{
+  background:transparent;border:1px solid var(--crimson-border);color:var(--crimson);
+}
+.ps-cta-secondary:hover,.ps-cta-secondary:focus{
+  background:var(--crimson-soft);color:var(--text);
+}
+
+/* ── POLISH: Consistent Interactive Transitions ──────────────── */
+.ps-card,.ps-grimoire-card,.ps-sheet-card,.ps-connect-card,
+.ps-char-card,.ps-new-char-card,.ps-feature,.ps-legendary-card,
+.ps-about-block,.cs-attack-card,.cs-feature-card,.cs-spell-item{
+  transition:background .2s ease,transform .15s ease,box-shadow .2s ease,border-color .2s ease;
+}
+.ps-feature:hover,.ps-about-block:hover{
+  transform:translateY(-1px);box-shadow:0 2px 12px rgba(0,0,0,.1);
+}
+.ps-char-card:hover,.ps-new-char-card:hover{
+  transform:translateY(-2px);box-shadow:0 4px 20px rgba(0,0,0,.15);
+}
+.ps-legendary-card:hover{
+  border-color:var(--crimson);box-shadow:0 4px 24px rgba(0,0,0,.2);
+}
+
+/* ── POLISH: Button & Link Micro-interactions ────────────────── */
+.ps-cta,.ps-nav-action,.ps-filter-btn,.pam-submit,.pam-tab,
+.sheet-print-btn,.cs-save-btn,.cs-rest-btn,
+.ps-char-card-btn,.ch-btn{
+  transition:background .2s ease,color .2s ease,border-color .2s ease,transform .15s ease,box-shadow .2s ease;
+}
+.ps-cta:active,.ps-nav-action:active,.pam-submit:active,
+.sheet-print-btn:active,.cs-save-btn:active,.ps-char-card-btn:active{
+  transform:scale(0.97);
+}
+
+/* ── POLISH: Focus Ring Consistency ──────────────────────────── */
+.ps-cta:focus-visible,.ps-filter-btn:focus-visible,
+.ps-char-card-btn:focus-visible,.cs-save-btn:focus-visible,
+.cs-rest-btn:focus-visible,.sheet-print-btn:focus-visible,
+.pam-submit:focus-visible,.pam-tab:focus-visible{
+  outline:2px solid var(--crimson);outline-offset:2px;
+}
+
+/* ── MOBILE: Better Touch Targets ────────────────────────────── */
+@media(max-width:860px){
+  .ps-filter-btn{min-height:44px;padding:10px 16px;}
+  .ps-cta{min-height:44px;padding:14px 24px;}
+  .ps-nav-action{min-height:44px;padding:10px 16px;}
+  .pam-tab{min-height:44px;}
+  .cs-tab{min-height:44px;padding:14px 16px;}
+  .cs-ability{min-height:52px;}
+  .cs-hp-btn{min-width:44px;min-height:44px;}
+  .ps-char-card-btn{min-height:44px;padding:10px 14px;}
+  .ps-grimoire-card,.ps-card,.ps-sheet-card{padding:24px 20px;}
+}
+@media(max-width:480px){
+  .ps-404{padding:40px 20px;}
+  .ps-404-title{font-size:32px;}
+  .ps-404-sub{font-size:28px;}
+  .ps-404-desc{font-size:15px;}
+  .ps-404-cta-group{flex-direction:column;align-items:center;}
+  .ps-404-cta-group .ps-cta{width:100%;max-width:260px;text-align:center;}
+}

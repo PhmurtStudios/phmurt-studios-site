@@ -19,6 +19,8 @@
   <meta name="twitter:description" content="Browse premade D&D 5e characters ready to play, or explore community-created heroes for inspiration." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="dns-prefetch" href="https://zrfmboqoyrqsyckktgpv.supabase.co" />
+  <link rel="dns-prefetch" href="https://js.stripe.com" />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/x-icon" href="favicon.ico" />
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
@@ -29,9 +31,13 @@
   <script src="theme.js?v=186"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0" crossorigin="anonymous" integrity="sha384-fm42zLXjam4N3lT5umWgNtBBPMP3Ddrdmr9lnPKtDWzs5Dqy457Yn6+eTvCgRU3n"></script>
   <script src="supabase-config.js?v=186"></script>
-  <script src="stripe-env.js?v=188"></script>
+  <script defer src="stripe-env.js?v=188"></script>
   <script src="stripe-config.js?v=186"></script>
   <script src="phmurt-auth.js?v=187"></script>
+  <link rel="canonical" href="https://phmurtstudios.com/gallery.html" />
+  <script type="application/ld+json">
+  {"@context":"https://schema.org","@type":"CollectionPage","name":"Premade D&D 5e Characters — Phmurt Studios","url":"https://phmurtstudios.com/gallery.html","description":"40 ready-to-play D&D 5e characters across every class and level, with full character sheets and one-click save.","isPartOf":{"@type":"WebSite","name":"Phmurt Studios","url":"https://phmurtstudios.com/"}}
+  </script>
   <style>
     /* ═══════════════════════════════════════════════════
        GALLERY — REDESIGNED
@@ -601,6 +607,30 @@
     }
     .gal-toast.show { transform: translateX(-50%) translateY(0); }
 
+    /* ─── COMMUNITY CHARACTERS ─── */
+    .gal-community { padding: 48px 56px 56px; }
+    .gal-community-header { margin-bottom: 32px; }
+    .gal-community-eyebrow {
+      font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 5px;
+      color: var(--crimson, #d4433a); text-transform: uppercase; margin-bottom: 16px;
+    }
+    .gal-community-title {
+      font-size: 36px; font-weight: 300; color: var(--text, #f2e8d6);
+      margin-bottom: 8px; line-height: 1.1;
+    }
+    .gal-community-desc {
+      font-size: 16px; color: var(--text-dim, #cfc0a8); font-style: italic;
+      line-height: 1.7; max-width: 560px;
+    }
+    .gal-community-empty {
+      text-align: center; padding: 48px 24px; color: var(--text-faint, #8a7a62);
+      font-style: italic; font-size: 15px;
+    }
+    .gc--community .gc-author {
+      font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--text-faint, #8a7a62); margin-top: 4px;
+    }
+
     /* ─── RESPONSIVE ─── */
     @media (max-width:768px) {
       .gallery-hero { padding: 36px 20px 28px; }
@@ -610,6 +640,8 @@
       .gf-search { width: 100%; min-width: 0; }
       .gal-results-bar { padding: 10px 20px; }
       .gal-section { padding: 32px 20px; }
+      .gal-community { padding: 36px 20px 40px; }
+      .gal-community-title { font-size: 28px; }
       .gal-grid { gap: 16px; }
       .sh-body { grid-template-columns: 1fr; }
       .sh-left { border-right: none; border-bottom: 1px solid var(--border, #2a2a3a); }
@@ -725,6 +757,17 @@
   <!-- GRID -->
   <div class="gal-section" id="main-content">
     <div class="gal-grid" id="character-grid"></div>
+  </div>
+
+  <!-- COMMUNITY CHARACTERS -->
+  <div class="ps-divider" style="margin:48px 0 0;"><div class="ps-div-line"></div><div class="ps-div-ornament"><div class="ps-div-dot"></div><div class="ps-div-gem"></div><div class="ps-div-dot"></div></div><div class="ps-div-line r"></div></div>
+  <div class="gal-community" id="community-section" style="display:none;">
+    <div class="gal-community-header">
+      <div class="gal-community-eyebrow">&#10022; Community</div>
+      <h2 class="gal-community-title">Player-Shared Characters</h2>
+      <p class="gal-community-desc">Characters created and shared by the community. Add any to your roster with one click.</p>
+    </div>
+    <div class="gal-grid" id="community-grid"></div>
   </div>
 
   <!-- FULL SHEET MODAL -->
@@ -1635,9 +1678,121 @@
     });
     document.getElementById('search-input').addEventListener('input', filterCharacters);
 
+    /* ═══════════════════════════════════════════════════
+       COMMUNITY CHARACTERS (loaded from Supabase)
+       ═══════════════════════════════════════════════════ */
+    function loadCommunityCharacters() {
+      if (typeof window.__supabase === 'undefined' && typeof window.supabase === 'undefined') return;
+      var sb = window.__supabase || window.supabase;
+      if (!sb || !sb.from) return;
+
+      sb.from('characters')
+        .select('id, name, race, class, level, builder_type, data, owner_id, is_public')
+        .eq('is_public', true)
+        .order('created_at', { ascending: false })
+        .limit(24)
+        .then(function (res) {
+          if (res.error || !res.data || !res.data.length) return;
+          renderCommunityCharacters(res.data);
+        });
+    }
+
+    function renderCommunityCharacters(chars) {
+      var section = document.getElementById('community-section');
+      var grid = document.getElementById('community-grid');
+      if (!section || !grid || !chars.length) return;
+
+      section.style.display = 'block';
+      grid.innerHTML = '';
+
+      chars.forEach(function (row) {
+        var name = esc(row.name || 'Unnamed');
+        var race = esc(row.race || '');
+        var cls = esc(row.class || row.class_ || '');
+        var level = row.level || 1;
+        var clsKey = (row.class || '').toLowerCase().split('/')[0].trim();
+        var data = row.data || {};
+
+        // Build ability scores if available
+        var abHtml = '';
+        var abilities = data.abilities || data.stats || null;
+        if (abilities) {
+          ['STR','DEX','CON','INT','WIS','CHA'].forEach(function (ab) {
+            var val = abilities[ab] || abilities[ab.toLowerCase()] || 10;
+            abHtml += '<div class="gc-ab">' +
+              '<div class="gc-ab-label">' + ab + '</div>' +
+              '<div class="gc-ab-score">' + val + '</div>' +
+              '<div class="gc-ab-mod">' + fmtMod(val) + '</div>' +
+              '</div>';
+          });
+        }
+
+        var card = document.createElement('div');
+        card.className = 'gc gc--' + clsKey + ' gc--community';
+        card.innerHTML =
+          '<div class="gc-head">' +
+            '<div class="gc-icon">' + (data.icon || '\u2694') + '</div>' +
+            '<div>' +
+              '<div class="gc-name">' + name + '</div>' +
+              '<div class="gc-subtitle">' + [cls, race].filter(Boolean).join(' \u00B7 ') + '</div>' +
+              '<div class="gc-author">by ' + esc(data._authorName || data.authorName || 'Adventurer') + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="gc-meta">' +
+            '<span class="gc-pill gc-pill--level">Lv ' + level + '</span>' +
+            (data.subclass ? '<span class="gc-pill">' + esc(data.subclass) + '</span>' : '') +
+          '</div>' +
+          (abHtml ? '<div class="gc-abs">' + abHtml + '</div>' : '') +
+          (data.flavor ? '<div class="gc-flavor">\u201C' + esc(data.flavor) + '\u201D</div>' : '') +
+          '<div class="gc-btns">' +
+            '<button class="gc-btn gc-btn--add" data-community-id="' + esc(row.id) + '">+ Add to Characters</button>' +
+          '</div>';
+
+        // Bind add button
+        card.querySelector('.gc-btn--add').addEventListener('click', function (e) {
+          e.stopPropagation();
+          addCommunityChar(row);
+        });
+
+        grid.appendChild(card);
+      });
+    }
+
+    function addCommunityChar(row) {
+      if (typeof PhmurtDB === 'undefined' || !PhmurtDB.getSession) {
+        showToast('Sign in to add characters');
+        return;
+      }
+      var session = PhmurtDB.getSession();
+      if (!session) {
+        if (PhmurtDB.openAuth) PhmurtDB.openAuth();
+        else showToast('Please sign in first');
+        return;
+      }
+      var data = row.data || {};
+      var snapshot = {
+        name: row.name,
+        race: row.race,
+        class: row.class || row.class_,
+        level: row.level,
+        edition: row.builder_type || '5e',
+        abilities: data.abilities || data.stats || {},
+        features: data.features || [],
+        equipment: data.equipment || [],
+        subclass: data.subclass || '',
+        flavor: data.flavor || '',
+        source: 'community-gallery'
+      };
+      PhmurtDB.saveCharacter(snapshot).then(function (res) {
+        if (res && res.id) showToast(snapshot.name + ' added!');
+        else showToast('Could not save — try again');
+      }).catch(function () { showToast('Save failed'); });
+    }
+
     // Initial render
     document.addEventListener('DOMContentLoaded', function () {
       renderCharacters();
+      loadCommunityCharacters();
     });
   </script>
 

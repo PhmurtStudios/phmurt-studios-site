@@ -1700,8 +1700,8 @@ var PhmurtDB = (function () {
       return sb.from('campaign_invites').insert({
         campaign_id: campaignId,
         owner_id:    _session.userId
-      }).select('code').single()
-        .then(function (r) { return r.data ? r.data.code : null; })
+      }).select('id, code, use_count, max_uses, created_at').single()
+        .then(function (r) { return r.data || null; })
         .catch(function () { return null; });
     },
 
@@ -1745,6 +1745,78 @@ var PhmurtDB = (function () {
         .eq('campaign_id', campaignId)
         .then(function (r) { return r.data || []; })
         .catch(function () { return []; });
+    },
+
+    /* Update a campaign member's role (DM only) */
+    updateMemberRole: function (campaignId, targetUserId, newRole) {
+      var sb = _sb();
+      if (!sb || !_session) return Promise.resolve(false);
+      // Only DM (campaign owner) can change roles
+      return sb.from('campaign_members')
+        .update({ role: newRole })
+        .eq('campaign_id', campaignId)
+        .eq('user_id', targetUserId)
+        .then(function (r) { return !r.error; })
+        .catch(function () { return false; });
+    },
+
+    /* Remove a member from a campaign (DM only) */
+    removeCampaignMember: function (campaignId, targetUserId) {
+      var sb = _sb();
+      if (!sb || !_session) return Promise.resolve(false);
+      // Only campaign owner can remove members; RLS enforces this server-side
+      return sb.from('campaign_members')
+        .delete()
+        .eq('campaign_id', campaignId)
+        .eq('user_id', targetUserId)
+        .then(function (r) { return !r.error; })
+        .catch(function () { return false; });
+    },
+
+    /* Leave a campaign (player removes themselves) */
+    leaveCampaign: function (campaignId) {
+      var sb = _sb();
+      if (!sb || !_session) return Promise.resolve(false);
+      return sb.from('campaign_members')
+        .delete()
+        .eq('campaign_id', campaignId)
+        .eq('user_id', _session.userId)
+        .then(function (r) { return !r.error; })
+        .catch(function () { return false; });
+    },
+
+    /* Subscribe to campaign changes for live multiplayer (Supabase Realtime) */
+    subscribeToCampaign: function (campaignId, onUpdate) {
+      var sb = _sb();
+      if (!sb || !campaignId || typeof onUpdate !== 'function') return null;
+      var channel = sb.channel('campaign-' + campaignId)
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'campaigns',
+          filter: 'id=eq.' + campaignId
+        }, function (payload) {
+          if (payload.new && payload.new.data) {
+            onUpdate(payload.new.data);
+          }
+        })
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'campaign_members',
+          filter: 'campaign_id=eq.' + campaignId
+        }, function (payload) {
+          onUpdate(null, { type: 'members', event: payload.eventType, data: payload.new || payload.old });
+        })
+        .subscribe();
+      return channel;
+    },
+
+    /* Unsubscribe from campaign Realtime channel */
+    unsubscribeFromCampaign: function (channel) {
+      var sb = _sb();
+      if (!sb || !channel) return;
+      sb.removeChannel(channel);
     },
 
     getMyCampaigns: function () {

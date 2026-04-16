@@ -135,6 +135,42 @@
 
 69. **archive/sql/migration-attribute-homebrew-to-loki.sql** *(new, already applied)* — Updated `_authorName` in the JSONB `data` column to "Loki" for all public `homebrew_content` rows. Community tab now displays "by Loki" for every shared entry.
 
+### Campaign Multiplayer System — Full Implementation
+
+72a. **phmurt-auth.js** *(updated)* — Added five new database functions for multiplayer campaign support: `updateMemberRole(campaignId, userId, role)` persists role changes to `campaign_members` table. `removeCampaignMember(campaignId, userId)` removes a player from a campaign (DM only, RLS enforced). `leaveCampaign(campaignId)` lets a player remove themselves. `subscribeToCampaign(campaignId, onUpdate)` creates a Supabase Realtime channel that listens for `campaigns` UPDATE events and `campaign_members` INSERT/UPDATE/DELETE events for live multiplayer sync. `unsubscribeFromCampaign(channel)` cleans up the subscription. Also updated `createInviteCode()` to return the full invite row (`id, code, use_count, max_uses, created_at`) instead of just the code string.
+
+72b. **campaign-invites.js** *(updated)* — Fixed three broken/stubbed multiplayer features: (1) `updateMemberRole` now calls `PhmurtDB.updateMemberRole()` and persists to Supabase instead of only updating local state. (2) Kick/remove player now calls `PhmurtDB.removeCampaignMember()` and removes the member from local state, assignments, and roles — previously was `() => {}` (empty function). (3) Added Supabase Realtime subscription that re-fetches members on any `campaign_members` table change, so the members list updates live when players join/leave. Also added a character assignment picker modal — when DM clicks "Assign" on a member, a modal appears listing all party characters to pick from.
+
+72c. **campaigns.html** *(updated)* — Added Supabase Realtime subscription in the main App component for player-role users: subscribes to campaign data changes so players see DM updates live (party changes, quest updates, etc.). Added "Leave Campaign" button in the sidebar for player-role users with confirmation dialog — removes the player from `campaign_members`, cleans up local state, and returns to campaign list. Updated `handleCreateInvite` to handle the new full-object return format from `createInviteCode()` with backward compatibility for string returns. Player tab access already correctly limited to: Dashboard, Timeline, World, Play, Quests, Relations, Initiative, Kingdom, Crafting, and Party (Invites).
+
+72d. **sw.js** *(updated)* — Cache version bumped to 190.
+
+### Site-Wide Improvements (6 Categories)
+
+71a. **style.css** *(updated)* — Polish & trust signals: Added missing CSS for `.ps-cta-secondary`, `.ps-404-check`, `.ps-404-cta-group` (used in 404 page). Added consistent hover/transition states for all interactive cards (`.ps-feature`, `.ps-about-block`, `.ps-legendary-card`, `.ps-char-card`, `.ps-new-char-card`). Added button micro-interactions (active scale, focus ring consistency). Mobile touch target improvements: minimum 44px tap targets for filter buttons, CTAs, nav actions, tabs, HP buttons, and character card buttons.
+
+71b. **All HTML pages** *(updated)* — SEO & discoverability: Added canonical URLs to all 15+ pages. Added JSON-LD structured data (WebSite schema on index, CollectionPage on grimoire/gallery, WebApplication on generators/character-builder, HowTo on learn). Fixed missing og:type/og:url on character-builder.html. Fixed missing twitter:title/twitter:description on campaigns.html and soup-savant.html.
+
+71c. **gallery.html** *(updated)* — Character builder → gallery pipeline: Added "Community Characters" section below premade characters that loads user-shared public characters from the `characters` table via Supabase. Shows author name, ability scores, class/race, and "Add to Characters" button. Cards use same visual style as premade characters with "by [author]" attribution.
+
+71d. **characters.html** *(updated)* — Renamed "Share" button to "Publish to Gallery" / "In Gallery" to make the connection between sharing and the gallery community section explicit. Updated all related toast messages and button states.
+
+71e. **phmurt-shell.js** *(updated)* — Onboarding flow: Added guided first-visit walkthrough that appears on homepage for new, unauthenticated visitors. Four-step modal with progress dots: welcome intro, character gallery CTA, generators CTA, sign-up prompt. Dismisses on skip/backdrop click/close button. Sets `phmurt_onboarded` localStorage flag. Self-contained CSS injected at runtime. Mobile-responsive with 480px breakpoint.
+
+71f. **All HTML pages** *(updated)* — Performance: Added `loading="lazy"` to below-fold images (about.html owlbear, 404.html owlbear). Added DNS prefetch hints for Supabase (`zrfmboqoyrqsyckktgpv.supabase.co`) and Stripe (`js.stripe.com`) across all major pages. Deferred `stripe-env.js` loading across all pages (previously sync, now deferred alongside stripe-config.js).
+
+71g. **sw.js** *(updated)* — Cache version bumped to 189.
+
+### Bug Fixes (Live Site Audit)
+
+70a. **index.html** *(updated)* — Fixed stale homepage copy: "12 ready to play characters" → "40 ready-to-play characters across every class and level"
+70b. **grimoire.html** *(updated)* — Fixed community homebrew section showing empty: changed query from non-existent `homebrew_compendium` table to `homebrew_content` with `is_public` filter, `likes_count` column, and JSONB data normalization (name/tags/author_name extraction). Fixed like-update query to match.
+70c. **characters.html** *(updated)* — Fixed auth gate and signed-in state both displaying simultaneously: auth gate now starts `display:none` (same as ch-main) so JS controls which one appears based on session state, eliminating the race condition flash.
+
+### Service Worker Update
+
+70d. **sw.js** *(updated)* — Cache version bumped to 188.
+
 ### Character Gallery Redesign
 
 70. **gallery.html** *(rewritten)* — Complete gallery redesign: compact card layout with left-side class accent stripe, 6-column ability score grid with modifiers, combat stat row (AC/HP/Speed) for detailed characters, class-colored icon circles. Full character sheet modal with traditional D&D layout (ability score boxes, saving throws with proficiency dots, skills list, attacks table, features, equipment tags, personality/backstory). "Add to My Characters" button saves premade character to user's Supabase characters table via `PhmurtDB.saveCharacter()`. Added 4 new characters from uploaded PDF sheets: Zarikar Thavios (Tiefling Sorcerer 9, Divine Soul), Za Hornyeth (Eladrin Rogue 6/Fighter 4, Arcane Trickster), Relmae Falstaer (Half-Elf Fighter 5, Champion), Amon Bellendon (Variant Human Wizard 7, Evocation). Extended character data schema supports AC, HP, speed, proficiency bonus, darkvision, resistances, saving throws, skills with bonuses, attacks with hit/damage, languages, background, and multiclass. 40 total premade characters. Updated race filter (added Eladrin, Variant Human) and level filter (added 7, 9, 10). Results counter shows "Showing X of Y characters". Search now matches name, class, and race. Removed community placeholder section. Responsive at 1200/768/480/375px breakpoints.

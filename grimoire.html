@@ -19,6 +19,8 @@
   <meta name="twitter:description" content="Browse all published D&D classes, supplements, and original RPG systems from Phmurt Studios." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="dns-prefetch" href="https://zrfmboqoyrqsyckktgpv.supabase.co" />
+  <link rel="dns-prefetch" href="https://js.stripe.com" />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/x-icon" href="favicon.ico" />
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
@@ -29,9 +31,13 @@
   <script src="theme.js?v=185"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0" crossorigin="anonymous" integrity="sha384-fm42zLXjam4N3lT5umWgNtBBPMP3Ddrdmr9lnPKtDWzs5Dqy457Yn6+eTvCgRU3n"></script>
   <script src="supabase-config.js?v=185"></script>
-  <script src="stripe-env.js?v=188"></script>
+  <script defer src="stripe-env.js?v=188"></script>
   <script src="stripe-config.js?v=185"></script>
   <script src="phmurt-auth.js?v=187"></script>
+  <link rel="canonical" href="https://phmurtstudios.com/grimoire.html" />
+  <script type="application/ld+json">
+{"@context":"https://schema.org","@type":"CollectionPage","name":"Grimoire — D&D Content Library","url":"https://phmurtstudios.com/grimoire.html","description":"Browse D&D 5e homebrew classes, subclasses, races, spells, items, monsters, and more from Phmurt Studios.","isPartOf":{"@type":"WebSite","name":"Phmurt Studios","url":"https://phmurtstudios.com/"}}
+  </script>
 </head>
 <body data-nav-active="Content" data-footer-copy="Roll Well. Play Weird." data-breadcrumb="Home|index.html;Grimoire">
   <a href="#main-content" class="ps-skip-nav">Skip to content</a>
@@ -199,8 +205,18 @@
         return;
       }
       try {
-        var res = await sb.from('homebrew_compendium').select('*').order('likes',{ascending:false}).order('created_at',{ascending:false}).limit(200);
-        _grimHbData = res.data || [];
+        var res = await sb.from('homebrew_content').select('*').eq('is_public', true).order('likes_count',{ascending:false}).order('created_at',{ascending:false}).limit(200);
+        var rows = res.data || [];
+        // Normalize: extract name/tags/author from JSONB data column
+        rows.forEach(function(row) {
+          if (row.data) {
+            if (!row.name)        row.name = row.data.name || 'Unnamed';
+            if (!row.tags)        row.tags = row.data.tags || [];
+            if (!row.author_name) row.author_name = row.data._authorName || 'Anonymous';
+          }
+          if (row.likes_count !== undefined && row.likes === undefined) row.likes = row.likes_count;
+        });
+        _grimHbData = rows;
         grimHbRender();
       } catch(e) {
         if (el) el.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:40px;color:var(--text-faint);">Unable to load community content.</div>';
@@ -352,7 +368,7 @@
       var row = _grimHbData && _grimHbData.find(function(r) { return r.id === id; });
       var cur = row ? (row.likes || 0) : 0;
       try {
-        await sb.from('homebrew_compendium').update({ likes: cur + 1 }).eq('id', id);
+        await sb.from('homebrew_content').update({ likes_count: cur + 1 }).eq('id', id);
         liked.push(id);
         localStorage.setItem('phmurt_liked_hb', JSON.stringify(liked));
         var c = document.getElementById('glc-' + id);

@@ -15,8 +15,12 @@
   <meta property="og:url" content="https://phmurtstudios.com/campaigns.html" />
   <meta property="og:image" content="https://phmurtstudios.com/logo.png" />
   <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Campaign Manager · Phmurt Studios" />
+  <meta name="twitter:description" content="Manage your D&D campaigns with our comprehensive campaign manager. Track sessions, NPCs, encounters, and more." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="dns-prefetch" href="https://zrfmboqoyrqsyckktgpv.supabase.co" />
+  <link rel="dns-prefetch" href="https://js.stripe.com" />
   <link rel="preconnect" href="https://unpkg.com" crossorigin />
   <link rel="dns-prefetch" href="https://unpkg.com" />
   <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
@@ -31,7 +35,7 @@
   <script src="theme.js?v=187"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0" crossorigin="anonymous" integrity="sha384-fm42zLXjam4N3lT5umWgNtBBPMP3Ddrdmr9lnPKtDWzs5Dqy457Yn6+eTvCgRU3n"></script>
   <script src="supabase-config.js?v=187"></script>
-  <script src="stripe-env.js?v=188"></script>
+  <script defer src="stripe-env.js?v=188"></script>
   <script src="stripe-config.js?v=187"></script>
   <script src="phmurt-auth.js?v=187"></script>
   <script src="phmurt-char-sync.js?v=187"></script>
@@ -1619,6 +1623,7 @@
       background: rgba(247,240,222,0.97);
     }
   </style>
+  <link rel="canonical" href="https://phmurtstudios.com/campaigns.html" />
 </head>
 <body data-nav-active="Campaigns" data-footer-copy="Roll Well. Play Weird.">
 
@@ -6090,6 +6095,39 @@ function App() {
     if (!loading) cmSyncRoute(activeCampaignId, activeTab);
   }, [activeCampaignId, activeTab, loading]);
 
+  // ── Realtime: subscribe to campaign updates for live multiplayer sync ──
+  const realtimeChannelRef = useRef(null);
+  useEffect(() => {
+    if (!activeCampaignId || !authSession) return;
+    if (typeof PhmurtDB === "undefined" || !PhmurtDB.subscribeToCampaign) return;
+    // Only subscribe for player role (DM is the one writing)
+    if (viewRole !== "player") return;
+
+    realtimeChannelRef.current = PhmurtDB.subscribeToCampaign(activeCampaignId, function (campaignData, memberEvent) {
+      if (campaignData) {
+        // Campaign data was updated — merge into local state
+        setCampaigns(function (prev) {
+          return prev.map(function (c) {
+            if (c.id !== activeCampaignId) return c;
+            var expanded = cmExpandFromCloud(campaignData);
+            return { ...c, data: expanded };
+          });
+        });
+      }
+      if (memberEvent && memberEvent.type === "members") {
+        // Membership changed — reload members
+        PhmurtDB.getCampaignMembers(activeCampaignId).then(setCampaignMembers);
+      }
+    });
+
+    return () => {
+      if (realtimeChannelRef.current && PhmurtDB.unsubscribeFromCampaign) {
+        PhmurtDB.unsubscribeFromCampaign(realtimeChannelRef.current);
+        realtimeChannelRef.current = null;
+      }
+    };
+  }, [activeCampaignId, authSession, viewRole]);
+
   // ── Character Sync: listen for builder pushes and patch party members live ──
   useEffect(() => {
     if (loading || typeof PhmurtCharSync === "undefined") return;
@@ -6296,9 +6334,11 @@ function App() {
   const handleCreateInvite = () => {
     if (viewRole !== "dm") return; // SECURITY: only DM can create invite codes
     if (typeof PhmurtDB === "undefined" || typeof PhmurtDB.createInviteCode !== "function" || !activeCampaignId) return;
-    PhmurtDB.createInviteCode(activeCampaignId).then(function(code) {
-      if (code) {
-        setInviteCodes(function(prev) { return [{ code: code, use_count: 0, created_at: new Date().toISOString() }].concat(prev); });
+    PhmurtDB.createInviteCode(activeCampaignId).then(function(result) {
+      if (result) {
+        // result is now a full object { id, code, use_count, max_uses, created_at } or just a code string (backward compat)
+        var invite = typeof result === 'string' ? { code: result, use_count: 0, created_at: new Date().toISOString() } : result;
+        setInviteCodes(function(prev) { return [invite].concat(prev); });
       }
     });
   };
@@ -6541,7 +6581,7 @@ function App() {
           </div>
         )}
 
-        {/* ── Multiplayer: Invite Players / Join Campaign ── */}
+        {/* ── Multiplayer: Invite Players / Join Campaign / Leave ── */}
         {!sidebarCollapsed && (
           <div style={{ padding:"8px 14px 12px", borderTop:"1px solid " + T.border }}>
             {viewRole === "dm" && (
@@ -6554,6 +6594,25 @@ function App() {
               style={{ width:"100%", padding:"7px 8px", marginTop:4, background:"rgba(212,67,58,0.06)", border:"1px solid rgba(212,67,58,0.15)", borderRadius:"4px", cursor:"pointer", color:T.crimson, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
               <Plus size={10}/> Join Campaign
             </button>
+            {campaignRoles[activeCampaignId] === "player" && (
+              <button onClick={() => {
+                if (!confirm("Leave this campaign? You can rejoin with a new invite code.")) return;
+                if (typeof PhmurtDB !== "undefined" && PhmurtDB.leaveCampaign) {
+                  PhmurtDB.leaveCampaign(activeCampaignId).then(function(ok) {
+                    if (ok) {
+                      setCampaigns(function(prev) { return prev.filter(function(c) { return c.id !== activeCampaignId; }); });
+                      setCampaignRoles(function(prev) { var n = Object.assign({}, prev); delete n[activeCampaignId]; return n; });
+                      setActiveCampaignId(null);
+                      setViewRole("dm");
+                      if (window.psToast) window.psToast("Left campaign");
+                    }
+                  });
+                }
+              }}
+                style={{ width:"100%", padding:"7px 8px", marginTop:4, background:"rgba(239,68,68,0.04)", border:"1px solid rgba(239,68,68,0.12)", borderRadius:"4px", cursor:"pointer", color:"rgba(239,68,68,0.7)", fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+                <X size={10}/> Leave Campaign
+              </button>
+            )}
           </div>
         )}
       </div>

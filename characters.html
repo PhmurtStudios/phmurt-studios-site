@@ -19,6 +19,8 @@
   <meta name="twitter:description" content="Your character hub — build, manage, and view your D&D characters." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="dns-prefetch" href="https://zrfmboqoyrqsyckktgpv.supabase.co" />
+  <link rel="dns-prefetch" href="https://js.stripe.com" />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
   <link rel="icon" type="image/x-icon" href="favicon.ico" />
   <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
@@ -28,7 +30,7 @@
   <script src="theme.js?v=185"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0" crossorigin="anonymous" integrity="sha384-fm42zLXjam4N3lT5umWgNtBBPMP3Ddrdmr9lnPKtDWzs5Dqy457Yn6+eTvCgRU3n"></script>
   <script src="supabase-config.js?v=185"></script>
-  <script src="stripe-env.js?v=188"></script>
+  <script defer src="stripe-env.js?v=188"></script>
   <script src="stripe-config.js?v=185"></script>
   <script src="phmurt-auth.js?v=187"></script>
   <script src="phmurt-utils.js?v=186"></script>
@@ -251,6 +253,7 @@
       #ch-filter-bar select, #ch-filter-bar input { font-size: 14px; min-width: 0; flex: 1 1 100%; }
     }
   </style>
+  <link rel="canonical" href="https://phmurtstudios.com/characters.html" />
 </head>
 <body data-nav-active="Characters" data-footer-copy="Roll Well. Play Weird." data-breadcrumb="Home|index.html;Characters">
 
@@ -271,7 +274,7 @@
   <div class="ch-hub reveal">
 
     <!-- Signed-out state -->
-    <div class="ch-auth-gate" id="ch-auth-gate">
+    <div class="ch-auth-gate" id="ch-auth-gate" style="display:none;">
       <div style="font-size:42px;margin-bottom:16px;opacity:0.3;">&#9876;</div>
       <p>Sign in to view and manage your characters.</p>
       <button class="ch-btn ch-btn-primary" id="ch-auth-gate-btn">Sign In</button>
@@ -404,7 +407,7 @@
           '<div class="ch-card-foot">' +
             '<a href="' + viewHref + '" class="ch-card-action view" data-prevent-propagation="true">View Sheet</a>' +
             '<a href="' + viewHref + '" class="ch-card-action edit" data-prevent-propagation="true">Edit</a>' +
-            '<button class="ch-card-action share" data-char-id="' + id + '" data-shared="' + (c.is_public ? '1' : '0') + '">' + (c.is_public ? '🔗 Shared' : 'Share') + '</button>' +
+            '<button class="ch-card-action share" data-char-id="' + id + '" data-shared="' + (c.is_public ? '1' : '0') + '">' + (c.is_public ? '\uD83D\uDD17 In Gallery' : '\uD83C\uDF10 Publish to Gallery') + '</button>' +
             '<button class="ch-card-action delete" data-char-id="' + id + '">Delete</button>' +
           '</div>' +
         '</div>';
@@ -452,12 +455,12 @@
               window.psToast(url);
             }
           } else {
-            /* Share the character */
-            btn.textContent = 'Sharing…';
+            /* Publish to gallery */
+            btn.textContent = 'Publishing\u2026';
             btn.disabled = true;
             PhmurtDB.shareCharacter(charId).then(function (result) {
               if (result.success) {
-                btn.textContent = '🔗 Shared';
+                btn.textContent = '\uD83D\uDD17 In Gallery';
                 btn.setAttribute('data-shared', '1');
                 btn.disabled = false;
                 /* Update local data */
@@ -466,15 +469,15 @@
                 /* Copy URL to clipboard */
                 if (navigator.clipboard && navigator.clipboard.writeText) {
                   navigator.clipboard.writeText(result.url).then(function () {
-                    if (window.psToast) window.psToast('Character shared! Link copied.');
+                    if (window.psToast) window.psToast('Published to gallery! Link copied.');
                   });
                 } else if (window.psToast) {
-                  window.psToast('Character shared!');
+                  window.psToast('Published to gallery!');
                 }
               } else {
-                btn.textContent = 'Share';
+                btn.textContent = '\uD83C\uDF10 Publish to Gallery';
                 btn.disabled = false;
-                if (window.psToast) window.psToast(result.error || 'Share failed.');
+                if (window.psToast) window.psToast(result.error || 'Publish failed.');
               }
             });
           }
