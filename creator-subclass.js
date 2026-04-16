@@ -34,6 +34,7 @@
     var sb = getSupabase(); var uid = currentUserId();
     if (!sb || !uid || !state.current || !state.current.clientId) return;
     setSyncState('syncing');
+    state.current._authorName = U.getAuthorName ? U.getAuthorName() : 'Anonymous';
     sb.from('homebrew_content').upsert({
       user_id: uid, type: 'subclass', client_id: state.current.clientId,
       data: state.current, slug: U.slugify ? U.slugify(state.current.name) : state.current.name,
@@ -60,7 +61,7 @@
     var root = document.getElementById('creator-root'); if (!root) return;
 
     var spellsHtml = (s.expandedSpells||[]).map(function(sp, i){
-      return '<div class="cr-trait-row" data-idx="'+i+'" style="margin-bottom:8px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">' +
+      return '<div class="cr-trait-row" data-idx="'+i+'" >' +
         '<div class="cr-grid cr-grid-2" style="gap:8px;margin-bottom:6px;">' +
           '<div><label>Spell Level</label>' + selectEl('spell-level', SPELL_LEVELS, sp.level) + '</div>' +
           '<div><label>Spells (CSV)</label><input type="text" data-list="spells" data-idx="'+i+'" data-field="spells" value="'+escAttr((sp.spells||[]).join(', '))+'" placeholder="e.g. magic missile, shield" /></div>' +
@@ -70,7 +71,7 @@
     }).join('');
 
     var featuresHtml = (s.features||[]).map(function(f, i){
-      return '<div class="cr-trait-row" data-idx="'+i+'" style="margin-bottom:8px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">' +
+      return '<div class="cr-trait-row" data-idx="'+i+'" >' +
         '<div class="cr-grid cr-grid-2" style="gap:8px;margin-bottom:6px;">' +
           '<div><label>Level</label>' + selectEl('feature-level', FEATURE_LEVELS, f.level) + '</div>' +
           '<div><label>Feature Name</label><input type="text" data-list="features" data-idx="'+i+'" data-field="name" value="'+escAttr(f.name)+'" placeholder="e.g. Arcane Recovery" /></div>' +

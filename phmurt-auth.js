@@ -213,6 +213,14 @@ var PhmurtDB = (function () {
   }
 
   function _fireChange() {
+    // Set the custom user ID in Supabase for RLS policies
+    try {
+      var sb = _sb();
+      var uid = _session && (_session.userId || (_session.user && (typeof _session.user === 'string' ? _session.user : _session.user.id)));
+      if (sb && uid) {
+        sb.rpc('set_app_user', { uid: uid }).then(null, function () {});
+      }
+    } catch (e) { /* RLS user sync is best-effort */ }
     _listeners.forEach(function (fn) {
       try {
         fn();

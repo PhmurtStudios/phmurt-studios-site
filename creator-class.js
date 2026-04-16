@@ -79,6 +79,7 @@
     var sb = getSupabase(); var uid = currentUserId();
     if (!sb || !uid || !state.current || !state.current.clientId) return;
     setSyncState('syncing');
+    state.current._authorName = U.getAuthorName ? U.getAuthorName() : 'Anonymous';
     var row = {
       user_id: uid,
       type: 'class',
@@ -285,7 +286,7 @@
   }
 
   function featureRow(f, idx) {
-    return '<div class="cr-trait-row" data-idx="' + idx + '" style="margin-bottom:10px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">' +
+    return '<div class="cr-trait-row" data-idx="' + idx + '" >' +
       '<input type="text" data-list="features" data-idx="' + idx + '" data-field="name" value="' + escAttr(f.name) + '" placeholder="Feature name" style="margin-bottom:6px;" />' +
       '<textarea data-list="features" data-idx="' + idx + '" data-field="desc" rows="2" placeholder="Description">' + esc(f.desc) + '</textarea>' +
       '<button type="button" class="cr-btn" data-act="remove-feature" data-idx="' + idx + '" style="margin-top:6px;">Remove</button>' +
@@ -293,7 +294,7 @@
   }
 
   function levelFeatureRow(lv, f, idx) {
-    return '<div class="cr-level-feature-row" data-level="' + lv + '" data-idx="' + idx + '" style="margin-bottom:10px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">' +
+    return '<div class="cr-level-feature-row" data-level="' + lv + '" data-idx="' + idx + '" >' +
       '<div style="display:flex;gap:8px;margin-bottom:6px;">' +
         '<div style="flex:0 0 80px;"><strong>Level ' + lv + '</strong></div>' +
         '<input type="text" data-level="' + lv + '" data-idx="' + idx + '" data-field="name" value="' + escAttr(f.name) + '" placeholder="Feature name" style="flex:1;" />' +
@@ -305,7 +306,7 @@
   }
 
   function abilityRow(a, idx) {
-    return '<div class="cr-ability-row" data-idx="' + idx + '" style="margin-bottom:10px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">' +
+    return '<div class="cr-ability-row" data-idx="' + idx + '" >' +
       '<input type="text" data-list="abilityUses" data-idx="' + idx + '" data-field="name" value="' + escAttr(a.name) + '" placeholder="Ability name" style="margin-bottom:6px;" />' +
       '<div style="display:flex;gap:8px;margin-bottom:6px;">' +
         '<input type="number" data-list="abilityUses" data-idx="' + idx + '" data-field="uses" value="' + (a.uses || 0) + '" placeholder="Uses" min="0" style="flex:0 0 80px;" />' +
@@ -320,7 +321,7 @@
   }
 
   function passiveRow(p, idx) {
-    return '<div class="cr-passive-row" data-idx="' + idx + '" style="margin-bottom:10px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">' +
+    return '<div class="cr-passive-row" data-idx="' + idx + '" >' +
       '<input type="text" data-list="passiveFeatures" data-idx="' + idx + '" data-field="name" value="' + escAttr(p.name) + '" placeholder="Feature name" style="margin-bottom:6px;" />' +
       '<textarea data-list="passiveFeatures" data-idx="' + idx + '" data-field="desc" rows="2" placeholder="Description">' + esc(p.desc) + '</textarea>' +
       '<button type="button" class="cr-btn" data-act="remove-passive" data-idx="' + idx + '" style="margin-top:6px;">Remove</button>' +

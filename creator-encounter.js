@@ -68,6 +68,7 @@
     var sb = getSupabase(); var uid = currentUserId();
     if (!sb || !uid || !state.current || !state.current.clientId) return;
     setSyncState('syncing');
+    state.current._authorName = U.getAuthorName ? U.getAuthorName() : 'Anonymous';
     sb.from('homebrew_content').upsert({
       user_id: uid, type: 'encounter', client_id: state.current.clientId,
       data: state.current, slug: U.slugify ? U.slugify(state.current.name) : state.current.name,
@@ -138,7 +139,7 @@
 
     var monstersHtml = (s.monsters||[]).map(function(m, i){
       var xp = U.crToXp ? (U.crToXp(m.cr) || 0) : 0;
-      return '<div class="cr-trait-row" style="margin-bottom:10px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">' +
+      return '<div class="cr-trait-row" >' +
         '<div class="cr-grid cr-grid-3" style="align-items:end;">' +
           '<div class="cr-field wide"><label>Monster</label><input type="text" data-list="monsters" data-idx="'+i+'" data-field="name" value="'+escAttr(m.name)+'" placeholder="e.g. Orc Warrior" /></div>' +
           '<div class="cr-field"><label>Count</label><input type="number" data-list="monsters" data-idx="'+i+'" data-field="count" value="'+(m.count||1)+'" min="1" /></div>' +
@@ -155,7 +156,7 @@
     }).join('');
 
     var terrainHtml = (s.terrain||[]).map(function(t, i){
-      return '<div class="cr-trait-row" style="margin-bottom:10px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">' +
+      return '<div class="cr-trait-row" >' +
         '<input type="text" data-list="terrain" data-idx="'+i+'" data-field="name" value="'+escAttr(t.name)+'" placeholder="Feature name (e.g., Lava Pit)" style="margin-bottom:6px;" />' +
         '<textarea data-list="terrain" data-idx="'+i+'" data-field="desc" rows="2" placeholder="Difficulty, damage, mechanics...">'+esc(t.desc)+'</textarea>' +
         '<button type="button" class="cr-btn" data-act="remove-terrain" data-idx="'+i+'" style="margin-top:6px;">Remove</button>' +

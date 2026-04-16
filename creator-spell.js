@@ -203,6 +203,7 @@
     var sb  = getSupabase();
     var uid = currentUserId();
     if (!sb || !uid) return Promise.resolve({ skipped: true });
+    spellData._authorName = U.getAuthorName ? U.getAuthorName() : 'Anonymous';
     var row = {
       user_id:   uid,
       type:      'spell',
@@ -431,7 +432,7 @@
     if (s.saveAbility && !s.attackType) extras.push(saveDCHint(s));
     if (s.damage && !s.attackType && !s.saveAbility) {
       extras.push('The target takes ' + esc(s.damage) +
-        (s.damageType ? ' ' + s.damageType.toLowerCase() : '') + ' damage.');
+        (s.damageType ? ' ' + esc(s.damageType.toLowerCase()) : '') + ' damage.');
     }
     if (extras.length) body += '<p><em>' + extras.join(' ') + '</em></p>';
 

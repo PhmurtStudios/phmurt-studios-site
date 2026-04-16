@@ -35,6 +35,7 @@
     var sb = getSupabase(); var uid = currentUserId();
     if (!sb || !uid || !state.current || !state.current.clientId) return;
     setSyncState('syncing');
+    state.current._authorName = U.getAuthorName ? U.getAuthorName() : 'Anonymous';
     sb.from('homebrew_content').upsert({
       user_id: uid, type: 'feat', client_id: state.current.clientId,
       data: state.current, slug: U.slugify ? U.slugify(state.current.name) : state.current.name,
@@ -64,7 +65,7 @@
     var root = document.getElementById('creator-root'); if (!root) return;
 
     var benefitsHtml = (s.benefits||[]).map(function(b, i){
-      return '<div class="cr-trait-row" data-idx="'+i+'" style="margin-bottom:8px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">' +
+      return '<div class="cr-trait-row" data-idx="'+i+'" >' +
         '<input type="text" data-list="benefits" data-idx="'+i+'" value="'+escAttr(b)+'" placeholder="e.g. You gain proficiency in one skill of your choice" />' +
         '<button type="button" class="cr-btn" data-act="remove-row" data-idx="'+i+'" style="margin-top:6px;">Remove</button>' +
       '</div>';

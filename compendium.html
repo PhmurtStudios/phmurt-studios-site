@@ -5638,7 +5638,7 @@
       if (type === 'race') {
         h += '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;font-size:13px;color:var(--text-muted,#a89a85);">';
         if (entry.size) h += '<span><strong>Size:</strong> ' + cmpEsc(entry.size) + '</span>';
-        if (entry.speed) h += '<span><strong>Speed:</strong> ' + entry.speed + ' ft</span>';
+        if (entry.speed) h += '<span><strong>Speed:</strong> ' + cmpEsc(entry.speed) + ' ft</span>';
         if (entry.languages) h += '<span><strong>Languages:</strong> ' + cmpEsc(typeof entry.languages === 'object' ? entry.languages.join(', ') : entry.languages) + '</span>';
         h += '</div>';
         if (entry.asi && typeof entry.asi === 'object') {
@@ -5659,7 +5659,7 @@
 
       if (type === 'class') {
         h += '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;font-size:13px;color:var(--text-muted,#a89a85);">';
-        if (entry.hitDie) h += '<span><strong>Hit Die:</strong> d' + entry.hitDie + '</span>';
+        if (entry.hitDie) h += '<span><strong>Hit Die:</strong> d' + cmpEsc(entry.hitDie) + '</span>';
         if (entry.primaryAbility) h += '<span><strong>Primary:</strong> ' + cmpEsc(entry.primaryAbility) + '</span>';
         if (entry.saves && entry.saves.length) h += '<span><strong>Saves:</strong> ' + cmpEsc(entry.saves.join(', ')) + '</span>';
         if (entry.spellcastingAbility) h += '<span><strong>Spellcasting:</strong> ' + cmpEsc(entry.spellcastingAbility) + '</span>';
@@ -5819,18 +5819,18 @@
 
         // Subtitle
         var sub = '';
-        if (type === 'race')       sub = (e.size || 'Medium') + ' &middot; ' + (e.speed || 30) + ' ft';
-        if (type === 'class')      sub = 'd' + (e.hitDie || 8) + ' &middot; ' + (e.spellcastingAbility ? 'Caster' : 'Martial');
-        if (type === 'background') sub = (e.skills || []).join(', ');
+        if (type === 'race')       sub = cmpEsc(e.size || 'Medium') + ' &middot; ' + cmpEsc(e.speed || 30) + ' ft';
+        if (type === 'class')      sub = 'd' + cmpEsc(e.hitDie || 8) + ' &middot; ' + (e.spellcastingAbility ? 'Caster' : 'Martial');
+        if (type === 'background') sub = cmpEsc((e.skills || []).join(', '));
         if (type === 'subclass') {
           var pc = DND_DATA.classes && DND_DATA.classes[e.parentClass];
-          sub = pc ? pc.name : (e.parentClass || '');
+          sub = pc ? cmpEsc(pc.name) : cmpEsc(e.parentClass || '');
         }
-        if (type === 'feat')       sub = (e.prerequisite && e.prerequisite !== 'None' ? 'Requires: ' + e.prerequisite : 'No prerequisite');
-        if (type === 'item')       sub = (e.category || '') + ' &middot; ' + (e.rarity || 'common');
-        if (type === 'spell')      sub = 'Level ' + (e.level || 0) + ' &middot; ' + (e.school || 'Magic') + ' &middot; ' + (e.castingTime || '1 action');
-        if (type === 'monster')    sub = (e.size || 'Medium') + ' ' + (e.monsterType || 'Creature') + ' &middot; CR ' + (e.cr || 0);
-        if (type === 'encounter')  sub = (e.environment || 'Generic') + ' &middot; ' + (e.difficulty || 'Medium') + ' for levels ' + (e.partyLevelMin || 1) + '-' + (e.partyLevelMax || 20);
+        if (type === 'feat')       sub = (e.prerequisite && e.prerequisite !== 'None' ? 'Requires: ' + cmpEsc(e.prerequisite) : 'No prerequisite');
+        if (type === 'item')       sub = cmpEsc(e.category || '') + ' &middot; ' + cmpEsc(e.rarity || 'common');
+        if (type === 'spell')      sub = 'Level ' + cmpEsc(e.level || 0) + ' &middot; ' + cmpEsc(e.school || 'Magic') + ' &middot; ' + cmpEsc(e.castingTime || '1 action');
+        if (type === 'monster')    sub = cmpEsc(e.size || 'Medium') + ' ' + cmpEsc(e.monsterType || 'Creature') + ' &middot; CR ' + cmpEsc(e.cr || 0);
+        if (type === 'encounter')  sub = cmpEsc(e.environment || 'Generic') + ' &middot; ' + cmpEsc(e.difficulty || 'Medium') + ' for levels ' + cmpEsc(e.partyLevelMin || 1) + '-' + cmpEsc(e.partyLevelMax || 20);
 
         // Desc snippet
         var desc = e.desc || (e.traits && e.traits[0] && e.traits[0].desc) ||
@@ -6179,7 +6179,7 @@
 
     // ── Helpers ──────────────────────────────────────────────────────────────
     function cmpEsc(str) {
-      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
     }
     // Normalize tags: always return an array whether input is string, array, or falsy
     function cmpNormTags(tags) {

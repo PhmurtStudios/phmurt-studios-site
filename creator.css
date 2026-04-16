@@ -264,21 +264,23 @@
 #creator-root input[type="number"],
 #creator-root textarea,
 #creator-root select {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  color: var(--text);
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
   font-family: Spectral, Georgia, serif;
   font-size: 13px;
   padding: 8px 10px;
   box-sizing: border-box;
   transition: border-color .12s, box-shadow .12s;
+  -webkit-appearance: none;
+  appearance: none;
 }
 #creator-root input[type="text"]:focus,
 #creator-root input[type="number"]:focus,
 #creator-root textarea:focus,
 #creator-root select:focus {
   outline: none;
-  border-color: var(--crimson);
+  border-color: var(--crimson) !important;
   box-shadow: 0 0 0 3px rgba(139, 0, 0, .12);
 }
 #creator-root textarea {
@@ -287,6 +289,19 @@
   font-size: 13px;
   line-height: 1.55;
   min-height: 70px;
+}
+/* Belt-and-suspenders: catch any input without a type attribute */
+#creator-root .cr-trait-row input,
+#creator-root .cr-trait-row textarea,
+#creator-root .cr-trait-row select {
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
+  color: var(--text) !important;
+  font-family: Spectral, Georgia, serif;
+  font-size: 13px;
+  padding: 8px 10px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* ── Trait row input refinements ────────────────────────────────── */

@@ -241,6 +241,14 @@
     overlay.addEventListener('click', function(e){ if (e.target === overlay) cleanup(); });
   }
 
+  // ── Author name helper ────────────────────────────────────────────
+  function getAuthorName() {
+    try {
+      var sess = global.PhmurtDB && global.PhmurtDB.getSession && global.PhmurtDB.getSession();
+      return (sess && (sess.name || sess.displayName)) || 'Anonymous';
+    } catch (e) { return 'Anonymous'; }
+  }
+
   // ── Export ────────────────────────────────────────────────────────
   global.PhmurtCreatorUtil = {
     parseDamage: parseDamage,
@@ -258,6 +266,7 @@
     fmtMod: fmtMod,
     monsterHp: monsterHp,
     showToast: showToast,
-    showConfirm: showConfirm
+    showConfirm: showConfirm,
+    getAuthorName: getAuthorName
   };
 })(window);

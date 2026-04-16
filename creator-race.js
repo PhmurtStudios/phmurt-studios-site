@@ -64,6 +64,7 @@
     var sb = getSupabase(); var uid = currentUserId();
     if (!sb || !uid || !state.current || !state.current.clientId) return;
     setSyncState('syncing');
+    state.current._authorName = U.getAuthorName ? U.getAuthorName() : 'Anonymous';
     var row = {
       user_id: uid,
       type: 'race',
@@ -228,7 +229,7 @@
   }
 
   function traitRow(listKey, t, idx) {
-    return '<div class="cr-trait-row" data-idx="' + idx + '" style="margin-bottom:10px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">' +
+    return '<div class="cr-trait-row" data-idx="' + idx + '" >' +
       '<input type="text" data-list="' + listKey + '" data-idx="' + idx + '" data-field="name" value="' + escAttr(t.name) + '" placeholder="Name" style="margin-bottom:6px;" />' +
       '<textarea data-list="' + listKey + '" data-idx="' + idx + '" data-field="desc" rows="2" placeholder="Description">' + esc(t.desc) + '</textarea>' +
       '<button type="button" class="cr-btn" data-act="remove-row" data-list="' + listKey + '" data-idx="' + idx + '" style="margin-top:6px;">Remove</button>' +
@@ -240,7 +241,7 @@
       return '<input type="text" data-list="subraces" data-idx="' + idx + '" data-subfield="traits" data-subidx="' + ti + '" value="' + escAttr(t.name || '') + '" placeholder="Trait name" style="margin-bottom:4px;" />';
     }).join('');
 
-    return '<div class="cr-trait-row" data-idx="' + idx + '" style="margin-bottom:10px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">' +
+    return '<div class="cr-trait-row" data-idx="' + idx + '" >' +
       '<input type="text" data-list="subraces" data-idx="' + idx + '" data-field="name" value="' + escAttr(sr.name || '') + '" placeholder="Subrace name" style="margin-bottom:6px;" />' +
       '<div style="margin-bottom:6px;"><strong>Traits:</strong> ' + (traitLines || '<em>none</em>') + '</div>' +
       '<button type="button" class="cr-btn" data-act="remove-row" data-list="subraces" data-idx="' + idx + '" style="margin-top:6px;">Remove</button>' +

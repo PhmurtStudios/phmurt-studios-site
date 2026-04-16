@@ -4,17 +4,21 @@
 
 ### Changed Files
 
-1. **creator.css** — Global input styling fix (white text boxes), preview layout improvements, trait row base styles
-2. **creator-monster.js** — Null check on `s.speed`, bounds checking on splice
-3. **creator-class.js** — Fixed `global.showRestToast` → `U.showToast`
-4. **creator-race.js** — Bounds checking on splice in remove-row
-5. **creator-subclass.js** — Null guards on array access, `.trim()` null safety
-6. **creator-feat.js** — Bounds checking on splice, `.trim()` null safety
-7. **creator-encounter.js** — Bounds checking on splice, `.trim()` null safety
-8. **creator-background.js** — Four `.trim()` null safety fixes
-9. **creator-item.js** — `.trim()` null safety
+1. **creator.css** — Global input styling fix (white text boxes with !important), preview layout improvements, trait row base styles
+2. **creator-util.js** — Added `getAuthorName()` helper for username injection
+3. **creator-spell.js** — Injects `_authorName`, fixed unescaped `damageType` XSS
+4. **creator-monster.js** — Null check on `s.speed`, bounds checking on splice, `_authorName` injection
+5. **creator-class.js** — Fixed `global.showRestToast` → `U.showToast`, `_authorName` injection
+6. **creator-race.js** — Bounds checking on splice, stripped inline trait-row styles, `_authorName` injection
+7. **creator-subclass.js** — Null guards on array access, `.trim()` null safety, `_authorName` injection
+8. **creator-feat.js** — Bounds checking on splice, `.trim()` null safety, `_authorName` injection
+9. **creator-encounter.js** — Bounds checking on splice, `.trim()` null safety, `_authorName` injection
+10. **creator-background.js** — Four `.trim()` null safety fixes, `_authorName` injection
+11. **creator-item.js** — `.trim()` null safety, `_authorName` injection
+12. **compendium.html** — Collection system, campaign add, clickable tags, card redesign, XSS fixes (escaped speed, hitDie, sub variable, upgraded cmpEsc to escape quotes)
+13. **campaign-homebrew-view.js** — Community homebrew tab in campaign manager
+14. **phmurt-auth.js** — Added `set_app_user` RPC call in `_fireChange()` for RLS user identification
 
-### Previously Changed (from earlier session)
+### SQL Migration (apply via Supabase dashboard)
 
-10. **compendium.html** — Collection system, campaign add, clickable tags, card redesign
-11. **campaign-homebrew-view.js** — Community homebrew tab in campaign manager
+15. **archive/sql/migration-homebrew-rls.sql** — Proper RLS policies for homebrew_content, user_collections, campaign_homebrew tables + helper functions

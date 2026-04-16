@@ -74,6 +74,7 @@
     var sb = getSupabase(); var uid = currentUserId();
     if (!sb || !uid || !state.current || !state.current.clientId) return;
     setSyncState('syncing');
+    state.current._authorName = U.getAuthorName ? U.getAuthorName() : 'Anonymous';
     var row = {
       user_id: uid,
       type: 'monster',
@@ -276,7 +277,7 @@
   }
 
   function traitRow(listKey, t, idx) {
-    return '<div class="cr-trait-row" data-idx="' + idx + '" style="margin-bottom:10px;padding:10px;background:var(--bg-card);border:1px solid var(--border);">' +
+    return '<div class="cr-trait-row" data-idx="' + idx + '" >' +
       '<input type="text" data-list="' + listKey + '" data-idx="' + idx + '" data-field="name" value="' + escAttr(t.name) + '" placeholder="Name (e.g., Multiattack)" style="margin-bottom:6px;" />' +
       '<textarea data-list="' + listKey + '" data-idx="' + idx + '" data-field="desc" rows="2" placeholder="Description">' + esc(t.desc) + '</textarea>' +
       (listKey === 'actions' && t.desc ? '<div class="cr-autocalc">' + actionHint(t.desc) + '</div>' : '') +

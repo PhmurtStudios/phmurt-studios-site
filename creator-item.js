@@ -58,6 +58,7 @@
     var sb = getSupabase(); var uid = currentUserId();
     if (!sb || !uid || !state.current || !state.current.clientId) return;
     setSyncState('syncing');
+    state.current._authorName = U.getAuthorName ? U.getAuthorName() : 'Anonymous';
     sb.from('homebrew_content').upsert({
       user_id: uid, type: 'item', client_id: state.current.clientId,
       data: state.current, slug: U.slugify ? U.slugify(state.current.name) : state.current.name,
