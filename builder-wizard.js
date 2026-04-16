@@ -19,7 +19,7 @@
   var ARCHETYPES = [
     {
       id: 'warrior',
-      icon: '⚔️',
+      icon: '\u2694',
       title: 'The Warrior',
       desc: 'A straightforward melee fighter. High Strength, tough armor, simple to play.',
       race: 'human', cls: 'fighter', bg: 'soldier',
@@ -28,7 +28,7 @@
     },
     {
       id: 'spellcaster',
-      icon: '🔮',
+      icon: '\u2726',
       title: 'The Spellcaster',
       desc: 'A magical powerhouse. High Intelligence, arcane spells, endless versatility.',
       race: 'elf', cls: 'wizard', bg: 'sage',
@@ -37,7 +37,7 @@
     },
     {
       id: 'healer',
-      icon: '✨',
+      icon: '\u2720',
       title: 'The Healer',
       desc: 'A divine protector. High Wisdom, healing magic, solid in both support and combat.',
       race: 'dwarf', cls: 'cleric', bg: 'acolyte',
@@ -46,7 +46,7 @@
     },
     {
       id: 'sneaky',
-      icon: '🗡️',
+      icon: '\u2620',
       title: 'The Sneak',
       desc: 'A cunning rogue. High Dexterity, stealth, massive sneak attack damage.',
       race: 'halfling', cls: 'rogue', bg: 'criminal',
@@ -55,7 +55,7 @@
     },
     {
       id: 'nature',
-      icon: '🌿',
+      icon: '\u2767',
       title: 'The Ranger',
       desc: 'A wilderness tracker. Good at range and melee, with some nature magic.',
       race: 'elf', cls: 'ranger', bg: 'outlander',
@@ -64,7 +64,7 @@
     },
     {
       id: 'talker',
-      icon: '🎭',
+      icon: '\u266B',
       title: 'The Face',
       desc: 'A charismatic bard. High Charisma, social skills, support magic, jack of all trades.',
       race: 'half_elf', cls: 'bard', bg: 'entertainer',
@@ -123,12 +123,12 @@
   }
 
   function injectWizardUI() {
-    /* Guide toggle button in sidebar */
+    /* Guide + Quick Build buttons in sidebar */
     var sidebar = document.getElementById('sidebar');
     if (sidebar) {
       var guideBtn = document.createElement('button');
       guideBtn.id = 'wizard-guide-btn';
-      guideBtn.innerHTML = '📖 Guide';
+      guideBtn.innerHTML = '\u2731 Guide';
       guideBtn.title = 'Toggle step-by-step guide';
       guideBtn.style.cssText = 'display:block;width:100%;margin-top:12px;padding:8px 12px;font-family:Cinzel,serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:rgba(212,67,58,0.06);border:1px solid rgba(212,67,58,0.15);color:var(--crimson,#d4433a);border-radius:4px;cursor:pointer;transition:all .15s;';
       guideBtn.addEventListener('click', function () {
@@ -141,6 +141,14 @@
         }
       });
       sidebar.appendChild(guideBtn);
+
+      var qbBtn = document.createElement('button');
+      qbBtn.id = 'wizard-quickbuild-btn';
+      qbBtn.innerHTML = '\u2694 Quick Build';
+      qbBtn.title = 'Pick an archetype and build a character instantly';
+      qbBtn.style.cssText = 'display:block;width:100%;margin-top:6px;padding:8px 12px;font-family:Cinzel,serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:rgba(94,224,154,0.06);border:1px solid rgba(94,224,154,0.15);color:var(--green,#5ee09a);border-radius:4px;cursor:pointer;transition:all .15s;';
+      qbBtn.addEventListener('click', function () { showWelcome(); });
+      sidebar.appendChild(qbBtn);
     }
 
     /* Step tip container (inserted at top of .cb-main) */
@@ -167,17 +175,17 @@
     overlay.innerHTML =
       '<div id="wizard-welcome-modal" style="background:var(--bg-card,#141420);border:1px solid var(--border,rgba(255,255,255,0.11));border-radius:8px;max-width:700px;width:100%;max-height:90vh;overflow-y:auto;padding:40px 36px;">' +
         '<div style="text-align:center;margin-bottom:28px;">' +
-          '<div style="font-size:36px;margin-bottom:12px;">⚔️</div>' +
+          '<div style="font-size:36px;margin-bottom:12px;opacity:0.8;">\u2694</div>' +
           '<h2 style="font-family:Cinzel,serif;font-size:22px;color:var(--text,#f2e8d6);margin:0 0 8px;">Welcome to the Character Builder</h2>' +
           '<p style="font-family:Spectral,serif;font-size:15px;color:var(--text-muted,#9a8870);margin:0;">Choose how you\'d like to build your character.</p>' +
         '</div>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:28px;">' +
           '<button id="wizard-mode-guided" style="padding:20px 16px;background:rgba(212,67,58,0.06);border:1px solid rgba(212,67,58,0.2);border-radius:6px;cursor:pointer;text-align:left;">' +
-            '<div style="font-family:Cinzel,serif;font-size:13px;font-weight:600;color:var(--crimson,#d4433a);margin-bottom:6px;">📖 Guided Mode</div>' +
+            '<div style="font-family:Cinzel,serif;font-size:13px;font-weight:600;color:var(--crimson,#d4433a);margin-bottom:6px;">\u2731 Guided Mode</div>' +
             '<div style="font-family:Spectral,serif;font-size:13px;color:var(--text-muted,#9a8870);line-height:1.5;">Step-by-step tips and recommendations at each stage. Great for first-timers.</div>' +
           '</button>' +
           '<button id="wizard-mode-free" style="padding:20px 16px;background:transparent;border:1px solid var(--border,rgba(255,255,255,0.11));border-radius:6px;cursor:pointer;text-align:left;">' +
-            '<div style="font-family:Cinzel,serif;font-size:13px;font-weight:600;color:var(--text,#f2e8d6);margin-bottom:6px;">🎲 Free Build</div>' +
+            '<div style="font-family:Cinzel,serif;font-size:13px;font-weight:600;color:var(--text,#f2e8d6);margin-bottom:6px;">\u2726 Free Build</div>' +
             '<div style="font-family:Spectral,serif;font-size:13px;color:var(--text-muted,#9a8870);line-height:1.5;">Jump right in and make your own choices. Tips available in the sidebar any time.</div>' +
           '</button>' +
         '</div>' +
@@ -273,9 +281,9 @@
     content.innerHTML =
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">' +
         '<div>' +
-          '<div style="font-family:Cinzel,serif;font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--crimson,#d4433a);margin-bottom:6px;">📖 ' + _esc(tip.title) + '</div>' +
+          '<div style="font-family:Cinzel,serif;font-size:12px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--crimson,#d4433a);margin-bottom:6px;">\u2731 ' + _esc(tip.title) + '</div>' +
           '<div style="font-family:Spectral,serif;font-size:14px;color:var(--text-muted,#9a8870);line-height:1.6;">' + tip.tip + '</div>' +
-          '<div style="font-family:Spectral,serif;font-size:13px;color:var(--text-dim,#6b5e50);margin-top:8px;font-style:italic;">💡 ' + tip.hint + '</div>' +
+          '<div style="font-family:Spectral,serif;font-size:13px;color:var(--text-dim,#6b5e50);margin-top:8px;font-style:italic;">\u2014 ' + tip.hint + '</div>' +
         '</div>' +
         '<button onclick="document.getElementById(\'wizard-step-tip\').style.display=\'none\';try{localStorage.setItem(\'phmurt_wizard_tips_visible\',\'0\')}catch(e){}" style="flex-shrink:0;background:none;border:none;color:var(--text-dim,#6b5e50);cursor:pointer;font-size:16px;padding:0;line-height:1;" title="Hide tips">✕</button>' +
       '</div>';

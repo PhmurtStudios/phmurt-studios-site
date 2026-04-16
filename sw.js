@@ -67,6 +67,7 @@ const PRECACHE_URLS = [
   'getting-started.html',
   'shared.html',
   'char-sheet-export.js',
+  'phmurt-tour.js',
   'my-characters.html',
   'characters.html',
   'sheet-dnd5e.html',

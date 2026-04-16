@@ -6324,6 +6324,14 @@ function App() {
     });
   };
 
+  // ── Auto-start campaign tour on first visit ──
+  useEffect(() => {
+    if (loading || !activeCampaignId) return;
+    if (typeof PhmurtTour !== "undefined" && !PhmurtTour.hasSeen("campaign-manager")) {
+      setTimeout(function () { PhmurtTour.start("campaign-manager"); }, 1200);
+    }
+  }, [loading, activeCampaignId]);
+
   // ── Multiplayer: load roles from getMyCampaigns and determine viewRole per campaign ──
   useEffect(() => {
     if (loading || !authSession) return; // Wait for both loading complete AND auth
@@ -6660,6 +6668,16 @@ function App() {
                 <X size={10}/> Leave Campaign
               </button>
             )}
+          </div>
+        )}
+
+        {/* Take Tour button */}
+        {!sidebarCollapsed && (
+          <div style={{ padding:"8px 14px", borderTop:"1px solid " + T.border }}>
+            <button onClick={() => { if (window.PhmurtTour) window.PhmurtTour.start('campaign-manager'); }}
+              style={{ width:"100%", padding:"7px 8px", background:"rgba(212,67,58,0.04)", border:"1px solid var(--border,rgba(255,255,255,0.11))", borderRadius:"4px", cursor:"pointer", color:T.textFaint, fontFamily:T.ui, fontSize:8, letterSpacing:"1px", textTransform:"uppercase", display:"flex", alignItems:"center", justifyContent:"center", gap:5 }}>
+              \u2316 Take Tour
+            </button>
           </div>
         )}
       </div>
@@ -7210,6 +7228,7 @@ root.render(React.createElement(App));
 
   </script>
 
+  <script src="phmurt-tour.js?v=192" defer></script>
   <div id="ps-site-footer"></div>
 </body>
 </html>

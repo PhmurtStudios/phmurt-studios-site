@@ -10239,7 +10239,58 @@ function init35() {
   <div id="ps-site-footer"></div>
 
   <script src="char-sheet-export.js?v=185"></script>
-  <script src="builder-wizard.js?v=186"></script>
-  <script src="phmurt-shell.js?v=187"></script>
+  <script src="phmurt-tour.js?v=192" defer></script>
+  <script src="builder-wizard.js?v=192"></script>
+  <script src="phmurt-shell.js?v=192"></script>
+  <script>
+  /* Auto-start character builder tour on first visit; add "Take Tour" button to sidebar */
+  document.addEventListener('DOMContentLoaded', function () {
+    setTimeout(function () {
+      var sidebar = document.getElementById('sidebar');
+      if (sidebar && window.PhmurtTour) {
+        var tourBtn = document.createElement('button');
+        tourBtn.id = 'cb-tour-btn';
+        tourBtn.innerHTML = '\u2316 Take Tour';
+        tourBtn.title = 'Guided tour of the character builder';
+        tourBtn.style.cssText = 'display:block;width:100%;margin-top:6px;padding:8px 12px;font-family:Cinzel,serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:rgba(212,67,58,0.04);border:1px solid var(--border,rgba(255,255,255,0.11));color:var(--text-dim,#6b5e50);border-radius:4px;cursor:pointer;transition:all .15s;';
+        tourBtn.addEventListener('click', function () { PhmurtTour.start('character-builder'); });
+        sidebar.appendChild(tourBtn);
+        /* Auto-start on first visit (after wizard overlay is shown/dismissed) */
+        if (!PhmurtTour.hasSeen('character-builder')) {
+          setTimeout(function () {
+            var wizardVisible = document.getElementById('wizard-welcome');
+            if (!wizardVisible || wizardVisible.style.display === 'none') {
+              PhmurtTour.start('character-builder');
+            }
+          }, 1500);
+        }
+      }
+      /* Character sheet tour button — inject into the sheet view (step 9) */
+      var origGoToStep = window.goToStep;
+      if (origGoToStep) {
+        var _patched = false;
+        window.goToStep = function (n, skip) {
+          origGoToStep(n, skip);
+          if ((n === 9 || n === '9') && !_patched && window.PhmurtTour) {
+            _patched = true;
+            setTimeout(function () {
+              var sheetArea = document.querySelector('.cs-section') || document.querySelector('.cs-ability-grid');
+              if (sheetArea) {
+                var stBtn = document.createElement('button');
+                stBtn.innerHTML = '\u2316 Tour Character Sheet';
+                stBtn.style.cssText = 'display:inline-block;margin:8px 0 16px;padding:8px 16px;font-family:Cinzel,serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;background:rgba(212,67,58,0.06);border:1px solid rgba(212,67,58,0.15);color:var(--crimson,#d4433a);border-radius:4px;cursor:pointer;';
+                stBtn.addEventListener('click', function () { PhmurtTour.start('character-sheet'); });
+                sheetArea.parentElement.insertBefore(stBtn, sheetArea);
+                if (!PhmurtTour.hasSeen('character-sheet')) {
+                  setTimeout(function () { PhmurtTour.start('character-sheet'); }, 600);
+                }
+              }
+            }, 300);
+          }
+        };
+      }
+    }, 200);
+  });
+  </script>
 </body>
 </html>

@@ -1262,8 +1262,7 @@ var PhmurtDB = (function () {
         var campRow = {
           id:          campaign.id,
           owner_id:    _session.userId,
-          name:        (campaign.name || 'Unnamed Campaign').slice(0, 80),
-          description: campaign.description || '',
+          description: (campaign.description || '').slice(0, 500),
           system:      campaign.system || '5e',
           invite_code: campaign.inviteCode || null,
           data:        campaign,
@@ -1303,10 +1302,10 @@ var PhmurtDB = (function () {
                 });
               })
               .catch(function (err) {
-                console.warn('[Auth] Campaign cloud insert failed:', err);
+                console.error('[Auth] Campaign cloud insert failed:', err && err.message ? err.message : err);
                 campaign.id = localId; // Restore local ID on failure
                 _legacySaveCampLocal(campaign);
-                return true;
+                return Promise.reject(err);
               });
           });
         }

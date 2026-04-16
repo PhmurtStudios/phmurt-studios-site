@@ -135,6 +135,24 @@
 
 69. **archive/sql/migration-attribute-homebrew-to-loki.sql** *(new, already applied)* — Updated `_authorName` in the JSONB `data` column to "Loki" for all public `homebrew_content` rows. Community tab now displays "by Loki" for every shared entry.
 
+### Localized Page Tours & Onboarding Overhaul
+
+75a. **phmurt-shell.js** *(updated)* — Removed the generic first-visit homepage onboarding popup (4-step modal with emojis). Onboarding is now localized per-page via targeted tours instead.
+
+75b. **builder-wizard.js** *(updated)* — Replaced all cartoony emojis with thematic Unicode symbols (swords, stars, crosses, etc.) throughout the Quick Build archetypes, Guided Mode UI, and step tips. Added persistent "Quick Build" button in the character builder sidebar (green accent) so the archetype picker is always accessible, not just on first visit.
+
+75c. **learn-dm.html** *(updated)* — Replaced all cartoony emoji icons in the DM tutorial tip cards with thematic Unicode symbols.
+
+75d. **phmurt-tour.js** *(new)* — Lightweight page tour engine. Highlights elements with a spotlight overlay and positioned tooltip. Supports Next/Back/End Tour navigation, step counter, auto-scroll to target, viewport clamping. Three tour definitions built in: `character-builder` (6 steps: sidebar nav, race selection, ability scores, summary, quick build, navigation), `character-sheet` (6 steps: ability scores, combat stats, saves, skills, features, interactive rolls), `campaign-manager` (6 steps: campaign list, dashboard, timeline, party, invites, world building). Tours auto-start on first visit (localStorage flag) and can be re-triggered via "Take Tour" buttons.
+
+75e. **character-builder.html** *(updated)* — Added phmurt-tour.js script. Injects "Take Tour" button in sidebar. Auto-starts character builder tour on first visit (skipped if wizard overlay is showing). Injects "Tour Character Sheet" button when step 9 (character sheet) is reached; auto-starts sheet tour on first view.
+
+75f. **campaigns.html** *(updated)* — Added phmurt-tour.js script. Added "Take Tour" button in sidebar below multiplayer section. Auto-starts campaign manager tour on first visit after a campaign is loaded.
+
+75g. **phmurt-auth.js** *(updated)* — Fixed campaign cloud save failure: removed `name` field from `campRow` (column doesn't exist in the `campaigns` table schema, causing silent INSERT failures). Improved error propagation so cloud save failures surface to the UI instead of being swallowed.
+
+75h. **sw.js** *(updated)* — Cache version bumped to 192. Added `phmurt-tour.js` to precache list.
+
 ### Navigation Tab Consistency Fix
 
 74a. **compendium.html** *(updated)* — Fixed `data-nav-active` from `"Content"` to `"Homebrew Workshop"` so the correct tab highlights.
