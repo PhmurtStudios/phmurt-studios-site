@@ -4681,40 +4681,77 @@
 
     // ── Share one entity to the compendium ───────────────────────
     async function hbShareEntry(type, id) {
+      // Look up entry from old storage
       var entityMap = { race: _homebrewEntities.races, class: _homebrewEntities.classes,
                         background: _homebrewEntities.backgrounds, subclass: _homebrewEntities.subclasses };
       var itemMap   = DND_DATA.homebrewDB || {};
       var entry = type === 'item' ? itemMap[id] : (entityMap[type] && entityMap[type][id]);
+
+      // Also check new creator module storage if not found
+      if (!entry) {
+        try {
+          if (type === 'class') {
+            var crClasses = JSON.parse(localStorage.getItem('phmurt_homebrew_entities_class') || '[]');
+            entry = crClasses.find(function(c) { return c.clientId === id; });
+          } else if (type === 'race') {
+            var crRaces = JSON.parse(localStorage.getItem('phmurt_homebrew_entities_race') || '{}');
+            entry = Object.values(crRaces).find(function(r) { return r.clientId === id; });
+          }
+        } catch(e) {}
+      }
       if (!entry) return { error: 'Entry not found.' };
 
       var session = (typeof PhmurtDB !== 'undefined') ? PhmurtDB.getSession() : null;
       var authorName = session ? session.name : 'Anonymous';
       var userId     = session ? session.userId : 'anon';
 
+      // Store author_name inside data so it survives the round-trip
+      var dataToStore = Object.assign({}, entry, { _authorName: authorName });
+
       var row = {
-        id:          'hbc-' + id,
-        user_id:     userId,
-        author_name: authorName,
-        type:        type,
-        name:        entry.name,
-        tags:        _hbTags(type, entry),
-        data:        entry,
-        updated_at:  new Date().toISOString(),
+        user_id:      userId,
+        type:         type,
+        client_id:    id,
+        data:         dataToStore,
+        slug:         (entry.name || 'untitled').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, ''),
+        is_public:    true,
+        published_at: new Date().toISOString(),
+        updated_at:   new Date().toISOString(),
       };
 
       var sb = _hbSb();
       if (!sb) return { error: 'Cloud sync not available.' };
 
       try {
-        var { error } = await sb.from('homebrew_compendium').upsert(row, { onConflict: 'id' });
+        var { error } = await sb.from('homebrew_content').upsert(row, { onConflict: 'user_id,type,client_id' });
         if (error) throw error;
         // Mark as shared locally
         entry.shared = true;
         if (type === 'item') {
           saveHomebrewItems();
         } else {
-          _homebrewEntities[type][id] = entry;
-          saveHomebrewEntities();
+          // Update in old storage if it exists there
+          var pluralMap = { race:'races', class:'classes', background:'backgrounds', subclass:'subclasses' };
+          var pluralKey = pluralMap[type];
+          if (pluralKey && _homebrewEntities[pluralKey] && _homebrewEntities[pluralKey][id]) {
+            _homebrewEntities[pluralKey][id] = entry;
+            saveHomebrewEntities();
+          }
+          // Update in new creator storage
+          try {
+            if (type === 'class') {
+              var cls = JSON.parse(localStorage.getItem('phmurt_homebrew_entities_class') || '[]');
+              var ci = cls.findIndex(function(c){ return c.clientId === id; });
+              if (ci !== -1) { cls[ci].shared = true; localStorage.setItem('phmurt_homebrew_entities_class', JSON.stringify(cls)); }
+            } else if (type === 'race') {
+              var rcs = JSON.parse(localStorage.getItem('phmurt_homebrew_entities_race') || '{}');
+              if (rcs[id]) { rcs[id].shared = true; localStorage.setItem('phmurt_homebrew_entities_race', JSON.stringify(rcs)); }
+              else {
+                var found = Object.keys(rcs).find(function(k){ return rcs[k].clientId === id; });
+                if (found) { rcs[found].shared = true; localStorage.setItem('phmurt_homebrew_entities_race', JSON.stringify(rcs)); }
+              }
+            }
+          } catch(e) {}
         }
         _compendiumState.communityData = null; // invalidate cache
         return { success: true };
@@ -4728,11 +4765,15 @@
       var sb = _hbSb();
       if (!sb) return { error: 'Cloud sync not available.' };
 
+      var session = (typeof PhmurtDB !== 'undefined') ? PhmurtDB.getSession() : null;
+      var userId  = session ? session.userId : 'anon';
+
       try {
-        var { error } = await sb.from('homebrew_compendium').delete().eq('id', 'hbc-' + id);
+        var { error } = await sb.from('homebrew_content').delete()
+          .eq('user_id', userId).eq('type', type).eq('client_id', id);
         if (error) throw error;
 
-        // Unmark locally
+        // Unmark locally in old storage
         var entityMap = { race: _homebrewEntities.races, class: _homebrewEntities.classes,
                           background: _homebrewEntities.backgrounds, subclass: _homebrewEntities.subclasses };
         var entry = type === 'item' ? (DND_DATA.homebrewDB && DND_DATA.homebrewDB[id])
@@ -4741,6 +4782,18 @@
           entry.shared = false;
           if (type === 'item') saveHomebrewItems(); else saveHomebrewEntities();
         }
+        // Unmark in new creator storage
+        try {
+          if (type === 'class') {
+            var cls = JSON.parse(localStorage.getItem('phmurt_homebrew_entities_class') || '[]');
+            var ci = cls.findIndex(function(c){ return c.clientId === id; });
+            if (ci !== -1) { cls[ci].shared = false; localStorage.setItem('phmurt_homebrew_entities_class', JSON.stringify(cls)); }
+          } else if (type === 'race') {
+            var rcs = JSON.parse(localStorage.getItem('phmurt_homebrew_entities_race') || '{}');
+            Object.keys(rcs).forEach(function(k) { if (rcs[k].clientId === id || k === id) { rcs[k].shared = false; } });
+            localStorage.setItem('phmurt_homebrew_entities_race', JSON.stringify(rcs));
+          }
+        } catch(e) {}
         _compendiumState.communityData = null;
         return { success: true };
       } catch(e) {
@@ -4755,12 +4808,22 @@
 
       try {
         var { data, error } = await sb
-          .from('homebrew_compendium')
+          .from('homebrew_content')
           .select('*')
-          .order('likes', { ascending: false })
+          .eq('is_public', true)
+          .order('likes_count', { ascending: false })
           .order('created_at', { ascending: false })
           .limit(200);
         if (error) throw error;
+        // Normalize rows so community rendering can access name/tags/author from data
+        (data || []).forEach(function(row) {
+          if (row.data) {
+            if (!row.name)        row.name = row.data.name || 'Unnamed';
+            if (!row.tags)        row.tags = row.data.tags || [];
+            if (!row.author_name) row.author_name = row.data._authorName || 'Anonymous';
+          }
+          if (row.likes_count !== undefined && row.likes === undefined) row.likes = row.likes_count;
+        });
         return { data: data || [] };
       } catch(e) {
         return { data: [], error: e.message || 'Failed to load compendium.' };
@@ -4783,10 +4846,10 @@
         // Fallback: direct update if RPC not set up
         if (error) {
           // Get current likes then increment
-          var { data: row } = await sb.from('homebrew_compendium').select('likes').eq('id', compendiumId).single();
-          var currentLikes = (row && row.likes) ? row.likes : 0;
-          var { error: updErr } = await sb.from('homebrew_compendium')
-            .update({ likes: currentLikes + 1 }).eq('id', compendiumId);
+          var { data: row } = await sb.from('homebrew_content').select('likes_count').eq('id', compendiumId).single();
+          var currentLikes = (row && row.likes_count) ? row.likes_count : 0;
+          var { error: updErr } = await sb.from('homebrew_content')
+            .update({ likes_count: currentLikes + 1 }).eq('id', compendiumId);
           if (updErr) throw updErr;
         }
 
@@ -5466,6 +5529,128 @@
       }
     }
 
+    // ── VIEW DETAIL MODAL ─────────────────────────────────────────────────
+    function cmpShowViewModal(type, entry) {
+      var existing = document.getElementById('cmp-view-overlay');
+      if (existing) existing.remove();
+
+      var overlay = document.createElement('div');
+      overlay.id = 'cmp-view-overlay';
+      overlay.style.cssText = 'position:fixed;inset:0;z-index:99998;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);padding:20px;';
+
+      var modal = document.createElement('div');
+      modal.style.cssText = 'background:var(--bg-card,#1e1914);border:1px solid var(--crimson-border,#6b3a3a);border-radius:12px;max-width:640px;width:100%;max-height:85vh;overflow-y:auto;padding:28px 32px;color:var(--text,#e8dcc8);font-family:inherit;box-shadow:0 12px 48px rgba(0,0,0,.6);';
+
+      var typeLabels = { race:'Race', class:'Class', background:'Background', subclass:'Subclass', feat:'Feat', item:'Item', spell:'Spell', monster:'Monster', encounter:'Encounter' };
+      var typeColors = { race:'#4169e1', class:'var(--crimson,#d4433a)', background:'#2e8b57', subclass:'#8b6914', feat:'#e67e22', item:'#6b4ea8', spell:'#2980b9', monster:'#e8605a', encounter:'#16a085' };
+
+      var h = '';
+      // Header
+      h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">';
+      h += '<div>';
+      h += '<span style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:' + (typeColors[type]||'#aaa') + ';">' + cmpEsc(typeLabels[type]||type) + '</span>';
+      h += '<h2 style="margin:4px 0 0;font-size:22px;color:var(--text,#e8dcc8);">' + cmpEsc(entry.name || 'Unnamed') + '</h2>';
+      h += '</div>';
+      h += '<button id="cmp-view-close" style="background:none;border:none;color:var(--text-muted,#a89a85);font-size:22px;cursor:pointer;padding:4px 8px;" title="Close">&times;</button>';
+      h += '</div>';
+
+      // Tags
+      var tags = cmpNormTags(entry.tags);
+      if (tags.length) {
+        h += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">';
+        tags.forEach(function(t) { h += '<span style="padding:3px 10px;border-radius:12px;font-size:12px;background:rgba(255,255,255,.07);color:var(--text-muted,#a89a85);border:1px solid var(--border,#3d3529);">' + cmpEsc(t) + '</span>'; });
+        h += '</div>';
+      }
+
+      // Type-specific details
+      if (type === 'race') {
+        h += '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;font-size:13px;color:var(--text-muted,#a89a85);">';
+        if (entry.size) h += '<span><strong>Size:</strong> ' + cmpEsc(entry.size) + '</span>';
+        if (entry.speed) h += '<span><strong>Speed:</strong> ' + entry.speed + ' ft</span>';
+        if (entry.languages) h += '<span><strong>Languages:</strong> ' + cmpEsc(typeof entry.languages === 'object' ? entry.languages.join(', ') : entry.languages) + '</span>';
+        h += '</div>';
+        if (entry.asi && typeof entry.asi === 'object') {
+          var asiParts = [];
+          Object.keys(entry.asi).forEach(function(k) { if (entry.asi[k]) asiParts.push(k + ' +' + entry.asi[k]); });
+          if (asiParts.length) h += '<p style="font-size:13px;color:var(--text-muted,#a89a85);"><strong>Ability Score Increases:</strong> ' + cmpEsc(asiParts.join(', ')) + '</p>';
+        }
+        // Traits
+        if (entry.traits && entry.traits.length) {
+          h += '<h3 style="font-size:15px;margin:18px 0 8px;color:var(--crimson,#d4433a);">Racial Traits</h3>';
+          entry.traits.forEach(function(t) {
+            h += '<div style="margin-bottom:10px;"><strong style="color:var(--text,#e8dcc8);">' + cmpEsc(t.name || '') + '</strong>';
+            if (t.desc) h += '<p style="margin:4px 0 0;font-size:13px;color:var(--text-muted,#a89a85);line-height:1.5;">' + cmpEsc(t.desc) + '</p>';
+            h += '</div>';
+          });
+        }
+      }
+
+      if (type === 'class') {
+        h += '<div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:14px;font-size:13px;color:var(--text-muted,#a89a85);">';
+        if (entry.hitDie) h += '<span><strong>Hit Die:</strong> d' + entry.hitDie + '</span>';
+        if (entry.primaryAbility) h += '<span><strong>Primary:</strong> ' + cmpEsc(entry.primaryAbility) + '</span>';
+        if (entry.saves && entry.saves.length) h += '<span><strong>Saves:</strong> ' + cmpEsc(entry.saves.join(', ')) + '</span>';
+        if (entry.spellcastingAbility) h += '<span><strong>Spellcasting:</strong> ' + cmpEsc(entry.spellcastingAbility) + '</span>';
+        h += '</div>';
+        if (entry.armorProf) h += '<p style="font-size:13px;color:var(--text-muted,#a89a85);"><strong>Armor:</strong> ' + cmpEsc(entry.armorProf) + '</p>';
+        if (entry.weaponProf) h += '<p style="font-size:13px;color:var(--text-muted,#a89a85);"><strong>Weapons:</strong> ' + cmpEsc(entry.weaponProf) + '</p>';
+        // Features
+        if (entry.features && entry.features.length) {
+          h += '<h3 style="font-size:15px;margin:18px 0 8px;color:var(--crimson,#d4433a);">Class Features</h3>';
+          entry.features.forEach(function(f) {
+            h += '<div style="margin-bottom:10px;"><strong style="color:var(--text,#e8dcc8);">' + cmpEsc(f.name || '') + '</strong>';
+            if (f.desc) h += '<p style="margin:4px 0 0;font-size:13px;color:var(--text-muted,#a89a85);line-height:1.5;">' + cmpEsc(f.desc) + '</p>';
+            h += '</div>';
+          });
+        }
+        // Level features
+        if (entry.levelFeatures) {
+          var lvKeys = Object.keys(entry.levelFeatures).sort(function(a,b){ return parseInt(a)-parseInt(b); });
+          if (lvKeys.length) {
+            h += '<h3 style="font-size:15px;margin:18px 0 8px;color:var(--crimson,#d4433a);">Level Features</h3>';
+            lvKeys.forEach(function(lv) {
+              var feats = entry.levelFeatures[lv];
+              if (feats && feats.length) {
+                feats.forEach(function(f) {
+                  h += '<div style="margin-bottom:8px;"><strong style="color:var(--text,#e8dcc8);">Lv ' + lv + ' — ' + cmpEsc(f.name || 'Feature') + '</strong>';
+                  if (f.desc) h += '<p style="margin:4px 0 0;font-size:13px;color:var(--text-muted,#a89a85);line-height:1.5;">' + cmpEsc(f.desc) + '</p>';
+                  h += '</div>';
+                });
+              }
+            });
+          }
+        }
+      }
+
+      if (type === 'background') {
+        if (entry.skills && entry.skills.length) h += '<p style="font-size:13px;color:var(--text-muted,#a89a85);"><strong>Skills:</strong> ' + cmpEsc(entry.skills.join(', ')) + '</p>';
+        if (entry.tools) h += '<p style="font-size:13px;color:var(--text-muted,#a89a85);"><strong>Tools:</strong> ' + cmpEsc(entry.tools) + '</p>';
+        if (entry.languages) h += '<p style="font-size:13px;color:var(--text-muted,#a89a85);"><strong>Languages:</strong> ' + cmpEsc(entry.languages) + '</p>';
+        if (entry.equipment) h += '<p style="font-size:13px;color:var(--text-muted,#a89a85);"><strong>Equipment:</strong> ' + cmpEsc(entry.equipment) + '</p>';
+        if (entry.featureDesc) {
+          h += '<h3 style="font-size:15px;margin:18px 0 8px;color:var(--crimson,#d4433a);">Feature</h3>';
+          h += '<p style="font-size:13px;color:var(--text-muted,#a89a85);line-height:1.5;">' + cmpEsc(entry.featureDesc) + '</p>';
+        }
+      }
+
+      // Generic desc fallback
+      if (type !== 'race' && type !== 'class' && type !== 'background') {
+        var desc = entry.desc || entry.featureDesc || '';
+        if (desc) h += '<p style="font-size:13px;color:var(--text-muted,#a89a85);line-height:1.5;margin-top:12px;">' + cmpEsc(desc) + '</p>';
+      }
+
+      modal.innerHTML = h;
+      overlay.appendChild(modal);
+      document.body.appendChild(overlay);
+
+      // Close handlers
+      document.getElementById('cmp-view-close').addEventListener('click', function() { overlay.remove(); });
+      overlay.addEventListener('click', function(ev) { if (ev.target === overlay) overlay.remove(); });
+      document.addEventListener('keydown', function onEsc(ev) {
+        if (ev.key === 'Escape') { overlay.remove(); document.removeEventListener('keydown', onEsc); }
+      });
+    }
+
     // ── MY HOMEBREW ──────────────────────────────────────────────────────────
 
     function cmpRenderMine() {
@@ -5557,7 +5742,7 @@
         var type  = row.type;
         var col   = typeColors[type] || 'var(--text-muted)';
         var lbl   = typeLabels[type] || type;
-        var id    = e.id;
+        var id    = e.id || e.clientId || '';
         var isShared = !!e.shared;
 
         // Subtitle
@@ -5609,6 +5794,7 @@
           + 'data-share-action="' + (isShared ? 'unshare' : 'share') + '" '
           + 'title="' + (isShared ? 'Remove from community' : 'Share with community') + '">'
           + (isShared ? '&#10003; Shared' : '&#8593; Share') + '</button>'
+          + '<button class="cmp-btn" data-view-type="' + type + '" data-view-id="' + id + '" title="View details">&#128065; View</button>'
           + '<button class="cmp-btn" data-edit-type="' + type + '" data-edit-id="' + id + '">Edit</button>'
           + '<button class="ps-fav-btn" data-fav-id="cmp-' + type + '-' + id + '" onclick="toggleFavorite(this)" title="Bookmark">&#9734;</button>'
           + '</div>'
@@ -5618,6 +5804,16 @@
       html += '</div>';
 
       container.innerHTML = html;
+
+      // Wire view buttons
+      container.querySelectorAll('[data-view-type]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var t = this.getAttribute('data-view-type');
+          var i = this.getAttribute('data-view-id');
+          var match = filtered.find(function(row) { return (row.entry.id || row.entry.clientId || '') === i && row.type === t; });
+          if (match) cmpShowViewModal(match.type, match.entry);
+        });
+      });
 
       // Wire edit buttons
       container.querySelectorAll('[data-edit-type]').forEach(function(btn) {
@@ -5688,10 +5884,19 @@
 
       // Local ids for "In Collection" badge
       var localIds = new Set();
+      var pluralMap2 = {race:'races', class:'classes', background:'backgrounds', subclass:'subclasses'};
       ['race','class','background','subclass'].forEach(function(t) {
-        Object.keys(_homebrewEntities[t] || {}).forEach(function(id) { localIds.add(id); });
+        var pk = pluralMap2[t] || t;
+        Object.keys(_homebrewEntities[pk] || {}).forEach(function(id) { localIds.add(id); });
       });
       Object.keys(DND_DATA.homebrewDB || {}).forEach(function(id) { localIds.add(id); });
+      // Also include new creator storage clientIds
+      try {
+        var crCls = JSON.parse(localStorage.getItem('phmurt_homebrew_entities_class') || '[]');
+        crCls.forEach(function(c) { if (c.clientId) localIds.add(c.clientId); });
+        var crRcs = JSON.parse(localStorage.getItem('phmurt_homebrew_entities_race') || '{}');
+        Object.values(crRcs).forEach(function(r) { if (r.clientId) localIds.add(r.clientId); });
+      } catch(e) {}
 
       var liked = [];
       try { liked = JSON.parse(localStorage.getItem('phmurt_liked_hb') || '[]'); } catch(e) {}
@@ -5739,7 +5944,7 @@
         var col     = typeColors[row.type] || 'var(--text-muted)';
         var lbl     = typeLabels[row.type] || row.type;
         var isLiked = likedSet.has(row.id);
-        var isLocal = row.data && localIds.has(row.data.id);
+        var isLocal = row.data && (localIds.has(row.data.id) || localIds.has(row.data.clientId) || localIds.has(row.client_id));
         var likes   = row.likes || 0;
 
         var desc = '';
@@ -5772,6 +5977,7 @@
           + 'data-like-row="' + row.id + '" ' + (isLiked ? 'disabled' : '') + '>'
           + '&#9829; <span class="like-count" data-lid="' + row.id + '">' + likes + '</span></button>';
 
+        html += '<button class="cmp-btn" data-cview-idx="' + filtered.indexOf(row) + '" title="View details">&#128065;</button>';
         if (!isLocal) {
           html += '<button class="cmp-btn primary" data-import-row="' + row.id + '">&#8595; Import</button>';
         }
@@ -5780,6 +5986,15 @@
       html += '</div>';
 
       container.innerHTML = html;
+
+      // Wire community view buttons
+      container.querySelectorAll('[data-cview-idx]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var idx = parseInt(this.getAttribute('data-cview-idx'), 10);
+          var row = filtered[idx];
+          if (row && row.data) cmpShowViewModal(row.type, row.data);
+        });
+      });
 
       // Wire like buttons
       container.querySelectorAll('.cmp-like-btn:not([disabled])').forEach(function(btn) {
