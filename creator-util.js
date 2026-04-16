@@ -227,7 +227,7 @@
     overlay.id = 'cr-confirm-overlay';
     overlay.style.cssText = 'position:fixed;inset:0;z-index:99999;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);';
     var box = document.createElement('div');
-    box.style.cssText = 'background:var(--bg-card,#1e1914);border:1px solid var(--crimson-border,#6b3a3a);border-radius:10px;padding:28px 32px;max-width:380px;font-family:inherit;color:var(--text,#e8dcc8);text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.5);';
+    box.style.cssText = 'background:var(--bg-card,#141420);border:1px solid var(--crimson-border,#6b3a3a);border-radius:10px;padding:28px 32px;max-width:380px;font-family:inherit;color:var(--text,#f2e8d6);text-align:center;box-shadow:0 8px 40px rgba(0,0,0,.5);';
     box.innerHTML = '<p style="margin:0 0 20px;font-size:15px;line-height:1.5;">' + escapeHtml(message) + '</p>' +
       '<div style="display:flex;gap:12px;justify-content:center;">' +
         '<button id="cr-confirm-yes" style="padding:8px 24px;border:none;border-radius:6px;background:var(--crimson,#d4433a);color:#fff;cursor:pointer;font-family:inherit;font-size:14px;font-weight:600;">Delete</button>' +

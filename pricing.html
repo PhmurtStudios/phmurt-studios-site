@@ -84,7 +84,7 @@
       cursor: pointer;
       transition: background .2s;
     }
-    .billing-switch.yearly { background: var(--accent, #7c3aed); }
+    .billing-switch.yearly { background: var(--crimson, #d4433a); }
     .billing-switch::after {
       content: '';
       width: 20px; height: 20px;
@@ -96,7 +96,7 @@
     }
     .billing-switch.yearly::after { transform: translateX(22px); }
     .billing-save {
-      background: var(--accent, #7c3aed);
+      background: var(--crimson, #d4433a);
       color: #fff;
       font-size: .75rem;
       padding: 2px 8px;
@@ -114,7 +114,7 @@
       padding: 0 24px;
     }
     .plan-card {
-      background: var(--bg-card, #1e1e2e);
+      background: var(--bg-card, #141420);
       border: 1px solid var(--crimson-border, #333);
       border-radius: 8px;
       padding: 36px 28px 32px;
@@ -123,15 +123,15 @@
       position: relative;
     }
     .plan-card.pro {
-      border-color: var(--accent, #7c3aed);
-      box-shadow: 0 0 20px rgba(124, 58, 237, .15);
+      border-color: var(--crimson, #d4433a);
+      box-shadow: 0 0 20px rgba(212, 67, 58, .15);
     }
     .plan-card.pro::before {
       content: 'MOST POPULAR';
       position: absolute;
       top: -12px; left: 50%;
       transform: translateX(-50%);
-      background: var(--accent, #7c3aed);
+      background: var(--crimson, #d4433a);
       color: #fff;
       font-size: .7rem;
       font-weight: 700;
@@ -142,7 +142,7 @@
     .plan-card.lifetime {
       border-color: #c9a84c;
       box-shadow: 0 0 30px rgba(201, 168, 76, .2);
-      background: linear-gradient(135deg, var(--bg-card, #1e1e2e) 0%, rgba(201, 168, 76, .03) 100%);
+      background: linear-gradient(135deg, var(--bg-card, #141420) 0%, rgba(201, 168, 76, .03) 100%);
     }
     .plan-card.lifetime::before {
       content: 'LIMITED';
@@ -220,12 +220,12 @@
       color: var(--text-primary, #eee);
     }
     .plan-cta.pro-cta {
-      background: var(--accent, #7c3aed);
+      background: var(--crimson, #d4433a);
       color: #fff;
     }
     .plan-cta.pro-cta:hover { opacity: .9; }
     .plan-cta.party-cta {
-      background: var(--accent, #7c3aed);
+      background: var(--crimson, #d4433a);
       color: #fff;
     }
     .plan-cta.party-cta:hover { opacity: .9; }
@@ -237,8 +237,8 @@
     .plan-cta.lifetime-cta:hover { opacity: .85; }
     .plan-cta.active-cta {
       background: transparent;
-      border: 1px solid var(--accent, #7c3aed);
-      color: var(--accent, #7c3aed);
+      border: 1px solid var(--crimson, #d4433a);
+      color: var(--crimson, #d4433a);
       cursor: default;
     }
 

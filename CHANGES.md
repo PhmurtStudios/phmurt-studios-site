@@ -21,6 +21,13 @@
 
 15. **character-builder.html** — "Create Homebrew" buttons moved from standalone full-width buttons at the bottom of each step to inline dashed-border cards in the selection grid alongside standard options (Race, Class, Background steps)
 
+### Style Consistency Fixes
+
+16. **pricing.html** — Replaced rogue purple accent `#7c3aed` with `var(--crimson, #d4433a)`, fixed `--bg-card` fallback `#1e1e2e` → `#141420`, fixed pro card box-shadow to crimson glow
+17. **campaigns.html** — Fixed loading shell `--bg` fallback `#0c0804` → `#08080a`, `--bg-nav` fallback `#100c08` → `#06060a`
+18. **creator-util.js** *(updated)* — Fixed confirm dialog `--bg-card` fallback `#1e1914` → `#141420`, `--text` fallback `#e8dcc8` → `#f2e8d6`
+19. **compendium.html** *(updated)* — Fixed view modal `--bg-card` fallback `#1e1914` → `#141420`, fixed 5 `--text` fallbacks `#e8dcc8` → `#f2e8d6`
+
 ### SQL Migration (apply via Supabase dashboard)
 
-16. **archive/sql/migration-homebrew-rls.sql** — Proper RLS policies for homebrew_content, user_collections, campaign_homebrew tables + helper functions
+20. **archive/sql/migration-homebrew-rls.sql** — Proper RLS policies for homebrew_content, user_collections, campaign_homebrew tables + helper functions
