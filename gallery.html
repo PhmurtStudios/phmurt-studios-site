@@ -586,11 +586,19 @@
       <select id="filter-race" class="filter-select">
         <option value="">All Races</option>
         <option value="Human">Human</option>
+        <option value="Dwarf">Dwarf</option>
         <option value="Elf">Elf</option>
+        <option value="High Elf">High Elf</option>
+        <option value="Wood Elf">Wood Elf</option>
+        <option value="Dark Elf">Dark Elf</option>
         <option value="Half-Elf">Half-Elf</option>
         <option value="Half-Orc">Half-Orc</option>
-        <option value="Dwarf">Dwarf</option>
         <option value="Halfling">Halfling</option>
+        <option value="Lightfoot Halfling">Lightfoot Halfling</option>
+        <option value="Stout Halfling">Stout Halfling</option>
+        <option value="Gnome">Gnome</option>
+        <option value="Rock Gnome">Rock Gnome</option>
+        <option value="Forest Gnome">Forest Gnome</option>
         <option value="Tiefling">Tiefling</option>
         <option value="Dragonborn">Dragonborn</option>
       </select>
@@ -877,7 +885,343 @@
         equipment: ['Dagger', 'Light crossbow', 'Scholar\'s pack', 'Spellbook'],
         traits: 'Intellectual and measured, Alaric approaches problems through logic and study. He is patient but easily frustrated by superstition.',
         backstory: 'A dedicated scholar of the arcane, Alaric left his tower to see the world and test his understanding of magic in real situations beyond academic theory.'
-      }
+      },
+      {
+  name: 'Durgan Ironfang',
+  class: 'Barbarian',
+  race: 'Dwarf',
+  level: 1,
+  subclass: 'None',
+  flavor: 'A stocky dwarf with a grudge and an axe to grind.',
+  icon: '⚡',
+  abilities: { STR: 15, DEX: 10, CON: 14, INT: 8, WIS: 12, CHA: 13 },
+  features: ['Rage — Enter a primal rage to deal extra damage', 'Reckless Attack — Attack with abandon and strike with advantage'],
+  equipment: ['Greataxe', 'Hide Armor', 'Backpack'],
+  traits: 'Hot-headed but loyal, Durgan speaks his mind freely and laughs at danger.',
+  backstory: 'Exiled from his clan for a crime he didn\'t commit, Durgan wanders the realm seeking redemption through battle.'
+},
+{
+  name: 'Taelin Brightstring',
+  class: 'Bard',
+  race: 'High Elf',
+  level: 1,
+  subclass: 'None',
+  flavor: 'An elven bard whose words are as sharp as her wit.',
+  icon: '♪',
+  abilities: { CHA: 15, DEX: 14, CON: 13, INT: 12, WIS: 10, STR: 8 },
+  features: ['Bardic Inspiration — Grant allies inspiration dice for bonus rolls', 'Spellcasting — Cast spells through performance and magic'],
+  equipment: ['Longsword', 'Lute', 'Leather Armor', 'Backpack'],
+  traits: 'Witty and charming, Taelin uses flattery and deception as easily as song.',
+  backstory: 'A runaway from an elven noble house, Taelin trades tales and music for coin and survival on the road.'
+},
+{
+  name: 'Dura Forgeheart',
+  class: 'Cleric',
+  race: 'Dwarf',
+  level: 1,
+  subclass: 'None',
+  flavor: 'A dwarven priest devoted to stone, craft, and protection.',
+  icon: '✦',
+  abilities: { WIS: 15, STR: 14, CON: 13, CHA: 12, INT: 10, DEX: 8 },
+  features: ['Channel Divinity — Invoke divine power to heal or smite', 'Spellcasting — Cast divine spells from a holy domain'],
+  equipment: ['Mace', 'Scale Mail', 'Shield', 'Holy Symbol', 'Backpack'],
+  traits: 'Stern and protective, Dura shows little patience for frivolity but boundless compassion for the faithful.',
+  backstory: 'Ordained in a mountain temple, Dura was sent forth to spread her god\'s teachings to distant lands.'
+},
+{
+  name: 'Theron Greenbough',
+  class: 'Druid',
+  race: 'Half-Elf',
+  level: 1,
+  subclass: 'None',
+  flavor: 'A half-elf who moves between civilization and wilderness with ease.',
+  icon: '⚘',
+  abilities: { WIS: 15, DEX: 14, CON: 13, INT: 12, CHA: 10, STR: 8 },
+  features: ['Spellcasting — Cast primal spells tied to nature', 'Druidic — Speak a secret language shared by druids'],
+  equipment: ['Quarterstaff', 'Leather Armor', 'Explorer\'s Pack', 'Holy Symbol'],
+  traits: 'Serene and observant, Theron speaks softly but listens to the whispers of nature.',
+  backstory: 'Raised between human villages and wild forests, Theron discovered an affinity for primal magic and chose the druid\'s path.'
+},
+{
+  name: 'Rhokk Stonefist',
+  class: 'Fighter',
+  race: 'Dragonborn',
+  level: 1,
+  subclass: 'None',
+  flavor: 'A dragonborn warrior with scales like steel and honor like stone.',
+  icon: '⛨',
+  abilities: { STR: 15, CON: 14, DEX: 13, WIS: 12, INT: 10, CHA: 8 },
+  features: ['Fighting Style — Choose a specialization in combat', 'Second Wind — Recover hit points during battle through sheer willpower'],
+  equipment: ['Longsword', 'Shield', 'Chain Mail', 'Adventuring Pack'],
+  traits: 'Disciplined and honorable, Rhokk views combat as a dance of strategy and strength.',
+  backstory: 'The youngest son of a dragonborn war band, Rhokk seeks to prove his worth in human lands.'
+},
+{
+  name: 'Mei Chen',
+  class: 'Monk',
+  race: 'Human',
+  level: 1,
+  subclass: 'None',
+  flavor: 'A disciplined martial artist searching for inner balance.',
+  icon: '⊞',
+  abilities: { DEX: 15, WIS: 14, CON: 13, STR: 12, INT: 10, CHA: 8 },
+  features: ['Martial Arts — Strike with fist and weapon with grace', 'Ki — Harness inner energy for supernatural feats'],
+  equipment: ['Quarterstaff', 'Dagger', 'Martial Arts Outfit', 'Explorer\'s Pack'],
+  traits: 'Calm and focused, Mei speaks deliberately and moves with precision.',
+  backstory: 'Trained in a secluded monastery from childhood, Mei now wanders the world to test her discipline against real challenges.'
+},
+{
+  name: 'Lord Garrett of Ashford',
+  class: 'Paladin',
+  race: 'Half-Orc',
+  level: 1,
+  subclass: 'None',
+  flavor: 'A half-orc knight sworn to righteous cause and noble purpose.',
+  icon: '⚔',
+  abilities: { STR: 15, CHA: 14, CON: 13, WIS: 12, INT: 10, DEX: 8 },
+  features: ['Lay on Hands — Channel divine power to heal wounds', 'Divine Sense — Detect celestial, fiend, and undead presences'],
+  equipment: ['Longsword', 'Shield', 'Chain Mail', 'Holy Symbol', 'Backpack'],
+  traits: 'Righteous and uncompromising, Garrett speaks with absolute conviction in his beliefs.',
+  backstory: 'Born to an orc mother and a human knight, Garrett took vows to prove orcs can embody honor and justice.'
+},
+{
+  name: 'Elowen Swiftbow',
+  class: 'Ranger',
+  race: 'Elf',
+  level: 1,
+  subclass: 'None',
+  flavor: 'An elven tracker who reads the land like a book.',
+  icon: '↝',
+  abilities: { DEX: 15, WIS: 14, CON: 13, STR: 12, INT: 10, CHA: 8 },
+  features: ['Favored Enemy — Hunt a chosen foe with expertise', 'Natural Explorer — Gain advantage in a chosen terrain'],
+  equipment: ['Longbow', 'Longsword', 'Leather Armor', 'Explorer\'s Pack'],
+  traits: 'Quiet and cautious, Elowen communicates more through action than words.',
+  backstory: 'Guardians of the forest drove her kind away, so Elowen became a ranger to defend the wild places herself.'
+},
+{
+  name: 'Vex Shadowbolt',
+  class: 'Rogue',
+  race: 'Gnome',
+  level: 1,
+  subclass: 'None',
+  flavor: 'A clever gnome who moves through shadows like they\'re old friends.',
+  icon: '†',
+  abilities: { DEX: 15, INT: 14, CHA: 13, WIS: 12, CON: 10, STR: 8 },
+  features: ['Expertise — Master two skills beyond normal limits', 'Sneak Attack — Strike with precision for devastating effect'],
+  equipment: ['Rapier', 'Hand Crossbow', 'Leather Armor', 'Thieves\' Tools', 'Backpack'],
+  traits: 'Quick-witted and scheming, Vex can talk her way into or out of anything.',
+  backstory: 'A street urchin turned pickpocket, Vex now hires herself out to those with coin and flexible morals.'
+},
+{
+  name: 'Zara of the Crimson Flame',
+  class: 'Sorcerer',
+  race: 'Half-Elf',
+  level: 1,
+  subclass: 'None',
+  flavor: 'A half-elf born with wild magic burning in her blood.',
+  icon: '⟡',
+  abilities: { CHA: 15, DEX: 14, CON: 13, INT: 12, WIS: 10, STR: 8 },
+  features: ['Sorcerous Origin — Channel innate magical power', 'Spellcasting — Cast spells fueled by raw magic'],
+  equipment: ['Dagger', 'Light Crossbow', 'Leather Armor', 'Component Pouch', 'Backpack'],
+  traits: 'Impulsive and passionate, Zara acts on instinct and feels emotions intensely.',
+  backstory: 'Orphaned as a child, Zara\'s magical talents manifested under stress, setting her on the path of a sorcerer.'
+},
+{
+  name: 'Malachai the Bound',
+  class: 'Warlock',
+  race: 'Tiefling',
+  level: 1,
+  subclass: 'None',
+  flavor: 'A tiefling who made a pact with powers beyond mortal ken.',
+  icon: '◉',
+  abilities: { CHA: 15, DEX: 14, INT: 13, WIS: 12, CON: 10, STR: 8 },
+  features: ['Pact Magic — Channel power granted by an otherworldly patron', 'Eldritch Invocations — Learn supernatural secrets of the cosmos'],
+  equipment: ['Dagger', 'Light Armor', 'Arcane Focus', 'Scholar\'s Pack'],
+  traits: 'Mysterious and calculating, Malachai views others as tools for his ambitions.',
+  backstory: 'Desperate and dying, Malachai bargained with a dark entity for power, never expecting to be bound so completely.'
+},
+{
+  name: 'Sylvain the Scholar',
+  class: 'Wizard',
+  race: 'Gnome',
+  level: 1,
+  subclass: 'None',
+  flavor: 'A curious gnome scholar who sees magic as the greatest puzzle.',
+  icon: '≡',
+  abilities: { INT: 15, DEX: 14, CON: 13, WIS: 12, CHA: 10, STR: 8 },
+  features: ['Spellcasting — Master arcane spells through study', 'Arcane Recovery — Regain spells through meditation'],
+  equipment: ['Quarterstaff', 'Light Crossbow', 'Scholar\'s Pack', 'Spellbook', 'Arcane Focus'],
+  traits: 'Meticulous and analytical, Sylvain pursues knowledge with singleminded dedication.',
+  backstory: 'Graduated from a prestigious academy with flying colors, Sylvain now researches magical phenomena in the field.'
+},
+{
+  name: 'Gornak Ironjaw',
+  class: 'Barbarian',
+  race: 'Half-Orc',
+  level: 5,
+  subclass: 'Berserker',
+  flavor: 'A half-orc berserker whose rage is a force of nature.',
+  icon: '⚡',
+  abilities: { STR: 17, DEX: 11, CON: 16, INT: 9, WIS: 12, CHA: 13 },
+  features: ['Rage — Enter a frenzy of destruction and damage reduction', 'Reckless Attack — Strike with wild abandon and advantage', 'Frenzy — Make an extra attack while raging', 'Extra Attack — Attack twice when taking the Attack action', 'Uncanny Dodge — Halve damage from a seen attack'],
+  equipment: ['Greataxe', 'Hide Armor', 'Shield', 'Bedroll', 'Rope', 'Backpack'],
+  traits: 'Wild and unpredictable, Gornak follows his instincts and respects strength above all.',
+  backstory: 'Once a slave, Gornak broke free and now wanders as a mercenary, selling his fury to the highest bidder.'
+},
+{
+  name: 'Cassandra the Magnificent',
+  class: 'Bard',
+  race: 'Dark Elf',
+  level: 5,
+  subclass: 'College of Glamour',
+  flavor: 'A drow bard who weaves magic and charm into every word.',
+  icon: '♪',
+  abilities: { CHA: 16, DEX: 15, CON: 13, INT: 12, WIS: 11, STR: 9 },
+  features: ['Bardic Inspiration — Grant inspiration for bonus rolls', 'Jack of All Trades — Add half proficiency to all checks', 'Spell Expertise — Cast spells as a spellcaster', 'Mantle of Inspiration — Use bardic inspiration to heal and assist', 'Charm of Fey Reinforcement — Enhance charm magic'],
+  equipment: ['Rapier', 'Lute', 'Leather Armor', 'Lute Case', 'Fine Clothes', 'Pouch of Coin'],
+  traits: 'Seductive and manipulative, Cassandra uses charm and beauty as weapons.',
+  backstory: 'Exiled from the underdark for her refusal to serve Lolth, Cassandra found freedom and fame in surface lands.'
+},
+{
+  name: 'Sister Kelia Ironheart',
+  class: 'Cleric',
+  race: 'Rock Gnome',
+  level: 5,
+  subclass: 'War Domain',
+  flavor: 'A gnome war priest who channels divine fury into combat.',
+  icon: '✦',
+  abilities: { WIS: 16, STR: 15, CON: 14, CHA: 12, INT: 11, DEX: 10 },
+  features: ['Channel Divinity — Invoke divine power for healing or damage', 'War Priest — Make attacks with extra precision', 'Divine Strike — Add damage to weapon attacks', 'Extra Attack — Attack twice when taking the Attack action', 'War Domain Spells — Cast domain-specific spells'],
+  equipment: ['War Hammer', 'Shield', 'Plate Armor', 'Holy Symbol', 'Bedroll', 'Backpack'],
+  traits: 'Aggressive and confident, Kelia believes the best defense is overwhelming offense blessed by her deity.',
+  backstory: 'A former blacksmith, Kelia discovered her calling when her forge was blessed by divine fire, and she devoted herself to the war god.'
+},
+{
+  name: 'Orin Deeproot',
+  class: 'Druid',
+  race: 'Lightfoot Halfling',
+  level: 5,
+  subclass: 'Circle of the Moon',
+  flavor: 'A halfling druid who shape-shifts into wild beasts.',
+  icon: '⚘',
+  abilities: { WIS: 16, DEX: 14, CON: 15, INT: 12, CHA: 11, STR: 10 },
+  features: ['Spellcasting — Cast primal spells and rituals', 'Wild Shape — Transform into beasts for combat and utility', 'Circle Spells — Cast specific spells tied to your circle', 'Unlimited Wild Shape — Transform at will once per turn', 'Timeless Body — Age slower as you gain power'],
+  equipment: ['Quarterstaff', 'Leather Armor', 'Explorer\'s Pack', 'Druidic Focus', 'Bedroll'],
+  traits: 'Calm and patient, Orin speaks with the wisdom of ancient forests and sees humans as temporary visitors.',
+  backstory: 'Born under a blood moon, Orin was raised by the forest itself and learned to wear the skins of beasts.'
+},
+{
+  name: 'Thane Stormborn',
+  class: 'Fighter',
+  race: 'Stout Halfling',
+  level: 5,
+  subclass: 'Champion',
+  flavor: 'A stout halfling fighter whose critical strikes are legendary.',
+  icon: '⛨',
+  abilities: { STR: 16, CON: 15, DEX: 14, WIS: 12, INT: 11, CHA: 10 },
+  features: ['Fighting Style — Specialization in weapon combat', 'Extra Attack — Attack twice when taking the Attack action', 'Champion — Improved critical hit range (19-20)', 'Second Wind — Heal yourself as a bonus action', 'Remarkable Athlete — Add proficiency to certain ability checks'],
+  equipment: ['Longsword', 'Shield', 'Chain Mail', 'Bedroll', 'Rope', 'Backpack'],
+  traits: 'Boisterous and brave, Thane laughs in the face of danger and celebrates victory with gusto.',
+  backstory: 'Too small for halfling expectations, Thane proved himself in mercenary work and now commands respect from all peoples.'
+},
+{
+  name: 'Asha of the Eastern Temple',
+  class: 'Monk',
+  race: 'Dark Elf',
+  level: 5,
+  subclass: 'Way of Shadow',
+  flavor: 'A drow monk who moves through darkness like water.',
+  icon: '⊞',
+  abilities: { DEX: 16, WIS: 15, CON: 13, STR: 12, INT: 11, CHA: 10 },
+  features: ['Martial Arts — Strike with precision and discipline', 'Extra Attack — Attack twice when taking the Attack action', 'Stunning Strike — Stun enemies with perfectly placed blows', 'Shadows Step — Become invisible and move through darkness', 'Ki Regeneration — Restore ki points through meditation'],
+  equipment: ['Quarterstaff', 'Dagger', 'Martial Arts Outfit', 'Bedroll', 'Rope', 'Backpack'],
+  traits: 'Disciplined and silent, Asha moves like a shadow and speaks only when necessary.',
+  backstory: 'Escaped from drow enslavement, Asha found refuge in a human monastery where she learned to channel her suffering into strength.'
+},
+{
+  name: 'Lord Marcus Brightblade',
+  class: 'Paladin',
+  race: 'Human',
+  level: 5,
+  subclass: 'Oath of the Watchers',
+  flavor: 'A human paladin sworn to guard against outer realms.',
+  icon: '⚔',
+  abilities: { STR: 16, CHA: 15, CON: 14, WIS: 13, INT: 12, DEX: 11 },
+  features: ['Lay on Hands — Heal wounds with divine power', 'Divine Strike — Add damage to weapon attacks', 'Extra Attack — Attack twice when taking the Attack action', 'Channel Divinity — Invoke oaths for powerful effects', 'Watcher\'s Awareness — Sense extraplanar presences'],
+  equipment: ['Longsword', 'Shield', 'Plate Armor', 'Holy Symbol', 'Bedroll', 'Backpack'],
+  traits: 'Vigilant and noble, Marcus sees his duty as paramount and will not compromise his principles.',
+  backstory: 'Marcus once witnessed a planar incursion that took his family, so he swore an oath to protect his world from such horrors.'
+},
+{
+  name: 'Sael Trackfinder',
+  class: 'Ranger',
+  race: 'Rock Gnome',
+  level: 5,
+  subclass: 'Fey Wanderer',
+  flavor: 'A gnome ranger blessed by the fey with uncanny luck.',
+  icon: '↝',
+  abilities: { DEX: 16, WIS: 15, CHA: 14, CON: 13, INT: 12, STR: 11 },
+  features: ['Favored Enemy — Hunt chosen foes with skill', 'Natural Explorer — Master chosen terrain', 'Extra Attack — Attack twice when taking the Attack action', 'Fey Reinforcements — Call fey allies for aid', 'Wanderer\'s Lore — Add wisdom modifier to knowledge checks'],
+  equipment: ['Longbow', 'Longsword', 'Leather Armor', 'Explorer\'s Pack', 'Bedroll', 'Rope'],
+  traits: 'Clever and whimsical, Sael speaks as if sharing ancient secrets and laughs at fey humor only she understands.',
+  backstory: 'Adopted by fey entities as a child, Sael straddles both worlds and hunts creatures that threaten the balance.'
+},
+{
+  name: 'Riven Blackthorn',
+  class: 'Rogue',
+  race: 'Halfling',
+  level: 5,
+  subclass: 'Mastermind',
+  flavor: 'A halfling rogue who orchestrates perfect plans from the shadows.',
+  icon: '†',
+  abilities: { DEX: 16, INT: 15, CHA: 14, WIS: 12, CON: 11, STR: 10 },
+  features: ['Expertise — Master skills beyond normal limits', 'Sneak Attack — Strike for devastating damage with precision', 'Cunning Action — Take extra actions each turn', 'Evasion — Dodge spell effects with agility', 'Insightful Manipulator — Read people\'s thoughts from behavior'],
+  equipment: ['Rapier', 'Hand Crossbow', 'Leather Armor', 'Thieves\' Tools', 'Disguise Kit', 'Backpack'],
+  traits: 'Calculating and manipulative, Riven sees three moves ahead and orchestrates others like puppets.',
+  backstory: 'Once a street gang leader, Riven now sells her services to nobles and merchants, always keeping her true motives secret.'
+},
+{
+  name: 'Vara Flameheart',
+  class: 'Sorcerer',
+  race: 'Dragonborn',
+  level: 5,
+  subclass: 'Draconic Bloodline',
+  flavor: 'A dragonborn sorcerer whose bloodline is pure dragon fire.',
+  icon: '⟡',
+  abilities: { CHA: 16, DEX: 14, CON: 15, INT: 12, WIS: 11, STR: 13 },
+  features: ['Sorcerous Spellcasting — Cast spells from innate magic', 'Draconic Resilience — Gain armor and damage resistance', 'Elemental Affinity — Add damage to spells of your element', 'Extra Sorcery Points — Fuel more powerful spells', 'Draconic Presence — Intimidate enemies with draconic majesty'],
+  equipment: ['Dagger', 'Light Crossbow', 'Leather Armor', 'Component Pouch', 'Bedroll', 'Backpack'],
+  traits: 'Proud and fierce, Vara speaks with absolute confidence and brooks no contradiction.',
+  backstory: 'Born of a union between human and true dragon, Vara carries her sire\'s power in her blood and seeks to prove her worth.'
+},
+{
+  name: 'Thaddeus the Bargained',
+  class: 'Warlock',
+  race: 'Forest Gnome',
+  level: 5,
+  subclass: 'Fiend Pact',
+  flavor: 'A gnome warlock bound to an infernal patron for forbidden knowledge.',
+  icon: '◉',
+  abilities: { CHA: 16, DEX: 14, INT: 15, WIS: 12, CON: 13, STR: 10 },
+  features: ['Pact Magic — Channel infernal power', 'Eldritch Invocations — Learn supernatural secrets', 'Fiend Patron Spells — Cast spells granted by your patron', 'One with Shadows — Become invisible in darkness', 'Dark One\'s Blessing — Gain temporary hit points after killing'],
+  equipment: ['Dagger', 'Light Crossbow', 'Leather Armor', 'Arcane Focus', 'Bedroll', 'Backpack'],
+  traits: 'Ambitious and cunning, Thaddeus smiles knowingly and speaks of forbidden truths.',
+  backstory: 'Desperate to save his village, Thaddeus made a pact with an infernal lord, a decision he\'s never regretted.'
+},
+{
+  name: 'Meredith Spellweaver',
+  class: 'Wizard',
+  race: 'High Elf',
+  level: 5,
+  subclass: 'Evocation',
+  flavor: 'An elven wizard who weaves elemental forces into devastating spells.',
+  icon: '≡',
+  abilities: { INT: 16, DEX: 15, CON: 14, WIS: 13, CHA: 11, STR: 10 },
+  features: ['Spellcasting — Master arcane spells through study', 'Arcane Recovery — Regain spells through meditation', 'Evocation Specialization — Specialize in destructive magic', 'Sculpt Spells — Shape spell effects to protect allies', 'Extra Cantrips — Know more magical tricks than most'],
+  equipment: ['Quarterstaff', 'Light Crossbow', 'Scholar\'s Pack', 'Spellbook', 'Arcane Focus', 'Bedroll'],
+  traits: 'Analytical and precise, Meredith views magic as a science to be mastered through rigorous study.',
+  backstory: 'Graduated as valedictorian of her academy, Meredith now documents new magical phenomena and tests experimental spells.'
+}
     ];
 
     let filteredCharacters = [...CHARACTERS];

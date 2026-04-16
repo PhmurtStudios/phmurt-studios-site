@@ -31,6 +31,7 @@
   <script src="stripe-env.js?v=188"></script>
   <script src="stripe-config.js?v=185"></script>
   <script src="phmurt-auth.js?v=187"></script>
+  <script src="phmurt-utils.js?v=186"></script>
 
   <style>
     /* ── Hub layout ──────────────────────────────────────────────── */
@@ -139,6 +140,15 @@
       color: var(--text-muted);
     }
     .ch-card-action.edit:hover { border-color: var(--text-dim); color: var(--text-dim); }
+    .ch-card-action.share {
+      background: transparent; border: 1px solid rgba(139,105,20,0.3);
+      color: #8b6914;
+    }
+    .ch-card-action.share:hover { background: rgba(139,105,20,0.08); border-color: #b88a1a; }
+    .ch-card-action.share[data-shared="1"] {
+      border-color: rgba(46,139,87,0.3); color: #2e8b57;
+    }
+    .ch-card-action.share[data-shared="1"]:hover { background: rgba(46,139,87,0.08); border-color: #2e8b57; }
     .ch-card-action.delete {
       background: transparent; border: 1px solid transparent;
       color: var(--text-faint); margin-left: auto;
@@ -229,6 +239,17 @@
       .ch-grid { grid-template-columns: 1fr; }
       .ch-card-level { display: none; }
     }
+
+    @media (max-width: 375px) {
+      .ch-hub { padding: 24px 14px 60px; }
+      .ch-card { padding: 18px 14px; }
+      .ch-card-name { font-size: 16px; }
+      .ch-card-footer { flex-wrap: wrap; gap: 6px; }
+      .ch-card-action { font-size: 9px; padding: 6px 10px; }
+      .ch-new-card { padding: 28px 14px; }
+      #ch-filter-bar { flex-wrap: wrap; gap: 8px; }
+      #ch-filter-bar select, #ch-filter-bar input { font-size: 14px; min-width: 0; flex: 1 1 100%; }
+    }
   </style>
 </head>
 <body data-nav-active="Characters" data-footer-copy="Roll Well. Play Weird." data-breadcrumb="Home|index.html;Characters">
@@ -317,6 +338,25 @@
       }
       count.innerHTML = '<strong>' + _chars.length + '</strong> Character' + (_chars.length !== 1 ? 's' : '') + limitInfo;
 
+      /* Subtle upgrade hint when approaching free limit */
+      var existingHint = document.getElementById('ch-upgrade-hint');
+      if (existingHint) existingHint.remove();
+      if (s && !s.isSubscribed && !s.isAdmin && !s.isSuperuser && _chars.length >= 2) {
+        var hintDiv = document.createElement('div');
+        hintDiv.id = 'ch-upgrade-hint';
+        hintDiv.style.cssText = 'margin-bottom:20px;padding:12px 18px;border-radius:6px;border:1px solid rgba(212,67,58,0.15);background:rgba(212,67,58,0.04);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;';
+        var hintText = _chars.length >= 3
+          ? 'You\'ve reached the free limit of 3 characters. Upgrade to create unlimited adventurers.'
+          : 'You have ' + _chars.length + ' of 3 free characters. Upgrade for unlimited slots.';
+        hintDiv.innerHTML =
+          '<span style="font-family:Spectral,serif;font-size:14px;color:var(--text-muted,#9a8870);">' + hintText + '</span>' +
+          '<a href="pricing.html" style="font-family:Cinzel,serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--crimson,#d4433a);text-decoration:none;white-space:nowrap;padding:6px 14px;border:1px solid rgba(212,67,58,0.25);border-radius:4px;">View Plans</a>';
+        var toolbar = document.querySelector('.ch-toolbar');
+        if (toolbar && toolbar.nextSibling) {
+          toolbar.parentNode.insertBefore(hintDiv, toolbar.nextSibling);
+        }
+      }
+
       /* Empty state */
       if (!_chars.length) {
         list.innerHTML =
@@ -364,6 +404,7 @@
           '<div class="ch-card-foot">' +
             '<a href="' + viewHref + '" class="ch-card-action view" data-prevent-propagation="true">View Sheet</a>' +
             '<a href="' + viewHref + '" class="ch-card-action edit" data-prevent-propagation="true">Edit</a>' +
+            '<button class="ch-card-action share" data-char-id="' + id + '" data-shared="' + (c.is_public ? '1' : '0') + '">' + (c.is_public ? '🔗 Shared' : 'Share') + '</button>' +
             '<button class="ch-card-action delete" data-char-id="' + id + '">Delete</button>' +
           '</div>' +
         '</div>';
@@ -389,6 +430,54 @@
           e.stopPropagation();
           var id = btn.getAttribute('data-char-id');
           if (id) deleteChar(decodeURIComponent(id));
+        });
+      });
+
+      /* Share / unshare button handlers */
+      list.querySelectorAll('.ch-card-action.share').forEach(function (btn) {
+        btn.addEventListener('click', function (e) {
+          e.stopPropagation();
+          var charId = decodeURIComponent(btn.getAttribute('data-char-id'));
+          var isShared = btn.getAttribute('data-shared') === '1';
+          if (!window.PhmurtDB) return;
+
+          if (isShared) {
+            /* Already shared — copy link */
+            var url = PhmurtDB.getShareUrl('character', charId);
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+              navigator.clipboard.writeText(url).then(function () {
+                if (window.psToast) window.psToast('Share link copied!');
+              });
+            } else if (window.psToast) {
+              window.psToast(url);
+            }
+          } else {
+            /* Share the character */
+            btn.textContent = 'Sharing…';
+            btn.disabled = true;
+            PhmurtDB.shareCharacter(charId).then(function (result) {
+              if (result.success) {
+                btn.textContent = '🔗 Shared';
+                btn.setAttribute('data-shared', '1');
+                btn.disabled = false;
+                /* Update local data */
+                var c = _chars.find(function (ch) { return String(ch.id) === charId; });
+                if (c) c.is_public = true;
+                /* Copy URL to clipboard */
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                  navigator.clipboard.writeText(result.url).then(function () {
+                    if (window.psToast) window.psToast('Character shared! Link copied.');
+                  });
+                } else if (window.psToast) {
+                  window.psToast('Character shared!');
+                }
+              } else {
+                btn.textContent = 'Share';
+                btn.disabled = false;
+                if (window.psToast) window.psToast(result.error || 'Share failed.');
+              }
+            });
+          }
         });
       });
     }

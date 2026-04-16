@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta name="referrer" content="strict-origin" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://*.stripe.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), usb=(), payment=(), serial=(), bluetooth=()" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Getting Started · Phmurt Studios</title>
+  <meta name="description" content="New to D&D? Start here. Learn the basics of tabletop roleplaying, browse premade characters, and jump into your first adventure." />
+  <meta property="og:title" content="Getting Started · Phmurt Studios" />
+  <meta property="og:description" content="New to D&D? Start here. Learn the basics, browse premade characters, and jump into your first adventure." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://phmurtstudios.com/getting-started.html" />
+  <meta property="og:image" content="https://phmurtstudios.com/logo.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Getting Started · Phmurt Studios" />
+  <meta name="twitter:description" content="New to D&D? Start here. Learn the basics, browse premade characters, and jump into your first adventure." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+  <link rel="manifest" href="site.webmanifest" />
+  <link rel="stylesheet" href="style.css?v=185" />
+  <script defer src="theme.js?v=185"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0" crossorigin="anonymous" integrity="sha384-fm42zLXjam4N3lT5umWgNtBBPMP3Ddrdmr9lnPKtDWzs5Dqy457Yn6+eTvCgRU3n"></script>
+  <script defer src="supabase-config.js?v=185"></script>
+  <script src="stripe-env.js?v=188"></script>
+  <script defer src="stripe-config.js?v=185"></script>
+  <script defer src="phmurt-auth.js?v=187"></script>
+  <style>
+    .gs-wrap { max-width: 960px; margin: 0 auto; padding: 40px 24px 80px; }
+
+    /* ── Hero ── */
+    .gs-hero { text-align: center; margin-bottom: 56px; }
+    .gs-hero-eyebrow {
+      font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 5px;
+      text-transform: uppercase; color: var(--crimson, #d4433a); margin-bottom: 12px;
+    }
+    .gs-hero-title {
+      font-family: 'Cinzel', serif; font-size: 2.2rem; font-weight: 700;
+      color: var(--text, #f2e8d6); margin: 0 0 14px;
+    }
+    .gs-hero-subtitle {
+      font-family: 'Spectral', serif; font-size: 1.1rem; line-height: 1.6;
+      color: var(--text-muted, #9a8870); max-width: 600px; margin: 0 auto;
+    }
+
+    /* ── Steps ── */
+    .gs-steps { display: flex; flex-direction: column; gap: 32px; margin-bottom: 56px; }
+    .gs-step {
+      display: flex; gap: 24px; align-items: flex-start;
+      background: var(--bg-card, #141420); border: 1px solid var(--border, rgba(255,255,255,0.11));
+      border-radius: 8px; padding: 28px 28px 24px; position: relative;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .gs-step:hover { border-color: var(--crimson, #d4433a); box-shadow: 0 4px 24px rgba(212,67,58,.08); }
+    .gs-step-num {
+      font-family: 'Cinzel', serif; font-size: 2rem; font-weight: 700;
+      color: var(--crimson, #d4433a); opacity: .35; line-height: 1; min-width: 40px; text-align: center;
+    }
+    .gs-step-body { flex: 1; }
+    .gs-step-title {
+      font-family: 'Cinzel', serif; font-size: 14px; font-weight: 600;
+      letter-spacing: 1px; color: var(--text, #f2e8d6); margin: 0 0 8px;
+    }
+    .gs-step-desc {
+      font-family: 'Spectral', serif; font-size: 15px; line-height: 1.6;
+      color: var(--text-muted, #9a8870); margin: 0 0 16px;
+    }
+
+    /* ── Cards ── */
+    .gs-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; margin-bottom: 56px; }
+    .gs-card {
+      background: var(--bg-card, #141420); border: 1px solid var(--border, rgba(255,255,255,0.11));
+      border-radius: 8px; padding: 32px 28px; text-align: center; text-decoration: none;
+      transition: border-color .25s, transform .25s, box-shadow .25s;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .gs-card:hover {
+      border-color: var(--crimson, #d4433a); transform: translateY(-3px);
+      box-shadow: 0 8px 32px rgba(0,0,0,.3);
+    }
+    .gs-card-icon { font-size: 2.4rem; margin-bottom: 16px; }
+    .gs-card-title {
+      font-family: 'Cinzel', serif; font-size: 13px; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase; color: var(--text, #f2e8d6); margin: 0 0 10px;
+    }
+    .gs-card-desc {
+      font-family: 'Spectral', serif; font-size: 14px; line-height: 1.55;
+      color: var(--text-muted, #9a8870); margin: 0 0 18px;
+    }
+    .gs-card-cta {
+      font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 3px;
+      text-transform: uppercase; color: var(--crimson, #d4433a); font-weight: 600;
+    }
+
+    /* ── Quick-start checklist ── */
+    .gs-checklist-title {
+      font-family: 'Cinzel', serif; font-size: 14px; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--text, #f2e8d6); text-align: center; margin: 0 0 24px;
+    }
+    .gs-checklist {
+      max-width: 520px; margin: 0 auto 56px; display: flex; flex-direction: column; gap: 12px;
+    }
+    .gs-check {
+      display: flex; align-items: center; gap: 14px;
+      font-family: 'Spectral', serif; font-size: 15px; color: var(--text-muted, #9a8870);
+      padding: 12px 16px; background: var(--bg-card, #141420);
+      border: 1px solid var(--border, rgba(255,255,255,0.11)); border-radius: 6px;
+      cursor: pointer; transition: border-color .2s;
+      user-select: none;
+    }
+    .gs-check:hover { border-color: rgba(255,255,255,.2); }
+    .gs-check-box {
+      width: 20px; height: 20px; border: 2px solid var(--crimson, #d4433a);
+      border-radius: 4px; display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: background .2s;
+    }
+    .gs-check.done .gs-check-box { background: var(--crimson, #d4433a); }
+    .gs-check.done .gs-check-box::after { content: '\2713'; color: #fff; font-size: 13px; font-weight: 700; }
+    .gs-check.done { color: var(--text, #f2e8d6); }
+
+    /* ── CTA banner ── */
+    .gs-cta-banner {
+      text-align: center; padding: 40px 24px;
+      background: linear-gradient(135deg, var(--bg-card, #141420) 0%, rgba(212,67,58,.06) 100%);
+      border: 1px solid var(--crimson, #d4433a); border-radius: 8px;
+    }
+    .gs-cta-banner-title {
+      font-family: 'Cinzel', serif; font-size: 18px; font-weight: 600;
+      color: var(--text, #f2e8d6); margin: 0 0 10px;
+    }
+    .gs-cta-banner-desc {
+      font-family: 'Spectral', serif; font-size: 15px; color: var(--text-muted, #9a8870);
+      margin: 0 0 20px;
+    }
+    .gs-cta-btn {
+      display: inline-block; font-family: 'Cinzel', serif; font-size: 10px;
+      letter-spacing: 3px; text-transform: uppercase; font-weight: 600;
+      padding: 12px 32px; background: var(--crimson, #d4433a); color: #fff;
+      border: none; border-radius: 4px; text-decoration: none; cursor: pointer;
+      transition: opacity .2s;
+    }
+    .gs-cta-btn:hover { opacity: .85; }
+
+    @media (max-width: 640px) {
+      .gs-cards { grid-template-columns: 1fr; }
+      .gs-step { flex-direction: column; gap: 12px; }
+      .gs-hero-title { font-size: 1.6rem; }
+    }
+
+    @media (max-width: 375px) {
+      .gs-wrap { padding: 28px 16px 60px; }
+      .gs-hero { margin-bottom: 36px; }
+      .gs-hero-title { font-size: 1.3rem; }
+      .gs-hero-subtitle { font-size: 0.95rem; }
+      .gs-step { padding: 20px 16px 18px; }
+      .gs-step-num { font-size: 1.5rem; min-width: 32px; }
+      .gs-card { padding: 24px 18px; }
+      .gs-card-icon { font-size: 2rem; }
+      .gs-cta-banner { padding: 28px 16px; }
+      .gs-check { padding: 10px 12px; font-size: 14px; }
+    }
+  </style>
+</head>
+<body data-nav-active="Getting Started" data-footer-copy="Roll Well. Play Weird." data-breadcrumb="Home|index.html;Getting Started">
+  <a href="#main-content" class="ps-skip-nav">Skip to content</a>
+  <div id="ps-site-shell"></div>
+  <div id="ps-page-breadcrumb"></div>
+
+  <main id="main-content">
+    <div class="gs-wrap">
+
+      <!-- Hero -->
+      <div class="gs-hero">
+        <div class="gs-hero-eyebrow">New Adventurer?</div>
+        <h1 class="gs-hero-title">Getting Started with D&D</h1>
+        <p class="gs-hero-subtitle">Whether you've never rolled a d20 or you're looking for your first character, this is the place to begin. We'll walk you through everything you need to start playing.</p>
+      </div>
+
+      <!-- Three Steps -->
+      <div class="gs-steps">
+        <div class="gs-step">
+          <div class="gs-step-num">1</div>
+          <div class="gs-step-body">
+            <div class="gs-step-title">Learn the Basics</div>
+            <p class="gs-step-desc">Understand how the game works: rolling dice, ability checks, combat, and magic. Our interactive tutorial walks you through each concept step by step with hands-on practice.</p>
+          </div>
+        </div>
+        <div class="gs-step">
+          <div class="gs-step-num">2</div>
+          <div class="gs-step-body">
+            <div class="gs-step-title">Pick a Character</div>
+            <p class="gs-step-desc">Browse our gallery of premade heroes, each with a backstory, ability scores, and equipment ready to go. Find one that fits your playstyle and jump straight into a game.</p>
+          </div>
+        </div>
+        <div class="gs-step">
+          <div class="gs-step-num">3</div>
+          <div class="gs-step-body">
+            <div class="gs-step-title">Join an Adventure</div>
+            <p class="gs-step-desc">Ask a friend who's a Dungeon Master, find a local game store, or join an online community. All you need is your character, some dice, and a willingness to explore.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Three main cards -->
+      <div class="gs-cards">
+        <a href="learn.html" class="gs-card">
+          <div class="gs-card-icon">&#x1F3B2;</div>
+          <div class="gs-card-title">Learn to Play</div>
+          <p class="gs-card-desc">Interactive tutorial covering dice, combat, magic, character creation, and the DM's role. Includes practice exercises and a knowledge check.</p>
+          <div class="gs-card-cta">Start Learning &rarr;</div>
+        </a>
+        <a href="gallery.html" class="gs-card">
+          <div class="gs-card-icon">&#x2694;</div>
+          <div class="gs-card-title">Character Gallery</div>
+          <p class="gs-card-desc">Premade heroes ready to play. Browse by class, race, and level. Each comes with a full backstory, stats, equipment, and personality traits.</p>
+          <div class="gs-card-cta">Browse Heroes &rarr;</div>
+        </a>
+        <a href="learn-dm.html" class="gs-card">
+          <div class="gs-card-icon">&#x1F4DC;</div>
+          <div class="gs-card-title">Learn to DM</div>
+          <p class="gs-card-desc">Ready to run the game? Learn world-building, encounter design, improvisation, and how to keep your table engaged. Includes a DM knowledge quiz.</p>
+          <div class="gs-card-cta">Become a DM &rarr;</div>
+        </a>
+      </div>
+
+      <!-- Quick-start checklist -->
+      <div class="gs-checklist-title">Quick-Start Checklist</div>
+      <div class="gs-checklist" id="gsChecklist">
+        <div class="gs-check" data-idx="0">
+          <div class="gs-check-box"></div>
+          <span>Read through the Learn to Play tutorial</span>
+        </div>
+        <div class="gs-check" data-idx="1">
+          <div class="gs-check-box"></div>
+          <span>Pick a premade character (or build your own)</span>
+        </div>
+        <div class="gs-check" data-idx="2">
+          <div class="gs-check-box"></div>
+          <span>Grab a set of dice (or use our dice roller)</span>
+        </div>
+        <div class="gs-check" data-idx="3">
+          <div class="gs-check-box"></div>
+          <span>Find a group to play with</span>
+        </div>
+        <div class="gs-check" data-idx="4">
+          <div class="gs-check-box"></div>
+          <span>Have your first session!</span>
+        </div>
+      </div>
+
+      <!-- CTA banner -->
+      <div class="gs-cta-banner">
+        <div class="gs-cta-banner-title">Ready to Build Your Own Character?</div>
+        <p class="gs-cta-banner-desc">Once you've learned the basics, create a fully custom character from scratch with our 5e Character Builder.</p>
+        <a href="characters.html" class="gs-cta-btn">Go to Characters</a>
+      </div>
+
+      <!-- Subtle Pro upgrade hint (hidden for subscribers) -->
+      <div class="gs-pro-hint" id="gs-pro-hint" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;padding:14px 20px;border-radius:6px;border:1px solid rgba(212,67,58,0.12);background:rgba(212,67,58,0.03);">
+          <span style="font-family:Spectral,serif;font-size:14px;color:var(--text-muted,#9a8870);">Unlock unlimited characters, campaigns, generators, and homebrew sharing with <strong style="color:var(--text,#f2e8d6);">Pro</strong>.</span>
+          <a href="pricing.html" style="font-family:Cinzel,serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--crimson,#d4433a);text-decoration:none;padding:6px 14px;border:1px solid rgba(212,67,58,0.25);border-radius:4px;white-space:nowrap;">Learn More</a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script defer src="phmurt-shell.js?v=185"></script>
+  <script>
+    // Interactive checklist with localStorage persistence
+    (function() {
+      var saved = [];
+      try { saved = JSON.parse(localStorage.getItem('gs_checklist') || '[]'); } catch(e){}
+
+      var items = document.querySelectorAll('.gs-check');
+      items.forEach(function(el) {
+        var idx = parseInt(el.getAttribute('data-idx'), 10);
+        if (saved.indexOf(idx) !== -1) el.classList.add('done');
+        el.addEventListener('click', function() {
+          el.classList.toggle('done');
+          var checked = [];
+          document.querySelectorAll('.gs-check.done').forEach(function(d) {
+            checked.push(parseInt(d.getAttribute('data-idx'), 10));
+          });
+          try { localStorage.setItem('gs_checklist', JSON.stringify(checked)); } catch(e){}
+        });
+      });
+    })();
+
+    // Show pro hint only for free-tier signed-in users
+    window.addEventListener('phmurt-auth-change', function() {
+      var hint = document.getElementById('gs-pro-hint');
+      if (!hint || typeof PhmurtDB === 'undefined') return;
+      var s = PhmurtDB.getSession();
+      if (s && !s.isSubscribed && !s.isAdmin && !s.isSuperuser) {
+        hint.style.display = 'block';
+      }
+    });
+  </script>
+</body>
+</html>

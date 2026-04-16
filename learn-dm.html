@@ -401,9 +401,18 @@
     @media (max-width: 480px) {
       .learn-tip-grid { grid-template-columns: 1fr; }
     }
+
+    @media (max-width: 375px) {
+      .learn-content { padding: 0 14px 32px; }
+      .learn-section-title { font-size: 13px; }
+      .learn-section-content { font-size: 14px; }
+      .learn-hero-title { font-size: 1.4rem; }
+      .learn-hero-subtitle { font-size: 0.95rem; }
+      .learn-quiz-option { padding: 10px 14px; font-size: 14px; }
+    }
   </style>
 </head>
-<body data-nav-active="Learn DM" data-breadcrumb="Home / Learn to DM" data-footer-copy="Roll Well. Play Weird.">
+<body data-nav-active="Getting Started" data-breadcrumb="Home|index.html;Getting Started|getting-started.html;Learn to DM" data-footer-copy="Roll Well. Play Weird.">
   <a href="#main-content" class="ps-skip-nav">Skip to content</a>
   <div id="ps-site-shell"></div>
   <div id="ps-page-breadcrumb"></div>
@@ -922,7 +931,7 @@
           <a href="compendium.html" style="text-decoration:none;">
             <div class="learn-tip-card" style="cursor:pointer;">
               <div class="learn-tip-card-icon">📚</div>
-              <div class="learn-tip-card-title">Compendium</div>
+              <div class="learn-tip-card-title">Homebrew Workshop</div>
               <div class="learn-tip-card-text">Look up monsters, spells, and items. Everything you need for encounter building in one place.</div>
             </div>
           </a>
@@ -1247,7 +1256,36 @@
         } else {
           msgEl.textContent = 'Give the guide another read — you\'ll pick it up fast!';
         }
+
+        /* Persist best score to localStorage */
+        try {
+          var prevBest = parseInt(localStorage.getItem('phmurt_dm_quiz_best') || '0', 10);
+          if (score > prevBest) {
+            localStorage.setItem('phmurt_dm_quiz_best', String(score));
+            localStorage.setItem('phmurt_dm_quiz_total', String(QUIZ_QUESTIONS.length));
+            localStorage.setItem('phmurt_dm_quiz_date', new Date().toISOString().slice(0, 10));
+          }
+          if (prevBest > 0 && score <= prevBest) {
+            var prevMsg = document.createElement('div');
+            prevMsg.style.cssText = 'font-family:Spectral,serif;font-size:13px;color:var(--text-dim,#6b5e50);margin-top:8px;font-style:italic;';
+            prevMsg.textContent = 'Your previous best: ' + prevBest + ' / ' + QUIZ_QUESTIONS.length;
+            result.appendChild(prevMsg);
+          }
+        } catch(e) {}
       }
+
+      /* Show previous best score if exists */
+      try {
+        var prevBest = parseInt(localStorage.getItem('phmurt_dm_quiz_best') || '0', 10);
+        var prevTotal = parseInt(localStorage.getItem('phmurt_dm_quiz_total') || '0', 10);
+        var prevDate = localStorage.getItem('phmurt_dm_quiz_date') || '';
+        if (prevBest > 0 && container) {
+          var prevDiv = document.createElement('div');
+          prevDiv.style.cssText = 'text-align:center;font-family:Spectral,serif;font-size:13px;color:var(--text-dim,#6b5e50);margin-bottom:20px;font-style:italic;';
+          prevDiv.textContent = 'Your best score: ' + prevBest + '/' + prevTotal + (prevDate ? ' (' + prevDate + ')' : '');
+          container.parentNode.insertBefore(prevDiv, container);
+        }
+      } catch(e) {}
     })();
 
   </script>

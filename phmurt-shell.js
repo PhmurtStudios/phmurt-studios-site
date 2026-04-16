@@ -31,35 +31,25 @@
   const SHELL = {
     nav: [
       { href: 'index.html', label: 'Home' },
-      { label: 'Content', children: [
-        { href: 'grimoire.html', label: 'Grimoire' },
-        { href: 'compendium.html', label: 'Compendium' }
-      ]},
-      { label: 'Players', children: [
-        { href: 'learn.html', label: 'Learn to Play' },
-        { href: 'gallery.html', label: 'Character Gallery' },
-        { href: 'character-sheets.html', label: 'Character Sheets' }
-      ]},
-      { label: 'DM Tools', children: [
-        { href: 'generators.html', label: 'Random Generators' },
-        { href: 'campaigns.html', label: 'Campaign Manager' }
-      ]},
-      { href: 'about.html', label: 'About' },
-      { href: 'characters.html', label: 'Characters' }
+      { href: 'grimoire.html', label: 'Content' },
+      { href: 'compendium.html', label: 'Homebrew Workshop' },
+      { href: 'characters.html', label: 'Characters' },
+      { href: 'campaigns.html', label: 'Campaigns' },
+      { href: 'generators.html', label: 'Generators' },
+      { href: 'getting-started.html', label: 'Getting Started' },
+      { href: 'about.html', label: 'About' }
       // Admin link is injected dynamically by updateAuthNav()
     ],
     // flat list for mobile menu and backwards compat
     flatNav: [
       ['index.html', 'Home'],
-      ['grimoire.html', 'Grimoire'],
-      ['compendium.html', 'Compendium'],
-      ['learn.html', 'Learn'],
-      ['gallery.html', 'Gallery'],
-      ['generators.html', 'Generators'],
-      ['character-sheets.html', 'Sheets'],
+      ['grimoire.html', 'Content'],
+      ['compendium.html', 'Homebrew Workshop'],
+      ['characters.html', 'Characters'],
       ['campaigns.html', 'Campaigns'],
-      ['about.html', 'About'],
-      ['characters.html', 'Characters']
+      ['generators.html', 'Generators'],
+      ['getting-started.html', 'Getting Started'],
+      ['about.html', 'About']
       // Admin link is injected dynamically by updateAuthNav()
     ],
     footerName: 'Phmurt Studios',
@@ -76,51 +66,54 @@
     ],
     'grimoire.html': [
       { href: 'index.html', label: 'Home' },
-      { label: 'Grimoire', current: true }
+      { label: 'Content', current: true }
     ],
     'compendium.html': [
       { href: 'index.html', label: 'Home' },
-      { label: 'Compendium', current: true }
+      { label: 'Homebrew Workshop', current: true }
     ],
     'character-builder.html': [
       { href: 'index.html', label: 'Home' },
+      { href: 'characters.html', label: 'Characters' },
       { label: 'Character Builder', current: true }
     ],
     'character-builder-35.html': [
       { href: 'index.html', label: 'Home' },
-      { href: 'character-sheets.html', label: 'Sheets' },
+      { href: 'characters.html', label: 'Characters' },
       { label: 'D&D 3.5e Builder', current: true }
-    ],
-    'character-sheets.html': [
-      { href: 'index.html', label: 'Home' },
-      { label: 'Character Sheets', current: true }
     ],
     'sheet-dnd5e.html': [
       { href: 'index.html', label: 'Home' },
-      { href: 'character-sheets.html', label: 'Sheets' },
+      { href: 'characters.html', label: 'Characters' },
       { label: 'D&D 5e Sheet', current: true }
     ],
     'soup-savant.html': [
       { href: 'index.html', label: 'Home' },
-      { href: 'grimoire.html', label: 'Grimoire' },
+      { href: 'grimoire.html', label: 'Content' },
       { label: 'Soup Savant', current: true }
     ],
     'legendary.html': [
       { href: 'index.html', label: 'Home' },
-      { href: 'grimoire.html', label: 'Grimoire' },
+      { href: 'grimoire.html', label: 'Content' },
       { label: 'Legendary Soups', current: true }
+    ],
+    'getting-started.html': [
+      { href: 'index.html', label: 'Home' },
+      { label: 'Getting Started', current: true }
     ],
     'learn.html': [
       { href: 'index.html', label: 'Home' },
+      { href: 'getting-started.html', label: 'Getting Started' },
       { label: 'Learn to Play', current: true }
     ],
     'gallery.html': [
       { href: 'index.html', label: 'Home' },
+      { href: 'getting-started.html', label: 'Getting Started' },
       { label: 'Character Gallery', current: true }
     ],
     'generators.html': [
       { href: 'index.html', label: 'Home' },
-      { label: 'DM Generators', current: true }
+      { label: 'Generators', current: true }
     ],
     'campaigns.html': [
       { href: 'index.html', label: 'Home' },
@@ -170,20 +163,22 @@
     const map = {
       'index.html': 'Home',
       'grimoire.html': 'Content',
-      'compendium.html': 'Content',
+      'compendium.html': 'Homebrew Workshop',
       'soup-savant.html': 'Content',
       'legendary.html': 'Content',
-      'learn.html': 'Players',
-      'gallery.html': 'Players',
-      'character-builder.html': 'Players',
-      'character-builder-35.html': 'Players',
-      'character-sheets.html': 'Players',
-      'sheet-dnd5e.html': 'Players',
-      'generators.html': 'DM Tools',
-      'campaigns.html': 'DM Tools',
+      'getting-started.html': 'Getting Started',
+      'learn.html': 'Getting Started',
+      'learn-dm.html': 'Getting Started',
+      'gallery.html': 'Getting Started',
+      'character-builder.html': 'Characters',
+      'character-builder-35.html': 'Characters',
+      'sheet-dnd5e.html': 'Characters',
+      'generators.html': 'Generators',
+      'campaigns.html': 'Campaigns',
       'about.html': 'About',
       'my-characters.html': 'Characters',
       'characters.html': 'Characters',
+      'shared.html': null,
       'reset-password.html': null
     };
     return map[pageName] ?? null;

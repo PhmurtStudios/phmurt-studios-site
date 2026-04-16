@@ -262,7 +262,7 @@ a{text-decoration:none;color:inherit;}
   opacity: 0; visibility: hidden; transform: translateY(-4px);
   transition: all 0.2s ease; pointer-events: none;
   box-shadow: 0 8px 32px rgba(0,0,0,0.4); z-index: 250;
-  min-width: 220px;
+  min-width: min(220px, 90vw);
 }
 .ps-dice-popup.visible { opacity: 1; visibility: visible; transform: translateY(0); pointer-events: auto; }
 .ps-dice-popup::before {
@@ -378,7 +378,7 @@ a{text-decoration:none;color:inherit;}
 .ps-nav-dropdown:hover .ps-nav-caret,.ps-nav-dropdown.open .ps-nav-caret{transform:rotate(180deg);}
 .ps-dropdown-panel{
   display:none;position:absolute;top:100%;left:50%;transform:translateX(-50%);
-  background:var(--bg-card);border:1px solid var(--border);min-width:200px;
+  background:var(--bg-card);border:1px solid var(--border);min-width:min(200px, 85vw);
   padding:8px 0;z-index:210;box-shadow:0 8px 24px rgba(0,0,0,0.3);
 }
 .ps-dropdown-panel::before{
@@ -704,6 +704,20 @@ a{text-decoration:none;color:inherit;}
   .ps-char-card-btn{flex:1 1 120px;text-align:center;padding:10px 12px;}
 }
 
+@media(max-width:375px){
+  .ps-page-hero{padding:32px 16px 28px;}
+  .ps-page-title,.ps-page-subtitle{font-size:26px;}
+  .ps-content{padding:0 16px 40px;}
+  .ps-card,.ps-grimoire-card,.ps-preview-panel,.ps-feature,.ps-stat-block,.ps-char-card,.ps-new-char-card{padding-left:14px;padding-right:14px;}
+  .sheet-grid-2,.sheet-grid-3,.sheet-grid-6{grid-template-columns:1fr;}
+  .ps-grimoire-search{padding:0 16px 12px;flex-wrap:wrap;}
+  .ps-grimoire-search input{min-width:0;width:100%;}
+  .pam-box{padding:28px 20px;}
+  #nav-user-dropdown{top:56px;right:8px;left:8px;}
+  .ps-mobile-menu{padding-top:72px;gap:18px;}
+  .ps-mobile-menu a{font-size:14px;letter-spacing:3px;}
+}
+
 /* AUTH MODAL */
 #phmurt-auth-modal{display:none;position:fixed;inset:0;z-index:5000;align-items:center;justify-content:center;padding:20px;overflow-y:auto;}
 #phmurt-auth-modal.open{display:flex;}
@@ -957,7 +971,7 @@ a{text-decoration:none;color:inherit;}
 
 /* GRIMOIRE SEARCH */
 .ps-grimoire-search{display:flex;gap:10px;padding:0 56px 16px;max-width:100%;}
-.ps-grimoire-search input{flex:1;min-width:200px;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-family:'Spectral',serif;font-size:15px;padding:10px 14px;}
+.ps-grimoire-search input{flex:1;min-width:0;background:var(--bg-card);border:1px solid var(--border);color:var(--text);font-family:'Spectral',serif;font-size:15px;padding:10px 14px;}
 .ps-grimoire-search input:focus{outline:none;border-color:var(--crimson);}
 .ps-grimoire-search input::placeholder{color:var(--text-faint);font-style:italic;}
 @media(max-width:860px){.ps-grimoire-search{padding:0 24px 12px;}}

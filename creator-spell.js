@@ -232,7 +232,7 @@
 
     root.innerHTML =
       '<div class="cr-topbar">' +
-        '<button class="cr-back" onclick="PhmurtCreator.close()">&larr; Back to Compendium</button>' +
+        '<button class="cr-back" onclick="PhmurtCreator.close()">&larr; Back to Workshop</button>' +
         '<div class="cr-title">' +
           '<div class="cr-eyebrow">The Workshop</div>' +
           '<div class="cr-heading">' + (state.mode === 'edit' ? 'Edit Spell' : 'Create Spell') +

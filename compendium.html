@@ -31,6 +31,7 @@
   <script src="stripe-env.js?v=188"></script>
   <script src="stripe-config.js?v=185"></script>
   <script src="phmurt-auth.js?v=187"></script>
+  <script src="phmurt-utils.js?v=186"></script>
   <script src="builder-data.js?v=185"></script>
 
   <style>
@@ -1549,6 +1550,15 @@
       right: 0;
       height: 1px;
       background: linear-gradient(90deg, transparent 10%, var(--crimson-border) 50%, transparent 90%);
+    }
+    @media (max-width: 375px) {
+      .cmp-layout { padding: 0 10px 24px; }
+      .cmp-main { padding: 0; }
+      .cmp-type-title { font-size: 11px; letter-spacing: 1.5px; }
+      .hb-form-group label { font-size: 10px; }
+      .hb-form-group input, .hb-form-group select, .hb-form-group textarea { font-size: 14px; padding: 8px 10px; }
+      .hbc-card { padding: 14px 12px; }
+      .hbe-modal-box { padding: 20px 14px; width: calc(100vw - 20px); }
     }
   </style>
 </head>
@@ -5193,6 +5203,12 @@
           + 'color:'+(isShared?'#2e8b57':'#8b6914')+';cursor:pointer;" '
           + 'title="'+(isShared?'Remove from community':'Share with community')+'">'
           + (isShared ? '✓ Shared' : '↑ Share') + '</button>';
+        // Copy Link (only if shared)
+        if (isShared) {
+          html += '<button data-link-type="'+type+'" data-link-id="'+id+'" class="hbc-link-btn" '
+            + 'style="font-family:Cinzel,serif;font-size:7px;letter-spacing:1px;text-transform:uppercase;padding:4px 9px;background:transparent;border:1px solid rgba(46,139,87,0.3);color:#2e8b57;cursor:pointer;" '
+            + 'title="Copy share link">🔗 Link</button>';
+        }
         // Edit
         html += '<button data-edit-type="'+type+'" data-edit-id="'+id+'" class="hbc-edit-btn" '
           + 'style="font-family:Cinzel,serif;font-size:7px;letter-spacing:1px;text-transform:uppercase;padding:4px 9px;background:transparent;border:1px solid var(--border);color:var(--text-muted);cursor:pointer;">Edit</button>';
@@ -5242,7 +5258,42 @@
               action === 'share' ? 'Shared!' : 'Unshared',
               action === 'share' ? 'Your content is now visible to the community.' : 'Removed from the community compendium.'
             );
+            // Subtle upgrade nudge after first share for free users
+            if (action === 'share') {
+              var sess = (typeof PhmurtDB !== 'undefined') ? PhmurtDB.getSession() : null;
+              if (sess && !sess.isSubscribed && !sess.isAdmin && !sess.isSuperuser) {
+                try {
+                  var shareCount = parseInt(localStorage.getItem('phmurt_share_count') || '0', 10) + 1;
+                  localStorage.setItem('phmurt_share_count', String(shareCount));
+                  if (shareCount === 1) {
+                    setTimeout(function () {
+                      showRestToast('Tip', 'Upgrade to Pro for unlimited sharing, characters, and campaigns. <a href="pricing.html" style="color:var(--crimson,#d4433a);">View Plans</a>');
+                    }, 2000);
+                  }
+                } catch(e) {}
+              }
+            }
             showHomebrewManager(); // re-render
+          }
+        });
+      });
+
+      // Copy Link buttons
+      container.querySelectorAll('.hbc-link-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var type = this.getAttribute('data-link-type');
+          var id   = this.getAttribute('data-link-id');
+          var url = (typeof PhmurtDB !== 'undefined' && PhmurtDB.getShareUrl)
+            ? PhmurtDB.getShareUrl(type, id)
+            : window.location.origin + '/shared.html?type=homebrew&t=' + encodeURIComponent(type) + '&id=' + encodeURIComponent(id);
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(url).then(function() {
+              showRestToast('Copied!', 'Share link copied to clipboard.');
+            }).catch(function() {
+              showRestToast('Link', url);
+            });
+          } else {
+            showRestToast('Link', url);
           }
         });
       });

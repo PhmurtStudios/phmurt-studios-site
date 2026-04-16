@@ -276,6 +276,16 @@
       .cb-scores-row { grid-template-columns: repeat(2,1fr); }
       .cb-stats-row { grid-template-columns: 1fr; }
     }
+    @media (max-width: 375px) {
+      .cb-main { padding: 16px 12px; }
+      .cb-card { padding: 14px; min-width: 0; }
+      .cb-card-name { font-size: 14px; }
+      .cb-sidebar { padding: 12px; }
+      #progressBar { font-size: 9px; }
+      .cb-step-title { font-size: 14px; }
+      .cb-ability-grid { grid-template-columns: repeat(2, 1fr); }
+      .cb-spell-grid { grid-template-columns: 1fr; }
+    }
 
     /* ── DICE ROLL POPUP ── */
     #dice-popup {
@@ -849,7 +859,7 @@
           <div class="cs-header-actions">
             <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
               <a href="characters.html" class="cs-save-btn" style="background:transparent;color:var(--text-muted);border:1px solid var(--border);text-decoration:none;display:inline-flex;align-items:center;">← Characters</a>
-              <button class="cs-save-btn" style="background:transparent;color:var(--crimson);border:1px solid var(--crimson-border);" onclick="window.print()">Print / PDF</button>
+              <button class="cs-save-btn" style="background:transparent;color:var(--crimson);border:1px solid var(--crimson-border);" onclick="exportCharSheet5e()">Export PDF</button>
               <button class="cs-save-btn" style="background:transparent;color:var(--text-muted);border:1px solid var(--border);" onclick="prevStep(9)">← Edit</button>
             </div>
             <div id="cs-save-status" class="cs-save-status"></div> <button onclick="showHomebrewManager()" style="font-family:'Cinzel',serif;font-size:8px;letter-spacing:2px;text-transform:uppercase;padding:5px 12px;background:transparent;border:1px solid #8b6914;color:#8b6914;cursor:pointer;margin-left:8px;" title="Manage Homebrew">⚗ Homebrew</button>
@@ -1251,7 +1261,7 @@
               <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end;">
                 <a href="characters.html" class="cs-save-btn" style="background:transparent;color:var(--text-muted);border:1px solid var(--border);text-decoration:none;display:inline-flex;align-items:center;">← Characters</a>
                 <button class="cs-save-btn" id="cs35-save-btn" onclick="saveChar35()">Save Character ↑</button>
-                <button class="cs-save-btn" style="background:transparent;color:var(--crimson);border:1px solid var(--crimson-border);" onclick="window.print()">Print / PDF</button>
+                <button class="cs-save-btn" style="background:transparent;color:var(--crimson);border:1px solid var(--crimson-border);" onclick="exportCharSheet5e()">Export PDF</button>
                 <button class="cs-save-btn" style="background:transparent;color:var(--text-muted);border:1px solid var(--border);" onclick="backToDetails35()">← Edit Details</button>
                 <button class="cs-save-btn" style="background:transparent;color:var(--text-muted);border:1px solid var(--border);" onclick="startNewCharacter()">New Character</button>
               </div>
@@ -1297,7 +1307,7 @@
 
   </div>
 
-  <script src="builder-data.js?v=185"></script>
+  <script src="builder-data.js?v=185" defer></script>
   <!-- builder-data-35.js lazy-loaded on first 3.5e edition switch -->
   <script>
 // ══════════════════════════════════════════════════════════════
@@ -1774,7 +1784,7 @@ function renderRaces(){
   // Inline "Create Homebrew Race" card
   var createCard = document.createElement('div');
   createCard.className = 'cb-card cb-card-create';
-  createCard.onclick = function(){ openHBEntityModal('race', null); };
+  createCard.onclick = function(){ showHomebrewManager(); };
   createCard.innerHTML = '<div class="cb-card-name" style="color:#8b6914;">✶ Create Homebrew</div><div class="cb-card-detail" style="color:#8b6914;opacity:.7;">Design your own custom race</div>';
   c.appendChild(createCard);
 }
@@ -1872,7 +1882,7 @@ function renderClasses(){
   // Inline "Create Homebrew Class" card
   var createCard = document.createElement('div');
   createCard.className = 'cb-card cb-card-create';
-  createCard.onclick = function(){ openHBEntityModal('class', null); };
+  createCard.onclick = function(){ showHomebrewManager(); };
   createCard.innerHTML = '<div class="cb-card-name" style="color:#8b6914;">✶ Create Homebrew</div><div class="cb-card-detail" style="color:#8b6914;opacity:.7;">Design your own custom class</div>';
   c.appendChild(createCard);
 }
@@ -1926,7 +1936,7 @@ function renderBackgrounds(){
   // Inline "Create Homebrew Background" card
   var createCard = document.createElement('div');
   createCard.className = 'cb-card cb-card-create';
-  createCard.onclick = function(){ openHBEntityModal('background', null); };
+  createCard.onclick = function(){ showHomebrewManager(); };
   createCard.innerHTML = '<div class="cb-card-name" style="color:#8b6914;">✶ Create Homebrew</div><div class="cb-card-detail" style="color:#8b6914;opacity:.7;">Design your own custom background</div>';
   c.appendChild(createCard);
 }
@@ -10220,6 +10230,8 @@ function init35() {
 
   <div id="ps-site-footer"></div>
 
+  <script src="char-sheet-export.js?v=185"></script>
+  <script src="builder-wizard.js?v=186"></script>
   <script src="phmurt-shell.js?v=187"></script>
 </body>
 </html>

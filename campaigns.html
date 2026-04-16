@@ -112,6 +112,11 @@
       animation: cm-spin 0.8s linear infinite;
     }
     @keyframes cm-spin { to { transform: rotate(360deg); } }
+
+    /* ═══ MOBILE: loading shell ═══ */
+    @media (max-width: 640px) {
+      .cm-loading-shell .cm-ls-nav { display: none; }
+    }
     @keyframes lwSlideIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes lwPulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
     /* Hide the default page hero when React loads */
@@ -1433,6 +1438,31 @@
         top: auto;
         bottom: calc(120px + env(safe-area-inset-bottom));
       }
+    }
+
+    /* ═══ MOBILE: phone-specific (< 480px) ═══ */
+    @media (max-width: 480px) {
+      /* Force map-setup sidebar to fit phone screens */
+      [style*="width:420"], [style*="width: 420"] {
+        width: calc(100vw - 16px) !important;
+        min-width: 0 !important;
+      }
+      /* Cap modal widths to viewport */
+      [style*="width: 520"], [style*="width:520"],
+      [style*="width: 740"], [style*="width:740"] {
+        width: calc(100vw - 24px) !important;
+        max-width: calc(100vw - 24px) !important;
+      }
+      /* Character stat grid: 2 columns on tiny phones */
+      .cm-char-sheet-stats { grid-template-columns: repeat(2, 1fr) !important; }
+      /* Flyout grids: single column */
+      .cm-confirm-flyout [style*="1fr 1fr"],
+      .cm-confirm-flyout [style*="grid-template-columns"] {
+        grid-template-columns: 1fr !important;
+      }
+      /* Tighter padding on action panel */
+      .cm-action-panel { left: 4px; right: 4px; padding: 8px 6px; }
+      .cm-action-card { width: 56px; height: 48px; font-size: 7px; }
     }
 
     /* ═══ LIGHT MODE OVERRIDES for action panel + combat UI ═══ */
@@ -5495,8 +5525,8 @@ function DashboardView({ data, setData, onNav, activeCampaignId, viewRole }) {
               { label:"NPC Gen", icon:Users, accent: T.moveBlue, url:`generators.html?export=campaign&campaignId=${encodeURIComponent(activeCampaignId||'')}` },
               { label:"Encounter", icon:Swords, accent: T.green, url:`generators.html?export=campaign&campaignId=${encodeURIComponent(activeCampaignId||'')}&type=encounter` },
               { label:"Treasure", icon:Package, accent:T.gold, url:`generators.html?export=campaign&campaignId=${encodeURIComponent(activeCampaignId||'')}&type=treasure` },
-              { label:"Compendium", icon:BookOpen, accent:"#c792ea", url:"compendium.html" },
-              { label:"Grimoire", icon:Wand2, accent:"#f2917c", url:"grimoire.html" },
+              { label:"Workshop", icon:BookOpen, accent:"#c792ea", url:"compendium.html" },
+              { label:"Content", icon:Wand2, accent:"#f2917c", url:"grimoire.html" },
               { label:"Character", icon:FileText, accent:T.gold, url:"character-builder.html" },
             ].map((tool, i) => {
               const ToolIcon = tool.icon;
@@ -5921,6 +5951,7 @@ function App() {
 
         // Load remaining tab views in background
         await loadTabModule("quests", "campaign-quests-view.js");
+        await loadTabModule("initiative", "campaign-initiative.js");
         await loadTabModule("homebrew", "campaign-homebrew-view.js");
         await loadTabModule("scheduler", "campaign-scheduler-view.js");
         await loadTabModule("settings", "campaign-settings-view.js");
@@ -5946,7 +5977,7 @@ function App() {
   // ── If user switches to an unloaded tab, prioritize loading it ──
   useEffect(() => {
     if (activeTab === "dashboard" || tabsReady[activeTab]) return;
-    var urls = { timeline: "campaign-timeline.js", world: "campaign-world.js", play: "campaign-play.js", "encounter-builder": "campaign-encounter-builder.js", factionwar: "campaign-factionwar.js", prophecy: "campaign-prophecy.js", heist: "campaign-heist.js", intrigue: "campaign-intrigue.js", downtime: "campaign-downtime.js", puzzles: "campaign-puzzles.js", kingdom: "campaign-kingdom.js", crafting: "campaign-crafting.js", invites: "campaign-invites.js", quests: "campaign-quests-view.js", homebrew: "campaign-homebrew-view.js", relationships: "campaign-relationships.js", scheduler: "campaign-scheduler-view.js", settings: "campaign-settings-view.js" };
+    var urls = { timeline: "campaign-timeline.js", world: "campaign-world.js", play: "campaign-play.js", "encounter-builder": "campaign-encounter-builder.js", initiative: "campaign-initiative.js", factionwar: "campaign-factionwar.js", prophecy: "campaign-prophecy.js", heist: "campaign-heist.js", intrigue: "campaign-intrigue.js", downtime: "campaign-downtime.js", puzzles: "campaign-puzzles.js", kingdom: "campaign-kingdom.js", crafting: "campaign-crafting.js", invites: "campaign-invites.js", quests: "campaign-quests-view.js", homebrew: "campaign-homebrew-view.js", relationships: "campaign-relationships.js", scheduler: "campaign-scheduler-view.js", settings: "campaign-settings-view.js" };
     var preload = activeTab === "world" ? loadTabModule("living-world", "living-world.js") : Promise.resolve();
     preload.then(function() { return loadTabModule(activeTab, urls[activeTab]); }).then(function() {
       setTabsReady(function(prev) { var n = Object.assign({}, prev); n[activeTab] = true; return n; });
@@ -6344,6 +6375,7 @@ function App() {
     { id:"quests", label:"Quests", icon: Scroll, roles:["dm","player"], module:"questBoard" },
     { id:"relationships", label:"Relations", icon: Activity, roles:["dm","player"], module:"livingWorld" },
     { id:"encounter-builder", label:"Encounters", icon: Target, roles:["dm"] },
+    { id:"initiative", label:"Initiative", icon: Swords, roles:["dm","player"] },
     { id:"homebrew", label:"Homebrew", icon: Wand2, roles:["dm"], module:"homebrew" },
     { id:"factionwar", label:"War", icon: Swords, roles:["dm"], module:"factionWar", proOnly:true },
     { id:"prophecy", label:"Prophecy", icon: BookOpen, roles:["dm"], module:"prophecy", proOnly:true },
@@ -6577,6 +6609,11 @@ function App() {
           window.CampaignHomebrewView
             ? React.createElement(window.CampaignHomebrewView, { data: data, setData: setData, viewRole: viewRole })
             : <TabLoadingSpinner label="Homebrew" />
+        )}
+        {activeTab === "initiative" && (
+          window.CampaignInitiativeView
+            ? React.createElement(window.CampaignInitiativeView, { data: data, setData: setData, viewRole: viewRole })
+            : <TabLoadingSpinner label="Initiative" />
         )}
         {activeTab === "scheduler" && (
           window.CampaignSchedulerView

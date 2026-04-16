@@ -1722,7 +1722,7 @@ window.CampaignHomebrewView = function CampaignHomebrewView({ data, setData, vie
               <div style={{ fontSize: "32px", opacity: 0.2, marginBottom: "12px" }}>{"\u2726"}</div>
               <div style={{ fontFamily: T.heading, fontSize: "14px", color: T.textMuted, marginBottom: "8px" }}>No community homebrew added yet</div>
               <div style={{ fontSize: "13px", color: T.textFaint }}>
-                Visit the <a href="/compendium.html" style={{ color: T.crimson }}>Compendium</a> to browse and add community homebrew to this campaign.
+                Visit the <a href="/compendium.html" style={{ color: T.crimson }}>Homebrew Workshop</a> to browse and add community homebrew to this campaign.
               </div>
             </div>
           ) : (

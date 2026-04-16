@@ -1176,7 +1176,7 @@ var PhmurtDB = (function () {
       var sb = _sb();
       if (sb) {
         return sb.from('characters')
-          .select('id, name, race, class, level, builder_type, created_at, updated_at')
+          .select('id, name, race, class, level, builder_type, is_public, created_at, updated_at')
           .eq('owner_id', _session.userId)
           .order('updated_at', { ascending: false })
           .then(function (r) { return r.data || []; })
@@ -1206,6 +1206,44 @@ var PhmurtDB = (function () {
         return Promise.resolve(true);
       }
       return Promise.resolve(false);
+    },
+
+    /* shareCharacter(id) → Promise<{success, url}> */
+    shareCharacter: function (id) {
+      if (!_session) return Promise.resolve({ success: false, error: 'Not signed in.' });
+      var sb = _sb();
+      if (!sb) return Promise.resolve({ success: false, error: 'Cloud sync not available.' });
+      var safeId = String(id).trim();
+      return sb.from('characters').update({ is_public: true })
+        .eq('id', safeId).eq('owner_id', _session.userId)
+        .then(function (r) {
+          if (r.error) return { success: false, error: r.error.message };
+          var url = window.location.origin + '/shared.html?type=character&id=' + encodeURIComponent(safeId);
+          return { success: true, url: url };
+        })
+        .catch(function (e) { return { success: false, error: e.message }; });
+    },
+
+    /* unshareCharacter(id) → Promise<{success}> */
+    unshareCharacter: function (id) {
+      if (!_session) return Promise.resolve({ success: false, error: 'Not signed in.' });
+      var sb = _sb();
+      if (!sb) return Promise.resolve({ success: false, error: 'Cloud sync not available.' });
+      var safeId = String(id).trim();
+      return sb.from('characters').update({ is_public: false })
+        .eq('id', safeId).eq('owner_id', _session.userId)
+        .then(function (r) {
+          if (r.error) return { success: false, error: r.error.message };
+          return { success: true };
+        })
+        .catch(function (e) { return { success: false, error: e.message }; });
+    },
+
+    /* getShareUrl(type, id) — build share URL for any content type */
+    getShareUrl: function (type, id) {
+      var base = window.location.origin + '/shared.html';
+      if (type === 'character') return base + '?type=character&id=' + encodeURIComponent(id);
+      return base + '?type=homebrew&t=' + encodeURIComponent(type) + '&id=' + encodeURIComponent(id);
     },
 
     /* ══════════════════════════════════════════════════════════

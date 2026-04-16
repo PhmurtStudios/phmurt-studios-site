@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta name="referrer" content="strict-origin" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://*.stripe.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), usb=(), payment=(), serial=(), bluetooth=()" />
+  <title>Shared Content · Phmurt Studios</title>
+  <meta name="description" content="View shared D&D characters and homebrew content on Phmurt Studios." />
+  <meta property="og:title" content="Shared Content · Phmurt Studios" />
+  <meta property="og:description" content="View shared D&D characters and homebrew content on Phmurt Studios." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://phmurtstudios.com/shared.html" />
+  <meta property="og:image" content="https://phmurtstudios.com/logo.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Shared Content · Phmurt Studios" />
+  <meta name="twitter:description" content="View shared D&D characters and homebrew content on Phmurt Studios." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+  <link rel="stylesheet" href="style.css?v=185" />
+  <script src="theme.js?v=185"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0" crossorigin="anonymous" integrity="sha384-fm42zLXjam4N3lT5umWgNtBBPMP3Ddrdmr9lnPKtDWzs5Dqy457Yn6+eTvCgRU3n"></script>
+  <script src="supabase-config.js?v=185"></script>
+  <script src="stripe-env.js?v=188"></script>
+  <script src="stripe-config.js?v=185"></script>
+  <script src="phmurt-auth.js?v=187"></script>
+  <script src="phmurt-utils.js?v=186"></script>
+  <script src="builder-data.js?v=185"></script>
+
+  <style>
+    /* ── Shared view layout ────────────────────────────────────── */
+    .sv-wrap { max-width: 900px; margin: 0 auto; padding: 0 32px 64px; }
+
+    .sv-loading {
+      text-align: center; padding: 80px 0;
+      font-family: 'Spectral', serif; font-size: 18px;
+      color: var(--text-muted, #9a8870); font-style: italic;
+    }
+    .sv-error {
+      text-align: center; padding: 80px 0;
+      font-family: 'Spectral', serif; font-size: 18px;
+      color: var(--crimson, #d4433a);
+    }
+    .sv-error-sub {
+      font-size: 14px; color: var(--text-dim, #6b5e50);
+      margin-top: 12px;
+    }
+
+    /* ── Character sheet view ──────────────────────────────────── */
+    .sv-char-header {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 32px; flex-wrap: wrap; gap: 16px;
+    }
+    .sv-char-name {
+      font-family: 'Cinzel', serif; font-size: 32px; font-weight: 700;
+      color: var(--text, #f2e8d6); margin: 0; line-height: 1.2;
+    }
+    .sv-char-subtitle {
+      font-family: 'Spectral', serif; font-size: 16px;
+      color: var(--text-muted, #9a8870); margin-top: 4px;
+    }
+    .sv-edition-badge {
+      font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 2px;
+      text-transform: uppercase; padding: 5px 12px; border-radius: 4px;
+      font-weight: 600; white-space: nowrap;
+    }
+    .sv-edition-badge.e5 { background: rgba(212,67,58,0.1); color: var(--crimson, #d4433a); }
+    .sv-edition-badge.e35 { background: rgba(201,168,76,0.12); color: var(--gold, #d4433a); }
+
+    .sv-shared-by {
+      font-family: 'Spectral', serif; font-size: 13px;
+      color: var(--text-dim, #6b5e50); margin-bottom: 28px;
+    }
+    .sv-shared-by strong { color: var(--text-muted, #9a8870); }
+
+    /* ── Ability scores row ────────────────────────────────────── */
+    .sv-abilities {
+      display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px;
+      margin-bottom: 32px;
+    }
+    @media (max-width: 600px) {
+      .sv-abilities { grid-template-columns: repeat(3, 1fr); }
+    }
+    .sv-ability {
+      text-align: center; padding: 16px 8px;
+      background: var(--bg-card, #141420);
+      border: 1px solid var(--border, rgba(255,255,255,0.11));
+      border-radius: 6px;
+    }
+    .sv-ability-label {
+      font-family: 'Cinzel', serif; font-size: 9px; letter-spacing: 2.5px;
+      text-transform: uppercase; color: var(--text-dim, #6b5e50);
+      margin-bottom: 6px;
+    }
+    .sv-ability-score {
+      font-family: 'Cinzel', serif; font-size: 28px; font-weight: 700;
+      color: var(--text, #f2e8d6); line-height: 1;
+    }
+    .sv-ability-mod {
+      font-family: 'Spectral', serif; font-size: 14px;
+      color: var(--crimson, #d4433a); margin-top: 4px;
+    }
+
+    /* ── Stat row (AC, HP, Speed etc) ──────────────────────────── */
+    .sv-stats {
+      display: flex; gap: 0; margin-bottom: 32px;
+      border: 1px solid var(--border, rgba(255,255,255,0.11));
+      border-radius: 6px; overflow: hidden;
+    }
+    .sv-stat {
+      flex: 1; text-align: center; padding: 14px 8px;
+      background: var(--bg-card, #141420);
+      border-right: 1px solid var(--border, rgba(255,255,255,0.11));
+    }
+    .sv-stat:last-child { border-right: none; }
+    .sv-stat-label {
+      font-family: 'Cinzel', serif; font-size: 8px; letter-spacing: 2px;
+      text-transform: uppercase; color: var(--text-dim, #6b5e50);
+      margin-bottom: 4px;
+    }
+    .sv-stat-value {
+      font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700;
+      color: var(--text, #f2e8d6);
+    }
+    @media (max-width: 500px) {
+      .sv-stats { flex-wrap: wrap; }
+      .sv-stat { flex: 1 1 33%; border-bottom: 1px solid var(--border, rgba(255,255,255,0.11)); }
+    }
+
+    /* ── Section panels ────────────────────────────────────────── */
+    .sv-section {
+      background: var(--bg-card, #141420);
+      border: 1px solid var(--border, rgba(255,255,255,0.11));
+      border-radius: 6px; padding: 20px 24px; margin-bottom: 20px;
+    }
+    .sv-section-title {
+      font-family: 'Cinzel', serif; font-size: 12px; font-weight: 600;
+      letter-spacing: 2px; text-transform: uppercase;
+      color: var(--crimson, #d4433a); margin: 0 0 14px 0;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border, rgba(255,255,255,0.11));
+    }
+    .sv-section p, .sv-section li {
+      font-family: 'Spectral', serif; font-size: 15px; line-height: 1.7;
+      color: var(--text-muted, #9a8870);
+    }
+    .sv-section ul { padding-left: 20px; margin: 0; }
+    .sv-section li { margin-bottom: 4px; }
+    .sv-section li strong {
+      color: var(--text, #f2e8d6); font-weight: 500;
+    }
+
+    /* ── Two-column grid for sections ──────────────────────────── */
+    .sv-grid-2 {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+    }
+    @media (max-width: 700px) { .sv-grid-2 { grid-template-columns: 1fr; } }
+
+    /* ── Saves & Skills ────────────────────────────────────────── */
+    .sv-save-row, .sv-skill-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-family: 'Spectral', serif; font-size: 14px;
+    }
+    .sv-save-row:last-child, .sv-skill-row:last-child { border-bottom: none; }
+    .sv-save-name, .sv-skill-name { color: var(--text-muted, #9a8870); }
+    .sv-skill-name .sv-prof-dot {
+      display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+      background: var(--crimson, #d4433a); margin-right: 6px; vertical-align: middle;
+    }
+    .sv-save-val, .sv-skill-val {
+      font-weight: 600; color: var(--text, #f2e8d6);
+      font-family: 'Cinzel', serif; font-size: 13px;
+    }
+
+    /* ── Homebrew view ─────────────────────────────────────────── */
+    .sv-hb-type-badge {
+      font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 2px;
+      text-transform: uppercase; padding: 4px 10px; border-radius: 4px;
+      background: rgba(212,67,58,0.1); color: var(--crimson, #d4433a);
+      display: inline-block; margin-bottom: 12px;
+    }
+    .sv-hb-name {
+      font-family: 'Cinzel', serif; font-size: 28px; font-weight: 700;
+      color: var(--text, #f2e8d6); margin: 0 0 8px; line-height: 1.2;
+    }
+    .sv-hb-author {
+      font-family: 'Spectral', serif; font-size: 13px;
+      color: var(--text-dim, #6b5e50); margin-bottom: 24px;
+    }
+    .sv-hb-author strong { color: var(--text-muted, #9a8870); }
+    .sv-hb-desc {
+      font-family: 'Spectral', serif; font-size: 16px; line-height: 1.8;
+      color: var(--text-muted, #9a8870); margin-bottom: 24px;
+    }
+    .sv-hb-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+    .sv-hb-tag {
+      font-family: 'Cinzel', serif; font-size: 10px; letter-spacing: 1.5px;
+      text-transform: uppercase; padding: 4px 10px; border-radius: 12px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid var(--border, rgba(255,255,255,0.11));
+      color: var(--text-dim, #6b5e50);
+    }
+
+    /* ── Stat block (for monsters / items) ─────────────────────── */
+    .sv-hb-stat-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      font-family: 'Spectral', serif; font-size: 14px;
+    }
+    .sv-hb-stat-row:last-child { border-bottom: none; }
+    .sv-hb-stat-label { color: var(--text-dim, #6b5e50); text-transform: uppercase; font-size: 11px; letter-spacing: 1px; font-family: 'Cinzel', serif; }
+    .sv-hb-stat-val { color: var(--text, #f2e8d6); font-weight: 500; }
+
+    /* ── Action bar ────────────────────────────────────────────── */
+    .sv-action-bar {
+      display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 32px;
+    }
+    .sv-action-btn {
+      font-family: 'Cinzel', serif; font-size: 11px; letter-spacing: 1.5px;
+      text-transform: uppercase; padding: 10px 20px; border-radius: 4px;
+      cursor: pointer; border: 1px solid var(--border, rgba(255,255,255,0.11));
+      background: transparent; color: var(--text-muted, #9a8870);
+      transition: all 0.15s; text-decoration: none; display: inline-flex;
+      align-items: center; gap: 6px;
+    }
+    .sv-action-btn:hover {
+      border-color: var(--crimson, #d4433a); color: var(--crimson, #d4433a);
+    }
+    .sv-action-btn.primary {
+      background: var(--crimson, #d4433a); color: var(--bg, #08080a);
+      border-color: var(--crimson, #d4433a); font-weight: 600;
+    }
+    .sv-action-btn.primary:hover { background: var(--gold, #d4433a); }
+
+    @media (max-width: 375px) {
+      .sv-wrap { padding: 0 16px 48px; }
+      .sv-char-name { font-size: 24px; }
+      .sv-abilities { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .sv-ability { padding: 12px 6px; }
+      .sv-ability-score { font-size: 22px; }
+      .sv-stats { flex-wrap: wrap; }
+      .sv-stat { flex: 1 1 50%; min-width: 0; }
+      .sv-stat-value { font-size: 18px; }
+      .sv-section { padding: 16px; }
+      .sv-grid-2 { grid-template-columns: 1fr; }
+      .sv-copy-btn { font-size: 9px; padding: 7px 14px; }
+      .sv-hb-header h1 { font-size: 24px; }
+    }
+  </style>
+</head>
+<body data-nav-active="" data-footer-copy="Roll Well. Play Weird." data-breadcrumb="Home|index.html;Shared">
+  <a href="#main-content" class="ps-skip-nav">Skip to content</a>
+  <div id="ps-site-shell"></div>
+  <div id="ps-page-breadcrumb"></div>
+
+  <div class="ps-content reveal" id="main-content">
+    <div class="sv-wrap">
+      <div id="sv-content">
+        <div class="sv-loading" id="sv-loading">Loading shared content&hellip;</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fantasy-section-end">◆   ◆   ◆</div>
+  <div id="ps-site-footer"></div>
+
+  <script>
+    /* ══════════════════════════════════════════════════════════════
+       Shared Content Viewer
+       URL params:
+         ?type=character&id=UUID
+         ?type=homebrew&t=race&id=UUID  (homebrew_content row id)
+    ══════════════════════════════════════════════════════════════ */
+    (function () {
+      'use strict';
+
+      var esc = function (v) {
+        return String(v == null ? '' : v)
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      };
+
+      function modStr(score) {
+        var m = Math.floor((score - 10) / 2);
+        return (m >= 0 ? '+' : '') + m;
+      }
+
+      function _sb() {
+        if (window.SUPABASE_URL && window.SUPABASE_ANON_KEY && window.supabase) {
+          return window.supabase.createClient(window.SUPABASE_URL, window.SUPABASE_ANON_KEY);
+        }
+        return null;
+      }
+
+      /* ── Parse URL params ────────────────────────────────────── */
+      var params = new URLSearchParams(window.location.search);
+      var type = (params.get('type') || '').toLowerCase();
+      var id   = params.get('id') || '';
+      var hbType = params.get('t') || '';  // homebrew sub-type (race, class, etc.)
+
+      if (!type || !id) {
+        showError('No content specified.', 'Add ?type=character&id=UUID or ?type=homebrew&t=race&id=UUID to the URL.');
+        return;
+      }
+
+      /* Validate ID format (UUID) */
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) {
+        showError('Invalid link.', 'The share link appears to be malformed.');
+        return;
+      }
+
+      if (type === 'character') {
+        loadCharacter(id);
+      } else if (type === 'homebrew') {
+        loadHomebrew(id, hbType);
+      } else {
+        showError('Unknown content type.', 'Supported types: character, homebrew');
+      }
+
+      /* ── Error display ───────────────────────────────────────── */
+      function showError(msg, sub) {
+        document.getElementById('sv-content').innerHTML =
+          '<div class="sv-error">' + esc(msg) +
+          (sub ? '<div class="sv-error-sub">' + esc(sub) + '</div>' : '') +
+          '</div>';
+      }
+
+      /* ══════════════════════════════════════════════════════════
+         CHARACTER VIEW
+      ══════════════════════════════════════════════════════════ */
+      async function loadCharacter(charId) {
+        var sb = _sb();
+        if (!sb) { showError('Unable to connect to database.'); return; }
+
+        try {
+          var { data, error } = await sb.from('characters')
+            .select('name, race, class, level, builder_type, data, owner_id')
+            .eq('id', charId)
+            .eq('is_public', true)
+            .maybeSingle();
+
+          if (error) throw error;
+          if (!data) {
+            showError('Character not found.', 'This character may have been unshared or the link is invalid.');
+            return;
+          }
+
+          /* Fetch owner display name */
+          var ownerName = 'An Adventurer';
+          try {
+            var { data: profile } = await sb.from('profiles')
+              .select('display_name')
+              .eq('id', data.owner_id)
+              .maybeSingle();
+            if (profile && profile.display_name) ownerName = profile.display_name;
+          } catch (e) { /* Profile lookup optional */ }
+
+          renderCharacter(data, ownerName);
+
+          /* Update page title and OG tags */
+          document.title = esc(data.name || 'Shared Character') + ' · Phmurt Studios';
+
+        } catch (e) {
+          showError('Failed to load character.', e.message || 'Please try again later.');
+        }
+      }
+
+      function renderCharacter(row, ownerName) {
+        var d = row.data || {};
+        var is35 = row.builder_type === '35e';
+        var name = esc(row.name || d.name || 'Unnamed Character');
+        var race = esc(row.race || d.race || '');
+        var cls = esc(row.class || d.cls || d.class || '');
+        var level = row.level || d.level || 1;
+        var edClass = is35 ? 'e35' : 'e5';
+        var edLabel = is35 ? '3.5e' : '5e';
+
+        /* Ability scores */
+        var abilities = d.abilities || {};
+        var abilityNames = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
+
+        var abilitiesHtml = '<div class="sv-abilities">';
+        abilityNames.forEach(function (a) {
+          var score = parseInt(abilities[a], 10) || 10;
+          abilitiesHtml +=
+            '<div class="sv-ability">' +
+              '<div class="sv-ability-label">' + a + '</div>' +
+              '<div class="sv-ability-score">' + score + '</div>' +
+              '<div class="sv-ability-mod">' + modStr(score) + '</div>' +
+            '</div>';
+        });
+        abilitiesHtml += '</div>';
+
+        /* Stat row */
+        var ac = d.ac || d.armorClass || '—';
+        var hp = d.hp || d.maxHp || d.hitPoints || '—';
+        var speed = d.speed || '30 ft';
+        if (typeof speed === 'object') speed = speed.walk || '30 ft';
+        var profBonus = d.proficiencyBonus || d.profBonus || ('+' + (Math.ceil(level / 4) + 1));
+
+        var statsHtml = '<div class="sv-stats">';
+        if (is35) {
+          var bab = d.bab || d.baseAttackBonus || '—';
+          statsHtml +=
+            '<div class="sv-stat"><div class="sv-stat-label">AC</div><div class="sv-stat-value">' + esc(String(ac)) + '</div></div>' +
+            '<div class="sv-stat"><div class="sv-stat-label">HP</div><div class="sv-stat-value">' + esc(String(hp)) + '</div></div>' +
+            '<div class="sv-stat"><div class="sv-stat-label">Speed</div><div class="sv-stat-value">' + esc(String(speed)) + '</div></div>' +
+            '<div class="sv-stat"><div class="sv-stat-label">BAB</div><div class="sv-stat-value">' + esc(String(bab)) + '</div></div>' +
+            '<div class="sv-stat"><div class="sv-stat-label">Level</div><div class="sv-stat-value">' + level + '</div></div>';
+        } else {
+          statsHtml +=
+            '<div class="sv-stat"><div class="sv-stat-label">AC</div><div class="sv-stat-value">' + esc(String(ac)) + '</div></div>' +
+            '<div class="sv-stat"><div class="sv-stat-label">HP</div><div class="sv-stat-value">' + esc(String(hp)) + '</div></div>' +
+            '<div class="sv-stat"><div class="sv-stat-label">Speed</div><div class="sv-stat-value">' + esc(String(speed)) + '</div></div>' +
+            '<div class="sv-stat"><div class="sv-stat-label">Prof</div><div class="sv-stat-value">' + esc(String(profBonus)) + '</div></div>' +
+            '<div class="sv-stat"><div class="sv-stat-label">Level</div><div class="sv-stat-value">' + level + '</div></div>';
+        }
+        statsHtml += '</div>';
+
+        /* Saving throws */
+        var savesHtml = '';
+        if (d.saves || d.savingThrows) {
+          var saves = d.saves || d.savingThrows || {};
+          savesHtml = '<div class="sv-section"><div class="sv-section-title">Saving Throws</div>';
+          var saveLabels = is35 ? ['Fort', 'Ref', 'Will'] : ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'];
+          saveLabels.forEach(function (s) {
+            var val = saves[s] !== undefined ? saves[s] : '—';
+            if (typeof val === 'number') val = (val >= 0 ? '+' : '') + val;
+            savesHtml += '<div class="sv-save-row"><span class="sv-save-name">' + esc(s) + '</span><span class="sv-save-val">' + esc(String(val)) + '</span></div>';
+          });
+          savesHtml += '</div>';
+        }
+
+        /* Skills */
+        var skillsHtml = '';
+        if (d.skills && typeof d.skills === 'object') {
+          var skillKeys = Object.keys(d.skills);
+          if (skillKeys.length) {
+            skillsHtml = '<div class="sv-section"><div class="sv-section-title">Skills</div>';
+            skillKeys.sort().forEach(function (sk) {
+              var entry = d.skills[sk];
+              var val, prof = false;
+              if (typeof entry === 'object') {
+                val = entry.total !== undefined ? entry.total : entry.bonus || 0;
+                prof = !!entry.proficient;
+              } else {
+                val = entry;
+              }
+              if (typeof val === 'number') val = (val >= 0 ? '+' : '') + val;
+              skillsHtml +=
+                '<div class="sv-skill-row">' +
+                  '<span class="sv-skill-name">' + (prof ? '<span class="sv-prof-dot"></span>' : '') + esc(sk) + '</span>' +
+                  '<span class="sv-skill-val">' + esc(String(val)) + '</span>' +
+                '</div>';
+            });
+            skillsHtml += '</div>';
+          }
+        }
+
+        /* Features */
+        var featuresHtml = '';
+        var features = d.features || d.classFeatures || [];
+        if (features.length) {
+          featuresHtml = '<div class="sv-section"><div class="sv-section-title">Features &amp; Traits</div><ul>';
+          features.forEach(function (f) {
+            if (typeof f === 'string') {
+              featuresHtml += '<li>' + esc(f) + '</li>';
+            } else if (f && f.name) {
+              featuresHtml += '<li><strong>' + esc(f.name) + '</strong>' + (f.desc ? ' — ' + esc(f.desc) : '') + '</li>';
+            }
+          });
+          featuresHtml += '</ul></div>';
+        }
+
+        /* Equipment */
+        var equipHtml = '';
+        var equipment = d.equipment || d.inventory || d.equipChoices || [];
+        if (equipment.length) {
+          equipHtml = '<div class="sv-section"><div class="sv-section-title">Equipment</div><ul>';
+          equipment.forEach(function (item) {
+            if (typeof item === 'string') {
+              equipHtml += '<li>' + esc(item) + '</li>';
+            } else if (item && item.name) {
+              equipHtml += '<li><strong>' + esc(item.name) + '</strong>' + (item.qty && item.qty > 1 ? ' ×' + item.qty : '') + '</li>';
+            }
+          });
+          equipHtml += '</ul></div>';
+        }
+
+        /* Spells */
+        var spellsHtml = '';
+        var spells = d.spells || d.selectedSpells || [];
+        var cantrips = d.cantrips || d.selectedCantrips || [];
+        if (spells.length || cantrips.length) {
+          spellsHtml = '<div class="sv-section"><div class="sv-section-title">Spells</div>';
+          if (cantrips.length) {
+            spellsHtml += '<p style="margin:0 0 6px;"><strong style="color:var(--text);">Cantrips:</strong> ' + cantrips.map(function(s){ return esc(typeof s === 'string' ? s : s.name || ''); }).join(', ') + '</p>';
+          }
+          if (spells.length) {
+            spellsHtml += '<ul>';
+            spells.forEach(function (s) {
+              var nm = typeof s === 'string' ? s : (s.name || '');
+              spellsHtml += '<li>' + esc(nm) + '</li>';
+            });
+            spellsHtml += '</ul>';
+          }
+          spellsHtml += '</div>';
+        }
+
+        /* Personality / backstory */
+        var personalityHtml = '';
+        var details = d.details || {};
+        var hasPerson = details.personality || details.ideals || details.bonds || details.flaws || details.backstory || d.backstory;
+        if (hasPerson) {
+          personalityHtml = '<div class="sv-section"><div class="sv-section-title">Personality &amp; Backstory</div>';
+          if (details.personality) personalityHtml += '<p><strong style="color:var(--text);">Personality:</strong> ' + esc(details.personality) + '</p>';
+          if (details.ideals) personalityHtml += '<p><strong style="color:var(--text);">Ideals:</strong> ' + esc(details.ideals) + '</p>';
+          if (details.bonds) personalityHtml += '<p><strong style="color:var(--text);">Bonds:</strong> ' + esc(details.bonds) + '</p>';
+          if (details.flaws) personalityHtml += '<p><strong style="color:var(--text);">Flaws:</strong> ' + esc(details.flaws) + '</p>';
+          var backstory = details.backstory || d.backstory || '';
+          if (backstory) personalityHtml += '<p><strong style="color:var(--text);">Backstory:</strong> ' + esc(backstory) + '</p>';
+          personalityHtml += '</div>';
+        }
+
+        /* Action bar */
+        var actionBar =
+          '<div class="sv-action-bar">' +
+            '<button class="sv-action-btn" onclick="copyShareLink()">&#128279; Copy Link</button>' +
+            '<a href="characters.html" class="sv-action-btn">View Your Characters</a>' +
+            '<a href="character-builder.html" class="sv-action-btn primary">+ Create Your Own</a>' +
+          '</div>';
+
+        /* Assemble */
+        var html =
+          '<div class="sv-char-header">' +
+            '<div>' +
+              '<h1 class="sv-char-name">' + name + '</h1>' +
+              '<div class="sv-char-subtitle">' + race + (race && cls ? ' · ' : '') + cls + '</div>' +
+            '</div>' +
+            '<span class="sv-edition-badge ' + edClass + '">' + edLabel + '</span>' +
+          '</div>' +
+          '<div class="sv-shared-by">Shared by <strong>' + esc(ownerName) + '</strong></div>' +
+          actionBar +
+          abilitiesHtml +
+          statsHtml +
+          '<div class="sv-grid-2">' + savesHtml + skillsHtml + '</div>' +
+          featuresHtml +
+          equipHtml +
+          spellsHtml +
+          personalityHtml;
+
+        document.getElementById('sv-content').innerHTML = html;
+      }
+
+      /* ══════════════════════════════════════════════════════════
+         HOMEBREW VIEW
+      ══════════════════════════════════════════════════════════ */
+      async function loadHomebrew(hbId, subType) {
+        var sb = _sb();
+        if (!sb) { showError('Unable to connect to database.'); return; }
+
+        try {
+          var { data, error } = await sb.from('homebrew_content')
+            .select('*')
+            .eq('id', hbId)
+            .eq('is_public', true)
+            .maybeSingle();
+
+          if (error) throw error;
+          if (!data) {
+            showError('Homebrew content not found.', 'This content may have been unshared or the link is invalid.');
+            return;
+          }
+
+          renderHomebrew(data);
+          document.title = esc(data.data && data.data.name || data.name || 'Shared Homebrew') + ' · Phmurt Studios';
+
+        } catch (e) {
+          showError('Failed to load homebrew content.', e.message || 'Please try again later.');
+        }
+      }
+
+      function renderHomebrew(row) {
+        var d = row.data || {};
+        var type = esc(row.type || 'homebrew');
+        var name = esc(d.name || row.name || 'Untitled');
+        var author = esc(d._authorName || 'Anonymous');
+        var desc = esc(d.description || d.desc || '');
+
+        /* Tags */
+        var tags = d.tags || [];
+        var tagsHtml = '';
+        if (tags.length) {
+          tagsHtml = '<div class="sv-hb-tags">';
+          tags.forEach(function (t) {
+            tagsHtml += '<span class="sv-hb-tag">' + esc(t) + '</span>';
+          });
+          tagsHtml += '</div>';
+        }
+
+        /* Build type-specific content */
+        var detailHtml = '';
+
+        /* ── Race ──────────────────────────────────────────────── */
+        if (type === 'race') {
+          var traits = d.traits || [];
+          if (d.speed) detailHtml += '<div class="sv-section"><div class="sv-section-title">Base Stats</div><div class="sv-hb-stat-row"><span class="sv-hb-stat-label">Speed</span><span class="sv-hb-stat-val">' + esc(d.speed) + '</span></div>';
+          if (d.size) detailHtml += '<div class="sv-hb-stat-row"><span class="sv-hb-stat-label">Size</span><span class="sv-hb-stat-val">' + esc(d.size) + '</span></div>';
+          if (d.abilityBonuses) detailHtml += '<div class="sv-hb-stat-row"><span class="sv-hb-stat-label">Ability Bonuses</span><span class="sv-hb-stat-val">' + esc(typeof d.abilityBonuses === 'string' ? d.abilityBonuses : JSON.stringify(d.abilityBonuses)) + '</span></div>';
+          if (d.speed || d.size || d.abilityBonuses) detailHtml += '</div>';
+
+          if (traits.length) {
+            detailHtml += '<div class="sv-section"><div class="sv-section-title">Racial Traits</div><ul>';
+            traits.forEach(function (t) {
+              if (typeof t === 'string') { detailHtml += '<li>' + esc(t) + '</li>'; }
+              else if (t && t.name) { detailHtml += '<li><strong>' + esc(t.name) + '</strong>' + (t.desc ? ' — ' + esc(t.desc) : '') + '</li>'; }
+            });
+            detailHtml += '</ul></div>';
+          }
+        }
+
+        /* ── Class ─────────────────────────────────────────────── */
+        else if (type === 'class') {
+          if (d.hitDie) detailHtml += '<div class="sv-section"><div class="sv-section-title">Class Info</div>';
+          if (d.hitDie) detailHtml += '<div class="sv-hb-stat-row"><span class="sv-hb-stat-label">Hit Die</span><span class="sv-hb-stat-val">d' + esc(String(d.hitDie)) + '</span></div>';
+          if (d.primaryAbility) detailHtml += '<div class="sv-hb-stat-row"><span class="sv-hb-stat-label">Primary Ability</span><span class="sv-hb-stat-val">' + esc(d.primaryAbility) + '</span></div>';
+          if (d.savingThrows) detailHtml += '<div class="sv-hb-stat-row"><span class="sv-hb-stat-label">Saving Throws</span><span class="sv-hb-stat-val">' + esc(Array.isArray(d.savingThrows) ? d.savingThrows.join(', ') : d.savingThrows) + '</span></div>';
+          if (d.hitDie) detailHtml += '</div>';
+
+          var classFeats = d.features || d.classFeatures || [];
+          if (classFeats.length) {
+            detailHtml += '<div class="sv-section"><div class="sv-section-title">Class Features</div><ul>';
+            classFeats.forEach(function (f) {
+              if (typeof f === 'string') { detailHtml += '<li>' + esc(f) + '</li>'; }
+              else if (f && f.name) {
+                detailHtml += '<li><strong>' + esc(f.name) + (f.level ? ' (Level ' + f.level + ')' : '') + '</strong>' + (f.desc ? ' — ' + esc(f.desc) : '') + '</li>';
+              }
+            });
+            detailHtml += '</ul></div>';
+          }
+        }
+
+        /* ── Spell ─────────────────────────────────────────────── */
+        else if (type === 'spell') {
+          detailHtml += '<div class="sv-section"><div class="sv-section-title">Spell Details</div>';
+          if (d.level !== undefined) detailHtml += '<div class="sv-hb-stat-row"><span class="sv-hb-stat-label">Level</span><span class="sv-hb-stat-val">' + (d.level === 0 ? 'Cantrip' : esc(String(d.level))) + '</span></div>';
+          if (d.school) detailHtml += '<div class="sv-hb-stat-row"><span class="sv-hb-stat-label">School</span><span class="sv-hb-stat-val">' + esc(d.school) + '</span></div>';
+          if (d.castingTime) detailHtml += '<div class="sv-hb-stat-row"><span class="sv-hb-stat-label">Casting Time</span><span class="sv-hb-stat-val">' + esc(d.castingTime) + '</span></div>';
+          if (d.range) detailHtml += '<div class="sv-hb-stat-row"><span class="sv-hb-stat-label">Range</span><span class="sv-hb-stat-val">' + esc(d.range) + '</span></div>';
+          if (d.components) detailHtml += '<div class="sv-hb-stat-row"><span class="sv-hb-stat-label">Components</span><span class="sv-hb-stat-val">' + esc(d.components) + '</span></div>';
+          if (d.duration) detailHtml += '<div class="sv-hb-stat-row"><span class="sv-hb-stat-label">Duration</span><span class="sv-hb-stat-val">' + esc(d.duration) + '</span></div>';
+          if (d.classes) detailHtml += '<div class="sv-hb-stat-row"><span class="sv-hb-stat-label">Classes</span><span class="sv-hb-stat-val">' + esc(Array.isArray(d.classes) ? d.classes.join(', ') : d.classes) + '</span></div>';
+          detailHtml += '</div>';
+          if (d.description || d.effect) {
+            detailHtml += '<div class="sv-section"><div class="sv-section-title">Effect</div><p>' + esc(d.description || d.effect) + '</p></div>';
+          }
+          if (d.atHigherLevels) {
+            detailHtml += '<div class="sv-section"><div class="sv-section-title">At Higher Levels</div><p>' + esc(d.atHigherLevels) + '</p></div>';
+          }
+        }
+
+        /* ── Monster ───────────────────────────────────────────── */
+        else if (type === 'monster') {
+          detailHtml += '<div class="sv-section"><div class="sv-section-title">Monster Stats</div>';
+          if (d.size) detailHtml += '<div class="sv-hb-stat-row"><span class="sv-hb-stat-label">Size</span><span class="sv-hb-stat-val">' + esc(d.size) + '</span></div>';
+          if (d.type) detailHtml += '<div class="sv-hb-stat-row"><span class="sv-hb-stat-label">Type</span><span class="sv-hb-stat-val">' + esc(d.type) + '</span></div>';
+          if (d.alignment) detailHtml += '<div class="sv-hb-stat-row"><span class="sv-hb-stat-label">Alignment</span><span class="sv-hb-stat-val">' + esc(d.alignment) + '</span></div>';
+          if (d.ac || d.armorClass) detailHtml += '<div class="sv-hb-stat-row"><span class="sv-hb-stat-label">AC</span><span class="sv-hb-stat-val">' + esc(String(d.ac || d.armorClass)) + '</span></div>';
+          if (d.hp || d.hitPoints) detailHtml += '<div class="sv-hb-stat-row"><span class="sv-hb-stat-label">HP</span><span class="sv-hb-stat-val">' + esc(String(d.hp || d.hitPoints)) + '</span></div>';
+          if (d.speed) detailHtml += '<div class="sv-hb-stat-row"><span class="sv-hb-stat-label">Speed</span><span class="sv-hb-stat-val">' + esc(typeof d.speed === 'object' ? JSON.stringify(d.speed) : d.speed) + '</span></div>';
+          if (d.cr || d.challengeRating) detailHtml += '<div class="sv-hb-stat-row"><span class="sv-hb-stat-label">CR</span><span class="sv-hb-stat-val">' + esc(String(d.cr || d.challengeRating)) + '</span></div>';
+          detailHtml += '</div>';
+
+          /* Monster abilities */
+          if (d.abilities) {
+            detailHtml += '<div class="sv-abilities">';
+            ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'].forEach(function (a) {
+              var score = parseInt(d.abilities[a], 10) || 10;
+              detailHtml +=
+                '<div class="sv-ability">' +
+                  '<div class="sv-ability-label">' + a + '</div>' +
+                  '<div class="sv-ability-score">' + score + '</div>' +
+                  '<div class="sv-ability-mod">' + modStr(score) + '</div>' +
+                '</div>';
+            });
+            detailHtml += '</div>';
+          }
+
+          /* Monster actions/traits */
+          var monTraits = d.traits || [];
+          if (monTraits.length) {
+            detailHtml += '<div class="sv-section"><div class="sv-section-title">Traits</div><ul>';
+            monTraits.forEach(function (t) {
+              if (typeof t === 'string') detailHtml += '<li>' + esc(t) + '</li>';
+              else if (t && t.name) detailHtml += '<li><strong>' + esc(t.name) + '</strong>' + (t.desc ? ' — ' + esc(t.desc) : '') + '</li>';
+            });
+            detailHtml += '</ul></div>';
+          }
+          var monActions = d.actions || [];
+          if (monActions.length) {
+            detailHtml += '<div class="sv-section"><div class="sv-section-title">Actions</div><ul>';
+            monActions.forEach(function (a) {
+              if (typeof a === 'string') detailHtml += '<li>' + esc(a) + '</li>';
+              else if (a && a.name) detailHtml += '<li><strong>' + esc(a.name) + '</strong>' + (a.desc ? ' — ' + esc(a.desc) : '') + '</li>';
+            });
+            detailHtml += '</ul></div>';
+          }
+        }
+
+        /* ── Item ──────────────────────────────────────────────── */
+        else if (type === 'item') {
+          detailHtml += '<div class="sv-section"><div class="sv-section-title">Item Details</div>';
+          if (d.type || d.itemType) detailHtml += '<div class="sv-hb-stat-row"><span class="sv-hb-stat-label">Type</span><span class="sv-hb-stat-val">' + esc(d.type || d.itemType) + '</span></div>';
+          if (d.rarity) detailHtml += '<div class="sv-hb-stat-row"><span class="sv-hb-stat-label">Rarity</span><span class="sv-hb-stat-val">' + esc(d.rarity) + '</span></div>';
+          if (d.attunement) detailHtml += '<div class="sv-hb-stat-row"><span class="sv-hb-stat-label">Attunement</span><span class="sv-hb-stat-val">' + esc(d.attunement) + '</span></div>';
+          if (d.damage) detailHtml += '<div class="sv-hb-stat-row"><span class="sv-hb-stat-label">Damage</span><span class="sv-hb-stat-val">' + esc(d.damage) + '</span></div>';
+          if (d.weight) detailHtml += '<div class="sv-hb-stat-row"><span class="sv-hb-stat-label">Weight</span><span class="sv-hb-stat-val">' + esc(d.weight) + '</span></div>';
+          detailHtml += '</div>';
+        }
+
+        /* ── Feat / Background / Subclass / Encounter — generic ── */
+        else {
+          var genTraits = d.traits || d.features || [];
+          if (genTraits.length) {
+            detailHtml += '<div class="sv-section"><div class="sv-section-title">Details</div><ul>';
+            genTraits.forEach(function (t) {
+              if (typeof t === 'string') detailHtml += '<li>' + esc(t) + '</li>';
+              else if (t && t.name) detailHtml += '<li><strong>' + esc(t.name) + '</strong>' + (t.desc ? ' — ' + esc(t.desc) : '') + '</li>';
+            });
+            detailHtml += '</ul></div>';
+          }
+        }
+
+        /* Description (if not already shown) */
+        var descSection = desc ? '<div class="sv-hb-desc">' + desc + '</div>' : '';
+
+        /* Action bar */
+        var actionBar =
+          '<div class="sv-action-bar">' +
+            '<button class="sv-action-btn" onclick="copyShareLink()">&#128279; Copy Link</button>' +
+            '<a href="compendium.html" class="sv-action-btn">Browse Homebrew Workshop</a>' +
+            '<a href="compendium.html#create" class="sv-action-btn primary">+ Create Your Own</a>' +
+          '</div>';
+
+        /* Assemble */
+        var html =
+          '<div class="sv-hb-type-badge">' + type + '</div>' +
+          '<h1 class="sv-hb-name">' + name + '</h1>' +
+          '<div class="sv-hb-author">Created by <strong>' + author + '</strong></div>' +
+          tagsHtml +
+          actionBar +
+          descSection +
+          detailHtml;
+
+        document.getElementById('sv-content').innerHTML = html;
+      }
+
+    })();
+
+    /* ── Global: Copy share link ─────────────────────────────── */
+    function copyShareLink() {
+      var url = window.location.href;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(function () {
+          if (window.psToast) window.psToast('Link copied!');
+        }).catch(function () {
+          _fallbackCopy(url);
+        });
+      } else {
+        _fallbackCopy(url);
+      }
+    }
+    function _fallbackCopy(text) {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;left:-9999px;top:-9999px;';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); if (window.psToast) window.psToast('Link copied!'); }
+      catch (e) { if (window.psToast) window.psToast('Copy failed — select the URL bar manually.'); }
+      document.body.removeChild(ta);
+    }
+  </script>
+  <script src="phmurt-shell.js?v=187"></script>
+</body>
+</html>

@@ -1,10 +1,11 @@
-const CACHE_VERSION = 185;
+const CACHE_VERSION = 186;
 const CACHE_NAME = 'phmurt-v' + CACHE_VERSION;
 const PRECACHE_URLS = [
   '/',
   'index.html',
   'style.css',
   'phmurt-auth.js',
+  'phmurt-utils.js',
   'phmurt-shell.js',
   'phmurt-realtime.js',
   'phmurt-char-sync.js',
@@ -63,6 +64,9 @@ const PRECACHE_URLS = [
   'character-builder.html',
   'character-builder-35.html',
   'character-sheets.html',
+  'getting-started.html',
+  'shared.html',
+  'char-sheet-export.js',
   'my-characters.html',
   'characters.html',
   'sheet-dnd5e.html',
