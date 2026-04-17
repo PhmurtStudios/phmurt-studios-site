@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta name="referrer" content="strict-origin" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://*.stripe.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), usb=(), payment=(), serial=(), bluetooth=()" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Subscription Health · Phmurt Studios</title>
+  <meta name="description" content="Diagnostic view of the current account's subscription state." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="stylesheet" href="style.css?v=187" />
+  <script src="theme.js?v=185"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0" crossorigin="anonymous" integrity="sha384-fm42zLXjam4N3lT5umWgNtBBPMP3Ddrdmr9lnPKtDWzs5Dqy457Yn6+eTvCgRU3n"></script>
+  <script src="supabase-config.js?v=185"></script>
+  <script src="stripe-env.js?v=188"></script>
+  <script src="stripe-config.js?v=185"></script>
+  <script src="phmurt-auth.js?v=187"></script>
+  <style>
+    .dbg-wrap {
+      max-width: 880px;
+      margin: 40px auto;
+      padding: 0 24px;
+      font-family: Spectral, serif;
+      color: var(--text, #e7dcc6);
+    }
+    .dbg-title {
+      font-family: Cinzel, serif;
+      font-size: 24px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      color: var(--crimson, #d4433a);
+      margin: 0 0 6px 0;
+    }
+    .dbg-sub {
+      font-size: 13px;
+      color: var(--text-muted, #9a8870);
+      margin: 0 0 24px 0;
+    }
+    .dbg-panel {
+      border: 1px solid var(--border-mid, rgba(212,67,58,0.15));
+      background: var(--panel-bg, rgba(30,26,22,0.9));
+      border-radius: 6px;
+      padding: 18px 20px;
+      margin-bottom: 18px;
+    }
+    .dbg-panel h2 {
+      font-family: Cinzel, serif;
+      font-size: 11px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--text-dim, #c4b59a);
+      margin: 0 0 12px 0;
+    }
+    .dbg-grid {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 6px 16px;
+      font-size: 13px;
+    }
+    .dbg-key {
+      color: var(--text-muted, #9a8870);
+      font-family: Cinzel, serif;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+    }
+    .dbg-val {
+      color: var(--text, #e7dcc6);
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      word-break: break-all;
+    }
+    .dbg-val.ok   { color: #6fcf97; }
+    .dbg-val.warn { color: #f2c94c; }
+    .dbg-val.err  { color: var(--crimson, #d4433a); }
+    .dbg-val.null { color: var(--text-faint, #6d6150); font-style: italic; }
+    .dbg-row {
+      display: contents;
+    }
+    .dbg-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .dbg-btn {
+      font-family: Cinzel, serif;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 9px 16px;
+      border: 1px solid var(--crimson-border, rgba(212,67,58,0.3));
+      background: transparent;
+      color: var(--text, #e7dcc6);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .dbg-btn:hover {
+      border-color: var(--crimson, #d4433a);
+      background: rgba(212,67,58,0.06);
+    }
+    .dbg-btn.primary {
+      background: var(--crimson, #d4433a);
+      color: #fff;
+      border-color: var(--crimson, #d4433a);
+    }
+    .dbg-btn.primary:hover { background: #b83a31; }
+    .dbg-notice {
+      padding: 12px 16px;
+      background: rgba(212,67,58,0.08);
+      border: 1px solid rgba(212,67,58,0.2);
+      border-radius: 4px;
+      color: var(--text-dim, #c4b59a);
+      font-size: 13px;
+      margin-bottom: 18px;
+    }
+  </style>
+</head>
+<body data-nav-active="" data-footer-copy="Diagnostic — not indexed.">
+  <a href="#main-content" class="ps-skip-nav">Skip to content</a>
+  <div id="ps-site-shell"></div>
+
+  <main id="main-content" class="dbg-wrap">
+    <h1 class="dbg-title">Subscription Health</h1>
+    <p class="dbg-sub">Compares your client-side cached session against the database profile row. Use this when support asks "is my subscription actually active?"</p>
+
+    <div class="dbg-notice">
+      <strong>Note:</strong> This page is not indexed and requires sign-in. The database row shown here is the source of truth; the client cache is advisory only.
+    </div>
+
+    <div class="dbg-panel">
+      <h2>Client Session (from PhmurtDB.getSession)</h2>
+      <div class="dbg-grid" id="dbg-client">
+        <div class="dbg-key">loading&hellip;</div><div class="dbg-val">&mdash;</div>
+      </div>
+    </div>
+
+    <div class="dbg-panel">
+      <h2>Database Profile (live fetch)</h2>
+      <div class="dbg-grid" id="dbg-db">
+        <div class="dbg-key">loading&hellip;</div><div class="dbg-val">&mdash;</div>
+      </div>
+    </div>
+
+    <div class="dbg-panel">
+      <h2>Derived State</h2>
+      <div class="dbg-grid" id="dbg-derived">
+        <div class="dbg-key">loading&hellip;</div><div class="dbg-val">&mdash;</div>
+      </div>
+    </div>
+
+    <div class="dbg-panel">
+      <h2>Actions</h2>
+      <div class="dbg-actions">
+        <button class="dbg-btn primary" id="dbg-refresh">Force Session Refresh</button>
+        <button class="dbg-btn" id="dbg-manage">Open Billing Portal</button>
+        <button class="dbg-btn" id="dbg-copy">Copy Support Bundle</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="phmurt-shell.js?v=187"></script>
+  <script>
+  (function () {
+    'use strict';
+
+    function esc(s) {
+      if (s === null || s === undefined) return '<span class="dbg-val null">null</span>';
+      return String(s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    function renderGrid(containerId, rows) {
+      var el = document.getElementById(containerId);
+      if (!el) return;
+      el.innerHTML = rows.map(function (r) {
+        var vCls = 'dbg-val';
+        if (r.value === null || r.value === undefined) vCls += ' null';
+        else if (r.severity === 'ok')   vCls += ' ok';
+        else if (r.severity === 'warn') vCls += ' warn';
+        else if (r.severity === 'err')  vCls += ' err';
+        var displayVal = (r.value === null || r.value === undefined) ? 'null' : esc(r.value);
+        return '<div class="dbg-row"><div class="dbg-key">' + esc(r.key) + '</div><div class="' + vCls + '">' + displayVal + '</div></div>';
+      }).join('');
+    }
+
+    function fmtDate(d) {
+      if (!d) return null;
+      try {
+        var dt = new Date(d);
+        if (isNaN(dt)) return String(d);
+        return dt.toISOString() + '  (' + dt.toLocaleString() + ')';
+      } catch (e) { return String(d); }
+    }
+
+    function clientRows(sess) {
+      if (!sess) return [{ key: 'session', value: 'NOT SIGNED IN', severity: 'err' }];
+      return [
+        { key: 'userId',            value: sess.userId },
+        { key: 'email',             value: sess.email },
+        { key: 'tier',              value: sess.tier || sess.subscriptionTier, severity: sess.isSubscribed ? 'ok' : null },
+        { key: 'isSubscribed',      value: String(!!sess.isSubscribed), severity: sess.isSubscribed ? 'ok' : 'warn' },
+        { key: 'isLifetime',        value: String(!!sess.isLifetime) },
+        { key: 'isAdmin',           value: String(!!sess.isAdmin) },
+        { key: 'isSuperuser',       value: String(!!sess.isSuperuser) },
+        { key: 'isBanned',          value: String(!!sess.isBanned), severity: sess.isBanned ? 'err' : null },
+        { key: 'expiresAt',         value: fmtDate(sess.subscriptionExpires) },
+        { key: 'cancelAt',          value: fmtDate(sess.subscriptionCancelAt), severity: sess.subscriptionCancelAt ? 'warn' : null }
+      ];
+    }
+
+    function dbRows(profile, err) {
+      if (err) return [{ key: 'error', value: err.message || String(err), severity: 'err' }];
+      if (!profile) return [{ key: 'profile', value: 'NOT FOUND', severity: 'err' }];
+      var activeOk = profile.subscription_tier !== 'free'
+        && profile.subscription_status === 'active'
+        && (!profile.subscription_expires_at || new Date(profile.subscription_expires_at) > new Date())
+        && !profile.is_banned;
+      return [
+        { key: 'id',                         value: profile.id },
+        { key: 'subscription_tier',          value: profile.subscription_tier, severity: activeOk ? 'ok' : (profile.subscription_tier === 'free' ? null : 'warn') },
+        { key: 'subscription_status',        value: profile.subscription_status, severity: profile.subscription_status === 'past_due' ? 'err' : (profile.subscription_status === 'active' ? 'ok' : null) },
+        { key: 'subscription_expires_at',    value: fmtDate(profile.subscription_expires_at) },
+        { key: 'subscription_cancel_at',     value: fmtDate(profile.subscription_cancel_at), severity: profile.subscription_cancel_at ? 'warn' : null },
+        { key: 'stripe_customer_id',         value: profile.stripe_customer_id },
+        { key: 'is_banned',                  value: String(!!profile.is_banned), severity: profile.is_banned ? 'err' : null },
+        { key: 'is_admin',                   value: String(!!profile.is_admin) },
+        { key: 'is_superuser',               value: String(!!profile.is_superuser) },
+        { key: 'updated_at',                 value: fmtDate(profile.updated_at) }
+      ];
+    }
+
+    function derivedRows(sess, profile) {
+      if (!sess || !profile) return [{ key: 'cannot compare', value: 'missing client or db row', severity: 'err' }];
+      var dbActive = profile.subscription_tier !== 'free'
+        && profile.subscription_status === 'active'
+        && (!profile.subscription_expires_at || new Date(profile.subscription_expires_at) > new Date())
+        && !profile.is_banned;
+      var clientActive = !!sess.isSubscribed;
+      var tierMatch = (sess.tier || sess.subscriptionTier) === profile.subscription_tier;
+      return [
+        { key: 'db says active',     value: String(dbActive),    severity: dbActive ? 'ok' : null },
+        { key: 'client says active', value: String(clientActive), severity: clientActive === dbActive ? 'ok' : 'err' },
+        { key: 'cache in sync',      value: String(clientActive === dbActive), severity: clientActive === dbActive ? 'ok' : 'err' },
+        { key: 'tier field matches', value: String(tierMatch), severity: tierMatch ? 'ok' : 'warn' }
+      ];
+    }
+
+    var currentProfile = null;
+    var currentSession = null;
+
+    function loadAll() {
+      currentSession = (window.PhmurtDB && PhmurtDB.getSession) ? PhmurtDB.getSession() : null;
+      renderGrid('dbg-client', clientRows(currentSession));
+
+      if (!currentSession) {
+        renderGrid('dbg-db', [{ key: 'not signed in', value: 'sign in to view DB profile', severity: 'warn' }]);
+        renderGrid('dbg-derived', [{ key: 'not signed in', value: '—' }]);
+        return;
+      }
+
+      var sb = (window.phmurtSupabase) ? window.phmurtSupabase : null;
+      if (!sb) {
+        renderGrid('dbg-db', [{ key: 'supabase', value: 'client not initialized', severity: 'err' }]);
+        return;
+      }
+
+      sb.from('profiles').select('*').eq('id', currentSession.userId).maybeSingle()
+        .then(function (r) {
+          if (r.error) {
+            currentProfile = null;
+            renderGrid('dbg-db', dbRows(null, r.error));
+            renderGrid('dbg-derived', [{ key: 'db fetch failed', value: r.error.message, severity: 'err' }]);
+            return;
+          }
+          currentProfile = r.data || null;
+          renderGrid('dbg-db',      dbRows(currentProfile));
+          renderGrid('dbg-derived', derivedRows(currentSession, currentProfile));
+        })
+        .catch(function (err) {
+          currentProfile = null;
+          renderGrid('dbg-db', dbRows(null, err));
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      loadAll();
+
+      var refreshBtn = document.getElementById('dbg-refresh');
+      if (refreshBtn) {
+        refreshBtn.addEventListener('click', function () {
+          refreshBtn.disabled = true;
+          refreshBtn.textContent = 'Refreshing…';
+          var p = (window.PhmurtDB && PhmurtDB.refreshSession)
+            ? PhmurtDB.refreshSession()
+            : Promise.resolve();
+          p.then(loadAll).catch(function (err) {
+            if (typeof window.psToast === 'function') window.psToast(err.message || 'Refresh failed');
+          }).then(function () {
+            refreshBtn.disabled = false;
+            refreshBtn.textContent = 'Force Session Refresh';
+          });
+        });
+      }
+
+      var manageBtn = document.getElementById('dbg-manage');
+      if (manageBtn) {
+        manageBtn.addEventListener('click', function () {
+          if (window.PhmurtDB && PhmurtDB.manageSubscription) {
+            PhmurtDB.manageSubscription().catch(function (err) {
+              if (typeof window.psToast === 'function') window.psToast(err.message || 'Could not open billing portal');
+            });
+          }
+        });
+      }
+
+      var copyBtn = document.getElementById('dbg-copy');
+      if (copyBtn) {
+        copyBtn.addEventListener('click', function () {
+          var bundle = {
+            at:      new Date().toISOString(),
+            client:  currentSession,
+            db:      currentProfile,
+            userAgent: navigator.userAgent
+          };
+          try {
+            navigator.clipboard.writeText(JSON.stringify(bundle, null, 2));
+            if (typeof window.psToast === 'function') window.psToast('Support bundle copied to clipboard');
+            else copyBtn.textContent = 'Copied ✓';
+          } catch (e) {
+            if (typeof window.psToast === 'function') window.psToast('Copy failed — select manually');
+          }
+        });
+      }
+
+      window.addEventListener('phmurt-auth-change', loadAll);
+    });
+  })();
+  </script>
+</body>
+</html>

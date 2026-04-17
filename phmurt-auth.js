@@ -118,6 +118,7 @@ var PhmurtDB = (function () {
       isBetaUser:          !!(profile && profile.is_beta_user),
       tier:                tier,  // NEW: Expose actual tier string for feature gating
       subscriptionTier:    isSubscribed ? tier : 'free',
+      subscriptionStatus:  subStatus,   // NEW: raw status ('active' | 'past_due' | 'canceled' | …) for banners
       isSubscribed:        isSubscribed,
       isLifetime:          tier === 'lifetime' && isSubscribed,
       hasAllContentAccess: tier === 'lifetime' && isSubscribed, // Lifetime members get all content (free + premium, past + future)
@@ -172,7 +173,23 @@ var PhmurtDB = (function () {
     // Admins bypass limits
     if (_session.isAdmin || _session.isSuperuser) return Promise.resolve({ blocked: false });
 
-    return _fetchLimits().then(function (limits) {
+    // If cached session says "not subscribed", attempt one fresh profile fetch
+    // before falling back to free-tier limits. This covers the seam where a
+    // subscription was just activated and the client cache hasn't caught up.
+    var preflight = Promise.resolve();
+    if (!_session.isSubscribed && _session.userId) {
+      preflight = _fetchProfile(_session.userId).then(function (profile) {
+        if (profile) {
+          var updated = _makeSession(_session, profile);
+          if (updated && updated.isSubscribed !== _session.isSubscribed) {
+            _session = updated;
+            try { _fireChange(); _lsSet(LS_SESSION, updated); } catch (e) { /* best-effort */ }
+          }
+        }
+      }).catch(function () { /* offline or RLS blocked — fall through to cached state */ });
+    }
+
+    return preflight.then(function () { return _fetchLimits(); }).then(function (limits) {
       // NOTE: Uses cached session.isSubscribed. Server-side database triggers are the real enforcement.
       // If a subscription was recently canceled, the webhook may not have fired yet, so this might
       // allow a save that the server will reject. That's OK — server RLS is authoritative.
@@ -1994,6 +2011,15 @@ var PhmurtDB = (function () {
       };
     },
 
+    /* Convenience: boolean "is this session entitled to pro features?"
+       Admins/superusers are treated as pro for UI purposes. Server-side RLS
+       is still the source of truth. */
+    isPro: function () {
+      if (!_session) return false;
+      if (_session.isAdmin || _session.isSuperuser) return true;
+      return !!_session.isSubscribed;
+    },
+
     checkLimit: function (table) {
       var freeKey = table === 'characters' ? 'free_max_characters' : 'free_max_campaigns';
       var paidKey = table === 'characters' ? 'paid_max_characters' : 'paid_max_campaigns';
@@ -2193,7 +2219,7 @@ var PhmurtDB = (function () {
             'Interactive Character Sheets',
             'Dice Roller',
             'Learn to Play Guides',
-            'Art Gallery',
+            'Character Gallery',
             'Basic Campaign Management',
           ],
           locked: Array.isArray(c.free_tier_locked) ? c.free_tier_locked : [
@@ -2510,37 +2536,36 @@ var PhmurtDB = (function () {
       if (typeof PhmurtDB !== 'undefined') {
         var sb = (typeof phmurtSupabase !== 'undefined' && phmurtSupabase) ? phmurtSupabase : null;
         if (sb) {
+          var MAX_ATTEMPTS = 10; // ~60 seconds total; webhooks can lag
           function _tryRefreshProfile(attempt) {
-            if (attempt > 5) {
+            if (attempt > MAX_ATTEMPTS) {
               if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Max retries for profile refresh after subscription success');
-              return; // Give up after 5 attempts (max ~25 seconds)
+              return;
             }
             sb.auth.getSession().then(function (r) {
               if (r.data && r.data.session && r.data.session.user) {
                 sb.from('profiles').select('*').eq('id', r.data.session.user.id).maybeSingle()
                   .then(function (pr) {
-                    // SECURITY: Check profile exists and has subscription status before use
                     if (pr && pr.data) {
                       var session = _makeSession(r.data.session.user, pr.data);
                       if (session) {
                         _session = session;
                         _fireChange();
-                        // If subscription isn't active yet, webhook may still be processing — retry
-                        if (!session.isSubscribed && attempt < 5) {
-                          var delay = Math.min(5000, 1500 * Math.pow(1.5, attempt));
+                        _lsSet(LS_SESSION, session);
+                        if (!session.isSubscribed && attempt < MAX_ATTEMPTS) {
+                          var delay = Math.min(6000, 1500 * Math.pow(1.4, attempt));
                           setTimeout(function () { _tryRefreshProfile(attempt + 1); }, delay);
                         }
                       }
-                    } else if (attempt < 5) {
-                      // Profile not ready yet, retry with exponential backoff
-                      var delay = Math.min(5000, 1500 * Math.pow(1.5, attempt));
+                    } else if (attempt < MAX_ATTEMPTS) {
+                      var delay = Math.min(6000, 1500 * Math.pow(1.4, attempt));
                       setTimeout(function () { _tryRefreshProfile(attempt + 1); }, delay);
                     }
                   })
                   .catch(function (e) {
                     if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Profile fetch attempt', attempt, 'failed:', e.message || e);
-                    if (attempt < 5) {
-                      var delay = Math.min(5000, 1000 * Math.pow(1.5, attempt));
+                    if (attempt < MAX_ATTEMPTS) {
+                      var delay = Math.min(6000, 1000 * Math.pow(1.4, attempt));
                       setTimeout(function () { _tryRefreshProfile(attempt + 1); }, delay);
                     }
                   });
@@ -2846,6 +2871,94 @@ var PhmurtDB = (function () {
     if (mBtn) mBtn.addEventListener('click', function () { _upgradeCheckout('monthly'); });
     if (yBtn) yBtn.addEventListener('click', function () { _upgradeCheckout('yearly'); });
   });
+
+  // ── Subscription Status Banner ─────────────────────────────────
+  // Shows a top-of-page banner for subscriptions in trouble:
+  //   • past_due           → red, "Payment failed — update card"
+  //   • cancel_at (future) → amber, "Subscription ends <date>"
+  // Auto-runs on phmurt-auth-change. Idempotent (removes then re-adds).
+  function _renderSubStatusBanner() {
+    var existing = document.getElementById('phmurt-sub-status-banner');
+    if (existing) existing.remove();
+
+    if (typeof PhmurtDB === 'undefined' || !PhmurtDB.getSession) return;
+    var sess = PhmurtDB.getSession();
+    if (!sess) return;
+
+    var status   = sess.subscriptionStatus;
+    var cancelAt = sess.subscriptionCancelAt;
+
+    var kind = null;
+    var message = '';
+    var actionLabel = '';
+    if (status === 'past_due') {
+      kind = 'error';
+      message = 'Your latest subscription payment failed. Update your card to keep Pro access.';
+      actionLabel = 'Update Payment';
+    } else if (status === 'unpaid') {
+      kind = 'error';
+      message = 'Your subscription is unpaid. Update your card to restore Pro access.';
+      actionLabel = 'Update Payment';
+    } else if (cancelAt && new Date(cancelAt) > new Date()) {
+      kind = 'warn';
+      var d;
+      try { d = new Date(cancelAt).toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' }); }
+      catch (e) { d = cancelAt; }
+      message = 'Your Pro subscription ends ' + d + '. Reactivate any time before then.';
+      actionLabel = 'Reactivate';
+    } else {
+      return; // Nothing to show
+    }
+
+    var bg = kind === 'error' ? 'rgba(212,67,58,0.12)' : 'rgba(242,201,76,0.10)';
+    var border = kind === 'error' ? 'rgba(212,67,58,0.35)' : 'rgba(242,201,76,0.30)';
+    var color  = kind === 'error' ? '#d4433a' : '#e6b93a';
+
+    var bar = document.createElement('div');
+    bar.id = 'phmurt-sub-status-banner';
+    bar.setAttribute('role', 'status');
+    bar.style.cssText =
+      'position:sticky;top:0;z-index:9000;width:100%;padding:10px 16px;' +
+      'background:' + bg + ';border-bottom:1px solid ' + border + ';' +
+      'display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center;' +
+      'font-family:Spectral,serif;font-size:13px;color:var(--text,#e7dcc6);';
+    bar.innerHTML =
+      '<span style="color:' + color + ';font-weight:600;">' + psEscapeHtml(message) + '</span>' +
+      '<button id="phmurt-sub-status-cta" style="' +
+        'font-family:Cinzel,serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;' +
+        'padding:6px 14px;border:1px solid ' + border + ';background:transparent;' +
+        'color:' + color + ';border-radius:3px;cursor:pointer;">' + psEscapeHtml(actionLabel) + '</button>' +
+      '<button id="phmurt-sub-status-dismiss" aria-label="Dismiss" style="' +
+        'background:none;border:none;color:var(--text-faint,#6d6150);font-size:18px;cursor:pointer;padding:0 6px;line-height:1;">&times;</button>';
+
+    // Insert at top of <body>
+    if (document.body) document.body.insertBefore(bar, document.body.firstChild);
+
+    var cta = document.getElementById('phmurt-sub-status-cta');
+    var dismiss = document.getElementById('phmurt-sub-status-dismiss');
+    if (cta) {
+      cta.addEventListener('click', function () {
+        if (PhmurtDB.manageSubscription) {
+          PhmurtDB.manageSubscription().catch(function (err) {
+            if (typeof window.psToast === 'function') window.psToast(err.message || 'Could not open billing portal.');
+          });
+        } else {
+          window.location.href = 'pricing.html';
+        }
+      });
+    }
+    if (dismiss) {
+      dismiss.addEventListener('click', function () { bar.remove(); });
+    }
+  }
+
+  // Re-render on auth changes and after DOM is ready
+  window.addEventListener('phmurt-auth-change', _renderSubStatusBanner);
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', _renderSubStatusBanner);
+  } else {
+    _renderSubStatusBanner();
+  }
 
   // ── Global Feature Gate ─────────────────────────────────────────
   // Call window.PhmurtGate(featureName) from any page.

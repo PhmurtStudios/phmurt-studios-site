@@ -2,6 +2,16 @@
 
 ## Last Updated: April 16, 2026
 
+### Subscription Hardening Batch (April 16, 2026)
+
+- **phmurt-auth.js** — `isPro()` convenience; `subscriptionStatus` + `subscriptionCancelAt` on session; preflight `_fetchProfile` inside `_checkLimit` so stale sessions don't block paid users; post-checkout polling bumped to 10 attempts with 6s cap; `_renderSubStatusBanner()` for past_due / unpaid / canceling states (auto-opens billing portal); hardcoded free-tier default fixed `Art Gallery` → `Character Gallery`.
+- **campaigns.html** — Hard-gate pro tab clicks (replaces the `!PhmurtGate(...)` no-op that always let users through); `handleConfirmCreate` split so `checkCampaignLimit()` preflight runs before insert to match character flow.
+- **pricing.html** — Reads Pro monthly/yearly prices + savings label from `PhmurtDB.getTierConfig()` with `$5` / `$50` / `Save $10` fallbacks; re-renders on `phmurt-auth-change`; dynamic billing-save badge.
+- **getting-started.html** — `gs-pro-hint` card hides for subscribers / admins / superusers via `phmurt-auth-change` listener.
+- **style.css** — Tightened broad `html.light-mode [style*="rgba(...)"]` selectors by also requiring `[style*="background"]` so inline gradients/borders are no longer clobbered (fixes character-builder blank-page regression in light mode).
+- **debug-subscription.html** *(new)* — Noindex diagnostic page with Client Session / Database Profile / Derived State panels, force-refresh, manage-subscription, and copy-support-bundle actions.
+- **archive/sql/migration-v5-subscription-hardening.sql** *(new)* — Idempotent migration widening `chk_subscription_tier` to allow `party` and `lifetime`, adding `chk_subscription_status` constraint, re-asserting `enforce_character_limit` / `enforce_campaign_limit` triggers with banned + tier-status-expiry checks, corrective UPDATEs for v4 drift (`Art Gallery` → `Character Gallery`, `$4.99/mo` → `$5/mo`, `$49.99/yr` → `$50/yr`), and a `subscription_health` view for diagnostics.
+
 ### Changed Files
 
 1. **creator.css** — Global input styling fix (white text boxes with !important), preview layout improvements, trait row base styles, **monster picker overhaul**: replaced card grid with horizontal row layout, filter pills (Type/Size/Source), expandable traditional D&D stat blocks, SVG search icon

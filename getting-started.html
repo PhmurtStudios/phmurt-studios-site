@@ -297,14 +297,13 @@
       });
     })();
 
-    // Show pro hint only for free-tier signed-in users
+    // Show pro hint only for free-tier signed-in users; hide for pro/admin
     window.addEventListener('phmurt-auth-change', function() {
       var hint = document.getElementById('gs-pro-hint');
       if (!hint || typeof PhmurtDB === 'undefined') return;
       var s = PhmurtDB.getSession();
-      if (s && !s.isSubscribed && !s.isAdmin && !s.isSuperuser) {
-        hint.style.display = 'block';
-      }
+      var shouldShow = !!(s && !s.isSubscribed && !s.isAdmin && !s.isSuperuser);
+      hint.style.display = shouldShow ? 'block' : 'none';
     });
   </script>
 </body>

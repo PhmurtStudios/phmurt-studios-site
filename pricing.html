@@ -493,7 +493,52 @@
     var partyCtaEl = document.getElementById('party-cta');
     var lifetimeCtaEl = document.getElementById('lifetime-cta');
 
+    /* ── Extract numeric+period from a tier-config price string ──
+       Accepts forms like "$5/mo", "$5 / month", "$50/yr".
+       Returns { amount: "$5", period: "/ month" } with sensible fallback. */
+    function _parseTierPrice(raw, defaultAmount, defaultPeriod) {
+      if (!raw || typeof raw !== 'string') {
+        return { amount: defaultAmount, period: defaultPeriod };
+      }
+      // Match leading amount (with optional decimals + currency symbol)
+      var m = raw.match(/^\s*(\$?[0-9]+(?:\.[0-9]+)?)\s*\/?\s*(.*)$/);
+      if (!m) return { amount: defaultAmount, period: defaultPeriod };
+      var amt = m[1];
+      var per = (m[2] || '').trim().toLowerCase();
+      var fullPeriod;
+      if (per === 'mo' || per === 'month' || per === 'monthly' || per === 'm') fullPeriod = '/ month';
+      else if (per === 'yr' || per === 'year' || per === 'yearly' || per === 'y') fullPeriod = '/ year';
+      else if (per) fullPeriod = '/ ' + per;
+      else fullPeriod = defaultPeriod;
+      return { amount: amt, period: fullPeriod };
+    }
+
+    function _getProPrices() {
+      var tier = null;
+      try {
+        if (typeof PhmurtDB !== 'undefined' && typeof PhmurtDB.getTierConfig === 'function') {
+          tier = PhmurtDB.getTierConfig();
+        }
+      } catch (e) { tier = null; }
+      var monthlyRaw = tier && tier.pro && tier.pro.price ? tier.pro.price.monthly : null;
+      var yearlyRaw  = tier && tier.pro && tier.pro.price ? tier.pro.price.yearly  : null;
+      var savingsRaw = tier && tier.pro && tier.pro.price ? tier.pro.price.yearlySavings : null;
+      return {
+        monthly: _parseTierPrice(monthlyRaw, '$5', '/ month'),
+        yearly:  _parseTierPrice(yearlyRaw,  '$50', '/ year'),
+        savings: (typeof savingsRaw === 'string' && savingsRaw) ? savingsRaw : 'Save $10',
+      };
+    }
+
+    /* Update the billing-save badge in the toggle to reflect dynamic savings */
+    function _updateBillingSaveLabel() {
+      var prices = _getProPrices();
+      var badge = document.querySelector('.billing-save');
+      if (badge) badge.textContent = prices.savings;
+    }
+
     function updatePricing() {
+      var prices = _getProPrices();
       if (yearly) {
         sw.classList.add('yearly');
         sw.setAttribute('aria-checked', 'true');
@@ -501,12 +546,12 @@
         lblY.classList.add('active');
         // SECURITY: Clear and rebuild to prevent duplicate spans
         while (priceEl.firstChild) { priceEl.removeChild(priceEl.firstChild); }
-        priceEl.appendChild(document.createTextNode('$50 '));
+        priceEl.appendChild(document.createTextNode(prices.yearly.amount + ' '));
         var span = document.createElement('span');
         span.className = 'period';
-        span.textContent = '/ year';
+        span.textContent = prices.yearly.period;
         priceEl.appendChild(span);
-        noteEl.textContent = 'That\'s ~$4.17/mo — save $10 vs monthly';
+        noteEl.textContent = prices.savings + ' vs monthly';
 
         // Update Party Pass pricing
         while (partyPriceEl.firstChild) { partyPriceEl.removeChild(partyPriceEl.firstChild); }
@@ -523,10 +568,10 @@
         lblY.classList.remove('active');
         // SECURITY: Clear and rebuild to prevent duplicate spans
         while (priceEl.firstChild) { priceEl.removeChild(priceEl.firstChild); }
-        priceEl.appendChild(document.createTextNode('$5 '));
+        priceEl.appendChild(document.createTextNode(prices.monthly.amount + ' '));
         var span = document.createElement('span');
         span.className = 'period';
-        span.textContent = '/ month';
+        span.textContent = prices.monthly.period;
         priceEl.appendChild(span);
         noteEl.textContent = '';
 
@@ -539,7 +584,11 @@
         partyPriceEl.appendChild(partySpan);
         partyNoteEl.textContent = 'That\'s ~$1.67/person per month';
       }
+      _updateBillingSaveLabel();
     }
+
+    /* Re-render when auth/site_settings refresh finishes (so DB-set prices take over) */
+    window.addEventListener('phmurt-auth-change', function () { updatePricing(); });
 
     /* ── Auto-select plan from query param (e.g. ?plan=yearly) ─────── */
     try {

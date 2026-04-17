@@ -6389,6 +6389,26 @@ function App() {
       if (!createKingdomName) setCreateKingdomName(createName.trim() + " Kingdom");
       return;
     }
+    // Client-side campaign-limit check (server trigger also enforces).
+    // Uses the preflight session refresh in _checkLimit so a just-subscribed
+    // user whose cache hasn't caught up will be unblocked automatically.
+    if (typeof PhmurtDB !== 'undefined' && typeof PhmurtDB.checkCampaignLimit === 'function' && PhmurtDB.getSession && PhmurtDB.getSession()) {
+      PhmurtDB.checkCampaignLimit().then(function (result) {
+        if (result && result.blocked) {
+          if (typeof PhmurtGate === 'function') PhmurtGate('unlimited-campaigns');
+          else if (typeof window.psToast === 'function') window.psToast(result.message || 'Campaign limit reached.');
+          else alert(result.message || 'Campaign limit reached.');
+          return;
+        }
+        _performCreateCampaign();
+      }).catch(function () { _performCreateCampaign(); /* Offline: let server trigger decide */ });
+      return;
+    }
+    _performCreateCampaign();
+  };
+
+  // Split out so the limit-check branch can call it after the preflight.
+  const _performCreateCampaign = () => {
     const base = NEW_CAMPAIGN(createType);
     if (createType === "live") {
       // Auto-enable kingdom module + living world for live campaigns
@@ -6736,7 +6756,17 @@ function App() {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
             return (
-              <button key={item.id} onClick={() => { if (item.proOnly && typeof PhmurtGate === 'function' && !PhmurtGate('advanced-campaign')) return; setActiveTab(item.id); }}
+              <button key={item.id} onClick={() => {
+                if (item.proOnly) {
+                  const _isPro = !!(authSession && (authSession.isSubscribed || authSession.isAdmin || authSession.isSuperuser))
+                    || (window.PhmurtDB && typeof PhmurtDB.isPro === 'function' && PhmurtDB.isPro());
+                  if (!_isPro) {
+                    if (typeof PhmurtGate === 'function') PhmurtGate('advanced-campaign');
+                    return; // Hard-block: do not switch tab for non-subscribers
+                  }
+                }
+                setActiveTab(item.id);
+              }}
                 onMouseEnter={e => { if (!isActive) e.currentTarget.style.background="rgba(255,255,255,0.03)"; }}
                 onMouseLeave={e => { if (!isActive) e.currentTarget.style.background="transparent"; }}
                 style={{

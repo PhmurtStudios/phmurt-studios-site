@@ -1092,33 +1092,19 @@ body.page-out{opacity:0;transform:translateY(-8px);transition:opacity 0.18s, tra
 
 /* ═══════════════════════════════
    LIGHT-MODE INLINE STYLE FALLBACKS
-   Safety net for inline rgba() styles
-   authored against the dark theme.
-   Keeps the UI readable on parchment.
+   Safety net for inline rgba() backgrounds
+   authored against the dark theme. We
+   require the style attribute to contain
+   a "background" declaration so we don't
+   accidentally hit shadows, borders, or
+   text colors.
    ═══════════════════════════════ */
-html.light-mode [style*="rgba(0,0,0,0.7"],
-html.light-mode [style*="rgba(0,0,0,0.8"],
-html.light-mode [style*="rgba(0,0,0,0.9"],
-html.light-mode [style*="rgba(8,8,10"],
-html.light-mode [style*="rgba(10,10,16"]{
-  background-color: var(--panel-bg, rgba(247,240,222,0.98)) !important;
-  color: var(--text, #2a1e10);
-}
-html.light-mode [style*="rgba(20,18,14"],
-html.light-mode [style*="rgba(30,26,22"],
-html.light-mode [style*="rgba(32,28,22"]{
+html.light-mode [style*="background"][style*="rgba(30,26,22"],
+html.light-mode [style*="background"][style*="rgba(32,28,22"],
+html.light-mode [style*="background"][style*="rgba(20,18,14"]{
   background-color: var(--panel-bg, rgba(247,240,222,0.98)) !important;
 }
-html.light-mode [style*="rgba(0,0,0,0.5"],
-html.light-mode [style*="rgba(0,0,0,0.4"],
-html.light-mode [style*="rgba(0,0,0,0.6"]{
-  background-color: var(--bg-dimmer, rgba(12,4,0,0.12)) !important;
-}
-html.light-mode [style*="rgba(0,0,0,0.3"],
-html.light-mode [style*="rgba(0,0,0,0.2"]{
-  background-color: var(--bg-dim, rgba(12,4,0,0.06)) !important;
-}
-/* Text that was white on dark panels - make legible on light panels */
-html.light-mode [style*="rgba(255,255,255"][style*="color"]{
-  color: var(--text, #2a1e10) !important;
+html.light-mode [style*="background"][style*="rgba(8,8,10"],
+html.light-mode [style*="background"][style*="rgba(10,10,16"]{
+  background-color: var(--modal-overlay, rgba(12,4,0,0.55)) !important;
 }
