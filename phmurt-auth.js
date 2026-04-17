@@ -357,9 +357,14 @@ var PhmurtDB = (function () {
       }
       // No Supabase session — reinforce legacy session (may already be set)
       if (!_session) _initLegacy();
+      // If we're in legacy-only state (legacy session present, no Supabase
+      // JWT and no way to refresh one), show the migration prompt so the
+      // user isn't left in a half-authenticated state.
+      _maybeShowLegacyMigrationPrompt(sb);
     }).catch(function (err) {
       if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] Supabase init failed:', err ? err.message : 'Unknown error');
       if (!_session) _initLegacy();
+      _maybeShowLegacyMigrationPrompt(sb);
     });
 
     sb.auth.onAuthStateChange(function (event, sess) {
@@ -382,6 +387,14 @@ var PhmurtDB = (function () {
         }).catch(function (err) {
           if (typeof PHMURT_DEBUG !== 'undefined' && PHMURT_DEBUG) console.warn('[PhmurtAuth] onAuthStateChange profile fetch failed:', err ? err.message : 'Unknown error');
         });
+        // MIGRATION CLEANUP: Once a user has a real Supabase session, remove
+        // lingering legacy account data so the browser can't regress to the
+        // legacy-only state. Idempotent — no-op after the first successful
+        // sign-in. LS_SESSION is intentionally kept because it now stores
+        // the Supabase-derived session (see _lsSet(LS_SESSION, ...) above).
+        try { localStorage.removeItem(LS_USERS); } catch (_e) { /* best effort */ }
+        try { _setCk(CK_USERS, '', -1); } catch (_e) { /* best effort */ }
+        try { _setCk(CK_SESSION, '', -1); } catch (_e) { /* best effort */ }
       } else if (event === 'SIGNED_OUT') {
         // CRITICAL FIX (V-056): Invalidate any pending profile fetches
         _profileFetchVersion++;
@@ -872,6 +885,224 @@ var PhmurtDB = (function () {
         setTimeout(function () { pwInput.focus(); }, 100);
       }
     });
+  }
+
+  /* ── Legacy-only migration prompt ────────────────────────────────
+     Fires on page load when a user has a legacy localStorage session
+     but NO Supabase JWT (and refreshSession can't recover one). This
+     prevents the "stuck on legacy-only" state where the browser looks
+     signed in but every server call (checkout, saves, etc.) fails
+     because there's no real Supabase session. UI mirrors the checkout
+     reauth prompt but does NOT invoke checkout on success — it just
+     signs the user in and resolves. Legacy cleanup happens in the
+     onAuthStateChange SIGNED_IN handler below.
+  ─────────────────────────────────────────────────────────────────── */
+  function _showLegacyMigrationPrompt(sb) {
+    return new Promise(function (resolve, reject) {
+      var old = document.getElementById('phmurt-legacy-migration-overlay');
+      if (old) old.remove();
+
+      var userEmail = _session ? _session.email : '';
+      function _esc(s) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+
+      var overlay = document.createElement('div');
+      overlay.id = 'phmurt-legacy-migration-overlay';
+      overlay.className = 'phmurt-upgrade-overlay';
+      overlay.innerHTML =
+        '<div class="phmurt-upgrade-modal">' +
+          '<div class="upgrade-glow"></div>' +
+          '<div class="upgrade-body">' +
+            '<button class="upgrade-close" id="phmurt-migration-close">&times;</button>' +
+            '<div class="upgrade-icon">&#128274;</div>' +
+            '<h2 class="upgrade-title">Sign In to Continue</h2>' +
+            '<p class="upgrade-text">Your account <strong>' + _esc(userEmail || 'on this device') + '</strong> needs to sync with the cloud. Please sign in once so saves and subscriptions work.</p>' +
+            '<input type="password" id="phmurt-migration-pw" placeholder="Password" ' +
+              'style="width:100%;padding:12px 14px;background:rgba(255,255,255,0.04);border:1px solid rgba(212,67,58,0.2);border-radius:4px;color:#f5ede0;font-family:Spectral,serif;font-size:14px;margin-bottom:16px;text-align:center;outline:none;" />' +
+            '<p id="phmurt-migration-err" style="color:#ef4444;font-size:12px;margin:0 0 12px;display:none;"></p>' +
+            '<button class="upgrade-btn" id="phmurt-migration-submit" style="width:100%;">Sign In</button>' +
+            '<div style="display:flex;align-items:center;gap:12px;margin:18px 0 14px;">' +
+              '<div style="flex:1;height:1px;background:rgba(212,67,58,0.15);"></div>' +
+              '<span style="color:#5a5046;font-family:Spectral,serif;font-size:12px;">or</span>' +
+              '<div style="flex:1;height:1px;background:rgba(212,67,58,0.15);"></div>' +
+            '</div>' +
+            '<button id="phmurt-migration-magic" style="width:100%;padding:12px 14px;background:transparent;border:1px solid rgba(212,67,58,0.25);border-radius:4px;color:#d4c4a8;font-family:Cinzel,serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;">Email Me a Sign-In Link</button>' +
+            '<p id="phmurt-migration-magic-msg" style="color:#5ee09a;font-size:12px;margin:8px 0 0;display:none;"></p>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(overlay);
+
+      var pwInput = document.getElementById('phmurt-migration-pw');
+      var errEl = document.getElementById('phmurt-migration-err');
+      var submitBtn = document.getElementById('phmurt-migration-submit');
+      if (!pwInput || !errEl || !submitBtn) {
+        overlay.remove();
+        return reject(new Error('Modal elements not found'));
+      }
+
+      function cleanup() { overlay.remove(); }
+
+      document.getElementById('phmurt-migration-close').addEventListener('click', function () {
+        cleanup();
+        reject(new Error('Dismissed.'));
+      });
+      overlay.addEventListener('click', function (ev) {
+        if (ev.target === overlay) { cleanup(); reject(new Error('Dismissed.')); }
+      });
+
+      function doMigrate() {
+        var pw = (pwInput.value || '').trim();
+        if (!pw) { errEl.textContent = 'Password is required.'; errEl.style.display = 'block'; return; }
+        errEl.style.display = 'none';
+        submitBtn.textContent = 'Signing in…';
+        submitBtn.disabled = true;
+
+        var email = _session ? _session.email : '';
+        var displayName = _session ? (_session.name || _session.displayName || 'Adventurer') : 'Adventurer';
+
+        // Try sign-in first; if no Supabase account yet, sign up so
+        // legacy-only users migrate seamlessly.
+        sb.auth.signInWithPassword({ email: email, password: pw })
+          .then(function (r) {
+            if (r.error) throw new Error(r.error.message);
+            return r;
+          })
+          .catch(function (signInErr) {
+            if (signInErr.message && signInErr.message.indexOf('Invalid login credentials') !== -1) {
+              submitBtn.textContent = 'Creating cloud account…';
+              return sb.auth.signUp({
+                email: email,
+                password: pw,
+                options: { data: { name: displayName } }
+              }).then(function (sr) {
+                if (sr.error) {
+                  if (sr.error.message && sr.error.message.indexOf('already registered') !== -1) {
+                    var e2 = new Error('Incorrect password.');
+                    e2._showReset = true;
+                    throw e2;
+                  }
+                  throw new Error(sr.error.message);
+                }
+                if (sr.data && sr.data.session) return sr;
+                return sb.auth.signInWithPassword({ email: email, password: pw })
+                  .then(function (r2) { if (r2.error) throw new Error(r2.error.message); return r2; });
+              });
+            }
+            throw signInErr;
+          })
+          .then(function (r) {
+            var user = r.data.user;
+            return _fetchProfile(user.id).then(function (profile) {
+              var session = _makeSession(user, profile);
+              if (!session) throw new Error('Failed to create session.');
+              _session = session;
+              _fireChange();
+              _lsSet(LS_SESSION, session);
+              cleanup();
+              resolve(session);
+            });
+          })
+          .catch(function (err) {
+            submitBtn.textContent = 'Sign In';
+            submitBtn.disabled = false;
+            var rawMsg = String(err.message || '').toLowerCase();
+            var errMsg = 'Sign-in failed. Please check your password.';
+            if (rawMsg.indexOf('rate limit') !== -1 || rawMsg.indexOf('too many') !== -1) errMsg = 'Too many attempts. Please wait a moment.';
+            else if (rawMsg.indexOf('network') !== -1 || rawMsg.indexOf('fetch') !== -1) errMsg = 'Network error. Please check your connection.';
+            errEl.textContent = String(errMsg).slice(0, 200);
+            errEl.style.display = 'block';
+            if (err._showReset && !document.getElementById('phmurt-migration-reset')) {
+              var resetLink = document.createElement('a');
+              resetLink.id = 'phmurt-migration-reset';
+              resetLink.href = '#';
+              resetLink.textContent = 'Reset password';
+              resetLink.style.cssText = 'color:#d4433a;font-size:12px;display:block;margin-top:8px;text-decoration:underline;cursor:pointer;';
+              resetLink.addEventListener('click', function (ev) {
+                ev.preventDefault();
+                resetLink.textContent = 'Sending reset email…';
+                sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/reset-password.html' })
+                  .then(function () { resetLink.textContent = 'Reset email sent! Check your inbox.'; resetLink.style.color = '#5ee09a'; })
+                  .catch(function (re) { resetLink.textContent = 'Could not send reset email: ' + (re.message || 'Unknown error'); });
+              });
+              errEl.parentNode.insertBefore(resetLink, errEl.nextSibling);
+            }
+          });
+      }
+
+      submitBtn.addEventListener('click', doMigrate);
+      pwInput.addEventListener('keydown', function (e) { if (e.key === 'Enter') doMigrate(); });
+
+      // Magic link option
+      var magicBtn = document.getElementById('phmurt-migration-magic');
+      var magicMsg = document.getElementById('phmurt-migration-magic-msg');
+      if (magicBtn) {
+        magicBtn.addEventListener('click', function () {
+          if (!userEmail) {
+            magicMsg.textContent = 'No email address found. Please use the password option.';
+            magicMsg.style.color = '#ef4444';
+            magicMsg.style.display = 'block';
+            return;
+          }
+          magicBtn.textContent = 'Sending…';
+          magicBtn.disabled = true;
+          sb.auth.signInWithOtp({
+            email: userEmail,
+            options: { emailRedirectTo: window.location.href.split('#')[0] }
+          }).then(function (r) {
+            if (r.error) throw new Error(r.error.message);
+            magicMsg.textContent = 'Check your email! Click the link we sent to ' + _esc(userEmail) + ' and you\'ll be signed in automatically.';
+            magicMsg.style.color = '#5ee09a';
+            magicMsg.style.display = 'block';
+            magicBtn.textContent = 'Email Sent';
+          }).catch(function (e) {
+            magicMsg.textContent = e.message || 'Could not send sign-in link. Please try the password option.';
+            magicMsg.style.color = '#ef4444';
+            magicMsg.style.display = 'block';
+            magicBtn.textContent = 'Email Me a Sign-In Link';
+            magicBtn.disabled = false;
+          });
+        });
+      }
+
+      if (pwInput) {
+        setTimeout(function () { pwInput.focus(); }, 100);
+      }
+    });
+  }
+
+  /* Called from _runSupabaseInit to detect legacy-only state and
+     show the migration prompt exactly once per tab. Safe to call
+     multiple times — subsequent calls become no-ops via sessionStorage
+     flag. Skips pages where the prompt would be disruptive. */
+  function _maybeShowLegacyMigrationPrompt(sb) {
+    try {
+      if (!sb || !_session || !_session.email) return;
+      // Already have a Supabase JWT? Nothing to do.
+      // (The caller only reaches here after confirming no Supabase session,
+      // but defense in depth.)
+      // Skip pages where the prompt would interfere with legitimate auth
+      // flows (reset password, magic-link callbacks, etc.).
+      var path = String(window.location.pathname || '').toLowerCase();
+      if (path.indexOf('reset-password') !== -1) return;
+      var hash = String(window.location.hash || '');
+      if (hash.indexOf('access_token=') !== -1 || hash.indexOf('error=') !== -1 ||
+          hash.indexOf('type=recovery') !== -1 || hash.indexOf('type=magiclink') !== -1) return;
+      // Once-per-tab guard
+      try {
+        if (sessionStorage.getItem('phmurt-legacy-migration-shown') === '1') return;
+      } catch (_e) { /* sessionStorage unavailable — still guard via early return below */ }
+      // Try one more silent refresh before prompting
+      sb.auth.refreshSession().then(function (r) {
+        var tok = r && r.data && r.data.session && r.data.session.access_token;
+        if (tok) return; // recovered silently, no prompt needed
+        try { sessionStorage.setItem('phmurt-legacy-migration-shown', '1'); } catch (_e) {}
+        _showLegacyMigrationPrompt(sb).catch(function () { /* user dismissed — OK */ });
+      }).catch(function () {
+        try { sessionStorage.setItem('phmurt-legacy-migration-shown', '1'); } catch (_e) {}
+        _showLegacyMigrationPrompt(sb).catch(function () { /* dismissed — OK */ });
+      });
+    } catch (_e) {
+      // Never break the page if the migration check itself throws.
+    }
   }
 
   /* ── Cross-tab session sync ──────────────────────────────────────── */

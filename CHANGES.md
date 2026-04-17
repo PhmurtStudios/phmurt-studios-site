@@ -2,6 +2,14 @@
 
 ## Last Updated: April 16, 2026
 
+### Legacy-only account migration (April 16, 2026 — late evening)
+
+- **phmurt-auth.js** *(updated)* — Fixes a pre-existing user-trap where any account with a `phmurt_auth_session` localStorage entry but no Supabase Auth JWT (and no refresh token) would hit a password prompt only at checkout, even though every other server call was silently failing too. Now detected and resolved proactively on every page load.
+  - Added `_showLegacyMigrationPrompt(sb)` — standalone migration modal (mirrors the checkout reauth prompt's UX but does NOT invoke checkout on success). Includes password sign-in, auto-signup-if-no-account fallback, password reset link when wrong password is detected, and "Email me a sign-in link" magic-link fallback.
+  - Added `_maybeShowLegacyMigrationPrompt(sb)` — called once per tab from `_runSupabaseInit` (both success and catch branches). Guards: skips `reset-password.html`, skips when URL hash contains `access_token=` / `error=` / `type=recovery` / `type=magiclink`, uses `sessionStorage['phmurt-legacy-migration-shown']` so dismissal doesn't re-trigger within the tab. Calls `sb.auth.refreshSession()` first — only prompts if that also can't recover a JWT.
+  - Extended `onAuthStateChange` SIGNED_IN branch to wipe legacy data once a real Supabase session is established: `localStorage.removeItem('phmurt_users_db')` + clear cookies `phmurt_udb` and `phmurt_sess`. Idempotent — no-op after the first successful sign-in. `phmurt_auth_session` (LS_SESSION) is intentionally preserved because it now holds the Supabase-derived session for cross-tab sync.
+  - Net effect: new users can't regress to legacy-only state, and any currently-stuck users are offered a one-time migration prompt the next time they load any page.
+
 ### Retention & Billing Batch 4 (April 16, 2026 — late evening)
 
 - **Migration `retention_emails_and_grace`** *(applied)* — Four retention primitives, all SECURITY DEFINER with `SET search_path = public, pg_temp`, admin-gated RPCs raising `42501`, and tightened grants (`REVOKE FROM PUBLIC, anon` + `GRANT TO authenticated, service_role`):
