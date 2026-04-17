@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta name="referrer" content="strict-origin" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://*.stripe.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), usb=(), payment=(), serial=(), bluetooth=()" />
+  <meta name="robots" content="noindex, nofollow" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Admin Analytics · Phmurt Studios</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="stylesheet" href="style.css?v=185" />
+  <script defer src="theme.js?v=185"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0" crossorigin="anonymous" integrity="sha384-fm42zLXjam4N3lT5umWgNtBBPMP3Ddrdmr9lnPKtDWzs5Dqy457Yn6+eTvCgRU3n"></script>
+  <script defer src="supabase-config.js?v=185"></script>
+  <script src="stripe-env.js?v=188"></script>
+  <script defer src="stripe-config.js?v=185"></script>
+  <script defer src="phmurt-auth.js?v=187"></script>
+  <style>
+    .aa-wrap { max-width: 1000px; margin: 0 auto; padding: 24px 16px 64px; }
+    .aa-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+    .aa-controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    .aa-controls select, .aa-controls button { font: inherit; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--ps-border, #b09a75); background: var(--ps-bg, #fff); color: inherit; }
+    .aa-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .aa-card { border: 1px solid var(--ps-border, #b09a75); border-radius: 10px; padding: 14px 16px; background: var(--ps-surface, #fff9ef); }
+    .aa-card .aa-label { font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: #777; margin-bottom: 4px; }
+    .aa-card .aa-value { font-size: 28px; font-weight: 700; font-family: 'Cinzel', serif; line-height: 1.1; }
+    .aa-card .aa-sub { font-size: 12px; color: #888; margin-top: 4px; }
+    .aa-section { margin-bottom: 28px; }
+    .aa-section h2 { font-family: 'Cinzel', serif; font-size: 18px; margin: 0 0 10px; }
+    .aa-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    .aa-table th, .aa-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid rgba(0,0,0,0.08); }
+    .aa-table th { font-weight: 600; color: #666; font-size: 12px; letter-spacing: 0.04em; text-transform: uppercase; }
+    .aa-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    .aa-bar-chart { display: flex; align-items: flex-end; gap: 4px; height: 120px; border-bottom: 1px solid rgba(0,0,0,0.2); padding: 0 4px 0; margin-bottom: 6px; }
+    .aa-bar { flex: 1 1 0; min-width: 4px; background: linear-gradient(to top, var(--ps-accent, #7a5b3e), var(--ps-accent-alt, #b38f5e)); border-radius: 3px 3px 0 0; position: relative; }
+    .aa-bar[data-value="0"] { background: #e5e5e5; min-height: 1px; }
+    .aa-xlabels { display: flex; font-size: 10px; color: #888; justify-content: space-between; padding: 0 4px; }
+    .aa-empty { color: #888; font-style: italic; padding: 12px; }
+    .aa-error { padding: 16px; background: #fce4e4; color: #8a1d1d; border: 1px solid #cc9393; border-radius: 8px; margin: 16px 0; }
+    .aa-loading { color: #888; padding: 12px 0; }
+  </style>
+</head>
+<body data-nav-active="" data-footer-copy="Admin">
+  <a href="#main-content" class="ps-skip-nav">Skip to content</a>
+  <div id="ps-site-shell"></div>
+
+  <main id="main-content" class="aa-wrap">
+    <div class="aa-head">
+      <div>
+        <h1 style="font-family:'Cinzel',serif;margin:0 0 4px">Admin Analytics</h1>
+        <div style="color:#777;font-size:14px">Funnel, signups, and top events.</div>
+      </div>
+      <div class="aa-controls">
+        <label for="aa-range" style="align-self:center;font-size:13px;color:#777">Range:</label>
+        <select id="aa-range" aria-label="Time range">
+          <option value="7">Last 7 days</option>
+          <option value="28" selected>Last 28 days</option>
+          <option value="90">Last 90 days</option>
+          <option value="180">Last 180 days</option>
+        </select>
+        <button type="button" id="aa-refresh" aria-label="Refresh data">Refresh</button>
+      </div>
+    </div>
+
+    <div id="aa-gate-notice" style="display:none"></div>
+
+    <div id="aa-content" style="display:none">
+      <div class="aa-section" aria-labelledby="aa-funnel-h">
+        <h2 id="aa-funnel-h">Conversion funnel</h2>
+        <div class="aa-grid" id="aa-funnel-grid"></div>
+      </div>
+
+      <div class="aa-section" aria-labelledby="aa-signups-h">
+        <h2 id="aa-signups-h">Daily signups</h2>
+        <div id="aa-signups-chart" class="aa-loading">Loading…</div>
+      </div>
+
+      <div class="aa-section" aria-labelledby="aa-top-events-h">
+        <h2 id="aa-top-events-h">Top events</h2>
+        <div id="aa-top-events" class="aa-loading">Loading…</div>
+      </div>
+
+      <div class="aa-section" aria-labelledby="aa-errors-h">
+        <h2 id="aa-errors-h">Recent error types</h2>
+        <div id="aa-errors" class="aa-loading">Loading…</div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      'use strict';
+
+      function esc(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+      }
+
+      function fmtNum(n) {
+        var v = Number(n) || 0;
+        return v.toLocaleString('en-US');
+      }
+
+      function pct(a, b) {
+        if (!b) return '—';
+        var p = (Number(a) / Number(b)) * 100;
+        if (!isFinite(p)) return '—';
+        return p.toFixed(1) + '%';
+      }
+
+      function showGateNotice(msg) {
+        var el = document.getElementById('aa-gate-notice');
+        el.className = 'aa-error';
+        el.textContent = msg;
+        el.style.display = 'block';
+        document.getElementById('aa-content').style.display = 'none';
+      }
+
+      function renderFunnel(stats) {
+        var pricing = stats.pricing_viewed || 0;
+        var gateShown = stats.gate_shown || 0;
+        var gateCta = stats.gate_cta_clicked || 0;
+        var coStarted = stats.checkout_started || 0;
+        var signups = stats.new_signups || 0;
+        var newSubs = stats.new_active_subs || 0;
+        var churned = stats.churned_subs || 0;
+        var waitlist = stats.lifetime_waitlist || 0;
+
+        var cards = [
+          { label: 'Pricing page views', value: pricing },
+          { label: 'Gate modal shown',  value: gateShown, sub: pct(gateShown, pricing) + ' of views' },
+          { label: 'Gate CTA clicks',   value: gateCta,   sub: pct(gateCta, gateShown) + ' of shown' },
+          { label: 'Checkouts started', value: coStarted, sub: pct(coStarted, gateCta) + ' of CTAs' },
+          { label: 'New signups',       value: signups },
+          { label: 'New active subs',   value: newSubs,   sub: pct(newSubs, signups) + ' of signups' },
+          { label: 'Churned subs',      value: churned },
+          { label: 'Lifetime waitlist', value: waitlist }
+        ];
+        var html = cards.map(function (c) {
+          var subHtml = c.sub ? '<div class="aa-sub">' + esc(c.sub) + '</div>' : '';
+          return '<div class="aa-card"><div class="aa-label">' + esc(c.label) + '</div>' +
+                 '<div class="aa-value">' + esc(fmtNum(c.value)) + '</div>' + subHtml + '</div>';
+        }).join('');
+        document.getElementById('aa-funnel-grid').innerHTML = html;
+      }
+
+      function renderSignups(rows) {
+        var el = document.getElementById('aa-signups-chart');
+        if (!rows || !rows.length) {
+          el.className = 'aa-empty';
+          el.textContent = 'No signups in range.';
+          return;
+        }
+        var max = 0;
+        for (var i = 0; i < rows.length; i++) if (rows[i].signups > max) max = rows[i].signups;
+        var bars = rows.map(function (r) {
+          var h = max > 0 ? Math.max(2, Math.round((Number(r.signups) / max) * 118)) : 2;
+          var title = r.day + ': ' + r.signups + ' signups';
+          return '<div class="aa-bar" data-value="' + esc(String(r.signups)) + '" ' +
+                 'style="height:' + h + 'px" title="' + esc(title) + '" aria-label="' + esc(title) + '"></div>';
+        }).join('');
+        var first = rows[0].day, last = rows[rows.length - 1].day;
+        el.className = '';
+        el.innerHTML =
+          '<div class="aa-bar-chart" role="img" aria-label="Daily signup bar chart">' + bars + '</div>' +
+          '<div class="aa-xlabels"><span>' + esc(first) + '</span><span>' + esc(last) + '</span></div>';
+      }
+
+      function renderTopEvents(rows) {
+        var el = document.getElementById('aa-top-events');
+        if (!rows || !rows.length) {
+          el.className = 'aa-empty';
+          el.textContent = 'No events in range.';
+          return;
+        }
+        el.className = '';
+        var tr = rows.map(function (r) {
+          return '<tr><td>' + esc(r.event_name) + '</td><td class="num">' + esc(fmtNum(r.cnt)) + '</td></tr>';
+        }).join('');
+        el.innerHTML = '<table class="aa-table"><thead><tr><th>Event</th><th style="text-align:right">Count</th></tr></thead><tbody>' + tr + '</tbody></table>';
+      }
+
+      function renderErrors(rows) {
+        var el = document.getElementById('aa-errors');
+        if (!rows || !rows.length) {
+          el.className = 'aa-empty';
+          el.textContent = 'No errors in range — nice.';
+          return;
+        }
+        el.className = '';
+        var tr = rows.map(function (r) {
+          var last = r.last_at ? new Date(r.last_at).toISOString().slice(0, 16).replace('T', ' ') : '';
+          return '<tr><td>' + esc(r.message) + '</td><td class="num">' + esc(fmtNum(r.cnt)) + '</td><td>' + esc(last) + '</td></tr>';
+        }).join('');
+        el.innerHTML = '<table class="aa-table"><thead><tr><th>Message (first 240 chars)</th><th style="text-align:right">Count</th><th>Last seen (UTC)</th></tr></thead><tbody>' + tr + '</tbody></table>';
+      }
+
+      async function loadAll() {
+        var rangeSel = document.getElementById('aa-range');
+        var days = parseInt(rangeSel.value, 10) || 28;
+        if (!window.phmurtSupabase) {
+          showGateNotice('Supabase client not loaded. Refresh the page.');
+          return;
+        }
+        var sb = window.phmurtSupabase;
+
+        // Admin gate — call funnel first. If RPC errors with "admin only" we show the gate notice.
+        try {
+          var funnelRes = await sb.rpc('admin_get_funnel_stats', { p_days_back: days });
+          if (funnelRes.error) {
+            var msg = String(funnelRes.error.message || '');
+            if (msg.indexOf('admin only') !== -1 || msg.indexOf('42501') !== -1 || funnelRes.error.code === '42501') {
+              showGateNotice('This dashboard is admin-only. Sign in with an admin account.');
+              return;
+            }
+            showGateNotice('Could not load funnel stats: ' + msg);
+            return;
+          }
+          var stats = (funnelRes.data && funnelRes.data[0]) || {};
+          renderFunnel(stats);
+        } catch (e) {
+          showGateNotice('Error loading funnel stats: ' + (e && e.message ? e.message : e));
+          return;
+        }
+
+        document.getElementById('aa-content').style.display = 'block';
+        document.getElementById('aa-gate-notice').style.display = 'none';
+
+        // Parallel load remaining panels
+        try {
+          var results = await Promise.all([
+            sb.rpc('admin_get_daily_signups', { p_days_back: days }),
+            sb.rpc('admin_get_top_events', { p_days_back: days, p_limit: 20 }),
+            sb.rpc('admin_get_recent_errors', { p_days_back: Math.min(days, 30), p_limit: 25 })
+          ]);
+          renderSignups(results[0].error ? [] : (results[0].data || []));
+          renderTopEvents(results[1].error ? [] : (results[1].data || []));
+          renderErrors(results[2].error ? [] : (results[2].data || []));
+        } catch (e) {
+          console.warn('Secondary panel load failed:', e && e.message ? e.message : e);
+        }
+      }
+
+      function boot() {
+        document.getElementById('aa-refresh').addEventListener('click', loadAll);
+        document.getElementById('aa-range').addEventListener('change', loadAll);
+
+        // Wait for supabase client + auth restore
+        function tryLoad(attempts) {
+          if (window.phmurtSupabase) {
+            // Require a session
+            try {
+              window.phmurtSupabase.auth.getSession().then(function (r) {
+                if (!r.data || !r.data.session) {
+                  showGateNotice('You must be signed in as an admin to view this page.');
+                  return;
+                }
+                loadAll();
+              });
+            } catch (e) {
+              showGateNotice('Could not verify session: ' + (e && e.message ? e.message : e));
+            }
+          } else if (attempts > 0) {
+            setTimeout(function () { tryLoad(attempts - 1); }, 150);
+          } else {
+            showGateNotice('Supabase client did not load.');
+          }
+        }
+        tryLoad(40);
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', boot);
+      } else {
+        boot();
+      }
+    })();
+  </script>
+</body>
+</html>

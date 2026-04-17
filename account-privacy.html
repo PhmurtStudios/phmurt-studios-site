@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+  <meta name="referrer" content="strict-origin" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co https://*.supabase.in https://*.stripe.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';" />
+  <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), usb=(), payment=(), serial=(), bluetooth=()" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Account &amp; Privacy | Phmurt Studios</title>
+  <meta name="description" content="Manage your Phmurt Studios account: export your data or permanently delete your account." />
+  <link rel="canonical" href="https://phmurtstudios.com/account-privacy.html" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;700&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32x32.png" />
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16x16.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png" />
+  <link rel="stylesheet" href="style.css?v=185" />
+  <script src="theme.js?v=185"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.47.0" crossorigin="anonymous" integrity="sha384-fm42zLXjam4N3lT5umWgNtBBPMP3Ddrdmr9lnPKtDWzs5Dqy457Yn6+eTvCgRU3n"></script>
+  <script src="supabase-config.js?v=185"></script>
+  <script src="phmurt-auth.js?v=187"></script>
+
+  <style>
+    /* ── Account & Privacy self-service styles ──────────────────── */
+    .ap-card {
+      border: 1px solid rgba(160, 130, 90, 0.28);
+      border-radius: 10px;
+      padding: 22px 22px 18px;
+      margin: 18px 0;
+      background: rgba(255, 250, 240, 0.55);
+      box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+    }
+    html[data-theme="dark"] .ap-card,
+    body.theme-dark .ap-card {
+      background: rgba(28, 24, 20, 0.45);
+      border-color: rgba(160, 130, 90, 0.35);
+    }
+    .ap-card h3 {
+      margin: 0 0 6px;
+      font-family: 'Cinzel', serif;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+    }
+    .ap-card .ap-sub {
+      margin: 0 0 12px;
+      color: #6b5a45;
+      font-size: 0.95em;
+    }
+    html[data-theme="dark"] .ap-card .ap-sub,
+    body.theme-dark .ap-card .ap-sub { color: #bfa986; }
+
+    .ap-btn-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 10px; }
+    .ap-btn {
+      display: inline-block;
+      padding: 9px 16px;
+      border-radius: 6px;
+      border: 1px solid rgba(120, 85, 50, 0.5);
+      background: #f3e6c4;
+      color: #2a1e10;
+      font-family: 'Cinzel', serif;
+      font-size: 0.95em;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 120ms ease;
+    }
+    .ap-btn:hover { background: #ead7a8; }
+    .ap-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .ap-btn.ap-danger {
+      background: #e9bcb0;
+      border-color: #a9463b;
+      color: #52170f;
+    }
+    .ap-btn.ap-danger:hover { background: #dfa598; }
+    html[data-theme="dark"] .ap-btn,
+    body.theme-dark .ap-btn { background: #3a2f22; color: #f2e6c8; border-color: rgba(200, 170, 120, 0.4); }
+    html[data-theme="dark"] .ap-btn:hover,
+    body.theme-dark .ap-btn:hover { background: #4a3c2c; }
+    html[data-theme="dark"] .ap-btn.ap-danger,
+    body.theme-dark .ap-btn.ap-danger { background: #512520; color: #ffe3dc; border-color: #8a3c32; }
+
+    .ap-input {
+      padding: 8px 10px;
+      border-radius: 5px;
+      border: 1px solid rgba(120, 85, 50, 0.4);
+      font-family: 'Spectral', serif;
+      font-size: 0.95em;
+      background: #fff;
+      color: #2a1e10;
+      min-width: 240px;
+    }
+    html[data-theme="dark"] .ap-input,
+    body.theme-dark .ap-input { background: #221b12; color: #f2e6c8; border-color: rgba(200, 170, 120, 0.35); }
+
+    .ap-status {
+      margin-top: 10px;
+      min-height: 1.3em;
+      font-size: 0.93em;
+      color: #6b5a45;
+    }
+    html[data-theme="dark"] .ap-status,
+    body.theme-dark .ap-status { color: #bfa986; }
+    .ap-status.ap-ok { color: #2f6d3a; }
+    .ap-status.ap-err { color: #a9463b; }
+    html[data-theme="dark"] .ap-status.ap-ok,
+    body.theme-dark .ap-status.ap-ok { color: #7fd08f; }
+    html[data-theme="dark"] .ap-status.ap-err,
+    body.theme-dark .ap-status.ap-err { color: #ff9e90; }
+
+    .ap-gate-notice {
+      padding: 16px 18px;
+      border: 1px dashed rgba(120, 85, 50, 0.45);
+      border-radius: 8px;
+      background: rgba(255, 245, 220, 0.45);
+      margin: 12px 0 18px;
+      color: #5b4a32;
+    }
+    html[data-theme="dark"] .ap-gate-notice,
+    body.theme-dark .ap-gate-notice {
+      background: rgba(60, 50, 35, 0.5);
+      color: #e9d9b0;
+    }
+    .ap-list { margin: 6px 0 0 20px; }
+    .ap-list li { margin: 2px 0; }
+    .ap-danger-box {
+      border: 1px solid #a9463b;
+      background: rgba(222, 130, 115, 0.12);
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-top: 10px;
+    }
+    html[data-theme="dark"] .ap-danger-box,
+    body.theme-dark .ap-danger-box { background: rgba(222, 130, 115, 0.18); }
+  </style>
+</head>
+<body data-nav-active="Account" data-footer-copy="Roll Well. Play Weird." data-breadcrumb="Home / Account &amp; Privacy">
+
+  <a href="#main-content" class="ps-skip-nav">Skip to content</a>
+  <div id="ps-site-shell"></div>
+  <div id="ps-page-breadcrumb"></div>
+
+  <header class="ps-content-header" id="main-content">
+    <h1>Account &amp; Privacy</h1>
+    <p class="ps-content-subtitle">Export your data or permanently delete your account.</p>
+  </header>
+
+  <div class="ps-divider"><div class="ps-div-line"></div><div class="ps-div-ornament"><div class="ps-div-dot"></div><div class="ps-div-gem"></div><div class="ps-div-dot"></div></div><div class="ps-div-line r"></div></div>
+
+  <main class="ps-content">
+
+    <div id="ap-auth-gate" class="ap-gate-notice" hidden>
+      <strong>You need to be signed in</strong>
+      <p style="margin:6px 0 0;">Please <a href="index.html">sign in</a> to manage your account data.</p>
+    </div>
+
+    <section class="ps-section" id="ap-main" hidden>
+      <p>Signed in as <strong id="ap-user-email">&nbsp;</strong>.</p>
+
+      <!-- ── EXPORT ─────────────────────────────────────────────────── -->
+      <div class="ap-card">
+        <h3>Export my data</h3>
+        <p class="ap-sub">We'll build a JSON bundle containing every row tied to your account &mdash; your profile, characters, campaigns, collections, and the events/visits/errors that reference your user ID. The file will download straight to your device.</p>
+        <ul class="ap-list">
+          <li>Format: JSON (structured, machine-readable)</li>
+          <li>Rate limit: up to 3 exports per hour</li>
+          <li>No other user's personal data is included</li>
+        </ul>
+        <div class="ap-btn-row">
+          <button type="button" class="ap-btn" id="ap-export-btn">Export my data</button>
+        </div>
+        <div class="ap-status" id="ap-export-status" role="status" aria-live="polite"></div>
+      </div>
+
+      <!-- ── DELETE ─────────────────────────────────────────────────── -->
+      <div class="ap-card">
+        <h3>Delete my account</h3>
+        <p class="ap-sub">This permanently removes your account and all content you own. This cannot be undone.</p>
+
+        <div class="ap-danger-box">
+          <p style="margin:0 0 6px;"><strong>What happens when you delete:</strong></p>
+          <ul class="ap-list">
+            <li>Any active subscription is canceled first (best-effort).</li>
+            <li>Your profile, characters, campaigns (with owned children), collections, and homebrew are <strong>permanently deleted</strong>.</li>
+            <li>Analytics rows (visits/events/errors) that reference your user ID are <strong>anonymized</strong> (your user ID is cleared) so aggregate metrics stay intact.</li>
+            <li>Your authentication record is deleted last.</li>
+          </ul>
+          <p style="margin:10px 0 6px;"><strong>To confirm, type</strong> <code>DELETE MY ACCOUNT</code> <strong>exactly below:</strong></p>
+          <div class="ap-btn-row">
+            <input type="text" class="ap-input" id="ap-delete-phrase" placeholder="Type DELETE MY ACCOUNT" autocomplete="off" spellcheck="false" />
+            <button type="button" class="ap-btn ap-danger" id="ap-delete-btn" disabled>Permanently delete my account</button>
+          </div>
+          <div class="ap-status" id="ap-delete-status" role="status" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <p style="margin-top:18px;">
+        See also our <a href="privacy.html">Privacy Policy</a>, <a href="cookies.html">Cookie Policy</a>, and <a href="terms.html">Terms of Service</a>.
+        Questions? <a href="mailto:contact@phmurtstudios.com">contact@phmurtstudios.com</a>.
+      </p>
+    </section>
+  </main>
+
+  <div class="fantasy-section-end">◆   ◆   ◆</div>
+
+  <div id="ps-site-footer"></div>
+  <noscript>
+    <p style="padding: 20px; text-align: center; color: #e74c3c; font-family: sans-serif;">
+      This site requires JavaScript to function properly. Please enable JavaScript in your browser settings.
+    </p>
+  </noscript>
+
+  <script src="phmurt-shell.js?v=187"></script>
+
+  <script>
+    /* ═══════════════════════════════════════════════════════════════
+       Account & Privacy — self-service Export / Delete
+       ═══════════════════════════════════════════════════════════════
+       Uses the deployed edge functions:
+         POST /functions/v1/export-user-data
+         POST /functions/v1/delete-user-account
+       Both require a Bearer JWT (the logged-in user's access token).
+       ═══════════════════════════════════════════════════════════════ */
+    (function () {
+      'use strict';
+
+      var REQUIRED_PHRASE = 'DELETE MY ACCOUNT';
+      var EDGE_EXPORT = (typeof SUPABASE_URL === 'string' ? SUPABASE_URL : '') + '/functions/v1/export-user-data';
+      var EDGE_DELETE = (typeof SUPABASE_URL === 'string' ? SUPABASE_URL : '') + '/functions/v1/delete-user-account';
+
+      var $ = function (id) { return document.getElementById(id); };
+
+      function setStatus(el, msg, kind) {
+        if (!el) return;
+        el.textContent = msg || '';
+        el.classList.remove('ap-ok', 'ap-err');
+        if (kind === 'ok') el.classList.add('ap-ok');
+        if (kind === 'err') el.classList.add('ap-err');
+      }
+
+      function escText(s) {
+        return String(s == null ? '' : s);
+      }
+
+      /* Wait for supabase client + active session */
+      function waitForSupabase(retries) {
+        retries = retries == null ? 50 : retries;
+        return new Promise(function (resolve, reject) {
+          (function tick(n) {
+            if (typeof window.phmurtSupabase !== 'undefined' && window.phmurtSupabase) {
+              resolve(window.phmurtSupabase);
+              return;
+            }
+            if (n <= 0) { reject(new Error('Supabase client not available')); return; }
+            setTimeout(function () { tick(n - 1); }, 150);
+          })(retries);
+        });
+      }
+
+      async function getAccessToken() {
+        var sb = await waitForSupabase();
+        var res;
+        try { res = await sb.auth.getSession(); } catch (e) { res = null; }
+        var session = res && res.data && res.data.session ? res.data.session : null;
+        if (!session || !session.access_token) return null;
+        return { token: session.access_token, user: session.user || null };
+      }
+
+      async function showMainOrGate() {
+        try {
+          var tok = await getAccessToken();
+          if (!tok) {
+            var gate = $('ap-auth-gate'); if (gate) gate.hidden = false;
+            var main = $('ap-main'); if (main) main.hidden = true;
+            return null;
+          }
+          var emailEl = $('ap-user-email');
+          if (emailEl && tok.user && tok.user.email) emailEl.textContent = escText(tok.user.email);
+          var g = $('ap-auth-gate'); if (g) g.hidden = true;
+          var m = $('ap-main'); if (m) m.hidden = false;
+          return tok;
+        } catch (err) {
+          var gate2 = $('ap-auth-gate'); if (gate2) gate2.hidden = false;
+          return null;
+        }
+      }
+
+      /* ── Export ─────────────────────────────────────────────── */
+      async function doExport() {
+        var btn = $('ap-export-btn');
+        var statusEl = $('ap-export-status');
+        setStatus(statusEl, 'Preparing your export…');
+        if (btn) btn.disabled = true;
+        try {
+          var tok = await getAccessToken();
+          if (!tok) {
+            setStatus(statusEl, 'You must be signed in to export your data.', 'err');
+            if (btn) btn.disabled = false;
+            return;
+          }
+          var resp = await fetch(EDGE_EXPORT, {
+            method: 'POST',
+            headers: {
+              'Authorization': 'Bearer ' + tok.token,
+              'Content-Type': 'application/json',
+              'apikey': typeof SUPABASE_ANON_KEY === 'string' ? SUPABASE_ANON_KEY : ''
+            },
+            body: '{}'
+          });
+          if (!resp.ok) {
+            var errBody = null;
+            try { errBody = await resp.json(); } catch (e) {}
+            var msg = (errBody && errBody.error) ? errBody.error : ('Export failed (HTTP ' + resp.status + ').');
+            setStatus(statusEl, msg, 'err');
+            if (btn) btn.disabled = false;
+            return;
+          }
+          var blob = await resp.blob();
+          /* Try to read the filename from Content-Disposition */
+          var cd = resp.headers.get('Content-Disposition') || '';
+          var fname = null;
+          var m = cd.match(/filename="?([^"]+)"?/i);
+          if (m && m[1]) fname = m[1];
+          if (!fname) {
+            var d = new Date().toISOString().slice(0, 10);
+            fname = 'phmurt-export-' + d + '.json';
+          }
+          var url = URL.createObjectURL(blob);
+          var a = document.createElement('a');
+          a.href = url;
+          a.download = fname;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(function () { URL.revokeObjectURL(url); }, 1500);
+          setStatus(statusEl, 'Your export has been downloaded as ' + fname + '.', 'ok');
+        } catch (err) {
+          setStatus(statusEl, 'Something went wrong while exporting. Please try again.', 'err');
+        } finally {
+          if (btn) btn.disabled = false;
+        }
+      }
+
+      /* ── Delete ─────────────────────────────────────────────── */
+      function wireDeleteGate() {
+        var input = $('ap-delete-phrase');
+        var btn = $('ap-delete-btn');
+        if (!input || !btn) return;
+        input.addEventListener('input', function () {
+          btn.disabled = (input.value !== REQUIRED_PHRASE);
+        });
+      }
+
+      async function doDelete() {
+        var input = $('ap-delete-phrase');
+        var btn = $('ap-delete-btn');
+        var statusEl = $('ap-delete-status');
+        if (!input || input.value !== REQUIRED_PHRASE) {
+          setStatus(statusEl, 'Please type the exact phrase to confirm.', 'err');
+          return;
+        }
+        /* JS confirm() for one last double-check */
+        var ok = window.confirm(
+          'This will permanently delete your account.\n\n' +
+          'Your characters, campaigns, and owned content will be removed.\n' +
+          'This cannot be undone. Continue?'
+        );
+        if (!ok) return;
+
+        setStatus(statusEl, 'Deleting your account…');
+        if (btn) btn.disabled = true;
+        input.disabled = true;
+
+        try {
+          var tok = await getAccessToken();
+          if (!tok) {
+            setStatus(statusEl, 'You must be signed in to delete your account.', 'err');
+            if (btn) btn.disabled = false;
+            input.disabled = false;
+            return;
+          }
+          var resp = await fetch(EDGE_DELETE, {
+            method: 'POST',
+            headers: {
+              'Authorization': 'Bearer ' + tok.token,
+              'Content-Type': 'application/json',
+              'apikey': typeof SUPABASE_ANON_KEY === 'string' ? SUPABASE_ANON_KEY : ''
+            },
+            body: JSON.stringify({ confirm_phrase: REQUIRED_PHRASE })
+          });
+          var data = null;
+          try { data = await resp.json(); } catch (e) {}
+          if (!resp.ok) {
+            var msg = (data && data.error) ? data.error : ('Delete failed (HTTP ' + resp.status + ').');
+            setStatus(statusEl, msg, 'err');
+            if (btn) btn.disabled = false;
+            input.disabled = false;
+            return;
+          }
+
+          setStatus(statusEl, 'Your account has been deleted. Signing you out…', 'ok');
+
+          /* Sign out locally so the browser doesn't hold a dangling session */
+          try {
+            var sb = await waitForSupabase();
+            await sb.auth.signOut();
+          } catch (e) { /* ignore */ }
+
+          /* Send them home with a flag */
+          setTimeout(function () {
+            try { window.location.href = 'index.html?deleted=1'; } catch (e) {}
+          }, 1200);
+        } catch (err) {
+          setStatus(statusEl, 'Something went wrong. Please try again or contact support.', 'err');
+          if (btn) btn.disabled = false;
+          input.disabled = false;
+        }
+      }
+
+      /* ── Boot ───────────────────────────────────────────────── */
+      document.addEventListener('DOMContentLoaded', async function () {
+        wireDeleteGate();
+        var expBtn = $('ap-export-btn'); if (expBtn) expBtn.addEventListener('click', doExport);
+        var delBtn = $('ap-delete-btn'); if (delBtn) delBtn.addEventListener('click', doDelete);
+        await showMainOrGate();
+      });
+
+      /* Also re-check gate when the supabase client finishes init */
+      window.addEventListener('phmurt-supabase-ready', function () { showMainOrGate(); });
+
+    })();
+  </script>
+
+</body>
+</html>

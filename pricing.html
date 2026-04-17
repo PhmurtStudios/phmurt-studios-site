@@ -314,6 +314,70 @@
       .pricing-grid { grid-template-columns: 1fr; }
     }
   </style>
+
+  <!--
+    SEO: schema.org Product with Offers for Pro (monthly + yearly) and
+    Lifetime. Prices below should stay in sync with pricing.html visible
+    UI and with phmurt-auth.js getTierConfig() defaults.
+    Search engines treat this as the canonical source of pricing metadata.
+  -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": "Phmurt Studios Pro",
+    "description": "Subscription for the Phmurt Studios tabletop RPG platform. Unlimited characters, unlimited campaigns, every generator, advanced campaign tabs, and world-building tools.",
+    "brand": { "@type": "Brand", "name": "Phmurt Studios" },
+    "image": "https://phmurtstudios.com/logo.png",
+    "url": "https://phmurtstudios.com/pricing.html",
+    "category": "Tabletop RPG software",
+    "offers": [
+      {
+        "@type": "Offer",
+        "name": "Pro Monthly",
+        "price": "5.00",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock",
+        "url": "https://phmurtstudios.com/pricing.html?plan=monthly",
+        "priceSpecification": {
+          "@type": "UnitPriceSpecification",
+          "price": "5.00",
+          "priceCurrency": "USD",
+          "billingDuration": "P1M",
+          "unitText": "MONTH"
+        }
+      },
+      {
+        "@type": "Offer",
+        "name": "Pro Yearly",
+        "price": "50.00",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/InStock",
+        "url": "https://phmurtstudios.com/pricing.html?plan=yearly",
+        "priceSpecification": {
+          "@type": "UnitPriceSpecification",
+          "price": "50.00",
+          "priceCurrency": "USD",
+          "billingDuration": "P1Y",
+          "unitText": "YEAR"
+        }
+      },
+      {
+        "@type": "Offer",
+        "name": "Lifetime Pass (early supporter, limited to 200)",
+        "price": "50.00",
+        "priceCurrency": "USD",
+        "availability": "https://schema.org/LimitedAvailability",
+        "url": "https://phmurtstudios.com/pricing.html",
+        "eligibleQuantity": {
+          "@type": "QuantitativeValue",
+          "maxValue": 200,
+          "unitCode": "C62"
+        }
+      }
+    ]
+  }
+  </script>
 </head>
 <body data-nav-active="" data-footer-copy="Roll Well. Play Weird." data-breadcrumb="Home|index.html;Pricing">
 
@@ -591,13 +655,28 @@
     window.addEventListener('phmurt-auth-change', function () { updatePricing(); });
 
     /* ── Auto-select plan from query param (e.g. ?plan=yearly) ─────── */
+    var pricingOrigin = 'direct';
     try {
       var urlParams = new URLSearchParams(window.location.search);
       var planParam = urlParams.get('plan');
       // SECURITY: Validate plan parameter is in allowed set
-      if (planParam === 'yearly') { yearly = true; updatePricing(); }
-      else if (planParam === 'monthly') { yearly = false; updatePricing(); }
+      if (planParam === 'yearly') { yearly = true; updatePricing(); pricingOrigin = 'url-param'; }
+      else if (planParam === 'monthly') { yearly = false; updatePricing(); pricingOrigin = 'url-param'; }
+      // Referrer-based attribution: distinguish deep-link from gate-modal.
+      if (pricingOrigin === 'direct' && document.referrer) {
+        try {
+          var refHost = new URL(document.referrer).hostname;
+          if (refHost === location.hostname) pricingOrigin = 'internal';
+        } catch (e2) { /* ignore */ }
+      }
     } catch (e) { /* URLSearchParams not supported — ignore */ }
+
+    /* ── Funnel analytics: record pricing-page view ─────────────────── */
+    try {
+      if (typeof PhmurtDB !== 'undefined' && typeof PhmurtDB.logEvent === 'function') {
+        PhmurtDB.logEvent('pricing-page-viewed', { from: pricingOrigin });
+      }
+    } catch (e) { /* ignore */ }
 
     sw.addEventListener('click', function () { yearly = !yearly; updatePricing(); });
     sw.addEventListener('keydown', function (e) {
@@ -623,18 +702,98 @@
                   counterEl.textContent = 'SOLD OUT';
                   counterEl.style.color = '#ef4444';
                   counterEl.style.fontWeight = '700';
-                  if (lifetimeCtaEl) {
-                    lifetimeCtaEl.textContent = 'Sold Out';
-                    lifetimeCtaEl.disabled = true;
-                    lifetimeCtaEl.style.opacity = '0.5';
-                    lifetimeCtaEl.style.cursor = 'not-allowed';
-                  }
+                  // Replace the disabled CTA with a small waitlist capture
+                  // form so interested users can still leave their email.
+                  _renderWaitlistCapture();
                 }
               }
             });
         }
       } catch (e) { /* Supabase not loaded yet — keep hardcoded fallback */ }
     })();
+
+    /* ── Lifetime waitlist capture ───────────────────────────────────
+       Swaps the disabled "Claim" button for a minimal email-capture
+       form. The form is backed by the lifetime_waitlist_join RPC which
+       is SECURITY DEFINER and only accepts inserts when all 200 slots
+       are in fact sold (double-checks server-side). */
+    function _renderWaitlistCapture() {
+      if (!lifetimeCtaEl) return;
+      if (document.getElementById('phmurt-waitlist-form')) return; // already rendered
+
+      var wrap = document.createElement('div');
+      wrap.id = 'phmurt-waitlist-form';
+      wrap.style.cssText = 'display:flex;flex-direction:column;gap:8px;margin:0 0 8px;';
+      wrap.innerHTML =
+        '<label for="phmurt-waitlist-email" style="font-family:Cinzel,serif;font-size:.7rem;letter-spacing:.15em;text-transform:uppercase;color:#c9a84c;">Join the waitlist</label>' +
+        '<input type="email" id="phmurt-waitlist-email" placeholder="you@example.com" autocomplete="email" ' +
+          'style="padding:10px 12px;border-radius:4px;background:rgba(10,10,10,0.6);border:1px solid #c9a84c55;color:var(--text,#e7dcc6);font-family:Spectral,serif;font-size:.95rem;" />' +
+        '<button type="button" id="phmurt-waitlist-submit" class="plan-cta" ' +
+          'style="background:#c9a84c;color:#0a0a0a;">Notify Me If A Slot Opens</button>' +
+        '<p id="phmurt-waitlist-help" style="font-size:.75rem;color:var(--text-secondary,#aaa);margin:0;">We&rsquo;ll only email you if a Lifetime Pass slot opens up. No newsletter, no spam.</p>';
+
+      // Replace the CTA button with the form, in place.
+      if (lifetimeCtaEl.parentNode) {
+        lifetimeCtaEl.parentNode.replaceChild(wrap, lifetimeCtaEl);
+      }
+
+      var emailIn = document.getElementById('phmurt-waitlist-email');
+      var submit  = document.getElementById('phmurt-waitlist-submit');
+      if (!emailIn || !submit) return;
+
+      function _submit() {
+        var email = (emailIn.value || '').trim();
+        // Lightweight client-side shape check; server re-validates.
+        if (!/^\S+@\S+\.\S+$/.test(email) || email.length < 5 || email.length > 254) {
+          showToast('Please enter a valid email address.', 'error');
+          try { emailIn.focus(); } catch (e) {}
+          return;
+        }
+
+        // Must be signed in — RPC is EXECUTE-granted to authenticated only.
+        if (typeof PhmurtDB === 'undefined' || !PhmurtDB.getSession || !PhmurtDB.getSession()) {
+          showToast('Please sign in first to join the waitlist.', 'error');
+          return;
+        }
+        if (typeof phmurtSupabase === 'undefined' || !phmurtSupabase) {
+          showToast('Could not reach the waitlist service. Please try again.', 'error');
+          return;
+        }
+
+        submit.disabled = true;
+        submit.textContent = 'Submitting\u2026';
+
+        phmurtSupabase.rpc('lifetime_waitlist_join', { p_email: email })
+          .then(function (res) {
+            if (res && res.error) {
+              // Server rejected (e.g. slots re-opened, invalid email)
+              showToast(res.error.message || 'Could not join waitlist.', 'error');
+              submit.disabled = false;
+              submit.textContent = 'Notify Me If A Slot Opens';
+              return;
+            }
+            // Success — disable form and show success state. Because
+            // the RPC is ON CONFLICT DO NOTHING, duplicates show the
+            // same success message without leaking that the email was
+            // already on the list.
+            showToast('You\u2019re on the list! We\u2019ll email you if a slot opens up.', 'success');
+            emailIn.disabled = true;
+            submit.disabled = true;
+            submit.textContent = 'On the Waitlist';
+            try { PhmurtDB.logEvent('lifetime-waitlist-joined', {}); } catch (e) {}
+          })
+          .catch(function (err) {
+            showToast((err && err.message) ? err.message : 'Could not join waitlist.', 'error');
+            submit.disabled = false;
+            submit.textContent = 'Notify Me If A Slot Opens';
+          });
+      }
+
+      submit.addEventListener('click', _submit);
+      emailIn.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); _submit(); }
+      });
+    }
 
     /* inline toast helper */
     function showToast(msg, type) {

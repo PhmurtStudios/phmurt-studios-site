@@ -169,6 +169,32 @@
     }
   </style>
   <link rel="canonical" href="https://phmurtstudios.com/getting-started.html" />
+
+  <!--
+    SEO: schema.org SoftwareApplication markup — helps search engines
+    display the free-tier price, category, and description in rich
+    results. Keep offer price in sync with pricing.html.
+  -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "Phmurt Studios",
+    "description": "Free online tabletop RPG platform: 5e and 3.5e character builders, interactive character sheets, dice roller, campaign management, and a library of getting-started guides for new players and dungeon masters.",
+    "applicationCategory": "GameApplication",
+    "operatingSystem": "Any (web-based)",
+    "url": "https://phmurtstudios.com/",
+    "image": "https://phmurtstudios.com/logo.png",
+    "offers": {
+      "@type": "Offer",
+      "price": "0.00",
+      "priceCurrency": "USD",
+      "availability": "https://schema.org/InStock",
+      "url": "https://phmurtstudios.com/pricing.html"
+    },
+    "creator": { "@type": "Organization", "name": "Phmurt Studios" }
+  }
+  </script>
 </head>
 <body data-nav-active="Getting Started" data-footer-copy="Roll Well. Play Weird." data-breadcrumb="Home|index.html;Getting Started">
   <a href="#main-content" class="ps-skip-nav">Skip to content</a>

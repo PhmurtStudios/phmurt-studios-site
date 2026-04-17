@@ -100,12 +100,31 @@ var PhmurtDB = (function () {
     // NOTE: This is a client-side check only. Server must always verify subscription status
     // before granting pro features. Never trust client-side isSubscribed flag alone.
     var subExpires = profile && profile.subscription_expires_at ? new Date(profile.subscription_expires_at) : null;
+    var now = new Date();
     // UPDATED: Support 'pro', 'party', and 'lifetime' tiers
     // Lifetime subscriptions are never treated as expired
     // SECURITY: Require 'active' status (not 'pending' or other statuses)
-    var isSubscribed = (tier === 'pro' || tier === 'party' || tier === 'lifetime')
+    var tierGrantsPro = (tier === 'pro' || tier === 'party' || tier === 'lifetime');
+    var activeWindowOpen = tierGrantsPro
       && subStatus === 'active'
-      && (tier === 'lifetime' || !subExpires || subExpires > new Date());
+      && (tier === 'lifetime' || !subExpires || subExpires > now);
+    // GRACE PERIOD: If Stripe's last payment failed, the webhook flips status
+    // to 'past_due' (or occasionally 'unpaid'). To avoid a hard lockout while
+    // the customer updates their card, we grant Pro features for 3 days from
+    // either the expiry timestamp or "now" if none is set. Server-side
+    // enforcement (is_pro_with_grace) applies the same 3-day window, so this
+    // client check matches the authoritative server logic.
+    // Lifetime tier is never in past_due/unpaid — it has no recurring charge.
+    var inGrace = false;
+    if (tierGrantsPro && tier !== 'lifetime' &&
+        (subStatus === 'past_due' || subStatus === 'unpaid')) {
+      var graceStart = subExpires || now;
+      var graceEnd = new Date(graceStart.getTime() + 3 * 24 * 60 * 60 * 1000);
+      if (now < graceEnd) {
+        inGrace = true;
+      }
+    }
+    var isSubscribed = activeWindowOpen || inGrace;
     return {
       userId:              user.id,
       user:                user.id,   // Alias so sess.user works (e.g. pricing.html)
@@ -122,6 +141,7 @@ var PhmurtDB = (function () {
       isSubscribed:        isSubscribed,
       isLifetime:          tier === 'lifetime' && isSubscribed,
       hasAllContentAccess: tier === 'lifetime' && isSubscribed, // Lifetime members get all content (free + premium, past + future)
+      isInGrace:           inGrace,                             // NEW: true when past_due/unpaid but within the 3-day grace window
       subscriptionExpires: subExpires ? subExpires.toISOString() : null,
       subscriptionCancelAt: (profile && profile.subscription_cancel_at) || null,
     };
@@ -227,6 +247,58 @@ var PhmurtDB = (function () {
           return { blocked: false };
         });
     });
+  }
+
+  /* ── Welcome email (best-effort, fire-and-forget) ─────────────────
+     Called once after a successful sign-up. Uses the user's own JWT
+     to hit the send-transactional-email edge function. The server
+     enforces a 1-year cooldown, so replays from a reload are no-ops.
+     Failures are swallowed so the sign-up flow never breaks. */
+  function _fireWelcomeEmail(userId, toEmail, displayName) {
+    try {
+      if (!userId || !toEmail) return;
+      if (typeof SUPABASE_URL === 'undefined' || !SUPABASE_URL) return;
+      var sb = _sb();
+      if (!sb) return;
+      // Prefer the fresh session returned by signUp; fall back to getSession().
+      var grabToken = sb.auth.getSession
+        ? sb.auth.getSession().then(function (r) {
+            return (r && r.data && r.data.session && r.data.session.access_token) || null;
+          }).catch(function () { return null; })
+        : Promise.resolve(null);
+      grabToken.then(function (accessToken) {
+        if (!accessToken) return;  // unconfirmed email flow — skip until confirmed
+        var endpoint = SUPABASE_URL.replace(/\/+$/, '') + '/functions/v1/send-transactional-email';
+        // Abort after 5s so we don't hold up anything.
+        var controller = null;
+        var timer = null;
+        try {
+          if (typeof AbortController !== 'undefined') {
+            controller = new AbortController();
+            timer = setTimeout(function () { try { controller.abort(); } catch (_e) {} }, 5000);
+          }
+        } catch (_e) { /* best-effort */ }
+        var fetchOpts = {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + accessToken,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            email_type: 'welcome',
+            user_id: userId,
+            to_email: toEmail,
+            context: { name: displayName || '' }
+          })
+        };
+        if (controller) fetchOpts.signal = controller.signal;
+        fetch(endpoint, fetchOpts)
+          .then(function () { if (timer) clearTimeout(timer); })
+          .catch(function () { if (timer) clearTimeout(timer); });
+      });
+    } catch (_e) {
+      // Never break the sign-up flow on an email failure.
+    }
   }
 
   function _fireChange() {
@@ -940,6 +1012,9 @@ var PhmurtDB = (function () {
               if (!sess) throw new Error('Failed to create session.');
               _session = sess;
               _fireChange();
+              // Best-effort welcome email. Happens in the background and
+              // never blocks the sign-up flow (server enforces cooldown).
+              try { _fireWelcomeEmail(user.id, ne, dnam); } catch (_e) { /* no-op */ }
               return sess;
             });
           })
@@ -2039,6 +2114,8 @@ var PhmurtDB = (function () {
         if (interval !== 'yearly' && interval !== 'party_monthly' && interval !== 'party_yearly' && interval !== 'lifetime') {
           resolvedInterval = 'monthly';
         }
+        // Funnel analytics: fires once per invocation, before the network call.
+        try { window.PhmurtDB.logEvent('checkout-started', { interval: resolvedInterval }); } catch (_e) {}
         return supabaseClient.functions.invoke('stripe-checkout', {
           body: {
             return_url: returnUrl || window.location.href,
@@ -2185,6 +2262,60 @@ var PhmurtDB = (function () {
       if (!_session.isSubscribed) return Promise.reject(new Error('No active subscription.'));
       // Re-use the checkout endpoint — it auto-redirects to portal for existing subscribers
       return window.PhmurtDB.startSubscription(returnUrl || window.location.href, 'monthly');
+    },
+
+    /* Log a conversion-funnel event.
+       Fire-and-forget — never throws, never blocks. Best-effort insert
+       into public.site_events (INSERT-only RLS for authenticated/anon).
+       event_props must be a plain object; it is serialized and truncated
+       server-side by the length checks on event_name / page / referrer.
+       Known event names currently in use:
+         - 'gate-modal-shown'              (feature: <name>)
+         - 'gate-modal-cta-click'          (plan: 'monthly'|'yearly')
+         - 'pricing-page-viewed'           (from: 'gate'|'direct'|'url-param')
+         - 'checkout-started'              (interval: <whitelisted>) */
+    logEvent: function (eventName, eventProps) {
+      try {
+        if (!eventName || typeof eventName !== 'string') return;
+        if (typeof phmurtSupabase === 'undefined' || !phmurtSupabase) return;
+        // Cap name to 80 to match DB CHECK constraint; drop anything longer.
+        var name = eventName.slice(0, 80);
+        var props = {};
+        if (eventProps && typeof eventProps === 'object' && !Array.isArray(eventProps)) {
+          // Shallow-copy scalars only to avoid shipping DOM nodes or cycles.
+          for (var k in eventProps) {
+            if (!Object.prototype.hasOwnProperty.call(eventProps, k)) continue;
+            var v = eventProps[k];
+            if (v === null) { props[k] = null; continue; }
+            var t = typeof v;
+            if (t === 'string') props[k] = v.slice(0, 500);
+            else if (t === 'number' || t === 'boolean') props[k] = v;
+            // Everything else (object, function, undefined) is dropped.
+          }
+        }
+        // Session correlator — stable within a tab lifetime, no PII.
+        var sid;
+        try {
+          sid = sessionStorage.getItem('phmurt-sid');
+          if (!sid) {
+            sid = Math.random().toString(36).slice(2) + Date.now().toString(36);
+            sessionStorage.setItem('phmurt-sid', sid);
+          }
+        } catch (_e) { sid = null; }
+        var uid = (_session && _session.userId) ? _session.userId : null;
+        var page = (location && location.pathname) ? location.pathname.slice(0, 512) : null;
+        var ref  = (document && document.referrer) ? document.referrer.slice(0, 1024) : null;
+        phmurtSupabase.from('site_events').insert({
+          user_id: uid,
+          session_id: sid,
+          event_name: name,
+          event_props: props,
+          page: page,
+          referrer: ref,
+        }).then(function () {}).catch(function () {});
+      } catch (_e) {
+        // Never throw from analytics.
+      }
     },
 
     /* Check if a feature is available on the user's current tier
@@ -2916,7 +3047,10 @@ var PhmurtDB = (function () {
 
     var bar = document.createElement('div');
     bar.id = 'phmurt-sub-status-banner';
-    bar.setAttribute('role', 'status');
+    // A11y: errors are assertive alerts; cancel-at-period-end is a polite status.
+    bar.setAttribute('role', kind === 'error' ? 'alert' : 'status');
+    bar.setAttribute('aria-live', kind === 'error' ? 'assertive' : 'polite');
+    bar.setAttribute('aria-atomic', 'true');
     bar.style.cssText =
       'position:sticky;top:0;z-index:9000;width:100%;padding:10px 16px;' +
       'background:' + bg + ';border-bottom:1px solid ' + border + ';' +
@@ -2974,9 +3108,18 @@ var PhmurtDB = (function () {
     if (document.getElementById('phmurt-gate-modal')) return true; // Already showing, proceed
 
     var tierCfg = PhmurtDB.getTierConfig();
+    // Funnel analytics: record that we showed the gate (before DOM build so
+    // crashes inside the modal still surface in the funnel).
+    try { PhmurtDB.logEvent('gate-modal-shown', { feature: featureName }); } catch (_e) {}
+
     var overlay = document.createElement('div');
     overlay.id = 'phmurt-gate-modal';
     overlay.className = 'phmurt-upgrade-overlay';
+    // A11y: mark overlay as the dialog container with proper labelling.
+    overlay.setAttribute('role', 'dialog');
+    overlay.setAttribute('aria-modal', 'true');
+    overlay.setAttribute('aria-labelledby', 'phmurt-gate-title');
+    overlay.setAttribute('aria-describedby', 'phmurt-gate-desc');
 
     var featureLabel = featureName.replace(/-/g, ' ').replace(/\b\w/g, function (c) { return c.toUpperCase(); });
     // SECURITY (V-027): Escape featureLabel to prevent XSS injection
@@ -2986,37 +3129,84 @@ var PhmurtDB = (function () {
       '<div class="phmurt-upgrade-modal">' +
         '<div class="upgrade-glow"></div>' +
         '<div class="upgrade-body">' +
-          '<button class="upgrade-close" id="phmurt-gate-close">&times;</button>' +
-          '<div class="upgrade-icon">&#9876;</div>' +
-          '<h2 class="upgrade-title">Upgrade to Pro</h2>' +
-          '<p class="upgrade-text"><strong>' + escapedFeatureLabel + '</strong> is a Pro feature. Unlock it — plus unlimited characters, campaigns, and every generator.</p>' +
+          '<button class="upgrade-close" id="phmurt-gate-close" aria-label="Close upgrade dialog" type="button">&times;</button>' +
+          '<div class="upgrade-icon" aria-hidden="true">&#9876;</div>' +
+          '<h2 class="upgrade-title" id="phmurt-gate-title">Upgrade to Pro</h2>' +
+          '<p class="upgrade-text" id="phmurt-gate-desc"><strong>' + escapedFeatureLabel + '</strong> is a Pro feature. Unlock it — plus unlimited characters, campaigns, and every generator.</p>' +
           '<div class="phmurt-upgrade-btns">' +
-            '<button class="upgrade-btn" id="phmurt-gate-monthly" style="cursor:pointer;">' + psEscapeHtml(String(tierCfg.pro.price.monthly || '')) + '</button>' +
-            '<button class="upgrade-btn yearly" id="phmurt-gate-yearly" style="cursor:pointer;">' + psEscapeHtml(String(tierCfg.pro.price.yearly || '')) + '</button>' +
+            '<button class="upgrade-btn" id="phmurt-gate-monthly" type="button" aria-label="Subscribe monthly for ' + psEscapeHtml(String(tierCfg.pro.price.monthly || '')) + '" style="cursor:pointer;">' + psEscapeHtml(String(tierCfg.pro.price.monthly || '')) + '</button>' +
+            '<button class="upgrade-btn yearly" id="phmurt-gate-yearly" type="button" aria-label="Subscribe yearly for ' + psEscapeHtml(String(tierCfg.pro.price.yearly || '')) + '" style="cursor:pointer;">' + psEscapeHtml(String(tierCfg.pro.price.yearly || '')) + '</button>' +
           '</div>' +
           '<span class="upgrade-save">' + psEscapeHtml(String(tierCfg.pro.price.yearlySavings || '')) + ' with yearly!</span>' +
         '</div>' +
-        '<div class="upgrade-divider"></div>' +
+        '<div class="upgrade-divider" aria-hidden="true"></div>' +
         '<div class="upgrade-footer" style="display:flex;align-items:center;justify-content:space-between;">' +
           '<a class="upgrade-compare" href="pricing.html">Compare plans</a>' +
-          '<button id="phmurt-gate-notnow" style="background:none;border:none;color:#5a5046;font-family:Cinzel,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;padding:0;transition:color 0.15s;" onmouseover="this.style.color=\'var(--crimson,#d4433a)\'" onmouseout="this.style.color=\'#5a5046\'">Not Now</button>' +
+          '<button id="phmurt-gate-notnow" type="button" style="background:none;border:none;color:#5a5046;font-family:Cinzel,serif;font-size:9px;letter-spacing:2px;text-transform:uppercase;cursor:pointer;padding:0;transition:color 0.15s;" onmouseover="this.style.color=\'var(--crimson,#d4433a)\'" onmouseout="this.style.color=\'#5a5046\'">Not Now</button>' +
         '</div>' +
       '</div>';
 
     document.body.appendChild(overlay);
+
+    // A11y: remember the element that had focus so we can restore it on close.
+    var previouslyFocused = (document.activeElement && typeof document.activeElement.focus === 'function')
+      ? document.activeElement
+      : null;
+
+    // A11y: focusable elements inside the dialog for the focus trap.
+    function _gateFocusables() {
+      return Array.prototype.slice.call(
+        overlay.querySelectorAll(
+          'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      );
+    }
 
     // Close handlers — SECURITY (V-028): Properly handle event listeners to prevent leaks
     var closeBtn = document.getElementById('phmurt-gate-close');
     var notNowBtn = document.getElementById('phmurt-gate-notnow');
     var closeHandler = function () { overlay.remove(); };
     var bgClickHandler = function (ev) { if (ev.target === overlay) overlay.remove(); };
+    // A11y: Esc closes, Tab/Shift-Tab cycle focus within the dialog.
+    var keyHandler = function (ev) {
+      if (ev.key === 'Escape' || ev.key === 'Esc') {
+        ev.preventDefault();
+        overlay.remove();
+        return;
+      }
+      if (ev.key === 'Tab') {
+        var focusables = _gateFocusables();
+        if (focusables.length === 0) { ev.preventDefault(); return; }
+        var first = focusables[0];
+        var last  = focusables[focusables.length - 1];
+        var active = document.activeElement;
+        if (ev.shiftKey && active === first) {
+          ev.preventDefault();
+          last.focus();
+        } else if (!ev.shiftKey && active === last) {
+          ev.preventDefault();
+          first.focus();
+        } else if (!overlay.contains(active)) {
+          // If focus somehow escaped, pull it back.
+          ev.preventDefault();
+          first.focus();
+        }
+      }
+    };
     if (closeBtn) closeBtn.addEventListener('click', closeHandler);
     if (notNowBtn) notNowBtn.addEventListener('click', closeHandler);
     overlay.addEventListener('click', bgClickHandler);
+    document.addEventListener('keydown', keyHandler);
+
+    // A11y: move focus inside the dialog (close button is least destructive).
+    try {
+      if (closeBtn && typeof closeBtn.focus === 'function') closeBtn.focus();
+    } catch (_e) { /* ignore */ }
 
     // Direct checkout buttons — skip pricing.html redirect
     function _gateCheckout(plan) {
       if (typeof PhmurtDB === 'undefined') return;
+      try { PhmurtDB.logEvent('gate-modal-cta-click', { plan: plan, feature: featureName }); } catch (_e) {}
       var btn = document.getElementById('phmurt-gate-' + plan);
       if (btn) { btn.textContent = 'Connecting\u2026'; btn.disabled = true; }
       PhmurtDB.startSubscription('https://phmurtstudios.com/', plan).catch(function (err) {
@@ -3029,12 +3219,17 @@ var PhmurtDB = (function () {
     if (monthlyBtn) monthlyBtn.addEventListener('click', function () { _gateCheckout('monthly'); });
     if (yearlyBtn)  yearlyBtn.addEventListener('click', function () { _gateCheckout('yearly'); });
 
-    // Clean up listeners when modal is removed
+    // Clean up listeners when modal is removed (covers click, Esc, and all exits).
     var observer = new MutationObserver(function() {
       if (!document.body.contains(overlay)) {
         if (closeBtn) closeBtn.removeEventListener('click', closeHandler);
         if (notNowBtn) notNowBtn.removeEventListener('click', closeHandler);
         overlay.removeEventListener('click', bgClickHandler);
+        document.removeEventListener('keydown', keyHandler);
+        // A11y: restore focus to the element that had it before the dialog opened.
+        if (previouslyFocused && typeof previouslyFocused.focus === 'function') {
+          try { previouslyFocused.focus(); } catch (_e) { /* ignore */ }
+        }
         observer.disconnect();
       }
     });
