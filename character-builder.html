@@ -2346,14 +2346,22 @@ function renderSpells(){
   if(C.cls==='cleric'||C.cls==='druid') spellCount=0;
   if(C.cls==='paladin'||C.cls==='ranger') cantripCount=0;
   if(C.cls==='warlock'){ cantripCount=2; spellCount=2; }
+  // Soup Savant: 2 instant soups (cantrips) + a starting cookbook of 6 first-level recipes
+  if(C.cls==='soupsavant'){ cantripCount=2; spellCount=6; }
+  // Soup Savant terminology — "spells" become "soup recipes"
+  var isSoupSavant = (C.cls==='soupsavant');
+  var cantripLabel = isSoupSavant ? 'Instant Soups' : 'Cantrips';
+  var spellLabel   = isSoupSavant ? '1st-Level Soup Recipes (Cookbook)' : '1st-Level Spells';
+  var spellHeaderTitle = isSoupSavant ? 'Soupcooking' : 'Spellcasting';
 
   let html=`<div class="cb-detail" style="margin-bottom:24px;">
-    <div class="cb-detail-title">Spellcasting: ${cls.name}</div>
-    <div class="cb-detail-sub">${DND_DATA.abilityShort[cls.spellcastingAbility]} · Save DC ${saveDC} · Atk +${atkBonus}</div></div>`;
+    <div class="cb-detail-title">${spellHeaderTitle}: ${cls.name}</div>
+    <div class="cb-detail-sub">${DND_DATA.abilityShort[cls.spellcastingAbility]} · ${isSoupSavant?'Soup save DC':'Save DC'} ${saveDC} · ${isSoupSavant?'Soup attack':'Atk'} +${atkBonus}</div>
+    ${isSoupSavant?'<div class="cb-panel-hint" style="margin-top:10px;">Your cookbook holds soup recipes; your bandolier of magical thermoses holds your spell slots (all the same level). Instant soups are served from Insta-cups and require no thermos. The Soup of the Day, Culinary Edge dice, and Soup Cabinet are tracked on your final character sheet.</div>':''}</div>`;
 
   if(spellList.cantrips&&cantripCount>0){
     const ch=C.selectedCantrips.length;
-    html+=`<div class="cb-spell-section"><div class="cb-spell-header">Cantrips: Choose ${cantripCount}</div>
+    html+=`<div class="cb-spell-section"><div class="cb-spell-header">${cantripLabel}: Choose ${cantripCount}</div>
       <div class="cb-spell-count"><span style="color:${ch>=cantripCount?'#5a9a5a':'var(--crimson)'}">${ch}/${cantripCount}</span> selected</div>
       <div class="cb-spell-grid">${spellList.cantrips.map(sp=>{const escapedSp=escapeAttr(sp);return`
           <div class="cb-spell-item ${C.selectedCantrips.includes(sp)?'selected':''}">
@@ -2364,7 +2372,7 @@ function renderSpells(){
   }
   if(spellList.level1&&spellCount>0){
     const ch=C.selectedSpells.length;
-    html+=`<div class="cb-spell-section"><div class="cb-spell-header">1st-Level Spells: Choose ${spellCount}</div>
+    html+=`<div class="cb-spell-section"><div class="cb-spell-header">${spellLabel}: Choose ${spellCount}</div>
       <div class="cb-spell-count"><span style="color:${ch>=spellCount?'#5a9a5a':'var(--crimson)'}">${ch}/${spellCount}</span> selected</div>
       <div class="cb-spell-grid">${spellList.level1.map(sp=>{const escapedSp=escapeAttr(sp);return`
           <div class="cb-spell-item ${C.selectedSpells.includes(sp)?'selected':''}">
@@ -2376,7 +2384,46 @@ function renderSpells(){
   if(C.cls==='cleric'||C.cls==='druid')
     html+=`<div class="cb-alert"><strong>Prepared Caster</strong>: You prepare ${Math.max(1,sm+1)} spells per long rest from the full list. No selection needed now.</div>`;
 
+  // Legendary Soups portfolio (DM-gated, listed for reference)
+  if(isSoupSavant && Array.isArray(DND_DATA.legendarySoups)){
+    html += renderLegendarySoupsPanel(saveDC);
+  }
+
   container.innerHTML=html;
+}
+
+// Legendary Soups portfolio renderer.
+// Available to a soup savant for reference; each soup requires
+// a specific harvested ingredient and DM approval before it can
+// be cooked. The renderer is referenced from renderSpells (build
+// step 7) and from buildCharSheet (step 9) for the spellcasting
+// section if the character is a Soup Savant.
+function renderLegendarySoupsPanel(saveDC){
+  if(!DND_DATA.legendarySoups || !DND_DATA.legendarySoups.length) return '';
+  var html = '<div class="cb-spell-section" style="margin-top:32px;">'
+           + '<div class="cb-spell-header" style="display:flex;align-items:center;gap:10px;">'
+           +   '<span style="color:var(--crimson);">⸎ Legendary Soups</span>'
+           +   '<span style="font-family:\'Spectral\',serif;font-size:10px;font-style:italic;color:var(--text-faint);font-weight:normal;letter-spacing:0;text-transform:none;">DM-gated · cooked once a legendary ingredient is harvested</span>'
+           + '</div>'
+           + '<div class="cb-panel-hint" style="margin-bottom:14px;">Each legendary recipe requires an ingredient that can only be obtained by defeating one of the most powerful creatures in existence. They are not carried in thermoses; they are cooked in a cauldron over a fire that must not go out.</div>'
+           + '<div style="display:grid;grid-template-columns:1fr;gap:10px;">';
+  DND_DATA.legendarySoups.forEach(function(s){
+    var benefits = (s.benefits||[]).map(function(b){return '<li style="margin:3px 0;">' + escapeHtml(b) + '</li>';}).join('');
+    html += '<details class="cb-detail" style="padding:14px 18px;">'
+         +   '<summary style="cursor:pointer;font-family:\'Cinzel\',serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--crimson);">'
+         +     escapeHtml(s.name)
+         +     ' <span style="font-family:\'Spectral\',serif;font-size:10px;font-style:italic;color:var(--text-faint);font-weight:normal;letter-spacing:0;text-transform:none;margin-left:8px;">' + escapeHtml(s.serves || '') + (s.duration?' · ' + escapeHtml(s.duration):'') + '</span>'
+         +   '</summary>'
+         +   '<div style="font-size:13px;color:var(--text-dim);line-height:1.6;margin-top:10px;">'
+         +     '<div style="margin-bottom:8px;"><strong style="color:var(--text);">Ingredient.</strong> ' + escapeHtml(s.ingredient) + '</div>'
+         +     '<div style="margin-bottom:8px;"><strong style="color:var(--text);">Cooking Time.</strong> ' + escapeHtml(s.cookingTime) + '</div>'
+         +     (s.special?'<div style="margin-bottom:8px;"><strong style="color:var(--text);">Special.</strong> ' + escapeHtml(s.special) + '</div>':'')
+         +     '<div style="margin-top:10px;"><strong style="color:var(--text);">Effects.</strong><ul style="margin:6px 0 0 20px;padding:0;">' + benefits + '</ul></div>'
+         +   '</div>'
+         + '</details>';
+  });
+  html += '</div></div>';
+  return html;
 }
 
 function toggleSpell(name,type,max){
@@ -3148,8 +3195,9 @@ function buildSpellsTab(){
     <div class="cs-spell-stat"><div class="cs-spell-stat-val">+${atkBonus}</div><div class="cs-spell-stat-label">Atk Bonus</div></div>
   </div>`;
 
-  // Spell slots
-  html+='<div class="cs-action-title" style="margin-bottom:12px;">Spell Slots</div>';
+  // Spell slots ("Thermoses" for Soup Savant — all the same level)
+  var isSoupSheet = (C.cls==='soupsavant');
+  html+='<div class="cs-action-title" style="margin-bottom:12px;">' + (isSoupSheet?'Thermoses (Bandolier)':'Spell Slots') + '</div>';
   const slotNames=['1st','2nd','3rd','4th','5th','6th','7th','8th','9th'];
   if(C.cls==='warlock'&&rawSlots){
     var wk=rawSlots[C.level-1]||[1,1];
@@ -3159,9 +3207,13 @@ function buildSpellsTab(){
     html+=`<div class="cs-slot-section"><div class="cs-slot-header"><span>${slotNames[wLevel-1]||wLevel+'th'} Level (Pact Magic)</span><div class="cs-slot-pips">${pips}</div></div></div>`;
   } else {
     slots.forEach((count,i)=>{
+      // Skip 0-count slot rows — Soup Savant only has slots at one level at a time;
+      // existing classes never have 0 in the middle of their array, so this is safe.
+      if(!count) return;
       const level=i+1; const used=spellSlotUsed[level]||0;
       const pips=Array.from({length:count},(_,j)=>`<div class="cs-slot-pip ${j<used?'used':'available'}" onclick="toggleSpellSlot(${level},${j},${count})" title="${j<used?'Restore':'Expend'} slot"></div>`).join('');
-      html+=`<div class="cs-slot-section"><div class="cs-slot-header"><span>${slotNames[i]||level+'th'} Level</span><div class="cs-slot-pips">${pips}</div></div></div>`;
+      var levelLabel = isSoupSheet ? `${slotNames[i]||level+'th'}-Level Thermoses (all your thermoses are this level)` : `${slotNames[i]||level+'th'} Level`;
+      html+=`<div class="cs-slot-section"><div class="cs-slot-header"><span>${levelLabel}</span><div class="cs-slot-pips">${pips}</div></div></div>`;
     });
   }
 
@@ -3217,6 +3269,23 @@ function buildSpellsTab(){
     const prepCount=C.cls==='paladin'?Math.max(1,sm+Math.floor(C.level/2)):Math.max(1,sm+C.level);
     html+=`<div class="cs-action-title" style="margin:20px 0 8px;">Prepared Caster</div>
       <div style="font-size:14px;color:var(--text-dim);line-height:1.7;">As a ${cls.name}, you prepare ${prepCount} spells each long rest from the full class list. Choose which to prepare after a long rest based on your needs.</div>`;
+  }
+  // Soup Savant: cookbook size + Culinary Edge + Legendary Soups portfolio on the sheet
+  if(C.cls==='soupsavant'){
+    var pb = pbBonus();
+    var cookbookCap = pb + C.level;
+    var dieSize = (DND_DATA.soupSavantCulinaryDie ? DND_DATA.soupSavantCulinaryDie(C.level) : 'd4');
+    var dieCount = (DND_DATA.soupSavantCulinaryDiceCount ? DND_DATA.soupSavantCulinaryDiceCount(C.level) : 0);
+    var instantsKnown = (DND_DATA.soupSavantInstants && DND_DATA.soupSavantInstants[C.level-1]) || 2;
+    html += '<div class="cs-action-title" style="margin:20px 0 8px;">Cookbook & Culinary Edge</div>'
+         + '<div style="font-size:13px;color:var(--text-dim);line-height:1.7;">'
+         +   '<div><strong style="color:var(--text);">Cookbook capacity.</strong> Up to ' + cookbookCap + ' soup recipes (PB ' + pb + ' + Soup Savant level ' + C.level + ').</div>'
+         +   '<div><strong style="color:var(--text);">Instant soups known.</strong> ' + instantsKnown + '.</div>'
+         +   (dieCount>0 ? '<div><strong style="color:var(--text);">Culinary Edge dice.</strong> ' + dieCount + ' × ' + dieSize + ' per long rest. Bonus action: add to a damage or healing roll.</div>' : '')
+         + '</div>';
+    if(DND_DATA.legendarySoups && DND_DATA.legendarySoups.length){
+      html += renderLegendarySoupsPanel(saveDC);
+    }
   }
   el.innerHTML=html;
 }
