@@ -585,6 +585,16 @@
 <body data-nav-active="Characters" data-footer-copy="Roll Well. Play Weird.">
 
   <a href="#main-content" class="ps-skip-nav">Skip to content</a>
+
+  <noscript>
+    <div style="max-width:640px;margin:60px auto;padding:32px 24px;font-family:'Spectral',serif;color:#f2e8d6;background:#141420;border:1px solid rgba(255,255,255,0.11);border-radius:8px;text-align:center;">
+      <h1 style="font-family:'Cinzel',serif;font-size:1.4rem;margin:0 0 12px;">JavaScript Required</h1>
+      <p style="margin:0 0 14px;line-height:1.6;">The Character Builder is a browser-based wizard that needs JavaScript to guide you through the build.</p>
+      <p style="margin:0 0 18px;font-size:0.95rem;color:#9a8870;line-height:1.55;">Enable JavaScript to build 5e and 3.5e characters with live stat tracking and cloud sync.</p>
+      <p style="margin:0;font-size:0.9rem;"><a href="index.html" style="color:#d4433a;">Return to Home</a> &middot; <a href="gallery.html" style="color:#d4433a;">Browse Characters</a> &middot; <a href="learn.html" style="color:#d4433a;">Player Basics</a></p>
+    </div>
+  </noscript>
+
   <div id="ps-site-shell"></div>
   <div id="ps-page-breadcrumb"></div>
 
@@ -1315,7 +1325,8 @@
 
   </div>
 
-  <script src="builder-data.js?v=185" defer></script>
+  <!-- NOTE: must NOT be defer — the inline script below references DND_DATA at top level (e.g. DND_DATA.homebrewDB = {};). With defer, that line throws ReferenceError and halts the inline script (including the DOMContentLoaded listener that calls init()), so the builder never populates. -->
+  <script src="builder-data.js?v=185"></script>
   <!-- builder-data-35.js lazy-loaded on first 3.5e edition switch -->
   <script>
 // ══════════════════════════════════════════════════════════════
@@ -10291,6 +10302,56 @@ function init35() {
       }
     }, 200);
   });
+  </script>
+
+  <!-- ── Boot-time canary ───────────────────────────────────────────
+       If the main builder container is missing, zero-height, or hidden
+       500ms after DOMContentLoaded, report to site_errors so we can
+       catch blank-page regressions in production. Fires at most once
+       per page load. -->
+  <script>
+  (function () {
+    function report(reason, detail) {
+      try {
+        if (typeof phmurtSupabase === 'undefined' || !phmurtSupabase) return;
+        var uid = null;
+        try { var s = (typeof PhmurtDB !== 'undefined' && PhmurtDB.getSession) ? PhmurtDB.getSession() : null; uid = s && s.userId ? s.userId : null; } catch (_e) {}
+        phmurtSupabase.from('site_errors').insert({
+          message: ('[char-builder canary] ' + reason).slice(0, 500),
+          stack:   (detail || '').slice(0, 2000),
+          page:    '/character-builder.html',
+          user_agent: (navigator.userAgent || '').slice(0, 300),
+          user_id: uid,
+        }).then(function () {}).catch(function () {});
+      } catch (_e) { /* swallow */ }
+    }
+    function check() {
+      try {
+        var main = document.getElementById('builder-5e');
+        var sel  = document.getElementById('editionSelector');
+        if (!main) return report('builder-5e missing', '');
+        var cs = getComputedStyle(main);
+        var rect = main.getBoundingClientRect();
+        var selVisible = sel && getComputedStyle(sel).display !== 'none';
+        // Healthy: either the edition selector is on screen, or the main builder is.
+        if (selVisible && sel.getBoundingClientRect().height > 0) return;
+        if (cs.display === 'none' || cs.visibility === 'hidden') {
+          return report('builder-5e hidden', 'display=' + cs.display + ' visibility=' + cs.visibility);
+        }
+        if (rect.height < 10) {
+          return report('builder-5e zero-height', 'h=' + rect.height + ' w=' + rect.width);
+        }
+      } catch (e) {
+        report('canary crashed', (e && e.message) || '');
+      }
+    }
+    function schedule() { setTimeout(check, 500); }
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', schedule, { once: true });
+    } else {
+      schedule();
+    }
+  })();
   </script>
 </body>
 </html>
