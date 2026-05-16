@@ -1003,6 +1003,303 @@ DND_DATA.levelFeatures = {
 }; // end DND_DATA.levelFeatures
 
 // ══════════════════════════════════════════════════════════════
+// SOUP RECIPE DESCRIPTIONS (Phmurt Studios homebrew)
+// Each recipe follows the Soup Spell System from the portfolio:
+//   • level — 0 (Instant Soup / Insta-cup) or 1-7 (thermos)
+//   • delivery — Served | Thrown | Pressure Cooked | Ranged Spell Attack
+//   • cookTime — preparation time (PDF: 10 min × thermos level per recipe)
+//   • range — derived from delivery method per the PDF
+//   • duration — instant or persistent
+//   • ingredients — material components
+//   • slowCook — true if the recipe has the Slow Cook (ritual) tag
+//   • desc — mechanical effect with thermos-level scaling where applicable
+//   • save — 'dex'|'con'|'wis'|... for save-based recipes
+//   • attackRoll — true for Ranged Spell Attack delivery
+// ══════════════════════════════════════════════════════════════
+DND_DATA.soupDescriptions = {
+  // ── INSTANT SOUPS (cantrips, no thermos) ────────────────
+  "Bad Batch": {
+    level:0, delivery:"Pressure Cooked", school:"Instant Soup",
+    cookTime:"5 minutes (Insta-cup)", range:"15-ft cone", duration:"Instantaneous",
+    ingredients:"A spoonful of an old failed batch you refuse to throw away",
+    save:"con",
+    desc:"Each creature in the cone makes a Constitution save vs your Soup save DC. On a failure, take 1d8 poison damage and become poisoned until the end of its next turn. Damage rises to 2d8 at savant level 5, 3d8 at 11, 4d8 at 17."
+  },
+  "Hot N' Ready": {
+    level:0, delivery:"Served", school:"Instant Soup",
+    cookTime:"5 minutes (Insta-cup)", range:"Reach (1 willing creature)", duration:"Instantaneous (temp HP 1 hr)",
+    ingredients:"Pre-mixed broth concentrate, hot water",
+    desc:"A creature within reach drinks. It regains 1d4 hit points and gains 1d4 temporary hit points (last 1 hour). Both dice rise to 2d4 at savant level 5, 3d4 at 11, 4d4 at 17."
+  },
+  "Quick Fix": {
+    level:0, delivery:"Served", school:"Instant Soup",
+    cookTime:"1 action (drip-feed)", range:"Touch", duration:"Instantaneous",
+    ingredients:"A drop of warm bone broth on the lips",
+    desc:"A creature with 0 HP within reach is stabilized. Functions as a successful spare-the-dying check made with your Soup attack modifier."
+  },
+  "Pocket Steam": {
+    level:0, delivery:"Pressure Cooked", school:"Instant Soup",
+    cookTime:"5 minutes (Insta-cup)", range:"5-ft cone", duration:"Until your next turn",
+    ingredients:"A pinch of crushed bay leaf",
+    save:"dex",
+    desc:"Burst of scalding aromatic steam in a 5-ft cone. Each creature there makes a DEX save or take 1d6 fire damage. The cone leaves the area dimly lit by faint glowing vapor until your next turn. Damage rises to 2d6 at L5, 3d6 at L11, 4d6 at L17."
+  },
+  "Pinch of Salt": {
+    level:0, delivery:"Ranged Spell Attack", school:"Instant Soup",
+    cookTime:"5 minutes (Insta-cup)", range:"30 ft", duration:"Until your next turn",
+    ingredients:"Coarse blessed salt",
+    attackRoll:true,
+    desc:"A grain of consecrated salt bursts of light on contact. On a hit, deal 1d6 radiant damage and the target sheds dim light in a 5-ft radius until your next turn (no advantage from being hidden). Damage rises to 2d6 at L5, 3d6 at L11, 4d6 at L17."
+  },
+  "Mystery Cup": {
+    level:0, delivery:"Served", school:"Instant Soup",
+    cookTime:"5 minutes (Insta-cup)", range:"Reach (1 willing creature)", duration:"1 minute",
+    ingredients:"A small unmarked thermos and your most disarming smile",
+    save:"wis",
+    desc:"A creature drinks something it cannot identify. It must succeed on a WIS save vs your Soup save DC or be unable to use reactions until the end of its next turn. You also have advantage on the next CHA check you make against it within 1 minute."
+  },
+  "Cold Comfort": {
+    level:0, delivery:"Ranged Spell Attack", school:"Instant Soup",
+    cookTime:"5 minutes (Insta-cup)", range:"60 ft", duration:"Until your next turn",
+    ingredients:"A handful of crushed mint, served frosted",
+    attackRoll:true,
+    desc:"A frigid splash of broth strikes a single target. On a hit, deal 1d8 cold damage and reduce its speed by 10 ft until your next turn. Damage rises to 2d8 at L5, 3d8 at L11, 4d8 at L17."
+  },
+  "Stockpot Light": {
+    level:0, delivery:"Served (placed object)", school:"Instant Soup",
+    cookTime:"5 minutes (Insta-cup)", range:"Touch", duration:"1 hour",
+    ingredients:"A clay stockpot, glow-cap mushroom shavings",
+    desc:"You touch a stockpot and it begins to softly luminesce. The pot sheds bright light in a 20-ft radius and dim light for another 20 ft for up to 1 hour. You can dismiss the light or move the pot as a free object interaction."
+  },
+  "Whisper Broth": {
+    level:0, delivery:"Served", school:"Instant Soup",
+    cookTime:"5 minutes (Insta-cup)", range:"Touch (one shared cup)", duration:"1 hour",
+    ingredients:"Two spoons drawn from the same pot",
+    desc:"Two creatures who each take a sip from the same cup can communicate telepathically with one another at distances up to 60 ft for 1 hour. Walls do not block the link, but extradimensional spaces and total cover do."
+  },
+  "Boilstrike": {
+    level:0, delivery:"Pressure Cooked (touch)", school:"Instant Soup",
+    cookTime:"5 minutes (Insta-cup)", range:"Touch", duration:"Until start of target's next turn",
+    ingredients:"A drop of pure rendered fat",
+    attackRoll:true,
+    desc:"You release a contact spray of supercharged broth onto a creature you can reach. Make a melee spell attack: on a hit, deal 1d8 lightning damage and the target cannot take reactions until the start of its next turn. Damage rises to 2d8 at L5, 3d8 at L11, 4d8 at L17."
+  },
+
+  // ── 1st-LEVEL SOUP RECIPES ──────────────────────────────
+  "Chicken Noodle": {
+    level:1, delivery:"Served", school:"1st-Level Recipe",
+    cookTime:"10 minutes (1 thermos)", range:"Reach (1 willing or incapacitated creature)", duration:"Instantaneous",
+    ingredients:"Stewed chicken, root vegetables, hand-pulled noodles, a slow-rendered stock",
+    desc:"A creature drinks. It regains 1d8 + your CHA modifier hit points. When you cook this from a higher-level thermos, the healing increases by 1d8 per thermos level above 1st (matching the cure wounds scaling)."
+  },
+  "Magic Mushroom": {
+    level:1, delivery:"Served", school:"1st-Level Recipe", slowCook:true,
+    cookTime:"10 minutes (1 thermos) · or +10 min as Slow Cook (no thermos)", range:"Reach (1 humanoid)", duration:"1 hour",
+    ingredients:"A symbiotic enchanted mushroom that only fruits in moonlit caves",
+    save:"wis",
+    desc:"A humanoid drinks the soup. It must succeed on a WIS save vs your Soup save DC or be charmed by you for 1 hour or until you or your allies harm it. While charmed it regards you as a friendly acquaintance. When the effect ends it knows it was charmed. WIS save has advantage if currently in combat with you or your companions."
+  },
+  "Pot of Gold Broth": {
+    level:1, delivery:"Served", school:"1st-Level Recipe", slowCook:true,
+    cookTime:"10 minutes (1 thermos)", range:"Reach (up to 3 willing creatures)", duration:"Concentration, up to 1 minute",
+    ingredients:"A flake of gold leaf, a bone marrow stock simmered for a full day",
+    desc:"Up to three creatures within reach each take a sip. While you maintain concentration, each blessed creature adds 1d4 to attack rolls and saving throws it makes."
+  },
+  "Spicy Jalapeño": {
+    level:1, delivery:"Pressure Cooked", school:"1st-Level Recipe",
+    cookTime:"10 minutes (1 thermos)", range:"15-ft cone", duration:"Instantaneous",
+    ingredients:"Roasted jalapeños, smoked paprika, a flash of dragon-pepper oil",
+    save:"dex",
+    desc:"A blast of capsaicin-laced steam erupts. Each creature in the cone makes a DEX save: 3d6 fire damage on a fail, half on a success. Flammable objects in the area not worn or carried catch fire. +1d6 per thermos level above 1st."
+  },
+  "Onion Tear Soup": {
+    level:1, delivery:"Pressure Cooked", school:"1st-Level Recipe",
+    cookTime:"10 minutes (1 thermos)", range:"Single target within 30 ft", duration:"Concentration, up to 1 minute",
+    ingredients:"Three pounds of caramelized onion, no salt, an unspoken regret",
+    save:"wis",
+    desc:"You crack the valve at one creature. WIS save vs your Soup save DC: on a fail, the creature falls prone in a fit of uncontrollable weeping laughter, becoming incapacitated for the duration. It repeats the save at the end of each of its turns and on taking damage."
+  },
+  "Peppered Pho": {
+    level:1, delivery:"Pressure Cooked", school:"1st-Level Recipe",
+    cookTime:"10 minutes (1 thermos)", range:"15-ft cone", duration:"Instantaneous",
+    ingredients:"Coarse-cracked black pepper, star anise, a stock that has not stopped simmering in three days",
+    save:"con",
+    desc:"A thunderous gust of fragrant steam slams forward. Each creature in the cone makes a CON save: 2d8 thunder damage and pushed 10 ft back on a fail, half damage and not pushed on a success. Audible from 300 ft. +1d8 per thermos level above 1st."
+  },
+  "Hearth Stew": {
+    level:1, delivery:"Served", school:"1st-Level Recipe", slowCook:true,
+    cookTime:"10 minutes (1 thermos)", range:"Reach (1 willing creature)", duration:"Concentration, up to 1 minute",
+    ingredients:"Slow-braised beef shank, bay leaf, a story told over the fire",
+    desc:"A willing creature drinks. It gains 1d8 + your CHA modifier temporary hit points and has advantage on saving throws against being frightened for the duration."
+  },
+  "Crystal Consommé": {
+    level:1, delivery:"Served", school:"1st-Level Recipe", slowCook:true,
+    cookTime:"10 minutes (1 thermos)", range:"Reach (1 willing creature)", duration:"8 hours",
+    ingredients:"A clarified consommé strained through silk three times, a sliver of moonstone",
+    desc:"A creature drinks the impossibly clear broth. Until they finish a long rest, the creature's AC is 13 + DEX modifier when not wearing armor (stacks with shield). The benefit ends if the creature dons armor."
+  },
+  "Forager's Broth": {
+    level:1, delivery:"Served", school:"1st-Level Recipe", slowCook:true,
+    cookTime:"10 minutes (1 thermos)", range:"Reach (1 willing creature)", duration:"10 minutes",
+    ingredients:"Wild game stock, foraged herbs identified that morning",
+    desc:"For 10 minutes the drinker can comprehend and verbally communicate with beasts. The DM determines the depth of conversation any given beast can hold."
+  },
+  "Carrot Clarity": {
+    level:1, delivery:"Served", school:"1st-Level Recipe", slowCook:true,
+    cookTime:"10 minutes (1 thermos)", range:"Reach (1 willing creature)", duration:"1 hour",
+    ingredients:"Roasted heirloom carrots, a peppercorn that has crossed three borders",
+    desc:"For 1 hour the drinker understands the literal meaning of any spoken language they hear and any written language they can see (taking 1 minute per page of unfamiliar script)."
+  },
+  "Berry Bisque": {
+    level:1, delivery:"Served (yields 10 berries)", school:"1st-Level Recipe", slowCook:true,
+    cookTime:"10 minutes (1 thermos)", range:"Touch", duration:"24 hours",
+    ingredients:"A handful of seasonal berries, hedgewitch's invocation",
+    desc:"Cooking transforms the berries: a single bowl yields ten enchanted berries. Eating one as an action restores 1 hit point and provides as much nourishment as a full day's food. Unused berries lose their potency after 24 hours."
+  },
+  "Spinach Surge": {
+    level:1, delivery:"Served", school:"1st-Level Recipe", slowCook:true,
+    cookTime:"10 minutes (1 thermos)", range:"Reach (1 willing creature)", duration:"1 hour",
+    ingredients:"A double-handful of fresh leafy greens flash-wilted in a hot stock",
+    desc:"For 1 hour the drinker's walking speed increases by 10 ft."
+  },
+
+  // ── 2nd-LEVEL ──────────────────────────────────────────
+  "Lentil Lockdown": {
+    level:2, delivery:"Served", school:"2nd-Level Recipe",
+    cookTime:"20 minutes (1 thermos)", range:"Reach (1 humanoid)", duration:"Concentration, up to 1 minute",
+    ingredients:"Black lentils slow-cooked with smoked salt", save:"wis",
+    desc:"A humanoid drinks. WIS save: on a fail, paralyzed for the duration. Repeats save at end of each of its turns."
+  },
+  "Cream of Bear": {
+    level:2, delivery:"Served", school:"2nd-Level Recipe", slowCook:true,
+    cookTime:"20 minutes (1 thermos)", range:"Reach (1 willing creature)", duration:"Concentration, up to 1 hour",
+    ingredients:"Slow-rendered bear fat, juniper, woodland mushrooms",
+    desc:"For the duration, the drinker's skin becomes thick and barklike. AC becomes a minimum of 16 (any DEX bonus still applies, and a higher AC supersedes)."
+  },
+  "Healing Hot Pot": {
+    level:2, delivery:"Served (mass)", school:"2nd-Level Recipe",
+    cookTime:"20 minutes (1 thermos)", range:"Touch (up to 3 willing creatures)", duration:"Instantaneous",
+    ingredients:"Triple-strength bone broth, a sprig of revivifying mint",
+    desc:"Up to three creatures sharing the pot each regain 1d4 + your CHA modifier hit points. +1d4 per thermos level above 2nd."
+  },
+  "Misty Mushroom Mist": {
+    level:2, delivery:"Pressure Cooked", school:"2nd-Level Recipe",
+    cookTime:"20 minutes (1 thermos)", range:"15-ft cone, settles into 20-ft radius", duration:"Concentration, up to 1 minute",
+    ingredients:"Smoke-cured fungi, a hot vinegar reduction",
+    desc:"A roiling cloud of warm aromatic mist fills a 20-ft radius sphere. The area is heavily obscured. A wind of moderate or greater speed disperses it."
+  },
+
+  // ── 3rd-LEVEL ──────────────────────────────────────────
+  "Phoenix Pho": {
+    level:3, delivery:"Pressure Cooked", school:"3rd-Level Recipe",
+    cookTime:"30 minutes (1 thermos)", range:"20-ft radius sphere within 150 ft", duration:"Instantaneous",
+    ingredients:"A single feather of phoenix down (regrown from any flame), saffron",
+    save:"dex",
+    desc:"A pillar of fragrant flame erupts at a point you can see. Each creature in the area makes a DEX save: 8d6 fire damage on a fail, half on a success. Flammable objects ignite. +1d6 per thermos level above 3rd."
+  },
+  "Restorative Ramen": {
+    level:3, delivery:"Served (mass)", school:"3rd-Level Recipe", slowCook:true,
+    cookTime:"30 minutes (1 thermos)", range:"Touch (up to 6 creatures within reach)", duration:"Instantaneous",
+    ingredients:"Hand-pulled noodles in a tonkotsu base reinforced with healing herbs",
+    desc:"Up to six creatures sharing the meal each regain 2d4 hit points and are cured of one disease or one effect making them poisoned."
+  },
+  "Lightning Lassi": {
+    level:3, delivery:"Pressure Cooked", school:"3rd-Level Recipe",
+    cookTime:"30 minutes (1 thermos)", range:"100-ft line, 5 ft wide", duration:"Instantaneous",
+    ingredients:"Yogurt cultured during a thunderstorm, fennel pollen", save:"dex",
+    desc:"A snapping bolt of charged broth lances out. Each creature in the line makes a DEX save: 4d10 lightning damage on a fail, half on a success. Ignites flammable unattended objects. +1d10 per thermos level above 3rd."
+  },
+  "Vacuum-Sealed Stock": {
+    level:3, delivery:"Reaction (no delivery)", school:"3rd-Level Recipe",
+    cookTime:"Reaction (uncap one prepared thermos)", range:"60 ft", duration:"Instantaneous",
+    ingredients:"A thermos sealed with cooling vapor pressure",
+    desc:"When you see a creature within 60 ft casting a spell, you can use your reaction to uncap a prepared Vacuum-Sealed Stock thermos. Functions as counterspell at 3rd level (auto-counter spells of 3rd level or lower; ability check vs DC 10 + spell level for higher)."
+  },
+
+  // ── 4th-LEVEL ──────────────────────────────────────────
+  "Polymorphic Potage": {
+    level:4, delivery:"Served", school:"4th-Level Recipe", slowCook:true,
+    cookTime:"40 minutes (1 thermos)", range:"Reach (1 creature)", duration:"Concentration, up to 1 hour",
+    ingredients:"Shapeshifter blood (any source), root broth, a strand of your own hair",
+    save:"wis",
+    desc:"A creature drinks. WIS save (auto-fail if willing). On a fail, transformed into a Beast of CR 1 or lower of your choice. Functions as the polymorph spell."
+  },
+  "Reviving Risotto": {
+    level:4, delivery:"Served", school:"4th-Level Recipe", slowCook:true,
+    cookTime:"40 minutes (1 thermos)", range:"Reach (1 willing creature)", duration:"8 hours",
+    ingredients:"Saffron risotto with a rendered phoenix-broth stock",
+    desc:"For the duration, the first time the drinker would drop to 0 hit points as a result of taking damage, the creature drops to 1 hit point instead. Functions as death ward."
+  },
+  "Stoneskin Stew": {
+    level:4, delivery:"Served", school:"4th-Level Recipe", slowCook:true,
+    cookTime:"40 minutes (1 thermos)", range:"Reach (1 willing creature)", duration:"Concentration, up to 1 hour",
+    ingredients:"Dust from a granite quarry, mountain-goat marrow",
+    desc:"A creature drinks. For the duration it has resistance to nonmagical bludgeoning, piercing, and slashing damage."
+  },
+
+  // ── 5th-LEVEL ──────────────────────────────────────────
+  "Animate Brunch": {
+    level:5, delivery:"Pressure Cooked (kitchenware)", school:"5th-Level Recipe",
+    cookTime:"50 minutes (1 thermos)", range:"120 ft", duration:"Concentration, up to 1 minute",
+    ingredients:"Up to ten plates, bowls, ladles, or kitchen implements",
+    desc:"Up to ten Tiny utensils animate as constructs. Use the animate objects rules. Each acts on your turn (bonus action to command). Tiny stat block: AC 18, HP 20, attack +8 to hit, 1d4+4 damage."
+  },
+  "Mass Cure Stew": {
+    level:5, delivery:"Served (mass)", school:"5th-Level Recipe",
+    cookTime:"50 minutes (1 thermos)", range:"Touch (up to 6 creatures within 30 ft)", duration:"Instantaneous",
+    ingredients:"A large communal pot, mass-quantity restorative broth",
+    desc:"Up to six creatures of your choice within 30 ft each regain 3d8 + your CHA modifier hit points."
+  },
+  "Conjuror's Cassoulet": {
+    level:5, delivery:"Slow Cook (cauldron)", school:"5th-Level Recipe", slowCook:true,
+    cookTime:"60 minutes (1 thermos + Slow Cook)", range:"90 ft (placement)", duration:"Concentration, up to 1 hour",
+    ingredients:"A regional cassoulet keyed to one elemental plane (e.g. coal-roasted for fire)",
+    desc:"You summon an elemental of CR 5 or lower (your choice) of the appropriate elemental type. Functions as conjure elemental — the elemental is friendly to you and obeys your verbal commands while you concentrate."
+  },
+
+  // ── 6th-LEVEL ──────────────────────────────────────────
+  "Heroes' Feast": {
+    level:6, delivery:"Slow Cook (laid table)", school:"6th-Level Recipe", slowCook:true,
+    cookTime:"60 minutes (1 thermos + Slow Cook)", range:"30-ft seating", duration:"24 hours",
+    ingredients:"A great pot of stew set with twelve bowls and twelve cups (a 1,000 gp gem of crystal is consumed)",
+    desc:"Functions as the heroes' feast spell. Up to twelve creatures who partake gain immunity to poison and frightened, advantage on WIS saves, +2d10 hit points, and +2d10 to maximum HP for 24 hours."
+  },
+  "Glowing Glow Soup": {
+    level:6, delivery:"Pressure Cooked", school:"6th-Level Recipe",
+    cookTime:"60 minutes (1 thermos)", range:"60-ft line, 5 ft wide", duration:"Concentration, up to 1 minute",
+    ingredients:"Sun-cured tomatoes, a candle made of solar-blessed beeswax",
+    save:"con",
+    desc:"A 60-ft line of brilliant sunlight pours from the thermos. Each creature in the line: CON save or 6d8 radiant damage (half on success); undead and oozes have disadvantage. You can use an action on each subsequent turn to repeat the line. Sheds bright light 30 ft, dim 30 ft."
+  },
+
+  // ── 7th-LEVEL ──────────────────────────────────────────
+  "Plane Shift Pho": {
+    level:7, delivery:"Slow Cook (cauldron)", school:"7th-Level Recipe", slowCook:true,
+    cookTime:"70 minutes (1 thermos + Slow Cook)", range:"Touch (up to 8 willing creatures)", duration:"Instantaneous",
+    ingredients:"Pho broth simmered with a tuning fork attuned to the destination plane (worth 250 gp)",
+    desc:"Up to eight willing creatures sharing a meal are transported to a plane of existence you name. You arrive in a location chosen by the DM. Functions as plane shift (transport mode)."
+  },
+  "Regeneration Reduction": {
+    level:7, delivery:"Slow Cook (cauldron)", school:"7th-Level Recipe", slowCook:true,
+    cookTime:"70 minutes (1 thermos + Slow Cook)", range:"Touch (1 willing creature)", duration:"1 hour",
+    ingredients:"A reduction of three legendary stocks combined into a single thick glaze, a drop of troll blood",
+    desc:"For 1 hour the drinker regains 1 hit point at the start of each of its turns (10 hit points per minute). Severed body parts are restored over 2 minutes if held in place. The creature also can regrow lost organs and limbs over 2 minutes."
+  }
+};
+
+// ══════════════════════════════════════════════════════════════
+// Extend the Soup Savant cookbook with leveled recipes (2-7)
+// so the spell-info popup has a description for every recipe
+// even when level-up grants higher-level entries.
+// ══════════════════════════════════════════════════════════════
+DND_DATA.spells.soupsavant.level2 = ["Lentil Lockdown","Cream of Bear","Healing Hot Pot","Misty Mushroom Mist"];
+DND_DATA.spells.soupsavant.level3 = ["Phoenix Pho","Restorative Ramen","Lightning Lassi","Vacuum-Sealed Stock"];
+DND_DATA.spells.soupsavant.level4 = ["Polymorphic Potage","Reviving Risotto","Stoneskin Stew"];
+DND_DATA.spells.soupsavant.level5 = ["Animate Brunch","Mass Cure Stew","Conjuror's Cassoulet"];
+DND_DATA.spells.soupsavant.level6 = ["Heroes' Feast","Glowing Glow Soup"];
+DND_DATA.spells.soupsavant.level7 = ["Plane Shift Pho","Regeneration Reduction"];
+
+// ══════════════════════════════════════════════════════════════
 // LEGENDARY SOUPS PORTFOLIO (Phmurt Studios)
 // Each legendary soup requires a specific ingredient harvested
 // from one of the most powerful creatures in existence. The
@@ -1768,294 +2065,120 @@ DND_DATA.feats = [
     name: "Sharpshooter",
     prereq: null,
     desc: "Attacking at long range does not impose disadvantage on your ranged weapon attack rolls. Your ranged weapon attacks ignore half cover and three-quarters cover. Before you make an attack with a ranged weapon that you are proficient with, you can choose to take a -5 penalty to the attack roll. If the attack hits, you add +10 to the attack's damage.",
-    benefits: ["No disadvantage at long range", "Ranged attacks ignore half and three-quarters cover", "-5 to hit / +10 damage option with ranged weapons"]
-  },
-  {
-    name: "Shield Master",
-    prereq: null,
-    desc: "If you take the Attack action on your turn, you can use a bonus action to try to shove a creature within 5 feet of you with your shield. If you are not incapacitated, you can add your shield's AC bonus to DEX saving throws you make against a spell or effect that targets only you. If you are subjected to an effect that allows a DEX save for half damage, you can use your reaction to take no damage if you succeed, interposing your shield between yourself and the source of the effect.",
-    benefits: ["Bonus action shield shove after attacking", "+2 (shield bonus) to DEX saves vs single-target spells", "Reaction: take no damage on successful DEX save (half-damage effects)"]
-  },
-  {
-    name: "Skilled",
-    prereq: null,
-    desc: "You gain proficiency in any combination of three skills or tools of your choice.",
-    benefits: ["Gain proficiency in 3 skills or tools of your choice"]
-  },
-  {
-    name: "Skulker",
-    prereq: "Dexterity 13 or higher",
-    desc: "You can try to hide when you are lightly obscured from the creature from which you are hiding. When you are hidden from a creature and miss it with a ranged weapon attack, making the attack does not reveal your position. Dim light does not impose disadvantage on your Perception checks that rely on sight.",
-    benefits: ["Can hide when lightly obscured", "Missing with a ranged attack does not reveal your position", "No disadvantage on Perception in dim light"]
-  },
-  {
-    name: "Spell Sniper",
-    prereq: "Ability to cast at least one spell",
-    desc: "When you cast a spell that requires an attack roll, the spell's range is doubled. Your ranged spell attacks ignore half cover and three-quarters cover. You learn one cantrip that requires an attack roll, chosen from the bard, cleric, druid, sorcerer, warlock, or wizard spell list. Your spellcasting ability for this cantrip uses the same class's ability.",
-    benefits: ["Double range on spell attack spells", "Spell attacks ignore half and three-quarters cover", "Learn 1 attack-roll cantrip from any spell list"]
-  },
-  {
-    name: "Tavern Brawler",
-    prereq: null,
-    desc: "Increase your Strength or Constitution by 1. You are proficient with improvised weapons and unarmed strikes. Your unarmed strike uses a d4 for damage. When you hit a creature with an unarmed strike or an improvised weapon on your turn, you can use a bonus action to attempt to grapple the creature.",
-    asi: {choice: ["str","con"], amount: 1},
-    benefits: ["+1 STR or CON", "Proficiency with improvised weapons and unarmed strikes", "Unarmed strikes deal 1d4", "Bonus action grapple attempt after hitting with an unarmed strike or improvised weapon"]
+    benefits: ["Ignore long range disadvantage", "Ignore half and three-quarters cover", "-5 to hit / +10 damage option on ranged weapon attacks"]
   },
   {
     name: "Tough",
     prereq: null,
     desc: "Your hit point maximum increases by an amount equal to twice your level when you gain this feat. Whenever you gain a level thereafter, your hit point maximum increases by an additional 2 hit points.",
-    benefits: ["HP maximum increases by 2 per character level (retroactive and ongoing)"]
+    benefits: ["+2 HP per character level (retroactive at the moment you take it)"]
   },
   {
     name: "War Caster",
-    prereq: "Ability to cast at least one spell",
-    desc: "You have advantage on Constitution saving throws that you make to maintain your concentration on a spell when you take damage. You can perform the somatic components of spells even when you have weapons or a shield in one or both hands. When a hostile creature's movement provokes an opportunity attack from you, you can use your reaction to cast a spell at the creature rather than making an opportunity attack. The spell must have a casting time of 1 action and target only that creature.",
-    benefits: ["Advantage on concentration saves when taking damage", "Can cast spells with somatic components while holding weapons or a shield", "Reaction: cast a spell as an opportunity attack"]
-  },
-  {
-    name: "Weapon Master",
-    prereq: null,
-    desc: "Increase your Strength or Dexterity by 1. You gain proficiency with four weapons of your choice. Each one must be a simple or martial weapon.",
-    asi: {choice: ["str","dex"], amount: 1},
-    benefits: ["+1 STR or DEX", "Gain proficiency with 4 weapons of your choice"]
+    prereq: "The ability to cast at least one spell",
+    desc: "You have advantage on Constitution saving throws that you make to maintain your concentration on a spell when you take damage. You can perform the somatic components of spells even when you have weapons or a shield in one or both hands. When a hostile creature's movement provokes an opportunity attack from you, you can use your reaction to cast a spell at the creature, rather than making an opportunity attack. The spell must have a casting time of 1 action and must target only that creature.",
+    benefits: ["Advantage on CON saves to maintain concentration", "Cast somatic spells while holding weapons/shields", "Reaction: cast a 1-action spell instead of an opportunity attack"]
   }
 ];
 
-// ── MULTICLASS PREREQUISITES (SRD 5.1) ──
-// To multiclass INTO a class, you must meet these ability score minimums.
-// The "or" key means either the main ability OR the "or" ability meets the 13 threshold.
+// ── MULTICLASS PREREQUISITES (XGtE) ──
+// minimum scores required to multiclass into a class.
 DND_DATA.multiclassPrereqs = {
-  barbarian: { str:13 },
-  bard:      { cha:13 },
-  cleric:    { wis:13 },
-  druid:     { wis:13 },
-  fighter:   { str:13, or:'dex' },
-  monk:      { dex:13, wis:13 },
-  paladin:   { str:13, cha:13 },
-  ranger:    { dex:13, wis:13 },
-  rogue:     { dex:13 },
-  sorcerer:  { cha:13 },
-  warlock:   { cha:13 },
-  wizard:    { int:13 }
+  barbarian: {str:13},
+  bard:      {cha:13},
+  cleric:    {wis:13},
+  druid:     {wis:13},
+  fighter:   {strOr:{str:13, dex:13}},
+  monk:      {dex:13, wis:13},
+  paladin:   {str:13, cha:13},
+  ranger:    {dex:13, wis:13},
+  rogue:     {dex:13},
+  sorcerer:  {cha:13},
+  warlock:   {cha:13},
+  wizard:    {int:13},
+  // Soup Savant: Charisma is the soupcooking ability
+  soupsavant:{cha:13}
 };
 
-// ── MULTICLASS SPELLCASTING WEIGHT ──
-// Weight for calculating multiclass caster level (full casters = 1, half-casters = 0.5, non-casters = 0)
+// Spellcasting weight for multiclass spell-slot calculations
+// Full caster = 1, half caster = 0.5, third caster = 0.33, others = 0
 DND_DATA.spellcastingWeight = {
-  bard: 1, cleric: 1, druid: 1, sorcerer: 1, wizard: 1,
-  paladin: 0.5, ranger: 0.5,
-  fighter: 0, barbarian: 0, monk: 0, rogue: 0, warlock: 'pact'
+  bard:1, cleric:1, druid:1, sorcerer:1, wizard:1,
+  paladin:0.5, ranger:0.5,
+  // Soup Savant follows the full-caster cadence (5th-level slots at L9, etc.)
+  soupsavant:1,
+  warlock:0
 };
 
-// ── MULTICLASS SPELL SLOT TABLE ──
-// Indexed by caster level (0-20), each entry is an array of max spell slots per spell level
+// Multiclass slot table: index = total caster level, value = slots[]
 DND_DATA.multiclassSlotTable = [
-  [],            // 0
-  [2],           // 1
-  [3],           // 2
-  [4,2],         // 3
-  [4,3],         // 4
-  [4,3,2],       // 5
-  [4,3,3],       // 6
-  [4,3,3,1],     // 7
-  [4,3,3,2],     // 8
-  [4,3,3,3,1],   // 9
-  [4,3,3,3,2],   // 10
-  [4,3,3,3,2,1], // 11
-  [4,3,3,3,2,1], // 12
-  [4,3,3,3,2,1,1], // 13
-  [4,3,3,3,2,1,1], // 14
-  [4,3,3,3,2,1,1,1], // 15
-  [4,3,3,3,2,1,1,1], // 16
-  [4,3,3,3,2,1,1,1,1], // 17
-  [4,3,3,3,3,1,1,1,1], // 18
-  [4,3,3,3,3,2,1,1,1], // 19
-  [4,3,3,3,3,2,2,1,1]  // 20
+  null,
+  [2],[3],[4,2],[4,3],[4,3,2],[4,3,3],[4,3,3,1],[4,3,3,2],[4,3,3,3,1],[4,3,3,3,2],
+  [4,3,3,3,2,1],[4,3,3,3,2,1],[4,3,3,3,2,1,1],[4,3,3,3,2,1,1],
+  [4,3,3,3,2,1,1,1],[4,3,3,3,2,1,1,1],[4,3,3,3,2,1,1,1,1],
+  [4,3,3,3,3,1,1,1,1],[4,3,3,3,3,2,1,1,1],[4,3,3,3,3,2,2,1,1]
 ];
 
-// ── MULTICLASS PROFICIENCY GAINS ──
-// What proficiencies a character gains when multiclassing into each class
+// Multiclass proficiency gains (XGtE)
 DND_DATA.multiclassProfGains = {
-  barbarian: { armor: ['Shields'], weapons: ['Simple weapons', 'Martial weapons'] },
-  bard:      { armor: ['Light armor'], weapons: [], skills: 1 },
-  cleric:    { armor: ['Light armor', 'Medium armor', 'Shields'], weapons: [] },
-  druid:     { armor: ['Light armor', 'Medium armor', 'Shields (nonmetal)'], weapons: [] },
-  fighter:   { armor: ['Light armor', 'Medium armor', 'Shields'], weapons: ['Simple weapons', 'Martial weapons'] },
-  monk:      { armor: [], weapons: ['Simple weapons', 'Shortswords'] },
-  paladin:   { armor: ['Light armor', 'Medium armor', 'Shields'], weapons: ['Simple weapons', 'Martial weapons'] },
-  ranger:    { armor: ['Light armor', 'Medium armor', 'Shields'], weapons: ['Simple weapons', 'Martial weapons'], skills: 1 },
-  rogue:     { armor: ['Light armor'], weapons: [], skills: 1, tools: ["Thieves' tools"] },
-  sorcerer:  { armor: [], weapons: [] },
-  warlock:   { armor: ['Light armor'], weapons: ['Simple weapons'] },
-  wizard:    { armor: [], weapons: [] }
+  barbarian: {armor:["Shields"], weapons:["Simple weapons","Martial weapons"]},
+  bard:      {armor:["Light armor"], skills:1},
+  cleric:    {armor:["Light armor","Medium armor","Shields"]},
+  druid:     {armor:["Light armor","Medium armor","Shields (nonmetal)"]},
+  fighter:   {armor:["Light armor","Medium armor","Shields"], weapons:["Simple weapons","Martial weapons"]},
+  monk:      {weapons:["Simple weapons","Shortswords"]},
+  paladin:   {armor:["Light armor","Medium armor","Shields"], weapons:["Simple weapons","Martial weapons"]},
+  ranger:    {armor:["Light armor","Medium armor","Shields"], weapons:["Simple weapons","Martial weapons"], skills:1},
+  rogue:     {armor:["Light armor"], skills:1, tools:["Thieves' tools"]},
+  sorcerer:  {},
+  warlock:   {armor:["Light armor"], weapons:["Simple weapons"]},
+  wizard:    {},
+  soupsavant:{armor:["Light armor"], weapons:["Simple weapons","Nets"], tools:["Cook's utensils","Alchemist's supplies"]}
 };
 
-// ── ALL D&D LANGUAGES ──
-DND_DATA.featLanguages = [
-  'Common', 'Dwarvish', 'Elvish', 'Giant', 'Gnomish', 'Goblin',
-  'Halfling', 'Orc', 'Abyssal', 'Celestial', 'Draconic',
-  'Deep Speech', 'Infernal', 'Primordial', 'Sylvan', 'Undercommon'
-];
+DND_DATA.featLanguages = ["Abyssal","Celestial","Common","Deep Speech","Draconic","Dwarvish","Elvish","Giant","Gnomish","Goblin","Halfling","Infernal","Orc","Primordial","Sylvan","Undercommon"];
 
-// ── ABILITY DESCRIPTIONS ──
 DND_DATA.abilityDescriptions = {
-  str: 'Measures natural athleticism and bodily power. Affects melee attacks, carrying capacity, and physical feats.',
-  dex: 'Measures agility, reflexes, and balance. Affects ranged attacks, AC, and initiative.',
-  con: 'Measures health, stamina, and vital force. Affects HP, concentration saves, and death saves.',
-  int: 'Measures mental acuity, information recall, and analytical skill. Affects investigation, nature knowledge, and spell attacks for wizards.',
-  wis: 'Measures awareness, intuition, and insight. Affects perception, survival, and spell attacks for clerics/druids.',
-  cha: 'Measures confidence, eloquence, and leadership. Affects persuasion, deception, and spell attacks for bards/sorcerers/warlocks.'
+  str: "Physical power, athletic training, and the extent to which you can exert raw physical force.",
+  dex: "Agility, reflexes, balance, and poise.",
+  con: "Health, stamina, and vital force.",
+  int: "Mental acuity, memory recall, and analytical reasoning.",
+  wis: "Awareness, intuition, insight, and perceptiveness about the world.",
+  cha: "Force of personality, persuasiveness, leadership, and confidence."
 };
 
-// ── SKILL DESCRIPTIONS ──
 DND_DATA.skillDescriptions = {
-  'Acrobatics': 'Your ability to stay on your feet in tricky situations. Used for tumbling, balancing, and dodging. (DEX)',
-  'Animal Handling': 'Calm down a domesticated animal or intuit an animal\'s intentions and moods. (WIS)',
-  'Arcana': 'Your ability to recall lore about spells, magic items, planes of existence, and other arcane matters. (INT)',
-  'Athletics': 'Covers difficult situations you encounter while climbing, jumping, or swimming. (STR)',
-  'Deception': 'Your ability to convincingly hide the truth, whether verbally or through your actions. (CHA)',
-  'History': 'Your ability to recall lore about historical events, legendary people, ancient kingdoms, and similar matters. (INT)',
-  'Insight': 'Your ability to determine the true intentions of a creature, such as when searching out a lie. (WIS)',
-  'Intimidation': 'When you attempt to influence someone through overt threats, hostile actions, and physical violence. (CHA)',
-  'Investigation': 'When you look around for clues and make deductions based on those clues. You might search an area for hidden objects or machinery. (INT)',
-  'Medicine': 'The Medicine skill lets you try to stabilize a dying companion or diagnose an illness. (WIS)',
-  'Nature': 'Your ability to recall lore about terrain, plants and animals, seasons, and weather. (INT)',
-  'Perception': 'Your ability to spot, hear, or otherwise detect the presence of something. It measures your awareness of your surroundings. (WIS)',
-  'Performance': 'Your ability to delight an audience with music, dance, acting, storytelling, or some other form of entertainment. (CHA)',
-  'Persuasion': 'When you attempt to influence someone or a group of people with tact, social graces, or good nature. (CHA)',
-  'Religion': 'Your ability to recall lore about gods, rites and prayers, religious hierarchies, holy symbols, and the practices of secret cults. (INT)',
-  'Sleight of Hand': 'Whenever you attempt an act of legerdemain or manual trickery, such as planting something on someone else or concealing an object. (DEX)',
-  'Stealth': 'Make a Stealth check when you attempt to hide from notice, slip away without being seen or heard, or sneak past guards. (DEX)',
-  'Survival': 'Your ability to track other creatures and to hunt wild animals for food, to find shelter, to navigate by the stars, and to know which plants are edible. (WIS)'
+  "Acrobatics":      "Stay on your feet in tricky situations, perform stunts, and maintain balance.",
+  "Animal Handling": "Calm, control, or read the intent of an animal.",
+  "Arcana":          "Recall lore about spells, magical items, planes of existence, and arcane symbols.",
+  "Athletics":       "Climb, jump, swim, and other physical exertion.",
+  "Deception":       "Convincingly hide the truth, verbally or through actions.",
+  "History":         "Recall lore about past events, legendary people, ancient kingdoms, and wars.",
+  "Insight":         "Determine the true intentions of a creature.",
+  "Intimidation":    "Influence someone through threats or hostile actions.",
+  "Investigation":   "Look for clues and make deductions based on them.",
+  "Medicine":        "Stabilize a dying companion or diagnose an illness.",
+  "Nature":          "Recall lore about terrain, plants, animals, weather, and natural cycles.",
+  "Perception":      "Spot, hear, or otherwise detect the presence of something.",
+  "Performance":     "Delight an audience with music, dance, acting, or other entertainment.",
+  "Persuasion":      "Influence someone with tact, social grace, or good nature.",
+  "Religion":        "Recall lore about deities, rites, prayers, and religious hierarchies.",
+  "Sleight of Hand": "Pick a lock, plant something, or pickpocket someone.",
+  "Stealth":         "Move silently, hide from a creature, or pass unnoticed.",
+  "Survival":        "Track, forage, navigate the wilderness, and predict the weather."
 };
 
-// ── FEAT TOOLS (from tool proficiencies) ──
-DND_DATA.featTools = [
-  'Thieves\' tools', 'Climbing kit', 'Forgery kit', 'Disguise kit', 'Herbalism kit',
-  'Alchemist\'s supplies', 'Brewer\'s supplies', 'Calligrapher\'s supplies', 'Carpenter\'s tools',
-  'Cartographer\'s tools', 'Cobbler\'s tools', 'Cook\'s utensils', 'Glassblower\'s tools',
-  'Jeweler\'s tools', 'Leatherworker\'s tools', 'Mason\'s tools', 'Painter\'s supplies',
-  'Potter\'s tools', 'Smith\'s tools', 'Tinker\'s tools', 'Weaver\'s tools',
-  'Lute', 'Horn', 'Violin', 'Flute', 'Drum', 'Bagpipe', 'Viol', 'Mandolin',
-  'Gaming set', 'Dice set', 'Playing cards', 'Navigator\'s tools', 'Vehicles (land)', 'Vehicles (water)'
-];
+DND_DATA.featTools = ["Alchemist's supplies","Brewer's supplies","Calligrapher's supplies","Carpenter's tools","Cartographer's tools","Cobbler's tools","Cook's utensils","Glassblower's tools","Jeweler's tools","Leatherworker's tools","Mason's tools","Painter's supplies","Potter's tools","Smith's tools","Tinker's tools","Weaver's tools","Woodcarver's tools"];
 
-// ── SUBCLASS DATA ──
+// Subclass selection level by class
 DND_DATA.subclassLevel = {
-  barbarian: 3,
-  bard: 3,
-  cleric: 1,
-  druid: 2,
-  fighter: 3,
-  monk: 3,
-  paladin: 3,
-  ranger: 3,
-  rogue: 3,
-  sorcerer: 1,
-  warlock: 1,
-  wizard: 2
+  barbarian:3, bard:3, cleric:1, druid:2, fighter:3, monk:3,
+  paladin:3, ranger:3, rogue:3, sorcerer:1, warlock:1, wizard:2,
+  soupsavant:99 // no subclass selection
 };
 
+// Per-class subclass features (level 3+ for most classes; soupsavant has none)
 DND_DATA.subclasses = {
-  fighter: [
-    { id:'champion', name:'Champion', flavorText:'The archetypal knight, with martial prowess and physical resilience.', features:[
-      {level:3, name:'Improved Critical', desc:'Your weapon attacks score a critical hit on a roll of 19 or 20.'},
-      {level:7, name:'Remarkable Athlete', desc:'Whenever you make an Athletics, Acrobatics, or Sleight of Hand check using STR, DEX, or INT, add a d4 bonus.'},
-      {level:10, name:'Additional Magical Item', desc:'You gain an additional magical item of your choice.'},
-      {level:15, name:'Superior Critical', desc:'Your weapon attacks now score a critical hit on a roll of 18-20.'},
-      {level:18, name:'Survivor', desc:'At the start of each of your turns, regain 5 HP if you have at least 1 HP and weren\'t incapacitated.'}
-    ]},
-    { id:'battle-master', name:'Battle Master', flavorText:'A tactician who uses maneuvers and superiority dice to control the battlefield.', features:[
-      {level:3, name:'Combat Superiority', desc:'You learn maneuvers. You gain superiority dice equal to 4 d8s. Use them to fuel maneuvers.'},
-      {level:7, name:'Know Your Enemy', desc:'Action: learn target\'s ability scores after seeing them attack.'},
-      {level:10, name:'Improved Combat Superiority', desc:'Your superiority dice change to d10s.'},
-      {level:15, name:'Relentless', desc:'When you roll initiative and have no superiority dice remaining, regain 1.'},
-      {level:18, name:'Master of Combat', desc:'Your superiority dice change to d12s.'}
-    ]},
-    { id:'eldritch-knight', name:'Eldritch Knight', flavorText:'A martial spellcaster who blends sword and sorcery for devastating effect.', features:[
-      {level:3, name:'Spellcasting', desc:'You gain spellcasting ability, learning Abjuration or Evocation spells.'},
-      {level:7, name:'War Magic', desc:'When you use the Attack action on your turn, you can cast a cantrip using a bonus action.'},
-      {level:10, name:'Eldritch Strike', desc:'When you hit with a weapon attack, add your spell damage on top.'},
-      {level:15, name:'Arcane Charge', desc:'When you cast a spell, use Bonus Action to move 30 feet in a straight line.'},
-      {level:18, name:'Improved War Magic', desc:'Attacks do not provoke opportunity attacks when you teleport or dash via spells.'}
-    ]}
-  ],
-  rogue: [
-    { id:'thief', name:'Thief', flavorText:'A criminal operative who relies on cunning and stealth to pursue their goals.', features:[
-      {level:3, name:'Fast Hands', desc:'Use a bonus action to take the Use an Object action, disarm a trap, or pick a lock.'},
-      {level:9, name:'Second-Story Work', desc:'You gain advantage on Strength (Athletics) checks and don\'t take damage from a fall under 30 ft.'},
-      {level:13, name:'Supreme Sneak', desc:'Advantage on Stealth checks if you move no more than half your speed.'},
-      {level:17, name:'Use Magic Device', desc:'You can use any magical item regardless of class, race, and ability score requirements.'}
-    ]},
-    { id:'assassin', name:'Assassin', flavorText:'A master of poisons, infiltration, and sudden death.', features:[
-      {level:3, name:'Assassinate', desc:'You have advantage on attack rolls against creatures that haven\'t taken a turn.'},
-      {level:9, name:'Evasion', desc:'When you\'re subjected to an effect that allows a DEX save for half damage, take no damage on success.'},
-      {level:13, name:'Infiltration Expertise', desc:'Gain advantage on Deception and Stealth checks to pass yourself off as someone or something else.'},
-      {level:17, name:'Death Strike', desc:'When you hit with your assassinate attack, target must make a CON save or take 6d6 poison damage.'}
-    ]},
-    { id:'arcane-trickster', name:'Arcane Trickster', flavorText:'A mage-rogue blend wielding enchantment and illusion magic.', features:[
-      {level:3, name:'Spellcasting', desc:'You learn Enchantment and Illusion spells using Intelligence as your spellcasting ability.'},
-      {level:9, name:'Magical Ambush', desc:'If you\'re hidden, creatures can\'t see you when you cast a spell. You have advantage on the attack roll.'},
-      {level:13, name:'Versatile Trickster', desc:'Use Mage Hand Legerdemain to cast any spell that has a range of self on a target wearing the hand.'},
-      {level:17, name:'Master Trickster', desc:'Use your Mage Hand Legerdemain action bonus action. Can use the hand to use a Magic Wand.'}
-    ]}
-  ],
-  wizard: [
-    { id:'abjuration', name:'Abjuration', flavorText:'Masters of protection and warding magic who shield allies and banish foes.', features:[
-      {level:2, name:'Abjuration Savant', desc:'Abjuration spells cost 25% less to copy into your spellbook. Learn more cantrips.'},
-      {level:6, name:'Arcane Ward', desc:'Create a protective ward with HP = your wizard level + INT mod. Damaged ward regains 1 HP/turn you cast abjuration spell.'},
-      {level:10, name:'Projected Ward', desc:'Your Arcane Ward can protect a creature within 30 feet that you can see.'},
-      {level:14, name:'Improved Abjuration', desc:'When creatures you can see within 60 ft fail a save vs your spell, they gain disadvantage on the next save.'}
-    ]},
-    { id:'conjuration', name:'Conjuration', flavorText:'Specialists in summoning creatures, objects, and teleportation.', features:[
-      {level:2, name:'Conjuration Savant', desc:'Conjuration spells cost 25% less to copy into your spellbook.'},
-      {level:6, name:'Minor Conjuration', desc:'You can use an action to conjure nonmagical object (< 1 lb, < 1 ft). It vanishes after 1 hour or when damaged.'},
-      {level:10, name:'Benign Transposition', desc:'You can use an action to teleport up to 30 ft to an unoccupied space you can see.'},
-      {level:14, name:'Focused Conjuration', desc:'Conjured creatures don\'t require concentration and can\'t be dismissed.'}
-    ]},
-    { id:'divination', name:'Divination', flavorText:'Seers and scriers who pierce the veil of the future and discern hidden truths.', features:[
-      {level:2, name:'Divination Savant', desc:'Divination spells cost 25% less to copy into your spellbook.'},
-      {level:6, name:'Portent', desc:'When you finish a long rest, roll 2d20. You can use these rolls to replace ability checks, attacks, or saves you see being made.'},
-      {level:10, name:'Expert Divination', desc:'Casting divination spells doesn\'t require concentration. You gain an additional Portent roll.'},
-      {level:14, name:'The Third Eye', desc:'Action: gain one of darkvision 60 ft, ethereal sight 60 ft, greater comprehension, or see invisibility. Once per short rest.'}
-    ]},
-    { id:'enchantment', name:'Enchantment', flavorText:'Wielders of charm and compulsion who bend minds to their will.', features:[
-      {level:2, name:'Enchantment Savant', desc:'Enchantment spells cost 25% less to copy into your spellbook.'},
-      {level:2, name:'Hypnotic Gaze', desc:'Action: charm a creature within 5 ft (WIS save or charmed; speed 0 and incapacitated until end of your next turn).'},
-      {level:6, name:'Instinctive Charm', desc:'When a creature within 30 ft attacks you, redirect the attack to another creature within range (WIS save).'},
-      {level:10, name:'Split Enchantment', desc:'When you cast an enchantment spell that targets one creature, you can target a second creature with it.'},
-      {level:14, name:'Alter Memories', desc:'When you charm a creature, you can also cause it to forget the encounter when the spell ends.'}
-    ]},
-    { id:'evocation', name:'Evocation', flavorText:'Masters of raw elemental power, hurling fire, ice, and lightning.', features:[
-      {level:2, name:'Evocation Savant', desc:'Evocation spells cost 25% less to copy into your spellbook.'},
-      {level:2, name:'Sculpt Spells', desc:'When you cast an evocation spell that affects others, you can carve out safe spaces in the spell for allies.'},
-      {level:6, name:'Potent Cantrip', desc:'Damaging cantrips that allow a save deal half damage on a successful save.'},
-      {level:10, name:'Empowered Evocation', desc:'Add your INT modifier to one damage roll of any wizard evocation spell you cast.'},
-      {level:14, name:'Overchannel', desc:'Once per long rest, deal maximum damage with an evocation spell of 5th level or lower.'}
-    ]},
-    { id:'illusion', name:'Illusion', flavorText:'Weavers of false images and trickery, who confound senses and mislead minds.', features:[
-      {level:2, name:'Illusion Savant', desc:'Illusion spells cost 25% less to copy into your spellbook.'},
-      {level:2, name:'Improved Minor Illusion', desc:'You learn the minor illusion cantrip and can create both sound and image with one casting.'},
-      {level:6, name:'Malleable Illusions', desc:'You can use an action to change the nature of an illusion spell you have cast.'},
-      {level:10, name:'Illusory Self', desc:'When a creature attacks you, use a reaction to interpose an illusory duplicate; the attack misses automatically.'},
-      {level:14, name:'Illusory Reality', desc:'When you cast an illusion spell of 1st level or higher, you can make one inanimate object real for 1 minute.'}
-    ]},
-    { id:'necromancy', name:'Necromancy', flavorText:'Manipulators of life force who command the undead and drain the living.', features:[
-      {level:2, name:'Necromancy Savant', desc:'Necromancy spells cost 25% less to copy into your spellbook.'},
-      {level:2, name:'Grim Harvest', desc:'When you kill a creature with a spell, regain HP equal to twice the spell\'s level (thrice for necromancy spells).'},
-      {level:6, name:'Undead Thralls', desc:'You add the animate dead spell to your spellbook. Skeletons and zombies you create gain bonus HP and damage.'},
-      {level:10, name:'Inured to Undeath', desc:'You have resistance to necrotic damage; your hit point maximum cannot be reduced.'},
-      {level:14, name:'Command Undead', desc:'Action: target an undead within 60 ft (CHA save vs your spell save DC) — on fail it becomes friendly to you and obeys commands.'}
-    ]},
-    { id:'transmutation', name:'Transmutation', flavorText:'Shapers of matter who transform substances and bestow magical alterations.', features:[
-      {level:2, name:'Transmutation Savant', desc:'Transmutation spells cost 25% less to copy into your spellbook.'},
-      {level:2, name:'Minor Alchemy', desc:'You can transmute one nonmagical object (up to 1 cu ft) into a different substance for 1 hour.'},
-      {level:6, name:'Transmuter\'s Stone', desc:'Spend 8 hours to create a stone that grants a benefit (darkvision, +10 speed, CON proficiency, or resistance to a damage type) to whoever carries it.'},
-      {level:10, name:'Shapechanger', desc:'You add polymorph to your spellbook. You can cast it on yourself without expending a spell slot, transforming into a beast of CR 1 or lower.'},
-      {level:14, name:'Master Transmuter', desc:'Use your Transmuter\'s Stone to perform one of: major transformation, panacea, restore life, or restore youth.'}
-    ]}
-  ],
-  // Soup Savant: no subclasses in the source homebrew portfolio.
+  // Soup Savant has no subclasses in the source homebrew portfolio.
   soupsavant: []
 };

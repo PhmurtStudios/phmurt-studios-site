@@ -1912,6 +1912,18 @@ function selectClass(id){
   // Update spell step appearance
   const step7=document.getElementById('step7item');
   if(step7) step7.style.display=DND_DATA.classes[id].spellcastingAbility?'':'none';
+  // Soup Savant: relabel the spell step nav + page so it reads as "Soups" / "Soup Recipes"
+  var isSav = (id === 'soupsavant');
+  var sidebarLabel = document.querySelector('#step7item .cb-step-label');
+  var sidebarSub   = document.getElementById('sl-spells');
+  if(sidebarLabel) sidebarLabel.textContent = isSav ? 'Soups' : 'Spells';
+  if(sidebarSub)   sidebarSub.textContent   = isSav ? 'Known soups' : 'Known spells';
+  var titleEl = document.getElementById('spellStepTitle');
+  var subEl   = document.getElementById('spellStepSub');
+  if(titleEl) titleEl.textContent = isSav ? 'Soups' : 'Spells';
+  if(subEl)   subEl.textContent   = isSav ? 'Choose your known soup recipes' : 'Choose your known spells';
+  var equipNextBtn = document.querySelector('#panel6 .cb-btn-primary');
+  if(equipNextBtn) equipNextBtn.textContent = isSav ? 'Continue to Soups →' : 'Continue to Spells →';
   renderClassDetail(id); updateMiniSummary();
 }
 function renderClassDetail(id){
@@ -2324,9 +2336,19 @@ function renderSpells(){
     return;
   }
 
-  if(titleEl) titleEl.textContent='Spells';
-  if(subEl) subEl.textContent='Choose your known spells';
-  if(nextBtn) nextBtn.textContent='Continue to Details →';
+  // Soup Savant: relabel everywhere "Spells" appears to "Soups"
+  var isSavantUI = (C.cls==='soupsavant');
+  if(titleEl) titleEl.textContent = isSavantUI ? 'Soups' : 'Spells';
+  if(subEl)   subEl.textContent   = isSavantUI ? 'Choose your known soup recipes' : 'Choose your known spells';
+  if(nextBtn) nextBtn.textContent = 'Continue to Details →';
+  // Sidebar nav step label + sublabel
+  var sidebarLabel = document.querySelector('#step7item .cb-step-label');
+  var sidebarSub   = document.getElementById('sl-spells');
+  if(sidebarLabel) sidebarLabel.textContent = isSavantUI ? 'Soups' : 'Spells';
+  if(sidebarSub)   sidebarSub.textContent   = isSavantUI ? 'Known soups' : 'Known spells';
+  // Step 6 (Equipment) "Continue to Spells →" button — relabel if soupsavant
+  var equipNextBtn = document.querySelector('#panel6 .cb-btn-primary');
+  if(equipNextBtn) equipNextBtn.textContent = isSavantUI ? 'Continue to Soups →' : 'Continue to Spells →';
 
   const spellList=DND_DATA.spells[C.cls];
   if(!spellList){
@@ -2662,10 +2684,15 @@ function closeDicePopup(){
 }
 
 function showSpellInfo(spellName, spellLevel){
-  var d = DND_DATA.spellDescriptions && DND_DATA.spellDescriptions[spellName];
+  // Soup Savant recipes pull from a separate descriptions table with
+  // soup-themed labels (Cooking Time, Delivery, Ingredients, Slow Cook).
+  var soup = (DND_DATA.soupDescriptions && DND_DATA.soupDescriptions[spellName]) || null;
+  var d = soup || (DND_DATA.spellDescriptions && DND_DATA.spellDescriptions[spellName]);
   var slotNames = ['Cantrip','1st','2nd','3rd','4th','5th','6th','7th','8th','9th'];
-  var lvNum  = parseInt(spellLevel) || 0;
+  var lvNum  = parseInt(spellLevel);
+  if(isNaN(lvNum)) lvNum = (d && typeof d.level === 'number') ? d.level : 0;
   var lvLabel = slotNames[lvNum] || (lvNum+'th');
+  if(soup) lvLabel = (lvNum === 0 ? 'Instant Soup' : (lvLabel + '-Level Recipe'));
 
   // Remove any existing spell popup
   var existing = document.getElementById('spell-info-overlay');
@@ -2691,16 +2718,30 @@ function showSpellInfo(spellName, spellLevel){
     : (d.save && d.save !== 'none'
       ? '<span style="font-family:Cinzel,serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:#8b7a2e;border:1px solid #8b7a2e;padding:2px 7px;margin-left:8px;">' + d.save.toUpperCase() + ' SAVE</span>'
       : '');
+  // Slow Cook ribbon (soup-only; matches the PDF's "Slow Cook" tag)
+  var slowCookBadge = (soup && d.slowCook)
+    ? '<span style="font-family:Cinzel,serif;font-size:7px;letter-spacing:2px;text-transform:uppercase;color:#8b7a2e;border:1px solid #8b7a2e;padding:2px 7px;margin-left:8px;">SLOW COOK</span>'
+    : '';
+
+  // Stat row labels — soup popups use soup-themed labels; spell popups use D&D labels.
+  var lblTime  = soup ? 'Cooking Time' : 'Casting Time';
+  var valTime  = soup ? (d.cookTime || '—') : (d.castTime || '—');
+  var lblRange = soup ? 'Delivery / Range' : 'Range';
+  var valRange = soup ? ((d.delivery || '—') + ' · ' + (d.range || '—')) : (d.range || '—');
+  var lblDur   = 'Duration';
+  var valDur   = d.duration || '—';
+  var lblComp  = soup ? 'Ingredients' : 'Components';
+  var valComp  = soup ? (d.ingredients || '—') : (d.components || '—');
 
   overlay.innerHTML = '<div class="spell-info-box">'
     + '<button class="spell-info-close" onclick="document.getElementById(\'spell-info-overlay\').remove()">×</button>'
-    + '<div class="spell-info-name">' + escapeHtml(spellName) + atkBadge + '</div>'
-    + '<div class="spell-info-school">' + escapeHtml(d.school||'') + ' · ' + lvLabel + ' Level</div>'
+    + '<div class="spell-info-name">' + escapeHtml(spellName) + atkBadge + slowCookBadge + '</div>'
+    + '<div class="spell-info-school">' + escapeHtml(d.school||'') + ' · ' + escapeHtml(lvLabel) + '</div>'
     + '<div class="spell-info-stats">'
-    + '<div class="spell-info-stat"><div class="spell-info-stat-label">Casting Time</div><div class="spell-info-stat-val">' + escapeHtml(d.castTime||'—') + '</div></div>'
-    + '<div class="spell-info-stat"><div class="spell-info-stat-label">Range</div><div class="spell-info-stat-val">' + escapeHtml(d.range||'—') + '</div></div>'
-    + '<div class="spell-info-stat"><div class="spell-info-stat-label">Duration</div><div class="spell-info-stat-val">' + escapeHtml(d.duration||'—') + '</div></div>'
-    + '<div class="spell-info-stat"><div class="spell-info-stat-label">Components</div><div class="spell-info-stat-val">' + escapeHtml(d.components||'—') + '</div></div>'
+    + '<div class="spell-info-stat"><div class="spell-info-stat-label">' + lblTime + '</div><div class="spell-info-stat-val">' + escapeHtml(valTime) + '</div></div>'
+    + '<div class="spell-info-stat"><div class="spell-info-stat-label">' + lblRange + '</div><div class="spell-info-stat-val">' + escapeHtml(valRange) + '</div></div>'
+    + '<div class="spell-info-stat"><div class="spell-info-stat-label">' + lblDur + '</div><div class="spell-info-stat-val">' + escapeHtml(valDur) + '</div></div>'
+    + '<div class="spell-info-stat"><div class="spell-info-stat-label">' + lblComp + '</div><div class="spell-info-stat-val">' + escapeHtml(valComp) + '</div></div>'
     + '</div>'
     + '<div class="spell-info-desc">' + escapeHtml(d.desc||'') + '</div>'
     + '</div>';
