@@ -1205,20 +1205,26 @@
     }
   };
 
-  function createTemple(deityId, level, city) {
+  var _templeCounter = 0;
+  function createTemple(deityId, level, city, opts) {
     var levelData = TEMPLE_LEVELS[level || 'temple'];
+    var options = opts || {};
+    var rngFn = typeof options.rng === 'function' ? options.rng : Math.random;
+    _templeCounter++;
     return {
-      id: 'temple-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11),
+      id: 'temple_' + Date.now().toString(36) + '_' + _templeCounter + '_' + Math.random().toString(36).slice(2, 8),
       deityId: deityId,
       city: city || 'Unknown',
-      region: 'Unknown',  // Will be set by assignTemples
+      region: options.region || 'Unknown',
       level: level || 'temple',
-      devotion: 30,
-      priests: Math.floor(Math.random() * (levelData ? levelData.maxPriests / 2 : 15)) + 3,
+      devotion: typeof options.devotion === 'number' ? options.devotion : 30,
+      priests: Math.floor(rngFn() * (levelData ? levelData.maxPriests / 2 : 15)) + 3,
       influence: levelData ? levelData.influenceRadius : 15,
       founded: Date.now(),
       upgraded: false,
-      priestNpc: null  // Will be set by assignTemples if available
+      priestNpc: null,
+      // Track per-temple yearly events (festivals, miracles, scandals)
+      eventLog: []
     };
   }
 
@@ -1406,20 +1412,47 @@
   ReligionEngine.prototype.convertRegion = function(deityId, regionName) {
     if (!regionName || !deityId) return null;
 
-    var regionTemples = this.temples.filter(function(t) { return t.city === regionName; });
+    // Match by region OR city (some setups store the region under city)
+    var regionTemples = this.temples.filter(function(t) {
+      return t && (t.region === regionName || t.city === regionName);
+    });
     if (regionTemples.length === 0) return null;
 
-    var targetTemple = regionTemples[Math.floor(Math.random() * regionTemples.length)];
+    // Prefer temples that already worship this deity (boost their devotion);
+    // otherwise convert a random rival temple to the deity.
+    var ownDeity = regionTemples.filter(function(t) { return t.deityId === deityId; });
+    var targetTemple;
+    var converted = false;
+    if (ownDeity.length > 0) {
+      targetTemple = ownDeity[Math.floor(Math.random() * ownDeity.length)];
+    } else {
+      targetTemple = regionTemples[Math.floor(Math.random() * regionTemples.length)];
+      // 50% chance to actually flip the deity
+      if (Math.random() < 0.5) {
+        targetTemple.deityId = deityId;
+        converted = true;
+      }
+    }
     var conversionRate = Math.floor(Math.random() * 20) + 10;
 
-    targetTemple.devotion = Math.min(100, targetTemple.devotion + conversionRate);
+    targetTemple.devotion = Math.min(100, (targetTemple.devotion || 0) + conversionRate);
+    if (Array.isArray(targetTemple.eventLog)) {
+      targetTemple.eventLog.push({
+        type: converted ? 'conversion' : 'devotion-rise',
+        deity: deityId,
+        amount: conversionRate,
+        at: Date.now()
+      });
+    }
 
     return {
       success: true,
       deity: deityId,
       region: regionName,
+      converted: converted,
       conversionRate: conversionRate,
-      newDevotion: targetTemple.devotion
+      newDevotion: targetTemple.devotion,
+      templeId: targetTemple.id
     };
   };
 

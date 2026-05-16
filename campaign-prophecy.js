@@ -107,6 +107,79 @@
     ]
   };
 
+  /**
+   * Evaluate a single trigger against world data.
+   * @param {object} trigger
+   * @param {object} world - { factions, npcs, regions, wars }
+   * @returns {boolean}
+   */
+  function evaluateTrigger(trigger, world) {
+    if (!trigger || !world) return false;
+    try {
+      switch (trigger.type) {
+        case 'faction_power': {
+          const f = (world.factions || []).find(x => x && x.name === trigger.factionName);
+          if (!f) return false;
+          const value = Number(trigger.value);
+          if (isNaN(value)) return false;
+          const power = Number(f.power) || 0;
+          switch (trigger.operator) {
+            case '>': return power > value;
+            case '<': return power < value;
+            case '>=': return power >= value;
+            case '<=': return power <= value;
+            case '==': case '=': return power === value;
+            default: return false;
+          }
+        }
+        case 'npc_dead': {
+          const npc = (world.npcs || []).find(n => n && n.name === trigger.npcName);
+          return !!(npc && (npc.dead || npc.status === 'dead'));
+        }
+        case 'region_state': {
+          const r = (world.regions || []).find(x => x && x.name === trigger.regionName);
+          return !!(r && r.state === trigger.state);
+        }
+        case 'war_declared': {
+          const wars = world.wars || [];
+          return wars.some(w =>
+            w && (
+              (w.attacker === trigger.faction1 && w.defender === trigger.faction2) ||
+              (w.attacker === trigger.faction2 && w.defender === trigger.faction1)
+            )
+          );
+        }
+        default:
+          return !!trigger.met; // Custom triggers stay manual
+      }
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /**
+   * Evaluate all triggers on a prophecy, return updated prophecy with
+   * trigger.met flags set and (optionally) status auto-advanced.
+   */
+  function evaluateProphecyTriggers(prophecy, world, opts) {
+    if (!prophecy || !Array.isArray(prophecy.triggers)) return prophecy;
+    const options = opts || {};
+    const updated = { ...prophecy };
+    updated.triggers = prophecy.triggers.map(t => ({
+      ...t,
+      met: evaluateTrigger(t, world)
+    }));
+    const mode = updated.triggerMode || 'all';
+    const fulfilled = mode === 'any'
+      ? updated.triggers.some(t => t.met)
+      : updated.triggers.every(t => t.met);
+    if (fulfilled && updated.status !== 'fulfilled' && options.autoFulfill !== false) {
+      updated.status = 'fulfilled';
+      updated.fulfilledAt = Date.now();
+    }
+    return updated;
+  }
+
   function initializeReligionState() {
     return {
       pantheon: DEFAULT_PANTHEON.map(d => ({ ...d })),
@@ -1978,4 +2051,6 @@
   }
 
   window.ProphecyReligionView = ProphecyReligionView;
+  window.evaluateTrigger = evaluateTrigger;
+  window.evaluateProphecyTriggers = evaluateProphecyTriggers;
 })();

@@ -463,10 +463,15 @@
   // SECTION 2: KINGDOM ENGINE (BUG-FIXED)
   // ═══════════════════════════════════════════════════════════════════════════
 
+  function _genKingdomId() {
+    return 'k_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+  }
+
   function initKingdom(name, rulerName, bannerCfg) {
     return {
-      id: Date.now().toString(),
+      id: _genKingdomId(),
       name: name || "New Kingdom",
+      ruler: rulerName || "Unnamed Ruler",
       banner: bannerCfg || { shape: "pointed", border: "ornate", emblem: "lion", bg: "#1a2e20", fg: "#c9a032" },
       founded: Date.now(),
       turn: 0,

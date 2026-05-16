@@ -378,34 +378,69 @@
   // CRAFTING ENGINE
   // ─────────────────────────────────────────────────────────────────────────
 
+  function _genId(prefix) {
+    return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+  }
+
+  function _abilityMod(score) {
+    if (typeof score !== 'number' || isNaN(score)) return 0;
+    return Math.floor((score - 10) / 2);
+  }
+
   class CraftingEngine {
     constructor(campaignData) {
-      this.party = campaignData.party || [];
-      this.strongholds = campaignData.strongholds || [];
-      // Data is managed via setData in React component
+      this.party = (campaignData && campaignData.party) || [];
+      this.strongholds = (campaignData && campaignData.strongholds) || [];
     }
 
     /**
-     * Check if party member can craft recipe
+     * Check if a party member can start a crafting project.
+     * @returns {{canCraft:boolean, reason?:string, missing?:object}}
      */
-    canCraft(party, crafterId, recipeId, materials) {
+    canCraft(party, crafterId, recipeId, materials, gold) {
       const recipe = RECIPES[recipeId];
       if (!recipe) return { canCraft: false, reason: 'Recipe not found' };
 
-      const crafter = party.find(p => p.id === crafterId);
+      const crafter = (party || []).find(p => p && p.id === crafterId);
       if (!crafter) return { canCraft: false, reason: 'Crafter not found' };
 
-      // Check tool proficiency (simplified: all party members can attempt)
-      // In full system, check proficiencies against recipe.tools
-
-      // Check materials
-      for (const [matId, needed] of Object.entries(recipe.materials)) {
-        const have = materials[matId] || 0;
+      // Material check (collect all missing for richer feedback)
+      const inv = materials || {};
+      const missing = {};
+      let missingAny = false;
+      const recipeMats = recipe.materials || {};
+      for (const matId of Object.keys(recipeMats)) {
+        const needed = recipeMats[matId] || 0;
+        const have = inv[matId] || 0;
         if (have < needed) {
-          return {
-            canCraft: false,
-            reason: `Need ${needed} ${MATERIALS[matId]?.name}, have ${have}`
-          };
+          missing[matId] = needed - have;
+          missingAny = true;
+        }
+      }
+      if (missingAny) {
+        const first = Object.keys(missing)[0];
+        const need = missing[first];
+        const matName = (MATERIALS[first] && MATERIALS[first].name) || first;
+        const more = Object.keys(missing).length - 1;
+        const reason = `Need ${need} more ${matName}` + (more > 0 ? ` (and ${more} other material${more > 1 ? 's' : ''})` : '');
+        return { canCraft: false, reason, missing };
+      }
+
+      // Optional gold check
+      if (typeof recipe.goldCost === 'number' && recipe.goldCost > 0) {
+        const haveGold = typeof gold === 'number' ? gold : Infinity;
+        if (haveGold < recipe.goldCost) {
+          return { canCraft: false, reason: `Need ${recipe.goldCost} gp, have ${haveGold}` };
+        }
+      }
+
+      // Tool proficiency check (best-effort against crafter.proficiencies)
+      if (Array.isArray(recipe.tools) && recipe.tools.length > 0) {
+        const profs = (crafter.proficiencies || []).map(s => String(s).toLowerCase());
+        const haveAny = recipe.tools.some(t => profs.includes(String(t).toLowerCase()));
+        if (!haveAny && profs.length > 0) {
+          // Soft-fail: warn but allow
+          return { canCraft: true, warning: `Crafter lacks proficiency in: ${recipe.tools.join(', ')}` };
         }
       }
 
@@ -413,72 +448,159 @@
     }
 
     /**
-     * Start a crafting project
+     * Start a crafting project. Does NOT mutate data — caller must update inventory/projects.
      */
     startProject(data, recipeId, crafterId) {
       const recipe = RECIPES[recipeId];
       if (!recipe) throw new Error('Recipe not found');
 
-      const crafter = data.party?.find(p => p.id === crafterId);
+      const crafter = data.party && data.party.find(p => p && p.id === crafterId);
       if (!crafter) throw new Error('Crafter not found');
 
-      const check = this.canCraft(data.party, crafterId, recipeId, data.crafting?.inventory || {});
+      const check = this.canCraft(
+        data.party,
+        crafterId,
+        recipeId,
+        (data.crafting && data.crafting.inventory) || {},
+        data.gold
+      );
       if (!check.canCraft) throw new Error(check.reason);
 
-      const projectId = 'proj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 9);
-
       return {
-        id: projectId,
+        id: _genId('proj'),
         recipeId,
         crafterId,
         crafterName: crafter.name,
         hoursWorked: 0,
         hoursNeeded: recipe.hours,
         started: Date.now(),
-        status: 'in_progress'
+        startedDate: new Date().toISOString(),
+        status: 'in_progress',
+        warning: check.warning || null
       };
     }
 
     /**
-     * Advance project hours
+     * Advance a project by `hours`. Returns updated project.
      */
     advanceHours(project, hours) {
-      const updated = { ...project, hoursWorked: project.hoursWorked + hours };
-
-      if (updated.hoursWorked >= updated.hoursNeeded) {
+      if (!project) throw new Error('Project required');
+      const h = typeof hours === 'number' && hours > 0 ? hours : 0;
+      const updated = {
+        ...project,
+        hoursWorked: Math.max(0, (project.hoursWorked || 0) + h)
+      };
+      if (updated.hoursWorked >= updated.hoursNeeded && updated.status === 'in_progress') {
         updated.status = 'ready_for_check';
+        updated.readyAt = Date.now();
       }
-
       return updated;
     }
 
     /**
-     * Resolve crafting check (DC vs roll)
-     * Returns: { success, quality, item }
+     * Compute how many days remain at a given hours-per-day pace
      */
-    resolveCraft(recipe, crafter, d20Roll) {
-      const profBonus = Math.ceil(crafter.level / 4) + 1;
-      const abilityMod = 2; // Simplified: average of relevant ability
-      const totalRoll = d20Roll + profBonus + abilityMod;
+    daysRemaining(project, hoursPerDay) {
+      if (!project) return 0;
+      const left = Math.max(0, (project.hoursNeeded || 0) - (project.hoursWorked || 0));
+      const pace = typeof hoursPerDay === 'number' && hoursPerDay > 0 ? hoursPerDay : 8;
+      return Math.ceil(left / pace);
+    }
 
-      const success = totalRoll >= recipe.dc;
-      let quality = 'standard';
+    /**
+     * Cancel a project. Optionally returns a fraction of materials.
+     * @returns {{ project, refundedMaterials }}
+     */
+    cancelProject(project, recipe, refundFraction) {
+      if (!project) throw new Error('Project required');
+      const refunded = {};
+      const frac = typeof refundFraction === 'number'
+        ? Math.max(0, Math.min(1, refundFraction))
+        : 0.5; // default: refund half
+      if (recipe && recipe.materials) {
+        for (const matId of Object.keys(recipe.materials)) {
+          refunded[matId] = Math.floor(recipe.materials[matId] * frac);
+        }
+      }
+      return {
+        project: { ...project, status: 'cancelled', cancelledAt: Date.now() },
+        refundedMaterials: refunded
+      };
+    }
 
-      if (d20Roll === 20) {
-        quality = 'masterwork';
-      } else if (!success && totalRoll >= recipe.dc - 5) {
-        quality = 'flawed';
-      } else if (!success) {
-        quality = 'failed';
+    /**
+     * Resolve a crafting check.
+     * Quality tiers: masterwork (nat 20 / +10 over DC), standard (success), flawed (within 5 of DC),
+     *   failed (more than 5 below DC), catastrophic (nat 1 with material loss).
+     * Uses crafter.intelligence/wisdom/dexterity if present, else falls back to +2.
+     */
+    resolveCraft(recipe, crafter, d20Roll, opts) {
+      if (!recipe) throw new Error('Recipe required');
+      const options = opts || {};
+      const ability = (recipe.ability || 'int').toLowerCase();
+      const score = (crafter && (crafter[ability] != null
+        ? crafter[ability]
+        : (crafter.stats && crafter.stats[ability]))) || null;
+      const abilityMod = score != null ? _abilityMod(score) : 2;
+      const profBonus = crafter && typeof crafter.level === 'number'
+        ? Math.ceil(crafter.level / 4) + 1
+        : 2;
+      const inspirationBonus = options.inspiration ? 2 : 0;
+      const masterworkTools = options.masterworkTools ? 1 : 0;
+
+      const totalRoll = (d20Roll || 0) + profBonus + abilityMod + inspirationBonus + masterworkTools;
+      const dc = recipe.dc || 10;
+
+      let quality;
+      if (d20Roll === 1) quality = 'catastrophic';
+      else if (d20Roll === 20 || totalRoll >= dc + 10) quality = 'masterwork';
+      else if (totalRoll >= dc) quality = 'standard';
+      else if (totalRoll >= dc - 5) quality = 'flawed';
+      else quality = 'failed';
+
+      const success = quality === 'masterwork' || quality === 'standard' || quality === 'flawed';
+      let item = null;
+      if (success && recipe.result) {
+        item = { ...recipe.result, quality, craftedAt: Date.now(), craftedBy: crafter && crafter.name };
+        if (quality === 'masterwork') {
+          item.bonus = (item.bonus || 0) + 1;
+          item.value = Math.round((item.value || 0) * 2);
+          item.note = 'Exceptional craftsmanship.';
+        } else if (quality === 'flawed') {
+          item.value = Math.round((item.value || 0) * 0.5);
+          item.note = 'Visible defects reduce its value.';
+        }
       }
 
+      // Material loss: catastrophic uses up everything; failed loses half
+      let materialLoss = 0;
+      if (quality === 'catastrophic') materialLoss = 1;
+      else if (quality === 'failed') materialLoss = 0.5;
+
       return {
-        success: success || quality === 'flawed' || quality === 'masterwork',
+        success,
         quality,
         totalRoll,
-        needed: recipe.dc,
-        item: quality !== 'failed' ? { ...recipe.result } : null
+        roll: d20Roll,
+        modifiers: { profBonus, abilityMod, inspirationBonus, masterworkTools },
+        needed: dc,
+        item,
+        materialLoss
       };
+    }
+
+    /**
+     * Aggregate inventory value in gold (best-effort)
+     */
+    inventoryValue(inventory) {
+      if (!inventory) return 0;
+      let total = 0;
+      for (const id of Object.keys(inventory)) {
+        const qty = inventory[id] || 0;
+        const mat = MATERIALS[id];
+        if (mat && typeof mat.value === 'number') total += qty * mat.value;
+      }
+      return total;
     }
   }
 

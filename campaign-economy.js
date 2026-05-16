@@ -209,6 +209,13 @@
     };
   }
 
+  // Pre-built lookup so callers don't pay O(n) on every market access.
+  const TRADE_GOODS_BY_ID = (() => {
+    const m = new Map();
+    TRADE_GOODS.forEach(g => m.set(g.id, g));
+    return m;
+  })();
+
   function assignRegionResources(regions, seed) {
     const rng = mulberry32(seed || 42);
     const resourceMap = new Map();
@@ -265,7 +272,9 @@
       this.regions = campaignData.regions || [];
       this.factions = campaignData.factions || [];
       this.cities = campaignData.cities || [];
-      this.tick = 0;
+      // ── BUGFIX: was `this.tick = 0`, which shadowed the prototype tick()
+      //    method and made the entire update loop unreachable. ──
+      this.tickCount = 0;
 
       // Markets: Map<regionId, Map<goodId, price>>
       this.markets = new Map();
@@ -340,7 +349,7 @@
       // ─ Phase 2: Update prices based on supply/demand ─
       this.markets.forEach((regionMarket, regionId) => {
         regionMarket.forEach((price, goodId) => {
-          const good = TRADE_GOODS.find(g => g.id === goodId);
+          const good = TRADE_GOODS_BY_ID.get(goodId); // O(1) instead of .find() (O(n))
           if (!good) return; // Skip if good definition not found
           const supplyMap = this.supply.get(regionId);
           if (!supplyMap) return; // Safety check for region supply
@@ -442,13 +451,14 @@
         }
       }
 
-      this.tick++;
+      this.tickCount++;
 
       return {
         markets: this.markets,
         treasuries: this.treasuries,
         tradeRoutes: this.tradeRoutes,
-        tradeEvents: events
+        tradeEvents: events,
+        tickCount: this.tickCount
       };
     }
 
@@ -465,7 +475,7 @@
       const goods = [];
       const supplyMap = this.supply.get(region.id);
       regionMarket.forEach((price, goodId) => {
-        const good = TRADE_GOODS.find(g => g.id === goodId);
+        const good = TRADE_GOODS_BY_ID.get(goodId);
         if (good) {
           goods.push({
             ...good,
@@ -616,7 +626,7 @@
         factionCount: this.treasuries.size,
         tradeRoutes: { total: totalTradeRoutes, active: activeRoutes },
         categoryPrices,
-        ticks: this.tick
+        ticks: this.tickCount
       };
     }
 
@@ -653,7 +663,8 @@
         treasuries: treasuriesData,
         supply: supplyData,
         tradeRoutes: this.tradeRoutes,
-        tick: this.tick
+        // Field still named `tick` on disk for back-compat with older saves.
+        tick: this.tickCount
       };
     }
 
@@ -701,7 +712,9 @@
       }
 
       if (Array.isArray(data.tradeRoutes)) this.tradeRoutes = data.tradeRoutes;
-      if (typeof data.tick === 'number') this.tick = data.tick;
+      // Accept either old `tick` or new `tickCount` field name on disk.
+      if (typeof data.tickCount === 'number') this.tickCount = data.tickCount;
+      else if (typeof data.tick === 'number') this.tickCount = data.tick;
     }
   }
 

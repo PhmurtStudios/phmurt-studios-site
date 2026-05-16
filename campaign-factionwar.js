@@ -272,11 +272,15 @@ const WORLD_EVENTS = [
    ═══════════════════════════════════════════════════════════════════ */
 
 // ── Seeded RNG for deterministic simulation ──
+// Mulberry32 — better distribution than LCG, deterministic, fast
 function seededRng(seed) {
-  let s = seed;
+  let s = (seed >>> 0) || 1;
   return function() {
-    s = (s * 1103515245 + 12345) & 0x7fffffff;
-    return s / 0x7fffffff;
+    s = (s + 0x6D2B79F5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
 }
 
@@ -588,7 +592,10 @@ function resolvesBattle(attacker, defender, region, state) {
         atk = Math.floor(atk * 0.6); // 40% penalty attacking walls without siege engines
       }
 
-      power += (atk + def) * count * (Math.min(100, army.morale + (cmdBonus.morale || 0)) / 100);
+      // Morale: clamp to 10..100 so a wounded army still fights, but at reduced power.
+      const moraleRaw = (typeof army.morale === 'number' ? army.morale : 70) + (cmdBonus.morale || 0);
+      const morale = Math.max(10, Math.min(100, moraleRaw));
+      power += (atk + def) * count * (morale / 100);
     });
 
     // Commander level bonus (3% per level)
@@ -605,7 +612,8 @@ function resolvesBattle(attacker, defender, region, state) {
     power *= 1 + (army.experience || 0) * 0.01;
 
     // Supply penalty — starving army fights poorly
-    if (army.supply < 30) power *= 0.7 + (army.supply / 100);
+    const supply = typeof army.supply === 'number' ? army.supply : 100;
+    if (supply < 30) power *= 0.7 + Math.max(0, supply) / 100;
 
     return { power, totalModels };
   }

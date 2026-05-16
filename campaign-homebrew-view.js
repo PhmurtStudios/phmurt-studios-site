@@ -1394,7 +1394,7 @@ function CardLibrary({ items, category, onExpand, emptyMsg }) {
       gap: "16px", padding: "20px"
     }}>
       {items.map((item, idx) => (
-        <Component key={idx} {...{ [propName]: item }} onExpand={() => onExpand(idx)} />
+        <Component key={item.id || item._key || idx} {...{ [propName]: item }} onExpand={() => onExpand(item)} />
       ))}
     </div>
   );
@@ -1407,31 +1407,85 @@ function CardLibrary({ items, category, onExpand, emptyMsg }) {
 function ImportModal({ onImport, onClose }) {
   const [jsonText, setJsonText] = React.useState("");
   const [error, setError] = React.useState("");
+  const [previewCount, setPreviewCount] = React.useState(0);
+
+  // Normalize a parsed JSON payload into an array of homebrew item objects.
+  // Accepts: array, single object, or wrapper objects like { monsters: [...] }.
+  const normalize = (parsed) => {
+    if (parsed == null) return [];
+    if (Array.isArray(parsed)) return parsed.filter(x => x && typeof x === 'object');
+    if (typeof parsed === 'object') {
+      // If exactly one array-valued property, treat it as the items list
+      const arrayProps = Object.keys(parsed).filter(k => Array.isArray(parsed[k]));
+      if (arrayProps.length === 1) {
+        return parsed[arrayProps[0]].filter(x => x && typeof x === 'object');
+      }
+      // Otherwise treat the object itself as a single item
+      return [parsed];
+    }
+    return [];
+  };
+
+  // Live preview as the user types
+  React.useEffect(() => {
+    if (!jsonText.trim()) { setPreviewCount(0); setError(""); return; }
+    try {
+      const parsed = JSON.parse(jsonText);
+      const items = normalize(parsed);
+      setPreviewCount(items.length);
+      setError(items.length === 0 ? "No importable items found in this JSON" : "");
+    } catch (e) {
+      setPreviewCount(0);
+      // Don't show parse errors mid-typing — only on Import click
+    }
+  }, [jsonText]);
 
   const handleImport = () => {
     try {
       const parsed = JSON.parse(jsonText);
-      if (Array.isArray(parsed)) {
-        onImport(parsed);
-      } else {
-        onImport([parsed]);
-      }
+      const items = normalize(parsed);
+      if (items.length === 0) { setError("No importable items found"); return; }
+      onImport(items);
       onClose();
     } catch (e) {
       setError("Invalid JSON: " + e.message);
     }
   };
 
+  const handleFile = async (file) => {
+    if (!file) return;
+    try {
+      const text = await file.text();
+      setJsonText(text);
+    } catch (e) {
+      setError("Failed to read file: " + e.message);
+    }
+  };
+
   return (
     <ModalShell title="Import Homebrew" onClose={onClose}>
       <p style={{ color: T.textMuted, fontSize: "13px", marginBottom: "12px" }}>
-        Paste exported JSON data below. Supports single items or arrays.
+        Paste exported JSON or upload a file. Supports single items, arrays, or wrapper objects (e.g. <code>{"{ monsters: [...] }"}</code>).
       </p>
       <textarea value={jsonText} onChange={e => { setJsonText(e.target.value); setError(""); }}
-        placeholder='Paste JSON here...' style={{ ...inputStyle, minHeight: "200px", resize: "vertical", fontFamily: "monospace", fontSize: "12px" }} />
+        placeholder='Paste JSON here...'
+        style={{ ...inputStyle, minHeight: "200px", resize: "vertical", fontFamily: "monospace", fontSize: "12px" }} />
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "8px", gap: "8px" }}>
+        <label style={{ ...secondaryBtn, fontSize: "12px", padding: "6px 12px", cursor: "pointer", display: "inline-block" }}>
+          {"\u{1F4C1} "}Load from file
+          <input type="file" accept=".json,application/json" style={{ display: "none" }}
+            onChange={e => handleFile(e.target.files && e.target.files[0])} />
+        </label>
+        {previewCount > 0 && (
+          <span style={{ fontSize: "12px", color: T.textMuted }}>
+            {previewCount} item{previewCount === 1 ? "" : "s"} ready to import
+          </span>
+        )}
+      </div>
       {error && <div style={{ color: T.crimson, fontSize: "12px", marginTop: "8px" }}>{error}</div>}
       <div style={{ display: "flex", gap: "10px", marginTop: "16px" }}>
-        <button onClick={handleImport} style={{ ...primaryBtn, flex: 1 }}>Import</button>
+        <button onClick={handleImport} style={{ ...primaryBtn, flex: 1 }}
+          disabled={!jsonText.trim()}>Import</button>
         <button onClick={onClose} style={{ ...secondaryBtn, flex: 1 }}>Cancel</button>
       </div>
     </ModalShell>
@@ -1439,29 +1493,62 @@ function ImportModal({ onImport, onClose }) {
 }
 
 function ExportModal({ items, categoryLabel, onClose }) {
-  const jsonStr = JSON.stringify(items, null, 2);
+  const jsonStr = React.useMemo(() => JSON.stringify(items, null, 2), [items]);
   const [copied, setCopied] = React.useState(false);
+  const sizeKb = (jsonStr.length / 1024).toFixed(1);
 
-  const handleCopy = () => {
+  const handleCopy = async () => {
     try {
-      navigator.clipboard.writeText(jsonStr);
+      if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(jsonStr);
+      } else {
+        const ta = document.createElement('textarea');
+        ta.value = jsonStr; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); } finally { document.body.removeChild(ta); }
+      }
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (e) {
       console.error('Failed to copy export to clipboard:', e);
+      if (window.psToast) window.psToast("Copy failed");
+    }
+  };
+
+  const handleDownload = () => {
+    try {
+      const blob = new Blob([jsonStr], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const stamp = new Date().toISOString().slice(0, 10);
+      const safeLabel = String(categoryLabel || 'homebrew').toLowerCase().replace(/\s+/g, '_');
+      a.href = url;
+      a.download = `${safeLabel}_${stamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      console.error('Failed to download export:', e);
+      if (window.psToast) window.psToast("Download failed");
     }
   };
 
   return (
     <ModalShell title={"Export " + categoryLabel} onClose={onClose}>
       <p style={{ color: T.textMuted, fontSize: "13px", marginBottom: "12px" }}>
-        Copy this JSON data to save or share your homebrew {categoryLabel.toLowerCase()}.
+        Copy or download this JSON data to save or share your homebrew {categoryLabel.toLowerCase()}.
+        <span style={{ marginLeft: "8px", color: T.textFaint }}>
+          ({items.length} item{items.length === 1 ? "" : "s"}, {sizeKb} KB)
+        </span>
       </p>
       <textarea readOnly value={jsonStr}
         style={{ ...inputStyle, minHeight: "250px", fontFamily: "monospace", fontSize: "11px", resize: "vertical" }} />
       <div style={{ display: "flex", gap: "10px", marginTop: "16px" }}>
-        <button onClick={handleCopy} style={{ ...primaryBtn, flex: 1 }}>
+        <button onClick={handleCopy} style={{ ...primaryBtn, flex: 1 }} disabled={items.length === 0}>
           {copied ? "Copied!" : "Copy to Clipboard"}
+        </button>
+        <button onClick={handleDownload} style={{ ...secondaryBtn, flex: 1 }} disabled={items.length === 0}>
+          {"\u2B07 "}Download .json
         </button>
         <button onClick={onClose} style={{ ...secondaryBtn, flex: 1 }}>Close</button>
       </div>
@@ -1496,80 +1583,141 @@ window.CampaignHomebrewView = function CampaignHomebrewView({ data, setData, vie
 
   const currentCat = categoryData[activeTab];
 
-  /* Sort + filter */
+  /* Sort + filter — preserves a stable original-index map so 'newest'
+     can sort by insertion order (highest index = most recent) regardless
+     of Array.sort stability quirks. */
   const sorted = React.useMemo(() => {
-    let arr = [...currentCat.data];
+    let arr = currentCat.data.map((item, _origIdx) => ({ item, _origIdx }));
     if (searchTerm) {
       const q = searchTerm.toLowerCase();
-      arr = arr.filter(item => (item.name || "").toLowerCase().includes(q) ||
+      arr = arr.filter(({ item }) =>
+        (item.name || "").toLowerCase().includes(q) ||
         (item.description || "").toLowerCase().includes(q) ||
-        (item.type || "").toLowerCase().includes(q));
+        (item.type || "").toLowerCase().includes(q) ||
+        (Array.isArray(item.tags) && item.tags.some(t => String(t).toLowerCase().includes(q)))
+      );
     }
-    arr.sort((a, b) => {
-      if (sortBy === "name") return (a.name || "").localeCompare(b.name || "");
-      if (sortBy === "cr" && activeTab === "monsters") return (a.cr || 0) - (b.cr || 0);
-      if (sortBy === "level" && (activeTab === "spells" || activeTab === "classFeatures")) return (a.level || 0) - (b.level || 0);
+    const cmp = (a, b) => {
+      const A = a.item, B = b.item;
+      if (sortBy === "name") return (A.name || "").localeCompare(B.name || "");
+      if (sortBy === "cr" && activeTab === "monsters") return (A.cr || 0) - (B.cr || 0);
+      if (sortBy === "level" && (activeTab === "spells" || activeTab === "classFeatures")) return (A.level || 0) - (B.level || 0);
       if (sortBy === "rarity" && activeTab === "items") {
         const order = { common: 0, uncommon: 1, rare: 2, very_rare: 3, legendary: 4, artifact: 5 };
-        return (order[a.rarity] || 0) - (order[b.rarity] || 0);
+        return (order[A.rarity] || 0) - (order[B.rarity] || 0);
       }
-      if (sortBy === "newest") return -1; /* keep order (newest last in array) */
+      if (sortBy === "newest") return b._origIdx - a._origIdx;
       return 0;
-    });
-    return arr;
+    };
+    arr.sort(cmp);
+    return arr.map(x => x.item);
   }, [currentCat.data, searchTerm, sortBy, activeTab]);
 
-  /* CRUD handlers */
+  /* Find the index of an item in the unsorted source array by identity. */
+  const findOrigIndex = React.useCallback((item) => {
+    if (!item) return -1;
+    const arr = currentCat.data;
+    // Fast: identity match
+    let idx = arr.indexOf(item);
+    if (idx >= 0) return idx;
+    // Fallback: id match (handles cases where item is a stale reference)
+    if (item.id != null) {
+      for (let i = 0; i < arr.length; i++) if (arr[i] && arr[i].id === item.id) return i;
+    }
+    return -1;
+  }, [currentCat.data]);
+
+  /* CRUD handlers — operate on item references, not sorted-array indices.
+     Previous version used the sorted-array index as if it indexed into
+     `currentCat.data`, causing edits/deletes to hit the wrong item after
+     sort/filter changed the order. */
   const handleCreate = (form) => {
-    const updated = { ...homebrew, [activeTab]: [...currentCat.data, form] };
+    if (!form || typeof form !== 'object') { setShowCreator(false); setEditingItem(null); return; }
+    const stamped = form.id ? form : { ...form, id: 'hb_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8) };
+    const updated = { ...homebrew, [activeTab]: [...currentCat.data, stamped] };
     setData(d => ({ ...d, _homebrew: updated }));
     setShowCreator(false);
     setEditingItem(null);
   };
 
-  const handleEdit = (idx) => {
-    setEditingItem(currentCat.data[idx]);
+  const handleEdit = (item) => {
+    if (!item) return;
+    setEditingItem(item);
     setShowCreator(true);
     setExpandedCard(null);
   };
 
   const handleEditSave = (form) => {
+    if (!form || typeof form !== 'object') { setShowCreator(false); setEditingItem(null); return; }
     const newArr = [...currentCat.data];
-    const origIdx = currentCat.data.indexOf(editingItem);
-    if (origIdx >= 0) newArr[origIdx] = form;
+    const origIdx = findOrigIndex(editingItem);
+    if (origIdx >= 0) {
+      // Preserve original id if missing on form
+      if (!form.id && editingItem && editingItem.id) form.id = editingItem.id;
+      newArr[origIdx] = form;
+    } else {
+      // Fall back to append rather than silently losing the edit
+      newArr.push(form);
+    }
     const updated = { ...homebrew, [activeTab]: newArr };
     setData(d => ({ ...d, _homebrew: updated }));
     setShowCreator(false);
     setEditingItem(null);
   };
 
-  const handleDuplicate = (idx) => {
-    const original = currentCat.data[idx];
-    const clone = JSON.parse(JSON.stringify(original));
+  const handleDuplicate = (item) => {
+    if (!item) return;
+    const clone = JSON.parse(JSON.stringify(item));
     clone.name = (clone.name || "Copy") + " (Copy)";
+    clone.id = 'hb_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
     const updated = { ...homebrew, [activeTab]: [...currentCat.data, clone] };
     setData(d => ({ ...d, _homebrew: updated }));
     setExpandedCard(null);
   };
 
-  const handleDelete = (idx) => {
+  const handleDelete = (item) => {
+    if (!item) return;
+    const origIdx = findOrigIndex(item);
+    if (origIdx < 0) { setExpandedCard(null); return; }
     if (!confirm("Delete this " + currentCat.singular.toLowerCase() + "? This cannot be undone.")) return;
-    const updated = { ...homebrew, [activeTab]: currentCat.data.filter((_, i) => i !== idx) };
+    const updated = { ...homebrew, [activeTab]: currentCat.data.filter((_, i) => i !== origIdx) };
     setData(d => ({ ...d, _homebrew: updated }));
     setExpandedCard(null);
   };
 
-  const handleCopyJSON = (idx) => {
+  const handleCopyJSON = (item) => {
+    if (!item) return;
     try {
-      navigator.clipboard.writeText(JSON.stringify(currentCat.data[idx], null, 2));
-      if (window.psToast) window.psToast("Copied to clipboard!");
-    } catch (e) { console.error('Failed to copy to clipboard:', e); }
+      const text = JSON.stringify(item, null, 2);
+      if (navigator && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text);
+        if (window.psToast) window.psToast("Copied to clipboard!");
+      } else {
+        // Fallback: textarea + execCommand
+        const ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); if (window.psToast) window.psToast("Copied to clipboard!"); }
+        finally { document.body.removeChild(ta); }
+      }
+    } catch (e) {
+      console.error('Failed to copy to clipboard:', e);
+      if (window.psToast) window.psToast("Copy failed");
+    }
   };
 
   const handleImport = (items) => {
-    const updated = { ...homebrew, [activeTab]: [...currentCat.data, ...items] };
+    if (!Array.isArray(items)) return;
+    // Filter out non-objects and stamp ids on items missing them
+    const stamped = items.filter(it => it && typeof it === 'object').map(it => (
+      it.id ? it : { ...it, id: 'hb_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8) }
+    ));
+    if (stamped.length === 0) {
+      if (window.psToast) window.psToast("No valid items to import");
+      return;
+    }
+    const updated = { ...homebrew, [activeTab]: [...currentCat.data, ...stamped] };
     setData(d => ({ ...d, _homebrew: updated }));
-    if (window.psToast) window.psToast("Imported " + items.length + " " + currentCat.label.toLowerCase() + "!");
+    if (window.psToast) window.psToast("Imported " + stamped.length + " " + currentCat.label.toLowerCase() + "!");
   };
 
   /* Sort options per category */
@@ -1772,7 +1920,7 @@ window.CampaignHomebrewView = function CampaignHomebrewView({ data, setData, vie
 
       {/* ─── Workshop Content Area ─── */}
       {mainView === "workshop" && <div style={{ flex: 1, overflowY: "auto" }}>
-        {expandedCard !== null && currentCat.data[expandedCard] ? (
+        {expandedCard && findOrigIndex(expandedCard) >= 0 ? (
           <div style={{ padding: "20px 24px" }}>
             <DetailToolbar
               onBack={() => setExpandedCard(null)}
@@ -1782,7 +1930,7 @@ window.CampaignHomebrewView = function CampaignHomebrewView({ data, setData, vie
               onExportJSON={() => handleCopyJSON(expandedCard)}
             />
             <DetailComponent
-              {...{ [detailPropMap[activeTab]]: currentCat.data[expandedCard] }}
+              {...{ [detailPropMap[activeTab]]: expandedCard }}
               viewRole={viewRole}
             />
           </div>

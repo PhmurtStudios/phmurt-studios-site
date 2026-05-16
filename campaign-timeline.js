@@ -58,6 +58,12 @@ function htmlEscape(s) {
   return String(s || '').replace(/[&<>"']/g, c => map[c]);
 }
 
+function getLocalDateStr() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 function timelineEventHeadline(ev) {
   const sanitize = (s) => htmlEscape(s || '');
   if (ev.headline && String(ev.headline).trim()) return sanitize(ev.headline).trim();
@@ -78,7 +84,7 @@ function TimelineView({ data, setData, onNav, viewRole }) {
   const dmView = isPlayerView ? false : _dmViewInternal; // Players can NEVER see DM-only content
   const [addingSession, setAddingSession] = useState(false);
   const [addingEvent, setAddingEvent] = useState(null);
-  const [newSession, setNewSession] = useState({ title:"", date:new Date().toISOString().split('T')[0], summary:"", dmOnly:false });
+  const [newSession, setNewSession] = useState({ title:"", date:getLocalDateStr(), summary:"", dmOnly:false });
   const [newEvent, setNewEvent] = useState({ type:"encounter", text:"", outcome:"", dmOnly:false, location:"", importance:"standard", scope:"", headline:"", linkedNames:"" });
   const [editNotes, setEditNotes] = useState({});
   const [filterType, setFilterType] = useState("all");
@@ -157,7 +163,7 @@ function TimelineView({ data, setData, onNav, viewRole }) {
         text: `Session ${n}: ${newSession.title}`
       }, ...(Array.isArray(d.activity) ? d.activity : [])].slice(0, 20)
     }));
-    setNewSession({ title: "", date: new Date().toISOString().split('T')[0], summary: "", dmOnly: false });
+    setNewSession({ title: "", date: getLocalDateStr(), summary: "", dmOnly: false });
     setAddingSession(false);
   };
   const addEvent = (sessionId) => {
@@ -208,6 +214,62 @@ function TimelineView({ data, setData, onNav, viewRole }) {
           s && s.id === sessionId ? { ...s, notes } : s
         )
       };
+    });
+  };
+
+  const deleteSession = (sessionId) => {
+    if (!sessionId) return;
+    if (typeof window !== "undefined" && typeof window.confirm === "function") {
+      if (!window.confirm("Delete this session and all its events? This cannot be undone.")) return;
+    }
+    setData(d => {
+      if (!Array.isArray(d.timeline)) return d;
+      const filtered = d.timeline.filter(s => s && s.id !== sessionId);
+      // Re-number sessions so numbering stays consistent (oldest-first = highest n = most recent)
+      // Timeline is stored newest-first, so renumber descending
+      const renum = filtered.map((s, idx) => ({ ...s, n: filtered.length - idx }));
+      return {
+        ...d,
+        timeline: renum,
+        sessionsPlayed: renum.length
+      };
+    });
+    // Clean up local state referencing the deleted id
+    setOpen(s => { const n = new Set(s); n.delete(sessionId); return n; });
+    setExpandedEvents(prev => {
+      const next = new Set();
+      prev.forEach(key => { if (!String(key).startsWith(sessionId + ":")) next.add(key); });
+      return next;
+    });
+    setEditNotes(prev => {
+      const next = { ...prev };
+      delete next[sessionId];
+      return next;
+    });
+    if (addingEvent === sessionId) setAddingEvent(null);
+  };
+
+  const deleteEvent = (sessionId, evId) => {
+    if (!sessionId || !evId) return;
+    if (typeof window !== "undefined" && typeof window.confirm === "function") {
+      if (!window.confirm("Delete this event? This cannot be undone.")) return;
+    }
+    setData(d => {
+      if (!Array.isArray(d.timeline)) return d;
+      return {
+        ...d,
+        timeline: d.timeline.map(s => s && s.id === sessionId
+          ? { ...s, events: (s.events || []).filter(e => e && e.id !== evId) }
+          : s
+        )
+      };
+    });
+    setExpandedEvents(prev => {
+      const key = `${sessionId}:${evId}`;
+      if (!prev.has(key)) return prev;
+      const n = new Set(prev);
+      n.delete(key);
+      return n;
     });
   };
 
@@ -552,6 +614,15 @@ function TimelineView({ data, setData, onNav, viewRole }) {
                                         ))}
                                       </div>
                                     )}
+                                    {!isPlayerView && (
+                                      <div style={{ marginTop:10, display:"flex", justifyContent:"flex-end" }}>
+                                        <button type="button" onClick={e=>{ e.stopPropagation(); deleteEvent(s.id, ev.id); }} title="Delete this event" style={{
+                                          display:"inline-flex", alignItems:"center", gap:4, padding:"3px 8px", cursor:"pointer",
+                                          background:"transparent", border:`1px solid ${T.crimsonBorder}`, borderRadius:"2px",
+                                          fontFamily:T.body, fontSize:10, color:T.crimson, fontWeight:500,
+                                        }}><Trash2 size={10}/> Delete</button>
+                                      </div>
+                                    )}
                                     {onNav && (
                                       <div style={{ marginTop:12, display:"flex", flexWrap:"wrap", gap:6 }}>
                                         <button type="button" onClick={e=>{ e.stopPropagation(); onNav("world"); }} style={{
@@ -600,6 +671,17 @@ function TimelineView({ data, setData, onNav, viewRole }) {
                       {editNotes[s.id]!=null && editNotes[s.id]!==(s.notes||"") && (
                         <CrimsonBtn small onClick={()=>{saveNotes(s.id,editNotes[s.id]);setEditNotes(p=>{const n={...p};delete n[s.id];return n;});}} style={{marginTop:6}}><Save size={10}/> Save</CrimsonBtn>
                       )}
+                    </div>
+                  )}
+
+                  {/* Delete session — DM only */}
+                  {!isPlayerView && (
+                    <div style={{ marginTop:12, display:"flex", justifyContent:"flex-end" }}>
+                      <button type="button" onClick={e=>{ e.stopPropagation(); deleteSession(s.id); }} title="Delete this session" style={{
+                        display:"inline-flex", alignItems:"center", gap:4, padding:"4px 10px", cursor:"pointer",
+                        background:"transparent", border:`1px solid ${T.crimsonBorder}`, borderRadius:"2px",
+                        fontFamily:T.ui, fontSize:9, letterSpacing:"1px", color:T.crimson, fontWeight:500, textTransform:"uppercase",
+                      }}><Trash2 size={10}/> Delete session</button>
                     </div>
                   )}
 

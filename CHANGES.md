@@ -285,3 +285,90 @@
 ### Character Gallery Redesign
 
 70. **gallery.html** *(rewritten)* — Complete gallery redesign: compact card layout with left-side class accent stripe, 6-column ability score grid with modifiers, combat stat row (AC/HP/Speed) for detailed characters, class-colored icon circles. Full character sheet modal with traditional D&D layout (ability score boxes, saving throws with proficiency dots, skills list, attacks table, features, equipment tags, personality/backstory). "Add to My Characters" button saves premade character to user's Supabase characters table via `PhmurtDB.saveCharacter()`. Added 4 new characters from uploaded PDF sheets: Zarikar Thavios (Tiefling Sorcerer 9, Divine Soul), Za Hornyeth (Eladrin Rogue 6/Fighter 4, Arcane Trickster), Relmae Falstaer (Half-Elf Fighter 5, Champion), Amon Bellendon (Variant Human Wizard 7, Evocation). Extended character data schema supports AC, HP, speed, proficiency bonus, darkvision, resistances, saving throws, skills with bonuses, attacks with hit/damage, languages, background, and multiclass. 40 total premade characters. Updated race filter (added Eladrin, Variant Human) and level filter (added 7, 9, 10). Results counter shows "Showing X of Y characters". Search now matches name, class, and race. Removed community placeholder section. Responsive at 1200/768/480/375px breakpoints.
+
+---
+
+## Autonomous Campaign-System Improvement Pass (April 21, 2026)
+
+System-by-system bug-fixing, hardening and feature expansion across every campaign module **except `campaign-world.js`** (per scope decision). Every change keeps backwards-compatible APIs; every non-JSX file passes `node --check`; every JSX edit was extracted and verified by sandboxed `new Function(...)` execution.
+
+### campaign-homebrew.js (~1300 → ~1500 lines)
+- **Search overhaul**: `search(query, opts)` now returns `{item, type, score, name}` ranked tuples with tiered scoring (exact=100, prefix=80, contains=60, description=30) and supports `type` and `limit` filters.
+- **Library management**: added `counts()`, `get(type, id)`, `clone(type, id)`, `clear(type)`.
+- **CR calculator rebuild**: `calculateCR()` now uses official DMG tables, averaging offensive (damage/attack/DC) and defensive (HP/AC) CRs, with attack/DC delta corrections, legendary +25% damage uplift, and rounding to valid CRs (`0, 1/8, 1/4, 1/2, 1..30`).
+- **DMG tables exposed**: `proficiencyForCR`, `xpForCR`, `_hpToCR`, `_damageToCR`, `_expectedDefensiveAC`, `_expectedAttackForCR`, `_expectedDCForCR`, `_roundToValidCR`.
+- **Damage parser**: `_averageDamage` now handles signed bonuses, multi-die expressions and damage-type words (`/([+-]?)(\d+)d(\d+)/gi`).
+- **Stat-block generator**: ability mods, saves/skills (with object format support via `fmtBonus`), resistances/immunities/vulnerabilities, lair actions, description, and proficiency bonus all rendered correctly. Fixed `[object Object]` regression in saves output.
+
+### campaign-crafting.js (1310 lines)
+- Added `_genId(prefix)` collision-resistant ids and `_abilityMod(score)` helper.
+- `canCraft()` now returns ALL missing materials (not just the first), supports `recipe.goldCost`, and treats missing tool proficiency as a soft fail.
+- New `daysRemaining(project, hoursPerDay)` and `cancelProject(project, recipe, refundFraction)` (default 50% refund).
+- `resolveCraft()` rewritten with quality tiers (`catastrophic` / `masterwork` / `standard` / `flawed` / `failed`), uses `crafter.stats[ability]`, accepts `inspiration` / `masterworkTools` opts, returns `materialLoss`. Fixed bug where natural-1 sometimes returned `flawed` instead of `catastrophic` (nat-1 check moved to top of cascade).
+- New `inventoryValue(inventory)` aggregator.
+
+### campaign-intrigue.js (1428 lines, JSX)
+- `removeBranch()` now purges connections referencing the branch's agents/factions and removes `globalEvents` tied to that branch.
+- `removeAgent()` cleans up connections AND `scheme.assignedAgents` arrays in **all** branches (not just the current one) — was leaving dangling references.
+- `addEvent(..., customDate)` for explicit-date entries.
+- New `removeEvent(eid)` and `toggleReveal(bid, aid, logEvent)` helpers.
+
+### campaign-heist.js (1450 lines, JSX)
+- Replaced low-quality `Math.sin`-based PRNG with `makeSeededRng(seed)` mulberry32 factory.
+- Added `_genHeistId(prefix)` collision-resistant ids; replaced `Date.now()` ids in `HeistCreationPanel`.
+- `generateBlueprint()`: seedBase combines name + locationType length, vault rooms get 25% elite chance, rooms include `connections`, `explored`, `cleared` flags.
+- `HeatSystem.updateHeat()` now NaN-safe: `cur = typeof heist.heat === 'number' && !isNaN(heist.heat) ? heist.heat : 0`.
+
+### campaign-factionwar.js (1665 lines, JSX)
+- Replaced LCG with mulberry32.
+- Morale clamped to 10..100; supply defaults to 100 to prevent NaN power calcs.
+
+### campaign-city-gen.js (1685 lines)
+- Fixed typo `placeePlazas` → `placePlazas` (definition + call site).
+- `generateAllCapitalMaps()` made defensive: per-city try/catch returns `{generated, skipped, failed, errors}` so one bad city no longer aborts the run.
+
+### campaign-religion.js (1787 lines)
+- `createTemple()` rewritten: `_templeCounter`-based ids, opts param (`rng` / `region` / `devotion`), per-temple `eventLog`.
+- `convertRegion()` now matches by region OR city, prefers existing temples, has a 50% chance to flip rival deity to current `deityId`, and writes events into `temple.eventLog`.
+
+### campaign-downtime.js (1799 lines, JSX)
+- `assignActivity()` now validates inputs, detects duplicates (unless `allowDuplicate`), accepts `startDay` / `currentCity` opts, and returns `assignmentId`.
+- `resolveDowntime(character, activityId, optsOrRng)` is backwards-compatible (`optsOrRng` may be a function = legacy rng), accepts `currentCity` / `worldData` / `assignmentId`, threads context to `_generateRewards` / `_generateNarrative`, marks the assignment resolved when an `assignmentId` is provided.
+- `_generateRewards` made defensive against missing `activity.goldReward.min/max`.
+
+### campaign-prophecy.js (1981 lines, JSX)
+- New `evaluateTrigger(trigger, world)` covering `faction_power` (with operators), `npc_dead`, `region_state`, `war_declared`.
+- New `evaluateProphecyTriggers(prophecy, world, opts)` that updates `trigger.met` and auto-advances status to `fulfilled` when the configured `triggerMode` (`all` / `any`) is satisfied.
+- Both exported as `window.evaluateTrigger` / `window.evaluateProphecyTriggers`.
+
+### campaign-kingdom.js (3292 lines, JSX)
+- Added `_genKingdomId()` helper, replacing `Date.now().toString()` based ids.
+- Added missing `ruler` field at top of `initKingdom`.
+
+### campaign-map-engine.js (4914 lines)
+- New `_normalizeSeed(seed)` accepts numbers (incl. negatives and zero), strings (FNV-1a hashed), and `null`/`undefined` (=> 1). String seeds are now stable across calls.
+- `generate(seed)` wrapped in try/catch with cleanup; on success returns `{ok, seed, elapsedMs}` and emits `generate` with elapsed timing; on failure returns `{ok:false, seed, error}` and emits `error` event. Old renderer's `destroy()` errors no longer prevent regeneration. POIs reset on each call to prevent stale-POI accumulation.
+- `_validRegionId` / `_validFactionId` guard `conquer/secede/alliance` against bogus IDs and self-alliance.
+- New public API: `getCityAt(x, y, radius)`, `findRegionByName(name)`, `findFactionByName(name)`, `findCityByName(name)`, `findPOIByName(name)`, `getPOIsByType(type, opts)`, `getStats()`, `snapshot()`, `getLastGenerateMs()`, `getLastError()`.
+- `getPOIAt(x, y, radius)` now picks the *closest* POI in range (was first in iteration order).
+- `_emit(event, data)` wraps each listener in try/catch — one bad listener no longer kills the rest.
+- `off(event, fn)` accepts `null`/`undefined` to clear all listeners for an event.
+
+### campaign-homebrew-view.js (1808 lines, JSX)
+- **Critical bug fix**: `expandedCard` previously held an index into the *sorted/filtered* array but `handleEdit/Delete/Duplicate/CopyJSON` used it as an index into the *unsorted* `currentCat.data`, so users could edit or delete the wrong item after sorting or searching. Now `expandedCard` holds the item itself and a memoised `findOrigIndex(item)` resolves the source-array index by reference (with id-based fallback).
+- `CardLibrary` keys cards by `item.id` (or `_key`) instead of array index, so React can preserve component state across re-sorts.
+- "newest" sort fixed: previously `return -1` from the comparator (relies on V8-specific behaviour and is not portable). Now sorts by stable `_origIdx` so it works under any conformant sort.
+- Search also matches `tags` array entries.
+- All CRUD handlers now stamp ids on items missing them, validate inputs, and fall back to append rather than silently dropping edits when the original item can't be located.
+- `handleCopyJSON` falls back to a hidden `<textarea>` + `execCommand('copy')` when `navigator.clipboard` is unavailable.
+- `handleImport` filters non-objects, stamps ids, and toasts when nothing imports.
+- **ImportModal**: now accepts wrapper objects like `{monsters:[...]}`, supports file upload (`<input type="file">`), shows a live "N items ready to import" preview, and disables the Import button when the textarea is empty.
+- **ExportModal**: clipboard fallback for non-Clipboard-API browsers, new "Download .json" button with date-stamped filename, item-count + size display.
+
+### Verification
+- All non-JSX files (`campaign-homebrew.js`, `campaign-crafting.js`, `campaign-city-gen.js`, `campaign-religion.js`, `campaign-map-engine.js`) pass `node --check`.
+- All JSX edits were extracted and exercised under `new Function(...)` sandboxes:
+  - homebrew CR calc, damage parser, clone, search, stat-block generator
+  - crafting `canCraft`, `startProject`, `resolveCraft` outcomes (incl. nat-1 / nat-20), `cancelProject`
+  - homebrew-view sort/filter/findOrigIndex/normalize logic
+  - map-engine seed normalisation, getCityAt, findRegionByName, getStats, snapshot, validId, defensive `_emit`

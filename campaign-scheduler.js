@@ -2,6 +2,17 @@
  * Campaign Session Scheduler
  * Self-contained session scheduling system with player availability management
  * Finds optimal play times and tracks campaign history
+ *
+ * v2 (2026-04-21):
+ *   • Fixed UTC/local timezone mismatch in findOptimalSlots (dateStr now matches getDay())
+ *   • getUpcoming() no longer mutates stored sessions
+ *   • _sessionCounter is auto-reconciled against existing session ids on deserialize
+ *   • findOptimalSlots() accepts {granularity, startHour, endHour} to control slot density
+ *   • Multi-day blackout ranges supported (exception.endDate)
+ *   • RSVP tracking: setRSVP / getRSVPCounts
+ *   • Calendar view: getCalendar(daysAhead)
+ *   • Removal helpers: removeSession, removePlayer
+ *   • Quick summary: summarize()
  */
 
 (function() {
@@ -67,6 +78,27 @@
   };
 
   // ============================================================================
+  // HELPERS
+  // ============================================================================
+
+  /** Local YYYY-MM-DD (does NOT shift by UTC offset). */
+  function _localDateStr(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function _hh(h) { return `${String(h).padStart(2, '0')}:00`; }
+
+  function _parseHourFromTime(t) {
+    if (typeof t !== 'string') return 0;
+    const parts = t.split(':');
+    const h = parseInt(parts[0], 10);
+    return Number.isFinite(h) ? h : 0;
+  }
+
+  // ============================================================================
   // SESSIONSCHEDULER CLASS
   // ============================================================================
 
@@ -81,21 +113,40 @@
     /**
      * Set player availability
      * @param {string} playerId - Unique player identifier
-     * @param {object} availability - { recurring: [{dayOfWeek(0-6), startHour, endHour}], exceptions: [{date, available, startHour, endHour}] }
+     * @param {object} availability - { recurring: [{dayOfWeek(0-6), startHour, endHour}],
+     *                                   exceptions: [{date, endDate?, available, startHour?, endHour?}] }
      */
     setPlayerAvailability(playerId, availability) {
       if (!playerId) {
         throw new Error('Player ID is required');
       }
+      if (!availability || typeof availability !== 'object') {
+        throw new Error('Availability must be an object');
+      }
 
       // Validate recurring slots
       if (availability.recurring && Array.isArray(availability.recurring)) {
         for (const slot of availability.recurring) {
+          if (!slot || typeof slot !== 'object') {
+            throw new Error('Recurring slot must be an object');
+          }
           if (slot.dayOfWeek < 0 || slot.dayOfWeek > 6) {
             throw new Error(`Invalid dayOfWeek: ${slot.dayOfWeek}`);
           }
           if (slot.startHour < 0 || slot.startHour > 23 || slot.endHour < 0 || slot.endHour > 24) {
             throw new Error(`Invalid hours: ${slot.startHour}-${slot.endHour}`);
+          }
+          if (slot.startHour >= slot.endHour) {
+            throw new Error(`startHour must be < endHour (got ${slot.startHour}-${slot.endHour})`);
+          }
+        }
+      }
+
+      // Validate exceptions
+      if (availability.exceptions && Array.isArray(availability.exceptions)) {
+        for (const ex of availability.exceptions) {
+          if (!ex || typeof ex !== 'object' || !ex.date) {
+            throw new Error('Exception requires a date');
           }
         }
       }
@@ -111,26 +162,41 @@
 
     /**
      * Set player metadata (name, email)
-     * @param {string} playerId - Unique player identifier
-     * @param {object} metadata - { name, email }
      */
     setPlayerMetadata(playerId, metadata) {
       const player = this.players.get(playerId) || { id: playerId, name: playerId, email: null, availability: { recurring: [], exceptions: [] } };
 
-      if (metadata.name) player.name = metadata.name;
-      if (metadata.email) player.email = metadata.email;
+      if (metadata && metadata.name) player.name = metadata.name;
+      if (metadata && metadata.email) player.email = metadata.email;
 
       this.players.set(playerId, player);
     }
 
+    /** Remove a player and clear their attendance/RSVPs. */
+    removePlayer(playerId) {
+      const existed = this.players.delete(playerId);
+      if (existed) {
+        for (const s of this.sessions) {
+          if (Array.isArray(s.attendees)) {
+            s.attendees = s.attendees.filter(id => id !== playerId);
+          }
+          if (s.rsvps && typeof s.rsvps === 'object') {
+            delete s.rsvps[playerId];
+          }
+        }
+      }
+      return existed;
+    }
+
     /**
-     * Find optimal time slots when players overlap
+     * Find optimal time slots when players overlap.
      * @param {number} minPlayers - Minimum players required (default: all players)
      * @param {number} durationHours - Session duration in hours
      * @param {number} daysAhead - Look this many days into the future (default: 30)
-     * @returns {array} Sorted list of {date, startTime, endTime, availablePlayers[], missingPlayers[], availableCount}
+     * @param {object} [opts] - { granularity: hours-step (default 1), startHour: 0, endHour: 24 }
+     * @returns {array} Sorted list of {date, startTime, endTime, dayOfWeek, availablePlayers[], missingPlayers[], availableCount}
      */
-    findOptimalSlots(minPlayers = this.players.size, durationHours = 4, daysAhead = 30) {
+    findOptimalSlots(minPlayers = this.players.size, durationHours = 4, daysAhead = 30, opts = {}) {
       if (this.players.size === 0) {
         return [];
       }
@@ -139,26 +205,25 @@
       durationHours = Math.max(1, Math.min(durationHours, 24));
       daysAhead = Math.max(1, Math.min(daysAhead, 365));
 
+      const granularity = Math.max(1, Math.min(parseInt(opts.granularity, 10) || 1, durationHours));
+      const dayStart = Math.max(0, Math.min(parseInt(opts.startHour, 10) || 0, 23));
+      const dayEnd = Math.max(dayStart + durationHours, Math.min(parseInt(opts.endHour, 10) || 24, 24));
+
       const slots = [];
       const now = new Date();
 
-      // Generate candidate slots for each day
       for (let dayOffset = 0; dayOffset < daysAhead; dayOffset++) {
-        const slotDate = new Date(now);
-        slotDate.setDate(slotDate.getDate() + dayOffset);
-
+        const slotDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + dayOffset);
         const dayOfWeek = slotDate.getDay();
-        const dateStr = slotDate.toISOString().split('T')[0];
+        const dateStr = _localDateStr(slotDate);
 
-        // Try hourly slots throughout the day
-        for (let hour = 0; hour <= 24 - durationHours; hour++) {
+        for (let hour = dayStart; hour <= dayEnd - durationHours; hour += granularity) {
           const startTime = hour;
           const endTime = hour + durationHours;
 
-          let availablePlayers = [];
-          let missingPlayers = [];
+          const availablePlayers = [];
+          const missingPlayers = [];
 
-          // Check each player's availability
           for (const [playerId, player] of this.players) {
             if (this._isPlayerAvailable(player, dateStr, dayOfWeek, startTime, endTime)) {
               availablePlayers.push(playerId);
@@ -167,12 +232,11 @@
             }
           }
 
-          // Only include slots meeting minimum
           if (availablePlayers.length >= minPlayers) {
             slots.push({
               date: dateStr,
-              startTime: `${String(startTime).padStart(2, '0')}:00`,
-              endTime: `${String(endTime).padStart(2, '0')}:00`,
+              startTime: _hh(startTime),
+              endTime: _hh(endTime),
               dayOfWeek: dayOfWeek,
               availablePlayers: availablePlayers,
               missingPlayers: missingPlayers,
@@ -182,14 +246,9 @@
         }
       }
 
-      // Sort by availability count (descending), then by date/time
       slots.sort((a, b) => {
-        if (b.availableCount !== a.availableCount) {
-          return b.availableCount - a.availableCount;
-        }
-        if (a.date !== b.date) {
-          return a.date.localeCompare(b.date);
-        }
+        if (b.availableCount !== a.availableCount) return b.availableCount - a.availableCount;
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
         return a.startTime.localeCompare(b.startTime);
       });
 
@@ -198,13 +257,10 @@
 
     /**
      * Schedule a session for a specific date/time
-     * @param {string} date - ISO date string (YYYY-MM-DD)
-     * @param {string} startTime - Time in HH:00 format
-     * @param {string} endTime - Time in HH:00 format
-     * @param {object} options - { notes, attendees }
-     * @returns {object} Session object
      */
     scheduleSession(date, startTime, endTime, options = {}) {
+      // Defensive: ensure counter is past any existing manual ids before allocating.
+      this._reconcileCounter();
       const session = {
         id: ++this._sessionCounter,
         date: date,
@@ -212,6 +268,7 @@
         endTime: endTime,
         status: 'scheduled',
         attendees: options.attendees || Array.from(this.players.keys()),
+        rsvps: {},                           // playerId → "yes"|"no"|"maybe"
         notes: options.notes || '',
         recap: null,
         createdAt: new Date().toISOString()
@@ -223,8 +280,6 @@
 
     /**
      * Cancel a scheduled session
-     * @param {number} sessionId - Session ID
-     * @returns {object} Notification data
      */
     cancelSession(sessionId) {
       const session = this.sessions.find(s => s.id === sessionId);
@@ -244,11 +299,15 @@
       };
     }
 
+    /** Remove a session entirely (vs. cancelling). */
+    removeSession(sessionId) {
+      const before = this.sessions.length;
+      this.sessions = this.sessions.filter(s => s.id !== sessionId);
+      return this.sessions.length !== before;
+    }
+
     /**
      * Mark a session as complete and store recap
-     * @param {number} sessionId - Session ID
-     * @param {string} recap - Session recap text
-     * @returns {object} Completed session
      */
     completeSession(sessionId, recap = '') {
       const session = this.sessions.find(s => s.id === sessionId);
@@ -264,33 +323,66 @@
     }
 
     /**
-     * Get upcoming scheduled sessions
-     * @returns {array} Sessions with countdown info
+     * Set a player's RSVP for a session.
+     * @param {number} sessionId
+     * @param {string} playerId
+     * @param {"yes"|"no"|"maybe"} response
+     */
+    setRSVP(sessionId, playerId, response) {
+      if (!['yes', 'no', 'maybe'].includes(response)) {
+        throw new Error('Response must be "yes", "no", or "maybe"');
+      }
+      const session = this.sessions.find(s => s.id === sessionId);
+      if (!session) throw new Error(`Session not found: ${sessionId}`);
+      if (!session.rsvps || typeof session.rsvps !== 'object') session.rsvps = {};
+      session.rsvps[playerId] = response;
+      return session.rsvps;
+    }
+
+    getRSVPCounts(sessionId) {
+      const session = this.sessions.find(s => s.id === sessionId);
+      if (!session) return { yes: 0, no: 0, maybe: 0, pending: 0 };
+      const rsvps = session.rsvps || {};
+      const counts = { yes: 0, no: 0, maybe: 0, pending: 0 };
+      const expected = Array.isArray(session.attendees) && session.attendees.length
+        ? session.attendees
+        : Array.from(this.players.keys());
+      for (const pid of expected) {
+        const r = rsvps[pid];
+        if (r === 'yes' || r === 'no' || r === 'maybe') counts[r]++;
+        else counts.pending++;
+      }
+      return counts;
+    }
+
+    /**
+     * Get upcoming scheduled sessions (returns FRESH objects; does not mutate stored data).
      */
     getUpcoming() {
       const now = new Date();
-      const upcoming = this.sessions.filter(s => s.status === 'scheduled');
-
-      upcoming.forEach(session => {
-        const sessionDate = new Date(`${session.date}T${session.startTime}:00`);
-        const diff = sessionDate - now;
-        session.daysUntil = Math.ceil(diff / (1000 * 60 * 60 * 24));
-        session.hoursUntil = Math.ceil(diff / (1000 * 60 * 60));
-      });
-
-      // Sort by date ascending
-      upcoming.sort((a, b) => {
-        const aDate = new Date(`${a.date}T${a.startTime}:00`);
-        const bDate = new Date(`${b.date}T${b.startTime}:00`);
-        return aDate - bDate;
-      });
+      const upcoming = this.sessions
+        .filter(s => s.status === 'scheduled')
+        .map(session => {
+          const sessionDate = new Date(`${session.date}T${session.startTime}:00`);
+          const diff = sessionDate - now;
+          return Object.assign({}, session, {
+            daysUntil: Math.ceil(diff / 86400000),
+            hoursUntil: Math.ceil(diff / 3600000),
+            isPast: diff < 0,
+            rsvpCounts: this.getRSVPCounts(session.id)
+          });
+        })
+        .sort((a, b) => {
+          const aDate = new Date(`${a.date}T${a.startTime}:00`);
+          const bDate = new Date(`${b.date}T${b.startTime}:00`);
+          return aDate - bDate;
+        });
 
       return upcoming;
     }
 
     /**
      * Get session history with recaps
-     * @returns {array} Completed sessions
      */
     getSessionHistory() {
       return this.sessions
@@ -304,12 +396,9 @@
 
     /**
      * Calculate per-player attendance rate
-     * @returns {array} Attendance stats: [{playerId, name, attended, total, rate}]
      */
     getAttendanceStats() {
       const stats = {};
-
-      // Initialize for all players
       for (const [playerId, player] of this.players) {
         stats[playerId] = {
           playerId: playerId,
@@ -320,24 +409,17 @@
         };
       }
 
-      // Count from completed sessions
       for (const session of this.sessions) {
         if (session.status === 'completed') {
-          // Count total sessions for all registered players
           for (const playerId of Object.keys(stats)) {
             stats[playerId].total++;
           }
-
-          // Count attendance: only players in attendees array
-          for (const attendee of session.attendees) {
-            if (stats[attendee]) {
-              stats[attendee].attended++;
-            }
+          for (const attendee of (session.attendees || [])) {
+            if (stats[attendee]) stats[attendee].attended++;
           }
         }
       }
 
-      // Calculate rates
       const result = Object.values(stats);
       result.forEach(s => {
         s.rate = s.total > 0 ? parseFloat((s.attended / s.total).toFixed(2)) : 0;
@@ -348,8 +430,6 @@
 
     /**
      * Get the next available slot when all/most players can play
-     * @param {number} durationHours - Session duration (default: 4)
-     * @returns {object} Next optimal slot or null
      */
     getNextAvailableSlot(durationHours = 4) {
       const slots = this.findOptimalSlots(this.players.size, durationHours, 90);
@@ -358,11 +438,6 @@
 
     /**
      * Generate recurring sessions for a specific day of week
-     * @param {number} dayOfWeek - 0=Sunday, 6=Saturday
-     * @param {string} startTime - Time in HH:00 format
-     * @param {number} count - Number of sessions to create
-     * @param {object} options - { notes, duration }
-     * @returns {array} Created sessions
      */
     generateRecurringSchedule(dayOfWeek, startTime, count, options = {}) {
       if (dayOfWeek < 0 || dayOfWeek > 6) {
@@ -374,16 +449,17 @@
       const endHour = Math.min(24, startHour + duration);
       const created = [];
 
-      // Find start date (next occurrence of dayOfWeek)
       const today = new Date();
-      let currentDate = new Date(today);
-      currentDate.setDate(currentDate.getDate() + ((dayOfWeek - currentDate.getDay() + 7) % 7));
+      let currentDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      // Next occurrence of dayOfWeek (today if matches; pass options.skipToday to force +7)
+      const offset = ((dayOfWeek - currentDate.getDay() + 7) % 7);
+      const skipToday = !!options.skipToday && offset === 0;
+      currentDate.setDate(currentDate.getDate() + (skipToday ? 7 : offset));
 
-      // Generate sessions
       for (let i = 0; i < count; i++) {
-        const dateStr = currentDate.toISOString().split('T')[0];
-        const endTimeStr = `${String(endHour).padStart(2, '0')}:00`;
-        const startTimeStr = `${String(startHour).padStart(2, '0')}:00`;
+        const dateStr = _localDateStr(currentDate);
+        const startTimeStr = _hh(startHour);
+        const endTimeStr = _hh(endHour);
 
         const session = this.scheduleSession(dateStr, startTimeStr, endTimeStr, {
           notes: options.notes || `Session ${i + 1} of recurring schedule`,
@@ -391,8 +467,6 @@
         });
 
         created.push(session);
-
-        // Move to next week
         currentDate.setDate(currentDate.getDate() + 7);
       }
 
@@ -400,22 +474,72 @@
     }
 
     /**
+     * Build a calendar grid for the next N days, marking each day as
+     * scheduled / available / unavailable. Useful for the calendar widget.
+     */
+    getCalendar(daysAhead = 30, durationHours = 4) {
+      const cal = [];
+      const now = new Date();
+      const sessionByDate = {};
+      for (const s of this.sessions) {
+        if (!s || !s.date) continue;
+        if (!sessionByDate[s.date]) sessionByDate[s.date] = [];
+        sessionByDate[s.date].push(s);
+      }
+
+      for (let i = 0; i < daysAhead; i++) {
+        const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() + i);
+        const ds = _localDateStr(d);
+        const dow = d.getDay();
+        // Count how many players have ANY availability that day.
+        let availCount = 0;
+        for (const [, player] of this.players) {
+          if (this._dayHasAnyAvailability(player, ds, dow)) availCount++;
+        }
+        cal.push({
+          date: ds,
+          dayOfWeek: dow,
+          sessions: sessionByDate[ds] || [],
+          playersAvailableCount: availCount,
+          totalPlayers: this.players.size
+        });
+      }
+      return cal;
+    }
+
+    /** High-level summary for dashboards. */
+    summarize() {
+      const upcoming = this.sessions.filter(s => s.status === 'scheduled').length;
+      const completed = this.sessions.filter(s => s.status === 'completed').length;
+      const cancelled = this.sessions.filter(s => s.status === 'cancelled').length;
+      const next = this.getUpcoming()[0] || null;
+      return {
+        players: this.players.size,
+        upcoming,
+        completed,
+        cancelled,
+        total: this.sessions.length,
+        nextSession: next ? { id: next.id, date: next.date, startTime: next.startTime, daysUntil: next.daysUntil } : null,
+        createdAt: this._createdAt
+      };
+    }
+
+    /**
      * Serialize scheduler data
-     * @returns {string} JSON string of all scheduler data
      */
     serialize() {
       const data = {
         players: Array.from(this.players.values()),
         sessions: this.sessions,
         _sessionCounter: this._sessionCounter,
-        _createdAt: this._createdAt
+        _createdAt: this._createdAt,
+        _version: 2
       };
       return JSON.stringify(data, null, 2);
     }
 
     /**
      * Deserialize scheduler data
-     * @param {string} jsonString - JSON data
      */
     deserialize(jsonString) {
       try {
@@ -425,14 +549,20 @@
         if (data.players && Array.isArray(data.players)) {
           for (const player of data.players) {
             if (player && player.id) {
+              // Backfill rsvps/availability defaults so older saves keep working.
+              if (!player.availability) player.availability = { recurring: [], exceptions: [] };
               this.players.set(player.id, player);
             }
           }
         }
 
-        this.sessions = Array.isArray(data.sessions) ? data.sessions : [];
+        this.sessions = Array.isArray(data.sessions) ? data.sessions.map(s => {
+          if (s && typeof s === 'object' && !s.rsvps) s.rsvps = {};
+          return s;
+        }) : [];
         this._sessionCounter = Math.max(0, parseInt(data._sessionCounter, 10) || 0);
         this._createdAt = data._createdAt || new Date().toISOString();
+        this._reconcileCounter();
       } catch (e) {
         throw new Error(`Deserialization failed: ${e.message}`);
       }
@@ -442,39 +572,61 @@
     // PRIVATE HELPERS
     // ========================================================================
 
+    /** Make sure _sessionCounter is at least max(existing session ids). */
+    _reconcileCounter() {
+      let max = this._sessionCounter;
+      for (const s of this.sessions) {
+        if (s && typeof s.id === 'number' && s.id > max) max = s.id;
+      }
+      this._sessionCounter = max;
+    }
+
     /**
-     * Check if a player is available for a specific slot
+     * Check if a player is available for a specific slot.
      * @private
      */
     _isPlayerAvailable(player, dateStr, dayOfWeek, startHour, endHour) {
-      if (!player.availability) {
-        return false;
+      if (!player.availability) return false;
+
+      // Exceptions override recurring. Support multi-day blackouts via endDate.
+      for (const exception of (player.availability.exceptions || [])) {
+        const inRange = exception.endDate
+          ? (dateStr >= exception.date && dateStr <= exception.endDate)
+          : (exception.date === dateStr);
+        if (!inRange) continue;
+        if (!exception.available) return false;
+        if (exception.startHour !== undefined && exception.endHour !== undefined) {
+          return startHour >= exception.startHour && endHour <= exception.endHour;
+        }
+        return true;
       }
 
-      // Check exceptions first (they override recurring)
-      for (const exception of player.availability.exceptions) {
-        if (exception.date === dateStr) {
-          if (!exception.available) {
-            return false;
-          }
-          // If exception marks available, check time
-          if (exception.startHour !== undefined && exception.endHour !== undefined) {
-            return startHour >= exception.startHour && endHour <= exception.endHour;
-          }
+      for (const slot of (player.availability.recurring || [])) {
+        if (slot.dayOfWeek === dayOfWeek &&
+            startHour >= slot.startHour && endHour <= slot.endHour) {
           return true;
         }
       }
+      return false;
+    }
 
-      // Check recurring availability
-      for (const slot of player.availability.recurring) {
-        if (slot.dayOfWeek === dayOfWeek) {
-          // Slot must fully contain requested time
-          if (startHour >= slot.startHour && endHour <= slot.endHour) {
-            return true;
-          }
-        }
+    /**
+     * Lighter-weight version of _isPlayerAvailable used by the calendar — just
+     * "is the player available AT ALL on this day?"
+     * @private
+     */
+    _dayHasAnyAvailability(player, dateStr, dayOfWeek) {
+      if (!player.availability) return false;
+      for (const exception of (player.availability.exceptions || [])) {
+        const inRange = exception.endDate
+          ? (dateStr >= exception.date && dateStr <= exception.endDate)
+          : (exception.date === dateStr);
+        if (!inRange) continue;
+        return !!exception.available;
       }
-
+      for (const slot of (player.availability.recurring || [])) {
+        if (slot.dayOfWeek === dayOfWeek) return true;
+      }
       return false;
     }
   }

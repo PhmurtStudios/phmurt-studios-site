@@ -1009,16 +1009,20 @@
       });
     }, [allTemplates, filterType, filterDifficulty, filterRegion, searchTerm]);
 
+    // Collision-resistant id generator
+    const _genId = (prefix) => `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
     const handleAddPuzzle = (puzzle) => {
       // Contextualize puzzle with world data if available
       const contextualized = contextualizePuzzle(puzzle, data);
       const newSessionPuzzle = {
         ...contextualized,
-        id: `session-${Date.now()}`,
+        id: _genId('session'),
         solved: false,
         hintsRevealed: 0,
         timeTaken: null,
-        solvedBy: null
+        solvedBy: null,
+        addedAt: Date.now()
       };
       setData(prev => ({
         ...prev,
@@ -1029,24 +1033,26 @@
     const handleSaveCustom = (puzzle) => {
       setData(prev => ({
         ...prev,
-        customPuzzles: [...(prev.customPuzzles || []), { ...puzzle, id: `custom-${Date.now()}` }]
+        customPuzzles: [...(prev.customPuzzles || []), { ...puzzle, id: _genId('custom') }]
       }));
       setShowCreator(false);
     };
 
     const handleDeletePuzzle = (puzzleId) => {
-      if (confirm('Delete this puzzle?')) {
-        setData(prev => ({
-          ...prev,
-          puzzles: (prev.puzzles || []).filter(p => p.id !== puzzleId)
-        }));
-      }
+      if (typeof confirm === 'function' && !confirm('Delete this puzzle?')) return;
+      // Remove from both session puzzles AND from custom templates if it lives there
+      setData(prev => ({
+        ...prev,
+        puzzles: (prev.puzzles || []).filter(p => p.id !== puzzleId),
+        customPuzzles: (prev.customPuzzles || []).filter(p => p.id !== puzzleId)
+      }));
     };
 
     const handleGenerateRandom = () => {
-      const filtered = allTemplates.filter(p => !p.custom);
-      if (filtered.length > 0) {
-        const random = filtered[Math.floor(Math.random() * filtered.length)];
+      // Honor the user's filters when picking randomly
+      const pool = filteredPuzzles.length > 0 ? filteredPuzzles : allTemplates.filter(p => !p.custom);
+      if (pool.length > 0) {
+        const random = pool[Math.floor(Math.random() * pool.length)];
         setSelectedPuzzle(random);
       }
     };
@@ -1055,7 +1061,27 @@
       setData(prev => ({
         ...prev,
         puzzles: (prev.puzzles || []).map(p =>
-          p.id === puzzleId ? { ...p, solved: true } : p
+          p.id === puzzleId ? { ...p, solved: true, solvedAt: Date.now() } : p
+        )
+      }));
+    };
+
+    const handleMarkUnsolved = (puzzleId) => {
+      setData(prev => ({
+        ...prev,
+        puzzles: (prev.puzzles || []).map(p =>
+          p.id === puzzleId ? { ...p, solved: false, solvedAt: null } : p
+        )
+      }));
+    };
+
+    const handleRevealHint = (puzzleId) => {
+      setData(prev => ({
+        ...prev,
+        puzzles: (prev.puzzles || []).map(p =>
+          p.id === puzzleId
+            ? { ...p, hintsRevealed: Math.min((p.hintsRevealed || 0) + 1, (p.hints && p.hints.length) || 0) }
+            : p
         )
       }));
     };

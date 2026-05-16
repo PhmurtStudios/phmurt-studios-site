@@ -934,7 +934,7 @@ function placeTrees(cx, cy, wall, river, buildings, hash, rng, W, H) {
 
 
 // ─── PLAZA GENERATION ────────────────────────────────────────────────────
-function placeePlazas(cx, cy, wall, roads, hash, rng) {
+function placePlazas(cx, cy, wall, roads, hash, rng) {
   var plazas = [];
   var numPlazas = randInt(3, 6, rng);
 
@@ -1599,7 +1599,7 @@ function generateCapitalCity(name, seed, population, terrain) {
   var trees = placeTrees(cx, cy, wall, river, buildings, hash, rng, W, H);
 
   // Place plazas
-  var plazas = placeePlazas(cx, cy, wall, roads, hash, rng);
+  var plazas = placePlazas(cx, cy, wall, roads, hash, rng);
 
   // Generate outfield
   var outfield = generateOutfield(cx, cy, wall, W, H, rng);
@@ -1659,23 +1659,36 @@ function generateCapitalCity(name, seed, population, terrain) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function generateAllCapitalMaps(cities, worldSeed) {
-  if (!cities || !cities.length) return;
+  if (!cities || !cities.length) return { generated: 0, skipped: 0, failed: 0 };
 
   window.TOWN_IMAGES = window.TOWN_IMAGES || {};
   window.TOWN_METADATA = window.TOWN_METADATA || {};
 
+  var stats = { generated: 0, skipped: 0, failed: 0, errors: [] };
+
   for (var i = 0; i < cities.length; i++) {
     var c = cities[i];
-    if (!c.isCapital && !c.capital) continue;
-    if (window.TOWN_IMAGES[c.name]) continue; // already has pre-generated image
+    if (!c || typeof c !== 'object' || !c.name) { stats.skipped++; continue; }
+    if (!c.isCapital && !c.capital) { stats.skipped++; continue; }
+    if (window.TOWN_IMAGES[c.name]) { stats.skipped++; continue; } // already has pre-generated image
 
-    var seed = worldSeed ? hashSeed(worldSeed + "-" + c.name) : hashSeed(c.name);
-    var result = generateCapitalCity(c.name, seed, c.population || 100000, c.terrain || "plains");
+    try {
+      var seed = worldSeed ? hashSeed(worldSeed + "-" + c.name) : hashSeed(c.name);
+      var result = generateCapitalCity(c.name, seed, c.population || 100000, c.terrain || "plains");
 
-    // Store as SVG data URI
-    window.TOWN_IMAGES[c.name] = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(result.svg)));
-    window.TOWN_METADATA[c.name] = result.metadata;
+      // Store as SVG data URI
+      window.TOWN_IMAGES[c.name] = "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(result.svg)));
+      window.TOWN_METADATA[c.name] = result.metadata;
+      stats.generated++;
+    } catch (err) {
+      stats.failed++;
+      stats.errors.push({ city: c.name, message: err && err.message ? err.message : String(err) });
+      if (typeof console !== 'undefined' && console.warn) {
+        console.warn('Failed to generate capital map for ' + c.name + ':', err);
+      }
+    }
   }
+  return stats;
 }
 
 

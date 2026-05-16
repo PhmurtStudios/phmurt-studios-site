@@ -312,26 +312,45 @@
   const LOCATION_TYPES = ['Vault', 'Mansion', 'Castle', 'Temple', 'Guild Hall', 'Caravan', 'Ship', 'Sewer', 'Tower', 'Tavern'];
   const REWARD_TIERS = ['Petty', 'Moderate', 'Valuable', 'Legendary'];
 
-  function seededRandom(seed) {
-    const x = Math.sin(seed++) * 10000;
-    return x - Math.floor(x);
+  // Mulberry32 — small, fast, good distribution
+  function makeSeededRng(seed) {
+    let s = (seed >>> 0) || 1;
+    return function() {
+      s = (s + 0x6D2B79F5) >>> 0;
+      let t = s;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  function _genHeistId(prefix) {
+    return `${prefix || 'h'}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
   }
 
   function generateBlueprint(heistName, locationType) {
     const template = BUILDING_TEMPLATES[locationType];
     if (!template) return {};
 
-    const seed = heistName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const seedBase = String(heistName || '')
+      .split('')
+      .reduce((acc, char) => acc + char.charCodeAt(0), 0) + (locationType ? locationType.length * 31 : 0);
+    const rng = makeSeededRng(seedBase || 1);
     const blueprint = {};
 
     template.rooms.forEach((room, idx) => {
       let guardCount = room.guards;
-      let hazards = room.hazards;
-      let loot = room.loot;
+      const hazards = room.hazards;
+      const loot = room.loot;
 
       if (room.type === 'room' || room.type === 'corridor') {
-        const guardVar = Math.floor(seededRandom(seed + idx * 10) * 3);
+        // ±1 around base
+        const guardVar = Math.floor(rng() * 3);
         guardCount = Math.max(0, room.guards - 1 + guardVar);
+      } else if (room.type === 'vault') {
+        // Vaults guard count can swing higher when seed is unlucky
+        const elite = rng() < 0.25 ? 1 : 0;
+        guardCount = (room.guards || 0) + elite;
       }
 
       const roomId = 'room_' + idx;
@@ -342,7 +361,10 @@
         description: `${locationType} ${room.name.toLowerCase()}`,
         hazards: hazards,
         loot: loot,
-        guards: guardCount
+        guards: guardCount,
+        connections: Array.isArray(room.connections) ? room.connections.slice() : [],
+        explored: false,
+        cleared: false
       };
     });
 
@@ -462,7 +484,7 @@
 
   function HeistCreationPanel({ data, setData, onClose }) {
     const [newHeist, setNewHeist] = useState({
-      id: Date.now(),
+      id: _genHeistId('heist'),
       name: 'New Heist',
       location: '',
       type: 'Vault',
@@ -1203,9 +1225,9 @@
 
   function HeatSystem({ heist, setHeist }) {
     const updateHeat = useCallback((amount) => {
-      const updated = {...heist};
-      updated.heat = Math.max(0, Math.min(100, updated.heat + amount));
-      setHeist(updated);
+      const cur = typeof heist.heat === 'number' && !isNaN(heist.heat) ? heist.heat : 0;
+      const next = Math.max(0, Math.min(100, cur + amount));
+      setHeist({ ...heist, heat: next });
     }, [heist, setHeist]);
 
     const activeConsequences = useMemo(() => {

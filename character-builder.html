@@ -10295,132 +10295,25 @@ function init35() {
         if (!raw) return;
         var d = JSON.parse(raw);
         if (!d.race && !d.cls) return;
-        if (Date.now() - d.ts > 86400000 * 7) return;
-        Object.keys(d).forEach(function(k) { if (k !== 'ts' && C35.hasOwnProperty(k)) C35[k] = d[k]; });
+        if (Date.now() - d.ts > 86400000 * 7) return; // expire after 7 days
+        if (typeof C35 !== 'undefined') {
+          Object.keys(d).forEach(function(k) { if (k !== 'ts' && C35.hasOwnProperty(k)) C35[k] = d[k]; });
+        }
       } catch(e) {}
     }
 
-    // Clear save when starting fresh
-    window.clearBuilderSave = function(edition) {
-      if (edition === '35e') localStorage.removeItem(SAVE_KEY_35);
-      else localStorage.removeItem(SAVE_KEY_5E);
-    };
-
-    // Restore on load
-    tryRestore5e();
-    tryRestore35();
-
-    // Listen for clicks and inputs to trigger auto-save
+    // Schedule autosave on user interaction
     document.addEventListener('click', scheduleAutoSave);
     document.addEventListener('input', scheduleAutoSave);
+    document.addEventListener('change', scheduleAutoSave);
+
+    // Try restore on load
+    document.addEventListener('DOMContentLoaded', function() {
+      try { tryRestore5e(); } catch(e) {}
+      try { tryRestore35(); } catch(e) {}
+    });
   })();
   </script>
 
-  <div id="ps-site-footer"></div>
-
-  <script src="char-sheet-export.js?v=185"></script>
-  <script src="phmurt-tour.js?v=192" defer></script>
-  <script src="builder-wizard.js?v=192"></script>
-  <script src="phmurt-shell.js?v=192"></script>
-  <script>
-  /* Auto-start character builder tour on first visit; add "Take Tour" button to sidebar */
-  document.addEventListener('DOMContentLoaded', function () {
-    setTimeout(function () {
-      var sidebar = document.getElementById('sidebar');
-      if (sidebar && window.PhmurtTour) {
-        var tourBtn = document.createElement('button');
-        tourBtn.id = 'cb-tour-btn';
-        tourBtn.innerHTML = '\u2316 Take Tour';
-        tourBtn.title = 'Guided tour of the character builder';
-        tourBtn.style.cssText = 'display:block;width:100%;margin-top:6px;padding:8px 12px;font-family:Cinzel,serif;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;background:rgba(212,67,58,0.04);border:1px solid var(--border,rgba(255,255,255,0.11));color:var(--text-dim,#6b5e50);border-radius:4px;cursor:pointer;transition:all .15s;';
-        tourBtn.addEventListener('click', function () { PhmurtTour.start('character-builder'); });
-        sidebar.appendChild(tourBtn);
-        /* Auto-start on first visit (after wizard overlay is shown/dismissed) */
-        if (!PhmurtTour.hasSeen('character-builder')) {
-          setTimeout(function () {
-            var wizardVisible = document.getElementById('wizard-welcome');
-            if (!wizardVisible || wizardVisible.style.display === 'none') {
-              PhmurtTour.start('character-builder');
-            }
-          }, 1500);
-        }
-      }
-      /* Character sheet tour button — inject into the sheet view (step 9) */
-      var origGoToStep = window.goToStep;
-      if (origGoToStep) {
-        var _patched = false;
-        window.goToStep = function (n, skip) {
-          origGoToStep(n, skip);
-          if ((n === 9 || n === '9') && !_patched && window.PhmurtTour) {
-            _patched = true;
-            setTimeout(function () {
-              var sheetArea = document.querySelector('.cs-section') || document.querySelector('.cs-ability-grid');
-              if (sheetArea) {
-                var stBtn = document.createElement('button');
-                stBtn.innerHTML = '\u2316 Tour Character Sheet';
-                stBtn.style.cssText = 'display:inline-block;margin:8px 0 16px;padding:8px 16px;font-family:Cinzel,serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;background:rgba(212,67,58,0.06);border:1px solid rgba(212,67,58,0.15);color:var(--crimson,#d4433a);border-radius:4px;cursor:pointer;';
-                stBtn.addEventListener('click', function () { PhmurtTour.start('character-sheet'); });
-                sheetArea.parentElement.insertBefore(stBtn, sheetArea);
-                if (!PhmurtTour.hasSeen('character-sheet')) {
-                  setTimeout(function () { PhmurtTour.start('character-sheet'); }, 600);
-                }
-              }
-            }, 300);
-          }
-        };
-      }
-    }, 200);
-  });
-  </script>
-
-  <!-- ── Boot-time canary ───────────────────────────────────────────
-       If the main builder container is missing, zero-height, or hidden
-       500ms after DOMContentLoaded, report to site_errors so we can
-       catch blank-page regressions in production. Fires at most once
-       per page load. -->
-  <script>
-  (function () {
-    function report(reason, detail) {
-      try {
-        if (typeof phmurtSupabase === 'undefined' || !phmurtSupabase) return;
-        var uid = null;
-        try { var s = (typeof PhmurtDB !== 'undefined' && PhmurtDB.getSession) ? PhmurtDB.getSession() : null; uid = s && s.userId ? s.userId : null; } catch (_e) {}
-        phmurtSupabase.from('site_errors').insert({
-          message: ('[char-builder canary] ' + reason).slice(0, 500),
-          stack:   (detail || '').slice(0, 2000),
-          page:    '/character-builder.html',
-          user_agent: (navigator.userAgent || '').slice(0, 300),
-          user_id: uid,
-        }).then(function () {}).catch(function () {});
-      } catch (_e) { /* swallow */ }
-    }
-    function check() {
-      try {
-        var main = document.getElementById('builder-5e');
-        var sel  = document.getElementById('editionSelector');
-        if (!main) return report('builder-5e missing', '');
-        var cs = getComputedStyle(main);
-        var rect = main.getBoundingClientRect();
-        var selVisible = sel && getComputedStyle(sel).display !== 'none';
-        // Healthy: either the edition selector is on screen, or the main builder is.
-        if (selVisible && sel.getBoundingClientRect().height > 0) return;
-        if (cs.display === 'none' || cs.visibility === 'hidden') {
-          return report('builder-5e hidden', 'display=' + cs.display + ' visibility=' + cs.visibility);
-        }
-        if (rect.height < 10) {
-          return report('builder-5e zero-height', 'h=' + rect.height + ' w=' + rect.width);
-        }
-      } catch (e) {
-        report('canary crashed', (e && e.message) || '');
-      }
-    }
-    function schedule() { setTimeout(check, 500); }
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', schedule, { once: true });
-    } else {
-      schedule();
-    }
-  })();
-  </script>
 </body>
 </html>

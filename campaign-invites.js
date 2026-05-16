@@ -57,20 +57,36 @@
   function copyToClipboard(text) {
     if (!text) return false;
     try {
-      navigator.clipboard.writeText(text).catch(() => {
-        // Fallback for older browsers
-        const textarea = document.createElement('textarea');
-        textarea.value = text;
-        textarea.style.position = 'fixed';
-        textarea.style.opacity = '0';
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-      });
-      return true;
+      // Try modern Clipboard API first — but only if available (HTTPS / secure context)
+      if (typeof navigator !== 'undefined' && navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).catch(() => {
+          legacyCopyFallback(text);
+        });
+        return true;
+      }
+      return legacyCopyFallback(text);
     } catch (e) {
       console.error('Copy failed:', e);
+      return false;
+    }
+  }
+
+  function legacyCopyFallback(text) {
+    try {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.top = '0';
+      textarea.style.left = '0';
+      textarea.style.opacity = '0';
+      textarea.setAttribute('readonly', '');
+      document.body.appendChild(textarea);
+      textarea.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(textarea);
+      return ok;
+    } catch (e) {
+      console.error('Legacy copy failed:', e);
       return false;
     }
   }
@@ -213,7 +229,7 @@
                 position: 'relative'
               }
             },
-            member.role.toUpperCase()
+            (member.role || 'member').toUpperCase()
           )
         ),
         React.createElement(
@@ -342,7 +358,6 @@
     const [copiedUrl, setCopiedUrl] = useState(null);
     const [assigningPlayerId, setAssigningPlayerId] = useState(null);
     const [error, setError] = useState(null);
-    const saveTimerRef = useRef(null);
 
     // Ensure invites data structure exists
     useEffect(() => {
@@ -406,41 +421,48 @@
       };
     }, [campaignId]);
 
-    // Auto-save debounced
-    useEffect(() => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-
-      saveTimerRef.current = setTimeout(() => {
-        setData(prev => ({
-          ...prev,
-          invites: {
-            playerAssignments: prev.invites?.playerAssignments || {},
-            invitedPlayers: prev.invites?.invitedPlayers || [],
-            memberRoles: prev.invites?.memberRoles || {},
-            inviteHistory: prev.invites?.inviteHistory || []
-          }
-        }));
-      }, 500);
-
-      return () => {
-        if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-      };
-    }, [data.invites]);
+    // NOTE: No local "auto-save" effect here on purpose.
+    // The parent CampaignManager (campaigns.html) has a debounced autosave
+    // that persists the full `campaigns` array to localStorage AND to Supabase
+    // via PhmurtDB.saveCampaign on every change (including changes to
+    // data.invites). The previous effect here wrote `data.invites` back into
+    // itself on every change, which produced a new object reference each
+    // render and kept resetting the parent's 3s cloud-save debounce —
+    // meaning cloud saves never fired. Removing it lets the parent autosave
+    // work normally.
 
     // Generate new invite code (DM only)
     const generateInvite = useCallback(async () => {
-      if (!window.PhmurtDB || !campaignId) return;
+      if (!window.PhmurtDB) {
+        setError('Cloud is not available. Sign in and try again.');
+        return;
+      }
+      if (!campaignId) {
+        setError('No campaign selected.');
+        return;
+      }
+      if (typeof campaignId === 'string' && campaignId.indexOf('camp-') === 0) {
+        setError('Save this campaign to the cloud before creating invites.');
+        return;
+      }
 
       try {
         setLoading(true);
         const result = await window.PhmurtDB.createInviteCode(campaignId);
-        if (result && result.code) {
-          setInviteCodes(prev => [result, ...prev]);
-          setError(null);
+        // PhmurtDB now returns either a row (with invite_code) or { error: '...' }
+        if (!result || result.error) {
+          setError((result && result.error) || 'Failed to create invite code');
+          return;
         }
+        if (!result.invite_code) {
+          setError('Invite was created but the server did not return a code. Try refreshing.');
+          return;
+        }
+        setInviteCodes(prev => [result, ...prev]);
+        setError(null);
       } catch (err) {
         console.error('Failed to create invite code:', err);
-        setError('Failed to create invite code');
+        setError((err && err.message) || 'Failed to create invite code');
       } finally {
         setLoading(false);
       }
@@ -555,7 +577,6 @@
 
     const isDm = viewRole === 'dm';
     const partyMembers = getPartyMembers();
-    const inviteCode = inviteCodes.length > 0 ? inviteCodes[0].invite_code || inviteCodes[0].code : null;
 
     // ========================================================================
     // RENDER
@@ -672,8 +693,8 @@
                       },
                       assignedCharacter: getAssignedCharacter(member.user_id),
                       isCurrentUser: member.user_id === currentUserId,
-                      onRoleChange: isDm ? role => updateMemberRole(member.user_id, role) : null,
-                      onKick: isDm && !member.isCurrentUser ? () => kickMember(member.user_id) : null,
+                      onRoleChange: isDm && member.user_id !== currentUserId ? role => updateMemberRole(member.user_id, role) : null,
+                      onKick: isDm && member.user_id !== currentUserId ? () => kickMember(member.user_id) : null,
                       onAssignCharacter: isDm ? () => setAssigningPlayerId(member.user_id) : null
                     })
                   )
@@ -733,9 +754,11 @@
                       : inviteCodes.map(code =>
                           React.createElement(InviteCodeCard, {
                             key: code.id,
+                            // DB schema column is `invite_code`; keep
+                            // the `code` fallback for any legacy rows.
                             code: code.invite_code || code.code,
                             createdAt: code.created_at,
-                            uses: code.uses || 0,
+                            uses: (typeof code.uses === 'number' ? code.uses : (code.use_count || 0)),
                             maxUses: code.max_uses,
                             onDelete: () => deleteInvite(code.id),
                             onCopy: handleCopyUrl
@@ -829,7 +852,7 @@
                     React.createElement(
                       'div',
                       { style: { fontSize: '16px', fontWeight: 'bold', color: T.gold, marginBottom: '16px' } },
-                      viewRole.charAt(0).toUpperCase() + viewRole.slice(1)
+                      viewRole ? viewRole.charAt(0).toUpperCase() + viewRole.slice(1) : 'Player'
                     ),
                     React.createElement(
                       'div',

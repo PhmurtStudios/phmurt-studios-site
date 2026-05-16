@@ -356,17 +356,22 @@
     }
 
     _generateHex(q, r, noiseVal, seed) {
+      // ── BUGFIX: previous bands left `lake` terrain unreachable (it was in
+      // the resources table but no noise band produced it). Bands now cover
+      // every terrain type defined in HEX_TERRAINS. ──
       let terrainId = 'plains';
 
-      if (noiseVal < 0.15) terrainId = 'mountains';
-      else if (noiseVal < 0.25) terrainId = 'hills';
-      else if (noiseVal < 0.35) terrainId = 'forest';
-      else if (noiseVal < 0.45) terrainId = 'swamp';
-      else if (noiseVal < 0.55) terrainId = 'jungle';
-      else if (noiseVal < 0.65) terrainId = 'desert';
-      else if (noiseVal < 0.75) terrainId = 'tundra';
-      else if (noiseVal < 0.85) terrainId = 'coast';
-      else if (noiseVal < 0.92) terrainId = 'river';
+      if (noiseVal < 0.10) terrainId = 'mountains';
+      else if (noiseVal < 0.18) terrainId = 'hills';
+      else if (noiseVal < 0.28) terrainId = 'forest';
+      else if (noiseVal < 0.36) terrainId = 'swamp';
+      else if (noiseVal < 0.45) terrainId = 'jungle';
+      else if (noiseVal < 0.55) terrainId = 'desert';
+      else if (noiseVal < 0.63) terrainId = 'tundra';
+      else if (noiseVal < 0.72) terrainId = 'coast';
+      else if (noiseVal < 0.80) terrainId = 'river';
+      else if (noiseVal < 0.86) terrainId = 'lake';
+      else if (noiseVal < 0.92) terrainId = 'ruins';
       else terrainId = 'plains';
 
       const terrain = HEX_TERRAINS[terrainId];
@@ -418,47 +423,44 @@
     }
 
     /**
-     * Move party in hex direction (0-5)
-     * Direction: 0=NE, 1=E, 2=SE, 3=SW, 4=W, 5=NW
+     * Move party in hex direction (0-5).
+     * Axial offsets — direction names follow the engine's existing convention.
+     * Returns { success, position, movement, hex, reason? } — never throws on
+     * bad input, so UI can show a friendly message.
      */
     moveParty(direction) {
-      const directions = [
-        { q: 1, r: 0 },   // NE
-        { q: 1, r: -1 },  // E
-        { q: 0, r: -1 },  // SE
-        { q: -1, r: 0 },  // SW
-        { q: -1, r: 1 },  // W
-        { q: 0, r: 1 }    // NW
-      ];
-
-      if (direction < 0 || direction > 5) throw new Error('Invalid direction');
-
-      const nextPos = directions[direction];
+      const dirs = HexCrawlEngine.DIRECTIONS;
+      const idx = parseInt(direction, 10);
+      if (!Number.isFinite(idx) || idx < 0 || idx > 5) {
+        return { success: false, reason: 'invalid_direction' };
+      }
+      const nextPos = dirs[idx];
       const newQ = this.partyPosition.q + nextPos.q;
       const newR = this.partyPosition.r + nextPos.r;
       const key = `${newQ},${newR}`;
 
       const targetHex = this.hexGrid.get(key);
-      if (!targetHex) throw new Error('Hex not found in grid');
+      if (!targetHex) return { success: false, reason: 'no_hex' };
 
       const moveCost = targetHex.terrainData.travelCost;
-      if (this.movement < moveCost) throw new Error('Insufficient movement points');
+      if (this.movement < moveCost) return { success: false, reason: 'no_movement', required: moveCost };
 
       this.movement -= moveCost;
       this.partyPosition = { q: newQ, r: newR };
-
       this.exploreHex(newQ, newR);
 
-      return { position: this.partyPosition, movement: this.movement, hex: targetHex };
+      return { success: true, position: this.partyPosition, movement: this.movement, hex: targetHex };
     }
 
     /**
-     * Explore and reveal hex contents
+     * Explore and reveal hex contents.
+     * Encounter chance now scales with the hex's danger level (5% per pip,
+     * floored at 10%, capped at 60%) instead of a flat 30%.
      */
     exploreHex(q, r) {
       const key = `${q},${r}`;
       const hex = this.hexGrid.get(key);
-      if (!hex) return;
+      if (!hex) return null;
 
       hex.revealed = true;
       this.revealedHexes.add(key);
@@ -467,10 +469,22 @@
         hex.explored = true;
         this.exploredHexes.add(key);
 
-        // Roll for encounter
-        if (Math.random() < 0.3) {
+        const baseChance = 0.10 + (hex.dangerLevel || 1) * 0.05;
+        const chance = Math.min(0.60, baseChance);
+        if (Math.random() < chance) {
           const encounter = this.rollEncounter(hex);
           if (encounter) hex.encounters.push(encounter);
+        }
+      }
+
+      // Auto-reveal hexes within line-of-sight from the explored hex.
+      const sight = (hex.terrainData && hex.terrainData.visibility) || 1;
+      for (const [k, other] of this.hexGrid) {
+        if (other.revealed) continue;
+        const d = this._estimateDistance(q, r, other.q, other.r);
+        if (d <= sight) {
+          other.revealed = true;
+          this.revealedHexes.add(k);
         }
       }
 
@@ -478,18 +492,30 @@
     }
 
     /**
-     * Camp at current hex - roll for random encounter
+     * Camp at current hex - roll for random encounter.
+     * Long rests in unsheltered terrain are riskier than short rests; sheltered
+     * terrain reduces the encounter chance. A successful long rest also restores
+     * daily movement.
+     * @param {object} [opts] - { restType: "short"|"long" (default "long"),
+     *                            watchBonus: int (subtract from encounter chance) }
      */
-    camp() {
+    camp(opts = {}) {
       const key = `${this.partyPosition.q},${this.partyPosition.r}`;
       const hex = this.hexGrid.get(key);
       if (!hex) return { success: false };
 
-      const encounterChance = 0.25 + (hex.dangerLevel * 0.1);
-      const hasEncounter = Math.random() < encounterChance;
+      const restType = opts.restType === 'short' ? 'short' : 'long';
+      const watch = Math.max(0, parseInt(opts.watchBonus, 10) || 0);
+
+      let chance = (restType === 'long' ? 0.25 : 0.12) + (hex.dangerLevel * 0.08);
+      if (hex.terrainData.shelterAvailable) chance *= 0.6;
+      chance = Math.max(0, chance - watch * 0.05);
+      const hasEncounter = Math.random() < chance;
 
       let result = {
+        success: true,
         position: this.partyPosition,
+        restType,
         shelterAvailable: hex.terrainData.shelterAvailable,
         hasEncounter,
         encounter: null,
@@ -498,9 +524,32 @@
 
       if (hasEncounter) {
         result.encounter = this.rollEncounter(hex);
+      } else if (restType === 'long') {
+        // Long rest restores movement.
+        this.movement = this.maxMovement;
+        result.movementRestored = true;
       }
 
       return result;
+    }
+
+    /**
+     * Attempt to avoid an encounter. Mirrors encounter.canAvoid/avoidDC fields
+     * defined in WILDERNESS_ENCOUNTERS so the UI can offer a 'Sneak past' option.
+     */
+    attemptAvoidEncounter(encounter, stealthBonus = 0) {
+      if (!encounter) return { success: false, reason: 'no_encounter' };
+      if (!encounter.canAvoid) return { success: false, reason: 'cannot_avoid', dc: 0 };
+      const roll = Math.floor(Math.random() * 20) + 1;
+      const total = roll + stealthBonus;
+      const success = total >= encounter.avoidDC;
+      return {
+        success,
+        roll,
+        total,
+        dc: encounter.avoidDC,
+        margin: total - encounter.avoidDC
+      };
     }
 
     /**
@@ -630,7 +679,9 @@
     }
 
     /**
-     * Get hexes visible from current position
+     * Get hexes visible from current position. Visibility itself reveals hexes
+     * (previously this only returned ones already-revealed, so visibility was
+     * effectively a no-op).
      */
     getVisibleHexes() {
       const key = `${this.partyPosition.q},${this.partyPosition.r}`;
@@ -645,12 +696,73 @@
           this.partyPosition.q, this.partyPosition.r,
           hex.q, hex.r
         );
-        if (dist <= visibility && hex.revealed) {
+        if (dist <= visibility) {
+          if (!hex.revealed) {
+            hex.revealed = true;
+            this.revealedHexes.add(hexKey);
+          }
           visibleHexes.push(hex);
         }
       }
 
       return visibleHexes;
+    }
+
+    /**
+     * A* pathfinding from current position to (toQ, toR), costed by terrain
+     * travelCost. Returns { path: [{q,r}], totalCost } or null if unreachable.
+     */
+    findPath(toQ, toR) {
+      const startKey = `${this.partyPosition.q},${this.partyPosition.r}`;
+      const goalKey = `${toQ},${toR}`;
+      if (!this.hexGrid.has(startKey) || !this.hexGrid.has(goalKey)) return null;
+
+      const dirs = HexCrawlEngine.DIRECTIONS;
+      const cameFrom = new Map();
+      const gScore = new Map([[startKey, 0]]);
+      const fScore = new Map([[startKey, this._estimateDistance(this.partyPosition.q, this.partyPosition.r, toQ, toR)]]);
+      const open = new Set([startKey]);
+
+      while (open.size > 0) {
+        // Pick lowest fScore
+        let curr = null, currF = Infinity;
+        for (const k of open) {
+          const f = fScore.get(k);
+          if (f < currF) { currF = f; curr = k; }
+        }
+        if (curr === null) break;
+        if (curr === goalKey) {
+          // Reconstruct
+          const path = [];
+          let cursor = curr;
+          while (cursor) {
+            const [qs, rs] = cursor.split(',');
+            path.unshift({ q: parseInt(qs, 10), r: parseInt(rs, 10) });
+            cursor = cameFrom.get(cursor);
+          }
+          return { path, totalCost: gScore.get(goalKey) || 0 };
+        }
+        open.delete(curr);
+        const [cqs, crs] = curr.split(',');
+        const cq = parseInt(cqs, 10), cr = parseInt(crs, 10);
+
+        for (const d of dirs) {
+          const nq = cq + d.q, nr = cr + d.r;
+          const nk = `${nq},${nr}`;
+          const nh = this.hexGrid.get(nk);
+          if (!nh) continue;
+          // Use ?? (nullish), not || — || treats start's gScore of 0 as falsy
+          // and re-adds start to the open set forever.
+          const tentative = (gScore.get(curr) ?? 0) + (nh.terrainData.travelCost || 1);
+          if (tentative < (gScore.get(nk) ?? Infinity)) {
+            cameFrom.set(nk, curr);
+            gScore.set(nk, tentative);
+            fScore.set(nk, tentative + this._estimateDistance(nq, nr, toQ, toR));
+            open.add(nk);
+          }
+        }
+      }
+      return null;
     }
 
     /**
@@ -817,14 +929,15 @@
     }
 
     /**
-     * Add note to current hex
+     * Add note to current hex. Returns true on success.
      */
     addNote(content) {
       const key = `${this.partyPosition.q},${this.partyPosition.r}`;
       const hex = this.hexGrid.get(key);
-      if (hex) {
-        hex.notes = content;
-      }
+      if (!hex) return false;
+      hex.notes = String(content || '');
+      this.notes.set(key, hex.notes);
+      return true;
     }
 
     /**
@@ -835,9 +948,16 @@
     }
 
     /**
-     * Get stats
+     * Get stats including a per-terrain breakdown of explored hexes.
      */
     getStats() {
+      const terrainBreakdown = {};
+      for (const key of this.exploredHexes) {
+        const h = this.hexGrid.get(key);
+        if (h && h.terrain) {
+          terrainBreakdown[h.terrain] = (terrainBreakdown[h.terrain] || 0) + 1;
+        }
+      }
       return {
         exploredHexCount: this.exploredHexes.size,
         revealedHexCount: this.revealedHexes.size,
@@ -845,10 +965,22 @@
         totalTravelEvents: this.travelEventHistory.length,
         currentPosition: this.partyPosition,
         currentMovement: this.movement,
-        maxMovement: this.maxMovement
+        maxMovement: this.maxMovement,
+        terrainBreakdown,
+        gridSize: this.hexGrid.size
       };
     }
   }
+
+  // Static lookup for axial directions (kept on the class for testability).
+  HexCrawlEngine.DIRECTIONS = [
+    { q: 1, r: 0 },   // 0
+    { q: 1, r: -1 },  // 1
+    { q: 0, r: -1 },  // 2
+    { q: -1, r: 0 },  // 3
+    { q: -1, r: 1 },  // 4
+    { q: 0, r: 1 }    // 5
+  ];
 
   // ============================================================================
   // EXPORTS

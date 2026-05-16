@@ -632,7 +632,34 @@
     }, [intrigue, update]);
 
     var removeAgent = useCallback(function(bid, aid) {
-      update({ branches: intrigue.branches.map(function(b) { return b.id === bid ? Object.assign({}, b, { agents: b.agents.filter(function(a) { return a.id !== aid; }) }) : b; }) });
+      var nextConns = (intrigue.connections || []).filter(function(c) {
+        return c && c.fromAgent !== aid && c.toAgent !== aid;
+      });
+      // Also remove from any scheme assignments
+      var nextBranches = intrigue.branches.map(function(b) {
+        if (b.id !== bid) {
+          // Still strip from any scheme.assignedAgents in other branches (defensive)
+          if (Array.isArray(b.schemes)) {
+            return Object.assign({}, b, {
+              schemes: b.schemes.map(function(s) {
+                if (!s || !Array.isArray(s.assignedAgents)) return s;
+                if (s.assignedAgents.indexOf(aid) === -1) return s;
+                return Object.assign({}, s, { assignedAgents: s.assignedAgents.filter(function(x) { return x !== aid; }) });
+              })
+            });
+          }
+          return b;
+        }
+        return Object.assign({}, b, {
+          agents: b.agents.filter(function(a) { return a.id !== aid; }),
+          schemes: (b.schemes || []).map(function(s) {
+            if (!s || !Array.isArray(s.assignedAgents)) return s;
+            if (s.assignedAgents.indexOf(aid) === -1) return s;
+            return Object.assign({}, s, { assignedAgents: s.assignedAgents.filter(function(x) { return x !== aid; }) });
+          })
+        });
+      });
+      update({ branches: nextBranches, connections: nextConns });
       if (editAgent && editAgent.id === aid) setEditAgent(null);
     }, [intrigue, update, editAgent]);
 
@@ -644,9 +671,27 @@
     }, [intrigue, update, newBranchName, newBranchDesc]);
 
     var removeBranch = useCallback(function(bid) {
-      var shouldDelete = typeof window !== 'undefined' && typeof window.confirm === 'function' && window.confirm('Remove this entire faction?');
+      var shouldDelete = typeof window !== 'undefined' && typeof window.confirm === 'function' && window.confirm('Remove this entire faction? Its agents and references in connections will also be removed.');
       if (!shouldDelete) return;
-      update({ branches: intrigue.branches.filter(function(b) { return b && b.id !== bid; }) });
+      // Collect agent IDs in this branch so we can purge connections that reference them
+      var branch = intrigue.branches.find(function(b) { return b && b.id === bid; });
+      var deadIds = {};
+      if (branch) {
+        if (branch.sage && branch.sage.id) deadIds[branch.sage.id] = true;
+        (branch.agents || []).forEach(function(a) { if (a && a.id) deadIds[a.id] = true; });
+      }
+      var nextConns = (intrigue.connections || []).filter(function(c) {
+        if (!c) return false;
+        if (c.fromFaction === bid || c.toFaction === bid) return false;
+        if (deadIds[c.fromAgent] || deadIds[c.toAgent]) return false;
+        return true;
+      });
+      var nextEvents = (intrigue.globalEvents || []).filter(function(e) { return !e || e.branchId !== bid; });
+      update({
+        branches: intrigue.branches.filter(function(b) { return b && b.id !== bid; }),
+        connections: nextConns,
+        globalEvents: nextEvents
+      });
       if (view === bid) setView('web');
     }, [intrigue, update, view]);
 
@@ -678,11 +723,42 @@
       update({ connections: (intrigue.connections || []).filter(function(c) { return c.id !== cid; }) });
     }, [intrigue, update]);
 
-    var addEvent = useCallback(function(bid, text) {
+    var addEvent = useCallback(function(bid, text, customDate) {
       if (!text || typeof text !== 'string' || !text.trim()) return;
-      var evt = { id: uid(), date: 'Session ' + ((intrigue.globalEvents || []).length + 1), text: text.trim(), branchId: bid };
+      var dateStr = customDate && typeof customDate === 'string' && customDate.trim()
+        ? customDate.trim()
+        : 'Session ' + ((intrigue.globalEvents || []).length + 1);
+      var evt = {
+        id: uid(),
+        date: dateStr,
+        text: text.trim(),
+        branchId: bid || null,
+        createdAt: Date.now()
+      };
       update({ globalEvents: (intrigue.globalEvents || []).concat([evt]) });
     }, [intrigue, update]);
+
+    var removeEvent = useCallback(function(eid) {
+      if (!eid) return;
+      update({ globalEvents: (intrigue.globalEvents || []).filter(function(e) { return e && e.id !== eid; }) });
+    }, [intrigue, update]);
+
+    /**
+     * Reveal/conceal an agent. Optionally also logs an event.
+     */
+    var toggleReveal = useCallback(function(bid, aid, logEvent) {
+      var agent = findAgent2(aid);
+      if (!agent) return;
+      var nextRevealed = !agent.revealed;
+      if (intrigue.shadowLeader && intrigue.shadowLeader.id === aid) {
+        update({ shadowLeader: Object.assign({}, intrigue.shadowLeader, { revealed: nextRevealed }) });
+      } else {
+        updateAgent(bid, aid, { revealed: nextRevealed });
+      }
+      if (logEvent) {
+        addEvent(bid, (nextRevealed ? 'Revealed: ' : 'Concealed: ') + (agent.name || 'an agent'));
+      }
+    }, [intrigue, update, updateAgent, addEvent, findAgent2]);
 
     var findAgent2 = useCallback(function(aid) {
       if (!aid) return null;

@@ -278,11 +278,23 @@
   };
 
   const getOutbreakSeverity = (infected, population) => {
-    const ratio = infected / population;
+    const pop = (typeof population === 'number' && population > 0) ? population : 1;
+    const inf = typeof infected === 'number' ? Math.max(0, infected) : 0;
+    const ratio = inf / pop;
     if (ratio > 0.2) return 'pandemic';
     if (ratio > 0.1) return 'epidemic';
     if (ratio > 0.02) return 'spreading';
     return 'contained';
+  };
+
+  // Compute deaths in a tick from disease mortality. Quarantine/treatment reduce.
+  const _tickDeaths = (outbreak, disease) => {
+    if (!disease) return 0;
+    let mortalityPerDay = (disease.mortalityRate || 0) * 0.05; // very rough — 5% of mortality rate per day
+    if (outbreak.quarantined) mortalityPerDay *= 0.7;
+    if (outbreak.sanitation === 'excellent') mortalityPerDay *= 0.5;
+    if (outbreak.sanitation === 'poor') mortalityPerDay *= 1.4;
+    return Math.floor(outbreak.infectedCount * mortalityPerDay);
   };
 
   // ============================================================================
@@ -437,50 +449,106 @@
         const d = { ...prev };
         if (!d.plague) d.plague = {};
 
+        const diseases = { ...DISEASE_LIBRARY, ...(d.plague.customDiseases || {}) };
+
         // Process each outbreak
         d.plague.outbreaks = (d.plague.outbreaks || []).map(outbreak => {
+          const disease = diseases[outbreak.diseaseId];
           const rate = calculateSpreadRate(outbreak);
           const newInfected = Math.floor(outbreak.infectedCount * rate);
+          const deaths = _tickDeaths(outbreak, disease);
           const updated = {
             ...outbreak,
-            infectedCount: Math.min(
-              outbreak.infectedCount + newInfected,
+            infectedCount: Math.max(0, Math.min(
+              outbreak.infectedCount + newInfected - deaths,
               outbreak.population
-            ),
-            daysSince: outbreak.daysSince + 1
+            )),
+            deathToll: (outbreak.deathToll || 0) + deaths,
+            population: Math.max(0, (outbreak.population || 0) - deaths),
+            daysSince: (outbreak.daysSince || 0) + 1
           };
 
           // Random mutation
           if (Math.random() < 0.05) {
             if (!d.plague.mutations) d.plague.mutations = [];
             d.plague.mutations.push({
+              id: 'mut_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
               outbreak: outbreak.location,
               disease: outbreak.diseaseId,
               severity: Math.random() > 0.5 ? 'increased' : 'decreased',
               date: new Date().toISOString()
             });
-            updated.dailyRate = outbreak.dailyRate + (Math.random() - 0.5) * 0.05;
+            updated.dailyRate = Math.max(0.01, Math.min(0.9, (outbreak.dailyRate || 0.15) + (Math.random() - 0.5) * 0.05));
           }
 
           return updated;
         });
 
-        // Progress patient stages
+        // Progress patient stages — uses disease DC for save-based progression
         d.plague.patients = (d.plague.patients || []).map(patient => {
-          if (patient.status === 'infected' && Math.random() < 0.2) {
-            const newStage = Math.min(patient.currentStage + 1, 4);
-            return {
-              ...patient,
-              currentStage: newStage,
-              status: newStage === 4 && Math.random() < 0.3 ? 'deceased' : patient.status
-            };
+          if (patient.status !== 'infected') return patient;
+
+          const disease = diseases[patient.diseaseId];
+          const dc = disease?.dc || 12;
+
+          // Roll a save (d20 + 0 modifier — caller can supply through treatments later)
+          // Treatments give +1 each, capped at +5
+          const treatmentBonus = Math.min(5, (patient.treatments || []).length);
+          const saveRoll = Math.floor(Math.random() * 20) + 1 + treatmentBonus;
+          const passed = saveRoll >= dc;
+
+          let { currentStage, successSaves, failedSaves, status } = patient;
+          if (passed) {
+            successSaves = (successSaves || 0) + 1;
+          } else {
+            failedSaves = (failedSaves || 0) + 1;
+            currentStage = Math.min((currentStage || 1) + 1, 4);
           }
-          return patient;
+
+          // 3 consecutive net successful saves → recovered
+          if (successSaves - failedSaves >= 3) {
+            status = 'recovered';
+          }
+
+          // Stage 4 + new failure rolls death using disease mortality
+          if (currentStage >= 4 && !passed) {
+            const mortality = disease?.mortalityRate ?? 0.15;
+            if (Math.random() < mortality) status = 'deceased';
+          }
+
+          return { ...patient, currentStage, successSaves, failedSaves, status };
         });
 
         return d;
       });
     }, [setData]);
+
+    // Remove a patient (DM only)
+    const removePatient = useCallback((patientId) => {
+      if (!isDM || !patientId) return;
+      setData(prev => {
+        const d = { ...prev };
+        if (!d.plague?.patients) return d;
+        d.plague = { ...d.plague, patients: d.plague.patients.filter(p => p && p.id !== patientId) };
+        return d;
+      });
+    }, [setData, isDM]);
+
+    // Cure a patient (DM only)
+    const curePatient = useCallback((patientId) => {
+      if (!isDM || !patientId) return;
+      setData(prev => {
+        const d = { ...prev };
+        if (!d.plague?.patients) return d;
+        d.plague = {
+          ...d.plague,
+          patients: d.plague.patients.map(p => p && p.id === patientId
+            ? { ...p, status: 'recovered', currentStage: Math.max(1, p.currentStage - 1) }
+            : p)
+        };
+        return d;
+      });
+    }, [setData, isDM]);
 
     // Save custom disease
     const saveCustomDisease = useCallback((disease) => {

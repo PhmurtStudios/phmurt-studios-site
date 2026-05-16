@@ -970,21 +970,92 @@
     /**
      * Search across all homebrew items
      * @param {string} query - Search term
-     * @returns {array} Matching items with type metadata
+     * @param {object} [opts] - Optional options: { types: string[], limit: number, fuzzy: boolean }
+     * @returns {array} Matching items with type metadata: { item, type, score }
      */
-    search(query) {
+    search(query, opts) {
       const results = [];
-      const q = query.toLowerCase();
+      if (!query || typeof query !== 'string') return results;
+      const q = query.trim().toLowerCase();
+      if (!q) return results;
+
+      const options = opts || {};
+      const typeFilter = Array.isArray(options.types) && options.types.length > 0 ? new Set(options.types) : null;
+      const limit = typeof options.limit === 'number' && options.limit > 0 ? options.limit : Infinity;
 
       for (const [type, typeMap] of this.items) {
+        if (typeFilter && !typeFilter.has(type)) continue;
         for (const item of typeMap.values()) {
-          if (item.name && item.name.toLowerCase().includes(q)) {
-            results.push(item);
+          let score = 0;
+          const nameLc = item.name ? String(item.name).toLowerCase() : '';
+          if (nameLc === q) score = 100;
+          else if (nameLc.startsWith(q)) score = 80;
+          else if (nameLc.includes(q)) score = 60;
+          else if (item.description && String(item.description).toLowerCase().includes(q)) score = 30;
+          else if (item.type && String(item.type).toLowerCase().includes(q)) score = 20;
+          else if (item.category && String(item.category).toLowerCase().includes(q)) score = 20;
+
+          if (score > 0) {
+            results.push({ item, type, score, name: item.name || '(unnamed)' });
           }
         }
       }
 
-      return results;
+      results.sort((a, b) => b.score - a.score || a.name.localeCompare(b.name));
+      return results.slice(0, limit);
+    }
+
+    /**
+     * Count items by type
+     * @returns {object} Type → count map
+     */
+    counts() {
+      const out = {};
+      for (const [type, typeMap] of this.items) {
+        out[type] = typeMap.size;
+      }
+      return out;
+    }
+
+    /**
+     * Clone an existing item with a new ID
+     * @param {string} type - Type of item
+     * @param {number} itemId - Source item ID
+     * @returns {object} New cloned item
+     */
+    clone(type, itemId) {
+      const source = this.items.get(type)?.get(itemId);
+      if (!source) throw new Error(`Item not found: ${type}/${itemId}`);
+      const copy = JSON.parse(JSON.stringify(source));
+      copy._id = ++this._idCounters[type];
+      copy._createdAt = new Date().toISOString();
+      copy._modifiedAt = copy._createdAt;
+      copy.name = (copy.name || 'Item') + ' (Copy)';
+      this.items.get(type).set(copy._id, copy);
+      return copy;
+    }
+
+    /**
+     * Get an item by type and ID
+     * @param {string} type - Type of item
+     * @param {number} itemId - Item ID
+     * @returns {object|null} Item or null
+     */
+    get(type, itemId) {
+      if (!this.items.has(type)) return null;
+      return this.items.get(type).get(itemId) || null;
+    }
+
+    /**
+     * Clear all items of a type, or all items if type omitted
+     * @param {string} [type] - Optional type to clear
+     */
+    clear(type) {
+      if (type) {
+        if (this.items.has(type)) this.items.get(type).clear();
+        return;
+      }
+      for (const typeMap of this.items.values()) typeMap.clear();
     }
 
     /**
@@ -1032,37 +1103,95 @@
     }
 
     /**
-     * Calculate challenge rating for a monster
+     * Calculate challenge rating for a monster using a tiered approach
+     * loosely modeled on the DMG monster building tables (p. 274-276).
      * @param {object} monster - Monster object
-     * @returns {number} Challenge rating
+     * @returns {number} Challenge rating (fractional supported: 0, 0.125, 0.25, 0.5, 1+)
      */
     calculateCR(monster) {
       if (monster._type !== 'monsters') {
         throw new Error('calculateCR only works with monsters');
       }
 
-      // Offensive CR: based on damage per round and attack bonus
-      let offensiveCR = 0;
-      let avgDamagePerRound = 0;
+      // ---- Defensive CR ----
+      const hp = Number(monster.hp) || 1;
+      const ac = Number(monster.ac) || 10;
+      const defCR = this._hpToCR(hp);
+      const expectedAC = this._expectedDefensiveAC(defCR);
+      const acDelta = ac - expectedAC;
+      // ±2 AC = ±1 CR step
+      const defensiveCR = Math.max(0, defCR + acDelta * 0.5);
 
-      if (monster.actions && monster.actions.length > 0) {
-        // Simple damage parsing (e.g., "1d8+3")
-        for (const action of monster.actions) {
-          if (action.damage) {
-            avgDamagePerRound += this._averageDamage(action.damage);
-          }
+      // ---- Offensive CR ----
+      let damagePerRound = 0;
+      let bestAttackBonus = 0;
+      let bestSaveDC = 0;
+
+      const allActions = []
+        .concat(Array.isArray(monster.actions) ? monster.actions : [])
+        .concat(Array.isArray(monster.legendaryActions) ? monster.legendaryActions : [])
+        .concat(Array.isArray(monster.lairActions) ? monster.lairActions : []);
+
+      for (const action of allActions) {
+        if (!action) continue;
+        if (action.damage) {
+          damagePerRound += this._averageDamage(action.damage);
+        }
+        if (typeof action.attack === 'number' && action.attack > bestAttackBonus) {
+          bestAttackBonus = action.attack;
+        }
+        if (typeof action.dc === 'number' && action.dc > bestSaveDC) {
+          bestSaveDC = action.dc;
         }
       }
 
-      offensiveCR = Math.ceil(avgDamagePerRound / 5);
+      // Legendary creatures typically act > 1 / round
+      if (Array.isArray(monster.legendaryActions) && monster.legendaryActions.length > 0) {
+        damagePerRound *= 1.25;
+      }
 
-      // Defensive CR: based on AC and HP
-      const acBonus = monster.ac - 10;
-      const hpBonus = Math.floor(monster.hp / 10);
-      let defensiveCR = acBonus + hpBonus;
+      const offCR = this._damageToCR(damagePerRound);
+      const expectedAttack = this._expectedAttackForCR(offCR);
+      const attackDelta = bestAttackBonus > 0 ? (bestAttackBonus - expectedAttack) : 0;
+      const dcDelta = bestSaveDC > 0 ? (bestSaveDC - this._expectedDCForCR(offCR)) : 0;
+      const offensiveCR = Math.max(0, offCR + (attackDelta + dcDelta) * 0.25);
 
-      // Average CR
-      return Math.round((offensiveCR + defensiveCR) / 2);
+      const avg = (defensiveCR + offensiveCR) / 2;
+      return this._roundToValidCR(avg);
+    }
+
+    /**
+     * Calculate proficiency bonus from CR (PHB / DMG table)
+     * @param {number} cr - Challenge rating
+     * @returns {number} Proficiency bonus
+     */
+    proficiencyForCR(cr) {
+      if (cr < 5) return 2;
+      if (cr < 9) return 3;
+      if (cr < 13) return 4;
+      if (cr < 17) return 5;
+      if (cr < 21) return 6;
+      if (cr < 25) return 7;
+      if (cr < 29) return 8;
+      return 9;
+    }
+
+    /**
+     * Calculate XP for a given CR (PHB monster XP table)
+     * @param {number} cr
+     * @returns {number} XP
+     */
+    xpForCR(cr) {
+      const table = {
+        0: 10, 0.125: 25, 0.25: 50, 0.5: 100,
+        1: 200, 2: 450, 3: 700, 4: 1100, 5: 1800,
+        6: 2300, 7: 2900, 8: 3900, 9: 5000, 10: 5900,
+        11: 7200, 12: 8400, 13: 10000, 14: 11500, 15: 13000,
+        16: 15000, 17: 18000, 18: 20000, 19: 22000, 20: 25000,
+        21: 33000, 22: 41000, 23: 50000, 24: 62000, 25: 75000,
+        26: 90000, 27: 105000, 28: 120000, 29: 135000, 30: 155000
+      };
+      return table[cr] != null ? table[cr] : 0;
     }
 
     /**
@@ -1093,55 +1222,119 @@
     /**
      * Generate D&D format stat block text
      * @param {object} monster - Monster object
-     * @returns {string} Formatted stat block
+     * @returns {string} Formatted stat block (markdown)
      */
     generateStatBlock(monster) {
-      let block = '';
-      block += `# ${monster.name}\n`;
-      block += `*${monster.size} ${monster.type}, ${monster.alignment}*\n\n`;
-      block += `**Armor Class** ${monster.ac}\n`;
-      block += `**Hit Points** ${monster.hp}\n`;
-      block += `**Speed** ${monster.speed}\n\n`;
+      if (!monster) return '';
+      const lines = [];
+      const mod = (s) => {
+        if (typeof s !== 'number') return '+0';
+        const m = Math.floor((s - 10) / 2);
+        return (m >= 0 ? '+' : '') + m;
+      };
+
+      lines.push(`# ${monster.name || 'Unnamed Creature'}`);
+      lines.push(`*${monster.size || 'Medium'} ${monster.type || 'creature'}, ${monster.alignment || 'unaligned'}*`);
+      lines.push('');
+      lines.push(`**Armor Class** ${monster.ac != null ? monster.ac : '—'}`);
+      lines.push(`**Hit Points** ${monster.hp != null ? monster.hp : '—'}`);
+      lines.push(`**Speed** ${monster.speed || '30 ft.'}`);
+      lines.push('');
 
       // Ability scores
-      const stats = monster.stats;
-      block += `| STR | DEX | CON | INT | WIS | CHA |\n`;
-      block += `|:---:|:---:|:---:|:---:|:---:|:---:|\n`;
-      block += `| ${stats.str} | ${stats.dex} | ${stats.con} | ${stats.int} | ${stats.wis} | ${stats.cha} |\n\n`;
+      const stats = monster.stats || { str: 10, dex: 10, con: 10, int: 10, wis: 10, cha: 10 };
+      lines.push('| STR | DEX | CON | INT | WIS | CHA |');
+      lines.push('|:---:|:---:|:---:|:---:|:---:|:---:|');
+      lines.push(`| ${stats.str} (${mod(stats.str)}) | ${stats.dex} (${mod(stats.dex)}) | ${stats.con} (${mod(stats.con)}) | ${stats.int} (${mod(stats.int)}) | ${stats.wis} (${mod(stats.wis)}) | ${stats.cha} (${mod(stats.cha)}) |`);
+      lines.push('');
 
-      // Senses
-      block += `**Senses** ${monster.senses}\n`;
-      block += `**Languages** ${monster.languages || 'none'}\n`;
-      block += `**Challenge** ${monster.cr} (${monster.xp} XP)\n\n`;
+      const fmtBonus = (entry) => {
+        if (entry == null) return '';
+        if (typeof entry === 'string') return entry;
+        if (typeof entry === 'object') {
+          const label = entry.name || (entry.stat ? entry.stat.toUpperCase() : '');
+          const bonus = typeof entry.bonus === 'number'
+            ? (entry.bonus >= 0 ? '+' + entry.bonus : String(entry.bonus))
+            : '';
+          return label + (bonus ? ' ' + bonus : '');
+        }
+        return String(entry);
+      };
+      if (Array.isArray(monster.saves) && monster.saves.length > 0) {
+        lines.push(`**Saving Throws** ${monster.saves.map(fmtBonus).join(', ')}`);
+      }
+      if (Array.isArray(monster.skills) && monster.skills.length > 0) {
+        lines.push(`**Skills** ${monster.skills.map(fmtBonus).join(', ')}`);
+      }
+      if (Array.isArray(monster.vulnerabilities) && monster.vulnerabilities.length > 0) {
+        lines.push(`**Damage Vulnerabilities** ${monster.vulnerabilities.join(', ')}`);
+      }
+      if (Array.isArray(monster.resistances) && monster.resistances.length > 0) {
+        lines.push(`**Damage Resistances** ${monster.resistances.join(', ')}`);
+      }
+      if (Array.isArray(monster.immunities) && monster.immunities.length > 0) {
+        lines.push(`**Damage Immunities** ${monster.immunities.join(', ')}`);
+      }
+      lines.push(`**Senses** ${monster.senses || 'passive Perception 10'}`);
+      lines.push(`**Languages** ${monster.languages || '—'}`);
+      const cr = monster.cr != null ? monster.cr : 0;
+      const xp = monster.xp != null ? monster.xp : this.xpForCR(cr);
+      lines.push(`**Challenge** ${cr} (${xp} XP)`);
+      lines.push(`**Proficiency Bonus** +${this.proficiencyForCR(cr)}`);
+      lines.push('');
 
-      // Traits
-      if (monster.traits && monster.traits.length > 0) {
-        block += `## Traits\n\n`;
+      if (Array.isArray(monster.traits) && monster.traits.length > 0) {
+        lines.push('## Traits');
+        lines.push('');
         for (const trait of monster.traits) {
-          block += `***${trait.name}.*** ${trait.desc}\n\n`;
+          if (!trait) continue;
+          lines.push(`***${trait.name || 'Trait'}.*** ${trait.desc || ''}`);
+          lines.push('');
         }
       }
 
-      // Actions
-      if (monster.actions && monster.actions.length > 0) {
-        block += `## Actions\n\n`;
+      if (Array.isArray(monster.actions) && monster.actions.length > 0) {
+        lines.push('## Actions');
+        lines.push('');
         for (const action of monster.actions) {
-          block += `***${action.name}.*** ${action.desc}`;
-          if (action.attack) block += ` (+${action.attack} to hit)`;
-          if (action.damage) block += `, ${action.damage}`;
-          block += '\n\n';
+          if (!action) continue;
+          let line = `***${action.name || 'Action'}.*** ${action.desc || ''}`;
+          if (typeof action.attack === 'number') line += ` _Attack:_ +${action.attack} to hit.`;
+          if (action.damage) line += ` _Hit:_ ${action.damage} damage.`;
+          if (typeof action.dc === 'number') line += ` _DC ${action.dc} saving throw._`;
+          lines.push(line);
+          lines.push('');
         }
       }
 
-      // Legendary actions
-      if (monster.legendaryActions && monster.legendaryActions.length > 0) {
-        block += `## Legendary Actions\n\n`;
+      if (Array.isArray(monster.legendaryActions) && monster.legendaryActions.length > 0) {
+        lines.push('## Legendary Actions');
+        lines.push('');
         for (const action of monster.legendaryActions) {
-          block += `***${action.name}.*** ${action.desc}\n\n`;
+          if (!action) continue;
+          lines.push(`***${action.name || 'Action'}.*** ${action.desc || ''}`);
+          lines.push('');
         }
       }
 
-      return block;
+      if (Array.isArray(monster.lairActions) && monster.lairActions.length > 0) {
+        lines.push('## Lair Actions');
+        lines.push('');
+        for (const action of monster.lairActions) {
+          if (!action) continue;
+          lines.push(`***${action.name || 'Action'}.*** ${action.desc || ''}`);
+          lines.push('');
+        }
+      }
+
+      if (monster.description) {
+        lines.push('## Description');
+        lines.push('');
+        lines.push(monster.description);
+        lines.push('');
+      }
+
+      return lines.join('\n');
     }
 
     /**
@@ -1264,27 +1457,131 @@
     }
 
     /**
-     * Parse damage string and return average
+     * Parse damage string and return average. Supports:
+     *   "1d8", "1d8+3", "2d6 - 1", "1d8+2d6+4", flat numbers, etc.
      * @private
      */
     _averageDamage(damageStr) {
+      if (typeof damageStr === 'number' && isFinite(damageStr)) return Math.max(0, damageStr);
       if (!damageStr || typeof damageStr !== 'string') return 0;
 
-      // Parse "1d8+3" format
-      const match = damageStr.match(/^(\d+)d(\d+)(?:\+(\d+))?$/);
-      if (!match) return 0;
+      // Strip whitespace and damage type words like "(slashing)" or "fire"
+      const cleaned = damageStr.replace(/\s+/g, '').replace(/\([^)]*\)/g, '');
+      let total = 0;
+      let matched = false;
 
-      const dice = parseInt(match[1], 10);
-      const sides = parseInt(match[2], 10);
-      const bonus = parseInt(match[3] || 0, 10);
-
-      // Validate parsed values
-      if (isNaN(dice) || isNaN(sides) || isNaN(bonus) || dice <= 0 || sides <= 0) {
-        return 0;
+      // Match dice expressions: NdM or NdM+B / -B
+      const diceRe = /([+-]?)(\d+)d(\d+)/gi;
+      let m;
+      while ((m = diceRe.exec(cleaned)) !== null) {
+        matched = true;
+        const sign = m[1] === '-' ? -1 : 1;
+        const dice = parseInt(m[2], 10);
+        const sides = parseInt(m[3], 10);
+        if (!isFinite(dice) || !isFinite(sides) || dice <= 0 || sides <= 0) continue;
+        total += sign * dice * ((sides + 1) / 2);
       }
 
-      // Average of a die is (sides + 1) / 2
-      return dice * ((sides + 1) / 2) + bonus;
+      // Match standalone numeric bonuses (after dice removed)
+      const noDice = cleaned.replace(/[+-]?\d+d\d+/gi, '');
+      const bonusRe = /([+-]?\d+)/g;
+      let b;
+      while ((b = bonusRe.exec(noDice)) !== null) {
+        matched = true;
+        const v = parseInt(b[1], 10);
+        if (isFinite(v)) total += v;
+      }
+
+      if (!matched) return 0;
+      return Math.max(0, total);
+    }
+
+    /**
+     * Approximate HP-to-CR mapping (DMG p. 274)
+     * @private
+     */
+    _hpToCR(hp) {
+      const t = [
+        [6, 0], [35, 0.125], [49, 0.25], [70, 0.5],
+        [85, 1], [100, 2], [115, 3], [130, 4], [145, 5],
+        [160, 6], [175, 7], [190, 8], [205, 9], [220, 10],
+        [235, 11], [250, 12], [265, 13], [280, 14], [295, 15],
+        [310, 16], [325, 17], [340, 18], [355, 19], [400, 20],
+        [445, 21], [490, 22], [535, 23], [580, 24], [625, 25],
+        [670, 26], [715, 27], [760, 28], [805, 29], [850, 30]
+      ];
+      for (let i = 0; i < t.length; i++) {
+        if (hp <= t[i][0]) return t[i][1];
+      }
+      return 30;
+    }
+
+    /**
+     * Damage-per-round to offensive CR (DMG p. 274)
+     * @private
+     */
+    _damageToCR(dpr) {
+      if (dpr <= 0) return 0;
+      const t = [
+        [1, 0], [3, 0.125], [5, 0.25], [8, 0.5],
+        [14, 1], [20, 2], [26, 3], [32, 4], [38, 5],
+        [44, 6], [50, 7], [56, 8], [62, 9], [68, 10],
+        [74, 11], [80, 12], [86, 13], [92, 14], [98, 15],
+        [104, 16], [110, 17], [116, 18], [122, 19], [140, 20],
+        [158, 21], [176, 22], [194, 23], [212, 24], [230, 25],
+        [248, 26], [266, 27], [284, 28], [302, 29], [320, 30]
+      ];
+      for (let i = 0; i < t.length; i++) {
+        if (dpr <= t[i][0]) return t[i][1];
+      }
+      return 30;
+    }
+
+    /** Expected AC at a given CR (DMG defensive table) */
+    _expectedDefensiveAC(cr) {
+      if (cr <= 3) return 13;
+      if (cr <= 4) return 14;
+      if (cr <= 7) return 15;
+      if (cr <= 9) return 16;
+      if (cr <= 12) return 17;
+      if (cr <= 16) return 18;
+      return 19;
+    }
+
+    /** Expected attack bonus at a given CR */
+    _expectedAttackForCR(cr) {
+      if (cr <= 3) return 3;
+      if (cr <= 4) return 5;
+      if (cr <= 7) return 6;
+      if (cr <= 9) return 7;
+      if (cr <= 12) return 8;
+      if (cr <= 16) return 10;
+      if (cr <= 20) return 11;
+      return 12;
+    }
+
+    /** Expected save DC at a given CR */
+    _expectedDCForCR(cr) {
+      if (cr <= 3) return 13;
+      if (cr <= 7) return 14;
+      if (cr <= 10) return 15;
+      if (cr <= 12) return 16;
+      if (cr <= 16) return 17;
+      if (cr <= 20) return 18;
+      return 19;
+    }
+
+    /** Round a number to nearest valid CR value */
+    _roundToValidCR(cr) {
+      const valid = [0, 0.125, 0.25, 0.5];
+      for (let i = 1; i <= 30; i++) valid.push(i);
+      let best = valid[0];
+      let bestDiff = Math.abs(cr - best);
+      for (let i = 1; i < valid.length; i++) {
+        const d = Math.abs(cr - valid[i]);
+        if (d < bestDiff) { best = valid[i]; bestDiff = d; }
+      }
+      return best;
     }
   }
 

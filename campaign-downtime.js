@@ -250,47 +250,70 @@
       this.log = []; // { character, activity, outcome, day, narrative, rewards, consequences }
     }
 
-    assignActivity(characterName, activityId, daysAllocated) {
+    assignActivity(characterName, activityId, daysAllocated, opts) {
+      if (!characterName || typeof characterName !== 'string') {
+        throw new Error('characterName is required');
+      }
       const activity = DOWNTIME_ACTIVITIES.find(a => a.id === activityId);
       if (!activity) throw new Error(`Activity ${activityId} not found`);
+      const days = typeof daysAllocated === 'number' && daysAllocated > 0 ? daysAllocated : 1;
+      const options = opts || {};
 
-      this.assignments.push({
+      // Reject duplicate active assignments unless overlap allowed
+      const dup = this.assignments.find(a =>
+        a.characterName === characterName && a.activityId === activityId && a.status === 'pending'
+      );
+      if (dup && !options.allowDuplicate) {
+        return { success: false, reason: 'Character already has this activity pending', existing: dup };
+      }
+
+      const assignment = {
+        id: 'asg_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8),
         characterName,
         activityId,
-        daysAllocated,
+        daysAllocated: days,
+        startDay: typeof options.startDay === 'number' ? options.startDay : null,
+        currentCity: options.currentCity || null,
         status: 'pending',
         timestamp: Date.now()
-      });
+      };
+      this.assignments.push(assignment);
 
-      return { success: true, character: characterName, activity: activity.name };
+      return { success: true, character: characterName, activity: activity.name, assignmentId: assignment.id };
     }
 
-    resolveDowntime(character, activityId, rng = Math.random) {
+    /**
+     * Resolve downtime. Options:
+     *   rng            - random generator (default Math.random)
+     *   currentCity    - city name for location-aware rewards
+     *   worldData      - { factions, cities, npcs } for narrative/reward enrichment
+     *   assignmentId   - if provided, mark that specific assignment as resolved
+     */
+    resolveDowntime(character, activityId, optsOrRng) {
       const activity = DOWNTIME_ACTIVITIES.find(a => a.id === activityId);
       if (!activity) throw new Error(`Activity ${activityId} not found`);
+
+      // Backwards-compat: second arg may be a function (rng) instead of options
+      let opts;
+      if (typeof optsOrRng === 'function') opts = { rng: optsOrRng };
+      else opts = optsOrRng || {};
+      const rng = typeof opts.rng === 'function' ? opts.rng : Math.random;
+      const characterName = typeof character === 'string' ? character : (character && character.name);
 
       const roll = rng();
       let outcome = 'success';
-      let narrativeKey = 'success';
 
       const probs = activity.outcomeProbabilities || { greatSuccess: 0.15, success: 0.65, complication: 0.20 };
-      if (roll < probs.greatSuccess) {
-        outcome = 'great_success';
-        narrativeKey = 'greatSuccess';
-      } else if (roll < probs.greatSuccess + probs.success) {
-        outcome = 'success';
-        narrativeKey = 'success';
-      } else {
-        outcome = 'complication';
-        narrativeKey = 'complication';
-      }
+      if (roll < probs.greatSuccess) outcome = 'great_success';
+      else if (roll < probs.greatSuccess + probs.success) outcome = 'success';
+      else outcome = 'complication';
 
-      const rewards = this._generateRewards(activity, outcome, rng);
+      const rewards = this._generateRewards(activity, outcome, rng, opts.currentCity, opts.worldData);
       const consequences = this._generateConsequences(activity, outcome, rng);
-      const narrative = this._generateNarrative(activity, outcome, character, rng);
+      const narrative = this._generateNarrative(activity, outcome, characterName, rng, opts.worldData);
 
       const result = {
-        character,
+        character: characterName,
         activity: activity.name,
         activityId,
         outcome,
@@ -301,15 +324,25 @@
       };
 
       this.log.push(result);
+
+      if (opts.assignmentId) {
+        const assignment = this.assignments.find(a => a.id === opts.assignmentId);
+        if (assignment) {
+          assignment.status = 'resolved';
+          assignment.resolvedAt = Date.now();
+          assignment.outcome = outcome;
+        }
+      }
       return result;
     }
 
     _generateRewards(activity, outcome, rng, currentCity = null, worldData = null) {
       const rewards = [];
+      const gr = activity && activity.goldReward;
+      const goldMin = gr && typeof gr.min === 'number' ? gr.min : 0;
+      const goldMax = gr && typeof gr.max === 'number' ? gr.max : 0;
 
       if (outcome === 'great_success') {
-        const goldMin = activity.goldReward.min;
-        const goldMax = activity.goldReward.max;
         const gold = Math.floor(rng() * (goldMax - goldMin + 1)) + goldMin;
         if (gold !== 0) rewards.push({ type: 'gold', value: gold > 0 ? Math.ceil(gold * 1.5) : gold });
 
@@ -318,8 +351,6 @@
           rewards.push({ type: 'special', value: activity.rewards[idx] });
         }
       } else if (outcome === 'success') {
-        const goldMin = activity.goldReward.min;
-        const goldMax = activity.goldReward.max;
         const gold = Math.floor(rng() * (goldMax - goldMin + 1)) + goldMin;
         if (gold !== 0) rewards.push({ type: 'gold', value: gold });
       }

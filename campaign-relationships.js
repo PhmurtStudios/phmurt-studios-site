@@ -529,6 +529,16 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
   const favorBalances = React.useMemo(() => (ledger.favorBalances || {}), [ledger]);
   const decayRates = React.useMemo(() => (ledger.decayRates || {}), [ledger]);
 
+  // Local date (avoids UTC off-by-one issues for users in negative timezones)
+  const _localDate = () => {
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  };
+
+  // Collision-resistant id (Date.now() alone collides when multiple events are added in same ms)
+  const _eventId = () => `evt_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+
   // Add event to ledger
   const addLedgerEvent = () => {
     if (!newEventDesc.trim() || !newEventFaction) return;
@@ -537,12 +547,13 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
       const existing = d.reputationLedger || {};
       const log = existing.eventLog || [];
       const newEntry = {
-        id: Date.now(),
-        date: new Date().toISOString().split('T')[0],
-        description: newEventDesc,
+        id: _eventId(),
+        date: _localDate(),
+        timestamp: Date.now(),
+        description: newEventDesc.trim(),
         faction: newEventFaction,
         amount: amount,
-        source: newEventSource || "Manual entry",
+        source: (newEventSource || "").trim() || "Manual entry",
         triggered: viewRole === "dm" ? "DM" : "System"
       };
       // Also update party reputation
@@ -557,6 +568,71 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
     setNewEventDesc("");
     setNewEventAmount("5");
     setNewEventSource("");
+  };
+
+  // Remove a ledger event (DM only). Optionally roll back the reputation change.
+  const removeLedgerEvent = (eventId, rollback) => {
+    if (!isDM || !eventId) return;
+    if (typeof window !== "undefined" && typeof window.confirm === "function") {
+      const msg = rollback
+        ? "Delete this event AND undo its reputation change?"
+        : "Delete this event from the log? (reputation score will not change)";
+      if (!window.confirm(msg)) return;
+    }
+    setData(d => {
+      const existing = d.reputationLedger || {};
+      const log = existing.eventLog || [];
+      const target = log.find(e => e && e.id === eventId);
+      if (!target) return d;
+      const newLog = log.filter(e => !e || e.id !== eventId);
+      let nextRep = d.partyReputation;
+      if (rollback && target.faction && target.amount) {
+        const cur = (d.partyReputation || {})[target.faction] || {};
+        const score = Math.max(0, Math.min(100, (cur.score != null ? cur.score : 50) - target.amount));
+        nextRep = { ...(d.partyReputation || {}), [target.faction]: { ...cur, score } };
+      }
+      return {
+        ...d,
+        reputationLedger: { ...existing, eventLog: newLog },
+        partyReputation: nextRep || d.partyReputation
+      };
+    });
+  };
+
+  // Apply one cycle of decay/growth to all factions with a configured rate.
+  const applyDecayCycle = () => {
+    if (!isDM) return;
+    setData(d => {
+      const ledger = d.reputationLedger || {};
+      const rates = ledger.decayRates || {};
+      const reps = { ...(d.partyReputation || {}) };
+      const log = (ledger.eventLog || []).slice();
+      const date = _localDate();
+      Object.keys(rates).forEach(name => {
+        const rate = parseFloat(rates[name]) || 0;
+        if (!rate) return;
+        const cur = reps[name] || {};
+        const old = cur.score != null ? cur.score : 50;
+        const next = Math.max(0, Math.min(100, old + rate));
+        if (next === old) return;
+        reps[name] = { ...cur, score: next };
+        log.push({
+          id: _eventId(),
+          date: date,
+          timestamp: Date.now(),
+          description: rate > 0 ? "Reputation grew over time" : "Reputation decayed over time",
+          faction: name,
+          amount: rate,
+          source: "Decay cycle",
+          triggered: "Auto"
+        });
+      });
+      return {
+        ...d,
+        partyReputation: reps,
+        reputationLedger: { ...ledger, eventLog: log }
+      };
+    });
   };
 
   // Update favor balance
@@ -597,7 +673,13 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
   const renderLedger = () => {
     const filtered = factionStandings.filter(f => !ledgerFilterFaction || f.name === ledgerFilterFaction);
     const filteredEvents = ledgerFilterFaction ? eventLog.filter(e => e.faction === ledgerFilterFaction) : eventLog;
-    const sortedEvents = [...filteredEvents].sort((a, b) => new Date(b.date) - new Date(a.date));
+    // Sort by timestamp when present (more accurate); fall back to date string. Stable on id ties.
+    const sortedEvents = [...filteredEvents].sort((a, b) => {
+      const ta = a.timestamp || (a.date ? new Date(a.date).getTime() : 0);
+      const tb = b.timestamp || (b.date ? new Date(b.date).getTime() : 0);
+      if (tb !== ta) return tb - ta;
+      return String(b.id || "").localeCompare(String(a.id || ""));
+    });
 
     return React.createElement("div", { style: { display: "flex", flexDirection: "column", gap: 24 } },
       // Event Log Section
@@ -640,7 +722,17 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
                         fontSize: 10, fontWeight: 500, color: isPositive ? T.green : T.crimson,
                         background: (isPositive ? T.green : T.crimson) + "15", padding: "2px 8px", borderRadius: 2
                       }
-                    }, (isPositive ? "+" : "") + evt.amount)
+                    }, (isPositive ? "+" : "") + evt.amount),
+                    isDM && React.createElement("button", {
+                      onClick: () => removeLedgerEvent(evt.id, true),
+                      title: "Delete event and undo its rep change",
+                      style: { fontSize: 10, padding: "2px 6px", background: "transparent", border: `1px solid ${T.crimsonBorder}`, color: T.crimson, borderRadius: 2, cursor: "pointer" }
+                    }, "↺"),
+                    isDM && React.createElement("button", {
+                      onClick: () => removeLedgerEvent(evt.id, false),
+                      title: "Delete event from log only (rep stays)",
+                      style: { fontSize: 10, padding: "2px 6px", background: "transparent", border: `1px solid ${T.border}`, color: T.textFaint, borderRadius: 2, cursor: "pointer" }
+                    }, "✕")
                   ),
                   React.createElement("div", { style: { fontSize: 9, color: T.textFaint, marginLeft: "85px" } }, "From: " + evt.source)
                 );
@@ -736,7 +828,14 @@ window.RelationshipWebView = function RelationshipWebView({ data, setData, viewR
 
       // Decay & Growth Rates
       React.createElement("div", { style: { background: T.bgCard, border: `1px solid ${T.border}`, borderRadius: 4, padding: "20px 24px" } },
-        React.createElement(SectionLabel, null, "Decay & Growth Rates"),
+        React.createElement("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 } },
+          React.createElement(SectionLabel, null, "Decay & Growth Rates"),
+          isDM && React.createElement("button", {
+            onClick: applyDecayCycle,
+            title: "Apply one full decay cycle now (logs an entry per affected faction)",
+            style: { fontSize: 10, padding: "5px 10px", fontFamily: T.ui, letterSpacing: "1px", textTransform: "uppercase", background: T.crimsonDim, color: T.crimson, border: `1px solid ${T.crimsonBorder}`, borderRadius: 2, cursor: "pointer" }
+          }, "Apply Cycle")
+        ),
         React.createElement("div", { style: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 12 } },
           filtered.map(f => {
             const rate = decayRates[f.name] || 0;

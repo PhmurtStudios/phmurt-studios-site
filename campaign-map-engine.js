@@ -4799,62 +4799,104 @@
       }
     }
 
+    /**
+     * Normalize any seed input to a positive 32-bit integer.
+     * Accepts numbers, strings (hashed), or null/undefined (=> 1).
+     */
+    _normalizeSeed(seed) {
+      if (seed == null) return 1;
+      if (typeof seed === 'number' && isFinite(seed)) {
+        const n = Math.abs(Math.floor(seed)) | 0;
+        return n === 0 ? 1 : n;
+      }
+      // Hash strings & other types via FNV-1a
+      const s = String(seed);
+      let h = 0x811c9dc5 >>> 0;
+      for (let i = 0; i < s.length; i++) {
+        h ^= s.charCodeAt(i);
+        h = Math.imul(h, 0x01000193) >>> 0;
+      }
+      return h === 0 ? 1 : h;
+    }
+
     generate(seed) {
-      this._seed = seed || 1;
+      const t0 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+      const newSeed = this._normalizeSeed(seed);
+      const prevSeed = this._seed;
+      this._seed = newSeed;
+      this._lastGenerateError = null;
 
-      // Reset grid and cached data
-      this.grid.land.fill(0);
-      this.grid.owner.fill(-1);
-      this.grid.faction.fill(-1);
-      this.grid.elevation.fill(0);
-      this._landCentroid = null;
+      try {
+        // Reset grid and cached data
+        this.grid.land.fill(0);
+        this.grid.owner.fill(-1);
+        this.grid.faction.fill(-1);
+        this.grid.elevation.fill(0);
+        this._landCentroid = null;
+        this.pois = [];
 
-      // Generate continent shapes
-      this._continentData = this.continentGen.generate(this._seed);
+        // Generate continent shapes
+        this._continentData = this.continentGen.generate(this._seed);
 
-      // Stamp onto grid
-      this.grid.stampLand(this._continentData.mainland);
-      for (const ext of this._continentData.extras) this.grid.stampLand(ext);
-      for (const isl of this._continentData.islands) this.grid.stampLand(isl);
+        // Stamp onto grid
+        this.grid.stampLand(this._continentData.mainland);
+        for (const ext of this._continentData.extras) this.grid.stampLand(ext);
+        for (const isl of this._continentData.islands) this.grid.stampLand(isl);
 
-      // Compute coast distance (used for city placement)
-      this.grid.computeCoastDistance();
+        // Compute coast distance (used for city placement)
+        this.grid.computeCoastDistance();
 
-      // Generate elevation for topographic contour lines
-      this._generateElevation(this._seed);
+        // Generate elevation for topographic contour lines
+        this._generateElevation(this._seed);
 
-      // Generate territories and factions
-      this.territory.generateRegions(this._seed);
-      this.territory.generateFactions(this._seed);
+        // Generate territories and factions
+        this.territory.generateRegions(this._seed);
+        this.territory.generateFactions(this._seed);
 
-      // Build road network between all cities
-      const allCities = [];
-      for (const r of this.territory.regions) allCities.push(...r.cities);
-      this.roads.build(allCities, mulberry32(this._seed + 7777));
+        // Build road network between all cities
+        const allCities = [];
+        for (const r of this.territory.regions) allCities.push(...r.cities);
+        this.roads.build(allCities, mulberry32(this._seed + 7777));
 
-      // Generate Points of Interest
-      this._generatePOIs(this._seed);
+        // Generate Points of Interest
+        this._generatePOIs(this._seed);
 
-      // Post-generation flavor pass — assign city traits/trades/hooks and
-      // enrich POI descriptions with full world context (nearby POIs,
-      // neighboring factions, spatial position, etc.)
-      this._assignWorldFlavor(this._seed);
+        // Post-generation flavor pass — assign city traits/trades/hooks and
+        // enrich POI descriptions with full world context (nearby POIs,
+        // neighboring factions, spatial position, etc.)
+        this._assignWorldFlavor(this._seed);
 
-      // Destroy old renderer (removes stale event listeners) and create new one
-      if (this.renderer) this.renderer.destroy();
-      this.renderer = new MapRenderer(this.canvas, this.grid, this.territory, this.borders, this.roads, this.opts, this._continentData, this.pois);
-      if (this._pendingClickCb) this.renderer.onRegionClick = this._pendingClickCb;
-      if (this._pendingHoverCb) this.renderer.onRegionHover = this._pendingHoverCb;
-      if (this._pendingPOIClickCb) this.renderer.onPOIClick = this._pendingPOIClickCb;
-      if (this._pendingCityClickCb) this.renderer.onCityClick = this._pendingCityClickCb;
-      this.renderer.centerMap();
-      this._emit("generate", { seed: this._seed });
+        // Destroy old renderer (removes stale event listeners) and create new one
+        if (this.renderer) {
+          try { this.renderer.destroy(); } catch (e) { /* ignore destroy errors */ }
+        }
+        this.renderer = new MapRenderer(this.canvas, this.grid, this.territory, this.borders, this.roads, this.opts, this._continentData, this.pois);
+        if (this._pendingClickCb) this.renderer.onRegionClick = this._pendingClickCb;
+        if (this._pendingHoverCb) this.renderer.onRegionHover = this._pendingHoverCb;
+        if (this._pendingPOIClickCb) this.renderer.onPOIClick = this._pendingPOIClickCb;
+        if (this._pendingCityClickCb) this.renderer.onCityClick = this._pendingCityClickCb;
+        this.renderer.centerMap();
+
+        const t1 = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        const elapsedMs = Math.round(t1 - t0);
+        this._lastGenerateMs = elapsedMs;
+        this._emit("generate", { seed: this._seed, elapsedMs });
+        return { ok: true, seed: this._seed, elapsedMs };
+      } catch (err) {
+        this._lastGenerateError = err;
+        this._emit("error", { phase: "generate", error: err, seed: newSeed, prevSeed });
+        if (typeof console !== 'undefined' && console.error) {
+          console.error('[MapEngine] generate() failed:', err);
+        }
+        return { ok: false, seed: newSeed, error: err };
+      }
     }
 
     render() { if (this.renderer) this.renderer.render(); }
     centerMap() { if (this.renderer) this.renderer.centerMap(); }
 
     conquer(factionId, regionId) {
+      if (!this._validFactionId(factionId) || !this._validRegionId(regionId)) return false;
       const ok = this.territory.conquer(factionId, regionId);
       if (ok && this.renderer) {
         this.renderer.invalidate(); this.renderer.render();
@@ -4864,6 +4906,7 @@
     }
 
     secede(regionId, name, color) {
+      if (!this._validRegionId(regionId)) return null;
       const nf = this.territory.secede(regionId, name, color);
       if (nf && this.renderer) {
         this.renderer.invalidate(); this.renderer.render();
@@ -4873,6 +4916,8 @@
     }
 
     alliance(absorberId, absorbedId) {
+      if (!this._validFactionId(absorberId) || !this._validFactionId(absorbedId)) return false;
+      if (absorberId === absorbedId) return false;
       const ok = this.territory.alliance(absorberId, absorbedId);
       if (ok && this.renderer) {
         this.renderer.invalidate(); this.renderer.render();
@@ -4881,20 +4926,153 @@
       return ok;
     }
 
+    _validRegionId(id) {
+      return typeof id === 'number' && id >= 0 && id < (this.territory.regions || []).length;
+    }
+    _validFactionId(id) {
+      return typeof id === 'number' && id >= 0 && id < (this.territory.factions || []).length;
+    }
+
     getRegions() { return this.territory.regions; }
     getFactions() { return this.territory.factions; }
     getRegionAt(x, y) { return this.territory.getRegionAt(x, y); }
     getFactionAt(x, y) { return this.territory.getFactionAt(x, y); }
     getSeed() { return this._seed; }
+    getLastGenerateMs() { return this._lastGenerateMs || 0; }
+    getLastError() { return this._lastGenerateError || null; }
 
     getPOIs() { return this.pois || []; }
     getPOIAt(x, y, radius) {
       const r = radius || 20;
+      const r2 = r * r;
+      let best = null, bestD2 = r2;
       for (const poi of (this.pois || [])) {
         const dx = x - poi.x, dy = y - poi.y;
-        if (dx * dx + dy * dy < r * r) return poi;
+        const d2 = dx * dx + dy * dy;
+        if (d2 < bestD2) { bestD2 = d2; best = poi; }
+      }
+      return best;
+    }
+
+    /** Find the city closest to (x,y) within `radius` map units, or null. */
+    getCityAt(x, y, radius) {
+      const r = radius || 25;
+      const r2 = r * r;
+      let best = null, bestD2 = r2;
+      for (const reg of (this.territory.regions || [])) {
+        for (const c of (reg.cities || [])) {
+          const dx = x - c.x, dy = y - c.y;
+          const d2 = dx * dx + dy * dy;
+          if (d2 < bestD2) { bestD2 = d2; best = c; }
+        }
+      }
+      return best;
+    }
+
+    /** Find a region by case-insensitive name match. Returns the region or null. */
+    findRegionByName(name) {
+      if (!name) return null;
+      const target = String(name).toLowerCase();
+      for (const r of (this.territory.regions || [])) {
+        if (r && r.name && r.name.toLowerCase() === target) return r;
       }
       return null;
+    }
+
+    /** Find a faction by case-insensitive name match. */
+    findFactionByName(name) {
+      if (!name) return null;
+      const target = String(name).toLowerCase();
+      for (const f of (this.territory.factions || [])) {
+        if (f && f.name && f.name.toLowerCase() === target) return f;
+      }
+      return null;
+    }
+
+    /** Find a city by case-insensitive name match across all regions. */
+    findCityByName(name) {
+      if (!name) return null;
+      const target = String(name).toLowerCase();
+      for (const r of (this.territory.regions || [])) {
+        for (const c of (r.cities || [])) {
+          if (c && c.name && c.name.toLowerCase() === target) return c;
+        }
+      }
+      return null;
+    }
+
+    /** Find a POI by case-insensitive name match. */
+    findPOIByName(name) {
+      if (!name) return null;
+      const target = String(name).toLowerCase();
+      for (const p of (this.pois || [])) {
+        if (p && p.name && p.name.toLowerCase() === target) return p;
+      }
+      return null;
+    }
+
+    /** Get all POIs of a given type, optionally including only major ones. */
+    getPOIsByType(type, opts) {
+      const o = opts || {};
+      const out = [];
+      for (const p of (this.pois || [])) {
+        if (type && p.type !== type) continue;
+        if (o.majorOnly && !p.isMajor) continue;
+        out.push(p);
+      }
+      return out;
+    }
+
+    /** Summary statistics about the generated world. */
+    getStats() {
+      const regions = this.territory.regions || [];
+      const factions = this.territory.factions || [];
+      let cityCount = 0;
+      let landCells = 0;
+      for (const r of regions) cityCount += (r.cities || []).length;
+      const grid = this.grid;
+      if (grid && grid.land) {
+        for (let i = 0; i < grid.size; i++) if (grid.land[i]) landCells++;
+      }
+      const landFraction = grid && grid.size > 0 ? landCells / grid.size : 0;
+      return {
+        seed: this._seed,
+        regions: regions.length,
+        factions: factions.length,
+        cities: cityCount,
+        pois: (this.pois || []).length,
+        roads: (this.roads && this.roads.roads) ? this.roads.roads.length : 0,
+        landCells,
+        landFraction,
+        lastGenerateMs: this._lastGenerateMs || 0,
+      };
+    }
+
+    /**
+     * Lightweight serializable snapshot — excludes typed arrays and
+     * canvas-bound objects. Useful for save/export and undo stacks.
+     */
+    snapshot() {
+      const regions = (this.territory.regions || []).map(r => ({
+        id: r.id, name: r.name, color: r.color,
+        factionId: r.factionId,
+        cities: (r.cities || []).map(c => ({
+          id: c.id, name: c.name, x: c.x, y: c.y, size: c.size,
+          isCapital: c.isCapital || false,
+          traits: c.traits || [], trades: c.trades || [], hooks: c.hooks || [],
+        })),
+      }));
+      const factions = (this.territory.factions || []).map(f => ({
+        id: f.id, name: f.name, color: f.color,
+        regions: Array.isArray(f.regions) ? f.regions.slice() : [],
+      }));
+      const pois = (this.pois || []).map(p => ({
+        id: p.id, name: p.name, type: p.type, x: p.x, y: p.y,
+        isMajor: p.isMajor || false,
+        regionId: p.regionId, factionId: p.factionId,
+        description: p.description || '',
+      }));
+      return { seed: this._seed, regions, factions, pois, stats: this.getStats() };
     }
 
     onRegionClick(fn) { if (this.renderer) this.renderer.onRegionClick = fn; this._pendingClickCb = fn; }
@@ -4903,8 +5081,23 @@
     onCityClick(fn) { if (this.renderer) this.renderer.onCityClick = fn; this._pendingCityClickCb = fn; }
 
     on(event, fn) { if (!this._eventListeners[event]) this._eventListeners[event] = []; this._eventListeners[event].push(fn); }
-    off(event, fn) { const l = this._eventListeners[event]; if (l) { const i = l.indexOf(fn); if (i >= 0) l.splice(i, 1); } }
-    _emit(event, data) { (this._eventListeners[event] || []).forEach(fn => fn(data)); }
+    off(event, fn) {
+      const l = this._eventListeners[event];
+      if (!l) return;
+      if (fn == null) { this._eventListeners[event] = []; return; }
+      const i = l.indexOf(fn);
+      if (i >= 0) l.splice(i, 1);
+    }
+    _emit(event, data) {
+      const listeners = this._eventListeners[event] || [];
+      for (const fn of listeners) {
+        try { fn(data); } catch (err) {
+          if (typeof console !== 'undefined' && console.error) {
+            console.error(`[MapEngine] listener for "${event}" threw:`, err);
+          }
+        }
+      }
+    }
   }
 
   /* Export */

@@ -105,6 +105,23 @@ classes: {
     features:[{level:1,name:"Spellcasting",desc:"Int-based spellcasting. Spellbook starts with 6 first-level spells. Prepare Int mod + Wizard level spells. Ritual Casting."},{level:1,name:"Arcane Recovery",desc:"Once per long rest, during a short rest, you can recover expended spell slots with a combined level equal to or less than half your wizard level (rounded up), and none of the slots can be 6th level or higher."}],
     subclasses:["Abjuration","Conjuration","Divination","Enchantment","Evocation","Illusion","Necromancy","Transmutation"],
     equipment:[["Quarterstaff","Dagger"],["Component pouch","Arcane focus"],["Scholar's pack","Explorer's pack"],["Spellbook"]]
+  },
+  // ── SOUP SAVANT (Phmurt Studios homebrew) ───────────────
+  // Charisma-based "spellcaster" whose spells are soup recipes
+  // and whose spell slots are thermoses — all thermoses are
+  // the same level at any given time. See spellSlots.soupsavant
+  // for the unique progression.
+  soupsavant: {
+    name:"Soup Savant", hitDie:6, saves:["cha","con"], primaryAbility:"cha", spellcastingAbility:"cha",
+    armorProf:["Light armor"], weaponProf:["Simple weapons","Nets"],
+    toolProf:["Cook's utensils","Alchemist's supplies"],
+    skillCount:2, skillOptions:["Animal Handling","Arcana","Deception","Medicine","Nature","Performance","Persuasion"],
+    features:[
+      {level:1,name:"Soupcooking (Spellcasting)",desc:"Cha-based 'spellcasting' that uses a magical cookbook (spellbook) and bandolier of arcane thermoses (spell slots). All your thermoses are the same level. Soup save DC = 8 + PB + CHA mod. Soup attack = PB + CHA mod. Cantrip-equivalent recipes are 'Instant Soups' served from Insta-cups. You start knowing 2 instant soups and 6 first-level soup recipes."},
+      {level:1,name:"Soup Cabinet",desc:"Action: create cabinet doors (1 ft × 2.5 ft) on any flat surface. Interior is an extradimensional space (2 ft × 1 ft × 2.5 ft) for storing soups, ingredients, and supplies. Persists until your next long rest. Expands at 5th and 10th level."}
+    ],
+    subclasses:[],
+    equipment:[["Magical soup cookbook"],["Bandolier of magical thermoses"],["Butcher's knife (functions as a dagger)","A net"],["Pack: cook's utensils, alchemist's supplies, hatchet, tinderbox"],["Leather armor"]]
   }
 },
 
@@ -166,6 +183,14 @@ spells: {
   warlock: {
     cantrips:["Blade Ward","Chill Touch","Eldritch Blast","Friends","Mage Hand","Minor Illusion","Poison Spray","Prestidigitation","True Strike","Thunderclap"],
     level1:["Armor of Agathys","Arms of Hadar","Charm Person","Comprehend Languages","Expeditious Retreat","Hellish Rebuke","Hex","Illusory Script","Protection from Evil and Good","Unseen Servant","Witch Bolt"]
+  },
+  // ── SOUP SAVANT RECIPES ───────────────────────────────
+  // "Cantrips" are Instant Soups (served from Insta-cups).
+  // "level1" recipes are 1st-level soup recipes shown at the
+  // build step. Higher-level recipes live in soupRecipesAll.
+  soupsavant: {
+    cantrips:["Bad Batch","Hot N' Ready","Quick Fix","Pocket Steam","Pinch of Salt","Mystery Cup","Cold Comfort","Stockpot Light","Whisper Broth","Boilstrike"],
+    level1:["Chicken Noodle","Magic Mushroom","Pot of Gold Broth","Spicy Jalapeño","Onion Tear Soup","Peppered Pho","Hearth Stew","Crystal Consommé","Forager's Broth","Carrot Clarity","Berry Bisque","Spinach Surge"]
   }
 },
 
@@ -177,7 +202,7 @@ alignments: ["Lawful Good","Neutral Good","Chaotic Good","Lawful Neutral","True 
 
 profBonus: { 1:2,2:2,3:2,4:2,5:3,6:3,7:3,8:3,9:4,10:4,11:4,12:4,13:5,14:5,15:5,16:5,17:6,18:6,19:6,20:6 },
 
-hpByLevel: { barbarian:12, bard:8, cleric:8, druid:8, fighter:10, monk:8, paladin:10, ranger:10, rogue:8, sorcerer:6, warlock:8, wizard:6 }
+hpByLevel: { barbarian:12, bard:8, cleric:8, druid:8, fighter:10, monk:8, paladin:10, ranger:10, rogue:8, sorcerer:6, warlock:8, wizard:6, soupsavant:6 }
 };
 
 // ── WEAPON LISTS ──
@@ -282,6 +307,15 @@ DND_DATA.abilityUses = {
   ],
   wizard:[
     {name:'Arcane Recovery', uses:1, recharge:'long_rest', desc:'Once per long rest, during a short rest, you can recover expended spell slots with a combined level equal to or less than half your wizard level (rounded up), and none of the slots can be 6th level or higher.'}
+  ],
+  soupsavant:[
+    {name:'Soup Cabinet', uses:1, recharge:'long_rest', desc:'Action: create cabinet doors on any flat surface. Extradimensional storage that persists until your next long rest. Expands to a Pantry (5th) and Kitchen (10th).'},
+    {name:'Culinary Edge', uses:2, recharge:'long_rest', isPool:true, desc:'Bonus action: when you cook a soup that deals damage or restores HP, expend one culinary die and add the result. Die size scales: d4 (2nd) → d6 (6th) → d8 (11th) → d10 (17th) → d12 (20th). Dice count: 2 / 3 / 4 / 5 at the same level breakpoints.'},
+    {name:'Soup of the Day', uses:1, recharge:'long_rest', desc:'After a long rest, roll on the Soup of the Day table (or twice at 9th). Apply each enhancement to a number of thermoses/Insta-cups equal to one culinary die roll. Lasts until your next long rest.'},
+    {name:'Forager Foresight (locate object)', uses:1, recharge:'long_rest', desc:'13th level. 10 minutes of contemplation casts locate object on a previously-encountered ingredient (no thermos cost). On another plane, you instead learn which plane.'},
+    {name:'Divinely Delicious Soup', uses:1, recharge:'long_rest', desc:'14th level. Once per day at preparation time, designate up to CHA mod (min 1) thermoses as Divinely Delicious — gain Smell, +3d8 Healing, and a Charming save effect on consumption.'},
+    {name:'Interdimensional Cauldron', uses:1, recharge:'long_rest', desc:'18th level. Once per long rest, spend 1 hour cooking a Planar Broth that opens a 10-minute portal to a plane of your choice (Medium creatures pass freely both ways).'},
+    {name:'Magnum Opus', uses:1, recharge:'long_rest', desc:'20th level. Once per long rest, spend 1 hour cooking your Magnum Opus — infuse any number of thermoses, double soup healing for 24h, grants frightened/charmed immunity for 24h.'}
   ]
 };
 
@@ -507,7 +541,64 @@ DND_DATA.spellSlots = {
   warlock: [
     [1,1],[2,1],[2,2],[2,2],[3,3],[3,3],[4,4],[4,4],[5,5],[5,5],
     [3,5],[3,5],[3,5],[3,5],[3,5],[3,5],[4,5],[4,5],[4,5],[4,5]
+  ],
+  // Soup Savant: all thermoses are the same level at any time.
+  // Encoded the same way as full casters but with all entries
+  // 0 except the active "thermos level" row. The character-sheet
+  // renderer skips zero-count slot rows so only the active level
+  // is displayed.
+  // Lvl  thermoses  level
+  //  1     2         1
+  //  2     3         1
+  //  3     3         2
+  //  4     3         2
+  //  5     4         3
+  //  6     4         3
+  //  7     4         4
+  //  8     4         4
+  //  9     5         5
+  // 10     5         5
+  // 11     5         5
+  // 12     5         5
+  // 13     6         5
+  // 14     6         5
+  // 15     6         5
+  // 16     6         6
+  // 17     6         6
+  // 18     7         6
+  // 19     7         7
+  // 20     7         7
+  soupsavant: [
+    [2],            [3],            [0,3],          [0,3],
+    [0,0,4],        [0,0,4],        [0,0,0,4],      [0,0,0,4],
+    [0,0,0,0,5],    [0,0,0,0,5],    [0,0,0,0,5],    [0,0,0,0,5],
+    [0,0,0,0,6],    [0,0,0,0,6],    [0,0,0,0,6],    [0,0,0,0,0,6],
+    [0,0,0,0,0,6],  [0,0,0,0,0,7],  [0,0,0,0,0,0,7],[0,0,0,0,0,0,7]
   ]
+};
+
+// ── SOUP SAVANT — Instant Soups (cantrips) known per level ──
+// Per the Soup Savant table: 2,2,3,3,3,3,3,3,4,4,4,4,4,4,4,5,5,5,5,5
+DND_DATA.soupSavantInstants = [2,2,3,3,3,3,3,3,4,4,4,4,4,4,4,5,5,5,5,5];
+
+// ── SOUP SAVANT — Culinary die size by level ──
+// 2nd: d4 · 6th: d6 · 11th: d8 · 17th: d10 · 20th: d12
+DND_DATA.soupSavantCulinaryDie = function(level){
+  if(level >= 20) return 'd12';
+  if(level >= 17) return 'd10';
+  if(level >= 11) return 'd8';
+  if(level >= 6)  return 'd6';
+  return 'd4';
+};
+
+// ── SOUP SAVANT — Number of Culinary Edge dice by level ──
+DND_DATA.soupSavantCulinaryDiceCount = function(level){
+  if(level >= 20) return 5;
+  if(level >= 17) return 5;
+  if(level >= 11) return 4;
+  if(level >= 6)  return 3;
+  if(level >= 2)  return 2;
+  return 0;
 };
 
 // ══════════════════════════════════════════════════════
@@ -872,9 +963,189 @@ DND_DATA.levelFeatures = {
     18: [{name:"Spell Mastery",desc:"Choose one 1st-level and one 2nd-level wizard spell in your spellbook. You can cast each at their lowest level without expending a spell slot. To cast at a higher level, use a slot as normal."}],
     19: [{name:"Ability Score Improvement",isASI:true,desc:"Increase one ability score by 2, or two scores by 1 each."}],
     20: [{name:"Signature Spells",desc:"You gain mastery over two powerful spells. Choose two 3rd-level wizard spells in your spellbook. You always have them prepared and can cast each once per short rest at 3rd level without a spell slot."}]
+  },
+
+  // ── SOUP SAVANT (Phmurt Studios homebrew) ─────────────
+  soupsavant: {
+    2:  [{name:"Culinary Edge (2 × d4)",desc:"When you cook a soup that deals damage or restores HP, expend one culinary die as a bonus action and add the result to the roll. You have 2 culinary dice (d4). Recharges on a long rest."},
+         {name:"Entrepreneur's Expertise",desc:"Choose one Charisma-based skill in which you are proficient. Your proficiency bonus is doubled for any check using it. You have advantage on Charisma checks to sell, barter, or negotiate the value of your soup (up to 10 gp; rises to 25 gp at 5th, 50 gp at 10th, no upper limit at 20th when using a Divinely Delicious soup)."}],
+    3:  [{name:"Soup of the Day",desc:"After a long rest, roll on the Soup of the Day table to determine an enhancement. Apply it to a number of your thermoses/Insta-cups equal to one culinary die roll. Triggers when consumed. Requires alchemist's supplies; lasts until your next long rest."},
+         {name:"Thermos Progression",desc:"Your thermos level increases to 2nd. Bandolier capacity is 3 thermoses."}],
+    4:  [{name:"Ability Score Improvement",isASI:true,desc:"Increase one ability score by 2, or two scores by 1 each. Cannot exceed 20."}],
+    5:  [{name:"Soup Pantry",desc:"Your Soup Cabinet expands. Door is now 2.5 ft × 6.5 ft and the interior is a 3 ft × 2 ft × 7 ft cube with cold storage. Up to 200 lb of material; perishables stay fresh for 1 week."},
+         {name:"Gritty Gut",desc:"Advantage on CON saves vs ingested hazards (poison/disease via food/drink). Immunity to the poisoned condition from spoiled food. Can craft soup from any organic/edible material — at 15th level extends to inorganic and inedible materials too."},
+         {name:"Thermos Progression",desc:"Your thermos level increases to 3rd. Bandolier capacity rises to 4 thermoses."}],
+    6:  [{name:"Culinary Edge (3 × d6)",desc:"You gain a third culinary die and the die size becomes d6."},
+         {name:"Trained Tongue",desc:"Advantage on Wisdom (Perception) checks that rely on taste or smell. Identify any nonmagical food, drink, or substance by taste. Automatically know if something has been poisoned or magically altered before swallowing. After 1 minute examining an unusual creature, intuit potential culinary uses (DM determines)."}],
+    7:  [{name:"Pop-up Stand",desc:"Gain proficiency with carpenter's tools and woodcarver's tools. With 4 hours of work and basic lumber, you can build a 5 × 5 × 8 ft covered stand with a prep surface and storage for 10 wooden bowls. Operating it for 4+ hours in a settlement: Cha (Persuasion) check vs DM-set DC; on success earn 2d6 sp/hour."},
+         {name:"Thermos Progression",desc:"Your thermos level increases to 4th."}],
+    8:  [{name:"Ability Score Improvement",isASI:true,desc:"Increase one ability score by 2, or two scores by 1 each."}],
+    9:  [{name:"Soup of the Day Improvement",desc:"You now roll on the Soup of the Day table twice after each long rest and choose which result applies. Each enhancement applies to a separate group of thermoses."},
+         {name:"Thermos Progression",desc:"Your thermos level increases to 5th. Bandolier capacity rises to 5 thermoses."}],
+    10: [{name:"Soup Kitchen",desc:"Your pantry becomes a fully equipped 10 × 10 × 10 ft soup kitchen with a magical hearth (no fuel; speak a command to adjust heat). You and up to four others can prepare soup recipes in half the normal time. A creature taking a short rest in the kitchen and consuming at least one bowl of your soup regains an extra 1d6 HP per Hit Die spent. Once per long rest, declare a communal meal for up to eight creatures: each gains the benefits of heroes' feast (requires a 5th-level or higher recipe cooked that day)."}],
+    11: [{name:"Culinary Edge (4 × d8)",desc:"You gain a fourth culinary die and the die size becomes d8."}],
+    12: [{name:"Ability Score Improvement",isASI:true,desc:"Increase one ability score by 2, or two scores by 1 each."}],
+    13: [{name:"Forager Foresight",desc:"Once per long rest, spend 10 minutes in contemplation to cast locate object on a previously-encountered specific ingredient (no thermos cost). On another plane, you instead learn which plane it is on. After 1 hour foraging in a new region, you automatically find 1d4 useful local ingredients (DM determines)."},
+         {name:"Bandolier (6 thermoses)",desc:"Your bandolier capacity rises to 6 thermoses (still all at thermos level 5)."}],
+    14: [{name:"Divinely Delicious Soup",desc:"Once per day at preparation, designate up to your CHA modifier (min 1) thermoses as Divinely Delicious. They gain: Smell — a creature within 15 ft that can smell an opened thermos must succeed a WIS save vs your Soup save DC or have disadvantage on its next save. Healing — a creature consuming the soup regains an extra 3d8 HP. Charming — on a failed WIS save, the creature is charmed by you for 1 hour or until you/your allies damage it."}],
+    15: [{name:"Pop-up Restaurant",desc:"Gain proficiency with mason's tools, glassblower's tools, and painter's supplies. You can design and oversee construction of a permanent restaurant with stone walls, glass windows, full kitchen, and seating for 20 patrons. Build 40 cu. ft. of structure per day with hired labor. A completed restaurant in a settlement of 500+ generates 5 gp/day when staffed. In settlements of 1,000+, 50% chance someone already knows your name or has tasted your soup."},
+         {name:"Gritty Gut Improvement",desc:"Your Gritty Gut now extends to inorganic and otherwise inedible materials. Your DM determines what effects, if any, result from incorporating such unusual ingredients."}],
+    16: [{name:"Ability Score Improvement",isASI:true,desc:"Increase one ability score by 2, or two scores by 1 each."},
+         {name:"Thermos Progression",desc:"Your thermos level increases to 6th."}],
+    17: [{name:"Culinary Edge (5 × d10)",desc:"You gain a fifth culinary die and the die size becomes d10."}],
+    18: [{name:"Interdimensional Cauldron",desc:"Once per long rest, given a cauldron, you can spend 1 hour cooking a Planar Broth. Pour it onto a solid surface to open a portal large enough for a Medium creature. The portal connects your location to a plane of your choice for 10 minutes; creatures pass freely both ways. The DM picks the destination, typically tied to your ingredients."},
+         {name:"Bandolier (7 thermoses)",desc:"Your bandolier capacity rises to 7 thermoses."}],
+    19: [{name:"Ability Score Improvement",isASI:true,desc:"Increase one ability score by 2, or two scores by 1 each."},
+         {name:"Thermos Progression",desc:"Your thermos level increases to 7th — the highest level a soup recipe can be."}],
+    20: [{name:"Legendary Chef",desc:"Your CHA score increases by 2, to a maximum of 22. Your culinary die becomes a d12 and you have 5 culinary dice. Once per long rest, spend 1 hour cooking your Magnum Opus (functions as a Divinely Delicious soup, but applies to any number of thermoses). All HP restored by your soups doubled for 24h; consumers gain immunity to frightened/charmed for 24h. Anyone who has ever consumed your soups has advantage on saves vs frightened while they can see or smell you."}]
   }
 
 }; // end DND_DATA.levelFeatures
+
+// ══════════════════════════════════════════════════════════════
+// LEGENDARY SOUPS PORTFOLIO (Phmurt Studios)
+// Each legendary soup requires a specific ingredient harvested
+// from one of the most powerful creatures in existence. The
+// soup savant character sheet exposes these via a dedicated
+// renderer (renderLegendarySoups, in character-builder.html).
+// ══════════════════════════════════════════════════════════════
+DND_DATA.legendarySoups = [
+  {
+    id:'tarrasque-tail',
+    name:"Tarrasque Tail Consommé",
+    ingredient:"Tarrasque tail marrow, sawn from the carcass within 1 hour of death before its regenerative properties seal the wound.",
+    cookingTime:"8 hours over open flame (marrow does not liquefy until the sixth hour; stopping at 6 hours yields lessened effects)",
+    serves:"1 creature",
+    benefits:[
+      "Hit point maximum increases by 50.",
+      "Resistance to bludgeoning, piercing, and slashing damage from nonmagical attacks.",
+      "At the start of each of its turns, regains 10 HP if it has at least 1 HP.",
+      "Immunity to the frightened condition.",
+      "These benefits are permanent and cannot be dispelled."
+    ]
+  },
+  {
+    id:'beholder-eye',
+    name:"Beholder Eye Bisque",
+    ingredient:"A beholder's central eye, removed whole within 10 minutes of death. The anti-magic humor must be skimmed and discarded throughout cooking or it will curdle into the soup.",
+    cookingTime:"12 hours (slow roast; requires constant skimming)",
+    serves:"1 creature",
+    duration:"7 days",
+    benefits:[
+      "Truesight out to 120 feet.",
+      "Immune to gaze attacks and effects that require eye contact.",
+      "Sees invisible creatures and objects as if they were visible.",
+      "Once per day, an action emits a 30-ft cone that functions as antimagic field until the start of its next turn (the creature cannot cast spells or use magical abilities while the cone is active)."
+    ]
+  },
+  {
+    id:'lich-phylactery',
+    name:"Lich Phylactery Potage",
+    ingredient:"The phylactery of a lich, shattered over a prepared broth at the exact moment of the lich's final death so that the soul residue is captured in the liquid.",
+    cookingTime:"24 hours (the soul residue must be coaxed in slowly; rushing destroys it)",
+    serves:"1 creature",
+    benefits:[
+      "No longer ages and cannot be magically aged. Can still die from other causes.",
+      "Advantage on all Intelligence-based ability checks and saving throws.",
+      "Once per long rest, when reduced to 0 HP, can choose to drop to 1 HP instead (does not function if killed outright).",
+      "Gain proficiency in Arcana, History, and Religion. Already-proficient becomes expertise."
+    ]
+  },
+  {
+    id:'ancient-dragon',
+    name:"Ancient Dragon Bone Broth",
+    ingredient:"The femur of an ancient dragon (CR 20+), cracked and slow-rendered over magical flame. Mundane fire cannot render the marrow.",
+    cookingTime:"10 hours (requires a magical heat source)",
+    serves:"Up to 4 creatures",
+    duration:"30 days",
+    benefits:[
+      "Immunity to the damage type associated with the dragon's breath weapon.",
+      "Strength and Constitution scores each increase by 4, to a maximum of 24.",
+      "Advantage on Charisma (Intimidation) checks and saving throws against being frightened.",
+      "Once per day, exhale a breath weapon identical to the dragon's, using your Soup save DC."
+    ]
+  },
+  {
+    id:'elder-brain',
+    name:"Elder Brain Bouillabaisse",
+    ingredient:"An elder brain, harvested whole from its brine pool within 30 minutes of death.",
+    cookingTime:"8 hours (the cook must succeed on three DC 16 Wisdom saves each hour or take 4d6 psychic damage from residual telepathic signals)",
+    serves:"Up to 6 creatures",
+    duration:"10 days",
+    benefits:[
+      "Telepathic communication with any creature within 120 ft that shares a language.",
+      "Cast detect thoughts at will, no slot or material components.",
+      "Once per day, action to cast dominate monster (save DC 18) on a humanoid, no slot.",
+      "Immunity to being charmed or frightened by aberrations."
+    ]
+  },
+  {
+    id:'kraken-ink',
+    name:"Kraken Ink Ramen",
+    ingredient:"The kraken's ink sac, handled only with magically treated gloves and diluted immediately into 100 gallons of pure seawater. Undiluted, the ink corrodes most metals.",
+    cookingTime:"8 hours (must be prepared near open water)",
+    serves:"Up to 4 creatures",
+    duration:"14 days",
+    benefits:[
+      "Swimming speed of 60 ft and the ability to breathe underwater.",
+      "Immunity to lightning damage.",
+      "Once per day, action to exhale a 20-ft radius cloud of black ink (heavily obscured for 1 minute; entering or starting a turn there: DC 18 CON save or blinded until leaving).",
+      "Communicate with any creature that has a swimming speed, regardless of language."
+    ]
+  },
+  {
+    id:'tiamat-spice',
+    name:"Tiamat's Five-Spice Hotpot",
+    ingredient:"One scale each from Tiamat's five heads — one red, one white, one blue, one green, one black. All five must enter the pot simultaneously.",
+    cookingTime:"5 hours (one hour per scale, added in sequence; if the pot boils over at any point the elemental balance collapses)",
+    serves:"1 creature (too potent to divide)",
+    benefits:[
+      "Immunity to fire, cold, lightning, acid, and poison damage.",
+      "Once per day, action to exhale a 30-ft cone breath of any one of the five damage types (10d8 damage; DC 20 DEX save for half).",
+      "Chromatic dragons regard the creature with involuntary respect; advantage on all Charisma checks vs chromatic dragons."
+    ]
+  },
+  {
+    id:'aboleth-memory',
+    name:"Aboleth Memory Bisque",
+    ingredient:"An aboleth's mucus glands, rendered immediately upon the creature's death. They begin to break down within 2 hours.",
+    cookingTime:"16 hours at very low heat (DC 14 WIS save each hour or become lost in visions of the aboleth's memories for that hour; if the cooking time exceeds 20 hours the soup is burnt)",
+    serves:"1 creature",
+    benefits:[
+      "Permanently gains proficiency in every skill in which it is not already proficient.",
+      "Cast legend lore at will, no slot. Information reflects the aboleth's memories and is extraordinarily detailed.",
+      "Advantage on all Intelligence saving throws and checks, permanently.",
+      "Once per week, 1 hour of meditation grants a detailed vision of a specific past event within the last 10,000 years that the aboleth could theoretically have witnessed (DM determines accuracy)."
+    ]
+  },
+  {
+    id:'vecna-eye',
+    name:"Vecna's Unseen Eye Stew",
+    ingredient:"Necrotic residue scraped from the empty eye socket of a creature that previously bore the Eye of Vecna.",
+    cookingTime:"6 hours (must be cooked in total darkness; any light source within 30 ft causes it to curdle)",
+    serves:"1 creature",
+    benefits:[
+      "See invisible and hidden creatures and objects within 60 ft, even in magical darkness.",
+      "Once per day, action to cast foresight on yourself, no slot.",
+      "Always knows whether a creature within 30 ft is lying (provided it is capable of intentional deceit).",
+      "Disadvantage on saving throws against effects that originate from Vecna."
+    ]
+  },
+  {
+    id:'dracolich-glaze',
+    name:"Dracolich Marrow Glaze",
+    ingredient:"The crystallized marrow from a dracolich's femur, captured as vapor in a sealed vessel during sublimation.",
+    cookingTime:"4 hours to produce the glaze; then applied as a finishing step to a completed non-legendary soup recipe",
+    serves:"Applied to another recipe",
+    special:"This glaze is applied to a completed non-legendary soup. That recipe gains the listed effects in addition to its normal effects.",
+    benefits:[
+      "Any healing the recipe provides also grants an equal number of temporary HP for 24 hours.",
+      "Resistance to necrotic damage for 7 days.",
+      "Does not need to sleep for 7 days; immune to exhaustion during that time.",
+      "Once during those 7 days, when reduced to 0 HP and killed, can instead drop to 1 HP and become immune to all damage until the end of its next turn."
+    ]
+  }
+];
 
 // ══════════════════════════════════════════════════════════════
 // EXTENDED SPELL LISTS — levels 2 through 9
@@ -1747,216 +2018,44 @@ DND_DATA.subclasses = {
       {level:2, name:'Divination Savant', desc:'Divination spells cost 25% less to copy into your spellbook.'},
       {level:6, name:'Portent', desc:'When you finish a long rest, roll 2d20. You can use these rolls to replace ability checks, attacks, or saves you see being made.'},
       {level:10, name:'Expert Divination', desc:'Casting divination spells doesn\'t require concentration. You gain an additional Portent roll.'},
-      {level:14, name:'Greater Portent', desc:'You gain 3 Portent rolls instead of 2. They refresh on a long rest.'}
+      {level:14, name:'The Third Eye', desc:'Action: gain one of darkvision 60 ft, ethereal sight 60 ft, greater comprehension, or see invisibility. Once per short rest.'}
     ]},
-    { id:'enchantment', name:'Enchantment', flavorText:'Masters of charm and mind magic who bend wills to their own.', features:[
+    { id:'enchantment', name:'Enchantment', flavorText:'Wielders of charm and compulsion who bend minds to their will.', features:[
       {level:2, name:'Enchantment Savant', desc:'Enchantment spells cost 25% less to copy into your spellbook.'},
-      {level:6, name:'Hypnotic Gaze', desc:'When a creature within 5 ft makes an attack vs you, use reaction to impose disadvantage.'},
-      {level:10, name:'Instinctive Charm', desc:'When a creature you can see damages you, use reaction to make it save vs charm or be charmed.'},
-      {level:14, name:'Split Enchantment', desc:'When you cast an enchantment spell affecting one creature, you can affect two creatures instead.'}
+      {level:2, name:'Hypnotic Gaze', desc:'Action: charm a creature within 5 ft (WIS save or charmed; speed 0 and incapacitated until end of your next turn).'},
+      {level:6, name:'Instinctive Charm', desc:'When a creature within 30 ft attacks you, redirect the attack to another creature within range (WIS save).'},
+      {level:10, name:'Split Enchantment', desc:'When you cast an enchantment spell that targets one creature, you can target a second creature with it.'},
+      {level:14, name:'Alter Memories', desc:'When you charm a creature, you can also cause it to forget the encounter when the spell ends.'}
     ]},
-    { id:'evocation', name:'Evocation', flavorText:'Destructive specialists who harness raw elemental force.', features:[
+    { id:'evocation', name:'Evocation', flavorText:'Masters of raw elemental power, hurling fire, ice, and lightning.', features:[
       {level:2, name:'Evocation Savant', desc:'Evocation spells cost 25% less to copy into your spellbook.'},
-      {level:6, name:'Sculpt Spells', desc:'When you cast an evocation spell, you can choose creatures in the area equal to 1 + spell level. They automatically succeed on saves.'},
-      {level:10, name:'Potent Cantrip', desc:'Your damaging cantrips don\'t deal reduced damage to creatures that make a successful save.'},
-      {level:14, name:'Empowered Evocation', desc:'Add your INT mod to evocation spell damage rolls. Usable once per turn.'}
+      {level:2, name:'Sculpt Spells', desc:'When you cast an evocation spell that affects others, you can carve out safe spaces in the spell for allies.'},
+      {level:6, name:'Potent Cantrip', desc:'Damaging cantrips that allow a save deal half damage on a successful save.'},
+      {level:10, name:'Empowered Evocation', desc:'Add your INT modifier to one damage roll of any wizard evocation spell you cast.'},
+      {level:14, name:'Overchannel', desc:'Once per long rest, deal maximum damage with an evocation spell of 5th level or lower.'}
     ]},
-    { id:'illusion', name:'Illusion', flavorText:'Masters of deception and misdirection who weave false realities.', features:[
+    { id:'illusion', name:'Illusion', flavorText:'Weavers of false images and trickery, who confound senses and mislead minds.', features:[
       {level:2, name:'Illusion Savant', desc:'Illusion spells cost 25% less to copy into your spellbook.'},
-      {level:6, name:'Improved Minor Illusion', desc:'You can create minor illusions without material components and as a bonus action.'},
-      {level:10, name:'Malleable Illusions', desc:'You can use an action to change an illusion\'s image as long as you can see it and stay within range.'},
-      {level:14, name:'Illusory Self', desc:'When a creature targets you with an attack, use reaction to impose disadvantage. You create decoy image.'}
+      {level:2, name:'Improved Minor Illusion', desc:'You learn the minor illusion cantrip and can create both sound and image with one casting.'},
+      {level:6, name:'Malleable Illusions', desc:'You can use an action to change the nature of an illusion spell you have cast.'},
+      {level:10, name:'Illusory Self', desc:'When a creature attacks you, use a reaction to interpose an illusory duplicate; the attack misses automatically.'},
+      {level:14, name:'Illusory Reality', desc:'When you cast an illusion spell of 1st level or higher, you can make one inanimate object real for 1 minute.'}
     ]},
-    { id:'necromancy', name:'Necromancy', flavorText:'Dark practitioners who command death and undeath.', features:[
+    { id:'necromancy', name:'Necromancy', flavorText:'Manipulators of life force who command the undead and drain the living.', features:[
       {level:2, name:'Necromancy Savant', desc:'Necromancy spells cost 25% less to copy into your spellbook.'},
-      {level:6, name:'Grim Harvest', desc:'Creatures killed by necromancy spells grant you temp HP = spell level + INT mod.'},
-      {level:10, name:'Undead Thralls', desc:'Zombies and skeletons you animate gain additional benefits and ability score increases.'},
-      {level:14, name:'Inured to Undeath', desc:'Necrotic damage can\'t reduce your HP below 1, and undead creatures can\'t sense you if you are invisible.'}
+      {level:2, name:'Grim Harvest', desc:'When you kill a creature with a spell, regain HP equal to twice the spell\'s level (thrice for necromancy spells).'},
+      {level:6, name:'Undead Thralls', desc:'You add the animate dead spell to your spellbook. Skeletons and zombies you create gain bonus HP and damage.'},
+      {level:10, name:'Inured to Undeath', desc:'You have resistance to necrotic damage; your hit point maximum cannot be reduced.'},
+      {level:14, name:'Command Undead', desc:'Action: target an undead within 60 ft (CHA save vs your spell save DC) — on fail it becomes friendly to you and obeys commands.'}
     ]},
-    { id:'transmutation', name:'Transmutation', flavorText:'Shifters and changers who reshape matter and living flesh.', features:[
+    { id:'transmutation', name:'Transmutation', flavorText:'Shapers of matter who transform substances and bestow magical alterations.', features:[
       {level:2, name:'Transmutation Savant', desc:'Transmutation spells cost 25% less to copy into your spellbook.'},
-      {level:6, name:'Minor Alchemy', desc:'You can transmute raw materials: wood to stone, copper to silver, etc. Limited to 1 sq ft per level.'},
-      {level:10, name:'Magical Dabbling', desc:'You can cast transmutation spells using sorcery points. Gain additional spell slots.'},
-      {level:14, name:'Master Transmuter', desc:'Spend 1-6 sorcery points to transmute yourself or a creature: change appearance, gain resistance, enhance speed.'}
+      {level:2, name:'Minor Alchemy', desc:'You can transmute one nonmagical object (up to 1 cu ft) into a different substance for 1 hour.'},
+      {level:6, name:'Transmuter\'s Stone', desc:'Spend 8 hours to create a stone that grants a benefit (darkvision, +10 speed, CON proficiency, or resistance to a damage type) to whoever carries it.'},
+      {level:10, name:'Shapechanger', desc:'You add polymorph to your spellbook. You can cast it on yourself without expending a spell slot, transforming into a beast of CR 1 or lower.'},
+      {level:14, name:'Master Transmuter', desc:'Use your Transmuter\'s Stone to perform one of: major transformation, panacea, restore life, or restore youth.'}
     ]}
   ],
-  cleric: [
-    { id:'life', name:'Life Domain', flavorText:'Gods of healing and vitality. Bonus healing and protection for allies.', features:[
-      {level:1, name:'Life Domain Spells', desc:'Bless, Cure Wounds, Lesser Restoration, Spiritual Weapon gain bonus spells.'},
-      {level:1, name:'Disciple of Life', desc:'When you cast a healing spell, add your WIS mod to the HP regained.'},
-      {level:6, name:'Blessed Healer', desc:'When you cast a healing spell on another, you regain HP = half the healing given.'},
-      {level:8, name:'Divine Strike', desc:'Once per turn, your weapon attacks deal extra 1d8 radiant damage.'},
-      {level:17, name:'Supreme Healing', desc:'When you use a spell slot to cast a healing spell, roll all dice twice and use highest.'}
-    ]},
-    { id:'light', name:'Light Domain', flavorText:'Gods of sun and knowledge. Fire spells and divine blasts.', features:[
-      {level:1, name:'Light Domain Spells', desc:'Burning Hands, Faerie Fire, Flaming Sphere, Fireball gain bonus spells.'},
-      {level:1, name:'Warding Flare', desc:'When a creature within 30 ft attacks you, impose disadvantage using your reaction.'},
-      {level:6, name:'Potent Spellcasting', desc:'Add your WIS mod to damage rolls for light domain spells.'},
-      {level:8, name:'Divine Strike', desc:'Once per turn, your weapon attacks deal extra 1d8 radiant damage.'},
-      {level:17, name:'Corona of Light', desc:'Enemies attacking you get disadvantage. Allies gain advantage on saves vs spells.'}
-    ]},
-    { id:'trickery', name:'Trickery Domain', flavorText:'Gods of deception and theft. Shadow magic and duplicity.', features:[
-      {level:1, name:'Trickery Domain Spells', desc:'Charm Person, Invisibility, Mirror Image, Polymorph gain bonus spells.'},
-      {level:1, name:'Blessing of the Trickster', desc:'You can use an action to grant a creature advantage on Stealth checks.'},
-      {level:6, name:'Invoke Duplicity', desc:'Create an illusory duplicate of yourself that you can use for attacks and spells.'},
-      {level:8, name:'Divine Strike', desc:'Once per turn, your weapon attacks deal extra 1d8 psychic damage.'},
-      {level:17, name:'Improved Duplicity', desc:'You can create 2 duplicates instead of 1 and make ranged spell attacks from them.'}
-    ]},
-    { id:'war', name:'War Domain', flavorText:'Gods of battle and conflict. Extra attacks and martial prowess.', features:[
-      {level:1, name:'War Domain Spells', desc:'Divine Favor, Shield, Spiritual Weapon, Wrathful Smite gain bonus spells.'},
-      {level:1, name:'War Priest', desc:'Bonus action to make weapon attack when you take the Dodge or Disengage action.'},
-      {level:6, name:'Blessing of the War God', desc:'You add your WIS mod to weapon attack damage rolls.'},
-      {level:8, name:'Divine Strike', desc:'Once per turn, your weapon attacks deal extra 1d8 damage of your domain type.'},
-      {level:17, name:'Avatar of Battle', desc:'You have advantage on attack rolls in combat and can\'t be slowed.'}
-    ]},
-    { id:'nature', name:'Nature Domain', flavorText:'Gods of wilderness and natural forces. Command of plants and animals.', features:[
-      {level:1, name:'Nature Domain Spells', desc:'Animal Friendship, Entangle, Barkskin, Plant Growth gain bonus spells.'},
-      {level:1, name:'Acolyte of Nature', desc:'Learn one druid cantrip. Gain proficiency in WIS (Animal Handling).'},
-      {level:6, name:'Dampen Elements', desc:'Use Channel Divinity to grant resistance to acid, cold, fire, lightning, or thunder.'},
-      {level:8, name:'Divine Strike', desc:'Once per turn, your weapon attacks deal extra 1d8 cold, fire, or lightning damage.'},
-      {level:17, name:'Master of Nature', desc:'Control weather patterns, gain immunity to poison, resistance to poison damage.'}
-    ]},
-    { id:'tempest', name:'Tempest Domain', flavorText:'Gods of storms and the sea. Thunder and lightning magic.', features:[
-      {level:1, name:'Tempest Domain Spells', desc:'Fog Cloud, Thunderwave, Lightning Bolt, Destructive Wave gain bonus spells.'},
-      {level:1, name:'Wrath of the Storm', desc:'When attacked while standing, use reaction to stun the attacker if you damage them.'},
-      {level:6, name:'Thunderbolt Strike', desc:'Use reaction to cause a creature you damage to make a STR save or fall prone.'},
-      {level:8, name:'Divine Strike', desc:'Once per turn, your weapon attacks deal extra 1d8 thunder damage.'},
-      {level:17, name:'Stormborn', desc:'You gain immunity to lightning and thunder, and fly without wings using air currents.'}
-    ]},
-    { id:'knowledge', name:'Knowledge Domain', flavorText:'Gods of knowledge and magic. Extra skill proficiency and spellcasting power.', features:[
-      {level:1, name:'Knowledge Domain Spells', desc:'Identify, Detect Thoughts, Suggest, Confusion gain bonus spells.'},
-      {level:1, name:'Blessings of Knowledge', desc:'Gain proficiency in two skills and three languages of your choice.'},
-      {level:6, name:'Channel Divinity: Potent Spellcasting', desc:'Add your WIS mod to spell attack rolls and saving throw DCs.'},
-      {level:8, name:'Divine Strike', desc:'Once per turn, your weapon attacks deal extra 1d8 psychic damage.'},
-      {level:17, name:'Visions of Mastery', desc:'When you finish a long rest, choose one spell you can cast. You can cast it at will.'}
-    ]}
-  ],
-  sorcerer: [
-    { id:'draconic-bloodline', name:'Draconic Bloodline', flavorText:'Dragon blood flows through your veins, granting draconic power.', features:[
-      {level:1, name:'Draconic Resilience', desc:'AC = 13 + DEX mod (if not wearing armor). You have darkvision 60 ft. You resist damage type of your draconic ancestor.'},
-      {level:6, name:'Elemental Affinity', desc:'When you cast a spell of damage type matching your ancestry, add CHA mod to damage once per turn.'},
-      {level:14, name:'Dragon Wings', desc:'You can use an action to conjure spectral draconic wings. Gain fly speed = movement speed.'},
-      {level:18, name:'Draconic Presence', desc:'Enemies within 60 ft make WIS saves or be frightened. Allies gain advantage on saves.'}
-    ]},
-    { id:'wild-magic', name:'Wild Magic', flavorText:'Your magic is chaotic and unpredictable, surging with primal forces.', features:[
-      {level:1, name:'Wild Magic Surge', desc:'When you cast a sorcerer spell, roll d20. On 1, roll Wild Magic Surge table.'},
-      {level:6, name:'Tides of Chaos', desc:'Gain advantage on attack roll, ability check, or save. Initiative rolls benefit from spell bonus.'},
-      {level:14, name:'Spell Bombardment', desc:'When you roll damage for sorcerer spell, roll d6. If you roll 4+, add 2d6 extra damage.'},
-      {level:18, name:'Controlled Chaos', desc:'You can use an action to reroll d20s instead of surging. You gain 2 tides per long rest.'}
-    ]}
-  ],
-  warlock: [
-    { id:'archfey', name:'The Archfey', flavorText:'Your patron is a powerful fey creature offering otherworldly power.', features:[
-      {level:1, name:'Expanded Spell List', desc:'Dimension Door, Faerie Fire, Phantasmal Force, Sleep, Suggestion gain bonus spells.'},
-      {level:1, name:'One with Shadows', desc:'In darkness, you are invisible. You can sense creatures within 30 ft even if invisible.'},
-      {level:6, name:'Misty Escape', desc:'When you take damage, use reaction to teleport up to 60 ft and become invisible.'},
-      {level:10, name:'Bewitching Strike', desc:'Your attack spells charm targets on hit. They have disadvantage on saves vs charm.'},
-      {level:14, name:'Master of Shadows', desc:'You can cast Invisibility at will. You are invisible while casting spells in darkness.'}
-    ]},
-    { id:'fiend', name:'The Fiend', flavorText:'You have made a bargain with a demon, devil, or dark entity.', features:[
-      {level:1, name:'Expanded Spell List', desc:'Burning Hands, Command, Hellish Rebuke, Scorching Ray, Fireball gain bonus spells.'},
-      {level:1, name:'Dark One\'s Blessing', desc:'When you reduce a creature to 0 HP, gain temporary HP = CHA mod + warlock level.'},
-      {level:6, name:'Dark One\'s Own Luck', desc:'Use reaction to add d10 to an ability check or save. Recharges on short rest.'},
-      {level:10, name:'Fiendish Resilience', desc:'Choose resistance type at end of long rest. You gain that resistance.'},
-      {level:14, name:'Hurl Through Hell', desc:'When you damage a creature, teleport it to hell and back on next turn taking damage.'}
-    ]},
-    { id:'great-old-one', name:'The Great Old One', flavorText:'Your patron is an ancient cosmic entity of unknowable power.', features:[
-      {level:1, name:'Expanded Spell List', desc:'Armor of Agathys, Disguise Self, Phantasmal Force, Telekinesis gain bonus spells.'},
-      {level:1, name:'Awakened Mind', desc:'You can telepathically communicate with creatures you see within 30 ft.'},
-      {level:6, name:'Entropic Ward', desc:'When a creature attacks you, use reaction to impose disadvantage. Range extends to 60 ft.'},
-      {level:10, name:'Thought Shield', desc:'Creatures taking psychic damage from you have disadvantage on save. You are immune to psychic damage.'},
-      {level:14, name:'Create Thrall', desc:'When you reduce a creature to 0 HP, it rises as thrall obeying your commands telepathically.'}
-    ]}
-  ],
-  bard: [
-    { id:'lore', name:'College of Lore', flavorText:'Master of knowledge and skill, master of others\' tricks.', features:[
-      {level:3, name:'Bonus Proficiencies', desc:'Gain proficiency with any three skills of your choice.'},
-      {level:6, name:'Peerless Skill', desc:'Add Bardic Inspiration die to ability checks you make once per short rest.'},
-      {level:14, name:'Magical Secrets', desc:'Learn any two spells from any class. Gain spell slots for them.'},
-      {level:20, name:'Superior Inspiration', desc:'Regain all Bardic Inspiration dice on short rests. Once per turn, you can give a die to a creature.'}
-    ]},
-    { id:'valor', name:'College of Valor', flavorText:'A master of martial arts as well as magical arts, blending combat and spellcasting.', features:[
-      {level:3, name:'Bonus Proficiencies', desc:'Gain proficiency with medium armor, shields, and martial weapons.'},
-      {level:6, name:'Extra Attack', desc:'Make two weapon attacks when you take the Attack action.'},
-      {level:14, name:'Battle Magic', desc:'When you attack with weapon, cast cantrip using bonus action.'},
-      {level:20, name:'Superior Inspiration', desc:'Regain all Bardic Inspiration dice on short rests. Bonus action attacks gain extra damage.'}
-    ]}
-  ],
-  druid: [
-    { id:'land', name:'Circle of the Land', flavorText:'Master of nature magic and a keeper of the natural balance.', features:[
-      {level:2, name:'Bonus Cantrip', desc:'Learn one bonus cantrip of your choice.'},
-      {level:2, name:'Natural Recovery', desc:'Regain spell slots on short rest equal to half druid level (rounded up).'},
-      {level:6, name:'Land\'s Stride', desc:'Difficult terrain doesn\'t slow you. You are immune to being restrained by terrain/plants.'},
-      {level:14, name:'Nature\'s Sanctuary', desc:'Beasts and plants won\'t willingly harm you. You have advantage on saves vs plant spells.'}
-    ]},
-    { id:'moon', name:'Circle of the Moon', flavorText:'Master of Wild Shape, a shapeshifter and predator of the night.', features:[
-      {level:2, name:'Combat Wild Shape', desc:'Use Wild Shape as bonus action. Wild Shape HP = druid HP.'},
-      {level:6, name:'Improved Wild Shape', desc:'Wild Shape forms get +1 to AC and dexterity saves.'},
-      {level:10, name:'Elemental Wild Shape', desc:'Gain ability to Wild Shape into elemental forms.'},
-      {level:14, name:'Thousand Forms', desc:'You can cast Alter Self at will without spell slots.'}
-    ]}
-  ],
-  monk: [
-    { id:'open-hand', name:'Way of the Open Hand', flavorText:'Master of weaponless martial arts and unarmed combat.', features:[
-      {level:3, name:'Martial Arts', desc:'Unarmed strike damage increases to 1d6. You can use DEX for unarmed attacks instead of STR.'},
-      {level:3, name:'Flurry of Blows', desc:'After attacking, use bonus action for two unarmed strikes. Costs 1 ki point.'},
-      {level:6, name:'Dedicated Weapon', desc:'Choose a martial weapon. You can use it with martial arts die instead of its damage die.'},
-      {level:11, name:'Quivering Palm', desc:'Spend 3 ki to inflict curse: creature makes CON save or takes 10d10 damage instantly.'},
-      {level:17, name:'Quivering Palm Master', desc:'Quivering Palm damage increases to 20d10. You can spend ki to heal instead of damage.'}
-    ]},
-    { id:'shadow', name:'Way of Shadow', flavorText:'Master of stealth and shadow, a living assassin.', features:[
-      {level:3, name:'Shadow Arts', desc:'Spend ki points: cast invisibility, darkvision, silence, or pass without trace without spells.'},
-      {level:6, name:'Shadow Step', desc:'Teleport 60 ft to shadow you can see as bonus action. Gain advantage on next melee attack.'},
-      {level:11, name:'Cloak of Shadows', desc:'In dim light or darkness, you are invisible to creatures that rely on sight.'},
-      {level:17, name:'Opportunist', desc:'Use reaction to make unarmed strike when creature within 5 ft takes action.'}
-    ]}
-  ],
-  paladin: [
-    { id:'devotion', name:'Oath of Devotion', flavorText:'Knights of virtue and light sworn to protect the innocent.', features:[
-      {level:3, name:'Channel Divinity: Sacred Weapon', desc:'Use action to gain +CHA to weapon attack rolls for 1 minute.'},
-      {level:3, name:'Channel Divinity: Sanctuary', desc:'Creature makes WIS save or can\'t attack you or your allies for 1 minute.'},
-      {level:7, name:'Aura of Protection', desc:'Allies within 10 ft gain bonus to saves and attack rolls = CHA mod.'},
-      {level:15, name:'Peerless Athlete', desc:'Add CHA mod to Athletics checks.'},
-      {level:20, name:'Holy Aura', desc:'Enemies that start turn within 10 ft make save or take 2d6 radiant damage.'}
-    ]},
-    { id:'vengeance', name:'Oath of Vengeance', flavorText:'Knights of retribution sworn to smite evil and injustice.', features:[
-      {level:3, name:'Channel Divinity: Abjure Enemy', desc:'Creature makes save or speed becomes 0 for 1 minute.'},
-      {level:3, name:'Channel Divinity: Vow of Enmity', desc:'Gain advantage on next attack against one creature you choose.'},
-      {level:7, name:'Relentless Avenger', desc:'After hitting with melee attack, use bonus action to move 30 ft toward target.'},
-      {level:15, name:'Soul of Vengeance', desc:'Use reaction to make weapon attack when target damages you.'},
-      {level:20, name:'Avenging Angel', desc:'Gain wings and fly speed. Gain advantage on attacks.'}
-    ]}
-  ],
-  ranger: [
-    { id:'hunter', name:'Hunter Archetype', flavorText:'A skilled tracker and skilled slayer of dangerous creatures.', features:[
-      {level:3, name:'Colossus Slayer', desc:'Once per turn on hit, add 1d8 damage to weapon attack.'},
-      {level:7, name:'Multiattack', desc:'Make two weapon attacks when you take the Attack action.'},
-      {level:11, name:'Volley', desc:'Action: ranged attack against all creatures in 10 ft radius.'},
-      {level:15, name:'Evasion', desc:'When you take damage, use reaction to take half damage with DEX save.'},
-      {level:20, name:'Superior Hunter\'s Defense', desc:'Gain multiple ways to improve defense, damage, and hit chance.'}
-    ]},
-    { id:'beast-master', name:'Beast Master Archetype', flavorText:'A ranger bonded with an animal companion in battle.', features:[
-      {level:3, name:'Ranger\'s Companion', desc:'Gain an animal companion that acts on your initiative and obeys your commands.'},
-      {level:7, name:'Exceptional Training', desc:'Your beast gains proficiency in DEX and WIS saves, and two skills.'},
-      {level:11, name:'Bestial Fury', desc:'Your beast makes two attacks when you take the Attack action.'},
-      {level:15, name:'Share Spells', desc:'When you cast a spell with a range of self, your beast gains the benefit.'},
-      {level:20, name:'Unbreakable Bond', desc:'Your beast gains proficiency in all saves and resistance to all damage.'}
-    ]}
-  ],
-  barbarian: [
-    { id:'berserker', name:'Path of the Berserker', flavorText:'Channeling rage into devastating melee attacks.', features:[
-      {level:3, name:'Frenzy', desc:'During rage, use bonus action to make weapon attack. Can happen each turn.'},
-      {level:6, name:'Mindless Rage', desc:'Immunity to charm and fear while raging. Can\'t be charmed or frightened.'},
-      {level:10, name:'Intimidating Presence', desc:'Enemies within 30 ft make WIS save or be frightened when you rage.'},
-      {level:14, name:'Retaliation', desc:'Use reaction to make weapon attack when a creature damages you.'},
-      {level:20, name:'Primal Champion', desc:'STR and CON each increase by 4. Max increases to 24.'}
-    ]},
-    { id:'totem-warrior', name:'Path of the Totem Warrior', flavorText:'Calling on animal spirits for primal power.', features:[
-      {level:3, name:'Totem Spirit', desc:'Choose bear, eagle, or wolf. Gain benefits while raging based on choice.'},
-      {level:6, name:'Aspect of the Beast', desc:'Gain permanent benefit from your totem spirit outside of rage.'},
-      {level:11, name:'Spirit Walker', desc:'You can cast commune with nature and beast sense without material components.'},
-      {level:14, name:'Totemic Attunement', desc:'Gain additional benefits and attacks from your totem in rage.'},
-      {level:20, name:'Primal Champion', desc:'STR and CON each increase by 4. Max increases to 24.'}
-    ]}
-  ]
+  // Soup Savant: no subclasses in the source homebrew portfolio.
+  soupsavant: []
 };

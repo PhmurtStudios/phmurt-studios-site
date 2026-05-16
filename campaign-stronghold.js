@@ -21,6 +21,40 @@
   };
 
   // ─────────────────────────────────────────────────────────────────────────
+  // EVENT-EFFECT PARSING HELPERS
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Pull a signed gold value out of a free-text effect like "+75gp" or
+   * "Lose 100gp, -5 morale". Returns the supplied default if no value is found.
+   */
+  function _parseGoldDelta(text, fallback) {
+    if (!text) return fallback || 0;
+    const t = String(text).toLowerCase();
+    // Match "+200gp", "-50gp", "100gp", or "lose 100gp"
+    const signed = t.match(/([+-]?)\s*(\d+)\s*gp/);
+    if (signed) {
+      let val = parseInt(signed[2], 10);
+      if (signed[1] === '-' || /\b(lose|spend|cost|pay)\b/.test(t)) val = -Math.abs(val);
+      else val = Math.abs(val);
+      return val;
+    }
+    return fallback || 0;
+  }
+
+  /**
+   * Pull a signed morale value out of an effect string. Recognises
+   * "+10 morale", "-5 morale", "morale -5", etc.
+   */
+  function _parseMoraleDelta(text, fallback) {
+    if (!text) return fallback || 0;
+    const t = String(text).toLowerCase();
+    const m = t.match(/([+-]?\d+)\s*morale/) || t.match(/morale\s*([+-]?\d+)/);
+    if (m) return parseInt(m[1], 10);
+    return fallback || 0;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
   // STRONGHOLD & BUILDING CATALOGS
   // ─────────────────────────────────────────────────────────────────────────
 
@@ -582,21 +616,23 @@
       const buildingData = BUILDING_TYPES[buildingType];
       if (!buildingData) return;
 
-      if (buildings.length >= type.maxBuildings) {
-        return;
-      }
+      // BUGFIX: enforce capacity AND treasury before queueing.
+      const inProgress = (domain.constructionQueue || []).length;
+      if ((buildings.length + inProgress) >= type.maxBuildings) return;
+      const treasury = domain.treasury || 0;
+      if (treasury < buildingData.cost) return;
 
       const updated = { ...domain };
       if (!updated.constructionQueue) updated.constructionQueue = [];
 
       updated.constructionQueue.push({
-        id: Date.now(),
+        id: Date.now() + Math.floor(Math.random() * 1000),
         buildingType,
         daysRemaining: buildingData.buildDays,
         startedWeek: domain.weekNumber || 0,
         cost: buildingData.cost
       });
-      updated.treasury = (updated.treasury || 0) - buildingData.cost;
+      updated.treasury = treasury - buildingData.cost;
 
       onUpdate(updated);
       setShowBuildMenu(false);
@@ -608,25 +644,47 @@
       onUpdate(updated);
     };
 
+    /** Cancel an in-progress construction; refund 50% of the cost. */
+    const handleCancelConstruction = (queueId) => {
+      const updated = { ...domain };
+      const queue = (updated.constructionQueue || []).slice();
+      const idx = queue.findIndex(q => q && q.id === queueId);
+      if (idx < 0) return;
+      const refund = Math.round((queue[idx].cost || 0) * 0.5);
+      queue.splice(idx, 1);
+      updated.constructionQueue = queue;
+      updated.treasury = (updated.treasury || 0) + refund;
+      onUpdate(updated);
+    };
+
     const handleAdvanceWeek = () => {
       const updated = { ...domain };
 
-      // Collect income
-      const incomeThisWeek = buildings.reduce((sum, b) => sum + (BUILDING_TYPES[b.type]?.income || 0), 0);
-      updated.treasury = (updated.treasury || 0) + incomeThisWeek;
+      // Compute domain defense from buildings (used to resolve threat events).
+      const defense = buildings.reduce(
+        (sum, b) => sum + (BUILDING_TYPES[b.type]?.defense || 0), 0
+      );
 
-      // Progress construction
+      // Collect income; subtract a small upkeep per building (10% of income, min 1).
+      const incomeThisWeek = buildings.reduce(
+        (sum, b) => sum + (BUILDING_TYPES[b.type]?.income || 0), 0
+      );
+      const upkeepThisWeek = buildings.length; // 1 gp/building/week base
+      const netIncome = incomeThisWeek - upkeepThisWeek;
+      updated.treasury = (updated.treasury || 0) + netIncome;
+
+      // Progress construction.
       const newQueue = [];
       if (updated.constructionQueue && updated.constructionQueue.length > 0) {
         updated.constructionQueue.forEach(item => {
           item.daysRemaining -= 7;
           if (item.daysRemaining <= 0) {
-            // Add completed building
             if (!updated.buildings) updated.buildings = [];
             updated.buildings.push({
               id: item.id,
               type: item.buildingType,
-              completed: true
+              completed: true,
+              completedWeek: (updated.weekNumber || 0) + 1
             });
           } else {
             newQueue.push(item);
@@ -635,36 +693,74 @@
         updated.constructionQueue = newQueue;
       }
 
-      // Random event (30% chance)
+      // Random event (30% chance). Threats now actually roll against defense.
       if (Math.random() < 0.3) {
         const event = DOMAIN_EVENTS[Math.floor(Math.random() * DOMAIN_EVENTS.length)];
         if (!updated.eventLog) updated.eventLog = [];
+        const morale0 = (updated.morale != null) ? updated.morale : 50;
+        let outcome = 'triggered';
+        let moraleDelta = 0;
+        let goldDelta = 0;
+
+        if (event.type === 'opportunity') {
+          // Match common reward strings; fall back to +50gp / +3 morale.
+          goldDelta = _parseGoldDelta(event.reward, +50);
+          moraleDelta = _parseMoraleDelta(event.reward, +3);
+          outcome = 'success';
+        } else if (event.type === 'event') {
+          moraleDelta = _parseMoraleDelta(event.effect, +5);
+          goldDelta = _parseGoldDelta(event.effect, 0);
+          outcome = 'celebrated';
+        } else if (event.type === 'threat') {
+          // d20 + defense vs the event's defenseCheck.
+          const dc = event.defenseCheck || 10;
+          const roll = Math.floor(Math.random() * 20) + 1;
+          const total = roll + defense;
+          if (total >= dc) {
+            outcome = 'defended (' + total + ' vs DC ' + dc + ')';
+            // Defenders keep a small bounty / morale boost.
+            goldDelta = _parseGoldDelta(event.successReward, +25);
+            moraleDelta = _parseMoraleDelta(event.successReward, +2);
+          } else {
+            outcome = 'failed (' + total + ' vs DC ' + dc + ')';
+            goldDelta = _parseGoldDelta(event.failurePenalty, -50);
+            moraleDelta = _parseMoraleDelta(event.failurePenalty, -8);
+            // A handful of threats can damage a building on failure.
+            if (event.id === 'dragon_sighting' || event.id === 'earthquake') {
+              const built = updated.buildings || [];
+              if (built.length > 0) {
+                const damagedIdx = Math.floor(Math.random() * built.length);
+                const damaged = built[damagedIdx];
+                damaged.damaged = true;
+                outcome += ' — ' + (BUILDING_TYPES[damaged.type]?.name || damaged.type) + ' damaged';
+              }
+            }
+          }
+        }
+
+        updated.treasury = (updated.treasury || 0) + goldDelta;
+        updated.morale = Math.max(0, Math.min(100, morale0 + moraleDelta));
+
         updated.eventLog.push({
           week: (updated.weekNumber || 0) + 1,
           event: event.name,
-          outcome: 'triggered',
+          outcome,
+          goldDelta,
+          moraleDelta,
           timestamp: Date.now()
         });
-
-        // Apply event effects
-        if (event.type === 'opportunity' && event.reward) {
-          updated.treasury += 50; // Simplified reward
-          updated.morale = Math.min(100, (updated.morale || 50) + 3);
-        } else if (event.type === 'threat') {
-          updated.morale = Math.max(0, (updated.morale || 50) - 5);
-        }
       }
 
-      // Morale drift toward 50
-      updated.morale = updated.morale || 50;
-      if (updated.morale < 50) {
-        updated.morale = Math.min(50, updated.morale + 2);
-      } else if (updated.morale > 50) {
-        updated.morale = Math.max(50, updated.morale - 2);
-      }
+      // Morale drift toward 50.
+      const m = (updated.morale != null) ? updated.morale : 50;
+      if (m < 50) updated.morale = Math.min(50, m + 2);
+      else if (m > 50) updated.morale = Math.max(50, m - 2);
+      else updated.morale = 50;
 
-      // Slow population growth
-      updated.population = Math.floor((updated.population || 100) * 1.01);
+      // Population growth scales with morale (sad domains shrink).
+      const pop = (updated.population != null) ? updated.population : 100;
+      const growthRate = 1.0 + ((updated.morale - 50) / 5000); // -1% to +1%
+      updated.population = Math.max(1, Math.floor(pop * growthRate));
 
       updated.weekNumber = (updated.weekNumber || 0) + 1;
 

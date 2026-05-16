@@ -209,26 +209,65 @@ window.CampaignSeasons = (function(){
   }
 
   CalendarTracker.prototype.advance = function(days) {
-    days = Math.max(0, parseInt(days, 10) || 0);
-    if (days === 0) return;
+    days = parseInt(days, 10) || 0;
+    if (days === 0) return { from: null, to: null, seasonChanged: false };
 
-    // Update day of week
-    this.dayOfWeek = (this.dayOfWeek + days) % FANTASY_CALENDAR.dayNames.length;
+    var dpm = FANTASY_CALENDAR.daysPerMonth;
+    var mpy = FANTASY_CALENDAR.months.length;
+    var dpy = dpm * mpy;
+    var dayNamesLen = FANTASY_CALENDAR.dayNames.length;
 
-    // Advance through days
-    for (var i = 0; i < days; i++) {
-      this.day++;
+    var prevSeason = this.getSeason();
+    var prevMonth = this.month;
+    var prevYear = this.year;
 
-      if (this.day > FANTASY_CALENDAR.daysPerMonth) {
-        this.day = 1;
-        this.month++;
-
-        if (this.month > FANTASY_CALENDAR.months.length) {
-          this.month = 1;
-          this.year++;
-        }
-      }
+    // O(1) advancement — no loop
+    var totalDayOfYear = (this.month - 1) * dpm + this.day - 1 + days;
+    var newYear = this.year + Math.floor(totalDayOfYear / dpy);
+    var dayInYear = ((totalDayOfYear % dpy) + dpy) % dpy; // handles negatives
+    if (totalDayOfYear < 0 && (totalDayOfYear % dpy !== 0)) {
+      newYear -= 1;
     }
+    this.month = Math.floor(dayInYear / dpm) + 1;
+    this.day = (dayInYear % dpm) + 1;
+    this.year = newYear;
+
+    // Day of week
+    var dowOffset = ((this.dayOfWeek + days) % dayNamesLen + dayNamesLen) % dayNamesLen;
+    this.dayOfWeek = dowOffset;
+
+    var newSeason = this.getSeason();
+    var seasonChanged = !!(prevSeason && newSeason && prevSeason.id !== newSeason.id);
+    if (seasonChanged) {
+      this.logEvent('Season changed: ' + prevSeason.name + ' → ' + newSeason.name);
+    }
+
+    return {
+      from: { year: prevYear, month: prevMonth, season: prevSeason ? prevSeason.id : null },
+      to: { year: this.year, month: this.month, season: newSeason ? newSeason.id : null },
+      seasonChanged: seasonChanged
+    };
+  };
+
+  CalendarTracker.prototype.getDateObject = function() {
+    return { day: this.day, month: this.month, year: this.year };
+  };
+
+  CalendarTracker.prototype.daysUntilSeasonChange = function() {
+    var monthObj = FANTASY_CALENDAR.months[this.month - 1];
+    if (!monthObj) return 0;
+    var currentSeason = monthObj.season;
+    var dpm = FANTASY_CALENDAR.daysPerMonth;
+
+    // Walk forward (max one full year) to find the next month with different season
+    for (var step = 0; step < FANTASY_CALENDAR.daysPerYear; step++) {
+      var curDayOfYear = (this.month - 1) * dpm + this.day + step;
+      var futureDayInYear = ((curDayOfYear - 1) % FANTASY_CALENDAR.daysPerYear);
+      var futureMonthIdx = Math.floor(futureDayInYear / dpm);
+      var futureMonth = FANTASY_CALENDAR.months[futureMonthIdx];
+      if (futureMonth && futureMonth.season !== currentSeason) return step;
+    }
+    return 0;
   };
 
   CalendarTracker.prototype.getDateString = function() {
@@ -356,10 +395,15 @@ window.CampaignSeasons = (function(){
 
   WeatherEngine.prototype._rollWeather = function(current, climate, season) {
     var transitions = this._getWeatherTransitions(current, climate, season);
-    var roll = this.rng();
-    var cumulative = 0;
-
     var weathers = Object.keys(transitions);
+
+    // Normalize weights so distribution is fair regardless of how many weights were added
+    var total = 0;
+    for (var w = 0; w < weathers.length; w++) total += transitions[weathers[w]];
+    if (total <= 0) return current;
+
+    var roll = this.rng() * total;
+    var cumulative = 0;
     for (var i = 0; i < weathers.length; i++) {
       cumulative += transitions[weathers[i]];
       if (roll <= cumulative) return weathers[i];
@@ -861,6 +905,58 @@ window.CampaignSeasons = (function(){
     this.activeEvents = this.activeEvents.filter(function(e) {
       return (now - e.triggeredAt) < (maxAge * 24 * 60 * 60 * 1000);
     });
+  };
+
+  // Clear events that took place more than `maxDays` ago in the campaign's calendar
+  SeasonalEffectsManager.prototype.clearExpiredByCalendar = function(calendar, maxDays) {
+    if (!calendar || typeof calendar.getDateObject !== 'function') return;
+    maxDays = maxDays || 30;
+    var nowDate = calendar.getDateObject();
+    this.activeEvents = this.activeEvents.filter(function(e) {
+      if (!e.calendarTriggeredOn) return true; // legacy event, keep
+      var diff = calendar.getDaysSince(e.calendarTriggeredOn);
+      return diff < maxDays;
+    });
+  };
+
+  // Suggest a list of seasonal event ids appropriate for the current season
+  SeasonalEffectsManager.prototype.getEligibleEvents = function(seasonId) {
+    var ids = [];
+    Object.keys(SEASONAL_EVENTS).forEach(function(id) {
+      var ev = SEASONAL_EVENTS[id];
+      if (!ev.season || ev.season === seasonId) ids.push(id);
+    });
+    return ids;
+  };
+
+  // Pick a random eligible event and trigger it; returns null if none triggered
+  SeasonalEffectsManager.prototype.maybeTriggerRandomEvent = function(calendar, worldData, chance) {
+    if (!calendar || typeof calendar.getSeason !== 'function') return null;
+    chance = (typeof chance === 'number') ? chance : 0.05;
+    if (this.rng() > chance) return null;
+
+    var season = calendar.getSeason();
+    var eligible = this.getEligibleEvents(season ? season.id : null);
+    if (!eligible.length) return null;
+
+    var pick = eligible[Math.floor(this.rng() * eligible.length)];
+    var event = this.triggerSeasonalEvent(pick, calendar, worldData);
+    if (event && typeof calendar.getDateObject === 'function') {
+      event.calendarTriggeredOn = calendar.getDateObject();
+    }
+    return event;
+  };
+
+  SeasonalEffectsManager.prototype.summary = function() {
+    var byCategory = {};
+    this.activeEvents.forEach(function(e) {
+      byCategory[e.category] = (byCategory[e.category] || 0) + 1;
+    });
+    return {
+      activeCount: this.activeEvents.length,
+      historyCount: this.eventHistory.length,
+      byCategory: byCategory
+    };
   };
 
   SeasonalEffectsManager.prototype.serialize = function() {
