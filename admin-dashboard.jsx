@@ -3391,9 +3391,9 @@ select cron.schedule(
 // ═══════════════════════════════
 function SubscriptionsPage({ addToast }) {
   const { data, loading, error, refetch } = useAdminQuery(async (db) => {
-    const [allProfiles, stripeEvents, pricingSettings] = await Promise.all([
+    const [allProfiles, stripeEvents, pricingSettings, healthRows] = await Promise.all([
       db.from('profiles')
-        .select('id, name, email, subscription_tier, subscription_status, subscription_interval, stripe_customer_id, subscription_started_at, subscription_expires_at, subscription_cancel_at, created_at')
+        .select('id, name, email, subscription_tier, subscription_status, subscription_interval, stripe_customer_id, subscription_started_at, subscription_expires_at, subscription_cancel_at, is_banned, created_at')
         .order('subscription_started_at', { ascending: false, nullsFirst: false })
         .limit(500),
       db.from('stripe_events')
@@ -3411,6 +3411,12 @@ function SubscriptionsPage({ addToast }) {
           return map;
         })
         .catch(() => ({})),
+      // subscription_health view (added by migration-v5) — surfaces anomalies.
+      // Falls back to [] if view is missing (pre-migration state).
+      db.from('subscription_health')
+        .select('user_id, is_active_subscriber, is_canceling, seconds_until_expiry')
+        .then(r => r.data || [])
+        .catch(() => []),
     ]);
     if (allProfiles.error) throw allProfiles.error;
     const profiles = allProfiles.data || [];
@@ -3447,6 +3453,36 @@ function SubscriptionsPage({ addToast }) {
     });
     const lifetimeUsers = proUsers.filter(p => p.subscription_tier === 'lifetime');
     const totalRevenue = (monthlyPro.length * monthlyPrice) + Math.round(yearlyPro.length * yearlyPrice / 12 * 100) / 100;
+
+    // Build quick lookup from subscription_health view
+    const healthById = {};
+    (healthRows || []).forEach(h => { healthById[h.user_id] = h; });
+
+    // Anomaly detection: users whose profile state disagrees with the view's
+    // is_active_subscriber derivation. Flagged cases:
+    //   A. Profile tier is paid but is_active_subscriber is false
+    //      → usually expired, banned, or missing status
+    //   B. Profile is banned but tier is still pro/party/lifetime
+    //   C. Subscription expires in < 7 days but no cancel_at set (renewal risk)
+    const nowMs = Date.now();
+    const anomalies = [];
+    profiles.forEach(p => {
+      const h = healthById[p.id];
+      const isPaidTier = ['pro', 'party', 'lifetime'].includes(p.subscription_tier);
+      if (isPaidTier && h && h.is_active_subscriber === false) {
+        anomalies.push({ user_id: p.id, kind: 'paid_tier_not_active', name: p.name || p.email, detail: `tier=${p.subscription_tier} status=${p.subscription_status || 'null'}` });
+      }
+      if (p.is_banned && isPaidTier) {
+        anomalies.push({ user_id: p.id, kind: 'banned_with_paid_tier', name: p.name || p.email, detail: `tier=${p.subscription_tier}` });
+      }
+      if (isPaidTier && p.subscription_expires_at && !p.subscription_cancel_at) {
+        const exp = new Date(p.subscription_expires_at).getTime();
+        if (exp > nowMs && (exp - nowMs) < 7 * 24 * 60 * 60 * 1000) {
+          anomalies.push({ user_id: p.id, kind: 'expiring_soon', name: p.name || p.email, detail: new Date(p.subscription_expires_at).toISOString().slice(0, 10) });
+        }
+      }
+    });
+
     return {
       profiles,
       proUsers,
@@ -3462,6 +3498,7 @@ function SubscriptionsPage({ addToast }) {
       monthlyPrice,
       yearlyPrice,
       stripeEvents,
+      anomalies,
     };
   });
 
@@ -3499,7 +3536,7 @@ function SubscriptionsPage({ addToast }) {
     </div>
   );
 
-  const s = data || { profiles: [], proUsers: [], pastDueUsers: [], cancelingUsers: [], lifetimeUsers: [], totalUsers: 0, totalPro: 0, monthlyCount: 0, yearlyCount: 0, lifetimeCount: 0, mrr: 0, monthlyPrice: 5, yearlyPrice: 50, stripeEvents: [] };
+  const s = data || { profiles: [], proUsers: [], pastDueUsers: [], cancelingUsers: [], lifetimeUsers: [], totalUsers: 0, totalPro: 0, monthlyCount: 0, yearlyCount: 0, lifetimeCount: 0, mrr: 0, monthlyPrice: 5, yearlyPrice: 50, stripeEvents: [], anomalies: [] };
 
   const filtered = s.profiles.filter(p => {
     if (filterTier === 'pro' && !['pro', 'party', 'lifetime'].includes(p.subscription_tier)) return false;
@@ -3547,7 +3584,41 @@ function SubscriptionsPage({ addToast }) {
           <div className="stat-value" style={{color:'#c9a84c'}}>{s.lifetimeCount} / 200</div>
           <div className="stat-sub">{200 - s.lifetimeCount} remaining · $50 one-time</div>
         </div>
+        <div className="stat-card">
+          <div className="stat-label">Anomalies</div>
+          <div className="stat-value" style={{color: s.anomalies.length > 0 ? '#ef4444' : '#5ee09a'}}>{s.anomalies.length}</div>
+          <div className="stat-sub">Tier / status / ban conflicts</div>
+        </div>
       </div>
+
+      {/* Anomaly detail panel (from subscription_health view) */}
+      {s.anomalies.length > 0 && (
+        <div className="card" style={{marginBottom:'20px',borderLeft:'3px solid #ef4444'}}>
+          <div className="card-header"><h2>Subscription anomalies</h2></div>
+          <div className="card-body" style={{maxHeight:'260px',overflowY:'auto'}}>
+            {s.anomalies.slice(0, 50).map((a, i) => {
+              const label = a.kind === 'paid_tier_not_active' ? 'Paid tier · not active'
+                : a.kind === 'banned_with_paid_tier'        ? 'Banned · still paid'
+                : a.kind === 'expiring_soon'                ? 'Expires in <7d · no cancel_at'
+                : a.kind;
+              const color = a.kind === 'banned_with_paid_tier' ? '#ef4444'
+                : a.kind === 'paid_tier_not_active'          ? '#f59e0b'
+                : '#eab308';
+              return (
+                <div key={a.user_id + '_' + i} style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid var(--border-mid)',fontSize:'12px'}}>
+                  <div>
+                    <span style={{padding:'2px 8px',borderRadius:'8px',fontSize:'10px',fontWeight:700,color,background:`${color}22`,marginRight:'8px'}}>{label}</span>
+                    <span style={{fontWeight:600}}>{a.name || '—'}</span>
+                    <span className="mono" style={{fontSize:'10px',color:'var(--text-faint)',marginLeft:'8px'}}>{a.user_id.slice(0, 8)}</span>
+                    <span style={{fontSize:'11px',color:'var(--text-muted)',marginLeft:'8px'}}>{a.detail}</span>
+                  </div>
+                  <a className="btn btn-sm" href={`/debug-subscription.html?uid=${encodeURIComponent(a.user_id)}`} target="_blank" rel="noopener noreferrer" style={{fontSize:'10px'}}>Diagnose →</a>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Conversion funnel */}
       <div className="card" style={{marginBottom:'20px'}}>
